@@ -10,17 +10,18 @@
 
 using namespace std; 
 using namespace cudf;
+using namespace cuSpatial;
 
 const unsigned int NUM_THREADS = 1024;
  
 template <typename T>
 __global__ void kernel_Hausdorff_Pair(
                 int num_pair,
-                uint *seg_left,
-                uint *seg_right,
+                uint32_t *seg_left,
+                uint32_t *seg_right,
                 T *xx,
                 T *yy,
-                uint *pos,
+                uint32_t *pos,
                 T *results
                 )
 {
@@ -87,7 +88,7 @@ __global__ void kernel_Hausdorff_Full(
                 int num_traj,
                 T *xx,
                 T *yy,
-                uint *pos,
+                uint32_t *pos,
                 T *results
                 )
 {
@@ -173,14 +174,14 @@ struct Hausdorff_functor {
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-    gdf_column  operator()(const gdf_column& coor_x,const gdf_column& coor_y,const gdf_column& cnt
+    gdf_column  operator()(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& cnt
     		/* ,cudaStream_t stream = 0   */)
     	
     { 
  	gdf_column d_matrix;
  	int num_set=cnt.size;
   	int block_sz = num_set*num_set;
- 	d_matrix.dtype= coor_x.dtype;
+ 	d_matrix.dtype= coord_x.dtype;
   	d_matrix.col_name=(char *)malloc(strlen("dist")+ 1);
 	strcpy(d_matrix.col_name,"dist");    
         RMM_TRY( RMM_ALLOC(&d_matrix.data, block_sz * sizeof(col_type), 0) );
@@ -191,10 +192,10 @@ struct Hausdorff_functor {
         struct timeval t0,t1;
         gettimeofday(&t0, NULL);
      
-        uint *d_pos=NULL;
-        RMM_TRY( RMM_ALLOC((void**)&d_pos, sizeof(uint)*num_set, 0) );
-        thrust::device_ptr<uint> trajcnt_ptr=thrust::device_pointer_cast(static_cast<uint*>(cnt.data));
-        thrust::device_ptr<uint> trajpos_ptr=thrust::device_pointer_cast(d_pos);
+        uint32_t *d_pos=NULL;
+        RMM_TRY( RMM_ALLOC((void**)&d_pos, sizeof(uint32_t)*num_set, 0) );
+        thrust::device_ptr<uint32_t> trajcnt_ptr=thrust::device_pointer_cast(static_cast<uint32_t*>(cnt.data));
+        thrust::device_ptr<uint32_t> trajpos_ptr=thrust::device_pointer_cast(d_pos);
         thrust::inclusive_scan(trajcnt_ptr,trajcnt_ptr+num_set,trajpos_ptr);
         col_type *d_tempdis=NULL;
         RMM_TRY( RMM_ALLOC((void**)&d_tempdis, sizeof(col_type)*block_sz, 0) )
@@ -211,16 +212,16 @@ struct Hausdorff_functor {
     	dim3 grid(block_x, block_y);
     	dim3 block(NUM_THREADS);   
         /*kernel_Hausdorff_Pair<col_type> <<< grid,block >>> (block_sz,d_pairs_left,d_pairs_right,        	
-         	static_cast<col_type*>(coor_x.data),static_cast<col_type*>(coor_y.data),
+         	static_cast<col_type*>(coord_x.data),static_cast<col_type*>(coord_y.data),
         	d_pos,static_cast<col_type*>(d_matrix.data));*/
  
  	kernel_Hausdorff_Full<col_type> <<< grid,block >>> (num_set,        	
-          	static_cast<col_type*>(coor_x.data),static_cast<col_type*>(coor_y.data),
+          	static_cast<col_type*>(coord_x.data),static_cast<col_type*>(coord_y.data),
          	d_pos,static_cast<col_type*>(d_matrix.data));
  
  
  	/*kernel_Hausdorff_Full<col_type> <<< grid,block >>> (num_set,        	
-         	static_cast<col_type*>(coor_x.data),static_cast<col_type*>(coor_y.data),
+         	static_cast<col_type*>(coord_x.data),static_cast<col_type*>(coord_y.data),
         	d_pos,d_tempdis);
         kernel_Hausdorff_Sym<<< grid,block >>> (num_set,d_tempdis,static_cast<col_type*>(d_matrix.data));*/
         
@@ -241,7 +242,7 @@ struct Hausdorff_functor {
     }
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
-    gdf_column  operator()(const gdf_column& coor_x,const gdf_column& coor_y,const gdf_column& cnt
+    gdf_column  operator()(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& cnt
     		/* ,cudaStream_t stream = 0   */)
     {
         CUDF_FAIL("Non-floating point operation is not supported");
@@ -249,26 +250,31 @@ struct Hausdorff_functor {
 };
     
 
+/**
+* @Brief compute Hausdorff distances among all pairs of a set of trajectories
+* see hausdorff.hpp
+*/
+
 namespace cuSpatial {
 
-gdf_column hausdorff_distance(const gdf_column& coor_x,const gdf_column& coor_y,const gdf_column& cnt
+gdf_column directed_hausdorff_distance(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& cnt
     		/* ,cudaStream_t stream = 0   */)
 {       
     struct timeval t0,t1;
     gettimeofday(&t0, NULL);
     
-    CUDF_EXPECTS(coor_x.data != nullptr &&coor_y.data!=nullptr && cnt.data!=NULL,
-    	"coor_x/coor_y/cnt data can not be null");
-    CUDF_EXPECTS(coor_x.size == coor_y.size ,"coor_x/coor_y/must have the same size");
+    CUDF_EXPECTS(coord_x.data != nullptr &&coord_y.data!=nullptr && cnt.data!=NULL,
+    	"coord_x/coord_y/cnt data can not be null");
+    CUDF_EXPECTS(coord_x.size == coord_y.size ,"coord_x/coord_y/must have the same size");
      
-    //future versions might allow coor_x/coor_y/cnt have null_count>0, which might be useful for taking query results as inputs 
-    CUDF_EXPECTS(coor_x.null_count == 0 && coor_y.null_count == 0 && cnt.null_count==0,
-    	"this version does not support coor_x/coor_y/cnt contains nulls");
+    //future versions might allow coord_x/coord_y/cnt have null_count>0, which might be useful for taking query results as inputs 
+    CUDF_EXPECTS(coord_x.null_count == 0 && coord_y.null_count == 0 && cnt.null_count==0,
+    	"this version does not support coord_x/coord_y/cnt contains nulls");
     
-    CUDF_EXPECTS(coor_x.size >= cnt.size ,"one trajectory must have at least one point");
+    CUDF_EXPECTS(coord_x.size >= cnt.size ,"one trajectory must have at least one point");
  
   
-    gdf_column dist =cudf::type_dispatcher(coor_x.dtype, Hausdorff_functor(), coor_x,coor_y,cnt/*,stream */);
+    gdf_column dist =cudf::type_dispatcher(coord_x.dtype, Hausdorff_functor(), coord_x,coord_y,cnt/*,stream */);
     
     gettimeofday(&t1, NULL);
     float Hausdorff_end2end_time=calc_time("C++ Hausdorff end-to-end time in ms=",t0,t1);

@@ -12,21 +12,21 @@
 namespace cuSpatial
 {
 	/**
-	 * @Brief read uint (unsigned integer) data from file as column
-	*
+	 * @Brief read uint32_t (unsigned integer with 32 bit fixed length) data from file as column
+	 * see soa_readers.hpp
 	*/
 
 	void read_uint_soa(const char *id_uint, gdf_column& values)                                 
 	{
     		uint *data=NULL;
-    		size_t num_l=read_field<uint>(id_uint,data);
+    		size_t num_l=read_field<uint32_t>(id_uint,data);
     		if(data==NULL) return;
 		
  		values.dtype= GDF_INT32;
  		values.col_name=(char *)malloc(strlen("id")+ 1);
 		strcpy(values.col_name,"id");
-		RMM_TRY( RMM_ALLOC(&values.data, num_l * sizeof(uint), 0) );
-		cudaMemcpy(values.data,data ,num_l * sizeof(uint) , cudaMemcpyHostToDevice);		
+		RMM_TRY( RMM_ALLOC(&values.data, num_l * sizeof(uint32_t), 0) );
+		cudaMemcpy(values.data,data ,num_l * sizeof(uint32_t) , cudaMemcpyHostToDevice);		
 		values.size=num_l;
 		values.valid=nullptr;
 		values.null_count=0;		

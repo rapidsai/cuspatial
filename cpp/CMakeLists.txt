@@ -223,15 +223,14 @@ add_library(cuspatial SHARED
             src/io/soa/pnt_soa_reader.cu
             src/io/soa/uint_soa_reader.cu
             src/io/soa/ts_soa_reader.cu
-            src/stq/sw_xy.cu            
-            src/spatial/pip2.cu	
+            src/st_query/sw_xy.cu            
+            src/spatial/pip.cu	
             src/spatial/haversine.cu	
             src/spatial/hausdorff.cu
-            src/spatial/ll2coor.cu
-            src/traj/traj_util.cpp
-            src/traj/traj_sbbox.cu
-            src/traj/traj_distspeed.cu            
-            src/traj/coor2traj.cu            
+            src/spatial/lonlat_to_coord.cu
+            src/trajectory/traj_sbbox.cu
+            src/trajectory/traj_distspeed.cu            
+            src/trajectory/coord_to_traj.cu            
             )
 
 #Override RPATH for cuspatial

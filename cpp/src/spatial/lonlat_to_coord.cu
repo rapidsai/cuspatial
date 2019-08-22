@@ -6,30 +6,25 @@
 #include <time.h>
 
 #include <cuspatial/shared_util.h>
-#include <cuspatial/coor_trans.hpp>
+#include <cuspatial/coord_trans.hpp>
 
 using namespace std; 
 using namespace cudf;
-
-/**
- 
- * @Brief transforming in_lon/in_lat (lon/lat defined in Coord) to out_x/out_y relative to a camera origiin
-
- */
+using namespace cuSpatial;
 
  template <typename T>
- __global__ void coor_trans_kernel(gdf_size_type loc_size,double cam_lon,double cam_lat,
+ __global__ void coord_trans_kernel(gdf_size_type loc_size,double cam_lon,double cam_lat,
  	const T* const __restrict__ in_lon,const T* const __restrict__ in_lat,
         T* const __restrict__ out_x, T* const __restrict__ out_y)
 {
     //assuming 1D grid/block config
-    uint idx =blockIdx.x*blockDim.x+threadIdx.x;
+    uint32_t idx =blockIdx.x*blockDim.x+threadIdx.x;
     if(idx>=loc_size) return;    
     out_x[idx]=((cam_lon - in_lon[idx]) * 40000.0 *cos((cam_lat + in_lat[idx]) * M_PI / 360) / 360);
     out_y[idx]=(cam_lat - in_lat[idx]) * 40000.0 / 360;
 }
 
-struct ll2coor_functor {
+struct ll2coord_functor {
     template <typename col_type>
     static constexpr bool is_supported()
     {
@@ -70,18 +65,18 @@ struct ll2coor_functor {
         gettimeofday(&t0, NULL);
         
         gdf_size_type min_grid_size = 0, block_size = 0;
-        CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, coor_trans_kernel<col_type>) );
+        CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, coord_trans_kernel<col_type>) );
         cudf::util::cuda::grid_config_1d grid{in_lon.size, block_size, 1};
         std::cout<<"in_lon.size="<<in_lon.size<<" block_size="<<block_size<<std::endl;
        
-        coor_trans_kernel<col_type> <<< grid.num_blocks, block_size >>> (in_lon.size,
+        coord_trans_kernel<col_type> <<< grid.num_blocks, block_size >>> (in_lon.size,
         	*((double*)(&(cam_lon.data))),*((double*)(&(cam_lat.data))),
    	    	static_cast<col_type*>(in_lon.data), static_cast<col_type*>(in_lat.data),
    	    	static_cast<col_type*>(out_x.data), static_cast<col_type*>(out_y.data) );           
         CUDA_TRY( cudaDeviceSynchronize() );
 
 	gettimeofday(&t1, NULL);
-	float ll2coor_kernel_time=calc_time("lon/lat to x/y conversion kernel time in ms=",t0,t1);
+	float ll2coord_kernel_time=calc_time("lon/lat to x/y conversion kernel time in ms=",t0,t1);
         //CHECK_STREAM(stream);
         
         num_print=(out_x.size<10)?out_x.size:10;
@@ -106,10 +101,11 @@ struct ll2coor_functor {
 namespace cuSpatial {
 
 /**
- * @Brief transforming in_lon/in_lat (lon/lat defined in Coord) to out_x/out_y relative to a camera origiin
- */
- 
-void ll2coor(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,const gdf_column  & in_lon,const gdf_column  & in_lat, 
+ * @Brief transforming in_lon/in_lat (lon/lat defined in Coord2D) to out_x/out_y relative to a camera origiin
+ * see coord_trans.hpp
+*/
+
+void lonlat_to_coord(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,const gdf_column  & in_lon,const gdf_column  & in_lat, 
     	gdf_column & out_x,gdf_column & out_y /* ,cudaStream_t stream = 0   */)
 {       
     struct timeval t0,t1;
@@ -125,13 +121,13 @@ void ll2coor(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,const gdf_c
     //future versions might allow in_(x/y) have null_count>0, which might be useful for taking query results as inputs 
     CUDF_EXPECTS(in_lon.null_count == 0 && in_lat.null_count == 0, "this version does not support point in_lon/in_lat contains nulls");
     
-    cudf::type_dispatcher(in_lon.dtype, ll2coor_functor(), cam_lon,cam_lat,in_lon,in_lat,out_x,out_y/*,stream */);
+    cudf::type_dispatcher(in_lon.dtype, ll2coord_functor(), cam_lon,cam_lat,in_lon,in_lat,out_x,out_y/*,stream */);
     
     // handle null_count if needed 
      
     gettimeofday(&t1, NULL);
-    float ll2coor_end2end_time=calc_time("lon/lat to x/y conversion end2end time in ms=",t0,t1);
+    float ll2coord_end2end_time=calc_time("lon/lat to x/y conversion end2end time in ms=",t0,t1);
     
-  }//ll2coor 
+  }//lonlat_to_coord 
     	
 }// namespace cuSpatial

@@ -1,8 +1,9 @@
 #include <string.h>
 #include <algorithm>
 #include <cuspatial/shared_util.h>
-#include <cuspatial/traj_util.h>
+#include "traj_util.h"
 
+using namespace cuSpatial;
 
 /**
  * @Brief retrive camera origin at a particular intersection from a configuration file
@@ -11,12 +12,12 @@
 
  * @param[in]  inter_name:  the unique name of an intersection
 
- * @param[out]  camera_origin  Location (lon/lat/alt) of the retrieved camera origin
+ * @param[out]  camera_origin  Location3D (lon/lat/alt) of the retrieved camera origin
  *
  * @return negative error code; 0 for success
  */
 
-int get_camera_origin(const char *df_fn, const char * inter_name, Location & camera_origin)
+int get_camera_origin(const char *df_fn, const char * inter_name, Location3D & camera_origin)
 {
     const int num_col=39;
     const char *col_name[num_col]={"cameraIdString","ipaddress","gx0","gy0","gx1","gy1","gx2","gy2","gx3","gy3","cx0","cy0","cx1","cy1","cx2","cy2","cx3","cy3",
@@ -65,13 +66,13 @@ int get_camera_origin(const char *df_fn, const char * inter_name, Location & cam
  * i.e., a set of coordiantes (lon/lat/alt) with a timestamp and an object (e.g., vehicle) identifier.
  *
  * @param[in]  root_fn: the root of the three files stored in columnar format,
- * with .objectid (uint type),.time (Time type) and .location(Location type) extensions, respectively.
+ * with .objectid (uint32_t type),.time (TimeStamp type) and .location(Location3D type) extensions, respectively.
  * @param[out]  objid: out array for ID
  * @param[out]  time: out array for ID
  * @param[out]  location: out array for ID
  * @return the number of records (should be the same for all the three data files)
  */
-size_t read_traj_soa(char *root_fn,int *& objid, Time *& time, Location*&  location)
+size_t read_traj_soa(char *root_fn,int *& objid, TimeStamp *& time, Location3D*&  location)
 {
      enum FILEDS {objid_id=0,time_id,location_id};
 	 const char * out_ext[]={".objectid",".time",".location"};
@@ -87,12 +88,12 @@ size_t read_traj_soa(char *root_fn,int *& objid, Time *& time, Location*&  locat
 
      strcpy(fn,root_fn);
      strcat(fn,out_ext[time_id]);
-     size_t time_len=read_field<Time>(fn,time);
+     size_t time_len=read_field<TimeStamp>(fn,time);
      if(time==NULL) return 0;
 
      strcpy(fn,root_fn);
      strcat(fn,out_ext[location_id]);
-     size_t loc_len=read_field<Location>(fn,location);
+     size_t loc_len=read_field<Location3D>(fn,location);
      if(location==NULL) return 0;
 
      if((objectid_len!=loc_len||objectid_len!=time_len)) return 0;

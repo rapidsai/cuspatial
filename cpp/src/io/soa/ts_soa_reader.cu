@@ -12,13 +12,13 @@
 namespace cuSpatial
 {
 	/**
-	 * @Brief read timestamp (ts: Time type) data from file as column
-	*
+	 * @Brief read timestamp (ts: TimeStamp type) data from file as column
+	 * see soa_readers.hpp
 	*/
 	void read_ts_soa(const char *ts_fn, gdf_column& ts)                             
 	{
-    		Time * time=NULL;
-    		size_t num_t=read_field<Time>(ts_fn,time);
+    		TimeStamp * time=NULL;
+    		size_t num_t=read_field<TimeStamp>(ts_fn,time);
     		if(time==NULL) return;
     		
     		/*printf("1st (hex):%016llx\n", *((unsigned long long *)(&(time[0]))));
@@ -29,8 +29,8 @@ namespace cuSpatial
  		ts.col_name=(char *)malloc(strlen("ts")+ 1);
 		strcpy(ts.col_name,"ts");
 		//make sure sizeof(TIME)==sizeof(GDF_INT64)
-		RMM_TRY( RMM_ALLOC(&ts.data, num_t * sizeof(Time), 0) );
-		cudaMemcpy(ts.data,time ,num_t * sizeof(Time) , cudaMemcpyHostToDevice);		
+		RMM_TRY( RMM_ALLOC(&ts.data, num_t * sizeof(TimeStamp), 0) );
+		cudaMemcpy(ts.data,time ,num_t * sizeof(TimeStamp) , cudaMemcpyHostToDevice);		
 		ts.size=num_t;
 		ts.valid=nullptr;
 		ts.null_count=0;		

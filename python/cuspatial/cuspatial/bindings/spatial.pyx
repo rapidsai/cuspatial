@@ -3,8 +3,8 @@ from cudf.dataframe.column import Column
 
 from libc.stdlib cimport calloc, malloc, free
                         
-cpdef cpp_pip2_bm(pnt_x,pnt_y,ply_fpos,ply_rpos,ply_x,ply_y): 
-    print("in cpp_pip2_bm")
+cpdef cpp_pip_bm(pnt_x,pnt_y,ply_fpos,ply_rpos,ply_x,ply_y): 
+    print("in cpp_pip_bm")
     cdef gdf_column* c_pnt_x = column_view_from_column(pnt_x)
     cdef gdf_column* c_pnt_y = column_view_from_column(pnt_y)
     
@@ -16,7 +16,7 @@ cpdef cpp_pip2_bm(pnt_x,pnt_y,ply_fpos,ply_rpos,ply_x,ply_y):
     cdef gdf_column* res_bm = <gdf_column*>malloc(sizeof(gdf_column))
 
     with nogil:
-        res_bm[0] = pip2_bm(c_pnt_x[0],c_pnt_y[0],c_ply_fpos[0],c_ply_rpos[0],c_ply_x[0],c_ply_y[0])
+        res_bm[0] = pip_bm(c_pnt_x[0],c_pnt_y[0],c_ply_fpos[0],c_ply_rpos[0],c_ply_x[0],c_ply_y[0])
         
     data, mask = gdf_column_to_column_mem(res_bm)
     free(c_pnt_x)
@@ -52,26 +52,26 @@ cpdef cpp_haversine_distance(x1,y1,x2,y2):
     
     return h_dist  
 
-cpdef cpp_ll2coor(cam_x,cam_y,in_x,in_y): 
+cpdef cpp_lonlat2coord(cam_lon,cam_lat,in_lon,in_lat): 
     print("in cpp_ll2coord")
     
-    cdef gdf_scalar* c_cam_x=gdf_scalar_from_scalar(cam_x)
-    cdef gdf_scalar* c_cam_y=gdf_scalar_from_scalar(cam_y)
+    cdef gdf_scalar* c_cam_lon=gdf_scalar_from_scalar(cam_lon)
+    cdef gdf_scalar* c_cam_lat=gdf_scalar_from_scalar(cam_lat)
    
-    cdef gdf_column* c_in_x = column_view_from_column(in_x)
-    cdef gdf_column* c_in_y = column_view_from_column(in_y)
+    cdef gdf_column* c_in_lon = column_view_from_column(in_lon)
+    cdef gdf_column* c_in_lat = column_view_from_column(in_lat)
 
     cdef gdf_column* c_out_x = <gdf_column*>malloc(sizeof(gdf_column))
     cdef gdf_column* c_out_y = <gdf_column*>malloc(sizeof(gdf_column))
  
     with nogil:
-       ll2coor(c_cam_x[0],c_cam_y[0],c_in_x[0],c_in_y[0],c_out_x[0],c_out_y[0])
+       lonlat_to_coord(c_cam_lon[0],c_cam_lat[0],c_in_lon[0],c_in_lat[0],c_out_x[0],c_out_y[0])
         
     x_data, x_mask = gdf_column_to_column_mem(c_out_x)
     y_data, y_mask = gdf_column_to_column_mem(c_out_y)
     
-    free(c_in_x)
-    free(c_in_y)
+    free(c_in_lon)
+    free(c_in_lat)
     free(c_out_x)
     free(c_out_y)
     
@@ -80,14 +80,14 @@ cpdef cpp_ll2coor(cam_x,cam_y,in_x,in_y):
     
     return x,y         
  
-cpdef cpp_directed_hausdorff(coor_x,coor_y,cnt):
+cpdef cpp_directed_hausdorff_distance(coor_x,coor_y,cnt):
     print("in cpp_hausdorff_distance")
     cdef gdf_column* c_coor_x = column_view_from_column(coor_x)
     cdef gdf_column* c_coor_y = column_view_from_column(coor_y)
     cdef gdf_column* c_cnt = column_view_from_column(cnt)
     cdef gdf_column* c_dist = <gdf_column*>malloc(sizeof(gdf_column))
     with nogil:
-     c_dist[0]=hausdorff_distance(c_coor_x[0],c_coor_y[0],c_cnt[0])
+     c_dist[0]=directed_hausdorff_distance(c_coor_x[0],c_coor_y[0],c_cnt[0])
     
     dist_data, dist_mask = gdf_column_to_column_mem(c_dist)    
     dist=Column.from_mem_views(dist_data,dist_mask)

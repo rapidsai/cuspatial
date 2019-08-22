@@ -13,17 +13,7 @@ namespace cuSpatial
 {
 	/**
 	 * @Brief read poygon data from file in SoA format; data type of vertices is fixed to double (GDF_FLOAT64)
-
-	 * @param[in] ply_fn: polygon data file name
-
-	 * @param[out] ply_fpos: pointer/array to index polygons, i.e., prefix-sum of #of rings of all polygons
-
-	 * @param[out] ply_rpos: pointer/array to index rings, i.e., prefix-sum of #of vertices of all rings
-
-	 * @param[out] ply_x: pointer/array of x coordiantes of concatenated polygons
-
-	 * @param[out] ply_y: pointer/array of x coordiantes of concatenated polygons
-	*
+	 * see soa_readers.hpp
 	*/	
 	
 	void read_ply_soa(const char *poly_fn,gdf_column& ply_fpos, gdf_column& ply_rpos,
@@ -37,9 +27,9 @@ namespace cuSpatial
   		ply_fpos.col_name=(char *)malloc(strlen("f_pos")+ 1);
 		strcpy(ply_fpos.col_name,"f_pos");
 		ply_fpos.data=NULL;
-		RMM_TRY( RMM_ALLOC(&ply_fpos.data, pm.num_f * sizeof(uint), 0) );
-		cudaMemcpy(ply_fpos.data, pm.p_f_len,pm.num_f * sizeof(uint) , cudaMemcpyHostToDevice);
-		thrust::device_ptr<uint> d_pfp_ptr=thrust::device_pointer_cast((uint *)ply_fpos.data);
+		RMM_TRY( RMM_ALLOC(&ply_fpos.data, pm.num_f * sizeof(uint32_t), 0) );
+		cudaMemcpy(ply_fpos.data, pm.p_f_len,pm.num_f * sizeof(uint32_t) , cudaMemcpyHostToDevice);
+		thrust::device_ptr<uint32_t> d_pfp_ptr=thrust::device_pointer_cast((uint32_t *)ply_fpos.data);
 		//prefix-sum: len to pos
 		thrust::inclusive_scan(d_pfp_ptr,d_pfp_ptr+pm.num_f,d_pfp_ptr);
 		ply_fpos.size=pm.num_f;
@@ -51,9 +41,9 @@ namespace cuSpatial
  		ply_rpos.col_name=(char *)malloc(strlen("r_pos")+ 1);
 		strcpy(ply_rpos.col_name,"r_pos");
 		ply_rpos.data=NULL;
-		RMM_TRY( RMM_ALLOC(&ply_rpos.data, pm.num_r * sizeof(uint), 0) );
-		cudaMemcpy(ply_rpos.data, pm.p_r_len,pm.num_r * sizeof(uint) , cudaMemcpyHostToDevice);
-		thrust::device_ptr<uint> d_prp_ptr=thrust::device_pointer_cast((uint *)ply_rpos.data);
+		RMM_TRY( RMM_ALLOC(&ply_rpos.data, pm.num_r * sizeof(uint32_t), 0) );
+		cudaMemcpy(ply_rpos.data, pm.p_r_len,pm.num_r * sizeof(uint32_t) , cudaMemcpyHostToDevice);
+		thrust::device_ptr<uint32_t> d_prp_ptr=thrust::device_pointer_cast((uint32_t *)ply_rpos.data);
 		//prefix-sum: len to pos
 		thrust::inclusive_scan(d_prp_ptr,d_prp_ptr+pm.num_r,d_prp_ptr);
 		ply_rpos.size=pm.num_r;
@@ -83,5 +73,5 @@ namespace cuSpatial
 		delete[] pm.p_y;
 		
 		delete[] pm.p_g_len;
-	}
-}
+	}//read_ply_soa
+}// namespace cuSpatial

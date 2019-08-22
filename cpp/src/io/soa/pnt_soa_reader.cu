@@ -13,6 +13,7 @@ namespace cuSpatial
 {
 	/**
 	 * @Brief read lon/lat from file into two columns; data type is fixed to double (GDF_FLOAT64)
+	 * see soa_readers.hpp
 	*
 	*/
 	void read_pnt_lonlat_soa(const char *pnt_fn,gdf_column& pnt_lon,gdf_column& pnt_lat)                                   

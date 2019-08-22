@@ -1,11 +1,13 @@
 #include <vector>
 #include <string>
-#include <cuspatial/pip2.hpp>
-#include <cuspatial/pip_util.h>
+#include <cuspatial/pip.hpp>
+#include "pip_util.h"
 #include <gtest/gtest.h>
 #include <tests/utilities/column_wrapper.cuh>
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
+
+using namespace cuSpatial;
 
 struct PIPToy : public GdfTest 
 {
@@ -48,7 +50,7 @@ struct PIPToy : public GdfTest
         cudf::test::column_wrapper<double> point_x_wrapp{pnt_x_v};
         cudf::test::column_wrapper<double> point_y_wrapp{pnt_y_v};
          
-        gdf_column res_bm1 = cuSpatial::pip2_bm( 
+        gdf_column res_bm1 = cuSpatial::pip_bm( 
         	*(point_x_wrapp.get()), *(point_y_wrapp.get()),
         	*(polygon_fpos_wrapp.get()), *(polygon_rpos_wrapp.get()), 
         	*(polygon_x_wrapp.get()), *(polygon_y_wrapp.get()) );

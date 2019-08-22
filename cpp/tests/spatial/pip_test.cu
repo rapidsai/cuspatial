@@ -4,17 +4,18 @@
 #include <string>
 
 #include <utilities/error_utils.hpp>
-#include <cuspatial/pip_util.h>
-#include <cuspatial/pip2.hpp>
+#include <cuspatial/pip.hpp>
 #include <gtest/gtest.h>
+#include "pip_util.h"
 
 #include <tests/utilities/column_wrapper.cuh>
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
 
+using namespace cuSpatial;
 
 template <typename T>
-struct PIPTest2 : public GdfTest 
+struct PIPTest : public GdfTest 
 {
     T * p_x=NULL, *p_y=NULL;
     int point_len=-1;
@@ -32,7 +33,7 @@ struct PIPTest2 : public GdfTest
       gettimeofday(&t0, NULL);
       read_polygon_soa<T>(poly_fn,polygon);
       gettimeofday(&t1, NULL);
-      float ply_load_time=calc_time("polygon data loading time=", t0,t1);
+      float ply_load_time=cuSpatial::calc_time("polygon data loading time=", t0,t1);
       CUDF_EXPECTS(polygon.num_f>0 && polygon.num_r>0,"invalid # of polygons/rings");
       CUDF_EXPECTS(polygon.num_f<=polygon.num_r,"a polygon must have at least one ring");
       CUDF_EXPECTS(polygon.p_y!=NULL && polygon.p_y!=NULL,"polygon vertex x/y array can not be NULL");
@@ -81,7 +82,7 @@ struct PIPTest2 : public GdfTest
        std::cerr<<i<<","<<p_x[i].lon<<","<<p_y[i].lat<<std::endl;*/
       
       gettimeofday(&t2, NULL);
-      float pnt_load_time=calc_time("point data loading time ......",t1,t2);      
+      float pnt_load_time=cuSpatial::calc_time("point data loading time ......",t1,t2);      
       return (0);
     }
     
@@ -104,7 +105,7 @@ struct PIPTest2 : public GdfTest
         cudf::test::column_wrapper<T> point_y_wrapp{pnt_y_v};
         std::cout<<"point_x_wrapp type="<<point_x_wrapp.get()->dtype<<std::endl;
         
-        gdf_column res_bm1 = cuSpatial::pip2_bm( 
+        gdf_column res_bm1 = cuSpatial::pip_bm( 
         	*(point_x_wrapp.get()), *(point_y_wrapp.get()),
         	*(polygon_fpos_wrapp.get()), *(polygon_rpos_wrapp.get()), 
         	*(polygon_x_wrapp.get()), *(polygon_y_wrapp.get()) );
@@ -138,10 +139,10 @@ struct PIPTest2 : public GdfTest
 //typedef testing::Types<int16_t, int32_t, int64_t, float, double> NumericTypes;
 typedef testing::Types<double> NumericTypes;
 
-TYPED_TEST_CASE(PIPTest2, NumericTypes);
+TYPED_TEST_CASE(PIPTest, NumericTypes);
 
 
-TYPED_TEST(PIPTest2, piptest)
+TYPED_TEST(PIPTest, piptest)
 {
     std::string pnt_fn =std::string("/home/jianting/cuspatial/data/locust.location");
     std::string ply_fn=std::string("/home/jianting/cuspatial/data/itsroi.ply"); 
@@ -155,7 +156,7 @@ TYPED_TEST(PIPTest2, piptest)
     cpu_pip_loop(this->point_len,this->p_x, this->p_y,this->polygon,cpu_pip_res);
     	
     gettimeofday(&t4, NULL);
-    calc_time("CPU PIP time......",t3,t4);
+    cuSpatial::calc_time("CPU PIP time......",t3,t4);
 
     //x,y and gpu_pip_res on CPU; pip code allocates memory
     //x and y will be uploaded and res will be downloaded automatically
@@ -166,7 +167,7 @@ TYPED_TEST(PIPTest2, piptest)
     assert(gpu_pip_res!=NULL);
     
     gettimeofday(&t5, NULL);
-    float gpu_pip_time1=calc_time("GPU PIP time 1(including point data transfer and kernel time)......",t4,t5);
+    float gpu_pip_time1=cuSpatial::calc_time("GPU PIP time 1(including point data transfer and kernel time)......",t4,t5);
 
     //Testing asynchronous issues by 2nd call
     uint* gpu_pip_res2=NULL;
@@ -174,7 +175,7 @@ TYPED_TEST(PIPTest2, piptest)
     assert(gpu_pip_res2!=NULL);
     
     gettimeofday(&t6, NULL);
-    float gpu_pip_time2=calc_time("GPU PIP time 2(including point data transfer and kernel time)......",t5,t6);
+    float gpu_pip_time2=cuSpatial::calc_time("GPU PIP time 2(including point data transfer and kernel time)......",t5,t6);
     delete[] gpu_pip_res2;
 
     int err_cnt=0,non_zero=0;

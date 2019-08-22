@@ -3,7 +3,7 @@ from cuspatial.bindings.cudf_cpp import *
 
 from libc.stdlib cimport calloc, malloc, free
                          
-cpdef cpp_coor2traj(coor_x,coor_y,pid,ts): 
+cpdef cpp_coord2traj(coor_x,coor_y,pid,ts): 
     print("in cpp_coor2traj")
     cdef gdf_column* c_coor_x = column_view_from_column(coor_x)
     cdef gdf_column* c_coor_y = column_view_from_column(coor_y)
@@ -14,7 +14,7 @@ cpdef cpp_coor2traj(coor_x,coor_y,pid,ts):
     cdef gdf_column* c_pos = <gdf_column*>malloc(sizeof(gdf_column))
     
     with nogil:
-         num_traj=coor2traj(c_coor_x[0],c_coor_y[0],c_pid[0],c_ts[0],c_tid[0],c_len[0],c_pos[0])
+         num_traj=coord_to_traj(c_coor_x[0],c_coor_y[0],c_pid[0],c_ts[0],c_tid[0],c_len[0],c_pos[0])
 
     tid_data, tid_mask = gdf_column_to_column_mem(c_tid)   
     len_data, len_mask = gdf_column_to_column_mem(c_len)    
@@ -26,7 +26,7 @@ cpdef cpp_coor2traj(coor_x,coor_y,pid,ts):
     return num_traj,tid,len,pos
 
 cpdef cpp_traj_distspeed(coor_x,coor_y,ts,len,pos): 
-    print("in cpp_coor2traj")
+    print("in cpp_traj_distspeed")
     cdef gdf_column* c_coor_x = column_view_from_column(coor_x)
     cdef gdf_column* c_coor_y = column_view_from_column(coor_y)
     cdef gdf_column* c_ts = column_view_from_column(ts)
@@ -46,7 +46,7 @@ cpdef cpp_traj_distspeed(coor_x,coor_y,ts,len,pos):
     return dist,speed
 
 cpdef cpp_traj_sbbox(coor_x,coor_y,len,pos): 
-     print("in cpp_coor2traj")
+     print("in cpp_traj_sbbox")
      cdef gdf_column* c_coor_x = column_view_from_column(coor_x)
      cdef gdf_column* c_coor_y = column_view_from_column(coor_y)
      cdef gdf_column* c_len = column_view_from_column(len)

@@ -10,6 +10,8 @@
 
 using namespace std; 
 using namespace cudf;
+using namespace cuSpatial;
+
 #define pi 3.1415926535 
 
  template <typename T>
@@ -17,7 +19,7 @@ using namespace cudf;
 	const T* const __restrict__ x2,const T* const __restrict__ y2, T* const __restrict__ h_dist)
 {
     //assuming 1D grid/block config
-    uint idx =blockIdx.x*blockDim.x+threadIdx.x;
+    uint32_t idx =blockIdx.x*blockDim.x+threadIdx.x;
     if(idx>=pnt_size) return;  
     T x_1 = pi/180 * x1[idx];
     T y_1 = pi/180 * y1[idx];
@@ -96,8 +98,17 @@ struct haversine_functor {
     }
 };
 
+/**
+ *@Brief Compute Haversine distances among pairs of logitude/latitude locations
+ *see haversine.hpp
+*/
 
 namespace cuSpatial{
+
+/**
+ * @Brief Compute Haversine distances among pairs of logitude/latitude locations
+ * see haversine.hpp
+*/
 
 gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2
                           /* , cudaStream_t stream = 0   */)

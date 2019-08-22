@@ -1,6 +1,6 @@
 """
-A toy example to demonstrate how to convert python arrays into 
-cuSpatial inputs, invoke the directed Hausdorff distance computing function in cuSpatial,
+A toy example to demonstrate how to convert python arrays into cuSpatial inputs,
+invoke the GPU accelerated directed Hausdorff distance computing function in cuSpatial,
 convert the results back to python array(s) again to be feed into scipy clustering APIs
 For the toy example, by desgin, both AgglomerativeClustering and DBSCAN cluster the 2nd and thrid 
 trajectories into one cluster while leaving the first trajectory as the sconed cluster. 
@@ -27,7 +27,7 @@ for traj in in_trajs:
 pnt_x=columnops.as_column(py_x,dtype=np.float64)
 pnt_y=columnops.as_column(py_y,dtype=np.float64)
 cnt=columnops.as_column(py_cnt,dtype=np.int32)
-distance=gis.cpp_directed_hausdorff(pnt_x,pnt_y,cnt)
+distance=gis.cpp_directed_hausdorff_distance(pnt_x,pnt_y,cnt)
 
 num_set=len(cnt)
 matrix=distance.data.to_array().reshape(num_set,num_set)
@@ -38,7 +38,7 @@ label1=agg1.fit(matrix)
 print("AgglomerativeClustering results={}".format(label1.labels_))
 
 #clustering using DBSCAN; as the minimum distanance is ~1.4, 
-using eps=1.5 will generate the same two clasters as AgglomerativeClustering
+#using eps=1.5 will generate the same two clasters as AgglomerativeClustering
 agg2=DBSCAN(eps=1.5,min_samples=1,metric='precomputed')
 label2=agg2.fit(matrix)
 print("DBSCAN clustering results={}".format(label2.labels_))

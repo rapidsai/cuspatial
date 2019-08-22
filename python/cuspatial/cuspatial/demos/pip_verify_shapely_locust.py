@@ -24,7 +24,7 @@ pnt_lon,pnt_lat=readers.cpp_read_pnt_lonlat_soa(data_dir+"locust.location");
 fpos,rpos,plyx,plyy=readers.cpp_read_ply_soa(data_dir+"itsroi.ply")
 
 start = time.time()
-bm=gis.cpp_pip2_bm(pnt_lon,pnt_lat,fpos,rpos,plyx,plyy)
+bm=gis.cpp_pip_bm(pnt_lon,pnt_lat,fpos,rpos,plyx,plyy)
 end = time.time()
 print("Python GPU Time in ms (end-to-end)={}".format((end - start)*1000)) 
 

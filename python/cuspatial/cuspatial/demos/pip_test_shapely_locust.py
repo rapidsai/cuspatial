@@ -1,6 +1,9 @@
 """
 pip demo directly using shapely, more efficient than using python gdal/ogr directly
 poygons are created only once and stored for reuse
+
+First install shapely by "conda install -c conda-forge gdal" and "conda install -c conda-forge shapefile"
+under cudef_dev environment 
 """
 
 import numpy as np 

@@ -1,31 +1,31 @@
 #pragma once
 
-typedef unsigned int uint;
-
-
-typedef struct Location
+namespace cuSpatial
 {
-    double lat;
-    double lon;
-    double alt;
-} Location;
+	struct Location3D
+	{
+		double lat;
+		double lon;
+		double alt;
+	};
 
-typedef struct Coord
-{
-    double x;
-    double y;
-} Coord;
+	struct Coord2D
+	{
+		double x;
+		double y;
+	};
 
-typedef struct Time
-{
-    uint y : 6;
-    uint m : 4;
-    uint d : 5;
-    uint hh : 5;
-    uint mm : 6;
-    uint ss : 6;
-    uint wd: 3;
-    uint yd: 9;
-    uint ms: 10;
-    uint pid:10;
-}Time;
+	struct TimeStamp
+	{
+		uint32_t y : 6;
+		uint32_t m : 4;
+		uint32_t d : 5;
+		uint32_t hh : 5;
+		uint32_t mm : 6;
+		uint32_t ss : 6;
+		uint32_t wd: 3;
+		uint32_t yd: 9;
+		uint32_t ms: 10;
+		uint32_t pid:10;
+	};
+}// namespace cuSpatial

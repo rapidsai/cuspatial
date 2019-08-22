@@ -6,38 +6,16 @@
 #include <time.h>
 
 #include <cuspatial/shared_util.h>
-#include <cuspatial/traj_util.h>
 #include <cuspatial/traj_thrust.h>
-#include <cuspatial/traj2.hpp>
+#include <cuspatial/trajectory.hpp>
 
 using namespace std; 
 using namespace cudf;
+using namespace cuSpatial;
 
-
-/**
- * @Brief computing distance(length) and speed of trajectories after their formation (e.g., from coor2traj)
-
- * @param[in] num_traj: number of trajectories to process
- 
- * @param[in] coor_x/coor_y: x and y coordiantes reative to a camera origin ordered by (id,timestamp)
-
- * @param[in] time: timestamp array ordered by (id,timestamp)
-
- * @param[in] len: number of points array ordered by (id,timestamp)
-
- * @param[in] pos: position offsets of trajectories used to index coor_x/coor_y/oid/ts ordered by (id,timestamp)
-
- * @param[out] dis: computed distances/lengths of trajectories in meters (m)
-
- * @param[out] sp: computed speed of trajectories in meters per second (m/s)
-
- * Note: we might output duration (in addtiion to distance/speed), should there is a need;
- * duration can be easiy computed on CPUs by fetching begining/ending timestamps of a trajectory in the time array 
- */
- 
 template <typename T>
-__global__ void distspeed_kernel(gdf_size_type num_traj,const T* const __restrict__ coor_x,const T* const __restrict__ coor_y,
-	 const Time *const __restrict__ time,const uint * const __restrict__ len,const uint * const __restrict__ pos,
+__global__ void distspeed_kernel(gdf_size_type num_traj,const T* const __restrict__ coord_x,const T* const __restrict__ coord_y,
+	 const TimeStamp *const __restrict__ time,const uint32_t * const __restrict__ len,const uint32_t * const __restrict__ pos,
 	 T* const __restrict__ dis, T* const __restrict__ sp)
 	 
 {
@@ -63,8 +41,8 @@ __global__ void distspeed_kernel(gdf_size_type num_traj,const T* const __restric
    	 	float ds=0;
    	 	for(int i=0;i<len[pid]-1;i++)
    	 	{
-   	 		float dt=(coor_x[bp+i+1]-coor_x[bp+i])*(coor_x[bp+i+1]-coor_x[bp+i]);
-   	 		dt+=(coor_y[bp+i+1]-coor_y[bp+i])*(coor_y[bp+i+1]-coor_y[bp+i]);
+   	 		float dt=(coord_x[bp+i+1]-coord_x[bp+i])*(coord_x[bp+i+1]-coord_x[bp+i]);
+   	 		dt+=(coord_y[bp+i+1]-coord_y[bp+i])*(coord_y[bp+i+1]-coord_y[bp+i]);
    	 		ds+=sqrt(dt);
    	 	}
    	 	dis[pid]=ds*1000; //km to m
@@ -80,12 +58,12 @@ struct distspeed_functor {
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-    void operator()(const gdf_column& coor_x,const gdf_column& coor_y,const gdf_column& ts,
+    void operator()(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& ts,
  			    const gdf_column& len,const gdf_column& pos,
  			    gdf_column& dist,gdf_column& speed/* ,cudaStream_t stream = 0   */)
     	
     { 
- 	dist.dtype= coor_x.dtype;
+ 	dist.dtype= coord_x.dtype;
   	dist.col_name=(char *)malloc(strlen("dist")+ 1);
 	strcpy(dist.col_name,"dist");    
         RMM_TRY( RMM_ALLOC(&dist.data, len.size * sizeof(col_type), 0) );
@@ -93,7 +71,7 @@ struct distspeed_functor {
      	dist.valid=nullptr;
      	dist.null_count=0;		
 
- 	speed.dtype= coor_x.dtype;
+ 	speed.dtype= coord_x.dtype;
   	speed.col_name=(char *)malloc(strlen("speed")+ 1);
 	strcpy(dist.col_name,"speed");    
         RMM_TRY( RMM_ALLOC(&speed.data, len.size * sizeof(col_type), 0) );
@@ -106,12 +84,12 @@ struct distspeed_functor {
         
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, distspeed_kernel<col_type>) );
-        cudf::util::cuda::grid_config_1d grid{coor_x.size, block_size, 1};
-        std::cout<<"coor_x.size="<<coor_x.size<<" block_size="<<block_size<<std::endl;
+        cudf::util::cuda::grid_config_1d grid{coord_x.size, block_size, 1};
+        std::cout<<"coord_x.size="<<coord_x.size<<" block_size="<<block_size<<std::endl;
        
         distspeed_kernel<col_type> <<< grid.num_blocks, block_size >>> (len.size,
-        	static_cast<col_type*>(coor_x.data),static_cast<col_type*>(coor_y.data),
-        	static_cast<Time*>(ts.data),static_cast<uint*>(len.data), static_cast<uint*>(pos.data),
+        	static_cast<col_type*>(coord_x.data),static_cast<col_type*>(coord_y.data),
+        	static_cast<TimeStamp*>(ts.data),static_cast<uint32_t*>(len.data), static_cast<uint32_t*>(pos.data),
    	    	static_cast<col_type*>(dist.data), static_cast<col_type*>(speed.data) );           
         CUDA_TRY( cudaDeviceSynchronize() );
 
@@ -130,7 +108,7 @@ struct distspeed_functor {
     }
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
-    void operator()(const gdf_column& coor_x,const gdf_column& coor_y,const gdf_column& ts,
+    void operator()(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& ts,
  			    const gdf_column& len,const gdf_column& pos,
  			    gdf_column& dist,gdf_column& speed/* ,cudaStream_t stream = 0   */)
     {
@@ -140,45 +118,32 @@ struct distspeed_functor {
     
 
 /**
- * @Brief computing distance(length) and speed of trajectories after their formation (e.g., from coor2traj)
-
- * @param[in] coor_x/coor_y: x and y coordiantes reative to a camera origin ordered by (id,timestamp)
-
- * @param[in] ts: timestamp column ordered by (id,timestamp)
-
- * @param[in] len: number of points column ordered by (id,timestamp)
-
- * @param[in] pos: position offsets of trajectories used to index coor_x/coor_y/oid/ts ordered by (id,timestamp)
-
- * @param[out] dist: computed distances/lengths of trajectories in meters (m)
-
- * @param[out] speed: computed speed of trajectories in meters per second (m/s)
-
- * Note: we might output duration (in addtiion to distance/speed), should there is a need;
- * duration can be easiy computed on CPUs by fetching begining/ending timestamps of a trajectory in the timestamp array 
+ * @Brief computing distance(length) and speed of trajectories after their formation (e.g., from coord_to_traj)
+ * see trajectory.hpp
  */
+ 
 namespace cuSpatial {
 
-void traj_distspeed(const gdf_column& coor_x,const gdf_column& coor_y,const gdf_column& ts,
+void traj_distspeed(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& ts,
  			    const gdf_column& len,const gdf_column& pos,gdf_column& dist,gdf_column& speed
  			    /* ,cudaStream_t stream = 0   */)
 {       
     struct timeval t0,t1;
     gettimeofday(&t0, NULL);
     
-    CUDF_EXPECTS(coor_x.data != nullptr &&coor_y.data!=nullptr && ts.data!=NULL && len.data!=NULL && pos.data!=NULL,
-    	"coor_x/coor_y/ts/len/pos data can not be null");
-    CUDF_EXPECTS(coor_x.size == coor_y.size && coor_x.size==ts.size ,"coor_x/coor_y/ts must have the same size");
+    CUDF_EXPECTS(coord_x.data != nullptr &&coord_y.data!=nullptr && ts.data!=NULL && len.data!=NULL && pos.data!=NULL,
+    	"coord_x/coord_y/ts/len/pos data can not be null");
+    CUDF_EXPECTS(coord_x.size == coord_y.size && coord_x.size==ts.size ,"coord_x/coord_y/ts must have the same size");
     CUDF_EXPECTS(len.size == pos.size ,"len/pos must have the same size");
      
-    //future versions might allow coor_x/coor_y/ts/pos/len have null_count>0, which might be useful for taking query results as inputs 
-    CUDF_EXPECTS(coor_x.null_count == 0 && coor_y.null_count == 0 && ts.null_count==0 && len.null_count==0 &&  pos.null_count==0,
-    	"this version does not support coor_x/coor_y/ts/len/pos contains nulls");
+    //future versions might allow coord_x/coord_y/ts/pos/len have null_count>0, which might be useful for taking query results as inputs 
+    CUDF_EXPECTS(coord_x.null_count == 0 && coord_y.null_count == 0 && ts.null_count==0 && len.null_count==0 &&  pos.null_count==0,
+    	"this version does not support coord_x/coord_y/ts/len/pos contains nulls");
     
-    CUDF_EXPECTS(coor_x.size >= pos.size ,"one trajectory must have at least one point");
+    CUDF_EXPECTS(coord_x.size >= pos.size ,"one trajectory must have at least one point");
  
   
-    cudf::type_dispatcher(coor_x.dtype, distspeed_functor(), coor_x,coor_y,ts,len,pos,dist,speed/*,stream */);
+    cudf::type_dispatcher(coord_x.dtype, distspeed_functor(), coord_x,coord_y,ts,len,pos,dist,speed/*,stream */);
     
     gettimeofday(&t1, NULL);
     float distspeed_end2end_time=calc_time("C++ traj_distspeed end-to-end time in ms=",t0,t1);

@@ -1,4 +1,5 @@
 """
+
 Note: make sure cudf_dev conda environment is activated
 """
 
@@ -32,11 +33,11 @@ cnt=readers.cpp_read_uint_soa(data_dir+data_set+".objcnt")
 id=readers.cpp_read_uint_soa(data_dir+data_set+".objectid")
 
 num_traj=cnt.data.size
-dist0=gis.cpp_directed_hausdorff(pnt_x,pnt_y,cnt)
+dist0=gis.cpp_directed_hausdorff_distance(pnt_x,pnt_y,cnt)
 cuspatial_dist0=dist0.data.to_array().reshape((num_traj,num_traj))
 
 start = time.time()
-dist=gis.cpp_directed_hausdorff(pnt_x,pnt_y,cnt)
+dist=gis.cpp_directed_hausdorff_distance(pnt_x,pnt_y,cnt)
 print("dis.size={} num_traj*num_traj={}".format(dist.data.size,num_traj*num_traj))
 end = time.time()
 print(end - start)  
