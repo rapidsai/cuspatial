@@ -23,7 +23,7 @@ Future support is planned for the following operations.
 5) Quadtree based indexing for large-scale point data (cpp/src/idx)<br>
 6) R-Tree based indexing for Polygons/Polylines (cpp/src/idx)<br>
  
-<h2>Compile/Install C++ backend</h2>
+## Compile/Install C++ backend
 To compile and run cuSpatial, use the following steps <br>
 export CUSPATIAL_HOME=$(pwd)/cuspatial <br>
 Step 1: clone a copy of cuSpatial (using your nvidia git-lab username/password) <br>
