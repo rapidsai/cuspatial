@@ -7,7 +7,7 @@ namespace cuSpatial {
 /**
  * @Brief transform 2D longitude/latitude coordinates to x/y coordinates relative to a camera origin
 
- * @param[in] cam_lon: logitude of camera origin
+ * @param[in] cam_lon: longitude of camera origin
  * @param[in] cam_lat: latitude of camera origin
  * @param[in] in_lon: array of longitude coordinates of input points to be transformed
  * @param[in] in_lat: array of latitude coordinates of input points to be transformed
