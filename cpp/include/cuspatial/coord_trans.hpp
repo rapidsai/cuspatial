@@ -15,7 +15,7 @@ namespace cuSpatial {
  * @param[out] out_y: column of y coordinates after transformation in kilometers (km)
  */
 void lonlat_to_coord(const gdf_scalar& cam_lon, const gdf_scalar& cam_lat, const gdf_column& in_lon, const gdf_column  & in_lat,
-    	gdf_column & out_x,gdf_column & out_y /* ,cudaStream_t stream = 0   */);
+    	gdf_column & out_x, gdf_column & out_y);
 
 }  // namespace cuSpatial
 
