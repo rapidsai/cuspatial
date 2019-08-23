@@ -3,7 +3,7 @@
 **NOTE:** cuSpatial depends on [cuDF](https://github.com/rapidsai/cudf) and [RMM](https://github.com/rapidsai/rmm) under [RAPIDS](https://rapids.ai/) framework<br> 
 See [here](https://nvidia-my.sharepoint.com/:p:/r/personal/jiantingz_nvidia_com/Documents/GPU4STA_V5.pptx?d=wa5b5d6d397074ea9a1600e74fd8a6345&csf=1&e=h7MdRq) 
 for a brief summary/discussion on C++ backend performance (as standalone components and with comparions to serial/multi-core implementations on CPUs and/or legacy code) <br>
-See the [deisgn documentation](doc/design.md) for a breif description on how spatial and trajectory data are represented in cuSpatial and the graph of operations on them.   
+See the [design documentation](doc/design.md) for a brief description of how spatial and trajectory data are represented in cuSpatial and the graph of operations on them.   
 
 ## Implemented operations:
 Currently, cuSpatial supports a subset of operations for spatial and trajectory data: <br>
