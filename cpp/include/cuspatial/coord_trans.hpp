@@ -17,5 +17,5 @@ namespace cuspatial {
 void lonlat_to_coord(const gdf_scalar& cam_lon, const gdf_scalar& cam_lat, const gdf_column& in_lon, const gdf_column  & in_lat,
     	gdf_column & out_x, gdf_column & out_y);
 
-}  // namespace cuSpatial
+}  // namespace cuspatial
 
