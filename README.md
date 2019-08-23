@@ -36,7 +36,7 @@ The rest of steps assume "export CUDACXX=/usr/local/cuda/bin/nvcc" and "export C
 Please note that, on some environments (OS+BASH), CUDF_HOME set by using "CUDF_HOME=..." when installing cuDF can not be used in cuSpatial. 
 Please use <b>export CUDF_HOME=$(pwd)/cudf</b> instead.   
 
-Step 3: comile and install C++ backend <br>
+Step 3: compile and install C++ backend <br>
 
 cd $CUSPATIAL_HOME/cpp <br>
 mkdir build <br>
