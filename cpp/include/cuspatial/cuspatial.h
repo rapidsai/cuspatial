@@ -1,6 +1,6 @@
 #pragma once
 
-namespace cuSpatial
+namespace cuspatial
 {
 	struct Location3D
 	{
