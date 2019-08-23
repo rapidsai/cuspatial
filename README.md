@@ -16,7 +16,7 @@ cuSpatial supports the following operations on spatial and trajectory data:
 7) [Computing spatial bounding boxes of trajectories](cpp/src/traj) <br> 
 
 Future support is planned for the following operations.
-1) Temporal window query (cpp/src/stq) <br>
+1. Temporal window query (cpp/src/stq)
 2) Temporal point query (year+month+day+hour+minute+second+millisecond)(cpp/src/stq)<br>
 3) Point-to-polyline nearest neighbor distance](cpp/src/spatial) <br>
 4) Grid based indexing for points and polygons (cpp/src/idx)<br>
