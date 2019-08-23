@@ -4,7 +4,7 @@ namespace cuspatial
 {
 	struct location_3d
 	{
-		double lat;
+		double latitude;
 		double lon;
 		double alt;
 	};
