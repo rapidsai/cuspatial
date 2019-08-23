@@ -1,5 +1,5 @@
 # cuSpatial
-GPU-Accelerated Spatial and Trajectory Data Management and Analytics Library <br>
+## GPU-Accelerated Spatial and Trajectory Data Management and Analytics Library
 **NOTE:** cuSpatial depends on [cudf](https://github.com/rapidsai/cudf) and [rmm](https://github.com/rapidsai/rmm) under [RAPDIS](https://rapids.ai/) framework<br> 
 See [here](https://nvidia-my.sharepoint.com/:p:/r/personal/jiantingz_nvidia_com/Documents/GPU4STA_V5.pptx?d=wa5b5d6d397074ea9a1600e74fd8a6345&csf=1&e=h7MdRq) 
 for a brief summary/discussion on C++ backend performance (as standalone components and with comparions to serial/mutli-core implementations on CPUs and/or legacy code) <br>
