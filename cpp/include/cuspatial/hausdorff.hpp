@@ -16,7 +16,7 @@ namespace cuSpatial {
  * @note Hausdorff distance is not symmetrical
  */
 
-gdf_column directed_hausdorff_distance(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& traj_cnt
+gdf_column directed_hausdorff_distance(const gdf_column& x, const gdf_column& y, const gdf_column& trajectory_count);
 
 }  // namespace cuspatial
 
