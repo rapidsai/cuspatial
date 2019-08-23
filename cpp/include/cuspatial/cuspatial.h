@@ -9,7 +9,7 @@ namespace cuspatial
 		double altitude;
 	};
 
-	struct Coord2D
+	struct coord_2d
 	{
 		double x;
 		double y;
