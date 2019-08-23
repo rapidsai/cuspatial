@@ -1,6 +1,7 @@
 """
 GPU-accelerated Haversine distance computation among three cities: New York, Paris and Sydney
 Results match https://www.vcalc.com/wiki/vCalc/Haversine+-+Distance
+
 Note: make sure cudf_dev conda environment is activated
 """
 

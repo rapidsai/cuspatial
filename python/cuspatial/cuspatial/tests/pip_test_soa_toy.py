@@ -1,5 +1,7 @@
 """
 GPU-based pip demo using toy datasets(tests among three points and two polygons)  
+
+Note: make sure cudf_dev conda environment is activated
 """
 
 import numpy as np

@@ -4,7 +4,9 @@ invoke the GPU accelerated directed Hausdorff distance computing function in cuS
 convert the results back to python array(s) again to be feed into scipy clustering APIs
 For the toy example, by desgin, both AgglomerativeClustering and DBSCAN cluster the 2nd and thrid 
 trajectories into one cluster while leaving the first trajectory as the sconed cluster. 
-Note: make sure cudf_dev conda environment is activated
+
+To run the demo, first install scipy and scikit-learn
+by "conda install -c conda-forge scipy scikit-learn"  under cudf_dev environment
 """
 
 import numpy as np

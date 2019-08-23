@@ -1,6 +1,10 @@
 """
+Demo code to verify the correctness of GPU-accelerated computing directed Hausdorff distance 
+on Locust trajectory dataset for 592 trajectories whose numbers of vertcies are between [256,1024)
+By comparing with scipy results.
 
-Note: make sure cudf_dev conda environment is activated
+To run the demo, first install scipy by "conda install -c conda-forge scipy"
+under cudef_dev environment 
 """
 
 import numpy as np

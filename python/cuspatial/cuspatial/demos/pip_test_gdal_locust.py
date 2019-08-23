@@ -1,6 +1,7 @@
 """
-pip demo directly using gdal/ogr for python; not for performance comparisons
-First install python-gdal by "conda install -c conda-forge gdal" under cudef_dev environment 
+pip demo directly using gdal/ogr for python; not for performance comparisons. 
+To run the demo, first install python-gdal by "conda install -c conda-forge gdal" 
+under cudef_dev environment 
 """
 
 import numpy as np 

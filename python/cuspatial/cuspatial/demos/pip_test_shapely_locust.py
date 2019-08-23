@@ -1,8 +1,8 @@
 """
-pip demo directly using shapely, more efficient than using python gdal/ogr directly
+PIP demo directly using shapely, more efficient than using python gdal/ogr directly
 poygons are created only once and stored for reuse
 
-First install shapely by "conda install -c conda-forge gdal" and "conda install -c conda-forge shapefile"
+To run the demo, first install python gdal and pyshp by "conda install -c conda-forge gdal pyshp"
 under cudef_dev environment 
 """
 

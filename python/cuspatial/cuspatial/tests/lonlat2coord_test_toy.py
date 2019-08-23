@@ -1,6 +1,7 @@
 """
 GPU accelerated coordinate transformation test: (log/lat)==>(x/y), relative to a camera origin
-Note: camera configuration is read from a CSV file using Panda
+
+Note:  make sure cudf_dev conda environment is activated
 """
 
 import numpy as np

@@ -1,7 +1,6 @@
 """
 A toy example to demonstrate how to convert python arrays into cuSpatial inputs and call 
 GPU-accelerated directed Hausdorff distance computation
-Note: make sure cudf_dev conda environment is activated
 """
 
 import numpy as np
