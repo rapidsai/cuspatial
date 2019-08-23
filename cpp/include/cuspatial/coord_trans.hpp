@@ -5,7 +5,7 @@ namespace cuSpatial {
 
 
 /**
- * @Brief transforming in_lon/in_lat (lon/lat defined in Coord2D) to out_x/out_y relative to a camera origiin
+ * @Brief transform 2D longitude/latitude coordinates to x/y coordinates relative to a camera origin
 
  * @param[in] cam_lon: logitude of camera origin
  * @param[in] cam_lat: latitude of camera origin
