@@ -22,7 +22,6 @@ Future support is planned for the following operations.
 4) Grid based indexing for points and polygons (cpp/src/idx)<br>
 5) Quadtree based indexing for large-scale point data (cpp/src/idx)<br>
 6) R-Tree based indexing for Polygons/Polylines (cpp/src/idx)<br>
-<br>
  
 <h2>Compile/Install C++ backend</h2>
 To compile and run cuSpatial, use the following steps <br>
