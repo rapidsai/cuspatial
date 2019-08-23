@@ -1,7 +1,7 @@
 #pragma once
 #include <cudf/cudf.h>
 
-namespace cuSpatial {
+namespace cuspatial {
 
 
 /**
