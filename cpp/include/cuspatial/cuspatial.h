@@ -6,7 +6,7 @@ namespace cuspatial
 	{
 		double latitude;
 		double longitude;
-		double alt;
+		double altitude;
 	};
 
 	struct Coord2D
