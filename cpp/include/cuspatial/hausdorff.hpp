@@ -17,7 +17,6 @@ namespace cuSpatial {
  */
 
 gdf_column directed_hausdorff_distance(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& traj_cnt
-    		/* ,cudaStream_t stream = 0   */);
 
 }  // namespace cuSpatial
 
