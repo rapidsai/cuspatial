@@ -6,7 +6,7 @@ for a brief summary/discussion on C++ backend performance (as standalone compone
 See the [design documentation](doc/design.md) for a brief description of how spatial and trajectory data are represented in cuSpatial and the graph of operations on them.   
 
 ## Implemented operations:
-Currently, cuSpatial supports a subset of operations for spatial and trajectory data: <br>
+cuSpatial supports the following operations on spatial and trajectory data:
 1) [Spatial window query](cpp/src/stq) <br>
 2) [Point-in-polygon test](cpp/src/spatial) <br>
 3) [Harversine distance](cpp/src/spatial) <br>
