@@ -12,7 +12,7 @@ namespace cuSpatial {
  * @param[in] traj_cnt: numbers of vertices of the set of trajectories;
  * also used to compute the starting offsets of the trjajectories in coord_x/coord_y arrays
 
- * @returns a flatted (1D) vector of all-pair direted Hausdorff distances among trajectories (i,j)
+ * @returns a flattened (1D) column of all-pairs directed Hausdorff distances among trajectories (i,j)
  * @note Hausdorff distance is not symmetrical
  */
 
