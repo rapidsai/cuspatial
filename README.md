@@ -5,7 +5,7 @@ See [here](https://nvidia-my.sharepoint.com/:p:/r/personal/jiantingz_nvidia_com/
 for a brief summary/discussion on C++ backend performance (as standalone components and with comparions to serial/multi-core implementations on CPUs and/or legacy code) <br>
 See the [deisgn documentation](doc/design.md) for a breif description on how spatial and trajectory data are represented in cuSpatial and the graph of operations on them.   
 
-<h2>Implemented operations:</h2> 
+## Implemented operations:
 Currently, cuSpatial supports a subset of operations for spatial and trajectory data: <br>
 1) [Spatial window query](cpp/src/stq) <br>
 2) [Point-in-polygon test](cpp/src/spatial) <br>
