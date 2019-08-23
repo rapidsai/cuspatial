@@ -13,7 +13,7 @@ namespace cuSpatial {
  * also used to compute the starting offsets of the trjajectories in coord_x/coord_y arrays
 
  * @returns a flatted (1D) vector of all-pair direted Hausdorff distances among trajectories (i,j)
- * Note that ausdorff distance is not symmetrical
+ * @note Hausdorff distance is not symmetrical
  */
 
 gdf_column directed_hausdorff_distance(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& traj_cnt
