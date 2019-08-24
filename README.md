@@ -8,20 +8,20 @@ See the [design documentation](doc/design.md) for a brief description of how spa
 ## Implemented operations:
 cuSpatial supports the following operations on spatial and trajectory data:
 1. [Spatial window query](cpp/src/stq)
-2) [Point-in-polygon test](cpp/src/spatial) <br>
-3) [Harversine distance](cpp/src/spatial) <br>
-4) [Hausdorff distance](cpp/src/spatial)<br>
-5) [Deriving trajectories from point location data](cpp/src/traj) <br>
-6) [Computing distance/speed of trajectories](cpp/src/traj) <br>
-7) [Computing spatial bounding boxes of trajectories](cpp/src/traj) <br> 
+2. [Point-in-polygon test](cpp/src/spatial) <br>
+3. [Harversine distance](cpp/src/spatial) <br>
+4. [Hausdorff distance](cpp/src/spatial)<br>
+5. [Deriving trajectories from point location data](cpp/src/traj) <br>
+6. [Computing distance/speed of trajectories](cpp/src/traj) <br>
+7. [Computing spatial bounding boxes of trajectories](cpp/src/traj) <br> 
 
 Future support is planned for the following operations.
 1. Temporal window query (cpp/src/stq)
-2) Temporal point query (year+month+day+hour+minute+second+millisecond)(cpp/src/stq)<br>
-3) Point-to-polyline nearest neighbor distance](cpp/src/spatial) <br>
-4) Grid based indexing for points and polygons (cpp/src/idx)<br>
-5) Quadtree based indexing for large-scale point data (cpp/src/idx)<br>
-6) R-Tree based indexing for Polygons/Polylines (cpp/src/idx)<br>
+2. Temporal point query (year+month+day+hour+minute+second+millisecond)(cpp/src/stq)<br>
+3. Point-to-polyline nearest neighbor distance](cpp/src/spatial) <br>
+4. Grid based indexing for points and polygons (cpp/src/idx)<br>
+5. Quadtree based indexing for large-scale point data (cpp/src/idx)<br>
+6. R-Tree based indexing for Polygons/Polylines (cpp/src/idx)<br>
  
 ## Compile/Install C++ backend
 To compile and run cuSpatial, use the following steps <br>
