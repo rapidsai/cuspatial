@@ -1,7 +1,23 @@
+/*
+ * Copyright (c) 2019, NVIDIA CORPORATION.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 #include <cudf/cudf.h>
 
-namespace cuSpatial {
+namespace cuspatial {
 
 /**
  * @Brief Point-in-Polygon (PIP) tests among a vector/array of points and a vector/array of polygons
@@ -24,5 +40,5 @@ gdf_column pip_bm(const gdf_column& pnt_x,const gdf_column& pnt_y,
                                    const gdf_column& ply_x,const gdf_column& ply_y
                           /* , cudaStream_t stream = 0   */);
 
-}  // namespace cuSpatial
+}  // namespace cuspatial
 

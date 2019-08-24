@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2019, NVIDIA CORPORATION.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <time.h>
 #include <sys/time.h>
 #include <vector>
@@ -19,7 +35,7 @@
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
 
-using namespace cuSpatial;
+using namespace cuspatial;
 
 struct is_true
 {
@@ -49,11 +65,11 @@ struct HausdorffTest : public GdfTest
       struct timeval t0,t1;
       gettimeofday(&t0, NULL);
       
-      cuSpatial::read_pnt_xy_soa(point_fn,pnt_x,pnt_y);
-      cuSpatial::read_uint_soa(cnt_fn,cnt);
+      cuspatial::read_pnt_xy_soa(point_fn,pnt_x,pnt_y);
+      cuspatial::read_uint_soa(cnt_fn,cnt);
       
       gettimeofday(&t1, NULL);
-      float data_load_time=cuSpatial::calc_time("point/cnt data loading time=", t0,t1);
+      float data_load_time=cuspatial::calc_time("point/cnt data loading time=", t0,t1);
       CUDF_EXPECTS(pnt_x.size>0 && pnt_y.size>0 && cnt.size>=0,"invalid # of points/trajectories");
       CUDF_EXPECTS(pnt_x.size==pnt_y.size, "x and y columns must have the same size");
       CUDF_EXPECTS(pnt_y.size >=cnt.size ,"a point set must have at least one point");      
@@ -69,19 +85,19 @@ TEST_F(HausdorffTest, hausdorfftest)
     //initializaiton
     this->set_initialize(point_fn.c_str(),cnt_fn.c_str());
     
-    //run cuSpatial::directed_hausdorff_distance twice 
+    //run cuspatial::directed_hausdorff_distance twice 
     struct timeval t0,t1,t2;
     gettimeofday(&t0, NULL);
     
-    gdf_column dist1=cuSpatial::directed_hausdorff_distance(this->pnt_x,this->pnt_y, this->cnt);         
+    gdf_column dist1=cuspatial::directed_hausdorff_distance(this->pnt_x,this->pnt_y, this->cnt);         
     assert(dist1.data!=NULL);
     gettimeofday(&t1, NULL);
-    float gpu_hausdorff_time1=cuSpatial::calc_time("GPU Hausdorff Distance time 1......",t0,t1);
+    float gpu_hausdorff_time1=cuspatial::calc_time("GPU Hausdorff Distance time 1......",t0,t1);
     
-    gdf_column dist2=cuSpatial::directed_hausdorff_distance(this->pnt_x,this->pnt_y, this->cnt);         
+    gdf_column dist2=cuspatial::directed_hausdorff_distance(this->pnt_x,this->pnt_y, this->cnt);         
     assert(dist2.data!=NULL);
     gettimeofday(&t2, NULL);
-    float gpu_hausdorff_time2=cuSpatial::calc_time("GPU Hausdorff Distance time 2......",t1,t2);
+    float gpu_hausdorff_time2=cuspatial::calc_time("GPU Hausdorff Distance time 2......",t1,t2);
   
     CUDF_EXPECTS(dist1.size==dist2.size ,"output of the two rounds needs to have the same size");
        

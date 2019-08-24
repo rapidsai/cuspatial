@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2019, NVIDIA CORPORATION.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 
 #include <iostream>
@@ -8,11 +24,11 @@
 #include <cuspatial/cuspatial.h>
 #include <utilities/error_utils.hpp>
 
-namespace cuSpatial
+namespace cuspatial
 {
 	/**
 	 * @brief struct for SoA (Structure of Array) representation of a set of polygons with multiple rings
-	 * The group level hierarchy variables (num_g, p_g_len and p_g_pos) are not exposed in cuSpatial but
+	 * The group level hierarchy variables (num_g, p_g_len and p_g_pos) are not exposed in cuspatial but
 	 * can be added later for applications that need to orgnaize polygons into groups for fast indexing
 	 p_{g,f,r}_pos should be the the prefix-sum (inclusive) of p_{g,f,r}_len,
 	 using e.g., std::partial_sum(...) and thrust::inclusive_scan (...)
@@ -40,7 +56,7 @@ namespace cuSpatial
 	std::ostream& operator<<(std::ostream& os, const TimeStamp & t);
 
 	/**
-	 * @brief read a set of Location3D data (lon/lat/alt) into separate x,y arrays
+	 * @brief read a set of location_3d data (lon/lat/alt) into separate x,y arrays
 	 *
 	 **/
 	template <typename T>
@@ -55,20 +71,20 @@ namespace cuSpatial
 		}
 		fseek (fp , 0 , SEEK_END);
 		size_t sz=ftell (fp);
-		CUDF_EXPECTS(sz%sizeof(Location3D)==0,"sizeof(Location3D) does not divide file length");
-		int num_rec = sz/sizeof(Location3D);
+		CUDF_EXPECTS(sz%sizeof(location_3d)==0,"sizeof(location_3d) does not divide file length");
+		int num_rec = sz/sizeof(location_3d);
 		std::cout<<"num_rec="<<num_rec<<std::endl;
 		fseek (fp , 0 , SEEK_SET);
 
 		x=new T[num_rec];
 		y=new T[num_rec];
 		CUDF_EXPECTS(x!=NULL && y!=NULL,"failed to allocation x/y arrays");
-		Location3D loc;
+		location_3d loc;
 		for(int i=0;i<num_rec;i++)
 		{
-			size_t t=fread(&loc,sizeof(Location3D),1,fp);
-			x[i]=loc.lon;
-			y[i]=loc.lat;
+			size_t t=fread(&loc,sizeof(location_3d),1,fp);
+			x[i]=loc.longitude;
+			y[i]=loc.latitude;
 		}
 		fclose(fp);
 		return num_rec;
@@ -88,18 +104,18 @@ namespace cuSpatial
 		}
 		fseek (fp , 0 , SEEK_END);
 		size_t sz=ftell (fp);
-		CUDF_EXPECTS(sz%sizeof(Coord2D)==0,"sizeof(Location3D) does not divide file length");
-		int num_rec = sz/sizeof(Coord2D);
+		CUDF_EXPECTS(sz%sizeof(coord_2d)==0,"sizeof(location_3d) does not divide file length");
+		int num_rec = sz/sizeof(coord_2d);
 		std::cout<<"num_rec="<<num_rec<<std::endl;
 		fseek (fp , 0 , SEEK_SET);
 
 		x=new T[num_rec];
 		y=new T[num_rec];
 		CUDF_EXPECTS(x!=NULL && y!=NULL,"failed to allocation x/y arrays");
-		Coord2D coor;
+		coord_2d coor;
 		for(int i=0;i<num_rec;i++)
 		{
-			size_t t=fread(&coor,sizeof(Coord2D),1,fp);
+			size_t t=fread(&coor,sizeof(coord_2d),1,fp);
 			x[i]=coor.x;
 			y[i]=coor.y;
 		}
@@ -203,10 +219,10 @@ namespace cuSpatial
 		return num_rec;
 	}
 
-	//materialization with three data types/structs: uint32_t, Location3D and TimeStamp
+	//materialization with three data types/structs: uint32_t, location_3d and TimeStamp
 
 	template size_t read_field(const char *,uint32_t *&);
-	template size_t read_field(const char *,Location3D*&);
+	template size_t read_field(const char *,location_3d*&);
 	template size_t read_field(const char *,TimeStamp* &);
 }
-// namespace cuSpatial
+// namespace cuspatial

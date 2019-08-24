@@ -1,16 +1,33 @@
+/*
+ * Copyright (c) 2019, NVIDIA CORPORATION.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
 #include <utilities/cuda_utils.hpp>
 #include <type_traits>
+#include <utility>
 #include <thrust/device_vector.h>
 #include <sys/time.h>
 #include <time.h>
 
 #include <cuspatial/shared_util.h>
-#include <cuspatial/coord_trans.hpp>
+#include <cuspatial/coordinate_transform.hpp>
 
 using namespace std; 
 using namespace cudf;
-using namespace cuSpatial;
+using namespace cuspatial;
 
  template <typename T>
  __global__ void coord_trans_kernel(gdf_size_type loc_size,double cam_lon,double cam_lat,
@@ -28,14 +45,15 @@ struct ll2coord_functor {
     template <typename col_type>
     static constexpr bool is_supported()
     {
-        return std::is_arithmetic<col_type>::value;
+        return std::is_floating_point<col_type>::value;
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-    void operator()(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,const gdf_column  & in_lon,const gdf_column  & in_lat, 
-    	gdf_column & out_x,gdf_column & out_y /* ,cudaStream_t stream = 0   */)
+    std::pair<gdf_column,gdf_column> operator()(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,
+    	 const gdf_column  & in_lon,const gdf_column  & in_lat /* ,cudaStream_t stream = 0   */)
     	
     {
+        gdf_column  out_x, out_y;
         int num_print=(in_lon.size<10)?in_lon.size:10;
         std::cout<<"ll2coord: showing the first "<< num_print<<" output records"<<std::endl;
         std::cout<<"in_lon"<<std::endl;
@@ -86,27 +104,30 @@ struct ll2coord_functor {
         std::cout<<"out_x"<<std::endl;     
         thrust::copy(outx_ptr,outx_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;     
         std::cout<<"out_y"<<std::endl;     
- 	thrust::copy(outy_ptr,outy_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;     
+ 	thrust::copy(outy_ptr,outy_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;  
+ 	
+ 	return std::make_pair(out_x,out_y);
     }
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
-    void operator()(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,const gdf_column  & in_lon,const gdf_column  & in_lat, 
-    	gdf_column & out_x,gdf_column & out_y /* ,cudaStream_t stream = 0   */)
+    std::pair<gdf_column,gdf_column> operator()(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,
+    	const gdf_column  & in_lon,const gdf_column  & in_lat/* ,cudaStream_t stream = 0   */)
     {
         CUDF_FAIL("Non-arithmetic operation is not supported");
     }
 };
     
 
-namespace cuSpatial {
+namespace cuspatial {
 
 /**
- * @Brief transforming in_lon/in_lat (lon/lat defined in Coord2D) to out_x/out_y relative to a camera origiin
- * see coord_trans.hpp
+ * @Brief transforming in_lon/in_lat (lon/lat defined in coord_2d) to out_x/out_y relative to a camera origiin
+ * see coordinate_transform.hpp
 */
 
-void lonlat_to_coord(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,const gdf_column  & in_lon,const gdf_column  & in_lat, 
-    	gdf_column & out_x,gdf_column & out_y /* ,cudaStream_t stream = 0   */)
+std::pair<gdf_column,gdf_column> lonlat_to_coord(const gdf_scalar& cam_lon, const gdf_scalar& cam_lat,
+	const gdf_column& in_lon, const gdf_column  & in_lat)
+
 {       
     struct timeval t0,t1;
     gettimeofday(&t0, NULL);
@@ -121,13 +142,13 @@ void lonlat_to_coord(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,con
     //future versions might allow in_(x/y) have null_count>0, which might be useful for taking query results as inputs 
     CUDF_EXPECTS(in_lon.null_count == 0 && in_lat.null_count == 0, "this version does not support point in_lon/in_lat contains nulls");
     
-    cudf::type_dispatcher(in_lon.dtype, ll2coord_functor(), cam_lon,cam_lat,in_lon,in_lat,out_x,out_y/*,stream */);
+    auto res=cudf::type_dispatcher(in_lon.dtype, ll2coord_functor(), cam_lon,cam_lat,in_lon,in_lat/*,stream */);
     
     // handle null_count if needed 
      
     gettimeofday(&t1, NULL);
     float ll2coord_end2end_time=calc_time("lon/lat to x/y conversion end2end time in ms=",t0,t1);
-    
+    return res;
   }//lonlat_to_coord 
     	
-}// namespace cuSpatial
+}// namespace cuspatial

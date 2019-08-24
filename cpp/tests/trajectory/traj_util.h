@@ -2,7 +2,7 @@
 
 #include <cuspatial/cuspatial.h>
 
-namespace cuSpatial {
+namespace cuspatial {
 	/**
 	 * @Brief retrive camera origin at a particular intersection from a configuration file
 
@@ -14,7 +14,7 @@ namespace cuSpatial {
 	 *
 	 * @return negative error code; 0 for success
 	 */
-	int get_camera_origin(const char *df_fn, const char * inter_name, Location3D & camera_origin);
+	int get_camera_origin(const char *df_fn, const char * inter_name, location_3d & camera_origin);
 
 
 	/**
@@ -22,12 +22,12 @@ namespace cuSpatial {
 	 * i.e., a set of coordiantes (lon/lat/alt) with a timestamp and an object (e.g., vehicle) identifier.
 	 *
 	 * @param[in]  root_fn: the root of the three files stored in columnar format,
-	 * with .objectid (uint type),.time (TimeStamp type) and .location(Location3D type) extensions, respectively.
+	 * with .objectid (uint type),.time (TimeStamp type) and .location(location_3d type) extensions, respectively.
 	 * @param[out]  objid: out array for ID
 	 * @param[out]  time: out array for ID
 	 * @param[out]  location: out array for ID
 	 * @return the number of records (should be the same for all the three data files)
 	 */
-	size_t read_traj_soa(char *root_fn,int *& objid, TimeStamp *& time, Location3D*&  location);
+	size_t read_traj_soa(char *root_fn,int *& objid, TimeStamp *& time, location_3d*&  location);
 
-} // namespace cuSpatial
+} // namespace cuspatial

@@ -1,9 +1,25 @@
+/*
+ * Copyright (c) 2019, NVIDIA CORPORATION.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 
 #include <ostream>
 #include <cuspatial/cuspatial.h>
 
-namespace cuSpatial
+namespace cuspatial
 {
 
 	/**
@@ -53,24 +69,24 @@ namespace cuSpatial
 	};
 
 	/**
-	 *@brief Thrust functor for transforming lon/lat (Location3D) to x/y (Coord2D) relative to an origin
+	 *@brief Thrust functor for transforming lon/lat (location_3d) to x/y (coord_2d) relative to an origin
 	 Note: Both x and y are in the unit of kilometers (km)
 	 */
 
-	struct coord_transformation : public thrust::unary_function<Location3D,Coord2D>
+	struct coord_transformation : public thrust::unary_function<location_3d,coord_2d>
 	{
-		Location3D origin;
+		location_3d origin;
 		__host__ __device__
-		coord_transformation(Location3D _origin): origin(_origin){}
+		coord_transformation(location_3d _origin): origin(_origin){}
 
 		__host__ __device__
-		Coord2D operator()(Location3D pt)
+		coord_2d operator()(location_3d pt)
 		{
-		  Coord2D c;
-		  c.x = ((origin.lon - pt.lon) * 40000.0 *
-			   cos((origin.lat + pt.lat) * M_PI / 360) / 360);
-		  c.y = (origin.lat - pt.lat) * 40000.0 / 360;
+		  coord_2d c;
+		  c.x = ((origin.longitude - pt.longitude) * 40000.0 *
+			   cos((origin.latitude + pt.latitude) * M_PI / 360) / 360);
+		  c.y = (origin.latitude - pt.latitude) * 40000.0 / 360;
 		  return c;
 		}
 	};
-} // namespace cuSpatial
+} // namespace cuspatial

@@ -267,10 +267,10 @@ add_library(cuspatial SHARED
             src/spatial/pip.cu	
             src/spatial/haversine.cu	
             src/spatial/hausdorff.cu
-            src/spatial/lonlat_to_coord.cu
+            src/spatial/lonlat_to_coordinate.cu
             src/trajectory/traj_sbbox.cu
             src/trajectory/traj_distspeed.cu            
-            src/trajectory/coord_to_traj.cu            
+            src/trajectory/coordinate_to_trajectory.cu            
             )
 
 #Override RPATH for cuspatial

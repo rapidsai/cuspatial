@@ -12,7 +12,7 @@ cdef extern from "pip.hpp" namespace "cuSpatial" nogil:
                                    const gdf_column& ply_fpos, const gdf_column& ply_rpos,
                                    const gdf_column& ply_x,const gdf_column& ply_y) except +
 
-cdef extern from "coord_trans.hpp" namespace "cuSpatial" nogil: 
+cdef extern from "coordinate_transform.hpp" namespace "cuSpatial" nogil: 
  cdef void lonlat_to_coord(const gdf_scalar cam_x,const gdf_scalar cam_y,const gdf_column  & in_x,const gdf_column  & in_y,
    	gdf_column & out_x,gdf_column & out_y) except +	                               
 

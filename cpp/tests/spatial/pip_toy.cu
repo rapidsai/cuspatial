@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2019, NVIDIA CORPORATION.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <vector>
 #include <string>
 #include <cuspatial/pip.hpp>
@@ -7,7 +23,7 @@
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
 
-using namespace cuSpatial;
+using namespace cuspatial;
 
 struct PIPToy : public GdfTest 
 {
@@ -50,7 +66,7 @@ struct PIPToy : public GdfTest
         cudf::test::column_wrapper<double> point_x_wrapp{pnt_x_v};
         cudf::test::column_wrapper<double> point_y_wrapp{pnt_y_v};
          
-        gdf_column res_bm1 = cuSpatial::pip_bm( 
+        gdf_column res_bm1 = cuspatial::pip_bm( 
         	*(point_x_wrapp.get()), *(point_y_wrapp.get()),
         	*(polygon_fpos_wrapp.get()), *(polygon_rpos_wrapp.get()), 
         	*(polygon_x_wrapp.get()), *(polygon_y_wrapp.get()) );

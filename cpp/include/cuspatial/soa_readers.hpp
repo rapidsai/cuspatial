@@ -1,9 +1,25 @@
+/*
+ * Copyright (c) 2019, NVIDIA CORPORATION.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 
 #include <cudf/cudf.h>
 #include <cuspatial/cuspatial.h>
 
-namespace cuSpatial {
+namespace cuspatial {
 
 	/**
 	*@Brief read uint32_t (unsigned integer with 32 bit fixed length) data from file as column;
@@ -23,7 +39,7 @@ namespace cuSpatial {
 
 	/**
 	 * @Brief read lon/lat from file as two columns; data type is fixed to double (GDF_FLOAT64)
-     *@param[in] pnt_fn: file name of point data in Location3D layout (lon/lat/alt but alt is omitted)
+     *@param[in] pnt_fn: file name of point data in location_3d layout (lon/lat/alt but alt is omitted)
      *@param[out] pnt_lon: gdf_column storing the longitude column
      *@param[out] pnt_lat: gdf_column storing the latitude column
 	*/
@@ -32,7 +48,7 @@ namespace cuSpatial {
 
 	/**
 	 *@Brief read x/y from file as two columns; data type is fixed to double (GDF_FLOAT64)
-     *@param[in] pnt_fn: file name of point data in Coord2D layout (x/y)
+     *@param[in] pnt_fn: file name of point data in coord_2d layout (x/y)
      *@param[out] pnt_x: gdf_column storing the x column
      *@param[out] pnt_y: gdf_column storing the y column
      Note: x/y can be lon/lat.
@@ -53,4 +69,4 @@ namespace cuSpatial {
 									   gdf_column& ply_x,gdf_column& ply_y);
 
 
-}// namespace cuSpatial
+}// namespace cuspatial
