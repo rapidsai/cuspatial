@@ -99,4 +99,3 @@ size_t read_traj_soa(char *root_fn,int *& objid, its_timestamp *& time, location
      if((objectid_len!=loc_len||objectid_len!=time_len)) return 0;
      return objectid_len;
 }
-

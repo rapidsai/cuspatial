@@ -21,7 +21,7 @@
 namespace cuspatial {
 
 /**
- * @Brief deriving trajectories from points (x/y relative to an origin), timestamps and objectids
+ * @Brief derive trajectories from points (x/y relative to an origin), timestamps and object IDs
  * by first sorting based on id and timestamp and then group by id.
 
  * @param[in/out] x:  x coordinates reative to a camera origin (before/after sorting)

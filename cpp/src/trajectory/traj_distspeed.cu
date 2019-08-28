@@ -166,3 +166,4 @@ void traj_distspeed(const gdf_column& x,const gdf_column& y,const gdf_column& ts
     }//traj_distspeed     
     	
 }// namespace cuspatial
+

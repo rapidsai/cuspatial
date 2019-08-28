@@ -143,7 +143,7 @@ struct coor2traj_functor {
 namespace cuspatial {
 
 /**
- * @Brief deriving trajectories from points (x/y relative to an origin), timestamps and objectids
+ * @Brief derive trajectories from points (x/y relative to an origin), timestamps and object IDs
  * by first sorting based on id and timestamp and then group by id.
  * see trajectory.hpp
 */
