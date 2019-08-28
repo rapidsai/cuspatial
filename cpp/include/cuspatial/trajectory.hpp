@@ -39,7 +39,9 @@ int coord_to_traj(gdf_column& coor_x,gdf_column& coor_y,gdf_column& oid, gdf_col
 
 
 /**
- * @Brief computing distance(length) and speed of trajectories after their formation (e.g., from coord_to_traj)
+ * @brief Compute the distance and speed of trajectories
+ * 
+ * Trajectories are typically derived from coordinate data using coords_to_trajectories).
 
  * @param[in] coor_x: x coordinates reative to a camera origin and ordered by (id,timestamp)
  * @param[in] coor_y: y coordinates reative to a camera origin and ordered by (id,timestamp)
