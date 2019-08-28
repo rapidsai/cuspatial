@@ -31,7 +31,7 @@ using namespace cuspatial;
 
 template <typename T>
 __global__ void distspeed_kernel(gdf_size_type num_traj,const T* const __restrict__ coord_x,const T* const __restrict__ coord_y,
-	 const TimeStamp *const __restrict__ time,const uint32_t * const __restrict__ len,const uint32_t * const __restrict__ pos,
+	 const its_timestamp *const __restrict__ time,const uint32_t * const __restrict__ len,const uint32_t * const __restrict__ pos,
 	 T* const __restrict__ dis, T* const __restrict__ sp)
 	 
 {
@@ -105,7 +105,7 @@ struct distspeed_functor {
        
         distspeed_kernel<col_type> <<< grid.num_blocks, block_size >>> (len.size,
         	static_cast<col_type*>(coord_x.data),static_cast<col_type*>(coord_y.data),
-        	static_cast<TimeStamp*>(ts.data),static_cast<uint32_t*>(len.data), static_cast<uint32_t*>(pos.data),
+        	static_cast<its_timestamp*>(ts.data),static_cast<uint32_t*>(len.data), static_cast<uint32_t*>(pos.data),
    	    	static_cast<col_type*>(dist.data), static_cast<col_type*>(speed.data) );           
         CUDA_TRY( cudaDeviceSynchronize() );
 

@@ -31,7 +31,7 @@ namespace cuspatial {
 
 
 	/**
-	 * @Brief read timestamp (ts: TimeStamp type) data from file as column
+	 * @Brief read timestamp (ts: its_timestamp type) data from file as column
      *@param[in] ts_fn: file name of timestamp column data
      *@param[out] ids: gdf_column storing the timestamp column
 	*/
@@ -61,8 +61,8 @@ namespace cuspatial {
 	 * @param[in] ply_fn: polygon data file name
 	 * @param[out] ply_fpos: pointer/array to index polygons, i.e., prefix-sum of #of rings of all polygons
 	 * @param[out] ply_rpos: pointer/array to index rings, i.e., prefix-sum of #of vertices of all rings
-	 * @param[out] ply_x: pointer/array of x coordiantes of concatenated polygons
-	 * @param[out] ply_y: pointer/array of x coordiantes of concatenated polygons
+	 * @param[out] ply_x: pointer/array of x coordinates of concatenated polygons
+	 * @param[out] ply_y: pointer/array of x coordinates of concatenated polygons
 	 Note: x/y can be lon/lat.
 	*/
 	void read_ply_soa(const char *ply_fn,gdf_column& ply_fpos, gdf_column& ply_rpos,

@@ -54,9 +54,9 @@ struct coor2traj_functor {
 	std::cout<<"oid"<<std::endl;
         thrust::device_ptr<uint32_t> id_ptr=thrust::device_pointer_cast(static_cast<uint32_t*>(oid.data));
         thrust::copy(id_ptr,id_ptr+num_print,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;  
-        thrust::device_ptr<TimeStamp> time_ptr=thrust::device_pointer_cast(static_cast<TimeStamp *>(ts.data));
+        thrust::device_ptr<its_timestamp> time_ptr=thrust::device_pointer_cast(static_cast<its_timestamp *>(ts.data));
         std::cout<<"timestamp"<<std::endl;
-        thrust::copy(time_ptr,time_ptr+num_print,std::ostream_iterator<TimeStamp>(std::cout, " "));std::cout<<std::endl;    
+        thrust::copy(time_ptr,time_ptr+num_print,std::ostream_iterator<its_timestamp>(std::cout, " "));std::cout<<std::endl;    
     	         
         struct timeval t0,t1;
         gettimeofday(&t0, NULL);
@@ -118,7 +118,7 @@ struct coor2traj_functor {
     	std::cout<<"oid"<<std::endl;
         thrust::copy(id_ptr,id_ptr+num_print,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;  
         std::cout<<"timestamp"<<std::endl;
-        thrust::copy(time_ptr,time_ptr+num_print,std::ostream_iterator<TimeStamp>(std::cout, " "));std::cout<<std::endl;  
+        thrust::copy(time_ptr,time_ptr+num_print,std::ostream_iterator<its_timestamp>(std::cout, " "));std::cout<<std::endl;  
         
         num_print=(num_traj<10)?num_traj:10;
         std::cout<<"showing the first "<< num_print<<" trajectory records"<<std::endl;

@@ -23,10 +23,10 @@ namespace cuspatial
 {
 
 	/**
-	 *@brief Thrust functor for comparing two TimeStamp variables; used in sorting based on timestamp
+	 *@brief Thrust functor for comparing two its_timestamp variables; used in sorting based on timestamp
 	 */
 	__host__ __device__
-	inline bool operator<(const TimeStamp & t1,const TimeStamp & t2)
+	inline bool operator<(const its_timestamp & t1,const its_timestamp & t2)
 	{
 		//cout<<"in operator<"<<endl;
 		if(t1.y<t2.y) return true;
@@ -39,15 +39,15 @@ namespace cuspatial
 		return false;
 	}
 
-	typedef  thrust::pair<TimeStamp, TimeStamp> TBBox;
+	typedef  thrust::pair<its_timestamp, its_timestamp> TBBox;
 
 	/**
-	 *@brief Thrust functor for lifting TimeStamp to an interval (1D box)
+	 *@brief Thrust functor for lifting its_timestamp to an interval (1D box)
 	 */
 	struct TBBox_transformation : public thrust::unary_function<TBBox,TBBox>
 	{
 		__host__ __device__
-			TBBox operator()(TimeStamp time)
+			TBBox operator()(its_timestamp time)
 			{
 				return TBBox(time, time);
 			}
@@ -62,8 +62,8 @@ namespace cuspatial
 			TBBox operator()(TBBox a, TBBox b)
 			{
 				// lower left corner
-				TimeStamp minT=(a.first<b.first)?a.first:b.first;
-			TimeStamp maxT=(a.second<b.second)?b.second:a.second;
+				its_timestamp minT=(a.first<b.first)?a.first:b.first;
+			its_timestamp maxT=(a.second<b.second)?b.second:a.second;
 				return TBBox(minT, maxT);
 			}
 	};

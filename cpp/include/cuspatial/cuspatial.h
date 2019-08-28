@@ -31,7 +31,7 @@ namespace cuspatial
 		double y;
 	};
 
-	struct TimeStamp
+	struct its_timestamp
 	{
 		uint32_t y : 6;
 		uint32_t m : 4;

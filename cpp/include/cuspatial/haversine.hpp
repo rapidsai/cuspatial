@@ -22,10 +22,10 @@ namespace cuspatial {
 /**
  * @Brief Compute Haversine distances among pairs of logitude/latitude locations
 
- * @param[in] x1: pointer/array of longitude coordiantes of the starting points
- * @param[in] y1: pointer/array of latitude  coordiantes of the starting points
- * @param[in] x2: pointer/array of longitude coordiantes of the ending points
- * @param[in] y2: pointer/array of latitude coordiantes of the ending points
+ * @param[in] x1: pointer/array of longitude coordinates of the starting points
+ * @param[in] y1: pointer/array of latitude  coordinates of the starting points
+ * @param[in] x2: pointer/array of longitude coordinates of the ending points
+ * @param[in] y2: pointer/array of latitude coordinates of the ending points
 
  * @returns the an array of distances (in kilometers -km) for all (x1,y1) and (x2,y2) point pairs
 

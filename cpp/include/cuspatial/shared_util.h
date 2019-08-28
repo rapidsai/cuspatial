@@ -50,10 +50,10 @@ namespace cuspatial
 
 
 	/**
-	 * @brief output operator for TimeStamp
+	 * @brief output operator for its_timestamp
 	 *
 	 **/
-	std::ostream& operator<<(std::ostream& os, const TimeStamp & t);
+	std::ostream& operator<<(std::ostream& os, const its_timestamp & t);
 
 	/**
 	 * @brief read a set of location_3d data (lon/lat/alt) into separate x,y arrays
@@ -219,10 +219,10 @@ namespace cuspatial
 		return num_rec;
 	}
 
-	//materialization with three data types/structs: uint32_t, location_3d and TimeStamp
+	//materialization with three data types/structs: uint32_t, location_3d and its_timestamp
 
 	template size_t read_field(const char *,uint32_t *&);
 	template size_t read_field(const char *,location_3d*&);
-	template size_t read_field(const char *,TimeStamp* &);
+	template size_t read_field(const char *,its_timestamp* &);
 }
 // namespace cuspatial

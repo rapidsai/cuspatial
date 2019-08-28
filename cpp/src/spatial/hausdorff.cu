@@ -31,75 +31,6 @@ using namespace cuspatial;
 const unsigned int NUM_THREADS = 1024;
  
 template <typename T>
-__global__ void kernel_Hausdorff_Pair(
-                int num_pair,
-                uint32_t *seg_left,
-                uint32_t *seg_right,
-                T *xx,
-                T *yy,
-                uint32_t *pos,
-                T *results
-                )
-{
-    int bidx = blockIdx.y*gridDim.x+blockIdx.x;
-    if (bidx < num_pair)
-    {
-        int seg_id_left = seg_left[bidx];
-        int seg_id_right = seg_right[bidx];
-        __shared__ T sdata[NUM_THREADS];
-        sdata[threadIdx.x] = -1;
-        __syncthreads();
-         int start_left = seg_id_left == 0 ? 0 : pos[seg_id_left-1];
-        int stop_left = pos[seg_id_left];
-
-        int start_right = seg_id_right == 0 ? 0 : pos[seg_id_right-1];
-        int stop_right = pos[seg_id_right];
-        T dist = 1e20;
-        int max_threads = 0;
-        {
-            max_threads = stop_left-start_left;
-            if (threadIdx.x < max_threads)
-            {
-                T my_xx = xx[start_left+threadIdx.x];
-                T my_yy = yy[start_left+threadIdx.x];
-                for (int i = start_right; i < stop_right; i++)
-                {
-                    T other_xx = xx[i];
-                    T other_yy = yy[i];
-                    T new_dist = (my_xx-other_xx)*(my_xx-other_xx)
-                        + (my_yy-other_yy)*(my_yy-other_yy);
-                    dist= min(dist, new_dist);//dist < new_dist ? dist : new_dist;
-                }
-            }
-        }
-        if (dist > 1e10)
-            dist = -1;
-
-        if(threadIdx.x < max_threads)
-            sdata[threadIdx.x] = dist;
-        __syncthreads();
-
-        //reduction
-        for(int offset = blockDim.x / 2;
-                offset > 0;
-                offset >>= 1)
-        {
-            if(threadIdx.x < offset)
-            {
-                T tmp = sdata[threadIdx.x + offset];
-                T tmp2 = sdata[threadIdx.x];
-                sdata[threadIdx.x] = max(tmp2, tmp);
-            }
-
-            __syncthreads();
-        }
-        __syncthreads();
-        if (threadIdx.x == 0)
-            results[bidx] = (sdata[0]>=0)?sqrt(sdata[0]):1e10;
-    }
-}
-
-template <typename T>
 __global__ void kernel_Hausdorff_Full(
                 int num_traj,
                 T *xx,
@@ -122,8 +53,6 @@ __global__ void kernel_Hausdorff_Full(
         int start_right = seg_id_right == 0 ? 0 : pos[seg_id_right-1];
         int stop_right = pos[seg_id_right];
         T dist = 1e20;
-        /*if(bidx<100 && threadIdx.x==0)
-        	printf("(%d %d %d) (%d %d) (%d,%d)\n",bidx,seg_id_left,seg_id_right, start_left,stop_left,start_right,stop_right);*/
         int max_threads = 0;
         {
             max_threads = stop_left-start_left;
@@ -165,22 +94,7 @@ __global__ void kernel_Hausdorff_Full(
         if (threadIdx.x == 0)
             results[bidx] = (sdata[0]>=0)?sqrt(sdata[0]):1e10;
     }
-    //if(bidx<100 && threadIdx.x == 0) printf("%d %10.5f\n",bidx,results[bidx]);
 }
-
-
-template <typename T>
-__global__ void kernel_Hausdorff_Sym(int num_set,T *in,T *out )                               
-{
-    int tidx = (blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x+threadIdx.x;
-    if(tidx<num_set*num_set)
-    {
-    	int indx=(tidx%num_set)*num_set+(tidx/num_set);
-    	out[tidx]=(in[tidx]>in[indx])?in[tidx]:in[indx];
-    	out[indx]=out[tidx];
-    }
-}
-
 
 struct Hausdorff_functor {
     template <typename col_type>
@@ -190,14 +104,14 @@ struct Hausdorff_functor {
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-    gdf_column  operator()(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& cnt
+    gdf_column  operator()(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts
     		/* ,cudaStream_t stream = 0   */)
     	
     { 
  	gdf_column d_matrix;
- 	int num_set=cnt.size;
+ 	int num_set=vertex_counts.size;
   	int block_sz = num_set*num_set;
- 	d_matrix.dtype= coord_x.dtype;
+ 	d_matrix.dtype= x.dtype;
   	d_matrix.col_name=(char *)malloc(strlen("dist")+ 1);
 	strcpy(d_matrix.col_name,"dist");    
         RMM_TRY( RMM_ALLOC(&d_matrix.data, block_sz * sizeof(col_type), 0) );
@@ -210,13 +124,10 @@ struct Hausdorff_functor {
      
         uint32_t *d_pos=NULL;
         RMM_TRY( RMM_ALLOC((void**)&d_pos, sizeof(uint32_t)*num_set, 0) );
-        thrust::device_ptr<uint32_t> trajcnt_ptr=thrust::device_pointer_cast(static_cast<uint32_t*>(cnt.data));
-        thrust::device_ptr<uint32_t> trajpos_ptr=thrust::device_pointer_cast(d_pos);
-        thrust::inclusive_scan(trajcnt_ptr,trajcnt_ptr+num_set,trajpos_ptr);
-        col_type *d_tempdis=NULL;
-        RMM_TRY( RMM_ALLOC((void**)&d_tempdis, sizeof(col_type)*block_sz, 0) )
-        assert(d_tempdis!=NULL);
-         
+        thrust::device_ptr<uint32_t> vertex_counts_ptr=thrust::device_pointer_cast(static_cast<uint32_t*>(vertex_counts.data));
+        thrust::device_ptr<uint32_t> vertex_positions_ptr=thrust::device_pointer_cast(d_pos);
+        thrust::inclusive_scan(vertex_counts_ptr,vertex_counts_ptr+num_set,vertex_positions_ptr);
+        
         int block_x = block_sz, block_y = 1;
         if (block_sz > 65535)
         {
@@ -227,28 +138,18 @@ struct Hausdorff_functor {
     	
     	dim3 grid(block_x, block_y);
     	dim3 block(NUM_THREADS);   
-        /*kernel_Hausdorff_Pair<col_type> <<< grid,block >>> (block_sz,d_pairs_left,d_pairs_right,        	
-         	static_cast<col_type*>(coord_x.data),static_cast<col_type*>(coord_y.data),
-        	d_pos,static_cast<col_type*>(d_matrix.data));*/
  
  	kernel_Hausdorff_Full<col_type> <<< grid,block >>> (num_set,        	
-          	static_cast<col_type*>(coord_x.data),static_cast<col_type*>(coord_y.data),
+          	static_cast<col_type*>(x.data),static_cast<col_type*>(y.data),
          	d_pos,static_cast<col_type*>(d_matrix.data));
- 
- 
- 	/*kernel_Hausdorff_Full<col_type> <<< grid,block >>> (num_set,        	
-         	static_cast<col_type*>(coord_x.data),static_cast<col_type*>(coord_y.data),
-        	d_pos,d_tempdis);
-        kernel_Hausdorff_Sym<<< grid,block >>> (num_set,d_tempdis,static_cast<col_type*>(d_matrix.data));*/
-        
+     
          
         CUDA_TRY( cudaDeviceSynchronize() );
 	gettimeofday(&t1, NULL);
 	float kernelexec_time=calc_time("kernel exec_time:",t0,t1);
         //CHECK_STREAM(stream);        
         RMM_TRY( RMM_FREE(d_pos, 0) );
-        //RMM_TRY( RMM_FREE(d_tempdis, 0) );
-        
+       
         int num_print=(d_matrix.size<10)?d_matrix.size:10;
         std::cout<<"showing the first "<< num_print<<" output records"<<std::endl;
         thrust::device_ptr<col_type> dist_ptr=thrust::device_pointer_cast(static_cast<col_type*>(d_matrix.data));
@@ -258,7 +159,7 @@ struct Hausdorff_functor {
     }
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
-    gdf_column  operator()(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& cnt
+    gdf_column  operator()(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts
     		/* ,cudaStream_t stream = 0   */)
     {
         CUDF_FAIL("Non-floating point operation is not supported");
@@ -273,24 +174,24 @@ struct Hausdorff_functor {
 
 namespace cuspatial {
 
-gdf_column directed_hausdorff_distance(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& cnt
+gdf_column directed_hausdorff_distance(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts
     		/* ,cudaStream_t stream = 0   */)
 {       
     struct timeval t0,t1;
     gettimeofday(&t0, NULL);
     
-    CUDF_EXPECTS(coord_x.data != nullptr &&coord_y.data!=nullptr && cnt.data!=NULL,
-    	"coord_x/coord_y/cnt data can not be null");
-    CUDF_EXPECTS(coord_x.size == coord_y.size ,"coord_x/coord_y/must have the same size");
+    CUDF_EXPECTS(x.data != nullptr &&y.data!=nullptr && vertex_counts.data!=NULL,
+    	"x/y/vertex_counts data can not be null");
+    CUDF_EXPECTS(x.size == y.size ,"x/y/must have the same size");
      
-    //future versions might allow coord_x/coord_y/cnt have null_count>0, which might be useful for taking query results as inputs 
-    CUDF_EXPECTS(coord_x.null_count == 0 && coord_y.null_count == 0 && cnt.null_count==0,
-    	"this version does not support coord_x/coord_y/cnt contains nulls");
+    //future versions might allow x/y/vertex_counts have null_count>0, which might be useful for taking query results as inputs 
+    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 && vertex_counts.null_count==0,
+    	"this version does not support x/y/vertex_counts contains nulls");
     
-    CUDF_EXPECTS(coord_x.size >= cnt.size ,"one trajectory must have at least one point");
+    CUDF_EXPECTS(x.size >= vertex_counts.size ,"one trajectory must have at least one point");
  
   
-    gdf_column dist =cudf::type_dispatcher(coord_x.dtype, Hausdorff_functor(), coord_x,coord_y,cnt/*,stream */);
+    gdf_column dist =cudf::type_dispatcher(x.dtype, Hausdorff_functor(), x,y,vertex_counts/*,stream */);
     
     gettimeofday(&t1, NULL);
     float Hausdorff_end2end_time=calc_time("C++ Hausdorff end-to-end time in ms=",t0,t1);

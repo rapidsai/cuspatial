@@ -21,10 +21,10 @@
 
 namespace cuspatial {
 	/**
-	 * @brief output operator for TimeStamp
+	 * @brief output operator for its_timestamp
 	 *
 	 **/
-	std::ostream& operator<<(std::ostream& os, const TimeStamp & t)
+	std::ostream& operator<<(std::ostream& os, const its_timestamp & t)
 	{
 		os <<"("<<t.y<<","<<t.m<<","<<t.d<<","<<t.hh<<","<<t.mm<<","<<t.ss<<","<<t.ms<<")";
 		return os;
