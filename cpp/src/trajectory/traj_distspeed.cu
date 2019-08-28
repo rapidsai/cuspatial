@@ -76,7 +76,7 @@ struct distspeed_functor {
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
     void operator()(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& ts,
  			    const gdf_column& len,const gdf_column& pos,
- 			    gdf_column& dist,gdf_column& speed/* ,cudaStream_t stream = 0   */)
+ 			    gdf_column& dist,gdf_column& speed)
     	
     { 
  	dist.dtype= coord_x.dtype;
@@ -96,7 +96,7 @@ struct distspeed_functor {
      	speed.null_count=0;	
         
         struct timeval t0,t1;
-        gettimeofday(&t0, NULL);
+        gettimeofday(&t0, nullptr);
         
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, distspeed_kernel<col_type>) );
@@ -109,7 +109,7 @@ struct distspeed_functor {
    	    	static_cast<col_type*>(dist.data), static_cast<col_type*>(speed.data) );           
         CUDA_TRY( cudaDeviceSynchronize() );
 
-	gettimeofday(&t1, NULL);
+	gettimeofday(&t1, nullptr);
 	float distspeed_kernel_time=calc_time("distspeed_kernel_time in ms=",t0,t1);
         //CHECK_STREAM(stream);
         
@@ -126,9 +126,9 @@ struct distspeed_functor {
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
     void operator()(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& ts,
  			    const gdf_column& len,const gdf_column& pos,
- 			    gdf_column& dist,gdf_column& speed/* ,cudaStream_t stream = 0   */)
+ 			    gdf_column& dist,gdf_column& speed)
     {
-        CUDF_FAIL("Non-arithmetic operation is not supported");
+        CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
     
@@ -141,13 +141,13 @@ struct distspeed_functor {
 namespace cuspatial {
 
 void traj_distspeed(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& ts,
- 			    const gdf_column& len,const gdf_column& pos,gdf_column& dist,gdf_column& speed
- 			    /* ,cudaStream_t stream = 0   */)
+ 			    const gdf_column& len,const gdf_column& pos,gdf_column& dist,gdf_column& speed)
+ 			    
 {       
     struct timeval t0,t1;
-    gettimeofday(&t0, NULL);
+    gettimeofday(&t0, nullptr);
     
-    CUDF_EXPECTS(coord_x.data != nullptr &&coord_y.data!=nullptr && ts.data!=NULL && len.data!=NULL && pos.data!=NULL,
+    CUDF_EXPECTS(coord_x.data != nullptr &&coord_y.data!=nullptr && ts.data!=nullptr && len.data!=nullptr && pos.data!=nullptr,
     	"coord_x/coord_y/ts/len/pos data can not be null");
     CUDF_EXPECTS(coord_x.size == coord_y.size && coord_x.size==ts.size ,"coord_x/coord_y/ts must have the same size");
     CUDF_EXPECTS(len.size == pos.size ,"len/pos must have the same size");
@@ -161,7 +161,7 @@ void traj_distspeed(const gdf_column& coord_x,const gdf_column& coord_y,const gd
   
     cudf::type_dispatcher(coord_x.dtype, distspeed_functor(), coord_x,coord_y,ts,len,pos,dist,speed/*,stream */);
     
-    gettimeofday(&t1, NULL);
+    gettimeofday(&t1, nullptr);
     float distspeed_end2end_time=calc_time("C++ traj_distspeed end-to-end time in ms=",t0,t1);
     
     }//traj_distspeed     

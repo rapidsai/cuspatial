@@ -102,7 +102,7 @@ struct sbbox_functor {
      	bbox_y2.null_count=0;	
      	
         struct timeval t0,t1;
-        gettimeofday(&t0, NULL);
+        gettimeofday(&t0, nullptr);
         
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, sbbox_kernel<col_type>) );
@@ -114,7 +114,7 @@ struct sbbox_functor {
    	    	static_cast<col_type*>(bbox_x1.data), static_cast<col_type*>(bbox_y1.data),static_cast<col_type*>(bbox_x2.data), static_cast<col_type*>(bbox_y2.data) );           
         CUDA_TRY( cudaDeviceSynchronize() );
 
-	gettimeofday(&t1, NULL);
+	gettimeofday(&t1, nullptr);
 	float sbbox_kernel_time=calc_time("spatial bbox kernel time in ms=",t0,t1);
         //CHECK_STREAM(stream);
         
@@ -139,7 +139,7 @@ struct sbbox_functor {
  		const gdf_column& len,const gdf_column& pos,
 		gdf_column& bbox_x1,gdf_column& bbox_y1,gdf_column& bbox_x2,gdf_column& bbox_y2)
     {
-        CUDF_FAIL("Non-arithmetic operation is not supported");
+        CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
     
@@ -156,9 +156,9 @@ void traj_sbbox(const gdf_column& coord_x,const gdf_column& coord_y,
 			gdf_column& bbox_x1,gdf_column& bbox_y1,gdf_column& bbox_x2,gdf_column& bbox_y2)
 {       
     struct timeval t0,t1;
-    gettimeofday(&t0, NULL);
+    gettimeofday(&t0, nullptr);
    
-    CUDF_EXPECTS(coord_x.data != nullptr &&coord_y.data!=nullptr && len.data!=NULL && pos.data!=NULL,
+    CUDF_EXPECTS(coord_x.data != nullptr &&coord_y.data!=nullptr && len.data!=nullptr && pos.data!=nullptr,
     	"coord_x/coord_y/len/pos data can not be null");
     CUDF_EXPECTS(coord_x.size == coord_y.size ,"coord_x/coord_y/ must have the same size");
     CUDF_EXPECTS(len.size == pos.size ,"len/pos must have the same size");
@@ -173,7 +173,7 @@ void traj_sbbox(const gdf_column& coord_x,const gdf_column& coord_y,
     
     // handle null_count if needed 
      
-    gettimeofday(&t1, NULL);
+    gettimeofday(&t1, nullptr);
     float sbbox_end2end_time=calc_time("spatial bbox end2end time in ms=",t0,t1);
     
     }//traj_distspeed     

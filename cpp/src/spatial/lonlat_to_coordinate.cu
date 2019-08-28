@@ -50,7 +50,7 @@ struct ll2coord_functor {
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
     std::pair<gdf_column,gdf_column> operator()(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,
-    	 const gdf_column  & in_lon,const gdf_column  & in_lat /* ,cudaStream_t stream = 0   */)
+    	 const gdf_column  & in_lon,const gdf_column  & in_lat)
     	
     {
         gdf_column  out_x, out_y;
@@ -80,7 +80,7 @@ struct ll2coord_functor {
      	out_y.null_count=0;	
         
         struct timeval t0,t1;
-        gettimeofday(&t0, NULL);
+        gettimeofday(&t0, nullptr);
         
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, coord_trans_kernel<col_type>) );
@@ -93,7 +93,7 @@ struct ll2coord_functor {
    	    	static_cast<col_type*>(out_x.data), static_cast<col_type*>(out_y.data) );           
         CUDA_TRY( cudaDeviceSynchronize() );
 
-	gettimeofday(&t1, NULL);
+	gettimeofday(&t1, nullptr);
 	float ll2coord_kernel_time=calc_time("lon/lat to x/y conversion kernel time in ms=",t0,t1);
         //CHECK_STREAM(stream);
         
@@ -111,9 +111,9 @@ struct ll2coord_functor {
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
     std::pair<gdf_column,gdf_column> operator()(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,
-    	const gdf_column  & in_lon,const gdf_column  & in_lat/* ,cudaStream_t stream = 0   */)
+    	const gdf_column  & in_lon,const gdf_column  & in_lat)
     {
-        CUDF_FAIL("Non-arithmetic operation is not supported");
+        CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
     
@@ -130,7 +130,7 @@ std::pair<gdf_column,gdf_column> lonlat_to_coord(const gdf_scalar& cam_lon, cons
 
 {       
     struct timeval t0,t1;
-    gettimeofday(&t0, NULL);
+    gettimeofday(&t0, nullptr);
     
     double cx=*((double*)(&(cam_lon.data)));
     double cy=*((double*)(&(cam_lat.data)));
@@ -146,7 +146,7 @@ std::pair<gdf_column,gdf_column> lonlat_to_coord(const gdf_scalar& cam_lon, cons
     
     // handle null_count if needed 
      
-    gettimeofday(&t1, NULL);
+    gettimeofday(&t1, nullptr);
     float ll2coord_end2end_time=calc_time("lon/lat to x/y conversion end2end time in ms=",t0,t1);
     return res;
   }//lonlat_to_coord 

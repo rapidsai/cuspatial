@@ -56,8 +56,8 @@ struct haversine_functor {
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-     gdf_column operator()(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2 
-    				/* , cudaStream_t stream = 0   */)
+     gdf_column operator()(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2)
+    				
     {
         gdf_column h_dist;
         col_type* data;
@@ -107,8 +107,7 @@ struct haversine_functor {
     }
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
-    gdf_column operator()(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2  
-    				/* , cudaStream_t stream = 0   */)
+    gdf_column operator()(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2)      				
     {
         CUDF_FAIL("Non-floating point operation is not supported");
     }
@@ -126,8 +125,7 @@ namespace cuspatial{
  * see haversine.hpp
 */
 
-gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2
-                          /* , cudaStream_t stream = 0   */)
+gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2 )                        
 {       
     struct timeval t0,t1;
     gettimeofday(&t0, NULL);

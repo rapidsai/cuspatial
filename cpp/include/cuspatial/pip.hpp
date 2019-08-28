@@ -37,8 +37,7 @@ namespace cuspatial {
 
 gdf_column pip_bm(const gdf_column& pnt_x,const gdf_column& pnt_y,
                                    const gdf_column& ply_fpos, const gdf_column& ply_rpos,
-                                   const gdf_column& ply_x,const gdf_column& ply_y
-                          /* , cudaStream_t stream = 0   */);
+                                   const gdf_column& ply_x,const gdf_column& ply_y);
+
 
 }  // namespace cuspatial
-

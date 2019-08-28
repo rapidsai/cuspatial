@@ -29,21 +29,21 @@ struct PIPToy : public GdfTest
 {
     int point_len=3;
 
-    double  *p_x=new double[point_len]{0,-8,6};
-    double  *p_y=new double[point_len]{0,-8,6};
+    double  *x=new double[point_len]{0,-8,6};
+    double  *y=new double[point_len]{0,-8,6};
     
-    struct PolyMeta<double> h_polygon;
+    struct polygons<double> h_polygon;
     
     int set_initialize()
     {          
-      h_polygon.num_g=1;
-      h_polygon.num_f=2;
-      h_polygon.num_r=2;
-      h_polygon.num_v=10;
-      h_polygon.p_f_pos=new uint[h_polygon.num_f]{1,2};
-      h_polygon.p_r_pos=new uint[h_polygon.num_r]{5,10};
-      h_polygon.p_x=new double[h_polygon.num_v]{-10,   5, 5, -10, -10,  0, 10, 10,  0, 0};
-      h_polygon.p_y=new double[h_polygon.num_v]{-10, -10, 5,   5,  -10, 0,  0, 10, 10, 0};
+      h_polygon.num_group=1;
+      h_polygon.num_feature=2;
+      h_polygon.num_ring=2;
+      h_polygon.num_vertex=10;
+      h_polygon.feature_position=new uint[h_polygon.num_feature]{1,2};
+      h_polygon.ring_position=new uint[h_polygon.num_ring]{5,10};
+      h_polygon.x=new double[h_polygon.num_vertex]{-10,   5, 5, -10, -10,  0, 10, 10,  0, 0};
+      h_polygon.y=new double[h_polygon.num_vertex]{-10, -10, 5,   5,  -10, 0,  0, 10, 10, 0};
   
       return 1;
     }
@@ -51,13 +51,13 @@ struct PIPToy : public GdfTest
     
     void exec_gpu_pip(uint *& gpu_pip_res)
     {  
-        //std::vector g_pos_v(h_polygon.p_g_pos,h_polygon.p_g_pos+h_polygon.num_g);
-        std::vector<uint> f_pos_v(h_polygon.p_f_pos,h_polygon.p_f_pos+h_polygon.num_f);
-        std::vector<uint> r_pos_v(h_polygon.p_r_pos,h_polygon.p_r_pos+h_polygon.num_r);
-        std::vector<double> ply_x_v(h_polygon.p_x,h_polygon.p_x+h_polygon.num_v);
-	std::vector<double> ply_y_v(h_polygon.p_y,h_polygon.p_y+h_polygon.num_v);
-        std::vector<double> pnt_x_v(p_x,p_x+this->point_len);
-	std::vector<double> pnt_y_v(p_y,p_y+this->point_len);   
+        //std::vector g_pos_v(h_polygon.group_position,h_polygon.group_position+h_polygon.num_group);
+        std::vector<uint> f_pos_v(h_polygon.feature_position,h_polygon.feature_position+h_polygon.num_feature);
+        std::vector<uint> r_pos_v(h_polygon.ring_position,h_polygon.ring_position+h_polygon.num_ring);
+        std::vector<double> ply_x_v(h_polygon.x,h_polygon.x+h_polygon.num_vertex);
+	std::vector<double> ply_y_v(h_polygon.y,h_polygon.y+h_polygon.num_vertex);
+        std::vector<double> pnt_x_v(x,x+this->point_len);
+	std::vector<double> pnt_y_v(y,y+this->point_len);   
         
         cudf::test::column_wrapper<uint> polygon_fpos_wrapp{f_pos_v};
         cudf::test::column_wrapper<uint> polygon_rpos_wrapp{r_pos_v};
@@ -78,20 +78,20 @@ struct PIPToy : public GdfTest
     
     void set_finalize()
     {
-	delete [] h_polygon.p_g_len;
-      	delete [] h_polygon.p_f_len;
-      	delete [] h_polygon.p_r_len;
+	delete [] h_polygon.group_length;
+      	delete [] h_polygon.feature_length;
+      	delete [] h_polygon.ring_length;
       	if(!h_polygon.is_inplace)
       	{
-      		delete [] h_polygon.p_g_pos;
-      		delete [] h_polygon.p_f_pos;
-      		delete [] h_polygon.p_r_pos;
+      		delete [] h_polygon.group_position;
+      		delete [] h_polygon.feature_position;
+      		delete [] h_polygon.ring_position;
       	}
-      	delete [] h_polygon.p_x;
-      	delete [] h_polygon.p_y;
+      	delete [] h_polygon.x;
+      	delete [] h_polygon.y;
       	
-    	delete[] p_x;
-    	delete[] p_y;
+    	delete[] x;
+    	delete[] y;
     	
     }
     
@@ -103,7 +103,7 @@ TEST_F(PIPToy, piptest)
     
     uint* cpu_pip_res=new uint[this->point_len];
     assert(cpu_pip_res!=NULL);  
-    cpu_pip_loop(this->point_len,this->p_x,this->p_y, this->h_polygon,cpu_pip_res);
+    cpu_pip_loop(this->point_len,this->x,this->y, this->h_polygon,cpu_pip_res);
   
     uint* gpu_pip_res=NULL;
     this->exec_gpu_pip(gpu_pip_res);

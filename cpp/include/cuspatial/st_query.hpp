@@ -39,4 +39,3 @@ int sw_xy(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_
 	const gdf_column& in_x,const gdf_column& in_y, gdf_column& out_x,gdf_column& out_y);
 
 }  // namespace cuspatial
-

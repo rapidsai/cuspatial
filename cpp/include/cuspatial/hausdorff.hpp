@@ -35,4 +35,3 @@ namespace cuspatial {
 gdf_column directed_hausdorff_distance(const gdf_column& x, const gdf_column& y, const gdf_column& vertex_counts);
 
 }  // namespace cuspatial
-

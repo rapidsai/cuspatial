@@ -31,8 +31,7 @@ namespace cuspatial {
 
  */
 
-gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2
-                          /* , cudaStream_t stream = 0   */);
+gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2);
+
 
 }  // namespace cuspatial
-

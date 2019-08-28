@@ -77,24 +77,24 @@ size_t read_traj_soa(char *root_fn,int *& objid, its_timestamp *& time, location
      enum FILEDS {objid_id=0,time_id,location_id};
 	 const char * out_ext[]={".objectid",".time",".location"};
 
-     objid=NULL;
-     location=NULL;
-     time=NULL;
+     objid=nullptr;
+     location=nullptr;
+     time=nullptr;
      char fn[100];
      strcpy(fn,root_fn);
      strcat(fn,out_ext[objid_id]);
      size_t objectid_len=read_field<int>(fn,objid);
-     if(objid==NULL) return 0;
+     if(objid==nullptr) return 0;
 
      strcpy(fn,root_fn);
      strcat(fn,out_ext[time_id]);
      size_t time_len=read_field<its_timestamp>(fn,time);
-     if(time==NULL) return 0;
+     if(time==nullptr) return 0;
 
      strcpy(fn,root_fn);
      strcat(fn,out_ext[location_id]);
      size_t loc_len=read_field<location_3d>(fn,location);
-     if(location==NULL) return 0;
+     if(location==nullptr) return 0;
 
      if((objectid_len!=loc_len||objectid_len!=time_len)) return 0;
      return objectid_len;

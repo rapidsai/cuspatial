@@ -39,7 +39,7 @@ struct coor2traj_functor {
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
     int operator()(gdf_column& coord_x,gdf_column& coord_y,gdf_column& oid, gdf_column& ts, 
- 			    gdf_column& tid, gdf_column& len,gdf_column& pos/* ,cudaStream_t stream = 0   */)
+ 			    gdf_column& tid, gdf_column& len,gdf_column& pos)
     {        
         int num_print=(oid.size<10)?oid.size:10;
         std::cout<<"showing the first "<< num_print<<" input records before sort"<<std::endl;
@@ -59,7 +59,7 @@ struct coor2traj_functor {
         thrust::copy(time_ptr,time_ptr+num_print,std::ostream_iterator<its_timestamp>(std::cout, " "));std::cout<<std::endl;    
     	         
         struct timeval t0,t1;
-        gettimeofday(&t0, NULL);
+        gettimeofday(&t0, nullptr);
         
         uint32_t num_rec=oid.size;
         auto od_it=thrust::make_zip_iterator(thrust::make_tuple(id_ptr,coorx_ptr,coory_ptr));
@@ -68,7 +68,7 @@ struct coor2traj_functor {
         thrust::stable_sort_by_key(id_ptr,id_ptr+num_rec,tl_it);
         
         //allocate sufficient memory to hold id,cnt and pos before reduce_by_key        
-        uint32_t *objcnt=NULL,*objpos=NULL,*objid=NULL;
+        uint32_t *objcnt=nullptr,*objpos=nullptr,*objid=nullptr;
         RMM_TRY( RMM_ALLOC((void**)&objcnt,num_rec* sizeof(uint32_t),0) ) ; 
         RMM_TRY( RMM_ALLOC((void**)&objpos,num_rec* sizeof(uint32_t),0) ) ; 
         RMM_TRY( RMM_ALLOC((void**)&objid,num_rec* sizeof(uint32_t),0) ) ; 
@@ -82,7 +82,7 @@ struct coor2traj_functor {
         std::cout<<"#traj="<<num_traj<<std::endl;
 
 	//allocate just enough memory (num_traj), copy over and then free large (num_rec) arrays         
-        uint32_t *trajid=NULL,*trajcnt=NULL,*trajpos=NULL;
+        uint32_t *trajid=nullptr,*trajcnt=nullptr,*trajpos=nullptr;
         RMM_TRY( RMM_ALLOC((void**)&trajid,num_traj* sizeof(uint32_t),0) ) ; 
         RMM_TRY( RMM_ALLOC((void**)&trajcnt,num_traj* sizeof(uint32_t),0) ) ; 
         RMM_TRY( RMM_ALLOC((void**)&trajpos,num_traj* sizeof(uint32_t),0) ) ; 
@@ -105,7 +105,7 @@ struct coor2traj_functor {
         thrust::inclusive_scan(thrust::device,trajcnt_ptr,trajcnt_ptr+num_traj,trajpos_ptr);
         gdf_column_view(&pos, trajpos, nullptr, num_traj, GDF_INT32);  
       
-	gettimeofday(&t1, NULL);
+	gettimeofday(&t1, nullptr);
         float coor2traj_kernel_time=calc_time("coord_to_traj kernel time in ms=",t0,t1);
         //CHECK_STREAM(stream);
     
@@ -134,9 +134,9 @@ struct coor2traj_functor {
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
     int operator()(gdf_column& coord_x,gdf_column& coord_y,gdf_column& oid, gdf_column& ts, 
- 			    gdf_column& tid, gdf_column& len,gdf_column& pos/* ,cudaStream_t stream = 0   */)
+ 			    gdf_column& tid, gdf_column& len,gdf_column& pos)
     {
-        CUDF_FAIL("Non-arithmetic operation is not supported");
+        CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
     
@@ -150,12 +150,12 @@ namespace cuspatial {
 */
 
 int coord_to_traj(gdf_column& coord_x,gdf_column& coord_y,gdf_column& oid, gdf_column& ts, 
- 			    gdf_column& tid,gdf_column& len,gdf_column& pos/* ,cudaStream_t stream = 0   */)
+ 			    gdf_column& tid,gdf_column& len,gdf_column& pos)
 {       
     struct timeval t0,t1;
-    gettimeofday(&t0, NULL);
+    gettimeofday(&t0, nullptr);
     
-    CUDF_EXPECTS(coord_x.data != nullptr &&coord_y.data!=nullptr&&oid.data!=NULL&&ts.data!=NULL, "coord_x/coord_y/oid/ts data can not be null");
+    CUDF_EXPECTS(coord_x.data != nullptr &&coord_y.data!=nullptr&&oid.data!=nullptr&&ts.data!=nullptr, "coord_x/coord_y/oid/ts data can not be null");
     CUDF_EXPECTS(coord_x.size == coord_y.size && coord_x.size==oid.size && coord_x.size==ts.size ,"coord_x/coord_y/oid/ts must have the same size");
     
     //future versions might allow coord_x/coord_y/oid/ts have null_count>0, which might be useful for taking query results as inputs 
@@ -165,7 +165,7 @@ int coord_to_traj(gdf_column& coord_x,gdf_column& coord_y,gdf_column& oid, gdf_c
     int num_traj = cudf::type_dispatcher( coord_x.dtype, coor2traj_functor(), 
     		coord_x,coord_y,oid,ts,tid,len,pos /*,stream */);
     		
-    gettimeofday(&t1, NULL);
+    gettimeofday(&t1, nullptr);
     float coor2traj_end2end_time=calc_time("coord_to_traj end-to-end time in ms=",t0,t1);
     
     return num_traj;

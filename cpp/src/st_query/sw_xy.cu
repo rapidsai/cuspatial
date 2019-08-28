@@ -39,8 +39,8 @@ struct sw_xy_functor {
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
     int operator()(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_scalar y2,
-	const gdf_column& in_x,const gdf_column& in_y, gdf_column& out_x,gdf_column& out_y
-		/* , cudaStream_t stream = 0   */)
+	const gdf_column& in_x,const gdf_column& in_y, gdf_column& out_x,gdf_column& out_y)
+		
     {        
         col_type q_x1=*((col_type*)(&(x1.data)));
 	col_type q_y1=*((col_type*)(&(y1.data)));
@@ -62,7 +62,7 @@ struct sw_xy_functor {
         thrust::copy(iny_ptr,iny_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;
     	         
         struct timeval t0,t1;
-        gettimeofday(&t0, NULL);
+        gettimeofday(&t0, nullptr);
        
         auto in_it=thrust::make_zip_iterator(thrust::make_tuple(inx_ptr,iny_ptr));
   	int num_hits= thrust::count_if(thrust::device, in_it, in_it+in_x.size, sw_functor_xy<col_type>(q_x1,q_x2,q_y1,q_y2));
@@ -90,7 +90,7 @@ struct sw_xy_functor {
         auto out_it=thrust::make_zip_iterator(thrust::make_tuple(outx_ptr,outy_ptr));
         thrust::copy_if(thrust::device, in_it, in_it+in_x.size,out_it, sw_functor_xy<col_type>(q_x1,q_x2,q_y1,q_y2));
         
-	gettimeofday(&t1, NULL);
+	gettimeofday(&t1, nullptr);
 	float swxy_kernel_time=calc_time("swxy kernel time in ms=",t0,t1);
         //CHECK_STREAM(stream);
     
@@ -105,10 +105,10 @@ struct sw_xy_functor {
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
     int operator()(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_scalar y2,
-	const gdf_column& in_x,const gdf_column& in_y, gdf_column& out_x,gdf_column& out_y
-	/* , cudaStream_t stream = 0   */)
+	const gdf_column& in_x,const gdf_column& in_y, gdf_column& out_x,gdf_column& out_y)
+	
     {
-        CUDF_FAIL("Non-arithmetic operation is not supported");
+        CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
     
@@ -121,11 +121,11 @@ struct sw_xy_functor {
 namespace cuspatial {
 
 int sw_xy(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_scalar y2,
-	const gdf_column& in_x,const gdf_column& in_y, gdf_column& out_x,gdf_column& out_y
-	/* , cudaStream_t stream = 0   */)
+	const gdf_column& in_x,const gdf_column& in_y, gdf_column& out_x,gdf_column& out_y)
+	
 {       
     struct timeval t0,t1;
-    gettimeofday(&t0, NULL);
+    gettimeofday(&t0, nullptr);
     
     CUDF_EXPECTS(in_x.dtype == in_y.dtype, "point type mismatch between x/y arrays");
     CUDF_EXPECTS(in_x.size == in_y.size, "#of points mismatch between x/y arrays");
@@ -136,7 +136,7 @@ int sw_xy(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_
     int num_traj = cudf::type_dispatcher( in_x.dtype, sw_xy_functor(), 
     		x1,y1,x2,y2,in_x,in_y, out_x,out_y/*,stream */);
     		
-    gettimeofday(&t1, NULL);
+    gettimeofday(&t1, nullptr);
     float swxy_end2end_time=calc_time("C++ sw_xy end-to-end time in ms= ",t0,t1);
     
     return num_traj;

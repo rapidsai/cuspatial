@@ -63,12 +63,12 @@ struct HausdorffTest : public GdfTest
       std::cout<<"beginning GPU free_mem="<<free_mem<<std::endl;
       
       struct timeval t0,t1;
-      gettimeofday(&t0, NULL);
+      gettimeofday(&t0, nullptr);
       
       cuspatial::read_pnt_xy_soa(point_fn,pnt_x,pnt_y);
       cuspatial::read_uint_soa(cnt_fn,cnt);
       
-      gettimeofday(&t1, NULL);
+      gettimeofday(&t1, nullptr);
       float data_load_time=cuspatial::calc_time("point/cnt data loading time=", t0,t1);
       CUDF_EXPECTS(pnt_x.size>0 && pnt_y.size>0 && cnt.size>=0,"invalid # of points/trajectories");
       CUDF_EXPECTS(pnt_x.size==pnt_y.size, "x and y columns must have the same size");
@@ -87,16 +87,16 @@ TEST_F(HausdorffTest, hausdorfftest)
     
     //run cuspatial::directed_hausdorff_distance twice 
     struct timeval t0,t1,t2;
-    gettimeofday(&t0, NULL);
+    gettimeofday(&t0, nullptr);
     
     gdf_column dist1=cuspatial::directed_hausdorff_distance(this->pnt_x,this->pnt_y, this->cnt);         
-    assert(dist1.data!=NULL);
-    gettimeofday(&t1, NULL);
+    assert(dist1.data!=nullptr);
+    gettimeofday(&t1, nullptr);
     float gpu_hausdorff_time1=cuspatial::calc_time("GPU Hausdorff Distance time 1......",t0,t1);
     
     gdf_column dist2=cuspatial::directed_hausdorff_distance(this->pnt_x,this->pnt_y, this->cnt);         
-    assert(dist2.data!=NULL);
-    gettimeofday(&t2, NULL);
+    assert(dist2.data!=nullptr);
+    gettimeofday(&t2, nullptr);
     float gpu_hausdorff_time2=cuspatial::calc_time("GPU Hausdorff Distance time 2......",t1,t2);
   
     CUDF_EXPECTS(dist1.size==dist2.size ,"output of the two rounds needs to have the same size");
@@ -107,10 +107,10 @@ TEST_F(HausdorffTest, hausdorfftest)
     std::cout<<"num_pair="<<num_pair<<std::endl;
     
     //verify the results of two GPU runs are the same
-    double *data1=NULL,*data2=NULL;
+    double *data1=nullptr,*data2=nullptr;
     RMM_TRY( RMM_ALLOC((void**)&data1, sizeof(double)*num_pair, 0) );
     RMM_TRY( RMM_ALLOC((void**)&data2, sizeof(double)*num_pair, 0) );
-    assert(data1!=NULL && data2!=NULL);
+    assert(data1!=nullptr && data2!=nullptr);
     cudaMemcpy(data1,dist1.data ,num_pair*sizeof(double) , cudaMemcpyDeviceToDevice);
     cudaMemcpy(data2,dist2.data ,num_pair*sizeof(double) , cudaMemcpyDeviceToDevice);
     
@@ -136,19 +136,19 @@ TEST_F(HausdorffTest, hausdorfftest)
     double *x_c=new double[num_pnt];
     double *y_c=new double[num_pnt];
     uint32_t *cnt_c=new uint32_t[set_size];
-    assert(x_c!=NULL && y_c!=NULL && cnt_c!=NULL);
+    assert(x_c!=nullptr && y_c!=nullptr && cnt_c!=nullptr);
     cudaMemcpy(x_c,this->pnt_x.data ,num_pnt*sizeof(double) , cudaMemcpyDeviceToHost);
     cudaMemcpy(y_c,this->pnt_y.data ,num_pnt*sizeof(double) , cudaMemcpyDeviceToHost);
     cudaMemcpy(cnt_c,this->cnt.data ,set_size*sizeof(uint32_t) , cudaMemcpyDeviceToHost);
     
     int subset_size=100;
-    double *dist_c=NULL;
+    double *dist_c=nullptr;
     hausdorff_test_sequential<double>(subset_size,x_c,y_c,cnt_c,dist_c);
-    assert(dist_c!=NULL);
+    assert(dist_c!=nullptr);
     
     double *dist_h1=new double[num_pair];
     double *dist_h2=new double[num_pair];
-    assert(dist_h1!=NULL && dist_h2!=NULL);
+    assert(dist_h1!=nullptr && dist_h2!=nullptr);
     
     cudaMemcpy(dist_h1,dist1.data ,num_pair*sizeof(double) , cudaMemcpyDeviceToHost);
     cudaMemcpy(dist_h2,dist2.data ,num_pair*sizeof(double) , cudaMemcpyDeviceToHost);

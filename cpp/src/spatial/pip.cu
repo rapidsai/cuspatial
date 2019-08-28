@@ -91,7 +91,7 @@ struct pip_functor {
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
     gdf_column operator()(gdf_column const & pnt_x,gdf_column const & pnt_y,
  			  gdf_column const & ply_fpos,gdf_column const & ply_rpos,
-			  gdf_column const & ply_x,gdf_column const & ply_y /* ,cudaStream_t stream = 0   */)
+			  gdf_column const & ply_x,gdf_column const & ply_y)
     {
         gdf_column res_bm;
         uint32_t* data;
@@ -116,7 +116,7 @@ struct pip_functor {
         gdf_column_view(&res_bm, data, nullptr, pnt_y.size, GDF_INT32);
 
         struct timeval t0,t1;
-        gettimeofday(&t0, NULL);
+        gettimeofday(&t0, nullptr);
         
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, pip_kernel<col_type>) );
@@ -131,7 +131,7 @@ struct pip_functor {
                 static_cast<uint32_t*>(res_bm.data) );
         CUDA_TRY( cudaDeviceSynchronize() );
 	
-	gettimeofday(&t1, NULL);	
+	gettimeofday(&t1, nullptr);	
  	float pip_kernel_time=calc_time("pip_kernel_time in ms=",t0,t1);
         
         //CHECK_STREAM(stream);
@@ -144,10 +144,10 @@ struct pip_functor {
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
     gdf_column operator()(gdf_column const & pnt_x,gdf_column const & pnt_y,
  			  gdf_column const & ply_fpos,gdf_column const & ply_rpos,
-			  gdf_column const & ply_x,gdf_column const & ply_y
-			  /*,cudaStream_t stream = 0 */)
+			  gdf_column const & ply_x,gdf_column const & ply_y)
+			  
     {
-        CUDF_FAIL("Non-arithmetic operation is not supported");
+        CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
 
@@ -161,11 +161,11 @@ namespace cuspatial {
 
 gdf_column pip_bm(const gdf_column& pnt_x,const gdf_column& pnt_y,
                                    const gdf_column& ply_fpos, const gdf_column& ply_rpos,
-                                   const gdf_column& ply_x,const gdf_column& ply_y
-                          /* ,cudaStream_t stream */)
+                                   const gdf_column& ply_x,const gdf_column& ply_y)
+                         
 {       
     struct timeval t0,t1;
-    gettimeofday(&t0, NULL);
+    gettimeofday(&t0, nullptr);
     
     CUDF_EXPECTS(pnt_y.data != nullptr && pnt_x.data != nullptr, "query point data cannot be empty");
     CUDF_EXPECTS(pnt_y.dtype == pnt_x.dtype, "polygon vertex and point data type mismatch for x array ");
@@ -186,7 +186,7 @@ gdf_column pip_bm(const gdf_column& pnt_x,const gdf_column& pnt_y,
     gdf_column res_bm = cudf::type_dispatcher( pnt_x.dtype, pip_functor(), 
     		pnt_x,pnt_y,ply_fpos,ply_rpos,ply_x,ply_y /*,stream */);
     		
-    gettimeofday(&t1, NULL);
+    gettimeofday(&t1, nullptr);
     float pip_end2end_time=calc_time("C++ pip_bm end-to-end time in ms=",t0,t1);
     
     return res_bm;

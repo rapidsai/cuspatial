@@ -34,4 +34,3 @@ std::pair<gdf_column,gdf_column> lonlat_to_coord(const gdf_scalar& cam_lon, cons
 	const gdf_column& in_lon, const gdf_column  & in_lat);
 
 }  // namespace cuspatial
-

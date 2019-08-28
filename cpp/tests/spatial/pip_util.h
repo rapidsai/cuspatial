@@ -36,13 +36,13 @@ namespace cuspatial
 	 * @return whehter the point is in the polygon
 	 */
 	template <typename T>
-	bool pip_test_sequential(const T& x, const T& y, const struct PolyMeta<T>& ply,int fid)
+	bool pip_test_sequential(const T& x, const T& y, const struct polygons<T>& ply,int fid)
 	{
 		//printf("pip: x=%15.10f y=%15.10f\n",x,y);
-		uint *f_pos=ply.p_f_pos;
-		uint *r_pos=ply.p_r_pos;
-		T *poly_x=ply.p_x;
-		T *poly_y=ply.p_y;
+		uint *f_pos=ply.feature_position;
+		uint *r_pos=ply.ring_position;
+		T *poly_x=ply.x;
+		T *poly_y=ply.y;
 		uint r_f = (0 == fid) ? 0 : f_pos[fid-1];
 		uint r_t=f_pos[fid];
 		//printf("(%d %d)=>\n",r_f,r_t);
@@ -67,8 +67,8 @@ namespace cuspatial
 		return (in_polygon);
 	}
 
-	template bool pip_test_sequential(const double& x, const double& y, const struct PolyMeta<double>& ply,int fid);
-	template bool pip_test_sequential(const float& x, const float& y, const struct PolyMeta<float>& ply,int fid);
+	template bool pip_test_sequential(const double& x, const double& y, const struct polygons<double>& ply,int fid);
+	template bool pip_test_sequential(const float& x, const float& y, const struct polygons<float>& ply,int fid);
 
 
 	/**
@@ -90,13 +90,13 @@ namespace cuspatial
 
 	*/
 	template <typename T>
-	void cpu_pip_loop(int num_pnt,const T* x, const T *y ,const struct PolyMeta<T>& poly,uint* res)
+	void cpu_pip_loop(int num_pnt,const T* x, const T *y ,const struct polygons<T>& poly,uint* res)
 	{
 		//assert(res!=NULL);
 		for(int i=0;i<num_pnt;i++)
 		{
 			uint mask=0;
-			for(size_t j=0;j<poly.num_f;j++)
+			for(size_t j=0;j<poly.num_feature;j++)
 			{
 				bool in_polygon =pip_test_sequential<T>(x[i],y[i],poly,j);
 				if(in_polygon)
@@ -108,6 +108,6 @@ namespace cuspatial
 		}
 	}
 
-	template void cpu_pip_loop(int num_pnt,const double *x, const double *y ,const struct PolyMeta<double>& poly,uint* res);
-	template void cpu_pip_loop(int num_pnt,const float *x, const float *y ,const struct PolyMeta<float>& poly,uint* res);
+	template void cpu_pip_loop(int num_pnt,const double *x, const double *y ,const struct polygons<double>& poly,uint* res);
+	template void cpu_pip_loop(int num_pnt,const float *x, const float *y ,const struct polygons<float>& poly,uint* res);
 }//namespace cuspatial

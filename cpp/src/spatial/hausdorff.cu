@@ -104,9 +104,7 @@ struct Hausdorff_functor {
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-    gdf_column  operator()(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts
-    		/* ,cudaStream_t stream = 0   */)
-    	
+    gdf_column  operator()(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts)    		    	
     { 
  	gdf_column d_matrix;
  	int num_set=vertex_counts.size;
@@ -120,9 +118,9 @@ struct Hausdorff_functor {
      	d_matrix.null_count=0;		
         
         struct timeval t0,t1;
-        gettimeofday(&t0, NULL);
+        gettimeofday(&t0, nullptr);
      
-        uint32_t *d_pos=NULL;
+        uint32_t *d_pos=nullptr;
         RMM_TRY( RMM_ALLOC((void**)&d_pos, sizeof(uint32_t)*num_set, 0) );
         thrust::device_ptr<uint32_t> vertex_counts_ptr=thrust::device_pointer_cast(static_cast<uint32_t*>(vertex_counts.data));
         thrust::device_ptr<uint32_t> vertex_positions_ptr=thrust::device_pointer_cast(d_pos);
@@ -145,9 +143,8 @@ struct Hausdorff_functor {
      
          
         CUDA_TRY( cudaDeviceSynchronize() );
-	gettimeofday(&t1, NULL);
+	gettimeofday(&t1, nullptr);
 	float kernelexec_time=calc_time("kernel exec_time:",t0,t1);
-        //CHECK_STREAM(stream);        
         RMM_TRY( RMM_FREE(d_pos, 0) );
        
         int num_print=(d_matrix.size<10)?d_matrix.size:10;
@@ -159,8 +156,8 @@ struct Hausdorff_functor {
     }
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
-    gdf_column  operator()(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts
-    		/* ,cudaStream_t stream = 0   */)
+    gdf_column  operator()(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts)
+    		
     {
         CUDF_FAIL("Non-floating point operation is not supported");
     }
@@ -174,13 +171,13 @@ struct Hausdorff_functor {
 
 namespace cuspatial {
 
-gdf_column directed_hausdorff_distance(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts
-    		/* ,cudaStream_t stream = 0   */)
+gdf_column directed_hausdorff_distance(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts)
+    		
 {       
     struct timeval t0,t1;
-    gettimeofday(&t0, NULL);
+    gettimeofday(&t0, nullptr);
     
-    CUDF_EXPECTS(x.data != nullptr &&y.data!=nullptr && vertex_counts.data!=NULL,
+    CUDF_EXPECTS(x.data != nullptr &&y.data!=nullptr && vertex_counts.data!=nullptr,
     	"x/y/vertex_counts data can not be null");
     CUDF_EXPECTS(x.size == y.size ,"x/y/must have the same size");
      
@@ -193,7 +190,7 @@ gdf_column directed_hausdorff_distance(const gdf_column& x,const gdf_column& y,c
   
     gdf_column dist =cudf::type_dispatcher(x.dtype, Hausdorff_functor(), x,y,vertex_counts/*,stream */);
     
-    gettimeofday(&t1, NULL);
+    gettimeofday(&t1, nullptr);
     float Hausdorff_end2end_time=calc_time("C++ Hausdorff end-to-end time in ms=",t0,t1);
     return dist;
     
