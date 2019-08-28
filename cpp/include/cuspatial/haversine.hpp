@@ -27,7 +27,7 @@ namespace cuspatial {
  * @param[in] x2: pointer/array of longitude coordinates of the ending points
  * @param[in] y2: pointer/array of latitude coordinates of the ending points
 
- * @returns the an array of distances (in kilometers -km) for all (x1,y1) and (x2,y2) point pairs
+ * @returns array of distances in kilometers (km) for all (x1,y1) and (x2,y2) point pairs
 
  */
 
