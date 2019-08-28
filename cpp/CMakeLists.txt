@@ -15,7 +15,7 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(CUDA_SPATIAL VERSION 0.9.0 LANGUAGES C CXX CUDA)
+project(CUDA_SPATIAL VERSION 0.10.0 LANGUAGES C CXX CUDA)
 
 if(NOT CMAKE_CUDA_COMPILER)
   message(SEND_ERROR "CMake cannot locate a CUDA compiler")
@@ -125,15 +125,15 @@ endif (RMM_INCLUDE AND RMM_LIBRARY)
 
 # - CUDF -------------------------------------------------------------------------------------------
 
-#find_path(CUDF_INCLUDE "cudf"
-#                "$ENV{CONDA_PREFIX}/include/cudf"
-#                "$ENV{CONDA_PREFIX}/include")
+find_path(CUDF_INCLUDE "cudf"
+          "$ENV{CUDF_HOME}/cpp/include"
+          "$ENV{CONDA_PREFIX}/include/cudf"
+          "$ENV{CONDA_PREFIX}/include")
 
-#find_library(CUDF_LIBRARY "cudf"
-#                   "$ENV{CONDA_PREFIX}/lib")
-                   
-SET(CUDF_INCLUDE "$ENV{CONDA_PREFIX}/include")    
-SET(CUDF_LIBRARY "$ENV{CONDA_PREFIX}/lib/libcudf.so")       
+find_library(CUDF_LIBRARY "cudf"
+             "$ENV{CUDF_HOME}/cpp/build"
+             "$ENV{CONDA_PREFIX}/lib")
+                  
 SET(CUDF_SRC_INCLUDE "$ENV{CUDF_HOME}/cpp/src")    
 SET(CUB_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/cub")
 SET(JITIFY_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/jitify")
