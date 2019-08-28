@@ -82,18 +82,18 @@ namespace cuspatial
 		CUDF_EXPECTS(fp!=nullptr,"can not open the input point file");
 		fseek (fp , 0 , SEEK_END);
 		size_t sz=ftell (fp);
-		CUDF_EXPECTS(sz%sizeof(location_3d)==0,"sizeof(location_3d) does not divide file length");
-		int num_ringec = sz/sizeof(location_3d);
+		CUDF_EXPECTS(sz%sizeof(location_3d<T>)==0,"sizeof(location_3d) does not divide file length");
+		int num_ringec = sz/sizeof(location_3d<T>);
 		//std::cout<<"num_ringec="<<num_ringec<<std::endl;
 		fseek (fp , 0 , SEEK_SET);
 
 		lon=new T[num_ringec];
 		lat=new T[num_ringec];
 		CUDF_EXPECTS(lon!=nullptr && lat!=nullptr,"failed to allocation lon/lat arrays");
-		location_3d loc;
+		location_3d<T> loc;
 		for(int i=0;i<num_ringec;i++)
 		{
-			size_t t=fread(&loc,sizeof(location_3d),1,fp);
+			size_t t=fread(&loc,sizeof(location_3d<T>),1,fp);
 			lon[i]=loc.longitude;
 			lat[i]=loc.latitude;
 		}
@@ -120,18 +120,18 @@ namespace cuspatial
 		CUDF_EXPECTS(fp!=nullptr,"can not open the input point file");
 		fseek (fp , 0 , SEEK_END);
 		size_t sz=ftell (fp);
-		CUDF_EXPECTS(sz%sizeof(coord_2d)==0,"sizeof(location_3d) does not divide file length");
-		int num_ringec = sz/sizeof(coord_2d);
+		CUDF_EXPECTS(sz%sizeof(coord_2d<T>)==0,"sizeof(coord_2d<T>) does not divide file length");
+		int num_ringec = sz/sizeof(coord_2d<T>);
 		//std::cout<<"num_rec="<<num_ringec<<std::endl;
 		fseek (fp , 0 , SEEK_SET);
 
 		x=new T[num_ringec];
 		y=new T[num_ringec];
 		CUDF_EXPECTS(x!=nullptr && y!=nullptr,"failed to allocation x/y arrays");
-		coord_2d coor;
+		coord_2d<T> coor;
 		for(int i=0;i<num_ringec;i++)
 		{
-			size_t t=fread(&coor,sizeof(coord_2d),1,fp);
+			size_t t=fread(&coor,sizeof(coord_2d<T>),1,fp);
 			x[i]=coor.x;
 			y[i]=coor.y;
 		}
@@ -257,7 +257,8 @@ namespace cuspatial
 
 	//materialization with three data types/structs: uint32_t, location_3d and its_timestamp
 	template size_t read_field(const char *,uint32_t *&);
-	template size_t read_field(const char *,location_3d*&);
+	template size_t read_field(const char *,location_3d<double>*&);
+	template size_t read_field(const char *,location_3d<float>*&);
 	template size_t read_field(const char *,its_timestamp* &);
 }
 // namespace cuspatial

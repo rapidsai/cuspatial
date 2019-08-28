@@ -72,17 +72,17 @@ namespace cuspatial
 	 *@brief Thrust functor for transforming lon/lat (location_3d) to x/y (coord_2d) relative to an origin
 	 Note: Both x and y are in the unit of kilometers (km)
 	 */
-
-	struct coord_transformation : public thrust::unary_function<location_3d,coord_2d>
+    template <typename T>
+	struct coord_transformation : public thrust::unary_function<location_3d<T>,coord_2d<T> >
 	{
-		location_3d origin;
+		location_3d<T> origin;
 		__host__ __device__
-		coord_transformation(location_3d _origin): origin(_origin){}
+		coord_transformation(location_3d<T> _origin): origin(_origin){}
 
 		__host__ __device__
-		coord_2d operator()(location_3d pt)
+		coord_2d<T> operator()(location_3d<T> pt)
 		{
-		  coord_2d c;
+		  coord_2d<T> c;
 		  c.x = ((origin.longitude - pt.longitude) * 40000.0 *
 			   cos((origin.latitude + pt.latitude) * M_PI / 360) / 360);
 		  c.y = (origin.latitude - pt.latitude) * 40000.0 / 360;

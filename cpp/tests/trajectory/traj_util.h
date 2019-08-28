@@ -14,7 +14,7 @@ namespace cuspatial {
 	 *
 	 * @return negative error code; 0 for success
 	 */
-	int get_camera_origin(const char *df_fn, const char * inter_name, location_3d & camera_origin);
+	int get_camera_origin(const char *df_fn, const char * inter_name, location_3d<double> & camera_origin);
 
 
 	/**
@@ -28,6 +28,6 @@ namespace cuspatial {
 	 * @param[out]  location: out array for ID
 	 * @return the number of records (should be the same for all the three data files)
 	 */
-	size_t read_traj_soa(char *root_fn,int *& objid, its_timestamp *& time, location_3d*&  location);
+	size_t read_traj_soa(char *root_fn,int *& objid, its_timestamp *& time, location_3d<double>*&  location);
 
 } // namespace cuspatial

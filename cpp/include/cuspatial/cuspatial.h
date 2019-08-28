@@ -18,17 +18,19 @@
 
 namespace cuspatial
 {
+	template<typename T>
 	struct location_3d
 	{
-		double latitude;
-		double longitude;
-		double altitude;
+		T latitude;
+		T longitude;
+		T altitude;
 	};
 
+	template<typename T>
 	struct coord_2d
 	{
-		double x;
-		double y;
+		T x;
+		T y;
 	};
 
 	struct its_timestamp
