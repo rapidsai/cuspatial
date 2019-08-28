@@ -30,7 +30,7 @@ using namespace cudf;
 using namespace cuspatial;
 
 template <typename T>
-__global__ void distspeed_kernel(gdf_size_type num_traj,const T* const __restrict__ coord_x,const T* const __restrict__ coord_y,
+__global__ void distspeed_kernel(gdf_size_type num_traj,const T* const __restrict__ x,const T* const __restrict__ y,
 	 const its_timestamp *const __restrict__ time,const uint32_t * const __restrict__ len,const uint32_t * const __restrict__ pos,
 	 T* const __restrict__ dis, T* const __restrict__ sp)
 	 
@@ -57,8 +57,8 @@ __global__ void distspeed_kernel(gdf_size_type num_traj,const T* const __restric
    	 	float ds=0;
    	 	for(int i=0;i<len[pid]-1;i++)
    	 	{
-   	 		float dt=(coord_x[bp+i+1]-coord_x[bp+i])*(coord_x[bp+i+1]-coord_x[bp+i]);
-   	 		dt+=(coord_y[bp+i+1]-coord_y[bp+i])*(coord_y[bp+i+1]-coord_y[bp+i]);
+   	 		float dt=(x[bp+i+1]-x[bp+i])*(x[bp+i+1]-x[bp+i]);
+   	 		dt+=(y[bp+i+1]-y[bp+i])*(y[bp+i+1]-y[bp+i]);
    	 		ds+=sqrt(dt);
    	 	}
    	 	dis[pid]=ds*1000; //km to m
@@ -74,12 +74,12 @@ struct distspeed_functor {
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-    void operator()(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& ts,
+    void operator()(const gdf_column& x,const gdf_column& y,const gdf_column& ts,
  			    const gdf_column& len,const gdf_column& pos,
  			    gdf_column& dist,gdf_column& speed)
     	
     { 
- 	dist.dtype= coord_x.dtype;
+ 	dist.dtype= x.dtype;
   	dist.col_name=(char *)malloc(strlen("dist")+ 1);
 	strcpy(dist.col_name,"dist");    
         RMM_TRY( RMM_ALLOC(&dist.data, len.size * sizeof(col_type), 0) );
@@ -87,7 +87,7 @@ struct distspeed_functor {
      	dist.valid=nullptr;
      	dist.null_count=0;		
 
- 	speed.dtype= coord_x.dtype;
+ 	speed.dtype= x.dtype;
   	speed.col_name=(char *)malloc(strlen("speed")+ 1);
 	strcpy(dist.col_name,"speed");    
         RMM_TRY( RMM_ALLOC(&speed.data, len.size * sizeof(col_type), 0) );
@@ -100,18 +100,17 @@ struct distspeed_functor {
         
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, distspeed_kernel<col_type>) );
-        cudf::util::cuda::grid_config_1d grid{coord_x.size, block_size, 1};
-        std::cout<<"coord_x.size="<<coord_x.size<<" block_size="<<block_size<<std::endl;
+        cudf::util::cuda::grid_config_1d grid{x.size, block_size, 1};
+        std::cout<<"x.size="<<x.size<<" block_size="<<block_size<<std::endl;
        
         distspeed_kernel<col_type> <<< grid.num_blocks, block_size >>> (len.size,
-        	static_cast<col_type*>(coord_x.data),static_cast<col_type*>(coord_y.data),
+        	static_cast<col_type*>(x.data),static_cast<col_type*>(y.data),
         	static_cast<its_timestamp*>(ts.data),static_cast<uint32_t*>(len.data), static_cast<uint32_t*>(pos.data),
    	    	static_cast<col_type*>(dist.data), static_cast<col_type*>(speed.data) );           
         CUDA_TRY( cudaDeviceSynchronize() );
 
 	gettimeofday(&t1, nullptr);
 	float distspeed_kernel_time=calc_time("distspeed_kernel_time in ms=",t0,t1);
-        //CHECK_STREAM(stream);
         
         int num_print=(len.size<10)?len.size:10;
         std::cout<<"showing the first "<< num_print<<" output records"<<std::endl;
@@ -124,7 +123,7 @@ struct distspeed_functor {
     }
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
-    void operator()(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& ts,
+    void operator()(const gdf_column& x,const gdf_column& y,const gdf_column& ts,
  			    const gdf_column& len,const gdf_column& pos,
  			    gdf_column& dist,gdf_column& speed)
     {
@@ -140,26 +139,26 @@ struct distspeed_functor {
  
 namespace cuspatial {
 
-void traj_distspeed(const gdf_column& coord_x,const gdf_column& coord_y,const gdf_column& ts,
+void traj_distspeed(const gdf_column& x,const gdf_column& y,const gdf_column& ts,
  			    const gdf_column& len,const gdf_column& pos,gdf_column& dist,gdf_column& speed)
  			    
 {       
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);
     
-    CUDF_EXPECTS(coord_x.data != nullptr &&coord_y.data!=nullptr && ts.data!=nullptr && len.data!=nullptr && pos.data!=nullptr,
-    	"coord_x/coord_y/ts/len/pos data can not be null");
-    CUDF_EXPECTS(coord_x.size == coord_y.size && coord_x.size==ts.size ,"coord_x/coord_y/ts must have the same size");
+    CUDF_EXPECTS(x.data != nullptr &&y.data!=nullptr && ts.data!=nullptr && len.data!=nullptr && pos.data!=nullptr,
+    	"x/y/ts/len/pos data can not be null");
+    CUDF_EXPECTS(x.size == y.size && x.size==ts.size ,"x/y/ts must have the same size");
     CUDF_EXPECTS(len.size == pos.size ,"len/pos must have the same size");
      
-    //future versions might allow coord_x/coord_y/ts/pos/len have null_count>0, which might be useful for taking query results as inputs 
-    CUDF_EXPECTS(coord_x.null_count == 0 && coord_y.null_count == 0 && ts.null_count==0 && len.null_count==0 &&  pos.null_count==0,
-    	"this version does not support coord_x/coord_y/ts/len/pos contains nulls");
+    //future versions might allow x/y/ts/pos/len have null_count>0, which might be useful for taking query results as inputs 
+    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 && ts.null_count==0 && len.null_count==0 &&  pos.null_count==0,
+    	"this version does not support x/y/ts/len/pos contains nulls");
     
-    CUDF_EXPECTS(coord_x.size >= pos.size ,"one trajectory must have at least one point");
+    CUDF_EXPECTS(x.size >= pos.size ,"one trajectory must have at least one point");
  
   
-    cudf::type_dispatcher(coord_x.dtype, distspeed_functor(), coord_x,coord_y,ts,len,pos,dist,speed/*,stream */);
+    cudf::type_dispatcher(x.dtype, distspeed_functor(), x,y,ts,len,pos,dist,speed);
     
     gettimeofday(&t1, nullptr);
     float distspeed_end2end_time=calc_time("C++ traj_distspeed end-to-end time in ms=",t0,t1);

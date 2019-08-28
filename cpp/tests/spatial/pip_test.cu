@@ -45,61 +45,61 @@ struct PIPTest : public GdfTest
      std::cout<<"GPU total_mem="<<total_mem<<std::endl;
      std::cout<<"beginning GPU free_mem="<<free_mem<<std::endl;
      
-      struct timeval t0,t1,t2;
-      gettimeofday(&t0, nullptr);
-      read_polygon_soa<T>(poly_filename,polygon);
-      gettimeofday(&t1, nullptr);
-      float ply_load_time=cuspatial::calc_time("polygon data loading time=", t0,t1);
-      CUDF_EXPECTS(polygon.num_feature>0 && polygon.num_ring>0,"invalid # of polygons/rings");
-      CUDF_EXPECTS(polygon.num_feature<=polygon.num_ring,"a polygon must have at least one ring_length");
-      CUDF_EXPECTS(polygon.y!=nullptr && polygon.y!=nullptr,"polygon vertex x/y array can not be nullptr");
+     struct timeval t0,t1,t2;
+     gettimeofday(&t0, nullptr);
+     read_polygon_soa<T>(poly_filename,polygon);
+     gettimeofday(&t1, nullptr);
+     float ply_load_time=cuspatial::calc_time("polygon data loading time=", t0,t1);
+     CUDF_EXPECTS(polygon.num_feature>0 && polygon.num_ring>0,"invalid # of polygons/rings");
+     CUDF_EXPECTS(polygon.num_feature<=polygon.num_ring,"a polygon must have at least one ring_length");
+     CUDF_EXPECTS(polygon.y!=nullptr && polygon.y!=nullptr,"polygon vertex x/y array can not be nullptr");
     
-      //from len to pos using inclusive scan (partial sum)
-      //support both in-place (saving memory) and regular
-      //for in-place prefix sum (pos and len arrays point to the same mem addresses)
-      if(polygon.is_inplace)
-      {
-		polygon.group_position=polygon.group_length;
-		polygon.feature_position=polygon.feature_length;
-		polygon.ring_position=polygon.ring_length;
-      }
-      else
-      {
-		polygon.group_position=new uint[polygon.num_group];
-		polygon.feature_position=new uint[polygon.num_feature];
-		polygon.ring_position=new uint[polygon.num_ring];
-      }
+     //from len to pos using inclusive scan (partial sum)
+     //support both in-place (saving memory) and regular
+     //for in-place prefix sum (pos and len arrays point to the same mem addresses)
+     if(polygon.is_inplace)
+     {
+         polygon.group_position=polygon.group_length;
+	 polygon.feature_position=polygon.feature_length;
+	 polygon.ring_position=polygon.ring_length;
+     }
+     else
+     {
+	 polygon.group_position=new uint[polygon.num_group];
+	 polygon.feature_position=new uint[polygon.num_feature];
+	 polygon.ring_position=new uint[polygon.num_ring];
+     }
 
-      std::partial_sum(polygon.group_length,polygon.group_length+polygon.num_group,polygon.group_position,std::plus<uint>());
-      std::partial_sum(polygon.feature_length,polygon.feature_length+polygon.num_feature,polygon.feature_position,std::plus<uint>());
-      std::partial_sum(polygon.ring_length,polygon.ring_length+polygon.num_ring,polygon.ring_position,std::plus<uint>());
+     std::partial_sum(polygon.group_length,polygon.group_length+polygon.num_group,polygon.group_position,std::plus<uint>());
+     std::partial_sum(polygon.feature_length,polygon.feature_length+polygon.num_feature,polygon.feature_position,std::plus<uint>());
+     std::partial_sum(polygon.ring_length,polygon.ring_length+polygon.num_ring,polygon.ring_position,std::plus<uint>());
 
-      /*printf("after partial sum\n");
-      printf("num_group=%d\n",polygon.num_group);
-      for(int i=0;i<polygon.num_group;i++)
-		printf("(%u %u)",polygon.group_length[i],polygon.group_position[i]);
-      printf("\n");
+     /*printf("after partial sum\n");
+     printf("num_group=%d\n",polygon.num_group);
+     for(int i=0;i<polygon.num_group;i++)
+	printf("(%u %u)",polygon.group_length[i],polygon.group_position[i]);
+     printf("\n");
 
-      printf("num_feature=%d\n",polygon.num_feature);
-      for(int i=0;i<polygon.num_feature;i++)
-		printf("(%u %u)",polygon.feature_length[i],polygon.feature_position[i]);
-      printf("\n");
-      printf("num_ring=%d\n",polygon.num_ring);
-      for(int i=0;i<polygon.num_ring;i++)
+     printf("num_feature=%d\n",polygon.num_feature);
+     for(int i=0;i<polygon.num_feature;i++)
+	printf("(%u %u)",polygon.feature_length[i],polygon.feature_position[i]);
+     printf("\n");
+     printf("num_ring=%d\n",polygon.num_ring);
+     for(int i=0;i<polygon.num_ring;i++)
 		printf("(%u %u)",polygon.ring_length[i],polygon.ring_position[i]);
-      printf("\n");*/
+     printf("\n");*/
  
-      point_len=read_point_lonlat<T>(point_filename,x,y);
-      std::cout<<"point_len="<<point_len<<std::endl;
-      CUDF_EXPECTS(point_len>0,"# of points must be greater than 0");
-      CUDF_EXPECTS(y!=nullptr && y!=nullptr,"point x/y array can not be nullptr");
+     point_len=read_point_lonlat<T>(point_filename,x,y);
+     //std::cout<<"point_len="<<point_len<<std::endl;
+     CUDF_EXPECTS(point_len>0,"# of points must be greater than 0");
+     CUDF_EXPECTS(y!=nullptr && y!=nullptr,"point x/y array can not be nullptr");
       
-      /*for(int i=0;i<10;i++)
-       std::cerr<<i<<","<<x[i].longitude<<","<<y[i].lat<<std::endl;*/
+     /*for(int i=0;i<10;i++)
+     std::cerr<<i<<","<<x[i].longitude<<","<<y[i].lat<<std::endl;*/
       
-      gettimeofday(&t2, nullptr);
-      float pnt_load_time=cuspatial::calc_time("point data loading time ......",t1,t2);      
-      return (0);
+     gettimeofday(&t2, nullptr);
+     float pnt_load_time=cuspatial::calc_time("point data loading time ......",t1,t2);      
+     return (0);
     }
     
     void exec_gpu_pip(uint *& gpu_pip_res)
@@ -119,7 +119,7 @@ struct PIPTest : public GdfTest
         cudf::test::column_wrapper<T> polygon_y_wrapp{ply_y_v};
         cudf::test::column_wrapper<T> point_x_wrapp{pnt_x_v};
         cudf::test::column_wrapper<T> point_y_wrapp{pnt_y_v};
-        std::cout<<"point_x_wrapp type="<<point_x_wrapp.get()->dtype<<std::endl;
+        //std::cout<<"point_x_wrapp type="<<point_x_wrapp.get()->dtype<<std::endl;
         
         gdf_column res_bm1 = cuspatial::pip_bm( 
         	*(point_x_wrapp.get()), *(point_y_wrapp.get()),

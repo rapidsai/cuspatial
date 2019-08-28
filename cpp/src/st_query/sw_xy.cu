@@ -69,16 +69,16 @@ struct sw_xy_functor {
         std::cout<<"#hits="<<num_hits<<std::endl;
    
         out_x.dtype= in_x.dtype;
-        out_x.col_name=(char *)malloc(strlen("coord_x")+ 1);
-       	strcpy(out_x.col_name,"coord_x");    
+        out_x.col_name=(char *)malloc(strlen("x")+ 1);
+       	strcpy(out_x.col_name,"x");    
         RMM_TRY( RMM_ALLOC(&out_x.data, num_hits* sizeof(col_type), 0) );
         out_x.size=in_x.size;
         out_x.valid=nullptr;
         out_x.null_count=0;		
        
         out_y.dtype= in_y.dtype;
-        out_y.col_name=(char *)malloc(strlen("coord_y")+ 1);
-       	strcpy(out_x.col_name,"coord_x");    
+        out_y.col_name=(char *)malloc(strlen("y")+ 1);
+       	strcpy(out_x.col_name,"x");    
         RMM_TRY( RMM_ALLOC(&out_y.data, num_hits*sizeof(col_type), 0) );
         out_y.size=in_y.size;
         out_y.valid=nullptr;
@@ -92,7 +92,6 @@ struct sw_xy_functor {
         
 	gettimeofday(&t1, nullptr);
 	float swxy_kernel_time=calc_time("swxy kernel time in ms=",t0,t1);
-        //CHECK_STREAM(stream);
     
         std::cout<<"showing the first "<< num_print<<" output records"<<std::endl;
         std::cout<<"x:"<<std::endl;
@@ -134,7 +133,7 @@ int sw_xy(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_
     CUDF_EXPECTS(in_x.null_count == 0 && in_y.null_count == 0, "this version does not support point data that contains nulls");
     
     int num_traj = cudf::type_dispatcher( in_x.dtype, sw_xy_functor(), 
-    		x1,y1,x2,y2,in_x,in_y, out_x,out_y/*,stream */);
+    		x1,y1,x2,y2,in_x,in_y, out_x,out_y);
     		
     gettimeofday(&t1, nullptr);
     float swxy_end2end_time=calc_time("C++ sw_xy end-to-end time in ms= ",t0,t1);

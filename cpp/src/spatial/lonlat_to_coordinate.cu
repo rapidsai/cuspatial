@@ -64,16 +64,16 @@ struct ll2coord_functor {
         thrust::copy(in_lat_ptr,in_lat_ptr+10,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;  
  
  	out_x.dtype= in_lon.dtype;
-  	out_x.col_name=(char *)malloc(strlen("coord_x")+ 1);
-	strcpy(out_x.col_name,"coord_x");    
+  	out_x.col_name=(char *)malloc(strlen("x")+ 1);
+	strcpy(out_x.col_name,"x");    
         RMM_TRY( RMM_ALLOC(&out_x.data, in_lon.size * sizeof(col_type), 0) );
      	out_x.size=in_lon.size;
      	out_x.valid=nullptr;
      	out_x.null_count=0;		
 
  	out_y.dtype= in_lat.dtype;
-  	out_y.col_name=(char *)malloc(strlen("coord_y")+ 1);
-	strcpy(out_x.col_name,"coord_x");    
+  	out_y.col_name=(char *)malloc(strlen("y")+ 1);
+	strcpy(out_x.col_name,"x");    
         RMM_TRY( RMM_ALLOC(&out_y.data, in_lon.size * sizeof(col_type), 0) );
      	out_y.size=in_lat.size;
      	out_y.valid=nullptr;
@@ -95,7 +95,6 @@ struct ll2coord_functor {
 
 	gettimeofday(&t1, nullptr);
 	float ll2coord_kernel_time=calc_time("lon/lat to x/y conversion kernel time in ms=",t0,t1);
-        //CHECK_STREAM(stream);
         
         num_print=(out_x.size<10)?out_x.size:10;
         std::cout<<"ll2coord: showing the first "<< num_print<<" output records"<<std::endl;
@@ -142,7 +141,7 @@ std::pair<gdf_column,gdf_column> lonlat_to_coord(const gdf_scalar& cam_lon, cons
     //future versions might allow in_(x/y) have null_count>0, which might be useful for taking query results as inputs 
     CUDF_EXPECTS(in_lon.null_count == 0 && in_lat.null_count == 0, "this version does not support point in_lon/in_lat contains nulls");
     
-    auto res=cudf::type_dispatcher(in_lon.dtype, ll2coord_functor(), cam_lon,cam_lat,in_lon,in_lat/*,stream */);
+    auto res=cudf::type_dispatcher(in_lon.dtype, ll2coord_functor(), cam_lon,cam_lat,in_lon,in_lat);
     
     // handle null_count if needed 
      

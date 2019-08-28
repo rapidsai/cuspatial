@@ -38,18 +38,18 @@ struct coor2traj_functor {
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-    int operator()(gdf_column& coord_x,gdf_column& coord_y,gdf_column& oid, gdf_column& ts, 
+    int operator()(gdf_column& x,gdf_column& y,gdf_column& oid, gdf_column& ts, 
  			    gdf_column& tid, gdf_column& len,gdf_column& pos)
     {        
         int num_print=(oid.size<10)?oid.size:10;
         std::cout<<"showing the first "<< num_print<<" input records before sort"<<std::endl;
 
         std::cout<<"x"<<std::endl;
-        thrust::device_ptr<col_type> coorx_ptr=thrust::device_pointer_cast(static_cast<col_type*>(coord_x.data));
-        thrust::copy(coorx_ptr,coorx_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;  
+        thrust::device_ptr<col_type> x_ptr=thrust::device_pointer_cast(static_cast<col_type*>(x.data));
+        thrust::copy(x_ptr,x_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;  
         std::cout<<"y"<<std::endl;
-        thrust::device_ptr<col_type> coory_ptr=thrust::device_pointer_cast(static_cast<col_type*>(coord_y.data));
-        thrust::copy(coory_ptr,coory_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;  
+        thrust::device_ptr<col_type> y_ptr=thrust::device_pointer_cast(static_cast<col_type*>(y.data));
+        thrust::copy(y_ptr,y_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;  
 	
 	std::cout<<"oid"<<std::endl;
         thrust::device_ptr<uint32_t> id_ptr=thrust::device_pointer_cast(static_cast<uint32_t*>(oid.data));
@@ -62,9 +62,9 @@ struct coor2traj_functor {
         gettimeofday(&t0, nullptr);
         
         uint32_t num_rec=oid.size;
-        auto od_it=thrust::make_zip_iterator(thrust::make_tuple(id_ptr,coorx_ptr,coory_ptr));
+        auto od_it=thrust::make_zip_iterator(thrust::make_tuple(id_ptr,x_ptr,y_ptr));
         thrust::stable_sort_by_key(time_ptr,time_ptr+num_rec,od_it);
-        auto tl_it=thrust::make_zip_iterator(thrust::make_tuple(time_ptr,coorx_ptr,coory_ptr));
+        auto tl_it=thrust::make_zip_iterator(thrust::make_tuple(time_ptr,x_ptr,y_ptr));
         thrust::stable_sort_by_key(id_ptr,id_ptr+num_rec,tl_it);
         
         //allocate sufficient memory to hold id,cnt and pos before reduce_by_key        
@@ -107,13 +107,12 @@ struct coor2traj_functor {
       
 	gettimeofday(&t1, nullptr);
         float coor2traj_kernel_time=calc_time("coord_to_traj kernel time in ms=",t0,t1);
-        //CHECK_STREAM(stream);
     
    	std::cout<<"showing the first "<< num_print<<" records aftr sort"<<std::endl;
         std::cout<<"x"<<std::endl;
-        thrust::copy(coorx_ptr,coorx_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;  
+        thrust::copy(x_ptr,x_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;  
         std::cout<<"y"<<std::endl;
-        thrust::copy(coory_ptr,coory_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;  
+        thrust::copy(y_ptr,y_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;  
     	
     	std::cout<<"oid"<<std::endl;
         thrust::copy(id_ptr,id_ptr+num_print,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;  
@@ -133,7 +132,7 @@ struct coor2traj_functor {
     }
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
-    int operator()(gdf_column& coord_x,gdf_column& coord_y,gdf_column& oid, gdf_column& ts, 
+    int operator()(gdf_column& x,gdf_column& y,gdf_column& oid, gdf_column& ts, 
  			    gdf_column& tid, gdf_column& len,gdf_column& pos)
     {
         CUDF_FAIL("Non-floating point operation is not supported");
@@ -149,22 +148,21 @@ namespace cuspatial {
  * see trajectory.hpp
 */
 
-int coord_to_traj(gdf_column& coord_x,gdf_column& coord_y,gdf_column& oid, gdf_column& ts, 
+int coord_to_traj(gdf_column& x,gdf_column& y,gdf_column& oid, gdf_column& ts, 
  			    gdf_column& tid,gdf_column& len,gdf_column& pos)
 {       
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);
     
-    CUDF_EXPECTS(coord_x.data != nullptr &&coord_y.data!=nullptr&&oid.data!=nullptr&&ts.data!=nullptr, "coord_x/coord_y/oid/ts data can not be null");
-    CUDF_EXPECTS(coord_x.size == coord_y.size && coord_x.size==oid.size && coord_x.size==ts.size ,"coord_x/coord_y/oid/ts must have the same size");
+    CUDF_EXPECTS(x.data != nullptr &&y.data!=nullptr&&oid.data!=nullptr&&ts.data!=nullptr, "x/y/oid/ts data can not be null");
+    CUDF_EXPECTS(x.size == y.size && x.size==oid.size && x.size==ts.size ,"x/y/oid/ts must have the same size");
     
-    //future versions might allow coord_x/coord_y/oid/ts have null_count>0, which might be useful for taking query results as inputs 
-    CUDF_EXPECTS(coord_x.null_count == 0 && coord_y.null_count == 0 && oid.null_count==0 && ts.null_count==0, 
-    	"this version does not support coord_x/coord_y/oid/ts contains nulls");
+    //future versions might allow x/y/oid/ts have null_count>0, which might be useful for taking query results as inputs 
+    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 && oid.null_count==0 && ts.null_count==0, 
+    	"this version does not support x/y/oid/ts contains nulls");
     
-    int num_traj = cudf::type_dispatcher( coord_x.dtype, coor2traj_functor(), 
-    		coord_x,coord_y,oid,ts,tid,len,pos /*,stream */);
-    		
+    int num_traj = cudf::type_dispatcher( x.dtype, coor2traj_functor(), x,y,oid,ts,tid,len,pos);
+    		    		
     gettimeofday(&t1, nullptr);
     float coor2traj_end2end_time=calc_time("coord_to_traj end-to-end time in ms=",t0,t1);
     

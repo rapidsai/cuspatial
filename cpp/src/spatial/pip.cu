@@ -134,7 +134,6 @@ struct pip_functor {
 	gettimeofday(&t1, nullptr);	
  	float pip_kernel_time=calc_time("pip_kernel_time in ms=",t0,t1);
         
-        //CHECK_STREAM(stream);
         /*thrust::device_ptr<uint32_t> d_resbm_ptr=thrust::device_pointer_cast(static_cast<uint32_t*>(res_bm.data));
         thrust::copy(d_resbm_ptr,d_resbm_ptr+pnt_x.size,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;*/       
  
@@ -184,7 +183,7 @@ gdf_column pip_bm(const gdf_column& pnt_x,const gdf_column& pnt_y,
     CUDF_EXPECTS(ply_x.null_count == 0 && ply_y.null_count == 0, "polygon should not contain nulls");
     
     gdf_column res_bm = cudf::type_dispatcher( pnt_x.dtype, pip_functor(), 
-    		pnt_x,pnt_y,ply_fpos,ply_rpos,ply_x,ply_y /*,stream */);
+    		pnt_x,pnt_y,ply_fpos,ply_rpos,ply_x,ply_y);
     		
     gettimeofday(&t1, nullptr);
     float pip_end2end_time=calc_time("C++ pip_bm end-to-end time in ms=",t0,t1);

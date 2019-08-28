@@ -51,12 +51,7 @@ namespace cuspatial {
 	int read_csv(const char *fn, std::vector<std::string> cols,int num_col,std::map<std::string,std::vector<std::string>>& df)
 	{
 	   FILE *fp=fopen(fn,"r");
-	   if(fp==NULL)
-	   {
-			//printf("can not open camera file %s\n",fn);
-			std::cout<<"can not open camera file "<<fn<<std::endl;
-			return(-1);
-	   }
+	   CUDF_EXPECTS(fp!= nullptr,"can not open camera file");
 	   char line_str[3000];
 	   std::vector<std::string> tokens;
 	   char *tmp=fgets(line_str,3000,fp);
