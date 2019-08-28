@@ -122,7 +122,7 @@ namespace cuspatial
 		size_t sz=ftell (fp);
 		CUDF_EXPECTS(sz%sizeof(coord_2d)==0,"sizeof(location_3d) does not divide file length");
 		int num_ringec = sz/sizeof(coord_2d);
-		std::cout<<"num_ringec="<<num_ringec<<std::endl;
+		//std::cout<<"num_rec="<<num_ringec<<std::endl;
 		fseek (fp , 0 , SEEK_SET);
 
 		x=new T[num_ringec];
@@ -244,7 +244,7 @@ namespace cuspatial
 		size_t sz=ftell (fp);
 		CUDF_EXPECTS(sz%sizeof(T)==0,"sizeof(T) does not divide file length");
 		size_t num_ringec = sz/sizeof(T);
-		std::cout<<"num_ringec="<<num_ringec<<std::endl;
+		//std::cout<<"num_rec="<<num_ringec<<std::endl;
 		fseek (fp , 0 , SEEK_SET);
 
 		field=new T[num_ringec];

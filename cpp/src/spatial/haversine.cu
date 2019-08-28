@@ -98,7 +98,6 @@ struct haversine_functor {
 	gettimeofday(&t1, NULL);	
  	float haversine_distance_kernel_time=calc_time("haversine_distance_kernel_time in ms=",t0,t1);
         
-        //CHECK_STREAM(stream);
         std::cout<<"haversine distance:"<<std::endl;
         thrust::device_ptr<col_type> d_hdist_ptr=thrust::device_pointer_cast(static_cast<col_type*>(data));
         thrust::copy(d_hdist_ptr,d_hdist_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;     
@@ -137,7 +136,7 @@ gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,const gd
     //future versions might allow pnt_(x/y) have null_count>0, which might be useful for taking query results as inputs 
     CUDF_EXPECTS(x1.null_count == 0 && y1.null_count == 0 && x2.null_count == 0 && y2.null_count == 0, "this version does not support x1/x2/y1/y2 contains nulls");
     
-    gdf_column h_d = cudf::type_dispatcher( x1.dtype, haversine_functor(), x1,y1,x2,y2 /*,stream */);
+    gdf_column h_d = cudf::type_dispatcher( x1.dtype, haversine_functor(), x1,y1,x2,y2);
     		
     gettimeofday(&t1, NULL);
     float haversine_end2end_time=calc_time("C++ haversine_distance end-to-end time in ms=",t0,t1);

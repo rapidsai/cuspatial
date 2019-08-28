@@ -188,7 +188,7 @@ gdf_column directed_hausdorff_distance(const gdf_column& x,const gdf_column& y,c
     CUDF_EXPECTS(x.size >= vertex_counts.size ,"one trajectory must have at least one point");
  
   
-    gdf_column dist =cudf::type_dispatcher(x.dtype, Hausdorff_functor(), x,y,vertex_counts/*,stream */);
+    gdf_column dist =cudf::type_dispatcher(x.dtype, Hausdorff_functor(), x,y,vertex_counts);
     
     gettimeofday(&t1, nullptr);
     float Hausdorff_end2end_time=calc_time("C++ Hausdorff end-to-end time in ms=",t0,t1);

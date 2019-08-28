@@ -30,11 +30,11 @@ using namespace cudf;
 using namespace cuspatial;
 
 /**
- * @Brief CUDA kernel for computing spatial bounding boxes of trjectories
+ * @Brief CUDA kernel for computing spatial bounding boxes of trajectories
  */
 
 template <typename T>
-__global__ void sbbox_kernel(gdf_size_type num_traj,const T* const __restrict__ coord_x,const T* const __restrict__ coord_y,
+__global__ void sbbox_kernel(gdf_size_type num_traj,const T* const __restrict__ x,const T* const __restrict__ y,
 	 const uint32_t * const __restrict__ len,const uint32_t * const __restrict__ pos,
 	 T* const __restrict__ bbox_x1, T* const __restrict__ bbox_y1,T* const __restrict__ bbox_x2, T* const __restrict__ bbox_y2)
 	 
@@ -44,15 +44,15 @@ __global__ void sbbox_kernel(gdf_size_type num_traj,const T* const __restrict__ 
    	 int bp=(pid==0)?0:pos[pid-1];
    	 int ep=pos[pid];
 
-   	 bbox_x2[pid]=bbox_x1[pid]=coord_x[bp];
-   	 bbox_y2[pid]=bbox_y1[pid]=coord_y[bp];
+   	 bbox_x2[pid]=bbox_x1[pid]=x[bp];
+   	 bbox_y2[pid]=bbox_y1[pid]=y[bp];
    
    	 for(int i=bp+1;i<ep;i++)
    	 {
-   	 	if(bbox_x1[pid]>coord_x[i]) bbox_x1[pid]=coord_x[i];
-   	 	if(bbox_x2[pid]<coord_x[i]) bbox_x2[pid]=coord_x[i];
-   	 	if(bbox_y1[pid]>coord_y[i]) bbox_y1[pid]=coord_y[i];
-   	 	if(bbox_y2[pid]<coord_y[i]) bbox_y2[pid]=coord_y[i];
+   	 	if(bbox_x1[pid]>x[i]) bbox_x1[pid]=x[i];
+   	 	if(bbox_x2[pid]<x[i]) bbox_x2[pid]=x[i];
+   	 	if(bbox_y1[pid]>y[i]) bbox_y1[pid]=y[i];
+   	 	if(bbox_y2[pid]<y[i]) bbox_y2[pid]=y[i];
     	 }
 }
 
@@ -64,12 +64,12 @@ struct sbbox_functor {
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-    void operator()(const gdf_column& coord_x,const gdf_column& coord_y,
+    void operator()(const gdf_column& x,const gdf_column& y,
  		const gdf_column& len,const gdf_column& pos,
 		gdf_column& bbox_x1,gdf_column& bbox_y1,gdf_column& bbox_x2,gdf_column& bbox_y2)
     	
     { 
- 	bbox_x1.dtype= coord_x.dtype;
+ 	bbox_x1.dtype= x.dtype;
   	bbox_x1.col_name=(char *)malloc(strlen("bbox_x1")+ 1);
 	strcpy(bbox_x1.col_name,"bbox_x1");    
         RMM_TRY( RMM_ALLOC(&bbox_x1.data, len.size * sizeof(col_type), 0) );
@@ -77,7 +77,7 @@ struct sbbox_functor {
      	bbox_x1.valid=nullptr;
      	bbox_x1.null_count=0;		
 	
-	bbox_x2.dtype= coord_x.dtype;
+	bbox_x2.dtype= x.dtype;
   	bbox_x2.col_name=(char *)malloc(strlen("bbox_x2")+ 1);
 	strcpy(bbox_x2.col_name,"bbox_x2");    
         RMM_TRY( RMM_ALLOC(&bbox_x2.data, len.size * sizeof(col_type), 0) );
@@ -85,7 +85,7 @@ struct sbbox_functor {
      	bbox_x2.valid=nullptr;
      	bbox_x2.null_count=0;		
  	
-	bbox_y1.dtype= coord_x.dtype;
+	bbox_y1.dtype= x.dtype;
   	bbox_y1.col_name=(char *)malloc(strlen("bbox_y1")+ 1);
 	strcpy(bbox_y1.col_name,"bbox_y1");    
         RMM_TRY( RMM_ALLOC(&bbox_y1.data, len.size * sizeof(col_type), 0) );
@@ -93,7 +93,7 @@ struct sbbox_functor {
      	bbox_y1.valid=nullptr;
      	bbox_y1.null_count=0;		
 	
-	bbox_y2.dtype= coord_x.dtype;
+	bbox_y2.dtype= x.dtype;
   	bbox_y2.col_name=(char *)malloc(strlen("bbox_y2")+ 1);
 	strcpy(bbox_y2.col_name,"bbox_y2");    
         RMM_TRY( RMM_ALLOC(&bbox_y2.data, len.size * sizeof(col_type), 0) );
@@ -106,17 +106,16 @@ struct sbbox_functor {
         
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, sbbox_kernel<col_type>) );
-        cudf::util::cuda::grid_config_1d grid{coord_x.size, block_size, 1};
-        std::cout<<"coord_x.size="<<coord_x.size<<" block_size="<<block_size<<std::endl;
+        cudf::util::cuda::grid_config_1d grid{x.size, block_size, 1};
+        std::cout<<"x.size="<<x.size<<" block_size="<<block_size<<std::endl;
        
         sbbox_kernel<col_type> <<< grid.num_blocks, block_size >>> (len.size,
-        	static_cast<col_type*>(coord_x.data),static_cast<col_type*>(coord_y.data),static_cast<uint32_t*>(len.data), static_cast<uint32_t*>(pos.data),
+        	static_cast<col_type*>(x.data),static_cast<col_type*>(y.data),static_cast<uint32_t*>(len.data), static_cast<uint32_t*>(pos.data),
    	    	static_cast<col_type*>(bbox_x1.data), static_cast<col_type*>(bbox_y1.data),static_cast<col_type*>(bbox_x2.data), static_cast<col_type*>(bbox_y2.data) );           
         CUDA_TRY( cudaDeviceSynchronize() );
 
 	gettimeofday(&t1, nullptr);
 	float sbbox_kernel_time=calc_time("spatial bbox kernel time in ms=",t0,t1);
-        //CHECK_STREAM(stream);
         
         int num_print=(len.size<10)?len.size:10;
         std::cout<<"showing the first "<< num_print<<" output records"<<std::endl;
@@ -135,7 +134,7 @@ struct sbbox_functor {
     }
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
-    void operator()(const gdf_column& coord_x,const gdf_column& coord_y,
+    void operator()(const gdf_column& x,const gdf_column& y,
  		const gdf_column& len,const gdf_column& pos,
 		gdf_column& bbox_x1,gdf_column& bbox_y1,gdf_column& bbox_x2,gdf_column& bbox_y2)
     {
@@ -147,29 +146,29 @@ struct sbbox_functor {
 namespace cuspatial {
 
 /**
- * @Brief computing spatial bounding boxes of trjectories
+ * @Brief computing spatial bounding boxes of trajectories
  * see trajectory.hpp
  */
  
-void traj_sbbox(const gdf_column& coord_x,const gdf_column& coord_y,
+void traj_sbbox(const gdf_column& x,const gdf_column& y,
  			const gdf_column& len,const gdf_column& pos,
 			gdf_column& bbox_x1,gdf_column& bbox_y1,gdf_column& bbox_x2,gdf_column& bbox_y2)
 {       
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);
    
-    CUDF_EXPECTS(coord_x.data != nullptr &&coord_y.data!=nullptr && len.data!=nullptr && pos.data!=nullptr,
-    	"coord_x/coord_y/len/pos data can not be null");
-    CUDF_EXPECTS(coord_x.size == coord_y.size ,"coord_x/coord_y/ must have the same size");
+    CUDF_EXPECTS(x.data != nullptr &&y.data!=nullptr && len.data!=nullptr && pos.data!=nullptr,
+    	"x/y/len/pos data can not be null");
+    CUDF_EXPECTS(x.size == y.size ,"x/y/ must have the same size");
     CUDF_EXPECTS(len.size == pos.size ,"len/pos must have the same size");
      
-    //future versions might allow coord_x/coord_y/pos/len have null_count>0, which might be useful for taking query results as inputs 
-    CUDF_EXPECTS(coord_x.null_count == 0 && coord_y.null_count == 0 && len.null_count==0 &&  pos.null_count==0,
-    	"this version does not support coord_x/coord_y/len/pos contains nulls");
+    //future versions might allow x/y/pos/len have null_count>0, which might be useful for taking query results as inputs 
+    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 && len.null_count==0 &&  pos.null_count==0,
+    	"this version does not support x/y/len/pos contains nulls");
     
-    CUDF_EXPECTS(coord_x.size >= pos.size ,"one trajectory must have at least one point");  
+    CUDF_EXPECTS(x.size >= pos.size ,"one trajectory must have at least one point");  
     
-    cudf::type_dispatcher(coord_x.dtype, sbbox_functor(), coord_x,coord_y,len,pos,bbox_x1,bbox_y1,bbox_x2,bbox_y2/*,stream */);
+    cudf::type_dispatcher(x.dtype, sbbox_functor(), x,y,len,pos,bbox_x1,bbox_y1,bbox_x2,bbox_y2);
     
     // handle null_count if needed 
      

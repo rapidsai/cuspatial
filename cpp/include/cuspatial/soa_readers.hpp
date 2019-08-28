@@ -22,10 +22,10 @@
 namespace cuspatial {
 
 	/**
-	*@Brief read uint32_t (unsigned integer with 32 bit fixed length) data from file as column;
+	*@Brief read uint32_t data from file as column; mostly for identifiers, lengths and positions.
     *mostly for identifiers, lengths and positions.
     *@param[in] col_fn: file name of uint32_t column data
-    *@param[out] ids: gdf_column storing the uint32_t column
+    * @return gdf_column storing the uint32_t data
 	*/
 	void read_uint_soa(const char *col_fn, gdf_column& ids);
 
