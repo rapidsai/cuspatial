@@ -152,7 +152,7 @@ struct pip_functor {
 
 
 /**
- * @Brief Point-in-Polygon (PIP) tests among a vector/array of points and a vector/array of polygons
+ * @brief Point-in-Polygon (PIP) tests among a vector/array of points and a vector/array of polygons
  * see pip.hpp
 */
 

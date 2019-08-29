@@ -21,7 +21,7 @@ namespace cuspatial {
 
 
 /**
- * @Brief transform 2D longitude/latitude coordinates to x/y coordinates relative to a camera origin
+ * @brief transform 2D longitude/latitude coordinates to x/y coordinates relative to a camera origin
 
  * @param[in] cam_lon: longitude of camera origin
  * @param[in] cam_lat: latitude of camera origin

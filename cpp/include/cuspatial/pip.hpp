@@ -20,7 +20,7 @@
 namespace cuspatial {
 
 /**
- * @Brief Point-in-Polygon (PIP) tests among a vector/array of points and a vector/array of polygons
+ * @brief Point-in-Polygon (PIP) tests among a vector/array of points and a vector/array of polygons
 
  * @param[in] pnt_x: pointer/array of x coordinates of points
  * @param[in] pnt_y: pointer/array of y coordinates of points

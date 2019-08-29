@@ -22,8 +22,8 @@
 #include <time.h>
 
 #include <cuspatial/shared_util.h>
-#include <cuspatial/traj_thrust.h>
 #include <cuspatial/trajectory.hpp>
+#include <include/trajectory_thrust.cuh>
 
 using namespace std; 
 using namespace cudf;
@@ -133,13 +133,14 @@ struct distspeed_functor {
     
 
 /**
- * @Brief computing distance(length) and speed of trajectories after their formation (e.g., from coord_to_traj)
+ * @brief computing distance(length) and speed of trajectories after their formation (e.g., from coord_to_traj)
+ *
  * see trajectory.hpp
  */
  
 namespace cuspatial {
 
-void traj_distspeed(const gdf_column& x,const gdf_column& y,const gdf_column& ts,
+void trajectory_distance_and_speed(const gdf_column& x,const gdf_column& y,const gdf_column& ts,
  			    const gdf_column& len,const gdf_column& pos,gdf_column& dist,gdf_column& speed)
  			    
 {       

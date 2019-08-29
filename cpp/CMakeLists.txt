@@ -259,17 +259,17 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 
 add_library(cuspatial SHARED
             src/shared/shared_util.cpp
-            src/io/soa/ply_soa_reader.cu
-            src/io/soa/pnt_soa_reader.cu
-            src/io/soa/uint_soa_reader.cu
-            src/io/soa/ts_soa_reader.cu
-            src/st_query/sw_xy.cu            
+            src/io/soa/polygon_soa_reader.cu
+            src/io/soa/point_soa_reader.cu
+            src/io/soa/uint32_soa_reader.cu
+            src/io/soa/timestamp_soa_reader.cu
+            src/st_query/spatial_window_point.cu            
             src/spatial/pip.cu	
             src/spatial/haversine.cu	
             src/spatial/hausdorff.cu
             src/spatial/lonlat_to_coordinate.cu
-            src/trajectory/traj_sbbox.cu
-            src/trajectory/traj_distspeed.cu            
+            src/trajectory/trajectory_spatial_bound.cu
+            src/trajectory/trajectory_distance_speed.cu            
             src/trajectory/coordinate_to_trajectory.cu            
             )
 

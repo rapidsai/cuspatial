@@ -120,7 +120,7 @@ struct ll2coord_functor {
 namespace cuspatial {
 
 /**
- * @Brief transforming in_lon/in_lat (lon/lat defined in coord_2d) to out_x/out_y relative to a camera origiin
+ * @brief transforming in_lon/in_lat (lon/lat defined in coord_2d) to out_x/out_y relative to a camera origiin
  * see coordinate_transform.hpp
 */
 

@@ -165,7 +165,7 @@ struct Hausdorff_functor {
     
 
 /**
-* @Brief compute Hausdorff distances among all pairs of a set of trajectories
+* @brief compute Hausdorff distances among all pairs of a set of trajectories
 * see hausdorff.hpp
 */
 

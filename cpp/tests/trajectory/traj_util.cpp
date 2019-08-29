@@ -6,13 +6,8 @@
 using namespace cuspatial;
 
 /**
- * @Brief retrive camera origin at a particular intersection from a configuration file
-
- * @param[in]  df_fn: name of configuration file that contains paramters for all cameras
-
- * @param[in]  inter_name:  the unique name of an intersection
-
- * @param[out]  camera_origin  location_3d (lon/lat/alt) of the retrieved camera origin
+ * @brief retrive camera origin at a particular intersection from a configuration file
+ *
  *
  * @return negative error code; 0 for success
  */
@@ -62,7 +57,7 @@ int get_camera_origin(const char *df_fn, const char * inter_name, location_3d<do
 }
 
 /**
- * @Brief retrive id, timestamp and location fields of a "raw" trajectory dataset,
+ * @brief retrive id, timestamp and location fields of a "raw" trajectory dataset,
  * i.e., a set of coordinates (lon/lat/alt) with a timestamp and an object (e.g., vehicle) identifier.
  *
  * @param[in]  root_fn: the root of the three files stored in columnar format,

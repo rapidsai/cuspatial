@@ -81,7 +81,7 @@ struct haversine_functor {
         gdf_column_view(&h_dist, data, nullptr, x1.size, x1.dtype);
 
         struct timeval t0,t1;
-        gettimeofday(&t0, NULL);
+        gettimeofday(&t0, nullptr);
         
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, haversine_distance_kernel<col_type>) );
@@ -95,7 +95,7 @@ struct haversine_functor {
                 static_cast<col_type*>(data) );
         CUDA_TRY( cudaDeviceSynchronize() );
 	
-	gettimeofday(&t1, NULL);	
+	gettimeofday(&t1, nullptr);	
  	float haversine_distance_kernel_time=calc_time("haversine_distance_kernel_time in ms=",t0,t1);
         
         std::cout<<"haversine distance:"<<std::endl;
@@ -113,21 +113,21 @@ struct haversine_functor {
 };
 
 /**
- *@Brief Compute Haversine distances among pairs of logitude/latitude locations
+ *@brief Compute Haversine distances among pairs of logitude/latitude locations
  *see haversine.hpp
 */
 
 namespace cuspatial{
 
 /**
- * @Brief Compute Haversine distances among pairs of logitude/latitude locations
+ * @brief Compute Haversine distances among pairs of logitude/latitude locations
  * see haversine.hpp
 */
 
 gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2 )                        
 {       
     struct timeval t0,t1;
-    gettimeofday(&t0, NULL);
+    gettimeofday(&t0, nullptr);
     
     CUDF_EXPECTS(x1.data != nullptr && y1.data != nullptr && x2.data != nullptr && y2.data != nullptr,"point lon/lat cannot be empty");
     CUDF_EXPECTS(x1.dtype == x2.dtype && x2.dtype==y1.dtype && y1.dtype==y2.dtype, "x1/x2/y1/y2 type mismatch");
@@ -138,7 +138,7 @@ gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,const gd
     
     gdf_column h_d = cudf::type_dispatcher( x1.dtype, haversine_functor(), x1,y1,x2,y2);
     		
-    gettimeofday(&t1, NULL);
+    gettimeofday(&t1, nullptr);
     float haversine_end2end_time=calc_time("C++ haversine_distance end-to-end time in ms=",t0,t1);
     
     return h_d;

@@ -22,15 +22,16 @@
 #include <time.h>
 
 #include <cuspatial/shared_util.h>
-#include <cuspatial/traj_thrust.h>
 #include <cuspatial/trajectory.hpp>
+#include <include/trajectory_thrust.cuh>
 
 using namespace std; 
 using namespace cudf;
 using namespace cuspatial;
 
 /**
- * @Brief CUDA kernel for computing spatial bounding boxes of trajectories
+ * @brief CUDA kernel for computing spatial bounding boxes of trajectories
+ *
  */
 
 template <typename T>
@@ -146,11 +147,12 @@ struct sbbox_functor {
 namespace cuspatial {
 
 /**
- * @Brief computing spatial bounding boxes of trajectories
+ * @brief computing spatial bounding boxes of trajectories
+ *
  * see trajectory.hpp
  */
  
-void traj_sbbox(const gdf_column& x,const gdf_column& y,
+void trajectory_spatal_bound(const gdf_column& x,const gdf_column& y,
  			const gdf_column& len,const gdf_column& pos,
 			gdf_column& bbox_x1,gdf_column& bbox_y1,gdf_column& bbox_x2,gdf_column& bbox_y2)
 {       
@@ -175,6 +177,6 @@ void traj_sbbox(const gdf_column& x,const gdf_column& y,
     gettimeofday(&t1, nullptr);
     float sbbox_end2end_time=calc_time("spatial bbox end2end time in ms=",t0,t1);
     
-    }//traj_distspeed     
+    }//trajectory_spatal_bound     
     	
 }// namespace cuspatial

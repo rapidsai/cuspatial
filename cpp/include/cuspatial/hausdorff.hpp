@@ -20,7 +20,7 @@
 namespace cuspatial {
 
 /**
- * @Brief compute Hausdorff distances among all pairs of a set of trajectories
+ * @brief compute Hausdorff distances among all pairs of a set of trajectories
  * https://en.wikipedia.org/wiki/Hausdorff_distance
 
  * @param[in] x: x coordinates of the input trajectroies

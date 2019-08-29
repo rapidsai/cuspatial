@@ -43,6 +43,7 @@ namespace cuspatial
 
 	/**
 	 *@brief Thrust functor for lifting its_timestamp to an interval (1D box)
+	 *
 	 */
 	struct TBBox_transformation : public thrust::unary_function<TBBox,TBBox>
 	{
@@ -55,6 +56,7 @@ namespace cuspatial
 
 	/**
 	 *@brief Thrust functor for generating an 1D bounding box from two 1D box
+	 *
 	 */
 	struct TBBox_reduction : public thrust::binary_function<TBBox,TBBox,TBBox>
 	{
@@ -70,9 +72,10 @@ namespace cuspatial
 
 	/**
 	 *@brief Thrust functor for transforming lon/lat (location_3d) to x/y (coord_2d) relative to an origin
+	 
 	 Note: Both x and y are in the unit of kilometers (km)
 	 */
-    template <typename T>
+        template <typename T>
 	struct coord_transformation : public thrust::unary_function<location_3d<T>,coord_2d<T> >
 	{
 		location_3d<T> origin;

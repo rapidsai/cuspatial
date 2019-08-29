@@ -25,8 +25,8 @@ struct sw_functor_xy
 	T x1,y1,x2,y2;
 
 	__host__ __device__
-	sw_functor_xy(T _x1,T _x2,T _y1,T _y2):
-		x1(_x1),y1(_y1),x2(_x2),y2(_y2){};
+	sw_functor_xy(T x1,T x2,T y1,T y2):
+		x1(x1),y1(y1),x2(x2),y2(y2){};
 
 	__host__ __device__
 	bool operator()(const thrust::tuple<T, T>& t)

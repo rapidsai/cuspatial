@@ -24,13 +24,13 @@
 
 #include <cuspatial/shared_util.h>
 #include <cuspatial/st_query.hpp>
-#include <cuspatial/stq_thrust.h>
+#include <include/st_query_thrust.cuh>
 
 using namespace std; 
 using namespace cudf;
 using namespace cuspatial;
 
-struct sw_xy_functor {
+struct sw_point_functor {
     template <typename col_type>
     static constexpr bool is_supported()
     {
@@ -38,9 +38,8 @@ struct sw_xy_functor {
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-    int operator()(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_scalar y2,
-	const gdf_column& in_x,const gdf_column& in_y, gdf_column& out_x,gdf_column& out_y)
-		
+    std::pair<gdf_column,gdf_column> operator()(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_scalar y2,
+	const gdf_column& in_x,const gdf_column& in_y)		
     {        
         col_type q_x1=*((col_type*)(&(x1.data)));
 	col_type q_y1=*((col_type*)(&(y1.data)));
@@ -68,6 +67,9 @@ struct sw_xy_functor {
   	int num_hits= thrust::count_if(thrust::device, in_it, in_it+in_x.size, sw_functor_xy<col_type>(q_x1,q_x2,q_y1,q_y2));
         std::cout<<"#hits="<<num_hits<<std::endl;
    
+        gdf_column out_x,out_y;
+        memset(&out_x,0,sizeof(gdf_column));
+        memset(&out_y,0,sizeof(gdf_column));
         out_x.dtype= in_x.dtype;
         out_x.col_name=(char *)malloc(strlen("x")+ 1);
        	strcpy(out_x.col_name,"x");    
@@ -99,12 +101,12 @@ struct sw_xy_functor {
         std::cout<<"y:"<<std::endl;
         thrust::copy(outy_ptr,outy_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;  
     
-        return num_hits;
+        return std::make_pair(out_x,out_y);
     }
 
     template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
-    int operator()(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_scalar y2,
-	const gdf_column& in_x,const gdf_column& in_y, gdf_column& out_x,gdf_column& out_y)
+    std::pair<gdf_column,gdf_column> operator()(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_scalar y2,
+	const gdf_column& in_x,const gdf_column& in_y)
 	
     {
         CUDF_FAIL("Non-floating point operation is not supported");
@@ -113,14 +115,14 @@ struct sw_xy_functor {
     
 
 /**
- * @Brief retrive all points (x,y) that fall within a query window (x1,y1,x2,y2) and output the filtered points
+ * @brief retrive all points (x,y) that fall within a query window (x1,y1,x2,y2) and output the filtered points
  * see st_query.hpp
  */
  
 namespace cuspatial {
 
-int sw_xy(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_scalar y2,
-	const gdf_column& in_x,const gdf_column& in_y, gdf_column& out_x,gdf_column& out_y)
+ std::pair<gdf_column,gdf_column> spatial_window_point(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_scalar y2,
+	const gdf_column& in_x,const gdf_column& in_y)
 	
 {       
     struct timeval t0,t1;
@@ -132,13 +134,13 @@ int sw_xy(const gdf_scalar x1,const gdf_scalar y1,const gdf_scalar x2,const gdf_
     
     CUDF_EXPECTS(in_x.null_count == 0 && in_y.null_count == 0, "this version does not support point data that contains nulls");
     
-    int num_traj = cudf::type_dispatcher( in_x.dtype, sw_xy_functor(), 
-    		x1,y1,x2,y2,in_x,in_y, out_x,out_y);
+    std::pair<gdf_column,gdf_column> res = cudf::type_dispatcher( in_x.dtype, sw_point_functor(), x1,y1,x2,y2,in_x,in_y);		
     		
     gettimeofday(&t1, nullptr);
-    float swxy_end2end_time=calc_time("C++ sw_xy end-to-end time in ms= ",t0,t1);
+    float swxy_end2end_time=calc_time("C++ sw_point end-to-end time in ms= ",t0,t1);
     
-    return num_traj;
-  }//sw_xy 
+    return res;
+    
+  }//sw_point 
   
 }// namespace cuSpatail

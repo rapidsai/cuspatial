@@ -28,28 +28,31 @@
 namespace cuspatial
 {
 	/**
-	 * @Brief read timestamp (ts: its_timestamp type) data from file as column
+	 * @brief read uint32_t (unsigned integer with 32 bit fixed length) data from file as column
+	 
 	 * see soa_readers.hpp
 	*/
-	void read_ts_soa(const char *ts_fn, gdf_column& ts)                             
+
+	gdf_column read_uint32_soa(const char *filename)                                
 	{
-    		its_timestamp * time=NULL;
-    		size_t num_t=read_field<its_timestamp>(ts_fn,time);
-    		if(time==NULL) return;
+  		gdf_column values;
+   		memset(&values,0,sizeof(gdf_column));
     		
-    		/*printf("1st (hex):%016llx\n", *((unsigned long long *)(&(time[0]))));
-		printf("1st: y=%d m=%d d=%d hh=%d mm=%d ss=%d wd=%d yd=%d ms=%d pid=%d\n",
-			time[0].y,time[0].m,time[0].d,time[0].hh,time[0].mm,time[0].ss,time[0].wd, time[0].yd,time[0].ms,time[0].pid);*/
- 		
- 		ts.dtype= GDF_INT64;
- 		ts.col_name=(char *)malloc(strlen("ts")+ 1);
-		strcpy(ts.col_name,"ts");
-		//make sure sizeof(TIME)==sizeof(GDF_INT64)
-		RMM_TRY( RMM_ALLOC(&ts.data, num_t * sizeof(its_timestamp), 0) );
-		cudaMemcpy(ts.data,time ,num_t * sizeof(its_timestamp) , cudaMemcpyHostToDevice);		
-		ts.size=num_t;
-		ts.valid=nullptr;
-		ts.null_count=0;		
-		delete[] time;
+    		uint *data=nullptr;
+    		size_t num_l=read_field<uint32_t>(filename,data);
+    		if(data==nullptr) 
+    			return values;
+		
+ 		values.dtype= GDF_INT32;
+ 		values.col_name=(char *)malloc(strlen("id")+ 1);
+		strcpy(values.col_name,"id");
+		RMM_TRY( RMM_ALLOC(&values.data, num_l * sizeof(uint32_t), 0) );
+		cudaMemcpy(values.data,data ,num_l * sizeof(uint32_t) , cudaMemcpyHostToDevice);		
+		values.size=num_l;
+		values.valid=nullptr;
+		values.null_count=0;		
+		delete[] data;
+		
+		return values;
 	}
 }

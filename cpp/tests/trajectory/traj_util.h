@@ -4,7 +4,7 @@
 
 namespace cuspatial {
 	/**
-	 * @Brief retrive camera origin at a particular intersection from a configuration file
+	 * @brief retrive camera origin at a particular intersection from a configuration file
 
 	 * @param[in]  df_fn: name of configuration file that contains paramters for all cameras
 
@@ -18,7 +18,7 @@ namespace cuspatial {
 
 
 	/**
-	 * @Brief retrive id, timestamp and location fields of a "raw" trajectory dataset,
+	 * @brief retrive id, timestamp and location fields of a "raw" trajectory dataset,
 	 * i.e., a set of coordiantes (lon/lat/alt) with a timestamp and an object (e.g., vehicle) identifier.
 	 *
 	 * @param[in]  root_fn: the root of the three files stored in columnar format,

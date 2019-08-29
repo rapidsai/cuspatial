@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
+#include <iostream>
 #include <assert.h>
 #include <string.h>
 #include <cuspatial/shared_util.h>

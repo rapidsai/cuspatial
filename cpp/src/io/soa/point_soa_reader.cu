@@ -27,15 +27,16 @@
 namespace cuspatial
 {
 	/**
-	 * @Brief read lon/lat from file into two columns; data type is fixed to double (GDF_FLOAT64)
+	 * @brief read lon/lat from file into two columns; data type is fixed to double (GDF_FLOAT64)
+         *
 	 * see soa_readers.hpp
-	*
 	*/
-	void read_pnt_lonlat_soa(const char *pnt_filename,gdf_column& pnt_lon,gdf_column& pnt_lat)                                   
+	std::pair<gdf_column, gdf_column>  read_lonlat_points_soa(const char *filename)                                  
 	{
 
 	    double * p_lon=nullptr, *p_lat=nullptr;
-	    int num_p=read_point_lonlat<double>(pnt_filename,p_lon,p_lat);
+	    int num_p=read_point_lonlat<double>(filename,p_lon,p_lat);
+	    gdf_column pnt_lon,pnt_lat;
 	    
  	    pnt_lon.dtype= GDF_FLOAT64;
  	    pnt_lon.col_name=(char *)malloc(strlen("lon")+ 1);
@@ -57,18 +58,22 @@ namespace cuspatial
 	    pnt_lat.valid=nullptr;
             pnt_lat.null_count=0;
 	    delete[] p_lat;
+	    
+	    return std::make_pair(pnt_lon,pnt_lat);
 	}
 	
 	/**
-	 * @Brief read x/y from file into two columns; data type is fixed to double (GDF_FLOAT64)
-	*
+	 * @brief read x/y from file into two columns; data type is fixed to double (GDF_FLOAT64)
+	 *
+	 * see soa_readers.hpp
 	*/
-	void read_pnt_xy_soa(const char *pnt_filename,gdf_column& pnt_x,gdf_column& pnt_y)                                   
+	std::pair<gdf_column, gdf_column>  read_xy_points_soa(const char *filename)                              
 	{
 
 	    double * x=nullptr, *y=nullptr;
-	    int num_p=read_point_xy<double>(pnt_filename,x,y);
-		
+	    int num_p=read_point_xy<double>(filename,x,y);
+	    gdf_column pnt_x,pnt_y;
+ 	    
  	    pnt_x.dtype= GDF_FLOAT64;
  	    pnt_x.col_name=(char *)malloc(strlen("x")+ 1);
 	    strcpy(pnt_x.col_name,"x");
@@ -89,5 +94,7 @@ namespace cuspatial
 	    pnt_y.valid=nullptr;
 	    pnt_y.null_count=0;
 	    delete[] y;
+	    
+	    return std::make_pair(pnt_x,pnt_y);
 	}	
 }

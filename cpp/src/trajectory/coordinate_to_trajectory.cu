@@ -24,7 +24,7 @@
 
 #include <cuspatial/shared_util.h>
 #include <cuspatial/trajectory.hpp>
-#include <cuspatial/traj_thrust.h>
+#include <include/trajectory_thrust.cuh>
 
 using namespace std; 
 using namespace cudf;
@@ -143,7 +143,7 @@ struct coor2traj_functor {
 namespace cuspatial {
 
 /**
- * @Brief derive trajectories from points (x/y relative to an origin), timestamps and object IDs
+ * @brief derive trajectories from points (x/y relative to an origin), timestamps and object IDs
  * by first sorting based on id and timestamp and then group by id.
  * see trajectory.hpp
 */

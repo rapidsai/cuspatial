@@ -161,15 +161,20 @@ namespace cuspatial
 		size_t sz=ftell(fp);
 		fseek(fp, 0L, SEEK_SET);
 
-		size_t ln=0;
-		ln=fread(&(ply.num_group),sizeof(int),1,fp);
-		CUDF_EXPECTS(ln==1,"expect reading an integer for num_group");
-		ln=fread(&(ply.num_feature),sizeof(int),1,fp);
-		CUDF_EXPECTS(ln==1,"expect reading an integer for num_feature");
-		ln=fread(&(ply.num_ring),sizeof(int),1,fp);
-		CUDF_EXPECTS(ln==1,"expect reading an integer for num_ring");
-		ln=fread(&(ply.num_vertex),sizeof(int),1,fp);
-		CUDF_EXPECTS(ln==1,"expect reading an integer for num_vertex");
+        memset(&ply,0, sizeof(polygons<T>));
+        //using CUDF_EXPECTS(ln==4)to get rid of "ignoring return value"
+        //and "unused-but-set-variable" compilation error
+        size_t ln=0;
+		ln+=fread(&(ply.num_group),sizeof(int),1,fp);
+ 		ln+=fread(&(ply.num_feature),sizeof(int),1,fp);
+		ln+=fread(&(ply.num_ring),sizeof(int),1,fp);
+		ln+=fread(&(ply.num_vertex),sizeof(int),1,fp);
+		CUDF_EXPECTS(ln==4,"invalid polygon file");
+
+	    CUDF_EXPECTS(ply.num_group>0 && ply.num_feature>0 && ply.num_ring>0 && ply.num_vertex >0,
+	    	"numbers of groups/features/rings/vertices must be positive");
+	    CUDF_EXPECTS(ply.num_group<=ply.num_feature && ply.num_feature<=ply.num_ring && ply.num_ring<=ply.num_vertex,
+			"numbers of groups/features/rings/vertices must be in increasing order");
 
 		//brief outputs to check whether the numbers look reasonable or as expected
 		//std::cout<<"# of groups="<< ply.num_group<<std::endl;
@@ -225,13 +230,12 @@ namespace cuspatial
 
 
 	/**
-	* @brief templated function to read data in SoA format from file to array
-	*for the repective data type or user defined struct.
+	* @brief read data in SoA format from file to array.
 
     * @param[in] filename: name of a binary file in SoA format to read
     * @param[out] field: pointer/array of values read from file
 
-    *@returns number of records read from the file
+    * @returns number of records read from the file
 	**/
 	template<class T>
 	size_t read_field(const char *filename,T*& field)

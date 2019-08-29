@@ -22,51 +22,57 @@
 namespace cuspatial {
 
 	/**
-	*@Brief read uint32_t data from file as column; mostly for identifiers, lengths and positions.
-    *mostly for identifiers, lengths and positions.
+	* @brief read uint32_t data from file as column
+    *
     * @param[in] filename: file to read
+
     * @return gdf_column storing the uint32_t data
 	*/
-	void read_uint_soa(const char *col_fn, gdf_column& ids);
+	gdf_column read_uint32_soa(const char *filename);
 
 
 	/**
-	 * @Brief read timestamp (ts: its_timestamp type) data from file as column
-     *@param[in] ts_fn: file name of timestamp column data
-     *@param[out] ids: gdf_column storing the timestamp column
+	 *@brief read timestamp data from file as column
+
+     *@param[in] filename: file to read
+
+    * @return gdf_column storing its_timestamp data
+    */
+	gdf_column read_timestamp_soa(const char *filename);
+
+	/**
+	 *@brief read lon/lat from file as two columns; data type is fixed to double (GDF_FLOAT64)
+
+     *@param[in] filename: file name of point data in location_3d layout (lon/lat/alt but alt is omitted)
+
+     @return gdf_columns storing x and y data
 	*/
-	void read_ts_soa(const char *ts_fn, gdf_column& ts);
+	std::pair<gdf_column, gdf_column>  read_lonlat_points_soa(const char *filename);
+
 
 	/**
-	 * @Brief read lon/lat from file as two columns; data type is fixed to double (GDF_FLOAT64)
-     *@param[in] pnt_fn: file name of point data in location_3d layout (lon/lat/alt but alt is omitted)
-     *@param[out] pnt_lon: gdf_column storing the longitude column
-     *@param[out] pnt_lat: gdf_column storing the latitude column
+	 *@brief read x/y from file as two columns; data type is fixed to double (GDF_FLOAT64)
+
+     *@param[in] filename: file name of point data in coordinate_2d layout (x/y)
+
+     @return gdf_columns storing x and y data
 	*/
-	void read_pnt_lonlat_soa(const char *pnt_fn, gdf_column& pnt_lon,gdf_column& pnt_lat);
+	std::pair<gdf_column, gdf_column>  read_xy_points_soa(const char *filename);
 
 
 	/**
-	 *@Brief read x/y from file as two columns; data type is fixed to double (GDF_FLOAT64)
-     *@param[in] pnt_fn: file name of point data in coord_2d layout (x/y)
-     *@param[out] pnt_x: gdf_column storing the x column
-     *@param[out] pnt_y: gdf_column storing the y column
-     Note: x/y can be lon/lat.
-	*/
-	void read_pnt_xy_soa(const char *pnt_fn, gdf_column& pnt_x,gdf_column& pnt_y);
+	 * @brief read poygon data from file in SoA format; data type of vertices is fixed to double (GDF_FLOAT64)
 
-
-	/**
-	 * @Brief read poygon data from file in SoA format; data type of vertices is fixed to double (GDF_FLOAT64)
-	 * @param[in] ply_fn: polygon data file name
+	 * @param[in] filename: polygon data file name to read from
 	 * @param[out] ply_fpos: pointer/array to index polygons, i.e., prefix-sum of #of rings of all polygons
 	 * @param[out] ply_rpos: pointer/array to index rings, i.e., prefix-sum of #of vertices of all rings
 	 * @param[out] ply_x: pointer/array of x coordinates of concatenated polygons
 	 * @param[out] ply_y: pointer/array of x coordinates of concatenated polygons
+
 	 Note: x/y can be lon/lat.
 	*/
-	void read_ply_soa(const char *ply_fn,gdf_column& ply_fpos, gdf_column& ply_rpos,
-									   gdf_column& ply_x,gdf_column& ply_y);
+	void read_polygon_soa(const char *filename,gdf_column* ply_fpos, gdf_column* ply_rpos,
+									   gdf_column* ply_x,gdf_column* ply_y);
 
 
 }// namespace cuspatial

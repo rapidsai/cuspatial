@@ -72,7 +72,7 @@ struct PIPToy : public GdfTest
         	*(polygon_x_wrapp.get()), *(polygon_y_wrapp.get()) );
     
         gpu_pip_res=new uint[this->point_len];
-        assert(gpu_pip_res!=NULL);
+        assert(gpu_pip_res!=nullptr);
     	EXPECT_EQ(cudaMemcpy(gpu_pip_res, res_bm1.data, this->point_len * sizeof(uint), cudaMemcpyDeviceToHost), cudaSuccess);
     }
     
@@ -102,12 +102,12 @@ TEST_F(PIPToy, piptest)
     ASSERT_GE(this->set_initialize(),0);
     
     uint* cpu_pip_res=new uint[this->point_len];
-    assert(cpu_pip_res!=NULL);  
+    assert(cpu_pip_res!=nullptr);  
     cpu_pip_loop(this->point_len,this->x,this->y, this->h_polygon,cpu_pip_res);
   
-    uint* gpu_pip_res=NULL;
+    uint* gpu_pip_res=nullptr;
     this->exec_gpu_pip(gpu_pip_res);
-    assert(gpu_pip_res!=NULL);
+    assert(gpu_pip_res!=nullptr);
     
     int err_cnt=0,non_zero=0;
     for(int i=0;i<this->point_len;i++)

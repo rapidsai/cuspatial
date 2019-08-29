@@ -65,8 +65,10 @@ struct HausdorffTest : public GdfTest
       struct timeval t0,t1;
       gettimeofday(&t0, nullptr);
       
-      cuspatial::read_pnt_xy_soa(point_fn,pnt_x,pnt_y);
-      cuspatial::read_uint_soa(cnt_fn,cnt);
+      auto points=cuspatial::read_xy_points_soa(point_fn);
+      pnt_x=points.first;
+      pnt_y=points.second;
+      cnt=cuspatial::read_uint32_soa(cnt_fn);
       
       gettimeofday(&t1, nullptr);
       float data_load_time=cuspatial::calc_time("point/cnt data loading time=", t0,t1);
