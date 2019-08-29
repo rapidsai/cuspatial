@@ -48,7 +48,7 @@ struct PIPTest : public GdfTest
      struct timeval t0,t1,t2;
      gettimeofday(&t0, nullptr);
      struct polygons<double> polygon;
-     read_polygon_soa(poly_filename,&polygon);
+     read_polygon_soa<double>(poly_filename,&polygon);
      gettimeofday(&t1, nullptr);
      float ply_load_time=cuspatial::calc_time("polygon data loading time=", t0,t1);
      CUDF_EXPECTS(polygon.num_feature>0 && polygon.num_ring>0,"invalid # of polygons/rings");
