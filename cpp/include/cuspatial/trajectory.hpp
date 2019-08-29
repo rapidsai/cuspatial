@@ -57,7 +57,7 @@ std::pair<gdf_column,gdf_column> trajectory_distance_and_speed(const gdf_column&
 
 
 /**
- * @brief compute spatial bounding boxes of trjectories
+ * @brief compute spatial bounding boxes of trajectories
 
  * @param[in] x: x coordinates reative to a camera origin and ordered by (id,timestamp)
  * @param[in] y: y coordinates reative to a camera origin and ordered by (id,timestamp)

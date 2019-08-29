@@ -36,7 +36,7 @@ namespace cuspatial
 		gdf_column* ply_x,gdf_column* ply_y)
 	{
 	        CUDF_EXPECTS(ply_fpos!=nullptr && ply_rpos!=nullptr && ply_x!=nullptr && ply_y!=nullptr,
-	        	"any of the polygon offset/ring offset/x coorinate/y coordinate column can be null ");
+	        	"none of the polygon offset/ring offset/x coorinate/y coordinate column can be null ");
 	        
 	        memset(ply_fpos,0,sizeof(gdf_column));
 	        memset(ply_rpos,0,sizeof(gdf_column));
@@ -44,8 +44,8 @@ namespace cuspatial
 	        memset(ply_y,0,sizeof(gdf_column));
 	
 	        struct polygons<double> pm;
-	        int num_p=read_polygon_soa<double>(filename,pm);
-	        if(num_p<=0) return;
+	        read_polygon_soa<double>(filename,&pm);	        
+	        if(pm.num_feature<=0) return;
 	        
   		ply_fpos->dtype=GDF_INT32;
   		ply_fpos->col_name=(char *)malloc(strlen("f_pos")+ 1);
