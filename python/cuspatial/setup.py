@@ -33,8 +33,8 @@ extensions = [
 setup(
     name="cuspatial",
     version=versioneer.get_version(),
-    description="cuSpstial - GPU-Accelerated Spatial and Trajectory Data Management and Analytics Library",
-    url="https://gitlab-master.nvidia.com/jiantingz/cuspatial",
+    description="cuSpatial: GPU-Accelerated Spatial and Trajectory Data Management and Analytics Library",
+    url="https://github.com/rapidsai/cuspatial",
     author="NVIDIA Corporation",
     license="Apache 2.0",
     classifiers=[
