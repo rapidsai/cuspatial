@@ -20,7 +20,7 @@
 namespace cuspatial {
 
 /**
- * @Brief Compute Haversine distances among pairs of logitude/latitude locations
+ * brief Compute Haversine distances among pairs of logitude/latitude locations
 
  * @param[in] x1: pointer/array of longitude coordinates of the starting points
  * @param[in] y1: pointer/array of latitude  coordinates of the starting points

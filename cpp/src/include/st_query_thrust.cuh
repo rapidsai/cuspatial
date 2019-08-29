@@ -18,17 +18,18 @@
 
 /**
  *@brief Thrust functor for spatial window query on point data (x/y)
+ *
  */
 template<typename T>
 struct sw_functor_xy
 {
 	T x1,y1,x2,y2;
 
-	__host__ __device__
+	 __device__
 	sw_functor_xy(T x1,T x2,T y1,T y2):
 		x1(x1),y1(y1),x2(x2),y2(y2){};
 
-	__host__ __device__
+	 __device__
 	bool operator()(const thrust::tuple<T, T>& t)
 	{
 		T x= thrust::get<0>(t);

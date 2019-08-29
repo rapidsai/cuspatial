@@ -33,6 +33,8 @@ namespace cuspatial {
  * whether the ith point is in the jth polygon.
 
  * Note: The # of polygons, i.e., ply_fpos.size can not exceed sizeof(uint)*8, i.e., 32.
+ * It is possible to use larger integers to accommodate more polygons (e.g., 64/128).
+ * For more polygons, the polygons need to be indexed and the problem essentially becomes a spatial join.
  */
 
 gdf_column pip_bm(const gdf_column& pnt_x,const gdf_column& pnt_y,

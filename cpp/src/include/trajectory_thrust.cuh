@@ -24,8 +24,9 @@ namespace cuspatial
 
 	/**
 	 *@brief Thrust functor for comparing two its_timestamp variables; used in sorting based on timestamp
+	 *
 	 */
-	__host__ __device__
+	 __device__
 	inline bool operator<(const its_timestamp & t1,const its_timestamp & t2)
 	{
 		//cout<<"in operator<"<<endl;
@@ -47,7 +48,7 @@ namespace cuspatial
 	 */
 	struct TBBox_transformation : public thrust::unary_function<TBBox,TBBox>
 	{
-		__host__ __device__
+		 __device__
 			TBBox operator()(its_timestamp time)
 			{
 				return TBBox(time, time);
@@ -60,7 +61,7 @@ namespace cuspatial
 	 */
 	struct TBBox_reduction : public thrust::binary_function<TBBox,TBBox,TBBox>
 	{
-		__host__ __device__
+		 __device__
 			TBBox operator()(TBBox a, TBBox b)
 			{
 				// lower left corner
@@ -79,10 +80,10 @@ namespace cuspatial
 	struct coord_transformation : public thrust::unary_function<location_3d<T>,coord_2d<T> >
 	{
 		location_3d<T> origin;
-		__host__ __device__
+		 __device__
 		coord_transformation(location_3d<T> _origin): origin(_origin){}
 
-		__host__ __device__
+		 __device__
 		coord_2d<T> operator()(location_3d<T> pt)
 		{
 		  coord_2d<T> c;

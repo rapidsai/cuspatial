@@ -54,5 +54,5 @@ namespace cuspatial
 		delete[] data;
 		
 		return values;
-	}
-}
+	}//read_uint32_soa
+}//cuspatial

@@ -47,6 +47,7 @@ int coord_to_traj(gdf_column& x,gdf_column& y,gdf_column& oid, gdf_column& ts,
  * @param[in] pos: position offsets of trajectories used to index x/y/oid/ts ordered by (id,timestamp)
  * @param[out] dist: computed distances/lengths of trajectories in meters (m)
  * @param[out] speed: computed speed of trajectories in meters per second (m/s)
+
  * Note: we might output duration (in addtiion to distance/speed), should there is a need
  * duration can be easiy computed on CPUs by fetching begining/ending timestamps of a trajectory in the timestamp array
  */
@@ -57,13 +58,18 @@ std::pair<gdf_column,gdf_column> trajectory_distance_and_speed(const gdf_column&
 
 /**
  * @brief compute spatial bounding boxes of trjectories
+
  * @param[in] x: x coordinates reative to a camera origin and ordered by (id,timestamp)
  * @param[in] y: y coordinates reative to a camera origin and ordered by (id,timestamp)
  * @param[in] len: number of points column ordered by (id,timestamp)
  * @param[in] pos: position offsets of trajectories used to index x/y/ ordered by (id,timestamp)
- * @param[out] bbox_x1/bbox_y1/bbox_x2/bbox_y2: computed spaital bounding boxes in four columns
+ * @param[out] bbox_x1: x coordinates of the lower-left corners of computed spatial bounding boxes
+ * @param[out] bbox_y1: y coordinates of the lower-left corners of computed spatial bounding boxes
+ * @param[out] bbox_x2: x coordinates of the upper-right corners of computed spatial bounding boxes
+ * @param[out] bbox_y2: y coordinates of the upper-right corners of computed spatial bounding boxes
+
  * Note: temporal 1D bounding box can be computed similary but it seems that there is no such a need;
- * Similar to the dicussion in coord_to_traj, the temporal 1D bounding box can be retrieved directly
+ * Similar to the dicussion in coord_to_traj, temporal 1D bounding box can be retrieved directly
  */
 
 void trajectory_spatal_bound(const gdf_column& x,const gdf_column& y,
