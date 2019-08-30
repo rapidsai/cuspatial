@@ -1,85 +1,104 @@
 # cuSpatial
 ## GPU-Accelerated Spatial and Trajectory Data Management and Analytics Library
-**NOTE:** cuSpatial depends on [cuDF](https://github.com/rapidsai/cudf) and [RMM](https://github.com/rapidsai/rmm) under [RAPIDS](https://rapids.ai/) framework<br> 
-See [here](https://nvidia-my.sharepoint.com/:p:/r/personal/jiantingz_nvidia_com/Documents/GPU4STA_V5.pptx?d=wa5b5d6d397074ea9a1600e74fd8a6345&csf=1&e=h7MdRq) 
-for a brief summary/discussion on C++ backend performance (as standalone components and with comparions to serial/multi-core implementations on CPUs and/or legacy code) <br>
-See the [design documentation](doc/design.md) for a brief description of how spatial and trajectory data are represented in cuSpatial and the graph of operations on them.   
+
+**NOTE:** cuSpatial depends on [cuDF](https://github.com/rapidsai/cudf) and
+[RMM](https://github.com/rapidsai/rmm) from [RAPIDS](https://rapids.ai/).
 
 ## Implemented operations:
 cuSpatial supports the following operations on spatial and trajectory data:
-1. [Spatial window query](cpp/src/stq)
-2. [Point-in-polygon test](cpp/src/spatial) <br>
-3. [Harversine distance](cpp/src/spatial) <br>
-4. [Hausdorff distance](cpp/src/spatial)<br>
-5. [Deriving trajectories from point location data](cpp/src/traj) <br>
-6. [Computing distance/speed of trajectories](cpp/src/traj) <br>
-7. [Computing spatial bounding boxes of trajectories](cpp/src/traj) <br> 
+1. Spatial window query
+2. Point-in-polygon test
+3. Haversine distance
+4. Hausdorff distance
+5. Deriving trajectories from point location data
+6. Computing distance/speed of trajectories
+7. Computing spatial bounding boxes of trajectories
 
 Future support is planned for the following operations.
-1. Temporal window query (cpp/src/stq)
-2. Temporal point query (year+month+day+hour+minute+second+millisecond)(cpp/src/stq)<br>
-3. Point-to-polyline nearest neighbor distance](cpp/src/spatial) <br>
-4. Grid based indexing for points and polygons (cpp/src/idx)<br>
-5. Quadtree based indexing for large-scale point data (cpp/src/idx)<br>
-6. R-Tree based indexing for Polygons/Polylines (cpp/src/idx)<br>
+1. Temporal window query
+2. Temporal point query (year+month+day+hour+minute+second+millisecond)
+3. Point-to-polyline nearest neighbor distance
+4. Grid-based indexing for points and polygons
+5. Quadtree-based indexing for large-scale point data
+6. R-Tree-based indexing for Polygons/Polylines
  
-## Compile/Install C++ backend
-To compile and run cuSpatial, use the following steps <br>
-export CUSPATIAL_HOME=$(pwd)/cuspatial <br>
-Step 1: clone a copy of cuSpatial (using your nvidia git-lab username/password) <br>
-git clone https://github.com/zhangjianting/cuspatial.git -b fea-initial-code ${CUSPATIAL_HOME}<br>
-<br>
+## Compile / Install C++ backend
+To compile and run cuSpatial, use the following steps.
 
-Step 2: install cudf by following the [instructions](https://github.com/rapidsai/cudf/blob/branch-0.9/CONTRIBUTING.md) <br>
-As a shortcut, one can just run the scripts "./build.sh libcudf" and "./build.sh cudf" under {CUSPATIAL_HOME} <br>
-The rest of steps assume "export CUDACXX=/usr/local/cuda/bin/nvcc" and "export CUDF_HOME=$(pwd)/cudf are executed, and conda environment cudf_dev is activated after Step 2. <br>
-Please note that, on some environments (OS+BASH), CUDF_HOME set by using "CUDF_HOME=..." when installing cuDF can not be used in cuSpatial. 
-Please use <b>export CUDF_HOME=$(pwd)/cudf</b> instead.   
+## Install dependencies
 
-Step 3: compile and install C++ backend <br>
+Currently, building cuSpatial requires a source installation of cuDF. Install
+cuDF by following the [instructions](https://github.com/rapidsai/cudf/blob/branch-0.10/CONTRIBUTING.md#script-to-build-cudf-from-source)
 
-cd $CUSPATIAL_HOME/cpp <br>
-mkdir build <br>
-cd build <br>
-cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX <br>
-make (or make -j [n]) <br>
-make install <br>
+The rest of steps assume the environment variable `CUDF_HOME` points to the 
+root directory of your clone of the cuDF repo, and that the `cudf_dev` Anaconda
+environment created in step 3 is active.
 
-cuSpatial should be installed at $CONDA_PREFIX, e.g., /home/jianting/anaconda3/envs/cudf_dev <br>
-For cuspatial, the include path is $CONDA_PREFIX/include/cuspatial/ and the library path  $CONDA_PREFIX/lib/libcuspatial.so, respetively. 
+## Clone, build and install cuSpatial
 
-<h2>Compile/Install Python wrapper and run Python test code </h2> 
+1. export `CUSPATIAL_HOME=$(pwd)/cuspatial`
+2. clone the cuSpatial repo
 
-Step 4: build and install python wrapper <br>
+```
+git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
+```
 
-cd $CUSPATIAL_HOME/python/cuspatial <br>
-python setup.py build_ext --inplace <br>
-python setup.py install <br>
+3. Compile and install C++ backend
 
-Step 5: Run python test code <br>
+```
+cd $CUSPATIAL_HOME/cpp
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
+make # (or make -j [n])
+make install
+```
 
-First,cuSpatial Python API path to PYTHONPATH (there are tools under tests subdir), i.e., <br>
-export PYTHONPATH=$CUSPATIAL_HOME/python/cuspatial <br>
+cuSpatial should now be installed at `$CONDA_PREFIX`. The cuspatial include path
+is `$CONDA_PREFIX/include/cuspatial/` and the library path is
+`$CONDA_PREFIX/lib/libcuspatial.so`. 
 
-Some test code using toy data can be run directly, e.g., <br>
-python  $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/pip2_test_soa_toy.py <br>
+4. Compile and install cuSpatial Python wrapper and run Python test code
 
-However, many test code uses real data from an ITS (Intelligent Transportation System) application. 
-You will need to follow instructions at [data/README.md](./data/README.md) to generate data for these test code. <br>
-Alternatively, you can download the preprocessed data("locust.*", "its_4326_roi.*", "itsroi.ply" and "its_camera_2.csv") from [here](https://nvidia-my.sharepoint.com/:u:/p/jiantingz/EdHR7qlaRSVPtw46XYVR9sQBjCcnUHygCuPUC3Hf8gW73A?e=LCr9nK),
-extrat the files and put them directly under $CUSPATIAL_HOME/data for quick demos. <br>
-A brief discription of these data files and their semantic roles in the ITS application can be found [here](doc/itsdata.md) 
+```
+cd $CUSPATIAL_HOME/python/cuspatial
+python setup.py build_ext --inplace
+python setup.py install
+```
 
-After data are dowloaded and/or pre-processed, you can run the [python test code](python/cuspatial/cuspatial/tests), e.g., <br>
-python  $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/pip2_verify.py <br>
-python  $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/traj2_test_soa3.py <br>
-python  $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/stq_test_soa1.py <br>
+5. Run python test code <br>
 
-<br>
-**NOTE:** Currently, cuSpatial supports reading point/polyine/polygon data using Structure of Array (SoA) format (more readers are being developed) <br>
-Alternatively, python users can read any point/polyine/polygon data using existing python packages, e.g., [Shapely](https://pypi.org/project/Shapely/), 
-to generate numpy arrays and feed them to [cuSpatial python APIs](python/cuspatial/cuspatial/bindings). <br> 
+First, add the cuSpatial Python API path to `PYTHONPATH` (there are tools under
+tests subdir): `export PYTHONPATH=$CUSPATIAL_HOME/python/cuspatial`
 
+Some tests using toy data can be run directly, e.g.,
 
+```
+python  $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/pip2_test_soa_toy.py
+```
 
+However, many test code uses real data from an ITS (Intelligent Transportation
+System) application. You will need to follow instructions at
+[data/README.md](./data/README.md) to generate data for these test code.
+Alternatively, you can download the preprocessed data ("locust.*",
+"its_4326_roi.*", "itsroi.ply" and "its_camera_2.csv") from 
+[here](https://nvidia-my.sharepoint.com/:u:/p/jiantingz/EdHR7qlaRSVPtw46XYVR9sQBjCcnUHygCuPUC3Hf8gW73A?e=LCr9nK).
+Extract the files and put them directly under $CUSPATIAL_HOME/data for quick
+demos. A brief description of these data files and their semantic roles in the
+ITS application can be found [here](doc/itsdata.md) TODO THIS IS MISSING
 
+After data are downloaded and/or pre-processed, you can run the 
+[python test code](python/cuspatial/cuspatial/tests):
+
+```
+python  $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/pip2_verify.py
+python  $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/traj2_test_soa3.py
+python  $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/stq_test_soa1.py
+```
+
+**NOTE:** Currently, cuSpatial supports reading point/polyine/polygon data using
+Structure of Array (SoA) format (more readers are being developed).
+Alternatively, python users can read any point/polyine/polygon data using
+existing python packages, e.g., [Shapely](https://pypi.org/project/Shapely/),
+to generate numpy arrays and feed them to
+[cuSpatial python APIs](python/cuspatial/cuspatial/bindings).
