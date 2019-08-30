@@ -148,11 +148,14 @@ namespace cuspatial
     * @param[in] poly_filename: name of a binary polygon file storing both vertices and indices
     * @param[out] ply: a polygons<T> structure holding vertex and indexing data
 
-    *@returns number of points being read
+	*note: the function can not return results as functions differ by treturn types are ambiguous
     **/
 	template <typename T>
-	int read_polygon_soa(const char *poly_filename,struct polygons<T>& ply)
+	void read_polygon_soa(const char *poly_filename,struct polygons<T>* ply)
 	{
+		CUDF_EXPECTS(ply!=nullptr,"input pointer to polygons<T> can not be null ");
+		memset(ply,0, sizeof(polygons<T>));
+
 		FILE *fp=fopen(poly_filename,"rb");
 		CUDF_EXPECTS(fp!=nullptr,"can not open the input polygon file");
 
@@ -161,51 +164,48 @@ namespace cuspatial
 		size_t sz=ftell(fp);
 		fseek(fp, 0L, SEEK_SET);
 
-        memset(&ply,0, sizeof(polygons<T>));
+
         //using CUDF_EXPECTS(ln==4)to get rid of "ignoring return value"
         //and "unused-but-set-variable" compilation error
         size_t ln=0;
-		ln+=fread(&(ply.num_group),sizeof(int),1,fp);
- 		ln+=fread(&(ply.num_feature),sizeof(int),1,fp);
-		ln+=fread(&(ply.num_ring),sizeof(int),1,fp);
-		ln+=fread(&(ply.num_vertex),sizeof(int),1,fp);
+		ln+=fread(&(ply->num_group),sizeof(int),1,fp);
+ 		ln+=fread(&(ply->num_feature),sizeof(int),1,fp);
+		ln+=fread(&(ply->num_ring),sizeof(int),1,fp);
+		ln+=fread(&(ply->num_vertex),sizeof(int),1,fp);
 		CUDF_EXPECTS(ln==4,"invalid polygon file");
 
-	    CUDF_EXPECTS(ply.num_group>0 && ply.num_feature>0 && ply.num_ring>0 && ply.num_vertex >0,
+	    CUDF_EXPECTS(ply->num_group>0 && ply->num_feature>0 && ply->num_ring>0 && ply->num_vertex >0,
 	    	"numbers of groups/features/rings/vertices must be positive");
-	    CUDF_EXPECTS(ply.num_group<=ply.num_feature && ply.num_feature<=ply.num_ring && ply.num_ring<=ply.num_vertex,
+	    CUDF_EXPECTS(ply->num_group<=ply->num_feature && ply->num_feature<=ply->num_ring && ply->num_ring<=ply->num_vertex,
 			"numbers of groups/features/rings/vertices must be in increasing order");
 
 		//brief outputs to check whether the numbers look reasonable or as expected
-		//std::cout<<"# of groups="<< ply.num_group<<std::endl;
-		std::cout<<"# of features="<<ply.num_feature<<std::endl;
-		std::cout<<"# of rings="<< ply.num_ring<<std::endl;
-		std::cout<<"# of vertices="<< ply.num_vertex<<std::endl;
-		size_t len=(4+ply.num_group+ply.num_feature+ply.num_ring)*sizeof(int)+2*ply.num_vertex*sizeof(T);
+		//std::cout<<"# of groups="<< ply->num_group<<std::endl;
+		std::cout<<"# of features="<<ply->num_feature<<std::endl;
+		std::cout<<"# of rings="<< ply->num_ring<<std::endl;
+		std::cout<<"# of vertices="<< ply->num_vertex<<std::endl;
+		size_t len=(4+ply->num_group+ply->num_feature+ply->num_ring)*sizeof(int)+2*ply->num_vertex*sizeof(T);
 		CUDF_EXPECTS(len==sz,"expecting file size and read size are the same");
 
-		ply.group_length=new uint32_t[ ply.num_group];
-		ply.feature_length=new uint32_t[ ply.num_feature];
-		ply.ring_length=new uint32_t[ ply.num_ring];
-		CUDF_EXPECTS(ply.group_length!=nullptr&&ply.feature_length!=nullptr&&ply.ring_length!=nullptr,"expecting p_{g,f,r}_len are non-zeron");
-		ply.x=new T [ply.num_vertex];
-		ply.y=new T [ply.num_vertex];
-		CUDF_EXPECTS(ply.x!=nullptr&&ply.y!=nullptr,"expecting polygon x/y arrays are not nullptr");
+		ply->group_length=new uint32_t[ ply->num_group];
+		ply->feature_length=new uint32_t[ ply->num_feature];
+		ply->ring_length=new uint32_t[ ply->num_ring];
+		CUDF_EXPECTS(ply->group_length!=nullptr&&ply->feature_length!=nullptr&&ply->ring_length!=nullptr,"expecting p_{g,f,r}_len are non-zeron");
+		ply->x=new T [ply->num_vertex];
+		ply->y=new T [ply->num_vertex];
+		CUDF_EXPECTS(ply->x!=nullptr&&ply->y!=nullptr,"expecting polygon x/y arrays are not nullptr");
 
-		size_t r_g=fread(ply.group_length,sizeof(int),ply.num_group,fp);
-		size_t r_f=fread(ply.feature_length,sizeof(int),ply.num_feature,fp);
-		size_t r_r=fread(ply.ring_length,sizeof(int),ply.num_ring,fp);
-		size_t r_x=fread(ply.x,sizeof(T),ply.num_vertex,fp);
-		size_t r_y=fread(ply.y,sizeof(T),ply.num_vertex,fp);
-		CUDF_EXPECTS(r_g==ply.num_group && r_f==ply.num_feature && r_r==ply.num_ring && r_x==ply.num_vertex && r_y==ply.num_vertex,
+		size_t r_g=fread(ply->group_length,sizeof(int),ply->num_group,fp);
+		size_t r_f=fread(ply->feature_length,sizeof(int),ply->num_feature,fp);
+		size_t r_r=fread(ply->ring_length,sizeof(int),ply->num_ring,fp);
+		size_t r_x=fread(ply->x,sizeof(T),ply->num_vertex,fp);
+		size_t r_y=fread(ply->y,sizeof(T),ply->num_vertex,fp);
+		CUDF_EXPECTS(r_g==ply->num_group && r_f==ply->num_feature && r_r==ply->num_ring && r_x==ply->num_vertex && r_y==ply->num_vertex,
 			"wrong number of data items read for index or vertex arrays");
-
-		return ply.num_feature;
 	}
 
-	int read_polygon_soa(const char *poly_filename,struct polygons<double>& ply);
-	int read_polygon_soa(const char *poly_filename,struct polygons<float>& ply);
-
+	void read_polygon_soa(const char *poly_filename,struct polygons<double> *ply);
+	void read_polygon_soa(const char *poly_filename,struct polygons<float> *ply);
     /**
     * @brief read a set of columns of a CSV file into a map
 
