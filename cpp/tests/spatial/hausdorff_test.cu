@@ -78,6 +78,7 @@ struct HausdorffTest : public GdfTest
     }
 };
 
+#if 0 // disable until data files are available
 TEST_F(HausdorffTest, hausdorfftest)
 {
     //currently using hard coded paths; to be updated
@@ -190,3 +191,4 @@ TEST_F(HausdorffTest, hausdorfftest)
     cudaMemGetInfo(&this->free_mem, &this->total_mem);
     std::cout<<"ending GPU free mem "<<this->free_mem<<std::endl;
 }
+#endif

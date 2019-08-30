@@ -147,7 +147,6 @@ namespace cuspatial {
  * by first sorting based on id and timestamp and then group by id.
  * see trajectory.hpp
 */
-
 int coords_to_trajectories(gdf_column& x, gdf_column& y, gdf_column& object_id,
                            gdf_column& timestamp, gdf_column& trajectory_id,
                            gdf_column& len,gdf_column& pos)
