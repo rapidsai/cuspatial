@@ -4,7 +4,7 @@ from cudf.bindings.cudf_cpp import *
 from libc.stdlib cimport calloc, malloc, free
 from libcpp.pair cimport pair
                          
-cpdef cpp_coords_to_trajectories(x, y, object_id, timestamp):
+cpdef cpp_derive_trajectories(x, y, object_id, timestamp):
     cdef gdf_column* c_x = column_view_from_column(x)
     cdef gdf_column* c_y = column_view_from_column(y)
     cdef gdf_column* c_object_id = column_view_from_column(object_id)
@@ -14,11 +14,11 @@ cpdef cpp_coords_to_trajectories(x, y, object_id, timestamp):
     cdef gdf_column* c_pos = <gdf_column*>malloc(sizeof(gdf_column))
     
     with nogil:
-         num_trajectories = coords_to_trajectories(c_x[0], c_y[0],
-                                                   c_object_id[0],
-                                                   c_timestamp[0],
-                                                   c_trajectory_id[0],
-                                                   c_len[0], c_pos[0])
+         num_trajectories = derive_trajectories(c_x[0], c_y[0],
+                                                c_object_id[0],
+                                                c_timestamp[0],
+                                                c_trajectory_id[0],
+                                                c_len[0], c_pos[0])
 
     traj_id_data, traj_id_mask = gdf_column_to_column_mem(c_trajectory_id)
     len_data, len_mask = gdf_column_to_column_mem(c_len)    

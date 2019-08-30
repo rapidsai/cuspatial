@@ -23,8 +23,8 @@ namespace cuspatial {
 /**
  * @brief derive trajectories from points, timestamps and object ids
  * 
- * Points are x/y coordinates relative to an origin). First sorts based on 
- * object id and timestamp and then groups by id.
+ * Points are x/y coordinates relative to an origin. First sorts by object id
+ * and timestamp and then groups by id.
  * 
  * @param[in/out] x: x coordinates relative to a camera origin
  *                  (before/after sorting)
@@ -32,16 +32,16 @@ namespace cuspatial {
  *                   (before/after sorting)
  * @param[in/out] object_id: object (e.g., vehicle) id column (before/after 
  *                sorting); upon completion, unique ids become trajectory ids
- * @param[in/out] ts: timestamp column (before/after sorting)
- * @param[out] tid: trajectory id column (see comments on oid)
- * @param[out] len: #of points in the derived trajectories
- * @param[out] pos: position offsets of trajectories used to index x, y, 
+ * @param[in/out] timestamp: timestamp column (before/after sorting)
+ * @param[out] trajectory_id: trajectory id column (see comments on oid)
+ * @param[out] length: #of points in the derived trajectories
+ * @param[out] offset: position offsets of trajectories used to index x, y, 
  *                  object_id and timestamp
- * @returns the number of derived trajectories
+ * @return number of derived trajectories
  */
-int coords_to_trajectories(gdf_column& x, gdf_column& y, gdf_column& object_id,
-                           gdf_column& timestamp, gdf_column& trajectory_id,
-                           gdf_column& len, gdf_column& pos);
+int derive_trajectories(gdf_column& x, gdf_column& y, gdf_column& object_id,
+                        gdf_column& timestamp, gdf_column& trajectory_id,
+                        gdf_column& length, gdf_column& offset);
 
 
 /**
