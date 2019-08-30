@@ -148,25 +148,34 @@ namespace cuspatial {
  * see trajectory.hpp
 */
 
-int coord_to_traj(gdf_column& x,gdf_column& y,gdf_column& oid, gdf_column& ts, 
- 			    gdf_column& tid,gdf_column& len,gdf_column& pos)
+int coords_to_trajectories(gdf_column& x, gdf_column& y, gdf_column& object_id,
+                           gdf_column& timestamp, gdf_column& trajectory_id,
+                           gdf_column& len,gdf_column& pos)
 {       
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);
     
-    CUDF_EXPECTS(x.data != nullptr &&y.data!=nullptr&&oid.data!=nullptr&&ts.data!=nullptr, "x/y/oid/ts data can not be null");
-    CUDF_EXPECTS(x.size == y.size && x.size==oid.size && x.size==ts.size ,"x/y/oid/ts must have the same size");
+    CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
+                 object_id.data != nullptr && timestamp.data != nullptr,
+                 "x/y/object_id/timetamp data cannot be null");
+    CUDF_EXPECTS(x.size == y.size && x.size == object_id.size &&
+                 x.size == timestamp.size ,
+                 "x/y/object_id/timestamp must have equal size");
     
-    //future versions might allow x/y/oid/ts have null_count>0, which might be useful for taking query results as inputs 
-    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 && oid.null_count==0 && ts.null_count==0, 
-    	"this version does not support x/y/oid/ts contains nulls");
+    // future versions might allow x/y/object_id/timestamp to have null_count > 0,
+    // which might be useful for taking query results as inputs 
+    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
+                 object_id.null_count==0 && timestamp.null_count==0, 
+                 "NULL support unimplemented");
     
-    int num_traj = cudf::type_dispatcher( x.dtype, coor2traj_functor(), x,y,oid,ts,tid,len,pos);
-    		    		
+    int num_traj = cudf::type_dispatcher(x.dtype, coor2traj_functor(), x, y,
+                                         object_id, timestamp, trajectory_id,
+                                         len, pos);
+
     gettimeofday(&t1, nullptr);
     float coor2traj_end2end_time=calc_time("coord_to_traj end-to-end time in ms=",t0,t1);
-    
+
     return num_traj;
-  }//coord_to_traj 
+}
   
 }// namespace cuspatial

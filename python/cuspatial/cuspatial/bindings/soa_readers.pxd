@@ -4,17 +4,14 @@
 # cython: language_level = 3
 # distutils: include_dirs = cuspatial/bindings/
 
-from cuspatial.bindings.cudf_cpp cimport *
+from cudf.bindings.cudf_cpp cimport *
+from libcpp.pair cimport pair
 
-cdef extern from "soa_readers.hpp" namespace "cuSpatial" nogil:
-	cdef void read_uint_soa(const char *pnt_fn,gdf_column& id) except +           
-	cdef void read_ts_soa(const char *ts_fn, gdf_column& ts) except +   
-	cdef void read_pnt_lonlat_soa(const char *pnt_fn, gdf_column& pnt_lon,gdf_column& pnt_lat) except +   
-	cdef void read_pnt_xy_soa(const char *pnt_fn, gdf_column& pnt_x,gdf_column& pnt_y) except +   	
-	cdef void read_ply_soa(const char *ply_fn,gdf_column& ply_fpos, gdf_column& ply_rpos,
-                                   gdf_column& ply_x,gdf_column& ply_y) except +   
-                       
-                                    
-                                    
-                                    
-                               
+cdef extern from "soa_readers.hpp" namespace "cuspatial" nogil:
+    cdef gdf_column read_uint32_soa(const char *pnt_fn) except +
+    cdef gdf_column read_timestamp_soa(const char *ts_fn) except +
+    cdef pair[gdf_column, gdf_column] read_lonlat_points_soa(const char *pnt_fn) except +
+    cdef pair[gdf_column, gdf_column] read_xy_points_soa(const char *pnt_fn) except +
+    cdef void read_polygon_soa(const char *ply_fn, gdf_column* ply_fpos,
+                               gdf_column* ply_rpos, gdf_column* ply_x,
+                               gdf_column* ply_y) except +

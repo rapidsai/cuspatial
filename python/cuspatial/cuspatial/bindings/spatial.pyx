@@ -1,5 +1,6 @@
-from cuspatial.bindings.cudf_cpp import *
+from cudf.bindings.cudf_cpp import *
 from cudf.dataframe.column import Column
+from libcpp.pair cimport pair
 
 from libc.stdlib cimport calloc, malloc, free
                         
@@ -52,33 +53,30 @@ cpdef cpp_haversine_distance(x1,y1,x2,y2):
     
     return h_dist  
 
-cpdef cpp_lonlat2coord(cam_lon,cam_lat,in_lon,in_lat): 
-    print("in cpp_ll2coord")
+cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
+    # print("in cpp_ll2coord")
     
-    cdef gdf_scalar* c_cam_lon=gdf_scalar_from_scalar(cam_lon)
-    cdef gdf_scalar* c_cam_lat=gdf_scalar_from_scalar(cam_lat)
+    cdef gdf_scalar* c_cam_lon = gdf_scalar_from_scalar(cam_lon)
+    cdef gdf_scalar* c_cam_lat = gdf_scalar_from_scalar(cam_lat)
    
     cdef gdf_column* c_in_lon = column_view_from_column(in_lon)
     cdef gdf_column* c_in_lat = column_view_from_column(in_lat)
 
-    cdef gdf_column* c_out_x = <gdf_column*>malloc(sizeof(gdf_column))
-    cdef gdf_column* c_out_y = <gdf_column*>malloc(sizeof(gdf_column))
- 
+    cpdef pair[gdf_column, gdf_column] coords
+
     with nogil:
-       lonlat_to_coord(c_cam_lon[0],c_cam_lat[0],c_in_lon[0],c_in_lat[0],c_out_x[0],c_out_y[0])
-        
-    x_data, x_mask = gdf_column_to_column_mem(c_out_x)
-    y_data, y_mask = gdf_column_to_column_mem(c_out_y)
+       coords = lonlat_to_coord(c_cam_lon[0], c_cam_lat[0], c_in_lon[0], c_in_lat[0])
+
+    x_data, x_mask = gdf_column_to_column_mem(&coords.first)
+    y_data, y_mask = gdf_column_to_column_mem(&coords.second)
     
     free(c_in_lon)
     free(c_in_lat)
-    free(c_out_x)
-    free(c_out_y)
     
     x=Column.from_mem_views(x_data, x_mask)
     y=Column.from_mem_views(y_data, y_mask)
-    
-    return x,y         
+
+    return x,y
  
 cpdef cpp_directed_hausdorff_distance(coor_x,coor_y,cnt):
     print("in cpp_hausdorff_distance")

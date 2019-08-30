@@ -21,46 +21,56 @@
 namespace cuspatial {
 
 /**
- * @brief derive trajectories from points (x/y relative to an origin), timestamps and objectids
- * by first sorting based on id and timestamp and then group by id.
- * @param[in/out] x:  x coordinates reative to a camera origin (before/after sorting)
- * @param[in/out] y:  y coordinates reative to a camera origin (before/after sorting)
- * @param[in/out] oid: object (e.g., vehicle) id column (before/after sorting); upon completion, unqiue ids become trajectory ids
+ * @brief derive trajectories from points, timestamps and object ids
+ * 
+ * Points are x/y coordinates relative to an origin). First sorts based on 
+ * object id and timestamp and then groups by id.
+ * 
+ * @param[in/out] x: x coordinates relative to a camera origin
+ *                  (before/after sorting)
+ * @param[in/out] y: y coordinates relative to a camera origin
+ *                   (before/after sorting)
+ * @param[in/out] object_id: object (e.g., vehicle) id column (before/after 
+ *                sorting); upon completion, unique ids become trajectory ids
  * @param[in/out] ts: timestamp column (before/after sorting)
  * @param[out] tid: trajectory id column (see comments on oid)
  * @param[out] len: #of points in the derived trajectories
- * @param[out] pos: position offsets of trajectories used to index x/y/oid/ts after completion
- * @returns the number of derived trajectory
+ * @param[out] pos: position offsets of trajectories used to index x, y, 
+ *                  object_id and timestamp
+ * @returns the number of derived trajectories
  */
-int coord_to_traj(gdf_column& x,gdf_column& y,gdf_column& oid, gdf_column& ts,
- 			      gdf_column& tid, gdf_column& len,gdf_column& pos);
+int coords_to_trajectories(gdf_column& x, gdf_column& y, gdf_column& object_id,
+                           gdf_column& timestamp, gdf_column& trajectory_id,
+                           gdf_column& len, gdf_column& pos);
 
 
 /**
  * @brief Compute the distance and speed of trajectories
  *
  * Trajectories are typically derived from coordinate data using coords_to_trajectories).
- * @param[in] x: x coordinates reative to a camera origin and ordered by (id,timestamp)
- * @param[in] y: y coordinates reative to a camera origin and ordered by (id,timestamp)
+ * @param[in] x: x coordinates relative to a camera origin and ordered by (id,timestamp)
+ * @param[in] y: y coordinates relative to a camera origin and ordered by (id,timestamp)
  * @param[in] ts: timestamp column ordered by (id,timestamp)
  * @param[in] len: number of points column ordered by (id,timestamp)
  * @param[in] pos: position offsets of trajectories used to index x/y/oid/ts ordered by (id,timestamp)
  * @param[out] dist: computed distances/lengths of trajectories in meters (m)
  * @param[out] speed: computed speed of trajectories in meters per second (m/s)
 
- * Note: we might output duration (in addtiion to distance/speed), should there is a need
- * duration can be easiy computed on CPUs by fetching begining/ending timestamps of a trajectory in the timestamp array
+ * Note: we might output duration (in addition to distance/speed), should there is a need
+ * duration can be easily computed on CPUs by fetching begining/ending timestamps of a trajectory in the timestamp array
  */
-
-std::pair<gdf_column,gdf_column> trajectory_distance_and_speed(const gdf_column& x,const gdf_column& y,const gdf_column& ts,
- 			    const gdf_column& len,const gdf_column& pos);
+std::pair<gdf_column,gdf_column> trajectory_distance_and_speed(const gdf_column& x,
+                                                               const gdf_column& y,
+                                                               const gdf_column& ts,
+                                                               const gdf_column& len,
+                                                               const gdf_column& pos);
 
 
 /**
- * @brief compute spatial bounding boxes of trjectories
+ * @brief compute spatial bounding boxes of trajectories
 
- * @param[in] x: x coordinates reative to a camera origin and ordered by (id,timestamp)
- * @param[in] y: y coordinates reative to a camera origin and ordered by (id,timestamp)
+ * @param[in] x: x coordinates relative to a camera origin and ordered by (id,timestamp)
+ * @param[in] y: y coordinates relative to a camera origin and ordered by (id,timestamp)
  * @param[in] len: number of points column ordered by (id,timestamp)
  * @param[in] pos: position offsets of trajectories used to index x/y/ ordered by (id,timestamp)
  * @param[out] bbox_x1: x coordinates of the lower-left corners of computed spatial bounding boxes
@@ -69,11 +79,11 @@ std::pair<gdf_column,gdf_column> trajectory_distance_and_speed(const gdf_column&
  * @param[out] bbox_y2: y coordinates of the upper-right corners of computed spatial bounding boxes
 
  * Note: temporal 1D bounding box can be computed similary but it seems that there is no such a need;
- * Similar to the dicussion in coord_to_traj, temporal 1D bounding box can be retrieved directly
+ * Similar to the discussion in coord_to_traj, temporal 1D bounding box can be retrieved directly
  */
-
-void trajectory_spatal_bound(const gdf_column& x,const gdf_column& y,
- 			    const gdf_column& len,const gdf_column& pos,
-				gdf_column& bbox_x1,gdf_column& bbox_y1,gdf_column& bbox_x2,gdf_column& bbox_y2);
+void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
+                               const gdf_column& len, const gdf_column& pos,
+                               gdf_column& bbox_x1, gdf_column& bbox_y1,
+                               gdf_column& bbox_x2, gdf_column& bbox_y2);
 
 }  // namespace cuspatial

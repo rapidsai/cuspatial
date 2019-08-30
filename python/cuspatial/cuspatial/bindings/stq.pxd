@@ -5,15 +5,12 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from cuspatial.bindings.cudf_cpp cimport *
+from cudf.bindings.cudf_cpp cimport *
+from libcpp.pair cimport pair
 
-cdef extern from "st_query.hpp" namespace "cuSpatial" nogil:
+cdef extern from "st_query.hpp" namespace "cuspatial" nogil:
 
-   cdef int sw_xy(const gdf_scalar x1,const gdf_scalar x2,const gdf_scalar y1,const gdf_scalar y2,
-   	const gdf_column  & in_x,const gdf_column  & in_y,gdf_column & out_x,gdf_column & out_y) except +	                               
-  		   
-   	
-    	                                
-                                    
-                                    
-                               
+    cdef pair[gdf_column, gdf_column] spatial_window_point(const gdf_scalar x1, const gdf_scalar x2,
+                                                           const gdf_scalar y1, const gdf_scalar y2,
+                                                           const gdf_column  & in_x,
+                                                           const gdf_column  & in_y) except +

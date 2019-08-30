@@ -152,16 +152,18 @@ namespace cuspatial {
  * see trajectory.hpp
  */
  
-void trajectory_spatal_bound(const gdf_column& x,const gdf_column& y,
- 			const gdf_column& len,const gdf_column& pos,
-			gdf_column& bbox_x1,gdf_column& bbox_y1,gdf_column& bbox_x2,gdf_column& bbox_y2)
-{       
+void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
+                               const gdf_column& len, const gdf_column& pos,
+                               gdf_column& bbox_x1, gdf_column& bbox_y1,
+                               gdf_column& bbox_x2, gdf_column& bbox_y2)
+{
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);
    
-    CUDF_EXPECTS(x.data != nullptr &&y.data!=nullptr && len.data!=nullptr && pos.data!=nullptr,
-    	"x/y/len/pos data can not be null");
-    CUDF_EXPECTS(x.size == y.size ,"x/y/ must have the same size");
+    CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
+                 len.data != nullptr && pos.data != nullptr,
+                 "x/y/len/pos data cannot be null");
+    CUDF_EXPECTS(x.size == y.size ,"x/y must have the same size");
     CUDF_EXPECTS(len.size == pos.size ,"len/pos must have the same size");
      
     //future versions might allow x/y/pos/len have null_count>0, which might be useful for taking query results as inputs 

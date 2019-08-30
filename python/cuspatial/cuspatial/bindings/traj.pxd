@@ -5,18 +5,28 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from cuspatial.bindings.cudf_cpp cimport *
+from cudf.bindings.cudf_cpp cimport *
+from libcpp.pair cimport pair
 
-cdef extern from "trajectory.hpp" namespace "cuSpatial" nogil:
+cdef extern from "trajectory.hpp" namespace "cuspatial" nogil:
 
-   cdef int coord_to_traj(gdf_column& coor_x,gdf_column& coor_y,gdf_column& pid, gdf_column& ts, gdf_column& tid,gdf_column& len,gdf_column& pos) except + 
-   cdef void traj_distspeed(const gdf_column& coor_x,const gdf_column& coor_y,const gdf_column& ts,
- 			    const gdf_column& len,const gdf_column& pos,gdf_column& dist,gdf_column& speed) except + 
-   cdef void traj_sbbox(const gdf_column& coor_x,const gdf_column& coor_y, const gdf_column& len,const gdf_column& pos,
-				gdf_column& bbox_x1,gdf_column& bbox_y1,gdf_column& bbox_x2,gdf_column& bbox_y2) except + 			   
-    		
-	
-    	                                
-                                    
-                                    
-                               
+   cdef int coords_to_trajectories(gdf_column& coor_x, gdf_column& coor_y,
+                                   gdf_column& pid, gdf_column& ts,
+                                   gdf_column& tid, gdf_column& len,
+                                   gdf_column& pos) except +
+
+   cdef pair[gdf_column, gdf_column] trajectory_distance_and_speed(
+      const gdf_column& x,
+      const gdf_column& y,
+      const gdf_column& ts,
+      const gdf_column& len,
+      const gdf_column& pos) except +
+
+   cdef void trajectory_spatial_bounds(const gdf_column& x,
+                                       const gdf_column& y,
+                                       const gdf_column& len,
+                                       const gdf_column& pos,
+                                       gdf_column& bbox_x1,
+                                       gdf_column& bbox_y1,
+                                       gdf_column& bbox_x2,
+                                       gdf_column& bbox_y2) except +

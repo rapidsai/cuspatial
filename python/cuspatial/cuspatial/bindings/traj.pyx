@@ -1,52 +1,56 @@
 from cudf.dataframe.column import Column
-from cuspatial.bindings.cudf_cpp import *
+from cudf.bindings.cudf_cpp import *
 
 from libc.stdlib cimport calloc, malloc, free
+from libcpp.pair cimport pair
                          
-cpdef cpp_coord2traj(coor_x,coor_y,pid,ts): 
-    print("in cpp_coor2traj")
-    cdef gdf_column* c_coor_x = column_view_from_column(coor_x)
-    cdef gdf_column* c_coor_y = column_view_from_column(coor_y)
-    cdef gdf_column* c_pid = column_view_from_column(pid)
-    cdef gdf_column* c_ts = column_view_from_column(ts)
-    cdef gdf_column* c_tid = <gdf_column*>malloc(sizeof(gdf_column))
+cpdef cpp_coords_to_trajectories(x, y, object_id, timestamp):
+    cdef gdf_column* c_x = column_view_from_column(x)
+    cdef gdf_column* c_y = column_view_from_column(y)
+    cdef gdf_column* c_object_id = column_view_from_column(object_id)
+    cdef gdf_column* c_timestamp = column_view_from_column(timestamp)
+    cdef gdf_column* c_trajectory_id = <gdf_column*>malloc(sizeof(gdf_column))
     cdef gdf_column* c_len = <gdf_column*>malloc(sizeof(gdf_column))
     cdef gdf_column* c_pos = <gdf_column*>malloc(sizeof(gdf_column))
     
     with nogil:
-         num_traj=coord_to_traj(c_coor_x[0],c_coor_y[0],c_pid[0],c_ts[0],c_tid[0],c_len[0],c_pos[0])
+         num_trajectories = coords_to_trajectories(c_x[0], c_y[0],
+                                                   c_object_id[0],
+                                                   c_timestamp[0],
+                                                   c_trajectory_id[0],
+                                                   c_len[0], c_pos[0])
 
-    tid_data, tid_mask = gdf_column_to_column_mem(c_tid)   
+    traj_id_data, traj_id_mask = gdf_column_to_column_mem(c_trajectory_id)
     len_data, len_mask = gdf_column_to_column_mem(c_len)    
     pos_data, pos_mask = gdf_column_to_column_mem(c_pos)
-    tid=Column.from_mem_views(tid_data, tid_mask)
-    len=Column.from_mem_views(len_data, len_mask)
-    pos=Column.from_mem_views(pos_data, pos_mask)
+    trajectory_id = Column.from_mem_views(traj_id_data,
+                                          traj_id_mask)
+    len = Column.from_mem_views(len_data, len_mask)
+    pos = Column.from_mem_views(pos_data, pos_mask)
     
-    return num_traj,tid,len,pos
+    return num_trajectories, trajectory_id, len, pos
 
-cpdef cpp_traj_distspeed(coor_x,coor_y,ts,len,pos): 
-    print("in cpp_traj_distspeed")
-    cdef gdf_column* c_coor_x = column_view_from_column(coor_x)
-    cdef gdf_column* c_coor_y = column_view_from_column(coor_y)
-    cdef gdf_column* c_ts = column_view_from_column(ts)
+cpdef cpp_trajectory_distance_and_speed(x, y, timestamp, len, pos):
+    cdef gdf_column* c_x = column_view_from_column(x)
+    cdef gdf_column* c_y = column_view_from_column(y)
+    cdef gdf_column* c_timestamp = column_view_from_column(timestamp)
     cdef gdf_column* c_len = column_view_from_column(len)
     cdef gdf_column* c_pos = column_view_from_column(pos)
-    cdef gdf_column* c_dist = <gdf_column*>malloc(sizeof(gdf_column))
-    cdef gdf_column* c_speed = <gdf_column*>malloc(sizeof(gdf_column))
-    
-    with nogil:
-         traj_distspeed(c_coor_x[0],c_coor_y[0],c_ts[0],c_len[0],c_pos[0],c_dist[0],c_speed[0])
+    cdef pair[gdf_column, gdf_column] c_distance_speed
 
-    dist_data, dist_mask = gdf_column_to_column_mem(c_dist)    
-    speed_data, speed_mask = gdf_column_to_column_mem(c_speed)
+    with nogil:
+        c_distance_speed = trajectory_distance_and_speed(c_x[0], c_y[0],
+                                                         c_timestamp[0],
+                                                         c_len[0],c_pos[0])
+
+    dist_data, dist_mask = gdf_column_to_column_mem(&c_distance_speed.first)
+    speed_data, speed_mask = gdf_column_to_column_mem(&c_distance_speed.second)
     dist=Column.from_mem_views(dist_data, dist_mask)
     speed=Column.from_mem_views(speed_data, speed_mask)
     
     return dist,speed
 
-cpdef cpp_traj_sbbox(coor_x,coor_y,len,pos): 
-     print("in cpp_traj_sbbox")
+cpdef cpp_trajectory_spatial_bounds(coor_x,coor_y,len,pos):
      cdef gdf_column* c_coor_x = column_view_from_column(coor_x)
      cdef gdf_column* c_coor_y = column_view_from_column(coor_y)
      cdef gdf_column* c_len = column_view_from_column(len)
@@ -57,7 +61,9 @@ cpdef cpp_traj_sbbox(coor_x,coor_y,len,pos):
      cdef gdf_column* c_y2 = <gdf_column*>malloc(sizeof(gdf_column))
      
      with nogil:
-          traj_sbbox(c_coor_x[0],c_coor_y[0],c_len[0],c_pos[0],c_x1[0],c_y1[0],c_x2[0],c_y2[0])
+          trajectory_spatial_bounds(c_coor_x[0], c_coor_y[0],
+                                    c_len[0], c_pos[0],
+                                    c_x1[0], c_y1[0], c_x2[0], c_y2[0])
  
      x1_data, x1_mask = gdf_column_to_column_mem(c_x1)    
      x1=Column.from_mem_views(x1_data,x1_mask)
@@ -69,4 +75,3 @@ cpdef cpp_traj_sbbox(coor_x,coor_y,len,pos):
      y2=Column.from_mem_views(y2_data,y2_mask)  
     
      return x1,y1,x2,y2
-  

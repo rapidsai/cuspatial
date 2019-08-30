@@ -5,26 +5,24 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from cuspatial.bindings.cudf_cpp cimport *
+from cudf.bindings.cudf_cpp cimport *
+from libcpp.pair cimport pair
 
-cdef extern from "pip.hpp" namespace "cuSpatial" nogil:
+cdef extern from "pip.hpp" namespace "cuspatial" nogil:
  cdef gdf_column pip_bm(const gdf_column& pnt_x,const gdf_column& pnt_y,
                                    const gdf_column& ply_fpos, const gdf_column& ply_rpos,
                                    const gdf_column& ply_x,const gdf_column& ply_y) except +
 
-cdef extern from "coordinate_transform.hpp" namespace "cuSpatial" nogil: 
- cdef void lonlat_to_coord(const gdf_scalar cam_x,const gdf_scalar cam_y,const gdf_column  & in_x,const gdf_column  & in_y,
-   	gdf_column & out_x,gdf_column & out_y) except +	                               
+cdef extern from "coordinate_transform.hpp" namespace "cuspatial" nogil: 
+ cdef pair[gdf_column, gdf_column] lonlat_to_coord(const gdf_scalar cam_x, const gdf_scalar cam_y,
+                                                   const gdf_column  & in_x,
+                                                   const gdf_column  & in_y) except +
 
-cdef extern from "haversine.hpp" namespace "cuSpatial" nogil:  
- gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,
- 	const gdf_column& x2,const gdf_column& y2)except +
+cdef extern from "haversine.hpp" namespace "cuspatial" nogil:  
+ gdf_column haversine_distance(const gdf_column& x1, const gdf_column& y1,
+                               const gdf_column& x2, const gdf_column& y2) except +
 
-cdef extern from "hausdorff.hpp" namespace "cuSpatial" nogil:  
- gdf_column& directed_hausdorff_distance(const gdf_column& coor_x,const gdf_column& coor_y,
-	const gdf_column& cnt)except + 
+cdef extern from "hausdorff.hpp" namespace "cuspatial" nogil:  
+ gdf_column& directed_hausdorff_distance(const gdf_column& coor_x, const gdf_column& coor_y,
+                                         const gdf_column& cnt)except +
 
-                                    
-                                    
-                                    
-                               
