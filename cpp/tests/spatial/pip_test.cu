@@ -101,6 +101,24 @@ TYPED_TEST(PIPTest, piptest)
     gettimeofday(&t2, nullptr);
     float gpu_pip_time2=cuspatial::calc_time("GPU PIP time 2(including point data transfer and kernel time)......",t1,t2);
 
+    int err_cnt=0,non_zero=0;
+    for(int i=0;i<this->point_len;i++)
+    {
+	if(gpu_pip_res[i]!=gpu_pip_res2[i])
+	{
+		/*printf("ERR: %d %d %d, G=%08x C=%08x\n",i,__builtin_popcount(gpu_pip_res[i]),
+			__builtin_popcount(gpu_pip_res2[i]), (unsigned int)(gpu_pip_res[i]),(unsigned int)(gpu_pip_res2[i]));*/
+		err_cnt++;
+	}
+	if(gpu_pip_res[i]!=0&&gpu_pip_res2[i]!=0)
+		non_zero++;
+    }
+    if(err_cnt==0)
+	std::cout<<"two rounds GPU results are identical...................OK"<<std::endl;     	
+    else
+	std::cout<<"two rounds GPU results differ by: "<<err_cnt<<std::endl;     	
+    std::cout<<"non zero results="<<non_zero<<std::endl;
+
     delete[] gpu_pip_res2;
     delete[] gpu_pip_res;
         
