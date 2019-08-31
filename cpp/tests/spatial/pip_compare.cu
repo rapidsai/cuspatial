@@ -165,7 +165,7 @@ typedef testing::Types<double> NumericTypes;
 
 TYPED_TEST_CASE(PIPCompare, NumericTypes);
 
-#if 0 // disable until data files are checked in
+#if 0  // disable until data files are checked in
 TYPED_TEST(PIPCompare, piptest)
 {
     std::string pnt_filename =std::string("/home/jianting/cuspatial/data/locust.location");

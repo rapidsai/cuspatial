@@ -49,7 +49,7 @@ struct is_true
 };
 
 
-struct HausdorffTest : public GdfTest 
+struct HausdorffCompare : public GdfTest 
 {
     
     gdf_column pnt_x,pnt_y,cnt;
@@ -79,7 +79,7 @@ struct HausdorffTest : public GdfTest
 };
 
 #if 0 // disable until data files are available
-TEST_F(HausdorffTest, hausdorfftest)
+TEST_F(HausdorffCompare, hausdorfftest)
 {
     //currently using hard coded paths; to be updated
     std::string point_fn =std::string("/home/jianting/trajcode/locust256.coor");
@@ -89,51 +89,58 @@ TEST_F(HausdorffTest, hausdorfftest)
     this->set_initialize(point_fn.c_str(),cnt_fn.c_str());
     
     //run cuspatial::directed_hausdorff_distance twice 
-    struct timeval t0,t1,t2;
-    gettimeofday(&t0, nullptr);
-    
-    gdf_column dist1=cuspatial::directed_hausdorff_distance(this->pnt_x,this->pnt_y, this->cnt);         
-    assert(dist1.data!=nullptr);
+    struct timeval t0,t1;
+    gettimeofday(&t0, nullptr);    
+    gdf_column dist=cuspatial::directed_hausdorff_distance(this->pnt_x,this->pnt_y, this->cnt);         
     gettimeofday(&t1, nullptr);
-    float gpu_hausdorff_time1=cuspatial::calc_time("GPU Hausdorff Distance time 1......",t0,t1);
+    float gpu_hausdorff_time=cuspatial::calc_time("GPU Hausdorff Distance time......",t0,t1);
     
-    gdf_column dist2=cuspatial::directed_hausdorff_distance(this->pnt_x,this->pnt_y, this->cnt);         
-    assert(dist2.data!=nullptr);
-    gettimeofday(&t2, nullptr);
-    float gpu_hausdorff_time2=cuspatial::calc_time("GPU Hausdorff Distance time 2......",t1,t2);
-  
-    CUDF_EXPECTS(dist1.size==dist2.size ,"output of the two rounds needs to have the same size");
-       
     int set_size=this->cnt.size;
-    int num_pair=dist1.size;
+    int num_pair=dist.size;
     assert(num_pair==set_size*set_size);
     std::cout<<"num_pair="<<num_pair<<std::endl;
     
-    //verify the results of two GPU runs are the same
-    double *data1=nullptr,*data2=nullptr;
-    RMM_TRY( RMM_ALLOC((void**)&data1, sizeof(double)*num_pair, 0) );
-    RMM_TRY( RMM_ALLOC((void**)&data2, sizeof(double)*num_pair, 0) );
-    assert(data1!=nullptr && data2!=nullptr);
-    cudaMemcpy(data1,dist1.data ,num_pair*sizeof(double) , cudaMemcpyDeviceToDevice);
-    cudaMemcpy(data2,dist2.data ,num_pair*sizeof(double) , cudaMemcpyDeviceToDevice);
-    
-    thrust::device_ptr<double> d_dist1_ptr=thrust::device_pointer_cast(data1);
-    thrust::device_ptr<double> d_dist2_ptr=thrust::device_pointer_cast(data2);
-    auto it=thrust::make_zip_iterator(thrust::make_tuple(d_dist1_ptr,d_dist2_ptr));
-    	
-    int this_cnt=thrust::copy_if(it,it+num_pair,it,is_true())-it;	
-    thrust::copy(d_dist1_ptr,d_dist1_ptr+this_cnt,std::ostream_iterator<double>(std::cout, " "));
-    std::cout<<std::endl<<std::endl;
-    thrust::copy(d_dist2_ptr,d_dist2_ptr+this_cnt,std::ostream_iterator<double>(std::cout, " "));
-    std::cout<<std::endl<<std::endl;
 	
-    if(this_cnt==0)
-	std::cout<<"Two rounds GPU results are identical...................OK"<<std::endl;     	
+    //transfer data to CPU and run on CPU 	
+    int num_pnt=this->pnt_x.size;
+    double *x_c=new double[num_pnt];
+    double *y_c=new double[num_pnt];
+    uint32_t *cnt_c=new uint32_t[set_size];
+    assert(x_c!=nullptr && y_c!=nullptr && cnt_c!=nullptr);
+    cudaMemcpy(x_c,this->pnt_x.data ,num_pnt*sizeof(double) , cudaMemcpyDeviceToHost);
+    cudaMemcpy(y_c,this->pnt_y.data ,num_pnt*sizeof(double) , cudaMemcpyDeviceToHost);
+    cudaMemcpy(cnt_c,this->cnt.data ,set_size*sizeof(uint32_t) , cudaMemcpyDeviceToHost);
+    
+    //test only the first subset_size pairs on CPUs
+    int subset_size=100;
+    double *dist_c=nullptr;
+    hausdorff_test_sequential<double>(subset_size,x_c,y_c,cnt_c,dist_c);
+    assert(dist_c!=nullptr);
+    
+    double *dist_h=new double[num_pair];    
+    cudaMemcpy(dist_h,dist.data ,num_pair*sizeof(double) , cudaMemcpyDeviceToHost);
+    
+    //verify the CPU results are the same as the two GPU results
+    int diff_cnt=0	;
+    for(int i=0;i<subset_size;i++)
+    {
+    	for(int j=0;j<subset_size;j++)
+    	{
+    		int p1=i*subset_size+j;
+    		int p2=i*set_size+j;
+    		if(fabs(dist_c[p1]-dist_h[p2])>0.00001)
+    		{
+    			//std::cout<<"diff:("<<i<<","<<j<<") "<<dist_c[p1]<<"  "<<dist_h[p2]<<std::endl;
+    			diff_cnt++;
+    		}
+   	}
+    }
+   
+   if(diff_cnt==0)
+	std::cout<<"GPU and CPU results are identical...................OK"<<std::endl;     	
     else
-	std::cout<<"Two rounds GPU results diff="<<this_cnt<<std::endl;     	
-    RMM_TRY( RMM_FREE(data1, 0) );
-    RMM_TRY( RMM_FREE(data2, 0) );
-
+	std::cout<<"# of GPU and CPU diffs="<<diff_cnt<<std::endl;     
+	
     cudaMemGetInfo(&this->free_mem, &this->total_mem);
     std::cout<<"ending GPU free mem "<<this->free_mem<<std::endl;
 }

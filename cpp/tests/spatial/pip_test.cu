@@ -20,6 +20,7 @@
 #include <string>
 
 #include <utilities/error_utils.hpp>
+#include <cuspatial/soa_readers.hpp>
 #include <cuspatial/pip.hpp>
 #include <gtest/gtest.h>
 #include "pip_util.h"
@@ -30,7 +31,6 @@
 
 using namespace cuspatial;
 
-template <typename T>
 template <typename T>
 struct PIPTest : public GdfTest 
 {
@@ -76,7 +76,7 @@ typedef testing::Types<double> NumericTypes;
 
 TYPED_TEST_CASE(PIPTest, NumericTypes);
 
-#if 0 // disable until data files are checked in
+#if  0 // disable until data files are checked in
 TYPED_TEST(PIPTest, piptest)
 {
     std::string pnt_filename =std::string("/home/jianting/cuspatial/data/locust.location");

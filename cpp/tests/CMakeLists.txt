@@ -87,6 +87,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 set(HAUSDORFF_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_toy.cu"
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cu"
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_compare.cu"
    )
  
 set(PIP_TEST_SRC
