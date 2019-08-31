@@ -88,6 +88,7 @@ set(SPATIAL_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_toy.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_test.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_compare.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/traj_util.cpp"
     )
 ConfigureTest(SPATIALTEST "${SPATIAL_TEST_SRC}")

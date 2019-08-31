@@ -36,14 +36,12 @@ template <typename T>
 bool pip_test_sequential(const T& x, const T& y,
                          const struct polygons<T>& ply, int fid)
 {
-    //printf("pip: x=%15.10f y=%15.10f\n",x,y);
     uint *f_pos=ply.feature_position;
     uint *r_pos=ply.ring_position;
     T *poly_x=ply.x;
     T *poly_y=ply.y;
     uint r_f = (0 == fid) ? 0 : f_pos[fid-1];
     uint r_t=f_pos[fid];
-    //printf("(%d %d)=>\n",r_f,r_t);
     bool in_polygon = false;
     for (uint r = r_f; r < r_t; r++) //for each ring
     {
@@ -55,7 +53,6 @@ bool pip_test_sequential(const T& x, const T& y,
             y0 = poly_y[m];
             x1 = poly_x[m+1];
             y1 = poly_y[m+1];
-            //printf("r=%d m=%d, x0=%15.10f y0=%15.10f x1=%15.10f y1=%15.10f\n",r, m,x0,y0,x1,y1);
             if ((((y0 <= y) && (y < y1)) ||
                     ((y1 <= y) && (y < y0))) &&
                     (x < (x1 - x0) * (y - y0) / (y1 - y0) + x0))
