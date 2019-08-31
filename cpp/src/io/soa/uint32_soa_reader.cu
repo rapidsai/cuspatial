@@ -38,7 +38,7 @@ namespace cuspatial
   		gdf_column values;
    		memset(&values,0,sizeof(gdf_column));
     		
-    		uint *data=nullptr;
+    		uint32_t *data=nullptr;
     		size_t num_l=read_field<uint32_t>(filename,data);
     		if(data==nullptr) 
     			return values;

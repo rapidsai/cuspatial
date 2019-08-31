@@ -36,16 +36,16 @@ template <typename T>
 bool pip_test_sequential(const T& x, const T& y,
                          const struct polygons<T>& ply, int fid)
 {
-    uint *f_pos=ply.feature_position;
-    uint *r_pos=ply.ring_position;
+    uint32_t *f_pos=ply.feature_position;
+    uint32_t *r_pos=ply.ring_position;
     T *poly_x=ply.x;
     T *poly_y=ply.y;
-    uint r_f = (0 == fid) ? 0 : f_pos[fid-1];
-    uint r_t=f_pos[fid];
+    uint32_t r_f = (0 == fid) ? 0 : f_pos[fid-1];
+    uint32_t r_t=f_pos[fid];
     bool in_polygon = false;
-    for (uint r = r_f; r < r_t; r++) //for each ring
+    for (uint32_t r = r_f; r < r_t; r++) //for each ring
     {
-        uint m = (r==0)?0:r_pos[r-1];
+        uint32_t m = (r==0)?0:r_pos[r-1];
         for (;m < r_pos[r]-1; m++) //for each line segment
         {
             T x0, x1, y0, y1;
@@ -78,16 +78,16 @@ template bool pip_test_sequential(const float& x, const float& y,
  * @param[out]  res  pointer/array of unsinged integers; the jth bit of res[i] indicates whehter
  *                   a point of (x[i],y[i]) is in polygon j.
  *
- * @note The # of polygons, i.e., poly.f_num can not exceed sizeof(uint)*8, i.e., 32.
+ * @note The # of polygons, i.e., poly.f_num can not exceed sizeof(uint32_t)*8, i.e., 32.
  */
 template <typename T>
-std::vector<uint> cpu_pip_loop(int num_pnt,const T* x, const T *y,
+std::vector<uint32_t> cpu_pip_loop(int num_pnt,const T* x, const T *y,
                                const struct polygons<T>& poly)
 {
-    std::vector<uint> res;
+    std::vector<uint32_t> res;
     for(int i=0;i<num_pnt;i++)
     {
-        uint mask=0;
+        uint32_t mask=0;
         for(size_t j=0;j<poly.num_feature;j++)
         {
             bool in_polygon =pip_test_sequential<T>(x[i],y[i],poly,j);
@@ -101,10 +101,10 @@ std::vector<uint> cpu_pip_loop(int num_pnt,const T* x, const T *y,
     return res;
 }
 
-template std::vector<uint> cpu_pip_loop(int num_pnt, const double *x,
+template std::vector<uint32_t> cpu_pip_loop(int num_pnt, const double *x,
                                         const double *y,
                                         const struct polygons<double>& poly);
-template std::vector<uint> cpu_pip_loop(int num_pnt, const float *x,
+template std::vector<uint32_t> cpu_pip_loop(int num_pnt, const float *x,
                                         const float *y,
                                         const struct polygons<float>& poly);
 
