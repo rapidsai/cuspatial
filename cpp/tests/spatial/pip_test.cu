@@ -16,16 +16,13 @@
 
 #include <time.h>
 #include <sys/time.h>
-#include <vector>
-#include <string>
 
+#include <gtest/gtest.h>
 #include <utilities/error_utils.hpp>
 #include <cuspatial/soa_readers.hpp>
 #include <cuspatial/pip.hpp>
-#include <gtest/gtest.h>
 #include "pip_util.h"
 
-#include <tests/utilities/column_wrapper.cuh>
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
 

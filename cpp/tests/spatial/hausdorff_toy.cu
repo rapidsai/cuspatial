@@ -20,14 +20,8 @@
 #include <string>
 #include <iostream>
 
-#include <thrust/device_vector.h>
-
-#include <utilities/error_utils.hpp>
 #include <gtest/gtest.h>
-
-#include <tests/utilities/cudf_test_utils.cuh>
-
-#include <cuspatial/soa_readers.hpp> 
+#include <utilities/error_utils.hpp>
 #include <cuspatial/hausdorff.hpp> 
 
 #include <tests/utilities/column_wrapper.cuh>
@@ -49,8 +43,8 @@ TEST_F(HausdorffToy, hausdorfftest)
   gdf_column dist=cuspatial::directed_hausdorff_distance(
   	*(point_x_wrapp.get()), *(point_y_wrapp.get()),*(cnt_wrapp.get()));
   double *h_dist=new double[dist.size];
-  CUDA_TRY(cudaMemcpy(h_dist, dist.data, dist.size*sizeof(double), cudaMemcpyDeviceToHost));//TODO: add streams
-  CUDF_EXPECTS(h_dist[0]==0&&h_dist[3]==0,"distance between trajectories themselves should be 0"); 
+  CUDA_TRY(cudaMemcpy(h_dist, dist.data, dist.size*sizeof(double), cudaMemcpyDeviceToHost));
+  CUDF_EXPECTS(h_dist[0]==0&&h_dist[3]==0,"distance between the same trajectoriy pair should be 0"); 
   std::cout<<"dist(0,1)="<<h_dist[1]<<std::endl;
   std::cout<<"dist(1,0)="<<h_dist[2]<<std::endl;
   delete[] h_dist;

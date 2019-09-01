@@ -16,10 +16,10 @@
 
 #include <vector>
 #include <string>
+#include <gtest/gtest.h>
 #include <cuspatial/pip.hpp>
 #include "pip_util.h"
-#include <gtest/gtest.h>
-#include <gmock/gmock-matchers.h>
+
 #include <tests/utilities/column_wrapper.cuh>
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>

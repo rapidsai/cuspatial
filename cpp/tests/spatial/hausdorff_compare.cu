@@ -20,12 +20,8 @@
 #include <string>
 #include <iostream>
 
-#include <thrust/device_vector.h>
-
-#include <utilities/error_utils.hpp>
 #include <gtest/gtest.h>
-
-#include <tests/utilities/cudf_test_utils.cuh>
+#include <utilities/error_utils.hpp>
 
 #include <cuspatial/soa_readers.hpp> 
 #include <cuspatial/hausdorff.hpp> 
