@@ -32,12 +32,12 @@ using namespace cuspatial;
 
 struct is_true
 {
-	__host__ __device__
+	__device__
 	bool operator()(const thrust::tuple<double, double>& t)
 	{
 		double v1= thrust::get<0>(t);
 		double v2= thrust::get<1>(t);
-		return(fabs(v1-v2)>0.01);
+		return(fabs(v1-v2)>0.001); //1-meter (uint in km)
 	}
 };
 
@@ -114,16 +114,16 @@ TEST_F(HausdorffTest, hausdorfftest)
     thrust::device_ptr<double> d_dist2_ptr=thrust::device_pointer_cast(data2);
     auto it=thrust::make_zip_iterator(thrust::make_tuple(d_dist1_ptr,d_dist2_ptr));
     	
-    int this_cnt=thrust::copy_if(it,it+num_pair,it,is_true())-it;	
-    thrust::copy(d_dist1_ptr,d_dist1_ptr+this_cnt,std::ostream_iterator<double>(std::cout, " "));
+    int diff_count=thrust::copy_if(it,it+num_pair,it,is_true())-it;	
+    thrust::copy(d_dist1_ptr,d_dist1_ptr+diff_count,std::ostream_iterator<double>(std::cout, " "));
     std::cout<<std::endl<<std::endl;
-    thrust::copy(d_dist2_ptr,d_dist2_ptr+this_cnt,std::ostream_iterator<double>(std::cout, " "));
+    thrust::copy(d_dist2_ptr,d_dist2_ptr+diff_count,std::ostream_iterator<double>(std::cout, " "));
     std::cout<<std::endl<<std::endl;
 	
-    if(this_cnt==0)
+    if(diff_count==0)
 	std::cout<<"Two rounds GPU results are identical...................OK"<<std::endl;     	
     else
-	std::cout<<"Two rounds GPU results diff="<<this_cnt<<std::endl;     	
+	std::cout<<"Two rounds GPU results diff="<<diff_count<<std::endl;     	
     RMM_TRY( RMM_FREE(data1, 0) );
     RMM_TRY( RMM_FREE(data2, 0) );
 

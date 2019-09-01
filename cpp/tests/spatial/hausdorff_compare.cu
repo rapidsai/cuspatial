@@ -33,17 +33,6 @@
 
 using namespace cuspatial;
 
-struct is_true
-{
-	__host__ __device__
-	bool operator()(const thrust::tuple<double, double>& t)
-	{
-		double v1= thrust::get<0>(t);
-		double v2= thrust::get<1>(t);
-		return(fabs(v1-v2)>0.01);
-	}
-};
-
 
 struct HausdorffCompare : public GdfTest 
 {
