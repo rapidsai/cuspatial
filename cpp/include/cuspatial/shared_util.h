@@ -21,7 +21,7 @@
 #include <numeric>
 #include <map>
 #include <vector>
-#include <cuspatial/cuspatial.h>
+#include <cuspatial/types.hpp>
 #include <utilities/error_utils.hpp>
 
 namespace cuspatial

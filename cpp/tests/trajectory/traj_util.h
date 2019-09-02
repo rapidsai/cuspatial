@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cuspatial/cuspatial.h>
+#include <cuspatial/types.hpp>
 
 namespace cuspatial {
 	/**

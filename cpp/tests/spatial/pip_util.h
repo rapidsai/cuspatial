@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuspatial/cuspatial.h>
+#include <cuspatial/types.hpp>
 #include <cuspatial/shared_util.h>
 
 namespace cuspatial
