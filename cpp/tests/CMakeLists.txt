@@ -84,11 +84,23 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CUDF_LIBRARY}"
                  "${CUSPATIAL_LIBRARY}"
                  )
-set(SPATIAL_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cu"
+set(HAVERSINE_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/haversine_toy.cu"
+   )
+
+set(HAUSDORFF_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_toy.cu"
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cu"
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_compare.cu"
+   )
+ 
+set(PIP_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_toy.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_test.cu"
-    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/traj_util.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_compare.cu"
     )
-ConfigureTest(SPATIALTEST "${SPATIAL_TEST_SRC}")
+
+ConfigureTest(HAVERSINE_TEST "${HAVERSINE_TEST_SRC}")
+ConfigureTest(HAUSDORFF_TEST "${HAUSDORFF_TEST_SRC}")
+ConfigureTest(PIPTEST "${PIP_TEST_SRC}")
 

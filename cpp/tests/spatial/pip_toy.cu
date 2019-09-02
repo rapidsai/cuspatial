@@ -16,10 +16,10 @@
 
 #include <vector>
 #include <string>
+#include <gtest/gtest.h>
 #include <cuspatial/pip.hpp>
 #include "pip_util.h"
-#include <gtest/gtest.h>
-#include <gmock/gmock-matchers.h>
+
 #include <tests/utilities/column_wrapper.cuh>
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
@@ -41,8 +41,8 @@ struct PIPToy : public GdfTest
         h_polygon.num_feature=2;
         h_polygon.num_ring=2;
         h_polygon.num_vertex=10;
-        h_polygon.feature_position=new uint[h_polygon.num_feature]{1,2};
-        h_polygon.ring_position=new uint[h_polygon.num_ring]{5,10};
+        h_polygon.feature_position=new uint32_t[h_polygon.num_feature]{1,2};
+        h_polygon.ring_position=new uint32_t[h_polygon.num_ring]{5,10};
         h_polygon.x=new double[h_polygon.num_vertex]{-10,   5, 5, -10, -10,  0, 10, 10,  0, 0};
         h_polygon.y=new double[h_polygon.num_vertex]{-10, -10, 5,   5,  -10, 0,  0, 10, 10, 0};
 
@@ -50,18 +50,18 @@ struct PIPToy : public GdfTest
     }
 
     
-    std::vector<uint> exec_gpu_pip()
+    std::vector<uint32_t> exec_gpu_pip()
     {  
         //std::vector g_pos_v(h_polygon.group_position,h_polygon.group_position+h_polygon.num_group);
-        std::vector<uint> f_pos_v(h_polygon.feature_position,h_polygon.feature_position+h_polygon.num_feature);
-        std::vector<uint> r_pos_v(h_polygon.ring_position,h_polygon.ring_position+h_polygon.num_ring);
+        std::vector<uint32_t> f_pos_v(h_polygon.feature_position,h_polygon.feature_position+h_polygon.num_feature);
+        std::vector<uint32_t> r_pos_v(h_polygon.ring_position,h_polygon.ring_position+h_polygon.num_ring);
         std::vector<double> ply_x_v(h_polygon.x,h_polygon.x+h_polygon.num_vertex);
         std::vector<double> ply_y_v(h_polygon.y,h_polygon.y+h_polygon.num_vertex);
         std::vector<double> pnt_x_v(x,x+this->point_len);
         std::vector<double> pnt_y_v(y,y+this->point_len);   
         
-        cudf::test::column_wrapper<uint> polygon_fpos_wrapp{f_pos_v};
-        cudf::test::column_wrapper<uint> polygon_rpos_wrapp{r_pos_v};
+        cudf::test::column_wrapper<uint32_t> polygon_fpos_wrapp{f_pos_v};
+        cudf::test::column_wrapper<uint32_t> polygon_rpos_wrapp{r_pos_v};
         cudf::test::column_wrapper<double> polygon_x_wrapp{ply_x_v};
         cudf::test::column_wrapper<double> polygon_y_wrapp{ply_y_v};
         cudf::test::column_wrapper<double> point_x_wrapp{pnt_x_v};
@@ -72,9 +72,9 @@ struct PIPToy : public GdfTest
             *(polygon_fpos_wrapp.get()), *(polygon_rpos_wrapp.get()), 
             *(polygon_x_wrapp.get()), *(polygon_y_wrapp.get()) );
     
-        std::vector<uint> gpu_pip_res(this->point_len);
+        std::vector<uint32_t> gpu_pip_res(this->point_len);
     	EXPECT_EQ(cudaMemcpy(gpu_pip_res.data(), res_bm1.data,
-                             this->point_len * sizeof(uint),
+                             this->point_len * sizeof(uint32_t),
                              cudaMemcpyDeviceToHost),
                   cudaSuccess);
         return gpu_pip_res;
@@ -104,11 +104,11 @@ TEST_F(PIPToy, piptest)
 {
     ASSERT_GE(this->set_initialize(), 0);
 
-    std::vector<uint> cpu_pip_res = cpu_pip_loop(this->point_len,
+    std::vector<uint32_t> cpu_pip_res = cpu_pip_loop(this->point_len,
                                                  this->x, this->y,
                                                  this->h_polygon);
 
-    std::vector<uint> gpu_pip_res = this->exec_gpu_pip();
+    std::vector<uint32_t> gpu_pip_res = this->exec_gpu_pip();
     EXPECT_THAT(gpu_pip_res, testing::Eq(cpu_pip_res));
 
     this->set_finalize();

@@ -32,7 +32,7 @@ namespace cuspatial {
  * @returns gdf_column of type GDF_INT32; the jth bit of the ith element of the returned GDF_INT32 array indicate
  * whether the ith point is in the jth polygon.
 
- * Note: The # of polygons, i.e., ply_fpos.size can not exceed sizeof(uint)*8, i.e., 32.
+ * Note: The # of polygons, i.e., ply_fpos.size can not exceed sizeof(uint32_t)*8, i.e., 32.
  * It is possible to use larger integers to accommodate more polygons (e.g., 64/128).
  * For more polygons, the polygons need to be indexed and the problem essentially becomes a spatial join.
  */

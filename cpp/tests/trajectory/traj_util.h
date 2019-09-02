@@ -22,7 +22,7 @@ namespace cuspatial {
 	 * i.e., a set of coordiantes (lon/lat/alt) with a timestamp and an object (e.g., vehicle) identifier.
 	 *
 	 * @param[in]  root_fn: the root of the three files stored in columnar format,
-	 * with .objectid (uint type),.time (its_timestamp type) and .location(location_3d type) extensions, respectively.
+	 * with .objectid (uint32_t type),.time (its_timestamp type) and .location(location_3d type) extensions, respectively.
 	 * @param[out]  objid: out array for ID
 	 * @param[out]  time: out array for ID
 	 * @param[out]  location: out array for ID

@@ -21,12 +21,12 @@
 
 
 template <typename T>
-void hausdorff_test_sequential(int set_size,const T* pnt_x, const T* pnt_y, const uint * cnt ,T *& h_dist)
+void hausdorff_test_sequential(int set_size,const T* pnt_x, const T* pnt_y, const uint32_t * cnt ,T *& h_dist)
 {
     int block_sz=set_size*set_size;
     h_dist=new T[block_sz];
     assert(h_dist!=NULL);
-    uint *pos=new uint[set_size];
+    uint32_t *pos=new uint32_t[set_size];
     assert(pos!=NULL);
     for(int i=0;i<set_size;i++)
     	pos[i]=(i==0)?cnt[i]:pos[i-1]+cnt[i];
@@ -59,5 +59,5 @@ void hausdorff_test_sequential(int set_size,const T* pnt_x, const T* pnt_y, cons
     }
 }
 
-template void hausdorff_test_sequential(int,const double*, const double*,const uint *,double*&);
-template void hausdorff_test_sequential(int,const float*, const float*,const uint *,float*&);
+template void hausdorff_test_sequential(int,const double*, const double*,const uint32_t *,double*&);
+template void hausdorff_test_sequential(int,const float*, const float*,const uint32_t *,float*&);
