@@ -23,14 +23,14 @@ namespace cuspatial {
  * @brief Point-in-Polygon (PIP) tests between a column of points and a
  *        column of polygons
  *
- * @param[in] pnt_x: x coordinates of points
- * @param[in] pnt_y: y coordinates of points
- * @param[in] ply_fpos: index polygons: prefix sum of number of rings of all
+ * @param[in] points_x: x coordinates of points
+ * @param[in] points_y: y coordinates of points
+ * @param[in] poly_fpos: index polygons: prefix sum of number of rings of all
  *            polygons
- * @param[in] ply_rpos: index rings: prefix sum of  number of vertices of all
+ * @param[in] poly_rpos: index rings: prefix sum of number of vertices of all
  *            rings
- * @param[in] ply_x: x coordinates of concatenated polygons
- * @param[in] ply_y: y coordinates of concatenated polygons
+ * @param[in] poly_x: x coordinates of concatenated polygons
+ * @param[in] poly_y: y coordinates of concatenated polygons
  *
  * @returns gdf_column of type GDF_INT32; the jth bit of the ith element of the
  *          returned GDF_INT32 array is 1 if the ith point is in the jth polygon
@@ -41,8 +41,11 @@ namespace cuspatial {
  * the polygons need to be indexed and the problem essentially becomes a spatial
  * join.
  */
-gdf_column pip_bm(const gdf_column& pnt_x, const gdf_column& pnt_y,
-                  const gdf_column& ply_fpos, const gdf_column& ply_rpos,
-                  const gdf_column& ply_x, const gdf_column& ply_y);
+gdf_column point_in_polygon_bitmap(const gdf_column& points_x,
+                                   const gdf_column& points_y,
+                                   const gdf_column& poly_fpos,
+                                   const gdf_column& poly_rpos,
+                                   const gdf_column& poly_x,
+                                   const gdf_column& poly_y);
 
 }  // namespace cuspatial

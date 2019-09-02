@@ -150,44 +150,44 @@ struct pip_functor {
     }
 };
 
-
-/**
- * @brief Point-in-Polygon (PIP) tests among a vector/array of points and a vector/array of polygons
- * see pip.hpp
-*/
-
 namespace cuspatial {
 
-gdf_column pip_bm(const gdf_column& pnt_x,const gdf_column& pnt_y,
-                                   const gdf_column& ply_fpos, const gdf_column& ply_rpos,
-                                   const gdf_column& ply_x,const gdf_column& ply_y)
-                         
+/*
+ * Point-in-Polygon (PIP) tests among a column of points and a column of
+ * polygons. See pip.hpp
+*/
+gdf_column point_in_polygon_bitmap(const gdf_column& points_x,
+                                   const gdf_column& points_y,
+                                   const gdf_column& poly_fpos,
+                                   const gdf_column& poly_rpos,
+                                   const gdf_column& poly_x,
+                                   const gdf_column& poly_y)
 {       
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);
-    
-    CUDF_EXPECTS(pnt_y.data != nullptr && pnt_x.data != nullptr, "query point data cannot be empty");
-    CUDF_EXPECTS(pnt_y.dtype == pnt_x.dtype, "polygon vertex and point data type mismatch for x array ");
-    
+
+    CUDF_EXPECTS(points_y.data != nullptr && points_x.data != nullptr, "query point data cannot be empty");
+    CUDF_EXPECTS(points_y.dtype == points_x.dtype, "polygon vertex and point data type mismatch for x array ");
+
     //future versions might allow pnt_(x/y) have null_count>0, which might be useful for taking query results as inputs 
-    CUDF_EXPECTS(pnt_x.null_count == 0 && pnt_y.null_count == 0, "this version does not support pnt_x/pnt_y contains nulls");
-  
-    CUDF_EXPECTS(ply_fpos.data != nullptr &&ply_rpos.data!=nullptr, "polygon index cannot be empty");
-    CUDF_EXPECTS(ply_fpos.size >0 && (size_t)ply_fpos.size<=sizeof(uint32_t)*8, "#polygon of polygons can not exceed bitmap capacity (32 for unsigned int)");
-    CUDF_EXPECTS(ply_y.data != nullptr && ply_x.data != nullptr, "polygon data cannot be empty");
-    CUDF_EXPECTS(ply_fpos.size <=ply_rpos.size,"#of polygons must be equal or less than # of rings (one polygon has at least one ring");
-    CUDF_EXPECTS(ply_y.size == ply_x.size, "polygon vertice sizes mismatch between x/y arrays");
-    CUDF_EXPECTS(pnt_y.size == pnt_x.size, "query points size mismatch from between x/y arrays");
-    CUDF_EXPECTS(ply_y.dtype == ply_x.dtype, "polygon vertex data type mismatch between x/y arrays");
-    CUDF_EXPECTS(ply_y.dtype == pnt_y.dtype, "polygon vertex and point data type mismatch for y array");
-    CUDF_EXPECTS(ply_x.null_count == 0 && ply_y.null_count == 0, "polygon should not contain nulls");
-    
-    gdf_column res_bm = cudf::type_dispatcher( pnt_x.dtype, pip_functor(), 
-    		pnt_x,pnt_y,ply_fpos,ply_rpos,ply_x,ply_y);
-    		
+    CUDF_EXPECTS(points_x.null_count == 0 && points_y.null_count == 0, "this version does not support points_x/points_y contains nulls");
+
+    CUDF_EXPECTS(poly_fpos.data != nullptr &&poly_rpos.data!=nullptr, "polygon index cannot be empty");
+    CUDF_EXPECTS(poly_fpos.size >0 && (size_t)poly_fpos.size<=sizeof(uint32_t)*8, "#polygon of polygons can not exceed bitmap capacity (32 for unsigned int)");
+    CUDF_EXPECTS(poly_y.data != nullptr && poly_x.data != nullptr, "polygon data cannot be empty");
+    CUDF_EXPECTS(poly_fpos.size <=poly_rpos.size,"#of polygons must be equal or less than # of rings (one polygon has at least one ring");
+    CUDF_EXPECTS(poly_y.size == poly_x.size, "polygon vertice sizes mismatch between x/y arrays");
+    CUDF_EXPECTS(points_y.size == points_x.size, "query points size mismatch from between x/y arrays");
+    CUDF_EXPECTS(poly_y.dtype == poly_x.dtype, "polygon vertex data type mismatch between x/y arrays");
+    CUDF_EXPECTS(poly_y.dtype == points_y.dtype, "polygon vertex and point data type mismatch for y array");
+    CUDF_EXPECTS(poly_x.null_count == 0 && poly_y.null_count == 0, "polygon should not contain nulls");
+
+    gdf_column res_bm = cudf::type_dispatcher(points_x.dtype, pip_functor(), 
+                                              points_x, points_y, poly_fpos,
+                                              poly_rpos,poly_x,poly_y);
+
     gettimeofday(&t1, nullptr);
     float pip_end2end_time=calc_time("C++ pip_bm end-to-end time in ms=",t0,t1);
-    
     return res_bm;
   }//pip 
   

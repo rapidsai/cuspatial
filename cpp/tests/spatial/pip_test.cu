@@ -59,14 +59,15 @@ struct PIPTest : public GdfTest
     
     std::vector<uint32_t> exec_gpu_pip()
     {      
-        gdf_column d_result = cuspatial::pip_bm(this->pnt_x, this->pnt_y,
-                                                this->f_pos, this->r_pos,
-                                                this->poly_x, this->poly_y); 
+        gdf_column result_bitmap =
+            cuspatial::point_in_polygon_bitmap(this->pnt_x, this->pnt_y,
+                                               this->f_pos, this->r_pos,
+                                               this->poly_x, this->poly_y); 
         std::vector<uint32_t> h_result(this->point_len);
-        EXPECT_EQ(cudaMemcpy(h_result.data(), d_result.data,
+        EXPECT_EQ(cudaMemcpy(h_result.data(), result_bitmap.data,
                              this->point_len * sizeof(uint32_t),
                              cudaMemcpyDeviceToHost), cudaSuccess);
-        gdf_column_free(&d_result);
+        gdf_column_free(&result_bitmap);
         return h_result;
     }
 };

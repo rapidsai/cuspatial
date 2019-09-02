@@ -67,7 +67,7 @@ struct PIPToy : public GdfTest
         cudf::test::column_wrapper<double> point_x_wrapp{pnt_x_v};
         cudf::test::column_wrapper<double> point_y_wrapp{pnt_y_v};
          
-        gdf_column res_bm1 = cuspatial::pip_bm( 
+        gdf_column res_bm1 = cuspatial::point_in_polygon_bitmap( 
             *(point_x_wrapp.get()), *(point_y_wrapp.get()),
             *(polygon_fpos_wrapp.get()), *(polygon_rpos_wrapp.get()), 
             *(polygon_x_wrapp.get()), *(polygon_y_wrapp.get()) );
