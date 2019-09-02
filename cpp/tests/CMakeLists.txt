@@ -85,22 +85,18 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CUSPATIAL_LIBRARY}"
                  )
 set(HAVERSINE_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/haversine_toy.cu"
-   )
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/haversine_toy.cu")
+ConfigureTest(HAVERSINE_TEST "${HAVERSINE_TEST_SRC}")
 
 set(HAUSDORFF_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_toy.cu"
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cu"
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_compare.cu"
-   )
- 
-set(PIP_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_compare.cu")
+ConfigureTest(HAUSDORFF_TEST "${HAUSDORFF_TEST_SRC}")
+
+set(POINT_IN_POLYGON_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_toy.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_test.cu"
-    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_compare.cu"
-    )
-
-ConfigureTest(HAVERSINE_TEST "${HAVERSINE_TEST_SRC}")
-ConfigureTest(HAUSDORFF_TEST "${HAUSDORFF_TEST_SRC}")
-ConfigureTest(PIPTEST "${PIP_TEST_SRC}")
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_compare.cu")
+ConfigureTest(POINT_IN_POLYGON_TEST "${POINT_IN_POLYGON_TEST_SRC}")
 
