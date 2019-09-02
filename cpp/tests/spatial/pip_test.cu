@@ -63,7 +63,7 @@ struct PIPTest : public GdfTest
                                                 this->f_pos, this->r_pos,
                                                 this->poly_x, this->poly_y); 
         std::vector<uint32_t> h_result(this->point_len);
-        EXPECT_EQ(cudaMemcpy(result.data(), d_result.data,
+        EXPECT_EQ(cudaMemcpy(h_result.data(), d_result.data,
                              this->point_len * sizeof(uint32_t),
                              cudaMemcpyDeviceToHost), cudaSuccess);
         gdf_column_free(&d_result);
