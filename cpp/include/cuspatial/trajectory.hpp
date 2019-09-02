@@ -105,7 +105,7 @@ void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
  * These IDs can then be used to reterive x/y/len/pos data for futher processing.
  */
 
-uint32_t trajectory_subset_id(const gdf_column& ids,
+uint32_t subset_trajectory_id(const gdf_column& ids,
 		const gdf_column& in_x, const gdf_column& in_y, const gdf_column& in_id, const gdf_column& in_ts,
 		gdf_column& out_x, gdf_column& out_y,gdf_column& out_id, gdf_column& out_ts);
 

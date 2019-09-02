@@ -90,8 +90,8 @@ TEST_F(TrajectorySubsetToy, trajectorysubsettest)
   memset(&out_id,0,sizeof(gdf_column));
   memset(&out_ts,0,sizeof(gdf_column));
   
-  std::cout<<"calling cuspatial::trajectory_subset_id"<<std::endl;
-  uint32_t num_hit=cuspatial::trajectory_subset_id(*(ids_wrapp.get()),
+  std::cout<<"calling cuspatial::subset_trajectory_id"<<std::endl;
+  uint32_t num_hit=cuspatial::subset_trajectory_id(*(ids_wrapp.get()),
   	*(point_x_wrapp.get()), *(point_y_wrapp.get()),*(point_id_wrapp.get()),*(point_ts_wrapp.get()),
   	out_x,out_y,out_id,out_ts);
   

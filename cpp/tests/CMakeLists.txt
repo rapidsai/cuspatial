@@ -100,6 +100,16 @@ set(POINT_IN_POLYGON_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_compare.cu")
 ConfigureTest(POINT_IN_POLYGON_TEST "${POINT_IN_POLYGON_TEST_SRC}")
 
+set(TRAJECTORY_DISTANCE_SPEED_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/trajectory_distance_speed_toy.cu"
+    )
+ConfigureTest(TRAJECTORY_DISTANCE_SPEED_TEST "${TRAJECTORY_DISTANCE_SPEED_TEST_SRC}")
+
+set(TRAJECTORY_DERIVE_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/trajectory_derive_toy.cu"
+    )
+ConfigureTest(TRAJECTORY_DERIVE_TEST "${TRAJECTORY_DERIVE_TEST_SRC}")
+
 set(TRAJECTORY_SUBSET_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/trajectory_subset_toy.cu"
     )
