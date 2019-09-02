@@ -8,7 +8,7 @@
 from cudf.bindings.cudf_cpp cimport *
 from libcpp.pair cimport pair
 
-cdef extern from "pip.hpp" namespace "cuspatial" nogil:
+cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
  cdef gdf_column point_in_polygon_bitmap(const gdf_column& pnt_x,
                                          const gdf_column& pnt_y,
                                          const gdf_column& ply_fpos,

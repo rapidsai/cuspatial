@@ -21,6 +21,7 @@
 
 namespace cuspatial
 {
+
 /**
  * @brief sequential point-in-polygon test between a single point and a single polygon;
  *        basic unit for either sequential execution or parallellization in multi-point/multi-polygon test cases

@@ -22,7 +22,7 @@
 #include <type_traits>
 #include <thrust/device_vector.h>
 #include <utility/utility.hpp>
-#include <cuspatial/pip.hpp>
+#include <cuspatial/point_in_polygon.hpp>
 
 using namespace std; 
 using namespace cudf;
@@ -154,8 +154,8 @@ namespace cuspatial {
 
 /*
  * Point-in-Polygon (PIP) tests among a column of points and a column of
- * polygons. See pip.hpp
-*/
+ * polygons. See point_in_polygon.hpp
+ */
 gdf_column point_in_polygon_bitmap(const gdf_column& points_x,
                                    const gdf_column& points_y,
                                    const gdf_column& poly_fpos,
