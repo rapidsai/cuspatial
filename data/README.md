@@ -18,11 +18,11 @@ For application background [see here](https://www.nvidia.com/en-us/deep-learning
 Download these three data files to {cudf_home}/data and compile/run two data
 preprocessing C++ programs in the folder to prepare the data files for the
 C++/Python test code. In addition to its_4326_roi.* and its_camera_2.csv,
-four derived SoA data files are needed for the tests:
-
-vehical identification (.objectid), timestamp (.time), lon/lat location
-(.location) and polygon (.ply). The instructions to compile and run
-json2soa.cpp and poly2soa.cpp are provided at the beginning of the two programs.
+four derived SoA data files are needed for the tests: vehicle identification
+(`.objectid`), timestamp (`.time`), lon/lat location
+(`.location`) and polygon (`.ply`). The instructions to compile and run
+`json2soa.cpp` and `poly2soa.cpp` are provided at the beginning of the two
+programs.
 
 ### json2soa
 To compile, download cJSON.c and cJSON.h from the
