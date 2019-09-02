@@ -82,8 +82,8 @@ struct HausdorffTest : public GdfTest
 TEST_F(HausdorffTest, hausdorfftest)
 {
     //currently using hard coded paths; to be updated
-    std::string point_fn =std::string("/home/jianting/trajcode/locust256.coor");
-    std::string cnt_fn =std::string("/home/jianting/trajcode/locust256.objcnt");
+    std::string point_fn =std::string("../../data/locust256.coor");
+    std::string cnt_fn =std::string("../../data/locust256.objcnt");
     
     //initializaiton
     this->set_initialize(point_fn.c_str(),cnt_fn.c_str());

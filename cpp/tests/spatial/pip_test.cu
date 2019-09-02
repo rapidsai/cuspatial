@@ -46,8 +46,7 @@ struct PIPTest : public GdfTest
 
         struct timeval t0,t1,t2;
         gettimeofday(&t0, nullptr);
-        struct polygons<double> polygon;
-        read_polygon_soa<double>(poly_filename,&polygon);
+        read_polygon_soa<T>(poly_filename,&polygon);
         gettimeofday(&t1, nullptr);
         float ply_load_time=cuspatial::calc_time("polygon data loading time=", t0,t1);
         CUDF_EXPECTS(polygon.num_feature>0 && polygon.num_ring>0,"invalid # of polygons/rings");
@@ -60,14 +59,14 @@ struct PIPTest : public GdfTest
         if(polygon.is_inplace)
         {
             polygon.group_position=polygon.group_length;
-        polygon.feature_position=polygon.feature_length;
-        polygon.ring_position=polygon.ring_length;
+            polygon.feature_position=polygon.feature_length;
+            polygon.ring_position=polygon.ring_length;
         }
         else
         {
-        polygon.group_position=new uint[polygon.num_group];
-        polygon.feature_position=new uint[polygon.num_feature];
-        polygon.ring_position=new uint[polygon.num_ring];
+            polygon.group_position=new uint[polygon.num_group];
+            polygon.feature_position=new uint[polygon.num_feature];
+            polygon.ring_position=new uint[polygon.num_ring];
         }
 
         std::partial_sum(polygon.group_length,polygon.group_length+polygon.num_group,polygon.group_position,std::plus<uint>());
@@ -102,7 +101,7 @@ struct PIPTest : public GdfTest
         return (0);
     }
     
-    void exec_gpu_pip(uint *& gpu_pip_res)
+    std::vector<uint> exec_gpu_pip()
     {
         //std::vector g_pos_v(polygon.group_position,polygon.group_position+polygon.num_group);
         std::vector<uint> f_pos_v(polygon.feature_position,polygon.feature_position+polygon.num_feature);
@@ -125,9 +124,12 @@ struct PIPTest : public GdfTest
             *(polygon_fpos_wrapp.get()), *(polygon_rpos_wrapp.get()), 
             *(polygon_x_wrapp.get()), *(polygon_y_wrapp.get()) );
 
-        gpu_pip_res=new uint[this->point_len];
-        CUDF_EXPECTS(gpu_pip_res!=nullptr,"error in allocating memory for results");
-        EXPECT_EQ(cudaMemcpy(gpu_pip_res, res_bm1.data, this->point_len * sizeof(uint), cudaMemcpyDeviceToHost), cudaSuccess);
+        std::vector<uint> gpu_pip_res(this->point_len);
+        EXPECT_EQ(cudaMemcpy(gpu_pip_res.data(), res_bm1.data,
+                             this->point_len * sizeof(uint),
+                             cudaMemcpyDeviceToHost),
+                  cudaSuccess);
+        return gpu_pip_res;
     }
     
     void set_finalize()
@@ -158,8 +160,8 @@ TYPED_TEST_CASE(PIPTest, NumericTypes);
 #if 0 // disable until data files are checked in
 TYPED_TEST(PIPTest, piptest)
 {
-    std::string pnt_filename =std::string("/home/jianting/cuspatial/data/locust.location");
-    std::string ply_filename=std::string("/home/jianting/cuspatial/data/itsroi.ply"); 
+    std::string pnt_filename =std::string("../../data/locust.location");
+    std::string ply_filename=std::string("../../data/itsroi.ply"); 
     ASSERT_GE(this->set_initialize(ply_filename.c_str(),pnt_filename.c_str()),0);
 
     struct timeval t3,t4,t5,t6;
@@ -176,21 +178,16 @@ TYPED_TEST(PIPTest, piptest)
     //x,y and gpu_pip_res on CPU; pip code allocates memory
     //x and y will be uploaded and res will be downloaded automatically
     //cost include both computation and data transfer time
-    uint* gpu_pip_res=nullptr;
-    this->exec_gpu_pip(gpu_pip_res);
-    assert(gpu_pip_res!=nullptr);
+    std::vector<uint> gpu_pip_res = this->exec_gpu_pip();
     
     gettimeofday(&t5, nullptr);
     float gpu_pip_time1=cuspatial::calc_time("GPU PIP time 1(including point data transfer and kernel time)......",t4,t5);
 
     //Testing asynchronous issues by 2nd call
-    uint* gpu_pip_res2=nullptr;
-    this->exec_gpu_pip(gpu_pip_res2);
-    assert(gpu_pip_res2!=nullptr);
-    
+    std::vector<uint> gpu_pip_res2 = this->exec_gpu_pip();
+
     gettimeofday(&t6, nullptr);
     float gpu_pip_time2=cuspatial::calc_time("GPU PIP time 2(including point data transfer and kernel time)......",t5,t6);
-    delete[] gpu_pip_res2;
 
     int err_cnt=0,non_zero=0;
     for(int i=0;i<this->point_len;i++)
@@ -211,11 +208,9 @@ TYPED_TEST(PIPTest, piptest)
         std::cout<<"# of GPU and CPU diffs="<<err_cnt<<std::endl;
         std::cout<<"non zero results="<<non_zero<<std::endl;
     }
-    
-    delete[] gpu_pip_res;
-    
+
     this->set_finalize();
-    
+
     cudaMemGetInfo(&this->free_mem, &this->total_mem);
     std::cout<<"ending GPU free mem "<<this->free_mem<<std::endl;
 }
