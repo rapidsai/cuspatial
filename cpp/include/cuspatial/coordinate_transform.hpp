@@ -19,18 +19,20 @@
 
 namespace cuspatial {
 
-
 /**
- * @brief transform 2D longitude/latitude coordinates to x/y coordinates relative to a camera origin
-
+ * @brief transform 2D longitude/latitude coordinates to x/y coordinates
+ *        relative to a camera origin
+ *
  * @param[in] cam_lon: longitude of camera origin
  * @param[in] cam_lat: latitude of camera origin
- * @param[in] in_lon: column of longitude coordinates of input points to be transformed
- * @param[in] in_lat: column of latitude coordinates of input points to be transformed
-
+ * @param[in] in_lon: longitude coordinates to transform
+ * @param[in] in_lat: latitude coordinates to transform
+ *
  * @returns a pair of columns storing transformed x/y coordinates
  */
-std::pair<gdf_column,gdf_column> lonlat_to_coord(const gdf_scalar& cam_lon, const gdf_scalar& cam_lat,
-	const gdf_column& in_lon, const gdf_column  & in_lat);
+std::pair<gdf_column,gdf_column> lonlat_to_coord(const gdf_scalar& cam_lon,
+                                                 const gdf_scalar& cam_lat,
+                                                 const gdf_column& in_lon,
+                                                 const gdf_column& in_lat);
 
 }  // namespace cuspatial

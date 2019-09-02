@@ -18,32 +18,48 @@
 
 namespace cuspatial
 {
-	template<typename T>
-	struct location_3d
-	{
-		T latitude;
-		T longitude;
-		T altitude;
-	};
 
-	template<typename T>
-	struct coord_2d
-	{
-		T x;
-		T y;
-	};
+/**
+ * @brief A 3D location: latitude, longitude, altitude
+ * 
+ * @tparam T the base type for the coordinates
+ */
+template<typename T>
+struct location_3d
+{
+    T latitude;
+    T longitude;
+    T altitude;
+};
 
-	struct its_timestamp
-	{
-		uint32_t y : 6;
-		uint32_t m : 4;
-		uint32_t d : 5;
-		uint32_t hh : 5;
-		uint32_t mm : 6;
-		uint32_t ss : 6;
-		uint32_t wd: 3;
-		uint32_t yd: 9;
-		uint32_t ms: 10;
-		uint32_t pid:10;
-	};
+/**
+ * @brief A 2D Cartesian location (x, y)
+ * 
+ * @tparam T the base type for the coordinates
+ */
+template<typename T>
+struct coord_2d
+{
+    T x;
+    T y;
+};
+
+/**
+ * @brief A timestamp
+ * 
+ */
+struct its_timestamp
+{
+    uint32_t y : 6;
+    uint32_t m : 4;
+    uint32_t d : 5;
+    uint32_t hh : 5;
+    uint32_t mm : 6;
+    uint32_t ss : 6;
+    uint32_t wd: 3;
+    uint32_t yd: 9;
+    uint32_t ms: 10;
+    uint32_t pid:10;
+};
+
 }// namespace cuspatial

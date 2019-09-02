@@ -22,16 +22,20 @@ namespace cuspatial {
 /**
  * @brief compute Hausdorff distances among all pairs of a set of trajectories
  * https://en.wikipedia.org/wiki/Hausdorff_distance
-
- * @param[in] x: x coordinates of the input trajectroies
- * @param[in] y: y coordinates of the input trajectroies
- * @param[in] vertex_counts: numbers of vertices of the set of trajectories;
- * also used to compute the starting offsets of the trjajectories in x/y arrays
-
- * @returns a flattened (1D) column of all-pairs directed Hausdorff distances among trajectories (i,j)
+ *
+ * @p vertex_counts is used to compute the starting offset of each trajectory
+ * in @p x and @p y
+ * 
+ * @param[in] x: x coordinates of the input trajectories
+ * @param[in] y: y coordinates of the input trajectories
+ * @param[in] vertex_counts: numbers of vertices in each trajectory
+ *
+ * @returns Flattened (1D) column of all-pairs directed Hausdorff distances
+ *          among trajectories (i,j)
+ * 
  * @note Hausdorff distance is not symmetrical
  */
-
-gdf_column directed_hausdorff_distance(const gdf_column& x, const gdf_column& y, const gdf_column& vertex_counts);
+gdf_column directed_hausdorff_distance(const gdf_column& x, const gdf_column& y,
+                                       const gdf_column& vertex_counts);
 
 }  // namespace cuspatial
