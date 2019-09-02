@@ -17,8 +17,6 @@
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
 #include <utilities/cuda_utils.hpp>
 #include <type_traits>
-#include <thrust/device_vector.h>
-#include <thrust/iterator/discard_iterator.h>
 #include <sys/time.h>
 #include <time.h>
 

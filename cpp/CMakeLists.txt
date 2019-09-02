@@ -270,6 +270,7 @@ add_library(cuspatial SHARED
             src/trajectory/trajectory_spatial_bound.cu
             src/trajectory/trajectory_distance_speed.cu
             src/trajectory/derive_trajectories.cu
+            src/trajectory/subset_trajectories.cu
             src/utility/utility.cpp)
 
 #Override RPATH for cuspatial

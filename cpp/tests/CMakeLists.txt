@@ -100,3 +100,7 @@ set(POINT_IN_POLYGON_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_compare.cu")
 ConfigureTest(POINT_IN_POLYGON_TEST "${POINT_IN_POLYGON_TEST_SRC}")
 
+set(TRAJECTORY_SUBSET_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/trajectory_subset_toy.cu"
+    )
+ConfigureTest(TRAJECTORY_SUBSET_TEST "${TRAJECTORY_SUBSET_TEST_SRC}")
