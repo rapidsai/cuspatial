@@ -258,20 +258,19 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial SHARED
-            src/shared/shared_util.cpp
             src/io/soa/polygon_soa_reader.cu
             src/io/soa/point_soa_reader.cu
             src/io/soa/uint32_soa_reader.cu
             src/io/soa/timestamp_soa_reader.cu
-            src/st_query/spatial_window_point.cu            
+            src/st_query/spatial_window_point.cu
             src/spatial/pip.cu	
             src/spatial/haversine.cu	
             src/spatial/hausdorff.cu
             src/spatial/lonlat_to_coordinate.cu
             src/trajectory/trajectory_spatial_bound.cu
-            src/trajectory/trajectory_distance_speed.cu            
-            src/trajectory/derive_trajectories.cu            
-            )
+            src/trajectory/trajectory_distance_speed.cu
+            src/trajectory/derive_trajectories.cu
+            src/utility/utility.cpp)
 
 #Override RPATH for cuspatial
 SET_TARGET_PROPERTIES(cuspatial PROPERTIES BUILD_RPATH "\$ORIGIN")

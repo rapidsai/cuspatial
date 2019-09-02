@@ -22,7 +22,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <cuspatial/shared_util.h>
+#include <utility/utility.hpp>
 #include <cuspatial/coordinate_transform.hpp>
 
 using namespace std; 

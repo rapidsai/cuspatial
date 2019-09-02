@@ -21,7 +21,7 @@
 #include <utilities/cuda_utils.hpp>
 #include <type_traits>
 #include <thrust/device_vector.h>
-#include <cuspatial/shared_util.h>
+#include <utility/utility.hpp>
 #include <cuspatial/pip.hpp>
 
 using namespace std; 

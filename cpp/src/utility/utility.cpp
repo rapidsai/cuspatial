@@ -17,7 +17,8 @@
 #include <iostream>
 #include <assert.h>
 #include <string.h>
-#include <cuspatial/shared_util.h>
+
+#include <utility/utility.hpp>
 
 namespace cuspatial {
 	/**

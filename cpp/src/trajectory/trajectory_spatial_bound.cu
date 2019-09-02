@@ -21,9 +21,10 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <cuspatial/shared_util.h>
+#include <utility/utility.hpp>
+#include <utility/trajectory_thrust.cuh>
 #include <cuspatial/trajectory.hpp>
-#include <include/trajectory_thrust.cuh>
+
 
 using namespace std; 
 using namespace cudf;

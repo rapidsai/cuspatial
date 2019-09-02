@@ -1,6 +1,6 @@
 #include <string.h>
 #include <algorithm>
-#include <cuspatial/shared_util.h>
+#include <utility/utility.hpp>
 #include "traj_util.h"
 
 using namespace cuspatial;

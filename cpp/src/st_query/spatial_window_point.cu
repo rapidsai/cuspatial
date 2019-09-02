@@ -22,9 +22,10 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <cuspatial/shared_util.h>
+#include <utility/utility.hpp>
+#include <utility/st_query_thrust.cuh>
 #include <cuspatial/st_query.hpp>
-#include <include/st_query_thrust.cuh>
+
 
 using namespace std; 
 using namespace cudf;

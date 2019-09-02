@@ -23,7 +23,7 @@
 #include <utilities/error_utils.hpp>
 #include <rmm/rmm.h>
 #include <cuspatial/soa_readers.hpp>
-#include <cuspatial/shared_util.h>
+#include <utility/utility.hpp>
 
 namespace cuspatial
 {
