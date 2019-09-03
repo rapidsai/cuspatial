@@ -159,7 +159,7 @@ struct sw_point_functor
  
 namespace cuspatial {
 
-std::pair<gdf_column,gdf_column> spatial_window_point(const gdf_scalar x1,
+std::pair<gdf_column,gdf_column> spatial_window_points(const gdf_scalar x1,
                                                       const gdf_scalar y1,
                                                       const gdf_scalar x2,
                                                       const gdf_scalar y2,
