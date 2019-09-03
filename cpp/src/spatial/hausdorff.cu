@@ -18,11 +18,11 @@
 #include <utilities/cuda_utils.hpp>
 #include <type_traits>
 #include <thrust/device_vector.h>
-#include <sys/time.h>
-#include <time.h>
 
 #include <utility/utility.hpp>
 #include <cuspatial/hausdorff.hpp>
+
+namespace {
 
 const unsigned int NUM_THREADS = 1024;
  
@@ -93,35 +93,31 @@ __global__ void kernel_Hausdorff_Full(
 }
 
 struct Hausdorff_functor {
-    template <typename col_type>
+    template <typename T>
     static constexpr bool is_supported()
     {
-         return std::is_floating_point<col_type>::value;
+         return std::is_floating_point<T>::value;
     }
 
-    template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
+    template <typename T, std::enable_if_t< is_supported<T>() >* = nullptr>
     gdf_column operator()(const gdf_column& x, const gdf_column& y,
                           const gdf_column& vertex_counts)
     {
         gdf_column d_matrix;
+        memset(&d_matrix,0,sizeof(gdf_column));
         int num_set=vertex_counts.size;
         int block_sz = num_set*num_set;
-        d_matrix.dtype= x.dtype;
-        d_matrix.col_name=(char *)malloc(strlen("dist")+ 1);
-        strcpy(d_matrix.col_name,"dist");    
-        RMM_TRY( RMM_ALLOC(&d_matrix.data, block_sz * sizeof(col_type), 0) );
-        d_matrix.size=block_sz;
-        d_matrix.valid=nullptr;
-        d_matrix.null_count=0;		
+        
+        cudaStream_t stream{0};
+        auto exec_policy = rmm::exec_policy(stream)->on(stream);
 
-        struct timeval t0,t1;
-        gettimeofday(&t0, nullptr);
-
-        uint32_t *d_pos=nullptr;
-        RMM_TRY( RMM_ALLOC((void**)&d_pos, sizeof(uint32_t)*num_set, 0) );
-        thrust::device_ptr<uint32_t> vertex_counts_ptr=thrust::device_pointer_cast(static_cast<uint32_t*>(vertex_counts.data));
-        thrust::device_ptr<uint32_t> vertex_positions_ptr=thrust::device_pointer_cast(d_pos);
-        thrust::inclusive_scan(vertex_counts_ptr,vertex_counts_ptr+num_set,vertex_positions_ptr);
+        T *temp_matrix{nullptr};
+        RMM_TRY( RMM_ALLOC(&temp_matrix, block_sz * sizeof(T), stream) );    
+  
+        uint32_t *vertex_positions{nullptr};
+        RMM_TRY( RMM_ALLOC((void**)&vertex_positions, sizeof(uint32_t)*num_set, stream) );      
+        uint32_t *vertex_counts_ptr=static_cast<uint32_t*>(vertex_counts.data);
+        thrust::inclusive_scan(exec_policy,vertex_counts_ptr,vertex_counts_ptr+num_set,vertex_positions);
 
         int block_x = block_sz, block_y = 1;
         if (block_sz > 65535)
@@ -129,37 +125,32 @@ struct Hausdorff_functor {
             block_y = ceil((float)block_sz/65535.0);
             block_x = 65535;
         }
-        printf("block_sz=%d  block: %d - %d\n", block_sz,block_x, block_y);
-
         dim3 grid(block_x, block_y);
         dim3 block(NUM_THREADS);   
  
-        kernel_Hausdorff_Full<col_type> <<< grid,block >>> (num_set,
-            static_cast<col_type*>(x.data), static_cast<col_type*>(y.data),
-            d_pos,static_cast<col_type*>(d_matrix.data));
-     
-         
-        CUDA_TRY( cudaDeviceSynchronize() );
-        gettimeofday(&t1, nullptr);
-        float kernelexec_time = cuspatial::calc_time("kernel exec_time:",t0,t1);
-        RMM_TRY( RMM_FREE(d_pos, 0) );
+        kernel_Hausdorff_Full<T> <<< grid,block >>> (num_set,
+            static_cast<T*>(x.data), static_cast<T*>(y.data),
+            vertex_positions,temp_matrix);
        
-        int num_print=(d_matrix.size<10)?d_matrix.size:10;
-        std::cout<<"showing the first "<< num_print<<" output records"<<std::endl;
-        thrust::device_ptr<col_type> dist_ptr=thrust::device_pointer_cast(static_cast<col_type*>(d_matrix.data));
-        std::cout<<"distance:"<<std::endl;
-        thrust::copy(dist_ptr,dist_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl; 
+        CUDA_TRY( cudaDeviceSynchronize() );
+        RMM_TRY( RMM_FREE(vertex_positions, stream) );
+       
+        gdf_column_view_augmented(&d_matrix, temp_matrix, nullptr, block_sz,
+                            x.dtype, 0,
+                            gdf_dtype_extra_info{TIME_UNIT_NONE}, "hausdorff_matrix");          
+ 
         return d_matrix;
     }
 
-    template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
+    template <typename T, std::enable_if_t< !is_supported<T>() >* = nullptr>
     gdf_column  operator()(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts)
     		
     {
         CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
-    
+
+} // namespace anonymous    
 
 /**
 * @brief compute Hausdorff distances among all pairs of a set of trajectories
@@ -170,10 +161,7 @@ namespace cuspatial {
 
 gdf_column directed_hausdorff_distance(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts)
     		
-{       
-    struct timeval t0,t1;
-    gettimeofday(&t0, nullptr);
-    
+{          
     CUDF_EXPECTS(x.data != nullptr &&y.data!=nullptr && vertex_counts.data!=nullptr,
     	"x/y/vertex_counts data can not be null");
     CUDF_EXPECTS(x.size == y.size ,"x/y/must have the same size");
@@ -187,8 +175,6 @@ gdf_column directed_hausdorff_distance(const gdf_column& x,const gdf_column& y,c
   
     gdf_column dist =cudf::type_dispatcher(x.dtype, Hausdorff_functor(), x,y,vertex_counts);
     
-    gettimeofday(&t1, nullptr);
-    float Hausdorff_end2end_time=calc_time("C++ Hausdorff end-to-end time in ms=",t0,t1);
     return dist;
     
     }//hausdorff_distance     
