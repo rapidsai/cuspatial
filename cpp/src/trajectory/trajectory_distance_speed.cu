@@ -25,16 +25,10 @@
 #include <utility/trajectory_thrust.cuh>
 #include <cuspatial/trajectory.hpp>
 
-
-using namespace std; 
-using namespace cudf;
-using namespace cuspatial;
-
 template <typename T>
 __global__ void distspeed_kernel(gdf_size_type num_traj,const T* const __restrict__ x,const T* const __restrict__ y,
-	 const its_timestamp *const __restrict__ time,const uint32_t * const __restrict__ len,const uint32_t * const __restrict__ pos,
-	 T* const __restrict__ dis, T* const __restrict__ sp)
-	 
+        const cuspatial::its_timestamp *const __restrict__ time,const uint32_t * const __restrict__ len,const uint32_t * const __restrict__ pos,
+        T* const __restrict__ dis, T* const __restrict__ sp)
 {
    	 int pid=blockIdx.x*blockDim.x+threadIdx.x;  
    	 if(pid>=num_traj) return;
@@ -106,12 +100,12 @@ struct distspeed_functor {
        
         distspeed_kernel<col_type> <<< grid.num_blocks, block_size >>> (len.size,
         	static_cast<col_type*>(x.data),static_cast<col_type*>(y.data),
-        	static_cast<its_timestamp*>(ts.data),static_cast<uint32_t*>(len.data), static_cast<uint32_t*>(pos.data),
+        	static_cast<cuspatial::its_timestamp*>(ts.data),static_cast<uint32_t*>(len.data), static_cast<uint32_t*>(pos.data),
    	    	static_cast<col_type*>(dist.data), static_cast<col_type*>(speed.data) );           
         CUDA_TRY( cudaDeviceSynchronize() );
 
-	gettimeofday(&t1, nullptr);
-	float distspeed_kernel_time=calc_time("distspeed_kernel_time in ms=",t0,t1);
+        gettimeofday(&t1, nullptr);
+        float distspeed_kernel_time = cuspatial::calc_time("distspeed_kernel_time in ms=",t0,t1);
         
         int num_print=(len.size<10)?len.size:10;
         std::cout<<"showing the first "<< num_print<<" output records"<<std::endl;

@@ -26,8 +26,6 @@
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
 
-using namespace cuspatial;
-
 template <typename T>
 struct PIPTest : public GdfTest 
 {
@@ -101,14 +99,14 @@ TYPED_TEST(PIPTest, piptest)
     int err_cnt=0,non_zero=0;
     for(int i=0;i<this->point_len;i++)
     {
-    if(gpu_pip_res[i]!=gpu_pip_res2[i])
-    {
-        /*printf("ERR: %d %d %d, G=%08x C=%08x\n",i,__builtin_popcount(gpu_pip_res[i]),
-            __builtin_popcount(gpu_pip_res2[i]), (unsigned int)(gpu_pip_res[i]),(unsigned int)(gpu_pip_res2[i]));*/
-        err_cnt++;
-    }
-    if(gpu_pip_res[i]!=0&&gpu_pip_res2[i]!=0)
-        non_zero++;
+        if(gpu_pip_res[i]!=gpu_pip_res2[i])
+        {
+            /*printf("ERR: %d %d %d, G=%08x C=%08x\n",i,__builtin_popcount(gpu_pip_res[i]),
+                __builtin_popcount(gpu_pip_res2[i]), (unsigned int)(gpu_pip_res[i]),(unsigned int)(gpu_pip_res2[i]));*/
+            err_cnt++;
+        }
+        if(gpu_pip_res[i]!=0&&gpu_pip_res2[i]!=0)
+            non_zero++;
     }
     if(err_cnt==0)
         std::cout<<"two rounds GPU results are identical...................OK"<<std::endl;     	

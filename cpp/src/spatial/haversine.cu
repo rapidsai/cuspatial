@@ -16,6 +16,7 @@
 
 #include <sys/time.h>
 #include <time.h>
+#include <math.h>
 
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
 #include <utilities/cuda_utils.hpp>
@@ -24,11 +25,7 @@
 #include <utility/utility.hpp>
 #include <cuspatial/haversine.hpp>
 
-using namespace std; 
-using namespace cudf;
-using namespace cuspatial;
 
-#define pi 3.1415926535 
 
  template <typename T>
  __global__ void haversine_distance_kernel(int pnt_size, const T* const __restrict__ x1,const T* const __restrict__ y1,
@@ -37,10 +34,10 @@ using namespace cuspatial;
     //assuming 1D grid/block config
     uint32_t idx =blockIdx.x*blockDim.x+threadIdx.x;
     if(idx>=pnt_size) return;  
-    T x_1 = pi/180 * x1[idx];
-    T y_1 = pi/180 * y1[idx];
-    T x_2 = pi/180 * x2[idx];
-    T y_2 = pi/180 * y2[idx];
+    T x_1 = M_PI/180 * x1[idx];
+    T y_1 = M_PI/180 * y1[idx];
+    T x_2 = M_PI/180 * x2[idx];
+    T y_2 = M_PI/180 * y2[idx];
     T dlon = x_2 - x_1;
     T dlat = y_2 - y_1;
     T a = sin(dlat/2)*sin(dlat/2) + cos(y_1) * cos(y_2) * sin(dlon/2)*sin(dlon/2);
@@ -56,12 +53,12 @@ struct haversine_functor {
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-     gdf_column operator()(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2)
-    				
+     gdf_column operator()(const gdf_column& x1, const gdf_column& y1,
+                           const gdf_column& x2, const gdf_column& y2)
     {
         gdf_column h_dist;
         col_type* data;
-        
+
         int num_print=(x1.size<10)?x1.size:10;
         std::cout<<"showing the first "<< num_print<<" output records"<<std::endl;
         thrust::device_ptr<col_type> x1_ptr=thrust::device_pointer_cast(static_cast<col_type*>(x1.data));
@@ -71,33 +68,33 @@ struct haversine_functor {
         std::cout<<"x1:"<<std::endl;
         thrust::copy(x1_ptr,x1_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;     
         std::cout<<"y1:"<<std::endl;
-  	thrust::copy(y1_ptr,y1_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;     
-  	std::cout<<"x2:"<<std::endl;
+        thrust::copy(y1_ptr,y1_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;     
+        std::cout<<"x2:"<<std::endl;
         thrust::copy(x2_ptr,x2_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;    
         std::cout<<"y2:"<<std::endl;
- 	thrust::copy(y2_ptr,y2_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;     
- 	
+        thrust::copy(y2_ptr,y2_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;     
+
         RMM_TRY( RMM_ALLOC(&data, x1.size * sizeof(col_type), 0) );
         gdf_column_view(&h_dist, data, nullptr, x1.size, x1.dtype);
 
         struct timeval t0,t1;
         gettimeofday(&t0, nullptr);
-        
+
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, haversine_distance_kernel<col_type>) );
         cudf::util::cuda::grid_config_1d grid{x1.size, block_size, 1};
-        
+
         std::cout<<"num_points="<<x1.size<<" min_grid_size="<<min_grid_size<<" block_size="<<block_size<<std::endl;
-        
+
         haversine_distance_kernel<col_type> <<< grid.num_blocks, block_size >>> (x1.size,
                	static_cast<col_type*>(x1.data), static_cast<col_type*>(y1.data),
         	static_cast<col_type*>(x2.data), static_cast<col_type*>(y2.data),
                 static_cast<col_type*>(data) );
         CUDA_TRY( cudaDeviceSynchronize() );
-	
-	gettimeofday(&t1, nullptr);	
- 	float haversine_distance_kernel_time=calc_time("haversine_distance_kernel_time in ms=",t0,t1);
-        
+
+        gettimeofday(&t1, nullptr);	
+        float haversine_distance_kernel_time=cuspatial::calc_time("haversine_distance_kernel_time in ms=",t0,t1);
+
         std::cout<<"haversine distance:"<<std::endl;
         thrust::device_ptr<col_type> d_hdist_ptr=thrust::device_pointer_cast(static_cast<col_type*>(data));
         thrust::copy(d_hdist_ptr,d_hdist_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;     

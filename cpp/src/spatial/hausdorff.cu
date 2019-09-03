@@ -24,10 +24,6 @@
 #include <utility/utility.hpp>
 #include <cuspatial/hausdorff.hpp>
 
-using namespace std; 
-using namespace cudf;
-using namespace cuspatial;
-
 const unsigned int NUM_THREADS = 1024;
  
 template <typename T>
@@ -104,47 +100,48 @@ struct Hausdorff_functor {
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-    gdf_column  operator()(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts)    		    	
-    { 
- 	gdf_column d_matrix;
- 	int num_set=vertex_counts.size;
-  	int block_sz = num_set*num_set;
- 	d_matrix.dtype= x.dtype;
-  	d_matrix.col_name=(char *)malloc(strlen("dist")+ 1);
-	strcpy(d_matrix.col_name,"dist");    
+    gdf_column operator()(const gdf_column& x, const gdf_column& y,
+                          const gdf_column& vertex_counts)
+    {
+        gdf_column d_matrix;
+        int num_set=vertex_counts.size;
+        int block_sz = num_set*num_set;
+        d_matrix.dtype= x.dtype;
+        d_matrix.col_name=(char *)malloc(strlen("dist")+ 1);
+        strcpy(d_matrix.col_name,"dist");    
         RMM_TRY( RMM_ALLOC(&d_matrix.data, block_sz * sizeof(col_type), 0) );
-     	d_matrix.size=block_sz;
-     	d_matrix.valid=nullptr;
-     	d_matrix.null_count=0;		
-        
+        d_matrix.size=block_sz;
+        d_matrix.valid=nullptr;
+        d_matrix.null_count=0;		
+
         struct timeval t0,t1;
         gettimeofday(&t0, nullptr);
-     
+
         uint32_t *d_pos=nullptr;
         RMM_TRY( RMM_ALLOC((void**)&d_pos, sizeof(uint32_t)*num_set, 0) );
         thrust::device_ptr<uint32_t> vertex_counts_ptr=thrust::device_pointer_cast(static_cast<uint32_t*>(vertex_counts.data));
         thrust::device_ptr<uint32_t> vertex_positions_ptr=thrust::device_pointer_cast(d_pos);
         thrust::inclusive_scan(vertex_counts_ptr,vertex_counts_ptr+num_set,vertex_positions_ptr);
-        
+
         int block_x = block_sz, block_y = 1;
         if (block_sz > 65535)
         {
-    	    block_y = ceil((float)block_sz/65535.0);
-    	    block_x = 65535;
-    	}
-    	printf("block_sz=%d  block: %d - %d\n", block_sz,block_x, block_y);
-    	
-    	dim3 grid(block_x, block_y);
-    	dim3 block(NUM_THREADS);   
+            block_y = ceil((float)block_sz/65535.0);
+            block_x = 65535;
+        }
+        printf("block_sz=%d  block: %d - %d\n", block_sz,block_x, block_y);
+
+        dim3 grid(block_x, block_y);
+        dim3 block(NUM_THREADS);   
  
- 	kernel_Hausdorff_Full<col_type> <<< grid,block >>> (num_set,        	
-          	static_cast<col_type*>(x.data),static_cast<col_type*>(y.data),
-         	d_pos,static_cast<col_type*>(d_matrix.data));
+        kernel_Hausdorff_Full<col_type> <<< grid,block >>> (num_set,
+            static_cast<col_type*>(x.data), static_cast<col_type*>(y.data),
+            d_pos,static_cast<col_type*>(d_matrix.data));
      
          
         CUDA_TRY( cudaDeviceSynchronize() );
-	gettimeofday(&t1, nullptr);
-	float kernelexec_time=calc_time("kernel exec_time:",t0,t1);
+        gettimeofday(&t1, nullptr);
+        float kernelexec_time = cuspatial::calc_time("kernel exec_time:",t0,t1);
         RMM_TRY( RMM_FREE(d_pos, 0) );
        
         int num_print=(d_matrix.size<10)?d_matrix.size:10;

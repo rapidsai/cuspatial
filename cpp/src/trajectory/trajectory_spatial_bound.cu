@@ -25,100 +25,99 @@
 #include <utility/trajectory_thrust.cuh>
 #include <cuspatial/trajectory.hpp>
 
-
-using namespace std; 
-using namespace cudf;
-using namespace cuspatial;
-
 /**
  * @brief CUDA kernel for computing spatial bounding boxes of trajectories
  *
  */
-
 template <typename T>
-__global__ void sbbox_kernel(gdf_size_type num_traj,const T* const __restrict__ x,const T* const __restrict__ y,
-	 const uint32_t * const __restrict__ len,const uint32_t * const __restrict__ pos,
-	 T* const __restrict__ bbox_x1, T* const __restrict__ bbox_y1,T* const __restrict__ bbox_x2, T* const __restrict__ bbox_y2)
-	 
+__global__ void sbbox_kernel(gdf_size_type num_traj, 
+                             const T* const __restrict__ x,
+                             const T* const __restrict__ y,
+                             const uint32_t * const __restrict__ len,
+                             const uint32_t * const __restrict__ pos,
+                             T* const __restrict__ bbox_x1,
+                             T* const __restrict__ bbox_y1,
+                             T* const __restrict__ bbox_x2,
+                             T* const __restrict__ bbox_y2)
 {
-   	 int pid=blockIdx.x*blockDim.x+threadIdx.x;  
-   	 if(pid>=num_traj) return;
-   	 int bp=(pid==0)?0:pos[pid-1];
-   	 int ep=pos[pid];
+    int pid=blockIdx.x*blockDim.x+threadIdx.x;  
+    if(pid>=num_traj) return;
+    int bp=(pid==0)?0:pos[pid-1];
+    int ep=pos[pid];
 
-   	 bbox_x2[pid]=bbox_x1[pid]=x[bp];
-   	 bbox_y2[pid]=bbox_y1[pid]=y[bp];
-   
-   	 for(int i=bp+1;i<ep;i++)
-   	 {
-   	 	if(bbox_x1[pid]>x[i]) bbox_x1[pid]=x[i];
-   	 	if(bbox_x2[pid]<x[i]) bbox_x2[pid]=x[i];
-   	 	if(bbox_y1[pid]>y[i]) bbox_y1[pid]=y[i];
-   	 	if(bbox_y2[pid]<y[i]) bbox_y2[pid]=y[i];
-    	 }
+    bbox_x2[pid]=bbox_x1[pid]=x[bp];
+    bbox_y2[pid]=bbox_y1[pid]=y[bp];
+
+    for(int i=bp+1;i<ep;i++)
+    {
+        if(bbox_x1[pid]>x[i]) bbox_x1[pid]=x[i];
+        if(bbox_x2[pid]<x[i]) bbox_x2[pid]=x[i];
+        if(bbox_y1[pid]>y[i]) bbox_y1[pid]=y[i];
+        if(bbox_y2[pid]<y[i]) bbox_y2[pid]=y[i];
+    }
 }
 
 struct sbbox_functor {
     template <typename col_type>
     static constexpr bool is_supported()
     {
-         return std::is_floating_point<col_type>::value;
+        return std::is_floating_point<col_type>::value;
     }
 
     template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
     void operator()(const gdf_column& x,const gdf_column& y,
- 		const gdf_column& len,const gdf_column& pos,
-		gdf_column& bbox_x1,gdf_column& bbox_y1,gdf_column& bbox_x2,gdf_column& bbox_y2)
-    	
-    { 
- 	bbox_x1.dtype= x.dtype;
-  	bbox_x1.col_name=(char *)malloc(strlen("bbox_x1")+ 1);
-	strcpy(bbox_x1.col_name,"bbox_x1");    
+                    const gdf_column& len, const gdf_column& pos,
+                    gdf_column& bbox_x1, gdf_column& bbox_y1,
+                    gdf_column& bbox_x2, gdf_column& bbox_y2)
+    {
+        bbox_x1.dtype= x.dtype;
+        bbox_x1.col_name=(char *)malloc(strlen("bbox_x1")+ 1);
+        strcpy(bbox_x1.col_name,"bbox_x1");    
         RMM_TRY( RMM_ALLOC(&bbox_x1.data, len.size * sizeof(col_type), 0) );
-     	bbox_x1.size=len.size;
-     	bbox_x1.valid=nullptr;
-     	bbox_x1.null_count=0;		
-	
-	bbox_x2.dtype= x.dtype;
-  	bbox_x2.col_name=(char *)malloc(strlen("bbox_x2")+ 1);
-	strcpy(bbox_x2.col_name,"bbox_x2");    
+        bbox_x1.size=len.size;
+        bbox_x1.valid=nullptr;
+        bbox_x1.null_count=0;
+
+        bbox_x2.dtype= x.dtype;
+        bbox_x2.col_name=(char *)malloc(strlen("bbox_x2")+ 1);
+        strcpy(bbox_x2.col_name,"bbox_x2");    
         RMM_TRY( RMM_ALLOC(&bbox_x2.data, len.size * sizeof(col_type), 0) );
-     	bbox_x2.size=len.size;
-     	bbox_x2.valid=nullptr;
-     	bbox_x2.null_count=0;		
- 	
-	bbox_y1.dtype= x.dtype;
-  	bbox_y1.col_name=(char *)malloc(strlen("bbox_y1")+ 1);
-	strcpy(bbox_y1.col_name,"bbox_y1");    
+        bbox_x2.size=len.size;
+        bbox_x2.valid=nullptr;
+        bbox_x2.null_count=0;
+
+        bbox_y1.dtype= x.dtype;
+        bbox_y1.col_name=(char *)malloc(strlen("bbox_y1")+ 1);
+        strcpy(bbox_y1.col_name,"bbox_y1");    
         RMM_TRY( RMM_ALLOC(&bbox_y1.data, len.size * sizeof(col_type), 0) );
-     	bbox_y1.size=len.size;
-     	bbox_y1.valid=nullptr;
-     	bbox_y1.null_count=0;		
-	
-	bbox_y2.dtype= x.dtype;
-  	bbox_y2.col_name=(char *)malloc(strlen("bbox_y2")+ 1);
-	strcpy(bbox_y2.col_name,"bbox_y2");    
+        bbox_y1.size=len.size;
+        bbox_y1.valid=nullptr;
+        bbox_y1.null_count=0;		
+
+        bbox_y2.dtype= x.dtype;
+        bbox_y2.col_name=(char *)malloc(strlen("bbox_y2")+ 1);
+        strcpy(bbox_y2.col_name,"bbox_y2");    
         RMM_TRY( RMM_ALLOC(&bbox_y2.data, len.size * sizeof(col_type), 0) );
-     	bbox_y2.size=len.size;
-     	bbox_y2.valid=nullptr;
-     	bbox_y2.null_count=0;	
-     	
+        bbox_y2.size=len.size;
+        bbox_y2.valid=nullptr;
+        bbox_y2.null_count=0;
+
         struct timeval t0,t1;
         gettimeofday(&t0, nullptr);
-        
+
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, sbbox_kernel<col_type>) );
         cudf::util::cuda::grid_config_1d grid{x.size, block_size, 1};
         std::cout<<"x.size="<<x.size<<" block_size="<<block_size<<std::endl;
-       
+
         sbbox_kernel<col_type> <<< grid.num_blocks, block_size >>> (len.size,
-        	static_cast<col_type*>(x.data),static_cast<col_type*>(y.data),static_cast<uint32_t*>(len.data), static_cast<uint32_t*>(pos.data),
-   	    	static_cast<col_type*>(bbox_x1.data), static_cast<col_type*>(bbox_y1.data),static_cast<col_type*>(bbox_x2.data), static_cast<col_type*>(bbox_y2.data) );           
+        static_cast<col_type*>(x.data),static_cast<col_type*>(y.data),static_cast<uint32_t*>(len.data), static_cast<uint32_t*>(pos.data),
+        static_cast<col_type*>(bbox_x1.data), static_cast<col_type*>(bbox_y1.data),static_cast<col_type*>(bbox_x2.data), static_cast<col_type*>(bbox_y2.data) );           
         CUDA_TRY( cudaDeviceSynchronize() );
 
-	gettimeofday(&t1, nullptr);
-	float sbbox_kernel_time=calc_time("spatial bbox kernel time in ms=",t0,t1);
-        
+        gettimeofday(&t1, nullptr);
+        float sbbox_kernel_time = cuspatial::calc_time("spatial bbox kernel time in ms=",t0,t1);
+
         int num_print=(len.size<10)?len.size:10;
         std::cout<<"showing the first "<< num_print<<" output records"<<std::endl;
         thrust::device_ptr<col_type> x1_ptr=thrust::device_pointer_cast(static_cast<col_type*>(bbox_x1.data));
@@ -126,24 +125,25 @@ struct sbbox_functor {
         thrust::device_ptr<col_type> x2_ptr=thrust::device_pointer_cast(static_cast<col_type*>(bbox_y1.data));
         thrust::device_ptr<col_type> y2_ptr=thrust::device_pointer_cast(static_cast<col_type*>(bbox_y2.data));
         std::cout<<"x1:"<<std::endl;
-        thrust::copy(x1_ptr,x1_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;     
+        thrust::copy(x1_ptr,x1_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;
         std::cout<<"y1:"<<std::endl;
- 	thrust::copy(y1_ptr,y1_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;     
- 	std::cout<<"x2:"<<std::endl;
-        thrust::copy(x2_ptr,x2_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;    
+        thrust::copy(y1_ptr,y1_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;
+        std::cout<<"x2:"<<std::endl;
+        thrust::copy(x2_ptr,x2_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;
         std::cout<<"y2:"<<std::endl;
- 	thrust::copy(y2_ptr,y2_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;     
+        thrust::copy(y2_ptr,y2_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;
     }
 
-    template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
-    void operator()(const gdf_column& x,const gdf_column& y,
- 		const gdf_column& len,const gdf_column& pos,
-		gdf_column& bbox_x1,gdf_column& bbox_y1,gdf_column& bbox_x2,gdf_column& bbox_y2)
+    template <typename col_type, std::enable_if_t<!is_supported<col_type>()>* = nullptr>
+    void operator()(const gdf_column& x, const gdf_column& y,
+                    const gdf_column& len, const gdf_column& pos,
+                    gdf_column& bbox_x1, gdf_column& bbox_y1,
+                    gdf_column& bbox_x2, gdf_column& bbox_y2)
     {
         CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
-    
+
 
 namespace cuspatial {
 
@@ -152,7 +152,6 @@ namespace cuspatial {
  *
  * see trajectory.hpp
  */
- 
 void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
                                const gdf_column& len, const gdf_column& pos,
                                gdf_column& bbox_x1, gdf_column& bbox_y1,
@@ -160,26 +159,26 @@ void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
 {
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);
-   
+
     CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
                  len.data != nullptr && pos.data != nullptr,
                  "x/y/len/pos data cannot be null");
     CUDF_EXPECTS(x.size == y.size ,"x/y must have the same size");
     CUDF_EXPECTS(len.size == pos.size ,"len/pos must have the same size");
-     
+
     //future versions might allow x/y/pos/len have null_count>0, which might be useful for taking query results as inputs 
-    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 && len.null_count==0 &&  pos.null_count==0,
-    	"this version does not support x/y/len/pos contains nulls");
-    
+    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
+                 len.null_count==0 &&  pos.null_count==0,
+                 "this version does not support x/y/len/pos contains nulls");
+
     CUDF_EXPECTS(x.size >= pos.size ,"one trajectory must have at least one point");  
-    
+
     cudf::type_dispatcher(x.dtype, sbbox_functor(), x,y,len,pos,bbox_x1,bbox_y1,bbox_x2,bbox_y2);
-    
-    // handle null_count if needed 
-     
+
+    // TODO: handle null_count if needed 
+
     gettimeofday(&t1, nullptr);
     float sbbox_end2end_time=calc_time("spatial bbox end2end time in ms=",t0,t1);
-    
-    }//trajectory_spatal_bound     
-    	
+}
+
 }// namespace cuspatial

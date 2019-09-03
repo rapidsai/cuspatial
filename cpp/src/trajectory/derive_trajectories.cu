@@ -26,10 +26,6 @@
 #include <utility/trajectory_thrust.cuh>
 #include <cuspatial/trajectory.hpp>
 
-using namespace std; 
-using namespace cudf;
-using namespace cuspatial;
-
 struct derive_trajectories_functor {
     template <typename T>
     static constexpr bool is_supported()
@@ -45,7 +41,8 @@ struct derive_trajectories_functor {
         T* x_ptr = static_cast<T*>(x.data);
         T* y_ptr = static_cast<T*>(y.data);
         uint32_t* id_ptr = static_cast<uint32_t*>(object_id.data);
-        its_timestamp * time_ptr = static_cast<its_timestamp*>(timestamp.data);
+        cuspatial::its_timestamp * time_ptr = 
+            static_cast<cuspatial::its_timestamp*>(timestamp.data);
 
 #ifdef DEBUG
         int num_print = (object_id.size < 10) ? object_id.size : 10;
@@ -106,7 +103,8 @@ struct derive_trajectories_functor {
         gdf_column_view(&offset, trajpos, nullptr, num_traj, GDF_INT32);
 
         gettimeofday(&t1, nullptr);
-        float derive_trajectories_kernel_time=calc_time("coord_to_traj kernel time in ms=",t0,t1);
+        float derive_trajectories_kernel_time = 
+            cuspatial::calc_time("coord_to_traj kernel time in ms=",t0,t1);
 
 #ifdef DEBUG
         std::cout<<"#traj="<<num_traj<<std::endl;

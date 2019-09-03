@@ -25,14 +25,12 @@
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
 
-using namespace cuspatial;
-
 template <typename T>
 struct PIPCompare : public GdfTest 
 {
     T * h_point_x=nullptr, *h_point_y=nullptr;
     int point_len=-1;
-    struct polygons<T> h_polygon;
+    cuspatial::polygons<T> h_polygon;
     gdf_column point_x,point_y,feature_position,ring_position,polygon_x,polygon_y;
     size_t free_mem = 0, total_mem = 0;
  
@@ -40,7 +38,7 @@ struct PIPCompare : public GdfTest
     {     
         struct timeval t0,t1,t2,t3;
         gettimeofday(&t0, nullptr);
-        read_polygon_soa<T>(poly_filename,&h_polygon);
+        cuspatial::read_polygon_soa<T>(poly_filename,&h_polygon);
         gettimeofday(&t1, nullptr);
         float ply_load_time=cuspatial::calc_time("h_polygon data loading time=", t0,t1);
         CUDF_EXPECTS(h_polygon.num_feature>0 && h_polygon.num_ring>0,"invalid # of polygons/rings");
@@ -68,7 +66,8 @@ struct PIPCompare : public GdfTest
         gettimeofday(&t1, nullptr);
         float polygon_load_time=cuspatial::calc_time("h_polygon data loading time ......",t0,t1);    
 
-        point_len=read_point_lonlat<T>(point_filename,h_point_x,h_point_y);
+        point_len = cuspatial::read_point_lonlat<T>(point_filename,
+                                                    h_point_x, h_point_y);
         std::cout<<"point_len="<<point_len<<std::endl;
         CUDF_EXPECTS(point_len>0,"# of points must be greater than 0");
         CUDF_EXPECTS(h_point_x!=nullptr && h_point_y!=nullptr,"point h_point_x/h_point_y array can not be nullptr");

@@ -25,14 +25,13 @@
 #include <utility/utility.hpp>
 #include <cuspatial/coordinate_transform.hpp>
 
-using namespace std; 
-using namespace cudf;
-using namespace cuspatial;
-
- template <typename T>
- __global__ void coord_trans_kernel(gdf_size_type loc_size,double cam_lon,double cam_lat,
- 	const T* const __restrict__ in_lon,const T* const __restrict__ in_lat,
-        T* const __restrict__ out_x, T* const __restrict__ out_y)
+template <typename T>
+__global__ void coord_trans_kernel(gdf_size_type loc_size,
+                                   double cam_lon, double cam_lat,
+                                   const T* const __restrict__ in_lon,
+                                   const T* const __restrict__ in_lat,
+                                   T* const __restrict__ out_x,
+                                   T* const __restrict__ out_y)
 {
     //assuming 1D grid/block config
     uint32_t idx =blockIdx.x*blockDim.x+threadIdx.x;
@@ -93,9 +92,9 @@ struct ll2coord_functor {
    	    	static_cast<col_type*>(out_x.data), static_cast<col_type*>(out_y.data) );           
         CUDA_TRY( cudaDeviceSynchronize() );
 
-	gettimeofday(&t1, nullptr);
-	float ll2coord_kernel_time=calc_time("lon/lat to x/y conversion kernel time in ms=",t0,t1);
-        
+        gettimeofday(&t1, nullptr);
+        float ll2coord_kernel_time = cuspatial::calc_time("lon/lat to x/y conversion kernel time in ms=",t0,t1);
+
         num_print=(out_x.size<10)?out_x.size:10;
         std::cout<<"ll2coord: showing the first "<< num_print<<" output records"<<std::endl;
         thrust::device_ptr<col_type> outx_ptr=thrust::device_pointer_cast(static_cast<col_type*>(out_x.data));

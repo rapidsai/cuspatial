@@ -24,14 +24,9 @@
 #include <utility/utility.hpp>
 #include <cuspatial/point_in_polygon.hpp>
 
-using namespace std; 
-using namespace cudf;
-using namespace cuspatial;
-
-
- template <typename T>
- __global__ void pip_kernel(gdf_size_type pnt_size,const T* const __restrict__ pnt_x,const T* const __restrict__ pnt_y,
-	gdf_size_type ply_size,const uint32_t* const __restrict__ ply_fpos,const uint32_t* const __restrict__ ply_rpos,	
+template <typename T>
+__global__ void pip_kernel(gdf_size_type pnt_size,const T* const __restrict__ pnt_x,const T* const __restrict__ pnt_y,
+        gdf_size_type ply_size,const uint32_t* const __restrict__ ply_fpos,const uint32_t* const __restrict__ ply_rpos,	
         const T* const __restrict__ ply_x,const T* const __restrict__ ply_y,
         uint32_t* const __restrict__ res_bm)
 {
@@ -130,9 +125,9 @@ struct pip_functor {
         	static_cast<col_type*>(ply_x.data), static_cast<col_type*>(ply_y.data),
                 static_cast<uint32_t*>(res_bm.data) );
         CUDA_TRY( cudaDeviceSynchronize() );
-	
-	gettimeofday(&t1, nullptr);	
- 	float pip_kernel_time=calc_time("pip_kernel_time in ms=",t0,t1);
+
+        gettimeofday(&t1, nullptr);	
+        float pip_kernel_time = cuspatial::calc_time("pip_kernel_time in ms=",t0,t1);
         
         /*thrust::device_ptr<uint32_t> d_resbm_ptr=thrust::device_pointer_cast(static_cast<uint32_t*>(res_bm.data));
         thrust::copy(d_resbm_ptr,d_resbm_ptr+pnt_x.size,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;*/       

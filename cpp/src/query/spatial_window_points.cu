@@ -26,10 +26,6 @@
 #include <cuspatial/query.hpp>
 
 
-using namespace std; 
-using namespace cudf;
-using namespace cuspatial;
-
 namespace {
 
 /**
@@ -55,8 +51,6 @@ struct spatial_window_functor_xy
         return(b1 && b2);
     }
 };
-
-} // namespace anonymous
 
 struct sw_point_functor 
 {
@@ -132,7 +126,8 @@ struct sw_point_functor
                                                             q_y1, q_y2));
 
         gettimeofday(&t1, nullptr);
-        float swxy_kernel_time=calc_time("swxy kernel time in ms=",t0,t1);
+        float swxy_kernel_time = cuspatial::calc_time("swxy kernel time in ms=",
+                                                      t0,t1);
     
         std::cout<<"showing the first "<< num_print<<" output records"<<std::endl;
         std::cout<<"x:"<<std::endl;
@@ -155,6 +150,7 @@ struct sw_point_functor
     }
 };
 
+} // namespace anonymous
 
 /**
  * @brief retrive all points (x,y) that fall within a query window (x1,y1,x2,y2) and output the filtered points

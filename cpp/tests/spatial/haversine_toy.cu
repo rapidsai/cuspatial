@@ -22,8 +22,6 @@
 #include <tests/utilities/column_wrapper.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
 
-using namespace cuspatial;
-
 struct HaversineToy : public GdfTest 
 {
 };   

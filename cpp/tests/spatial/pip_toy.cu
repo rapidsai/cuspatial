@@ -24,8 +24,6 @@
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
 
-using namespace cuspatial;
-
 struct PIPToy : public GdfTest 
 {
     int point_len=3;
@@ -33,7 +31,7 @@ struct PIPToy : public GdfTest
     double  *x=new double[point_len]{0,-8,6};
     double  *y=new double[point_len]{0,-8,6};
     
-    struct polygons<double> h_polygon;
+    cuspatial::polygons<double> h_polygon;
     
     int set_initialize()
     {          

@@ -31,9 +31,6 @@
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
 
-using namespace cuspatial;
-
-
 struct HausdorffCompare : public GdfTest 
 {
     
