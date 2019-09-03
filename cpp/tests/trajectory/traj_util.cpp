@@ -3,15 +3,13 @@
 #include <utility/utility.hpp>
 #include "traj_util.h"
 
-using namespace cuspatial;
-
 /**
- * @brief retrive camera origin at a particular intersection from a configuration file
+ * @brief retrieve camera origin at a particular intersection from a
+ * configuration file
  *
- *
+ * @todo: don't return inscrutable error codes; throw helpful exceptions
  * @return negative error code; 0 for success
  */
-
 int get_camera_origin(const char *df_fn, const char * inter_name, location_3d<double> & camera_origin)
 {
     const int num_col=39;
