@@ -152,19 +152,18 @@ struct sw_point_functor
 
 } // namespace anonymous
 
-/**
- * @brief retrive all points (x,y) that fall within a query window (x1,y1,x2,y2) and output the filtered points
- * see st_query.hpp
- */
- 
 namespace cuspatial {
 
-std::pair<gdf_column,gdf_column> spatial_window_points(const gdf_scalar x1,
-                                                      const gdf_scalar y1,
-                                                      const gdf_scalar x2,
-                                                      const gdf_scalar y2,
-                                                      const gdf_column& in_x,
-                                                      const gdf_column& in_y)
+/*
+ * Return all points (x,y) that fall within a query window (x1,y1,x2,y2)
+ * see query.hpp
+ */
+std::pair<gdf_column,gdf_column> spatial_window_points(const gdf_scalar& x1,
+                                                       const gdf_scalar& y1,
+                                                       const gdf_scalar& x2,
+                                                       const gdf_scalar& y2,
+                                                       const gdf_column& in_x,
+                                                       const gdf_column& in_y)
 {
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);

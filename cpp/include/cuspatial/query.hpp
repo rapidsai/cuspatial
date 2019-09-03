@@ -16,7 +16,7 @@
 
 #pragma once
 
-typedef struct gdf_column_ gdf_column; // forward declaration
+#include <cudf/types.h>
 
 namespace cuspatial {
 
@@ -33,10 +33,10 @@ namespace cuspatial {
  * @returns pair of gdf_columns of query results of in_x and in_y columns.
  */
 
- std::pair<gdf_column,gdf_column> spatial_window_points(const gdf_scalar x1,
-                                                        const gdf_scalar y1,
-                                                        const gdf_scalar x2,
-                                                        const gdf_scalar y2,
+ std::pair<gdf_column,gdf_column> spatial_window_points(const gdf_scalar& x1,
+                                                        const gdf_scalar& y1,
+                                                        const gdf_scalar& x2,
+                                                        const gdf_scalar& y2,
                                                         const gdf_column& in_x,
                                                         const gdf_column& in_y);
 
