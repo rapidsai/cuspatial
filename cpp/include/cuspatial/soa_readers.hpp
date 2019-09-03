@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include <cudf/cudf.h>
-#include <cuspatial/types.hpp>
+typedef struct gdf_column_ gdf_column; // forward declaration
 
 namespace cuspatial {
 

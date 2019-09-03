@@ -26,145 +26,166 @@
 #include <cuspatial/trajectory.hpp>
 
 template <typename T>
-__global__ void distspeed_kernel(gdf_size_type num_traj,const T* const __restrict__ x,const T* const __restrict__ y,
-        const cuspatial::its_timestamp *const __restrict__ time,const uint32_t * const __restrict__ len,const uint32_t * const __restrict__ pos,
-        T* const __restrict__ dis, T* const __restrict__ sp)
+__global__ void distspeed_kernel(gdf_size_type num_traj,
+                                 const T* const __restrict__ x,
+                                 const T* const __restrict__ y,
+                                 const cuspatial::its_timestamp * const __restrict__ time,
+                                 const uint32_t * const __restrict__ len,
+                                 const uint32_t * const __restrict__ pos,
+                                 T* const __restrict__ dis,
+                                 T* const __restrict__ sp)
 {
-   	 int pid=blockIdx.x*blockDim.x+threadIdx.x;  
-   	 if(pid>=num_traj) return;
-   	 int bp=(pid==0)?0:pos[pid-1];
-   	 int ep=pos[pid]-1;
+    int pid=blockIdx.x*blockDim.x+threadIdx.x;  
+    if(pid>=num_traj) return;
+    int bp=(pid==0)?0:pos[pid-1];
+    int ep=pos[pid]-1;
 
-  	 //assuming the same year --restriction to be removed 	 
-  	 float td=(time[ep].yd-time[bp].yd)*86400;
-  	 td+=(time[ep].hh-time[bp].hh)*3600;
-  	 td+=(time[ep].mm-time[bp].mm)*60;
-  	 td+=(time[ep].ss-time[bp].ss);
-  	 td+=(time[ep].ms-time[bp].ms)/(float)1000; 	 
- 
-   	 if((len[pid]<2)||(td==0)||(time[ep].y!=time[bp].y)) 
-   	 {
-   	 	dis[pid]=-1;
-   	 	sp[pid]=-1;
-   	 }
-   	 else
-   	 {
-   	 	float ds=0;
-   	 	for(int i=0;i<len[pid]-1;i++)
-   	 	{
-   	 		float dt=(x[bp+i+1]-x[bp+i])*(x[bp+i+1]-x[bp+i]);
-   	 		dt+=(y[bp+i+1]-y[bp+i])*(y[bp+i+1]-y[bp+i]);
-   	 		ds+=sqrt(dt);
-   	 	}
-   	 	dis[pid]=ds*1000; //km to m
-   	 	sp[pid]=ds*1000/td; // m/s
-   	 }
+    //assuming the same year --restriction to be removed 	 
+    float td=(time[ep].yd-time[bp].yd)*86400;
+    td+=(time[ep].hh-time[bp].hh)*3600;
+    td+=(time[ep].mm-time[bp].mm)*60;
+    td+=(time[ep].ss-time[bp].ss);
+    td+=(time[ep].ms-time[bp].ms)/(float)1000; 	 
+
+    if((len[pid]<2)||(td==0)||(time[ep].y!=time[bp].y)) 
+    {
+        dis[pid]=-1;
+        sp[pid]=-1;
+    }
+    else
+    {
+        float ds=0;
+        for(int i=0;i<len[pid]-1;i++)
+        {
+            float dt=(x[bp+i+1]-x[bp+i])*(x[bp+i+1]-x[bp+i]);
+            dt+=(y[bp+i+1]-y[bp+i])*(y[bp+i+1]-y[bp+i]);
+            ds+=sqrt(dt);
+        }
+        dis[pid]=ds*1000; //km to m
+        sp[pid]=ds*1000/td; // m/s
+    }
 }
 
-struct distspeed_functor {
-    template <typename col_type>
+struct distspeed_functor
+{
+    template <typename T>
     static constexpr bool is_supported()
     {
-         return std::is_floating_point<col_type>::value;
+        return std::is_floating_point<T>::value;
     }
 
-    template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-    std::pair<gdf_column,gdf_column> operator()(const gdf_column& x,const gdf_column& y,const gdf_column& ts,
- 			    const gdf_column& len,const gdf_column& pos)
-    	
+    template <typename T, std::enable_if_t< is_supported<T>() >* = nullptr>
+    std::pair<gdf_column,gdf_column> operator()(const gdf_column& x,
+                                                const gdf_column& y,
+                                                const gdf_column& timestamp,
+                                                const gdf_column& length,
+                                                const gdf_column& offset)
     { 
- 	gdf_column dist,speed;
- 	memset(&dist,0,sizeof(dist));
- 	memset(&dist,0,sizeof(speed));
- 	
- 	dist.dtype= x.dtype;
-  	dist.col_name=(char *)malloc(strlen("dist")+ 1);
-	strcpy(dist.col_name,"dist");    
-        RMM_TRY( RMM_ALLOC(&dist.data, len.size * sizeof(col_type), 0) );
-     	dist.size=len.size;
-     	dist.valid=nullptr;
-     	dist.null_count=0;		
+        gdf_column dist{};
+        T* temp{nullptr};
+        RMM_TRY( RMM_ALLOC(&temp, length.size * sizeof(T), 0) );
+        gdf_column_view_augmented(&dist, temp, nullptr, length.size, x.dtype, 0,
+                                  gdf_dtype_extra_info{TIME_UNIT_NONE}, "dist");
 
- 	speed.dtype= x.dtype;
-  	speed.col_name=(char *)malloc(strlen("speed")+ 1);
-	strcpy(dist.col_name,"speed");    
-        RMM_TRY( RMM_ALLOC(&speed.data, len.size * sizeof(col_type), 0) );
-     	speed.size=len.size;
-     	speed.valid=nullptr;
-     	speed.null_count=0;	
+        gdf_column speed{};
+        RMM_TRY( RMM_ALLOC(&temp, length.size * sizeof(T), 0) );
+        gdf_column_view_augmented(&speed, temp, nullptr, length.size, x.dtype, 0,
+                                  gdf_dtype_extra_info{TIME_UNIT_NONE}, "speed");
         
         struct timeval t0,t1;
         gettimeofday(&t0, nullptr);
-        
+
         gdf_size_type min_grid_size = 0, block_size = 0;
-        CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, distspeed_kernel<col_type>) );
+        CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size,
+                                                     &block_size,
+                                                     distspeed_kernel<T>) );
         cudf::util::cuda::grid_config_1d grid{x.size, block_size, 1};
         std::cout<<"x.size="<<x.size<<" block_size="<<block_size<<std::endl;
-       
-        distspeed_kernel<col_type> <<< grid.num_blocks, block_size >>> (len.size,
-        	static_cast<col_type*>(x.data),static_cast<col_type*>(y.data),
-        	static_cast<cuspatial::its_timestamp*>(ts.data),static_cast<uint32_t*>(len.data), static_cast<uint32_t*>(pos.data),
-   	    	static_cast<col_type*>(dist.data), static_cast<col_type*>(speed.data) );           
+
+        distspeed_kernel<T><<<grid.num_blocks, block_size>>>(length.size,
+            static_cast<T*>(x.data), static_cast<T*>(y.data),
+            static_cast<cuspatial::its_timestamp*>(timestamp.data),
+            static_cast<uint32_t*>(length.data),
+            static_cast<uint32_t*>(offset.data),
+            static_cast<T*>(dist.data), static_cast<T*>(speed.data) );
         CUDA_TRY( cudaDeviceSynchronize() );
 
         gettimeofday(&t1, nullptr);
-        float distspeed_kernel_time = cuspatial::calc_time("distspeed_kernel_time in ms=",t0,t1);
+        float distspeed_kernel_time =
+            cuspatial::calc_time("distspeed_kernel_time in ms=",t0,t1);
 #ifdef DEBUG
-        int num_print=(len.size<10)?len.size:10;
-        std::cout<<"showing the first "<< num_print<<" output records"<<std::endl;
-        thrust::device_ptr<col_type> dist_ptr=thrust::device_pointer_cast(static_cast<col_type*>(dist.data));
-        thrust::device_ptr<col_type> speed_ptr=thrust::device_pointer_cast(static_cast<col_type*>(speed.data));
-        std::cout<<"distance:"<<std::endl;
-        thrust::copy(dist_ptr,dist_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl; 
-        std::cout<<"speed:"<<std::endl;
-        thrust::copy(speed_ptr,speed_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;    
+        int num_print = (len.size < 10) ? len.size : 10;
+        std::cout << "showing the first " << num_print
+                  << " output records" << std::endl;
+        thrust::device_ptr<col_type> dist_ptr =
+            thrust::device_pointer_cast(static_cast<col_type*>(dist.data));
+        thrust::device_ptr<col_type> speed_ptr =
+            thrust::device_pointer_cast(static_cast<col_type*>(speed.data));
+        std::cout << "distance:" << std::endl;
+        thrust::copy(dist_ptr, dist_ptr + num_print,
+                     std::ostream_iterator<col_type>(std::cout, " "));
+        std::cout << std::endl; 
+        std::cout << "speed:" << std::endl;
+        thrust::copy(speed_ptr, speed_ptr + num_print,
+                     std::ostream_iterator<col_type>(std::cout, " "));
+        std::cout << std::endl;    
 #endif
-	return std::make_pair(dist,speed);
+        return std::make_pair(dist,speed);
     }
 
-    template <typename col_type, std::enable_if_t< !is_supported<col_type>() >* = nullptr>
-   std::pair<gdf_column,gdf_column> operator()(const gdf_column& x,const gdf_column& y,const gdf_column& ts,
- 			    const gdf_column& len,const gdf_column& pos) 			   
+    template <typename T, std::enable_if_t< !is_supported<T>() >* = nullptr>
+    std::pair<gdf_column,gdf_column> operator()(const gdf_column& x,
+                                                const gdf_column& y,
+                                                const gdf_column& timestamp,
+                                                const gdf_column& length,
+                                                const gdf_column& offset)
     {
         CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
-    
 
-/**
- * @brief computing distance(length) and speed of trajectories after their formation (e.g., from coord_to_traj)
+
+namespace cuspatial {
+
+/*
+ * Compute distance(length) and speed of trajectories
  *
  * see trajectory.hpp
  */
- 
-namespace cuspatial {
-
- std::pair<gdf_column,gdf_column> trajectory_distance_and_speed(const gdf_column& x,const gdf_column& y,const gdf_column& ts,
- 			    const gdf_column& len,const gdf_column& pos)
- 			    
-{       
+std::pair<gdf_column,gdf_column>
+trajectory_distance_and_speed(const gdf_column& x, const gdf_column& y,
+                              const gdf_column& timestamp,
+                              const gdf_column& length,
+                              const gdf_column& offset)
+{
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);
     
-    CUDF_EXPECTS(x.data != nullptr &&y.data!=nullptr && ts.data!=nullptr && len.data!=nullptr && pos.data!=nullptr,
-    	"x/y/ts/len/pos data can not be null");
-    CUDF_EXPECTS(x.size == y.size && x.size==ts.size ,"x/y/ts must have the same size");
-    CUDF_EXPECTS(len.size == pos.size ,"len/pos must have the same size");
-     
+    CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
+                 timestamp.data != nullptr && length.data != nullptr &&
+                 offset.data != nullptr,
+                 "Null data pointer");
+    CUDF_EXPECTS(x.size == y.size && x.size == timestamp.size &&
+                 length.size == offset.size, "Data size mismatch");
+
     //future versions might allow x/y/ts/pos/len have null_count>0, which might be useful for taking query results as inputs 
-    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 && ts.null_count==0 && len.null_count==0 &&  pos.null_count==0,
-    	"this version does not support x/y/ts/len/pos contains nulls");
-    
-    CUDF_EXPECTS(x.size >= pos.size ,"one trajectory must have at least one point");
- 
-  
-    std::pair<gdf_column,gdf_column>  res_pair=cudf::type_dispatcher(x.dtype, distspeed_functor(), x,y,ts,len,pos);
-    
+    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
+                 timestamp.null_count == 0 &&
+                 length.null_count == 0 && offset.null_count == 0,
+                 "Null data support not implemented");
+
+    CUDF_EXPECTS(x.size >= offset.size ,
+                 "one trajectory must have at least one point");
+
+    std::pair<gdf_column,gdf_column> res_pair = 
+        cudf::type_dispatcher(x.dtype, distspeed_functor(), x, y,
+                              timestamp, length, offset);
+
     gettimeofday(&t1, nullptr);
-    float distspeed_end2end_time=calc_time("C++ traj_distspeed end-to-end time in ms=",t0,t1);
+    float distspeed_end2end_time = cuspatial::calc_time("C++ traj_distspeed end-to-end time in ms=",t0,t1);
     
     return res_pair;
-    }//traj_distspeed     
-    	
+}
+
 }// namespace cuspatial
 

@@ -58,85 +58,99 @@ __global__ void sbbox_kernel(gdf_size_type num_traj,
 }
 
 struct sbbox_functor {
-    template <typename col_type>
+    template <typename T>
     static constexpr bool is_supported()
     {
-        return std::is_floating_point<col_type>::value;
+        return std::is_floating_point<T>::value;
     }
 
-    template <typename col_type, std::enable_if_t< is_supported<col_type>() >* = nullptr>
-    void operator()(const gdf_column& x,const gdf_column& y,
-                    const gdf_column& len, const gdf_column& pos,
+    template <typename T, std::enable_if_t< is_supported<T>() >* = nullptr>
+    void operator()(const gdf_column& x, const gdf_column& y,
+                    const gdf_column& length, const gdf_column& offset,
                     gdf_column& bbox_x1, gdf_column& bbox_y1,
                     gdf_column& bbox_x2, gdf_column& bbox_y2)
     {
-        bbox_x1.dtype= x.dtype;
-        bbox_x1.col_name=(char *)malloc(strlen("bbox_x1")+ 1);
-        strcpy(bbox_x1.col_name,"bbox_x1");    
-        RMM_TRY( RMM_ALLOC(&bbox_x1.data, len.size * sizeof(col_type), 0) );
-        bbox_x1.size=len.size;
-        bbox_x1.valid=nullptr;
-        bbox_x1.null_count=0;
+        T* temp{nullptr};
+        RMM_TRY( RMM_ALLOC(&temp, length.size * sizeof(T), 0) );
 
-        bbox_x2.dtype= x.dtype;
-        bbox_x2.col_name=(char *)malloc(strlen("bbox_x2")+ 1);
-        strcpy(bbox_x2.col_name,"bbox_x2");    
-        RMM_TRY( RMM_ALLOC(&bbox_x2.data, len.size * sizeof(col_type), 0) );
-        bbox_x2.size=len.size;
-        bbox_x2.valid=nullptr;
-        bbox_x2.null_count=0;
+        gdf_column_view_augmented(&bbox_x1, temp, nullptr, length.size, x.dtype,
+                                  0, gdf_dtype_extra_info{TIME_UNIT_NONE},
+                                  "bbox_x1");
 
-        bbox_y1.dtype= x.dtype;
-        bbox_y1.col_name=(char *)malloc(strlen("bbox_y1")+ 1);
-        strcpy(bbox_y1.col_name,"bbox_y1");    
-        RMM_TRY( RMM_ALLOC(&bbox_y1.data, len.size * sizeof(col_type), 0) );
-        bbox_y1.size=len.size;
-        bbox_y1.valid=nullptr;
-        bbox_y1.null_count=0;		
+        RMM_TRY( RMM_ALLOC(&temp, length.size * sizeof(T), 0) );
+        gdf_column_view_augmented(&bbox_x2, temp, nullptr, length.size, x.dtype,
+                                  0, gdf_dtype_extra_info{TIME_UNIT_NONE},
+                                  "bbox_x2");
 
-        bbox_y2.dtype= x.dtype;
-        bbox_y2.col_name=(char *)malloc(strlen("bbox_y2")+ 1);
-        strcpy(bbox_y2.col_name,"bbox_y2");    
-        RMM_TRY( RMM_ALLOC(&bbox_y2.data, len.size * sizeof(col_type), 0) );
-        bbox_y2.size=len.size;
-        bbox_y2.valid=nullptr;
-        bbox_y2.null_count=0;
+        RMM_TRY( RMM_ALLOC(&temp, length.size * sizeof(T), 0) );
+        gdf_column_view_augmented(&bbox_y1, temp, nullptr, length.size, x.dtype,
+                                  0, gdf_dtype_extra_info{TIME_UNIT_NONE},
+                                  "bbox_y1");
+
+        RMM_TRY( RMM_ALLOC(&temp, length.size * sizeof(T), 0) );
+        gdf_column_view_augmented(&bbox_y2, temp, nullptr, length.size, x.dtype,
+                                  0, gdf_dtype_extra_info{TIME_UNIT_NONE},
+                                  "bbox_y2");
 
         struct timeval t0,t1;
         gettimeofday(&t0, nullptr);
 
         gdf_size_type min_grid_size = 0, block_size = 0;
-        CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, sbbox_kernel<col_type>) );
+        CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size,
+                                                     &block_size,
+                                                     sbbox_kernel<T>) );
         cudf::util::cuda::grid_config_1d grid{x.size, block_size, 1};
-        std::cout<<"x.size="<<x.size<<" block_size="<<block_size<<std::endl;
+        std::cout << "x.size=" << x.size << " block_size=" 
+                  << block_size << std::endl;
 
-        sbbox_kernel<col_type> <<< grid.num_blocks, block_size >>> (len.size,
-        static_cast<col_type*>(x.data),static_cast<col_type*>(y.data),static_cast<uint32_t*>(len.data), static_cast<uint32_t*>(pos.data),
-        static_cast<col_type*>(bbox_x1.data), static_cast<col_type*>(bbox_y1.data),static_cast<col_type*>(bbox_x2.data), static_cast<col_type*>(bbox_y2.data) );           
+        sbbox_kernel<T><<< grid.num_blocks, block_size >>>(
+            length.size, static_cast<T*>(x.data), static_cast<T*>(y.data),
+            static_cast<uint32_t*>(length.data),
+            static_cast<uint32_t*>(offset.data),
+            static_cast<T*>(bbox_x1.data),
+            static_cast<T*>(bbox_y1.data),
+            static_cast<T*>(bbox_x2.data),
+            static_cast<T*>(bbox_y2.data) );
         CUDA_TRY( cudaDeviceSynchronize() );
 
         gettimeofday(&t1, nullptr);
-        float sbbox_kernel_time = cuspatial::calc_time("spatial bbox kernel time in ms=",t0,t1);
+        float sbbox_kernel_time =
+            cuspatial::calc_time("spatial bbox kernel time in ms=",t0,t1);
 
-        int num_print=(len.size<10)?len.size:10;
-        std::cout<<"showing the first "<< num_print<<" output records"<<std::endl;
-        thrust::device_ptr<col_type> x1_ptr=thrust::device_pointer_cast(static_cast<col_type*>(bbox_x1.data));
-        thrust::device_ptr<col_type> y1_ptr=thrust::device_pointer_cast(static_cast<col_type*>(bbox_x2.data));
-        thrust::device_ptr<col_type> x2_ptr=thrust::device_pointer_cast(static_cast<col_type*>(bbox_y1.data));
-        thrust::device_ptr<col_type> y2_ptr=thrust::device_pointer_cast(static_cast<col_type*>(bbox_y2.data));
-        std::cout<<"x1:"<<std::endl;
-        thrust::copy(x1_ptr,x1_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;
-        std::cout<<"y1:"<<std::endl;
-        thrust::copy(y1_ptr,y1_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;
-        std::cout<<"x2:"<<std::endl;
-        thrust::copy(x2_ptr,x2_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;
-        std::cout<<"y2:"<<std::endl;
-        thrust::copy(y2_ptr,y2_ptr+num_print,std::ostream_iterator<col_type>(std::cout, " "));std::cout<<std::endl;
+#ifdef DEBUG
+        int num_print = (length.size < 10) ? length.size : 10;
+        std::cout << "showing the first " << num_print 
+                  << " output records" << std::endl;
+        thrust::device_ptr<T> x1_ptr =
+            thrust::device_pointer_cast(static_cast<T*>(bbox_x1.data));
+        thrust::device_ptr<T> y1_ptr =
+            thrust::device_pointer_cast(static_cast<T*>(bbox_x2.data));
+        thrust::device_ptr<T> x2_ptr =
+            thrust::device_pointer_cast(static_cast<T*>(bbox_y1.data));
+        thrust::device_ptr<T> y2_ptr =
+            thrust::device_pointer_cast(static_cast<T*>(bbox_y2.data));
+        std::cout << "x1:" << std::endl;
+        thrust::copy(x1_ptr, x1_ptr + num_print,
+                     std::ostream_iterator<T>(std::cout, " "));
+        std::cout << std::endl;
+        std::cout << "y1:" << std::endl;
+        thrust::copy(y1_ptr, y1_ptr + num_print,
+                     std::ostream_iterator<T>(std::cout, " "));
+        std::cout << std::endl;
+        std::cout << "x2:" << std::endl;
+        thrust::copy(x2_ptr, x2_ptr + num_print,
+                     std::ostream_iterator<T>(std::cout, " "));
+        std::cout << std::endl;
+        std::cout << "y2:" << std::endl;
+        thrust::copy(y2_ptr, y2_ptr + num_print,
+                     std::ostream_iterator<T>(std::cout, " "));
+        std::cout << std::endl;
+#endif
     }
 
-    template <typename col_type, std::enable_if_t<!is_supported<col_type>()>* = nullptr>
+    template <typename T, std::enable_if_t<!is_supported<T>()>* = nullptr>
     void operator()(const gdf_column& x, const gdf_column& y,
-                    const gdf_column& len, const gdf_column& pos,
+                    const gdf_column& length, const gdf_column& offset,
                     gdf_column& bbox_x1, gdf_column& bbox_y1,
                     gdf_column& bbox_x2, gdf_column& bbox_y2)
     {
@@ -153,7 +167,8 @@ namespace cuspatial {
  * see trajectory.hpp
  */
 void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
-                               const gdf_column& len, const gdf_column& pos,
+                               const gdf_column& length,
+                               const gdf_column& offset,
                                gdf_column& bbox_x1, gdf_column& bbox_y1,
                                gdf_column& bbox_x2, gdf_column& bbox_y2)
 {
@@ -161,24 +176,28 @@ void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
     gettimeofday(&t0, nullptr);
 
     CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
-                 len.data != nullptr && pos.data != nullptr,
-                 "x/y/len/pos data cannot be null");
-    CUDF_EXPECTS(x.size == y.size ,"x/y must have the same size");
-    CUDF_EXPECTS(len.size == pos.size ,"len/pos must have the same size");
+                 length.data != nullptr && offset.data != nullptr,
+                 "Null data pointer");
+    CUDF_EXPECTS(x.size == y.size && length.size == offset.size,
+                 "Data size mismatch");
 
-    //future versions might allow x/y/pos/len have null_count>0, which might be useful for taking query results as inputs 
+    // future versions might allow x/y/pos/len have null_count>0, which might be
+    // useful for taking query results as inputs 
     CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
-                 len.null_count==0 &&  pos.null_count==0,
-                 "this version does not support x/y/len/pos contains nulls");
+                 length.null_count==0 &&  offset.null_count==0,
+                 "Null data support not implemented");
 
-    CUDF_EXPECTS(x.size >= pos.size ,"one trajectory must have at least one point");  
+    CUDF_EXPECTS(x.size >= offset.size,
+                 "one trajectory must have at least one point");  
 
-    cudf::type_dispatcher(x.dtype, sbbox_functor(), x,y,len,pos,bbox_x1,bbox_y1,bbox_x2,bbox_y2);
+    cudf::type_dispatcher(x.dtype, sbbox_functor(), x, y, length, offset,
+                          bbox_x1, bbox_y1, bbox_x2, bbox_y2);
 
     // TODO: handle null_count if needed 
 
     gettimeofday(&t1, nullptr);
-    float sbbox_end2end_time=calc_time("spatial bbox end2end time in ms=",t0,t1);
+    float sbbox_end2end_time =
+        cuspatial::calc_time("spatial bbox end2end time in ms=",t0,t1);
 }
 
 }// namespace cuspatial

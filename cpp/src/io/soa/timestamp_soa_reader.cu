@@ -6,6 +6,7 @@
 #include <thrust/device_ptr.h>
 #include <utilities/error_utils.hpp>
 #include <rmm/rmm.h>
+#include <cudf/types.h>
 #include <cuspatial/soa_readers.hpp>
 #include <utility/utility.hpp>
 

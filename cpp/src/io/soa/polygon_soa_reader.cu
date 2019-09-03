@@ -21,6 +21,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/device_ptr.h>
 #include <rmm/rmm.h>
+#include <cudf/types.h>
 #include <utilities/error_utils.hpp>
 #include <cuspatial/soa_readers.hpp>
 #include <utility/utility.hpp>

@@ -19,6 +19,7 @@
 #include <math.h>
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
+#include <cudf/types.h>
 #include <utilities/error_utils.hpp>
 #include <rmm/rmm.h>
 #include <cuspatial/soa_readers.hpp>
