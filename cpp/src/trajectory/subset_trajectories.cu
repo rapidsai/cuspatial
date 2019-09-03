@@ -26,6 +26,8 @@
 #include <utility/trajectory_thrust.cuh>
 #include <cuspatial/trajectory.hpp>
 
+namespace{
+
 struct is_true
 {
     __device__
@@ -59,59 +61,15 @@ struct subset_functor {
         cudaStream_t stream{0};
         auto exec_policy = rmm::exec_policy(stream)->on(stream);
 
-#ifdef DEBUG
-        int num_print = (in_id.size < 10) ? in_id.size : 10;
-        std::cout << "showing the first " << num_print
-                  << " input records before sort" << std::endl;
-
-        std::cout << "input x" << std::endl;
-        thrust::copy(exec_policy, in_x_ptr, in_x_ptr+num_print, 
-                     std::ostream_iterator<T>(std::cout, " "));
-        std::cout << std::endl;  
-        std::cout << "input y" << std::endl;
-        thrust::copy(exec_policy, in_y_ptr, in_y_ptr+num_print,
-                     std::ostream_iterator<T>(std::cout, " "));
-        std::cout << std::endl;  
-
-        std::cout << "input id" << std::endl;
-        thrust::copy(exec_policy, in_id_ptr, in_id_ptr+num_print,
-                     std::ostream_iterator<uint32_t>(std::cout, " "));
-        std::cout << std::endl;  
-        std::cout << "input timestamp" << std::endl;
-        thrust::copy(exec_policy, in_ts_ptr, in_ts_ptr+num_print,
-                     std::ostream_iterator<its_timestamp>(std::cout, " "));
-        std::cout << std::endl;    
-#endif
-
-
         gdf_size_type num_id{id.size};
         gdf_size_type num_rec{in_id.size};
 
-        rmm::device_vector<uint32_t> temp_id(id_ptr, id_ptr + num_id);
-        
-        //thrust::copy(exec_policy, id_ptr, id_ptr + num_id, temp_id);
-        thrust::sort(exec_policy, temp_id.begin(), temp_id.end());
-
-#ifdef DEBUG
-        thrust::copy(exec_policy, temp_id_ptr, temp_id_ptr+num_id, 
-                     std::ostream_iterator<uint32_t>(std::cout, " "));
-        std::cout<<std::endl;
-        std::cout<<"beginning binary_search .............."<<std::endl;
-#endif
-            
+        rmm::device_vector<uint32_t> temp_id(id_ptr, id_ptr + num_id);     
+        thrust::sort(exec_policy, temp_id.begin(), temp_id.end());            
         thrust::device_vector<bool> hit_vec(num_rec);
         thrust::binary_search(exec_policy, temp_id.cbegin(), temp_id.cend(),
                               in_id_ptr, in_id_ptr + num_rec, hit_vec.begin());
 
-#ifdef DEBUG
-        std::cout<<"binary_search results.............."<<std::endl;
-        thrust::copy(exec_policy, hit_vec.begin(), hit_vec.end(),
-                     std::ostream_iterator<uint32_t>(std::cout, " "));
-        std::cout << std::endl;
-        thrust::copy(exec_policy, hit_vec.begin(), hit_vec.end(),
-                     std::ostream_iterator<uint32_t>(std::cout, " "));
-        std::cout << std::endl;
-#endif
 
         uint32_t num_hit = thrust::count_if(exec_policy, hit_vec.begin(),
                                             hit_vec.end(), is_true());
@@ -156,6 +114,7 @@ struct subset_functor {
     }
 };
     
+} // namespace anonymous
 
 namespace cuspatial {
 

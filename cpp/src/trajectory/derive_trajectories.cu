@@ -15,8 +15,6 @@
  */
 
 #include <type_traits>
-#include <sys/time.h>
-#include <time.h>
 
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
 #include <utilities/cuda_utils.hpp>
@@ -48,31 +46,6 @@ struct derive_trajectories_functor {
 
         cudaStream_t stream{0};
         auto exec_policy = rmm::exec_policy(stream)->on(stream);
-
-#ifdef DEBUG
-        int num_print = (object_id.size < 10) ? object_id.size : 10;
-        std::cout << "showing the first " << num_print
-                  << " input records before sort" << std::endl;
-        std::cout << "x" << std::endl;
-        thrust::copy(exec_policy, x_ptr, x_ptr + num_print,
-                     std::ostream_iterator<T>(std::cout, " "));
-        std::cout << std::endl;  
-        std::cout << "y" << std::endl;
-        thrust::copy(exec_policy, y_ptr, y_ptr+num_print,
-                     std::ostream_iterator<T>(std::cout, " "));
-        std::cout << std::endl;  
-        std::cout << "object id" << std::endl;
-        thrust::copy(exec_policy, id_ptr, id_ptr + num_print,
-                     std::ostream_iterator<uint32_t>(std::cout, " "));
-        std::cout << std::endl;  
-        std::cout << "timestamp" << std::endl;
-        thrust::copy(exec_policy, time_ptr, time_ptr + num_print,
-                     std::ostream_iterator<its_timestamp>(std::cout, " "));
-        std::cout << std::endl;  
-#endif
-
-        struct timeval t0,t1;
-        gettimeofday(&t0, nullptr);
 
         uint32_t num_rec = object_id.size;
         thrust::stable_sort_by_key(exec_policy, time_ptr, time_ptr + num_rec,
@@ -106,53 +79,10 @@ struct derive_trajectories_functor {
         RMM_TRY( RMM_FREE(objid, 0) );
         RMM_TRY( RMM_FREE(objcnt, 0) );
 
-        // to avoid lost memory problem when tid/cnt/pos gdf columns are
-        // associated with device memory
         gdf_column_view(&trajectory_id, trajid, nullptr, num_traj, GDF_INT32);
         gdf_column_view(&length, trajcnt, nullptr, num_traj, GDF_INT32);
         gdf_column_view(&offset, trajpos, nullptr, num_traj, GDF_INT32);
 
-        gettimeofday(&t1, nullptr);
-        float derive_trajectories_kernel_time = 
-            cuspatial::calc_time("coord_to_traj kernel time in ms=",t0,t1);
-
-#ifdef DEBUG
-        std::cout << "#traj=" << num_traj << std::endl;
-        std::cout << "showing the first " << num_print 
-                  << " records after sort" << std::endl;
-        std::cout << "x" << std::endl;
-        thrust::copy(exec_policy, x_ptr, x_ptr + num_print,
-                     std::ostream_iterator<T>(std::cout, " "));
-        std::cout << std::endl;  
-        std::cout << "y" << std::endl;
-        thrust::copy(exec_policy, y_ptr, y_ptr + num_print,
-                     std::ostream_iterator<T>(std::cout, " "));
-        std::cout << std::endl;  
-        std::cout << "oid" << std::endl;
-        thrust::copy(exec_policy, id_ptr, id_ptr + num_print,
-                     std::ostream_iterator<uint32_t>(std::cout, " "));
-        std::cout << std::endl;  
-        std::cout << "timestamp" << std::endl;
-        thrust::copy(exec_policy, time_ptr, time_ptr + num_print,
-                     std::ostream_iterator<its_timestamp>(std::cout, " "));
-        std::cout << std::endl;  
-        num_print = (num_traj < 10) ? num_traj : 10;
-        std::cout << "showing the first " << num_print 
-                  << " trajectory records" << std::endl;
-        std::cout << "trajectory id" << std::endl;
-        thrust::copy(exec_policy, trajid, trajid + num_print,
-                     std::ostream_iterator<uint32_t>(std::cout, " "))
-        std::cout << std::endl;  
-        std::cout << "trajectory #of points" << std::endl;
-        thrust::copy(exec_policy, trajcnt, trajcnt + num_print,
-                     std::ostream_iterator<uint32_t>(std::cout, " "));
-        std::cout << std::endl;  
-        std::cout << "trajectory position index on sorted point x/y array"
-                  << std::endl;
-        thrust::copy(exec_policy, trajpos, trajpos + num_print,
-                     std::ostream_iterator<uint32_t>(std::cout, " "));
-        std::cout << std::endl;  
-#endif
         return num_traj;
     }
 
@@ -179,8 +109,6 @@ int derive_trajectories(gdf_column& x, gdf_column& y, gdf_column& object_id,
                         gdf_column& timestamp, gdf_column& trajectory_id,
                         gdf_column& length, gdf_column& offset)
 {       
-    struct timeval t0,t1;
-    gettimeofday(&t0, nullptr);
     
     CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
                  object_id.data != nullptr && timestamp.data != nullptr,
@@ -199,10 +127,6 @@ int derive_trajectories(gdf_column& x, gdf_column& y, gdf_column& object_id,
                                                  derive_trajectories_functor(),
                                                  x, y, object_id, timestamp,
                                                  trajectory_id, length, offset);
-
-    gettimeofday(&t1, nullptr);
-    float coor2traj_end2end_time =
-        calc_time("coord_to_traj end-to-end time in ms=",t0,t1);
 
     return num_trajectories;
 }

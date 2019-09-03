@@ -25,6 +25,11 @@
 #include <utility/trajectory_thrust.cuh>
 #include <cuspatial/trajectory.hpp>
 
+namespace {
+/**
+ * @brief CUDA kernel for computing distances and speeds of trajectories
+ *
+ */
 template <typename T>
 __global__ void distspeed_kernel(gdf_size_type num_traj,
                                  const T* const __restrict__ x,
@@ -92,16 +97,11 @@ struct distspeed_functor
         gdf_column_view_augmented(&speed, temp, nullptr, length.size, x.dtype, 0,
                                   gdf_dtype_extra_info{TIME_UNIT_NONE}, "speed");
         
-        struct timeval t0,t1;
-        gettimeofday(&t0, nullptr);
-
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size,
                                                      &block_size,
                                                      distspeed_kernel<T>) );
         cudf::util::cuda::grid_config_1d grid{x.size, block_size, 1};
-        std::cout<<"x.size="<<x.size<<" block_size="<<block_size<<std::endl;
-
         distspeed_kernel<T><<<grid.num_blocks, block_size>>>(length.size,
             static_cast<T*>(x.data), static_cast<T*>(y.data),
             static_cast<cuspatial::its_timestamp*>(timestamp.data),
@@ -110,26 +110,6 @@ struct distspeed_functor
             static_cast<T*>(dist.data), static_cast<T*>(speed.data) );
         CUDA_TRY( cudaDeviceSynchronize() );
 
-        gettimeofday(&t1, nullptr);
-        float distspeed_kernel_time =
-            cuspatial::calc_time("distspeed_kernel_time in ms=",t0,t1);
-#ifdef DEBUG
-        int num_print = (len.size < 10) ? len.size : 10;
-        std::cout << "showing the first " << num_print
-                  << " output records" << std::endl;
-        thrust::device_ptr<col_type> dist_ptr =
-            thrust::device_pointer_cast(static_cast<col_type*>(dist.data));
-        thrust::device_ptr<col_type> speed_ptr =
-            thrust::device_pointer_cast(static_cast<col_type*>(speed.data));
-        std::cout << "distance:" << std::endl;
-        thrust::copy(dist_ptr, dist_ptr + num_print,
-                     std::ostream_iterator<col_type>(std::cout, " "));
-        std::cout << std::endl; 
-        std::cout << "speed:" << std::endl;
-        thrust::copy(speed_ptr, speed_ptr + num_print,
-                     std::ostream_iterator<col_type>(std::cout, " "));
-        std::cout << std::endl;    
-#endif
         return std::make_pair(dist,speed);
     }
 
@@ -143,6 +123,8 @@ struct distspeed_functor
         CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
+
+} // namespace anonymous
 
 
 namespace cuspatial {
@@ -158,9 +140,7 @@ trajectory_distance_and_speed(const gdf_column& x, const gdf_column& y,
                               const gdf_column& length,
                               const gdf_column& offset)
 {
-    struct timeval t0,t1;
-    gettimeofday(&t0, nullptr);
-    
+
     CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
                  timestamp.data != nullptr && length.data != nullptr &&
                  offset.data != nullptr,
@@ -181,9 +161,6 @@ trajectory_distance_and_speed(const gdf_column& x, const gdf_column& y,
         cudf::type_dispatcher(x.dtype, distspeed_functor(), x, y,
                               timestamp, length, offset);
 
-    gettimeofday(&t1, nullptr);
-    float distspeed_end2end_time = cuspatial::calc_time("C++ traj_distspeed end-to-end time in ms=",t0,t1);
-    
     return res_pair;
 }
 

@@ -26,8 +26,11 @@
 
 namespace {
 
-//A port from https://gitlab-master.nvidia.com/metromind/DS-ITS-app/stream-ITS/blob/master/src/main/scala/com/nvidia/ds/its/util/Util.scala
-//Note: points in the third quadrant relative camera will be translated into points in the first quadrant - use with caution
+/**
+ * @brief CUDA kernel for approximately transforming lon/lat to x/y (in km) relative to a camera origin
+ *
+ *Note: points in the third quadrant relative camera will be transformed into points in the first quadrant - use with caution
+ */
 
 template <typename T>
 __global__ void coord_trans_kernel(gdf_size_type loc_size,

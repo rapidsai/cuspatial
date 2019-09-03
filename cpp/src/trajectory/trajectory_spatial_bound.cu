@@ -17,13 +17,12 @@
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
 #include <utilities/cuda_utils.hpp>
 #include <type_traits>
-#include <thrust/device_vector.h>
-#include <sys/time.h>
-#include <time.h>
 
 #include <utility/utility.hpp>
 #include <utility/trajectory_thrust.cuh>
 #include <cuspatial/trajectory.hpp>
+
+namespace{
 
 /**
  * @brief CUDA kernel for computing spatial bounding boxes of trajectories
@@ -92,17 +91,11 @@ struct sbbox_functor {
                                   0, gdf_dtype_extra_info{TIME_UNIT_NONE},
                                   "bbox_y2");
 
-        struct timeval t0,t1;
-        gettimeofday(&t0, nullptr);
-
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size,
                                                      &block_size,
                                                      sbbox_kernel<T>) );
         cudf::util::cuda::grid_config_1d grid{x.size, block_size, 1};
-        std::cout << "x.size=" << x.size << " block_size=" 
-                  << block_size << std::endl;
-
         sbbox_kernel<T><<< grid.num_blocks, block_size >>>(
             length.size, static_cast<T*>(x.data), static_cast<T*>(y.data),
             static_cast<uint32_t*>(length.data),
@@ -112,40 +105,6 @@ struct sbbox_functor {
             static_cast<T*>(bbox_x2.data),
             static_cast<T*>(bbox_y2.data) );
         CUDA_TRY( cudaDeviceSynchronize() );
-
-        gettimeofday(&t1, nullptr);
-        float sbbox_kernel_time =
-            cuspatial::calc_time("spatial bbox kernel time in ms=",t0,t1);
-
-#ifdef DEBUG
-        int num_print = (length.size < 10) ? length.size : 10;
-        std::cout << "showing the first " << num_print 
-                  << " output records" << std::endl;
-        thrust::device_ptr<T> x1_ptr =
-            thrust::device_pointer_cast(static_cast<T*>(bbox_x1.data));
-        thrust::device_ptr<T> y1_ptr =
-            thrust::device_pointer_cast(static_cast<T*>(bbox_x2.data));
-        thrust::device_ptr<T> x2_ptr =
-            thrust::device_pointer_cast(static_cast<T*>(bbox_y1.data));
-        thrust::device_ptr<T> y2_ptr =
-            thrust::device_pointer_cast(static_cast<T*>(bbox_y2.data));
-        std::cout << "x1:" << std::endl;
-        thrust::copy(x1_ptr, x1_ptr + num_print,
-                     std::ostream_iterator<T>(std::cout, " "));
-        std::cout << std::endl;
-        std::cout << "y1:" << std::endl;
-        thrust::copy(y1_ptr, y1_ptr + num_print,
-                     std::ostream_iterator<T>(std::cout, " "));
-        std::cout << std::endl;
-        std::cout << "x2:" << std::endl;
-        thrust::copy(x2_ptr, x2_ptr + num_print,
-                     std::ostream_iterator<T>(std::cout, " "));
-        std::cout << std::endl;
-        std::cout << "y2:" << std::endl;
-        thrust::copy(y2_ptr, y2_ptr + num_print,
-                     std::ostream_iterator<T>(std::cout, " "));
-        std::cout << std::endl;
-#endif
     }
 
     template <typename T, std::enable_if_t<!is_supported<T>()>* = nullptr>
@@ -158,6 +117,7 @@ struct sbbox_functor {
     }
 };
 
+} // namespace anonymous
 
 namespace cuspatial {
 
@@ -172,8 +132,6 @@ void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
                                gdf_column& bbox_x1, gdf_column& bbox_y1,
                                gdf_column& bbox_x2, gdf_column& bbox_y2)
 {
-    struct timeval t0,t1;
-    gettimeofday(&t0, nullptr);
 
     CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
                  length.data != nullptr && offset.data != nullptr,
@@ -195,9 +153,6 @@ void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
 
     // TODO: handle null_count if needed 
 
-    gettimeofday(&t1, nullptr);
-    float sbbox_end2end_time =
-        cuspatial::calc_time("spatial bbox end2end time in ms=",t0,t1);
 }
 
 }// namespace cuspatial
