@@ -32,7 +32,7 @@ namespace {
 template<typename T>
 struct spatial_window_functor_xy
 {
-    T x1,y1,x2,y2;
+    T x1, y1, x2, y2;
 
     __device__
     spatial_window_functor_xy(T x1, T x2, T y1, T y2)
@@ -54,7 +54,7 @@ struct sw_point_functor
     template <typename T>
     static constexpr bool is_supported()
     {
-            return std::is_floating_point<T>::value;
+        return std::is_floating_point<T>::value;
     }
      
     template <typename T, std::enable_if_t< is_supported<T>() >* = nullptr>
@@ -65,10 +65,10 @@ struct sw_point_functor
                                                 const gdf_column& in_x,
                                                 const gdf_column& in_y)
     {        
-        T q_x1=*((T*)(&(x1.data)));
-        T q_y1=*((T*)(&(y1.data)));
-        T q_x2=*((T*)(&(x2.data)));
-        T q_y2=*((T*)(&(y2.data)));
+        T const q_x1=*reinterpret_cast<T const*>(&x1.data);
+        T const q_y1=*reinterpret_cast<T const*>(&y1.data);
+        T const q_x2=*reinterpret_cast<T const*>(&x2.data);
+        T const q_y2=*reinterpret_cast<T const*>(&y2.data);
   
         CUDF_EXPECTS(q_x1<q_x2,"x1 must be less than x2 in a spatial window query");
         CUDF_EXPECTS(q_y1<q_y2,"y1 must be less than y2 in a spatial window query");
@@ -82,9 +82,9 @@ struct sw_point_functor
                                    
         int num_hits= thrust::count_if(exec_policy, in_it, in_it+in_x.size, 
                                        spatial_window_functor_xy<T>(q_x1,
-                                                                           q_x2,
-                                                                           q_y1,
-                                                                           q_y2));            
+                                                                    q_x2,
+                                                                    q_y1,
+                                                                    q_y2));
         T* temp_x{nullptr};
         T* temp_y{nullptr};
         RMM_TRY( RMM_ALLOC(&temp_x, num_hits * sizeof(T), 0) );
@@ -141,9 +141,11 @@ std::pair<gdf_column,gdf_column> spatial_window_points(const gdf_scalar& x1,
 
     CUDF_EXPECTS(in_x.null_count == 0 && in_y.null_count == 0, "this version does not support point data that contains nulls");
 
-    std::pair<gdf_column,gdf_column> res = cudf::type_dispatcher( in_x.dtype, sw_point_functor(), x1,y1,x2,y2,in_x,in_y);		
+    std::pair<gdf_column,gdf_column> res = 
+        cudf::type_dispatcher(in_x.dtype, sw_point_functor(), x1, y1, x2, y2,
+                              in_x,in_y);
 
     return res;
 }
-  
+
 }// namespace cuspatial
