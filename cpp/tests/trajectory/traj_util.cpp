@@ -3,18 +3,22 @@
 #include <utility/utility.hpp>
 #include "traj_util.h"
 
+using namespace cuspatial;
+
 /**
  * @brief retrive camera origin at a particular intersection from a configuration file
  *
  *
  * @return negative error code; 0 for success
  */
+
 int get_camera_origin(const char *df_fn, const char * inter_name, location_3d<double> & camera_origin)
 {
     const int num_col=39;
     const char *col_name[num_col]={"cameraIdString","ipaddress","gx0","gy0","gx1","gy1","gx2","gy2","gx3","gy3","cx0","cy0","cx1","cy1","cx2","cy2","cx3","cy3",
     "originLon","originLat","numberROI","roi_0_x0","roi_0_y0","roi_0_x1","roi_0_y1","roi_0_x2","roi_0_y2","roi_0_x3","roi_0_y3","roi_1_x0","roi_1_y0",
     "roi_1_x1","roi_1_y1","roi_1_x2","roi_1_y2","roi_1_x3","roi_1_y3","camera_resolutionX","camera_resolutionY"};
+
     std::vector<std::string> col_vec(col_name,col_name+num_col);
     std::map<std::string,std::vector<std::string>> camera_map;
 

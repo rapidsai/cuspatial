@@ -84,6 +84,10 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CUDF_LIBRARY}"
                  "${CUSPATIAL_LIBRARY}"
                  )
+set(COORDINATE_TRANSFORM_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/coordinate_transform_toy.cu")
+ConfigureTest(COORDINATE_TRANSFORM_TEST "${COORDINATE_TRANSFORM_TEST_SRC}")
+
 set(HAVERSINE_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/haversine_toy.cu")
 ConfigureTest(HAVERSINE_TEST "${HAVERSINE_TEST_SRC}")
@@ -100,6 +104,11 @@ set(POINT_IN_POLYGON_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_compare.cu")
 ConfigureTest(POINT_IN_POLYGON_TEST "${POINT_IN_POLYGON_TEST_SRC}")
 
+set(SPATIAL_WINDOW_POINT_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/query/spatial_window_test_toy.cu"
+    )
+ConfigureTest(SPATIAL_WINDOW_POINT_TEST "${SPATIAL_WINDOW_POINT_TEST_SRC}")
+
 set(TRAJECTORY_DISTANCE_SPEED_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/trajectory_distance_speed_toy.cu"
     )
@@ -109,6 +118,11 @@ set(TRAJECTORY_DERIVE_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/trajectory_derive_toy.cu"
     )
 ConfigureTest(TRAJECTORY_DERIVE_TEST "${TRAJECTORY_DERIVE_TEST_SRC}")
+
+set(TRAJECTORY_SPATIAL_BOUND_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/trajectory_spatial_bounds_toy.cu"
+    )
+ConfigureTest(TRAJECTORY_SPATIAL_BOUND_TEST "${TRAJECTORY_SPATIAL_BOUND_SRC}")
 
 set(TRAJECTORY_SUBSET_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/trajectory_subset_toy.cu"
