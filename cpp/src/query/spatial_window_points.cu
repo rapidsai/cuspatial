@@ -32,20 +32,18 @@ namespace {
 template<typename T>
 struct spatial_window_functor_xy
 {
-    T x1, y1, x2, y2;
+    T left, bottom, right, top;
 
     __device__
-    spatial_window_functor_xy(T x1, T x2, T y1, T y2)
-    : x1(x1), y1(y1), x2(x2), y2(y2) {};
+    spatial_window_functor_xy(T left, T bottom, T right, T top)
+    : left(left), bottom(bottom), right(right), top(top) {}
 
     __device__
     bool operator()(const thrust::tuple<T, T>& t)
     {
         T x= thrust::get<0>(t);
         T y= thrust::get<1>(t);
-        bool b1 = x > x1 && x < x2;
-        bool b2 = y > x1 && y < x2;
-        return(b1 && b2);
+        return x > left && x < right && y > bottom && y < top;
     }
 };
 
@@ -65,64 +63,61 @@ struct sw_point_functor
     }
      
     template <typename T, std::enable_if_t< is_supported<T>() >* = nullptr>
-    std::pair<gdf_column,gdf_column> operator()(const gdf_scalar x1,
-                                                const gdf_scalar y1,
-                                                const gdf_scalar x2,
-                                                const gdf_scalar y2,
-                                                const gdf_column& in_x,
-                                                const gdf_column& in_y)
+    std::pair<gdf_column,gdf_column> operator()(const gdf_scalar left,
+                                                const gdf_scalar bottom,
+                                                const gdf_scalar right,
+                                                const gdf_scalar top,
+                                                const gdf_column& x,
+                                                const gdf_column& y)
     {
-        T q_x1 = get_scalar<T>(x1);
-        T q_x2 = get_scalar<T>(x2);
-        T q_y1 = get_scalar<T>(y1);
-        T q_y2 = get_scalar<T>(y2);
+        T q_left = get_scalar<T>(left);
+        T q_right = get_scalar<T>(right);
+        T q_bottom = get_scalar<T>(bottom);
+        T q_top = get_scalar<T>(top);
   
-        CUDF_EXPECTS(q_x1<q_x2,"x1 must be less than x2 in a spatial window query");
-        CUDF_EXPECTS(q_y1<q_y2,"y1 must be less than y2 in a spatial window query");
+        CUDF_EXPECTS(q_left < q_right,
+                     "left must be less than right in a spatial window query");
+        CUDF_EXPECTS(q_bottom < q_top,
+                     "bottom must be less than top in a spatial window query");
 
         cudaStream_t stream{0};
         auto exec_policy = rmm::exec_policy(stream)->on(stream);
 
-        auto in_it=thrust::make_zip_iterator(thrust::make_tuple(
-                                   static_cast<T*>(in_x.data),
-                                   static_cast<T*>(in_y.data)));
+        auto in_it = thrust::make_zip_iterator(thrust::make_tuple(
+            static_cast<T*>(x.data), static_cast<T*>(y.data)));
                                    
-        int num_hits= thrust::count_if(exec_policy, in_it, in_it+in_x.size, 
-                                       spatial_window_functor_xy<T>(q_x1,
-                                                                    q_x2,
-                                                                    q_y1,
-                                                                    q_y2));
+        int num_hits =
+            thrust::count_if(exec_policy, in_it, in_it + x.size, 
+                             spatial_window_functor_xy<T>(q_left, q_bottom,
+                                                          q_right, q_top));
+
         T* temp_x{nullptr};
         T* temp_y{nullptr};
         RMM_TRY( RMM_ALLOC(&temp_x, num_hits * sizeof(T), 0) );
         RMM_TRY( RMM_ALLOC(&temp_y, num_hits * sizeof(T), 0) );
             
-        auto out_it=thrust::make_zip_iterator(thrust::make_tuple(temp_x,temp_y));
-        thrust::copy_if(exec_policy, in_it, in_it+in_x.size,out_it, 
-	                        spatial_window_functor_xy<T>(q_x1, q_x2,
-	                                                            q_y1, q_y2));
+        auto out_it = 
+            thrust::make_zip_iterator(thrust::make_tuple(temp_x, temp_y));
+        thrust::copy_if(exec_policy, in_it, in_it + x.size, out_it, 
+                        spatial_window_functor_xy<T>(q_left, q_bottom,
+                                                     q_right, q_top));
 
-        gdf_column out_x,out_y;
-        memset(&out_x,0,sizeof(gdf_column));
-        memset(&out_y,0,sizeof(gdf_column));
+        gdf_column out_x{}, out_y{};
         
-        gdf_column_view_augmented(&out_x, temp_x, nullptr, num_hits,
-                          in_x.dtype, 0,
-                              gdf_dtype_extra_info{TIME_UNIT_NONE}, "x");          
-        gdf_column_view_augmented(&out_y, temp_y, nullptr, num_hits,
-                              in_y.dtype, 0,
-                              gdf_dtype_extra_info{TIME_UNIT_NONE}, "y");          
-            
-        return std::make_pair(out_x,out_y);
+        gdf_column_view_augmented(&out_x, temp_x, nullptr, num_hits, x.dtype,
+                              0, gdf_dtype_extra_info{TIME_UNIT_NONE}, "x");
+        gdf_column_view_augmented(&out_y, temp_y, nullptr, num_hits, y.dtype,
+                              0, gdf_dtype_extra_info{TIME_UNIT_NONE}, "y");
+        return std::make_pair(out_x, out_y);
     }
 
     template <typename T, std::enable_if_t< !is_supported<T>() >* = nullptr>
-    std::pair<gdf_column,gdf_column> operator()(const gdf_scalar x1,
-                                                const gdf_scalar y1,
-                                                const gdf_scalar x2,
-                                                const gdf_scalar y2,
-                                                const gdf_column& in_x,
-                                                const gdf_column& in_y)
+    std::pair<gdf_column,gdf_column> operator()(const gdf_scalar left,
+                                                const gdf_scalar bottom,
+                                                const gdf_scalar right,
+                                                const gdf_scalar top,
+                                                const gdf_column& x,
+                                                const gdf_column& y)
     {
        CUDF_FAIL("Non-floating point operation is not supported");
     }
@@ -136,21 +131,22 @@ namespace cuspatial {
  * Return all points (x,y) that fall within a query window (x1,y1,x2,y2)
  * see query.hpp
  */
-std::pair<gdf_column,gdf_column> spatial_window_points(const gdf_scalar& x1,
-                                                       const gdf_scalar& y1,
-                                                       const gdf_scalar& x2,
-                                                       const gdf_scalar& y2,
-                                                       const gdf_column& in_x,
-                                                       const gdf_column& in_y)
+std::pair<gdf_column,gdf_column> spatial_window_points(const gdf_scalar& left,
+                                                       const gdf_scalar& bottom,
+                                                       const gdf_scalar& right,
+                                                       const gdf_scalar& top,
+                                                       const gdf_column& x,
+                                                       const gdf_column& y)
 {
-    CUDF_EXPECTS(in_x.dtype == in_y.dtype, "point type mismatch between x/y arrays");
-    CUDF_EXPECTS(in_x.size == in_y.size, "#of points mismatch between x/y arrays");
+    CUDF_EXPECTS(x.dtype == y.dtype, "point type mismatch between x/y arrays");
+    CUDF_EXPECTS(x.size == y.size, "#of points mismatch between x/y arrays");
 
-    CUDF_EXPECTS(in_x.null_count == 0 && in_y.null_count == 0, "this version does not support point data that contains nulls");
+    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0,
+                 "this version does not support point data that contains nulls");
 
     std::pair<gdf_column,gdf_column> res = 
-        cudf::type_dispatcher(in_x.dtype, sw_point_functor(), x1, y1, x2, y2,
-                              in_x,in_y);
+        cudf::type_dispatcher(x.dtype, sw_point_functor(), left, bottom,
+                              right, top, x, y);
 
     return res;
 }

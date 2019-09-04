@@ -2,7 +2,7 @@
 
 ## New Features
 
-- PR #7 Initial code checkin
+- PR #7 Initial code
 
 ## Improvements
 
