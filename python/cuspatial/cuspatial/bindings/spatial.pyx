@@ -1,20 +1,21 @@
-from cudf.bindings.cudf_cpp import *
-from cudf.dataframe.column import Column
+from cudf._lib.cudf import *
+from cudf._lib.cudf cimport *
+from cudf.core.column import Column
 from libcpp.pair cimport pair
 
 from libc.stdlib cimport calloc, malloc, free
-                        
+
 cpdef cpp_point_in_polygon_bitmap(points_x, points_y,
                                   poly_fpos, poly_rpos,
-                                  poly_x, poly_y): 
+                                  poly_x, poly_y):
     cdef gdf_column* c_points_x = column_view_from_column(points_x)
     cdef gdf_column* c_points_y = column_view_from_column(points_y)
-    
+
     cdef gdf_column* c_poly_fpos = column_view_from_column(poly_fpos)
     cdef gdf_column* c_poly_rpos = column_view_from_column(poly_rpos)
- 
+
     cdef gdf_column* c_poly_x = column_view_from_column(poly_x)
-    cdef gdf_column* c_poly_y = column_view_from_column(poly_y)    
+    cdef gdf_column* c_poly_y = column_view_from_column(poly_y)
     cdef gdf_column* result_bitmap = <gdf_column*>malloc(sizeof(gdf_column))
 
     with nogil:
@@ -28,13 +29,13 @@ cpdef cpp_point_in_polygon_bitmap(points_x, points_y,
     free(c_poly_fpos)
     free(c_poly_rpos)
     free(c_poly_x)
-    free(c_poly_y)  
+    free(c_poly_y)
     free(result_bitmap)
-    bitmap = Column.from_mem_views(data, mask) 
+    bitmap = Column.from_mem_views(data, mask)
 
     return bitmap
 
-cpdef cpp_haversine_distance(x1,y1,x2,y2): 
+cpdef cpp_haversine_distance(x1,y1,x2,y2):
     cdef gdf_column* c_x1= column_view_from_column(x1)
     cdef gdf_column* c_y1 = column_view_from_column(y1)
     cdef gdf_column* c_x2= column_view_from_column(x2)
@@ -51,9 +52,9 @@ cpdef cpp_haversine_distance(x1,y1,x2,y2):
     free(c_x2)
     free(c_y2)
     free(c_h_dist)
-    h_dist=Column.from_mem_views(data, mask) 
+    h_dist=Column.from_mem_views(data, mask)
 
-    return h_dist  
+    return h_dist
 
 cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
     cdef gdf_scalar* c_cam_lon = gdf_scalar_from_scalar(cam_lon)
@@ -86,7 +87,7 @@ cpdef cpp_directed_hausdorff_distance(coor_x,coor_y,cnt):
     with nogil:
      c_dist[0]=directed_hausdorff_distance(c_coor_x[0],c_coor_y[0],c_cnt[0])
 
-    dist_data, dist_mask = gdf_column_to_column_mem(c_dist)    
+    dist_data, dist_mask = gdf_column_to_column_mem(c_dist)
     dist=Column.from_mem_views(dist_data,dist_mask)
 
-    return dist   
+    return dist

@@ -7,7 +7,7 @@ Note: make sure cudf_dev conda environment is activated
 
 import numpy as np
 import time
-from cudf.dataframe import columnops
+from cudf.core import column
 import cuspatial.bindings.spatial as gis
 
 cities=[]
@@ -24,10 +24,10 @@ for i in range(len(cities)):
   pnt_y1.append(cities[i][2])
   pnt_x2.append(cities[j][1])
   pnt_y2.append(cities[j][2])
-x1=columnops.as_column(pnt_x1,dtype=np.float64)
-y1=columnops.as_column(pnt_y1,dtype=np.float64)
-x2=columnops.as_column(pnt_x2,dtype=np.float64)
-y2=columnops.as_column(pnt_y2,dtype=np.float64)
+x1=column.as_column(pnt_x1,dtype=np.float64)
+y1=column.as_column(pnt_y1,dtype=np.float64)
+x2=column.as_column(pnt_x2,dtype=np.float64)
+y2=column.as_column(pnt_y2,dtype=np.float64)
 dis=gis.cpp_haversine_distance(x1,y1,x2,y2)
 dis.data.to_array().reshape(3,3)
 
