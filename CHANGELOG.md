@@ -8,4 +8,4 @@
 
 ## Bug Fixes
 
-- PR #8 subset_trajectory_id test improvements and bug fixes
+- PR #16 `cuspatial::subset_trajectory_id` test improvements and bug fixes
