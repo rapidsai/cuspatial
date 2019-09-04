@@ -68,6 +68,10 @@ cpdef cpp_haversine_distance(x1,y1,x2,y2):
     return h_dist
 
 cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
+    cam_lon = np.float64(cam_lon)
+    cam_lat = np.float64(cam_lat)
+    in_lon = in_lon.astype('float64')._column
+    in_lat = in_lat.astype('float64')._column
     cdef gdf_scalar* c_cam_lon = gdf_scalar_from_scalar(cam_lon)
     cdef gdf_scalar* c_cam_lat = gdf_scalar_from_scalar(cam_lat)
     cdef gdf_column* c_in_lon = column_view_from_column(in_lon)
@@ -88,7 +92,7 @@ cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
     x=Column.from_mem_views(x_data, x_mask)
     y=Column.from_mem_views(y_data, y_mask)
 
-    return x,y
+    return cudf.Series(x), cudf.Series(y)
 
 cpdef cpp_directed_hausdorff_distance(coor_x,coor_y,cnt):
     coor_x = coor_x.astype('float64')._column
