@@ -8,6 +8,12 @@ from libc.stdlib cimport calloc, malloc, free
 cpdef cpp_point_in_polygon_bitmap(points_x, points_y,
                                   poly_fpos, poly_rpos,
                                   poly_x, poly_y):
+    points_x = points_x.astype('float64')._column
+    points_y = points_y.astype('float64')._column
+    poly_fpos = poly_fpos.astype('int32')._column
+    poly_rpos = poly_rpos.astype('int32')._column
+    poly_x = poly_x.astype('float64')._column
+    poly_y = poly_y.astype('float64')._column
     cdef gdf_column* c_points_x = column_view_from_column(points_x)
     cdef gdf_column* c_points_y = column_view_from_column(points_y)
 
