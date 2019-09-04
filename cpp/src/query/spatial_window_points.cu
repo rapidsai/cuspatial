@@ -56,6 +56,13 @@ struct sw_point_functor
     {
         return std::is_floating_point<T>::value;
     }
+
+    template <typename T>
+    T get_scalar(const gdf_scalar v) {
+        T ret{};  // Safe type pun, compiler should optimize away the memcpy
+        memcpy(&ret, &v.data, sizeof(T));
+        return ret;
+    }
      
     template <typename T, std::enable_if_t< is_supported<T>() >* = nullptr>
     std::pair<gdf_column,gdf_column> operator()(const gdf_scalar x1,
@@ -64,11 +71,11 @@ struct sw_point_functor
                                                 const gdf_scalar y2,
                                                 const gdf_column& in_x,
                                                 const gdf_column& in_y)
-    {        
-        T const q_x1=*reinterpret_cast<T const*>(&x1.data);
-        T const q_y1=*reinterpret_cast<T const*>(&y1.data);
-        T const q_x2=*reinterpret_cast<T const*>(&x2.data);
-        T const q_y2=*reinterpret_cast<T const*>(&y2.data);
+    {
+        T q_x1 = get_scalar<T>(x1);
+        T q_x2 = get_scalar<T>(x2);
+        T q_y1 = get_scalar<T>(y1);
+        T q_y2 = get_scalar<T>(y2);
   
         CUDF_EXPECTS(q_x1<q_x2,"x1 must be less than x2 in a spatial window query");
         CUDF_EXPECTS(q_y1<q_y2,"y1 must be less than y2 in a spatial window query");
