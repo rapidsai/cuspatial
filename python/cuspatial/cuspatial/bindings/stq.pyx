@@ -16,8 +16,7 @@ cpdef cpp_sw_xy(qx1,qx2,qy1,qy2,in_x,in_y):
 
     cdef pair[gdf_column, gdf_column] columns
 
-    columns = spatial_window_points(c_qx1, c_qy1, c_qx2, c_qy2,
-                                    c_in_x, c_in_y)
+    columns = spatial_window_points(c_qx1, c_qy1, c_qx2, c_qy2, c_in_x, c_in_y)
 
     outx_data, outx_mask = gdf_column_to_column_mem(&columns.first)
     outy_data, outy_mask = gdf_column_to_column_mem(&columns.second)

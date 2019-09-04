@@ -36,6 +36,11 @@ cpdef cpp_point_in_polygon_bitmap(points_x, points_y,
     return bitmap
 
 cpdef cpp_haversine_distance(x1,y1,x2,y2):
+    x1 = x1.astype('float64')._column
+    y1 = y1.astype('float64')._column
+    x2 = x2.astype('float64')._column
+    y2 = y2.astype('float64')._column
+
     cdef gdf_column* c_x1= column_view_from_column(x1)
     cdef gdf_column* c_y1 = column_view_from_column(y1)
     cdef gdf_column* c_x2= column_view_from_column(x2)
@@ -80,6 +85,9 @@ cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
     return x,y
 
 cpdef cpp_directed_hausdorff_distance(coor_x,coor_y,cnt):
+    coor_x = coor_x.astype('float64')._column
+    coor_y = coor_y.astype('float64')._column
+    cnt = cnt.astype('int32')._column
     cdef gdf_column* c_coor_x = column_view_from_column(coor_x)
     cdef gdf_column* c_coor_y = column_view_from_column(coor_y)
     cdef gdf_column* c_cnt = column_view_from_column(cnt)
