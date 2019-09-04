@@ -47,30 +47,31 @@ void test_subset(std::vector<int32_t> ids_to_keep)
     std::iota(sequence.begin(), sequence.end(), 0);
 
     //three sorted trajectories: one with 2/3 of the points, two with 1/6
-    std::vector<int32_t> point_id(column_size);
-    std::transform(sequence.cbegin(), sequence.cend(), point_id.begin(),
+    std::vector<int32_t> id_vector(column_size);
+    std::transform(sequence.cbegin(), sequence.cend(), id_vector.begin(),
                    [](int32_t i) { return (i < 2 * i / 3) ? 0 : 
                                           (i < 5 * i / 6) ? 1 : 2; });
-
-    int point_ms[] = {1,2,3,4,5,1,2,3,4,1,2,3};
-
+    
+    // timestamp milliseconds
+    std::vector<int64_t> ms_vector(sequence.begin(), sequence.end()); 
+    
     //randomize sequence
     std::seed_seq seed{0};
     std::mt19937 g(seed);
     
     std::shuffle(sequence.begin(), sequence.end(), g);
 
-    wrapper<double> point_x_wrapper(column_size,
+    wrapper<double> in_x(column_size,
         [&](gdf_index_type i) { return static_cast<double>(sequence[i]); });
-    wrapper<double> point_y_wrapper(column_size,
+    wrapper<double> in_y(column_size,
         [&](gdf_index_type i) { return static_cast<double>(sequence[i]); });
-    wrapper<int32_t> point_id_wrapper(column_size,
-        [&](gdf_index_type i) { return point_id[sequence[i]]; });
-    wrapper<cudf::timestamp> point_ts_wrapper(column_size,
+    wrapper<int32_t> in_id(column_size,
+        [&](gdf_index_type i) { return id_vector[sequence[i]]; });
+    wrapper<cudf::timestamp> in_ts(column_size,
         [&](gdf_index_type i) { 
-            return static_cast<cudf::timestamp>(point_ms[sequence[i]]); 
+            return static_cast<cudf::timestamp>(ms_vector[sequence[i]]); 
         });
-    wrapper<int32_t> ids_wrapper{ids_to_keep};
+    wrapper<int32_t> ids{ids_to_keep};
 
     gdf_column out_x{}, out_y{}, out_id{}, out_ts{};
 
@@ -82,7 +83,7 @@ void test_subset(std::vector<int32_t> ids_to_keep)
         std::copy_if(sequence.begin(), sequence.end(), expected_sequence.begin(),
             [&](int32_t i) {
                 return std::binary_search(ids_to_keep.begin(), ids_to_keep.end(),
-                                          point_id[i]);
+                                          id_vector[i]);
             }
         ) - expected_sequence.begin();
 
@@ -91,22 +92,17 @@ void test_subset(std::vector<int32_t> ids_to_keep)
     wrapper<double> expected_y(expected_size,
         [&](gdf_index_type i) { return static_cast<double>(expected_sequence[i]); });
     wrapper<int32_t> expected_id(expected_size,
-        [&](gdf_index_type i) { return point_id[expected_sequence[i]]; });
+        [&](gdf_index_type i) { return id_vector[expected_sequence[i]]; });
     wrapper<cudf::timestamp> expected_ts(expected_size,
         [&](gdf_index_type i) {
-            return static_cast<cudf::timestamp>(point_ms[expected_sequence[i]]);
+            return static_cast<cudf::timestamp>(ms_vector[expected_sequence[i]]);
         });
 
     gdf_size_type num_hit{0};
     
     EXPECT_NO_THROW(
-        num_hit = cuspatial::subset_trajectory_id(ids_wrapper,
-                                                  point_x_wrapper,
-                                                  point_y_wrapper,
-                                                  point_id_wrapper,
-                                                  point_ts_wrapper,
-                                                  out_x, out_y,
-                                                  out_id, out_ts));
+        num_hit = cuspatial::subset_trajectory_id(ids, in_x, in_y, in_id, in_ts,
+                                                  out_x, out_y, out_id, out_ts));
 
     EXPECT_EQ(num_hit, expected_size);
     EXPECT_TRUE(expected_x == out_x);
