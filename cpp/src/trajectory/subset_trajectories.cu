@@ -71,8 +71,8 @@ struct subset_functor {
                               in_id_ptr, in_id_ptr + num_rec, hit_vec.begin());
 
 
-        uint32_t num_hit = thrust::count_if(exec_policy, hit_vec.begin(),
-                                            hit_vec.end(), is_true());
+        uint32_t num_hit = thrust::count(exec_policy, hit_vec.begin(),
+                                            hit_vec.end(), true);
         
         RMM_TRY( RMM_ALLOC(&out_x.data, num_hit * sizeof(double), 0) ); 
         RMM_TRY( RMM_ALLOC(&out_y.data, num_hit * sizeof(double), 0) );
@@ -94,9 +94,11 @@ struct subset_functor {
                                                                     out_y_ptr,
                                                                     out_id_ptr,
                                                                     out_ts_ptr));
+
         uint32_t num_keep = thrust::copy_if(exec_policy, in_itr, in_itr+num_rec,
                                             hit_vec.begin(), out_itr,
                                             is_true()) - out_itr;
+
         CUDF_EXPECTS(num_hit == num_keep,
                      "count_if and copy_if result mismatch");
 
