@@ -82,4 +82,4 @@ def test_triple():
         cudf.Series(pnt_x2),
         cudf.Series(pnt_y2)
     )
-    assert np.allclose(distance, [[0.0, 5.83724090e+03, 1.59887555e+04, 5.83724090e+03, 0.0, 1.69604974e+04, 1.59887555e+04, 1.69604974e+04, 0.0]])
+    assert np.allclose(distance.to_array(), [[0.0, 5.83724090e+03, 1.59887555e+04, 5.83724090e+03, 0.0, 1.69604974e+04, 1.59887555e+04, 1.69604974e+04, 0.0]])

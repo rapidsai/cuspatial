@@ -1,6 +1,7 @@
 from cudf._lib.cudf import *
 from cudf._lib.cudf cimport *
 from cudf.core.column import Column
+from cudf import Series
 from libcpp.pair cimport pair
 
 from libc.stdlib cimport calloc, malloc, free
@@ -65,7 +66,7 @@ cpdef cpp_haversine_distance(x1,y1,x2,y2):
     free(c_h_dist)
     h_dist=Column.from_mem_views(data, mask)
 
-    return h_dist
+    return Series(h_dist)
 
 cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
     cam_lon = np.float64(cam_lon)
@@ -92,7 +93,7 @@ cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
     x=Column.from_mem_views(x_data, x_mask)
     y=Column.from_mem_views(y_data, y_mask)
 
-    return cudf.Series(x), cudf.Series(y)
+    return Series(x), Series(y)
 
 cpdef cpp_directed_hausdorff_distance(coor_x,coor_y,cnt):
     coor_x = coor_x.astype('float64')._column
@@ -108,4 +109,4 @@ cpdef cpp_directed_hausdorff_distance(coor_x,coor_y,cnt):
     dist_data, dist_mask = gdf_column_to_column_mem(c_dist)
     dist=Column.from_mem_views(dist_data,dist_mask)
 
-    return dist
+    return Series(dist)
