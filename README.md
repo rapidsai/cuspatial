@@ -1,76 +1,104 @@
-# RAPIDS Standard Repo Template
+# cuSpatial
+## GPU-Accelerated Spatial and Trajectory Data Management and Analytics Library
 
-This is repo is the standard RAPIDS repo with the following items to make all RAPIDS repos consistent:
+**NOTE:** cuSpatial depends on [cuDF](https://github.com/rapidsai/cudf) and
+[RMM](https://github.com/rapidsai/rmm) from [RAPIDS](https://rapids.ai/).
 
-- GitHub File Templates
-  - Issue templates
-  - PR template
-- GitHub Repo Templates
-  - Issue/PR labels
-  - Project tracking and release board templates
-- Files
-  - `CHANGELOG.md` skeleton
-  - `CONTRIBUTING.md` skeleton
-  - `LICENSE` file with Apache 2.0 License
-  - `README.md` skeleton
+## Implemented operations:
+cuSpatial supports the following operations on spatial and trajectory data:
+1. Spatial window query
+2. Point-in-polygon test
+3. Haversine distance
+4. Hausdorff distance
+5. Deriving trajectories from point location data
+6. Computing distance/speed of trajectories
+7. Computing spatial bounding boxes of trajectories
 
+Future support is planned for the following operations.
+1. Temporal window query
+2. Temporal point query (year+month+day+hour+minute+second+millisecond)
+3. Point-to-polyline nearest neighbor distance
+4. Grid-based indexing for points and polygons
+5. Quadtree-based indexing for large-scale point data
+6. R-Tree-based indexing for Polygons/Polylines
+ 
+## Compile / Install C++ backend
+To compile and run cuSpatial, use the following steps.
 
-## Usage for new RAPIDS repos
+## Install dependencies
 
-1. Clone this repo
-2. Find/replace all in the clone of `___PROJECT___` and replace with the name of the new library
-3. Inspect files to make sure all replacements work and update text as needed
-4. Customize issue/PR templates to fit the repo
-5. Update `CHANGELOG.md` with next release version, see [changelog format](https://rapidsai.github.io/devdocs/docs/resources/changelog/) for more info
-6. Add developer documentation to the end of the `CONTRIBUTING.md` that is project specific and useful for developers contributing to the project
-    - The goal here is to keep the `README.md` light, so the development/debugging information should go in `CONTRIBUTING.md`
-7. Complete `README.md` with project description, quick start, install, and contribution information
-8. Remove everything above the RAPIDS logo below from the `README.md`
-9. Check `LICENSE` file is correct
-10. Change git origin to point to new repo and push
-11. Alert OPS team to copy labels and project boards to new repo
+Currently, building cuSpatial requires a source installation of cuDF. Install
+cuDF by following the [instructions](https://github.com/rapidsai/cudf/blob/branch-0.10/CONTRIBUTING.md#script-to-build-cudf-from-source)
 
-## Usage for existing RAPIDS repos
+The rest of steps assume the environment variable `CUDF_HOME` points to the 
+root directory of your clone of the cuDF repo, and that the `cudf_dev` Anaconda
+environment created in step 3 is active.
 
-1. Follow the steps 1-9 above, but add the files to your existing repo and merge
-2. Alert OPS team to copy labels and project boards to new repo
+## Clone, build and install cuSpatial
 
-## Useful docs to review
+1. export `CUSPATIAL_HOME=$(pwd)/cuspatial`
+2. clone the cuSpatial repo
 
-- Issue triage & release planning
-  - [Issue triage process with GitHub projects](https://rapidsai.github.io/devdocs/docs/releases/triage/)
-  - [Release planning with GitHub projects](https://rapidsai.github.io/devdocs/docs/releases/planning/)
-- Code release process
-  - [Hotfix process](https://rapidsai.github.io/devdocs/docs/releases/hotfix/)
-  - [Release process](https://rapidsai.github.io/devdocs/docs/releases/process/)
-- Code contributions
-  - [Code contribution guide](https://rapidsai.github.io/devdocs/docs/contributing/code/)
-  - [Filing issues](https://rapidsai.github.io/devdocs/docs/contributing/issues/)
-  - [Filing PRs](https://rapidsai.github.io/devdocs/docs/contributing/prs/)
-  - [Code of conduct](https://rapidsai.github.io/devdocs/docs/resources/conduct/)
-- Development process
-  - [Git branching and merging methodology](https://rapidsai.github.io/devdocs/docs/resources/git/)
-  - [Versions and tags](https://rapidsai.github.io/devdocs/docs/resources/versions/)
-  - [Changelog format](https://rapidsai.github.io/devdocs/docs/resources/changelog/)
-  - [Style guide](https://rapidsai.github.io/devdocs/docs/resources/style/)
-  - [Labels](https://rapidsai.github.io/devdocs/docs/maintainers/labels/)
+```
+git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
+```
 
----
+3. Compile and install C++ backend
 
-# <div align="left"><img src="https://rapids.ai/assets/images/rapids_logo.png" width="90px"/>&nbsp;___PROJECT___</div>
+```
+cd $CUSPATIAL_HOME/cpp
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
+make # (or make -j [n])
+make install
+```
 
-The [RAPIDS](https://rapids.ai) ___PROJECT___ ..._insert project description_...
+cuSpatial should now be installed at `$CONDA_PREFIX`. The cuspatial include path
+is `$CONDA_PREFIX/include/cuspatial/` and the library path is
+`$CONDA_PREFIX/lib/libcuspatial.so`. 
 
-**NOTE:** For the latest stable [README.md](https://github.com/rapidsai/___PROJECT___/blob/master/README.md) ensure you are on the `master` branch.
+4. Compile and install cuSpatial Python wrapper and run Python test code
 
-## Quick Start
+```
+cd $CUSPATIAL_HOME/python/cuspatial
+python setup.py build_ext --inplace
+python setup.py install
+```
 
-## Install ___PROJECT___
+5. Run python test code <br>
 
-### Conda
+First, add the cuSpatial Python API path to `PYTHONPATH` (there are tools under
+tests subdir): `export PYTHONPATH=$CUSPATIAL_HOME/python/cuspatial`
 
-### Pip
+Some tests using toy data can be run directly, e.g.,
 
-## Contributing Guide
+```
+python  $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/pip2_test_soa_toy.py
+```
 
-Review the [CONTRIBUTING.md](https://github.com/rapidsai/___PROJECT___/blob/master/CONTRIBUTING.md) file for information on how to contribute code and issues to the project.
+However, many test code uses real data from an ITS (Intelligent Transportation
+System) application. You will need to follow instructions at
+[data/README.md](./data/README.md) to generate data for these test code.
+Alternatively, you can download the preprocessed data ("locust.*",
+"its_4326_roi.*", "itsroi.ply" and "its_camera_2.csv") from 
+[here](https://nvidia-my.sharepoint.com/:u:/p/jiantingz/EdHR7qlaRSVPtw46XYVR9sQBjCcnUHygCuPUC3Hf8gW73A?e=LCr9nK).
+Extract the files and put them directly under $CUSPATIAL_HOME/data for quick
+demos. A brief description of these data files and their semantic roles in the
+ITS application can be found [here](doc/itsdata.md) TODO THIS IS MISSING
+
+After data are downloaded and/or pre-processed, you can run the 
+[python test code](python/cuspatial/cuspatial/tests):
+
+```
+python  $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/pip2_verify.py
+python  $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/traj2_test_soa3.py
+python  $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/stq_test_soa1.py
+```
+
+**NOTE:** Currently, cuSpatial supports reading point/polyine/polygon data using
+Structure of Array (SoA) format (more readers are being developed).
+Alternatively, python users can read any point/polyine/polygon data using
+existing python packages, e.g., [Shapely](https://pypi.org/project/Shapely/),
+to generate numpy arrays and feed them to
+[cuSpatial python APIs](python/cuspatial/cuspatial/bindings).
