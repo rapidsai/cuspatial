@@ -2,18 +2,13 @@
 
 """
 GPU-based coordinate transformation demo: (log/lat)==>(x/y), relative to a camera origin
-Note: camera configuration is read from a CSV file using Panda
 """
 
 import pytest
 import cudf
 from cudf.tests.utils import assert_eq
 import numpy as np
-import pandas as pd
-import cuspatial.bindings.spatial as gis
 import cuspatial.bindings.trajectory as traj
-import cuspatial.bindings.soa_readers as readers
-import cuspatial.utils.traj_utils as tools
 
 def test_derive_trajectories_zeros():
     num_trajectories = traj.cpp_derive_trajectories(
@@ -128,4 +123,3 @@ def test_trajectory_distance_and_speed_single_trajectory():
     )
     assert_eq(dist, cudf.Series([7892.922363, 6812.55908203125, 8485.28125]))
     assert_eq(speed, cudf.Series([1973230.625, 2270853., 4242640.5])) # fast!
-

@@ -73,7 +73,7 @@ cpdef cpp_trajectory_spatial_bounds(coor_x,coor_y,length,pos):
     cdef gdf_column* c_x2 = <gdf_column*>malloc(sizeof(gdf_column))
     cdef gdf_column* c_y1 = <gdf_column*>malloc(sizeof(gdf_column))
     cdef gdf_column* c_y2 = <gdf_column*>malloc(sizeof(gdf_column))
-    
+
     with nogil:
         trajectory_spatial_bounds(c_coor_x[0], c_coor_y[0],
                                 c_length[0], c_pos[0],
