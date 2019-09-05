@@ -68,6 +68,9 @@ conda list
 # cuSpatial currently requires a source build of cudf and not a conda package
 ################################################################################
 
+logger "Clone cudf"
+git clone git@github.com:rapidsai/cudf.git ${CUDF_HOME}
+
 logger "Build cudf..."
 cd $CUDF_HOME
 ./build.sh clean libnvstrings nvstrings libcudf cudf
@@ -76,25 +79,21 @@ cd $CUDF_HOME
 # BUILD - Build libcuspatial and cuSpatial from source
 ################################################################################
 
-logger "Build libcuspatial"
-mkdir $WORKSPACE/cpp/build
-cd $WORKSPACE/cpp/build
-cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
-make -j $PARALLEL_LEVEL
-make install
-
 logger "Build cuSpatial"
-cd $WORKSPACE/python/cuspatial
-python setup.py build_ext --inplace
-python setup.py install
+cd $WORKSPACE
+./build.sh clean libcuspatial cuspatial
 
 ###############################################################################
 # TEST - Run libcuspatial and cuSpatial Unit Tests
 ###############################################################################
 
-logger "Download/Generate Test Data"
-#TODO
+if hasArg --skip-tests; then
+    logger "Skipping tests..."
+else
+    logger "Download/Generate Test Data"
+    #TODO
 
-logger "Test cuSpatial"
-#TODO
+    logger "Test cuSpatial"
+    #TODO
+fi
 
