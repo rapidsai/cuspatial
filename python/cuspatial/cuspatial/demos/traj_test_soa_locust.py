@@ -10,7 +10,7 @@ import cuspatial.bindings.trajectory as traj
 import cuspatial.bindings.soa_readers as readers
 import cuspatial.utils.traj_utils as tools
 
-data_dir = "/home/jianting/cuspatial/data/"
+data_dir = "./"
 df = pd.read_csv(data_dir + "its_camera_2.csv")
 this_cam = df.loc[df["cameraIdString"] == "HWY_20_AND_LOCUST"]
 cam_lon = np.double(this_cam.iloc[0]["originLon"])
@@ -30,17 +30,11 @@ print(out2)
 y, m, d, hh, mm, ss, wd, yd, ms, pid = tools.get_ts_struct(ts_0)
 
 pnt_x, pnt_y = gis.cpp_lonlat2coord(cam_lon, cam_lat, pnt_lon, pnt_lat)
-num_traj, tid, len, pos = traj.cpp_coord2traj(pnt_x, pnt_y, id, ts)
-
+num_traj, trajectories = traj.cpp_derive_trajectories(pnt_x, pnt_y, id, ts)
+#  = num_traj, tid, len, pos =
 y, m, d, hh, mm, ss, wd, yd, ms, pid = tools.get_ts_struct(ts_0)
-
-dist, speed = traj.cpp_traj_distspeed(pnt_x, pnt_y, ts, len, pos)
+dist, speed = traj.cpp_trajectory_distance_and_speed(pnt_x, pnt_y, ts, trajectories['length'], trajectories['position'])
 print(dist.data.to_array()[0], speed.data.to_array()[0])
 
-x1, y1, x2, y2 = traj.cpp_traj_sbbox(pnt_x, pnt_y, len, pos)
-print(
-    x1.data.to_array()[0],
-    x2.data.to_array()[0],
-    y1.data.to_array()[0],
-    y2.data.to_array()[0],
-)
+boxes = traj.cpp_trajectory_spatial_bounds(pnt_x, pnt_y, trajectories['length'], trajectories['position'])
+print(boxes.head())

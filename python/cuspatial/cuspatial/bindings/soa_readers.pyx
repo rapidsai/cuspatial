@@ -1,3 +1,4 @@
+from cudf.core import Series
 from cudf.core.column import Column
 from cudf._lib.cudf import *
 from libc.stdlib cimport calloc, malloc, free
@@ -11,9 +12,9 @@ cpdef cpp_read_uint_soa(soa_file_name):
     with nogil:
         c_id = read_uint32_soa(c_string)
     id_data, id_mask = gdf_column_to_column_mem(&c_id)
-    id=Column.from_mem_views(id_data,id_mask)	
+    ids=Column.from_mem_views(id_data,id_mask)	
 
-    return id
+    return Series(ids)
 
 cpdef cpp_read_ts_soa(soa_file_name):
     # print("in cpp_read_ts_soa, reading ",soa_file_name)
@@ -25,7 +26,7 @@ cpdef cpp_read_ts_soa(soa_file_name):
     ts_data, ts_mask = gdf_column_to_column_mem(&c_ts)
     ts=Column.from_mem_views(ts_data,ts_mask)	
 
-    return ts
+    return Series(ts).astype('datetime64[ms]')
 
 cpdef cpp_read_pnt_lonlat_soa(soa_file_name):
     # print("in cpp_read_pnt_lonlat_soa, reading ",soa_file_name)
@@ -39,7 +40,7 @@ cpdef cpp_read_pnt_lonlat_soa(soa_file_name):
     lat_data, lat_mask = gdf_column_to_column_mem(&columns.second)
     lat=Column.from_mem_views(lat_data,lat_mask)
 
-    return lon,lat
+    return Series(lon), Series(lat)
 
 cpdef cpp_read_pnt_xy_soa(soa_file_name):
     # print("in cpp_read_pnt_xy_soa, reading ",soa_file_name)
@@ -53,7 +54,7 @@ cpdef cpp_read_pnt_xy_soa(soa_file_name):
     y_data, y_mask = gdf_column_to_column_mem(&columns.second)
     y=Column.from_mem_views(y_data,y_mask)
 
-    return x,y
+    return Series(x), Series(y)
 
 cpdef cpp_read_polygon_soa(soa_file_name):
     # print("in cpp_read_polygon_soa, reading ",soa_file_name)
@@ -74,5 +75,5 @@ cpdef cpp_read_polygon_soa(soa_file_name):
     y_data, y_mask = gdf_column_to_column_mem(c_ply_y)
     y=Column.from_mem_views(y_data,y_mask)
 
-    return f_pos,r_pos,x,y
+    return Series(f_pos), Series(r_pos), Series(x), Series(y)
 
