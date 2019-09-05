@@ -13,6 +13,7 @@ function logger() {
 # Set path and build parallel level
 export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=4
+export CUDF_HOME="${WORKSPACE}/cudf"
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
@@ -46,6 +47,9 @@ conda config --set ssl_verify False
 ##########################################################################################
 # BUILD - Conda package builds (conda deps: libcupatial <- libcuspatial_cffi <- cuspatial)
 ##########################################################################################
+
+logger "Clone cudf"
+git clone git@github.com:rapidsai/cudf.git $CUDF_HOME
 
 logger "Build conda pkg for libcuspatial..."
 source ci/cpu/libcuspatial/build_libcuspatial.sh
