@@ -123,8 +123,6 @@ TEST_F(TrajectorySubsetTest, SelectSome)
 
 TEST_F(TrajectorySubsetTest, BadData)
 {
-    //constexpr gdf_size_type column_size{1000};
-
     gdf_column out_x, out_y, out_id, out_timestamp;
 
     gdf_column bad_x, bad_y, bad_in_id, bad_timestamp, bad_id;
