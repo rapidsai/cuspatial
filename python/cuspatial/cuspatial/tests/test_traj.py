@@ -10,6 +10,47 @@ from cudf.tests.utils import assert_eq
 import numpy as np
 import cuspatial.bindings.trajectory as traj
 
+def test_subset_trajectory_id_zeros():
+    result = traj.cpp_subset_trajectory_id(
+        cudf.Series([0]),
+        cudf.Series([0]),
+        cudf.Series([0]),
+        cudf.Series([0]),
+        cudf.Series([0]),
+    )
+    assert_eq(result, cudf.DataFrame({'x': [0.0], 'y': [0.0],
+        'ids': cudf.Series([0]).astype('int32'),
+        'timestamp': cudf.Series([0]).astype('datetime64[ms]')}))
+
+def test_subset_trajectory_id_ones():
+    result = traj.cpp_subset_trajectory_id(
+        cudf.Series([1]),
+        cudf.Series([1]),
+        cudf.Series([1]),
+        cudf.Series([1]),
+        cudf.Series([1]),
+    )
+    assert_eq(result, cudf.DataFrame({'x': [1.0], 'y': [1.0],
+        'ids': cudf.Series([1]).astype('int32'),
+        'timestamp': cudf.Series([1]).astype('datetime64[ms]')}))
+
+def test_subset_trajectory_id_random():
+    np.random.seed(0)
+    result = traj.cpp_subset_trajectory_id(
+        cudf.Series(np.random.randint(0, 10, 10)),
+        cudf.Series(np.random.randint(0, 10, 10)),
+        cudf.Series(np.random.randint(0, 10, 10)),
+        cudf.Series(np.random.randint(0, 10, 10)),
+        cudf.Series(np.random.randint(0, 10, 10)),
+    )
+    assert_eq(result, cudf.DataFrame({
+        'x': [7.0, 6, 1, 6, 7, 7, 8],
+        'y': [5.0, 9, 4, 3, 0, 3, 5],
+        'ids': cudf.Series([2, 3, 3, 3, 3, 7, 0]).astype('int32'),
+        'timestamp': cudf.Series(
+            [9, 9, 7, 3, 2, 7, 2]
+        ).astype('datetime64[ms]')}))
+
 def test_spatial_bounds_zeros():
     result = traj.cpp_trajectory_spatial_bounds(
         cudf.Series([0]),

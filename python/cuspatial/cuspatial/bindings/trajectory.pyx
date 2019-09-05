@@ -94,8 +94,13 @@ cpdef cpp_trajectory_spatial_bounds(coor_x,coor_y,length,pos):
 
     return DataFrame({'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2})
 
-cpdef cpp_subset_trajectory_id(id, in_x, in_y, in_id, in_timestamp):
-    cdef gdf_column* c_id = column_view_from_column(id)
+cpdef cpp_subset_trajectory_id(ids, in_x, in_y, in_id, in_timestamp):
+    ids = ids.astype('int32')._column
+    in_x = in_x.astype('float64')._column
+    in_y = in_y.astype('float64')._column
+    in_id = in_id.astype('int32')._column
+    in_timestamp = in_timestamp.astype('datetime64[ms]')._column
+    cdef gdf_column* c_id = column_view_from_column(ids)
     cdef gdf_column* c_in_x = column_view_from_column(in_x)
     cdef gdf_column* c_in_y = column_view_from_column(in_y)
     cdef gdf_column* c_in_id = column_view_from_column(in_id)
@@ -110,14 +115,17 @@ cpdef cpp_subset_trajectory_id(id, in_x, in_y, in_id, in_timestamp):
         count = subset_trajectory_id(c_id[0], c_in_x[0], c_in_y[0], c_in_id[0], 
                                      c_in_timestamp[0], c_out_x[0], c_out_y[0],
                                      c_out_id[0], c_out_timestamp[0])
-    
+
     x_data, x_mask = gdf_column_to_column_mem(c_out_x)
     x = Column.from_mem_views(x_data,x_mask)
     y_data, y_mask = gdf_column_to_column_mem(c_out_y)
     y = Column.from_mem_views(y_data,y_mask)
     id_data, id_mask = gdf_column_to_column_mem(c_out_id)
-    id = Column.from_mem_views(id_data,id_mask)
+    ids = Column.from_mem_views(id_data,id_mask)
     timestamp_data, timestamp_mask = gdf_column_to_column_mem(c_out_timestamp)
     timestamp = Column.from_mem_views(timestamp_data, timestamp_mask)
 
-    return x, y, id, timestamp
+    return DataFrame({'x': Series(x),
+                      'y': Series(y),
+                      'ids': Series(ids),
+                      'timestamp': Series(timestamp)})
