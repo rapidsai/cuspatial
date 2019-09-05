@@ -5,7 +5,7 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from cudf.bindings.cudf_cpp cimport *
+from cudf._lib.cudf cimport *
 from libcpp.pair cimport pair
 
 cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
