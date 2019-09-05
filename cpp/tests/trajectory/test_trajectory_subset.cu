@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
-#include <time.h>
-#include <sys/time.h>
 #include <vector>
-#include <iostream>
 #include <random>
 
 #include <gtest/gtest.h>
-#include <thrust/device_vector.h>
-#include <utilities/error_utils.hpp>
-#include <cuspatial/types.hpp> 
-#include <cuspatial/trajectory.hpp> 
-#include <utility/utility.hpp>
-#include <utility/trajectory_thrust.cuh>
 
-#include <tests/utilities/column_wrapper.cuh>
-#include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
+#include <tests/utilities/column_wrapper.cuh>
+
+#include <cuspatial/trajectory.hpp>
 
 struct TrajectorySubsetTest : public GdfTest 
 {
