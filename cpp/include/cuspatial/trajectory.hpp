@@ -53,11 +53,11 @@ gdf_size_type derive_trajectories(const gdf_column& x, const gdf_column& y,
  * Trajectories are typically derived from coordinate data using
  * derive_trajectories().
  * 
- * @param[in] x: x coordinates relative to a camera origin and ordered by
+ * @param[in] x: x coordinates (km) relative to a camera origin and ordered by
  *            (id,timestamp)
- * @param[in] y: y coordinates relative to a camera origin and ordered by
+ * @param[in] y: y coordinates (km) relative to a camera origin and ordered by
  *            (id,timestamp)
- * @param[in] timestamp: timestamp column ordered by (id,timestamp)
+ * @param[in] timestamp: timestamp (ms) column ordered by (id,timestamp)
  * @param[in] length: number of points column ordered by (id,timestamp)
  * @param[in] offset: offsets of trajectories used to index x/y/oid/ts
  *            ordered by (id,timestamp)

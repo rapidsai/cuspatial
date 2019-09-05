@@ -26,7 +26,7 @@ cpdef cpp_derive_trajectories(x, y, object_id, timestamp):
                                                 c_length[0], c_pos[0])
 
     traj_id_data, traj_id_mask = gdf_column_to_column_mem(c_trajectory_id)
-    length_data, length_mask = gdf_column_to_column_mem(c_length)    
+    length_data, length_mask = gdf_column_to_column_mem(c_length)
     pos_data, pos_mask = gdf_column_to_column_mem(c_pos)
     trajectory_id = Column.from_mem_views(traj_id_data,
                                           traj_id_mask)
@@ -43,8 +43,8 @@ cpdef cpp_trajectory_distance_and_speed(x, y, timestamp, length, pos):
     x = x.astype('float64')._column
     y = y.astype('float64')._column
     timestamp = timestamp.astype('datetime64[ms]')._column
-    length = length.astype('int64')._column
-    pos = pos.astype('int64')._column
+    length = length.astype('int32')._column
+    pos = pos.astype('int32')._column
     cdef gdf_column* c_x = column_view_from_column(x)
     cdef gdf_column* c_y = column_view_from_column(y)
     cdef gdf_column* c_timestamp = column_view_from_column(timestamp)

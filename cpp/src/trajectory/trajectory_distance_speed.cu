@@ -35,8 +35,8 @@ __global__ void distspeed_kernel(gdf_size_type num_traj,
                                  const T* const __restrict__ x,
                                  const T* const __restrict__ y,
                                  const cudf::timestamp * const __restrict__ time,
-                                 const uint32_t * const __restrict__ len,
-                                 const uint32_t * const __restrict__ pos,
+                                 const int32_t * const __restrict__ length,
+                                 const int32_t * const __restrict__ pos,
                                  T* const __restrict__ dis,
                                  T* const __restrict__ sp)
 {
@@ -45,26 +45,31 @@ __global__ void distspeed_kernel(gdf_size_type num_traj,
     int bp=(pid==0)?0:pos[pid-1];
     int ep=pos[pid]-1;
 
-    cudf::timestamp e = time[ep];
     cudf::timestamp b = time[bp];
+    cudf::timestamp e = time[ep];
     cudf::timestamp td = e - b;
 
-    if((len[pid]<2)||unwrap(td)==0)
+    if(length[pid]<2)
     {
-        dis[pid]=-1;
-        sp[pid]=-1;
+        dis[pid]=-2;
+        sp[pid]=-2;
+    }
+    else if(unwrap(td)==0)
+    {
+        dis[pid]=-3;
+        sp[pid]=-3;
     }
     else
     {
         float ds=0;
-        for(int i=0;i<len[pid]-1;i++)
+        for(int i=0;i<length[pid]-1;i++)
         {
             float dt=(x[bp+i+1]-x[bp+i])*(x[bp+i+1]-x[bp+i]);
             dt+=(y[bp+i+1]-y[bp+i])*(y[bp+i+1]-y[bp+i]);
             ds+=sqrt(dt);
         }
         dis[pid]=ds*1000; //km to m
-        sp[pid]=ds*1000/unwrap(td); // m/s
+        sp[pid]=ds*1000000/unwrap(td); // m/s
     }
 }
 
@@ -102,8 +107,8 @@ struct distspeed_functor
         distspeed_kernel<T><<<grid.num_blocks, block_size>>>(length.size,
             static_cast<T*>(x.data), static_cast<T*>(y.data),
             static_cast<cudf::timestamp*>(timestamp.data),
-            static_cast<uint32_t*>(length.data),
-            static_cast<uint32_t*>(offset.data),
+            static_cast<int32_t*>(length.data),
+            static_cast<int32_t*>(offset.data),
             static_cast<T*>(dist.data), static_cast<T*>(speed.data) );
         CUDA_TRY( cudaDeviceSynchronize() );
 
