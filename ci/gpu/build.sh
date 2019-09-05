@@ -44,6 +44,9 @@ nvidia-smi
 
 logger "Activate conda env..."
 source activate gdf
+
+# These installs are dependencies of cudf and most should be removed once we use a conda package
+# for cudf
 conda install "rmm=$MINOR_VERSION.*" "cudatoolkit=$CUDA_REL" \
               "dask>=2.1.0" "distributed>=2.1.0" "numpy>=1.16" "double-conversion" \
               "rapidjson" "flatbuffers" "boost-cpp" "fsspec>=0.3.3" "dlpack" \
@@ -69,7 +72,7 @@ conda list
 ################################################################################
 
 logger "Clone cudf"
-git clone git@github.com:rapidsai/cudf.git ${CUDF_HOME}
+git clone git@github.com:rapidsai/cudf.git -b branch-$MINOR_VERSION ${CUDF_HOME}
 
 logger "Build cudf..."
 cd $CUDF_HOME

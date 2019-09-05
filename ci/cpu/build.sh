@@ -24,6 +24,7 @@ cd $WORKSPACE
 # Get latest tag and number of commits since tag
 export GIT_DESCRIBE_TAG=`git describe --abbrev=0 --tags`
 export GIT_DESCRIBE_NUMBER=`git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count`
+export MINOR_VERSION=`echo $GIT_DESCRIBE_TAG | grep -o -E '([0-9]+\.[0-9]+)'`
 
 ################################################################################
 # SETUP - Check environment
@@ -49,7 +50,7 @@ conda config --set ssl_verify False
 ##########################################################################################
 
 logger "Clone cudf"
-git clone git@github.com:rapidsai/cudf.git $CUDF_HOME
+git clone git@github.com:rapidsai/cudf.git -b branch-$MINOR_VERSION $CUDF_HOME
 
 logger "Build conda pkg for libcuspatial..."
 source ci/cpu/libcuspatial/build_libcuspatial.sh

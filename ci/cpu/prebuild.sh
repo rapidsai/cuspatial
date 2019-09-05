@@ -2,14 +2,15 @@
 
 #Upload cuspatial once per CUDA
 if [[ "$CUDA" == "9.2" ]]; then
-    export UPLOAD_CUDF=1
+    export UPLOAD_CUSPATIAL=1
 else
-    export UPLOAD_CUDF=0
+    export UPLOAD_CUSPATIAL=0
 fi
 
 #Upload libcuspatial once per PYTHON
 if [[ "$PYTHON" == "3.6" ]]; then
-    export UPLOAD_LIBCUDF=1
+    export UPLOAD_LIBCUSPATIAL=1
 else
-    export UPLOAD_LIBCUDF=0
+    export UPLOAD_LIBCUSPATIAL=0
 fi
+

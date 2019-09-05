@@ -31,12 +31,12 @@ if [ "$UPLOAD_LIBCUDF" == "1" ]; then
   anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --force ${LIBCUSPATIAL_FILE}
 fi
 
-if [ "$UPLOAD_CUDF" == "1" ]; then
+if [ "$UPLOAD_CUSPATIAL" == "1" ]; then
   LABEL_OPTION="--label main --label cuda9.2 --label cuda10.0"
   echo "LABEL_OPTION=${LABEL_OPTION}"
 
   test -e ${CUSPATIAL_FILE}
-  echo "Upload dask-cudf"
+  echo "Upload cuspatial"
   echo ${CUSPATIAL_FILE}
   anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --force ${CUSPATIAL_FILE}
 fi
