@@ -1,3 +1,4 @@
+from cudf import Series, DataFrame
 from cudf.core.column import Column
 from cudf._lib.cudf import *
 
@@ -5,12 +6,16 @@ from libc.stdlib cimport calloc, malloc, free
 from libcpp.pair cimport pair
 
 cpdef cpp_derive_trajectories(x, y, object_id, timestamp):
+    x = x.astype('float64')._column
+    y = y.astype('float64')._column
+    object_id = object_id.astype('int32')._column
+    timestamp = timestamp.astype('datetime64[ms]')._column
     cdef gdf_column* c_x = column_view_from_column(x)
     cdef gdf_column* c_y = column_view_from_column(y)
     cdef gdf_column* c_object_id = column_view_from_column(object_id)
     cdef gdf_column* c_timestamp = column_view_from_column(timestamp)
     cdef gdf_column* c_trajectory_id = <gdf_column*>malloc(sizeof(gdf_column))
-    cdef gdf_column* c_len = <gdf_column*>malloc(sizeof(gdf_column))
+    cdef gdf_column* c_length = <gdf_column*>malloc(sizeof(gdf_column))
     cdef gdf_column* c_pos = <gdf_column*>malloc(sizeof(gdf_column))
 
     with nogil:
@@ -18,42 +23,51 @@ cpdef cpp_derive_trajectories(x, y, object_id, timestamp):
                                                 c_object_id[0],
                                                 c_timestamp[0],
                                                 c_trajectory_id[0],
-                                                c_len[0], c_pos[0])
+                                                c_length[0], c_pos[0])
 
     traj_id_data, traj_id_mask = gdf_column_to_column_mem(c_trajectory_id)
-    len_data, len_mask = gdf_column_to_column_mem(c_len)    
+    length_data, length_mask = gdf_column_to_column_mem(c_length)    
     pos_data, pos_mask = gdf_column_to_column_mem(c_pos)
     trajectory_id = Column.from_mem_views(traj_id_data,
                                           traj_id_mask)
-    len = Column.from_mem_views(len_data, len_mask)
+    length = Column.from_mem_views(length_data, length_mask)
     pos = Column.from_mem_views(pos_data, pos_mask)
 
-    return num_trajectories, trajectory_id, len, pos
+    return (num_trajectories,
+            DataFrame({'trajectory_id': Series(trajectory_id),
+                       'length': Series(length),
+                       'position': Series(pos)}))
 
-cpdef cpp_trajectory_distance_and_speed(x, y, timestamp, len, pos):
+
+cpdef cpp_trajectory_distance_and_speed(x, y, timestamp, length, pos):
+    x = x.astype('float64')._column
+    y = y.astype('float64')._column
+    timestamp = timestamp.astype('datetime64[ms]')._column
+    length = length.astype('int64')._column
+    pos = pos.astype('int64')._column
     cdef gdf_column* c_x = column_view_from_column(x)
     cdef gdf_column* c_y = column_view_from_column(y)
     cdef gdf_column* c_timestamp = column_view_from_column(timestamp)
-    cdef gdf_column* c_len = column_view_from_column(len)
+    cdef gdf_column* c_length = column_view_from_column(length)
     cdef gdf_column* c_pos = column_view_from_column(pos)
     cdef pair[gdf_column, gdf_column] c_distance_speed
 
     with nogil:
         c_distance_speed = trajectory_distance_and_speed(c_x[0], c_y[0],
                                                          c_timestamp[0],
-                                                         c_len[0],c_pos[0])
+                                                         c_length[0],c_pos[0])
 
     dist_data, dist_mask = gdf_column_to_column_mem(&c_distance_speed.first)
     speed_data, speed_mask = gdf_column_to_column_mem(&c_distance_speed.second)
     dist=Column.from_mem_views(dist_data, dist_mask)
     speed=Column.from_mem_views(speed_data, speed_mask)
 
-    return dist,speed
+    return Series(dist), Series(speed)
 
-cpdef cpp_trajectory_spatial_bounds(coor_x,coor_y,len,pos):
+cpdef cpp_trajectory_spatial_bounds(coor_x,coor_y,length,pos):
     cdef gdf_column* c_coor_x = column_view_from_column(coor_x)
     cdef gdf_column* c_coor_y = column_view_from_column(coor_y)
-    cdef gdf_column* c_len = column_view_from_column(len)
+    cdef gdf_column* c_length = column_view_from_column(length)
     cdef gdf_column* c_pos = column_view_from_column(pos)
     cdef gdf_column* c_x1 = <gdf_column*>malloc(sizeof(gdf_column))
     cdef gdf_column* c_x2 = <gdf_column*>malloc(sizeof(gdf_column))
@@ -62,7 +76,7 @@ cpdef cpp_trajectory_spatial_bounds(coor_x,coor_y,len,pos):
     
     with nogil:
         trajectory_spatial_bounds(c_coor_x[0], c_coor_y[0],
-                                c_len[0], c_pos[0],
+                                c_length[0], c_pos[0],
                                 c_x1[0], c_y1[0], c_x2[0], c_y2[0])
 
     x1_data, x1_mask = gdf_column_to_column_mem(c_x1)

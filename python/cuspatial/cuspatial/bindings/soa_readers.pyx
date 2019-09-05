@@ -1,5 +1,5 @@
 from cudf.core.column import Column
-from cudf.core._lib import *
+from cudf._lib.cudf import *
 from libc.stdlib cimport calloc, malloc, free
 from libcpp.pair cimport pair
 
