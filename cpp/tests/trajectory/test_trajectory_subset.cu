@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
-#include <time.h>
-#include <sys/time.h>
 #include <vector>
-#include <iostream>
 #include <random>
 
 #include <gtest/gtest.h>
-#include <thrust/device_vector.h>
-#include <utilities/error_utils.hpp>
-#include <cuspatial/types.hpp> 
-#include <cuspatial/trajectory.hpp> 
-#include <utility/utility.hpp>
-#include <utility/trajectory_thrust.cuh>
 
-#include <tests/utilities/column_wrapper.cuh>
-#include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
+#include <tests/utilities/column_wrapper.cuh>
+
+#include <cuspatial/trajectory.hpp>
 
 struct TrajectorySubsetTest : public GdfTest 
 {
@@ -49,8 +41,10 @@ void test_subset(std::vector<int32_t> ids_to_keep)
     //three sorted trajectories: one with 2/3 of the points, two with 1/6
     std::vector<int32_t> id_vector(column_size);
     std::transform(sequence.cbegin(), sequence.cend(), id_vector.begin(),
-                   [](int32_t i) { return (i < 2 * i / 3) ? 0 : 
-                                          (i < 5 * i / 6) ? 1 : 2; });
+                   [](int32_t i) { 
+                       return (i < 2 * column_size / 3) ? 0 : 
+                              (i < 5 * column_size / 6) ? 1 : 2; 
+                    });
     
     // timestamp milliseconds
     std::vector<int64_t> ms_vector(sequence.begin(), sequence.end()); 
@@ -79,13 +73,15 @@ void test_subset(std::vector<int32_t> ids_to_keep)
     std::sort(ids_to_keep.begin(), ids_to_keep.end());
 
     std::vector<int32_t> expected_sequence(sequence.size());
-    auto expected_size =
+    auto end =
         std::copy_if(sequence.begin(), sequence.end(), expected_sequence.begin(),
             [&](int32_t i) {
                 return std::binary_search(ids_to_keep.begin(), ids_to_keep.end(),
                                           id_vector[i]);
             }
-        ) - expected_sequence.begin();
+        );
+
+    gdf_size_type expected_size = end - expected_sequence.begin();
 
     wrapper<double> expected_x(expected_size,
         [&](gdf_index_type i) { return static_cast<double>(expected_sequence[i]); });
@@ -127,8 +123,6 @@ TEST_F(TrajectorySubsetTest, SelectSome)
 
 TEST_F(TrajectorySubsetTest, BadData)
 {
-    //constexpr gdf_size_type column_size{1000};
-
     gdf_column out_x, out_y, out_id, out_timestamp;
 
     gdf_column bad_x, bad_y, bad_in_id, bad_timestamp, bad_id;

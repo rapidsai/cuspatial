@@ -40,9 +40,11 @@ namespace cuspatial {
  * 
  * @return number of derived trajectories
  */
-int derive_trajectories(gdf_column& x, gdf_column& y, gdf_column& object_id,
-                        gdf_column& timestamp, gdf_column& trajectory_id,
-                        gdf_column& length, gdf_column& offset);
+gdf_size_type derive_trajectories(const gdf_column& x, const gdf_column& y,
+                                  const gdf_column& object_id,
+                                  const gdf_column& timestamp,
+                                  gdf_column& trajectory_id,
+                                  gdf_column& length, gdf_column& offset);
 
 
 /**
