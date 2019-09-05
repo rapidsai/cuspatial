@@ -16,7 +16,7 @@
 
 #pragma once
 
-typedef struct gdf_column_ gdf_column; // forward declaration
+#include <cudf/types.h>
 
 namespace cuspatial {
 
@@ -116,17 +116,26 @@ void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
  * @param[out] out_timestamp: output timestamp ordered by (in_id,in_ts)
  * 
  * @return number of trajectories returned
+ * 
+ * @note the output columns are allocated by this function but they must 
+ * be deallocated by the caller.
+ * 
+ * @note this function is likely to be removed in the future since it is 
+ * redundant to cuDF functionality
  *
- * Note: the API is useful for integrating with cuDF and serial Python APIs,
+ * @note: the API is useful for integrating with cuDF and serial Python APIs,
  * e.g., query based on trajectory level information using serial Python APIs or
  * cuDF APIs and identify a subset of trajectory IDs. These IDs can then be used
  * to retrieve x/y/len/pos data for futher processing.
  */
-uint32_t subset_trajectory_id(const gdf_column& id,
-                              const gdf_column& in_x, const gdf_column& in_y,
-                              const gdf_column& in_id,
-                              const gdf_column& in_timestamp,
-                              gdf_column& out_x, gdf_column& out_y,
-                              gdf_column& out_id, gdf_column& out_timestamp);
+gdf_size_type subset_trajectory_id(const gdf_column& id,
+                                   const gdf_column& in_x,
+                                   const gdf_column& in_y,
+                                   const gdf_column& in_id,
+                                   const gdf_column& in_timestamp,
+                                   gdf_column& out_x,
+                                   gdf_column& out_y,
+                                   gdf_column& out_id,
+                                   gdf_column& out_timestamp);
 
 }  // namespace cuspatial

@@ -34,3 +34,13 @@ cdef extern from "trajectory.hpp" namespace "cuspatial" nogil:
                                        gdf_column& bbox_y1,
                                        gdf_column& bbox_x2,
                                        gdf_column& bbox_y2) except +
+   
+   cdef gdf_size_type subset_trajectory_id(const gdf_column& id,
+                                           const gdf_column& in_x,
+                                           const gdf_column& in_y,
+                                           const gdf_column& in_id,
+                                           const gdf_column& in_timestamp,
+                                           gdf_column& out_x,
+                                           gdf_column& out_y,
+                                           gdf_column& out_id,
+                                           gdf_column& out_timestamp) except +

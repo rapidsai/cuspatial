@@ -7,3 +7,5 @@
 ## Improvements
 
 ## Bug Fixes
+
+- PR #16 `cuspatial::subset_trajectory_id` test improvements and bug fixes

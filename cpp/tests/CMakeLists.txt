@@ -11,7 +11,8 @@ endif()
 
 add_library(cudftestutil STATIC
             "${CUDF_TEST_INCLUDE}/tests/utilities/cudf_test_utils.cu"
-            "${CUDF_TEST_INCLUDE}/tests/utilities/valid_vectors.cpp")
+            "${CUDF_TEST_INCLUDE}/tests/utilities/valid_vectors.cpp"
+            "${CUDF_TEST_INCLUDE}/tests/utilities/nvcategory_utils.cu")
 
 target_link_libraries(cudftestutil cudf cuspatial rmm cudart cuda nvrtc NVCategory  NVStrings)
                      
@@ -125,6 +126,6 @@ set(TRAJECTORY_SPATIAL_BOUND_SRC
 ConfigureTest(TRAJECTORY_SPATIAL_BOUND_TEST "${TRAJECTORY_SPATIAL_BOUND_SRC}")
 
 set(TRAJECTORY_SUBSET_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/trajectory_subset_toy.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_trajectory_subset.cu"
     )
 ConfigureTest(TRAJECTORY_SUBSET_TEST "${TRAJECTORY_SUBSET_TEST_SRC}")
