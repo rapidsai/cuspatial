@@ -33,7 +33,7 @@ HELP="$0 [clean] [libcuspatial] [cuspatial] [-v] [-g] [-n] [-h]
 "
 LIBCUSPATIAL_BUILD_DIR=${REPODIR}/cpp/build
 CUSPATIAL_BUILD_DIR=${REPODIR}/python/cuspatial/build
-BUILD_DIRS="${LIBNVSTRINGS_BUILD_DIR} ${NVSTRINGS_BUILD_DIR} ${LIBCUDF_BUILD_DIR} ${CUDF_BUILD_DIR} ${DASK_CUDF_BUILD_DIR}"
+BUILD_DIRS="${LIBCUSPATIAL_BUILD_DIR} ${CUSPATIAL_BUILD_DIR}"
 
 # Set defaults for vars modified by flags to this script
 VERBOSE=""
