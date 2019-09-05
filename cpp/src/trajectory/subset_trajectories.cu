@@ -82,22 +82,21 @@ struct subset_functor {
                 auto in_itr = thrust::make_zip_iterator(thrust::make_tuple(
                     static_cast<T*>(in_x.data), static_cast<T*>(in_y.data),
                     static_cast<int32_t*>(in_id.data),
-                    static_cast<cuspatial::its_timestamp*>(in_timestamp.data)));
+                    static_cast<cudf::timestamp*>(in_timestamp.data)));
                 auto out_itr = thrust::make_zip_iterator(thrust::make_tuple(
                     static_cast<T*>(out_x.data), static_cast<T*>(out_y.data),
                     static_cast<int32_t*>(out_id.data),
-                    static_cast<cuspatial::its_timestamp*>(out_timestamp.data)));
+                    static_cast<cudf::timestamp*>(out_timestamp.data)));
 
-                gdf_size_type num_keep = thrust::copy_if(exec_policy, in_itr,
-                                                        in_itr + num_rec,
-                                                        hit_vec.begin(), out_itr,
-                                                        is_true()) - out_itr;
+                auto end = thrust::copy_if(exec_policy, in_itr, in_itr + num_rec,
+                                           hit_vec.begin(), out_itr, is_true());
+                gdf_size_type num_keep = end - out_itr;
 
                 CUDF_EXPECTS(num_hit == num_keep,
                             "count_if and copy_if result mismatch");
             }
         }
-        
+
         return num_hit;
     }
 
@@ -132,8 +131,7 @@ gdf_size_type subset_trajectory_id(const gdf_column& id,
     CUDF_EXPECTS(in_x.size == in_y.size && in_x.size == in_id.size &&
                  in_x.size == in_timestamp.size,
                  "Data size mismatch");
-    CUDF_EXPECTS(in_id.dtype == GDF_INT8 || in_id.dtype == GDF_INT16 ||
-                 in_id.dtype == GDF_INT32 || in_id.dtype == GDF_INT64,
+    CUDF_EXPECTS(in_id.dtype == GDF_INT32,
                  "Invalid trajectory ID datatype");
     CUDF_EXPECTS(id.dtype == in_id.dtype,
                  "Trajectory ID datatype mismatch");
