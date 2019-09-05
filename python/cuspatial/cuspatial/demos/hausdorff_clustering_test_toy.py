@@ -11,7 +11,7 @@ by "conda install -c conda-forge scipy scikit-learn"  under cudf_dev environment
 
 import numpy as np
 import time
-from cudf.dataframe import columnops
+from cudf.core import column
 import cuspatial.bindings.spatial as gis
 from scipy.spatial.distance import directed_hausdorff
 from sklearn.cluster import AgglomerativeClustering,DBSCAN
@@ -26,9 +26,9 @@ py_y=np.array(out_trajs[:,1])
 py_cnt = []
 for traj in in_trajs:
  py_cnt.append(len(traj))
-pnt_x=columnops.as_column(py_x,dtype=np.float64)
-pnt_y=columnops.as_column(py_y,dtype=np.float64)
-cnt=columnops.as_column(py_cnt,dtype=np.int32)
+pnt_x=column.as_column(py_x,dtype=np.float64)
+pnt_y=column.as_column(py_y,dtype=np.float64)
+cnt=column.as_column(py_cnt,dtype=np.int32)
 distance=gis.cpp_directed_hausdorff_distance(pnt_x,pnt_y,cnt)
 
 num_set=len(cnt)
