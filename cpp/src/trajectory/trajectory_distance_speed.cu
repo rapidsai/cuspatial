@@ -34,7 +34,7 @@ template <typename T>
 __global__ void distspeed_kernel(gdf_size_type num_traj,
                                  const T* const __restrict__ x,
                                  const T* const __restrict__ y,
-                                 const cuspatial::its_timestamp * const __restrict__ time,
+                                 const cudf::timestamp * const __restrict__ time,
                                  const uint32_t * const __restrict__ len,
                                  const uint32_t * const __restrict__ pos,
                                  T* const __restrict__ dis,
@@ -45,14 +45,11 @@ __global__ void distspeed_kernel(gdf_size_type num_traj,
     int bp=(pid==0)?0:pos[pid-1];
     int ep=pos[pid]-1;
 
-    //assuming the same year --restriction to be removed 	 
-    float td=(time[ep].yd-time[bp].yd)*86400;
-    td+=(time[ep].hh-time[bp].hh)*3600;
-    td+=(time[ep].mm-time[bp].mm)*60;
-    td+=(time[ep].ss-time[bp].ss);
-    td+=(time[ep].ms-time[bp].ms)/(float)1000; 	 
+    cudf::timestamp e = time[ep];
+    cudf::timestamp b = time[bp];
+    cudf::timestamp td = e - b;
 
-    if((len[pid]<2)||(td==0)||(time[ep].y!=time[bp].y)) 
+    if((len[pid]<2)||unwrap(td)==0)
     {
         dis[pid]=-1;
         sp[pid]=-1;
@@ -67,7 +64,7 @@ __global__ void distspeed_kernel(gdf_size_type num_traj,
             ds+=sqrt(dt);
         }
         dis[pid]=ds*1000; //km to m
-        sp[pid]=ds*1000/td; // m/s
+        sp[pid]=ds*1000/unwrap(td); // m/s
     }
 }
 
@@ -104,7 +101,7 @@ struct distspeed_functor
         cudf::util::cuda::grid_config_1d grid{x.size, block_size, 1};
         distspeed_kernel<T><<<grid.num_blocks, block_size>>>(length.size,
             static_cast<T*>(x.data), static_cast<T*>(y.data),
-            static_cast<cuspatial::its_timestamp*>(timestamp.data),
+            static_cast<cudf::timestamp*>(timestamp.data),
             static_cast<uint32_t*>(length.data),
             static_cast<uint32_t*>(offset.data),
             static_cast<T*>(dist.data), static_cast<T*>(speed.data) );
