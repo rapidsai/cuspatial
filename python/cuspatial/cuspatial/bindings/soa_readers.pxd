@@ -4,7 +4,7 @@
 # cython: language_level = 3
 # distutils: include_dirs = cuspatial/bindings/
 
-from cudf.bindings.cudf_cpp cimport *
+from cudf._lib.cudf cimport *
 from libcpp.pair cimport pair
 
 cdef extern from "soa_readers.hpp" namespace "cuspatial" nogil:
