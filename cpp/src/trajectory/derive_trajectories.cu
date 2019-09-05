@@ -34,9 +34,9 @@ struct derive_trajectories_functor {
     }
 
     template <typename T, std::enable_if_t< is_supported<T>() >* = nullptr>
-    gdf_size_type operator()(gdf_column& x, gdf_column& y,
-                             gdf_column& object_id,
-                             gdf_column& timestamp,
+    gdf_size_type operator()(const gdf_column& x, const gdf_column& y,
+                             const gdf_column& object_id,
+                             const gdf_column& timestamp,
                              gdf_column& trajectory_id,
                              gdf_column& length,
                              gdf_column& offset)
@@ -86,8 +86,9 @@ struct derive_trajectories_functor {
     }
 
     template <typename T, std::enable_if_t< !is_supported<T>() >* = nullptr>
-    gdf_size_type operator()(gdf_column& x, gdf_column& y,
-                             gdf_column& object_id, gdf_column& timestamp,
+    gdf_size_type operator()(const gdf_column& x, const gdf_column& y,
+                             const gdf_column& object_id, 
+                             const gdf_column& timestamp,
                              gdf_column& trajectory_id,
                              gdf_column& length, gdf_column& offset)
     {
@@ -105,22 +106,23 @@ namespace cuspatial {
  * object IDs by first sorting based on id and timestamp and then group by id.
  * see trajectory.hpp
 */
-gdf_size_type derive_trajectories(gdf_column& x, gdf_column& y,
-                                  gdf_column& object_id,
-                                  gdf_column& timestamp,
+gdf_size_type derive_trajectories(const gdf_column& x, const gdf_column& y,
+                                  const gdf_column& object_id,
+                                  const gdf_column& timestamp,
                                   gdf_column& trajectory_id,
                                   gdf_column& length,
                                   gdf_column& offset)
 {
     CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
                  object_id.data != nullptr && timestamp.data != nullptr,
-                 "x/y/object_id/timetamp data cannot be null");
+                 "Null input data");
     CUDF_EXPECTS(x.size == y.size && x.size == object_id.size &&
                  x.size == timestamp.size ,
-                 "x/y/object_id/timestamp must have equal size");
-
-    // future versions might allow x/y/object_id/timestamp to have null_count > 0,
-    // which might be useful for taking query results as inputs 
+                 "Data size mismatch");
+    CUDF_EXPECTS(object_id.dtype == GDF_INT32,
+                 "Invalid trajectory ID datatype");
+    CUDF_EXPECTS(timestamp.dtype == GDF_TIMESTAMP,
+                 "Invalid timestamp datatype");
     CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
                  object_id.null_count==0 && timestamp.null_count==0, 
                  "NULL support unimplemented");
