@@ -65,6 +65,10 @@ cpdef cpp_trajectory_distance_and_speed(x, y, timestamp, length, pos):
     return Series(dist), Series(speed)
 
 cpdef cpp_trajectory_spatial_bounds(coor_x,coor_y,length,pos):
+    coor_x = coor_x.astype('float64')._column
+    coor_y = coor_y.astype('float64')._column
+    length = length.astype('int32')._column
+    pos = pos.astype('int32')._column
     cdef gdf_column* c_coor_x = column_view_from_column(coor_x)
     cdef gdf_column* c_coor_y = column_view_from_column(coor_y)
     cdef gdf_column* c_length = column_view_from_column(length)
@@ -88,7 +92,7 @@ cpdef cpp_trajectory_spatial_bounds(coor_x,coor_y,length,pos):
     y2_data, y2_mask = gdf_column_to_column_mem(c_y2)
     y2 = Column.from_mem_views(y2_data,y2_mask)
 
-    return x1, y1, x2, y2
+    return DataFrame({'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2})
 
 cpdef cpp_subset_trajectory_id(id, in_x, in_y, in_id, in_timestamp):
     cdef gdf_column* c_id = column_view_from_column(id)

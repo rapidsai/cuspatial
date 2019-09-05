@@ -10,6 +10,98 @@ from cudf.tests.utils import assert_eq
 import numpy as np
 import cuspatial.bindings.trajectory as traj
 
+def test_spatial_bounds_zeros():
+    result = traj.cpp_trajectory_spatial_bounds(
+        cudf.Series([0]),
+        cudf.Series([0]),
+        cudf.Series([0]),
+        cudf.Series([0]),
+    )
+    assert_eq(result, cudf.DataFrame({'x1': [0.0],
+                                      'y1': [0.0],
+                                      'x2': [0.0],
+                                      'y2': [0.0]
+    }))
+
+def test_spatial_bounds_ones():
+    result = traj.cpp_trajectory_spatial_bounds(
+        cudf.Series([1]),
+        cudf.Series([1]),
+        cudf.Series([1]),
+        cudf.Series([1]),
+    )
+    assert_eq(result, cudf.DataFrame({'x1': [1.0],
+                                      'y1': [1.0],
+                                      'x2': [1.0],
+                                      'y2': [1.0]
+    }))
+
+def test_spatial_bounds_zero_to_one():
+    result = traj.cpp_trajectory_spatial_bounds(
+        cudf.Series([0, 0]),
+        cudf.Series([0, 1]),
+        cudf.Series([2]),
+        cudf.Series([2]),
+    )
+    assert_eq(result, cudf.DataFrame({'x1': [0.0],
+                                      'y1': [0.0],
+                                      'x2': [0.0],
+                                      'y2': [1.0]
+    }))
+
+def test_spatial_bounds_zero_to_one_xy():
+    result = traj.cpp_trajectory_spatial_bounds(
+        cudf.Series([0, 1]),
+        cudf.Series([0, 1]),
+        cudf.Series([2]),
+        cudf.Series([2]),
+    )
+    assert_eq(result, cudf.DataFrame({'x1': [0.0],
+                                      'y1': [0.0],
+                                      'x2': [1.0],
+                                      'y2': [1.0]
+    }))
+
+def test_spatial_bounds_subsetted():
+    result = traj.cpp_trajectory_spatial_bounds(
+        cudf.Series([0, 1, -1, 2]),
+        cudf.Series([0, 1, -1, 2]),
+        cudf.Series([2, 2]),
+        cudf.Series([2, 4]),
+    )
+    assert_eq(result, cudf.DataFrame({'x1': [0.0, -1.0],
+                                      'y1': [0.0, -1.0],
+                                      'x2': [1.0, 2.0],
+                                      'y2': [1.0, 2.0]
+    }))
+
+def test_spatial_bounds_intersected():
+    result = traj.cpp_trajectory_spatial_bounds(
+        cudf.Series([0, 2, 1, 3]),
+        cudf.Series([0, 2, 1, 3]),
+        cudf.Series([2, 2]),
+        cudf.Series([2, 4]),
+    )
+    assert_eq(result, cudf.DataFrame({'x1': [0.0, 1.0],
+                                      'y1': [0.0, 1.0],
+                                      'x2': [2.0, 3.0],
+                                      'y2': [2.0, 3.0]
+    }))
+
+def test_spatial_bounds_two_and_three():
+    result = traj.cpp_trajectory_spatial_bounds(
+        cudf.Series([0, 2, 1, 3, 2]),
+        cudf.Series([0, 2, 1, 3, 2]),
+        cudf.Series([2, 3]),
+        cudf.Series([2, 5]),
+    )
+    assert_eq(result, cudf.DataFrame({'x1': [0.0, 1.0],
+                                      'y1': [0.0, 1.0],
+                                      'x2': [2.0, 3.0],
+                                      'y2': [2.0, 3.0]
+    }))
+
+
 def test_derive_trajectories_zeros():
     num_trajectories = traj.cpp_derive_trajectories(
         cudf.Series([0]),
