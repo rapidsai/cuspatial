@@ -62,7 +62,7 @@ namespace cuspatial
         gdf_column_view_augmented(&pnt_lat, temp_lat, nullptr, num_p,
                               GDF_FLOAT64, 0,
                               gdf_dtype_extra_info{TIME_UNIT_NONE}, "lat");          
-        delete[] p_lon;
+        delete[] p_lat;
 	    
         return std::make_pair(pnt_lon,pnt_lat);
     }

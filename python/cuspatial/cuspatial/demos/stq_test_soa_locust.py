@@ -6,16 +6,16 @@ num should be the same as x.data.size, both are 1338671
 
 import numpy as np
 import pandas as pd
-import cuspatial.bindings.traj as traj
+import cuspatial.bindings.trajectory as traj
 import cuspatial.bindings.stq as stq
 import cuspatial.bindings.soa_readers as readers
-from cudf.dataframe import columnops
+from cudf.core import column
 import cudf
 
-data_dir="/home/jianting/cuspatial/data/"
-pnt_lon,pnt_lat=readers.cpp_read_pnt_lonlat_soa(data_dir+"locust.location");
-num,nlon,nlat=stq.cpp_sw_xy(np.double(-180),np.double(180),np.double(-90),np.double(90),pnt_lon,pnt_lat)
+data_dir = "/home/jianting/cuspatial/data/"
+pnt_lon, pnt_lat = readers.cpp_read_pnt_lonlat_soa(data_dir + "locust.location")
+num, nlon, nlat = stq.cpp_sw_xy(
+    np.double(-180), np.double(180), np.double(-90), np.double(90), pnt_lon, pnt_lat
+)
 print(num)
 print(pnt_lon.data.size)
-
-	
