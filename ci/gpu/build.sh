@@ -86,5 +86,9 @@ else
 
     logger "Test cuSpatial"
     #TODO
+
+    #Python Unit tests for cuSpatial
+    cd $WORKSPACE/python/cuspatial
+    py.test --cache-clear --junitxml=${WORKSPACE}/junit-cuspatial.xml -v
 fi
 
