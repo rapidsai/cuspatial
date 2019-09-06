@@ -1,4 +1,4 @@
-# COPYRIGHT 2019 NVIDIA
+# Copyright (c) 2019, NVIDIA CORPORATION.
 
 from cuspatial._lib.spatial import (
     cpp_directed_hausdorff_distance,
