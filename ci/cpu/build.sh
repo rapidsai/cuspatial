@@ -22,9 +22,10 @@ export HOME=$WORKSPACE
 cd $WORKSPACE
 
 # Get latest tag and number of commits since tag
-export GIT_DESCRIBE_TAG=`git describe --abbrev=0 --tags`
-export GIT_DESCRIBE_NUMBER=`git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count`
-export MINOR_VERSION=`echo $GIT_DESCRIBE_TAG | grep -o -E '([0-9]+\.[0-9]+)'`
+#export GIT_DESCRIBE_TAG=`git describe --abbrev=0 --tags`
+#export GIT_DESCRIBE_NUMBER=`git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count`
+#export MINOR_VERSION=`echo $GIT_DESCRIBE_TAG | grep -o -E '([0-9]+\.[0-9]+)'`
+export MINOR_VERSION="0.10"
 
 ################################################################################
 # SETUP - Check environment
