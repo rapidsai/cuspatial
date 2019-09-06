@@ -52,8 +52,11 @@ conda config --set ssl_verify False
 
 logger "Clone cudf"
 git clone https://github.com/rapidsai/cudf.git -b branch-$MINOR_VERSION $CUDF_HOME
+cd $CUDF_HOME
+git submodule update --init --remote --recursive
 
 logger "Build conda pkg for libcuspatial..."
+cd $WORKSPACE
 source ci/cpu/libcuspatial/build_libcuspatial.sh
 
 logger "Build conda pkg for cuspatial..."

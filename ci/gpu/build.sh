@@ -63,6 +63,8 @@ conda list
 
 logger "Clone cudf"
 git clone https://github.com/rapidsai/cudf.git -b branch-$MINOR_VERSION ${CUDF_HOME}
+cd $CUDF_HOME
+git submodule update --init --remote --recursive
 
 ################################################################################
 # BUILD - Build libcuspatial and cuSpatial from source
