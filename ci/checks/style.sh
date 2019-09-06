@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright (c) 2018, NVIDIA CORPORATION.
 #####################
-# cuDF Style Tester #
+# cuSpatial Style Tester #
 #####################
 
 # Ignore errors and set path
@@ -26,7 +26,7 @@ FLAKE=`flake8 python`
 FLAKE_RETVAL=$?
 
 # Run flake8-cython and get results/return code
-FLAKE_CYTHON=`flake8 --config=python/cudf/.flake8.cython`
+FLAKE_CYTHON=`flake8 --config=python/cuspatial/.flake8.cython`
 FLAKE_CYTHON_RETVAL=$?
 
 # Output results if failure otherwise show pass

@@ -22,8 +22,8 @@ VALIDARGS="clean libcuspatial cuspatial -v -g -n -h"
 HELP="$0 [clean] [libcuspatial] [cuspatial] [-v] [-g] [-n] [-h]
    clean        - remove all existing build artifacts and configuration (start
                   over)
-   libcuspatial - build the nvstrings C++ code only
-   cuspatial    - build the nvstrings Python package
+   libcuspatial - build the libcuspatial C++ code only
+   cuspatial    - build the cuspatial Python package
    -v           - verbose build mode
    -g           - build for debug
    -n           - no install step
@@ -95,7 +95,7 @@ fi
 if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
 
     mkdir -p ${LIBCUSPATIAL_BUILD_DIR}
-    cd ${LIBCUDF_BUILD_DIR}
+    cd ${LIBCUSPATIAL_BUILD_DIR}
     cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
           -DCMAKE_CXX11_ABI`=ON \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
@@ -107,7 +107,7 @@ if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
 fi
 
 # Build and install the cuspatial Python package
-if (( ${NUMARGS} == 0 )) || hasArg cudf; then
+if (( ${NUMARGS} == 0 )) || hasArg cuspatial; then
 
     cd ${REPODIR}/python/cuspatial
     if [[ ${INSTALL_TARGET} != "" ]]; then

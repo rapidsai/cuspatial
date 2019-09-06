@@ -21,7 +21,7 @@ if [ -z "$MY_UPLOAD_KEY" ]; then
     return 0
 fi
 
-if [ "$UPLOAD_LIBCUDF" == "1" ]; then
+if [ "$UPLOAD_LIBCUSPATIAL" == "1" ]; then
   LABEL_OPTION="--label main --label cuda${CUDA_REL}"
   echo "LABEL_OPTION=${LABEL_OPTION}"
 

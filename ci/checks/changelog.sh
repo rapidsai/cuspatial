@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright (c) 2018, NVIDIA CORPORATION.
 #########################
-# cuDF CHANGELOG Tester #
+# cuSpatial CHANGELOG Tester #
 #########################
 
 # Checkout master for comparison
