@@ -50,7 +50,7 @@ conda config --set ssl_verify False
 ##########################################################################################
 
 logger "Clone cudf"
-git clone git@github.com:rapidsai/cudf.git -b branch-$MINOR_VERSION $CUDF_HOME
+git clone https://github.com/rapidsai/cudf.git -b branch-$MINOR_VERSION $CUDF_HOME
 
 logger "Build conda pkg for libcuspatial..."
 source ci/cpu/libcuspatial/build_libcuspatial.sh

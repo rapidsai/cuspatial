@@ -72,7 +72,7 @@ conda list
 ################################################################################
 
 logger "Clone cudf"
-git clone git@github.com:rapidsai/cudf.git -b branch-$MINOR_VERSION ${CUDF_HOME}
+git clone https://github.com/rapidsai/cudf.git -b branch-$MINOR_VERSION ${CUDF_HOME}
 
 logger "Build cudf..."
 cd $CUDF_HOME
