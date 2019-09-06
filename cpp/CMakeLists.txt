@@ -52,9 +52,9 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
     option(CMAKE_CXX11_ABI "Enable the GLIBCXX11 ABI" ON)
     if(CMAKE_CXX11_ABI)
-        message(STATUS "CUDF: Enabling the GLIBCXX11 ABI")
+        message(STATUS "CUSPATIAL: Enabling the GLIBCXX11 ABI")
     else()
-        message(STATUS "CUDF: Disabling the GLIBCXX11 ABI")
+        message(STATUS "CUSPATIAL: Disabling the GLIBCXX11 ABI")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -D_GLIBCXX_USE_CXX11_ABI=0")
@@ -102,19 +102,30 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 
 ###################################################################################################
+# - conda environment -----------------------------------------------------------------------------
+
+if("$ENV{CONDA_BUILD}" STREQUAL "1")
+    set(CMAKE_SYSTEM_PREFIX_PATH "$ENV{BUILD_PREFIX};$ENV{PREFIX};${CMAKE_SYSTEM_PREFIX_PATH}")
+    set(CONDA_INCLUDE_DIRS "$ENV{BUILD_PREFIX}/include" "$ENV{PREFIX}/include")
+    set(CONDA_LINK_DIRS "$ENV{BUILD_PREFIX}/lib" "$ENV{PREFIX}/lib")
+    message(STATUS "Conda build detected, CMAKE_SYSTEM_PREFIX_PATH set to: ${CMAKE_SYSTEM_PREFIX_PATH}")
+elseif(DEFINED ENV{CONDA_PREFIX})
+    set(CMAKE_SYSTEM_PREFIX_PATH "$ENV{CONDA_PREFIX};${CMAKE_SYSTEM_PREFIX_PATH}")
+    set(CONDA_INCLUDE_DIRS "$ENV{CONDA_PREFIX}/include")
+    set(CONDA_LINK_DIRS "$ENV{CONDA_PREFIX}/lib")
+    message(STATUS "Conda environment detected, CMAKE_SYSTEM_PREFIX_PATH set to: ${CMAKE_SYSTEM_PREFIX_PATH}")
+endif("$ENV{CONDA_BUILD}" STREQUAL "1")
+
+###################################################################################################
 # - RMM -------------------------------------------------------------------------------------------
 
 find_path(RMM_INCLUDE "rmm"
-          HINTS "$ENV{RMM_ROOT}/include"
-                "$ENV{CONDA_PREFIX}/include/rmm"
-                "$ENV{CONDA_PREFIX}/include")
+          HINTS "$ENV{RMM_ROOT}/include")
 
 find_library(RMM_LIBRARY "rmm"
-             HINTS "$ENV{RMM_ROOT}/lib"
-                   "$ENV{CONDA_PREFIX}/lib")
+             HINTS "$ENV{RMM_ROOT}/lib")
 
 message(STATUS "RMM: RMM_ROOT set to $ENV{RMM_ROOT}")
-message(STATUS "RMM: CONDA_PREFIX set to $ENV{CONDA_PREFIX}")
 message(STATUS "RMM: RMM_LIBRARY set to ${RMM_LIBRARY}")
 message(STATUS "RMM: RMM_INCLUDE set to ${RMM_INCLUDE}")
 
@@ -126,21 +137,17 @@ endif (RMM_INCLUDE AND RMM_LIBRARY)
 # - CUDF -------------------------------------------------------------------------------------------
 
 find_path(CUDF_INCLUDE "cudf"
-          "$ENV{CUDF_HOME}/cpp/include"
-          "$ENV{CONDA_PREFIX}/include/cudf"
-          "$ENV{CONDA_PREFIX}/include")
+          HINTS "$ENV{CUDF_ROOT}/cpp/include")
 
 find_library(CUDF_LIBRARY "cudf"
-             "$ENV{CUDF_HOME}/cpp/build"
-             "$ENV{CONDA_PREFIX}/lib")
-                  
-SET(CUDF_SRC_INCLUDE "$ENV{CUDF_HOME}/cpp/src")    
+             HINTS "$ENV{CUDF_ROOT}/lib")
+
+SET(CUDF_SRC_INCLUDE "$ENV{CUDF_HOME}/cpp/src")
 SET(CUB_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/cub")
 SET(JITIFY_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/jitify")
 SET(CUDF_TEST_INCLUDE "$ENV{CUDF_HOME}/cpp/")
 
 message(STATUS "CUDF: CUDF_HOME set to $ENV{CUDF_HOME}")
-message(STATUS "CUDF: CONDA_PREFIX set to $ENV{CONDA_PREFIX}")
 message(STATUS "CUDF: CUDF_LIBRARY set to ${CUDF_LIBRARY}")
 message(STATUS "CUDF: CUDF_INCLUDE set to ${CUDF_INCLUDE}")
 message(STATUS "CUDF SRC: CUDF_SRC_INCLUDE set to ${CUDF_SRC_INCLUDE}")
@@ -157,21 +164,16 @@ endif (CUDF_INCLUDE AND CUDF_LIBRARY)
 # - NVStrings -------------------------------------------------------------------------------------
 
 find_path(NVSTRINGS_INCLUDE "nvstrings"
-          HINTS "$ENV{NVSTRINGS_ROOT}/include"
-                "$ENV{CONDA_PREFIX}/include/nvstrings"
-                "$ENV{CONDA_PREFIX}/include")
+          HINTS "$ENV{NVSTRINGS_ROOT}/include")
 
 find_library(NVSTRINGS_LIBRARY "NVStrings"
-             HINTS "$ENV{NVSTRINGS_ROOT}/lib"
-                   "$ENV{CONDA_PREFIX}/lib")
+             HINTS "$ENV{NVSTRINGS_ROOT}/lib")
 
 find_library(NVCATEGORY_LIBRARY "NVCategory"
-             HINTS "$ENV{NVSTRINGS_ROOT}/lib"
-                   "$ENV{CONDA_PREFIX}/lib")
+             HINTS "$ENV{NVSTRINGS_ROOT}/lib")
 
 find_library(NVTEXT_LIBRARY "NVText"
-             HINTS "$ENV{NVSTRINGS_ROOT}/lib"
-                   "$ENV{CONDA_PREFIX}/lib")
+             HINTS "$ENV{NVSTRINGS_ROOT}/lib")
 
 message(STATUS "NVSTRINGS: NVSTRINGS_INCLUDE set to ${NVSTRINGS_INCLUDE}")
 message(STATUS "NVSTRINGS: NVSTRINGS_LIBRARY set to ${NVSTRINGS_LIBRARY}")
@@ -213,9 +215,9 @@ endif(BUILD_TESTS)
 # - add google benchmark --------------------------------------------------------------------------
 
 if(BUILD_BENCHMARKS)
-  
+
   include(ConfigureGoogleBenchmark)
-  
+
   if(GBENCH_FOUND)
     message(STATUS "Google C++ Benchmarking Framework (Google Benchmark) found in ${GBENCH_ROOT}")
     include_directories(${GBENCH_INCLUDE_DIR})
@@ -236,13 +238,13 @@ endif(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
-       		    "${CMAKE_SOURCE_DIR}/thirdparty/cub"             
+       		        "${CMAKE_SOURCE_DIR}/thirdparty/cub"
                     "${RMM_INCLUDE}"
                     "${CUDF_SRC_INCLUDE}"
                     "${CUDF_INCLUDE}"
                     "${CUB_INCLUDE}"
                     "${JITIFY_INCLUDE}")
-		
+
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
@@ -264,7 +266,7 @@ add_library(cuspatial SHARED
             src/io/soa/timestamp_soa_reader.cu
             src/query/spatial_window_points.cu
             src/spatial/point_in_polygon.cu
-            src/spatial/haversine.cu	
+            src/spatial/haversine.cu
             src/spatial/hausdorff.cu
             src/spatial/lonlat_to_coordinate.cu
             src/trajectory/trajectory_spatial_bound.cu
