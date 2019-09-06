@@ -137,12 +137,12 @@ endif (RMM_INCLUDE AND RMM_LIBRARY)
 # - CUDF -------------------------------------------------------------------------------------------
 
 find_path(CUDF_INCLUDE "cudf"
-          "$ENV{CUDF_HOME}/cpp/include")
+          HINTS "$ENV{CUDF_ROOT}/cpp/include")
 
 find_library(CUDF_LIBRARY "cudf"
-             "$ENV{CUDF_HOME}/cpp/build")
-                  
-SET(CUDF_SRC_INCLUDE "$ENV{CUDF_HOME}/cpp/src")    
+             HINTS "$ENV{CUDF_ROOT}/lib")
+
+SET(CUDF_SRC_INCLUDE "$ENV{CUDF_HOME}/cpp/src")
 SET(CUB_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/cub")
 SET(JITIFY_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/jitify")
 SET(CUDF_TEST_INCLUDE "$ENV{CUDF_HOME}/cpp/")
@@ -215,9 +215,9 @@ endif(BUILD_TESTS)
 # - add google benchmark --------------------------------------------------------------------------
 
 if(BUILD_BENCHMARKS)
-  
+
   include(ConfigureGoogleBenchmark)
-  
+
   if(GBENCH_FOUND)
     message(STATUS "Google C++ Benchmarking Framework (Google Benchmark) found in ${GBENCH_ROOT}")
     include_directories(${GBENCH_INCLUDE_DIR})
@@ -238,13 +238,13 @@ endif(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
-       		        "${CMAKE_SOURCE_DIR}/thirdparty/cub"             
+       		        "${CMAKE_SOURCE_DIR}/thirdparty/cub"
                     "${RMM_INCLUDE}"
                     "${CUDF_SRC_INCLUDE}"
                     "${CUDF_INCLUDE}"
                     "${CUB_INCLUDE}"
                     "${JITIFY_INCLUDE}")
-		
+
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
@@ -266,7 +266,7 @@ add_library(cuspatial SHARED
             src/io/soa/timestamp_soa_reader.cu
             src/query/spatial_window_points.cu
             src/spatial/point_in_polygon.cu
-            src/spatial/haversine.cu	
+            src/spatial/haversine.cu
             src/spatial/hausdorff.cu
             src/spatial/lonlat_to_coordinate.cu
             src/trajectory/trajectory_spatial_bound.cu
