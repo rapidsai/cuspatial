@@ -32,11 +32,11 @@
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
 
-struct TrajectoryDeriveToy : public GdfTest 
+struct TrajectoryDistanceSpeed : public GdfTest 
 {
 };   
    
-TEST_F(TrajectoryDeriveToy, trajectoryderivetest)
+TEST_F(TrajectoryDistanceSpeed, DistanceAndSpeed)
 {
     //three sorted trajectories with 5,4,3 points, respectively
     std::cout<<"in TrajectoryDeriveToy"<<std::endl;
