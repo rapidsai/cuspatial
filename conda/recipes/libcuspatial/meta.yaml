@@ -21,6 +21,7 @@ build:
     - CXX
     - CUDAHOSTCXX
     - PARALLEL_LEVEL
+    - CUDF_HOME
   run_exports:
     - {{ pin_subpackage("libcuspatial", max_pin="x.x") }}
 
