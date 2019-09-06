@@ -1,17 +1,13 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-"""
-GPU-based coordinate transformation demo: (log/lat)==>(x/y), relative to a camera origin
-"""
-
 import pytest
 import cudf
 from cudf.tests.utils import assert_eq
 import numpy as np
-import cuspatial.bindings.trajectory as traj
+from cuspatial.core import trajectory
 
-def test_subset_trajectory_id_zeros():
-    result = traj.cpp_subset_trajectory_id(
+def test_subset_id_zeros():
+    result = trajectory.subset_trajectory_id(
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([0]),
@@ -22,8 +18,8 @@ def test_subset_trajectory_id_zeros():
         'ids': cudf.Series([0]).astype('int32'),
         'timestamp': cudf.Series([0]).astype('datetime64[ms]')}))
 
-def test_subset_trajectory_id_ones():
-    result = traj.cpp_subset_trajectory_id(
+def test_subset_id_ones():
+    result = trajectory.subset_trajectory_id(
         cudf.Series([1]),
         cudf.Series([1]),
         cudf.Series([1]),
@@ -34,9 +30,9 @@ def test_subset_trajectory_id_ones():
         'ids': cudf.Series([1]).astype('int32'),
         'timestamp': cudf.Series([1]).astype('datetime64[ms]')}))
 
-def test_subset_trajectory_id_random():
+def test_subset_id_random():
     np.random.seed(0)
-    result = traj.cpp_subset_trajectory_id(
+    result = trajectory.subset_trajectory_id(
         cudf.Series(np.random.randint(0, 10, 10)),
         cudf.Series(np.random.randint(0, 10, 10)),
         cudf.Series(np.random.randint(0, 10, 10)),
@@ -52,7 +48,7 @@ def test_subset_trajectory_id_random():
         ).astype('datetime64[ms]')}))
 
 def test_spatial_bounds_zeros():
-    result = traj.cpp_trajectory_spatial_bounds(
+    result = trajectory.spatial_bounds(
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([0]),
@@ -65,7 +61,7 @@ def test_spatial_bounds_zeros():
     }))
 
 def test_spatial_bounds_ones():
-    result = traj.cpp_trajectory_spatial_bounds(
+    result = trajectory.spatial_bounds(
         cudf.Series([1]),
         cudf.Series([1]),
         cudf.Series([1]),
@@ -78,7 +74,7 @@ def test_spatial_bounds_ones():
     }))
 
 def test_spatial_bounds_zero_to_one():
-    result = traj.cpp_trajectory_spatial_bounds(
+    result = trajectory.spatial_bounds(
         cudf.Series([0, 0]),
         cudf.Series([0, 1]),
         cudf.Series([2]),
@@ -91,7 +87,7 @@ def test_spatial_bounds_zero_to_one():
     }))
 
 def test_spatial_bounds_zero_to_one_xy():
-    result = traj.cpp_trajectory_spatial_bounds(
+    result = trajectory.spatial_bounds(
         cudf.Series([0, 1]),
         cudf.Series([0, 1]),
         cudf.Series([2]),
@@ -104,7 +100,7 @@ def test_spatial_bounds_zero_to_one_xy():
     }))
 
 def test_spatial_bounds_subsetted():
-    result = traj.cpp_trajectory_spatial_bounds(
+    result = trajectory.spatial_bounds(
         cudf.Series([0, 1, -1, 2]),
         cudf.Series([0, 1, -1, 2]),
         cudf.Series([2, 2]),
@@ -117,7 +113,7 @@ def test_spatial_bounds_subsetted():
     }))
 
 def test_spatial_bounds_intersected():
-    result = traj.cpp_trajectory_spatial_bounds(
+    result = trajectory.spatial_bounds(
         cudf.Series([0, 2, 1, 3]),
         cudf.Series([0, 2, 1, 3]),
         cudf.Series([2, 2]),
@@ -130,7 +126,7 @@ def test_spatial_bounds_intersected():
     }))
 
 def test_spatial_bounds_two_and_three():
-    result = traj.cpp_trajectory_spatial_bounds(
+    result = trajectory.spatial_bounds(
         cudf.Series([0, 2, 1, 3, 2]),
         cudf.Series([0, 2, 1, 3, 2]),
         cudf.Series([2, 3]),
@@ -144,7 +140,7 @@ def test_spatial_bounds_two_and_three():
 
 
 def test_derive_trajectories_zeros():
-    num_trajectories = traj.cpp_derive_trajectories(
+    num_trajectories = trajectory.derive(
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([0]),
@@ -158,7 +154,7 @@ def test_derive_trajectories_zeros():
     }))
 
 def test_derive_trajectories_ones():
-    num_trajectories = traj.cpp_derive_trajectories(
+    num_trajectories = trajectory.derive(
         cudf.Series([1]),
         cudf.Series([1]),
         cudf.Series([1]),
@@ -172,7 +168,7 @@ def test_derive_trajectories_ones():
     }))
 
 def test_derive_trajectories_two():
-    num_trajectories = traj.cpp_derive_trajectories(
+    num_trajectories = trajectory.derive(
         cudf.Series([0, 1]),
         cudf.Series([0, 1]),
         cudf.Series([0, 1]),
@@ -187,7 +183,7 @@ def test_derive_trajectories_two():
 
 def test_derive_trajectories_many():
     np.random.seed(0)
-    num_trajectories = traj.cpp_derive_trajectories(
+    num_trajectories = trajectory.derive(
         cudf.Series(np.random.randint(0, 10, 10)),
         cudf.Series(np.random.randint(0, 10, 10)),
         cudf.Series(np.random.randint(0, 10, 10)),
@@ -200,52 +196,52 @@ def test_derive_trajectories_many():
         'position': cudf.Series([2, 4, 5, 7, 8, 10]).astype('int32'),
     }))
 
-def test_trajectory_distance_and_speed_zeros():
-    dist, speed = traj.cpp_trajectory_distance_and_speed(
+def test_distance_and_speed_zeros():
+    result = trajectory.distance_and_speed(
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([0]),
     )
-    assert_eq(dist, cudf.Series([-2.0]))
-    assert_eq(speed, cudf.Series([-2.0]))
+    assert_eq(result['meters'], cudf.Series([-2.0]), check_names=False)
+    assert_eq(result['speed'], cudf.Series([-2.0]), check_names=False)
 
-def test_trajectory_distance_and_speed_ones():
-    dist, speed = traj.cpp_trajectory_distance_and_speed(
+def test_distance_and_speed_ones():
+    result = trajectory.distance_and_speed(
         cudf.Series([1]),
         cudf.Series([1]),
         cudf.Series([1]),
         cudf.Series([1]),
         cudf.Series([1]),
     )
-    assert_eq(dist, cudf.Series([-2.0]))
-    assert_eq(speed, cudf.Series([-2.0]))
+    assert_eq(result['meters'], cudf.Series([-2.0]), check_names=False)
+    assert_eq(result['speed'], cudf.Series([-2.0]), check_names=False)
 
-def test_one_trajectory_one_meter_one_second():
-    dist, speed = traj.cpp_trajectory_distance_and_speed(
+def test_one_one_meter_one_second():
+    result = trajectory.distance_and_speed(
         cudf.Series([0.0, 0.001]),
         cudf.Series([0.0, 0.0]),
         cudf.Series([0, 1000]),
         cudf.Series([2]),
         cudf.Series([2]),
     )
-    assert_eq(dist, cudf.Series([1.0]))
-    assert_eq(speed, cudf.Series([1.0]))
+    assert_eq(result['meters'], cudf.Series([1.0]), check_names=False)
+    assert_eq(result['speed'], cudf.Series([1.0]), check_names=False)
 
 def test_two_trajectories_one_meter_one_second():
-    dist, speed = traj.cpp_trajectory_distance_and_speed(
+    result = trajectory.distance_and_speed(
         cudf.Series([0.0, 0.001, 0.0, 0.0]),
         cudf.Series([0.0, 0.0, 0.0, 0.001]),
         cudf.Series([0, 1000, 0, 1000]),
         cudf.Series([2, 2]),
         cudf.Series([2, 4]),
     )
-    assert_eq(dist, cudf.Series([1.0, 1.0]))
-    assert_eq(speed, cudf.Series([1.0, 1.0]))
+    assert_eq(result['meters'], cudf.Series([1.0, 1.0]), check_names=False)
+    assert_eq(result['speed'], cudf.Series([1.0, 1.0]), check_names=False)
 
-def test_trajectory_distance_and_speed_single_trajectory():
-    dist, speed = traj.cpp_trajectory_distance_and_speed(
+def test_distance_and_speed_single_trajectory():
+    result = trajectory.distance_and_speed(
         cudf.Series([
             1.0, 2.0, 3.0, 5.0, 7.0, 1.0, 2.0, 3.0, 6.0, 0.0, 3.0, 6.0]),
         cudf.Series([
@@ -254,5 +250,7 @@ def test_trajectory_distance_and_speed_single_trajectory():
         cudf.Series([5, 4, 3]),
         cudf.Series([5, 9, 12]),
     )
-    assert_eq(dist, cudf.Series([7892.922363, 6812.55908203125, 8485.28125]))
-    assert_eq(speed, cudf.Series([1973230.625, 2270853., 4242640.5])) # fast!
+    assert_eq(result['meters'], cudf.Series(
+        [7892.922363, 6812.55908203125, 8485.28125]), check_names=False)
+    assert_eq(result['speed'], cudf.Series(
+        [1973230.625, 2270853., 4242640.5]), check_names=False) # fast!

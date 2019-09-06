@@ -4,11 +4,11 @@ import pytest
 import cudf
 from cudf.tests.utils import assert_eq
 import numpy as np
-import cuspatial.bindings.spatial as gis
+from cuspatial.core import gis
 
 def test_missing_0():
     with pytest.raises(RuntimeError):
-        result = gis.cpp_point_in_polygon_bitmap(
+        result = gis.point_in_polygon_bitmap(
             cudf.Series(),
             cudf.Series([0.0]),
             cudf.Series([0.0]),
@@ -19,7 +19,7 @@ def test_missing_0():
 
 def test_missing_1():
     with pytest.raises(RuntimeError):
-        result = gis.cpp_point_in_polygon_bitmap(
+        result = gis.point_in_polygon_bitmap(
             cudf.Series([0.0]),
             cudf.Series(),
             cudf.Series([0.0]),
@@ -30,7 +30,7 @@ def test_missing_1():
 
 def test_missing_2():
     with pytest.raises(RuntimeError):
-        result = gis.cpp_point_in_polygon_bitmap(
+        result = gis.point_in_polygon_bitmap(
             cudf.Series([0.0]),
             cudf.Series([0.0]),
             cudf.Series(),
@@ -41,7 +41,7 @@ def test_missing_2():
 
 def test_missing_3():
     with pytest.raises(RuntimeError):
-        result = gis.cpp_point_in_polygon_bitmap(
+        result = gis.point_in_polygon_bitmap(
             cudf.Series([0.0]),
             cudf.Series([0.0]),
             cudf.Series([0.0]),
@@ -52,7 +52,7 @@ def test_missing_3():
 
 def test_missing_4():
     with pytest.raises(RuntimeError):
-        result = gis.cpp_point_in_polygon_bitmap(
+        result = gis.point_in_polygon_bitmap(
             cudf.Series([0.0]),
             cudf.Series([0.0]),
             cudf.Series([0.0]),
@@ -63,7 +63,7 @@ def test_missing_4():
 
 def test_missing_5():
     with pytest.raises(RuntimeError):
-        result = gis.cpp_point_in_polygon_bitmap(
+        result = gis.point_in_polygon_bitmap(
             cudf.Series([0.0]),
             cudf.Series([0.0]),
             cudf.Series([0.0]),
@@ -73,7 +73,7 @@ def test_missing_5():
         )
 
 def test_zeros():
-    result = gis.cpp_point_in_polygon_bitmap(
+    result = gis.point_in_polygon_bitmap(
         cudf.Series([0.0]),
         cudf.Series([0.0]),
         cudf.Series([0.0]),
@@ -84,7 +84,7 @@ def test_zeros():
     assert_eq(cudf.Series(result), cudf.Series([0]).astype('int32'))
 
 def test_one_point_in():
-    result = gis.cpp_point_in_polygon_bitmap(
+    result = gis.point_in_polygon_bitmap(
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([1]),
@@ -95,7 +95,7 @@ def test_one_point_in():
     assert_eq(cudf.Series(result), cudf.Series([1]).astype('int32'))
 
 def test_one_point_out():
-    result = gis.cpp_point_in_polygon_bitmap(
+    result = gis.point_in_polygon_bitmap(
         cudf.Series([1]),
         cudf.Series([1]),
         cudf.Series([1]),
@@ -106,7 +106,7 @@ def test_one_point_out():
     assert_eq(cudf.Series(result), cudf.Series([0]).astype('int32'))
 
 def test_dataset():
-    result = gis.cpp_point_in_polygon_bitmap(
+    result = gis.point_in_polygon_bitmap(
         cudf.Series([0, -8, 6.0]),
         cudf.Series([0, -8, 6.0]),
         cudf.Series([1, 2]),
@@ -114,7 +114,7 @@ def test_dataset():
         cudf.Series([-10.0, 5, 5, -10, -10, 0, 10, 10, 0, 0]),
         cudf.Series([-10.0, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
     )
-    # The result of cpp_point_in_polygon_bitmap is a binary bitmap of
+    # The result of point_in_polygon_bitmap is a binary bitmap of
     # coordinates inside of the polgyon.
     print(np.binary_repr(result.data.to_array()[0], width=2))
     assert_eq(cudf.Series(result), cudf.Series([3, 1, 2]).astype('int32'))

@@ -6,8 +6,8 @@ shapely python end-to-end time 127659.4, 100,519X speedup (127659.4/1.27)
 
 import numpy as np
 import time
-import cuspatial.bindings.spatial as gis
-import cuspatial.bindings.soa_readers as readers
+import cuspatial._lib.spatial as gis
+import cuspatial._lib.soa_readers as readers
 from cudf.core import column
 from shapely.geometry import Polygon, Point
 from shapely.geometry import shape

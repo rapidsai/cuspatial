@@ -6,9 +6,9 @@ num should be the same as x.data.size, both are 1338671
 
 import numpy as np
 import pandas as pd
-import cuspatial.bindings.trajectory as traj
-import cuspatial.bindings.stq as stq
-import cuspatial.bindings.soa_readers as readers
+import cuspatial._lib.trajectory as traj
+import cuspatial._lib.stq as stq
+import cuspatial._lib.soa_readers as readers
 from cudf.core import column
 import cudf
 
