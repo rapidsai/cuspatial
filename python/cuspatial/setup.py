@@ -19,14 +19,13 @@ extensions = [
         sources=cython_files,
         include_dirs=[
             "../../cpp/include/cuspatial",
-            os.environ['CONDA_PREFIX']+"/include/cudf",
             os.path.dirname(sysconfig.get_path("include")),
-            np.get_include()
+            np.get_include(),
         ],
         library_dirs=[get_python_lib()],
-        libraries=["cudf","cuspatial"],
+        libraries=["cudf", "cuspatial"],
         language="c++",
-        extra_compile_args=["-std=c++14"]
+        extra_compile_args=["-std=c++14"],
     )
 ]
 
@@ -50,6 +49,7 @@ setup(
     setup_requires=["cython"],
     ext_modules=cythonize(extensions),
     packages=find_packages(include=["cuspatial", "cuspatial.*"]),
+    package_data={"cuspatial._lib": ["*.pxd"]},
     cmdclass=versioneer.get_cmdclass(),
     install_requires=install_requires,
     zip_safe=False,

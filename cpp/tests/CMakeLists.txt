@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(CUDF_TESTS LANGUAGES C CXX CUDA)
+project(CUSPATIAL_TESTS LANGUAGES C CXX CUDA)
 
 if(NOT CMAKE_CUDA_COMPILER)
   message(SEND_ERROR "CMake cannot locate a CUDA compiler")
@@ -9,6 +9,7 @@ endif()
 ###################################################################################################
 # - common test utils -----------------------------------------------------------------------------
 
+# Use shipped library in libcudf package instead here
 add_library(cudftestutil STATIC
             "${CUDF_TEST_INCLUDE}/tests/utilities/cudf_test_utils.cu"
             "${CUDF_TEST_INCLUDE}/tests/utilities/valid_vectors.cpp"
@@ -39,7 +40,7 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
 endfunction(ConfigureTest)
 
-option(CMAKE_ENABLE_BENCHMARKS "Enable building cuDF benchmarks" OFF)
+option(CMAKE_ENABLE_BENCHMARKS "Enable building cuSpatial benchmarks" OFF)
 
 function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
     if(CMAKE_ENABLE_BENCHMARKS)
@@ -80,7 +81,7 @@ include_directories("${CMAKE_BINARY_DIR}/include"
 
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
                  "${CMAKE_BINARY_DIR}/lib"
-                  "${GTEST_LIBRARY_DIR}"
+                 "${GTEST_LIBRARY_DIR}"
                  "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}"
                  "${CUSPATIAL_LIBRARY}"
