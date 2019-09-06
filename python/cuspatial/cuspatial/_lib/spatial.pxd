@@ -31,3 +31,11 @@ cdef extern from "hausdorff.hpp" namespace "cuspatial" nogil:
                                          const gdf_column& coor_y,
                                          const gdf_column& cnt)except +
 
+cdef extern from "query.hpp" namespace "cuspatial" nogil:
+ cdef pair[gdf_column, gdf_column] spatial_window_points(
+        const gdf_scalar& left,
+        const gdf_scalar& bottom,
+        const gdf_scalar& right,
+        const gdf_scalar& top,
+        const gdf_column& x,
+        const gdf_column& y) except +

@@ -8,7 +8,8 @@ from .core.gis import (
     directed_hausdorff_distance,
     haversine_distance,
     lonlat_to_xy_km_coordinates,
-    point_in_polygon_bitmap
+    point_in_polygon_bitmap,
+    window_points,
 )
 from .io.soa import (
     read_uint,

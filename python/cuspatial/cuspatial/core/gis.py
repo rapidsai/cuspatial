@@ -5,7 +5,8 @@ from cuspatial._lib.spatial import (
     cpp_directed_hausdorff_distance,
     cpp_haversine_distance,
     cpp_lonlat2coord,
-    cpp_point_in_polygon_bitmap
+    cpp_point_in_polygon_bitmap,
+    cpp_spatial_window_points,
 )
 
 def directed_hausdorff_distance(x, y, count):
@@ -93,3 +94,26 @@ def point_in_polygon_bitmap(x_points, y_points,
         x_points, y_points,
         polygon_ids, polygon_end_indices, polygons_x, polygons_y
     )
+
+def window_points(left, bottom, right, top, x, y):
+    """ Return only the subset of coordinates that fall within the numerically
+    closed borders [,] of the defined bounding box.
+   
+    params
+    left: x coordinate of window left boundary
+    bottom: y coordinate of window bottom boundary
+    right: x coordinate of window right boundary
+    top: y coordinate of window top boundary
+    x: Series of x coordinates to convert to window coordinates
+    y: Series of y coordinates to convert to window coordinates
+    
+    Parameters
+    ----------
+    {params}
+
+    Returns
+    -------
+    DataFrame: x, y coordinates in the new window coordinate system
+    """
+    result = cpp_spatial_window_points(left, bottom, right, top, x, y)
+    return DataFrame({'x': result[0], 'y': result[1]})
