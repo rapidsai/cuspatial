@@ -11,7 +11,7 @@ cpdef cpp_read_uint_soa(soa_file_name):
     with nogil:
         c_id = read_uint32_soa(c_string)
     id_data, id_mask = gdf_column_to_column_mem(&c_id)
-    id=Column.from_mem_views(id_data,id_mask)	
+    id=Column.from_mem_views(id_data,id_mask)
 
     return id
 
@@ -23,7 +23,7 @@ cpdef cpp_read_ts_soa(soa_file_name):
     with nogil:
         c_ts = read_timestamp_soa(c_string)
     ts_data, ts_mask = gdf_column_to_column_mem(&c_ts)
-    ts=Column.from_mem_views(ts_data,ts_mask)	
+    ts=Column.from_mem_views(ts_data,ts_mask)
 
     return ts
 

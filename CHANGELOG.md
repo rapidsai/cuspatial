@@ -5,6 +5,7 @@
 - PR #7 Initial code
 - PR #18 Python initial unit tests and bindings
 - PR #32 Python API first pass
+- PR #37 Python __init__.py package design
 
 ## Improvements
 
