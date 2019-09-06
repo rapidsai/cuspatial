@@ -99,11 +99,7 @@ if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
     cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
           -DCMAKE_CXX11_ABI=ON \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
-    if [[ ${INSTALL_TARGET} != "" ]]; then
-        make -j${PARALLEL_LEVEL} install_cuspatial VERBOSE=${VERBOSE}
-    else
-        make -j${PARALLEL_LEVEL} cuspatial VERBOSE=${VERBOSE}
-    fi
+    make -j ${PARALLEL_LEVEL} install VERBOSE=${VERBOSE}
 fi
 
 # Build and install the cuspatial Python package
