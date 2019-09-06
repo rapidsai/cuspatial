@@ -6,6 +6,7 @@
 - PR #18 Python initial unit tests and bindings
 - PR #32 Python API first pass
 - PR #37 Python __init__.py package design
+- PR #38 Add __init__.py empties to resolve issue with PYTHONPATH
 
 ## Improvements
 
