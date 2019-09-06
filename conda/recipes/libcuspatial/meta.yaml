@@ -29,7 +29,7 @@ requirements:
     - cmake >=3.12.4
   host:
     - libcudf {{ minor_version }}.*
-    - cudatoolkit {{ cuda_version }.*
+    - cudatoolkit {{ cuda_version }}.*
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
     - libcudf {{ minor_version }}.*
