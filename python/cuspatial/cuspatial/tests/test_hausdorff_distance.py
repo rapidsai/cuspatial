@@ -6,10 +6,10 @@ import time
 import cudf
 from cudf.tests.utils import assert_eq
 from cudf.core import column
-from cuspatial.core import gis
+import cuspatial
 
 def test_zeros():
-    distance = gis.directed_hausdorff_distance(
+    distance = cuspatial.directed_hausdorff_distance(
         cudf.Series([0.0]),
         cudf.Series([0.0]),
         cudf.Series([1])
@@ -18,7 +18,7 @@ def test_zeros():
 
 def test_empty_x():
     with pytest.raises(RuntimeError):
-        distance = gis.directed_hausdorff_distance(
+        distance = cuspatial.directed_hausdorff_distance(
             cudf.Series(),
             cudf.Series([0]),
             cudf.Series([0])
@@ -26,7 +26,7 @@ def test_empty_x():
 
 def test_empty_y():
     with pytest.raises(RuntimeError):
-        distance = gis.directed_hausdorff_distance(
+        distance = cuspatial.directed_hausdorff_distance(
             cudf.Series([0]),
             cudf.Series(),
             cudf.Series([0])
@@ -34,7 +34,7 @@ def test_empty_y():
 
 def test_empty_counts():
     with pytest.raises(RuntimeError):
-        distance = gis.directed_hausdorff_distance(
+        distance = cuspatial.directed_hausdorff_distance(
             cudf.Series([0]),
             cudf.Series([0]),
             cudf.Series()
@@ -53,7 +53,7 @@ def test_large():
     pnt_x = cudf.Series(py_x)
     pnt_y = cudf.Series(py_y)
     cnt = cudf.Series(py_cnt)
-    distance=gis.directed_hausdorff_distance(pnt_x,pnt_y,cnt)
+    distance=cuspatial.directed_hausdorff_distance(pnt_x,pnt_y,cnt)
 
     num_set=len(cnt)
     matrix=distance.data.to_array().reshape(num_set,num_set)
@@ -61,14 +61,14 @@ def test_large():
     assert np.allclose(distance.data.to_array(), expect)
 
 def test_count_one():
-    distance = gis.directed_hausdorff_distance(
+    distance = cuspatial.directed_hausdorff_distance(
             cudf.Series([0.0, 0.0]),
             cudf.Series([0.0, 1.0]),
             cudf.Series([1, 1]))
     assert_eq(cudf.Series([0, 1.0, 1, 0]), cudf.Series(distance))
 
 def test_count_two():
-    distance = gis.directed_hausdorff_distance(
+    distance = cuspatial.directed_hausdorff_distance(
             cudf.Series([0.0, 0.0, 1.0, 0.0]),
             cudf.Series([0.0, -1.0, 1.0, -1.0]),
             cudf.Series([2, 2]))
@@ -90,7 +90,7 @@ def test_values():
     pnt_x =cudf.Series(py_x)
     pnt_y= cudf.Series(py_y)
     cnt= cudf.Series(py_cnt)
-    distance=gis.directed_hausdorff_distance(pnt_x,pnt_y,cnt)
+    distance=cuspatial.directed_hausdorff_distance(pnt_x,pnt_y,cnt)
 
     num_set=len(cnt)
     matrix=distance.data.to_array().reshape(num_set,num_set)

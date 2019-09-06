@@ -4,10 +4,10 @@ import pytest
 import cudf
 from cudf.tests.utils import assert_eq
 import numpy as np
-from cuspatial.core import trajectory
+import cuspatial
 
 def test_subset_id_zeros():
-    result = trajectory.subset_trajectory_id(
+    result = cuspatial.subset_trajectory_id(
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([0]),
@@ -19,7 +19,7 @@ def test_subset_id_zeros():
         'timestamp': cudf.Series([0]).astype('datetime64[ms]')}))
 
 def test_subset_id_ones():
-    result = trajectory.subset_trajectory_id(
+    result = cuspatial.subset_trajectory_id(
         cudf.Series([1]),
         cudf.Series([1]),
         cudf.Series([1]),
@@ -32,7 +32,7 @@ def test_subset_id_ones():
 
 def test_subset_id_random():
     np.random.seed(0)
-    result = trajectory.subset_trajectory_id(
+    result = cuspatial.subset_trajectory_id(
         cudf.Series(np.random.randint(0, 10, 10)),
         cudf.Series(np.random.randint(0, 10, 10)),
         cudf.Series(np.random.randint(0, 10, 10)),
@@ -48,7 +48,7 @@ def test_subset_id_random():
         ).astype('datetime64[ms]')}))
 
 def test_spatial_bounds_zeros():
-    result = trajectory.spatial_bounds(
+    result = cuspatial.spatial_bounds(
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([0]),
@@ -61,7 +61,7 @@ def test_spatial_bounds_zeros():
     }))
 
 def test_spatial_bounds_ones():
-    result = trajectory.spatial_bounds(
+    result = cuspatial.spatial_bounds(
         cudf.Series([1]),
         cudf.Series([1]),
         cudf.Series([1]),
@@ -74,7 +74,7 @@ def test_spatial_bounds_ones():
     }))
 
 def test_spatial_bounds_zero_to_one():
-    result = trajectory.spatial_bounds(
+    result = cuspatial.spatial_bounds(
         cudf.Series([0, 0]),
         cudf.Series([0, 1]),
         cudf.Series([2]),
@@ -87,7 +87,7 @@ def test_spatial_bounds_zero_to_one():
     }))
 
 def test_spatial_bounds_zero_to_one_xy():
-    result = trajectory.spatial_bounds(
+    result = cuspatial.spatial_bounds(
         cudf.Series([0, 1]),
         cudf.Series([0, 1]),
         cudf.Series([2]),
@@ -100,7 +100,7 @@ def test_spatial_bounds_zero_to_one_xy():
     }))
 
 def test_spatial_bounds_subsetted():
-    result = trajectory.spatial_bounds(
+    result = cuspatial.spatial_bounds(
         cudf.Series([0, 1, -1, 2]),
         cudf.Series([0, 1, -1, 2]),
         cudf.Series([2, 2]),
@@ -113,7 +113,7 @@ def test_spatial_bounds_subsetted():
     }))
 
 def test_spatial_bounds_intersected():
-    result = trajectory.spatial_bounds(
+    result = cuspatial.spatial_bounds(
         cudf.Series([0, 2, 1, 3]),
         cudf.Series([0, 2, 1, 3]),
         cudf.Series([2, 2]),
@@ -126,7 +126,7 @@ def test_spatial_bounds_intersected():
     }))
 
 def test_spatial_bounds_two_and_three():
-    result = trajectory.spatial_bounds(
+    result = cuspatial.spatial_bounds(
         cudf.Series([0, 2, 1, 3, 2]),
         cudf.Series([0, 2, 1, 3, 2]),
         cudf.Series([2, 3]),
@@ -140,7 +140,7 @@ def test_spatial_bounds_two_and_three():
 
 
 def test_derive_trajectories_zeros():
-    num_trajectories = trajectory.derive(
+    num_trajectories = cuspatial.derive(
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([0]),
@@ -154,7 +154,7 @@ def test_derive_trajectories_zeros():
     }))
 
 def test_derive_trajectories_ones():
-    num_trajectories = trajectory.derive(
+    num_trajectories = cuspatial.derive(
         cudf.Series([1]),
         cudf.Series([1]),
         cudf.Series([1]),
@@ -168,7 +168,7 @@ def test_derive_trajectories_ones():
     }))
 
 def test_derive_trajectories_two():
-    num_trajectories = trajectory.derive(
+    num_trajectories = cuspatial.derive(
         cudf.Series([0, 1]),
         cudf.Series([0, 1]),
         cudf.Series([0, 1]),
@@ -183,7 +183,7 @@ def test_derive_trajectories_two():
 
 def test_derive_trajectories_many():
     np.random.seed(0)
-    num_trajectories = trajectory.derive(
+    num_trajectories = cuspatial.derive(
         cudf.Series(np.random.randint(0, 10, 10)),
         cudf.Series(np.random.randint(0, 10, 10)),
         cudf.Series(np.random.randint(0, 10, 10)),
@@ -197,7 +197,7 @@ def test_derive_trajectories_many():
     }))
 
 def test_distance_and_speed_zeros():
-    result = trajectory.distance_and_speed(
+    result = cuspatial.distance_and_speed(
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([0]),
@@ -208,7 +208,7 @@ def test_distance_and_speed_zeros():
     assert_eq(result['speed'], cudf.Series([-2.0]), check_names=False)
 
 def test_distance_and_speed_ones():
-    result = trajectory.distance_and_speed(
+    result = cuspatial.distance_and_speed(
         cudf.Series([1]),
         cudf.Series([1]),
         cudf.Series([1]),
@@ -219,7 +219,7 @@ def test_distance_and_speed_ones():
     assert_eq(result['speed'], cudf.Series([-2.0]), check_names=False)
 
 def test_one_one_meter_one_second():
-    result = trajectory.distance_and_speed(
+    result = cuspatial.distance_and_speed(
         cudf.Series([0.0, 0.001]),
         cudf.Series([0.0, 0.0]),
         cudf.Series([0, 1000]),
@@ -230,7 +230,7 @@ def test_one_one_meter_one_second():
     assert_eq(result['speed'], cudf.Series([1.0]), check_names=False)
 
 def test_two_trajectories_one_meter_one_second():
-    result = trajectory.distance_and_speed(
+    result = cuspatial.distance_and_speed(
         cudf.Series([0.0, 0.001, 0.0, 0.0]),
         cudf.Series([0.0, 0.0, 0.0, 0.001]),
         cudf.Series([0, 1000, 0, 1000]),
@@ -241,7 +241,7 @@ def test_two_trajectories_one_meter_one_second():
     assert_eq(result['speed'], cudf.Series([1.0, 1.0]), check_names=False)
 
 def test_distance_and_speed_single_trajectory():
-    result = trajectory.distance_and_speed(
+    result = cuspatial.distance_and_speed(
         cudf.Series([
             1.0, 2.0, 3.0, 5.0, 7.0, 1.0, 2.0, 3.0, 6.0, 0.0, 3.0, 6.0]),
         cudf.Series([
