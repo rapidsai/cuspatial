@@ -12,10 +12,10 @@ import numpy as np
 import cudf
 from cudf.core import column
 from cudf.tests.utils import assert_eq
-import cuspatial._lib.spatial as gis
+import cuspatial.core.gis as gis
 
 def test_zeros():
-    distance = gis.cpp_haversine_distance(
+    distance = gis.haversine_distance(
         cudf.Series([0.0]),
         cudf.Series([0.0]),
         cudf.Series([0.0]),
@@ -25,7 +25,7 @@ def test_zeros():
 
 def test_empty_x1():
     with pytest.raises(RuntimeError):
-        distance = gis.cpp_haversine_distance(
+        distance = gis.haversine_distance(
             cudf.Series(),
             cudf.Series([0]),
             cudf.Series([0]),
@@ -34,7 +34,7 @@ def test_empty_x1():
 
 def test_empty_y1():
     with pytest.raises(RuntimeError):
-        distance = gis.cpp_haversine_distance(
+        distance = gis.haversine_distance(
             cudf.Series([0]),
             cudf.Series(),
             cudf.Series([0]),
@@ -43,7 +43,7 @@ def test_empty_y1():
 
 def test_empty_x2():
     with pytest.raises(RuntimeError):
-        distance = gis.cpp_haversine_distance(
+        distance = gis.haversine_distance(
             cudf.Series([0]),
             cudf.Series([0]),
             cudf.Series([0]),
@@ -52,7 +52,7 @@ def test_empty_x2():
 
 def test_empty_y2():
     with pytest.raises(RuntimeError):
-        distance = gis.cpp_haversine_distance(
+        distance = gis.haversine_distance(
             cudf.Series([0]),
             cudf.Series([0]),
             cudf.Series([0]),
@@ -76,7 +76,7 @@ def test_triple():
             pnt_y1.append(cities[i][1])
             pnt_x2.append(cities[j][0])
             pnt_y2.append(cities[j][1])
-    distance = gis.cpp_haversine_distance(
+    distance = gis.haversine_distance(
         cudf.Series(pnt_x1),
         cudf.Series(pnt_y1),
         cudf.Series(pnt_x2),
