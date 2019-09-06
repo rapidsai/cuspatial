@@ -104,8 +104,8 @@ def window_points(left, bottom, right, top, x, y):
     bottom: y coordinate of window bottom boundary
     right: x coordinate of window right boundary
     top: y coordinate of window top boundary
-    x: Series of x coordinates to convert to window coordinates
-    y: Series of y coordinates to convert to window coordinates
+    x: Series of x coordinates that may fall within the window
+    y: Series of y coordinates that may fall within the window
     
     Parameters
     ----------
@@ -113,7 +113,7 @@ def window_points(left, bottom, right, top, x, y):
 
     Returns
     -------
-    DataFrame: x, y coordinates in the new window coordinate system
+    DataFrame: subset of x, y pairs above that fall within the window
     """
     result = cpp_spatial_window_points(left, bottom, right, top, x, y)
     return DataFrame({'x': result[0], 'y': result[1]})
