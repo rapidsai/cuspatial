@@ -123,3 +123,84 @@ TEST_F(TrajectoryDistanceSpeed, DistanceAndSpeedThree)
     EXPECT_THAT(gpu_speed, testing::Pointwise(FloatNearPointwise(1e-8),
                 speed));
 }
+
+TEST_F(TrajectoryDistanceSpeed, BadData)
+{
+    gdf_column bad_x, bad_y, bad_timestamp, bad_length, bad_offset;
+    gdf_column_view(&bad_x, 0, 0, 0,  GDF_FLOAT64);
+    gdf_column_view(&bad_y, 0, 0, 0,  GDF_FLOAT64);
+    gdf_column_view(&bad_timestamp, 0, 0, 0, GDF_TIMESTAMP);
+    gdf_column_view(&bad_length, 0, 0, 0, GDF_INT32);
+    gdf_column_view(&bad_offset, 0, 0, 0, GDF_INT32);
+
+    // null pointers
+    CUDF_EXPECT_THROW_MESSAGE(
+        cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
+                                                 bad_length, bad_offset),
+        "Null input data");
+
+    // size mismatch
+    bad_x.data = bad_y.data = bad_timestamp.data = bad_length.data =
+        bad_offset.data = reinterpret_cast<void*>(0x0badf00d);
+    bad_x.size = 10;
+    bad_y.size = 12; // mismatch
+    bad_timestamp.size = 10;
+    bad_length.size = 3;
+    bad_offset.size = 3;
+
+    CUDF_EXPECT_THROW_MESSAGE(
+        cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
+                                                 bad_length, bad_offset),
+        "Data size mismatch");
+
+    // Invalid ID datatype
+    bad_y.size = 10;
+    bad_offset.size = 4;
+
+    CUDF_EXPECT_THROW_MESSAGE(
+        cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
+                                                 bad_length, bad_offset),
+        "Data size mismatch");
+
+    bad_offset.size = 3;
+    bad_length.dtype = GDF_FLOAT32;
+
+    CUDF_EXPECT_THROW_MESSAGE(
+        cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
+                                                 bad_length, bad_offset),
+        "Invalid trajectory length datatype");
+    
+    bad_length.dtype = GDF_INT32;
+    bad_offset.dtype = GDF_FLOAT32;
+
+    CUDF_EXPECT_THROW_MESSAGE(
+        cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
+                                                 bad_length, bad_offset),
+        "Invalid trajectory offset datatype");
+
+    bad_offset.dtype = GDF_INT32;
+    bad_timestamp.dtype = GDF_DATE32;
+
+    CUDF_EXPECT_THROW_MESSAGE(
+        cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
+                                                 bad_length, bad_offset),
+        "Invalid timestamp datatype");
+
+    bad_timestamp.dtype = GDF_TIMESTAMP;
+    bad_x.null_count = 5;
+    CUDF_EXPECT_THROW_MESSAGE(
+        cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
+                                                 bad_length, bad_offset),
+        "NULL support unimplemented");
+
+    bad_x.null_count = 0;
+    bad_x.size = 1;
+    bad_y.size = 1;
+    bad_timestamp.size = 1;
+    CUDF_EXPECT_THROW_MESSAGE(
+        cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
+                                                 bad_length, bad_offset),
+        "Insufficient trajectory data");
+
+    
+}

@@ -146,20 +146,19 @@ trajectory_distance_and_speed(const gdf_column& x, const gdf_column& y,
     CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
                  timestamp.data != nullptr && length.data != nullptr &&
                  offset.data != nullptr,
-                 "Null data pointer");
+                 "Null input data");
     CUDF_EXPECTS(x.size == y.size && x.size == timestamp.size &&
                  length.size == offset.size, "Data size mismatch");
     CUDF_EXPECTS(timestamp.dtype == GDF_TIMESTAMP,
-                 "Invalid timestamp data type");
+                 "Invalid timestamp datatype");
     CUDF_EXPECTS(length.dtype == GDF_INT32,
-                 "Invalid trajectory length data type");
+                 "Invalid trajectory length datatype");
     CUDF_EXPECTS(offset.dtype == GDF_INT32,
-                 "Invalid trajectory offset data type");
+                 "Invalid trajectory offset datatype");
     CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
                  timestamp.null_count == 0 &&
                  length.null_count == 0 && offset.null_count == 0,
-                 "Null data support not implemented");
-
+                 "NULL support unimplemented");
     CUDF_EXPECTS(x.size >= offset.size ,
                  "Insufficient trajectory data");
 
