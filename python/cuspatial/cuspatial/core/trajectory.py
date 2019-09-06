@@ -111,7 +111,7 @@ def distance_and_speed(x_coords, y_coords, timestamps, length, position):
         0              1000.0  100000.000000
         1              1000.0  111111.109375
     """
-    result = cpp_trasectory_distance_and_speed(
+    result = cpp_trajectory_distance_and_speed(
         x_coords,
         y_coords,
         timestamps,
