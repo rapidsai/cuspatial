@@ -6,12 +6,6 @@ from cudf.tests.utils import assert_eq
 import numpy as np
 from cuspatial.core import gis
 
-"""
-GPU accelerated coordinate transformation test: (log/lat)==>(x/y), relative to a camera origin
-
-Note:  make sure cudf_dev conda environment is activated
-"""
-
 def test_camera_oob_0():
     with pytest.raises(RuntimeError):
         x, y = gis.lonlat_to_xy_km_coordinates(-200, 0,

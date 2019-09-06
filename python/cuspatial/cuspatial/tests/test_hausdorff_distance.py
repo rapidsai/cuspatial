@@ -1,19 +1,5 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-"""
-A toy example to demonstrate how to convert python arrays into cuSpatial inputs,
-invoke the GPU accelerated directed Hausdorff distance computing function in
-cuSpatial, convert the results back to python array(s) again to be feed into 
-scipy clustering APIs.
-
-For the toy example, by desgin, both AgglomerativeClustering and DBSCAN cluster 
-the 2nd and third trajectories into one cluster while leaving the first 
-trajectory as the second cluster. 
-
-To run the demo, first install scipy and scikit-learn
-by "conda install -c conda-forge scipy scikit-learn"  under cudf_dev environment
-"""
-
 import pytest
 import numpy as np
 import time

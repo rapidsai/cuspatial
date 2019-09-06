@@ -1,18 +1,11 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-"""
-GPU-accelerated Haversine distance computation among three cities: New York, Paris and Sydney
-Results match https://www.vcalc.com/wiki/vCalc/Haversine+-+Distance
-
-Note: make sure cudf_dev conda environment is activated
-"""
-
 import pytest
 import numpy as np
 import cudf
 from cudf.core import column
 from cudf.tests.utils import assert_eq
-import cuspatial.core.gis as gis
+from cuspatial.core import gis
 
 def test_zeros():
     distance = gis.haversine_distance(

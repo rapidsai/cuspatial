@@ -4,7 +4,7 @@ import pytest
 import cudf
 from cudf.tests.utils import assert_eq
 import numpy as np
-import cuspatial.core.gis as gis
+from cuspatial.core import gis
 
 def test_missing_0():
     with pytest.raises(RuntimeError):
