@@ -18,17 +18,13 @@
 #include <utilities/cuda_utils.hpp>
 #include <type_traits>
 #include <thrust/device_vector.h>
-#include <sys/time.h>
-#include <time.h>
 
-#include <utility/utility.hpp>
-#include <utility/trajectory_thrust.cuh>
 #include <cuspatial/trajectory.hpp>
 
 namespace {
-/**
- * @brief CUDA kernel for computing distances and speeds of trajectories
- *
+
+/*
+ * CUDA kernel for computing distances and speeds of trajectories
  */
 template <typename T>
 __global__ void distspeed_kernel(gdf_size_type num_traj,
