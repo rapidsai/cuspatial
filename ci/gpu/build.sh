@@ -47,17 +47,7 @@ source activate gdf
 
 # These installs are dependencies of cudf and most should be removed once we use a conda package
 # for cudf
-conda install "rmm=$MINOR_VERSION.*" "cudatoolkit=$CUDA_REL" \
-              "dask>=2.1.0" "distributed>=2.1.0" "numpy>=1.16" "double-conversion" \
-              "rapidjson" "flatbuffers" "boost-cpp" "fsspec>=0.3.3" "dlpack" \
-              "feather-format" "cupy>=6.0.0" "arrow-cpp=0.14.1" "pyarrow=0.14.1" \
-              "fastavro>=0.22.0" "pandas>=0.24.2,<0.25" "hypothesis"
-
-# Install the master version of dask and distributed
-logger "pip install git+https://github.com/dask/distributed.git --upgrade --no-deps" 
-pip install "git+https://github.com/dask/distributed.git" --upgrade --no-deps
-logger "pip install git+https://github.com/dask/dask.git --upgrade --no-deps"
-pip install "git+https://github.com/dask/dask.git" --upgrade --no-deps
+conda install "rmm=$MINOR_VERSION.*" "cudf=$MINOR_VERSION" "cudatoolkit=$CUDA_REL"
 
 logger "Check versions..."
 python --version
@@ -68,15 +58,11 @@ conda list
 ################################################################################
 # BUILD - Build libnvstrings, nvstrings, libcudf, and cuDF from source
 #
-# cuSpatial currently requires a source build of cudf and not a conda package
+# cuSpatial currently requires a the cudf repo for private headers
 ################################################################################
 
 logger "Clone cudf"
 git clone https://github.com/rapidsai/cudf.git -b branch-$MINOR_VERSION ${CUDF_HOME}
-
-logger "Build cudf..."
-cd $CUDF_HOME
-./build.sh clean libnvstrings nvstrings libcudf cudf
 
 ################################################################################
 # BUILD - Build libcuspatial and cuSpatial from source

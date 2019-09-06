@@ -28,19 +28,11 @@ requirements:
   build:
     - cmake >=3.12.4
   host:
-    - librmm {{ minor_version }}.*
-    - libnvstrings {{ minor_version }}.*
-    - cudatoolkit {{ cuda_version }}.*
-    - arrow-cpp 0.14.1.*
-    - double-conversion
-    - rapidjson
-    - flatbuffers
-    - boost-cpp
-    - dlpack
+    - libcudf {{ minor_version }}.*
+    - cudatoolkit {{ cuda_version }.*
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
-    - arrow-cpp 0.14.1.*
-    - dlpack
+    - libcudf {{ minor_version }}.*
 
 test:
   commands:
