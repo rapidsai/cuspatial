@@ -10,7 +10,8 @@
 
 ## Improvements
 
-- #31 Add Github CODEOWNERS
+- PR #31 Add Github CODEOWNERS
+- PR #39 Add cython headers to install, python / cmake packaging cleanup
 
 ## Bug Fixes
 

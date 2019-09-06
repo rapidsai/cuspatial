@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(CUDF_TESTS LANGUAGES C CXX CUDA)
+project(CUSPATIAL_TESTS LANGUAGES C CXX CUDA)
 
 if(NOT CMAKE_CUDA_COMPILER)
   message(SEND_ERROR "CMake cannot locate a CUDA compiler")
@@ -9,17 +9,16 @@ endif()
 ###################################################################################################
 # - common test utils -----------------------------------------------------------------------------
 
-add_library(cudftestutil STATIC
-            "${CUDF_TEST_INCLUDE}/tests/utilities/cudf_test_utils.cu"
-            "${CUDF_TEST_INCLUDE}/tests/utilities/valid_vectors.cpp"
-            "${CUDF_TEST_INCLUDE}/tests/utilities/nvcategory_utils.cu")
+find_library(CUDFTESTUTIL_LIBRARY "libcudftestutil.a"
+             HINTS "$ENV{CUDF_ROOT}/lib")
 
-target_link_libraries(cudftestutil cudf cuspatial rmm cudart cuda nvrtc NVCategory  NVStrings)
-                     
+message(STATUS "CUDFTESTUTIL: CUDFTESTUTIL_LIBRARY set to ${CUDFTESTUTIL_LIBRARY}")
+message(STATUS "CUDFTESTUTIL: CUDF_TEST_INCLUDE set to ${CUDF_TEST_INCLUDE}")
 
-if(USE_NVTX)
-    target_link_libraries(cudftestutil ${NVTX_LIBRARY})
-endif(USE_NVTX)
+add_library(cudftestutil STATIC IMPORTED ${CUDFTESTUTIL_LIBRARY})
+if (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
+    set_target_properties(cudftestutil PROPERTIES IMPORTED_LOCATION ${CUDFTESTUTIL_LIBRARY})
+endif (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
 
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
@@ -28,7 +27,7 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     add_executable(${CMAKE_TEST_NAME}
                    ${CMAKE_TEST_SRC})
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cudf
+    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial cudf
                           cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES} NVCategory
                           NVStrings nvrtc)
     if(USE_NVTX)
@@ -39,14 +38,14 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
 endfunction(ConfigureTest)
 
-option(CMAKE_ENABLE_BENCHMARKS "Enable building cuDF benchmarks" OFF)
+option(CMAKE_ENABLE_BENCHMARKS "Enable building cuSpatial benchmarks" OFF)
 
 function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
     if(CMAKE_ENABLE_BENCHMARKS)
         add_executable(${CMAKE_BENCH_NAME}
                     ${CMAKE_BENCH_SRC})
         set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-        target_link_libraries(${CMAKE_BENCH_NAME} cudf cudftestutil)
+        target_link_libraries(${CMAKE_BENCH_NAME} cuspatial cudf cudftestutil)
         set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
                                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bench")
         add_test(NAME ${CMAKE_BENCH_NAME} COMMAND ${CMAKE_BENCH_NAME})
@@ -80,7 +79,7 @@ include_directories("${CMAKE_BINARY_DIR}/include"
 
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
                  "${CMAKE_BINARY_DIR}/lib"
-                  "${GTEST_LIBRARY_DIR}"
+                 "${GTEST_LIBRARY_DIR}"
                  "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}"
                  "${CUSPATIAL_LIBRARY}"
