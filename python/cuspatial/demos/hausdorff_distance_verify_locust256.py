@@ -13,8 +13,8 @@ import sys
 import pickle
 
 from scipy.spatial.distance import directed_hausdorff
-import cuspatial.bindings.spatial as gis
-import cuspatial.bindings.soa_readers as readers
+import cuspatial._lib.spatial as gis
+import cuspatial._lib.soa_readers as readers
 
 data_dir = "/home/jianting/trajcode/"
 data_set = "locust256"

@@ -4,7 +4,7 @@ import pytest
 import cudf
 from cudf.tests.utils import assert_eq
 import numpy as np
-import cuspatial.bindings.spatial as gis
+import cuspatial._lib.spatial as gis
 
 """
 GPU accelerated coordinate transformation test: (log/lat)==>(x/y), relative to a camera origin

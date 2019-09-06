@@ -5,9 +5,9 @@ Note: camera configuration is read from a CSV file using Panda
 
 import numpy as np
 import pandas as pd
-import cuspatial.bindings.spatial as gis
-import cuspatial.bindings.trajectory as traj
-import cuspatial.bindings.soa_readers as readers
+import cuspatial._lib.spatial as gis
+import cuspatial._lib.trajectory as traj
+import cuspatial._lib.soa_readers as readers
 import cuspatial.utils.traj_utils as tools
 
 data_dir = "/home/jianting/cuspatial/data/"

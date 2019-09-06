@@ -8,7 +8,7 @@ import pytest
 import cudf
 from cudf.tests.utils import assert_eq
 import numpy as np
-import cuspatial.bindings.trajectory as traj
+import cuspatial._lib.trajectory as traj
 
 def test_subset_trajectory_id_zeros():
     result = traj.cpp_subset_trajectory_id(

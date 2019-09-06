@@ -11,7 +11,7 @@ from setuptools import find_packages, setup
 from setuptools.extension import Extension
 
 install_requires = ["numba", "cython"]
-cython_files = ["cuspatial/bindings/**/*.pyx"]
+cython_files = ["cuspatial/_lib/**/*.pyx"]
 
 extensions = [
     Extension(

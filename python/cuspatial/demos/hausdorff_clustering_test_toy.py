@@ -12,7 +12,7 @@ by "conda install -c conda-forge scipy scikit-learn"  under cudf_dev environment
 import numpy as np
 import time
 from cudf.core import column
-import cuspatial.bindings.spatial as gis
+import cuspatial._lib.spatial as gis
 from scipy.spatial.distance import directed_hausdorff
 from sklearn.cluster import AgglomerativeClustering,DBSCAN
 

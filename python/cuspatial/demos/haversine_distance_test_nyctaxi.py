@@ -1,7 +1,7 @@
 import time
 import cudf
 from cudf.core import column
-import cuspatial.bindings.spatial as gis
+import cuspatial._lib.spatial as gis
 
 start = time.time()
 # data dowloaded from https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2009-01.csv

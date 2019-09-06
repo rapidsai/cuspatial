@@ -20,7 +20,7 @@ import time
 import cudf
 from cudf.tests.utils import assert_eq
 from cudf.core import column
-import cuspatial.bindings.spatial as gis
+import cuspatial._lib.spatial as gis
 
 def test_zeros():
     distance = gis.cpp_directed_hausdorff_distance(

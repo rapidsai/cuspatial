@@ -12,7 +12,7 @@ import numpy as np
 import cudf
 from cudf.core import column
 from cudf.tests.utils import assert_eq
-import cuspatial.bindings.spatial as gis
+import cuspatial._lib.spatial as gis
 
 def test_zeros():
     distance = gis.cpp_haversine_distance(
