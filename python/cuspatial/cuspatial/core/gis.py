@@ -1,5 +1,6 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
+from cudf import DataFrame
 from cuspatial._lib.spatial import (
     cpp_directed_hausdorff_distance,
     cpp_haversine_distance,
@@ -61,7 +62,10 @@ def lonlat_to_xy_km_coordinates(camera_lon, camera_lat, lon_coords, lat_coords):
     returns
     DataFrame: 'x', 'y' columns for new km positions of coords
     """
-    return cpp_lonlat2coord(camera_lon, camera_lat, lon_coords, lat_coords)
+    result = cpp_lonlat2coord(camera_lon, camera_lat, lon_coords, lat_coords)
+    return DataFrame({'x': result[0],
+                      'y': result[1]
+    })
 
 def point_in_polygon_bitmap(x_points, y_points,
         polygon_ids, polygon_end_indices, polygons_x, polygons_y):
