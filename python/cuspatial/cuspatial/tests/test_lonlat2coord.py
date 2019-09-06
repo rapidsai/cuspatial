@@ -4,32 +4,32 @@ import pytest
 import cudf
 from cudf.tests.utils import assert_eq
 import numpy as np
-from cuspatial.core import gis
+import cuspatial
 
 def test_camera_oob_0():
     with pytest.raises(RuntimeError):
-        result = gis.lonlat_to_xy_km_coordinates(-200, 0,
+        result = cuspatial.lonlat_to_xy_km_coordinates(-200, 0,
             cudf.Series([0]),
             cudf.Series([0])
         )
 
 def test_camera_oob_1():
     with pytest.raises(RuntimeError):
-        result = gis.lonlat_to_xy_km_coordinates(200, 0,
+        result = cuspatial.lonlat_to_xy_km_coordinates(200, 0,
             cudf.Series([0]),
             cudf.Series([0])
         )
 
 def test_camera_oob_2():
     with pytest.raises(RuntimeError):
-        result = gis.lonlat_to_xy_km_coordinates(0, -100,
+        result = cuspatial.lonlat_to_xy_km_coordinates(0, -100,
             cudf.Series([0]),
             cudf.Series([0])
         )
 
 def test_camera_oob_3():
     with pytest.raises(RuntimeError):
-        result = gis.lonlat_to_xy_km_coordinates(0, 100,
+        result = cuspatial.lonlat_to_xy_km_coordinates(0, 100,
             cudf.Series([0]),
             cudf.Series([0])
         )
@@ -38,14 +38,14 @@ def test_camera_oob_3():
 def test_camera_corners(corner):
     x = [-180, 180, -180, 180]
     y = [-90, 90, 90, -90]
-    result = gis.lonlat_to_xy_km_coordinates(x[corner], y[corner],
+    result = cuspatial.lonlat_to_xy_km_coordinates(x[corner], y[corner],
         cudf.Series(x[corner]),
         cudf.Series(y[corner])
     )
     result = cudf.DataFrame({'x': [0], 'y': [0]})
 
 def test_longest_distance():
-    result = gis.lonlat_to_xy_km_coordinates(-180, -90,
+    result = cuspatial.lonlat_to_xy_km_coordinates(-180, -90,
         cudf.Series([180]),
         cudf.Series([90])
     )
@@ -54,7 +54,7 @@ def test_longest_distance():
     }))
 
 def test_half_distance():
-    result = gis.lonlat_to_xy_km_coordinates(-180, -90,
+    result = cuspatial.lonlat_to_xy_km_coordinates(-180, -90,
         cudf.Series([0]),
         cudf.Series([0])
     )
@@ -64,13 +64,13 @@ def test_half_distance():
 
 def test_missing_coords():
     with pytest.raises(RuntimeError):
-        result = gis.lonlat_to_xy_km_coordinates(-180, -90,
+        result = cuspatial.lonlat_to_xy_km_coordinates(-180, -90,
             cudf.Series(),
             cudf.Series([0])
         )
 
 def test_zeros():
-    result = gis.lonlat_to_xy_km_coordinates(
+    result = cuspatial.lonlat_to_xy_km_coordinates(
         0.0,
         0.0,
         cudf.Series([0.0]),
@@ -86,6 +86,13 @@ def test_values():
     py_lat=cudf.Series([42.49207437, 42.49202408,42.49266787])
 
     #note: x/y coordinates in killometers -km 
-    x,y=gis.lonlat_to_xy_km_coordinates(cam_lon, cam_lat, py_lon, py_lat)
-    print(cudf.Series(x))
-    print(cudf.Series(y))
+    result = cuspatial.lonlat_to_xy_km_coordinates(
+        cam_lon,
+        cam_lat,
+        py_lon,
+        py_lat
+    )
+    assert_eq(result, cudf.DataFrame({
+        'x': [0.0064683857, 0.024330807, -0.0178664241],
+        'y': [-0.011576666, -0.00598888, -0.0775211111]
+    }))
