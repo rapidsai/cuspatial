@@ -7,17 +7,10 @@ as x.data.size, both are 1338671
 import cuspatial
 
 data_dir = "./data/"
-data = cuspatial.read_points_lonlat(
-    data_dir + "locust.location"
-)
+data = cuspatial.read_points_lonlat(data_dir + "locust.location")
 
 points_inside = cuspatial.window_points(
-    -180,
-    -90,
-    180,
-    90,
-    data['lon'],
-    data['lat'],
+    -180, -90, 180, 90, data["lon"], data["lat"]
 )
 print(points_inside.shape[0])
 assert points_inside.shape[0] == data.shape[0]

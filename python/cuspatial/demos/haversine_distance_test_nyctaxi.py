@@ -7,9 +7,7 @@ import cuspatial
 start = time.time()
 # data dowloaded from
 # https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2009-01.csv
-df = read_csv(
-    "data/yellow_tripdata_2009-01.csv"
-)
+df = read_csv("data/yellow_tripdata_2009-01.csv")
 end = time.time()
 print("data ingesting time (from SSD) in ms={}".format((end - start) * 1000))
 df.head().to_pandas().columns
