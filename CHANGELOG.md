@@ -14,6 +14,7 @@
 - PR #31 Add Github CODEOWNERS
 - PR #39 Add cython headers to install, python / cmake packaging cleanup
 - PR #41 Python and Cython style cleanup, pre-commit hook
+- PR #45 Improve documentation in haversine and point in polygon
 
 ## Bug Fixes
 
