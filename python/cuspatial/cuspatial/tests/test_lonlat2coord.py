@@ -43,7 +43,7 @@ def test_camera_corners(corner):
     result = cuspatial.lonlat_to_xy_km_coordinates(
         x[corner], y[corner], cudf.Series(x[corner]), cudf.Series(y[corner])
     )
-    assert_eq(result, cudf.DataFrame({"x": [0], "y": [0]}))
+    assert_eq(result, cudf.DataFrame({"x": [0.0], "y": [0.0]}))
 
 
 def test_longest_distance():
