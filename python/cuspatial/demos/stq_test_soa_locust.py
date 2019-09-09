@@ -4,22 +4,20 @@ and (x1,x2,y1,y2)=[-180,180,-90,90] as the query window num should be the same
 as x.data.size, both are 1338671
 """
 
-import numpy as np
+import cuspatial
 
-import cuspatial._lib.soa_readers as readers
-import cuspatial._lib.stq as stq
-
-data_dir = "/home/jianting/cuspatial/data/"
-pnt_lon, pnt_lat = readers.cpp_read_pnt_lonlat_soa(
+data_dir = "./data/"
+data = cuspatial.read_points_lonlat(
     data_dir + "locust.location"
 )
-num, nlon, nlat = stq.cpp_sw_xy(
-    np.double(-180),
-    np.double(180),
-    np.double(-90),
-    np.double(90),
-    pnt_lon,
-    pnt_lat,
+
+points_inside = cuspatial.window_points(
+    -180,
+    -90,
+    180,
+    90,
+    data['lon'],
+    data['lat'],
 )
-print(num)
-print(pnt_lon.data.size)
+print(points_inside.shape[0])
+assert points_inside.shape[0] == data.shape[0]
