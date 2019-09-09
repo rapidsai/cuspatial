@@ -11,7 +11,6 @@ import pandas as pd
 import cuspatial
 import cuspatial.utils.traj_utils as tools
 
-breakpoint()
 data_dir = "./data/"
 df = pd.read_csv(data_dir + "its_camera_2.csv")
 this_cam = df.loc[df["cameraIdString"] == "HWY_20_AND_LOCUST"]
