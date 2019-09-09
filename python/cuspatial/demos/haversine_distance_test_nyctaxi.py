@@ -1,7 +1,6 @@
 import time
 
-from cudf import Series
-from cudf import read_csv
+from cudf import Series, read_csv
 
 import cuspatial
 
