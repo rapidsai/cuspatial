@@ -1,6 +1,7 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
 from cudf import DataFrame
+
 from cuspatial._lib.spatial import (
     cpp_directed_hausdorff_distance,
     cpp_haversine_distance,
@@ -8,6 +9,7 @@ from cuspatial._lib.spatial import (
     cpp_point_in_polygon_bitmap,
     cpp_spatial_window_points,
 )
+
 
 def directed_hausdorff_distance(x, y, count):
     """ Compute the directed Hausdorff distances between any groupings
@@ -17,7 +19,7 @@ def directed_hausdorff_distance(x, y, count):
     x: x coordinates
     y: y coordinates
     count: size of each polygon
-    
+
     Parameters
     ----------
     {params}
@@ -26,6 +28,7 @@ def directed_hausdorff_distance(x, y, count):
     DataFrame: 'min', 'max' columns of Hausdorff distances for each polygon
     """
     return cpp_directed_hausdorff_distance(x, y, count)
+
 
 def haversine_distance(p1_lat, p1_lon, p2_lat, p2_lon):
     """ Compute the haversine distances between an arbitrary list of lat/lon
@@ -36,7 +39,7 @@ def haversine_distance(p1_lat, p1_lon, p2_lat, p2_lon):
     p1_lon: longitude of first set of coords
     p2_lat: latitude of second set of coords
     p2_lon: longitude of second set of coords
-    
+
     Parameters
     ----------
     {params}
@@ -46,7 +49,10 @@ def haversine_distance(p1_lat, p1_lon, p2_lat, p2_lon):
     """
     return cpp_haversine_distance(p1_lat, p1_lon, p2_lat, p2_lon)
 
-def lonlat_to_xy_km_coordinates(camera_lon, camera_lat, lon_coords, lat_coords):
+
+def lonlat_to_xy_km_coordinates(
+    camera_lon, camera_lat, lon_coords, lat_coords
+):
     """ Convert lonlat coordinates to km x,y coordinates based on some camera
     origin.
 
@@ -55,7 +61,7 @@ def lonlat_to_xy_km_coordinates(camera_lon, camera_lat, lon_coords, lat_coords):
     camera_lat: float64 - latitude camera
     lon_coords: Series of longitude coords to convert to x
     lat_coords: Series of latitude coords to convert to y
-    
+
     Parameters
     ----------
     {params}
@@ -64,12 +70,17 @@ def lonlat_to_xy_km_coordinates(camera_lon, camera_lat, lon_coords, lat_coords):
     DataFrame: 'x', 'y' columns for new km positions of coords
     """
     result = cpp_lonlat2coord(camera_lon, camera_lat, lon_coords, lat_coords)
-    return DataFrame({'x': result[0],
-                      'y': result[1]
-    })
+    return DataFrame({"x": result[0], "y": result[1]})
 
-def point_in_polygon_bitmap(x_points, y_points,
-        polygon_ids, polygon_end_indices, polygons_x, polygons_y):
+
+def point_in_polygon_bitmap(
+    x_points,
+    y_points,
+    polygon_ids,
+    polygon_end_indices,
+    polygons_x,
+    polygons_y,
+):
     """ Compute from a set of points and a set of polygons which points fall
     within which polygons.
 
@@ -91,14 +102,19 @@ def point_in_polygon_bitmap(x_points, y_points,
     true or false for each of 32 polygons.
     """
     return cpp_point_in_polygon_bitmap(
-        x_points, y_points,
-        polygon_ids, polygon_end_indices, polygons_x, polygons_y
+        x_points,
+        y_points,
+        polygon_ids,
+        polygon_end_indices,
+        polygons_x,
+        polygons_y,
     )
+
 
 def window_points(left, bottom, right, top, x, y):
     """ Return only the subset of coordinates that fall within the numerically
     closed borders [,] of the defined bounding box.
-   
+
     params
     left: x coordinate of window left boundary
     bottom: y coordinate of window bottom boundary
@@ -106,7 +122,7 @@ def window_points(left, bottom, right, top, x, y):
     top: y coordinate of window top boundary
     x: Series of x coordinates that may fall within the window
     y: Series of y coordinates that may fall within the window
-    
+
     Parameters
     ----------
     {params}
@@ -116,4 +132,4 @@ def window_points(left, bottom, right, top, x, y):
     DataFrame: subset of x, y pairs above that fall within the window
     """
     result = cpp_spatial_window_points(left, bottom, right, top, x, y)
-    return DataFrame({'x': result[0], 'y': result[1]})
+    return DataFrame({"x": result[0], "y": result[1]})
