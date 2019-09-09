@@ -1,6 +1,6 @@
 """
-demo of chaining three APIs: derive_trajectories+subset_trajectory(by ID)+hausdorff_distance
-also serves as an example to integrate cudf and cuspatial
+demo of chaining three APIs: derive_trajectories+subset_trajectory(by ID)
++hausdorff_distance also serves as an example to integrate cudf and cuspatial
 """
 
 import cuspatial
