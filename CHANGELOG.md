@@ -8,6 +8,7 @@
 - PR #37 Python __init__.py package design
 - PR #38 Add __init__.py empties to resolve issue with PYTHONPATH
 - PR #25 Add gpuCI integration
+- PR #43 Add notebooks directory and clustering_with_cuspatial notebook.
 
 ## Improvements
 
