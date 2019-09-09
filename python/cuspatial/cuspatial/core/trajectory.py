@@ -1,29 +1,31 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-import cudf
 import warnings
+
+import cudf
+
 from cuspatial._lib.trajectory import (
-    cpp_subset_trajectory_id,
-    cpp_trajectory_spatial_bounds,
     cpp_derive_trajectories,
+    cpp_subset_trajectory_id,
     cpp_trajectory_distance_and_speed,
+    cpp_trajectory_spatial_bounds,
 )
 
 warnings.warn("Duplicates cuDF functionality", DeprecationWarning)
+
+
 def subset_trajectory_id(trajectory_ids, in_x, in_y, point_ids, timestamps):
     """
     Deprecated
     """
     return cpp_subset_trajectory_id(
-        trajectory_ids,
-        in_x,
-        in_y,
-        point_ids,
-        timestamps
+        trajectory_ids, in_x, in_y, point_ids, timestamps
     )
 
+
 def spatial_bounds(
-        x_coords, y_coords, trajectory_size, trajectory_end_position):
+    x_coords, y_coords, trajectory_size, trajectory_end_position
+):
     """ Compute the bounding boxes of sets of trajectories.
 
     Parameters
@@ -44,11 +46,9 @@ def spatial_bounds(
     1  1.0  1.0  3.0  3.0
     """
     return cpp_trajectory_spatial_bounds(
-        x_coords,
-        y_coords,
-        trajectory_size,
-        trajectory_end_position
+        x_coords, y_coords, trajectory_size, trajectory_end_position
     )
+
 
 def derive(x_coords, y_coords, object_ids, timestamps):
     """ Derive trajectories from points, timestamps, and ids.
@@ -79,12 +79,8 @@ def derive(x_coords, y_coords, object_ids, timestamps):
         0              0       2         2
         1              1       2         4)
     """
-    return cpp_derive_trajectories(
-        x_coords,
-        y_coords,
-        object_ids,
-        timestamps
-    )
+    return cpp_derive_trajectories(x_coords, y_coords, object_ids, timestamps)
+
 
 def distance_and_speed(x_coords, y_coords, timestamps, length, position):
     """ Compute the distance travelled and speed of sets of trajectories
@@ -112,17 +108,8 @@ def distance_and_speed(x_coords, y_coords, timestamps, length, position):
         1              1000.0  111111.109375
     """
     result = cpp_trajectory_distance_and_speed(
-        x_coords,
-        y_coords,
-        timestamps,
-        length,
-        position
+        x_coords, y_coords, timestamps, length, position
     )
-    df = cudf.DataFrame({
-        'meters': result[0],
-        'speed': result[1]
-    })
-    df.index.name = 'trajectory_id'
+    df = cudf.DataFrame({"meters": result[0], "speed": result[1]})
+    df.index.name = "trajectory_id"
     return df
-
-

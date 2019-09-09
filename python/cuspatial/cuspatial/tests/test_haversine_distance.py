@@ -1,11 +1,12 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-import pytest
 import numpy as np
+import pytest
+
 import cudf
-from cudf.core import column
-from cudf.tests.utils import assert_eq
+
 import cuspatial
+
 
 def test_zeros():
     distance = cuspatial.haversine_distance(
@@ -16,49 +17,44 @@ def test_zeros():
     )
     assert cudf.Series(distance)[0] == 0
 
+
 def test_empty_x1():
     with pytest.raises(RuntimeError):
-        distance = cuspatial.haversine_distance(
-            cudf.Series(),
-            cudf.Series([0]),
-            cudf.Series([0]),
-            cudf.Series([0]),
+        distance = cuspatial.haversine_distance(  # noqa: F841
+            cudf.Series(), cudf.Series([0]), cudf.Series([0]), cudf.Series([0])
         )
+
 
 def test_empty_y1():
     with pytest.raises(RuntimeError):
-        distance = cuspatial.haversine_distance(
-            cudf.Series([0]),
-            cudf.Series(),
-            cudf.Series([0]),
-            cudf.Series([0]),
+        distance = cuspatial.haversine_distance(  # noqa: F841
+            cudf.Series([0]), cudf.Series(), cudf.Series([0]), cudf.Series([0])
         )
+
 
 def test_empty_x2():
     with pytest.raises(RuntimeError):
-        distance = cuspatial.haversine_distance(
-            cudf.Series([0]),
-            cudf.Series([0]),
-            cudf.Series([0]),
-            cudf.Series(),
+        distance = cuspatial.haversine_distance(  # noqa: F841
+            cudf.Series([0]), cudf.Series([0]), cudf.Series([0]), cudf.Series()
         )
+
 
 def test_empty_y2():
     with pytest.raises(RuntimeError):
-        distance = cuspatial.haversine_distance(
-            cudf.Series([0]),
-            cudf.Series([0]),
-            cudf.Series([0]),
-            cudf.Series(),
+        distance = cuspatial.haversine_distance(  # noqa: F841
+            cudf.Series([0]), cudf.Series([0]), cudf.Series([0]), cudf.Series()
         )
 
+
 def test_triple():
-    cities = cudf.DataFrame({
-        'New York': [-74.0060,40.7128],
-        'Paris': [2.3522,48.8566],
-        'Sydney': [151.2093,-33.8688]
-    })
-    cities = cities.set_index(['lat', 'lon'])
+    cities = cudf.DataFrame(
+        {
+            "New York": [-74.0060, 40.7128],
+            "Paris": [2.3522, 48.8566],
+            "Sydney": [151.2093, -33.8688],
+        }
+    )
+    cities = cities.set_index(["lat", "lon"])
     pnt_x1 = []
     pnt_y1 = []
     pnt_x2 = []
@@ -73,6 +69,21 @@ def test_triple():
         cudf.Series(pnt_x1),
         cudf.Series(pnt_y1),
         cudf.Series(pnt_x2),
-        cudf.Series(pnt_y2)
+        cudf.Series(pnt_y2),
     )
-    assert np.allclose(distance.to_array(), [[0.0, 5.83724090e+03, 1.59887555e+04, 5.83724090e+03, 0.0, 1.69604974e+04, 1.59887555e+04, 1.69604974e+04, 0.0]])
+    assert np.allclose(
+        distance.to_array(),
+        [
+            [
+                0.0,
+                5.83724090e03,
+                1.59887555e04,
+                5.83724090e03,
+                0.0,
+                1.69604974e04,
+                1.59887555e04,
+                1.69604974e04,
+                0.0,
+            ]
+        ],
+    )
