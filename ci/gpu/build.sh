@@ -22,7 +22,6 @@ export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=4
 export CUDA_REL=${CUDA_VERSION%.*}
 export CUDF_HOME="${WORKSPACE}/cudf"
-export PYTHONPATH=${WORKSPACE}/python/cuspatial
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
@@ -44,10 +43,7 @@ nvidia-smi
 
 logger "Activate conda env..."
 source activate gdf
-
-# These installs are dependencies of cudf and most should be removed once we use a conda package
-# for cudf
-conda install "rmm=$MINOR_VERSION.*" "cudf=$MINOR_VERSION" "cudatoolkit=$CUDA_REL"
+conda install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL"
 
 logger "Check versions..."
 python --version
@@ -56,8 +52,6 @@ $CXX --version
 conda list
 
 ################################################################################
-# BUILD - Build libnvstrings, nvstrings, libcudf, and cuDF from source
-#
 # cuSpatial currently requires a the cudf repo for private headers
 ################################################################################
 

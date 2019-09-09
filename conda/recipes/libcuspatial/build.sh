@@ -5,6 +5,4 @@
 printenv
 # build cuspatial with verbose output
 cd $WORKSPACE
-echo "Fix permissions on build script"
-chmod ugo+x ./build.sh
 ./build.sh -v libcuspatial

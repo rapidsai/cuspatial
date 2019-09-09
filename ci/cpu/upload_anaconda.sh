@@ -1,10 +1,8 @@
 #!/bin/bash
-#
-# Adopted from https://github.com/tmcdonell/travis-scripts/blob/dfaac280ac2082cd6bcaba3217428347899f2975/update-accelerate-buildbot.sh
 
 set -e
 
-export LIBCUSPATIAL_FILE=`conda build conda/recipes/libcuspatial --python=$PYTHON --output`
+export LIBCUSPATIAL_FILE=`conda build conda/recipes/libcuspatial  --output`
 export CUSPATIAL_FILE=`conda build conda/recipes/cuspatial --python=$PYTHON --output`
 
 SOURCE_BRANCH=master

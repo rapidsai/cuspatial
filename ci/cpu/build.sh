@@ -46,7 +46,7 @@ conda list
 conda config --set ssl_verify False
 
 ##########################################################################################
-# BUILD - Conda package builds (conda deps: libcupatial <- libcuspatial_cffi <- cuspatial)
+# BUILD - Conda package builds (conda deps: libcupatial <- cuspatial)
 ##########################################################################################
 
 logger "Clone cudf"
