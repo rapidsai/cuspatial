@@ -13,8 +13,7 @@ import time
 import numpy as np
 from scipy.spatial.distance import directed_hausdorff
 
-import cuspatial._lib.soa_readers as readers
-import cuspatial._lib.spatial as gis
+import cuspatial
 
 data_dir = "/home/jianting/trajcode/"
 data_set = "locust256"
@@ -30,18 +29,18 @@ if len(sys.argv) >= 2:
     data_set = sys.argv[1]
 
 # reading poing xy coordinate data (relative to a camera origin)
-pnt_x, pnt_y = readers.cpp_read_pnt_xy_soa(data_dir + data_set + ".coor")
+pnt_x, pnt_y = cuspatial.read_points_xy_km(data_dir + data_set + ".coor")
 # reading numbers of points in trajectories
-cnt = readers.cpp_read_uint_soa(data_dir + data_set + ".objcnt")
+cnt = cuspatial.read_uint(data_dir + data_set + ".objcnt")
 # reading object(vehicle) id
-id = readers.cpp_read_uint_soa(data_dir + data_set + ".objectid")
+id = cuspatial.read_uint(data_dir + data_set + ".objectid")
 
 num_traj = cnt.data.size
-dist0 = gis.cpp_directed_hausdorff_distance(pnt_x, pnt_y, cnt)
+dist0 = cuspatial.directed_hausdorff_distance(pnt_x, pnt_y, cnt)
 cuspatial_dist0 = dist0.data.to_array().reshape((num_traj, num_traj))
 
 start = time.time()
-dist = gis.cpp_directed_hausdorff_distance(pnt_x, pnt_y, cnt)
+dist = cuspatial.directed_hausdorff_distance(pnt_x, pnt_y, cnt)
 print(
     "dis.size={} num_traj*num_traj={}".format(
         dist.data.size, num_traj * num_traj

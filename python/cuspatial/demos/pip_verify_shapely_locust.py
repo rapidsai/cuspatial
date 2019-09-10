@@ -10,8 +10,7 @@ import time
 import shapefile
 from shapely.geometry import Point, Polygon
 
-import cuspatial._lib.soa_readers as readers
-import cuspatial._lib.spatial as gis
+import cuspatial
 
 data_dir = "/home/jianting/cuspatial/data/"
 plyreader = shapefile.Reader(data_dir + "its_4326_roi.shp")
@@ -20,13 +19,13 @@ plys = []
 for shape in polygon:
     plys.append(Polygon(shape.points))
 
-pnt_lon, pnt_lat = readers.cpp_read_pnt_lonlat_soa(
-    data_dir + "locust.location"
-)
-fpos, rpos, plyx, plyy = readers.cpp_read_ply_soa(data_dir + "itsroi.ply")
+pnt_lon, pnt_lat = cuspatial.read_points_lonlat(data_dir + "locust.location")
+fpos, rpos, plyx, plyy = cuspatial.read_polygon(data_dir + "itsroi.ply")
 
 start = time.time()
-bm = gis.cpp_pip_bm(pnt_lon, pnt_lat, fpos, rpos, plyx, plyy)
+bm = cuspatial.point_in_polygon_bitmap(
+    pnt_lon, pnt_lat, fpos, rpos, plyx, plyy
+)
 end = time.time()
 print("Python GPU Time in ms (end-to-end)={}".format((end - start) * 1000))
 
