@@ -350,5 +350,7 @@ def test_distance_and_speed_timestamp_types(timestamp_type):
         cudf.Series([2, 4]),
     )
     assert_eq(
-        result, cudf.DataFrame({"meters": [1.0, 1.0], "speed": [1.0, 1.0]}), check_names=False
+        result,
+        cudf.DataFrame({"meters": [1.0, 1.0], "speed": [1.0, 1.0]}),
+        check_names=False,
     )
