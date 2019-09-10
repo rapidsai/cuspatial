@@ -30,15 +30,15 @@ def directed_hausdorff_distance(x, y, count):
     return cpp_directed_hausdorff_distance(x, y, count)
 
 
-def haversine_distance(p1_lat, p1_lon, p2_lat, p2_lon):
-    """ Compute the haversine distances (km) between an arbitrary list of
-    lat/lon pairs.
+def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
+    """ Compute the haversine distances between an arbitrary list of lon/lat
+    pairs
 
     params
-    p1_lat: latitude of first set of coords
     p1_lon: longitude of first set of coords
-    p2_lat: latitude of second set of coords
+    p1_lat: latitude of first set of coords
     p2_lon: longitude of second set of coords
+    p2_lat: latitude of second set of coords
 
     Parameters
     ----------
@@ -47,7 +47,7 @@ def haversine_distance(p1_lat, p1_lon, p2_lat, p2_lon):
     returns
     Series: distance between all pairs of lat/lon coords
     """
-    return cpp_haversine_distance(p1_lat, p1_lon, p2_lat, p2_lon)
+    return cpp_haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat)
 
 
 def lonlat_to_xy_km_coordinates(
