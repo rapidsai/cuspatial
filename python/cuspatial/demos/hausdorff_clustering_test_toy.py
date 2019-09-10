@@ -13,9 +13,9 @@ conda-forge scipy scikit-learn` under cudf_dev environment
 import numpy as np
 from sklearn.cluster import DBSCAN, AgglomerativeClustering
 
-from cudf.core import column
+from cudf import Series
 
-import cuspatial._lib.spatial as gis
+import cuspatial
 
 in_trajs = []
 in_trajs.append(np.array([[1, 0], [2, 1], [3, 2], [5, 3], [7, 1]]))
@@ -27,10 +27,10 @@ py_y = np.array(out_trajs[:, 1])
 py_cnt = []
 for traj in in_trajs:
     py_cnt.append(len(traj))
-pnt_x = column.as_column(py_x, dtype=np.float64)
-pnt_y = column.as_column(py_y, dtype=np.float64)
-cnt = column.as_column(py_cnt, dtype=np.int32)
-distance = gis.cpp_directed_hausdorff_distance(pnt_x, pnt_y, cnt)
+pnt_x = Series(py_x)
+pnt_y = Series(py_y)
+cnt = Series(py_cnt)
+distance = cuspatial.directed_hausdorff_distance(pnt_x, pnt_y, cnt)
 
 num_set = len(cnt)
 matrix = distance.data.to_array().reshape(num_set, num_set)
