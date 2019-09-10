@@ -21,3 +21,4 @@
 - PR #17 Update issue / PR templates
 - PR #23 Fix cudf Cython imports
 - PR #24 `cuspatial::derive_trajectories()` test improvements and bug fixes
+- PR #49 Docstring for haversine and argument ordering was backwards
