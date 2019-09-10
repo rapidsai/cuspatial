@@ -97,6 +97,30 @@ def point_in_polygon_bitmap(
     ----------
     {params}
 
+    Examples
+    --------
+        result = cuspatial.point_in_polygon_bitmap(
+            cudf.Series([0, -8, 6.0]), # x coordinates of 3 query points
+            cudf.Series([0, -8, 6.0]), # y coordinates of 3 query points
+            cudf.Series([1, 2]), # unique id of two polygons
+            cudf.Series([5, 10]), # position of last vertex in each polygon
+            # polygon coordinates, x and y
+            cudf.Series([-10.0, 5, 5, -10, -10, 0, 10, 10, 0, 0]),
+            cudf.Series([-10.0, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
+        )
+        # The result of point_in_polygon_bitmap is a binary bitmap of
+        # coordinates inside of the polgyon.
+        print(cudf.Series(result))
+        0    3
+        1    1
+        2    2
+        dtype: int32
+        # The result 3, 1, 2 represents the position of each point in each
+        # polygon in integer binary format:
+        # Point 0: (0, 0) falls in both polygons: 0b11 (3)
+        # Point 1: (-8, -8) falls in the first polygon: 0b01 (1)
+        # Point 2: (6.0, 6.0) falls in the second polygon: 0b10 (2)
+
     returns
     Series: one int32 for each point. This int32 is a binary bitmap specifying
     true or false for each of 32 polygons.
