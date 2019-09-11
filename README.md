@@ -21,11 +21,15 @@ Future support is planned for the following operations.
 4. Grid-based indexing for points and polygons
 5. Quadtree-based indexing for large-scale point data
 6. R-Tree-based indexing for Polygons/Polylines
- 
-## Compile / Install C++ backend
-To compile and run cuSpatial, use the following steps.
 
-## Install dependencies
+## Install from Conda
+To insall via conda, please run:
+`conda install -c rapidsai-nightly cuspatial`
+
+## Install from Source
+To compile and install cuSpatial's C++ backend, please follow the following steps:
+
+### Install dependencies
 
 Currently, building cuSpatial requires a source installation of cuDF. Install
 cuDF by following the [instructions](https://github.com/rapidsai/cudf/blob/branch-0.10/CONTRIBUTING.md#script-to-build-cudf-from-source)
@@ -34,7 +38,7 @@ The rest of steps assume the environment variable `CUDF_HOME` points to the
 root directory of your clone of the cuDF repo, and that the `cudf_dev` Anaconda
 environment created in step 3 is active.
 
-## Clone, build and install cuSpatial
+### Clone, build and install cuSpatial
 
 1. export `CUSPATIAL_HOME=$(pwd)/cuspatial`
 2. clone the cuSpatial repo
