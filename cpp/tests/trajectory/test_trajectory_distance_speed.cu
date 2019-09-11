@@ -118,9 +118,9 @@ TEST_F(TrajectoryDistanceSpeed, DistanceAndSpeedThree)
     std::vector<double> gpu_speed(distance_speed.second.size);
     cudaMemcpy(gpu_speed.data(), distance_speed.second.data,
                distance_speed.second.size * sizeof(double), cudaMemcpyDefault);
-    EXPECT_THAT(gpu_distance, testing::Pointwise(FloatNearPointwise(1e-8),
+    EXPECT_THAT(gpu_distance, testing::Pointwise(FloatNearPointwise(1e-9),
                 distance));
-    EXPECT_THAT(gpu_speed, testing::Pointwise(FloatNearPointwise(1e-8),
+    EXPECT_THAT(gpu_speed, testing::Pointwise(FloatNearPointwise(1e-9),
                 speed));
 }
 
