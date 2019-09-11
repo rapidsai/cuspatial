@@ -16,6 +16,7 @@
 - PR #41 Python and Cython style cleanup, pre-commit hook
 - PR #44 Update all demos with Python API
 - PR #45 Improve documentation in haversine and point in polygon
+- PR #50 Validate that distance and speed work with all datetimes
 
 ## Bug Fixes
 
