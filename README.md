@@ -27,7 +27,7 @@ To install via conda:
 `conda install -c rapidsai-nightly cuspatial`
 
 ## Install from Source
-To compile and install cuSpatial's C++ backend, please follow the following steps:
+To build and install cuSpatial from source:
 
 ### Install dependencies
 
