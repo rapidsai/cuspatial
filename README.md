@@ -101,4 +101,4 @@ Structure of Array (SoA) format (more readers are being developed).
 Alternatively, python users can read any point/polyine/polygon data using
 existing python packages, e.g., [Shapely](https://pypi.org/project/Shapely/),
 to generate numpy arrays and feed them to
-[cuSpatial python APIs](python/cuspatial/cuspatial/bindings).
+[cuSpatial python APIs](python/cuspatial/cuspatial).

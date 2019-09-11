@@ -1,20 +1,19 @@
 """
-Demo code to verify the correctness of GPU-accelerated computing directed Hausdorff distance 
-on Locust trajectory dataset for 592 trajectories whose numbers of vertcies are between [256,1024)
-By comparing with scipy results.
+Demo code to verify the correctness of GPU-accelerated computing directed
+Hausdorff distance on Locust trajectory dataset for 592 trajectories whose
+numbers of vertcies are between [256,1024) by comparing with scipy results.
 
-To run the demo, first install scipy by "conda install -c conda-forge scipy"
-under cudef_dev environment 
+To run the demo, first install scipy by `conda install -c conda-forge scipy`
+under cudf_dev environment
 """
 
-import numpy as np
-import time
 import sys
-import pickle
+import time
 
+import numpy as np
 from scipy.spatial.distance import directed_hausdorff
-import cuspatial.bindings.spatial as gis
-import cuspatial.bindings.soa_readers as readers
+
+import cuspatial
 
 data_dir = "/home/jianting/trajcode/"
 data_set = "locust256"
@@ -30,25 +29,28 @@ if len(sys.argv) >= 2:
     data_set = sys.argv[1]
 
 # reading poing xy coordinate data (relative to a camera origin)
-pnt_x, pnt_y = readers.cpp_read_pnt_xy_soa(data_dir + data_set + ".coor")
+pnt_x, pnt_y = cuspatial.read_points_xy_km(data_dir + data_set + ".coor")
 # reading numbers of points in trajectories
-cnt = readers.cpp_read_uint_soa(data_dir + data_set + ".objcnt")
+cnt = cuspatial.read_uint(data_dir + data_set + ".objcnt")
 # reading object(vehicle) id
-id = readers.cpp_read_uint_soa(data_dir + data_set + ".objectid")
+id = cuspatial.read_uint(data_dir + data_set + ".objectid")
 
 num_traj = cnt.data.size
-dist0 = gis.cpp_directed_hausdorff_distance(pnt_x, pnt_y, cnt)
+dist0 = cuspatial.directed_hausdorff_distance(pnt_x, pnt_y, cnt)
 cuspatial_dist0 = dist0.data.to_array().reshape((num_traj, num_traj))
 
 start = time.time()
-dist = gis.cpp_directed_hausdorff_distance(pnt_x, pnt_y, cnt)
-print("dis.size={} num_traj*num_traj={}".format(dist.data.size, num_traj * num_traj))
+dist = cuspatial.directed_hausdorff_distance(pnt_x, pnt_y, cnt)
+print(
+    "dis.size={} num_traj*num_traj={}".format(
+        dist.data.size, num_traj * num_traj
+    )
+)
 end = time.time()
 print(end - start)
 print(
-    "python Directed Hausdorff distance GPU end-to-end time in ms (end-to-end)={}".format(
-        (end - start) * 1000
-    )
+    "python Directed Hausdorff distance GPU end-to-end time in ms "
+    "(end-to-end)={}".format((end - start) * 1000)
 )
 
 start = time.time()
@@ -103,9 +105,8 @@ for i in range(num_traj):
 print("mis_match={}".format(mis_match))
 end = time.time()
 print(
-    "python Directed Hausdorff distance cpu end-to-end time in ms (end-to-end)={}".format(
-        (end - start) * 1000
-    )
+    "python Directed Hausdorff distance cpu end-to-end time in ms "
+    "(end-to-end)={}".format((end - start) * 1000)
 )
 
 # for val in d[0]:

@@ -17,12 +17,12 @@ DartConfiguration.tcl
 
 ## Python build directories & artifacts
 dist/
-cudf.egg-info/
+cuspatial.egg-info/
 python/build
 python/*/build
-python/cuspatial/*/bindings/**/*.cpp
-python/cuspatial/*/bindings/**/*.h
-python/cuspatial/*/bindings/.nfs*
+python/cuspatial/*/_lib/**/*.cpp
+python/cuspatial/*/_lib/**/*.h
+python/cuspatial/*/_lib/.nfs*
 python/cuspatial/*.ipynb
 python/cuspatial/.ipynb_checkpoints
 .Python
