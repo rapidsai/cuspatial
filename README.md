@@ -23,7 +23,7 @@ Future support is planned for the following operations.
 6. R-Tree-based indexing for Polygons/Polylines
 
 ## Install from Conda
-To insall via conda, please run:
+To install via conda:
 `conda install -c rapidsai-nightly cuspatial`
 
 ## Install from Source
