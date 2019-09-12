@@ -330,6 +330,16 @@ def test_distance_and_speed_single_trajectory():
     )  # fast!
 
 
+#########################
+# Measure that distance and speed are calculatd
+# correctly using each of the four cudf datetime
+# resolutions.
+#
+# Compute the distance and speed of two trajectories,
+# each over 0.001 km in 1 second.
+# If datetime type conversion wasn't supported, speed
+# would be different for each test.
+#########################
 @pytest.mark.parametrize(
     "timestamp_type",
     [
@@ -341,8 +351,8 @@ def test_distance_and_speed_single_trajectory():
 )
 def test_distance_and_speed_timestamp_types(timestamp_type):
     result = cuspatial.distance_and_speed(
-        cudf.Series([0.0, 0.001, 0.0, 0.0]),
-        cudf.Series([0.0, 0.0, 0.0, 0.001]),
+        cudf.Series([0.0, 0.001, 0.0, 0.0]),  # 1 meter in x
+        cudf.Series([0.0, 0.0, 0.0, 0.001]),  # 1 meter in y
         cudf.Series([0, timestamp_type[1], 0, timestamp_type[1]]).astype(
             timestamp_type[0]
         ),
