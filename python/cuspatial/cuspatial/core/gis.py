@@ -40,18 +40,19 @@ def directed_hausdorff_distance(x, y, count):
     x[0] is the nearer point in x to o. The distance from x[0] to the farthest
     point in o = 1.414.
 
-    result = cuspatial.directed_hausdorff_distance(
-        cudf.Series([0, 1, 0, 0]),
-        cudf.Series([0, 0, 1, 2]),
-        cudf.Series([2, 2,]),
-    )
-    print(result)
-         0         1
-    0  0.0  1.414214
-    1  2.0  0.000000
+        result = cuspatial.directed_hausdorff_distance(
+            cudf.Series([0, 1, 0, 0]),
+            cudf.Series([0, 0, 1, 2]),
+            cudf.Series([2, 2,]),
+        )
+        print(result)
+             0         1
+        0  0.0  1.414214
+        1  2.0  0.000000
 
-    returns
-    DataFrame: The pairwise hausdorff distance of each set to each other set.
+    Returns
+    -------
+    DataFrame: The pairwise Hausdorff distance of each set to each other set.
     """
     result = cpp_directed_hausdorff_distance(x, y, count)
     dim = len(count)
