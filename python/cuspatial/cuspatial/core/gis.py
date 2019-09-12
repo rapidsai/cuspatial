@@ -24,10 +24,40 @@ def directed_hausdorff_distance(x, y, count):
     ----------
     {params}
 
+    Example
+    -------
+    Consider a pair of lines on a grid.
+
+     |
+     o
+    -oxx-
+     |
+    o = [[0, 0], [0, 1]]
+    x = [[1, 0], [2, 0]]
+
+    o[0] is the nearer point in o to x. The distance from o[0] to the farthest
+    point in x = 2.
+    x[0] is the nearer point in x to o. The distance from x[0] to the farthest
+    point in o = 1.414.
+
+    result = cuspatial.directed_hausdorff_distance(
+        cudf.Series([0, 1, 0, 0]),
+        cudf.Series([0, 0, 1, 2]),
+        cudf.Series([2, 2,]),
+    )
+    print(result)
+         0         1
+    0  0.0  1.414214
+    1  2.0  0.000000
+
     returns
-    DataFrame: 'min', 'max' columns of Hausdorff distances for each polygon
+    DataFrame: The pairwise hausdorff distance of each set to each other set.
     """
-    return cpp_directed_hausdorff_distance(x, y, count)
+    result = cpp_directed_hausdorff_distance(x, y, count)
+    dim = len(count)
+    return DataFrame.from_gpu_matrix(
+        result.data.to_gpu_array().reshape(dim, dim)
+    )
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
