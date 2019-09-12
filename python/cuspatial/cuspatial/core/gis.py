@@ -82,7 +82,9 @@ def point_in_polygon_bitmap(
     polygons_y,
 ):
     """ Compute from a set of points and a set of polygons which points fall
-    within which polygons.
+    within which polygons. Note that `polygons_(x,y)` must be specified as
+    closed polygons: the first and last coordinate of each polygon must be
+    the same.
 
     params
     x_points: x coordinates of points to test
@@ -90,8 +92,8 @@ def point_in_polygon_bitmap(
     polygon_ids: a unique integer id for each polygon
     polygon_end_indices: the (n+1)th vertex of the final coordinate of each
                          polygon in the next parameters
-    polygons_x: x coordinates of all polygon points
-    polygons_y: y coordinates of all polygon points
+    polygons_x: x closed coordinates of all polygon points
+    polygons_y: y closed coordinates of all polygon points
 
     Parameters
     ----------
@@ -104,7 +106,8 @@ def point_in_polygon_bitmap(
             cudf.Series([0, -8, 6.0]), # y coordinates of 3 query points
             cudf.Series([1, 2]), # unique id of two polygons
             cudf.Series([5, 10]), # position of last vertex in each polygon
-            # polygon coordinates, x and y
+            # polygon coordinates, x and y. Note [-10, -10] and [0, 0] repeat
+            # the start/end coordinate of the two polygons.
             cudf.Series([-10.0, 5, 5, -10, -10, 0, 10, 10, 0, 0]),
             cudf.Series([-10.0, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
         )
