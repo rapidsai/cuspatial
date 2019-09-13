@@ -43,9 +43,9 @@ def _find_min_bits(val):
     return minbits
 
 
-def pip_bitmap_column_to_boolean_array(polygon_bitmap_column):
+def pip_bitmap_column_to_binary_array(polygon_bitmap_column):
     """Convert the bitmap output of cpp_point_in_polygon_bitmap
-    to an array of Bools.
+    to an array of 0s and 1s.
     """
     minbits = _find_min_bits(polygon_bitmap_column.max())
     binary_maps = apply_binarize(polygon_bitmap_column.data.mem, minbits)

@@ -136,26 +136,26 @@ def test_dataset():
     assert_eq(result, expected)
 
 
-def test_pip_bitmap_column_to_boolean_array():
+def test_pip_bitmap_column_to_binary_array():
     col = cudf.Series([0, 13, 3, 9])._column
-    got = gis_utils.pip_bitmap_column_to_boolean_array(col)
+    got = gis_utils.pip_bitmap_column_to_binary_array(col)
     expected = np.array(
         [[0, 0, 0, 0], [1, 1, 0, 1], [0, 0, 1, 1], [1, 0, 0, 1]], dtype="int8"
     )
     np.testing.assert_array_equal(got.copy_to_host(), expected)
 
     col = cudf.Series([])._column
-    got = gis_utils.pip_bitmap_column_to_boolean_array(col)
+    got = gis_utils.pip_bitmap_column_to_binary_array(col)
     expected = np.array([], dtype="int8").reshape(0, 0)
     np.testing.assert_array_equal(got.copy_to_host(), expected)
 
     col = cudf.Series([None, None])._column
-    got = gis_utils.pip_bitmap_column_to_boolean_array(col)
+    got = gis_utils.pip_bitmap_column_to_binary_array(col)
     expected = np.array([], dtype="int8").reshape(2, 0)
     np.testing.assert_array_equal(got.copy_to_host(), expected)
 
     col = cudf.Series([238, 13, 29594])._column
-    got = gis_utils.pip_bitmap_column_to_boolean_array(col)
+    got = gis_utils.pip_bitmap_column_to_binary_array(col)
     expected = np.array(
         [
             [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0],
