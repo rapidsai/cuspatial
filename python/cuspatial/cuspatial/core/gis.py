@@ -135,15 +135,15 @@ def point_in_polygon_bitmap(
         polygons_y,
     )
 
-    result_bools = gis_utils.pip_bitmap_column_to_boolean_array(bitmap_result)
-    result_df = DataFrame.from_gpu_matrix(result_bools)._apply_support_method(
-        "astype", dtype="bool"
-    )
-    result_df.columns = [
+    result_binary = gis_utils.pip_bitmap_column_to_boolean_array(bitmap_result)
+    result_bools = DataFrame.from_gpu_matrix(
+        result_binary
+    )._apply_support_method("astype", dtype="bool")
+    result_bools.columns = [
         f"in_polygon_{x}" for x in list(reversed(polygon_ids))
     ]
-    result_df = result_df[list(reversed(result_df.columns))]
-    return result_df
+    result_bools = result_bools[list(reversed(result_bools.columns))]
+    return result_bools
 
 
 def window_points(left, bottom, right, top, x, y):
