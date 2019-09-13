@@ -75,12 +75,12 @@ def lonlat_to_xy_km_coordinates(
 
 
 def point_in_polygon_bitmap(
-        x_points,
-        y_points,
-        polygon_ids,
-        polygon_end_indices,
-        polygons_x,
-        polygons_y,
+    x_points,
+    y_points,
+    polygon_ids,
+    polygon_end_indices,
+    polygons_x,
+    polygons_y,
 ):
     """ Compute from a set of points and a set of polygons which points fall
     within which polygons.
@@ -110,7 +110,8 @@ def point_in_polygon_bitmap(
             cudf.Series([-10.0, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
         )
         # The result of point_in_polygon_bitmap is a DataFrame of Boolean
-        # values indicating whether each point (rows) falls within each polygon (columns).
+        # values indicating whether each point (rows) falls within
+        # each polygon (columns).
         print(result)
                    in_polygon_0  in_polygon_1
         0          True          True
@@ -136,9 +137,11 @@ def point_in_polygon_bitmap(
 
     result_bools = gis_utils.pip_bitmap_column_to_boolean_array(bitmap_result)
     result_df = DataFrame.from_gpu_matrix(result_bools)._apply_support_method(
-        "astype", dtype='bool')
-    result_df.columns = [f'in_polygon_{x}' for x in
-                         range(len(polygon_ids) - 1, -1, -1)]
+        "astype", dtype="bool"
+    )
+    result_df.columns = [
+        f"in_polygon_{x}" for x in list(reversed(polygon_ids))
+    ]
     result_df = result_df[list(reversed(result_df.columns))]
     return result_df
 

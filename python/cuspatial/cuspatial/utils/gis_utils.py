@@ -25,7 +25,7 @@ def binarize(in_col, out, width):
 
 
 def apply_binarize(in_col, width):
-    out = rmm.device_array((in_col.size, width), dtype='int8')
+    out = rmm.device_array((in_col.size, width), dtype="int8")
     if out.size > 0:
         out[:] = 0
         binarize.forall(out.size)(in_col, out, width)
