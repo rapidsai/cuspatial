@@ -7,6 +7,7 @@ import cudf
 from cudf.tests.utils import assert_eq
 
 import cuspatial
+from cuspatial.utils import gis_utils
 
 
 def test_missing_0():
@@ -90,7 +91,8 @@ def test_zeros():
         cudf.Series([0.0]),
         cudf.Series([0.0]),
     )
-    assert_eq(cudf.Series(result), cudf.Series([0]).astype("int32"))
+    expected = cudf.DataFrame({'in_polygon_0': False})
+    assert_eq(result, expected)
 
 
 def test_one_point_in():
@@ -102,7 +104,8 @@ def test_one_point_in():
         cudf.Series([-1, 0, 1]),
         cudf.Series([-1, 1, -1]),
     )
-    assert_eq(cudf.Series(result), cudf.Series([1]).astype("int32"))
+    expected = cudf.DataFrame({'in_polygon_0': True})
+    assert_eq(result, expected)
 
 
 def test_one_point_out():
@@ -114,7 +117,8 @@ def test_one_point_out():
         cudf.Series([-1, 0, 1]),
         cudf.Series([-1, 1, -1]),
     )
-    assert_eq(cudf.Series(result), cudf.Series([0]).astype("int32"))
+    expected = cudf.DataFrame({'in_polygon_0': False})
+    assert_eq(result, expected)
 
 
 def test_dataset():
@@ -126,7 +130,38 @@ def test_dataset():
         cudf.Series([-10.0, 5, 5, -10, -10, 0, 10, 10, 0, 0]),
         cudf.Series([-10.0, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
     )
-    # The result of point_in_polygon_bitmap is a binary bitmap of
-    # coordinates inside of the polgyon.
-    print(np.binary_repr(result.data.to_array()[0], width=2))
-    assert_eq(cudf.Series(result), cudf.Series([3, 1, 2]).astype("int32"))
+    expected = cudf.DataFrame()
+    expected['in_polygon_0'] = [True, True, False]
+    expected['in_polygon_1'] = [True, False, True]
+    assert_eq(result, expected)
+
+
+def test_pip_bitmap_column_to_boolean_array():
+    col = cudf.Series([0, 13, 3, 9])._column
+    got = gis_utils.pip_bitmap_column_to_boolean_array(col)
+    expected = np.array(
+        [[0, 0, 0, 0],
+         [1, 1, 0, 1],
+         [0, 0, 1, 1],
+         [1, 0, 0, 1]],
+        dtype='int8')
+    np.testing.assert_array_equal(got.copy_to_host(), expected)
+
+    col = cudf.Series([])._column
+    got = gis_utils.pip_bitmap_column_to_boolean_array(col)
+    expected = np.array([], dtype='int8').reshape(0, 0)
+    np.testing.assert_array_equal(got.copy_to_host(), expected)
+
+    col = cudf.Series([None, None])._column
+    got = gis_utils.pip_bitmap_column_to_boolean_array(col)
+    expected = np.array([], dtype='int8').reshape(2, 0)
+    np.testing.assert_array_equal(got.copy_to_host(), expected)
+
+    col = cudf.Series([238, 13, 29594])._column
+    got = gis_utils.pip_bitmap_column_to_boolean_array(col)
+    expected = np.array(
+        [[0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1],
+         [1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0]],
+        dtype='int8')
+    np.testing.assert_array_equal(got.copy_to_host(), expected)
