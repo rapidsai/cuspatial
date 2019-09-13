@@ -113,7 +113,7 @@ def point_in_polygon_bitmap(
         # values indicating whether each point (rows) falls within
         # each polygon (columns).
         print(result)
-                   in_polygon_0  in_polygon_1
+                   in_polygon_1  in_polygon_2
         0          True          True
         1          True         False
         2         False          True
