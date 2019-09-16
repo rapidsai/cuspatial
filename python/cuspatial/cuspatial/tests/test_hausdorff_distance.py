@@ -69,13 +69,7 @@ def test_count_two():
         cudf.Series([2, 2]),
     )
     assert_eq(
-        distance,
-        cudf.DataFrame(
-            {
-                0: [0, 1.4142135623730951],
-                1: [1, 0.0],
-            }
-        ),
+        distance, cudf.DataFrame({0: [0, 1.4142135623730951], 1: [1, 0.0]})
     )
 
 
