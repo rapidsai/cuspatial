@@ -13,7 +13,7 @@ def test_zeros():
     distance = cuspatial.directed_hausdorff_distance(
         cudf.Series([0.0]), cudf.Series([0.0]), cudf.Series([1])
     )
-    assert cudf.Series(distance)[0] == 0
+    assert_eq(distance, cudf.DataFrame([0.0]))
 
 
 def test_empty_x():
@@ -52,15 +52,14 @@ def test_large():
     cnt = cudf.Series(py_cnt)
     distance = cuspatial.directed_hausdorff_distance(pnt_x, pnt_y, cnt)
 
-    expect = np.array([0, 1, 1, 0])
-    assert np.allclose(distance.data.to_array(), expect)
+    assert_eq(distance, cudf.DataFrame({0: [0, 1.0], 1: [1.0, 0]}))
 
 
 def test_count_one():
     distance = cuspatial.directed_hausdorff_distance(
         cudf.Series([0.0, 0.0]), cudf.Series([0.0, 1.0]), cudf.Series([1, 1])
     )
-    assert_eq(cudf.Series([0, 1.0, 1, 0]), cudf.Series(distance))
+    assert_eq(distance, cudf.DataFrame({0: [0, 1.0], 1: [1.0, 0]}))
 
 
 def test_count_two():
@@ -69,9 +68,14 @@ def test_count_two():
         cudf.Series([0.0, -1.0, 1.0, -1.0]),
         cudf.Series([2, 2]),
     )
-    print(cudf.Series(distance))
     assert_eq(
-        cudf.Series([0.0, 1, 1.4142135623730951, 0]), cudf.Series(distance)
+        distance,
+        cudf.DataFrame(
+            {
+                0: [0, 1.4142135623730951],
+                1: [1, 0.0],
+            }
+        ),
     )
 
 
@@ -91,20 +95,17 @@ def test_values():
     cnt = cudf.Series(py_cnt)
     distance = cuspatial.directed_hausdorff_distance(pnt_x, pnt_y, cnt)
 
-    expect = np.array(
-        [
-            0,
-            4.12310563,
-            4.0,
-            3.60555128,
-            0.0,
-            1.41421356,
-            4.47213595,
-            1.41421356,
-            0.0,
-        ]
+    print(distance)
+    assert_eq(
+        distance,
+        cudf.DataFrame(
+            {
+                0: [0, 3.605551, 4.472136],
+                1: [4.123106, 0.0, 1.414214],
+                2: [4.0, 1.414214, 0.0],
+            }
+        ),
     )
-    assert np.allclose(distance.data.to_array(), expect)
 
 
 # def test_count_1():
