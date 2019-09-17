@@ -17,6 +17,7 @@
 - PR #44 Update all demos with Python API
 - PR #45 Improve documentation in haversine and point in polygon
 - PR #61 Point-in-polygon DataFrame output
+- PR #64 Use YYMMDD tag in nightly build
 
 ## Bug Fixes
 
