@@ -10,6 +10,8 @@ from cuspatial._lib.soa_readers import (
     cpp_read_uint_soa,
 )
 
+from cuspatial.utils.traj_utils import its_timestamp_int64_to_datetime64ms
+
 
 def read_uint(filename):
     """Reads a binary file of uint32s into a `cudf.Series`
@@ -20,7 +22,8 @@ def read_uint(filename):
 def read_its_timestamps(filename):
     """Reads a binary formatted its_timestamp file into a Series of uint64s.
     """
-    return Series(cpp_read_ts_soa(filename))
+    its_ts = cpp_read_ts_soa(filename)
+    return its_timestamp_int64_to_datetime64ms(its_ts.data.mem)
 
 
 def read_points_lonlat(filename):
