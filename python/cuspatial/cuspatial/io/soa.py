@@ -9,7 +9,6 @@ from cuspatial._lib.soa_readers import (
     cpp_read_ts_soa,
     cpp_read_uint_soa,
 )
-
 from cuspatial.utils.traj_utils import its_timestamp_int64_to_datetime64ms
 
 
