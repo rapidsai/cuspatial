@@ -16,7 +16,7 @@
 
 #include <vector>
 #include <gtest/gtest.h>
-
+#include <random>
 #include <tests/utilities/cudf_test_fixtures.h>
 #include <tests/utilities/column_wrapper.cuh>
 
