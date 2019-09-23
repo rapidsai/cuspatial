@@ -22,7 +22,7 @@ ids = cuspatial.read_uint(data_dir + "locust.objectid")
 ts = cuspatial.read_its_timestamps(data_dir + "locust.time")
 
 # examine binary representatons
-ts_0 = ts.astype('int64').data.to_array()[0]
+ts_0 = ts.astype("int64").data.to_array()[0]
 out1 = format(ts_0, "016x")
 print(out1)
 out2 = format(ts_0, "064b")
