@@ -16,6 +16,8 @@
 - PR #41 Python and Cython style cleanup, pre-commit hook
 - PR #44 Update all demos with Python API
 - PR #45 Improve documentation in haversine and point in polygon
+- PR #61 Point-in-polygon DataFrame output
+- PR #64 Use YYMMDD tag in nightly build
 
 ## Bug Fixes
 
@@ -25,4 +27,4 @@
 - PR #24 `cuspatial::derive_trajectories()` test improvements and bug fixes
 - PR #33 `cuspatial::trajectory_distance_and_speed()` test improvements and bug fixes
 - PR #49 Docstring for haversine and argument ordering was backwards
-
+- PR #66 added missing header in tests
