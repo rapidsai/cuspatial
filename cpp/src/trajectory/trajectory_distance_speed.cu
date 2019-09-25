@@ -18,17 +18,13 @@
 #include <utilities/cuda_utils.hpp>
 #include <type_traits>
 #include <thrust/device_vector.h>
-#include <sys/time.h>
-#include <time.h>
 
-#include <utility/utility.hpp>
-#include <utility/trajectory_thrust.cuh>
 #include <cuspatial/trajectory.hpp>
 
 namespace {
-/**
- * @brief CUDA kernel for computing distances and speeds of trajectories
- *
+
+/*
+ * CUDA kernel for computing distances and speeds of trajectories
  */
 template <typename T>
 __global__ void distspeed_kernel(gdf_size_type num_traj,
@@ -40,36 +36,36 @@ __global__ void distspeed_kernel(gdf_size_type num_traj,
                                  T* const __restrict__ dis,
                                  T* const __restrict__ sp)
 {
-    int pid=blockIdx.x*blockDim.x+threadIdx.x;  
-    if(pid>=num_traj) return;
-    int bp=(pid==0)?0:pos[pid-1];
+    int pid = blockIdx.x * blockDim.x + threadIdx.x;  
+    if (pid >= num_traj) return;
+    int bp= (pid == 0) ? 0 : pos[pid - 1];
     int ep=pos[pid]-1;
 
     cudf::timestamp b = time[bp];
     cudf::timestamp e = time[ep];
     cudf::timestamp td = e - b;
 
-    if(length[pid]<2)
+    if(length[pid] < 2)
     {
-        dis[pid]=-2;
-        sp[pid]=-2;
+        dis[pid] = -2;
+        sp[pid] = -2;
     }
     else if(unwrap(td)==0)
     {
-        dis[pid]=-3;
-        sp[pid]=-3;
+        dis[pid] = -3;
+        sp[pid] = -3;
     }
     else
     {
-        float ds=0;
-        for(int i=0;i<length[pid]-1;i++)
+        T ds=0;
+        for(int i = 0; i < length[pid]-1; i++)
         {
-            float dt=(x[bp+i+1]-x[bp+i])*(x[bp+i+1]-x[bp+i]);
-            dt+=(y[bp+i+1]-y[bp+i])*(y[bp+i+1]-y[bp+i]);
-            ds+=sqrt(dt);
+            T dx = (x[bp + i + 1] - x[bp + i]);
+            T dy = (y[bp + i + 1] - y[bp + i]);
+            ds+=sqrt(dx*dx + dy*dy);
         }
-        dis[pid]=ds*1000; //km to m
-        sp[pid]=ds*1000000/unwrap(td); // m/s
+        dis[pid] = ds * 1000; //km to m
+        sp[pid] = ds * 1000000 / unwrap(td); // m/s
     }
 }
 
@@ -92,7 +88,7 @@ struct distspeed_functor
         T* temp{nullptr};
         RMM_TRY( RMM_ALLOC(&temp, length.size * sizeof(T), 0) );
         gdf_column_view_augmented(&dist, temp, nullptr, length.size, x.dtype, 0,
-                                  gdf_dtype_extra_info{TIME_UNIT_NONE}, "dist");
+                                  gdf_dtype_extra_info{TIME_UNIT_NONE}, "distance");
 
         gdf_column speed{};
         RMM_TRY( RMM_ALLOC(&temp, length.size * sizeof(T), 0) );
@@ -146,18 +142,21 @@ trajectory_distance_and_speed(const gdf_column& x, const gdf_column& y,
     CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
                  timestamp.data != nullptr && length.data != nullptr &&
                  offset.data != nullptr,
-                 "Null data pointer");
+                 "Null input data");
     CUDF_EXPECTS(x.size == y.size && x.size == timestamp.size &&
                  length.size == offset.size, "Data size mismatch");
-
-    //future versions might allow x/y/ts/pos/len have null_count>0, which might be useful for taking query results as inputs 
+    CUDF_EXPECTS(timestamp.dtype == GDF_TIMESTAMP,
+                 "Invalid timestamp datatype");
+    CUDF_EXPECTS(length.dtype == GDF_INT32,
+                 "Invalid trajectory length datatype");
+    CUDF_EXPECTS(offset.dtype == GDF_INT32,
+                 "Invalid trajectory offset datatype");
     CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
                  timestamp.null_count == 0 &&
                  length.null_count == 0 && offset.null_count == 0,
-                 "Null data support not implemented");
-
+                 "NULL support unimplemented");
     CUDF_EXPECTS(x.size >= offset.size ,
-                 "one trajectory must have at least one point");
+                 "Insufficient trajectory data");
 
     std::pair<gdf_column,gdf_column> res_pair = 
         cudf::type_dispatcher(x.dtype, distspeed_functor(), x, y,
