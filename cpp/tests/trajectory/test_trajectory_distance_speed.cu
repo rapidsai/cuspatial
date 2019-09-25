@@ -22,11 +22,6 @@
 
 #include <cuspatial/trajectory.hpp> 
 
-MATCHER_P(FloatNearPointwise, tol, "Out of range") {
-    return (std::get<0>(arg) > std::get<1>(arg) - tol &&
-            std::get<0>(arg) < std::get<1>(arg) + tol) ;
-}
-
 struct TrajectoryDistanceSpeed : public GdfTest 
 {
 };
@@ -118,10 +113,11 @@ TEST_F(TrajectoryDistanceSpeed, DistanceAndSpeedThree)
     std::vector<double> gpu_speed(distance_speed.second.size);
     cudaMemcpy(gpu_speed.data(), distance_speed.second.data,
                distance_speed.second.size * sizeof(double), cudaMemcpyDefault);
-    EXPECT_THAT(gpu_distance, testing::Pointwise(FloatNearPointwise(1e-9),
-                distance));
-    EXPECT_THAT(gpu_speed, testing::Pointwise(FloatNearPointwise(1e-9),
-                speed));
+    for (size_t i = 0; i < gpu_distance.size(); i++) {
+        
+        EXPECT_NEAR(gpu_distance[i], distance[i], 1e-9);
+        EXPECT_NEAR(gpu_speed[i], speed[i], 1e-9);
+    }
 }
 
 TEST_F(TrajectoryDistanceSpeed, BadData)
