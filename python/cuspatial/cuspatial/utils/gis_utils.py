@@ -32,21 +32,9 @@ def apply_binarize(in_col, width):
     return out
 
 
-def _find_min_bits(val):
-    if val == 0:
-        return 1
-
-    minbits = 0
-    while val > 0:
-        val = operator.rshift(val, 1)
-        minbits += 1
-    return minbits
-
-
-def pip_bitmap_column_to_binary_array(polygon_bitmap_column):
+def pip_bitmap_column_to_binary_array(polygon_bitmap_column, width):
     """Convert the bitmap output of cpp_point_in_polygon_bitmap
     to an array of 0s and 1s.
     """
-    minbits = _find_min_bits(polygon_bitmap_column.max())
-    binary_maps = apply_binarize(polygon_bitmap_column.data.mem, minbits)
+    binary_maps = apply_binarize(polygon_bitmap_column.data.mem, width)
     return binary_maps

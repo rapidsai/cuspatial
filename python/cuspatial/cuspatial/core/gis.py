@@ -135,7 +135,9 @@ def point_in_polygon_bitmap(
         polygons_y,
     )
 
-    result_binary = gis_utils.pip_bitmap_column_to_binary_array(bitmap_result)
+    result_binary = gis_utils.pip_bitmap_column_to_binary_array(
+        polygon_bitmap_column=bitmap_result, width=len(polygon_ids)
+    )
     result_bools = DataFrame.from_gpu_matrix(
         result_binary
     )._apply_support_method("astype", dtype="bool")
