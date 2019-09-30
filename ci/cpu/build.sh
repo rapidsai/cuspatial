@@ -26,6 +26,11 @@ export GIT_DESCRIBE_TAG=`git describe --abbrev=0 --tags`
 export GIT_DESCRIBE_NUMBER=`git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count`
 export MINOR_VERSION=`echo $GIT_DESCRIBE_TAG | grep -o -E '([0-9]+\.[0-9]+)'`
 
+# If nightly build, append current YYMMDD to version
+if [[ "$BUILD_MODE" = "branch" && "$SOURCE_BRANCH" = branch-* ]] ; then
+  export VERSION_SUFFIX=`date +%y%m%d`
+fi
+
 ################################################################################
 # SETUP - Check environment
 ################################################################################
@@ -67,4 +72,3 @@ source ci/cpu/cuspatial/build_cuspatial.sh
 
 logger "Upload conda pkgs..."
 source ci/cpu/upload_anaconda.sh
-
