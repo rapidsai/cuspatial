@@ -1,6 +1,7 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
 import numpy as np
+import pytest
 
 import cudf
 from cudf.tests.utils import assert_eq
@@ -327,3 +328,39 @@ def test_distance_and_speed_single_trajectory():
         cudf.Series([1973230.625, 2270853.0, 4242640.5]),
         check_names=False,
     )  # fast!
+
+
+#########################
+# Measure that distance and speed are calculatd
+# correctly using each of the four cudf datetime
+# resolutions.
+#
+# Compute the distance and speed of two trajectories,
+# each over 0.001 km in 1 second.
+# If datetime type conversion wasn't supported, speed
+# would be different for each test.
+#########################
+@pytest.mark.parametrize(
+    "timestamp_type",
+    [
+        ("datetime64[ns]", 1000000000),
+        ("datetime64[us]", 1000000),
+        ("datetime64[ms]", 1000),
+        ("datetime64[s]", 1),
+    ],
+)
+def test_distance_and_speed_timestamp_types(timestamp_type):
+    result = cuspatial.distance_and_speed(
+        cudf.Series([0.0, 0.001, 0.0, 0.0]),  # 1 meter in x
+        cudf.Series([0.0, 0.0, 0.0, 0.001]),  # 1 meter in y
+        cudf.Series([0, timestamp_type[1], 0, timestamp_type[1]]).astype(
+            timestamp_type[0]
+        ),
+        cudf.Series([2, 2]),
+        cudf.Series([2, 4]),
+    )
+    assert_eq(
+        result,
+        cudf.DataFrame({"meters": [1.0, 1.0], "speed": [1.0, 1.0]}),
+        check_names=False,
+    )
