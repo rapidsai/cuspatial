@@ -9,6 +9,7 @@ from cuspatial._lib.spatial import (
     cpp_point_in_polygon_bitmap,
     cpp_spatial_window_points,
 )
+from cuspatial.utils import gis_utils
 
 
 def directed_hausdorff_distance(x, y, count):
@@ -30,15 +31,15 @@ def directed_hausdorff_distance(x, y, count):
     return cpp_directed_hausdorff_distance(x, y, count)
 
 
-def haversine_distance(p1_lat, p1_lon, p2_lat, p2_lon):
-    """ Compute the haversine distances (km) between an arbitrary list of
-    lat/lon pairs.
+def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
+    """ Compute the haversine distances between an arbitrary list of lon/lat
+    pairs
 
     params
-    p1_lat: latitude of first set of coords
     p1_lon: longitude of first set of coords
-    p2_lat: latitude of second set of coords
+    p1_lat: latitude of first set of coords
     p2_lon: longitude of second set of coords
+    p2_lat: latitude of second set of coords
 
     Parameters
     ----------
@@ -47,7 +48,7 @@ def haversine_distance(p1_lat, p1_lon, p2_lat, p2_lon):
     returns
     Series: distance between all pairs of lat/lon coords
     """
-    return cpp_haversine_distance(p1_lat, p1_lon, p2_lat, p2_lon)
+    return cpp_haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat)
 
 
 def lonlat_to_xy_km_coordinates(
@@ -108,24 +109,24 @@ def point_in_polygon_bitmap(
             cudf.Series([-10.0, 5, 5, -10, -10, 0, 10, 10, 0, 0]),
             cudf.Series([-10.0, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
         )
-        # The result of point_in_polygon_bitmap is a binary bitmap of
-        # coordinates inside of the polgyon.
-        print(cudf.Series(result))
-        0    3
-        1    1
-        2    2
-        dtype: int32
-        # The result 3, 1, 2 represents the position of each point in each
-        # polygon in integer binary format:
-        # Point 0: (0, 0) falls in both polygons: 0b11 (3)
-        # Point 1: (-8, -8) falls in the first polygon: 0b01 (1)
-        # Point 2: (6.0, 6.0) falls in the second polygon: 0b10 (2)
+        # The result of point_in_polygon_bitmap is a DataFrame of Boolean
+        # values indicating whether each point (rows) falls within
+        # each polygon (columns).
+        print(result)
+                   in_polygon_1  in_polygon_2
+        0          True          True
+        1          True         False
+        2         False          True
+
+        # Point 0: (0, 0) falls in both polygons
+        # Point 1: (-8, -8) falls in the first polygon
+        # Point 2: (6.0, 6.0) falls in the second polygon
 
     returns
-    Series: one int32 for each point. This int32 is a binary bitmap specifying
-    true or false for each of 32 polygons.
+    DataFrame: a DataFrame of Boolean values indicating whether each point
+    falls within each polygon.
     """
-    return cpp_point_in_polygon_bitmap(
+    bitmap_result = cpp_point_in_polygon_bitmap(
         x_points,
         y_points,
         polygon_ids,
@@ -133,6 +134,16 @@ def point_in_polygon_bitmap(
         polygons_x,
         polygons_y,
     )
+
+    result_binary = gis_utils.pip_bitmap_column_to_binary_array(bitmap_result)
+    result_bools = DataFrame.from_gpu_matrix(
+        result_binary
+    )._apply_support_method("astype", dtype="bool")
+    result_bools.columns = [
+        f"in_polygon_{x}" for x in list(reversed(polygon_ids))
+    ]
+    result_bools = result_bools[list(reversed(result_bools.columns))]
+    return result_bools
 
 
 def window_points(left, bottom, right, top, x, y):
