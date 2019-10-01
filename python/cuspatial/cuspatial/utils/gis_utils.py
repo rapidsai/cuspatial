@@ -3,7 +3,7 @@ import operator
 
 from numba import cuda
 
-from librmm_cffi import librmm as rmm
+import rmm
 
 
 @cuda.jit
