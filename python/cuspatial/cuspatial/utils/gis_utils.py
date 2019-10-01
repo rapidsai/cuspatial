@@ -1,9 +1,8 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 import operator
 
-from numba import cuda
-
 import rmm
+from numba import cuda
 
 
 @cuda.jit
