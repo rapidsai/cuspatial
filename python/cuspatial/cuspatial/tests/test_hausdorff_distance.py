@@ -89,7 +89,6 @@ def test_values():
     cnt = cudf.Series(py_cnt)
     distance = cuspatial.directed_hausdorff_distance(pnt_x, pnt_y, cnt)
 
-    print(distance)
     assert_eq(
         distance,
         cudf.DataFrame(
