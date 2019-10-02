@@ -13,8 +13,8 @@ from cuspatial.utils import gis_utils
 
 
 def directed_hausdorff_distance(x, y, count):
-    """ Compute the directed Hausdorff distances between any groupings
-    of trajectories.
+    """ Compute the directed Hausdorff distances between all pairs of
+    trajectories.
 
     params
     x: x coordinates
