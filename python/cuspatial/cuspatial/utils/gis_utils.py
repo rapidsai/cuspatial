@@ -1,9 +1,8 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 import operator
 
+import rmm
 from numba import cuda
-
-from librmm_cffi import librmm as rmm
 
 
 @cuda.jit
