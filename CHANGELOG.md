@@ -20,6 +20,7 @@
 - PR #61 Point-in-polygon DataFrame output
 - PR #59 Improve detail of point in polygon docs
 - PR #64 Use YYMMDD tag in nightly build
+- PR #68 Use YYMMDD tag in nightly build of cuspatial python 
 
 ## Bug Fixes
 
