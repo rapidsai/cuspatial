@@ -40,3 +40,4 @@
 - PR #33 `cuspatial::trajectory_distance_and_speed()` test improvements and bug fixes
 - PR #49 Docstring for haversine and argument ordering was backwards
 - PR #66 added missing header in tests
+- PR #70 Require width parameterization of bitmap to binary conversion
