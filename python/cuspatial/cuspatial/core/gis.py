@@ -13,22 +13,60 @@ from cuspatial.utils import gis_utils
 
 
 def directed_hausdorff_distance(x, y, count):
-    """ Compute the directed Hausdorff distances between any groupings
-    of polygons.
+    """ Compute the directed Hausdorff distances between all pairs of
+    trajectories.
 
     params
     x: x coordinates
     y: y coordinates
-    count: size of each polygon
+    count: size of each trajectory
 
     Parameters
     ----------
     {params}
 
-    returns
-    DataFrame: 'min', 'max' columns of Hausdorff distances for each polygon
+    Example
+    -------
+    The directed Hausdorff distance from one trajectory to another is the
+    greatest of all the distances from a point in the first trajectory to
+    the closest point in the second.
+    [Wikipedia](https://en.wikipedia.org/wiki/Hausdorff_distance)
+
+    Consider a pair of lines on a grid.
+
+     |
+     o
+    -oxx-
+     |
+    o = [[0, 0], [0, 1]]
+    x = [[1, 0], [2, 0]]
+
+    o[0] is the closest point in o to x. The distance from o[0] to the farthest
+    point in x = 2.
+    x[0] is the closest point in x to o. The distance from x[0] to the farthest
+    point in o = 1.414.
+
+        result = cuspatial.directed_hausdorff_distance(
+            cudf.Series([0, 1, 0, 0]),
+            cudf.Series([0, 0, 1, 2]),
+            cudf.Series([2, 2,]),
+        )
+        print(result)
+             0         1
+        0  0.0  1.414214
+        1  2.0  0.000000
+
+    Returns
+    -------
+    DataFrame: The pairwise directed distance matrix with one row and one
+    column per input trajectory; the value at row i, column j represents the
+    hausdorff distance from trajectory i to trajectory j.
     """
-    return cpp_directed_hausdorff_distance(x, y, count)
+    result = cpp_directed_hausdorff_distance(x, y, count)
+    dim = len(count)
+    return DataFrame.from_gpu_matrix(
+        result.data.to_gpu_array().reshape(dim, dim)
+    )
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):

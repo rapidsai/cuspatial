@@ -41,7 +41,7 @@ def spatial_bounds(
     >>>    cudf.Series([2, 5]),
     >>> )
     >>> print(result)
-    x1   y1   x2   y2
+        x1   y1   x2   y2
     0  0.0  0.0  2.0  2.0
     1  1.0  1.0  3.0  3.0
     """
