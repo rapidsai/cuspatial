@@ -17,6 +17,7 @@
 - PR #44 Update all demos with Python API
 - PR #45 Improve documentation in haversine and point in polygon
 - PR #50 Validate that distance and speed work with all datetimes
+- PR #58 Hausdorff distance returns a DataFrame, and better docs.
 - PR #61 Point-in-polygon DataFrame output
 - PR #59 Improve detail of point in polygon docs
 - PR #64 Use YYMMDD tag in nightly build
