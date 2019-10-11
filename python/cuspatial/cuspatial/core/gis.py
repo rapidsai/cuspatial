@@ -13,22 +13,60 @@ from cuspatial.utils import gis_utils
 
 
 def directed_hausdorff_distance(x, y, count):
-    """ Compute the directed Hausdorff distances between any groupings
-    of polygons.
+    """ Compute the directed Hausdorff distances between all pairs of
+    trajectories.
 
     params
     x: x coordinates
     y: y coordinates
-    count: size of each polygon
+    count: size of each trajectory
 
     Parameters
     ----------
     {params}
 
-    returns
-    DataFrame: 'min', 'max' columns of Hausdorff distances for each polygon
+    Example
+    -------
+    The directed Hausdorff distance from one trajectory to another is the
+    greatest of all the distances from a point in the first trajectory to
+    the closest point in the second.
+    [Wikipedia](https://en.wikipedia.org/wiki/Hausdorff_distance)
+
+    Consider a pair of lines on a grid.
+
+     |
+     o
+    -oxx-
+     |
+    o = [[0, 0], [0, 1]]
+    x = [[1, 0], [2, 0]]
+
+    o[0] is the closest point in o to x. The distance from o[0] to the farthest
+    point in x = 2.
+    x[0] is the closest point in x to o. The distance from x[0] to the farthest
+    point in o = 1.414.
+
+        result = cuspatial.directed_hausdorff_distance(
+            cudf.Series([0, 1, 0, 0]),
+            cudf.Series([0, 0, 1, 2]),
+            cudf.Series([2, 2,]),
+        )
+        print(result)
+             0         1
+        0  0.0  1.414214
+        1  2.0  0.000000
+
+    Returns
+    -------
+    DataFrame: The pairwise directed distance matrix with one row and one
+    column per input trajectory; the value at row i, column j represents the
+    hausdorff distance from trajectory i to trajectory j.
     """
-    return cpp_directed_hausdorff_distance(x, y, count)
+    result = cpp_directed_hausdorff_distance(x, y, count)
+    dim = len(count)
+    return DataFrame.from_gpu_matrix(
+        result.data.to_gpu_array().reshape(dim, dim)
+    )
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
@@ -83,7 +121,9 @@ def point_in_polygon_bitmap(
     polygons_y,
 ):
     """ Compute from a set of points and a set of polygons which points fall
-    within which polygons.
+    within which polygons. Note that `polygons_(x,y)` must be specified as
+    closed polygons: the first and last coordinate of each polygon must be
+    the same.
 
     params
     x_points: x coordinates of points to test
@@ -91,8 +131,8 @@ def point_in_polygon_bitmap(
     polygon_ids: a unique integer id for each polygon
     polygon_end_indices: the (n+1)th vertex of the final coordinate of each
                          polygon in the next parameters
-    polygons_x: x coordinates of all polygon points
-    polygons_y: y coordinates of all polygon points
+    polygons_x: x closed coordinates of all polygon points
+    polygons_y: y closed coordinates of all polygon points
 
     Parameters
     ----------
@@ -105,7 +145,8 @@ def point_in_polygon_bitmap(
             cudf.Series([0, -8, 6.0]), # y coordinates of 3 query points
             cudf.Series([1, 2]), # unique id of two polygons
             cudf.Series([5, 10]), # position of last vertex in each polygon
-            # polygon coordinates, x and y
+            # polygon coordinates, x and y. Note [-10, -10] and [0, 0] repeat
+            # the start/end coordinate of the two polygons.
             cudf.Series([-10.0, 5, 5, -10, -10, 0, 10, 10, 0, 0]),
             cudf.Series([-10.0, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
         )
@@ -135,7 +176,9 @@ def point_in_polygon_bitmap(
         polygons_y,
     )
 
-    result_binary = gis_utils.pip_bitmap_column_to_binary_array(bitmap_result)
+    result_binary = gis_utils.pip_bitmap_column_to_binary_array(
+        polygon_bitmap_column=bitmap_result, width=len(polygon_ids)
+    )
     result_bools = DataFrame.from_gpu_matrix(
         result_binary
     )._apply_support_method("astype", dtype="bool")

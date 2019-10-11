@@ -16,7 +16,13 @@
 - PR #41 Python and Cython style cleanup, pre-commit hook
 - PR #44 Update all demos with Python API
 - PR #45 Improve documentation in haversine and point in polygon
+- PR #50 Validate that distance and speed work with all datetimes
+- PR #58 Hausdorff distance returns a DataFrame, and better docs.
 - PR #61 Point-in-polygon DataFrame output
+- PR #59 Improve detail of point in polygon docs
+- PR #64 Use YYMMDD tag in nightly build
+- PR #68 Use YYMMDD tag in nightly build of cuspatial python
+- PR #82 Added update-version.sh
 - PR #67 Correctly refactor its timestamps into datetime64[ms]
 
 ## Bug Fixes
@@ -25,5 +31,7 @@
 - PR #17 Update issue / PR templates
 - PR #23 Fix cudf Cython imports
 - PR #24 `cuspatial::derive_trajectories()` test improvements and bug fixes
+- PR #33 `cuspatial::trajectory_distance_and_speed()` test improvements and bug fixes
 - PR #49 Docstring for haversine and argument ordering was backwards
 - PR #66 added missing header in tests
+- PR #70 Require width parameterization of bitmap to binary conversion
