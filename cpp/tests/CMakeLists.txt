@@ -29,7 +29,7 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial cudf
                           cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES} NVCategory
-                          NVStrings nvrtc)
+                          NVStrings nvrtc gdal)
     if(USE_NVTX)
         target_link_libraries(${CMAKE_TEST_NAME} ${NVTX_LIBRARY})
     endif(USE_NVTX)
@@ -80,6 +80,7 @@ include_directories("${CMAKE_BINARY_DIR}/include"
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
                  "${CMAKE_BINARY_DIR}/lib"
                  "${GTEST_LIBRARY_DIR}"
+                 "${CONDA_LINK_DIRS}"
                  "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}"
                  "${CUSPATIAL_LIBRARY}"
@@ -103,6 +104,10 @@ set(POINT_IN_POLYGON_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_test.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_compare.cu")
 ConfigureTest(POINT_IN_POLYGON_TEST "${POINT_IN_POLYGON_TEST_SRC}")
+
+set(SHAPEFILE_POYGON_READER_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/io/read_shapefile_polygon_test.cu")
+ConfigureTest(SHAPEFILE_POLYGON_READER_TEST "${SHAPEFILE_POYGON_READER_TEST_SRC}")
 
 set(SPATIAL_WINDOW_POINT_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/query/spatial_window_test_toy.cu")

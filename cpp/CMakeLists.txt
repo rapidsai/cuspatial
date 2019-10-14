@@ -88,7 +88,7 @@ set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--disable-new-dtags")
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,--disable-new-dtags")
 
 option(BUILD_TESTS "Configure CMake to build tests"
-       OFF)
+       ON)
 
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 
@@ -195,6 +195,7 @@ if (NVSTRINGS_INCLUDE AND NVTEXT_LIBRARY)
     set_target_properties(NVText PROPERTIES IMPORTED_LOCATION ${NVTEXT_LIBRARY})
 endif (NVSTRINGS_INCLUDE AND NVTEXT_LIBRARY)
 
+
 ###################################################################################################
 # - add gtest -------------------------------------------------------------------------------------
 
@@ -252,6 +253,7 @@ include_directories("${CMAKE_BINARY_DIR}/include"
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
                  "${CMAKE_BINARY_DIR}/lib"
                  "${FLATBUFFERS_LIBRARY_DIR}"
+                 "${CONDA_LINK_DIRS}"
                  "${GTEST_LIBRARY_DIR}"
                  "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}")
@@ -260,6 +262,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial SHARED
+	    src/io/shp/polygon_shp_reader.cu
             src/io/soa/polygon_soa_reader.cu
             src/io/soa/point_soa_reader.cu
             src/io/soa/uint32_soa_reader.cu
@@ -293,7 +296,7 @@ endif(USE_NVTX)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(cuspatial cudf rmm cudart cuda nvrtc)
+target_link_libraries(cuspatial cudf rmm cudart cuda nvrtc gdal)
 
 
 ###################################################################################################
