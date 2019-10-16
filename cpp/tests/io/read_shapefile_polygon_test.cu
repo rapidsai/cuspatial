@@ -36,7 +36,7 @@ TEST_F(ReadShapefilePolygonTest, readshapefilepolygontest)
     std::string shape_filename=std::string("/home/jianting/cuspatial_data/its_4326_roi.shp"); 
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);
-    cuspatial::read_polygon_shp(shape_filename.c_str(),&f_pos,&r_pos,&poly_x,&poly_y);
+    cuspatial::read_polygon_shapefile(shape_filename.c_str(),&f_pos,&r_pos,&poly_x,&poly_y);
     std::cout<<"# of polygons= "<<f_pos.size<<std::endl;
     std::cout<<"# of rings= "<<r_pos.size<<std::endl;
     std::cout<<"# of vertices= "<<poly_x.size<<std::endl;

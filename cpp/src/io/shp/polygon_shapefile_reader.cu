@@ -88,7 +88,6 @@ namespace
               }
         }
         else if (eFlatType == wkbPolygon)
-        {
             LinearRingFromPolygon(*((OGRPolygon *) poShape),aPointX, aPointY, aPartSize );
 	else
            CUDF_EXPECTS(0, "must be polygonal geometry." );    
@@ -133,7 +132,10 @@ namespace
         g_len_v.push_back(num_feature);
         return num_feature;
     }
+}
 
+namespace cuspatial
+{
     /*
     * Read a polygon shapefile and fill in a polygons structure
     * ToDo: read associated relational data into a CUDF Table 
@@ -144,7 +146,7 @@ namespace
     * Note: only the first layer is read - shapefiles have only one layer in GDALDataset model    
     */
 
-    void read_shapefile(const char *filename, struct polygons<double>& pm)
+    void polygon_from_shapefile(const char *filename, struct polygons<double>& pm)
     {
         vector<int> g_len_v,f_len_v,r_len_v;
         vector<double> x_v, y_v;
@@ -175,16 +177,13 @@ namespace
         memcpy((void *)(pm.x),(void *)(x_v.data()),pm.num_vertex*sizeof(double));
         memcpy((void *)(pm.y),(void *)(y_v.data()),pm.num_vertex*sizeof(double));      
     }
-}
 
-namespace cuspatial
-{
     /*
     * read polygon data from file in ESRI Shapefile format; data type of vertices is fixed to double (GDF_FLOAT64)
     * see shp_readers.hpp
     */
 
-    void read_polygon_shp(const char *filename,
+    void read_polygon_shapefile(const char *filename,
                       gdf_column* ply_fpos, gdf_column* ply_rpos,
                       gdf_column* ply_x, gdf_column* ply_y)
     {
@@ -195,7 +194,7 @@ namespace cuspatial
 
         struct polygons<double> pm;
         memset(&pm,0,sizeof(pm));
-        read_shapefile(filename,pm);
+        polygon_from_shapefile(filename,pm);
         if (pm.num_feature <=0) return;
 
         cudaStream_t stream{0};
