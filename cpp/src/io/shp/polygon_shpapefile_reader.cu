@@ -40,15 +40,15 @@ namespace cuspatial
     void VertexFromLinearRing(OGRLinearRing const& poRing, std::vector<double> &aPointX, 
  	std::vector<double> &aPointY,std::vector<int> &aPartSize )
     {
-        int nCount = poRing->getNumPoints();
+        int nCount = poRing.getNumPoints();
         int nNewCount = aPointX.size() + nCount;
  
         aPointX.reserve( nNewCount );
         aPointY.reserve( nNewCount );
         for (int i = nCount - 1; i >= 0; i-- )
         {
-            aPointX.push_back( poRing->getX(i));
-             aPointY.push_back( poRing->getY(i));
+            aPointX.push_back( poRing.getX(i));
+             aPointY.push_back( poRing.getY(i));
         }
         aPartSize.push_back( nCount );	
     }
@@ -57,15 +57,15 @@ namespace cuspatial
       * Read a Polygon (could be with multiple rings) into x/y/size vectors
      */
 
-    void LinearRingFromPolygon(OGRPolygon *poPolygon, std::vector<double> &aPointX, 
+    void LinearRingFromPolygon(OGRPolygon const & poPolygon, std::vector<double> &aPointX, 
   	std::vector<double> &aPointY,std::vector<int> &aPartSize )
     {
         
-        VertexFromLinearRing( poPolygon->getExteriorRing(),
+        VertexFromLinearRing( poPolygon.getExteriorRing(),
                                         aPointX, aPointY, aPartSize );
   
-        for(int i = 0; i < poPolygon->getNumInteriorRings(); i++ )
-            VertexFromLinearRing( poPolygon->getInteriorRing(i),
+        for(int i = 0; i < poPolygon.getNumInteriorRings(); i++ )
+            VertexFromLinearRing( poPolygon.getInteriorRing(i),
                                             aPointX, aPointY, aPartSize );
     }
  
@@ -73,7 +73,7 @@ namespace cuspatial
       * Read a Geometry (could be MultiPolygon/GeometryCollection) into x/y/size vectors
      */
 
-    void PolygonFromGeometry(OGRGeometry *poShape, std::vector<double> &aPointX, 
+    void PolygonFromGeometry(OGRGeometry const *poShape, std::vector<double> &aPointX, 
  	std::vector<double> &aPointY,std::vector<int> &aPartSize )
     {
         OGRwkbGeometryType eFlatType = wkbFlatten(poShape->getGeometryType());
@@ -88,7 +88,8 @@ namespace cuspatial
               }
         }
         else if (eFlatType == wkbPolygon)
-            LinearRingFromPolygon((OGRPolygon *) poShape,aPointX, aPointY, aPartSize );
+        {
+            LinearRingFromPolygon(*((OGRPolygon *) poShape),aPointX, aPointY, aPartSize );
 	else
            CUDF_EXPECTS(0, "must be polygonal geometry." );    
     }
@@ -123,7 +124,7 @@ namespace cuspatial
  	    PolygonFromGeometry( poShape, aPointX, aPointY, aPartSize );
  		
             x_v.insert(x_v.end(),aPointX.begin(),aPointX.end());
- 	    y_v.insert(y_v.end(),	aPointY.begin(),aPointY.end());
+ 	    y_v.insert(y_v.end(),aPointY.begin(),aPointY.end());
             r_len_v.insert(r_len_v.end(),aPartSize.begin(),aPartSize.end());
  	    f_len_v.push_back(aPartSize.size());
  	    OGR_F_Destroy( hFeat );

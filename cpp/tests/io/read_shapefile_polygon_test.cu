@@ -22,7 +22,7 @@
 #include <utilities/error_utils.hpp>
 #include <tests/utilities/cudf_test_utils.cuh>
 #include <tests/utilities/cudf_test_fixtures.h>
-#include <cuspatial/shp_readers.hpp>
+#include <cuspatial/shapefile_readers.hpp>
 #include <utility/utility.hpp> 
 
 struct ReadShapefilePolygonTest : public GdfTest 

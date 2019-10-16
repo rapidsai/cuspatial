@@ -196,6 +196,19 @@ if (NVSTRINGS_INCLUDE AND NVTEXT_LIBRARY)
 endif (NVSTRINGS_INCLUDE AND NVTEXT_LIBRARY)
 
 
+# - find gdal -------------------------------------------------------------------------------------
+
+find_package(GDAL REQUIRED)
+
+message(STATUS "GDAL: GDAL_LIBRARIES set to ${GDAL_LIBRARIES}")
+message(STATUS "GDAL: GDAL_INCLUDE_DIRS set to ${GDAL_INCLUDE_DIRS}")
+
+if(GDAL_FOUND)
+    message(STATUS "GDAL found in ${GDAL_INCLUDE_DIRS}")
+else()
+    message(FATAL_ERROR "GDAL not found, please check your settings.")
+endif(GDAL_FOUND)
+
 ###################################################################################################
 # - add gtest -------------------------------------------------------------------------------------
 
@@ -239,7 +252,8 @@ endif(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
-       		        "${CMAKE_SOURCE_DIR}/thirdparty/cub"
+       		    "${CMAKE_SOURCE_DIR}/thirdparty/cub"
+       		    "${GDAL_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
                     "${CUDF_SRC_INCLUDE}"
                     "${CUDF_INCLUDE}"
@@ -253,6 +267,7 @@ include_directories("${CMAKE_BINARY_DIR}/include"
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
                  "${CMAKE_BINARY_DIR}/lib"
                  "${FLATBUFFERS_LIBRARY_DIR}"
+                 "${GDAL_LIBRARIES}"
                  "${CONDA_LINK_DIRS}"
                  "${GTEST_LIBRARY_DIR}"
                  "${RMM_LIBRARY}"
@@ -262,7 +277,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial SHARED
-	    src/io/shp/polygon_shp_reader.cu
+	    src/io/shp/polygon_shapefile_reader.cu
             src/io/soa/polygon_soa_reader.cu
             src/io/soa/point_soa_reader.cu
             src/io/soa/uint32_soa_reader.cu
