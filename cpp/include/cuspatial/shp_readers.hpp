@@ -21,7 +21,7 @@ typedef struct gdf_column_ gdf_column; // forward declaration
 namespace cuspatial {
 
 /**
- * @brief read polygon data from file in SoA format
+ * @brief read polygon data from an ESRI Shapefile.
  *
  * data type of vertices is fixed to double (GDF_FLOAT64)
  *
