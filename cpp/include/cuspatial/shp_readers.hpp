@@ -35,7 +35,7 @@ namespace cuspatial {
  *
  * @note: x/y can be lon/lat.
 **/
-void read_polygon_shp(const char *filename,
+void read_polygon_shapefile(const char *filename,
                       gdf_column* ply_fpos, gdf_column* ply_rpos,
                       gdf_column* ply_x, gdf_column* ply_y);
 
