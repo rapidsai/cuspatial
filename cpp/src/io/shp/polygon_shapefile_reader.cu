@@ -23,12 +23,10 @@
 #include <cudf/types.h>
 #include <cudf/legacy/column.hpp>
 #include <utilities/error_utils.hpp>
-#include <cuspatial/shp_readers.hpp>
+#include <cuspatial/shapefile_readers.hpp>
 #include <utility/utility.hpp>
 
 #include <ogrsf_frmts.h>
-
-using namespace std;
 
 namespace
 {
@@ -106,8 +104,8 @@ namespace
      
     */
     
-    int ReadLayer(const OGRLayerH layer,vector<int>& g_len_v,vector<int>&f_len_v,vector<int>&r_len_v,
-         vector<double>&x_v, vector<double>&y_v)
+    int ReadLayer(const OGRLayerH layer,std::vector<int>& g_len_v,std::vector<int>&f_len_v,
+         std::vector<int>& r_len_v,std::vector<double>& x_v, std::vector<double>& y_v)         
     {
         int num_feature=0;
         OGR_L_ResetReading(layer );
@@ -148,8 +146,8 @@ namespace cuspatial
 
     void polygon_from_shapefile(const char *filename, struct polygons<double>& pm)
     {
-        vector<int> g_len_v,f_len_v,r_len_v;
-        vector<double> x_v, y_v;
+        std::vector<int> g_len_v,f_len_v,r_len_v;
+        std::vector<double> x_v, y_v;
         GDALAllRegister();
         
         GDALDatasetH hDS = GDALOpenEx( filename, GDAL_OF_VECTOR, NULL, NULL, NULL );
