@@ -37,7 +37,7 @@ namespace cuspatial
      * Read a LinearRing into x/y/size vectors
     */
  
-    void VertexFromLinearRing(OGRLinearRing *poRing, std::vector<double> &aPointX, 
+    void VertexFromLinearRing(OGRLinearRing const& poRing, std::vector<double> &aPointX, 
  	std::vector<double> &aPointY,std::vector<int> &aPartSize )
     {
         int nCount = poRing->getNumPoints();
