@@ -30,7 +30,7 @@
 
 using namespace std;
 
-namespace cuspatial
+namespace
 {
  
     /*
@@ -61,11 +61,11 @@ namespace cuspatial
   	std::vector<double> &aPointY,std::vector<int> &aPartSize )
     {
         
-        VertexFromLinearRing( poPolygon.getExteriorRing(),
+        VertexFromLinearRing( *(poPolygon.getExteriorRing()),
                                         aPointX, aPointY, aPartSize );
   
         for(int i = 0; i < poPolygon.getNumInteriorRings(); i++ )
-            VertexFromLinearRing( poPolygon.getInteriorRing(i),
+            VertexFromLinearRing( *(poPolygon.getInteriorRing(i)),
                                             aPointX, aPointY, aPartSize );
     }
  
@@ -175,7 +175,10 @@ namespace cuspatial
         memcpy((void *)(pm.x),(void *)(x_v.data()),pm.num_vertex*sizeof(double));
         memcpy((void *)(pm.y),(void *)(y_v.data()),pm.num_vertex*sizeof(double));      
     }
- 
+}
+
+namespace cuspatial
+{
     /*
     * read polygon data from file in ESRI Shapefile format; data type of vertices is fixed to double (GDF_FLOAT64)
     * see shp_readers.hpp
