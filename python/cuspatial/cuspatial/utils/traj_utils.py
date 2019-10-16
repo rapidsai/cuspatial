@@ -4,7 +4,7 @@ import numpy as np
 from numba import cuda
 
 import cudf
-from librmm_cffi import librmm as rmm
+import rmm
 
 
 def get_ts_struct(ts):
