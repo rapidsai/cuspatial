@@ -1,0 +1,48 @@
+# Copyright (c) 2018, NVIDIA CORPORATION.
+
+{% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
+{% set minor_version =  version.split('.')[0] + '.' + version.split('.')[1] %}
+{% set git_revision_count=environ.get('GIT_DESCRIBE_NUMBER', 0) %}
+{% set cuda_version='.'.join(environ.get('CUDA_VERSION', '9.2').split('.')[:2]) %}
+
+package:
+  name: libcuspatial
+  version: {{ version }}
+
+source:
+  path: ../../..
+
+build:
+  number: {{ git_revision_count }}
+  string: cuda{{ cuda_version }}_{{ git_revision_count }}
+  script_env:
+    - CC
+    - CXX
+    - CUDAHOSTCXX
+    - PARALLEL_LEVEL
+    - CUDF_HOME
+    - VERSION_SUFFIX
+  run_exports:
+    - {{ pin_subpackage("libcuspatial", max_pin="x.x") }}
+
+requirements:
+  build:
+    - cmake >=3.12.4
+  host:
+    - libcudf {{ minor_version }}.*
+    - cudatoolkit {{ cuda_version }}.*
+  run:
+    - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
+    - libcudf {{ minor_version }}.*
+
+test:
+  commands:
+    - test -f $PREFIX/lib/libcuspatial.so
+
+about:
+  home: http://rapids.ai/
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: libcuspatial library
+
