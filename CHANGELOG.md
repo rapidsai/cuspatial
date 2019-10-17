@@ -35,6 +35,7 @@
 
 ## Bug Fixes
 
+- PR #89 Fix cudf header include
 - PR #16 `cuspatial::subset_trajectory_id()` test improvements and bug fixes
 - PR #17 Update issue / PR templates
 - PR #23 Fix cudf Cython imports
