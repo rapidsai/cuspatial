@@ -6,6 +6,8 @@
 
 ## Bug Fixes
 
+- PR #90 Basic 0.11 initial support
+
 
 # cuSpatial 0.10.0 (Date TBD)
 
