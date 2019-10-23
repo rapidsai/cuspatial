@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-#include <cudf/column/column.hpp>
+#include <vector>
+#include <cudf/column/column_view.hpp>
 #include <cudf/column/column_factories.hpp>
 
 namespace cuspatial {
+
+
 
 /*
  * Return 
@@ -25,21 +28,22 @@ namespace cuspatial {
  */
 cudf::column_view quadtree_on_points(cudf::column_view x,cudf::column_view y)
 {
-    std::vector<column_view> children;
-    std::unique_ptr<column> key_col=cudf::make_numeric_column(data_type{INT32}, 0);
-    children->push_back(key_col->view());
-    std::unique_ptr<column> indicator_col=cudf::make_numeric_column(data_type{BOOL8}, 0);
-    children->push_back(indicator_col->view());
-    std::unique_ptr<column> fpos_col=cudf::make_numeric_column(data_type{INT32}, 0);
-    children->push_back(fpos_col->view());
-    std::unique_ptr<column> len_col=cudf::make_numeric_column(data_type{INT32}, 0);
-    children->push_back(len_col->view());
+    std::vector<cudf::column_view> children;
+    std::unique_ptr<cudf::column> key_col=cudf::make_numeric_column(cudf::data_type{cudf::INT32}, 0);
+    children.push_back(key_col->view());
+    std::unique_ptr<cudf::column> indicator_col=cudf::make_numeric_column(cudf::data_type{cudf::BOOL8}, 0);
+    children.push_back(indicator_col->view());
+    std::unique_ptr<cudf::column> fpos_col=cudf::make_numeric_column(cudf::data_type{cudf::INT32}, 0);
+    children.push_back(fpos_col->view());
+    std::unique_ptr<cudf::column> len_col=cudf::make_numeric_column(cudf::data_type{cudf::INT32}, 0);
+    children.push_back(len_col->view());
     
-    children->push_back(x);
-    children->push_back(y);
+    children.push_back(x);
+    children.push_back(y);
     
     cudf::column_view ret=cudf::column_view(
     	cudf::data_type{cudf::EMPTY},0,nullptr,nullptr,cudf::UNKNOWN_NULL_COUNT,0,children);
+    return ret;
 }
 
 }// namespace cuspatial
