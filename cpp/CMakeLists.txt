@@ -87,8 +87,7 @@ endif(CMAKE_BUILD_TYPE MATCHES Debug)
 set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--disable-new-dtags")
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,--disable-new-dtags")
 
-option(BUILD_TESTS "Configure CMake to build tests"
-       ON)
+option(BUILD_TESTS "Configure CMake to build tests" OFF)
 
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 

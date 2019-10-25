@@ -6,6 +6,8 @@
 
 ## Bug Fixes
 
+- PR #94 Add legacy headers as cudf migrates
+
 
 # cuSpatial 0.10.0 (Date TBD)
 
