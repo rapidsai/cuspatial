@@ -17,8 +17,8 @@
 #include <vector>
 #include <gtest/gtest.h>
 
-#include <tests/utilities/cudf_test_fixtures.h>
-#include <tests/utilities/column_wrapper.cuh>
+#include <tests/utilities/legacy/cudf_test_fixtures.h>
+#include <tests/utilities/legacy/column_wrapper.cuh>
 
 #include <cuspatial/trajectory.hpp> 
 
@@ -55,11 +55,11 @@ TEST_F(TrajectoryDistanceSpeed, DistanceAndSpeedThree)
 
     std::vector<double> x(sequence.begin(), sequence.end());
     wrapper<double> in_x{x};
-        //[&](gdf_index_type i) { return static_cast<double>(sequence[i]); });
+        //[&](cudf::size_type i) { return static_cast<double>(sequence[i]); });
     wrapper<double> in_y(column_size,
-        [&](gdf_index_type i) { return static_cast<double>(sequence[i]); });
+        [&](cudf::size_type i) { return static_cast<double>(sequence[i]); });
     wrapper<cudf::timestamp> in_ts(column_size,
-        [&](gdf_index_type i) {
+        [&](cudf::size_type i) {
             return static_cast<cudf::timestamp>(ms_vector[sequence[i]]);
         });
 
