@@ -28,9 +28,9 @@
 #include <utility/utility.hpp>
 #include <utility/trajectory_thrust.cuh>
 
-#include <tests/utilities/column_wrapper.cuh>
-#include <tests/utilities/cudf_test_utils.cuh>
-#include <tests/utilities/cudf_test_fixtures.h>
+#include <tests/utilities/legacy/column_wrapper.cuh>
+#include <tests/utilities/legacy/cudf_test_utils.cuh>
+#include <tests/utilities/legacy/cudf_test_fixtures.h>
 
 struct TrajectoryDeriveToy : public GdfTest 
 {
