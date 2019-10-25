@@ -22,7 +22,7 @@
 
 #include <gtest/gtest.h>
 #include <thrust/device_vector.h>
-#include <utilities/error_utils.hpp>
+#include <utilities/legacy/error_utils.hpp>
 #include <cuspatial/coordinate_transform.hpp>
 #include <utility/utility.hpp>
 
