@@ -22,7 +22,7 @@
 #include <rmm/thrust_rmm_allocator.h>
 #include <cudf/types.h>
 #include <cudf/legacy/column.hpp>
-#include <utilities/error_utils.hpp>
+#include <utilities/legacy/error_utils.hpp>
 #include <cuspatial/soa_readers.hpp>
 #include <utility/utility.hpp>
 
