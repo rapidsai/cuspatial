@@ -28,8 +28,8 @@
 #include <utility/utility.hpp> 
 #include "hausdorff_util.h" 
 
-#include <tests/utilities/cudf_test_utils.cuh>
-#include <tests/utilities/cudf_test_fixtures.h>
+#include <tests/utilities/legacy/cudf_test_utils.cuh>
+#include <tests/utilities/legacy/cudf_test_fixtures.h>
 
 struct HausdorffCompare : public GdfTest 
 {

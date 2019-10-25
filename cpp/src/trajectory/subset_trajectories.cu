@@ -15,7 +15,7 @@
  */
 
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
-#include <cudf/copying.hpp>
+#include <cudf/legacy/copying.hpp>
 #include <utilities/cuda_utils.hpp>
 #include <type_traits>
 #include <thrust/device_vector.h>

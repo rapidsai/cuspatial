@@ -26,9 +26,9 @@
 #include <cuspatial/coordinate_transform.hpp>
 #include <utility/utility.hpp>
 
-#include <tests/utilities/column_wrapper.cuh>
-#include <tests/utilities/cudf_test_utils.cuh>
-#include <tests/utilities/cudf_test_fixtures.h>
+#include <tests/utilities/legacy/column_wrapper.cuh>
+#include <tests/utilities/legacy/cudf_test_utils.cuh>
+#include <tests/utilities/legacy/cudf_test_fixtures.h>
 
 struct CoordinateTransToy : public GdfTest 
 {
