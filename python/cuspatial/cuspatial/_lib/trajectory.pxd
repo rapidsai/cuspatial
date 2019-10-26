@@ -10,7 +10,7 @@ from libcpp.pair cimport pair
 
 cdef extern from "trajectory.hpp" namespace "cuspatial" nogil:
 
-    cdef gdf_size_type derive_trajectories(
+    cdef size_type derive_trajectories(
         const gdf_column& coor_x,
         const gdf_column& coor_y,
         const gdf_column& pid,
@@ -39,7 +39,7 @@ cdef extern from "trajectory.hpp" namespace "cuspatial" nogil:
         gdf_column& bbox_y2
     ) except +
 
-    cdef gdf_size_type subset_trajectory_id(
+    cdef size_type subset_trajectory_id(
         const gdf_column& id,
         const gdf_column& in_x,
         const gdf_column& in_y,
