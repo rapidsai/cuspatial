@@ -2,7 +2,7 @@
 #include <string.h>
 #include <math.h>
 #include <cuda_runtime.h>
-#include <utilities/error_utils.hpp>
+#include <utilities/legacy/error_utils.hpp>
 #include <rmm/rmm.h>
 #include <cudf/types.h>
 #include <cudf/legacy/column.hpp>

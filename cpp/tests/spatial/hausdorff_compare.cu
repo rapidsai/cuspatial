@@ -21,7 +21,7 @@
 #include <iostream>
 
 #include <gtest/gtest.h>
-#include <utilities/error_utils.hpp>
+#include <utilities/legacy/error_utils.hpp>
 
 #include <cuspatial/soa_readers.hpp> 
 #include <cuspatial/hausdorff.hpp> 
