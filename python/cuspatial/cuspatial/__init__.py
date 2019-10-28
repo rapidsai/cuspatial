@@ -18,6 +18,4 @@ from .io.soa import (
     read_polygon,
     read_uint,
 )
-from .io.shapefile import (
-    read_polygon_shapefile,
-)
+from .io.shapefile import read_polygon_shapefile
