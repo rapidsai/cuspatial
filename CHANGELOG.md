@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #94 Python bindings for shapefile reader
+
 ## Improvements
 
 ## Bug Fixes
