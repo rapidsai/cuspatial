@@ -171,7 +171,7 @@ namespace cuspatial
         CUDF_EXPECTS(pm.ring_length != nullptr, "NULL ring_length pointer");
         CUDF_EXPECTS(pm.x!=nullptr&&pm.y!=nullptr,"expecting polygon x/y arrays are not nullptr");
 	      
-        memcpy((void *)(pm.group_length),(void *)(g_len_v.data()),pm.num_group*sizeof(uint32_t));
+        std::copy_n(pm.group_length, pm.num_group, g_len_v.begin());
         memcpy((void *)(pm.feature_length),(void *)(f_len_v.data()),pm.num_feature*sizeof(uint32_t));
         memcpy((void *)(pm.ring_length),(void *)(r_len_v.data()),pm.num_ring*sizeof(uint32_t));
         memcpy((void *)(pm.x),(void *)(x_v.data()),pm.num_vertex*sizeof(double));
