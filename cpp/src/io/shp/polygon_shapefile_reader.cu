@@ -37,7 +37,7 @@ namespace
     */
  
     void VertexFromLinearRing(OGRLinearRing const& poRing, std::vector<double> &aPointX, 
- 	std::vector<double> &aPointY,std::vector<int> &aPartSize )
+        std::vector<double> &aPointY,std::vector<int> &aPartSize )
     {
         int nCount = poRing.getNumPoints();
         int nNewCount = aPointX.size() + nCount;
@@ -47,7 +47,7 @@ namespace
         for (int i = nCount - 1; i >= 0; i-- )
         {
             aPointX.push_back( poRing.getX(i));
-             aPointY.push_back( poRing.getY(i));
+            aPointY.push_back( poRing.getY(i));
         }
         aPartSize.push_back( nCount );	
     }
@@ -57,7 +57,7 @@ namespace
      */
 
     void LinearRingFromPolygon(OGRPolygon const & poPolygon, std::vector<double> &aPointX, 
-  	std::vector<double> &aPointY,std::vector<int> &aPartSize )
+        std::vector<double> &aPointY,std::vector<int> &aPartSize )
     {
         
         VertexFromLinearRing( *(poPolygon.getExteriorRing()),
@@ -84,7 +84,7 @@ namespace
             {
                 OGRGeometry *poGeom=poGC->getGeometryRef(i);
                 PolygonFromGeometry(poGeom,aPointX, aPointY, aPartSize );
-              }
+            }
         }
         else if (eFlatType == wkbPolygon)
             LinearRingFromPolygon(*((OGRPolygon *) poShape),aPointX, aPointY, aPartSize );

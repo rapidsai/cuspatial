@@ -249,8 +249,8 @@ endif(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
-       		    "${CMAKE_SOURCE_DIR}/thirdparty/cub"
-       		    "${GDAL_INCLUDE_DIR}"
+                    "${CMAKE_SOURCE_DIR}/thirdparty/cub"
+                    "${GDAL_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
                     "${CUDF_SRC_INCLUDE}"
                     "${CUDF_INCLUDE}"
@@ -274,7 +274,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial SHARED
-	    src/io/shp/polygon_shapefile_reader.cu
+            src/io/shp/polygon_shapefile_reader.cu
             src/io/soa/polygon_soa_reader.cu
             src/io/soa/point_soa_reader.cu
             src/io/soa/uint32_soa_reader.cu
