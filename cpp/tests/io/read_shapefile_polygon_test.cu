@@ -29,11 +29,11 @@ struct ReadShapefilePolygonTest : public GdfTest
 {
 };   
 
-#if  1 // disable until data files are checked in
+#if  0 // disable until data files are checked in
 TEST_F(ReadShapefilePolygonTest, readshapefilepolygontest)
 {
     gdf_column f_pos,r_pos,poly_x,poly_y;
-    std::string shape_filename=std::string("/home/jianting/cuspatial_data/its_4326_roi.shp"); 
+    std::string shape_filename=std::string("its_4326_roi.shp"); 
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);
     cuspatial::read_polygon_shapefile(shape_filename.c_str(),&f_pos,&r_pos,&poly_x,&poly_y);
