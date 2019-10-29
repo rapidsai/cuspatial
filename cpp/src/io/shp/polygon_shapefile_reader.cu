@@ -166,7 +166,9 @@ namespace cuspatial
         pm.ring_length=new uint32_t[ pm.num_ring];
         pm.x=new double [pm.num_vertex];
         pm.y=new double [pm.num_vertex];
-        CUDF_EXPECTS(pm.group_length!=nullptr&&pm.feature_length!=nullptr&&pm.ring_length!=nullptr,"expecting p_{g,f,r}_len are non-zeron");		    
+        CUDF_EXPECTS(pm.group_length !=nullptr, "NULL group_length pointer");
+        CUDF_EXPECTS(pm.feature_length != nullptr, "NULL feature_length pointer");
+        CUDF_EXPECTS(pm.ring_length != nullptr, "NULL ring_length pointer");
         CUDF_EXPECTS(pm.x!=nullptr&&pm.y!=nullptr,"expecting polygon x/y arrays are not nullptr");
 	      
         memcpy((void *)(pm.group_length),(void *)(g_len_v.data()),pm.num_group*sizeof(uint32_t));
