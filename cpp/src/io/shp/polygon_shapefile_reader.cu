@@ -144,7 +144,7 @@ namespace cuspatial
     * Note: only the first layer is read - shapefiles have only one layer in GDALDataset model    
     */
 
-    void polygon_from_shapefile(const char *filename, struct polygons<double>& pm)
+    void polygon_from_shapefile(const char *filename, polygons<double>& pm)
     {
         std::vector<int> g_len_v,f_len_v,r_len_v;
         std::vector<double> x_v, y_v;
