@@ -31,6 +31,7 @@ requirements:
   host:
     - libcudf {{ minor_version }}.*
     - cudatoolkit {{ cuda_version }}.*
+    - gdal 2.4.*
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
     - libcudf {{ minor_version }}.*
