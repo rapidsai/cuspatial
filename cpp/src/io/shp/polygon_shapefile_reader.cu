@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <algorithm>
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
 #include <rmm/thrust_rmm_allocator.h>
@@ -61,18 +62,18 @@ namespace
         
         VertexFromLinearRing( *(poPolygon.getExteriorRing()),
                                         aPointX, aPointY, aPartSize );
-  
+
         for(int i = 0; i < poPolygon.getNumInteriorRings(); i++ )
             VertexFromLinearRing( *(poPolygon.getInteriorRing(i)),
                                             aPointX, aPointY, aPartSize );
     }
- 
+
      /*
       * Read a Geometry (could be MultiPolygon/GeometryCollection) into x/y/size vectors
      */
 
     void PolygonFromGeometry(OGRGeometry const *poShape, std::vector<double> &aPointX, 
- 	std::vector<double> &aPointY,std::vector<int> &aPartSize )
+        std::vector<double> &aPointY,std::vector<int> &aPartSize )
     {
         OGRwkbGeometryType eFlatType = wkbFlatten(poShape->getGeometryType());
 
@@ -87,10 +88,10 @@ namespace
         }
         else if (eFlatType == wkbPolygon)
             LinearRingFromPolygon(*((OGRPolygon *) poShape),aPointX, aPointY, aPartSize );
-	else
+        else
            CUDF_EXPECTS(0, "must be polygonal geometry." );    
     }
- 
+
      /*
      * Read a GDALDataset layer (corresponding to a shapefile) into five vectors
      *
@@ -118,14 +119,14 @@ namespace
             std::vector<double> aPointX;
             std::vector<double> aPointY;
             std::vector<int> aPartSize;
- 	    PolygonFromGeometry( poShape, aPointX, aPointY, aPartSize );
- 		
+            PolygonFromGeometry( poShape, aPointX, aPointY, aPartSize );
+
             x_v.insert(x_v.end(),aPointX.begin(),aPointX.end());
- 	    y_v.insert(y_v.end(),aPointY.begin(),aPointY.end());
+            y_v.insert(y_v.end(),aPointY.begin(),aPointY.end());
             r_len_v.insert(r_len_v.end(),aPartSize.begin(),aPartSize.end());
- 	    f_len_v.push_back(aPartSize.size());
- 	    OGR_F_Destroy( hFeat );
- 	    num_feature++;
+            f_len_v.push_back(aPartSize.size());
+            OGR_F_Destroy( hFeat );
+            num_feature++;
         }
         g_len_v.push_back(num_feature);
         return num_feature;
@@ -149,7 +150,7 @@ namespace cuspatial
         std::vector<int> g_len_v,f_len_v,r_len_v;
         std::vector<double> x_v, y_v;
         GDALAllRegister();
-        
+
         GDALDatasetH hDS = GDALOpenEx( filename, GDAL_OF_VECTOR, NULL, NULL, NULL );
         CUDF_EXPECTS(hDS!=NULL,"Failed to open ESRI Shapefile dataset");		    
         OGRLayerH hLayer = GDALDatasetGetLayer( hDS,0 );
@@ -170,12 +171,12 @@ namespace cuspatial
         CUDF_EXPECTS(pm.feature_length != nullptr, "NULL feature_length pointer");
         CUDF_EXPECTS(pm.ring_length != nullptr, "NULL ring_length pointer");
         CUDF_EXPECTS(pm.x != nullptr && pm.y != nullptr, "NULL polygon x/y data pointer");
-	      
-        std::copy_n(pm.group_length, pm.num_group, g_len_v.begin());
-        memcpy((void *)(pm.feature_length),(void *)(f_len_v.data()),pm.num_feature*sizeof(uint32_t));
-        memcpy((void *)(pm.ring_length),(void *)(r_len_v.data()),pm.num_ring*sizeof(uint32_t));
-        memcpy((void *)(pm.x),(void *)(x_v.data()),pm.num_vertex*sizeof(double));
-        memcpy((void *)(pm.y),(void *)(y_v.data()),pm.num_vertex*sizeof(double));      
+
+        std::copy_n(g_len_v.begin(),pm.num_group,pm.group_length);
+        std::copy_n(f_len_v.begin(),pm.num_feature,pm.feature_length);
+        std::copy_n(r_len_v.begin(),pm.num_ring,pm.ring_length);
+        std::copy_n(x_v.begin(),pm.num_vertex,pm.x);
+        std::copy_n(y_v.begin(),pm.num_vertex,pm.y);
     }
 
     /*
@@ -192,7 +193,7 @@ namespace cuspatial
         memset(ply_x,0,sizeof(gdf_column));
         memset(ply_y,0,sizeof(gdf_column));
 
-        struct polygons<double> pm;
+        polygons<double> pm;
         memset(&pm,0,sizeof(pm));
         polygon_from_shapefile(filename,pm);
         if (pm.num_feature <=0) return;

@@ -202,11 +202,9 @@ find_package(GDAL REQUIRED)
 message(STATUS "GDAL: GDAL_LIBRARIES set to ${GDAL_LIBRARIES}")
 message(STATUS "GDAL: GDAL_INCLUDE_DIRS set to ${GDAL_INCLUDE_DIRS}")
 
-if(GDAL_FOUND)
-    message(STATUS "GDAL found in ${GDAL_INCLUDE_DIRS}")
-else()
+if(NOT GDAL_FOUND)
     message(FATAL_ERROR "GDAL not found, please check your settings.")
-endif(GDAL_FOUND)
+endif(NOT GDAL_FOUND)
 
 ###################################################################################################
 # - add gtest -------------------------------------------------------------------------------------
