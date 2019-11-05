@@ -28,16 +28,16 @@
 
 struct ReadShapefilePolygonTest : public GdfTest 
 {
-   bool check_polygon(const cuspatial::polygons<double>&  h_polygon,const gdf_column& f_pos,
-       const gdf_column& r_pos,const gdf_column& poly_x,const gdf_column& poly_y)
+    bool check_polygon(const cuspatial::polygons<double>&  h_polygon,const gdf_column& f_pos,
+        const gdf_column& r_pos,const gdf_column& poly_x,const gdf_column& poly_y)
    {
-   	CUDF_EXPECTS(h_polygon.num_feature==(uint32_t)f_pos.size,"number of features/polygons mismatches expected");
-   	CUDF_EXPECTS(h_polygon.num_ring==(uint32_t)r_pos.size,"number of rings mismatches expected");
-   	CUDF_EXPECTS(h_polygon.num_vertex==(uint32_t)poly_x.size,"number of vertices mismatches expected");
-   	CUDF_EXPECTS(poly_x.size==poly_y.size,"numbers of vertices in x and y vectors mismatch");
+        CUDF_EXPECTS(h_polygon.num_feature==(uint32_t)f_pos.size,"number of features/polygons mismatches expected");
+        CUDF_EXPECTS(h_polygon.num_ring==(uint32_t)r_pos.size,"number of rings mismatches expected");
+        CUDF_EXPECTS(h_polygon.num_vertex==(uint32_t)poly_x.size,"number of vertices mismatches expected");
+        CUDF_EXPECTS(poly_x.size==poly_y.size,"numbers of vertices in x and y vectors mismatch");
 
         std::vector<uint32_t> h_f_pos(h_polygon.num_feature);
-    	EXPECT_EQ(cudaMemcpy(h_f_pos.data(),f_pos.data,
+        EXPECT_EQ(cudaMemcpy(h_f_pos.data(),f_pos.data,
                              h_polygon.num_feature* sizeof(uint32_t),
                              cudaMemcpyDeviceToHost),
                   cudaSuccess);
@@ -49,9 +49,9 @@ struct ReadShapefilePolygonTest : public GdfTest
                              h_polygon.num_ring* sizeof(uint32_t),
                              cudaMemcpyDeviceToHost),
                   cudaSuccess);
-   	for(size_t i = 0; i<h_polygon.num_ring;i++)
-           EXPECT_EQ(h_polygon.ring_position[i],h_r_pos[i]);
-           
+        for(size_t i = 0; i<h_polygon.num_ring;i++)
+            EXPECT_EQ(h_polygon.ring_position[i],h_r_pos[i]);
+
         std::vector<double> h_x(h_polygon.num_vertex);
         EXPECT_EQ(cudaMemcpy(h_x.data(),poly_x.data,
                              h_polygon.num_vertex* sizeof(double),
@@ -59,7 +59,7 @@ struct ReadShapefilePolygonTest : public GdfTest
                   cudaSuccess);
         for(size_t i = 0; i<h_polygon.num_vertex;i++)
            EXPECT_NEAR(h_polygon.x[i],h_x[i],1e-9);
-        
+
         std::vector<double> h_y(h_polygon.num_vertex);
         EXPECT_EQ(cudaMemcpy(h_y.data(),poly_y.data,
                              h_polygon.num_vertex* sizeof(double),
@@ -67,7 +67,7 @@ struct ReadShapefilePolygonTest : public GdfTest
                   cudaSuccess);
         for(size_t i = 0; i<h_polygon.num_vertex;i++)
             EXPECT_NEAR(h_polygon.y[i],h_y[i],1e-9);
-        return true;   	    
+        return true;
     }
 };
 
