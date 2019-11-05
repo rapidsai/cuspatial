@@ -49,7 +49,7 @@ namespace
             aPointX.push_back( poRing.getX(i));
             aPointY.push_back( poRing.getY(i));
         }
-        aPartSize.push_back( nCount );	
+        aPartSize.push_back( nCount );
     }
  
      /*
@@ -152,7 +152,7 @@ namespace cuspatial
         GDALAllRegister();
 
         GDALDatasetH hDS = GDALOpenEx( filename, GDAL_OF_VECTOR, NULL, NULL, NULL );
-        CUDF_EXPECTS(hDS!=NULL,"Failed to open ESRI Shapefile dataset");		    
+        CUDF_EXPECTS(hDS!=NULL,"Failed to open ESRI Shapefile dataset");
         OGRLayerH hLayer = GDALDatasetGetLayer( hDS,0 );
         CUDF_EXPECTS(hLayer!=NULL,"Failed to open the first layer");
         int num_f=ReadLayer(hLayer,g_len_v,f_len_v,r_len_v,x_v,y_v);
