@@ -144,19 +144,19 @@ TEST_F(ReadShapefilePolygonTest, testITSROI)
 {
     const char* env_p = std::getenv("CUSPATIAL_HOME");
     CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_HOME environmental variable must be set");
-    std::string shape_filename=std::string(env_p)+std::string("data/two_polys.shp"); 
+    std::string shape_filename=std::string(env_p)+std::string("data/its_4326_roi.shp"); 
     std::cout<<"Using shapefile "<<shape_filename<<std::endl;
-   
-    gdf_column f_pos,r_pos,poly_x,poly_y;
-    
+       
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);
+
+    gdf_column f_pos,r_pos,poly_x,poly_y;
     cuspatial::read_polygon_shapefile(shape_filename.c_str(),&f_pos,&r_pos,&poly_x,&poly_y);
     std::cout<<"# of polygons= "<<f_pos.size<<std::endl;
     std::cout<<"# of rings= "<<r_pos.size<<std::endl;
     std::cout<<"# of vertices= "<<poly_x.size<<std::endl;
 
     gettimeofday(&t1, nullptr);
-    float gpu_pip_time1=cuspatial::calc_time("read shapefile time......",t0,t1);
+    float shapefile_read_time=cuspatial::calc_time("read shapefile time......",t0,t1);
 }
 #endif
