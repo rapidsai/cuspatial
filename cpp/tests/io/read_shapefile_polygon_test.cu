@@ -25,6 +25,7 @@
 #include <cuspatial/shapefile_readers.hpp>
 #include <utility/utility.hpp> 
 
+
 struct ReadShapefilePolygonTest : public GdfTest 
 {
    bool check_polygon(const cuspatial::polygons<double>&  h_polygon,const gdf_column& f_pos,
@@ -76,7 +77,7 @@ TEST_F(ReadShapefilePolygonTest, testNonExist)
 {
     const char* env_p = std::getenv("CUSPATIAL_HOME");
     CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_HOME environmental variable must be set");
-    std::string shape_filename=std::string(env_p)+std::string("data/non_exist.shp"); 
+    std::string shape_filename=std::string(env_p)+std::string("/test_fixtures/shapefiles/non_exist.shp"); 
     std::cout<<"Using shapefile "<<shape_filename<<std::endl;
     
     gdf_column f_pos,r_pos,poly_x,poly_y;
@@ -88,7 +89,7 @@ TEST_F(ReadShapefilePolygonTest, testZero)
 
     const char* env_p = std::getenv("CUSPATIAL_HOME");
     CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_HOME environmental variable must be set");
-    std::string shape_filename=std::string(env_p)+std::string("data/empty_poly.shp"); 
+    std::string shape_filename=std::string(env_p)+std::string("/test_fixtures/shapefiles/empty_poly.shp"); 
     std::cout<<"Using shapefile "<<shape_filename<<std::endl;
 
     gdf_column f_pos,r_pos,poly_x,poly_y;
@@ -99,7 +100,7 @@ TEST_F(ReadShapefilePolygonTest, testOne)
 {
     const char* env_p = std::getenv("CUSPATIAL_HOME");
     CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_HOME environmental variable must be set");
-    std::string shape_filename=std::string(env_p)+std::string("data/one_poly.shp"); 
+    std::string shape_filename=std::string(env_p)+std::string("/test_fixtures/shapefiles/one_poly.shp"); 
     std::cout<<"Using shapefile "<<shape_filename<<std::endl;
     
     cuspatial::polygons<double> h_polygon;
@@ -121,7 +122,7 @@ TEST_F(ReadShapefilePolygonTest, testTwo)
 {
     const char* env_p = std::getenv("CUSPATIAL_HOME");
     CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_HOME environmental variable must be set");
-    std::string shape_filename=std::string(env_p)+std::string("data/two_polys.shp"); 
+    std::string shape_filename=std::string(env_p)+std::string("/test_fixtures/shapefiles/two_polys.shp"); 
     std::cout<<"Using shapefile "<<shape_filename<<std::endl;
 
     cuspatial::polygons<double> h_polygon;
@@ -144,7 +145,7 @@ TEST_F(ReadShapefilePolygonTest, testITSROI)
 {
     const char* env_p = std::getenv("CUSPATIAL_HOME");
     CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_HOME environmental variable must be set");
-    std::string shape_filename=std::string(env_p)+std::string("data/its_4326_roi.shp"); 
+    std::string shape_filename=std::string(env_p)+std::string("/test_fixtures/shapefiles/its_4326_roi.shp"); 
     std::cout<<"Using shapefile "<<shape_filename<<std::endl;
        
     struct timeval t0,t1;
