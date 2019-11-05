@@ -63,10 +63,10 @@ python python/cuspatial/cuspatial/tests/test_hausdorff_distance.py
 python python/cuspatial/cuspatial/tests/test_pip.py
 ```
 
-Some other tests invlove I/O and the small data files should be put under $CUSPATIAL_HOME/data.
+Some other tests invlove I/O and the small data files should be put under $CUSPATIAL_HOME/test_fixtures.
 For example, $CUSPATIAL_HOME/cpp/build/gtests/SHAPEFILE_POLYGON_READER_TEST requires three
-pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. The zipped file 
-$CUSPATIAL_HOME/data/polytestdata.zip should be uncompressed before running the test. 
+pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. They are available at 
+$CUSPATIAL_HOME/test_fixtures/shapefiles <br>
 
 Finally, many test/demo code uses real data from an ITS (Intelligent Transportation
 System) application. You will need to follow instructions at
@@ -77,7 +77,8 @@ Alternatively, you can download the preprocessed data ("locust.*",
 Extract the files and put them directly under $CUSPATIAL_HOME/data for quick demos. 
 
 **NOTE:** Currently, cuSpatial supports reading point/polyine/polygon data using
-Structure of Array (SoA) format and a shapefile reader to read polygon data from a shapefile.
+Structure of Array (SoA) format and a [shapefile reader](./cpp/src/io/shp)
+to read polygon data from a shapefile.
 Alternatively, python users can read any point/polyine/polygon data using
 existing python packages, e.g., [Shapely](https://pypi.org/project/Shapely/) 
 and [Fiona](https://github.com/Toblerity/Fiona),to generate numpy arrays and feed them to
