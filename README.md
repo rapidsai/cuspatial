@@ -24,7 +24,9 @@ Future support is planned for the following operations.
 
 ## Install from Conda
 To install via conda:
-`conda install -c rapidsai-nightly cuspatial`
+```
+conda install -c conda-forge -c rapidsai-nightly cuspatial
+```
 
 ## Install from Source
 To build and install cuSpatial from source:
@@ -48,7 +50,7 @@ git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
 ```
 
 3. Compile and install 
-Similar to cuDF (version 0.11), simplely run 'build.sh' diectly under $CUSPATIAL_HOME
+Similar to cuDF (version 0.11), simplely run 'build.sh' diectly under $CUSPATIAL_HOME<br>
 Note that a "build" dir is created automatically under $CUSPATIAL_HOME/cpp
 
 4. Run C++/Python test code <br>
@@ -57,7 +59,6 @@ Some tests using inline data can be run directly, e.g.,
 ```
 $CUSPATIAL_HOME/cpp/build/gtests/HAUSDORFF_TEST
 $CUSPATIAL_HOME/cpp/build/gtests/POINT_IN_POLYGON_TEST
-python  $CUSPATIAL_HOME/python/cuspatial/cuspatial
 python python/cuspatial/cuspatial/tests/test_hausdorff_distance.py
 python python/cuspatial/cuspatial/tests/test_pip.py
 ```
@@ -65,7 +66,7 @@ python python/cuspatial/cuspatial/tests/test_pip.py
 Some other tests invlove I/O and the small data files should be put under $CUSPATIAL_HOME/data.
 For example, $CUSPATIAL_HOME/cpp/build/gtests/SHAPEFILE_POLYGON_READER_TEST requires three
 pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. The zipped file 
-$CUSPATIAL_HOME/data/polytestdata.zip should be uncompressed to run the test. 
+$CUSPATIAL_HOME/data/polytestdata.zip should be uncompressed before running the test. 
 
 Finally, many test/demo code uses real data from an ITS (Intelligent Transportation
 System) application. You will need to follow instructions at
