@@ -34,6 +34,7 @@
 - PR #64 Use YYMMDD tag in nightly build
 - PR #68 Use YYMMDD tag in nightly build of cuspatial python
 - PR #82 Added update-version.sh
+- PR #86 Add Shapefile reader for polygons
 
 ## Bug Fixes
 
@@ -45,4 +46,3 @@
 - PR #49 Docstring for haversine and argument ordering was backwards
 - PR #66 added missing header in tests
 - PR #70 Require width parameterization of bitmap to binary conversion
-- PR #86 Add Shapefile reader for polygons
