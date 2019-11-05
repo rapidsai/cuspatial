@@ -74,22 +74,34 @@ struct ReadShapefilePolygonTest : public GdfTest
 
 TEST_F(ReadShapefilePolygonTest, testNonExist)
 {
-          
+    const char* env_p = std::getenv("CUSPATIAL_HOME");
+    CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_HOME environmental variable must be set");
+    std::string shape_filename=std::string(env_p)+std::string("data/non_exist.shp"); 
+    std::cout<<"Using shapefile "<<shape_filename<<std::endl;
+    
     gdf_column f_pos,r_pos,poly_x,poly_y;
-    std::string shape_filename=std::string("non_exist.shp"); 
     EXPECT_THROW(cuspatial::read_polygon_shapefile(shape_filename.c_str(),&f_pos,&r_pos,&poly_x,&poly_y),cudf::logic_error);
 }
 
 TEST_F(ReadShapefilePolygonTest, testZero)
 {
 
+    const char* env_p = std::getenv("CUSPATIAL_HOME");
+    CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_HOME environmental variable must be set");
+    std::string shape_filename=std::string(env_p)+std::string("data/empty_poly.shp"); 
+    std::cout<<"Using shapefile "<<shape_filename<<std::endl;
+
     gdf_column f_pos,r_pos,poly_x,poly_y;
-    std::string shape_filename=std::string("empty_poly.shp"); 
     EXPECT_THROW(cuspatial::read_polygon_shapefile(shape_filename.c_str(),&f_pos,&r_pos,&poly_x,&poly_y),cudf::logic_error);
 }
 
 TEST_F(ReadShapefilePolygonTest, testOne)
 {
+    const char* env_p = std::getenv("CUSPATIAL_HOME");
+    CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_HOME environmental variable must be set");
+    std::string shape_filename=std::string(env_p)+std::string("data/one_poly.shp"); 
+    std::cout<<"Using shapefile "<<shape_filename<<std::endl;
+    
     cuspatial::polygons<double> h_polygon;
     h_polygon.num_group=1;
     h_polygon.num_feature=1;
@@ -101,14 +113,17 @@ TEST_F(ReadShapefilePolygonTest, testOne)
     h_polygon.y=new double[h_polygon.num_vertex]{-10, -10, 5,   5, -10};
 
     gdf_column f_pos,r_pos,poly_x,poly_y;
-    std::string shape_filename=std::string("one_poly.shp"); 
     cuspatial::read_polygon_shapefile(shape_filename.c_str(),&f_pos,&r_pos,&poly_x,&poly_y);
-
     CUDF_EXPECTS(this->check_polygon(h_polygon,f_pos,r_pos,poly_x,poly_y),"polygon readout mismatches expected");
 }
 
 TEST_F(ReadShapefilePolygonTest, testTwo)
 {
+    const char* env_p = std::getenv("CUSPATIAL_HOME");
+    CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_HOME environmental variable must be set");
+    std::string shape_filename=std::string(env_p)+std::string("data/two_polys.shp"); 
+    std::cout<<"Using shapefile "<<shape_filename<<std::endl;
+
     cuspatial::polygons<double> h_polygon;
     h_polygon.num_group=1;
     h_polygon.num_feature=2;
@@ -120,7 +135,6 @@ TEST_F(ReadShapefilePolygonTest, testTwo)
     h_polygon.y=new double[h_polygon.num_vertex]{-10, -10, 5,   5, -10,0,  0, 10, 10, 0};
 
     gdf_column f_pos,r_pos,poly_x,poly_y;
-    std::string shape_filename=std::string("two_polys.shp"); 
     cuspatial::read_polygon_shapefile(shape_filename.c_str(),&f_pos,&r_pos,&poly_x,&poly_y);
 
     CUDF_EXPECTS(this->check_polygon(h_polygon,f_pos,r_pos,poly_x,poly_y),"polygon readout mismatches expected");
@@ -128,8 +142,13 @@ TEST_F(ReadShapefilePolygonTest, testTwo)
 
 TEST_F(ReadShapefilePolygonTest, testITSROI)
 {
+    const char* env_p = std::getenv("CUSPATIAL_HOME");
+    CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_HOME environmental variable must be set");
+    std::string shape_filename=std::string(env_p)+std::string("data/two_polys.shp"); 
+    std::cout<<"Using shapefile "<<shape_filename<<std::endl;
+   
     gdf_column f_pos,r_pos,poly_x,poly_y;
-    std::string shape_filename=std::string("its_4326_roi.shp"); 
+    
     struct timeval t0,t1;
     gettimeofday(&t0, nullptr);
     cuspatial::read_polygon_shapefile(shape_filename.c_str(),&f_pos,&r_pos,&poly_x,&poly_y);
