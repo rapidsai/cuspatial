@@ -141,23 +141,4 @@ TEST_F(ReadShapefilePolygonTest, testTwo)
     CUDF_EXPECTS(this->check_polygon(h_polygon,f_pos,r_pos,poly_x,poly_y),"polygon readout mismatches expected");
 }
 
-TEST_F(ReadShapefilePolygonTest, testITSROI)
-{
-    const char* env_p = std::getenv("CUSPATIAL_HOME");
-    CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_HOME environmental variable must be set");
-    std::string shape_filename=std::string(env_p)+std::string("/test_fixtures/shapefiles/its_4326_roi.shp"); 
-    std::cout<<"Using shapefile "<<shape_filename<<std::endl;
-       
-    struct timeval t0,t1;
-    gettimeofday(&t0, nullptr);
-
-    gdf_column f_pos,r_pos,poly_x,poly_y;
-    cuspatial::read_polygon_shapefile(shape_filename.c_str(),&f_pos,&r_pos,&poly_x,&poly_y);
-    std::cout<<"# of polygons= "<<f_pos.size<<std::endl;
-    std::cout<<"# of rings= "<<r_pos.size<<std::endl;
-    std::cout<<"# of vertices= "<<poly_x.size<<std::endl;
-
-    gettimeofday(&t1, nullptr);
-    float shapefile_read_time=cuspatial::calc_time("read shapefile time......",t0,t1);
-}
 #endif
