@@ -68,14 +68,6 @@ For example, $CUSPATIAL_HOME/cpp/build/gtests/SHAPEFILE_POLYGON_READER_TEST requ
 pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. They are available at 
 $CUSPATIAL_HOME/test_fixtures/shapefiles <br>
 
-Finally, many test/demo code uses real data from an ITS (Intelligent Transportation
-System) application. You will need to follow instructions at
-[data/README.md](./data/README.md) to generate data for these test code.
-Alternatively, you can download the preprocessed data ("locust.*",
-"its_4326_roi.*", "itsroi.ply" and "its_camera_2.csv") from 
-[here](https://nvidia-my.sharepoint.com/:u:/p/jiantingz/EdHR7qlaRSVPtw46XYVR9sQBjCcnUHygCuPUC3Hf8gW73A?e=LCr9nK).
-Extract the files and put them directly under $CUSPATIAL_HOME/data for quick demos. 
-
 **NOTE:** Currently, cuSpatial supports reading point/polyine/polygon data using
 Structure of Array (SoA) format and a [shapefile reader](./cpp/src/io/shp)
 to read polygon data from a shapefile.
