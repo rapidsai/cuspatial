@@ -30,7 +30,6 @@ requirements:
     - python
     - cudf {{ minor_version }}.*
     - libcuspatial {{ minor_version}}.*
-    - cython >=0.29,<0.30
 
 test:
   commands:
