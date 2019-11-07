@@ -23,6 +23,7 @@
 #include <utility/utility.hpp>
 #include <cuspatial/coordinate_transform.hpp>
 
+#include <cudf/legacy/column.hpp>
 
 namespace {
 
@@ -42,7 +43,7 @@ __global__ void coord_trans_kernel(gdf_size_type loc_size,
 {
     //assuming 1D grid/block config
     uint32_t idx =blockIdx.x*blockDim.x+threadIdx.x;
-    if(idx>=loc_size) return;    
+    if(idx>=loc_size) return;
     out_x[idx]=((cam_lon - in_lon[idx]) * 40000.0 *cos((cam_lat + in_lat[idx]) * M_PI / 360) / 360);
     out_y[idx]=(cam_lat - in_lat[idx]) * 40000.0 / 360;
 }
@@ -57,12 +58,12 @@ struct ll2coord_functor {
     template <typename T, std::enable_if_t< is_supported<T>() >* = nullptr>
     std::pair<gdf_column,gdf_column> operator()(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,
     	 const gdf_column  & in_lon,const gdf_column  & in_lat)
-    	
+
     {
         gdf_column  out_x, out_y;
         memset(&out_x,0,sizeof(gdf_column));
         memset(&out_y,0,sizeof(gdf_column));
-        
+
         cudaStream_t stream{0};
         T* temp_x{nullptr};
         T* temp_y{nullptr};
@@ -71,21 +72,21 @@ struct ll2coord_functor {
 
         gdf_column_view_augmented(&out_x, temp_x, nullptr, in_lon.size,
                                 in_lon.dtype, 0,
-                                gdf_dtype_extra_info{TIME_UNIT_NONE}, "x");          
+                                gdf_dtype_extra_info{TIME_UNIT_NONE}, "x");
         gdf_column_view_augmented(&out_y, temp_y, nullptr, in_lat.size,
                                 in_lat.dtype, 0,
-                                gdf_dtype_extra_info{TIME_UNIT_NONE}, "y");          
+                                gdf_dtype_extra_info{TIME_UNIT_NONE}, "y");
 
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, coord_trans_kernel<T>) );
         cudf::util::cuda::grid_config_1d grid{in_lon.size, block_size, 1};
-       
+
         coord_trans_kernel<T> <<< grid.num_blocks, block_size >>> (in_lon.size,
         	*((double*)(&(cam_lon.data))),*((double*)(&(cam_lat.data))),
    	    	static_cast<T*>(in_lon.data), static_cast<T*>(in_lat.data),
-   	    	temp_x, temp_y );           
+   	    	temp_x, temp_y );
         CUDA_TRY( cudaDeviceSynchronize() );
-	
+
  	return std::make_pair(out_x,out_y);
     }
 
@@ -97,7 +98,7 @@ struct ll2coord_functor {
     }
 };
 
-} // namespace anonymous        
+} // namespace anonymous
 
 namespace cuspatial {
 
@@ -109,7 +110,7 @@ namespace cuspatial {
 std::pair<gdf_column,gdf_column> lonlat_to_coord(const gdf_scalar& cam_lon, const gdf_scalar& cam_lat,
 	const gdf_column& in_lon, const gdf_column  & in_lat)
 
-{           
+{
 
     double cx=*((double*)(&(cam_lon.data)));
     double cy=*((double*)(&(cam_lat.data)));
@@ -117,14 +118,14 @@ std::pair<gdf_column,gdf_column> lonlat_to_coord(const gdf_scalar& cam_lon, cons
     	"camera origin must have valid lat/lon values [-180,-90,180,90]");
     CUDF_EXPECTS(in_lon.data != nullptr &&in_lat.data!=nullptr, "input point cannot be empty");
     CUDF_EXPECTS(in_lon.size == in_lat.size, "input x and y arrays must have the same length");
-    
-    //future versions might allow in_(x/y) have null_count>0, which might be useful for taking query results as inputs 
+
+    //future versions might allow in_(x/y) have null_count>0, which might be useful for taking query results as inputs
     CUDF_EXPECTS(in_lon.null_count == 0 && in_lat.null_count == 0, "this version does not support point in_lon/in_lat contains nulls");
-    
+
     auto res=cudf::type_dispatcher(in_lon.dtype, ll2coord_functor(), cam_lon,cam_lat,in_lon,in_lat);
-    
+
     return res;
-    
-  }//lonlat_to_coord 
-    	
+
+  }//lonlat_to_coord
+
 }// namespace cuspatial

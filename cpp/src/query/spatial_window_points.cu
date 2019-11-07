@@ -20,6 +20,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/count.h>
 
+#include <rmm/thrust_rmm_allocator.h>
+#include <cudf/legacy/column.hpp>
+
 #include <utility/utility.hpp>
 #include <cuspatial/query.hpp>
 
@@ -47,7 +50,7 @@ struct spatial_window_functor_xy
     }
 };
 
-struct sw_point_functor 
+struct sw_point_functor
 {
     template <typename T>
     static constexpr bool is_supported()
@@ -61,7 +64,7 @@ struct sw_point_functor
         memcpy(&ret, &v.data, sizeof(T));
         return ret;
     }
-     
+
     template <typename T, std::enable_if_t< is_supported<T>() >* = nullptr>
     std::pair<gdf_column,gdf_column> operator()(const gdf_scalar left,
                                                 const gdf_scalar bottom,
@@ -74,7 +77,7 @@ struct sw_point_functor
         T q_right = get_scalar<T>(right);
         T q_bottom = get_scalar<T>(bottom);
         T q_top = get_scalar<T>(top);
-  
+
         CUDF_EXPECTS(q_left < q_right,
                      "left must be less than right in a spatial window query");
         CUDF_EXPECTS(q_bottom < q_top,
@@ -85,9 +88,9 @@ struct sw_point_functor
 
         auto in_it = thrust::make_zip_iterator(thrust::make_tuple(
             static_cast<T*>(x.data), static_cast<T*>(y.data)));
-                                   
+
         int num_hits =
-            thrust::count_if(exec_policy, in_it, in_it + x.size, 
+            thrust::count_if(exec_policy, in_it, in_it + x.size,
                              spatial_window_functor_xy<T>(q_left, q_bottom,
                                                           q_right, q_top));
 
@@ -95,15 +98,15 @@ struct sw_point_functor
         T* temp_y{nullptr};
         RMM_TRY( RMM_ALLOC(&temp_x, num_hits * sizeof(T), 0) );
         RMM_TRY( RMM_ALLOC(&temp_y, num_hits * sizeof(T), 0) );
-            
-        auto out_it = 
+
+        auto out_it =
             thrust::make_zip_iterator(thrust::make_tuple(temp_x, temp_y));
-        thrust::copy_if(exec_policy, in_it, in_it + x.size, out_it, 
+        thrust::copy_if(exec_policy, in_it, in_it + x.size, out_it,
                         spatial_window_functor_xy<T>(q_left, q_bottom,
                                                      q_right, q_top));
 
         gdf_column out_x{}, out_y{};
-        
+
         gdf_column_view_augmented(&out_x, temp_x, nullptr, num_hits, x.dtype,
                               0, gdf_dtype_extra_info{TIME_UNIT_NONE}, "x");
         gdf_column_view_augmented(&out_y, temp_y, nullptr, num_hits, y.dtype,
@@ -144,7 +147,7 @@ std::pair<gdf_column,gdf_column> spatial_window_points(const gdf_scalar& left,
     CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0,
                  "this version does not support point data that contains nulls");
 
-    std::pair<gdf_column,gdf_column> res = 
+    std::pair<gdf_column,gdf_column> res =
         cudf::type_dispatcher(x.dtype, sw_point_functor(), left, bottom,
                               right, top, x, y);
 

@@ -16,7 +16,10 @@
 
 
 #include <math.h>
+
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
+#include <cudf/legacy/column.hpp>
+
 #include <utilities/cuda_utils.hpp>
 #include <type_traits>
 #include <thrust/device_vector.h>
@@ -32,7 +35,7 @@ namespace {
 {
     //assuming 1D grid/block config
     uint32_t idx =blockIdx.x*blockDim.x+threadIdx.x;
-    if(idx>=pnt_size) return;  
+    if(idx>=pnt_size) return;
     T x_1 = M_PI/180 * x1[idx];
     T y_1 = M_PI/180 * y1[idx];
     T x_2 = M_PI/180 * x2[idx];
@@ -71,18 +74,18 @@ struct haversine_functor {
         	static_cast<T*>(x2.data), static_cast<T*>(y2.data),
                 static_cast<T*>(data) );
         CUDA_TRY( cudaDeviceSynchronize() );
- 
+
         return h_dist;
     }
 
     template <typename T, std::enable_if_t< !is_supported<T>() >* = nullptr>
-    gdf_column operator()(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2)      				
+    gdf_column operator()(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2)
     {
         CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
 
-} // namespace anonymous   
+} // namespace anonymous
 
 /**
  *@brief Compute Haversine distances among pairs of logitude/latitude locations
@@ -96,19 +99,19 @@ namespace cuspatial{
  * see haversine.hpp
 */
 
-gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2 )                        
-{           
+gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2 )
+{
     CUDF_EXPECTS(x1.data != nullptr && y1.data != nullptr && x2.data != nullptr && y2.data != nullptr,"point lon/lat cannot be empty");
     CUDF_EXPECTS(x1.dtype == x2.dtype && x2.dtype==y1.dtype && y1.dtype==y2.dtype, "x1/x2/y1/y2 type mismatch");
     CUDF_EXPECTS(x1.size == x2.size && x2.size==y1.size && y1.size==y2.size, "x1/x2/y1/y2 size mismatch");
-       
-    //future versions might allow pnt_(x/y) have null_count>0, which might be useful for taking query results as inputs 
+
+    //future versions might allow pnt_(x/y) have null_count>0, which might be useful for taking query results as inputs
     CUDF_EXPECTS(x1.null_count == 0 && y1.null_count == 0 && x2.null_count == 0 && y2.null_count == 0, "this version does not support x1/x2/y1/y2 contains nulls");
-    
+
     gdf_column h_d = cudf::type_dispatcher( x1.dtype, haversine_functor(), x1,y1,x2,y2);
-    		
+
     return h_d;
-    
-  }//haversine_distance 
-  
+
+  }//haversine_distance
+
 }// namespace cuspatial
