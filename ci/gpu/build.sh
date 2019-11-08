@@ -59,6 +59,8 @@ conda env create --name cudf_dev --file $CUDF_HOME/conda/environments/cudf_dev_c
 source activate cudf_dev
 ./build.sh
 
+conda install "gdal=2.4.*"
+
 ################################################################################
 # BUILD - Build libcuspatial and cuSpatial from source
 ################################################################################
