@@ -2,13 +2,15 @@
 
 ## New Features
 
+- PR #86 Add Shapefile reader for polygons
 - PR #94 Python bindings for shapefile reader
 
 ## Improvements
 
 ## Bug Fixes
 
-- PR #94 Add legacy headers as cudf migrates 
+- PR #94 Add legacy headers as cudf migrates
+- PR #98 Updates to accommodate cudf refactoring
 
 
 # cuSpatial 0.10.0 (16 Oct 2019)
@@ -36,6 +38,7 @@
 - PR #64 Use YYMMDD tag in nightly build
 - PR #68 Use YYMMDD tag in nightly build of cuspatial python
 - PR #82 Added update-version.sh
+- PR #86 Add Shapefile reader for polygons
 
 ## Bug Fixes
 

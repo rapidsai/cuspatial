@@ -23,6 +23,8 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include <rmm/thrust_rmm_allocator.h>
+
 #include <utility/utility.hpp>
 #include <utility/trajectory_thrust.cuh>
 #include <cuspatial/trajectory.hpp>
@@ -104,13 +106,13 @@ struct subset_functor {
     gdf_size_type operator()(const gdf_column& ids,
                              const gdf_column& in_x, const gdf_column& in_y,
                              const gdf_column& in_id, const gdf_column& in_ts,
-                             gdf_column& out_x, gdf_column& out_y, 
+                             gdf_column& out_x, gdf_column& out_y,
                              gdf_column& out_id, gdf_column& out_ts)
     {
         CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
-    
+
 } // namespace anonymous
 
 namespace cuspatial {
@@ -138,7 +140,7 @@ gdf_size_type subset_trajectory_id(const gdf_column& id,
     CUDF_EXPECTS(in_timestamp.dtype == GDF_TIMESTAMP,
                  "Invalid timestamp datatype");
     CUDF_EXPECTS(in_x.null_count == 0 && in_y.null_count == 0 &&
-                 in_id.null_count==0 && in_timestamp.null_count==0, 
+                 in_id.null_count==0 && in_timestamp.null_count==0,
                  "NULL support unimplemented");
 
     out_x = cudf::empty_like(in_x);
@@ -146,9 +148,9 @@ gdf_size_type subset_trajectory_id(const gdf_column& id,
     out_id = cudf::empty_like(in_id);
     out_timestamp = cudf::empty_like(in_timestamp);
 
-    return cudf::type_dispatcher(in_x.dtype, subset_functor(), id, 
-                                 in_x, in_y, in_id, in_timestamp, 
+    return cudf::type_dispatcher(in_x.dtype, subset_functor(), id,
+                                 in_x, in_y, in_id, in_timestamp,
                                  out_x, out_y, out_id, out_timestamp);
 }
-  
+
 }// namespace cuspatial
