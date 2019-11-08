@@ -1,6 +1,6 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-from cudf import DataFrame, Series
+from cudf import DataFrame
 
 from cuspatial._lib.shapefile_reader import cpp_read_polygon_shapefile
 

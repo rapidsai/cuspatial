@@ -3,7 +3,7 @@
 ## New Features
 
 - PR #86 Add Shapefile reader for polygons
-- PR #94 Python bindings for shapefile reader
+- PR #92 Python bindings for shapefile reader
 
 ## Improvements
 
