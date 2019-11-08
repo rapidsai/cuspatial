@@ -6,7 +6,9 @@
 
 ## Bug Fixes
 
-- PR #94 Add legacy headers as cudf migrates 
+- PR #94 Add legacy headers as cudf migrates
+- PR #98 Updates to accommodate cudf refactoring
+- PR #86 Add Shapefile reader for polygons
 
 
 # cuSpatial 0.10.0 (Date TBD)
@@ -45,4 +47,3 @@
 - PR #49 Docstring for haversine and argument ordering was backwards
 - PR #66 added missing header in tests
 - PR #70 Require width parameterization of bitmap to binary conversion
-- PR #86 Add Shapefile reader for polygons
