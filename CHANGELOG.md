@@ -36,6 +36,7 @@
 - PR #64 Use YYMMDD tag in nightly build
 - PR #68 Use YYMMDD tag in nightly build of cuspatial python
 - PR #82 Added update-version.sh
+- PR #86 Add Shapefile reader for polygons
 
 ## Bug Fixes
 

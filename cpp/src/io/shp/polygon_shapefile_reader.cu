@@ -49,7 +49,7 @@ namespace
             aPointX.push_back( poRing.getX(i));
             aPointY.push_back( poRing.getY(i));
         }
-        aPartSize.push_back( nCount );	
+        aPartSize.push_back( nCount );
     }
  
      /*
@@ -152,7 +152,7 @@ namespace cuspatial
         GDALAllRegister();
 
         GDALDatasetH hDS = GDALOpenEx( filename, GDAL_OF_VECTOR, NULL, NULL, NULL );
-        CUDF_EXPECTS(hDS!=NULL,"Failed to open ESRI Shapefile dataset");		    
+        CUDF_EXPECTS(hDS!=NULL,"Failed to open ESRI Shapefile dataset");
         OGRLayerH hLayer = GDALDatasetGetLayer( hDS,0 );
         CUDF_EXPECTS(hLayer!=NULL,"Failed to open the first layer");
         int num_f=ReadLayer(hLayer,g_len_v,f_len_v,r_len_v,x_v,y_v);
@@ -199,7 +199,7 @@ namespace cuspatial
         if (pm.num_feature <=0) return;
 
         cudaStream_t stream{0};
-        auto exec_policy = rmm::exec_policy(stream)->on(stream);
+        auto exec_policy = rmm::exec_policy(stream);
 
         int32_t* temp{nullptr};
         RMM_TRY( RMM_ALLOC(&temp, pm.num_feature * sizeof(int32_t), stream) );
@@ -207,7 +207,7 @@ namespace cuspatial
                               pm.num_feature * sizeof(int32_t),
                               cudaMemcpyHostToDevice, stream) );
         //prefix-sum: len to pos
-        thrust::inclusive_scan(exec_policy, temp, temp + pm.num_feature, temp);
+        thrust::inclusive_scan(exec_policy->on(stream), temp, temp + pm.num_feature, temp);
         gdf_column_view_augmented(ply_fpos, temp, nullptr, pm.num_feature,
                               GDF_INT32, 0,
                               gdf_dtype_extra_info{TIME_UNIT_NONE}, "f_pos");
@@ -216,7 +216,7 @@ namespace cuspatial
         CUDA_TRY( cudaMemcpyAsync(temp, pm.ring_length,
                               pm.num_ring * sizeof(int32_t),
                               cudaMemcpyHostToDevice, stream) );
-        thrust::inclusive_scan(exec_policy, temp, temp + pm.num_feature, temp);
+        thrust::inclusive_scan(exec_policy->on(stream), temp, temp + pm.num_feature, temp);
         gdf_column_view_augmented(ply_rpos, temp, nullptr, pm.num_ring,
                               GDF_INT32, 0,
                               gdf_dtype_extra_info{TIME_UNIT_NONE}, "r_pos");
