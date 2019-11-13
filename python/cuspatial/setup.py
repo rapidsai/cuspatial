@@ -11,7 +11,14 @@ from setuptools import find_packages, setup
 from setuptools.extension import Extension
 
 install_requires = ["numba", "cython"]
-cython_files = ["cuspatial/_lib/**/*.pyx"]
+cython_files = ["cuspatial/**/*.pyx"]
+
+CUDA_HOME = os.environ.get("CUDA_HOME", False)
+if not CUDA_HOME:
+    CUDA_HOME = (
+        os.popen('echo "$(dirname $(dirname $(which nvcc)))"').read().strip()
+    )
+cuda_include_dir = os.path.join(CUDA_HOME, "include")
 
 extensions = [
     Extension(
@@ -21,6 +28,7 @@ extensions = [
             "../../cpp/include/cuspatial",
             os.path.dirname(sysconfig.get_path("include")),
             np.get_include(),
+            cuda_include_dir,
         ],
         library_dirs=[get_python_lib()],
         libraries=["cudf", "cuspatial"],

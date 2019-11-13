@@ -6,7 +6,6 @@
 # cython: language_level = 3
 
 
-from cudf.core.column import Column
 from cudf._lib.cudf import *
 from libc.stdlib cimport calloc, malloc, free
 from libcpp.pair cimport pair
@@ -21,8 +20,7 @@ cpdef cpp_read_uint_soa(soa_file_name):
             c_string
         )
 
-    id_data, id_mask = gdf_column_to_column_mem(&c_id)
-    id = Column.from_mem_views(id_data, id_mask)
+    id = gdf_column_to_column(&c_id)
 
     return id
 
@@ -36,8 +34,7 @@ cpdef cpp_read_ts_soa(soa_file_name):
             c_string
         )
 
-    ts_data, ts_mask = gdf_column_to_column_mem(&c_ts)
-    ts = Column.from_mem_views(ts_data, ts_mask)
+    id = gdf_column_to_column(&c_ts)
 
     return ts
 
@@ -51,10 +48,8 @@ cpdef cpp_read_pnt_lonlat_soa(soa_file_name):
             c_string
         )
 
-    lon_data, lon_mask = gdf_column_to_column_mem(&columns.first)
-    lon = Column.from_mem_views(lon_data, lon_mask)
-    lat_data, lat_mask = gdf_column_to_column_mem(&columns.second)
-    lat = Column.from_mem_views(lat_data, lat_mask)
+    lon = gdf_column_to_column(&columns.first)
+    lat = gdf_column_to_column(&columns.second)
 
     return lon, lat
 
@@ -68,10 +63,8 @@ cpdef cpp_read_pnt_xy_soa(soa_file_name):
             c_string
         )
 
-    x_data, x_mask = gdf_column_to_column_mem(&columns.first)
-    x = Column.from_mem_views(x_data, x_mask)
-    y_data, y_mask = gdf_column_to_column_mem(&columns.second)
-    y = Column.from_mem_views(y_data, y_mask)
+    x = gdf_column_to_column(&columns.first)
+    y = gdf_column_to_column(&columns.second)
 
     return x, y
 
@@ -92,13 +85,9 @@ cpdef cpp_read_polygon_soa(soa_file_name):
             c_ply_y
         )
 
-    f_data, f_mask = gdf_column_to_column_mem(c_ply_fpos)
-    f_pos = Column.from_mem_views(f_data, f_mask)
-    r_data, r_mask = gdf_column_to_column_mem(c_ply_rpos)
-    r_pos = Column.from_mem_views(r_data, r_mask)
-    x_data, x_mask = gdf_column_to_column_mem(c_ply_x)
-    x = Column.from_mem_views(x_data, x_mask)
-    y_data, y_mask = gdf_column_to_column_mem(c_ply_y)
-    y = Column.from_mem_views(y_data, y_mask)
+    f_pos = gdf_column_to_column(c_ply_fpos)
+    r_pos = gdf_column_to_column(c_ply_rpos)
+    x = gdf_column_to_column(c_ply_x)
+    y = gdf_column_to_column(c_ply_y)
 
     return f_pos, r_pos, x, y

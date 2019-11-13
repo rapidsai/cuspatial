@@ -18,3 +18,6 @@ from .io.soa import (
     read_polygon,
     read_uint,
 )
+from .core.interpolate import (
+    cubic_spline
+)
