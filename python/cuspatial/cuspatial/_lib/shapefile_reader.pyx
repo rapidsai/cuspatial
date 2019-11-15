@@ -8,8 +8,7 @@
 
 from cudf.core.column import Column
 from cudf._lib.cudf import *
-from libc.stdlib cimport calloc, malloc, free
-from libcpp.pair cimport pair
+from libc.stdlib cimport malloc, free
 
 cpdef cpp_read_polygon_shapefile(shapefile_file_name):
     cdef bytes py_bytes = shapefile_file_name.encode()
@@ -28,13 +27,14 @@ cpdef cpp_read_polygon_shapefile(shapefile_file_name):
             c_ply_y
         )
 
-    f_data, f_mask = gdf_column_to_column_mem(c_ply_fpos)
-    f_pos = Column.from_mem_views(f_data, f_mask)
-    r_data, r_mask = gdf_column_to_column_mem(c_ply_rpos)
-    r_pos = Column.from_mem_views(r_data, r_mask)
-    x_data, x_mask = gdf_column_to_column_mem(c_ply_x)
-    x = Column.from_mem_views(x_data, x_mask)
-    y_data, y_mask = gdf_column_to_column_mem(c_ply_y)
-    y = Column.from_mem_views(y_data, y_mask)
+    f_pos = gdf_column_to_column(c_ply_fpos)
+    r_pos = gdf_column_to_column(c_ply_rpos)
+    x = gdf_column_to_column(c_ply_x)
+    y = gdf_column_to_column(c_ply_y)
+
+    free(c_ply_fpos)
+    free(c_ply_rpos)
+    free(c_ply_x)
+    free(c_ply_y)
 
     return f_pos, r_pos, x, y

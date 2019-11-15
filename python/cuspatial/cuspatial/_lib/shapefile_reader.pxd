@@ -5,7 +5,6 @@
 # distutils: include_dirs = cuspatial/bindings/
 
 from cudf._lib.cudf cimport *
-from libcpp.pair cimport pair
 
 cdef extern from "shapefile_readers.hpp" namespace "cuspatial" nogil:
     cdef gdf_column read_polygon_shapefile(
