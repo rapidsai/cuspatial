@@ -43,7 +43,7 @@ nvidia-smi
 
 logger "Activate conda env..."
 source activate gdf
-conda install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL"
+conda install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" "gdal=2.4.*"
 
 logger "Check versions..."
 python --version

@@ -21,6 +21,8 @@
 
 #include <cuspatial/trajectory.hpp>
 
+#include <cudf/legacy/column.hpp>
+
 namespace {
 
 /*
@@ -36,7 +38,7 @@ __global__ void distspeed_kernel(gdf_size_type num_traj,
                                  T* const __restrict__ dis,
                                  T* const __restrict__ sp)
 {
-    int pid = blockIdx.x * blockDim.x + threadIdx.x;  
+    int pid = blockIdx.x * blockDim.x + threadIdx.x;
     if (pid >= num_traj) return;
     int bp= (pid == 0) ? 0 : pos[pid - 1];
     int ep=pos[pid]-1;
@@ -83,7 +85,7 @@ struct distspeed_functor
                                                 const gdf_column& timestamp,
                                                 const gdf_column& length,
                                                 const gdf_column& offset)
-    { 
+    {
         gdf_column dist{};
         T* temp{nullptr};
         RMM_TRY( RMM_ALLOC(&temp, length.size * sizeof(T), 0) );
@@ -94,7 +96,7 @@ struct distspeed_functor
         RMM_TRY( RMM_ALLOC(&temp, length.size * sizeof(T), 0) );
         gdf_column_view_augmented(&speed, temp, nullptr, length.size, x.dtype, 0,
                                   gdf_dtype_extra_info{TIME_UNIT_NONE}, "speed");
-        
+
         gdf_size_type min_grid_size = 0, block_size = 0;
         CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size,
                                                      &block_size,
@@ -158,7 +160,7 @@ trajectory_distance_and_speed(const gdf_column& x, const gdf_column& y,
     CUDF_EXPECTS(x.size >= offset.size ,
                  "Insufficient trajectory data");
 
-    std::pair<gdf_column,gdf_column> res_pair = 
+    std::pair<gdf_column,gdf_column> res_pair =
         cudf::type_dispatcher(x.dtype, distspeed_functor(), x, y,
                               timestamp, length, offset);
 
@@ -166,4 +168,3 @@ trajectory_distance_and_speed(const gdf_column& x, const gdf_column& y,
 }
 
 }// namespace cuspatial
-

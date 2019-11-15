@@ -30,6 +30,7 @@ requirements:
     - python
     - cudf {{ minor_version }}.*
     - libcuspatial {{ minor_version}}.*
+    - gdal 2.4.*
 
 test:
   commands:
