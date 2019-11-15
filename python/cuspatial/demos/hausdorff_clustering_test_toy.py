@@ -32,8 +32,7 @@ pnt_y = Series(py_y)
 cnt = Series(py_cnt)
 distance = cuspatial.directed_hausdorff_distance(pnt_x, pnt_y, cnt)
 
-num_set = len(cnt)
-matrix = distance.data.to_array().reshape(num_set, num_set)
+matrix = distance.as_matrix()
 
 # clustering using AgglomerativeClustering
 agg1 = AgglomerativeClustering(
