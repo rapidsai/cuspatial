@@ -11,6 +11,7 @@
 
 - PR #94 Add legacy headers as cudf migrates
 - PR #98 Updates to accommodate cudf refactoring
+- PR #103 Update the include paths for cuda_utils
 
 
 # cuSpatial 0.10.0 (16 Oct 2019)
