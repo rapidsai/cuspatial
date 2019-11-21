@@ -20,7 +20,7 @@
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
 #include <cudf/legacy/column.hpp>
 
-#include <utilities/cuda_utils.hpp>
+#include <utilities/legacy/cuda_utils.hpp>
 #include <type_traits>
 #include <thrust/device_vector.h>
 #include <utility/utility.hpp>
