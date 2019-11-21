@@ -15,7 +15,7 @@
  */
 
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
-#include <utilities/cuda_utils.hpp>
+#include <utilities/legacy/cuda_utils.hpp>
 #include <type_traits>
 
 #include <utility/utility.hpp>
