@@ -182,12 +182,11 @@ def test_spatial_bounds_two_and_three():
 
 
 def test_derive_trajectories_zeros():
-    num_trajectories = cuspatial.derive(
+    trajectories = cuspatial.derive(
         cudf.Series([0]), cudf.Series([0]), cudf.Series([0]), cudf.Series([0])
     )
-    assert num_trajectories[0] == 1
     assert_eq(
-        num_trajectories[1],
+        trajectories,
         cudf.DataFrame(
             {
                 "trajectory_id": cudf.Series([0]).astype("int32"),
@@ -199,12 +198,11 @@ def test_derive_trajectories_zeros():
 
 
 def test_derive_trajectories_ones():
-    num_trajectories = cuspatial.derive(
+    trajectories = cuspatial.derive(
         cudf.Series([1]), cudf.Series([1]), cudf.Series([1]), cudf.Series([1])
     )
-    assert num_trajectories[0] == 1
     assert_eq(
-        num_trajectories[1],
+        trajectories,
         cudf.DataFrame(
             {
                 "trajectory_id": cudf.Series([1]).astype("int32"),
@@ -216,15 +214,14 @@ def test_derive_trajectories_ones():
 
 
 def test_derive_trajectories_two():
-    num_trajectories = cuspatial.derive(
+    trajectories = cuspatial.derive(
         cudf.Series([0, 1]),
         cudf.Series([0, 1]),
         cudf.Series([0, 1]),
         cudf.Series([0, 1]),
     )
-    assert num_trajectories[0] == 2
     assert_eq(
-        num_trajectories[1],
+        trajectories,
         cudf.DataFrame(
             {
                 "trajectory_id": cudf.Series([0, 1]).astype("int32"),
@@ -237,15 +234,14 @@ def test_derive_trajectories_two():
 
 def test_derive_trajectories_many():
     np.random.seed(0)
-    num_trajectories = cuspatial.derive(
+    trajectories = cuspatial.derive(
         cudf.Series(np.random.randint(0, 10, 10)),
         cudf.Series(np.random.randint(0, 10, 10)),
         cudf.Series(np.random.randint(0, 10, 10)),
         cudf.Series(np.random.randint(0, 10, 10)),
     )
-    assert num_trajectories[0] == 6
     assert_eq(
-        num_trajectories[1],
+        trajectories,
         cudf.DataFrame(
             {
                 "trajectory_id": cudf.Series([0, 3, 4, 5, 8, 9]).astype(

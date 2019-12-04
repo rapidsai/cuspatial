@@ -13,7 +13,7 @@ def test_zeros():
     distance = cuspatial.directed_hausdorff_distance(
         cudf.Series([0.0]), cudf.Series([0.0]), cudf.Series([1])
     )
-    assert_eq(distance, cudf.DataFrame([0.0]))
+    assert_eq(distance, cudf.DataFrame([[0.0]]))
 
 
 def test_empty_x():

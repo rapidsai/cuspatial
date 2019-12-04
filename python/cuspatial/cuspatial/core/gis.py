@@ -65,7 +65,7 @@ def directed_hausdorff_distance(x, y, count):
     result = cpp_directed_hausdorff_distance(x, y, count)
     dim = len(count)
     return DataFrame.from_gpu_matrix(
-        result.data.to_gpu_array().reshape(dim, dim)
+        result.to_gpu_array().reshape(dim, dim)
     )
 
 
