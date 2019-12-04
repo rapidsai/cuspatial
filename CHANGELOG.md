@@ -16,6 +16,8 @@
 
 ## Improvements
 
+- PR #104 Remove unused CUDA conda labels
+
 ## Bug Fixes
 
 - PR #94 Add legacy headers as cudf migrates
