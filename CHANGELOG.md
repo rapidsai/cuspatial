@@ -1,4 +1,4 @@
-# cuSpatial 0.11.0 (TBD)
+# cuSpatial 0.11.0 (11 Dec 2019)
 
 ## New Features
 
