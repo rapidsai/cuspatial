@@ -15,9 +15,12 @@
  */
 
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
-#include <utilities/cuda_utils.hpp>
+#include <utilities/legacy/cuda_utils.hpp>
 #include <type_traits>
 #include <thrust/device_vector.h>
+
+#include <rmm/thrust_rmm_allocator.h>
+#include <cudf/legacy/column.hpp>
 
 #include <utility/utility.hpp>
 #include <cuspatial/hausdorff.hpp>
@@ -25,7 +28,7 @@
 namespace {
 
 const unsigned int NUM_THREADS = 1024;
- 
+
 template <typename T>
 __global__ void kernel_Hausdorff_Full(
                 int num_traj,
@@ -107,15 +110,15 @@ struct Hausdorff_functor {
         memset(&d_matrix,0,sizeof(gdf_column));
         int num_set=vertex_counts.size;
         int block_sz = num_set*num_set;
-        
+
         cudaStream_t stream{0};
         auto exec_policy = rmm::exec_policy(stream)->on(stream);
 
         T *temp_matrix{nullptr};
-        RMM_TRY( RMM_ALLOC(&temp_matrix, block_sz * sizeof(T), stream) );    
-  
+        RMM_TRY( RMM_ALLOC(&temp_matrix, block_sz * sizeof(T), stream) );
+
         uint32_t *vertex_positions{nullptr};
-        RMM_TRY( RMM_ALLOC((void**)&vertex_positions, sizeof(uint32_t)*num_set, stream) );      
+        RMM_TRY( RMM_ALLOC((void**)&vertex_positions, sizeof(uint32_t)*num_set, stream) );
         uint32_t *vertex_counts_ptr=static_cast<uint32_t*>(vertex_counts.data);
         thrust::inclusive_scan(exec_policy,vertex_counts_ptr,vertex_counts_ptr+num_set,vertex_positions);
 
@@ -126,31 +129,31 @@ struct Hausdorff_functor {
             block_x = 65535;
         }
         dim3 grid(block_x, block_y);
-        dim3 block(NUM_THREADS);   
- 
+        dim3 block(NUM_THREADS);
+
         kernel_Hausdorff_Full<T> <<< grid,block >>> (num_set,
             static_cast<T*>(x.data), static_cast<T*>(y.data),
             vertex_positions,temp_matrix);
-       
+
         CUDA_TRY( cudaDeviceSynchronize() );
         RMM_TRY( RMM_FREE(vertex_positions, stream) );
-       
+
         gdf_column_view_augmented(&d_matrix, temp_matrix, nullptr, block_sz,
                             x.dtype, 0,
-                            gdf_dtype_extra_info{TIME_UNIT_NONE}, "hausdorff_matrix");          
- 
+                            gdf_dtype_extra_info{TIME_UNIT_NONE}, "hausdorff_matrix");
+
         return d_matrix;
     }
 
     template <typename T, std::enable_if_t< !is_supported<T>() >* = nullptr>
     gdf_column  operator()(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts)
-    		
+
     {
         CUDF_FAIL("Non-floating point operation is not supported");
     }
 };
 
-} // namespace anonymous    
+} // namespace anonymous
 
 /**
 * @brief compute Hausdorff distances among all pairs of a set of trajectories
@@ -160,23 +163,23 @@ struct Hausdorff_functor {
 namespace cuspatial {
 
 gdf_column directed_hausdorff_distance(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts)
-    		
-{          
+
+{
     CUDF_EXPECTS(x.data != nullptr &&y.data!=nullptr && vertex_counts.data!=nullptr,
     	"x/y/vertex_counts data can not be null");
     CUDF_EXPECTS(x.size == y.size ,"x/y/must have the same size");
-     
-    //future versions might allow x/y/vertex_counts have null_count>0, which might be useful for taking query results as inputs 
+
+    //future versions might allow x/y/vertex_counts have null_count>0, which might be useful for taking query results as inputs
     CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 && vertex_counts.null_count==0,
     	"this version does not support x/y/vertex_counts contains nulls");
-    
+
     CUDF_EXPECTS(x.size >= vertex_counts.size ,"one trajectory must have at least one point");
- 
-  
+
+
     gdf_column dist =cudf::type_dispatcher(x.dtype, Hausdorff_functor(), x,y,vertex_counts);
-    
+
     return dist;
-    
-    }//hausdorff_distance     
-    	
+
+    }//hausdorff_distance
+
 }// namespace cuspatial

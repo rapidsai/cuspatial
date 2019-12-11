@@ -15,12 +15,14 @@
  */
 
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
-#include <utilities/cuda_utils.hpp>
+#include <utilities/legacy/cuda_utils.hpp>
 #include <type_traits>
 
 #include <utility/utility.hpp>
 #include <utility/trajectory_thrust.cuh>
 #include <cuspatial/trajectory.hpp>
+
+#include <cudf/legacy/column.hpp>
 
 namespace{
 
@@ -29,7 +31,7 @@ namespace{
  *
  */
 template <typename T>
-__global__ void sbbox_kernel(gdf_size_type num_traj, 
+__global__ void sbbox_kernel(gdf_size_type num_traj,
                              const T* const __restrict__ x,
                              const T* const __restrict__ y,
                              const uint32_t * const __restrict__ len,
@@ -39,7 +41,7 @@ __global__ void sbbox_kernel(gdf_size_type num_traj,
                              T* const __restrict__ bbox_x2,
                              T* const __restrict__ bbox_y2)
 {
-    int pid=blockIdx.x*blockDim.x+threadIdx.x;  
+    int pid=blockIdx.x*blockDim.x+threadIdx.x;
     if(pid>=num_traj) return;
     int bp=(pid==0)?0:pos[pid-1];
     int ep=pos[pid];
@@ -140,18 +142,18 @@ void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
                  "Data size mismatch");
 
     // future versions might allow x/y/pos/len have null_count>0, which might be
-    // useful for taking query results as inputs 
+    // useful for taking query results as inputs
     CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
                  length.null_count==0 &&  offset.null_count==0,
                  "Null data support not implemented");
 
     CUDF_EXPECTS(x.size >= offset.size,
-                 "one trajectory must have at least one point");  
+                 "one trajectory must have at least one point");
 
     cudf::type_dispatcher(x.dtype, sbbox_functor(), x, y, length, offset,
                           bbox_x1, bbox_y1, bbox_x2, bbox_y2);
 
-    // TODO: handle null_count if needed 
+    // TODO: handle null_count if needed
 
 }
 

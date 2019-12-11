@@ -11,6 +11,7 @@ from .core.trajectory import (
     spatial_bounds,
     subset_trajectory_id,
 )
+from .io.shapefile import read_polygon_shapefile
 from .io.soa import (
     read_its_timestamps,
     read_points_lonlat,
