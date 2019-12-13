@@ -8,13 +8,9 @@ python/            @rapidsai/cuspatial-python-codeowners
 **/CMakeLists.txt  @rapidsai/cuspatial-cmake-codeowners
 **/cmake/          @rapidsai/cuspatial-cmake-codeowners
 
-# java code owners
-java/              @rapidsai/cuspatial-java-codeowners
-
 # build/ops code owners
 .github/           @rapidsai/cuspatial-ops-codeowners 
 ci/                @rapidsai/cuspatial-ops-codeowners
 conda/             @rapidsai/cuspatial-ops-codeowners
 **/Dockerfile      @rapidsai/cuspatial-ops-codeowners
 **/.dockerignore   @rapidsai/cuspatial-ops-codeowners
-docker/            @rapidsai/cuspatial-ops-codeowners
