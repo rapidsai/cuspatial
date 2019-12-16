@@ -54,7 +54,7 @@ def test_triple():
             "Sydney": [151.2093, -33.8688],
         }
     )
-    cities = cities.set_index(["lat", "lon"])
+    cities.index = ["lat", "lon"]
     pnt_x1 = []
     pnt_y1 = []
     pnt_x2 = []

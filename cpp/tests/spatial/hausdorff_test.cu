@@ -18,15 +18,15 @@
 #include <sys/time.h>
 
 #include <gtest/gtest.h>
-#include <utilities/error_utils.hpp>
+#include <utilities/legacy/error_utils.hpp>
 
 #include <cuspatial/soa_readers.hpp> 
 #include <cuspatial/hausdorff.hpp> 
 #include <utility/utility.hpp> 
 #include "hausdorff_util.h" 
 
-#include <tests/utilities/cudf_test_utils.cuh>
-#include <tests/utilities/cudf_test_fixtures.h>
+#include <tests/utilities/legacy/cudf_test_utils.cuh>
+#include <tests/utilities/legacy/cudf_test_fixtures.h>
 
 struct is_true
 {

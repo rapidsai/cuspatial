@@ -21,12 +21,12 @@
 #include <iostream>
 
 #include <gtest/gtest.h>
-#include <utilities/error_utils.hpp>
+#include <utilities/legacy/error_utils.hpp>
 #include <cuspatial/hausdorff.hpp> 
 
-#include <tests/utilities/column_wrapper.cuh>
-#include <tests/utilities/cudf_test_utils.cuh>
-#include <tests/utilities/cudf_test_fixtures.h>
+#include <tests/utilities/legacy/column_wrapper.cuh>
+#include <tests/utilities/legacy/cudf_test_utils.cuh>
+#include <tests/utilities/legacy/cudf_test_fixtures.h>
 
 struct HausdorffToy : public GdfTest 
 {
