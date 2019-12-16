@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #109 Update OPS codeowners group name
+
 ## Bug Fixes
 
 
