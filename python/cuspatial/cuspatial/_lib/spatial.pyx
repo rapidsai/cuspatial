@@ -8,7 +8,7 @@
 
 from cudf._lib.cudf import *
 from cudf._lib.cudf cimport *
-from cudf.core.column import Column
+from cudf._libxx.column import Column
 from cudf import Series
 from libcpp.pair cimport pair
 
@@ -43,7 +43,6 @@ cpdef cpp_point_in_polygon_bitmap(
             c_poly_y[0]
         )
 
-    data, mask = gdf_column_to_column_mem(result_bitmap)
     free(c_points_x)
     free(c_points_y)
     free(c_poly_fpos)
@@ -51,9 +50,8 @@ cpdef cpp_point_in_polygon_bitmap(
     free(c_poly_x)
     free(c_poly_y)
     free(result_bitmap)
-    bitmap = Column.from_mem_views(data, mask)
 
-    return bitmap
+    return gdf_column_to_column(result_bitmap)
 
 cpdef cpp_haversine_distance(x1, y1, x2, y2):
     x1 = x1.astype('float64')._column
@@ -76,15 +74,13 @@ cpdef cpp_haversine_distance(x1, y1, x2, y2):
             c_y2[0]
         )
 
-    data, mask = gdf_column_to_column_mem(c_h_dist)
     free(c_x1)
     free(c_y1)
     free(c_x2)
     free(c_y2)
     free(c_h_dist)
-    h_dist=Column.from_mem_views(data, mask)
 
-    return Series(h_dist)
+    return Series(gdf_column_to_column(c_h_dist))
 
 cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
     cam_lon = np.float64(cam_lon)
@@ -106,16 +102,11 @@ cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
             c_in_lat[0]
         )
 
-    x_data, x_mask = gdf_column_to_column_mem(&coords.first)
-    y_data, y_mask = gdf_column_to_column_mem(&coords.second)
-
     free(c_in_lon)
     free(c_in_lat)
 
-    x = Column.from_mem_views(x_data, x_mask)
-    y = Column.from_mem_views(y_data, y_mask)
-
-    return Series(x), Series(y)
+    return (Series(gdf_column_to_column(&coords.first)),
+           Series(gdf_column_to_column(&coords.second)))
 
 cpdef cpp_directed_hausdorff_distance(coor_x, coor_y, cnt):
     coor_x = coor_x.astype('float64')._column
@@ -132,10 +123,7 @@ cpdef cpp_directed_hausdorff_distance(coor_x, coor_y, cnt):
             c_cnt[0]
         )
 
-    dist_data, dist_mask = gdf_column_to_column_mem(c_dist)
-    dist = Column.from_mem_views(dist_data, dist_mask)
-
-    return Series(dist)
+    return Series(gdf_column_to_column(c_dist))
 
 cpdef cpp_spatial_window_points(left, bottom, right, top, x, y):
     left = np.float64(left)
@@ -167,10 +155,5 @@ cpdef cpp_spatial_window_points(left, bottom, right, top, x, y):
             c_y[0]
         )
 
-    outx_data, outx_mask = gdf_column_to_column_mem(&xy.first)
-    outy_data, outy_mask = gdf_column_to_column_mem(&xy.second)
-
-    outx = Column.from_mem_views(outx_data, outx_mask)
-    outy = Column.from_mem_views(outy_data, outy_mask)
-
-    return Series(outx), Series(outy)
+    return (Series(gdf_column_to_column(&xy.first)),
+            Series(gdf_column_to_column(&xy.second)))
