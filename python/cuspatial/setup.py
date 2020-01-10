@@ -1,6 +1,7 @@
 # Copyright (c) 2018, NVIDIA CORPORATION.
 
 import os
+import shutil
 import sysconfig
 from distutils.sysconfig import get_python_lib
 

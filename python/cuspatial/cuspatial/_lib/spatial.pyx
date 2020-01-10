@@ -109,7 +109,7 @@ cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
     free(c_in_lat)
 
     return (Series(gdf_column_to_column(&coords.first)),
-           Series(gdf_column_to_column(&coords.second)))
+            Series(gdf_column_to_column(&coords.second)))
 
 cpdef cpp_directed_hausdorff_distance(coor_x, coor_y, cnt):
     coor_x = coor_x.astype('float64')._column

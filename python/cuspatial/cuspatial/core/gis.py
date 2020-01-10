@@ -64,9 +64,7 @@ def directed_hausdorff_distance(x, y, count):
     """
     result = cpp_directed_hausdorff_distance(x, y, count)
     dim = len(count)
-    return DataFrame.from_gpu_matrix(
-        result.to_gpu_array().reshape(dim, dim)
-    )
+    return DataFrame.from_gpu_matrix(result.to_gpu_array().reshape(dim, dim))
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
