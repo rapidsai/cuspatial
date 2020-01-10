@@ -42,8 +42,9 @@ logger "Check GPU usage..."
 nvidia-smi
 
 logger "Activate conda env..."
-source activate gdf
-conda install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" "gdal=2.4.*"
+conda create --name cuspatial_dev --file conda/environments/cuspatial_dev.yml
+conda activate cuspatial_dev
+# conda install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" "gdal=2.4.*"
 
 logger "Check versions..."
 python --version
