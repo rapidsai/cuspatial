@@ -152,6 +152,7 @@ def test_pip_bitmap_column_to_binary_array():
     col = cudf.Series([None, None])._column
     got = gis_utils.pip_bitmap_column_to_binary_array(col, width=0)
     expected = np.array([], dtype="int8").reshape(2, 0)
+    breakpoint()
     np.testing.assert_array_equal(got.copy_to_host(), expected)
 
     col = cudf.Series([238, 13, 29594])._column

@@ -49,9 +49,10 @@ cpdef cpp_point_in_polygon_bitmap(
     free(c_poly_rpos)
     free(c_poly_x)
     free(c_poly_y)
+    result = gdf_column_to_column(result_bitmap)
     free(result_bitmap)
 
-    return gdf_column_to_column(result_bitmap)
+    return result
 
 cpdef cpp_haversine_distance(x1, y1, x2, y2):
     x1 = x1.astype('float64')._column
@@ -78,9 +79,11 @@ cpdef cpp_haversine_distance(x1, y1, x2, y2):
     free(c_y1)
     free(c_x2)
     free(c_y2)
+
+    result = Series(gdf_column_to_column(c_h_dist))
     free(c_h_dist)
 
-    return Series(gdf_column_to_column(c_h_dist))
+    return result
 
 cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
     cam_lon = np.float64(cam_lon)

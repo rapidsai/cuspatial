@@ -38,6 +38,8 @@ extensions = [
         sources=cython_files,
         include_dirs=[
             "../../cpp/include/cuspatial",
+            "../../thirdparty/cub",
+            "../../thirdparty/libcudacxx/include",
             os.path.dirname(sysconfig.get_path("include")),
             np.get_include(),
             cuda_include_dir,
