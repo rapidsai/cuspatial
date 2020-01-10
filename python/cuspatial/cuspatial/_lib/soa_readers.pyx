@@ -6,7 +6,6 @@
 # cython: language_level = 3
 
 
-from cudf._libxx.column import Column
 from cudf._lib.cudf import *
 from libc.stdlib cimport calloc, malloc, free
 from libcpp.pair cimport pair

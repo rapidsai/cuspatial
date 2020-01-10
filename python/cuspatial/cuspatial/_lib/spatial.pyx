@@ -8,7 +8,6 @@
 
 from cudf._lib.cudf import *
 from cudf._lib.cudf cimport *
-from cudf._libxx.column import Column
 from cudf import Series
 from libcpp.pair cimport pair
 
