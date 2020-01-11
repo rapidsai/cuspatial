@@ -44,7 +44,7 @@ nvidia-smi
 logger "Activate conda env..."
 # conda env create --name cuspatial_dev --file conda/environments/cuspatial_dev.yml
 # conda activate cuspatial_dev
-conda install -c rapidsdev-nightly -c default "cudf=0.12.*" "cudatoolkit=$CUDA_REL" "gdal=2.4.*"
+conda install -c rapidsai-nightly -c default "cudf=0.12.*" "cudatoolkit=$CUDA_REL" "gdal=2.4.*"
 
 logger "Check versions..."
 python --version
