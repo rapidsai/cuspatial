@@ -5,11 +5,12 @@
 ## Improvements
 
 - PR #109 Update OPS codeowners group name
+- PR #113 Support libcudf++
 
 ## Bug Fixes
 
 
-# cuSpatial 0.11.0 (TBD)
+# cuSpatial 0.11.0 (11 Dec 2019)
 
 ## New Features
 
