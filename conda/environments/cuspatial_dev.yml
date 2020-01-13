@@ -1,0 +1,11 @@
+name: cuspatial_dev
+channels:
+  - rapidsai
+  - nvidia
+  - rapidsai-nightly
+  - conda-forge
+  - defaults
+dependencies:
+  - cudf=0.12.*
+  - cudatoolkit=9.2
+  - gdal>=2.4.*

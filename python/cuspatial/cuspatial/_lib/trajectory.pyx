@@ -7,7 +7,6 @@
 
 
 from cudf import Series, DataFrame
-from cudf.core.column import Column
 from cudf._lib.cudf import *
 
 from libc.stdlib cimport calloc, malloc, free
@@ -35,12 +34,9 @@ cpdef cpp_derive_trajectories(x, y, object_id, timestamp):
             c_length[0], c_pos[0]
         )
 
-    traj_id_data, traj_id_mask = gdf_column_to_column_mem(c_trajectory_id)
-    length_data, length_mask = gdf_column_to_column_mem(c_length)
-    pos_data, pos_mask = gdf_column_to_column_mem(c_pos)
-    trajectory_id = Column.from_mem_views(traj_id_data, traj_id_mask)
-    length = Column.from_mem_views(length_data, length_mask)
-    pos = Column.from_mem_views(pos_data, pos_mask)
+    trajectory_id = gdf_column_to_column(c_trajectory_id)
+    length = gdf_column_to_column(c_length)
+    pos = gdf_column_to_column(c_pos)
 
     return (
         num_trajectories,
@@ -72,10 +68,8 @@ cpdef cpp_trajectory_distance_and_speed(x, y, timestamp, length, pos):
                                                          c_timestamp[0],
                                                          c_length[0], c_pos[0])
 
-    dist_data, dist_mask = gdf_column_to_column_mem(&c_distance_speed.first)
-    speed_data, speed_mask = gdf_column_to_column_mem(&c_distance_speed.second)
-    dist=Column.from_mem_views(dist_data, dist_mask)
-    speed=Column.from_mem_views(speed_data, speed_mask)
+    dist = gdf_column_to_column(&c_distance_speed.first)
+    speed = gdf_column_to_column(&c_distance_speed.second)
 
     return Series(dist), Series(speed)
 
@@ -105,14 +99,10 @@ cpdef cpp_trajectory_spatial_bounds(coor_x, coor_y, length, pos):
             c_y2[0]
         )
 
-    x1_data, x1_mask = gdf_column_to_column_mem(c_x1)
-    x1 = Column.from_mem_views(x1_data, x1_mask)
-    x2_data, x2_mask = gdf_column_to_column_mem(c_x2)
-    x2 = Column.from_mem_views(x2_data, x2_mask)
-    y1_data, y1_mask = gdf_column_to_column_mem(c_y1)
-    y1 = Column.from_mem_views(y1_data, y1_mask)
-    y2_data, y2_mask = gdf_column_to_column_mem(c_y2)
-    y2 = Column.from_mem_views(y2_data, y2_mask)
+    x1 = gdf_column_to_column(c_x1)
+    x2 = gdf_column_to_column(c_x2)
+    y1 = gdf_column_to_column(c_y1)
+    y2 = gdf_column_to_column(c_y2)
 
     return DataFrame({'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2})
 
@@ -138,14 +128,10 @@ cpdef cpp_subset_trajectory_id(ids, in_x, in_y, in_id, in_timestamp):
                                      c_in_timestamp[0], c_out_x[0], c_out_y[0],
                                      c_out_id[0], c_out_timestamp[0])
 
-    x_data, x_mask = gdf_column_to_column_mem(c_out_x)
-    x = Column.from_mem_views(x_data, x_mask)
-    y_data, y_mask = gdf_column_to_column_mem(c_out_y)
-    y = Column.from_mem_views(y_data, y_mask)
-    id_data, id_mask = gdf_column_to_column_mem(c_out_id)
-    ids = Column.from_mem_views(id_data, id_mask)
-    timestamp_data, timestamp_mask = gdf_column_to_column_mem(c_out_timestamp)
-    timestamp = Column.from_mem_views(timestamp_data, timestamp_mask)
+    x = gdf_column_to_column(c_out_x)
+    y = gdf_column_to_column(c_out_y)
+    ids = gdf_column_to_column(c_out_id)
+    timestamp = gdf_column_to_column(c_out_timestamp)
 
     return DataFrame({'x': Series(x),
                       'y': Series(y),

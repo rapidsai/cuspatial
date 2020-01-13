@@ -4,6 +4,9 @@
 
 ## Improvements
 
+- PR #109 Update OPS codeowners group name
+- PR #113 Support libcudf++
+
 ## Bug Fixes
 
 

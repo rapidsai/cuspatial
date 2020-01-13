@@ -6,8 +6,7 @@
 # cython: language_level = 3
 
 
-from cudf.core.column import Column
-from cudf._lib.cudf import *
+from cudf._lib.cudf cimport gdf_column, gdf_column_to_column
 from libc.stdlib cimport malloc, free
 
 cpdef cpp_read_polygon_shapefile(shapefile_file_name):
