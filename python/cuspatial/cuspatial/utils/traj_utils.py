@@ -1,10 +1,10 @@
 # Copyright 2019, NVIDIA Corporation
 
 import numpy as np
+import rmm
 from numba import cuda
 
 import cudf
-import rmm
 
 
 def get_ts_struct(ts):
