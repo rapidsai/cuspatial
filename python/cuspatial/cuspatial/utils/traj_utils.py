@@ -1,6 +1,5 @@
 # Copyright 2019, NVIDIA Corporation
 
-import numpy as np
 import rmm
 from numba import cuda
 
@@ -72,15 +71,3 @@ def its_timestamp_int64_to_datetime64ms(its_timestamp_int64_col):
             its_timestamp_int64_col, out
         )
     return cudf.Series(out).astype("datetime64[ms]")
-
-
-def ts_struct_to_datetime64(ts):
-    y, m, d, hh, mm, ss, wd, yd, ms, pid = get_ts_struct(ts)
-    time = ms
-    time = time + ss * 1000
-    time = time + mm * 60000
-    time = time + hh * 3600000
-    time = time + d * 86400000
-    time = time + m * 2628000000
-    time = time + y * 31536000000
-    return np.datetime64(time, "ms")
