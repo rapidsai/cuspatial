@@ -17,12 +17,14 @@
 #include <type_traits>
 
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
-#include <utilities/cuda_utils.hpp>
+#include <utilities/legacy/cuda_utils.hpp>
 #include <rmm/thrust_rmm_allocator.h>
 
 #include <utility/utility.hpp>
 #include <utility/trajectory_thrust.cuh>
 #include <cuspatial/trajectory.hpp>
+
+#include <cudf/legacy/column.hpp>
 
 namespace {
 
@@ -87,7 +89,7 @@ struct derive_trajectories_functor {
 
     template <typename T, std::enable_if_t< !is_supported<T>() >* = nullptr>
     gdf_size_type operator()(const gdf_column& x, const gdf_column& y,
-                             const gdf_column& object_id, 
+                             const gdf_column& object_id,
                              const gdf_column& timestamp,
                              gdf_column& trajectory_id,
                              gdf_column& length, gdf_column& offset)
@@ -124,7 +126,7 @@ gdf_size_type derive_trajectories(const gdf_column& x, const gdf_column& y,
     CUDF_EXPECTS(timestamp.dtype == GDF_TIMESTAMP,
                  "Invalid timestamp datatype");
     CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
-                 object_id.null_count==0 && timestamp.null_count==0, 
+                 object_id.null_count==0 && timestamp.null_count==0,
                  "NULL support unimplemented");
 
     gdf_size_type num_trajectories =

@@ -18,13 +18,13 @@
 #include <sys/time.h>
 
 #include <gtest/gtest.h>
-#include <utilities/error_utils.hpp>
+#include <utilities/legacy/error_utils.hpp>
 #include <cuspatial/soa_readers.hpp>
 #include <cuspatial/point_in_polygon.hpp>
 #include "pip_util.h"
 
-#include <tests/utilities/cudf_test_utils.cuh>
-#include <tests/utilities/cudf_test_fixtures.h>
+#include <tests/utilities/legacy/cudf_test_utils.cuh>
+#include <tests/utilities/legacy/cudf_test_fixtures.h>
 
 template <typename T>
 struct PIPTest : public GdfTest 

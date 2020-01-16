@@ -22,6 +22,7 @@ namespace cuspatial {
 
 /**
  * @brief compute Hausdorff distances among all pairs of a set of trajectories
+ * 
  * https://en.wikipedia.org/wiki/Hausdorff_distance
  *
  * @p vertex_counts is used to compute the starting offset of each trajectory

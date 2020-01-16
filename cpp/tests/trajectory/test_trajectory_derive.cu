@@ -16,9 +16,9 @@
 
 #include <vector>
 #include <gtest/gtest.h>
-
-#include <tests/utilities/cudf_test_fixtures.h>
-#include <tests/utilities/column_wrapper.cuh>
+#include <random>
+#include <tests/utilities/legacy/cudf_test_fixtures.h>
+#include <tests/utilities/legacy/column_wrapper.cuh>
 
 #include <cuspatial/trajectory.hpp> 
 
@@ -54,13 +54,13 @@ TEST_F(TrajectoryDerive, DeriveThree)
     std::shuffle(sequence.begin(), sequence.end(), g);
 
     wrapper<double> in_x(column_size,
-        [&](gdf_index_type i) { return static_cast<double>(sequence[i]); });
+        [&](cudf::size_type i) { return static_cast<double>(sequence[i]); });
     wrapper<double> in_y(column_size,
-        [&](gdf_index_type i) { return static_cast<double>(sequence[i]); });
+        [&](cudf::size_type i) { return static_cast<double>(sequence[i]); });
     wrapper<int32_t> in_id(column_size,
-        [&](gdf_index_type i) { return id_vector[sequence[i]]; });
+        [&](cudf::size_type i) { return id_vector[sequence[i]]; });
     wrapper<cudf::timestamp> in_ts(column_size,
-        [&](gdf_index_type i) { 
+        [&](cudf::size_type i) { 
             return static_cast<cudf::timestamp>(ms_vector[sequence[i]]); 
         });
 

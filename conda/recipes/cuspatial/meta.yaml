@@ -1,0 +1,45 @@
+# Copyright (c) 2018, NVIDIA CORPORATION.
+
+{% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
+{% set minor_version =  version.split('.')[0] + '.' + version.split('.')[1] %}
+{% set git_revision_count=environ.get('GIT_DESCRIBE_NUMBER', 0) %}
+{% set py_version=environ.get('CONDA_PY', 36) %}
+
+package:
+  name: cuspatial
+  version: {{ version }}
+
+source:
+  path: ../../..
+
+build:
+  number: {{ git_revision_count }}
+  string: py{{ py_version }}_{{ git_revision_count }}
+  script_env:
+    - VERSION_SUFFIX
+
+requirements:
+  build:
+    - python
+    - cython >=0.29,<0.30
+    - setuptools
+    - cudf {{ minor_version }}.*
+    - libcuspatial {{ minor_version}}.*
+
+  run:
+    - python
+    - cudf {{ minor_version }}.*
+    - libcuspatial {{ minor_version}}.*
+    - gdal 2.4.*
+
+test:
+  commands:
+    - python -c "import cuspatial"
+
+about:
+  home: http://rapids.ai/
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: cuSpatial GPU Spatial and Trajectory Data Management and Analytics Library
+

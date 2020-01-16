@@ -19,14 +19,17 @@
 #include <ostream>
 #include <cuspatial/types.hpp>
 
+#include <thrust/pair.h>
+#include <thrust/functional.h>
+
 namespace cuspatial
 {
 
 /**
  * @brief Thrust functor for comparing two its_timestamp variables;
- * 
+ *
  * Used in sorting based on timestamp
- * 
+ *
  **/
 __device__
 inline bool operator<(const its_timestamp & t1,const its_timestamp & t2)
@@ -75,7 +78,7 @@ struct TBBox_reduction : public thrust::binary_function<TBBox,TBBox,TBBox>
 /**
  * @brief Thrust functor for transforming lon/lat (location_3d) to x/y (coord_2d)
  *        relative to an origin
- * 
+ *
  * @note: Both x and y are in the unit of kilometers (km)
  **/
 template <typename T>
