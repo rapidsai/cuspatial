@@ -17,33 +17,33 @@
 #include <vector>
 #include <cudf/column/column_view.hpp>
 #include <cudf/column/column_factories.hpp>
+#include <cudf/table/table_view.hpp>
+#include <cudf/table/table.hpp>
+#include <cuspatial/quadtree.hpp>
 
 namespace cuspatial {
 
-
-
-/*
- * Return 
- * see indexing.hpp
- */
-cudf::column_view quadtree_on_points(cudf::column_view x,cudf::column_view y)
+std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::column_view x,cudf::column_view y)
 {
-    std::vector<cudf::column_view> children;
-    std::unique_ptr<cudf::column> key_col=cudf::make_numeric_column(cudf::data_type{cudf::INT32}, 0);
-    children.push_back(key_col->view());
-    std::unique_ptr<cudf::column> indicator_col=cudf::make_numeric_column(cudf::data_type{cudf::BOOL8}, 0);
-    children.push_back(indicator_col->view());
-    std::unique_ptr<cudf::column> fpos_col=cudf::make_numeric_column(cudf::data_type{cudf::INT32}, 0);
-    children.push_back(fpos_col->view());
-    std::unique_ptr<cudf::column> len_col=cudf::make_numeric_column(cudf::data_type{cudf::INT32}, 0);
-    children.push_back(len_col->view());
+    //x/y not used for now
+    std::vector<std::unique_ptr<cudf::column>> src_cols;
     
-    children.push_back(x);
-    children.push_back(y);
+    std::unique_ptr<cudf::column> key_col=cudf::make_numeric_column(cudf::data_type{cudf::INT32}, 1); 
+    src_cols.push_back(key_col);
     
-    cudf::column_view ret=cudf::column_view(
-    	cudf::data_type{cudf::EMPTY},0,nullptr,nullptr,cudf::UNKNOWN_NULL_COUNT,0,children);
-    return ret;
+    std::unique_ptr<cudf::column> indicator_col=cudf::make_numeric_column(cudf::data_type{cudf::BOOL8}, 1);
+    src_cols.push_back(indicator_col);
+    
+    std::unique_ptr<cudf::column> fpos_col=cudf::make_numeric_column(cudf::data_type{cudf::INT32}, 1);
+    src_cols.push_back(fpos_col);
+    
+    std::unique_ptr<cudf::column> len_col=cudf::make_numeric_column(cudf::data_type{cudf::INT32}, 1);
+    src_cols.push_back(len_col);
+
+    
+    std::unique_ptr<cudf::experimental::table> destination_table = std::make_unique<cudf::experimental::table>(std::move(src_cols));
+        
+    return destination_table;
 }
 
 }// namespace cuspatial
