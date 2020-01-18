@@ -29,16 +29,16 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::column_view 
     std::vector<std::unique_ptr<cudf::column>> src_cols;
     
     std::unique_ptr<cudf::column> key_col=cudf::make_numeric_column(cudf::data_type{cudf::INT32}, 1); 
-    src_cols.push_back(key_col);
+    src_cols.push_back(std::move(key_col));
     
     std::unique_ptr<cudf::column> indicator_col=cudf::make_numeric_column(cudf::data_type{cudf::BOOL8}, 1);
-    src_cols.push_back(indicator_col);
+    src_cols.push_back(std::move(indicator_col));
     
     std::unique_ptr<cudf::column> fpos_col=cudf::make_numeric_column(cudf::data_type{cudf::INT32}, 1);
-    src_cols.push_back(fpos_col);
+    src_cols.push_back(std::move(fpos_col));
     
     std::unique_ptr<cudf::column> len_col=cudf::make_numeric_column(cudf::data_type{cudf::INT32}, 1);
-    src_cols.push_back(len_col);
+    src_cols.push_back(std::move(len_col));
 
     
     std::unique_ptr<cudf::experimental::table> destination_table = std::make_unique<cudf::experimental::table>(std::move(src_cols));
