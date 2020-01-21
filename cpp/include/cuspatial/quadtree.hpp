@@ -22,6 +22,7 @@ namespace cuspatial {
  * @brief .
  * @note: .
 **/
+std::unique_ptr<cudf::column> nested_column_test(cudf::column_view,cudf::column_view);
 
 std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::column_view ,cudf::column_view);
 
