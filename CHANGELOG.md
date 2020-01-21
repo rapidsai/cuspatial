@@ -9,6 +9,8 @@
 
 ## Bug Fixes
 
+- PR #116 Fix API issue with shapefile reader
+
 
 # cuSpatial 0.11.0 (11 Dec 2019)
 
