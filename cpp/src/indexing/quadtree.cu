@@ -23,9 +23,9 @@
 #include <cudf/table/table.hpp>
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
-#include <cuspatial/quadtree.hpp>
 #include <utility/z_order.cuh>
 #include <utility/quadtree_thrust.cuh>
+#include <cuspatial/quadtree.hpp>
 
 namespace { //anonymous
 
