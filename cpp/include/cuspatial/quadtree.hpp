@@ -24,6 +24,7 @@ namespace cuspatial {
 **/
 std::unique_ptr<cudf::column> nested_column_test(cudf::column_view,cudf::column_view);
 
-std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::column_view ,cudf::column_view,SBBox, double , int, int);
+std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::mutable_column_view,
+	cudf::mutable_column_view,SBBox, double , int, int);
 
 }// namespace cuspatial

@@ -34,6 +34,10 @@ std::vector<std::unique_ptr<cudf::column>> dowork(double *d_p_x,double *d_p_y,SB
 	
                                          
 {
+    std::cout<<"point_len="<<point_len<<std::endl;
+    std::cout<<"M="<<M<<std::endl;
+    std::cout<<"MINSIZE="<<MINSIZE<<std::endl;
+    
     auto d_pnt_iter=thrust::make_zip_iterator(thrust::make_tuple(d_p_x,d_p_y));       
     uint *d_p_pntkey=NULL,*d_p_runkey=NULL, *d_p_runlen=NULL;
     RMM_TRY( RMM_ALLOC( (void**)&(d_p_pntkey),point_len* sizeof(uint),0));
@@ -241,26 +245,30 @@ if(1)
    return quad_cols;
 }
 
-struct quadtree_point_processor {
+/*struct quadtree_point_processor {
  
-  template <typename T>
-  //std::enable_if_t<std::is_floating_point<T>::value, std::pair<std::unique_ptr<rmm::device_buffer>, cudf::size_type>>
-  std::unique_ptr<cudf::experimental::table> operator()(cudf::column_view const& x,
- 					  cudf::column_view const& y,
+  
+  template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
+  std::unique_ptr<cudf::experimental::table> operator()(cudf::mutable_column_view x,
+ 					  cudf::mutable_column_view y,
  					  quad_point_inputs qpi,
                                           rmm::mr::device_memory_resource* mr,
                                           cudaStream_t stream)
                                           {
-    double *xx=NULL,*yy=NULL;
-  
+    //double *d_p_x=cudf::mutable_column_device_view::create(x, stream)->data<double>();
+    //double *d_p_y=cudf::mutable_column_device_view::create(y, stream)->data<double>();
+
+    T *d_p_x=x.data<T>();
+    T *d_p_y=y.data<T>();
+   
     std::vector<std::unique_ptr<cudf::column>> quad_cols=
-    	dowork(xx,yy,thrust::get<0>(qpi),thrust::get<1>(qpi), x.size(), 
+    	dowork(d_p_x,d_p_x,thrust::get<0>(qpi),thrust::get<1>(qpi), x.size(), 
     		thrust::get<1>(qpi), thrust::get<2>(qpi),mr,stream);
   
     std::unique_ptr<cudf::experimental::table> destination_table = std::make_unique<cudf::experimental::table>(std::move(quad_cols));      
     return destination_table;
     }
-  };
+  };*/
 } //end anonymous namespace
 
 namespace cuspatial {
@@ -298,15 +306,26 @@ std::unique_ptr<cudf::column> nested_column_test(cudf::column_view x,cudf::colum
     return ret;
 }
 
-std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::column_view const& x,cudf::column_view const& y,
+std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::mutable_column_view x,cudf::mutable_column_view y,
 	SBBox bbox, double scale, int M, int MINSIZE)
 {   
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
-    quad_point_inputs qpi=thrust::make_tuple(bbox,scale,M,MINSIZE);
     
+    /*quad_point_inputs qpi=thrust::make_tuple(bbox,scale,M,MINSIZE);
     return cudf::experimental::type_dispatcher(x.type(),quadtree_point_processor{}, 
-    	x,y, qpi, mr,stream);                                                                                                                                                                               
+    	x,y, qpi, mr,stream); */
+     
+    double *d_p_x=x.data<double>();
+    double *d_p_y=y.data<double>();
+   
+    int point_len=x.size();
+    std::vector<std::unique_ptr<cudf::column>> quad_cols=
+    	dowork(d_p_x,d_p_x,bbox,scale,point_len,M,MINSIZE,mr,stream);
+  
+    std::unique_ptr<cudf::experimental::table> destination_table = std::make_unique<cudf::experimental::table>(std::move(quad_cols));      
+    return destination_table;
+  	
 }
 
 }// namespace cuspatial
