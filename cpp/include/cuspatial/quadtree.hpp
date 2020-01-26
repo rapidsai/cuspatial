@@ -15,7 +15,7 @@
  */
 
 #pragma once
-
+#include <utility/quadtree_thrust.cuh>
 namespace cuspatial {
 
 /**
@@ -25,6 +25,6 @@ namespace cuspatial {
 std::unique_ptr<cudf::column> nested_column_test(cudf::column_view,cudf::column_view);
 
 std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::mutable_column_view,
-	cudf::mutable_column_view,SBBox, double , int, int);
+	cudf::mutable_column_view,double,double,double,double, double , int, int);
 
 }// namespace cuspatial

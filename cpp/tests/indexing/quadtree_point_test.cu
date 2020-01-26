@@ -25,8 +25,6 @@
 #include <cudf/column/column_view.hpp>
 #include <cudf/table/table_view.hpp>
 #include <cudf/table/table.hpp>
-#include <utility/z_order.cuh>
-#include <utility/quadtree_thrust.cuh>
 #include <cuspatial/quadtree.hpp>
 
 struct QuadtreeOnPointIndexingTest : public GdfTest 
@@ -55,7 +53,8 @@ TEST_F(QuadtreeOnPointIndexingTest, test1)
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_y, yy, point_len * sizeof(double), cudaMemcpyHostToDevice ) );     
     
     double scale=1.0;
-    SBBox bbox(thrust::make_tuple(0,0),thrust::make_tuple(8,8));    
+    double x1=0,x2=0,y1=8,y2=8;
+    //SBBox bbox(thrust::make_tuple(0,0),thrust::make_tuple(8,8));    
    
     /*column_view::column_view(data_type type, size_type size, void const* data,
                             bitmask_type const* null_mask, size_type null_count,
@@ -64,7 +63,7 @@ TEST_F(QuadtreeOnPointIndexingTest, test1)
    
     cudf::mutable_column_view x(cudf::data_type{cudf::FLOAT64},point_len,d_p_x);
     cudf::mutable_column_view y(cudf::data_type{cudf::FLOAT64},point_len,d_p_y);
-    std::unique_ptr<cudf::experimental::table> qidx= cuspatial::quadtree_on_points(x,y,bbox, scale,M, MINSIZE);
+    std::unique_ptr<cudf::experimental::table> qidx= cuspatial::quadtree_on_points(x,y,x1,y1,x2,y2, scale,M, MINSIZE);
     std::cout<<"num cols="<<qidx->view().num_columns()<<std::endl;
 }
 

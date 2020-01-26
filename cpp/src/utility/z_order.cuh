@@ -1,3 +1,4 @@
+#pragma once
 //adapted from https://dl.acm.org/doi/10.1109/TC.2007.70814
 __constant__ const ushort dilate_tab2[256] = {
       0x0000, 0x0001,  0x0004, 0x0005,    0x0010, 0x0011,  0x0014, 0x0015,

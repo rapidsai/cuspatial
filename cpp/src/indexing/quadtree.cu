@@ -23,8 +23,6 @@
 #include <cudf/table/table.hpp>
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
-#include <utility/z_order.cuh>
-#include <utility/quadtree_thrust.cuh>
 #include <cuspatial/quadtree.hpp>
 
 namespace { //anonymous
@@ -307,7 +305,7 @@ std::unique_ptr<cudf::column> nested_column_test(cudf::column_view x,cudf::colum
 }
 
 std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::mutable_column_view x,cudf::mutable_column_view y,
-	SBBox bbox, double scale, int M, int MINSIZE)
+	double x1,double y1,double x2,double y2, double scale, int M, int MINSIZE)
 {   
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
@@ -318,7 +316,7 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::mutable_colu
      
     double *d_p_x=x.data<double>();
     double *d_p_y=y.data<double>();
-   
+    SBBox bbox(thrust::make_tuple(x1,y1),thrust::make_tuple(x2,y2)); 
     int point_len=x.size();
     std::vector<std::unique_ptr<cudf::column>> quad_cols=
     	dowork(d_p_x,d_p_x,bbox,scale,point_len,M,MINSIZE,mr,stream);

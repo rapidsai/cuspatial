@@ -19,7 +19,7 @@
 #include <thrust/pair.h>
 #include <thrust/tuple.h>
 #include <thrust/functional.h>
-
+#include "z_order.cuh"
 namespace 
 {
 

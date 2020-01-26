@@ -19,9 +19,9 @@ cudf_to_np_types = {
     BOOL8: np.dtype("bool")
 }
 
-def cpp_quadtree_on_points(Column x, Column y):
+def cpp_quadtree_on_points(Column x, Column y,double x1,double y1,double x2,double y2,double scale, int M, int MINSIZE):
     cdef unique_ptr[table] c_result = move(
-        quadtree_on_points(x.view(), y.view())            
+        quadtree_on_points(x.mutable_view(), y.mutable_view(),x1,y1,x2,y2,scale,M,MINSIZE)            
     )
     return _Table.from_ptr(move(c_result))
 
