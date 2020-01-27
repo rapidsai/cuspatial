@@ -25,6 +25,8 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 #include <cuspatial/quadtree.hpp>
 
+typedef thrust::tuple<double, double,double,double,double,uint,uint> quad_point_parameters;
+
 namespace { //anonymous
 
 std::vector<std::unique_ptr<cudf::column>> dowork(double *d_p_x,double *d_p_y,SBBox bbox, double scale,
@@ -243,13 +245,12 @@ if(1)
    return quad_cols;
 }
 
-/*struct quadtree_point_processor {
- 
+struct quadtree_point_processor {
   
   template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
   std::unique_ptr<cudf::experimental::table> operator()(cudf::mutable_column_view x,
  					  cudf::mutable_column_view y,
- 					  quad_point_inputs qpi,
+ 					  quad_point_parameters qpi,
                                           rmm::mr::device_memory_resource* mr,
                                           cudaStream_t stream)
                                           {
@@ -259,14 +260,22 @@ if(1)
     T *d_p_x=x.data<T>();
     T *d_p_y=y.data<T>();
    
+    double x1=thrust::get<0>(qpi);
+    double y1=thrust::get<1>(qpi);
+    double x2=thrust::get<2>(qpi);
+    double x2=thrust::get<3>(qpi);
+    SBBox bbox(thrust::make_tuple(x1,y1),thrust::make_tuple(x2,y2));
+    double scale=thrust::get<4>(qpi);
+    uint num_levels=thrust::get<5>(qpi);
+    uint min_size=thrust::get<5>(qpi);
+    
     std::vector<std::unique_ptr<cudf::column>> quad_cols=
-    	dowork(d_p_x,d_p_x,thrust::get<0>(qpi),thrust::get<1>(qpi), x.size(), 
-    		thrust::get<1>(qpi), thrust::get<2>(qpi),mr,stream);
+    	dowork(d_p_x,d_p_x,bbox,scale, x.size(),num_levels,min_size); 
   
     std::unique_ptr<cudf::experimental::table> destination_table = std::make_unique<cudf::experimental::table>(std::move(quad_cols));      
     return destination_table;
     }
-  };*/
+  };
 } //end anonymous namespace
 
 namespace cuspatial {
@@ -310,20 +319,9 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::mutable_colu
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
     
-    /*quad_point_inputs qpi=thrust::make_tuple(bbox,scale,num_levels,min_size);
+    quad_point_parameters qpi=thrust::make_tuple(x1,y1,x2,y2,scale,num_levels,min_size);
     return cudf::experimental::type_dispatcher(x.type(),quadtree_point_processor{}, 
-    	x,y, qpi, mr,stream); */
-     
-    double *d_p_x=x.data<double>();
-    double *d_p_y=y.data<double>();
-    SBBox bbox(thrust::make_tuple(x1,y1),thrust::make_tuple(x2,y2)); 
-    int point_len=x.size();
-    std::vector<std::unique_ptr<cudf::column>> quad_cols=
-    	dowork(d_p_x,d_p_x,bbox,scale,point_len,num_levels,min_size,mr,stream);
-  
-    std::unique_ptr<cudf::experimental::table> destination_table = std::make_unique<cudf::experimental::table>(std::move(quad_cols));      
-    return destination_table;
-  	
+    	x,y, qpi, mr,stream);       	
 }
 
 }// namespace cuspatial

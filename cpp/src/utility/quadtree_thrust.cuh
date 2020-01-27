@@ -37,9 +37,6 @@ static void HandleCudaError( cudaError_t err,
 typedef unsigned char uchar;
 typedef unsigned int  uint;
 typedef thrust::pair<thrust::tuple<double,double>, thrust::tuple<double,double>> SBBox;
-typedef thrust::tuple<SBBox,double,uint,uint> quad_point_inputs;
-typedef thrust::tuple<uint, uint *, bool *, uint*, uint*> quad_point_outputs;
-
 
 struct xytoz 
 {
