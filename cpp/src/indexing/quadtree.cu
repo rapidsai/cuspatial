@@ -25,17 +25,32 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 #include <cuspatial/quadtree.hpp>
 
+typedef thrust::tuple<double, double,double,double,double,uint,uint> quad_point_parameters;
+
 namespace { //anonymous
 
-std::vector<std::unique_ptr<cudf::column>> dowork(double *d_p_x,double *d_p_y,SBBox bbox, double scale,
-	int point_len,int num_levels, int min_size, rmm::mr::device_memory_resource* mr, cudaStream_t stream)
+template<typename T>
+std::vector<std::unique_ptr<cudf::column>> dowork(T *d_p_x,T *d_p_y,SBBox bbox, double scale,
+	cudf::size_type point_len,uint num_levels, uint min_size, rmm::mr::device_memory_resource* mr, cudaStream_t stream)
 	
                                          
+{
+
+if(1)
 {
     std::cout<<"point_len="<<point_len<<std::endl;
     std::cout<<"num_levels="<<num_levels<<std::endl;
     std::cout<<"min_size="<<min_size<<std::endl;
+
+    thrust::device_ptr<T> d_x_ptr=thrust::device_pointer_cast(d_p_x);	
+    thrust::device_ptr<T> d_y_ptr=thrust::device_pointer_cast(d_p_y);   
     
+    printf("x\n");
+    thrust::copy(d_x_ptr,d_x_ptr+point_len,std::ostream_iterator<T>(std::cout, " "));std::cout<<std::endl;
+    printf("y\n");
+    thrust::copy(d_y_ptr,d_y_ptr+point_len,std::ostream_iterator<T>(std::cout, " "));std::cout<<std::endl;
+
+}    
     auto d_pnt_iter=thrust::make_zip_iterator(thrust::make_tuple(d_p_x,d_p_y));       
     uint *d_p_pntkey=NULL,*d_p_runkey=NULL, *d_p_runlen=NULL;
     RMM_TRY( RMM_ALLOC( (void**)&(d_p_pntkey),point_len* sizeof(uint),0));
@@ -44,6 +59,14 @@ std::vector<std::unique_ptr<cudf::column>> dowork(double *d_p_x,double *d_p_y,SB
     assert(d_p_pntkey!=NULL & d_p_runkey!=NULL && d_p_runlen!=NULL);
     
     thrust::transform(thrust::device,d_pnt_iter,d_pnt_iter+point_len, d_p_pntkey,xytoz(bbox,num_levels,scale));   
+
+if(1)
+{
+   
+    thrust::device_ptr<uint> d_pntkey_ptr=thrust::device_pointer_cast(d_p_pntkey);	
+    thrust::copy(d_pntkey_ptr,d_pntkey_ptr+point_len,std::ostream_iterator<uint>(std::cout, " "));std::cout<<std::endl;
+}
+
     thrust::stable_sort_by_key(thrust::device,d_p_pntkey, d_p_pntkey+point_len,d_pnt_iter);
     size_t num_run = thrust::reduce_by_key(thrust::device,d_p_pntkey,d_p_pntkey+point_len,
     	thrust::constant_iterator<int>(1),d_p_runkey,d_p_runlen).first -d_p_runkey;
@@ -101,7 +124,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(double *d_p_x,double *d_p_y,SB
     
     //reverse the order of quadtree nodes; skip the root node
     int num_count_nodes=0;
-    for(int k=0;k<num_levels;k++)
+    for(uint k=0;k<num_levels;k++)
     {	
    	//printf("k=%d lev_bpos[k]=%d lev_epos[k]=%d\n",k,lev_bpos[k],lev_epos[k]);
    	int nq1=thrust::copy(thrust::device,d_p_parentkey+lev_bpos[k],d_p_parentkey+lev_epos[k],d_p_qtpkey+num_count_nodes)-(d_p_qtpkey+num_count_nodes);   	
@@ -119,7 +142,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(double *d_p_x,double *d_p_y,SB
     RMM_FREE(d_p_pntlen,0);d_p_pntlen=NULL;
 
     int num_parent_nodes=0;
-    for(int k=1;k<num_levels;k++) num_parent_nodes+=lev_num[k];
+    for(uint k=1;k<num_levels;k++) num_parent_nodes+=lev_num[k];
    
     //temporal device memory for vector expansion
     uint *d_p_tmppos=NULL;
@@ -243,30 +266,51 @@ if(1)
    return quad_cols;
 }
 
-/*struct quadtree_point_processor {
- 
+struct quadtree_point_processor {
   
   template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
-  std::unique_ptr<cudf::experimental::table> operator()(cudf::mutable_column_view x,
- 					  cudf::mutable_column_view y,
- 					  quad_point_inputs qpi,
+  std::unique_ptr<cudf::experimental::table> operator()(cudf::mutable_column_view& x,
+ 					  cudf::mutable_column_view& y,
+ 					  quad_point_parameters qpi,
                                           rmm::mr::device_memory_resource* mr,
                                           cudaStream_t stream)
                                           {
-    //double *d_p_x=cudf::mutable_column_device_view::create(x, stream)->data<double>();
-    //double *d_p_y=cudf::mutable_column_device_view::create(y, stream)->data<double>();
+    T *d_p_x=cudf::mutable_column_device_view::create(x, stream)->data<T>();
+    T *d_p_y=cudf::mutable_column_device_view::create(y, stream)->data<T>();
 
-    T *d_p_x=x.data<T>();
-    T *d_p_y=y.data<T>();
-   
+    //T *d_p_x=x.data<T>();
+    //T *d_p_y=y.data<T>();
+    
+    double x1=thrust::get<0>(qpi);
+    double y1=thrust::get<1>(qpi);
+    double x2=thrust::get<2>(qpi);
+    double y2=thrust::get<3>(qpi);
+    SBBox bbox(thrust::make_tuple(x1,y1),thrust::make_tuple(x2,y2));
+    double scale=thrust::get<4>(qpi);
+    uint num_levels=thrust::get<5>(qpi);
+    uint min_size=thrust::get<6>(qpi);
+    
     std::vector<std::unique_ptr<cudf::column>> quad_cols=
-    	dowork(d_p_x,d_p_x,thrust::get<0>(qpi),thrust::get<1>(qpi), x.size(), 
-    		thrust::get<1>(qpi), thrust::get<2>(qpi),mr,stream);
+    	dowork<T>(d_p_x,d_p_y,bbox,scale, x.size(),num_levels,min_size,mr,stream); 
   
-    std::unique_ptr<cudf::experimental::table> destination_table = std::make_unique<cudf::experimental::table>(std::move(quad_cols));      
+    std::unique_ptr<cudf::experimental::table> destination_table = 
+    	std::make_unique<cudf::experimental::table>(std::move(quad_cols));      
     return destination_table;
     }
-  };*/
+  
+  
+  template<typename T, std::enable_if_t<!std::is_floating_point<T>::value >* = nullptr>
+  std::unique_ptr<cudf::experimental::table> operator()(cudf::mutable_column_view& x,
+ 					  cudf::mutable_column_view& y,
+ 					  quad_point_parameters qpi,
+                                          rmm::mr::device_memory_resource* mr,
+                                          cudaStream_t stream)
+                                          {
+ 	CUDF_FAIL("Non-floating point operation is not supported");
+   }  
+      
+  };
+  
 } //end anonymous namespace
 
 namespace cuspatial {
@@ -304,26 +348,15 @@ std::unique_ptr<cudf::column> nested_column_test(cudf::column_view x,cudf::colum
     return ret;
 }
 
-std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::mutable_column_view x,cudf::mutable_column_view y,
+std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::mutable_column_view& x,cudf::mutable_column_view& y,
 	double x1,double y1,double x2,double y2, double scale, int num_levels, int min_size)
 {   
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
     
-    /*quad_point_inputs qpi=thrust::make_tuple(bbox,scale,num_levels,min_size);
+    quad_point_parameters qpi=thrust::make_tuple(x1,y1,x2,y2,scale,num_levels,min_size);
     return cudf::experimental::type_dispatcher(x.type(),quadtree_point_processor{}, 
-    	x,y, qpi, mr,stream); */
-     
-    double *d_p_x=x.data<double>();
-    double *d_p_y=y.data<double>();
-    SBBox bbox(thrust::make_tuple(x1,y1),thrust::make_tuple(x2,y2)); 
-    int point_len=x.size();
-    std::vector<std::unique_ptr<cudf::column>> quad_cols=
-    	dowork(d_p_x,d_p_x,bbox,scale,point_len,num_levels,min_size,mr,stream);
-  
-    std::unique_ptr<cudf::experimental::table> destination_table = std::make_unique<cudf::experimental::table>(std::move(quad_cols));      
-    return destination_table;
-  	
+    	x,y, qpi, mr,stream);       	
 }
 
 }// namespace cuspatial

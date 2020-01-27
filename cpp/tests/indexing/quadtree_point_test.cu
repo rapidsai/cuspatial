@@ -34,8 +34,8 @@ struct QuadtreeOnPointIndexingTest : public GdfTest
 
 TEST_F(QuadtreeOnPointIndexingTest, test1)
 {
-    const int M=3;
-    int MINSIZE=12;
+    const int num_levels=3;
+    int min_size=12;
     int point_len=71;
     
     double xx[]={1.9804558865545805, 0.1895259128530169, 1.2591725716781235, 0.8178039499335275, 0.48171647380517046, 1.3890664414691907, 0.2536015260915061, 3.1907684812039956, 3.028362149164369, 3.918090468102582, 3.710910700915217, 3.0706987088385853, 3.572744183805594, 3.7080407833612004, 3.70669993057843, 3.3588457228653024, 2.0697434332621234, 2.5322042870739683, 2.175448214220591, 2.113652420701984, 2.520755151373394, 2.9909779614491687, 2.4613232527836137, 4.975578758530645, 4.07037627210835, 4.300706849071861, 4.5584381091040616, 4.822583857757069, 4.849847745942472, 4.75489831780737, 4.529792124514895, 4.732546857961497, 3.7622247877537456, 3.2648444465931474, 3.01954722322135, 3.7164018490892348, 3.7002781846945347, 2.493975723955388, 2.1807636574967466, 2.566986568683904, 2.2006520196663066, 2.5104987015171574, 2.8222482218882474, 2.241538022180476, 2.3007438625108882, 6.0821276168848994, 6.291790729917634, 6.109985464455084, 6.101327777646798, 6.325158445513714, 6.6793884701899, 6.4274219368674315, 6.444584786789386, 7.897735998643542, 7.079453687660189, 7.430677191305505, 7.5085184104988, 7.886010001346151, 7.250745898479374, 7.769497359206111, 1.8703303641352362, 1.7015273093278767, 2.7456295127617385, 2.2065031771469, 3.86008672302403, 1.9143371250907073, 3.7176098065039747, 0.059011873032214, 3.1162712022943757, 2.4264509160270813, 3.154282922203257};
@@ -53,17 +53,12 @@ TEST_F(QuadtreeOnPointIndexingTest, test1)
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_y, yy, point_len * sizeof(double), cudaMemcpyHostToDevice ) );     
     
     double scale=1.0;
-    double x1=0,x2=0,y1=8,y2=8;
+    double x1=0,x2=8,y1=0,y2=8;
     //SBBox bbox(thrust::make_tuple(0,0),thrust::make_tuple(8,8));    
-   
-    /*column_view::column_view(data_type type, size_type size, void const* data,
-                            bitmask_type const* null_mask, size_type null_count,
-                            size_type offset,
-                         std::vector<column_view> const& children)*/
-   
+      
     cudf::mutable_column_view x(cudf::data_type{cudf::FLOAT64},point_len,d_p_x);
     cudf::mutable_column_view y(cudf::data_type{cudf::FLOAT64},point_len,d_p_y);
-    std::unique_ptr<cudf::experimental::table> qidx= cuspatial::quadtree_on_points(x,y,x1,y1,x2,y2, scale,M, MINSIZE);
+    std::unique_ptr<cudf::experimental::table> qidx= cuspatial::quadtree_on_points(x,y,x1,y1,x2,y2, scale,num_levels, min_size);
     std::cout<<"num cols="<<qidx->view().num_columns()<<std::endl;
 }
 
