@@ -22,6 +22,10 @@
 
 namespace cuspatial {
 
+std::unique_ptr<cudf::experimental::table> cubicspline(cudf::column_view t,
+                                         cudf::column_view x,
+                                         cudf::column_view ids);
+
 /**
  * @brief Create a table of coefficients from an SoA of x/y coordinates
  *

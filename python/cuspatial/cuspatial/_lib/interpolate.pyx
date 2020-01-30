@@ -8,13 +8,13 @@
 from libcpp.memory cimport make_unique
 from cudf._libxx.table cimport *
 
-cpdef cpp_cubicspline(Column x, _Table y, _Table ids):
+cpdef cpp_cubicspline(Column x, Table y, Table ids):
     cdef unique_ptr[table] c_result 
     x_v = x.view()
     y_v = y.view()
     ids_v = ids.view()
     with nogil:
-        c_result = cubicspline(x_v, y_v, ids_v)
+        c_result = move(cubicspline(x_v, y_v, ids_v))
 
-    result = _Table.from_ptr(move(c_result))
+    result = Table.from_unique_ptr(move(c_result), ["x", "y"])
     return result
