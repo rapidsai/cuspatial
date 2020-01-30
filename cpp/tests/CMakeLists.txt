@@ -86,6 +86,10 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CUDF_LIBRARY}"
                  "${CUSPATIAL_LIBRARY}"
                  )
+set(QUADTREE_POINT_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/indexing/quadtree_point_test.cu")
+ConfigureTest(QUADTREE_POINT_TEST "${QUADTREE_POINT_TEST_SRC}")
+
 set(COORDINATE_TRANSFORM_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/coordinate_transform_toy.cu")
 ConfigureTest(COORDINATE_TRANSFORM_TEST "${COORDINATE_TRANSFORM_TEST_SRC}")
