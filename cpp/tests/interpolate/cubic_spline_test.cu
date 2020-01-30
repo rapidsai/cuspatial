@@ -64,4 +64,3 @@ TEST_F(CubicSplineTest, test1)
     std::cout<<"len table="<<splines->view().num_rows()<<std::endl;
 }
 
-

@@ -22,19 +22,29 @@
 
 namespace cuspatial {
 
+/**
+ * @brief Create a table of coefficients from an SoA of t/x coefficients
+ *
+ * @param[in] t interpolation coordinates for fitting splines
+ * @param[in] x column of depedent variables to be fit along t axis
+ * @return cudf::table_view (4, t.num_rows()) table of coefficients for spline interpolation
+**/
 std::unique_ptr<cudf::experimental::table> cubicspline(cudf::column_view t,
                                          cudf::column_view x,
                                          cudf::column_view ids);
 
 /**
- * @brief Create a table of coefficients from an SoA of x/y coordinates
+ * @brief Create a table of coefficients from an SoA of coordinates.
+ *
+ * As suggested by the input parameters, this version computes cubic spline
+ * coefficients for each column of the table_view x.
  *
  * @param[in] x interpolation coordinates for fitting splines
- * @param[in] y table of depedent variables to be fit along x axis
+ * @param[in] y table of dependent variables to be fit along x axis
  * @param[in] ids_and_end_coordinates pairs of ids and index of last value in each trajectory
  * @return cudf::table_view (4, (M*len(ids))) table of coefficients for spline interpolation
 **/
-std::unique_ptr<cudf::experimental::table> cubicspline(cudf::column_view x,
-                                         cudf::table_view y,
+std::unique_ptr<cudf::experimental::table> cubicspline(cudf::column_view t,
+                                         cudf::table_view x,
                                          cudf::table_view ids);
 }// namespace cuspatial
