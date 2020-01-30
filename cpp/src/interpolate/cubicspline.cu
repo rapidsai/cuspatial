@@ -48,26 +48,58 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
     x_[1] = 2;
     x_[2] = 3;
     x_[3] = 4;
+    // h = t[1:] - t[:-1]
     thrust::device_vector<float> h(t_.begin(), t_.end()-1);
     thrust::transform(t_.begin()+1, t_.end(), h.begin(), h.begin(), thrust::minus<float>()); 
     thrust::copy(h.begin(), h.end(), std::ostream_iterator<float>(std::cout, "\n"));
     thrust::copy(x_.begin(), x_.end(), std::ostream_iterator<float>(std::cout, "\n"));
+    // b = (y[1:]-y[:-1])/h
     thrust::device_vector<float> b(x_.begin(), x_.end()-1);
     thrust::transform(x_.begin()+1, x_.end(), b.begin(), b.begin(), thrust::minus<float>());
     thrust::transform(b.begin(), b.end(), h.begin(), b.begin(), thrust::divides<float>());
     thrust::copy(b.begin(), b.end(), std::ostream_iterator<float>(std::cout, "\n"));
+    // v = 2*(h[:-1]+h[1:])
     thrust::device_vector<float> v(h.begin(), h.end()-1);
     thrust::device_vector<float> two(v.size(), 2);
     thrust::transform(h.begin()+1, h.end(), v.begin(), v.begin(), thrust::plus<float>());
     thrust::transform(v.begin(), v.end(), two.begin(), v.begin(), thrust::multiplies<float>());
     thrust::copy(v.begin(), v.end(), std::ostream_iterator<float>(std::cout, "\n"));
+    // u = 6*(b[1:] - b[:-1])
     thrust::device_vector<float> u(b.begin(), b.end()-1);
     thrust::device_vector<float> six(b.size(), 6);
     thrust::transform(b.begin()+1, b.end(), u.begin(), u.begin(), thrust::minus<float>());
     thrust::transform(u.begin(), u.end(), six.begin(), u.begin(), thrust::multiplies<float>());
     thrust::copy(u.begin(), u.end(), std::ostream_iterator<float>(std::cout, "\n"));
 
+    // 2. allocate sparse matrix inputs
+    // 3. fill tridiagonal matrix
+    // M = cp.zeros((n-2, n-2))
+    // cp.fill_diagonal(M, v)
+    // cp.fill_diagonal(M[1:], h[1:-1])
+    // cp.fill_diagonal(M[:, 1:], h[1:-1])
+    thrust::device_vector<float> d(v.begin(), v.end());
+    thrust::device_vector<float> dl(h.begin()+1, h.end()-1);
+    thrust::device_vector<float> du(h.begin()+1, h.end()-1);
 
+    // 4. call cusparse<T>gtsv2() to solve
+    // 4.1 Get cuSparse library context
+    // compute inputs:
+    // handle: the cuSparse library context
+    // m: size
+    // n: number of columns of solution matrix B
+    // dl, d, du: vectors of the diagonal
+    // B: (ldb, n) dimensional dense matrix to be solved for
+    // ldb: leading dimension of B
+    // pBuffer: get size of thisu by gtsv2_bufferSizeExt 
+    
+    // the 2x2 case is degenerate... solve it by hand since a 2x2
+    // matrix is trivial to invert.
+
+
+    // 5. finish coefficient calculations
+
+    // END:
+    // Basic columnar operations to prepare return values to `cuspatial` DataFrame
     std::unique_ptr<cudf::column> column_1 = cudf::make_numeric_column(cudf::data_type{cudf::FLOAT64}, ids.size());
     std::unique_ptr<cudf::column> column_2 = cudf::make_numeric_column(cudf::data_type{cudf::FLOAT64}, ids.size());
     std::vector<std::unique_ptr<cudf::column>> table;
