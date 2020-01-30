@@ -52,7 +52,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(T *d_p_x,T *d_p_y,SBBox bbox, 
     auto exec_policy = rmm::exec_policy(stream)->on(stream);
 
 //debugging: make sure the inputs are correct
-if(1)
+if(0)
 {
     thrust::device_ptr<T> d_x_ptr=thrust::device_pointer_cast(d_p_x);	
     thrust::device_ptr<T> d_y_ptr=thrust::device_pointer_cast(d_p_y);   
@@ -73,7 +73,7 @@ if(1)
     //computing Morton code (Z-order) 
     thrust::transform(exec_policy,d_pnt_iter,d_pnt_iter+point_len, d_p_pntkey,xytoz(bbox,num_levels,scale));   
 
-if(1)
+if(0)
 {
    
     thrust::device_ptr<uint> d_pntkey_ptr=thrust::device_pointer_cast(d_p_pntkey);	
@@ -247,7 +247,7 @@ if(1)
    //line 10 of algorithm in Fig. 5 in ref. 
    thrust::exclusive_scan(exec_policy,d_p_qtclen,d_p_qtclen+num_valid_nodes,d_p_qtcpos,lev_num[1]);   
 
-if(1)
+if(0)
 {
    std::cout<<"length:"<<std::endl;
    thrust::device_ptr<uint> d_qtclen_ptr=thrust::device_pointer_cast(d_p_qtclen);
@@ -284,7 +284,7 @@ if(1)
    RMM_FREE(d_p_qtnlen,stream);d_p_qtnlen=NULL;
    RMM_FREE(d_p_qtclen,stream);d_p_qtclen=NULL;
 
-if(1)
+if(0)
 {
 
     thrust::device_ptr<uint> d_qtpkey_ptr=thrust::device_pointer_cast(d_p_qtpkey);	
