@@ -1,7 +1,7 @@
 import numpy as np
-from cudf._libxx.column cimport *
-from cudf._libxx.table cimport *
-cimport cudf._libxx.lib as libcudf
+from cudf._libxx.lib cimport *
+from cudf._libxx.column cimport Column
+from cudf._libxx.table cimport Table
 from cudf.core.buffer import Buffer
 
 cudf_to_np_types = {
@@ -25,7 +25,7 @@ def cpp_quadtree_on_points(Column x, Column y,
     cdef unique_ptr[table] c_result = move(
         quadtree_on_points(x.mutable_view(), y.mutable_view(),x1,y1,x2,y2,scale,num_levels,min_size)            
     )
-    return _Table.from_ptr(move(c_result))
+    return Table.from_unique_ptr(move(c_result), ["x", "y"])
 
 def cpp_nested_column_test(Column x, Column y):
     print('in cpp_nested_column_test..................')
@@ -59,7 +59,7 @@ def cpp_nested_column_test(Column x, Column y):
     #not sure about the logic; seems no child column was appended
     children = None
     if c_children.size() != 0:
-        children = tuple(Column.from_ptr(move(c_children[i]))
+        children = tuple(Column.from_unique_ptr(move(c_children[i]))
                              for i in range(c_children.size()))
     print('children.size=',children.size())
     return build_column(data, dtype=dtype, mask=mask, children=children)
