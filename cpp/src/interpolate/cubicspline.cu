@@ -278,14 +278,12 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
           thrust::make_tuple(z.end(), z.end()-1, h.end(), d_v.end())),
         calc_d_functor());
     tPrint(d_v, "d_v");
-    tPrint(z.begin()+1, z.end(), "z[1:]");
-    tPrint(z.begin(), z.end()-1, "z[:-1]");
 
-    rmm::device_vector<float> t_final(t_.begin(), t_.end()-1);
+    rmm::device_vector<float> t_final(t_.begin()+1, t_.end());
 
-    rmm::device_vector<float> deg_2(c.begin(), c.end());
-    rmm::device_vector<float> deg_1(b.begin(), b.end());
-    rmm::device_vector<float> deg_0(a.begin(), a.end());
+    rmm::device_vector<float> deg_2(d_v.begin(), d_v.end());
+    rmm::device_vector<float> deg_1(d_v.begin(), d_v.end());
+    rmm::device_vector<float> deg_0(d_v.begin(), d_v.end());
 
     thrust::for_each(
         thrust::make_zip_iterator(
@@ -305,6 +303,10 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
         thrust::make_zip_iterator(
           thrust::make_tuple(a.end(), b.end(), c.end(), d_v.end(), t_final.end(), deg_0.end())),
         calc_deg_0_functor());
+    tPrint(c, "c");
+    tPrint(b, "b");
+    tPrint(a, "a");
+    tPrint(t_final, "t");
     tPrint(d_v, "deg_3");
     tPrint(deg_2, "deg_2");
     tPrint(deg_1, "deg_1");
