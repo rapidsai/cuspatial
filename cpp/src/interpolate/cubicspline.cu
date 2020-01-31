@@ -65,6 +65,25 @@ void tPrint(rmm::device_vector<T> vec, const char* name="None") {
     std::cout << "\n";
 }
 
+struct saxpy_functor
+{
+  const float a;
+  saxpy_functor(float _a) : a(_a) {}
+  __host__ __device__
+    float operator()(const float& x, const float& y) const {
+      return a * x + y;
+    }
+};
+struct mul_scalar_functor
+{
+  const float a;
+  mul_scalar_functor(float _a) : a(_a) {}
+  __host__ __device__
+    float operator()(const float& x) const {
+      return a * x;
+    }
+};
+
 } // anonymous namespace
 
 namespace cuspatial
@@ -104,11 +123,11 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
     thrust::transform(t_.begin()+1, t_.end(), h.begin(), h.begin(), thrust::minus<float>()); 
     tPrint(h, "h");
 
-    // b = (y[1:]-y[:-1])/h
-    rmm::device_vector<float> b(x_.begin(), x_.end()-1);
-    thrust::transform(x_.begin()+1, x_.end(), b.begin(), b.begin(), thrust::minus<float>());
-    thrust::transform(b.begin(), b.end(), h.begin(), b.begin(), thrust::divides<float>());
-    tPrint(b, "b");
+    // i = (y[1:]-y[:-1])/h
+    rmm::device_vector<float> i(x_.begin(), x_.end()-1);
+    thrust::transform(x_.begin()+1, x_.end(), i.begin(), i.begin(), thrust::minus<float>());
+    thrust::transform(i.begin(), i.end(), h.begin(), i.begin(), thrust::divides<float>());
+    tPrint(i, "i");
 
     // v = 2*(h[:-1]+h[1:])
     rmm::device_vector<float> v(h.begin(), h.end()-1);
@@ -117,10 +136,10 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
     thrust::transform(v.begin(), v.end(), two.begin(), v.begin(), thrust::multiplies<float>());
     tPrint(v, "v");
 
-    // u = 6*(b[1:] - b[:-1])
-    rmm::device_vector<float> u(b.begin(), b.end()-1);
-    rmm::device_vector<float> six(b.size(), 6);
-    thrust::transform(b.begin()+1, b.end(), u.begin(), u.begin(), thrust::minus<float>());
+    // u = 6*(i[1:] - i[:-1])
+    rmm::device_vector<float> u(i.begin(), i.end()-1);
+    rmm::device_vector<float> six(i.size(), 6);
+    thrust::transform(i.begin()+1, i.end(), u.begin(), u.begin(), thrust::minus<float>());
     thrust::transform(u.begin(), u.end(), six.begin(), u.begin(), thrust::multiplies<float>());
     tPrint(u, "u");
 
@@ -184,16 +203,28 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
     tPrint(a, "a"); 
 
     // b = b - h*(z[1:] + 2*z[:-1])/6 
-    rmm::device_vector<float> z(u.begin(), u.end());
+    rmm::device_vector<float> b(i.begin(), i.end());
+    rmm::device_vector<float> z(u.size()+2, 0);
+    thrust::copy(u.begin(), u.end(), z.begin()+1);
+    tPrint(z, "z");
     rmm::device_vector<float> two_z(z.begin(), z.end()-1);
-    thrust::transform(two_z.begin(), two_z.end(), two.begin(), two_z.end(), thrust::multiplies<float>());
+    rmm::device_vector<float> two_z_len(z.size(), 2);
+    thrust::transform(two_z.begin(), two_z.end(), two_z_len.begin(), two_z.begin(), thrust::multiplies<float>());
+    tPrint(two, "two");
+    tPrint(two_z, "two_z");
     rmm::device_vector<float> z_tmp(z.begin()+1, z.end());
     thrust::transform(z_tmp.begin(), z_tmp.end(), two_z.begin(), z_tmp.begin(), thrust::plus<float>());
+    tPrint(z_tmp, "z_tmp");
     rmm::device_vector<float> h_over_six(h.begin(), h.end());
     thrust::transform(h.begin(), h.end(), six.begin(), h_over_six.begin(), thrust::divides<float>());
+    tPrint(h_over_six, "h_over_six");
     thrust::transform(z_tmp.begin(), z_tmp.end(), h_over_six.begin(), z_tmp.begin(), thrust::multiplies<float>());
     thrust::transform(b.begin(), b.end(), z_tmp.begin(), b.begin(), thrust::minus<float>());
     tPrint(b, "b");
+
+    rmm::device_vector<float> c(z.begin(), z.end());
+    thrust::transform(c.begin(), c.end(), c.begin(), mul_scalar_functor(1.0/2.0));
+    tPrint(c, "c");
 
     // END:
     // Basic columnar operations to prepare return values to `cuspatial` DataFrame
