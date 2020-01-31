@@ -11,6 +11,7 @@ from .core.trajectory import (
     spatial_bounds,
     subset_trajectory_id,
 )
+from .core.interpolate import cubic_spline
 from .io.shapefile import read_polygon_shapefile
 from .indexing.quadtree import quadtree_on_points
 from .io.soa import (
