@@ -15,7 +15,8 @@
  */
 
 #include "cuspatial/cubicspline.hpp"
-#include "cudf/column/column_factories.hpp"
+#include <cudf/column/column_factories.hpp>
+#include <cudf/column/column_device_view.cuh>
 #include "cusparse.h"
 #include <thrust/device_vector.h>
 
@@ -139,6 +140,8 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
     cudf::column_view ids
 )
 {
+    cudaStream_t stream=0;
+    rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
     // steps
     // compute array values
     // 1. compute precursor values for tridiagonal matrix
@@ -312,13 +315,25 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
     tPrint(deg_1, "deg_1");
     tPrint(deg_0, "deg_0");
 
+    std::unique_ptr<cudf::column> column_deg_3 = cudf::make_numeric_column(cudf::data_type{cudf::FLOAT32}, d_v.size());
+    float *cd3 = cudf::mutable_column_device_view::create(column_deg_3->mutable_view())->data<float>();
+    thrust::copy(d_v.begin(), d_v.end(), cd3);
+    std::unique_ptr<cudf::column> column_deg_2 = cudf::make_numeric_column(cudf::data_type{cudf::FLOAT32}, deg_2.size());
+    float *cd2 = cudf::mutable_column_device_view::create(column_deg_2->mutable_view())->data<float>();
+    thrust::copy(deg_2.begin(), deg_2.end(), cd2);
+    std::unique_ptr<cudf::column> column_deg_1 = cudf::make_numeric_column(cudf::data_type{cudf::FLOAT32}, deg_1.size());
+    float *cd1 = cudf::mutable_column_device_view::create(column_deg_1->mutable_view())->data<float>();
+    thrust::copy(deg_1.begin(), deg_1.end(), cd1);
+    std::unique_ptr<cudf::column> column_deg_0 = cudf::make_numeric_column(cudf::data_type{cudf::FLOAT32}, deg_0.size());
+    float *cd0 = cudf::mutable_column_device_view::create(column_deg_0->mutable_view())->data<float>();
+    thrust::copy(deg_0.begin(), deg_0.end(), cd0);
     // END:
     // Basic columnar operations to prepare return values to `cuspatial` DataFrame
-    std::unique_ptr<cudf::column> column_1 = cudf::make_numeric_column(cudf::data_type{cudf::FLOAT64}, ids.size());
-    std::unique_ptr<cudf::column> column_2 = cudf::make_numeric_column(cudf::data_type{cudf::FLOAT64}, ids.size());
     std::vector<std::unique_ptr<cudf::column>> table;
-    table.push_back(std::move(column_1));
-    table.push_back(std::move(column_2));
+    table.push_back(std::move(column_deg_3));
+    table.push_back(std::move(column_deg_2));
+    table.push_back(std::move(column_deg_1));
+    table.push_back(std::move(column_deg_0));
     std::unique_ptr<cudf::experimental::table> result = std::make_unique<cudf::experimental::table>(move(table));
     return result;
 }
