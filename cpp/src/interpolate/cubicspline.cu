@@ -97,6 +97,36 @@ struct calc_d_functor
       thrust::get<3>(t) = (thrust::get<0>(t) - thrust::get<1>(t)) / 6.0*thrust::get<2>(t);
     }
 };
+struct calc_deg_2_functor
+{
+  template<typename Tuple>
+  __host__ __device__
+    void operator()(Tuple t)
+    {
+      // (c - 3*d*t)
+      thrust::get<3>(t) = thrust::get<0>(t) - 3.0 * thrust::get<1>(t) * thrust::get<2>(t);
+    }
+};
+struct calc_deg_1_functor
+{
+  template<typename Tuple>
+  __host__ __device__
+    void operator()(Tuple t)
+    {
+      // (b - (2*c*t) + (3*d*t*t))
+      thrust::get<4>(t) = thrust::get<0>(t) - (2.0 * thrust::get<1>(t) * thrust::get<3>(t)) + (3.0 * thrust::get<2>(t) * thrust::get<3>(t) * thrust::get<3>(t));
+    }
+};
+struct calc_deg_0_functor
+{
+  template<typename Tuple>
+  __host__ __device__
+    void operator()(Tuple t)
+    {
+      // (a - (b*t) + (c*t*t) - (d*t*t*t))
+      thrust::get<5>(t) = thrust::get<0>(t) - thrust::get<1>(t) * thrust::get<4>(t) + thrust::get<2>(t) * thrust::get<4>(t) * thrust::get<4>(t) - thrust::get<3>(t) * thrust::get<4>(t) * thrust::get<4>(t) * thrust::get<4>(t);
+    }
+};
 
 } // anonymous namespace
 
@@ -250,6 +280,35 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
     tPrint(d_v, "d_v");
     tPrint(z.begin()+1, z.end(), "z[1:]");
     tPrint(z.begin(), z.end()-1, "z[:-1]");
+
+    rmm::device_vector<float> t_final(t_.begin(), t_.end()-1);
+
+    rmm::device_vector<float> deg_2(c.begin(), c.end());
+    rmm::device_vector<float> deg_1(b.begin(), b.end());
+    rmm::device_vector<float> deg_0(a.begin(), a.end());
+
+    thrust::for_each(
+        thrust::make_zip_iterator(
+          thrust::make_tuple(c.begin(), d_v.begin(), t_final.begin(), deg_2.begin())),
+        thrust::make_zip_iterator(
+          thrust::make_tuple(c.end(), d_v.end(), t_final.end(), deg_2.end())),
+        calc_deg_2_functor());
+    thrust::for_each(
+        thrust::make_zip_iterator(
+          thrust::make_tuple(b.begin(), c.begin(), d_v.begin(), t_final.begin(), deg_1.begin())),
+        thrust::make_zip_iterator(
+          thrust::make_tuple(b.end(), c.end(), d_v.end(), t_final.end(), deg_1.end())),
+        calc_deg_1_functor());
+    thrust::for_each(
+        thrust::make_zip_iterator(
+          thrust::make_tuple(a.begin(), b.begin(), c.begin(), d_v.begin(), t_final.begin(), deg_0.begin())),
+        thrust::make_zip_iterator(
+          thrust::make_tuple(a.end(), b.end(), c.end(), d_v.end(), t_final.end(), deg_0.end())),
+        calc_deg_0_functor());
+    tPrint(d_v, "deg_3");
+    tPrint(deg_2, "deg_2");
+    tPrint(deg_1, "deg_1");
+    tPrint(deg_0, "deg_0");
 
     // END:
     // Basic columnar operations to prepare return values to `cuspatial` DataFrame
