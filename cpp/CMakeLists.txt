@@ -313,7 +313,7 @@ endif(USE_NVTX)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(cuspatial cudf rmm cudart cuda nvrtc gdal)
+target_link_libraries(cuspatial cudf rmm cudart cuda cusparse nvrtc gdal)
 
 
 ###################################################################################################

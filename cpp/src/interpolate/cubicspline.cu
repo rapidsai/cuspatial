@@ -19,6 +19,53 @@
 #include "cusparse.h"
 #include <thrust/device_vector.h>
 
+namespace
+{
+
+void HANDLE_CUSPARSE_STATUS(cusparseStatus_t status) {
+  if(status != CUSPARSE_STATUS_SUCCESS) {
+    const char* status_string;
+    switch(status) {
+      case CUSPARSE_STATUS_SUCCESS:
+          status_string = "CUSPARSE_STATUS_SUCCESS";
+          break;
+      case CUSPARSE_STATUS_NOT_INITIALIZED:
+          status_string = "CUSPARSE_STATUS_NOT_INITIALIZED";
+          break;
+      case CUSPARSE_STATUS_ALLOC_FAILED:
+          status_string = "CUSPARSE_STATUS_ALLOC_FAILED";
+          break;
+      case CUSPARSE_STATUS_INVALID_VALUE:
+          status_string = "CUSPARSE_STATUS_INVALID_VALUE";
+          break;
+      case CUSPARSE_STATUS_ARCH_MISMATCH:
+          status_string = "CUSPARSE_STATUS_ARCH_MISMATCH";
+          break;
+      case CUSPARSE_STATUS_EXECUTION_FAILED:
+          status_string = "CUSPARSE_STATUS_EXECUTION_FAILED";
+          break;
+      case CUSPARSE_STATUS_INTERNAL_ERROR:
+          status_string = "CUSPARSE_STATUS_INTERNAL_ERROR";
+          break;
+      case CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
+          status_string = "CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED";
+          break;
+      default:
+          status_string = "UNKNOWN";
+    }
+    printf("Cusparse error status %s\n", status_string);
+  }
+  assert(False);
+}
+
+template<typename T>
+void tPrint(rmm::device_vector<T> vec) {
+    thrust::copy(vec.begin(), vec.end(), std::ostream_iterator<float>(std::cout, " "));
+    std::cout << "\n";
+}
+
+} // anonymous namespace
+
 namespace cuspatial
 {
 
@@ -38,35 +85,37 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
     
     // 1. compute precursor values for tridiagonal matrix
     // DO
-    thrust::device_vector<float> t_(4);
+    rmm::device_vector<float> t_(5);
     t_[0] = 0;
     t_[1] = 1;
     t_[2] = 2;
     t_[3] = 3;
-    thrust::device_vector<float> x_(4);
+    t_[4] = 4;
+    rmm::device_vector<float> x_(5);
     x_[0] = 3;
     x_[1] = 2;
     x_[2] = 3;
     x_[3] = 4;
+    x_[4] = 3;
     // h = t[1:] - t[:-1]
-    thrust::device_vector<float> h(t_.begin(), t_.end()-1);
+    rmm::device_vector<float> h(t_.begin(), t_.end()-1);
     thrust::transform(t_.begin()+1, t_.end(), h.begin(), h.begin(), thrust::minus<float>()); 
     thrust::copy(h.begin(), h.end(), std::ostream_iterator<float>(std::cout, "\n"));
     thrust::copy(x_.begin(), x_.end(), std::ostream_iterator<float>(std::cout, "\n"));
     // b = (y[1:]-y[:-1])/h
-    thrust::device_vector<float> b(x_.begin(), x_.end()-1);
+    rmm::device_vector<float> b(x_.begin(), x_.end()-1);
     thrust::transform(x_.begin()+1, x_.end(), b.begin(), b.begin(), thrust::minus<float>());
     thrust::transform(b.begin(), b.end(), h.begin(), b.begin(), thrust::divides<float>());
     thrust::copy(b.begin(), b.end(), std::ostream_iterator<float>(std::cout, "\n"));
     // v = 2*(h[:-1]+h[1:])
-    thrust::device_vector<float> v(h.begin(), h.end()-1);
-    thrust::device_vector<float> two(v.size(), 2);
+    rmm::device_vector<float> v(h.begin(), h.end()-1);
+    rmm::device_vector<float> two(v.size(), 2);
     thrust::transform(h.begin()+1, h.end(), v.begin(), v.begin(), thrust::plus<float>());
     thrust::transform(v.begin(), v.end(), two.begin(), v.begin(), thrust::multiplies<float>());
     thrust::copy(v.begin(), v.end(), std::ostream_iterator<float>(std::cout, "\n"));
     // u = 6*(b[1:] - b[:-1])
-    thrust::device_vector<float> u(b.begin(), b.end()-1);
-    thrust::device_vector<float> six(b.size(), 6);
+    rmm::device_vector<float> u(b.begin(), b.end()-1);
+    rmm::device_vector<float> six(b.size(), 6);
     thrust::transform(b.begin()+1, b.end(), u.begin(), u.begin(), thrust::minus<float>());
     thrust::transform(u.begin(), u.end(), six.begin(), u.begin(), thrust::multiplies<float>());
     thrust::copy(u.begin(), u.end(), std::ostream_iterator<float>(std::cout, "\n"));
@@ -77,9 +126,9 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
     // cp.fill_diagonal(M, v)
     // cp.fill_diagonal(M[1:], h[1:-1])
     // cp.fill_diagonal(M[:, 1:], h[1:-1])
-    thrust::device_vector<float> d(v.begin(), v.end());
-    thrust::device_vector<float> dl(h.begin()+1, h.end()-1);
-    thrust::device_vector<float> du(h.begin()+1, h.end()-1);
+    rmm::device_vector<float> d(v.begin(), v.end());
+    rmm::device_vector<float> dl(h.begin()+1, h.end()-1);
+    rmm::device_vector<float> du(h.begin()+1, h.end()-1);
 
     // 4. call cusparse<T>gtsv2() to solve
     // 4.1 Get cuSparse library context
@@ -91,6 +140,40 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
     // B: (ldb, n) dimensional dense matrix to be solved for
     // ldb: leading dimension of B
     // pBuffer: get size of thisu by gtsv2_bufferSizeExt 
+    cusparseStatus_t cusparseStatus;
+    cusparseHandle_t handle;
+    cudaMalloc(&handle, sizeof(cusparseHandle_t));
+    cusparseStatus = cusparseCreate(&handle);
+    HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    size_t pBufferSize;
+    float* dlp = thrust::raw_pointer_cast(dl.data());
+    cusparseStatus = cusparseSgtsv2_bufferSizeExt(
+        handle,
+        u.size(), 
+        1,
+        thrust::raw_pointer_cast(dl.data()),
+        thrust::raw_pointer_cast(d.data()),
+        thrust::raw_pointer_cast(du.data()),
+        thrust::raw_pointer_cast(u.data()),
+        u.size(),
+        &pBufferSize
+    );
+    HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    rmm::device_vector<float> pBuffer(pBufferSize);
+    cusparseStatus = cusparseSgtsv2(
+        handle,
+        u.size(),
+        1,
+        thrust::raw_pointer_cast(dl.data()),
+        thrust::raw_pointer_cast(d.data()),
+        thrust::raw_pointer_cast(du.data()),
+        thrust::raw_pointer_cast(u.data()),
+        u.size(),
+        thrust::raw_pointer_cast(pBuffer.data())
+    );
+    HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    tPrint(u);
+    
     
     // the 2x2 case is degenerate... solve it by hand since a 2x2
     // matrix is trivial to invert.
