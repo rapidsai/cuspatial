@@ -134,7 +134,7 @@ struct calc_deg_0_functor
 namespace cuspatial
 {
 
-std::unique_ptr<cudf::experimental::table> cubicspline(
+std::unique_ptr<cudf::experimental::table> cubicspline_column(
     cudf::column_view t,
     cudf::column_view x,
     cudf::column_view ids

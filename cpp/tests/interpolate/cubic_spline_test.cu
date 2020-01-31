@@ -59,7 +59,7 @@ TEST_F(CubicSplineTest, test1)
     cudf::column_view t_column(cudf::data_type{cudf::FLOAT64},point_len,d_p_t);
     cudf::column_view x_column(cudf::data_type{cudf::FLOAT64},point_len,d_p_x);
     cudf::column_view ids_column(cudf::data_type{cudf::FLOAT64},point_len,d_p_ids);
-    std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline(t_column, x_column, ids_column);
+    std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_column(t_column, x_column, ids_column);
     std::cout<<"num cols="<<splines->view().num_columns()<<std::endl;
     std::cout<<"len table="<<splines->view().num_rows()<<std::endl;
 }

@@ -6,15 +6,16 @@
 
 from cudf._libxx.table cimport *
 
-cdef extern from "cubicspline.hpp" namespace "cuspatial" nogil:
-    cdef unique_ptr[table] cpp_cubicspline(
+cdef extern from "cubicspline.hpp" namespace "cuspatial":
+    cdef unique_ptr[table] cpp_cubicspline "cuspatial::cubicspline" (
         column_view x,
         table_view y,
         table_view ids_and_end_coordinates
-    )
+    ) except +
     
-    cdef unique_ptr[table] cpp_cubicspline_column(
+cdef extern from "cubicspline.hpp" namespace "cuspatial" nogil:
+    cdef unique_ptr[table] cpp_cubicspline_column "cuspatial::cubicspline_column" (
         column_view t,
         column_view x,
         column_view ids
-    )
+    ) except +

@@ -29,7 +29,7 @@ namespace cuspatial {
  * @param[in] x column of depedent variables to be fit along t axis
  * @return cudf::table_view (4, t.num_rows()) table of coefficients for spline interpolation
 **/
-std::unique_ptr<cudf::experimental::table> cubicspline(cudf::column_view t,
+std::unique_ptr<cudf::experimental::table> cubicspline_column(cudf::column_view t,
                                          cudf::column_view x,
                                          cudf::column_view ids);
 
