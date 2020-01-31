@@ -59,10 +59,15 @@ void HANDLE_CUSPARSE_STATUS(cusparseStatus_t status) {
 }
 
 template<typename T>
-void tPrint(rmm::device_vector<T> vec, const char* name="None") {
+void tPrint(thrust::detail::normal_iterator<T> start, thrust::detail::normal_iterator<T> stop, const char* name="None") {
     std::cout << name << "\n";
-    thrust::copy(vec.begin(), vec.end(), std::ostream_iterator<float>(std::cout, " "));
+    thrust::copy(start, stop, std::ostream_iterator<float>(std::cout, " "));
     std::cout << "\n";
+}
+
+template<typename T>
+void tPrint(rmm::device_vector<T> vec, const char* name="None") {
+  tPrint(vec.begin(), vec.end(), name);
 }
 
 struct saxpy_functor
@@ -81,6 +86,15 @@ struct mul_scalar_functor
   __host__ __device__
     float operator()(const float& x) const {
       return a * x;
+    }
+};
+struct calc_d_functor
+{
+  template<typename Tuple>
+  __host__ __device__
+    void operator()(Tuple t)
+    {
+      thrust::get<3>(t) = (thrust::get<0>(t) - thrust::get<1>(t)) / 6.0*thrust::get<2>(t);
     }
 };
 
@@ -225,6 +239,17 @@ std::unique_ptr<cudf::experimental::table> cubicspline(
     rmm::device_vector<float> c(z.begin(), z.end());
     thrust::transform(c.begin(), c.end(), c.begin(), mul_scalar_functor(1.0/2.0));
     tPrint(c, "c");
+
+    rmm::device_vector<float> d_v(h.begin(), h.end());
+    thrust::for_each(
+        thrust::make_zip_iterator(
+          thrust::make_tuple(z.begin()+1, z.begin(), h.begin(), d_v.begin())),
+        thrust::make_zip_iterator(
+          thrust::make_tuple(z.end(), z.end()-1, h.end(), d_v.end())),
+        calc_d_functor());
+    tPrint(d_v, "d_v");
+    tPrint(z.begin()+1, z.end(), "z[1:]");
+    tPrint(z.begin(), z.end()-1, "z[:-1]");
 
     // END:
     // Basic columnar operations to prepare return values to `cuspatial` DataFrame
