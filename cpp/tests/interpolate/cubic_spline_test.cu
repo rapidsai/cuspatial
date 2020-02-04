@@ -33,13 +33,69 @@ struct CubicSplineTest : public GdfTest
  
 };
 
-TEST_F(CubicSplineTest, test1)
+TEST_F(CubicSplineTest, test_full_single)
+{
+    int point_len = 5;
+    float t[point_len] = {0, 1, 2, 3, 4};
+    assert(sizeof(t) / sizeof(float)==point_len);
+    float y[point_len] = {3, 2, 3, 4, 3};
+    assert(sizeof(x) / sizeof(float)==point_len);
+    int ids_len = 1;
+    int ids[ids_len] = {0};
+    int prefix[ids_len] = {0};
+    
+    float *d_p_t = NULL;
+    float *d_p_y = NULL;
+    float *d_p_ids = NULL;
+    float *d_p_prefix = NULL;
+    RMM_TRY( RMM_ALLOC( &d_p_t, point_len* sizeof(float), 0));
+    assert(d_p_t != NULL);    
+    RMM_TRY( RMM_ALLOC( &d_p_y, point_len* sizeof(float), 0));
+    assert(d_p_x != NULL);
+    RMM_TRY( RMM_ALLOC( &d_p_ids, ids_len * sizeof(int), 0));
+    assert(d_p_ids != NULL);    
+    RMM_TRY( RMM_ALLOC( &d_p_prefix, ids_len * sizeof(int), 0));
+    assert(d_p_prefix != NULL);    
+    
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_t, t, point_len * sizeof(float), cudaMemcpyHostToDevice ) );    
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_y, y, point_len * sizeof(float), cudaMemcpyHostToDevice ) );     
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_ids, ids, ids_len * sizeof(int), cudaMemcpyHostToDevice ) );     
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_prefix, prefix, ids_len * sizeof(int), cudaMemcpyHostToDevice ) );     
+    
+    cudf::column_view t_column(cudf::data_type{cudf::FLOAT64},
+        point_len,d_p_t);
+    cudf::column_view y_column(cudf::data_type{cudf::FLOAT64},
+        point_len,d_p_y);
+    cudf::column_view ids_column(cudf::data_type{cudf::FLOAT64},
+        ids_len,d_p_ids);
+    cudf::column_view prefix_column(cudf::data_type{cudf::FLOAT64},
+        ids_len,d_p_prefix);
+    /*
+    std::unique_ptr<cudf::experimental::table> splines =
+        cuspatial::cubicspline_full(
+            t_column, y_column, ids_column, prefix_column
+        );
+    std::cout<<"num cols="<<splines->view().num_columns()<<std::endl;
+    std::cout<<"len table="<<splines->view().num_rows()<<std::endl;
+    */
+    /*
+    cudf::column_view col = splines->view().column(0);
+    std::cout << "honk" << std::endl;
+    std::cout << "col size: " << col.size();
+    for(int i = 0 ; i < col.size() ; ++i) {
+      std::cout << col.data<float>()[0] << " ";
+    }
+    std::cout << std::endl;
+    */
+}
+
+TEST_F(CubicSplineTest, test_1)
 {
     int point_len = 5;
     float t[5] = {0, 1, 2, 3, 4};
-    assert(sizeof(t) / sizeof(int)==point_len);
+    assert(sizeof(t) / sizeof(float)==point_len);
     float x[5] = {3, 2, 3, 4, 3};
-    assert(sizeof(x) / sizeof(int)==point_len);
+    assert(sizeof(x) / sizeof(float)==point_len);
     int ids[5] = {0, 1, 2, 3, 4};
     
     float *d_p_t = NULL;
@@ -60,7 +116,8 @@ TEST_F(CubicSplineTest, test1)
     cudf::column_view x_column(cudf::data_type{cudf::FLOAT64},point_len,d_p_x);
     cudf::column_view ids_column(cudf::data_type{cudf::FLOAT64},point_len,d_p_ids);
     std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_column(t_column, x_column, ids_column);
-    std::cout<<"num cols="<<splines->view().num_columns()<<std::endl;
-    std::cout<<"len table="<<splines->view().num_rows()<<std::endl;
+    // TODO: Test that the values are as expected
+    std::cout << "test_1 " << splines->view().column(0).size() << std::endl;
 }
+
 

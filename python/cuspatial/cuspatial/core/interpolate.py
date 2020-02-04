@@ -31,3 +31,7 @@ def cubic_spline(x, y, ids_and_end_coordinates):
     ids_c = ids_and_end_coordinates._column
     result = cubicspline_column(x_c, y_c, ids_c)
     return DataFrame(result._columns)
+
+def cubic_spline_2(x, y, ids_and_prefix_sum):
+    result = cubicspline_full(x, y, ids_and_prefix_sum())
+    return result

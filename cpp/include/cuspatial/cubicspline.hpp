@@ -47,4 +47,21 @@ std::unique_ptr<cudf::experimental::table> cubicspline_column(cudf::column_view 
 std::unique_ptr<cudf::experimental::table> cubicspline(cudf::column_view t,
                                          cudf::table_view x,
                                          cudf::table_view ids);
+/**
+ * @brief Create a table of coefficients from an SoA of coordinates.
+ *
+ * This version computes coefficients similarly to the table_view method, but
+ * only accepts a single column for x. ids and prefix are also passed in as
+ * separate arguments.
+ *
+ * @param[in] x interpolation coordinates for fitting splines
+ * @param[in] y column of dependent variables to be fit along x axis
+ * @param[in] ids of incoming coordinate sets
+ * @param[in] prefix_sum of incoming coordinate sets
+ * @return cudf::table_view (4, (M*len(ids))) table of coefficients for spline interpolation
+**/
+std::unique_ptr<cudf::experimental::table> cubicspline_full(cudf::column_view t,
+                                         cudf::column_view y,
+                                         cudf::column_view ids,
+                                         cudf::column_view prefix_sums);
 }// namespace cuspatial

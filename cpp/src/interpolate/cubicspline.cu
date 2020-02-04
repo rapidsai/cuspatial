@@ -20,8 +20,7 @@
 #include "cusparse.h"
 #include <thrust/device_vector.h>
 
-namespace
-{
+namespace { // anonymous
 
 void HANDLE_CUSPARSE_STATUS(cusparseStatus_t status) {
   if(status != CUSPARSE_STATUS_SUCCESS) {
@@ -78,15 +77,6 @@ void tPrint(rmm::device_vector<T> vec, const char* name="None") {
 #define TPRINT(vec, name) {}
 #endif
 
-struct saxpy_functor
-{
-  const float a;
-  saxpy_functor(float _a) : a(_a) {}
-  __host__ __device__
-    float operator()(const float& x, const float& y) const {
-      return a * x + y;
-    }
-};
 struct mul_scalar_functor
 {
   const float a;
@@ -136,10 +126,47 @@ struct calc_deg_0_functor
     }
 };
 
+struct cubic_spline_sparse_tridiagonal_creation_functor {
+template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
+    void operator()(cudf::column_view& t, cudf::column_view& y,
+        cudf::mutable_column_view& buffer,
+        rmm::mr::device_memory_resource *mr,
+        cudaStream_t stream)
+      {
+          // Compute h, i, v, u
+      }
+};
+
 } // anonymous namespace
 
 namespace cuspatial
 {
+
+std::unique_ptr<cudf::experimental::table> cubicspline_full(
+    cudf::column_view t,
+    cudf::column_view y,
+    cudf::column_view ids,
+    cudf::column_view prefixes
+)
+{
+    cudaStream_t stream=0;
+    rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
+
+    // Allocate storage for cuSparse dependency computation
+    rmm::device_vector<float> t_(t.data<float>(), t.data<float>()+t.size());
+    rmm::device_vector<float> y_(y.data<float>(), y.data<float>()+y.size());
+    TPRINT(t_, "t_");
+    TPRINT(y_, "y_");
+    
+    // Placeholder result preparation
+    std::unique_ptr<cudf::column> result_col = cudf::make_numeric_column(y.type(), y.size());
+    float *cd1 = cudf::mutable_column_device_view::create(result_col->mutable_view())->data<float>();
+    thrust::copy(y_.begin(), y_.end(), cd1);
+    std::vector<std::unique_ptr<cudf::column>> table;
+    table.push_back(std::move(result_col));
+    std::unique_ptr<cudf::experimental::table> result = std::make_unique<cudf::experimental::table>(move(table));
+    return result;
+}
 
 std::unique_ptr<cudf::experimental::table> cubicspline_column(
     cudf::column_view t,
@@ -147,7 +174,7 @@ std::unique_ptr<cudf::experimental::table> cubicspline_column(
     cudf::column_view ids
 )
 {
-    cudaStream_t stream=0;
+    // cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
     // steps
     // compute array values
