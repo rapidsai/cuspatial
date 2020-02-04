@@ -61,7 +61,7 @@ void HANDLE_CUSPARSE_STATUS(cusparseStatus_t status) {
 
 template<typename T>
 void tPrint(thrust::detail::normal_iterator<T> start, thrust::detail::normal_iterator<T> stop, const char* name="None") {
-    std::cout << name << "\n";
+    std::cout << name << " size: " << stop-start << " ";
     thrust::copy(start, stop, std::ostream_iterator<float>(std::cout, " "));
     std::cout << "\n";
 }
@@ -70,6 +70,13 @@ template<typename T>
 void tPrint(rmm::device_vector<T> vec, const char* name="None") {
   tPrint(vec.begin(), vec.end(), name);
 }
+
+#define ALLOW_PRINT 1
+#if ALLOW_PRINT
+#define TPRINT(vec, name) (tPrint( vec, name))
+#else
+#define TPRINT(vec, name) {}
+#endif
 
 struct saxpy_functor
 {
@@ -152,6 +159,7 @@ std::unique_ptr<cudf::experimental::table> cubicspline_column(
     
     // 1. compute precursor values for tridiagonal matrix
     // DO
+    /*
     rmm::device_vector<float> t_(5);
     t_[0] = 0;
     t_[1] = 1;
@@ -164,31 +172,38 @@ std::unique_ptr<cudf::experimental::table> cubicspline_column(
     x_[2] = 3;
     x_[3] = 4;
     x_[4] = 3;
+    */
+    //std::cout << "t Input size " << t.size() << std::endl;
+    //std::cout << "x Input size " << x.size() << std::endl;
+    rmm::device_vector<float> t_(t.data<float>(), t.data<float>()+t.size());
+    rmm::device_vector<float> x_(x.data<float>(), x.data<float>()+x.size());
+    TPRINT(t_, "t_");
+    TPRINT(x_, "x_");
 
     // h = t[1:] - t[:-1]
     rmm::device_vector<float> h(t_.begin(), t_.end()-1);
     thrust::transform(t_.begin()+1, t_.end(), h.begin(), h.begin(), thrust::minus<float>()); 
-    tPrint(h, "h");
+    TPRINT(h, "h");
 
     // i = (y[1:]-y[:-1])/h
     rmm::device_vector<float> i(x_.begin(), x_.end()-1);
     thrust::transform(x_.begin()+1, x_.end(), i.begin(), i.begin(), thrust::minus<float>());
     thrust::transform(i.begin(), i.end(), h.begin(), i.begin(), thrust::divides<float>());
-    tPrint(i, "i");
+    TPRINT(i, "i");
 
     // v = 2*(h[:-1]+h[1:])
     rmm::device_vector<float> v(h.begin(), h.end()-1);
     rmm::device_vector<float> two(v.size(), 2);
     thrust::transform(h.begin()+1, h.end(), v.begin(), v.begin(), thrust::plus<float>());
     thrust::transform(v.begin(), v.end(), two.begin(), v.begin(), thrust::multiplies<float>());
-    tPrint(v, "v");
+    TPRINT(v, "v");
 
     // u = 6*(i[1:] - i[:-1])
     rmm::device_vector<float> u(i.begin(), i.end()-1);
     rmm::device_vector<float> six(i.size(), 6);
     thrust::transform(i.begin()+1, i.end(), u.begin(), u.begin(), thrust::minus<float>());
     thrust::transform(u.begin(), u.end(), six.begin(), u.begin(), thrust::multiplies<float>());
-    tPrint(u, "u");
+    TPRINT(u, "u");
 
     // 2. allocate sparse matrix inputs
     // 3. fill tridiagonal matrix
@@ -229,6 +244,7 @@ std::unique_ptr<cudf::experimental::table> cubicspline_column(
         &pBufferSize
     );
     HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    std::cout << "pBufferSize " << pBufferSize << std::endl;
     rmm::device_vector<float> pBuffer(pBufferSize);
     cusparseStatus = cusparseSgtsv2(
         handle,
@@ -242,36 +258,36 @@ std::unique_ptr<cudf::experimental::table> cubicspline_column(
         thrust::raw_pointer_cast(pBuffer.data())
     );
     HANDLE_CUSPARSE_STATUS(cusparseStatus);
-    tPrint(u, "u");
+    TPRINT(u, "u");
 
     // 5. finish coefficient calculations
     // a = y[:-1]
     rmm::device_vector<float> a(x_.begin(), x_.end()-1);
-    tPrint(a, "a"); 
+    TPRINT(a, "a"); 
 
     // b = b - h*(z[1:] + 2*z[:-1])/6 
     rmm::device_vector<float> b(i.begin(), i.end());
     rmm::device_vector<float> z(u.size()+2, 0);
     thrust::copy(u.begin(), u.end(), z.begin()+1);
-    tPrint(z, "z");
+    TPRINT(z, "z");
     rmm::device_vector<float> two_z(z.begin(), z.end()-1);
     rmm::device_vector<float> two_z_len(z.size(), 2);
     thrust::transform(two_z.begin(), two_z.end(), two_z_len.begin(), two_z.begin(), thrust::multiplies<float>());
-    tPrint(two, "two");
-    tPrint(two_z, "two_z");
+    TPRINT(two, "two");
+    TPRINT(two_z, "two_z");
     rmm::device_vector<float> z_tmp(z.begin()+1, z.end());
     thrust::transform(z_tmp.begin(), z_tmp.end(), two_z.begin(), z_tmp.begin(), thrust::plus<float>());
-    tPrint(z_tmp, "z_tmp");
+    TPRINT(z_tmp, "z_tmp");
     rmm::device_vector<float> h_over_six(h.begin(), h.end());
     thrust::transform(h.begin(), h.end(), six.begin(), h_over_six.begin(), thrust::divides<float>());
-    tPrint(h_over_six, "h_over_six");
+    TPRINT(h_over_six, "h_over_six");
     thrust::transform(z_tmp.begin(), z_tmp.end(), h_over_six.begin(), z_tmp.begin(), thrust::multiplies<float>());
     thrust::transform(b.begin(), b.end(), z_tmp.begin(), b.begin(), thrust::minus<float>());
-    tPrint(b, "b");
+    TPRINT(b, "b");
 
-    rmm::device_vector<float> c(z.begin(), z.end());
+    rmm::device_vector<float> c(z.begin(), z.end()-1);
     thrust::transform(c.begin(), c.end(), c.begin(), mul_scalar_functor(1.0/2.0));
-    tPrint(c, "c");
+    TPRINT(c, "c");
 
     rmm::device_vector<float> d_v(h.begin(), h.end());
     thrust::for_each(
@@ -280,7 +296,7 @@ std::unique_ptr<cudf::experimental::table> cubicspline_column(
         thrust::make_zip_iterator(
           thrust::make_tuple(z.end(), z.end()-1, h.end(), d_v.end())),
         calc_d_functor());
-    tPrint(d_v, "d_v");
+    TPRINT(d_v, "d_v");
 
     rmm::device_vector<float> t_final(t_.begin()+1, t_.end());
 
@@ -306,14 +322,14 @@ std::unique_ptr<cudf::experimental::table> cubicspline_column(
         thrust::make_zip_iterator(
           thrust::make_tuple(a.end(), b.end(), c.end(), d_v.end(), t_final.end(), deg_0.end())),
         calc_deg_0_functor());
-    tPrint(c, "c");
-    tPrint(b, "b");
-    tPrint(a, "a");
-    tPrint(t_final, "t");
-    tPrint(d_v, "deg_3");
-    tPrint(deg_2, "deg_2");
-    tPrint(deg_1, "deg_1");
-    tPrint(deg_0, "deg_0");
+    TPRINT(c, "c");
+    TPRINT(b, "b");
+    TPRINT(a, "a");
+    TPRINT(t_final, "t");
+    TPRINT(d_v, "deg_3");
+    TPRINT(deg_2, "deg_2");
+    TPRINT(deg_1, "deg_1");
+    TPRINT(deg_0, "deg_0");
 
     std::unique_ptr<cudf::column> column_deg_3 = cudf::make_numeric_column(cudf::data_type{cudf::FLOAT32}, d_v.size());
     float *cd3 = cudf::mutable_column_device_view::create(column_deg_3->mutable_view())->data<float>();

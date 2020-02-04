@@ -35,25 +35,25 @@ struct CubicSplineTest : public GdfTest
 
 TEST_F(CubicSplineTest, test1)
 {
-    int point_len = 4;
-    double t[4] = {0, 1, 2, 3};
+    int point_len = 5;
+    float t[5] = {0, 1, 2, 3, 4};
     assert(sizeof(t) / sizeof(int)==point_len);
-    double x[4] = {0, 1, 2, 1};
+    float x[5] = {3, 2, 3, 4, 3};
     assert(sizeof(x) / sizeof(int)==point_len);
-    int ids[4] = {0, 1, 2, 3};
+    int ids[5] = {0, 1, 2, 3, 4};
     
-    double *d_p_t = NULL;
-    double *d_p_x = NULL;
-    double *d_p_ids = NULL;
-    RMM_TRY( RMM_ALLOC( &d_p_t,point_len* sizeof(double), 0));
+    float *d_p_t = NULL;
+    float *d_p_x = NULL;
+    float *d_p_ids = NULL;
+    RMM_TRY( RMM_ALLOC( &d_p_t,point_len* sizeof(float), 0));
     assert(d_p_t != NULL);    
-    RMM_TRY( RMM_ALLOC( &d_p_x,point_len* sizeof(double), 0));
+    RMM_TRY( RMM_ALLOC( &d_p_x,point_len* sizeof(float), 0));
     assert(d_p_x != NULL);
     RMM_TRY( RMM_ALLOC( &d_p_ids,point_len* sizeof(int), 0));
     assert(d_p_ids != NULL);    
  
-    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_t, t, point_len * sizeof(double), cudaMemcpyHostToDevice ) );    
-    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_x, x, point_len * sizeof(double), cudaMemcpyHostToDevice ) );     
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_t, t, point_len * sizeof(float), cudaMemcpyHostToDevice ) );    
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_x, x, point_len * sizeof(float), cudaMemcpyHostToDevice ) );     
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_ids, ids, point_len * sizeof(int), cudaMemcpyHostToDevice ) );     
     
     cudf::column_view t_column(cudf::data_type{cudf::FLOAT64},point_len,d_p_t);
