@@ -1,3 +1,17 @@
+# cuSpatial 0.12.0 (04 Feb 2020)
+
+## New Features
+
+## Improvements
+
+- PR #109 Update OPS codeowners group name
+- PR #113 Support libcudf++
+
+## Bug Fixes
+
+- PR #116 Fix API issue with shapefile reader
+
+
 # cuSpatial 0.11.0 (11 Dec 2019)
 
 ## New Features
