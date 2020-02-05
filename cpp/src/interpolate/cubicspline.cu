@@ -126,7 +126,7 @@ struct calc_deg_0_functor
     }
 };
 
-struct cubic_spline_sparse_tridiagonal_creation_functor {
+struct intermediate_kernel {
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
     void operator()(cudf::column_view& t, cudf::column_view& y,
         cudf::mutable_column_view& buffer,
@@ -194,7 +194,7 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     int64_t n = y.size();
     int64_t tcb_size = 2 * (n-1) + 2 * (n-2);
     cudf::mutable_column_view tridiagonal_creation_buffer = make_numeric_column(y.type(), tcb_size, cudf::UNALLOCATED, stream, mr)->mutable_view();
-    cudf::experimental::type_dispatcher(y.type(), cubic_spline_sparse_tridiagonal_creation_functor{}, t, y, tridiagonal_creation_buffer, mr, stream);
+    cudf::experimental::type_dispatcher(y.type(), intermediate_kernel{}, t, y, tridiagonal_creation_buffer, mr, stream);
     
     // Placeholder result preparation
     std::unique_ptr<cudf::column> result_col = cudf::make_numeric_column(y.type(), y.size());
