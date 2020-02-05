@@ -126,43 +126,66 @@ struct calc_deg_0_functor
     }
 };
 
-struct intermediate_kernel {
+struct intermediate_results {
+template<typename T>
+  __device__
+  void operator()(const T* t, const T* y, const int32_t* prefixes, T* buffer) {
+    // Compute h, i, v, u
+    int64_t n = y->size();
+    assert(buffer->size() == 2 * (n-1) + 2 * (n-2));
+    int h = 0;
+    int len_h = n-1;
+    int i = h+len_h;
+    int len_i = n-1;
+    int v = i+len_i;
+    int len_v = n-2;
+    int u = v+len_v;
+    int len_u = n-2;
+    int ci = 0;
+    for(ci = 0 ; ci < len_h ; ++ci) {
+      //buffer[h+ci] = t[h+ci+1] - t[h+ci];
+      //buffer[i+ci] = (y[h+ci+1] - y[h+ci]) / buffer[h+ci];
+    }
+    for(ci = 0 ; ci < len_v ; ++ci) {
+      //buffer[v+ci] = (buffer[h+ci+1]+buffer[h+len_h-1-ci]) * 2;
+    }
+    for(ci = 0 ; ci < len_u ; ++ci) {
+      //buffer[u+ci] = (buffer[i+ci+1] - buffer[i+len_i-1-ci]) * 6;
+    } 
+  }
+};
+
+struct compute_splines {
 template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
-    void operator()(cudf::column_view& t, cudf::column_view& y,
-        cudf::mutable_column_view& buffer,
+    void operator()(cudf::column_view const& t, cudf::column_view const& y,
+        cudf::column_view const& ids, cudf::column_view const& prefixes,
+        cudf::mutable_column_view const& buffer,
         rmm::mr::device_memory_resource *mr,
         cudaStream_t stream)
       {
-          // Compute h, i, v, u
-          int n = y.size();
-          assert(buffer.size() == 2 * (n-1) + 2 * (n-2));
-          int h = 0;
-          int len_h = n-1;
-          int i = h+len_h;
-          int len_i = n-1;
-          int v = i+len_i;
-          int len_v = n-2;
-          int u = v+len_v;
-          int len_u = n-2;
-          T* data = buffer.data<T>();
-          data[0] = 1;
-          const T* TT = t.data<T>();
+          auto BUFFER = nullptr;
+          auto TT = t.data<T>();
           const T* Y = y.data<T>();
-          int ci = 0;
-          for(ci = 0 ; ci < len_h ; ++ci) {
-              data[h+ci] = TT[h+ci+1] - TT[h+ci];
-              data[i+ci] = (Y[h+ci+1] - Y[h+ci]) / data[h+ci];
-          }
-          for(ci = 0 ; ci < len_v ; ++ci) {
-              data[v+ci] = (data[h+ci+1]+data[h+len_h-1-ci]) * 2;
-          }
-          for(ci = 0 ; ci < len_u ; ++ci) {
-              data[u+ci] = (data[i+ci+1] - data[i+len_i-1-ci]) * 6;
-          } 
+          const int32_t* IDS = ids.data<int32_t>();
+          const int32_t* PREFIXES = prefixes.data<int32_t>();
+          thrust::for_each(thrust::device, thrust::make_counting_iterator<int>(1),
+          thrust::make_counting_iterator<int>(static_cast<int>(prefixes.size())),
+                           [TT, Y, IDS, PREFIXES, BUFFER] __device__
+                           (auto ci) mutable {
+                             uint64_t len = PREFIXES[ci] - PREFIXES[ci-1];
+                             BUFFER[ci-1] = len;
+                           });
+          /*
+          thrust::for_each(rmm::exec_policy(stream)->on(stream),
+                           thrust::make_counting_iterator<int>(1),
+                           thrust::make_counting_iterator<int>(y.size()),
+                           intermediate_results(TT, Y, PREFIXES, BUFFER));
+          */
       }
 template<typename T, std::enable_if_t<!std::is_floating_point<T>::value >* = nullptr>
-    void operator()(cudf::column_view& t, cudf::column_view& y,
-        cudf::mutable_column_view& buffer,
+    void operator()(cudf::column_view const& t, cudf::column_view const& y,
+        cudf::column_view const& ids, cudf::column_view const& prefixes,
+        cudf::mutable_column_view const& buffer,
         rmm::mr::device_memory_resource *mr,
         cudaStream_t stream)
       {
@@ -193,8 +216,12 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
 
     int64_t n = y.size();
     int64_t tcb_size = 2 * (n-1) + 2 * (n-2);
-    cudf::mutable_column_view tridiagonal_creation_buffer = make_numeric_column(y.type(), tcb_size, cudf::UNALLOCATED, stream, mr)->mutable_view();
-    cudf::experimental::type_dispatcher(y.type(), intermediate_kernel{}, t, y, tridiagonal_creation_buffer, mr, stream);
+    cudf::mutable_column_view cv_result = make_numeric_column(y.type(), tcb_size, cudf::UNALLOCATED, stream, mr)->mutable_view();
+    // Make a table instead of a column
+    //tPrint(tridiagonal_creation_buffer.begin(), tridiagonal_creation_buffer.end(), "tcb");
+    //cudf::experimental::type_dispatcher(y.type(), compute_splines{}, t, y, ids, prefixes, cv_result, mr, stream);
+    compute_splines comp_spl;
+    comp_spl.operator()<float>(t, y, ids, prefixes, cv_result, mr, stream);
     
     // Placeholder result preparation
     std::unique_ptr<cudf::column> result_col = cudf::make_numeric_column(y.type(), y.size());
