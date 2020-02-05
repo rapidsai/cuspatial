@@ -70,23 +70,27 @@ TEST_F(CubicSplineTest, test_full_single)
         ids_len,d_p_ids);
     cudf::column_view prefix_column(cudf::data_type{cudf::FLOAT64},
         ids_len,d_p_prefix);
-    /*
+
     std::unique_ptr<cudf::experimental::table> splines =
         cuspatial::cubicspline_full(
             t_column, y_column, ids_column, prefix_column
         );
     std::cout<<"num cols="<<splines->view().num_columns()<<std::endl;
     std::cout<<"len table="<<splines->view().num_rows()<<std::endl;
-    */
-    /*
-    cudf::column_view col = splines->view().column(0);
-    std::cout << "honk" << std::endl;
-    std::cout << "col size: " << col.size();
-    for(int i = 0 ; i < col.size() ; ++i) {
-      std::cout << col.data<float>()[0] << " ";
+    
+    std::cout << "test_full " << splines->view().column(0).size() << std::endl;
+
+    cudf::column_view device_column = splines->view().column(0);
+    std::vector<float> host_data;
+    host_data.resize(device_column.size());
+    cudaMemcpy(host_data.data(), device_column.data<float>(),
+          device_column.size() * sizeof(float),
+          cudaMemcpyDeviceToHost);
+
+    for(unsigned int i = 0 ; i < host_data.size() ; ++i ){
+      std::cout << host_data[i] << " ";
     }
     std::cout << std::endl;
-    */
 }
 
 TEST_F(CubicSplineTest, test_1)

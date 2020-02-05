@@ -134,6 +134,39 @@ template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = null
         cudaStream_t stream)
       {
           // Compute h, i, v, u
+          int n = y.size();
+          assert(buffer.size() == 2 * (n-1) + 2 * (n-2));
+          int h = 0;
+          int len_h = n-1;
+          int i = h+len_h;
+          int len_i = n-1;
+          int v = i+len_i;
+          int len_v = n-2;
+          int u = v+len_v;
+          int len_u = n-2;
+          T* data = buffer.data<T>();
+          data[0] = 1;
+          const T* TT = t.data<T>();
+          const T* Y = y.data<T>();
+          int ci = 0;
+          for(ci = 0 ; ci < len_h ; ++ci) {
+              data[h+ci] = TT[h+ci+1] - TT[h+ci];
+              data[i+ci] = (Y[h+ci+1] - Y[h+ci]) / data[h+ci];
+          }
+          for(ci = 0 ; ci < len_v ; ++ci) {
+              data[v+ci] = (data[h+ci+1]+data[h+len_h-1-ci]) * 2;
+          }
+          for(ci = 0 ; ci < len_u ; ++ci) {
+              data[u+ci] = (data[i+ci+1] - data[i+len_i-1-ci]) * 6;
+          } 
+      }
+template<typename T, std::enable_if_t<!std::is_floating_point<T>::value >* = nullptr>
+    void operator()(cudf::column_view& t, cudf::column_view& y,
+        cudf::mutable_column_view& buffer,
+        rmm::mr::device_memory_resource *mr,
+        cudaStream_t stream)
+      {
+          CUDF_FAIL("Non-floating point operation is not supported.");
       }
 };
 
@@ -157,6 +190,11 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     rmm::device_vector<float> y_(y.data<float>(), y.data<float>()+y.size());
     TPRINT(t_, "t_");
     TPRINT(y_, "y_");
+
+    int64_t n = y.size();
+    int64_t tcb_size = 2 * (n-1) + 2 * (n-2);
+    cudf::mutable_column_view tridiagonal_creation_buffer = make_numeric_column(y.type(), tcb_size, cudf::UNALLOCATED, stream, mr)->mutable_view();
+    cudf::experimental::type_dispatcher(y.type(), cubic_spline_sparse_tridiagonal_creation_functor{}, t, y, tridiagonal_creation_buffer, mr, stream);
     
     // Placeholder result preparation
     std::unique_ptr<cudf::column> result_col = cudf::make_numeric_column(y.type(), y.size());
