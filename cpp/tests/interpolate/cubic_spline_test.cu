@@ -35,14 +35,14 @@ struct CubicSplineTest : public GdfTest
 
 TEST_F(CubicSplineTest, test_full_single)
 {
-    int point_len = 5;
-    float t[point_len] = {0, 1, 2, 3, 4};
+    int point_len = 10;
+    float t[point_len] = {0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
     assert(sizeof(t) / sizeof(float)==point_len);
-    float y[point_len] = {3, 2, 3, 4, 3};
+    float y[point_len] = {3, 2, 3, 4, 3, 3, 2, 3, 4, 3};
     assert(sizeof(x) / sizeof(float)==point_len);
-    int ids_len = 1;
-    int ids[ids_len] = {0};
-    int prefix[ids_len] = {0};
+    int ids_len = 2;
+    int ids[ids_len] = {0, 1};
+    int prefix[ids_len] = {0, 5};
     
     float *d_p_t = NULL;
     float *d_p_y = NULL;
@@ -66,9 +66,9 @@ TEST_F(CubicSplineTest, test_full_single)
         point_len,d_p_t);
     cudf::column_view y_column(cudf::data_type{cudf::FLOAT64},
         point_len,d_p_y);
-    cudf::column_view ids_column(cudf::data_type{cudf::FLOAT64},
+    cudf::column_view ids_column(cudf::data_type{cudf::INT32},
         ids_len,d_p_ids);
-    cudf::column_view prefix_column(cudf::data_type{cudf::FLOAT64},
+    cudf::column_view prefix_column(cudf::data_type{cudf::INT32},
         ids_len,d_p_prefix);
 
     std::unique_ptr<cudf::experimental::table> splines =

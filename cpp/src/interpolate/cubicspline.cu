@@ -169,13 +169,36 @@ struct compute_splines {
           const T* Y = y.data<T>();
           const int32_t* IDS = ids.data<int32_t>();
           const int32_t* PREFIXES = prefixes.data<int32_t>();
-          thrust::for_each(thrust::device, thrust::make_counting_iterator<int>(1),
+          int64_t size = y.size();
+          assert(buffer.size() == 2 * (size-1) + 2 * (size-2));
+          thrust::for_each(rmm::exec_policy(stream)->on(stream),
+              thrust::make_counting_iterator<int>(1),
           thrust::make_counting_iterator<int>(static_cast<int>(prefixes.size())),
                            [TT, Y, IDS, PREFIXES, BUFFER] __device__
-                           (int ci) mutable {
-                             uint64_t len = PREFIXES[ci] - PREFIXES[ci-1];
-                             BUFFER[ci-1] = len;
-                           });
+                           (int index) {
+                           BUFFER[PREFIXES[index]-1] = float(PREFIXES[index]-1);
+    int n = PREFIXES[index] - PREFIXES[index-1];
+    int h = PREFIXES[index-1];
+    int len_h = n-1;
+    int i = h+len_h;
+    int len_i = n-1;
+    int v = i+len_i;
+    int len_v = n-2;
+    int u = v+len_v;
+    int len_u = n-2;
+    int ci = 0;
+    for(ci = 0 ; ci < len_h ; ++ci) {
+      BUFFER[h+ci] = TT[h+ci+1] - TT[h+ci];
+      BUFFER[i+ci] = (Y[h+ci+1] - Y[h+ci]) / BUFFER[h+ci];
+    }
+    for(ci = 0 ; ci < len_v ; ++ci) {
+      BUFFER[v+ci] = (BUFFER[h+ci+1]+BUFFER[h+len_h-1-ci]) * 2;
+    }
+    for(ci = 0 ; ci < len_u ; ++ci) {
+      BUFFER[u+ci] = (BUFFER[i+ci+1] - BUFFER[i+len_i-1-ci]) * 6;
+    } 
+    BUFFER[h] = index*index*index;
+ });
           /*
           thrust::for_each(rmm::exec_policy(stream)->on(stream),
                            thrust::make_counting_iterator<int>(1),
@@ -225,6 +248,8 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     //cudf::experimental::type_dispatcher(y.type(), compute_splines{}, t, y, ids, prefixes, cv_result, mr, stream);
     compute_splines comp_spl;
     comp_spl.operator()<float>(t, y, ids, prefixes, cv_result, mr, stream);
+    rmm::device_vector<float> intermediate(cv_result.data<float>(), cv_result.data<float>()+cv_result.size());
+    TPRINT(intermediate, "intermediate");
     
     // Placeholder result preparation
     std::unique_ptr<cudf::column> result_col = cudf::make_numeric_column(y.type(), y.size());
