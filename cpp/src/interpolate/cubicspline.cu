@@ -156,22 +156,23 @@ template<typename T>
 };
 
 struct compute_splines {
-template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
+//template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
+  template<typename T>
     void operator()(cudf::column_view const& t, cudf::column_view const& y,
         cudf::column_view const& ids, cudf::column_view const& prefixes,
         cudf::mutable_column_view const& buffer,
         rmm::mr::device_memory_resource *mr,
         cudaStream_t stream)
       {
-          auto BUFFER = nullptr;
-          auto TT = t.data<T>();
+          T* BUFFER = buffer.data<T>();
+          const T* TT = t.data<T>();
           const T* Y = y.data<T>();
           const int32_t* IDS = ids.data<int32_t>();
           const int32_t* PREFIXES = prefixes.data<int32_t>();
           thrust::for_each(thrust::device, thrust::make_counting_iterator<int>(1),
           thrust::make_counting_iterator<int>(static_cast<int>(prefixes.size())),
                            [TT, Y, IDS, PREFIXES, BUFFER] __device__
-                           (auto ci) mutable {
+                           (int ci) mutable {
                              uint64_t len = PREFIXES[ci] - PREFIXES[ci-1];
                              BUFFER[ci-1] = len;
                            });
@@ -182,6 +183,7 @@ template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = null
                            intermediate_results(TT, Y, PREFIXES, BUFFER));
           */
       }
+  /*
 template<typename T, std::enable_if_t<!std::is_floating_point<T>::value >* = nullptr>
     void operator()(cudf::column_view const& t, cudf::column_view const& y,
         cudf::column_view const& ids, cudf::column_view const& prefixes,
@@ -191,6 +193,7 @@ template<typename T, std::enable_if_t<!std::is_floating_point<T>::value >* = nul
       {
           CUDF_FAIL("Non-floating point operation is not supported.");
       }
+      */
 };
 
 } // anonymous namespace
