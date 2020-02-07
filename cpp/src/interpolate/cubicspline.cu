@@ -17,6 +17,7 @@
 #include "cuspatial/cubicspline.hpp"
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_device_view.cuh>
+#include <cudf/filling.hpp>
 #include "cusparse.h"
 #include <thrust/device_vector.h>
 
@@ -170,26 +171,26 @@ struct compute_splines {
           const int32_t* IDS = ids.data<int32_t>();
           const int32_t* PREFIXES = prefixes.data<int32_t>();
           int64_t size = y.size();
-          assert(buffer.size() == 2 * (size-1) + 2 * (size-2));
+          assert(buffer.size() == size* 4);
           thrust::for_each(rmm::exec_policy(stream)->on(stream),
               thrust::make_counting_iterator<int>(1),
           thrust::make_counting_iterator<int>(static_cast<int>(prefixes.size())),
                            [TT, Y, IDS, PREFIXES, BUFFER] __device__
                            (int index) {
-                           BUFFER[PREFIXES[index]-1] = float(PREFIXES[index]-1);
     int n = PREFIXES[index] - PREFIXES[index-1];
-    int h = PREFIXES[index-1];
+    int h = PREFIXES[index-1] * 4;
+    int s_i = PREFIXES[index-1];
     int len_h = n-1;
     int i = h+len_h;
-    int len_i = n-1;
+    int len_i = len_h;
     int v = i+len_i;
     int len_v = n-2;
     int u = v+len_v;
-    int len_u = n-2;
+    int len_u = len_v;
     int ci = 0;
     for(ci = 0 ; ci < len_h ; ++ci) {
-      BUFFER[h+ci] = TT[h+ci+1] - TT[h+ci];
-      BUFFER[i+ci] = (Y[h+ci+1] - Y[h+ci]) / BUFFER[h+ci];
+      BUFFER[h+ci] = TT[s_i+ci+1] - TT[s_i+ci];
+      BUFFER[i+ci] = (Y[s_i+ci+1] - Y[s_i+ci]) / BUFFER[h+ci];
     }
     for(ci = 0 ; ci < len_v ; ++ci) {
       BUFFER[v+ci] = (BUFFER[h+ci+1]+BUFFER[h+len_h-1-ci]) * 2;
@@ -197,7 +198,6 @@ struct compute_splines {
     for(ci = 0 ; ci < len_u ; ++ci) {
       BUFFER[u+ci] = (BUFFER[i+ci+1] - BUFFER[i+len_i-1-ci]) * 6;
     } 
-    BUFFER[h] = index*index*index;
  });
           /*
           thrust::for_each(rmm::exec_policy(stream)->on(stream),
@@ -241,15 +241,79 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     TPRINT(y_, "y_");
 
     int64_t n = y.size();
-    int64_t tcb_size = 2 * (n-1) + 2 * (n-2);
+    int64_t tcb_size = 4 * n;
     cudf::mutable_column_view cv_result = make_numeric_column(y.type(), tcb_size, cudf::UNALLOCATED, stream, mr)->mutable_view();
+
+    //cudf::experimental::fill(cv_result, cudf::size_type(0), cv_result.size(), cudf::scalar(0.0));
+    //thrust::fill(cv_result.data<float>(), cv_result.data<float>()+cv_result.size(), 0.0);
+    // Need three separate buffers
+    // 1. h/i interleaved: (n-1)*len(ids)
+    // 2. D vector: (n-2) * len(ids)
+    // 3. Dlu vector: (n-3) len(ids)
+    int64_t h_i_buffer_size = 2 * n; 
+    int64_t D_buffer_size = n - (ids.size() - 2);
+    int64_t Dlu_buffer_size = n - (ids.size() - 2);
+    cudf::mutable_column_view h_i_buffer = make_numeric_column(y.type(), h_i_buffer_size, cudf::UNALLOCATED, stream, mr)->mutable_view();
+    cudf::mutable_column_view D_buffer = make_numeric_column(y.type(), D_buffer_size, cudf::UNALLOCATED, stream, mr)->mutable_view();
+    cudf::mutable_column_view Dlu_buffer = make_numeric_column(y.type(), Dlu_buffer_size, cudf::UNALLOCATED, stream, mr)->mutable_view();
+
+
     // Make a table instead of a column
     //tPrint(tridiagonal_creation_buffer.begin(), tridiagonal_creation_buffer.end(), "tcb");
     //cudf::experimental::type_dispatcher(y.type(), compute_splines{}, t, y, ids, prefixes, cv_result, mr, stream);
     compute_splines comp_spl;
     comp_spl.operator()<float>(t, y, ids, prefixes, cv_result, mr, stream);
+
     rmm::device_vector<float> intermediate(cv_result.data<float>(), cv_result.data<float>()+cv_result.size());
     TPRINT(intermediate, "intermediate");
+
+    // cusparse solve n length m tridiagonal systems
+    // 4. call cusparse<T>gtsv2() to solve
+    // 4.1 Get cuSparse library context
+    // compute inputs:
+    // handle: the cuSparse library context
+    // m: size
+    // n: number of columns of solution matrix B
+    // dl, d, du: vectors of the diagonal
+    // B: (ldb, n) dimensional dense matrix to be solved for
+    // ldb: leading dimension of B
+    // pBuffer: get size of thisu by gtsv2_bufferSizeExt 
+    /*
+    cusparseStatus_t cusparseStatus;
+    cusparseHandle_t handle;
+    cudaMalloc(&handle, sizeof(cusparseHandle_t));
+    cusparseStatus = cusparseCreate(&handle);
+    HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    size_t pBufferSize;
+    float* dlp = thrust::raw_pointer_cast(dl.data());
+    cusparseStatus = cusparseSgtsv2_bufferSizeExt(
+        handle,
+        u.size(), 
+        1,
+        thrust::raw_pointer_cast(dl.data()),
+        thrust::raw_pointer_cast(d.data()),
+        thrust::raw_pointer_cast(du.data()),
+        thrust::raw_pointer_cast(u.data()),
+        u.size(),
+        &pBufferSize
+    );
+    HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    std::cout << "pBufferSize " << pBufferSize << std::endl;
+    rmm::device_vector<float> pBuffer(pBufferSize);
+    cusparseStatus = cusparseSgtsv2(
+        handle,
+        u.size(),
+        1,
+        thrust::raw_pointer_cast(dl.data()),
+        thrust::raw_pointer_cast(d.data()),
+        thrust::raw_pointer_cast(du.data()),
+        thrust::raw_pointer_cast(u.data()),
+        u.size(),
+        thrust::raw_pointer_cast(pBuffer.data())
+    );
+    HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    TPRINT(u, "u");
+    */
     
     // Placeholder result preparation
     std::unique_ptr<cudf::column> result_col = cudf::make_numeric_column(y.type(), y.size());

@@ -35,14 +35,14 @@ struct CubicSplineTest : public GdfTest
 
 TEST_F(CubicSplineTest, test_full_single)
 {
-    int point_len = 10;
-    float t[point_len] = {0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
+    int point_len = 15;
+    float t[point_len] = {0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
     assert(sizeof(t) / sizeof(float)==point_len);
-    float y[point_len] = {3, 2, 3, 4, 3, 3, 2, 3, 4, 3};
+    float y[point_len] = {3, 2, 3, 4, 3, 3, 4, 3, 2, 3, 3, 2, 3, 4, 3};
     assert(sizeof(x) / sizeof(float)==point_len);
-    int ids_len = 2;
-    int ids[ids_len] = {0, 1};
-    int prefix[ids_len] = {0, 5};
+    int ids_len = 4;
+    int ids[ids_len] = {0, 0, 1, 2};
+    int prefix[ids_len] = {0, 5, 10, 15};
     
     float *d_p_t = NULL;
     float *d_p_y = NULL;
@@ -62,9 +62,9 @@ TEST_F(CubicSplineTest, test_full_single)
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_ids, ids, ids_len * sizeof(int), cudaMemcpyHostToDevice ) );     
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_prefix, prefix, ids_len * sizeof(int), cudaMemcpyHostToDevice ) );     
     
-    cudf::column_view t_column(cudf::data_type{cudf::FLOAT64},
+    cudf::column_view t_column(cudf::data_type{cudf::FLOAT32},
         point_len,d_p_t);
-    cudf::column_view y_column(cudf::data_type{cudf::FLOAT64},
+    cudf::column_view y_column(cudf::data_type{cudf::FLOAT32},
         point_len,d_p_y);
     cudf::column_view ids_column(cudf::data_type{cudf::INT32},
         ids_len,d_p_ids);
