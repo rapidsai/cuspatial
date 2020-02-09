@@ -18,6 +18,7 @@
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/filling.hpp>
+#include <cudf/scalar/scalar.hpp>
 #include "cusparse.h"
 #include <thrust/device_vector.h>
 
@@ -68,6 +69,11 @@ void tPrint(thrust::detail::normal_iterator<T> start, thrust::detail::normal_ite
 
 template<typename T>
 void tPrint(rmm::device_vector<T> vec, const char* name="None") {
+  tPrint(vec.begin(), vec.end(), name);
+}
+
+void tPrint(cudf::mutable_column_view col, const char* name="None") {
+  rmm::device_vector<float> vec = rmm::device_vector<float>(col.data<float>(), col.data<float>()+col.size());
   tPrint(vec.begin(), vec.end(), name);
 }
 
@@ -153,6 +159,96 @@ template<typename T>
     for(ci = 0 ; ci < len_u ; ++ci) {
       //buffer[u+ci] = (buffer[i+ci+1] - buffer[i+len_i-1-ci]) * 6;
     } 
+  }
+};
+
+struct coefficients_compute {
+  template <typename T>
+  void operator()(cudf::column_view const& t,
+                  cudf::column_view const& y,
+                  cudf::column_view const& prefixes,
+                  cudf::mutable_column_view const& h,
+                  cudf::mutable_column_view const& i,
+                  cudf::mutable_column_view const& z,
+                  cudf::mutable_column_view const& d3,
+                  cudf::mutable_column_view const& d2,
+                  cudf::mutable_column_view const& d1,
+                  cudf::mutable_column_view const& d0,
+                  rmm::mr::device_memory_resource *mr,
+                  cudaStream_t stream) {
+      const T* T_ = t.data<T>();
+      const T* Y_ = y.data<T>();
+      const int32_t* PREFIXES = prefixes.data<int32_t>();
+      T* H_ = h.data<T>();
+      T* I_ = i.data<T>();
+      T* Z_ = z.data<T>();
+      T* D3_ = d3.data<T>();
+      T* D2_ = d2.data<T>();
+      T* D1_ = d1.data<T>();
+      T* D0_ = d0.data<T>();
+      thrust::for_each(rmm::exec_policy(stream)->on(stream),
+        thrust::make_counting_iterator<int>(1),
+        thrust::make_counting_iterator<int>(prefixes.size()),
+        [T_, Y_, PREFIXES, H_, I_, Z_, D3_, D2_, D1_, D0_] __device__
+        (int index) {
+          int n = PREFIXES[index] - PREFIXES[index-1];
+          int h = PREFIXES[index-1];
+          int ci = 0;
+          for(ci = 0 ; ci < n-1 ; ++ci) {
+            T a = Y_[h+ci];
+            T b = I_[h+ci] - H_[h+ci] * (Z_[h+ci+1] + 2 * Z_[h+ci]) / 6;
+            T c = Z_[h+ci] / 2.0;
+            T d = (Z_[h+ci+1] - Z_[h+ci]) / 6 * H_[h+ci];
+            T t = T_[h+ci+1];
+            D3_[h+ci] = d;
+            D2_[h+ci] = c - 3 * d * t;
+            D1_[h+ci] = b - t * (2*c - t * (3 * d));
+            D0_[h+ci] = a - t * (b - t * (c - t * d)); // horners
+          }
+      });
+  };
+};
+
+struct compute_spline_tridiagonals {
+  template <typename T>
+  void operator()(cudf::column_view const& t,
+                  cudf::column_view const& y,
+                  cudf::column_view const& prefixes,
+                  cudf::mutable_column_view const& D,
+                  cudf::mutable_column_view const& Dlu,
+                  cudf::mutable_column_view const& u,
+                  cudf::mutable_column_view const& h,
+                  cudf::mutable_column_view const& i,
+                  rmm::mr::device_memory_resource *mr,
+                  cudaStream_t stream) {
+      const T* T_ = t.data<T>();
+      const T* Y_ = y.data<T>();
+      const int32_t* PREFIXES = prefixes.data<int32_t>();
+      T* D_ = D.data<T>();
+      T* Dlu_ = Dlu.data<T>();
+      T* U_ = u.data<T>();
+      T* H_ = h.data<T>();
+      T* I_ = i.data<T>();
+      thrust::for_each(rmm::exec_policy(stream)->on(stream),
+        thrust::make_counting_iterator<int>(1),
+        thrust::make_counting_iterator<int>(prefixes.size()),
+        [T_, Y_, PREFIXES, D_, Dlu_, U_, H_, I_] __device__
+        (int index) {
+          int n = PREFIXES[index] - PREFIXES[index-1];
+          int h = PREFIXES[index-1];
+          int ci = 0;
+          for(ci = 0 ; ci < n-1 ; ++ci) {
+            H_[h + ci] = T_[h+ci+1] - T_[h+ci];
+            I_[h + ci] = (Y_[h+ci+1] - Y_[h+ci]) / H_[h + ci];
+          }
+          for(ci = 0 ; ci < n-2 ; ++ci) {
+            D_[h+ci+1] = (H_[h+ci+1]+H_[h+(n-2)-ci]) * 2;
+            U_[h+ci+1] = (I_[h+ci+1] - I_[h+(n-2)-ci]) * 6;
+          }
+          for(ci = 0 ; ci < n-3 ; ++ci) {
+            Dlu_[h+ci+1] = I_[h+ci+1];
+          }
+      });
   }
 };
 
@@ -242,30 +338,71 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
 
     int64_t n = y.size();
     int64_t tcb_size = 4 * n;
-    cudf::mutable_column_view cv_result = make_numeric_column(y.type(), tcb_size, cudf::UNALLOCATED, stream, mr)->mutable_view();
+    auto column_result = make_numeric_column(y.type(), tcb_size, cudf::UNALLOCATED, stream, mr);
+    cudf::mutable_column_view cv_result = column_result->mutable_view();
+    
+    compute_splines comp_spl;
+    comp_spl.operator()<float>(t, y, ids, prefixes, cv_result, mr, stream);
+
+    rmm::device_vector<float> intermediate(cv_result.data<float>(), cv_result.data<float>()+cv_result.size());
+    TPRINT(intermediate, "intermediate");
+
 
     //cudf::experimental::fill(cv_result, cudf::size_type(0), cv_result.size(), cudf::scalar(0.0));
     //thrust::fill(cv_result.data<float>(), cv_result.data<float>()+cv_result.size(), 0.0);
     // Need three separate buffers
     // 1. h/i interleaved: (n-1)*len(ids)
     // 2. D vector: (n-2) * len(ids)
-    // 3. Dlu vector: (n-3) len(ids)
-    int64_t h_i_buffer_size = 2 * n; 
-    int64_t D_buffer_size = n - (ids.size() - 2);
-    int64_t Dlu_buffer_size = n - (ids.size() - 2);
-    cudf::mutable_column_view h_i_buffer = make_numeric_column(y.type(), h_i_buffer_size, cudf::UNALLOCATED, stream, mr)->mutable_view();
-    cudf::mutable_column_view D_buffer = make_numeric_column(y.type(), D_buffer_size, cudf::UNALLOCATED, stream, mr)->mutable_view();
-    cudf::mutable_column_view Dlu_buffer = make_numeric_column(y.type(), Dlu_buffer_size, cudf::UNALLOCATED, stream, mr)->mutable_view();
-
-
+    // 3. Dlu vector: (n-3) * len(ids)
+    int64_t h_i_buffer_size = (n-1); 
+    int64_t D_buffer_size = n - (prefixes.size());
+    int64_t Dlu_buffer_size = n - 2 * (prefixes.size());
+    auto h_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);
+    auto i_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);
+    auto D_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);
+    auto Dlu_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);
+    auto Dll_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);
+    auto u_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);
+    cudf::mutable_column_view h_buffer = h_col->mutable_view();
+    cudf::mutable_column_view i_buffer = i_col->mutable_view();
+    cudf::mutable_column_view D_buffer = D_col->mutable_view();
+    cudf::mutable_column_view Dlu_buffer = Dll_col->mutable_view();
+    cudf::mutable_column_view Dll_buffer = Dll_col->mutable_view();
+    cudf::mutable_column_view u_buffer = u_col->mutable_view();
+    
+    cudf::experimental::scalar_type_t<float> zero;
+    zero.set_value(0.0);
+    cudf::experimental::scalar_type_t<float> one;
+    one.set_value(1.0);
+    cudf::experimental::fill(h_buffer, 0, h_col->size(), zero);
+    cudf::experimental::fill(i_buffer, 0, i_col->size(), zero);
+    cudf::experimental::fill(D_buffer, 0, D_col->size(), one);
+    cudf::experimental::fill(Dlu_buffer, 0, Dlu_col->size(), zero);
+    cudf::experimental::fill(Dll_buffer, 0, Dlu_col->size(), zero);
+    cudf::experimental::fill(u_buffer, 0, u_col->size(), zero);
+    
+    rmm::device_vector<float> h_zero(h_buffer.data<float>(), h_buffer.data<float>()+h_buffer.size());
+    TPRINT(h_zero, "h_zero");
+    rmm::device_vector<float> D_one(D_buffer.data<float>(), D_buffer.data<float>()+D_buffer.size());
+    TPRINT(D_one, "D_one");
+    rmm::device_vector<float> Dlu_zero(Dlu_buffer.data<float>(), Dlu_buffer.data<float>()+Dlu_buffer.size());
+    TPRINT(Dlu_zero, "Dlu_zero");
     // Make a table instead of a column
     //tPrint(tridiagonal_creation_buffer.begin(), tridiagonal_creation_buffer.end(), "tcb");
-    //cudf::experimental::type_dispatcher(y.type(), compute_splines{}, t, y, ids, prefixes, cv_result, mr, stream);
-    compute_splines comp_spl;
-    comp_spl.operator()<float>(t, y, ids, prefixes, cv_result, mr, stream);
+    //cudf::experimental::type_dispatcher(y.type(), compute_spline_tridiagonals{}, t, y, prefixes, D_buffer, Dlu_buffer, h_buffer, i_buffer, cv_result, mr, stream);
+    compute_spline_tridiagonals comp_tri;
+    comp_tri.operator()<float>(t, y, prefixes, D_buffer, Dlu_buffer, u_buffer, h_buffer, i_buffer, mr, stream);
 
-    rmm::device_vector<float> intermediate(cv_result.data<float>(), cv_result.data<float>()+cv_result.size());
-    TPRINT(intermediate, "intermediate");
+    rmm::device_vector<float> h_i(h_buffer.data<float>(), h_buffer.data<float>()+h_buffer.size());
+    TPRINT(h_i, "h_i");
+    rmm::device_vector<float> i_i(i_buffer.data<float>(), i_buffer.data<float>()+i_buffer.size());
+    TPRINT(i_i, "i_i");
+    rmm::device_vector<float> D_i(D_buffer.data<float>(), D_buffer.data<float>()+D_buffer.size());
+    TPRINT(D_i, "D_i");
+    rmm::device_vector<float> Dlu_i(Dlu_buffer.data<float>(), Dlu_buffer.data<float>()+Dlu_buffer.size());
+    TPRINT(Dlu_i, "Dlu_i");
+    rmm::device_vector<float> u_i(u_buffer.data<float>(), u_buffer.data<float>()+u_buffer.size());
+    TPRINT(u_i, "u_i");
 
     // cusparse solve n length m tridiagonal systems
     // 4. call cusparse<T>gtsv2() to solve
@@ -278,49 +415,64 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     // B: (ldb, n) dimensional dense matrix to be solved for
     // ldb: leading dimension of B
     // pBuffer: get size of thisu by gtsv2_bufferSizeExt 
-    /*
     cusparseStatus_t cusparseStatus;
     cusparseHandle_t handle;
     cudaMalloc(&handle, sizeof(cusparseHandle_t));
     cusparseStatus = cusparseCreate(&handle);
     HANDLE_CUSPARSE_STATUS(cusparseStatus);
     size_t pBufferSize;
-    float* dlp = thrust::raw_pointer_cast(dl.data());
-    cusparseStatus = cusparseSgtsv2_bufferSizeExt(
+    cusparseStatus = cusparseSgtsv2StridedBatch_bufferSizeExt(
         handle,
-        u.size(), 
-        1,
-        thrust::raw_pointer_cast(dl.data()),
-        thrust::raw_pointer_cast(d.data()),
-        thrust::raw_pointer_cast(du.data()),
-        thrust::raw_pointer_cast(u.data()),
-        u.size(),
+        y.size()/(prefixes.size()-1),
+        Dll_buffer.data<float>(),
+        D_buffer.data<float>(),
+        Dlu_buffer.data<float>(),
+        u_buffer.data<float>(),
+        prefixes.size()-1,
+        y.size()/(prefixes.size()-1),
         &pBufferSize
     );
     HANDLE_CUSPARSE_STATUS(cusparseStatus);
     std::cout << "pBufferSize " << pBufferSize << std::endl;
     rmm::device_vector<float> pBuffer(pBufferSize);
-    cusparseStatus = cusparseSgtsv2(
+    cusparseStatus = cusparseSgtsv2StridedBatch(
         handle,
-        u.size(),
-        1,
-        thrust::raw_pointer_cast(dl.data()),
-        thrust::raw_pointer_cast(d.data()),
-        thrust::raw_pointer_cast(du.data()),
-        thrust::raw_pointer_cast(u.data()),
-        u.size(),
+        y.size()/(prefixes.size()-1),
+        Dll_buffer.data<float>(),
+        D_buffer.data<float>(),
+        Dlu_buffer.data<float>(),
+        u_buffer.data<float>(),
+        prefixes.size()-1,
+        y.size()/(prefixes.size()-1),
         thrust::raw_pointer_cast(pBuffer.data())
     );
     HANDLE_CUSPARSE_STATUS(cusparseStatus);
-    TPRINT(u, "u");
-    */
+    TPRINT(u_buffer, "u_buffer");
+
+    // Finally, compute coefficients via Horner's scheme
+    auto d3_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);
+    auto d2_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);
+    auto d1_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);
+    auto d0_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);
+    cudf::mutable_column_view d3 = d3_col->mutable_view();
+    cudf::mutable_column_view d2 = d2_col->mutable_view();
+    cudf::mutable_column_view d1 = d1_col->mutable_view();
+    cudf::mutable_column_view d0 = d0_col->mutable_view();
+
+    coefficients_compute coefs;
+    coefs.operator()<float>(t, y, prefixes, h_buffer, i_buffer, u_buffer, d3, d2, d1, d0, mr, stream);
+
+    TPRINT(d3, "d3");
+    TPRINT(d2, "d2");
+    TPRINT(d1, "d1");
+    TPRINT(d0, "d0");
     
-    // Placeholder result preparation
-    std::unique_ptr<cudf::column> result_col = cudf::make_numeric_column(y.type(), y.size());
-    float *cd1 = cudf::mutable_column_device_view::create(result_col->mutable_view())->data<float>();
-    thrust::copy(y_.begin(), y_.end(), cd1);
+    // Place d3..0 into a table and return
     std::vector<std::unique_ptr<cudf::column>> table;
-    table.push_back(std::move(result_col));
+    table.push_back(std::move(d3_col));
+    table.push_back(std::move(d2_col));
+    table.push_back(std::move(d1_col));
+    table.push_back(std::move(d0_col));
     std::unique_ptr<cudf::experimental::table> result = std::make_unique<cudf::experimental::table>(move(table));
     return result;
 }
@@ -415,7 +567,6 @@ std::unique_ptr<cudf::experimental::table> cubicspline_column(
     cusparseStatus = cusparseCreate(&handle);
     HANDLE_CUSPARSE_STATUS(cusparseStatus);
     size_t pBufferSize;
-    float* dlp = thrust::raw_pointer_cast(dl.data());
     cusparseStatus = cusparseSgtsv2_bufferSizeExt(
         handle,
         u.size(), 
