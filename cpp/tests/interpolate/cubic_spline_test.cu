@@ -27,6 +27,18 @@
 #include <cudf/table/table.hpp>
 #include <cuspatial/cubicspline.hpp>
 
+static void HandleCudaError( cudaError_t err,
+                         const char *file,
+                         int line ) {
+    if (err != cudaSuccess) {
+        printf( "%s in %s at line %d\n", cudaGetErrorString( err ),
+                file, line );
+        exit( EXIT_FAILURE );
+    }
+}
+#define HANDLE_CUDA_ERROR( err ) (HandleCudaError( err, __FILE__, __LINE__ ))
+
+
 struct CubicSplineTest : public GdfTest 
 {
  
