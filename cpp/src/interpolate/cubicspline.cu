@@ -354,9 +354,6 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     // 1. h/i interleaved: (n-1)*len(ids)
     // 2. D vector: (n-2) * len(ids)
     // 3. Dlu vector: (n-3) * len(ids)
-    int64_t h_i_buffer_size = (n-1); 
-    int64_t D_buffer_size = n - (prefixes.size());
-    int64_t Dlu_buffer_size = n - 2 * (prefixes.size());
     auto h_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);
     auto i_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);
     auto D_col = make_numeric_column(y.type(), n, cudf::UNALLOCATED, stream, mr);

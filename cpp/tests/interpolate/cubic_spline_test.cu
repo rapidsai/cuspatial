@@ -104,9 +104,8 @@ TEST_F(CubicSplineTest, test_full_single)
     std::cout << std::endl;
 }
 
-TEST_F(CubicSplineTest, test_1)
+TEST_F(CubicSplineTest, test_single)
 {
-  /*
     int point_len = 5;
     float t[5] = {0, 1, 2, 3, 4};
     assert(sizeof(t) / sizeof(float)==point_len);
@@ -138,7 +137,6 @@ TEST_F(CubicSplineTest, test_1)
     RMM_FREE(d_p_t, 0);
     RMM_FREE(d_p_x, 0);
     RMM_FREE(d_p_ids, 0);
-    */
 }
 
 
