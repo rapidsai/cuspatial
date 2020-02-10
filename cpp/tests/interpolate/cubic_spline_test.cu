@@ -62,7 +62,7 @@ TEST_F(CubicSplineTest, test_full_single)
     RMM_TRY( RMM_ALLOC( &d_p_t, point_len* sizeof(float), 0));
     assert(d_p_t != NULL);    
     RMM_TRY( RMM_ALLOC( &d_p_y, point_len* sizeof(float), 0));
-    assert(d_p_x != NULL);
+    assert(d_p_y != NULL);
     RMM_TRY( RMM_ALLOC( &d_p_ids, ids_len * sizeof(int), 0));
     assert(d_p_ids != NULL);    
     RMM_TRY( RMM_ALLOC( &d_p_prefix, ids_len * sizeof(int), 0));
@@ -102,6 +102,11 @@ TEST_F(CubicSplineTest, test_full_single)
       std::cout << host_data[i] << " ";
     }
     std::cout << std::endl;
+
+    RMM_FREE(d_p_y, 0);
+    RMM_FREE(d_p_t, 0);
+    RMM_FREE(d_p_ids, 0);
+    RMM_FREE(d_p_prefix, 0);
 }
 
 TEST_F(CubicSplineTest, test_single)

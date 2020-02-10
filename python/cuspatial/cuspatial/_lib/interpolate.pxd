@@ -14,8 +14,16 @@ cdef extern from "cubicspline.hpp" namespace "cuspatial":
     ) except +
     
 cdef extern from "cubicspline.hpp" namespace "cuspatial" nogil:
-    cdef unique_ptr[table] cpp_cubicspline_column "cuspatial::cubicspline_column" (
+    cdef unique_ptr[table] cpp_cubicspline_thrust "cuspatial::cubicspline_column" (
         column_view t,
         column_view x,
         column_view ids
+    ) except +
+
+cdef extern from "cubicspline.hpp" namespace "cuspatial" nogil:
+    cdef unique_ptr[table] cpp_cubicspline_cusparse "cuspatial::cubicspline_full" (
+        column_view t,
+        column_view x,
+        column_view ids,
+        column_view prefix_sums
     ) except +

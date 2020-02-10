@@ -77,7 +77,12 @@ void tPrint(cudf::mutable_column_view col, const char* name="None") {
   tPrint(vec.begin(), vec.end(), name);
 }
 
-#define ALLOW_PRINT 1
+void tPrint(cudf::column_view col, const char* name="None") {
+  rmm::device_vector<float> vec = rmm::device_vector<float>(col.data<float>(), col.data<float>()+col.size());
+  tPrint(vec.begin(), vec.end(), name);
+}
+
+#define ALLOW_PRINT 0
 #if ALLOW_PRINT
 #define TPRINT(vec, name) (tPrint( vec, name))
 #else
@@ -330,13 +335,11 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
 
-    // Allocate storage for cuSparse dependency computation
-    rmm::device_vector<float> t_(t.data<float>(), t.data<float>()+t.size());
-    rmm::device_vector<float> y_(y.data<float>(), y.data<float>()+y.size());
-    TPRINT(t_, "t_");
-    TPRINT(y_, "y_");
+    TPRINT(t, "t_");
+    TPRINT(y, "y_");
 
     int64_t n = y.size();
+    /*
     int64_t tcb_size = 4 * n;
     auto column_result = make_numeric_column(y.type(), tcb_size, cudf::UNALLOCATED, stream, mr);
     cudf::mutable_column_view cv_result = column_result->mutable_view();
@@ -346,7 +349,7 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
 
     rmm::device_vector<float> intermediate(cv_result.data<float>(), cv_result.data<float>()+cv_result.size());
     TPRINT(intermediate, "intermediate");
-
+    */
 
     //cudf::experimental::fill(cv_result, cudf::size_type(0), cv_result.size(), cudf::scalar(0.0));
     //thrust::fill(cv_result.data<float>(), cv_result.data<float>()+cv_result.size(), 0.0);
@@ -378,28 +381,20 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     cudf::experimental::fill(Dll_buffer, 0, Dlu_col->size(), zero);
     cudf::experimental::fill(u_buffer, 0, u_col->size(), zero);
     
-    rmm::device_vector<float> h_zero(h_buffer.data<float>(), h_buffer.data<float>()+h_buffer.size());
-    TPRINT(h_zero, "h_zero");
-    rmm::device_vector<float> D_one(D_buffer.data<float>(), D_buffer.data<float>()+D_buffer.size());
-    TPRINT(D_one, "D_one");
-    rmm::device_vector<float> Dlu_zero(Dlu_buffer.data<float>(), Dlu_buffer.data<float>()+Dlu_buffer.size());
-    TPRINT(Dlu_zero, "Dlu_zero");
+    TPRINT(h_buffer, "h_zero");
+    TPRINT(D_buffer, "D_one");
+    TPRINT(Dlu_buffer, "Dlu_zero");
     // Make a table instead of a column
     //tPrint(tridiagonal_creation_buffer.begin(), tridiagonal_creation_buffer.end(), "tcb");
     //cudf::experimental::type_dispatcher(y.type(), compute_spline_tridiagonals{}, t, y, prefixes, D_buffer, Dlu_buffer, h_buffer, i_buffer, cv_result, mr, stream);
     compute_spline_tridiagonals comp_tri;
     comp_tri.operator()<float>(t, y, prefixes, D_buffer, Dlu_buffer, u_buffer, h_buffer, i_buffer, mr, stream);
 
-    rmm::device_vector<float> h_i(h_buffer.data<float>(), h_buffer.data<float>()+h_buffer.size());
-    TPRINT(h_i, "h_i");
-    rmm::device_vector<float> i_i(i_buffer.data<float>(), i_buffer.data<float>()+i_buffer.size());
-    TPRINT(i_i, "i_i");
-    rmm::device_vector<float> D_i(D_buffer.data<float>(), D_buffer.data<float>()+D_buffer.size());
-    TPRINT(D_i, "D_i");
-    rmm::device_vector<float> Dlu_i(Dlu_buffer.data<float>(), Dlu_buffer.data<float>()+Dlu_buffer.size());
-    TPRINT(Dlu_i, "Dlu_i");
-    rmm::device_vector<float> u_i(u_buffer.data<float>(), u_buffer.data<float>()+u_buffer.size());
-    TPRINT(u_i, "u_i");
+    TPRINT(h_buffer, "h_i");
+    TPRINT(i_buffer, "i_i");
+    TPRINT(D_buffer, "D_i");
+    TPRINT(Dlu_buffer, "Dlu_i");
+    TPRINT(u_buffer, "u_i");
 
     // cusparse solve n length m tridiagonal systems
     // 4. call cusparse<T>gtsv2() to solve

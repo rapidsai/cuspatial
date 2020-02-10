@@ -37,6 +37,12 @@ def cubic_spline(x, y, ids_and_end_coordinates):
     return result
 
 
-def cubic_spline_2(x, y, ids_and_prefix_sum):
-    result = cubicspline_full(x, y, ids_and_prefix_sum())
+def cubic_spline_2(x, y, ids, prefix_sums):
+    x_c = x._column
+    y_c = y._column
+    ids_c = ids._column
+    prefix_c = prefix_sums._column
+    result_table = cubicspline_full(x_c, y_c, ids_c, prefix_c)
+    result_table._index = RangeIndex(result_table._num_rows)
+    result = DataFrame._from_table(result_table)
     return result

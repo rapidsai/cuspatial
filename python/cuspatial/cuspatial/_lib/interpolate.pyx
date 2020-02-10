@@ -18,6 +18,17 @@ cpdef cubicspline_column(Column t, Column x, Column ids):
     ids_v = ids.view()
     cdef unique_ptr[table] c_result
     with nogil:
-        c_result = move(cpp_cubicspline_column(t_v, x_v, ids_v))
+        c_result = move(cpp_cubicspline_thrust(t_v, x_v, ids_v))
+    result = Table.from_unique_ptr(move(c_result), ["d3", "d2", "d1", "d0"])
+    return result
+
+cpdef cubicspline_full(Column t, Column x, Column ids, Column prefixes):
+    t_v = t.view()
+    x_v = x.view()
+    ids_v = ids.view()
+    prefixes_v = prefixes.view()
+    cdef unique_ptr[table] c_result
+    with nogil:
+        c_result = move(cpp_cubicspline_cusparse(t_v, x_v, ids_v, prefixes_v))
     result = Table.from_unique_ptr(move(c_result), ["d3", "d2", "d1", "d0"])
     return result
