@@ -25,7 +25,6 @@
 #include <cudf/column/column_view.hpp>
 #include <cudf/table/table_view.hpp>
 #include <cudf/table/table.hpp>
-#include <cuspatial/quadtree.hpp>
 #include <cuspatial/cubicspline.hpp>
 
 struct CubicSplineTest : public GdfTest 
