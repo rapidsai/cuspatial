@@ -1,3 +1,13 @@
+# cuSpatial 0.13.0 (TBD)
+
+## New Features
+
+## Improvements
+
+## Bug Fixes
+
+- PR #123 Update references to error utils after libcudf changes
+
 # cuSpatial 0.12.0 (04 Feb 2020)
 
 ## New Features
