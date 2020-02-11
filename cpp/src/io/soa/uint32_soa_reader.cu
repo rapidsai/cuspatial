@@ -18,7 +18,7 @@
 #include <string.h>
 #include <math.h>
 #include <cuda_runtime.h>
-#include <utilities/legacy/error_utils.hpp>
+#include <cudf/utilities/error.hpp>
 #include <rmm/rmm.h>
 #include <cudf/types.h>
 #include <cudf/legacy/column.hpp>
