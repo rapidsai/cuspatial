@@ -33,9 +33,8 @@ namespace { //anonymous
 //http://www.adms-conf.org/2019-camera-ready/zhang_adms19.pdf
 
 template<typename T>
-std::vector<std::unique_ptr<cudf::column>> dowork(T *d_p_x,T *d_p_y,SBBox bbox, double scale,
-	cudf::size_type point_len,uint num_levels, uint min_size, rmm::mr::device_memory_resource* mr, cudaStream_t stream)
-	
+std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,T *d_p_x,T *d_p_y,SBBox bbox, double scale,
+	uint num_levels, uint min_size, rmm::mr::device_memory_resource* mr, cudaStream_t stream)	
                                          
 {
     double x1=thrust::get<0>(bbox.first);
@@ -50,6 +49,10 @@ std::vector<std::unique_ptr<cudf::column>> dowork(T *d_p_x,T *d_p_y,SBBox bbox, 
     std::cout<<"min_size="<<min_size<<std::endl;
     
     auto exec_policy = rmm::exec_policy(stream)->on(stream);
+    uint * d_p_id=NULL;
+    RMM_TRY( RMM_ALLOC( &d_p_id,point_len* sizeof(uint), stream));
+    assert(d_p_id!=NULL);
+    thrust::sequence(exec_policy,d_p_id,d_p_id+point_len);
 
 //debugging: make sure the inputs are correct
 if(0)
@@ -63,7 +66,7 @@ if(0)
     thrust::copy(d_y_ptr,d_y_ptr+point_len,std::ostream_iterator<T>(std::cout, " "));std::cout<<std::endl;
 
 }    
-    auto d_pnt_iter=thrust::make_zip_iterator(thrust::make_tuple(d_p_x,d_p_y));       
+    auto d_pnt_iter=thrust::make_zip_iterator(thrust::make_tuple(d_p_id,d_p_x,d_p_y));       
     uint *d_p_pntkey=NULL,*d_p_runkey=NULL, *d_p_runlen=NULL;
     RMM_TRY( RMM_ALLOC( (void**)&(d_p_pntkey),point_len* sizeof(uint),stream));
     RMM_TRY( RMM_ALLOC( (void**)&(d_p_runkey),point_len* sizeof(uint),stream));
@@ -129,22 +132,26 @@ if(0)
             
     //allocate three temporal arrays for parent key,number of children,
     //and the number of points in each quadrant, respectively
-    //d_p_qttkey will be copied to the data array of the key column after revmoing invlaid quadtree ndoes
+    //d_p_fullkey will be copied to the data array of the key column after revmoing invlaid quadtree ndoes
     //d_p_qtclen and d_p_qtnlen will be combined to generate the final length array
     //see fig.1 of ref. 
-    uint *d_p_qttkey=NULL,*d_p_qtclen=NULL,*d_p_qtnlen=NULL;
-    RMM_TRY( RMM_ALLOC( (void**)&(d_p_qttkey),end_pos* sizeof(uint),stream));
-    assert(d_p_qtclen!=NULL);
+    uint *d_p_fullkey=NULL,*d_p_qtclen=NULL,*d_p_qtnlen=NULL;
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_fullkey),end_pos* sizeof(uint),stream));
+    assert(d_p_fullkey!=NULL);
     RMM_TRY( RMM_ALLOC( (void**)&(d_p_qtclen),end_pos* sizeof(uint),stream));
     assert(d_p_qtclen!=NULL);
     RMM_TRY( RMM_ALLOC( (void**)&(d_p_qtnlen),end_pos* sizeof(uint),stream));
     assert(d_p_qtnlen!=NULL);
-    
+    uchar *d_p_fulllev=NULL;
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_fulllev),end_pos* sizeof(uchar),0));
+    assert(d_p_fulllev!=NULL);
+   
     //reverse the order of quadtree nodes for easier manipulation; skip the root node 
     int num_count_nodes=0;
     for(uint k=0;k<num_levels;k++)
     {	
-   	int nq1=thrust::copy(exec_policy,d_p_parentkey+lev_bpos[k],d_p_parentkey+lev_epos[k],d_p_qttkey+num_count_nodes)-(d_p_qttkey+num_count_nodes);   	
+   	thrust::fill(thrust::device,d_p_fulllev+num_count_nodes,d_p_fulllev+num_count_nodes+(lev_epos[k]-lev_bpos[k]),k);
+   	int nq1=thrust::copy(exec_policy,d_p_parentkey+lev_bpos[k],d_p_parentkey+lev_epos[k],d_p_fullkey+num_count_nodes)-(d_p_fullkey+num_count_nodes);   	
    	int nq2=thrust::copy(exec_policy,d_p_numchild+lev_bpos[k],d_p_numchild+lev_epos[k],d_p_qtclen+num_count_nodes)-(d_p_qtclen+num_count_nodes); 
    	int nq3=thrust::copy(exec_policy,d_p_pntlen+lev_bpos[k],d_p_pntlen+lev_epos[k],d_p_qtnlen+num_count_nodes)-(d_p_qtnlen+num_count_nodes);   	
    	int nq4=thrust::reduce(exec_policy,d_p_pntlen+lev_bpos[k],d_p_pntlen+lev_epos[k]);
@@ -185,67 +192,127 @@ if(0)
     //line 3 of algorithm in Fig. 5 in ref. 
     thrust::inclusive_scan(exec_policy,d_p_parentpos,d_p_parentpos+num_child_nodes,d_p_parentpos,thrust::maximum<int>()); 
     
-   //counting the number of nodes whose children have numbers of points above min_size;
-   //note that we start at level 2 as level nodes (whose parents are the root node -level 0) need to be kept  
-   auto iter_in=thrust::make_zip_iterator(thrust::make_tuple(d_p_qttkey+lev_num[1],d_p_qtclen+lev_num[1],d_p_qtnlen+lev_num[1],d_p_parentpos));
-   int num_invalid_parent_nodes = thrust::count_if(exec_policy,iter_in,iter_in+(num_parent_nodes-lev_num[1]),remove_discard(d_p_qtnlen,min_size));  
-   RMM_FREE(d_p_parentpos,stream);d_p_parentpos=NULL;
+    //counting the number of nodes whose children have numbers of points above min_size;
+    //note that we start at level 2 as level nodes (whose parents are the root node -level 0) need to be kept  
+    auto iter_in=thrust::make_zip_iterator(thrust::make_tuple(d_p_fullkey+lev_num[1],d_p_fulllev+lev_num[1],
+   	d_p_qtclen+lev_num[1],d_p_qtnlen+lev_num[1],d_p_parentpos));
+    int num_invalid_parent_nodes = thrust::count_if(exec_policy,iter_in,iter_in+(num_parent_nodes-lev_num[1]),
+   	remove_discard(d_p_qtnlen,min_size));  
+    RMM_FREE(d_p_parentpos,stream);d_p_parentpos=NULL;
 
-   assert(num_invalid_parent_nodes<=num_parent_nodes);
-   num_parent_nodes-=num_invalid_parent_nodes;
+    assert(num_invalid_parent_nodes<=num_parent_nodes);
+    num_parent_nodes-=num_invalid_parent_nodes;
  
-   uint *d_p_templen=NULL;
-   RMM_TRY( RMM_ALLOC( (void**)&(d_p_templen),end_pos* sizeof(uint),stream));
-   assert(d_p_templen!=NULL);
+    uint *d_p_templen=NULL;
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_templen),end_pos* sizeof(uint),stream));
+    assert(d_p_templen!=NULL);
    
-   //line 4 of algorithm in Fig. 5 in ref. 
-   HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_p_templen, (void *)d_p_qtnlen, end_pos * sizeof(uint), cudaMemcpyDeviceToDevice ) );     
-   //line 5 of algorithm in Fig. 5 in ref. 
-   int num_valid_nodes = thrust::remove_if(exec_policy,iter_in,iter_in+num_child_nodes,remove_discard(d_p_templen,min_size))-iter_in;
-   RMM_FREE(d_p_templen,stream);d_p_templen=NULL;
-   //add back level 1 nodes
-   num_valid_nodes+=lev_num[1];
-   std::cout<<"num_invalid_parent_nodes="<<num_invalid_parent_nodes<<std::endl;
-   std::cout<<"num_valid_nodes="<<num_valid_nodes<<std::endl;
+    //line 4 of algorithm in Fig. 5 in ref. 
+    HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_p_templen, (void *)d_p_qtnlen, end_pos * sizeof(uint), cudaMemcpyDeviceToDevice ) );     
+    //line 5 of algorithm in Fig. 5 in ref. 
+    int num_valid_nodes = thrust::remove_if(exec_policy,iter_in,iter_in+num_child_nodes,remove_discard(d_p_templen,min_size))-iter_in;
+    RMM_FREE(d_p_templen,stream);d_p_templen=NULL;
+    //add back level 1 nodes
+    num_valid_nodes+=lev_num[1];
+    std::cout<<"num_invalid_parent_nodes="<<num_invalid_parent_nodes<<std::endl;
+    std::cout<<"num_valid_nodes="<<num_valid_nodes<<std::endl;
      
-   //preparing the key column for output 
-   std::unique_ptr<cudf::column> key_col = cudf::make_numeric_column(
+    //preparing the key column for output 
+    //Note: only the first num_valid_nodes elements should in the output array
+    std::unique_ptr<cudf::column> key_col = cudf::make_numeric_column(
        cudf::data_type(cudf::type_id::INT32), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);      
-   uint *d_p_qtpkey=cudf::mutable_column_device_view::create(key_col->mutable_view(), stream)->data<uint>();
-   assert(d_p_qtpkey!=NULL);
-   //only the first num_valid_nodes elements should in the output array
-   thrust::copy(exec_policy,d_p_qttkey,d_p_qttkey+num_valid_nodes,d_p_qtpkey);
-   RMM_FREE(d_p_qttkey,stream);d_p_qttkey=NULL;
-   
-   //preparing the indicator array for output
-   std::unique_ptr<cudf::column> sign_col = cudf::make_numeric_column(
-           cudf::data_type(cudf::type_id::BOOL8), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);      
-   bool *d_p_sign=cudf::mutable_column_device_view::create(sign_col->mutable_view(), stream)->data<bool>();
-   assert(d_p_sign!=NULL);
-   
-   HANDLE_CUDA_ERROR( cudaMemset(d_p_sign,0,num_valid_nodes*sizeof(bool)) );
-   //line 6 of algorithm in Fig. 5 in ref. 
-   thrust::transform(exec_policy,d_p_qtnlen,d_p_qtnlen+num_parent_nodes,d_p_sign,thrust::placeholders::_1 > min_size);  
-   //line 7 of algorithm in Fig. 5 in ref. 
-   thrust::replace_if(exec_policy,d_p_qtnlen,d_p_qtnlen+num_parent_nodes,d_p_sign,thrust::placeholders::_1,0);
- 
-   std::cout<<"total point"<<thrust::reduce(exec_policy,d_p_qtnlen,d_p_qtnlen+num_valid_nodes)<<std::endl;
-   std::cout<<"non-last-level points="<<thrust::reduce(exec_policy,d_p_qtnlen,d_p_qtnlen+num_parent_nodes)<<std::endl;
+    uint *d_p_qtkey=cudf::mutable_column_device_view::create(key_col->mutable_view(), stream)->data<uint>();
+    assert(d_p_qtkey!=NULL);
+  
+    thrust::copy(exec_policy,d_p_fullkey,d_p_fullkey+num_valid_nodes,d_p_qtkey);
+    RMM_FREE(d_p_fullkey,stream);d_p_fullkey=NULL;
 
-   //allocating two temporal array for the first child position array and first point position array, respectively
-   //later they will be used to generate the final position array 
-   uint *d_p_qtnpos=NULL,*d_p_qtcpos=NULL;
-   RMM_TRY( RMM_ALLOC( (void**)&(d_p_qtnpos),num_valid_nodes* sizeof(uint),stream));
-   RMM_TRY( RMM_ALLOC(  (void**)&(d_p_qtcpos),num_valid_nodes* sizeof(uint),stream));
-   assert(d_p_qtcpos!=NULL && d_p_qtcpos!=NULL);
- 
-   //line 8 of algorithm in Fig. 5 in ref. 
-   thrust::exclusive_scan(exec_policy,d_p_qtnlen,d_p_qtnlen+num_valid_nodes,d_p_qtnpos);
-   //line 9 of algorithm in Fig. 5 in ref. 
-   thrust::replace_if(exec_policy,d_p_qtclen,d_p_qtclen+num_valid_nodes,d_p_sign,!thrust::placeholders::_1,0);
+    std::unique_ptr<cudf::column> lev_col = cudf::make_numeric_column(
+       cudf::data_type(cudf::type_id::INT8), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);      
+    uchar *d_p_qtlev=cudf::mutable_column_device_view::create(lev_col->mutable_view(), stream)->data<uchar>();
+    assert(d_p_qtlev!=NULL);
+  
+    thrust::copy(exec_policy,d_p_fulllev,d_p_fulllev+num_valid_nodes,d_p_qtlev);
+    RMM_FREE(d_p_fulllev,stream);d_p_fulllev=NULL;   
    
-   //line 10 of algorithm in Fig. 5 in ref. 
-   thrust::exclusive_scan(exec_policy,d_p_qtclen,d_p_qtclen+num_valid_nodes,d_p_qtcpos,lev_num[1]);   
+    //preparing the indicator array for output
+    std::unique_ptr<cudf::column> sign_col = cudf::make_numeric_column(
+           cudf::data_type(cudf::type_id::BOOL8), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);      
+    bool *d_p_qtsign=cudf::mutable_column_device_view::create(sign_col->mutable_view(), stream)->data<bool>();
+    assert(d_p_qtsign!=NULL);
+   
+    HANDLE_CUDA_ERROR( cudaMemset(d_p_qtsign,0,num_valid_nodes*sizeof(bool)) );
+    //line 6 of algorithm in Fig. 5 in ref. 
+    thrust::transform(exec_policy,d_p_qtnlen,d_p_qtnlen+num_parent_nodes,d_p_qtsign,thrust::placeholders::_1 > min_size);  
+    //line 7 of algorithm in Fig. 5 in ref. 
+    thrust::replace_if(exec_policy,d_p_qtnlen,d_p_qtnlen+num_parent_nodes,d_p_qtsign,thrust::placeholders::_1,0);
+ 
+    std::cout<<"total point"<<thrust::reduce(exec_policy,d_p_qtnlen,d_p_qtnlen+num_valid_nodes)<<std::endl;
+    std::cout<<"non-last-level points="<<thrust::reduce(exec_policy,d_p_qtnlen,d_p_qtnlen+num_parent_nodes)<<std::endl;
+
+    //allocating two temporal array for the first child position array and first point position array, respectively
+    //later they will be used to generate the final position array 
+    uint *d_p_qtnpos=NULL,*d_p_qtcpos=NULL;
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_qtnpos),num_valid_nodes* sizeof(uint),stream));
+    RMM_TRY( RMM_ALLOC(  (void**)&(d_p_qtcpos),num_valid_nodes* sizeof(uint),stream));
+    assert(d_p_qtnpos!=NULL && d_p_qtcpos!=NULL);
+   
+    //revision to line 8 of algorithm in Fig. 5 in ref. 
+    //ajust nlen and npos based on last-level z-order code
+    uint *d_p_tmp_key=NULL;
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_tmp_key),num_valid_nodes* sizeof(uint),0));
+    assert(d_p_tmp_key!=NULL);
+    HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_p_tmp_key, (void *)d_p_qtkey, num_valid_nodes * sizeof(uint), cudaMemcpyDeviceToDevice ) );
+    uint *d_p_tmp_pos=NULL;
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_tmp_pos),num_valid_nodes* sizeof(uint),0));
+    assert(d_p_tmp_pos!=NULL);
+
+    auto key_lev_iter=thrust::make_zip_iterator(thrust::make_tuple(d_p_qtkey,d_p_qtlev,d_p_qtsign));
+    thrust::transform(exec_policy,key_lev_iter,key_lev_iter+num_valid_nodes,d_p_tmp_key,flatten_z_code(min_size));
+    uint num_leaf_nodes=thrust::copy_if(exec_policy,thrust::make_counting_iterator(0),
+   	thrust::make_counting_iterator(0)+num_valid_nodes,d_p_qtsign,d_p_tmp_pos,!thrust::placeholders::_1)-d_p_tmp_pos;   
+
+    uint *d_p_tmp_seq=NULL;
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_tmp_seq),num_valid_nodes* sizeof(uint),0));
+    assert(d_p_tmp_seq!=NULL);
+
+    uint *d_p_tmp_neln=NULL;
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_tmp_neln),num_leaf_nodes* sizeof(uint),0));
+    assert(d_p_tmp_neln!=NULL);
+
+    uint *d_p_tmp_npos=NULL;
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_tmp_npos),num_valid_nodes* sizeof(uint),0));
+    assert(d_p_tmp_npos!=NULL);
+
+    thrust::sequence(exec_policy,d_p_tmp_seq,d_p_tmp_seq+num_valid_nodes);
+    thrust::copy(exec_policy,d_p_qtnlen,d_p_qtnlen+num_valid_nodes,d_p_tmp_neln);   
+    auto seq_len_pos=thrust::make_zip_iterator(thrust::make_tuple(d_p_tmp_seq,d_p_tmp_neln));
+    thrust::stable_sort_by_key(exec_policy,d_p_tmp_key,d_p_tmp_key+num_valid_nodes,seq_len_pos);    
+ 
+    thrust::remove_if(exec_policy,d_p_tmp_neln,d_p_tmp_neln+num_valid_nodes,d_p_tmp_neln,thrust::placeholders::_1==0);
+    //only the first num_leaf_nodes are needed
+    thrust::exclusive_scan(exec_policy,d_p_tmp_neln,d_p_tmp_neln+num_leaf_nodes,d_p_tmp_npos);
+    auto len_pos_iter=thrust::make_zip_iterator(thrust::make_tuple(d_p_tmp_neln,d_p_tmp_npos));
+    thrust::stable_sort_by_key(thrust::device,d_p_tmp_seq,d_p_tmp_seq+num_leaf_nodes,len_pos_iter);
+    
+    RMM_TRY(RMM_FREE(d_p_tmp_seq,0));d_p_tmp_seq=NULL; 
+    HANDLE_CUDA_ERROR( cudaMemset(d_p_qtnlen,0,num_valid_nodes*sizeof(uint)) ); 
+    HANDLE_CUDA_ERROR( cudaMemset(d_p_qtnpos,0,num_valid_nodes*sizeof(uint)) ); 
+   
+    auto in_len_pos_iter=thrust::make_zip_iterator(thrust::make_tuple(d_p_tmp_neln,d_p_tmp_npos));
+    auto out_len_pos_iter=thrust::make_zip_iterator(thrust::make_tuple(d_p_qtnlen,d_p_qtnpos));
+    thrust::scatter(thrust::device,in_len_pos_iter,in_len_pos_iter+num_leaf_nodes,d_p_tmp_pos,out_len_pos_iter);
+    
+    RMM_TRY(RMM_FREE(d_p_tmp_pos,0));d_p_tmp_pos=NULL;
+    RMM_TRY(RMM_FREE(d_p_tmp_neln,0));d_p_tmp_neln=NULL;
+    RMM_TRY(RMM_FREE(d_p_tmp_npos,0));d_p_tmp_npos=NULL;
+  
+  
+    //line 9 of algorithm in Fig. 5 in ref. 
+    thrust::replace_if(exec_policy,d_p_qtclen,d_p_qtclen+num_valid_nodes,d_p_qtsign,!thrust::placeholders::_1,0);
+   
+    //line 10 of algorithm in Fig. 5 in ref. 
+    thrust::exclusive_scan(exec_policy,d_p_qtclen,d_p_qtclen+num_valid_nodes,d_p_qtcpos,lev_num[1]);   
 
 if(0)
 {
@@ -255,7 +322,7 @@ if(0)
    thrust::copy(d_qtclen_ptr,d_qtclen_ptr+num_valid_nodes,std::ostream_iterator<uint>(std::cout, " "));std::cout<<std::endl;
    thrust::copy(d_qtnlen_ptr,d_qtnlen_ptr+num_valid_nodes,std::ostream_iterator<uint>(std::cout, " "));std::cout<<std::endl;
 
-   std::cout<<"length:"<<std::endl;
+   std::cout<<"pos:"<<std::endl;
    thrust::device_ptr<uint> d_qtcpos_ptr=thrust::device_pointer_cast(d_p_qtcpos);
    thrust::device_ptr<uint> d_qtnpos_ptr=thrust::device_pointer_cast(d_p_qtnpos);
    thrust::copy(d_qtcpos_ptr,d_qtcpos_ptr+num_valid_nodes,std::ostream_iterator<uint>(std::cout, " "));std::cout<<std::endl;
@@ -273,9 +340,9 @@ if(0)
    uint *d_p_qtfpos=cudf::mutable_column_device_view::create(fpos_col->mutable_view(), stream)->data<uint>();
    assert(d_p_qtfpos!=NULL);   
 
-   auto iter_len_in=thrust::make_zip_iterator(thrust::make_tuple(d_p_qtclen,d_p_qtnlen,d_p_sign));
-   auto iter_pos_in=thrust::make_zip_iterator(thrust::make_tuple(d_p_qtcpos,d_p_qtnpos,d_p_sign));
    //line 11 of algorithm in Fig. 5 in ref. 
+   auto iter_len_in=thrust::make_zip_iterator(thrust::make_tuple(d_p_qtclen,d_p_qtnlen,d_p_qtsign));
+   auto iter_pos_in=thrust::make_zip_iterator(thrust::make_tuple(d_p_qtcpos,d_p_qtnpos,d_p_qtsign));
    thrust::transform(exec_policy,iter_len_in,iter_len_in+num_valid_nodes,d_p_qtlength,what2output());
    thrust::transform(exec_policy,iter_pos_in,iter_pos_in+num_valid_nodes,d_p_qtfpos,what2output());
    
@@ -284,26 +351,34 @@ if(0)
    RMM_FREE(d_p_qtnlen,stream);d_p_qtnlen=NULL;
    RMM_FREE(d_p_qtclen,stream);d_p_qtclen=NULL;
 
-if(0)
+if(1)
 {
 
-    thrust::device_ptr<uint> d_qtpkey_ptr=thrust::device_pointer_cast(d_p_qtpkey);	
-    thrust::device_ptr<bool> d_sign_ptr=thrust::device_pointer_cast(d_p_sign);   
-    thrust::device_ptr<uint> d_qtlength_ptr=thrust::device_pointer_cast(d_p_qtlength);	
-    thrust::device_ptr<uint> d_qtfpos_ptr=thrust::device_pointer_cast(d_p_qtfpos);   
+    thrust::device_ptr<uint> d_key_ptr=thrust::device_pointer_cast(d_p_qtkey);
+    thrust::device_ptr<uchar> d_lev_ptr=thrust::device_pointer_cast(d_p_qtlev);   
+    thrust::device_ptr<bool> d_sign_ptr=thrust::device_pointer_cast(d_p_qtsign);   
+    thrust::device_ptr<uint> d_len_ptr=thrust::device_pointer_cast(d_p_qtlength);	
+    thrust::device_ptr<uint> d_fpos_ptr=thrust::device_pointer_cast(d_p_qtfpos);   
  
     printf("key\n");
-    thrust::copy(d_qtpkey_ptr,d_qtpkey_ptr+num_valid_nodes,std::ostream_iterator<uint>(std::cout, " "));std::cout<<std::endl;
+    thrust::copy(d_key_ptr,d_key_ptr+num_valid_nodes,std::ostream_iterator<uint>(std::cout, " "));std::cout<<std::endl;
+    
+    printf("lev\n");
+    thrust::copy(d_lev_ptr,d_lev_ptr+num_valid_nodes,std::ostream_iterator<uint>(std::cout, " "));std::cout<<std::endl;
+   
     printf("sign\n");
     thrust::copy(d_sign_ptr,d_sign_ptr+num_valid_nodes,std::ostream_iterator<bool>(std::cout, " "));std::cout<<std::endl;
+    
     printf("length\n");
-    thrust::copy(d_qtlength_ptr,d_qtlength_ptr+num_valid_nodes,std::ostream_iterator<uint>(std::cout, " "));std::cout<<std::endl;
+    thrust::copy(d_len_ptr,d_len_ptr+num_valid_nodes,std::ostream_iterator<uint>(std::cout, " "));std::cout<<std::endl;
+    
     printf("fpos\n");
-    thrust::copy(d_qtfpos_ptr,d_qtfpos_ptr+num_valid_nodes,std::ostream_iterator<uint>(std::cout, " "));std::cout<<std::endl;
+    thrust::copy(d_fpos_ptr,d_fpos_ptr+num_valid_nodes,std::ostream_iterator<uint>(std::cout, " "));std::cout<<std::endl;
 }   
 
    std::vector<std::unique_ptr<cudf::column>> quad_cols;
    quad_cols.push_back(std::move(key_col));
+   quad_cols.push_back(std::move(lev_col));
    quad_cols.push_back(std::move(sign_col));
    quad_cols.push_back(std::move(length_col));
    quad_cols.push_back(std::move(fpos_col));
@@ -313,12 +388,14 @@ if(0)
 struct quadtree_point_processor {
   
   template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
-  std::unique_ptr<cudf::experimental::table> operator()(cudf::mutable_column_view& x,
+  std::unique_ptr<cudf::experimental::table> operator()(/*cudf::mutable_column_view id,*/
+                                          cudf::mutable_column_view& x,
  					  cudf::mutable_column_view& y,
  					  quad_point_parameters qpi,
                                           rmm::mr::device_memory_resource* mr,
                                           cudaStream_t stream)
                                           {
+    //T *d_p_id=cudf::mutable_column_device_view::create(id, stream)->data<T>();
     T *d_p_x=cudf::mutable_column_device_view::create(x, stream)->data<T>();
     T *d_p_y=cudf::mutable_column_device_view::create(y, stream)->data<T>();
 
@@ -333,9 +410,10 @@ struct quadtree_point_processor {
     double scale=thrust::get<4>(qpi);
     uint num_levels=thrust::get<5>(qpi);
     uint min_size=thrust::get<6>(qpi);
-    
+   
+   
     std::vector<std::unique_ptr<cudf::column>> quad_cols=
-    	dowork<T>(d_p_x,d_p_y,bbox,scale, x.size(),num_levels,min_size,mr,stream); 
+    	dowork<T>(x.size(),/*d_p_id,*/d_p_x,d_p_y,bbox,scale, num_levels,min_size,mr,stream); 
   
     std::unique_ptr<cudf::experimental::table> destination_table = 
     	std::make_unique<cudf::experimental::table>(std::move(quad_cols));      
