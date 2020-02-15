@@ -26,6 +26,7 @@
 #include <cudf/table/table_view.hpp>
 #include <cudf/table/table.hpp>
 #include <cuspatial/quadtree.hpp>
+#include <utility/helper_thrust.cuh>
 
 struct QuadtreeOnPointIndexingTest : public GdfTest 
 {

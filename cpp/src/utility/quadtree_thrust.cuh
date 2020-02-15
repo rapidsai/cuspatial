@@ -20,35 +20,21 @@
 #include <thrust/tuple.h>
 #include <thrust/functional.h>
 #include "z_order.cuh"
+#include "bbox_thrust.cuh"
 namespace 
 {
-
-static void HandleCudaError( cudaError_t err,
-                         const char *file,
-                         int line ) {
-    if (err != cudaSuccess) {
-        printf( "%s in %s at line %d\n", cudaGetErrorString( err ),
-                file, line );
-        exit( EXIT_FAILURE );	
-    }
-}
-#define HANDLE_CUDA_ERROR( err ) (HandleCudaError( err, __FILE__, __LINE__ ))
-
-typedef unsigned char uchar;
-typedef unsigned int  uint;
-typedef thrust::pair<thrust::tuple<double,double>, thrust::tuple<double,double>> SBBox;
 
 struct xytoz 
 {
     
   SBBox bbox;
-  uchar lev;
+  uint8_t lev;
   double scale;
 
-  xytoz(SBBox _bbox,uchar _lev,double _scale): bbox(_bbox),lev(_lev),scale(_scale) {}
+  xytoz(SBBox _bbox,uint8_t _lev,double _scale): bbox(_bbox),lev(_lev),scale(_scale) {}
    
     __device__
-    uint operator()(thrust::tuple<uint,double,double> loc )
+    uint32_t operator()(thrust::tuple<uint32_t,double,double> loc )
     {	
 	double x=thrust::get<1>(loc);
 	double y=thrust::get<2>(loc);
@@ -56,9 +42,9 @@ struct xytoz
 		return (1<<(2*lev));
 	else
 	{	
-		ushort a=(ushort)((x-thrust::get<0>(bbox.first))/scale);
-		ushort b=(ushort)((y-thrust::get<1>(bbox.first))/scale);
-		uint c= z_order(a,b);
+		uint16_t a=(uint16_t)((x-thrust::get<0>(bbox.first))/scale);
+		uint16_t b=(uint16_t)((y-thrust::get<1>(bbox.first))/scale);
+		uint32_t c= z_order(a,b);
 		return c;
 	}
     }
@@ -66,11 +52,11 @@ struct xytoz
 
 struct get_parent 
 {
-    uchar lev;
-    get_parent(uchar _lev):lev(_lev){}
+    uint8_t lev;
+    get_parent(uint8_t _lev):lev(_lev){}
     
     __device__
-    uint operator()(uint child )
+    uint32_t operator()(uint32_t child )
     {
     	return (child>>lev);
     }
@@ -78,14 +64,14 @@ struct get_parent
 
 struct remove_discard
 {
-    uint *p_len,limit,end_pos;
-    remove_discard(uint *_p_len,uint _limit): 
+    uint32_t *p_len,limit,end_pos;
+    remove_discard(uint32_t *_p_len,uint32_t _limit): 
     	p_len(_p_len),limit(_limit){}
     
     __device__ 
-    bool operator()(thrust::tuple<uint,uchar, uint,uint,uint> v)
+    bool operator()(thrust::tuple<uint32_t,uint8_t, uint32_t,uint32_t,uint32_t> v)
     {
-        //uint tid = threadIdx.x + blockDim.x*blockIdx.x;
+        //uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
         //printf("remove_discard tid=%d\n",tid);
         return (p_len[thrust::get<4>(v)]<=limit);
     }
@@ -95,29 +81,124 @@ struct remove_discard
 struct what2output
 {
     __device__ 
-    uint operator()(thrust::tuple<uint, uint,bool> v)
+    uint32_t operator()(thrust::tuple<uint32_t, uint32_t,bool> v)
     {
         return (thrust::get<2>(v)?(thrust::get<0>(v)):(thrust::get<1>(v)));
     }
 };
 
+
+struct gen_quad_bbox
+{
+  uint32_t *d_p_key=NULL;
+  double scale;
+  SBBox aoi_bbox;
+  uint8_t *d_p_lev;
+  uint32_t M;
+  
+  gen_quad_bbox(uint32_t _M,SBBox _aoi_bbox,double _scale,uint32_t *_d_p_key,uint8_t *_d_p_lev):
+  	M(_M),aoi_bbox(_aoi_bbox),scale(_scale),d_p_key(_d_p_key),d_p_lev(_d_p_lev){}
+  
+  __device__
+  SBBox operator()(uint32_t p) const
+  {
+      double s=scale*pow(2.0,M-1-d_p_lev[p]);
+      uint32_t zx=z_order_x(d_p_key[p]);
+      uint32_t zy=z_order_y(d_p_key[p]);
+      double x0=thrust::get<0>(aoi_bbox.first);;
+      double y0=thrust::get<1>(aoi_bbox.first);
+      double qx1=zx*s+x0;
+      double qx2=(zx+1)*s+x0;   
+      double qy1=zy*s+y0;
+      double qy2=(zy+1)*s+y0;
+      printf("%5d %5d %5d %10.5f %10.5f %10.5f %10.5f (scale=%10.5f)\n",p,zx,zy,qx1,qy1,qx2,qy2,scale);
+      SBBox bbox(thrust::make_tuple(qx1,qy1),thrust::make_tuple(qx2,qy2));    
+      return bbox;
+  }
+};
+
 struct flatten_z_code
 {
-        uint M;
+        uint32_t M;
         
-        flatten_z_code(uint _M):M(_M){}
+        flatten_z_code(uint32_t _M):M(_M){}
         
         __device__ 
-	uint operator()(thrust::tuple<uint,uint,bool> v)
+	uint32_t operator()(thrust::tuple<uint32_t,uint32_t,bool> v)
 	{
-		uint key=thrust::get<0>(v);
-		uint lev=thrust::get<1>(v);
-		uint ret=(thrust::get<2>(v))?0xFFFFFFFF:(key<<(2*(M-1-lev)));
-		//uint tid = threadIdx.x + blockDim.x*blockIdx.x;
+		uint32_t key=thrust::get<0>(v);
+		uint32_t lev=thrust::get<1>(v);
+		uint32_t ret=(thrust::get<2>(v))?0xFFFFFFFF:(key<<(2*(M-1-lev)));
+		//uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
 		//printf("tid=%d key=%d lev=%d ret=%d\n",tid,key,lev,ret);
 		return (ret);
 	}
 };
 
+struct qt_get_fpos
+{
+    uint32_t *d_p_qtfpos=NULL;
+    qt_get_fpos(uint32_t *_d_p_qtfpos):d_p_qtfpos(_d_p_qtfpos){}
+    
+    __device__ 
+    uint32_t operator()(uint32_t idx)
+    {
+        return d_p_qtfpos[idx];
+    }
+};
+
+struct qt_is_type
+{
+    uint8_t type;
+    qt_is_type(uint8_t _type):type(_type){}
+    
+    __device__ 
+    bool operator()(thrust::tuple<uint8_t,uint8_t,uint32_t,uint32_t> v)
+    {
+        return thrust::get<1>(v)==type;
+    }
+};
+
+struct qt_not_type
+{
+    uint8_t type;
+    qt_not_type(uint8_t _type):type(_type){}
+    
+    __device__ 
+    bool operator()(thrust::tuple<uint8_t,uint8_t,uint32_t,uint32_t> v)
+    {
+        return thrust::get<1>(v)!=type;
+    }
+};
+
+struct pq_remove_zero
+{    
+    __device__ 
+    bool operator()(thrust::tuple<uint32_t,uint32_t,uint32_t> v)
+    {
+        return thrust::get<2>(v)==0;
+    }
+};
+
+
+struct update_quad
+{
+	uint32_t *d_p_qtfpos=NULL,*d_seq_pos=NULL;
+	update_quad(uint32_t *_d_p_qtfpos,uint32_t *_d_seq_pos):
+		d_p_qtfpos(_d_p_qtfpos),d_seq_pos(_d_seq_pos){}
+        
+        __device__ 
+	uint32_t operator()(thrust::tuple<uint32_t,uint32_t> v)
+	{
+	   //assuming 1d grid
+	   //uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
+	   uint32_t qid=thrust::get<0>(v);
+	   uint32_t sid=thrust::get<1>(v);
+	   uint32_t fpos=d_p_qtfpos[qid];
+	   uint32_t seq=d_seq_pos[sid];
+	   //printf("tid=%d qid=%d sid=%d fpos=%d seq=%d\n",tid,qid,sid,fpos,seq);
+	   return(fpos+seq);
+	}
+};
 
 } // namespace cuspatial

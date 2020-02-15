@@ -1,6 +1,6 @@
 #pragma once
 //adapted from https://dl.acm.org/doi/10.1109/TC.2007.70814
-__constant__ const ushort dilate_tab2[256] = {
+__constant__ const uint16_t dilate_tab2[256] = {
       0x0000, 0x0001,  0x0004, 0x0005,    0x0010, 0x0011,  0x0014, 0x0015,
       0x0040, 0x0041,  0x0044, 0x0045,    0x0050, 0x0051,  0x0054, 0x0055,
       0x0100, 0x0101,  0x0104, 0x0105,    0x0110, 0x0111,  0x0114, 0x0115,
@@ -37,13 +37,13 @@ __constant__ const ushort dilate_tab2[256] = {
 
 /*  Algorithm 1  */
  __device__
-inline uint dilate_2(ushort x){
+inline uint32_t dilate_2(uint16_t x){
   return dilate_tab2[    0xFF & x      ]
       | (dilate_tab2[ (0xFFFF & x) >>8 ] <<16);
 }
 
  __device__
-inline uint z_order(ushort x, ushort y)
+inline uint32_t z_order(uint16_t x, uint16_t y)
 {
 	return (dilate_2(y)<<1)|dilate_2(x);
 }
@@ -86,20 +86,20 @@ __constant__ const unsigned char undilate_tab2[256] = {
 
 /*  Algorithm 2  */
  __device__
- inline ushort undilate_2(uint x){
+ inline uint16_t undilate_2(uint32_t x){
   return undilate_tab2[0xFF & ((x>>7) |x)      ]
       | (undilate_tab2[0xFF &(((x>>7) |x) >>16)]
            << 8);
 }
 
  __device__
-inline ushort z_order_x(uint index)
+inline uint16_t z_order_x(uint32_t index)
 {
 	return undilate_2(index&0x55555555);
 }
 
  __device__
-inline ushort z_order_y(uint index)
+inline uint16_t z_order_y(uint32_t index)
 {
 	return undilate_2((index>>1)&0x55555555);
 }
