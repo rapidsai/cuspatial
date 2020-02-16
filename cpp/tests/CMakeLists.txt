@@ -65,6 +65,7 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}"
                     "${CMAKE_SOURCE_DIR}/src"
                     "${CMAKE_SOURCE_DIR}/thirdparty/cub"
+                    "${CMAKE_SOURCE_DIR}/thirdparty/libcudacxx/include"
                     "${CMAKE_SOURCE_DIR}/thirdparty/dlpack/include"
                     "${GTEST_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
@@ -72,6 +73,7 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CUDF_SRC_INCLUDE}"
                     "${CUDF_TEST_INCLUDE}"
                     "${CUB_INCLUDE}"
+                    "${SIMT_INCLUDE}"
                     )
  
 ###################################################################################################
@@ -86,6 +88,11 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CUDF_LIBRARY}"
                  "${CUSPATIAL_LIBRARY}"
                  )
+
+set(BOUNDING_BOX_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/bounding_box_test.cu")
+ConfigureTest(BOUNDING_BOX_TEST "${BOUNDING_BOX_TEST_SRC}")
+
 set(QUADTREE_POINT_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/indexing/quadtree_point_test.cu")
 ConfigureTest(QUADTREE_POINT_TEST "${QUADTREE_POINT_TEST_SRC}")

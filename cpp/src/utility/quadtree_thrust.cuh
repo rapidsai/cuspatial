@@ -24,14 +24,15 @@
 namespace 
 {
 
+template<typename T>
 struct xytoz 
 {
     
-  SBBox bbox;
+  SBBox<T> bbox;
   uint8_t lev;
   double scale;
 
-  xytoz(SBBox _bbox,uint8_t _lev,double _scale): bbox(_bbox),lev(_lev),scale(_scale) {}
+  xytoz(SBBox<T> _bbox,uint8_t _lev,double _scale): bbox(_bbox),lev(_lev),scale(_scale) {}
    
     __device__
     uint32_t operator()(thrust::tuple<uint32_t,double,double> loc )
@@ -87,20 +88,20 @@ struct what2output
     }
 };
 
-
+template<typename T>
 struct gen_quad_bbox
 {
   uint32_t *d_p_key=NULL;
   double scale;
-  SBBox aoi_bbox;
+  SBBox<T> aoi_bbox;
   uint8_t *d_p_lev;
   uint32_t M;
   
-  gen_quad_bbox(uint32_t _M,SBBox _aoi_bbox,double _scale,uint32_t *_d_p_key,uint8_t *_d_p_lev):
+  gen_quad_bbox(uint32_t _M,SBBox<T> _aoi_bbox,double _scale,uint32_t *_d_p_key,uint8_t *_d_p_lev):
   	M(_M),aoi_bbox(_aoi_bbox),scale(_scale),d_p_key(_d_p_key),d_p_lev(_d_p_lev){}
   
   __device__
-  SBBox operator()(uint32_t p) const
+  SBBox<T> operator()(uint32_t p) const
   {
       double s=scale*pow(2.0,M-1-d_p_lev[p]);
       uint32_t zx=z_order_x(d_p_key[p]);
@@ -112,7 +113,7 @@ struct gen_quad_bbox
       double qy1=zy*s+y0;
       double qy2=(zy+1)*s+y0;
       printf("%5d %5d %5d %10.5f %10.5f %10.5f %10.5f (scale=%10.5f)\n",p,zx,zy,qx1,qy1,qx2,qy2,scale);
-      SBBox bbox(thrust::make_tuple(qx1,qy1),thrust::make_tuple(qx2,qy2));    
+      SBBox<T> bbox(thrust::make_tuple(qx1,qy1),thrust::make_tuple(qx2,qy2));    
       return bbox;
   }
 };

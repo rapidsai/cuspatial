@@ -36,7 +36,7 @@ namespace { //anonymous
 //http://www.adms-conf.org/2019-camera-ready/zhang_adms19.pdf
 
 template<typename T>
-std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,T *d_p_x,T *d_p_y,SBBox bbox, double scale,
+std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,T *d_p_x,T *d_p_y,SBBox<T> bbox, double scale,
 	uint32_t num_levels, uint32_t min_size, rmm::mr::device_memory_resource* mr, cudaStream_t stream)	
                                          
 {
@@ -77,7 +77,7 @@ if(0)
     assert(d_p_pntkey!=NULL & d_p_runkey!=NULL && d_p_runlen!=NULL);
     
     //computing Morton code (Z-order) 
-    thrust::transform(exec_policy,d_pnt_iter,d_pnt_iter+point_len, d_p_pntkey,xytoz(bbox,num_levels,scale));   
+    thrust::transform(exec_policy,d_pnt_iter,d_pnt_iter+point_len, d_p_pntkey,xytoz<T>(bbox,num_levels,scale));   
 
 if(0)
 {
@@ -409,7 +409,7 @@ struct quadtree_point_processor {
     double y1=thrust::get<1>(qpi);
     double x2=thrust::get<2>(qpi);
     double y2=thrust::get<3>(qpi);
-    SBBox bbox(thrust::make_tuple(x1,y1),thrust::make_tuple(x2,y2));
+    SBBox<T> bbox(thrust::make_tuple(x1,y1),thrust::make_tuple(x2,y2));
     double scale=thrust::get<4>(qpi);
     uint32_t num_levels=thrust::get<5>(qpi);
     uint32_t min_size=thrust::get<6>(qpi);

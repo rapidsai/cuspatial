@@ -19,55 +19,76 @@
 #include <ostream>
 #include <thrust/pair.h>
 #include <thrust/functional.h>
+#include <utility/z_order.cuh>
 
 namespace
 {
 
-typedef thrust::pair<thrust::tuple<double,double>, thrust::tuple<double,double>> SBBox;
+template<typename T>
+using SBBox=thrust::pair<thrust::tuple<T,T>, thrust::tuple<T,T>> ;
 
-std::ostream& operator << (std::ostream& os, const SBBox & bbox)
+template<typename T>
+std::ostream& operator << (std::ostream& os, const SBBox<T> & bbox)
 {
-    double x1=thrust::get<0>(bbox.first);
-    double y1=thrust::get<1>(bbox.first);
-    double x2=thrust::get<0>(bbox.second);
-    double y2=thrust::get<1>(bbox.second);
+    T x1=thrust::get<0>(bbox.first);
+    T y1=thrust::get<1>(bbox.first);
+    T x2=thrust::get<0>(bbox.second);
+    T y2=thrust::get<1>(bbox.second);
 
     os << "("<< x1 <<"," << y1 <<"," << x2 << "," << y2 <<std::endl;
     return os;
 }
 
 // reduce a pair of bounding boxes (a,b) to a bounding box containing a and b
+template<typename T>
 struct bbox_reduction
 {
-     __device__
-        SBBox operator()(SBBox a, SBBox b)
-        {
-            // lower left corner
+     __device__     
+     SBBox<T> operator()(const SBBox<T>& a, const SBBox<T>& b)
+     {
             double fx1=thrust::get<0>(a.first);
             double fx2=thrust::get<0>(b.first);
             double fy1=thrust::get<1>(a.first);
             double fy2=thrust::get<1>(b.first);
 
             double tx1=thrust::get<0>(a.second);
-            double tx2=thrust::get<0>(b.second);
-            double ty1=thrust::get<1>(a.second);
+            double tx2=thrust::get<0>(b.second); 
+            double ty1=thrust::get<1>(a.second);          
             double ty2=thrust::get<1>(b.second);
             
+            //printf("%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n",fx1,fy1,fx2,fy2,tx1,ty1,tx2,ty2);
             thrust::tuple<double,double> ll=thrust::make_tuple(min(fx1,tx1),min(fy1,ty1));
             thrust::tuple<double,double> ur=thrust::make_tuple(max(fx2,tx2),max(fy2,ty2));
-            return SBBox(ll, ur);
-        }
+            return SBBox<T>(ll, ur);
+      }
 };
 
+template<typename T>
 struct bbox_transformation
 {
      __device__
-        SBBox operator()(thrust::tuple<double,double> t)
-        {
-            return SBBox(t, t);
-        }
+     SBBox<T> operator()(const thrust::tuple<T,T>& t)
+     {
+         return SBBox<T>(t, t);
+     }
 };    
 
+template<typename T>
+struct bbox2tuple
+{
+     __device__
+     thrust::tuple<T,T,T,T> operator()(const SBBox<T>& bbox)
+     {
+        T x1=thrust::get<0>(bbox.first);
+        T x2=thrust::get<0>(bbox.second);
+        T y1=thrust::get<1>(bbox.first);
+        T y2=thrust::get<1>(bbox.second);
+        //printf("%10.5f %10.5f %10.5f %10.5f\n",x1,y1,x2,y2);
+        return thrust::make_tuple(x1,y1,x2,y2);
+     }
+};    
+
+template<typename T>
 struct pairwise_test_intersection
 {
   uint8_t M;
@@ -76,10 +97,10 @@ struct pairwise_test_intersection
   uint8_t *d_p_lev=NULL;
   bool *d_p_qtsign=NULL;
   double scale;
-  SBBox *ply_bbox,aoi_bbox;
+  SBBox<T> *ply_bbox,aoi_bbox;
  
- pairwise_test_intersection(uint8_t _M,uint32_t _num_node,SBBox _aoi_bbox,double _scale,
- 	uint32_t *_d_p_key,uint8_t* _d_p_lev,bool *_d_p_sign,SBBox *_ply_bbox):
+ pairwise_test_intersection(uint8_t _M,uint32_t _num_node,SBBox<T> _aoi_bbox,T _scale,
+ 	uint32_t *_d_p_key,uint8_t* _d_p_lev,bool *_d_p_sign,SBBox<T> *_ply_bbox):
   	M(_M),num_node(_num_node),aoi_bbox(_aoi_bbox),
   	d_p_key(_d_p_key),d_p_lev(_d_p_lev),d_p_qtsign(_d_p_sign),scale(_scale),ply_bbox(_ply_bbox)
  {
@@ -94,28 +115,29 @@ struct pairwise_test_intersection
     uint32_t quad_idx=p%num_node;
   
     uint8_t lev=d_p_lev[quad_idx];   
-    double s=scale*pow(2.0,M-1-lev);
+    T s=scale*pow(2.0,M-1-lev);
     uint32_t zx=z_order_x(d_p_key[quad_idx]);
     uint32_t zy=z_order_y(d_p_key[quad_idx]);
        
-    double x0=thrust::get<0>(aoi_bbox.first);;
-    double y0=thrust::get<1>(aoi_bbox.first);
-    double qx1=zx*s+x0;
-    double qx2=(zx+1)*s+x0;   
-    double qy1=zy*s+y0;
-    double qy2=(zy+1)*s+y0;
+    T x0=thrust::get<0>(aoi_bbox.first);;
+    T y0=thrust::get<1>(aoi_bbox.first);
+    T qx1=zx*s+x0;
+    T qx2=(zx+1)*s+x0;   
+    T qy1=zy*s+y0;
+    T qy2=(zy+1)*s+y0;
 
-    SBBox box=ply_bbox[poly_idx];
-    double px1=thrust::get<0>(box.first);
-    double py1=thrust::get<1>(box.first);
-    double px2=thrust::get<0>(box.second);
-    double py2=thrust::get<1>(box.second);
+    SBBox<T> box=ply_bbox[poly_idx];
+    T px1=thrust::get<0>(box.first);
+    T py1=thrust::get<1>(box.first);
+    T px2=thrust::get<0>(box.second);
+    T py2=thrust::get<1>(box.second);
     bool not_intersect=(qx1>px2||qx2<px1||qy1>py2||qy2<py1);
     uint8_t type=not_intersect?2:(d_p_qtsign[quad_idx]?1:0);
     return thrust::make_tuple(lev,type,poly_idx,quad_idx);
   }
 };
 
+template<typename T>
 struct twolist_test_intersection
 {
   uint8_t M;
@@ -124,10 +146,10 @@ struct twolist_test_intersection
   uint8_t *d_p_lev=NULL;
   bool *d_p_qtsign=NULL;
   double scale;
-  SBBox *ply_bbox,aoi_bbox;
+  SBBox<T> *ply_bbox,aoi_bbox;
  
- twolist_test_intersection(uint8_t _M,SBBox _aoi_bbox,double _scale,uint32_t *_d_p_key,
- 	uint8_t * _d_p_lev,bool *_d_p_sign,SBBox *_ply_bbox):
+ twolist_test_intersection(uint8_t _M,SBBox<T> _aoi_bbox,double _scale,uint32_t *_d_p_key,
+ 	uint8_t * _d_p_lev,bool *_d_p_sign,SBBox<T> *_ply_bbox):
   	M(_M),aoi_bbox(_aoi_bbox),d_p_key(_d_p_key),
   	d_p_lev(_d_p_lev),d_p_qtsign(_d_p_sign),scale(_scale),ply_bbox(_ply_bbox) {}
   	
@@ -143,18 +165,18 @@ struct twolist_test_intersection
     uint32_t zx=z_order_x(d_p_key[quad_idx]);
     uint32_t zy=z_order_y(d_p_key[quad_idx]);
       
-    double x0=thrust::get<0>(aoi_bbox.first);;
-    double y0=thrust::get<1>(aoi_bbox.first);
-    double qx1=zx*s+x0;
-    double qx2=(zx+1)*s+x0;   
-    double qy1=zy*s+y0;
-    double qy2=(zy+1)*s+y0;
+    T x0=thrust::get<0>(aoi_bbox.first);;
+    T y0=thrust::get<1>(aoi_bbox.first);
+    T qx1=zx*s+x0;
+    T qx2=(zx+1)*s+x0;   
+    T qy1=zy*s+y0;
+    T qy2=(zy+1)*s+y0;
     
-    SBBox box=ply_bbox[poly_idx];
-    double px1=thrust::get<0>(box.first);
-    double py1=thrust::get<1>(box.first);
-    double px2=thrust::get<0>(box.second);
-    double py2=thrust::get<1>(box.second);
+    SBBox<T> box=ply_bbox[poly_idx];
+    T px1=thrust::get<0>(box.first);
+    T py1=thrust::get<1>(box.first);
+    T px2=thrust::get<0>(box.second);
+    T py2=thrust::get<1>(box.second);
     bool not_intersect=(qx1>px2||qx2<px1||qy1>py2||qy2<py1);
     uint8_t type=not_intersect?2:(d_p_qtsign[quad_idx]?1:0);
     //printf("lev=%d type=%d poly_idx=%d quad_id=%d\n",lev,type,poly_idx,quad_idx);
