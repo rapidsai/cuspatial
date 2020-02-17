@@ -112,7 +112,7 @@ struct gen_quad_bbox
       double qx2=(zx+1)*s+x0;   
       double qy1=zy*s+y0;
       double qy2=(zy+1)*s+y0;
-      printf("%5d %5d %5d %10.5f %10.5f %10.5f %10.5f (scale=%10.5f)\n",p,zx,zy,qx1,qy1,qx2,qy2,scale);
+      printf("gen_quad_bbox: %5d %5d %5d %10.5f %10.5f %10.5f %10.5f (scale=%10.5f)\n",p,zx,zy,qx1,qy1,qx2,qy2,scale);
       SBBox<T> bbox(thrust::make_tuple(qx1,qy1),thrust::make_tuple(qx2,qy2));    
       return bbox;
   }
@@ -130,8 +130,8 @@ struct flatten_z_code
 		uint32_t key=thrust::get<0>(v);
 		uint32_t lev=thrust::get<1>(v);
 		uint32_t ret=(thrust::get<2>(v))?0xFFFFFFFF:(key<<(2*(M-1-lev)));
-		//uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
-		//printf("tid=%d key=%d lev=%d ret=%d\n",tid,key,lev,ret);
+		uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
+		printf("flatten_z_code: tid=%d key=%d lev=%d ret=%d\n",tid,key,lev,ret);
 		return (ret);
 	}
 };
@@ -184,20 +184,20 @@ struct pq_remove_zero
 
 struct update_quad
 {
-	uint32_t *d_p_qtfpos=NULL,*d_seq_pos=NULL;
-	update_quad(uint32_t *_d_p_qtfpos,uint32_t *_d_seq_pos):
+	const uint32_t *d_p_qtfpos=NULL,*d_seq_pos=NULL;
+	update_quad(const uint32_t *_d_p_qtfpos,const uint32_t *_d_seq_pos):
 		d_p_qtfpos(_d_p_qtfpos),d_seq_pos(_d_seq_pos){}
         
         __device__ 
 	uint32_t operator()(thrust::tuple<uint32_t,uint32_t> v)
 	{
 	   //assuming 1d grid
-	   //uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
+	   uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
 	   uint32_t qid=thrust::get<0>(v);
 	   uint32_t sid=thrust::get<1>(v);
 	   uint32_t fpos=d_p_qtfpos[qid];
 	   uint32_t seq=d_seq_pos[sid];
-	   //printf("tid=%d qid=%d sid=%d fpos=%d seq=%d\n",tid,qid,sid,fpos,seq);
+	   printf("update_quad:tid=%d qid=%d sid=%d fpos=%d seq=%d\n",tid,qid,sid,fpos,seq);
 	   return(fpos+seq);
 	}
 };

@@ -23,21 +23,32 @@
 #include <tests/utilities/legacy/cudf_test_utils.cuh>
 #include <tests/utilities/legacy/cudf_test_fixtures.h>
 #include <cudf/column/column_view.hpp>
+#include <cudf/column/column_device_view.cuh>
+#include <cudf/column/column_factories.hpp>
 #include <cudf/table/table_view.hpp>
 #include <cudf/table/table.hpp>
-#include <cuspatial/quadtree.hpp>
-#include <utility/helper_thrust.cuh>
 
-struct QuadtreeOnPointIndexingTest : public GdfTest 
+#include <utility/helper_thrust.cuh>
+#include <utility/quadtree_thrust.cuh>
+#include <utility/bbox_thrust.cuh>
+
+#include <cuspatial/quadtree.hpp>
+#include <cuspatial/bounding_box.hpp>
+#include <cuspatial/spatial_jion.hpp>
+
+struct QuadtreePolygonBBoxJoinTest : public GdfTest 
 {
  
 };
 
-TEST_F(QuadtreeOnPointIndexingTest, test1)
+TEST_F(QuadtreePolygonBBoxJoinTest, test1)
 {
-    const int num_levels=3;
-    int min_size=12;
-    int point_len=71;
+    cudaStream_t stream=0;
+    rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
+
+    const uint32_t num_levels=3;
+    const uint32_t min_size=12;
+    const uint32_t point_len=71;
     
     double scale=1.0;
     double x1=0,x2=8,y1=0,y2=8;
@@ -47,9 +58,7 @@ TEST_F(QuadtreeOnPointIndexingTest, test1)
     assert(sizeof(xx)/sizeof(double)==point_len);
     double yy[71]={1.3472225743317712, 0.5431061133894604, 0.1448705855995005, 0.8138440641113271, 1.9022922214961997, 1.5177694304735412, 1.8762161698642947, 0.2621847215928189, 0.027638405909631958, 0.3338651960183463, 0.9937713340192049, 0.9376313558467103, 0.33184908855075124, 0.09804238103130436, 0.7485845679979923, 0.2346381514128677, 1.1809465376402173, 1.419555755682142, 1.2372448404986038, 1.2774712415624014, 1.902015274420646, 1.2420487904041893, 1.0484414482621331, 0.9606291981013242, 1.9486902798139454, 0.021365525588281198, 1.8996548860019926, 0.3234041700489503, 1.9531893897409585, 0.7800065259479418, 1.942673409259531, 0.5659923375279095, 2.8709552313924487, 2.693039435509084, 2.57810040095543, 2.4612194182614333, 2.3345952955903906, 3.3999020934055837, 3.2296461832828114, 3.6607732238530897, 3.7672478678985257, 3.0668114607133137, 3.8159308233351266, 3.8812819070357545, 3.6045900851589048, 2.5470532680258002, 2.983311357415729, 2.2235950639628523, 2.5239201807166616, 2.8765450351723674, 2.5605928243991434, 2.9754616970668213, 2.174562817047202, 3.380784914178574, 3.063690547962938, 3.380489849365283, 3.623862886287816, 3.538128217886674, 3.4154469467473447, 3.253257011908445, 4.209727933188015, 7.478882372510933, 7.474216636277054, 6.896038613284851, 7.513564222799629, 6.885401350515916, 6.194330707468438, 5.823535317960799, 6.789029097334483, 5.188939408363776, 5.788316610960881};
     assert(sizeof(yy)/sizeof(double)==point_len);
-    
-    cudaStream_t stream=0;
-    
+        
     double *d_p_x=NULL,*d_p_y=NULL;
     RMM_TRY( RMM_ALLOC( &d_p_x,point_len* sizeof(double), stream));
     assert(d_p_x!=NULL);
@@ -69,8 +78,54 @@ TEST_F(QuadtreeOnPointIndexingTest, test1)
     cudf::mutable_column_view x(cudf::data_type{cudf::FLOAT64},point_len,d_p_x);
     cudf::mutable_column_view y(cudf::data_type{cudf::FLOAT64},point_len,d_p_y);
     
-    std::unique_ptr<cudf::experimental::table> qidx= cuspatial::quadtree_on_points(id,x,y,x1,y1,x2,y2, scale,num_levels, min_size);
-    std::cout<<"num cols="<<qidx->view().num_columns()<<std::endl;
+    std::unique_ptr<cudf::experimental::table> quadtree= cuspatial::quadtree_on_points(id,x,y,x1,y1,x2,y2, scale,num_levels, min_size);
+    std::cout<<"quadtree num cols="<<quadtree->view().num_columns()<<std::endl;
+    
+    uint32_t ply_fpos[]={1,2,3,4};
+    uint32_t ply_rpos[]={4,10,14,19};
+    double ply_x[] = {2.488450,1.333584,3.460720,2.488450,5.039823,5.561707,7.103516,7.190674,5.998939,5.039823,5.998939,5.573720,6.703534,5.998939,2.088115,1.034892,2.415080,3.208660,2.088115};
+    double ply_y[] = {5.856625,5.008840,4.586599,5.856625,4.229242,1.825073,1.503906,4.025879,5.653384,4.229242,1.235638,0.197808,0.086693,1.235638,4.541529,3.530299,2.896937,3.745936,4.541529};
+    uint32_t num_poly=sizeof(ply_fpos)/sizeof(uint32_t);
+    uint32_t num_ring=sizeof(ply_rpos)/sizeof(uint32_t);
+    uint32_t num_vertex=sizeof(ply_x)/sizeof(double);
+    assert(num_vertex==sizeof(ply_y)/sizeof(double));
+    assert(num_vertex=ply_rpos[num_ring-1]);
+        
+    std::unique_ptr<cudf::column> fpos_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
+    	num_poly, cudf::mask_state::UNALLOCATED, stream, mr );      
+    uint32_t *d_p_fpos=cudf::mutable_column_device_view::create(fpos_col->mutable_view(), stream)->data<uint32_t>();
+    assert(d_p_fpos!=NULL);
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_fpos, ply_fpos, num_poly * sizeof(uint32_t), cudaMemcpyHostToDevice ) ); 
+
+    std::unique_ptr<cudf::column> rpos_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
+    	num_ring, cudf::mask_state::UNALLOCATED, stream, mr );      
+    uint32_t *d_p_rpos=cudf::mutable_column_device_view::create(rpos_col->mutable_view(), stream)->data<uint32_t>();
+    assert(d_p_rpos!=NULL);
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_rpos, ply_rpos, num_ring * sizeof(uint32_t), cudaMemcpyHostToDevice ) ); 
+
+    std::unique_ptr<cudf::column> x_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
+    	num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
+    double *d_poly_x=cudf::mutable_column_device_view::create(x_col->mutable_view(), stream)->data<double>();
+    assert(d_p_x!=NULL);
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_x, ply_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) ); 
+
+    std::unique_ptr<cudf::column> y_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
+    	num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
+    double *d_poly_y=cudf::mutable_column_device_view::create(y_col->mutable_view(), stream)->data<double>();
+    assert(d_poly_y!=NULL);
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_y, ply_y, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) ); 
+   
+    std::unique_ptr<cudf::experimental::table> bbox_tbl=cuspatial::polygon_bbox(*fpos_col,*rpos_col,*x_col,*y_col); 
+    
+    std::cout<<"polygon bbox="<<bbox_tbl->view().num_rows()<<std::endl;
+    
+    const cudf::table_view quad_view=quadtree->view();
+    const cudf::table_view bbox_view=bbox_tbl->view();
+    
+    std::unique_ptr<cudf::experimental::table> pair_tbl=cuspatial::quad_bbox_join(
+        quad_view,bbox_view,x1,y1,x2,y2, scale,num_levels, min_size);
+   
+   std::cout<<"polygon/quad num pair="<<pair_tbl->view().num_columns()<<std::endl;
 }
 
 

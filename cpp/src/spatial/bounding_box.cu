@@ -40,13 +40,16 @@ struct bounding_box_processor {
   
   template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
   std::unique_ptr<cudf::experimental::table> operator()(
-  	uint32_t num_poly,uint32_t num_ring,uint32_t num_vertex,
-	const cudf::column_view& fpos,const cudf::column_view& rpos,
+ 	const cudf::column_view& fpos,const cudf::column_view& rpos,
 	const cudf::column_view& x,const cudf::column_view& y, 
 	rmm::mr::device_memory_resource* mr,
         cudaStream_t stream)
    {    
     
+    uint32_t num_poly=fpos.size();
+    uint32_t num_ring=rpos.size();
+    uint32_t num_vertex=x.size();
+    std::cout<<"num_poly="<<num_poly<<",num_ring="<<num_ring<<",num_vertex="<<num_vertex<<std::endl;
     auto exec_policy = rmm::exec_policy(stream)->on(stream);
     
     const uint32_t *d_ply_fpos=fpos.data<uint32_t>();
@@ -84,10 +87,11 @@ struct bounding_box_processor {
     auto d_vertex_iter=thrust::make_zip_iterator(thrust::make_tuple(d_ply_x,d_ply_y));          
 
     //reuse d_first_ring_pos to store sequential polygon index, should be 0,1,....
-    int num_bbox=thrust::reduce_by_key(exec_policy,d_vertex_pid,d_vertex_pid+num_vertex,
+    uint32_t num_bbox=thrust::reduce_by_key(exec_policy,d_vertex_pid,d_vertex_pid+num_vertex,
      	thrust::make_transform_iterator(d_vertex_iter,bbox_transformation<T>()),
      	d_first_ring_pos,d_p_bbox,thrust::equal_to<uint32_t>(),bbox_reduction<T>()).first-d_first_ring_pos;
-    assert(num_poly==num_bbox);
+    std::cout<<"num_poly="<<num_poly<<",num_bbox="<<num_bbox<<std::endl;
+    CUDF_EXPECTS(num_poly==num_bbox,"#of bbox after reduction should be the same as # of polys");
 
     std::unique_ptr<cudf::column> x1_col = cudf::make_numeric_column(
        cudf::data_type{cudf::experimental::type_to_id<T>()}, num_poly,cudf::mask_state::UNALLOCATED, stream, mr);      
@@ -128,7 +132,6 @@ struct bounding_box_processor {
   
   template<typename T, std::enable_if_t<!std::is_floating_point<T>::value >* = nullptr>
   std::unique_ptr<cudf::experimental::table> operator()(
-	uint32_t num_poly,uint32_t num_ring,uint32_t num_vertex,
 	const cudf::column_view& fpos,const cudf::column_view& rpos,
 	const cudf::column_view& x,const cudf::column_view& y, 
 	rmm::mr::device_memory_resource* mr,
@@ -143,7 +146,6 @@ struct bounding_box_processor {
 
 namespace cuspatial {
 std::unique_ptr<cudf::experimental::table> polygon_bbox(
-	uint32_t num_poly,uint32_t num_ring,uint32_t num_vertex,
 	cudf::column_view fpos,cudf::column_view rpos,
 	cudf::column_view x,cudf::column_view y)
 {   
@@ -151,7 +153,7 @@ std::unique_ptr<cudf::experimental::table> polygon_bbox(
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
     
     return cudf::experimental::type_dispatcher(x.type(),bounding_box_processor{}, 
-    	num_poly,num_ring,num_vertex,fpos,rpos,x,y,mr,stream);       	
+    	fpos,rpos,x,y,mr,stream);       	
 }
 
 }// namespace cuspatial

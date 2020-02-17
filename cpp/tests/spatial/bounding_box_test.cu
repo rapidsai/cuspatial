@@ -42,40 +42,43 @@ TEST_F(BoundingBoxTest, test1)
     uint32_t ply_rpos[]={4,10,14,19};
     double ply_x[] = {2.488450,1.333584,3.460720,2.488450,5.039823,5.561707,7.103516,7.190674,5.998939,5.039823,5.998939,5.573720,6.703534,5.998939,2.088115,1.034892,2.415080,3.208660,2.088115};
     double ply_y[] = {5.856625,5.008840,4.586599,5.856625,4.229242,1.825073,1.503906,4.025879,5.653384,4.229242,1.235638,0.197808,0.086693,1.235638,4.541529,3.530299,2.896937,3.745936,4.541529};
+    
     uint32_t num_poly=sizeof(ply_fpos)/sizeof(uint32_t);
     uint32_t num_ring=sizeof(ply_rpos)/sizeof(uint32_t);
-    uint32_t num_vertex=sizeof(ply_x)/sizeof(double);
-    assert(num_vertex==sizeof(ply_y)/sizeof(double));
-    assert(num_vertex=ply_rpos[num_ring-1]);
+    uint32_t num_vertex=sizeof(ply_x)/sizeof(double);   
+    std::cout<<"num_poly="<<num_poly<<",num_ring="<<num_ring<<",num_vertex="<<num_vertex<<std::endl;
+
+    CUDF_EXPECTS(num_vertex==sizeof(ply_y)/sizeof(double),"x/y should have same length");
+    CUDF_EXPECTS(num_vertex=ply_rpos[num_ring-1],"# of vertex should be the same as the last postion");
     
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
     
     std::unique_ptr<cudf::column> fpos_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
-    	num_poly*sizeof(uint32_t), cudf::mask_state::UNALLOCATED, stream, mr );      
+    	num_poly, cudf::mask_state::UNALLOCATED, stream, mr );      
     uint32_t *d_p_fpos=cudf::mutable_column_device_view::create(fpos_col->mutable_view(), stream)->data<uint32_t>();
     assert(d_p_fpos!=NULL);
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_fpos, ply_fpos, num_poly * sizeof(uint32_t), cudaMemcpyHostToDevice ) ); 
 
     std::unique_ptr<cudf::column> rpos_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
-    	num_ring*sizeof(uint32_t), cudf::mask_state::UNALLOCATED, stream, mr );      
+    	num_ring, cudf::mask_state::UNALLOCATED, stream, mr );      
     uint32_t *d_p_rpos=cudf::mutable_column_device_view::create(rpos_col->mutable_view(), stream)->data<uint32_t>();
     assert(d_p_rpos!=NULL);
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_rpos, ply_rpos, num_ring * sizeof(uint32_t), cudaMemcpyHostToDevice ) ); 
 
     std::unique_ptr<cudf::column> x_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
-    	num_vertex*sizeof(double), cudf::mask_state::UNALLOCATED, stream, mr );      
+    	num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
     double *d_p_x=cudf::mutable_column_device_view::create(x_col->mutable_view(), stream)->data<double>();
     assert(d_p_x!=NULL);
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_x, ply_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) ); 
 
     std::unique_ptr<cudf::column> y_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
-    	num_vertex*sizeof(double), cudf::mask_state::UNALLOCATED, stream, mr );      
+    	num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
     double *d_p_y=cudf::mutable_column_device_view::create(y_col->mutable_view(), stream)->data<double>();
     assert(d_p_y!=NULL);
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_y, ply_y, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) ); 
    
-   std::unique_ptr<cudf::experimental::table> bbox_tbl=cuspatial::polygon_bbox(num_poly,num_ring,num_vertex,
+   std::unique_ptr<cudf::experimental::table> bbox_tbl=cuspatial::polygon_bbox(
 	*fpos_col,*rpos_col,*x_col,*y_col);
    
    std::cout<<"num cols="<<bbox_tbl->view().num_columns()<<std::endl; 

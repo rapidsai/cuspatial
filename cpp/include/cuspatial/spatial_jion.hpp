@@ -15,13 +15,17 @@
  */
 
 #pragma once
-
 namespace cuspatial {
+
 /**
  * @brief .
  * @note: .
 **/
-std::unique_ptr<cudf::experimental::table> polygon_bbox(
-	cudf::column_view,cudf::column_view,cudf::column_view,cudf::column_view);
+std::unique_ptr<cudf::experimental::table> quad_bbox_join(cudf::table_view const&,
+	cudf::table_view const&,double,double,double,double, double,uint32_t,uint32_t);
 
-}  // namespace cuspatial
+std::unique_ptr<cudf::experimental::table> pip_refine(const cudf::table_view&,
+	const cudf::table_view&,const cudf::table_view&,
+	const cudf::table_view&,const cudf::column_view&,const cudf::column_view&);
+
+}// namespace cuspatial

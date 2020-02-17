@@ -19,9 +19,9 @@ struct get_vec_element
     get_vec_element(T *_d_p_vec):d_p_vec(_d_p_vec){}
     
     __device__ 
-    T operator()(uint idx)
+    T operator()(uint32_t idx)
     {
-    	//uint tid = threadIdx.x + blockDim.x*blockIdx.x;
+    	//uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
         //printf("get_vec_element=%d %d %d\n",tid,idx,_d_p_vec[idx]);
         return d_p_vec[idx];
     }

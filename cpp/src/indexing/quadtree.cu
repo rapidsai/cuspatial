@@ -36,8 +36,9 @@ namespace { //anonymous
 //http://www.adms-conf.org/2019-camera-ready/zhang_adms19.pdf
 
 template<typename T>
-std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,T *d_p_x,T *d_p_y,SBBox<T> bbox, double scale,
-	uint32_t num_levels, uint32_t min_size, rmm::mr::device_memory_resource* mr, cudaStream_t stream)	
+std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,
+	uint32_t* d_p_id,T *d_p_x,T *d_p_y,SBBox<double> bbox, double scale,
+	uint32_t num_level, uint32_t min_size, rmm::mr::device_memory_resource* mr, cudaStream_t stream)	
                                          
 {
     double x1=thrust::get<0>(bbox.first);
@@ -48,15 +49,11 @@ std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,T *d
     std::cout<<"bounding box(x1,y1,x2,y2)=("<<x1<<","<<y1<<","<<x2<<","<<x2<<","<<y2<<std::endl;
     std::cout<<"scale="<<scale<<std::endl;
     std::cout<<"point_len="<<point_len<<std::endl;
-    std::cout<<"num_levels="<<num_levels<<std::endl;
+    std::cout<<"num_level="<<num_level<<std::endl;
     std::cout<<"min_size="<<min_size<<std::endl;
     
     auto exec_policy = rmm::exec_policy(stream)->on(stream);
-    uint32_t * d_p_id=NULL;
-    RMM_TRY( RMM_ALLOC( &d_p_id,point_len* sizeof(uint32_t), stream));
-    assert(d_p_id!=NULL);
-    thrust::sequence(exec_policy,d_p_id,d_p_id+point_len);
-
+    
 //debugging: make sure the inputs are correct
 if(0)
 {
@@ -77,7 +74,7 @@ if(0)
     assert(d_p_pntkey!=NULL & d_p_runkey!=NULL && d_p_runlen!=NULL);
     
     //computing Morton code (Z-order) 
-    thrust::transform(exec_policy,d_pnt_iter,d_pnt_iter+point_len, d_p_pntkey,xytoz<T>(bbox,num_levels,scale));   
+    thrust::transform(exec_policy,d_pnt_iter,d_pnt_iter+point_len, d_p_pntkey,xytoz<T>(bbox,num_level,scale));   
 
 if(0)
 {
@@ -95,27 +92,27 @@ if(0)
 
     //allocate sufficient GPU memory for "full quadrants" (Secection 4.1 of ref.)
     uint32_t *d_p_parentkey=NULL,*d_p_numchild=NULL,*d_p_pntlen=NULL;    
-    RMM_TRY( RMM_ALLOC( (void**)&(d_p_parentkey),num_levels*num_run* sizeof(uint32_t),stream));
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_parentkey),num_level*num_run* sizeof(uint32_t),stream));
     HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_p_parentkey, (void *)d_p_runkey, num_run * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
     assert(d_p_parentkey!=NULL);
     RMM_FREE(d_p_runkey,stream);d_p_runkey=NULL;
     
-    RMM_TRY( RMM_ALLOC( (void**)&(d_p_pntlen),num_levels*num_run* sizeof(uint32_t),stream));    
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_pntlen),num_level*num_run* sizeof(uint32_t),stream));    
     HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_p_pntlen, (void *)d_p_runlen, num_run * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
     assert(d_p_pntlen!=NULL);
     RMM_FREE(d_p_runlen,stream);d_p_runlen=NULL;
      
-    RMM_TRY( RMM_ALLOC( (void**)&(d_p_numchild),num_levels*num_run* sizeof(uint32_t),stream));
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_numchild),num_level*num_run* sizeof(uint32_t),stream));
     assert(d_p_numchild!=NULL);
     HANDLE_CUDA_ERROR( cudaMemset(d_p_numchild,0,num_run*sizeof(uint32_t)) ); 
     
     //generating keys of paraent quadrants and numbers of child quadrants of "full quadrants" 
     //based on the second of paragraph of Section 4.2 of ref. 
     //keeping track of the number of quadrants, their begining/ending positions for each level 
-    int lev_num[num_levels],lev_bpos[num_levels],lev_epos[num_levels];
-    lev_num[num_levels-1]=num_run;
+    int lev_num[num_level],lev_bpos[num_level],lev_epos[num_level];
+    lev_num[num_level-1]=num_run;
     uint32_t begin_pos=0, end_pos=num_run;
-    for(int k=num_levels-1;k>=0;k--)
+    for(int k=num_level-1;k>=0;k--)
     {  			        
          uint32_t nk=thrust::reduce_by_key(exec_policy,
 	    thrust::make_transform_iterator(d_p_parentkey+begin_pos,get_parent(2)),
@@ -151,7 +148,7 @@ if(0)
    
     //reverse the order of quadtree nodes for easier manipulation; skip the root node 
     int num_count_nodes=0;
-    for(uint32_t k=0;k<num_levels;k++)
+    for(uint32_t k=0;k<num_level;k++)
     {	
    	thrust::fill(thrust::device,d_p_fulllev+num_count_nodes,d_p_fulllev+num_count_nodes+(lev_epos[k]-lev_bpos[k]),k);
    	int nq1=thrust::copy(exec_policy,d_p_parentkey+lev_bpos[k],d_p_parentkey+lev_epos[k],d_p_fullkey+num_count_nodes)-(d_p_fullkey+num_count_nodes);   	
@@ -164,13 +161,13 @@ if(0)
     assert(num_count_nodes==begin_pos);//root node not counted 
     
     //delete oversized nodes for memroy efficiency
-    //num_count_nodes should be typically much smaller than num_levels*num_run 
+    //num_count_nodes should be typically much smaller than num_level*num_run 
     RMM_FREE(d_p_parentkey,stream);d_p_parentkey=NULL;
     RMM_FREE(d_p_numchild,stream);d_p_numchild=NULL;
     RMM_FREE(d_p_pntlen,stream);d_p_pntlen=NULL;
 
     int num_parent_nodes=0;
-    for(uint32_t k=1;k<num_levels;k++) num_parent_nodes+=lev_num[k];
+    for(uint32_t k=1;k<num_level;k++) num_parent_nodes+=lev_num[k];
    
     //temporal device memory for vector expansion
     uint32_t *d_p_tmppos=NULL;
@@ -367,7 +364,8 @@ if(1)
     thrust::copy(d_key_ptr,d_key_ptr+num_valid_nodes,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
     
     printf("lev\n");
-    thrust::copy(d_lev_ptr,d_lev_ptr+num_valid_nodes,std::ostream_iterator<uint8_t>(std::cout, " "));std::cout<<std::endl;
+    //change from uint8_t to uint32_t in ostream_iterator to output numbers instead of special chars
+    thrust::copy(d_lev_ptr,d_lev_ptr+num_valid_nodes,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
    
     printf("sign\n");
     thrust::copy(d_sign_ptr,d_sign_ptr+num_valid_nodes,std::ostream_iterator<bool>(std::cout, " "));std::cout<<std::endl;
@@ -391,32 +389,29 @@ if(1)
 struct quadtree_point_processor {
   
   template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
-  std::unique_ptr<cudf::experimental::table> operator()(/*cudf::mutable_column_view id,*/
+  std::unique_ptr<cudf::experimental::table> operator()(
+  					  cudf::mutable_column_view& id,
                                           cudf::mutable_column_view& x,
  					  cudf::mutable_column_view& y,
  					  quad_point_parameters qpi,
                                           rmm::mr::device_memory_resource* mr,
                                           cudaStream_t stream)
                                           {
-    //T *d_p_id=cudf::mutable_column_device_view::create(id, stream)->data<T>();
+    uint32_t *d_p_id=cudf::mutable_column_device_view::create(id, stream)->data<uint32_t>();
     T *d_p_x=cudf::mutable_column_device_view::create(x, stream)->data<T>();
     T *d_p_y=cudf::mutable_column_device_view::create(y, stream)->data<T>();
-
-    //T *d_p_x=x.data<T>();
-    //T *d_p_y=y.data<T>();
-    
     double x1=thrust::get<0>(qpi);
     double y1=thrust::get<1>(qpi);
     double x2=thrust::get<2>(qpi);
     double y2=thrust::get<3>(qpi);
-    SBBox<T> bbox(thrust::make_tuple(x1,y1),thrust::make_tuple(x2,y2));
+    SBBox<double> bbox(thrust::make_tuple(x1,y1),thrust::make_tuple(x2,y2));
     double scale=thrust::get<4>(qpi);
-    uint32_t num_levels=thrust::get<5>(qpi);
+    uint32_t num_level=thrust::get<5>(qpi);
     uint32_t min_size=thrust::get<6>(qpi);
    
    
     std::vector<std::unique_ptr<cudf::column>> quad_cols=
-    	dowork<T>(x.size(),/*d_p_id,*/d_p_x,d_p_y,bbox,scale, num_levels,min_size,mr,stream); 
+    	dowork<T>(x.size(),d_p_id,d_p_x,d_p_y,bbox,scale, num_level,min_size,mr,stream); 
   
     std::unique_ptr<cudf::experimental::table> destination_table = 
     	std::make_unique<cudf::experimental::table>(std::move(quad_cols));      
@@ -425,7 +420,9 @@ struct quadtree_point_processor {
   
   
   template<typename T, std::enable_if_t<!std::is_floating_point<T>::value >* = nullptr>
-  std::unique_ptr<cudf::experimental::table> operator()(cudf::mutable_column_view& x,
+  std::unique_ptr<cudf::experimental::table> operator()(
+  					  cudf::mutable_column_view& id,
+  					  cudf::mutable_column_view& x,
  					  cudf::mutable_column_view& y,
  					  quad_point_parameters qpi,
                                           rmm::mr::device_memory_resource* mr,
@@ -473,15 +470,16 @@ std::unique_ptr<cudf::column> nested_column_test(cudf::column_view x,cudf::colum
     return ret;
 }
 
-std::unique_ptr<cudf::experimental::table> quadtree_on_points(cudf::mutable_column_view& x,cudf::mutable_column_view& y,
-	double x1,double y1,double x2,double y2, double scale, int num_levels, int min_size)
+std::unique_ptr<cudf::experimental::table> quadtree_on_points(
+	cudf::mutable_column_view& id,cudf::mutable_column_view& x,cudf::mutable_column_view& y,
+	double x1,double y1,double x2,double y2, double scale, int num_level, int min_size)
 {   
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
     
-    quad_point_parameters qpi=thrust::make_tuple(x1,y1,x2,y2,scale,num_levels,min_size);
+    quad_point_parameters qpi=thrust::make_tuple(x1,y1,x2,y2,scale,num_level,min_size);
     return cudf::experimental::type_dispatcher(x.type(),quadtree_point_processor{}, 
-    	x,y, qpi, mr,stream);       	
+    	id,x,y, qpi, mr,stream);       	
 }
 
 }// namespace cuspatial

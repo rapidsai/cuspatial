@@ -89,6 +89,10 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CUSPATIAL_LIBRARY}"
                  )
 
+set(SPATIAL_JOIN_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/join/quadtree_polygon_test.cu")
+ConfigureTest(SPATIAL_JOIN_TEST "${SPATIAL_JOIN_TEST_SRC}")
+
 set(BOUNDING_BOX_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/bounding_box_test.cu")
 ConfigureTest(BOUNDING_BOX_TEST "${BOUNDING_BOX_TEST_SRC}")
