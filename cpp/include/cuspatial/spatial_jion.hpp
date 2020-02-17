@@ -26,6 +26,7 @@ std::unique_ptr<cudf::experimental::table> quad_bbox_join(cudf::table_view const
 
 std::unique_ptr<cudf::experimental::table> pip_refine(const cudf::table_view&,
 	const cudf::table_view&,const cudf::table_view&,
-	const cudf::table_view&,const cudf::column_view&,const cudf::column_view&);
+	const cudf::column_view&,const cudf::column_view&,const cudf::column_view&,
+	const cudf::column_view&,const cudf::column_view&);
 
 }// namespace cuspatial
