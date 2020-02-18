@@ -11,6 +11,7 @@ from .core.trajectory import (
     spatial_bounds,
     subset_trajectory_id,
 )
+from .core import interpolate
 from .core.interpolate import cubic_spline_2
 from .io.shapefile import read_polygon_shapefile
 from .io.soa import (

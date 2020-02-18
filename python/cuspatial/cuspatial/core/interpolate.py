@@ -44,7 +44,7 @@ def cubic_spline_fit(c, points):
 
 
 class CubicSpline:
-    def __init__(self, t, y, ids, size):
+    def __init__(self, t, y, ids=None, size=None):
         # error protections:
         if not isinstance(t, Series):
             raise TypeError(
@@ -58,23 +58,32 @@ class CubicSpline:
             raise TypeError(
                 "Error: dependent and independent vars have different length"
             )
-        if not len(t) == len(ids):
-            raise ValueError("error: id length doesn't match input length")
-        if not (len(t) % size == 0):
+        self.ids = Series(ids).astype('int32') if ids is not None else Series(
+            [0, 0]).astype('int32')
+        self.size = size if size is not None else len(t)
+        if not isinstance(self.size, int):
+            raise TypeError(
+                "Error: size must be an integer"
+            )
+        if not ((len(t) % self.size) == 0):
             raise ValueError(
                 "Error: length of input is not a multiple of size"
             )
-        self.t = t
-        self.y = y
-        self.ids = ids
-        self.size = size
-        self._c = {}
-        prefix = Series(np.arange(len(t) / size) * size)
-        if isinstance(y, Series):
-            self.c["y"] = cubic_spline_2(t, y, ids, prefix)
+        self.t = Series(t).astype('float32')
+        self.y = Series(y).astype('float32')
+        self.prefix = Series(
+            np.arange((len(t) / self.size) + 1) * self.size
+        ).astype('int32')
+        self._compute_coefficients()
+
+    def _compute_coefficients(self):
+        if isinstance(self.y, Series):
+            self.c = cubic_spline_2(self.t, self.y, self.ids, self.prefix)
         else:
-            for col in y.columns:
-                self.c[col] = cubic_spline_2(t, y, ids, prefix)
+            self.c = {}
+            for col in self.y.columns:
+                self.c[col] = cubic_spline_2(
+                    self.t, self.y, self.ids, self.prefix)
 
     def __call__(self, coordinates):
         if isinstance(self.y, Series):
