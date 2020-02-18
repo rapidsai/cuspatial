@@ -109,6 +109,7 @@ TEST_F(CubicSplineTest, test_full_single)
     RMM_FREE(d_p_prefix, 0);
 }
 
+/*
 TEST_F(CubicSplineTest, test_single)
 {
     int point_len = 5;
@@ -143,5 +144,5 @@ TEST_F(CubicSplineTest, test_single)
     RMM_FREE(d_p_x, 0);
     RMM_FREE(d_p_ids, 0);
 }
-
+*/
 
