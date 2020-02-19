@@ -1,7 +1,6 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
 import warnings
-
 import cudf
 
 from cuspatial._lib.trajectory import (
@@ -52,6 +51,7 @@ def spatial_bounds(
 
 def derive(x_coords, y_coords, object_ids, timestamps):
     """ Derive trajectories from points, timestamps, and ids.
+    
     Parameters
     ----------
     {params}
@@ -65,16 +65,16 @@ def derive(x_coords, y_coords, object_ids, timestamps):
 
     Examples
     --------
-        import cudf
-        num_trajectories, result = trajectory.derive(
-            cudf.Series([0, 1, 2, 3]),
-            cudf.Series([0, 0, 1, 1])
-            cudf.Series([0, 0, 1, 1])
-            cudf.Series([0, 10, 0, 10])
-        )
-        print(num_trajectories)
+    >>> import cudf
+    >>> num_trajectories, result = trajectory.derive(
+    >>>     cudf.Series([0, 1, 2, 3]),
+    >>>     cudf.Series([0, 0, 1, 1]),
+    >>>     cudf.Series([0, 0, 1, 1]),
+    >>>     cudf.Series([0, 10, 0, 10]),
+    >>> )
+    >>> print(num_trajectories)
         2
-        print(result)
+    >>> print(result)
            trajectory_id  length  position
         0              0       2         2
         1              1       2         4)
@@ -101,7 +101,7 @@ def distance_and_speed(x_coords, y_coords, timestamps, length, position):
         result = trajectory.distance_and_speed(x, y, timestamps,
                                                result['length'],
                                                result['position'])
-        print(result)
+    >>> print(result)
                        meters          speed
         trajectory_id
         0              1000.0  100000.000000
