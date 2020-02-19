@@ -37,7 +37,7 @@ def spatial_bounds(
     >>>    cudf.Series([0, 2, 1, 3, 2]),
     >>>    cudf.Series([0, 2, 1, 3, 2]),
     >>>    cudf.Series([2, 3]),
-    >>>    cudf.Series([2, 5]),
+    >>>    cudf.Series([2, 5])
     >>> )
     >>> print(result)
         x1   y1   x2   y2
@@ -58,19 +58,17 @@ def derive(x_coords, y_coords, object_ids, timestamps):
 
     Returns
     -------
-    result_tuple : tuple (number of discovered trajectories,
-                          DataFrame
-                    id, length, and positions of trajectories for feeding into
-                    compute_distance_and_speed
+    result_tuple : tuple (number of discovered trajectories,DataFrame)
+    DataFrame    : id, length, and positions of trajectories for feeding into compute_distance_and_speed
 
     Examples
     --------
     >>> import cudf
     >>> num_trajectories, result = trajectory.derive(
-    >>>     cudf.Series([0, 1, 2, 3]),
-    >>>     cudf.Series([0, 0, 1, 1]),
-    >>>     cudf.Series([0, 0, 1, 1]),
-    >>>     cudf.Series([0, 10, 0, 10]),
+    >>>    cudf.Series([0, 1, 2, 3]),
+    >>>    cudf.Series([0, 0, 1, 1]),
+    >>>    cudf.Series([0, 0, 1, 1]),
+    >>>    cudf.Series([0, 10, 0, 10])
     >>> )
     >>> print(num_trajectories)
         2
@@ -92,15 +90,14 @@ def distance_and_speed(x_coords, y_coords, timestamps, length, position):
     Returns
     -------
     result : DataFrame
-        meters - travelled distance of trajectory
+        meters - travelled distance of trajectory,
         speed - speed in m/sec of trajectory
 
     Examples
     --------
     Compute the distance and speed of the above derived trajectories
-        result = trajectory.distance_and_speed(x, y, timestamps,
-                                               result['length'],
-                                               result['position'])
+    
+    >>> result = trajectory.distance_and_speed(x, y, timestamps, result['length'], result['position'])
     >>> print(result)
                        meters          speed
         trajectory_id
