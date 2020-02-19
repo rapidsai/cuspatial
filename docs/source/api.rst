@@ -11,7 +11,6 @@ Trajectory
 .. automethod:: cuspatial.core.trajectory.spatial_bounds
 .. automethod:: cuspatial.core.trajectory.derive
 .. automethod:: cuspatial.core.trajectory.distance_and_speed
-
     
 GIS
 ---
@@ -19,4 +18,3 @@ GIS
 .. automethod:: cuspatial.core.gis.haversine_distance
 .. automethod:: cuspatial.core.gis.lonlat_to_xy_km_coordinates
 .. automethod:: cuspatial.core.gis.window_points
-    
