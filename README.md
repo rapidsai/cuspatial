@@ -1,6 +1,8 @@
 # cuSpatial
 ## GPU-Accelerated Spatial and Trajectory Data Management and Analytics Library
 
+[![Build Status](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/cuspatial/job/branches/job/cuspatial-branch-pipeline/badge/icon)](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/cuspatial/job/branches/job/cuspatial-branch-pipeline/)
+
 **NOTE:** cuSpatial depends on [cuDF](https://github.com/rapidsai/cudf) and
 [RMM](https://github.com/rapidsai/rmm) from [RAPIDS](https://rapids.ai/).
 
