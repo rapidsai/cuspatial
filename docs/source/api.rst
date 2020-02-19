@@ -10,8 +10,8 @@ Trajectory
 .. automethod:: cuspatial.core.trajectory.subset_trajectory_id
 .. automethod:: cuspatial.core.trajectory.spatial_bounds
 .. automethod:: cuspatial.core.trajectory.derive
-.. automethod:: cuspatial.core.trajectory.distance_and_speed
-    
+.. automethod:: cuspatial.core.trajectory.distance_and_speed   
+
 GIS
 ---
 .. automethod:: cuspatial.core.gis.directed_hausdorff_distance 
