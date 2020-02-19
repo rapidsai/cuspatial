@@ -6,7 +6,7 @@ As a prerequisite, a RAPIDS compatible GPU is required to build the docs since t
 
 In order to build the docs, we need the conda dev environment from cuspatial and build cuspatial from source. Currently, building cuSpatial requires a source installation of cuDF. See build [instructions](https://github.com/rapidsai/cudf/blob/branch-0.13/CONTRIBUTING.md#setting-up-your-build-environment). 
 
-1. Create a conda env and build cudf from source. The dependencies to build rapids from source are installed in that conda environment, and then rapids is built and installed into the same environment.
+1. Create a conda env and build cuspatial from source. The dependencies to build rapids from source are installed in that conda environment, and then rapids is built and installed into the same environment.
 
 2. Once cudf is built from source, navigate to `cuspatial/docs/`. If you have your documentation written and want to turn it into HTML, run makefile:
 
