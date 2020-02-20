@@ -1,6 +1,7 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
 import warnings
+
 import cudf
 
 from cuspatial._lib.trajectory import (
@@ -26,11 +27,11 @@ def spatial_bounds(
     x_coords, y_coords, trajectory_size, trajectory_end_position
 ):
     """ Compute the bounding boxes of sets of trajectories.
-
+    
     Parameters
     ----------
     {params}
-
+    
     Examples
     --------
     >>> result = trajectory.spatial_bounds(
@@ -55,11 +56,12 @@ def derive(x_coords, y_coords, object_ids, timestamps):
     Parameters
     ----------
     {params}
-
+    
     Returns
     -------
     result_tuple : tuple (number of discovered trajectories,DataFrame)
-    DataFrame    : id, length, and positions of trajectories for feeding into compute_distance_and_speed
+    DataFrame    : id, length, and positions of trajectories
+                   for feeding into compute_distance_and_speed
 
     Examples
     --------
@@ -68,36 +70,36 @@ def derive(x_coords, y_coords, object_ids, timestamps):
     >>>    cudf.Series([0, 1, 2, 3]),
     >>>    cudf.Series([0, 0, 1, 1]),
     >>>    cudf.Series([0, 0, 1, 1]),
-    >>>    cudf.Series([0, 10, 0, 10])
-    >>> )
+    >>>    cudf.Series([0, 10, 0, 10]))
     >>> print(num_trajectories)
         2
     >>> print(result)
            trajectory_id  length  position
         0              0       2         2
-        1              1       2         4)
+        1              1       2         4
     """
     return cpp_derive_trajectories(x_coords, y_coords, object_ids, timestamps)
 
 
 def distance_and_speed(x_coords, y_coords, timestamps, length, position):
     """ Compute the distance travelled and speed of sets of trajectories
-
+    
     Parameters
     ----------
     {params}
-
+    
     Returns
     -------
     result : DataFrame
-        meters - travelled distance of trajectory,
+        meters - travelled distance of trajectory
         speed - speed in m/sec of trajectory
-
+    
     Examples
     --------
     Compute the distance and speed of the above derived trajectories
-    
-    >>> result = trajectory.distance_and_speed(x, y, timestamps, result['length'], result['position'])
+    >>> result = trajectory.distance_and_speed(x, y, timestamps,
+                                               result['length'],
+                                               result['position'])
     >>> print(result)
                        meters          speed
         trajectory_id
