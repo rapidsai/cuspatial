@@ -56,8 +56,8 @@ void HANDLE_CUSPARSE_STATUS(cusparseStatus_t status) {
           status_string = "UNKNOWN";
     }
     printf("Cusparse error status %s\n", status_string);
+    CUDF_EXPECTS(status != CUSPARSE_STATUS_SUCCESS, "Fail");
   }
-  assert(False);
 }
 
 #define ALLOW_PRINT 0
@@ -254,7 +254,7 @@ struct compute_splines {
           const int32_t* IDS = ids.data<int32_t>();
           const int32_t* PREFIXES = prefixes.data<int32_t>();
           int64_t size = y.size();
-          assert(buffer.size() == size* 4);
+          CUDF_EXPECTS(buffer.size() == size* 4, "compute_splines bad input buffer");
           thrust::for_each(rmm::exec_policy(stream)->on(stream),
               thrust::make_counting_iterator<int>(1),
           thrust::make_counting_iterator<int>(static_cast<int>(prefixes.size())),
@@ -300,6 +300,18 @@ template<typename T, std::enable_if_t<!std::is_floating_point<T>::value >* = nul
 
 namespace cuspatial
 {
+
+std::unique_ptr<cudf::column> cubicspline_interpolate(
+    cudf::column_view points,
+    cudf::column_view ids,
+    cudf::table_view coefficients
+)
+{
+    cudaStream_t stream=0;
+    rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
+    auto result = make_numeric_column(points.type(), points.size(), cudf::UNALLOCATED, stream, mr);
+    return result;
+}
 
 std::unique_ptr<cudf::experimental::table> cubicspline_full(
     cudf::column_view t,
@@ -405,6 +417,10 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     cudf::mutable_column_view d2 = d2_col->mutable_view();
     cudf::mutable_column_view d1 = d1_col->mutable_view();
     cudf::mutable_column_view d0 = d0_col->mutable_view();
+    cudf::experimental::fill(d3, 0, d3_col->size(), zero);
+    cudf::experimental::fill(d2, 0, d2_col->size(), zero);
+    cudf::experimental::fill(d1, 0, d1_col->size(), zero);
+    cudf::experimental::fill(d0, 0, d0_col->size(), zero);
 
     coefficients_compute coefs;
     coefs.operator()<float>(t, y, prefixes, h_buffer, i_buffer, u_buffer, d3, d2, d1, d0, mr, stream);
