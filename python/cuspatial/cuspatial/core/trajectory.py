@@ -1,7 +1,9 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
 import warnings
+
 import cudf
+
 from cuspatial._lib.trajectory import (
     cpp_derive_trajectories,
     cpp_subset_trajectory_id,
@@ -25,11 +27,11 @@ def spatial_bounds(
     x_coords, y_coords, trajectory_size, trajectory_end_position
 ):
     """ Compute the bounding boxes of sets of trajectories.
-    
+
     Parameters
     ----------
     {params}
-    
+
     Examples
     --------
     >>> result = trajectory.spatial_bounds(
@@ -50,11 +52,11 @@ def spatial_bounds(
 
 def derive(x_coords, y_coords, object_ids, timestamps):
     """ Derive trajectories from points, timestamps, and ids.
-    
+
     Parameters
     ----------
     {params}
-    
+
     Returns
     -------
     result_tuple : tuple (number of discovered trajectories,DataFrame)
@@ -63,7 +65,6 @@ def derive(x_coords, y_coords, object_ids, timestamps):
 
     Examples
     --------
-    >>> import cudf
     >>> num_trajectories, result = trajectory.derive(
     >>>    cudf.Series([0, 1, 2, 3]),
     >>>    cudf.Series([0, 0, 1, 1]),
@@ -81,17 +82,17 @@ def derive(x_coords, y_coords, object_ids, timestamps):
 
 def distance_and_speed(x_coords, y_coords, timestamps, length, position):
     """ Compute the distance travelled and speed of sets of trajectories
-    
+
     Parameters
     ----------
     {params}
-    
+
     Returns
     -------
     result : DataFrame
         meters - travelled distance of trajectory
         speed - speed in m/sec of trajectory
-    
+
     Examples
     --------
     Compute the distance and speed of the above derived trajectories
