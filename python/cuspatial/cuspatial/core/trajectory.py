@@ -1,9 +1,7 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
 import warnings
-
 import cudf
-
 from cuspatial._lib.trajectory import (
     cpp_derive_trajectories,
     cpp_subset_trajectory_id,
