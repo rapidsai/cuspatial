@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #128 Use RMM's `DeviceBuffer` for Python allocations
+
 ## Bug Fixes
 
 - PR #123 Update references to error utils after libcudf changes
