@@ -83,7 +83,7 @@ struct bbox2tuple
         T x2=thrust::get<0>(bbox.second);
         T y1=thrust::get<1>(bbox.first);
         T y2=thrust::get<1>(bbox.second);
-        printf("bbox2tuple: %10.5f %10.5f %10.5f %10.5f\n",x1,y1,x2,y2);
+        //printf("bbox2tuple: %10.5f %10.5f %10.5f %10.5f\n",x1,y1,x2,y2);
         return thrust::make_tuple(x1,y1,x2,y2);
      }
 };    
@@ -98,7 +98,7 @@ struct tuple2bbox
         T y1=thrust::get<1>(v);
         T x2=thrust::get<2>(v);
         T y2=thrust::get<3>(v);
-        printf("tuple2bbox: %10.5f %10.5f %10.5f %10.5f\n",x1,y1,x2,y2);        
+        //printf("tuple2bbox: %10.5f %10.5f %10.5f %10.5f\n",x1,y1,x2,y2);        
         return SBBox<T>(thrust::make_tuple(x1,y1), thrust::make_tuple(x2,y2));
      }
 };    
@@ -126,7 +126,6 @@ struct pairwise_test_intersection
   __device__
   thrust::tuple<uint8_t,uint8_t, uint32_t,uint32_t> operator()(uint32_t p) const
   {
-    uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
     uint32_t poly_idx=p/num_node;
     uint32_t quad_idx=p%num_node;
   
@@ -149,8 +148,10 @@ struct pairwise_test_intersection
     double py2=thrust::get<1>(box.second);
     bool not_intersect=(qx1>px2||qx2<px1||qy1>py2||qy2<py1);
     uint8_t type=not_intersect?2:(d_p_qtsign[quad_idx]?1:0);
-    printf("init: tid=%d qx1=%10.5f qy1=%10.5f qx2=%10.5f qy2=%10.5f px1=%10.5f py1=%10.5f px2=%10.5f py2=%10.5f\n",tid,qx1,qy1,qx2,qy2,px1,py1,px2,py2);    
-    printf("init: tid=%d lev=%d sign=%d type=%d poly_idx=%d quad_id=%d\n",tid, lev,d_p_qtsign[quad_idx],type,poly_idx,quad_idx);
+   
+    //uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
+    //printf("init: tid=%d qx1=%10.5f qy1=%10.5f qx2=%10.5f qy2=%10.5f px1=%10.5f py1=%10.5f px2=%10.5f py2=%10.5f\n",tid,qx1,qy1,qx2,qy2,px1,py1,px2,py2);    
+    //printf("init: tid=%d lev=%d sign=%d type=%d poly_idx=%d quad_id=%d\n",tid, lev,d_p_qtsign[quad_idx],type,poly_idx,quad_idx);
     return thrust::make_tuple(lev,type,poly_idx,quad_idx);
   }
 };
@@ -175,7 +176,6 @@ struct twolist_test_intersection
   __device__
   thrust::tuple<uint8_t,uint8_t, uint32_t,uint32_t> operator()(thrust::tuple<uint32_t,uint32_t> v) const
   {
-    uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
     uint32_t poly_idx=thrust::get<0>(v);
     uint32_t quad_idx=thrust::get<1>(v);
   
@@ -198,8 +198,9 @@ struct twolist_test_intersection
     double py2=thrust::get<1>(box.second);
     bool not_intersect=(qx1>px2||qx2<px1||qy1>py2||qy2<py1);
     uint8_t type=not_intersect?2:(d_p_qtsign[quad_idx]?1:0);
-    printf("rest: tid=%d qx1=%10.5f qy1=%10.5f qx2=%10.5f qy2=%10.5f px1=%10.5f py1=%10.5f px2=%10.5f py2=%10.5f\n",tid,qx1,qy1,qx2,qy2,px1,py1,px2,py2);    
-    printf("rest: tid=%d lev=%d sign=%d type=%d poly_idx=%d quad_id=%d\n",tid, lev,d_p_qtsign[quad_idx],type,poly_idx,quad_idx);
+    //uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
+    //printf("rest: tid=%d qx1=%10.5f qy1=%10.5f qx2=%10.5f qy2=%10.5f px1=%10.5f py1=%10.5f px2=%10.5f py2=%10.5f\n",tid,qx1,qy1,qx2,qy2,px1,py1,px2,py2);    
+    //printf("rest: tid=%d lev=%d sign=%d type=%d poly_idx=%d quad_id=%d\n",tid, lev,d_p_qtsign[quad_idx],type,poly_idx,quad_idx);
     return thrust::make_tuple(lev,type,poly_idx,quad_idx);
   }
 };

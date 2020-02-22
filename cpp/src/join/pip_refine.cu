@@ -38,6 +38,9 @@
 namespace
 {
 
+const uint8_t max_warps_per_block=32;
+const uint8_t num_threads_per_warp=32;
+
 template <typename T>
 __global__ void quad_pip_phase1_kernel(const uint32_t * pq_poly_id,const uint32_t *pq_quad_id,
 	const uint32_t *pnt_length,const uint32_t *pnt_fpos, const T*  pnt_x,const T*  pnt_y, 
@@ -46,9 +49,8 @@ __global__ void quad_pip_phase1_kernel(const uint32_t * pq_poly_id,const uint32_
 {
     __shared__ uint32_t qid,pid,num_point,first_pos,num_adjusted;
     
-    //assume #of points/threads no more than 32*32
-    const uint32_t num_count=32;
-    __shared__ uint32_t data[num_count];
+    //assume #of points/threads no more than num_threads_per_warp*max_warps_per_block (32*32)
+    __shared__ uint32_t data[max_warps_per_block];
     //assuming 1d 
     if(threadIdx.x==0)
     {
@@ -56,17 +58,17 @@ __global__ void quad_pip_phase1_kernel(const uint32_t * pq_poly_id,const uint32_
     	pid=pq_poly_id[blockIdx.x];
     	num_point=pnt_length[qid];
     	first_pos=pnt_fpos[qid]; 
-    	num_adjusted=((num_point-1)/32+1)*32;
+    	num_adjusted=((num_point-1)/num_threads_per_warp+1)*num_threads_per_warp;
        	//printf("block=%d qid=%d pid=%d num_point=%d first_pos=%d\n",
     	//	blockIdx.x,qid,pid,num_point,first_pos);	
     }
      __syncthreads();
      
-    if((threadIdx.x>=num_count)&&(threadIdx.x>=num_adjusted))
+    if((threadIdx.x>=max_warps_per_block)&&(threadIdx.x>=num_adjusted))
     	return;
     __syncthreads();
     
-    if(threadIdx.x<num_count)
+    if(threadIdx.x<max_warps_per_block)
         data[threadIdx.x]=0;
     __syncthreads();
     
@@ -101,23 +103,22 @@ __global__ void quad_pip_phase1_kernel(const uint32_t * pq_poly_id,const uint32_
       }
       __syncthreads();
 
-      //unsigned mask = __activemask();       
       unsigned mask = __ballot_sync(0xFFFFFFFF, threadIdx.x < num_point);
       uint32_t vote=__ballot_sync(mask,in_polygon);
       //printf("p1: block=%d thread=%d tid=%d in_polygon=%d mask=%08x vote=%08x\n",blockIdx.x,threadIdx.x,tid,in_polygon,mask,vote);
       
-      if(threadIdx.x%32==0)
-      	data[threadIdx.x/32]=__popc(vote);  
+      if(threadIdx.x%num_threads_per_warp==0)
+      	data[threadIdx.x/num_threads_per_warp]=__popc(vote);  
       __syncthreads();
       
-      /*if(threadIdx.x<num_count)
+      /*if(threadIdx.x<max_warps_per_block)
       	printf("p1: block=%d thread=%d data=%d\n",blockIdx.x,threadIdx.x,data[threadIdx.x]);
       __syncthreads();*/
       
-      if(threadIdx.x<num_count)
+      if(threadIdx.x<max_warps_per_block)
       {
       	uint32_t num=data[threadIdx.x];
-        for (uint32_t offset = num_count/2; offset > 0; offset /= 2) 
+        for (uint32_t offset = max_warps_per_block/2; offset > 0; offset /= 2) 
             num += __shfl_xor_sync(0xFFFFFFFF,num, offset);  	
         if(threadIdx.x==0)
             num_hits[blockIdx.x]=num;
@@ -133,8 +134,9 @@ __global__ void quad_pip_phase2_kernel(const uint32_t * pq_poly_id,const uint32_
 {
     __shared__ uint32_t qid,pid,num_point,first_pos,mem_offset,num_adjusted;
     
-    //assume #of points/threads no more than 1024
-    __shared__ uint16_t sums[257];
+    //assume #of points/threads no more than num_threads_per_warp*max_warps_per_block (32*32)
+    __shared__ uint16_t temp[max_warps_per_block],sums[max_warps_per_block+1];
+
     //assuming 1d 
     if(threadIdx.x==0)
     {
@@ -144,13 +146,17 @@ __global__ void quad_pip_phase2_kernel(const uint32_t * pq_poly_id,const uint32_
     	first_pos=pnt_fpos[qid]; 
     	mem_offset=d_num_hits[blockIdx.x];
     	sums[0]=0;
-    	num_adjusted=((num_point-1)/32+1)*32;
+    	num_adjusted=((num_point-1)/num_threads_per_warp+1)*num_threads_per_warp;
      	//printf("block=%d qid=%d pid=%d num_point=%d first_pos=%d mem_offset=%d\n",
     	//	blockIdx.x,qid,pid,num_point,first_pos,mem_offset);
     		
     }
     __syncthreads();
-    
+
+     if(threadIdx.x<max_warps_per_block+1)
+    	temp[threadIdx.x]=0;
+    __syncthreads();
+   
     uint32_t tid = first_pos+threadIdx.x;    	
     bool in_polygon = false;
     if(threadIdx.x<num_point)
@@ -160,9 +166,9 @@ __global__ void quad_pip_phase2_kernel(const uint32_t * pq_poly_id,const uint32_
      
        uint32_t r_f = (0 == pid) ? 0 : poly_fpos[pid-1];
        uint32_t r_t=poly_fpos[pid];
-       for (uint32_t k = r_f; k < r_t; k++) //for each ring
+       for (uint16_t k = r_f; k < r_t; k++) //for each ring
        {
-           uint32_t m = (k==0)?0:poly_rpos[k-1];
+           uint16_t m = (k==0)?0:poly_rpos[k-1];
            for (;m < poly_rpos[k]-1; m++) //for each line segment
            {
               T x0, x1, y0, y1;
@@ -179,19 +185,28 @@ __global__ void quad_pip_phase2_kernel(const uint32_t * pq_poly_id,const uint32_
           }//k
       }
       __syncthreads();    
-      num_adjusted=32;       
-      if(threadIdx.x<num_adjusted)
+  
+      unsigned mask = __ballot_sync(0xFFFFFFFF, threadIdx.x < num_adjusted);
+      uint32_t vote=__ballot_sync(mask,in_polygon);    
+      if(threadIdx.x%num_threads_per_warp==0)
+      	temp[threadIdx.x/num_threads_per_warp]=__popc(vote);  
+      __syncthreads();
+    
+     //warp-level scan; only one warp is used
+     if(threadIdx.x<num_threads_per_warp)
       {
-          uint32_t num=in_polygon?1:0;
-          for (int i=1; i<=32; i*=2)
+          uint16_t num=temp[threadIdx.x];
+          for (uint8_t i=1; i<=num_threads_per_warp; i*=2)
           {
-            int n = __shfl_up_sync(0xFFFFFFF,num, i, 32);
+            int n = __shfl_up_sync(0xFFFFFFF,num, i, num_threads_per_warp);
             if (threadIdx.x >= i) num += n;
           }
           sums[threadIdx.x+1]=num;
           __syncthreads();
       }
-     
+      //important!!!!!!!!!!!
+      __syncthreads();
+      
       /*if(threadIdx.x<num_point)
       	printf("after: block=%d thread=%d tid=%d %10.5f %10.5f in_polygon=%d val=%d\n",
       		blockIdx.x,threadIdx.x,tid,pnt_x[tid],pnt_y[tid],in_polygon,sums[threadIdx.x]);
@@ -199,10 +214,13 @@ __global__ void quad_pip_phase2_kernel(const uint32_t * pq_poly_id,const uint32_
       
       if((threadIdx.x<num_point)&&(in_polygon))
       {
-     	uint32_t pos=sums[threadIdx.x];
-     	/*printf("block=%d thread=%d qid=%d pid=%d tid=%d pos=%d\n",
-    		blockIdx.x,threadIdx.x,qid,pid,tid,pos);*/
-    	
+     	uint16_t num=sums[threadIdx.x/num_threads_per_warp];
+     	uint16_t warp_offset=__popc(vote>>(threadIdx.x%num_threads_per_warp))-1;
+     	uint16_t pos=num+warp_offset;
+     	
+     	//printf("block=%d thread=%d qid=%d pid=%d tid=%d mem_offset=%d num=%d warp_offset=%d pos=%d\n",
+    	//	blockIdx.x,threadIdx.x,qid,pid,tid,mem_offset,num,warp_offset,pos); 
+    		
         d_res_poly_id[mem_offset+pos]=poly_id[pid];
         d_res_pnt_id[mem_offset+pos]=pnt_id[tid];
       } 
@@ -241,11 +259,25 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
     HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_tmp_polyid, (void *)d_pq_polyid, num_pq_pair * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
     HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_tmp_quadid, (void *)d_pq_quadid, num_pq_pair * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
 
+if(1)
+{
+	printf("phase1 results before remove:\n");	
+	thrust::device_ptr<uint32_t> d_num_hits_ptr=thrust::device_pointer_cast(d_num_hits);		
+	printf("d_num_hits: before reduce\n");
+        thrust::copy(d_num_hits_ptr,d_num_hits_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+}
     auto valid_pq_pair_iter=thrust::make_zip_iterator(thrust::make_tuple(d_tmp_polyid,d_tmp_quadid,d_num_hits));    
     uint32_t num_valid_pair=thrust::remove_if(exec_policy,valid_pq_pair_iter,valid_pq_pair_iter+num_pq_pair,
     	valid_pq_pair_iter,pq_remove_zero())-valid_pq_pair_iter;   
     printf("num_valid_pair=%d\n",num_valid_pair);
-    
+
+if(1)
+{
+	printf("phase1 results after remove:\n");	
+	thrust::device_ptr<uint32_t> d_num_hits_ptr=thrust::device_pointer_cast(d_num_hits);		
+	printf("d_num_hits: before reduce\n");
+        thrust::copy(d_num_hits_ptr,d_num_hits_ptr+num_valid_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+}    
     uint32_t total_hits=thrust::reduce(exec_policy,d_num_hits,d_num_hits+num_valid_pair);
     printf("total_hits=%d\n",total_hits);
     thrust::exclusive_scan(exec_policy,d_num_hits,d_num_hits+num_valid_pair,d_num_hits);

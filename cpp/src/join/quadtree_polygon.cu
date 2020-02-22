@@ -178,9 +178,7 @@ if(1)
         auto pair_output_new_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pq_lev_new,d_pq_type_new,d_poly_idx_new,d_quad_idx_new));   
         auto counting_iter=thrust::make_counting_iterator(0);
         thrust::exclusive_scan(exec_policy,d_quad_nchild,d_quad_nchild+num_nonleaf_pair,d_quad_nchild);
-        thrust::scatter(exec_policy,counting_iter,counting_iter+num_nonleaf_pair,d_quad_nchild,d_expand_pos);
-        
-        printf("before d_quad_nchild\n");
+        thrust::scatter(exec_policy,counting_iter,counting_iter+num_nonleaf_pair,d_quad_nchild,d_expand_pos);        
         RMM_TRY(RMM_FREE(d_quad_nchild,0));d_quad_nchild=NULL;    
 
         thrust::inclusive_scan(exec_policy,d_expand_pos,d_expand_pos+num_pair,d_expand_pos,thrust::maximum<int>());        

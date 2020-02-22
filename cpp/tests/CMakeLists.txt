@@ -90,8 +90,9 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  )
 
 set(SPATIAL_JOIN_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/join/quadtree_polygon_test.cu"
-   "${CMAKE_CURRENT_SOURCE_DIR}/join/pip_refine_test.cu")
+   #"${CMAKE_CURRENT_SOURCE_DIR}/join/quadtree_polygon_test.cu"
+   #"${CMAKE_CURRENT_SOURCE_DIR}/join/pip_refine_test_small.cu"
+   "${CMAKE_CURRENT_SOURCE_DIR}/join/pip_refine_test_large.cu")
 ConfigureTest(SPATIAL_JOIN_TEST "${SPATIAL_JOIN_TEST_SRC}")
 
 set(BOUNDING_BOX_TEST_SRC
