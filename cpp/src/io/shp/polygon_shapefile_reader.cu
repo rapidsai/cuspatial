@@ -23,7 +23,7 @@
 #include <rmm/thrust_rmm_allocator.h>
 #include <cudf/types.h>
 #include <cudf/legacy/column.hpp>
-#include <utilities/legacy/error_utils.hpp>
+#include <cudf/utilities/error.hpp>
 #include <cuspatial/shapefile_readers.hpp>
 #include <utility/utility.hpp>
 

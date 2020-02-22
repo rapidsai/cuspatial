@@ -22,7 +22,7 @@
 #include <map>
 #include <vector>
 #include <cuspatial/types.hpp>
-#include <utilities/legacy/error_utils.hpp>
+#include <cudf/utilities/error.hpp>
 
 namespace cuspatial
 {

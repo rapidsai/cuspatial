@@ -1,4 +1,14 @@
-# cuSpatial 0.12.0 (TBD)
+# cuSpatial 0.13.0 (TBD)
+
+## New Features
+
+## Improvements
+
+## Bug Fixes
+
+- PR #123 Update references to error utils after libcudf changes
+
+# cuSpatial 0.12.0 (04 Feb 2020)
 
 ## New Features
 
@@ -8,6 +18,8 @@
 - PR #113 Support libcudf++
 
 ## Bug Fixes
+
+- PR #116 Fix API issue with shapefile reader
 
 
 # cuSpatial 0.11.0 (11 Dec 2019)
