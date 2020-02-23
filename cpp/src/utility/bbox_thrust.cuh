@@ -46,7 +46,7 @@ struct bbox_reduction
      __device__     
      SBBox<T> operator()(const SBBox<T>& a, const SBBox<T>& b)
      {
-            double fx1=thrust::get<0>(a.first);
+           double fx1=thrust::get<0>(a.first);
             double fx2=thrust::get<0>(b.first);
             double fy1=thrust::get<1>(a.first);
             double fy2=thrust::get<1>(b.first);
@@ -56,9 +56,12 @@ struct bbox_reduction
             double ty1=thrust::get<1>(a.second);          
             double ty2=thrust::get<1>(b.second);
             
-            //printf("%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n",fx1,fy1,fx2,fy2,tx1,ty1,tx2,ty2);
-            thrust::tuple<double,double> ll=thrust::make_tuple(min(fx1,tx1),min(fy1,ty1));
-            thrust::tuple<double,double> ur=thrust::make_tuple(max(fx2,tx2),max(fy2,ty2));
+            thrust::tuple<double,double> ll=thrust::make_tuple(min(fx1,fx2),min(fy1,fy2));
+            thrust::tuple<double,double> ur=thrust::make_tuple(max(tx1,tx2),max(ty1,ty2));
+            
+            /*printf("[(%7.5f %7.5f %7.5f %7.5f),(%7.5f,%7.5f %7.5f %7.5f)]==>((%7.5f,%7.5f %7.5f %7.5f)\n",
+            fx1,fy1,tx1,ty1,fx2,fy2,tx2,ty2, min(fx1,fx2),min(fy1,fy2),max(tx1,tx2),max(ty1,ty2));*/
+            
             return SBBox<T>(ll, ur);
       }
 };
