@@ -198,7 +198,6 @@ if(0)
    	d_p_qtclen+lev_num[1],d_p_qtnlen+lev_num[1],d_p_parentpos));
     int num_invalid_parent_nodes = thrust::count_if(exec_policy,iter_in,iter_in+(num_parent_nodes-lev_num[1]),
    	remove_discard(d_p_qtnlen,min_size));  
-    RMM_FREE(d_p_parentpos,stream);d_p_parentpos=NULL;
 
     assert(num_invalid_parent_nodes<=num_parent_nodes);
     num_parent_nodes-=num_invalid_parent_nodes;
@@ -212,7 +211,8 @@ if(0)
     //line 5 of algorithm in Fig. 5 in ref. 
     int num_valid_nodes = thrust::remove_if(exec_policy,iter_in,iter_in+num_child_nodes,remove_discard(d_p_templen,min_size))-iter_in;
     RMM_FREE(d_p_templen,stream);d_p_templen=NULL;
-    
+    RMM_FREE(d_p_parentpos,stream);d_p_parentpos=NULL;
+   
     //add back level 1 nodes
     num_valid_nodes+=lev_num[1];
     std::cout<<"num_invalid_parent_nodes="<<num_invalid_parent_nodes<<std::endl;
