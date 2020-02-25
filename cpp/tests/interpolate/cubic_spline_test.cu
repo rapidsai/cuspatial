@@ -50,7 +50,7 @@ TEST_F(CubicSplineTest, test_full_single)
     float t[point_len] = {0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
     assert(sizeof(t) / sizeof(float)==point_len);
     float y[point_len] = {3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3};
-    assert(sizeof(x) / sizeof(float)==point_len);
+    assert(sizeof(y) / sizeof(float)==point_len);
     int ids_len = 4;
     int ids[ids_len] = {0, 0, 1, 2};
     int prefix[ids_len] = {0, 5, 10, 15};
@@ -109,40 +109,47 @@ TEST_F(CubicSplineTest, test_full_single)
     RMM_FREE(d_p_prefix, 0);
 }
 
-/*
-TEST_F(CubicSplineTest, test_single)
+TEST_F(CubicSplineTest, test_interpolate)
 {
     int point_len = 5;
     float t[5] = {0, 1, 2, 3, 4};
     assert(sizeof(t) / sizeof(float)==point_len);
     float x[5] = {3, 2, 3, 4, 3};
     assert(sizeof(x) / sizeof(float)==point_len);
-    int ids[5] = {0, 1, 2, 3, 4};
+    int ids[5] = {0, 0};
+    int prefix[2] = {0, 5};
     
     float *d_p_t = NULL;
     float *d_p_x = NULL;
     float *d_p_ids = NULL;
+    float *d_p_prefix = NULL;
     RMM_TRY( RMM_ALLOC( &d_p_t,point_len* sizeof(float), 0));
     assert(d_p_t != NULL);    
     RMM_TRY( RMM_ALLOC( &d_p_x,point_len* sizeof(float), 0));
     assert(d_p_x != NULL);
-    RMM_TRY( RMM_ALLOC( &d_p_ids,point_len* sizeof(int), 0));
+    RMM_TRY( RMM_ALLOC( &d_p_ids,2 * sizeof(int), 0));
     assert(d_p_ids != NULL);    
+    RMM_TRY( RMM_ALLOC( &d_p_prefix,2 * sizeof(int), 0));
+    assert(d_p_prefix != NULL);    
  
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_t, t, point_len * sizeof(float), cudaMemcpyHostToDevice ) );    
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_x, x, point_len * sizeof(float), cudaMemcpyHostToDevice ) );     
-    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_ids, ids, point_len * sizeof(int), cudaMemcpyHostToDevice ) );     
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_ids, ids, 2 * sizeof(int), cudaMemcpyHostToDevice ) );     
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_prefix, prefix, 2 * sizeof(int), cudaMemcpyHostToDevice ) );     
     
     cudf::column_view t_column(cudf::data_type{cudf::FLOAT64},point_len,d_p_t);
     cudf::column_view x_column(cudf::data_type{cudf::FLOAT64},point_len,d_p_x);
-    cudf::column_view ids_column(cudf::data_type{cudf::FLOAT64},point_len,d_p_ids);
-    std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_column(t_column, x_column, ids_column);
+    cudf::column_view ids_column(cudf::data_type{cudf::FLOAT64},2,d_p_ids);
+    cudf::column_view prefix_column(cudf::data_type{cudf::FLOAT64},2,d_p_prefix);
+    std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_full(t_column, x_column, ids_column, prefix_column);
     // TODO: Test that the values are as expected
     std::cout << "test_1 " << splines->view().column(0).size() << std::endl;
+
+    std::unique_ptr<cudf::column> interpolates = cuspatial::cubicspline_interpolate(t_column, ids_column, splines->view());
+    std::cout << "interpolate " << interpolates->size() << std::endl;
 
     RMM_FREE(d_p_t, 0);
     RMM_FREE(d_p_x, 0);
     RMM_FREE(d_p_ids, 0);
 }
-*/
 

@@ -31,10 +31,10 @@ namespace cuspatial {
  * @param[in] coefficients table of splines fit to the curves matching the ids
  * @return cudf::column `y` coordinates interpolated from `x` and `coefs`.
 **/
-std::unique_ptr<cudf::experimental::column> cubicspline_interpolate(
+std::unique_ptr<cudf::column> cubicspline_interpolate(
                                          cudf::column_view points,
                                          cudf::column_view ids,
-                                         cudf::table coefficients );
+                                         cudf::table_view coefficients );
 
 /**
  * @brief Create a table of coefficients from an SoA of coordinates.
