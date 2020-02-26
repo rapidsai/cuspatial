@@ -32,9 +32,11 @@ namespace cuspatial {
  * @return cudf::column `y` coordinates interpolated from `x` and `coefs`.
 **/
 std::unique_ptr<cudf::column> cubicspline_interpolate(
-                                         cudf::column_view points,
-                                         cudf::column_view ids,
-                                         cudf::table_view coefficients );
+                                         cudf::column_view query_points,
+                                         cudf::column_view curve_ids,
+                                         cudf::column_view prefixes,
+                                         cudf::column_view source_points,
+                                         cudf::table_view coefficients);
 
 /**
  * @brief Create a table of coefficients from an SoA of coordinates.

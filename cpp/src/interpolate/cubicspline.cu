@@ -93,30 +93,37 @@ void tPrint(cudf::column_view col, const char* name="None") {
 struct parallel_search {
   template <typename T>
   void operator()(cudf::column_view const& t,
+                  cudf::column_view const& curve_ids,
                   cudf::column_view const& prefixes,
                   cudf::column_view const& query_coords,
                   cudf::mutable_column_view const& result,
                   rmm::mr::device_memory_resource *mr,
                   cudaStream_t stream) {
       const T* T_ = t.data<T>();
+      const int32_t* CURVE_IDS_ = curve_ids.data<int32_t>();
       const int32_t* PREFIXES_ = prefixes.data<int32_t>();
-      T* QUERY_COORDS_ = query_coords.data<T>();
+      const T* QUERY_COORDS_ = query_coords.data<T>();
       T* RESULT_ = result.data<T>();
       thrust::for_each(rmm::exec_policy(stream)->on(stream),
-        thrust::make_counting_iterator<int>(1),
-        thrust::make_counting_iterator<int>(prefixes.size()),
-        [T_, PREFIXES_, QUERY_COORDS_, RESULT_] __device__
+        thrust::make_counting_iterator<int>(0),
+        thrust::make_counting_iterator<int>(query_coords.size()),
+        [T_, CURVE_IDS_, PREFIXES_, QUERY_COORDS_, RESULT_] __device__
         (int index) {
-          int len = PREFIXES_[index] - PREFIXES_[index-1];
-          int h = PREFIXES_[index];
-          RESULT_[index] = len-1;
+          int curve = CURVE_IDS_[index];
+          int len = PREFIXES_[curve+1] - PREFIXES_[curve];
+          int h = PREFIXES_[curve];
+          // O(n) search, can do log(n) easily
           for(int32_t i = 0 ; i < len-1 ; ++i) {
-            if(QUERY_COORDS_[index] > T_[h+i]) {
-              RESULT_[index] = i;
+            if((T_[h+i]+0.0001 - QUERY_COORDS_[index]) > 0.00001) {
+              RESULT_[index] = h+i;
               return;
             }
           }
-          RESULT_[index] = -1.0;
+          // TODO: Important failure case:
+          // This will use the final set of coefficients
+          // for t_ values that are outside of the original
+          // interpolation range.
+          RESULT_[index] = h+len - 2;
       });
   };
 };
@@ -124,28 +131,28 @@ struct parallel_search {
 struct interpolate {
   template <typename T>
   void operator()(cudf::column_view const& t,
-                  cudf::column_view const& positions,
-                  cudf::mutable_column_view const& d3,
-                  cudf::mutable_column_view const& d2,
-                  cudf::mutable_column_view const& d1,
-                  cudf::mutable_column_view const& d0,
+                  cudf::column_view const& ids,
+                  cudf::column_view const& coef_indexes,
+                  cudf::table_view const& coefficients,
                   cudf::mutable_column_view const& result,
                   rmm::mr::device_memory_resource *mr,
                   cudaStream_t stream) {
       const T* T_ = t.data<T>();
-      const int32_t* POSITIONS_ = positions.data<int32_t>();
-      T* D3_ = d3.data<T>();
-      T* D2_ = d2.data<T>();
-      T* D1_ = d1.data<T>();
-      T* D0_ = d0.data<T>();
+      const int32_t* IDS_ = ids.data<int32_t>();
+      const int32_t* COEF_INDEXES_ = coef_indexes.data<int32_t>();
+      const T* D3_ = coefficients.column(3).data<T>();
+      const T* D2_ = coefficients.column(2).data<T>();
+      const T* D1_ = coefficients.column(1).data<T>();
+      const T* D0_ = coefficients.column(0).data<T>();
       T* RESULT_ = result.data<T>();
       thrust::for_each(rmm::exec_policy(stream)->on(stream),
         thrust::make_counting_iterator<int>(0),
-        thrust::make_counting_iterator<int>(positions.size()-1),
-        [T_, POSITIONS_, D3_, D2_, D1_, D0_, RESULT_] __device__
+        thrust::make_counting_iterator<int>(t.size()),
+        [T_, IDS_, COEF_INDEXES_, D3_, D2_, D1_, D0_, RESULT_] __device__
         (int index) {
-          int h = POSITIONS_[index];
-          RESULT_[index] = T_[h] * (D3_[h] + T_[h] * (D2_[h] + T_[h] * D1_[h] + D0_[h]));
+          int h = RESULT_[index];
+          RESULT_[index] = T_[h] * T_[h] * T_[h] * D3_[h] + T_[h] * T_[h] * D2_[h] + T_[h] * D1_[h] + D0_[h];
+          //RESULT_[index] = T_[h] * (D3_[h] + T_[h] * (D2_[h] + T_[h] * D1_[h] + D0_[h]));
       });
   };
 };
@@ -187,7 +194,7 @@ struct coefficients_compute {
             T b = I_[h+ci] - H_[h+ci] * (Z_[h+ci+1] + 2 * Z_[h+ci]) / 6;
             T c = Z_[h+ci] / 2.0;
             T d = (Z_[h+ci+1] - Z_[h+ci]) / 6 * H_[h+ci];
-            T t = T_[h+ci+1];
+            T t = T_[h+ci];
             D3_[h+ci] = d;
             D2_[h+ci] = c - 3 * d * t;
             D1_[h+ci] = b - t * (2*c - t * (3 * d));
@@ -303,18 +310,35 @@ namespace cuspatial
 {
 
 std::unique_ptr<cudf::column> cubicspline_interpolate(
-    cudf::column_view points,
-    cudf::column_view ids,
+    cudf::column_view query_points,
+    cudf::column_view curve_ids,
+    cudf::column_view prefixes,
+    cudf::column_view source_points,
     cudf::table_view coefficients
 )
 {
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
-    auto result = make_numeric_column(points.type(), points.size(), cudf::mask_state::UNALLOCATED, stream, mr);
-    cudf::mutable_column_view temp = result->mutable_view();
+    auto result = make_numeric_column(query_points.type(), query_points.size(), cudf::mask_state::UNALLOCATED, stream, mr);
+    cudf::mutable_column_view search_result = result->mutable_view();
     cudf::experimental::scalar_type_t<float> one;
     one.set_value(1.0);
-    cudf::experimental::fill(temp, 0, result->size(), one);
+    cudf::experimental::fill_in_place(search_result, 0, result->size(), one);
+    TPRINT(result->view(), "one");
+    
+    parallel_search search;
+    search.operator()<float>(query_points, curve_ids, prefixes, source_points, search_result, mr, stream);
+    TPRINT(search_result, "parallel_search_");
+
+    interpolate intrp;
+    intrp.operator()<float>(query_points, curve_ids, prefixes, coefficients, search_result, mr, stream);
+    TPRINT(query_points, "query_points_");
+    TPRINT(curve_ids, "curve_ids_");
+    TPRINT(prefixes, "prefixes_");
+    TPRINT(search_result, "interpolate_");
+    for(int i = 0 ; i < coefficients.num_columns() ; ++i) {
+      TPRINT(coefficients.column(i), "col_");
+    }
     return result;
 }
 
@@ -329,6 +353,8 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
     TPRINT(t, "t_");
     TPRINT(y, "y_");
+    TPRINT(ids, "ids");
+    TPRINT(prefixes, "prefixes");
 
     int64_t n = y.size();
     auto h_col = make_numeric_column(y.type(), n, cudf::mask_state::UNALLOCATED, stream, mr);
@@ -411,7 +437,6 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     HANDLE_CUSPARSE_STATUS(cusparseStatus);
     cusparseStatus = cusparseDestroy(handle);
     HANDLE_CUSPARSE_STATUS(cusparseStatus);
-    TPRINT(u_buffer, "u_buffer");
 
     // Finally, compute coefficients via Horner's scheme
     auto d3_col = make_numeric_column(y.type(), n, cudf::mask_state::UNALLOCATED, stream, mr);
@@ -429,6 +454,10 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
 
     coefficients_compute coefs;
     coefs.operator()<float>(t, y, prefixes, h_buffer, i_buffer, u_buffer, d3, d2, d1, d0, mr, stream);
+
+    TPRINT(h_buffer, "h_buffer_");
+    TPRINT(i_buffer, "i_buffer_");
+    TPRINT(u_buffer, "u_buffer_");
 
     TPRINT(d3, "d3");
     TPRINT(d2, "d2");
