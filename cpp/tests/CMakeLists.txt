@@ -89,11 +89,21 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CUSPATIAL_LIBRARY}"
                  )
 
-set(SPATIAL_JOIN_TEST_SRC
-   #"${CMAKE_CURRENT_SOURCE_DIR}/join/quadtree_polygon_test.cu"
-   #"${CMAKE_CURRENT_SOURCE_DIR}/join/pip_refine_test_small.cu"
-   "${CMAKE_CURRENT_SOURCE_DIR}/join/pip_refine_test_large.cu")
-ConfigureTest(SPATIAL_JOIN_TEST "${SPATIAL_JOIN_TEST_SRC}")
+set(SPATIAL_JOIN_FILTERING_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/join/quadtree_polygon_test.cu")
+ConfigureTest(SPATIAL_JOIN_FILTERING_TEST "${SPATIAL_JOIN_FILTERING_SRC}")
+
+set(SPATIAL_JOIN_REFINEMENT_SMALL_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/join/pip_refine_test_small.cu")
+ConfigureTest(SPATIAL_JOIN_REFINEMENT_SMALL_TEST "${SPATIAL_JOIN_REFINEMENT_SMALL_SRC}")
+
+set(SPATIAL_JOIN_REFINEMENT_LARGE_SRC
+      "${CMAKE_CURRENT_SOURCE_DIR}/join/pip_refine_test_large.cu")
+ConfigureTest(SPATIAL_JOIN_REFINEMENT_LARGE_TEST "${SPATIAL_JOIN_REFINEMENT_LARGE_SRC}")
+
+set(SPATIAL_JOIN_NYCTAXI_SRC
+      "${CMAKE_CURRENT_SOURCE_DIR}/join/spatial_join_nyctaxi_test.cu")
+ConfigureTest(SPATIAL_JOIN_NYCTAXIE_TEST "${SPATIAL_JOIN_NYCTAXI_SRC}")
 
 set(BOUNDING_BOX_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/bounding_box_test.cu")

@@ -50,7 +50,7 @@ struct PIPRefineTestSmall : public GdfTest
     uint32_t *d_poly_id=NULL,*d_poly_fpos=NULL,*d_poly_rpos=NULL;
     double *d_poly_x=NULL,*d_poly_y=NULL;
     
-    std::unique_ptr<cudf::column> poly_id,poly_fpos,poly_rpos,poly_x ,poly_y;
+    std::unique_ptr<cudf::column> poly_fpos,poly_rpos,poly_x ,poly_y;
     
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
@@ -70,12 +70,6 @@ struct PIPRefineTestSmall : public GdfTest
         std::cout<<"setup_polygons:num_ring="<<this->num_ring<<std::endl;
         std::cout<<"setup_polygons:num_vertex="<<this->num_vertex<<std::endl;
    
-        poly_id = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
-    	num_poly, cudf::mask_state::UNALLOCATED, stream, mr );      
-        d_poly_id=cudf::mutable_column_device_view::create(poly_id->mutable_view(), stream)->data<uint32_t>();
-        assert(d_poly_id!=NULL);
-        thrust::sequence(thrust::device,d_poly_id,d_poly_id+num_poly);
- 
         poly_fpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
     		num_poly, cudf::mask_state::UNALLOCATED, stream, mr );      
         d_poly_fpos=cudf::mutable_column_device_view::create(poly_fpos->mutable_view(), stream)->data<uint32_t>();
@@ -157,7 +151,7 @@ void run_test(double x1,double y1,double x2,double y2,double scale,uint32_t num_
  
      std::unique_ptr<cudf::experimental::table> pip_pair_tbl=cuspatial::pip_refine(
          pq_pair_view,quad_view,pnt_view,
-         poly_id->view(),poly_fpos->view(),poly_rpos->view(),poly_x->view(),poly_y->view());   
+         poly_fpos->view(),poly_rpos->view(),poly_x->view(),poly_y->view());   
      std::cout<<"polygon/point num pair="<<pip_pair_tbl->view().num_columns()<<std::endl;
 }
  

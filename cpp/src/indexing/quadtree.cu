@@ -125,10 +125,10 @@ if(0)
 	    d_p_pntlen+begin_pos,
 	    d_p_parentkey+end_pos,d_p_pntlen+end_pos).first-(d_p_parentkey+end_pos);
 	assert(nk==nn);	
-	std::cout<<"lev="<<k<<" begin_pos="<<begin_pos<<" end_pos="<<end_pos<<std::endl;
+	std::cout<<"lev="<<k<<" begin_pos="<<begin_pos<<" end_pos="<<end_pos<<" nk="<<nk<<" nn="<<nn<<std::endl;
     	lev_num[k]=nk; lev_bpos[k]=begin_pos; lev_epos[k]=end_pos; 	  	
-    	begin_pos=end_pos; end_pos+=nk;
-    }  
+    	begin_pos=end_pos; end_pos+=nk; 
+ }  
             
     //allocate three temporal arrays for parent key,number of children,
     //and the number of points in each quadrant, respectively
@@ -290,7 +290,7 @@ if(0)
     auto seq_len_pos=thrust::make_zip_iterator(thrust::make_tuple(d_p_tmp_seq,d_p_tmp_neln));
     thrust::stable_sort_by_key(exec_policy,d_p_tmp_key,d_p_tmp_key+num_valid_nodes,seq_len_pos);    
 
-if(1)
+if(0)
 {
    printf("d_p_tmp_key:after sort\n");
    thrust::device_ptr<uint> d_tmpkey_ptr=thrust::device_pointer_cast(d_p_tmp_key);
@@ -329,7 +329,7 @@ if(1)
     //line 10 of algorithm in Fig. 5 in ref. 
     thrust::exclusive_scan(exec_policy,d_p_qtclen,d_p_qtclen+num_valid_nodes,d_p_qtcpos,lev_num[1]);   
 
-if(1)
+if(0)
 {
    std::cout<<"length0:"<<std::endl;
    thrust::device_ptr<uint32_t> d_qtclen_ptr=thrust::device_pointer_cast(d_p_qtclen);
@@ -366,7 +366,7 @@ if(1)
    RMM_FREE(d_p_qtnlen,stream);d_p_qtnlen=NULL;
    RMM_FREE(d_p_qtclen,stream);d_p_qtclen=NULL;
 
-if(1)
+if(0)
 {
 
     thrust::device_ptr<uint32_t> d_key_ptr=thrust::device_pointer_cast(d_p_qtkey);

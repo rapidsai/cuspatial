@@ -29,25 +29,21 @@
 #include <cudf/table/table.hpp>
 
 #include <utility/helper_thrust.cuh>
-#include <utility/quadtree_thrust.cuh>
-#include <utility/bbox_thrust.cuh>
-#include <cuspatial/bounding_box.hpp>
+#include <utility/join_thrust.cuh>
 #include <cuspatial/spatial_jion.hpp>
 
 
 namespace
 {
 
-const uint8_t max_warps_per_block=32;
-const uint8_t num_threads_per_warp=32;
-
 template <typename T>
 __global__ void quad_pip_phase1_kernel(const uint32_t * pq_poly_id,const uint32_t *pq_quad_id,
-	const uint32_t *pnt_length,const uint32_t *pnt_fpos, const T*  pnt_x,const T*  pnt_y, 
+	const uint32_t *block_offset,const uint32_t * block_length,
+	const uint32_t *qt_fpos, const T*  pnt_x,const T*  pnt_y, 
 	const uint32_t*  poly_fpos,const uint32_t*  poly_rpos,const T*  poly_x,const T*  poly_y,
         uint32_t* num_hits)        
 {
-    __shared__ uint32_t qid,pid,num_point,first_pos,num_adjusted;
+    __shared__ uint32_t qid,pid,num_point,first_pos,qpos,num_adjusted;
     
     //assume #of points/threads no more than num_threads_per_warp*max_warps_per_block (32*32)
     __shared__ uint32_t data[max_warps_per_block];
@@ -56,8 +52,9 @@ __global__ void quad_pip_phase1_kernel(const uint32_t * pq_poly_id,const uint32_
     {
     	qid=pq_quad_id[blockIdx.x];
     	pid=pq_poly_id[blockIdx.x];
-    	num_point=pnt_length[qid];
-    	first_pos=pnt_fpos[qid]; 
+  	qpos=block_offset[blockIdx.x];
+    	num_point=block_length[blockIdx.x];
+    	first_pos=qt_fpos[qid]+qpos; 
     	num_adjusted=((num_point-1)/num_threads_per_warp+1)*num_threads_per_warp;
        	//printf("block=%d qid=%d pid=%d num_point=%d first_pos=%d\n",
     	//	blockIdx.x,qid,pid,num_point,first_pos);	
@@ -128,11 +125,12 @@ __global__ void quad_pip_phase1_kernel(const uint32_t * pq_poly_id,const uint32_
 
 template <typename T>
 __global__ void quad_pip_phase2_kernel(const uint32_t * pq_poly_id,const uint32_t *pq_quad_id,
-	const uint32_t *pnt_length,const uint32_t *pnt_fpos, const T*  pnt_x,const T*  pnt_y, const uint32_t* pnt_id,
-	const uint32_t *poly_id,const uint32_t* poly_fpos,const uint32_t*  poly_rpos,const T*  poly_x,const T*  poly_y,
-        uint32_t *d_num_hits,uint32_t *d_res_poly_id,uint32_t *d_res_pnt_id)        
-{
-    __shared__ uint32_t qid,pid,num_point,first_pos,mem_offset,num_adjusted;
+	uint32_t *block_offset,uint32_t * block_length,
+	const uint32_t *qt_fpos, const T*  pnt_x,const T*  pnt_y, const uint32_t* pnt_id,
+	const uint32_t*  poly_fpos,const uint32_t*  poly_rpos,const T*  poly_x,const T*  poly_y,
+        uint32_t *d_num_hits,uint32_t *d_res_poly_id,uint32_t *d_res_pnt_id)      
+{  
+  __shared__ uint32_t qid,pid,num_point,first_pos,mem_offset,qpos,num_adjusted;
     
     //assume #of points/threads no more than num_threads_per_warp*max_warps_per_block (32*32)
     __shared__ uint16_t temp[max_warps_per_block],sums[max_warps_per_block+1];
@@ -140,13 +138,14 @@ __global__ void quad_pip_phase2_kernel(const uint32_t * pq_poly_id,const uint32_
     //assuming 1d 
     if(threadIdx.x==0)
     {
-    	qid=pq_quad_id[blockIdx.x];
+   	qid=pq_quad_id[blockIdx.x];
     	pid=pq_poly_id[blockIdx.x];
-    	num_point=pnt_length[qid];
-    	first_pos=pnt_fpos[qid]; 
+    	qpos=block_offset[blockIdx.x];
+    	num_point=block_length[blockIdx.x];
     	mem_offset=d_num_hits[blockIdx.x];
+    	first_pos=qt_fpos[qid]+qpos; 
     	sums[0]=0;
-    	num_adjusted=((num_point-1)/num_threads_per_warp+1)*num_threads_per_warp;
+      	num_adjusted=((num_point-1)/num_threads_per_warp+1)*num_threads_per_warp;
      	//printf("block=%d qid=%d pid=%d num_point=%d first_pos=%d mem_offset=%d\n",
     	//	blockIdx.x,qid,pid,num_point,first_pos,mem_offset);
     		
@@ -166,9 +165,9 @@ __global__ void quad_pip_phase2_kernel(const uint32_t * pq_poly_id,const uint32_
      
        uint32_t r_f = (0 == pid) ? 0 : poly_fpos[pid-1];
        uint32_t r_t=poly_fpos[pid];
-       for (uint16_t k = r_f; k < r_t; k++) //for each ring
+       for (uint32_t k = r_f; k < r_t; k++) //for each ring
        {
-           uint16_t m = (k==0)?0:poly_rpos[k-1];
+           uint32_t m = (k==0)?0:poly_rpos[k-1];
            for (;m < poly_rpos[k]-1; m++) //for each line segment
            {
               T x0, x1, y0, y1;
@@ -195,7 +194,7 @@ __global__ void quad_pip_phase2_kernel(const uint32_t * pq_poly_id,const uint32_
      //warp-level scan; only one warp is used
      if(threadIdx.x<num_threads_per_warp)
       {
-          uint16_t num=temp[threadIdx.x];
+          uint32_t num=temp[threadIdx.x];
           for (uint8_t i=1; i<=num_threads_per_warp; i*=2)
           {
             int n = __shfl_up_sync(0xFFFFFFF,num, i, num_threads_per_warp);
@@ -216,80 +215,184 @@ __global__ void quad_pip_phase2_kernel(const uint32_t * pq_poly_id,const uint32_
       {
      	uint16_t num=sums[threadIdx.x/num_threads_per_warp];
      	uint16_t warp_offset=__popc(vote>>(threadIdx.x%num_threads_per_warp))-1;
-     	uint16_t pos=num+warp_offset;
+     	uint32_t pos=mem_offset+num+warp_offset;
      	
      	//printf("block=%d thread=%d qid=%d pid=%d tid=%d mem_offset=%d num=%d warp_offset=%d pos=%d\n",
     	//	blockIdx.x,threadIdx.x,qid,pid,tid,mem_offset,num,warp_offset,pos); 
     		
-        d_res_poly_id[mem_offset+pos]=poly_id[pid];
-        d_res_pnt_id[mem_offset+pos]=pnt_id[tid];
+        d_res_poly_id[pos]=pid;
+        d_res_pnt_id[pos]=pnt_id[tid];
       } 
       __syncthreads();
 }
 
 template<typename T>
 std::vector<std::unique_ptr<cudf::column>> dowork(
-	uint32_t num_pq_pair,const uint32_t * d_pq_polyid,const uint32_t * d_pq_quadid,
+	uint32_t num_org_pair,const uint32_t * d_org_poly_id,const uint32_t * d_org_quad_id,
 	uint32_t num_node,const uint32_t *d_qt_key,const uint8_t *d_qt_lev,
 	const bool *d_qt_sign, const uint32_t *d_qt_length, const uint32_t *d_qt_fpos,
 	const uint32_t num_pnt,const uint32_t * d_pnt_id,const T *d_pnt_x, const T *d_pnt_y,
-	const uint32_t num_poly,const uint32_t * d_poly_id,const uint32_t * d_poly_fpos,
+	const uint32_t num_poly,const uint32_t * d_poly_fpos,
 	const uint32_t * d_poly_rpos,const T *d_poly_x, const T *d_poly_y,
 	rmm::mr::device_memory_resource* mr, cudaStream_t stream)	
                                          
 {
     auto exec_policy = rmm::exec_policy(stream)->on(stream);
     
-    uint32_t *d_num_hits=NULL;
-    RMM_TRY( RMM_ALLOC( &d_num_hits,num_pq_pair* sizeof(uint32_t), 0));
-    assert(d_num_hits!=NULL);
-    HANDLE_CUDA_ERROR( cudaMemset(d_num_hits,0,num_pq_pair*sizeof(uint32_t)) ); 
-
-    printf("running quad_pip_phase1_kernel\n");
-    quad_pip_phase1_kernel<T> <<< num_pq_pair, 256 >>> (d_pq_polyid,d_pq_quadid,
-    	d_qt_length,d_qt_fpos,d_pnt_x,d_pnt_y,d_poly_fpos,d_poly_rpos,d_poly_x,d_poly_y,d_num_hits);
-    HANDLE_CUDA_ERROR( cudaDeviceSynchronize() );	
-
-    //remove poly-quad pair with zero hits
+     uint32_t num_pq_pair=thrust::transform_reduce(exec_policy,d_org_quad_id,
+      	d_org_quad_id+num_org_pair,get_num_units(d_qt_length,threads_per_block),0, thrust::plus<uint32_t>());
+     printf("num_pq_pair=%d\n",num_pq_pair);
+     
+     uint32_t *d_num_units=NULL,*d_num_sum=NULL;
+     RMM_TRY( RMM_ALLOC( &d_num_units,num_org_pair* sizeof(uint32_t), 0));
+     RMM_TRY( RMM_ALLOC( &d_num_sum,num_org_pair* sizeof(uint32_t), 0));
+     assert(d_num_units!=NULL && d_num_sum!=NULL);
+     thrust::transform(exec_policy,d_org_quad_id,d_org_quad_id+num_org_pair,
+     	d_num_units,get_num_units(d_qt_length,threads_per_block));
+ if(0)
+ {
+         printf("d_org_poly_id\n");
+    
+        thrust::device_ptr<const uint32_t> d_org_poly_id_ptr=thrust::device_pointer_cast(d_org_poly_id);		
+         thrust::copy(d_org_poly_id_ptr,d_org_poly_id_ptr+num_org_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+    
+        thrust::device_ptr<const uint32_t> d_org_quad_id_ptr=thrust::device_pointer_cast(d_org_quad_id);		
+         thrust::copy(d_org_quad_id_ptr,d_org_quad_id_ptr+num_org_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
  
-    uint32_t *d_tmp_polyid=NULL,*d_tmp_quadid=NULL;
-    RMM_TRY( RMM_ALLOC( &d_tmp_polyid,num_pq_pair* sizeof(uint32_t), stream));
-    RMM_TRY( RMM_ALLOC( &d_tmp_quadid,num_pq_pair* sizeof(uint32_t), stream));
-    assert(d_tmp_polyid!=NULL && d_tmp_quadid!=NULL);
-    HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_tmp_polyid, (void *)d_pq_polyid, num_pq_pair * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
-    HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_tmp_quadid, (void *)d_pq_quadid, num_pq_pair * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
-
-if(1)
-{
-	printf("phase1 results before remove:\n");	
-	thrust::device_ptr<uint32_t> d_num_hits_ptr=thrust::device_pointer_cast(d_num_hits);		
-	printf("d_num_hits: before reduce\n");
-        thrust::copy(d_num_hits_ptr,d_num_hits_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
-}
-    auto valid_pq_pair_iter=thrust::make_zip_iterator(thrust::make_tuple(d_tmp_polyid,d_tmp_quadid,d_num_hits));    
-    uint32_t num_valid_pair=thrust::remove_if(exec_policy,valid_pq_pair_iter,valid_pq_pair_iter+num_pq_pair,
-    	valid_pq_pair_iter,pq_remove_zero())-valid_pq_pair_iter;   
-    printf("num_valid_pair=%d\n",num_valid_pair);
-
-if(1)
-{
-	printf("phase1 results after remove:\n");	
-	thrust::device_ptr<uint32_t> d_num_hits_ptr=thrust::device_pointer_cast(d_num_hits);		
-	printf("d_num_hits: before reduce\n");
-        thrust::copy(d_num_hits_ptr,d_num_hits_ptr+num_valid_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
-}    
-    uint32_t total_hits=thrust::reduce(exec_policy,d_num_hits,d_num_hits+num_valid_pair);
-    printf("total_hits=%d\n",total_hits);
-    thrust::exclusive_scan(exec_policy,d_num_hits,d_num_hits+num_valid_pair,d_num_hits);
-
-if(1)
-{
-	printf("phase1 results:\n");	
-	thrust::device_ptr<uint32_t> d_num_hits_ptr=thrust::device_pointer_cast(d_num_hits);		
-	printf("d_num_hits: after reduce\n");
-        thrust::copy(d_num_hits_ptr,d_num_hits_ptr+num_valid_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
-}
+     printf("d_num_units\n");
+     thrust::device_ptr<uint32_t> d_num_units_ptr=thrust::device_pointer_cast(d_num_units);		
+     thrust::copy(d_num_units_ptr,d_num_units_ptr+num_org_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ }
+         
+     uint32_t *d_pq_poly_id=NULL,*d_pq_quad_id=NULL,*d_quad_offset=NULL,*d_quad_len=NULL;
+     RMM_TRY( RMM_ALLOC( &d_pq_poly_id,num_pq_pair* sizeof(uint32_t), 0));
+     HANDLE_CUDA_ERROR( cudaMemset(d_pq_poly_id,0,num_pq_pair*sizeof(uint32_t)) ); 
+     RMM_TRY( RMM_ALLOC( &d_pq_quad_id,num_pq_pair* sizeof(uint32_t), 0));
+     HANDLE_CUDA_ERROR( cudaMemset(d_pq_quad_id,0,num_pq_pair*sizeof(uint32_t)) ); 
+     RMM_TRY( RMM_ALLOC( &d_quad_offset,num_pq_pair* sizeof(uint32_t), 0));
+     HANDLE_CUDA_ERROR( cudaMemset(d_quad_offset,0,num_pq_pair*sizeof(uint32_t)) );
+     RMM_TRY( RMM_ALLOC( &d_quad_len,num_pq_pair* sizeof(uint32_t), 0));
+     HANDLE_CUDA_ERROR( cudaMemset(d_quad_len,0,num_pq_pair*sizeof(uint32_t)) );
+          
+     thrust::exclusive_scan(exec_policy,d_num_units,d_num_units+num_org_pair,d_num_sum);
+ if(0)
+ {
+     printf("d_num_sum\n");
+    thrust::device_ptr<uint32_t> d_num_sum_ptr=thrust::device_pointer_cast(d_num_sum);		
+     thrust::copy(d_num_sum_ptr,d_num_sum_ptr+num_org_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ }
+ 
+     thrust::scatter(exec_policy,thrust::make_counting_iterator(0),
+   		thrust::make_counting_iterator(0)+num_org_pair,d_num_sum,d_quad_offset);
+ 
+ if(0)
+ {
+     printf("after scatter: d_quad_offset\n");
+    thrust::device_ptr<uint32_t> d_quad_offset_ptr=thrust::device_pointer_cast(d_quad_offset);		
+     thrust::copy(d_quad_offset_ptr,d_quad_offset_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ }
+     thrust::inclusive_scan(exec_policy,d_quad_offset,d_quad_offset+num_pq_pair,d_quad_offset,thrust::maximum<int>());
+     RMM_FREE(d_num_sum,0);d_num_sum=NULL;
   
+     
+ if(0)
+ {
+     printf("after scan d_quad_offset\n");
+    thrust::device_ptr<uint32_t> d_quad_offset_ptr=thrust::device_pointer_cast(d_quad_offset);		
+     thrust::copy(d_quad_offset_ptr,d_quad_offset_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ }
+     
+     thrust::gather(exec_policy,d_quad_offset,d_quad_offset+num_pq_pair,d_org_poly_id,d_pq_poly_id);
+     thrust::gather(exec_policy,d_quad_offset,d_quad_offset+num_pq_pair,d_org_quad_id,d_pq_quad_id);
+ 
+ if(0)
+ {
+      printf("afte gather:d_pq_poly_id\n");
+ 
+      thrust::device_ptr<uint32_t> d_poly_id_ptr=thrust::device_pointer_cast(d_pq_poly_id);		
+      thrust::copy(d_poly_id_ptr,d_poly_id_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ 
+     thrust::device_ptr<uint32_t> d_quad_id_ptr=thrust::device_pointer_cast(d_pq_quad_id);		
+      thrust::copy(d_quad_id_ptr,d_quad_id_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ }
+      uint32_t *d_num_hits=NULL;
+      RMM_TRY( RMM_ALLOC( &d_num_hits,num_pq_pair* sizeof(uint32_t), 0));
+      assert(d_num_hits!=NULL);
+      HANDLE_CUDA_ERROR( cudaMemset(d_num_hits,0,num_pq_pair*sizeof(uint32_t)) ); 
+   
+     thrust::exclusive_scan_by_key(exec_policy,d_quad_offset,d_quad_offset+num_pq_pair,
+     	thrust::constant_iterator<int>(1),d_quad_offset);
+     
+     //d_quad_offset used as both input and output
+     auto qid_bid_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pq_quad_id,d_quad_offset));
+     auto offset_length_iter=thrust::make_zip_iterator(thrust::make_tuple(d_quad_offset,d_quad_len));
+     
+     thrust::transform(exec_policy,qid_bid_iter,qid_bid_iter+num_pq_pair,
+     	offset_length_iter,gen_offset_length(threads_per_block,d_qt_length));
+  
+  if(0)
+  {
+      printf("d_pq_poly_id\n");
+ 
+     thrust::device_ptr<uint32_t> d_poly_id_ptr=thrust::device_pointer_cast(d_pq_poly_id);		
+      thrust::copy(d_poly_id_ptr,d_poly_id_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ 
+      printf("d_pq_quad_id\n");
+     thrust::device_ptr<uint32_t> d_quad_id_ptr=thrust::device_pointer_cast(d_pq_quad_id);		
+      thrust::copy(d_quad_id_ptr,d_quad_id_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ 
+      printf("d_quad_offset\n");
+     thrust::device_ptr<uint32_t> d_quad_offset_ptr=thrust::device_pointer_cast(d_quad_offset);		
+      thrust::copy(d_quad_offset_ptr,d_quad_offset_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+      
+      printf("d_quad_length\n");
+     thrust::device_ptr<uint32_t> d_quad_len_ptr=thrust::device_pointer_cast(d_quad_len);		
+      thrust::copy(d_quad_len_ptr,d_quad_len_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+   
+  }
+         
+     printf("running quad_pip_phase1_kernel\n");
+     quad_pip_phase1_kernel<T> <<< num_pq_pair, threads_per_block >>> 
+     	(const_cast<uint32_t*>(d_pq_poly_id),const_cast<uint32_t*>(d_pq_quad_id),
+     	 const_cast<uint32_t*>(d_quad_offset),const_cast<uint32_t*>(d_quad_len),
+     		d_qt_fpos,d_pnt_x,d_pnt_y,d_poly_fpos,d_poly_rpos,d_poly_x,d_poly_y,d_num_hits);
+     HANDLE_CUDA_ERROR( cudaDeviceSynchronize() );
+ 
+ 
+ if(0)
+ {
+ 	printf("phase1 results:\n");	
+ 	thrust::device_ptr<uint32_t> d_num_hits_ptr=thrust::device_pointer_cast(d_num_hits);		
+ 	printf("d_num_hits: before reduce\n");
+         thrust::copy(d_num_hits_ptr,d_num_hits_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ }
+ 
+     //remove poly-quad pair with zero hits
+     auto valid_pq_pair_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pq_poly_id,d_pq_quad_id,d_quad_offset,d_quad_len,d_num_hits));
+     uint32_t num_valid_pair=thrust::remove_if(exec_policy,valid_pq_pair_iter,valid_pq_pair_iter+num_pq_pair,
+     	valid_pq_pair_iter,pq_remove_zero())-valid_pq_pair_iter;   
+     printf("num_valid_pair=%d\n",num_valid_pair);
+ 
+ if(0)
+ {
+ 	printf("after removal:\n");	
+ 	thrust::device_ptr<uint32_t> d_num_hits_ptr=thrust::device_pointer_cast(d_num_hits);		
+ 	printf("d_num_hits: before reduce\n");
+         thrust::copy(d_num_hits_ptr,d_num_hits_ptr+num_valid_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ }
+      
+     uint32_t total_hits=thrust::reduce(exec_policy,d_num_hits,d_num_hits+num_valid_pair);
+     printf("total_hits=%d\n",total_hits);
+     thrust::exclusive_scan(exec_policy,d_num_hits,d_num_hits+num_valid_pair,d_num_hits);
+ 
+ if(0)
+ {
+ 	printf("phase1 results:\n");	
+ 	thrust::device_ptr<uint32_t> d_num_hits_ptr=thrust::device_pointer_cast(d_num_hits);		
+ 	printf("d_num_hits: after reduce\n");
+         thrust::copy(d_num_hits_ptr,d_num_hits_ptr+num_valid_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ }
+        
     std::unique_ptr<cudf::column> poly_id_col = cudf::make_numeric_column(
        cudf::data_type(cudf::type_id::INT32), total_hits,cudf::mask_state::UNALLOCATED,  stream, mr);      
     uint32_t *d_res_poly_id=cudf::mutable_column_device_view::create(poly_id_col->mutable_view(), stream)->data<uint32_t>();
@@ -299,33 +402,28 @@ if(1)
        cudf::data_type(cudf::type_id::INT32), total_hits,cudf::mask_state::UNALLOCATED,  stream, mr);      
     uint32_t *d_res_pnt_id=cudf::mutable_column_device_view::create(pnt_id_col->mutable_view(), stream)->data<uint32_t>();
     CUDF_EXPECTS(d_res_pnt_id!=NULL,"point_id can not be NULL"); 
+    
+     printf("running quad_pip_phase2_kernel\n");
+     quad_pip_phase2_kernel<T> <<< num_valid_pair, threads_per_block >>> 
+        (d_pq_poly_id,d_pq_quad_id,
+         d_quad_offset,d_quad_len,
+     	d_qt_fpos,d_pnt_x,d_pnt_y,d_pnt_id,
+     	d_poly_fpos,d_poly_rpos,d_poly_x,d_poly_y,
+     	d_num_hits,d_res_poly_id,d_res_pnt_id);   
+     HANDLE_CUDA_ERROR( cudaDeviceSynchronize() );
         
-    printf("running quad_pip_phase2_kernel\n");
-    quad_pip_phase2_kernel<T> <<< num_valid_pair, 256 >>> 
-       (d_tmp_polyid,d_tmp_quadid,
-    	d_qt_length,d_qt_fpos,d_pnt_x,d_pnt_y,d_pnt_id,
-    	d_poly_id,d_poly_fpos,d_poly_rpos,d_poly_x,d_poly_y,
-    	d_num_hits,d_res_poly_id,d_res_pnt_id);   
-    HANDLE_CUDA_ERROR( cudaDeviceSynchronize() );
-    
-    RMM_TRY(RMM_FREE(d_num_hits,stream));d_num_hits=NULL;
-    RMM_TRY(RMM_FREE(d_tmp_polyid,stream));d_tmp_polyid=NULL;
-    RMM_TRY(RMM_FREE(d_tmp_quadid,stream));d_tmp_quadid=NULL;
-    
-   //thrust::stable_sort_by_key(exec_policy,d_res_pnt_id,d_res_pnt_id+total_hits,d_res_poly_id);
-   
-if(1)
+if(0)
 {
-	printf("phase2 results:\n");	
-
-	thrust::device_ptr<uint32_t> d_res_poly_ptr=thrust::device_pointer_cast(d_res_poly_id);		
-	printf("d_res_poly_id\n");
-        thrust::copy(d_res_poly_ptr,d_res_poly_ptr+total_hits,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
-
-	thrust::device_ptr<uint32_t> d_res_pnt_ptr=thrust::device_pointer_cast(d_res_pnt_id);		
-	printf("d_res_pnt_id\n");
-        thrust::copy(d_res_pnt_ptr,d_res_pnt_ptr+total_hits,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
-}
+ 	printf("phase2 results:\n");	
+ 
+ 	thrust::device_ptr<uint32_t> d_res_poly_ptr=thrust::device_pointer_cast(d_res_poly_id);		
+ 	printf("d_res_poly_id\n");
+         thrust::copy(d_res_poly_ptr,d_res_poly_ptr+total_hits,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ 
+ 	thrust::device_ptr<uint32_t> d_res_pnt_ptr=thrust::device_pointer_cast(d_res_pnt_id);		
+ 	printf("d_res_pnt_id\n");
+         thrust::copy(d_res_pnt_ptr,d_res_pnt_ptr+total_hits,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+}   
 
    std::vector<std::unique_ptr<cudf::column>> pair_cols;
    pair_cols.push_back(std::move(poly_id_col));
@@ -338,12 +436,11 @@ struct pip_refine_processor {
   template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
   std::unique_ptr<cudf::experimental::table> operator()(
 	cudf::table_view const& pq_pair,cudf::table_view const& quadtree,cudf::table_view const& pnt,
-	cudf::column_view const& poly_id,cudf::column_view const& poly_fpos,cudf::column_view const& poly_rpos,
+	cudf::column_view const& poly_fpos,cudf::column_view const& poly_rpos,
 	cudf::column_view const& poly_x,cudf::column_view const& poly_y,
 	rmm::mr::device_memory_resource* mr,
         cudaStream_t stream)
    {            
-       const uint32_t *d_poly_id=poly_id.data<uint32_t>();       
        const uint32_t *d_poly_fpos=poly_fpos.data<uint32_t>();
        const uint32_t *d_poly_rpos=poly_rpos.data<uint32_t>();
        const T *d_poly_x=poly_x.data<T>();
@@ -365,14 +462,14 @@ struct pip_refine_processor {
              
        uint32_t num_pair=pq_pair.num_rows();
        uint32_t num_node=quadtree.num_rows();
-       uint32_t num_poly=poly_id.size();
+       uint32_t num_poly=poly_fpos.size();
        uint32_t num_pnt=pnt.num_rows();
 
        std::vector<std::unique_ptr<cudf::column>> pair_cols=
        		dowork(num_pair,d_pq_poly_id,d_pq_quad_id,
        			num_node,d_qt_key,d_qt_lev,d_qt_sign,d_qt_length,d_qt_fpos,
        			num_pnt,d_pnt_id,d_pnt_x,d_pnt_y,
-       			num_poly,d_poly_id,d_poly_fpos,d_poly_rpos,d_poly_x,d_poly_y,
+       			num_poly,d_poly_fpos,d_poly_rpos,d_poly_x,d_poly_y,
        			mr,stream);
        	
       std::unique_ptr<cudf::experimental::table> destination_table = 
@@ -384,7 +481,7 @@ struct pip_refine_processor {
   template<typename T, std::enable_if_t<!std::is_floating_point<T>::value >* = nullptr>
   std::unique_ptr<cudf::experimental::table> operator()(
 	cudf::table_view const& pq_pair,cudf::table_view const& quadtree,cudf::table_view const& pnt,
-	cudf::column_view const& poly_id,cudf::column_view const& poly_fpos,cudf::column_view const& poly_rpos,
+	cudf::column_view const& poly_fpos,cudf::column_view const& poly_rpos,
 	cudf::column_view const& poly_x,cudf::column_view const& poly_y,
 	rmm::mr::device_memory_resource* mr, cudaStream_t stream)       
     {
@@ -398,7 +495,7 @@ struct pip_refine_processor {
 namespace cuspatial {
 std::unique_ptr<cudf::experimental::table> pip_refine(
 	cudf::table_view const& pq_pair,cudf::table_view const& quadtree,cudf::table_view const& pnt,
-	cudf::column_view const& poly_id,cudf::column_view const& poly_fpos,cudf::column_view const& poly_rpos,
+	cudf::column_view const& poly_fpos,cudf::column_view const& poly_rpos,
 	cudf::column_view const& poly_x,cudf::column_view const& poly_y)
 	
 	
@@ -411,7 +508,7 @@ std::unique_ptr<cudf::experimental::table> pip_refine(
    rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();    
    
    return cudf::experimental::type_dispatcher(pnt_dtype,pip_refine_processor{}, 
-    	pq_pair,quadtree,pnt,poly_id,poly_fpos,poly_rpos,poly_x,poly_y,mr,stream);   
+    	pq_pair,quadtree,pnt,poly_fpos,poly_rpos,poly_x,poly_y,mr,stream);   
     	    	
 }
 

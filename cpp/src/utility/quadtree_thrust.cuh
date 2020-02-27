@@ -40,7 +40,7 @@ struct xytoz
 	double x=thrust::get<1>(loc);
 	double y=thrust::get<2>(loc);
 	if(x<thrust::get<0>(bbox.first)||x>thrust::get<0>(bbox.second)||y<thrust::get<1>(bbox.first)||y>thrust::get<1>(bbox.second))
-		return (1<<(2*lev));
+		return (1<<(2*lev)-1);
 	else
 	{	
 		uint16_t a=(uint16_t)((x-thrust::get<0>(bbox.first))/scale);
@@ -72,14 +72,14 @@ struct remove_discard
     __device__ 
     bool operator()(thrust::tuple<uint32_t,uint8_t, uint32_t,uint32_t,uint32_t> v)
     {
-        uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
+        //uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
         uint32_t key=thrust::get<0>(v);
         uint8_t lev=thrust::get<1>(v);
         uint32_t clen=thrust::get<2>(v);
         uint32_t nlen=thrust::get<3>(v);
         uint32_t ppos=thrust::get<4>(v);
-        uint32_t plen=p_len[ppos];
-        printf("remove_discard tid=%d key=%d lev=%d clen=%d nlen=%d ppos=%d plen=%d\n",tid,key,lev,clen,nlen,ppos,plen);
+        //uint32_t plen=p_len[ppos];
+        //printf("remove_discard tid=%d key=%d lev=%d clen=%d nlen=%d ppos=%d plen=%d\n",tid,key,lev,clen,nlen,ppos,plen);
         return (p_len[thrust::get<4>(v)]<=limit);
     }
 };
@@ -177,16 +177,6 @@ struct qt_not_type
         return thrust::get<1>(v)!=type;
     }
 };
-
-struct pq_remove_zero
-{    
-    __device__ 
-    bool operator()(thrust::tuple<uint32_t,uint32_t,uint32_t> v)
-    {
-        return thrust::get<2>(v)==0;
-    }
-};
-
 
 struct update_quad
 {

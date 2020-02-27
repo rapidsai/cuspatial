@@ -67,7 +67,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
     RMM_TRY( RMM_ALLOC( (void**)&(d_poly_sbbox),num_poly*sizeof(SBBox<T>), 0));
     assert(d_poly_sbbox!=NULL);
  
- if(1)
+ if(0)
  {
     printf("x1\n");
     thrust::device_ptr<const T> d_x1_ptr = thrust::device_pointer_cast(poly_x1);
@@ -86,7 +86,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
     thrust::copy(d_y2_ptr,d_y2_ptr+num_poly,std::ostream_iterator<T>(std::cout, " "));std::cout<<std::endl;   	
  }
 
-if(1)
+if(0)
 {
    printf("qt sign\n");
    thrust::device_ptr<const bool> d_sign_ptr=thrust::device_pointer_cast(d_p_qtsign); 
@@ -98,18 +98,19 @@ if(1)
    
     uint32_t num_top_lev_children=thrust::count_if(exec_policy,d_p_qtlev,
     	d_p_qtlev+num_node,thrust::placeholders::_1==0);  
-    uint32_t init_len=10000,curr_len=init_len;
+    uint32_t init_len=1000;
+    uint32_t curr_len=init_len;
     
     uint8_t *d_pq_lev_out=NULL,*d_pq_type_out=NULL;
-    RMM_TRY( RMM_ALLOC( &d_pq_lev_out,init_len* sizeof(uint8_t), stream));
+    RMM_TRY( RMM_ALLOC( &d_pq_lev_out,curr_len* sizeof(uint8_t), stream));
     assert(d_pq_lev_out!=NULL);
-    RMM_TRY( RMM_ALLOC( &d_pq_type_out,init_len* sizeof(uint8_t), stream));
+    RMM_TRY( RMM_ALLOC( &d_pq_type_out,curr_len* sizeof(uint8_t), stream));
     assert(d_pq_type_out!=NULL);
   
     uint32_t *d_quad_idx_out=NULL,*d_poly_idx_out=NULL;
-    RMM_TRY( RMM_ALLOC( &d_quad_idx_out,init_len* sizeof(uint32_t), stream));
+    RMM_TRY( RMM_ALLOC( &d_quad_idx_out,curr_len* sizeof(uint32_t), stream));
     assert(d_quad_idx_out!=NULL);
-    RMM_TRY( RMM_ALLOC( &d_poly_idx_out,init_len* sizeof(uint32_t), stream));
+    RMM_TRY( RMM_ALLOC( &d_poly_idx_out,curr_len* sizeof(uint32_t), stream));
     assert(d_poly_idx_out!=NULL);
    
     auto pair_output_iter=thrust::make_zip_iterator(
@@ -120,8 +121,8 @@ if(1)
     uint32_t  num_pair=num_top_lev_children*num_poly;  
     printf("num_top_lev_children=%d num_poly=%d num_pair=%d\n",num_top_lev_children,num_poly,num_pair);
 
-    uint32_t *d_quad_idx_temp=NULL,*d_poly_idx_temp=NULL;
     uint8_t *d_pq_lev_temp=NULL,*d_pq_type_temp=NULL;
+    uint32_t *d_quad_idx_temp=NULL,*d_poly_idx_temp=NULL;
     RMM_TRY( RMM_ALLOC( &d_quad_idx_temp,num_pair* sizeof(uint32_t), stream));
     assert(d_quad_idx_temp!=NULL);
     
@@ -179,7 +180,7 @@ if(1)
         auto counting_iter=thrust::make_counting_iterator(0);
         thrust::exclusive_scan(exec_policy,d_quad_nchild,d_quad_nchild+num_nonleaf_pair,d_quad_nchild);
         thrust::scatter(exec_policy,counting_iter,counting_iter+num_nonleaf_pair,d_quad_nchild,d_expand_pos);        
-        RMM_TRY(RMM_FREE(d_quad_nchild,0));d_quad_nchild=NULL;    
+        RMM_TRY(RMM_FREE(d_quad_nchild,stream));d_quad_nchild=NULL;    
 
         thrust::inclusive_scan(exec_policy,d_expand_pos,d_expand_pos+num_pair,d_expand_pos,thrust::maximum<int>());        
         thrust::gather(exec_policy,d_expand_pos,d_expand_pos+num_pair,pair_output_temp_iter,pair_output_new_iter);       
@@ -222,31 +223,35 @@ if(1)
      pair_output_temp_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pq_lev_temp,d_pq_type_temp,d_poly_idx_temp,d_quad_idx_temp));    
 
     //expand child nodes and get ready for the next round
-    if((i<num_level-1)&&(b_pos+num_nonleaf_pair*4>init_len))
+    uint32_t max_num=b_pos+num_nonleaf_pair*4;
+    if((i<num_level-1)&&(max_num>curr_len))
     {
-       	 //double init_len;
-       	 curr_len=init_len*2;
-       	 
+       	 curr_len*=((max_num/curr_len)+1);
+      	 printf("increasing capacity: level=%d bpos=%d max_num=%d curr_len=%d\n",i,b_pos,max_num,curr_len);
+  
          uint8_t *d_pq_lev_new=NULL,*d_pq_type_new=NULL;
          RMM_TRY( RMM_ALLOC( &d_pq_lev_new,curr_len* sizeof(uint8_t), stream));
          assert(d_pq_lev_new!=NULL);
-         RMM_TRY( RMM_FREE (d_quad_idx_out,stream));
+ 	 HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_pq_lev_new, (void *)d_pq_lev_out, b_pos * sizeof(uint8_t), cudaMemcpyDeviceToDevice ) );                
+         RMM_TRY( RMM_FREE (d_pq_lev_out,stream));      
          d_pq_lev_out=d_pq_lev_new;
+         
          RMM_TRY( RMM_ALLOC( &d_pq_type_new,curr_len* sizeof(uint8_t), stream));
          assert(d_pq_type_new!=NULL);
+   	 HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_pq_type_new, (void *)d_pq_type_out, b_pos * sizeof(uint8_t), cudaMemcpyDeviceToDevice ) );              
          RMM_TRY( RMM_FREE (d_pq_type_out,stream));
          d_pq_type_out=d_pq_type_new;
             	      	 
        	 uint32_t *d_quad_idx_new=NULL,*d_poly_idx_new=NULL;
    	 RMM_TRY( RMM_ALLOC( &d_quad_idx_new,curr_len* sizeof(uint32_t), stream));
          assert(d_quad_idx_new!=NULL);
-         HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_quad_idx_new, (void *)d_quad_idx_out, curr_len * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
+         HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_quad_idx_new, (void *)d_quad_idx_out, b_pos * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
          RMM_TRY( RMM_FREE (d_quad_idx_out,stream));
          d_quad_idx_out=d_quad_idx_new;
          
          RMM_TRY( RMM_ALLOC( &d_poly_idx_new,curr_len* sizeof(uint32_t), stream));
          assert(d_poly_idx_new!=NULL);
-         HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_poly_idx_new, (void *)d_poly_idx_out, curr_len * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
+         HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_poly_idx_new, (void *)d_poly_idx_out, b_pos * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
          RMM_TRY( RMM_FREE (d_poly_idx_out,stream));
          d_poly_idx_out=d_poly_idx_new;
    
@@ -287,7 +292,7 @@ if(1)
     RMM_FREE(d_poly_idx_out,stream);d_poly_idx_out=NULL;
     RMM_FREE(d_quad_idx_out,stream);d_quad_idx_out=NULL;
   
-  if(1)
+  if(0)
  {
     printf("total pairs =%d\n",b_pos);
 
