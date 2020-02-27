@@ -1,7 +1,8 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
 from cuspatial._lib.interpolate import (
-    cubicspline_full
+    cubicspline_full,
+    cubicspline_interpolate
 )
 
 from cudf import DataFrame, Series
@@ -39,20 +40,19 @@ def cubic_spline_2(x, y, ids, prefix_sums):
     return result
 
 
-def cubic_spline_fit(c, original_t, points, points_ids, prefixes):
-    c_c = c._table
-    original_t_c = original_t._column
+def cubic_spline_fit(points, points_ids, prefixes, original_t, c):
     points_c = points._column
     points_ids_c = points_ids._column
     prefixes_c = prefixes._column
+    original_t_c = original_t._column
     result_column = cubicspline_interpolate(
-            points_c, points_ids_c, prefix_c, original_t_c, c_c
+            points_c, points_ids_c, prefixes_c, original_t_c, c
     )
     return result_column
 
 
 class CubicSpline:
-    def __init__(self, t, y, ids=None, size=None):
+    def __init__(self, t, y, ids=None, size=None, prefixes=None):
         # error protections:
         if len(t) < 5:
             raise ValueError(
@@ -83,25 +83,34 @@ class CubicSpline:
             )
         self.t = Series(t).astype('float32')
         self.y = Series(y).astype('float32')
-        self.prefix = Series(
-            np.arange((len(t) / self.size) + 1) * self.size
-        ).astype('int32')
-        self._compute_coefficients()
+        if prefixes is None:
+            self.prefix = Series(
+                np.arange((len(t) / self.size) + 1) * self.size
+            ).astype('int32')
+        else:
+            self.prefix = prefixes.astype('int32')
+        self.c = self._compute_coefficients()
 
     def _compute_coefficients(self):
         if isinstance(self.y, Series):
-            self.c = cubic_spline_2(self.t, self.y, self.ids, self.prefix)
+            return cubic_spline_2(self.t, self.y, self.ids, self.prefix)
         else:
-            self.c = {}
+            c = {}
             for col in self.y.columns:
-                self.c[col] = cubic_spline_2(
+                c[col] = cubic_spline_2(
                     self.t, self.y, self.ids, self.prefix)
+            return c
 
-    def __call__(self, coordinates):
+    def __call__(self, coordinates, groups=None):
         if isinstance(self.y, Series):
-            return cubic_spline_fit(self.c, coordinates)
+            if groups is not None:
+                self.groups = groups.astype('int32')
+            else:
+                self.groups = Series(np.repeat(0, len(self.t))).astype('int32')
+            result = cubic_spline_fit(coordinates, self.groups, self.prefix, self.t, self.c)
+            return Series(result)
         else:
             result = DataFrame()
             for col in self.y.columns:
-                result[col] = cubic_spline_fit(self.c[col], coordinates)
+                result[col] = Series(cubic_spline_fit(self.c[col], coordinates))
             return result

@@ -60,7 +60,7 @@ void HANDLE_CUSPARSE_STATUS(cusparseStatus_t status) {
   }
 }
 
-#define ALLOW_PRINT 1
+#define ALLOW_PRINT 0
 #if ALLOW_PRINT
 
 template<typename T>
@@ -323,13 +323,13 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
     auto result = make_numeric_column(query_points.type(), query_points.size(), cudf::mask_state::UNALLOCATED, stream, mr);
     cudf::mutable_column_view search_result = result->mutable_view();
-    //cudf::experimental::scalar_type_t<float> one;
-    //one.set_value(1.0);
-    //cudf::experimental::fill_in_place(search_result, 0, result->size(), one);
     
     parallel_search search;
     search.operator()<float>(query_points, curve_ids, prefixes, source_points, search_result, mr, stream);
     TPRINT(search_result, "parallel_search_");
+    TPRINT(query_points, "query_points_");
+    TPRINT(curve_ids, "curve_ids_");
+    TPRINT(prefixes, "prefixes_");
 
     interpolate intrp;
     intrp.operator()<float>(query_points, curve_ids, prefixes, coefficients, search_result, mr, stream);

@@ -24,7 +24,7 @@ cpdef cubicspline_interpolate(Column points, Column ids, Column prefixes, Column
     ids_v = ids.view()
     prefixes_v = prefixes.view()
     original_t_v = original_t.view()
-    coefs_v = coefficients.view()
+    coefs_v = coefficients.data_view()
     cdef unique_ptr[column] c_result
     with nogil:
         c_result = move(cpp_cubicspline_interpolate(p_v, ids_v, prefixes_v, original_t_v, coefs_v))
