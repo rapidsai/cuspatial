@@ -113,9 +113,10 @@ struct parallel_search {
           int len = PREFIXES_[curve+1] - PREFIXES_[curve];
           int h = PREFIXES_[curve];
           // O(n) search, can do log(n) easily
-          for(int32_t i = 0 ; i < len-1 ; ++i) {
+          for(int32_t i = 0 ; i < len ; ++i) {
             if((T_[h+i]+0.0001 - QUERY_COORDS_[index]) > 0.00001) {
-              RESULT_[index] = h+i;
+              RESULT_[index] = h+i-1;
+              if(h+i-1 == -1) RESULT_[index] = 0;
               return;
             }
           }
@@ -151,7 +152,7 @@ struct interpolate {
         [T_, IDS_, COEF_INDEXES_, D3_, D2_, D1_, D0_, RESULT_] __device__
         (int index) {
           int h = RESULT_[index];
-          RESULT_[index] = D3_[h] + T_[h] * (D2_[h] + T_[h] * (D1_[h] + (T_[h] * D0_[h])));
+          RESULT_[index] = D3_[h] + T_[index] * (D2_[h] + T_[index] * (D1_[h] + (T_[index] * D0_[h])));
       });
   };
 };
@@ -335,9 +336,6 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
     TPRINT(curve_ids, "curve_ids_");
     TPRINT(prefixes, "prefixes_");
     TPRINT(search_result, "interpolate_");
-    for(int i = 0 ; i < coefficients.num_columns() ; ++i) {
-      TPRINT(coefficients.column(i), "col_");
-    }
     return result;
 }
 
