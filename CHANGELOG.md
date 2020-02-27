@@ -1,3 +1,15 @@
+# cuSpatial 0.13.0 (TBD)
+
+## New Features
+
+- PR #130 Add cubic spline fit and interpolation
+
+## Improvements
+
+## Bug Fixes
+
+
+
 # cuSpatial 0.12.0 (04 Feb 2020)
 
 ## New Features
