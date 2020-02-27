@@ -116,7 +116,7 @@ struct parallel_search {
           for(int32_t i = 0 ; i < len ; ++i) {
             if((T_[h+i]+0.0001 - QUERY_COORDS_[index]) > 0.00001) {
               RESULT_[index] = h+i-1;
-              if(h+i-1 == -1) RESULT_[index] = 0;
+              if(i == 0) RESULT_[index] = index;
               return;
             }
           }
@@ -321,10 +321,9 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
     auto result = make_numeric_column(query_points.type(), query_points.size(), cudf::mask_state::UNALLOCATED, stream, mr);
     cudf::mutable_column_view search_result = result->mutable_view();
-    cudf::experimental::scalar_type_t<float> one;
-    one.set_value(1.0);
-    cudf::experimental::fill_in_place(search_result, 0, result->size(), one);
-    TPRINT(result->view(), "one");
+    //cudf::experimental::scalar_type_t<float> one;
+    //one.set_value(1.0);
+    //cudf::experimental::fill_in_place(search_result, 0, result->size(), one);
     
     parallel_search search;
     search.operator()<float>(query_points, curve_ids, prefixes, source_points, search_result, mr, stream);
@@ -435,11 +434,12 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     cusparseStatus = cusparseDestroy(handle);
     HANDLE_CUSPARSE_STATUS(cusparseStatus);
 
+    int dn = n - (prefixes.size()-1);
     // Finally, compute coefficients via Horner's scheme
-    auto d3_col = make_numeric_column(y.type(), n, cudf::mask_state::UNALLOCATED, stream, mr);
-    auto d2_col = make_numeric_column(y.type(), n, cudf::mask_state::UNALLOCATED, stream, mr);
-    auto d1_col = make_numeric_column(y.type(), n, cudf::mask_state::UNALLOCATED, stream, mr);
-    auto d0_col = make_numeric_column(y.type(), n, cudf::mask_state::UNALLOCATED, stream, mr);
+    auto d3_col = make_numeric_column(y.type(), dn, cudf::mask_state::UNALLOCATED, stream, mr);
+    auto d2_col = make_numeric_column(y.type(), dn, cudf::mask_state::UNALLOCATED, stream, mr);
+    auto d1_col = make_numeric_column(y.type(), dn, cudf::mask_state::UNALLOCATED, stream, mr);
+    auto d0_col = make_numeric_column(y.type(), dn, cudf::mask_state::UNALLOCATED, stream, mr);
     cudf::mutable_column_view d3 = d3_col->mutable_view();
     cudf::mutable_column_view d2 = d2_col->mutable_view();
     cudf::mutable_column_view d1 = d1_col->mutable_view();
