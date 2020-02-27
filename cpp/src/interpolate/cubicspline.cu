@@ -60,7 +60,7 @@ void HANDLE_CUSPARSE_STATUS(cusparseStatus_t status) {
   }
 }
 
-#define ALLOW_PRINT 1
+#define ALLOW_PRINT 0
 #if ALLOW_PRINT
 
 template<typename T>
@@ -112,11 +112,12 @@ struct parallel_search {
           int curve = CURVE_IDS_[index];
           int len = PREFIXES_[curve+1] - PREFIXES_[curve];
           int h = PREFIXES_[curve];
+          int dh = PREFIXES_[curve] - (curve);
           // O(n) search, can do log(n) easily
           for(int32_t i = 0 ; i < len ; ++i) {
             if((T_[h+i]+0.0001 - QUERY_COORDS_[index]) > 0.00001) {
-              RESULT_[index] = h+i-1;
-              if(i == 0) RESULT_[index] = index;
+              RESULT_[index] = dh+i-1;
+              if(i == 0) RESULT_[index] = index-curve;
               return;
             }
           }
@@ -188,6 +189,7 @@ struct coefficients_compute {
         (int index) {
           int n = PREFIXES[index] - PREFIXES[index-1];
           int h = PREFIXES[index-1];
+          int dh = PREFIXES[index-1] - (index-1);
           int ci = 0;
           for(ci = 0 ; ci < n-1 ; ++ci) {
             T a = Y_[h+ci];
@@ -195,10 +197,10 @@ struct coefficients_compute {
             T c = Z_[h+ci] / 2.0;
             T d = (Z_[h+ci+1] - Z_[h+ci]) / 6 * H_[h+ci];
             T t = T_[h+ci];
-            D3_[h+ci] = d;
-            D2_[h+ci] = c - 3 * d * t;
-            D1_[h+ci] = b - t * (2*c - t * (3 * d));
-            D0_[h+ci] = a - t * (b - t * (c - t * d)); // horners
+            D3_[dh+ci] = d;
+            D2_[dh+ci] = c - 3 * d * t;
+            D1_[dh+ci] = b - t * (2*c - t * (3 * d));
+            D0_[dh+ci] = a - t * (b - t * (c - t * d)); // horners
           }
       });
   };
