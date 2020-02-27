@@ -39,13 +39,25 @@ def cubic_spline_2(x, y, ids, prefix_sums):
     return result
 
 
-def cubic_spline_fit(c, points):
-    return {}
+def cubic_spline_fit(c, original_t, points, points_ids, prefixes):
+    c_c = c._table
+    original_t_c = original_t._column
+    points_c = points._column
+    points_ids_c = points_ids._column
+    prefixes_c = prefixes._column
+    result_column = cubicspline_interpolate(
+            points_c, points_ids_c, prefix_c, original_t_c, c_c
+    )
+    return result_column
 
 
 class CubicSpline:
     def __init__(self, t, y, ids=None, size=None):
         # error protections:
+        if len(t) < 5:
+            raise ValueError(
+                "Use of GPU cubic spline requires splines of length > 4"
+            )
         if not isinstance(t, Series):
             raise TypeError(
                 "Error: input independent vars must be cudf Series"

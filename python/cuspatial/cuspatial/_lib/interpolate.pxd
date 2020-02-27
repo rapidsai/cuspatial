@@ -13,3 +13,12 @@ cdef extern from "cubicspline.hpp" namespace "cuspatial" nogil:
         column_view ids,
         column_view prefix_sums
     ) except +
+
+cdef extern from "cubicspline.hpp" namespace "cuspatial" nogil:
+    cdef unique_ptr[column] cpp_cubicspline_interpolate "cuspatial::cubicspline_interpolate" (
+        column_view p,
+        column_view ids,
+        column_view prefix_sums,
+        column_view old_t,
+        table_view coefficients
+    ) except +

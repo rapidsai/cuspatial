@@ -60,7 +60,7 @@ void HANDLE_CUSPARSE_STATUS(cusparseStatus_t status) {
   }
 }
 
-#define ALLOW_PRINT 0
+#define ALLOW_PRINT 1
 #if ALLOW_PRINT
 
 template<typename T>
@@ -446,10 +446,6 @@ std::unique_ptr<cudf::experimental::table> cubicspline_full(
     cudf::mutable_column_view d2 = d2_col->mutable_view();
     cudf::mutable_column_view d1 = d1_col->mutable_view();
     cudf::mutable_column_view d0 = d0_col->mutable_view();
-    cudf::experimental::fill(d3, 0, d3_col->size(), zero);
-    cudf::experimental::fill(d2, 0, d2_col->size(), zero);
-    cudf::experimental::fill(d1, 0, d1_col->size(), zero);
-    cudf::experimental::fill(d0, 0, d0_col->size(), zero);
 
     coefficients_compute coefs;
     coefs.operator()<float>(t, y, prefixes, h_buffer, i_buffer, u_buffer, d3, d2, d1, d0, mr, stream);

@@ -12,7 +12,7 @@ from .core.trajectory import (
     subset_trajectory_id,
 )
 from .core import interpolate
-from .core.interpolate import cubic_spline_2
+from .core.interpolate import cubic_spline_2, cubic_spline_fit
 from .io.shapefile import read_polygon_shapefile
 from .io.soa import (
     read_its_timestamps,
