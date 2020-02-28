@@ -24,7 +24,8 @@ def binarize(in_col, out, width):
 
 
 def apply_binarize(in_col, width):
-    out = rmm.device_array((in_col.size, width), dtype="int8")
+    buf = rmm.DeviceBuffer(size=(in_col.size * width))
+    out = cuda.as_cuda_array(buf).view("int8").reshape((in_col.size, width))
     if out.size > 0:
         out[:] = 0
         binarize.forall(out.size)(in_col, out, width)
