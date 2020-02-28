@@ -1,12 +1,12 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+import numpy as np
+import pytest
+
 import cudf
 from cudf.tests.utils import assert_eq
 
 import cuspatial
-
-import numpy as np
-import pytest
 
 
 @pytest.mark.xfail(raises=TypeError, reason="size must be an integer")

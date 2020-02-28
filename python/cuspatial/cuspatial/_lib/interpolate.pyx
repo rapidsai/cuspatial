@@ -21,7 +21,10 @@ cpdef cubicspline_full(Column t, Column x, Column ids, Column prefixes):
     result = Table.from_unique_ptr(move(c_result), ["d3", "d2", "d1", "d0"])
     return result
 
-cpdef cubicspline_interpolate(Column points, Column ids, Column prefixes, Column original_t, Table coefficients):
+cpdef cubicspline_interpolate(
+    Column points, Column ids, Column prefixes,
+    Column original_t, Table coefficients
+):
     p_v = points.view()
     ids_v = ids.view()
     prefixes_v = prefixes.view()

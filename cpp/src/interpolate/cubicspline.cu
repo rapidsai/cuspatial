@@ -249,6 +249,9 @@ struct compute_spline_tridiagonals {
   }
 };
 
+// This is template code for properly supporting type_dispatcher. It's
+// functionality is supplanted by the other kernel methods, but I'm going
+// to base the type_dispatch support off of this.
 struct compute_splines {
 //template<typename T, std::enable_if_t<std::is_floating_point<T>::value >* = nullptr>
   template<typename T>

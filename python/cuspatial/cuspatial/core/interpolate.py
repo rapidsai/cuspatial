@@ -1,14 +1,14 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
-from cuspatial._lib.interpolate import (
-    cubicspline_full,
-    cubicspline_interpolate,
-)
+import numpy as np
 
 from cudf import DataFrame, Series
 from cudf.core.index import RangeIndex
 
-import numpy as np
+from cuspatial._lib.interpolate import (
+    cubicspline_full,
+    cubicspline_interpolate,
+)
 
 
 def cubic_spline_2(x, y, ids, prefix_sums):
