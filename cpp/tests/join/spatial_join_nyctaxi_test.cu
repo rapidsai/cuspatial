@@ -177,6 +177,16 @@ size_t read_point_binary(const char *fn,double*& h_pnt_x,double*& h_pnt_y)
     //timeval t0,t1;
     //gettimeofday(&t0, NULL);
 }
+
+float calc_time(const char *msg,timeval t0, timeval t1)
+{
+ 	long d = t1.tv_sec*1000000+t1.tv_usec - t0.tv_sec * 1000000-t0.tv_usec;
+ 	float t=(float)d/1000;
+ 	if(msg!=NULL)
+ 		printf("%s ...%10.3f\n",msg,t);
+ 	return t;
+}
+
 //==========================================================================================================
 
 
@@ -184,14 +194,21 @@ struct SpatialJoinNYCTaxi : public GdfTest
 {    
     uint32_t num_pnt=0;
     uint32_t * d_pnt_id=NULL;
-    double *d_h_pnt_x=NULL,*d_h_pnt_y=NULL;
+    double *d_pnt_x=NULL,*d_pnt_y=NULL;
+    double *h_pnt_x=NULL,*h_pnt_y=NULL;
     std::unique_ptr<cudf::column> col_pnt_id,col_pnt_x,col_pnt_y;
     
     uint32_t num_poly=0,num_ring=0,num_vertex=0;
-    uint32_t *d_poly_id=NULL,*d_poly_fpos=NULL,*d_poly_rpos=NULL;
+    uint32_t *d_poly_fpos=NULL,*d_poly_rpos=NULL;
     double *d_poly_x=NULL,*d_poly_y=NULL;
-    
+    uint32_t *h_poly_fpos=NULL,*h_poly_rpos=NULL;
+    double *h_poly_x=NULL,*h_poly_y=NULL;
+
+    const uint32_t *d_pp_pnt_idx=NULL,*d_pp_poly_idx=NULL;
+    uint32_t *h_pp_pnt_idx=NULL,*h_pp_poly_idx=NULL;
+   
     std::unique_ptr<cudf::column> col_poly_fpos,col_poly_rpos,col_poly_x,col_poly_y;
+    uint32_t num_quadrants=0,num_pq_pairs=0,num_pp_pairs=0;
     
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
@@ -225,10 +242,10 @@ struct SpatialJoinNYCTaxi : public GdfTest
         //uint32_t num_temp=std::accumulate(r_len_v.begin(), r_len_v.end(),0);
         //printf("num_temp=%d num_vertex=%d\n",num_temp,num_vertex);
 
-        uint32_t *h_poly_fpos=new uint32_t[num_poly];
-        uint32_t *h_poly_rpos=new uint32_t[num_ring];
-        double *h_poly_x=new double [num_vertex];
-        double *h_poly_y=new double [num_vertex];
+        h_poly_fpos=new uint32_t[num_poly];
+        h_poly_rpos=new uint32_t[num_ring];
+        h_poly_x=new double [num_vertex];
+        h_poly_y=new double [num_vertex];
 
         std::copy_n(f_len_v.begin(),num_poly,h_poly_fpos);
         std::copy_n(r_len_v.begin(),num_ring,h_poly_rpos);
@@ -272,11 +289,6 @@ struct SpatialJoinNYCTaxi : public GdfTest
         thrust::inclusive_scan(thrust::device,d_poly_rpos,d_poly_rpos+num_ring,d_poly_rpos);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_x, h_poly_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );    
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_y, h_poly_y, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );     	
-
-        delete[] h_poly_fpos;h_poly_fpos=NULL;
-        delete[] h_poly_rpos;h_poly_rpos=NULL;
-        delete[] h_poly_x; h_poly_x=NULL;
-        delete[] h_poly_y; h_poly_y=NULL;   
     }
   
     void setup_points(double& x1,double& y1,double& x2,double& y2, uint32_t first_n)
@@ -320,8 +332,8 @@ struct SpatialJoinNYCTaxi : public GdfTest
     	    num_pnt+=len_vec[i];
     
         uint32_t p=0;
-        double *h_pnt_x=new double[num_pnt];
-        double *h_pnt_y=new double[num_pnt];
+        h_pnt_x=new double[num_pnt];
+        h_pnt_y=new double[num_pnt];
         assert(h_pnt_x!=NULL && h_pnt_y!=NULL);
         for(uint32_t i=0;i<num;i++)
         {
@@ -351,20 +363,22 @@ struct SpatialJoinNYCTaxi : public GdfTest
       
         col_pnt_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
         	num_pnt, cudf::mask_state::UNALLOCATED, stream, mr );      
-        d_h_pnt_x=cudf::mutable_column_device_view::create(col_pnt_x->mutable_view(), stream)->data<double>();
-        assert(d_h_pnt_x!=NULL);
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_h_pnt_x, h_pnt_x, num_pnt * sizeof(double), cudaMemcpyHostToDevice ) );    
+        d_pnt_x=cudf::mutable_column_device_view::create(col_pnt_x->mutable_view(), stream)->data<double>();
+        assert(d_pnt_x!=NULL);
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_x, h_pnt_x, num_pnt * sizeof(double), cudaMemcpyHostToDevice ) );    
     
         col_pnt_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
         	num_pnt, cudf::mask_state::UNALLOCATED, stream, mr );      
-        d_h_pnt_y=cudf::mutable_column_device_view::create(col_pnt_y->mutable_view(), stream)->data<double>();
-        assert(d_h_pnt_y!=NULL);    
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_h_pnt_y, h_pnt_y, num_pnt * sizeof(double), cudaMemcpyHostToDevice ) );    
-    
+        d_pnt_y=cudf::mutable_column_device_view::create(col_pnt_y->mutable_view(), stream)->data<double>();
+        assert(d_pnt_y!=NULL);    
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_y, h_pnt_y, num_pnt * sizeof(double), cudaMemcpyHostToDevice ) );    
     } 
  
     void run_test(double x1,double y1,double x2,double y2,double scale,uint32_t num_level,uint32_t min_size)
     {       
+        timeval t0,t1;
+        gettimeofday(&t0, NULL);
+         
         cudf::mutable_column_view pnt_id_view=col_pnt_id->mutable_view();
         cudf::mutable_column_view pnt_x_view=col_pnt_x->mutable_view();
         cudf::mutable_column_view pnt_y_view=col_pnt_y->mutable_view();
@@ -373,18 +387,18 @@ struct SpatialJoinNYCTaxi : public GdfTest
 
         std::unique_ptr<cudf::experimental::table> quadtree= 
       		cuspatial::quadtree_on_points(pnt_id_view,pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_level, min_size);
-        std::cout<<"run_test: quadtree num cols="<<quadtree->view().num_columns()<<std::endl;
+        std::cout<<"# of quadrants="<<quadtree->view().num_rows()<<std::endl;
      
         std::unique_ptr<cudf::experimental::table> bbox_tbl=
      	cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view()); 
-        std::cout<<"polygon bbox="<<bbox_tbl->view().num_rows()<<std::endl;
+        std::cout<<"# of polygon bboxes="<<bbox_tbl->view().num_rows()<<std::endl;
      
         const cudf::table_view quad_view=quadtree->view();
         const cudf::table_view bbox_view=bbox_tbl->view();
      
         std::unique_ptr<cudf::experimental::table> pq_pair_tbl=cuspatial::quad_bbox_join(
          quad_view,bbox_view,x1,y1,x2,y2, scale,num_level, min_size);   
-        std::cout<<"polygon/quad num pair="<<pq_pair_tbl->view().num_columns()<<std::endl;
+        std::cout<<"# of polygon/quad pairs="<<pq_pair_tbl->view().num_rows()<<std::endl;
  
         const cudf::table_view pq_pair_view=pq_pair_tbl->view();
         const cudf::table_view pnt_view({pnt_id_view,pnt_x_view,pnt_y_view});
@@ -392,7 +406,87 @@ struct SpatialJoinNYCTaxi : public GdfTest
         std::unique_ptr<cudf::experimental::table> pip_pair_tbl=cuspatial::pip_refine(
        	  pq_pair_view,quad_view,pnt_view,
          col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view());   
-        std::cout<<"polygon/point num pair="<<pip_pair_tbl->view().num_columns()<<std::endl;
+        std::cout<<"# of polygon/point pairs="<<pip_pair_tbl->view().num_rows()<<std::endl;      
+        
+        gettimeofday(&t1, NULL);
+        float gpu_time=calc_time("gpu end-to-end computing time",t0,t1);
+        
+        num_pp_pairs=pip_pair_tbl->num_rows();
+ 	d_pp_poly_idx=pip_pair_tbl->view().column(0).data<uint32_t>();
+        d_pp_pnt_idx=pip_pair_tbl->view().column(1).data<uint32_t>();
+        h_pp_poly_idx=new uint32_t[num_pp_pairs];
+        h_pp_pnt_idx=new uint32_t[num_pp_pairs];
+ 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_poly_idx, d_pp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
+ 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_pnt_idx, d_pp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );       
+    }
+    
+    void run_compare()
+    {
+        const char* env_p = std::getenv("CUSPATIAL_DATA");
+        CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_DATA environmental variable must be set");
+        //from https://s3.amazonaws.com/nyc-tlc/misc/taxi_zones.zip
+        std::string shape_filename=std::string(env_p)+std::string("taxi_zones.shp"); 
+        std::cout<<"Using shapefile "<<shape_filename<<std::endl;
+
+        GDALAllRegister();
+        const char *file_name=shape_filename.c_str();
+        GDALDatasetH hDS = GDALOpenEx(file_name, GDAL_OF_VECTOR, NULL, NULL, NULL );
+        if(hDS==NULL)
+        {
+	    printf("Failed to open ESRI Shapefile dataset %s\n",file_name);
+	    exit(-1);
+        }
+        
+        OGRLayerH layer = GDALDatasetGetLayer( hDS,0 );
+        std::vector<OGRGeometry *> polygons;
+        OGR_L_ResetReading( layer );
+    	OGRFeatureH hFeat;
+        while( (hFeat = OGR_L_GetNextFeature( layer )) != NULL )
+        {
+    		OGRGeometry *poShape=(OGRGeometry *)OGR_F_GetGeometryRef( hFeat );
+		polygons.push_back(poShape);
+	}
+	printf("run_compare: # of polygons=%lu\n",polygons.size());
+
+	timeval t0,t1;
+	gettimeofday(&t0, NULL);
+
+	std::vector<std::pair<uint32_t,uint32_t>> cpu_pairs;
+	for(uint32_t i=0;i<num_pnt;i++)
+	{
+	    if(i%1000==0)
+	    	printf("i=%d\n",i);
+	    OGRPoint pnt(h_pnt_x[i],h_pnt_y[i]);
+	    for(uint32_t j=0;j<polygons.size();j++)
+	    {
+		if(polygons[j]->Contains(&pnt))
+		  cpu_pairs.push_back(std::make_pair(j,i));
+	    }  
+	}
+	printf("cpu_pairs.size()=%lu\n",cpu_pairs.size());
+        
+        gettimeofday(&t1, NULL);
+        float cpu_time=calc_time("cpu all-pair computing time",t0,t1);
+        
+        std::vector<std::pair<uint32_t,uint32_t>> gpu_pairs;
+        for(uint32_t i=0;i<num_pp_pairs;i++)
+          gpu_pairs.push_back(std::make_pair(h_pp_poly_idx[i],h_pp_pnt_idx[i]));
+        printf("gpu_pairs.size()=%lu\n",gpu_pairs.size());
+        
+    }
+    
+    void tear_down()
+    {
+        delete[] h_poly_fpos;h_poly_fpos=NULL;
+        delete[] h_poly_rpos;h_poly_rpos=NULL;
+        delete[] h_poly_x; h_poly_x=NULL;
+        delete[] h_poly_y; h_poly_y=NULL;
+        
+        delete[] h_pnt_x; h_pnt_x=NULL;
+        delete[] h_pnt_y; h_pnt_y=NULL; 
+        
+        delete[] h_pp_poly_idx; h_pp_poly_idx=NULL;
+        delete[] h_pp_pnt_idx; h_pp_pnt_idx=NULL;
     }
  
 };
@@ -401,11 +495,13 @@ TEST_F(SpatialJoinNYCTaxi, test)
 {
     const uint32_t num_level=15;
     const uint32_t min_size=512;
-    const uint32_t first_n=1;
-  
+    const uint32_t first_n=6;
+    
+    std::cout<<"loading NYC taxi zone shapefile data..........."<<std::endl;  
     double poly_x1,poly_y1,poly_x2,poly_y2;
     this->setup_polygons(poly_x1,poly_y1,poly_x2,poly_y2);
         
+    std::cout<<"loading NYC taxi pickup locations..........."<<std::endl;  
     double pnt_x1,pnt_y1,pnt_x2,pnt_y2;
     this->setup_points(pnt_x1,pnt_y1,pnt_x2,pnt_y2,first_n);
  
@@ -417,9 +513,14 @@ TEST_F(SpatialJoinNYCTaxi, test)
     double bbox_y1=poly_y1-scale;
     double bbox_x2=poly_x2+scale; 
     double bbox_y2=poly_y2+scale;
-    printf("length=%15.10f scale=%15.10f\n",length,scale);
+    printf("Area of Interests: length=%15.10f scale=%15.10f\n",length,scale);
 
-    std::cout<<"running test_point_large..........."<<std::endl;
+    std::cout<<"running test on NYC taxi trip data..........."<<std::endl;
     this->run_test(bbox_x1,bbox_y1,bbox_x2,bbox_y2,scale,num_level,min_size);
+    
+    std::cout<<"running GDAL CPU code for comparison..........."<<std::endl;
+    this->run_compare();   
+    
+    this->tear_down();
 }
 
