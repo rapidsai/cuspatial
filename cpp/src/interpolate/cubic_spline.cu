@@ -343,7 +343,7 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
     return result;
 }
 
-std::unique_ptr<cudf::experimental::table> cubicspline_full(
+std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     cudf::column_view t,
     cudf::column_view y,
     cudf::column_view ids,

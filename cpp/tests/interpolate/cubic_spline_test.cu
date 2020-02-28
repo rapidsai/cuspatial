@@ -26,7 +26,7 @@
 #include <cudf/table/table_view.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
-#include <cuspatial/cubicspline.hpp>
+#include <cuspatial/cubic_spline.hpp>
 
 static void HandleCudaError( cudaError_t err,
                          const char *file,
@@ -85,7 +85,7 @@ TEST_F(CubicSplineTest, test_coefficients_single)
     cudf::column prefix_column = make_col<int>(prefix, ids_len);
 
     std::unique_ptr<cudf::experimental::table> splines =
-        cuspatial::cubicspline_full(
+        cuspatial::cubicspline_coefficients(
             t_column, y_column, ids_column, prefix_column
         );
 
@@ -118,7 +118,7 @@ TEST_F(CubicSplineTest, test_coefficients_full)
     cudf::column prefix_column = make_col<int>(prefix, ids_len);
 
     std::unique_ptr<cudf::experimental::table> splines =
-        cuspatial::cubicspline_full(
+        cuspatial::cubicspline_coefficients(
             t_column, y_column, ids_column, prefix_column
         );
 
@@ -152,7 +152,7 @@ TEST_F(CubicSplineTest, test_interpolate_single)
     cudf::column prefix_column = make_col<int>(prefix, ids_len);
     cudf::column point_ids_column = make_col<int>(point_ids, point_len);
 
-    std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_full(t_column, x_column, ids_column, prefix_column);
+    std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_coefficients(t_column, x_column, ids_column, prefix_column);
 
     std::unique_ptr<cudf::column> interpolates = cuspatial::cubicspline_interpolate(t_column, point_ids_column, prefix_column, t_column, splines->view());
     
@@ -184,7 +184,7 @@ TEST_F(CubicSplineTest, test_interpolate_full)
     cudf::column prefix_column = make_col<int>(prefix, ids_len);
     cudf::column point_ids_column = make_col<int>(point_ids, point_len);
 
-    std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_full(t_column, x_column, ids_column, prefix_column);
+    std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_coefficients(t_column, x_column, ids_column, prefix_column);
 
     std::unique_ptr<cudf::column> interpolates = cuspatial::cubicspline_interpolate(t_column, point_ids_column.view(), prefix_column, t_column, splines->view());
     

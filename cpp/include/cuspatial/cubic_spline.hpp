@@ -26,9 +26,24 @@ namespace cuspatial {
  * @brief Compute quadratic interpolations of a set of points based on their
  * ids and a coefficient matrix.
  *
- * @param[in] points column of coordinate values to be interpolated
- * @param[in] ids column of ids associated with each coordinate value
- * @param[in] coefficients table of splines fit to the curves matching the ids
+ * @param[in] query_points float32 column of coordinate values to be 
+ * interpolated.
+ *
+ * @param[in] curve_ids int32 column of ids associated with each query point.
+ * These ids identify which spline each query point should be interpolated
+ * into.
+ *
+ * @param[in] prefixes int32 column of prefix_sum of the source_points.
+ * This is used to calculate which values from the coefficients are
+ * used for each interpolation.
+ *
+ * @param[in] source_points float32 column of the original `t` values used
+ * to compute the coefficients matrix.  These source points are used to
+ * identify which specific spline a given query_point is interpolated with.
+ *
+ * @param[in] coefficients float32 table of splines produced by
+ * cubicspline_coefficients.
+ *
  * @return cudf::column `y` coordinates interpolated from `x` and `coefs`.
 **/
 std::unique_ptr<cudf::column> cubicspline_interpolate(
@@ -41,17 +56,39 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
 /**
  * @brief Create a table of coefficients from an SoA of coordinates.
  *
- * This version computes coefficients similarly to the table_view method, but
- * only accepts a single column for x. ids and prefix are also passed in as
- * separate arguments.
+ * Computes coefficients for a natural cubic spline according to the method
+ * found on http://mathworld.wolfram.com/CubicSpline.html with some
+ * variation. 
  *
- * @param[in] x interpolation coordinates for fitting splines
- * @param[in] y column of dependent variables to be fit along x axis
- * @param[in] ids of incoming coordinate sets
- * @param[in] prefix_sum of incoming coordinate sets
- * @return cudf::table_view (4, (M*len(ids))) table of coefficients for spline interpolation
+ * This implementation is massively parallel and has two explicit
+ * dependencies: The input data is arranged in parallel arrays and 
+ * Structure-of-Array form wherein the values of many functions are
+ * packed in sequence into a single array.
+ *
+ * This library currently requires that all input splines be the same
+ * length. The minimum length supported by this algorithm is 5.
+ *
+ * @param[in] float32 column_view of x interpolation coordinates for fitting splines
+ * @param[in] float32 y column of dependent variables to be fit along x axis
+ * @param[in] int32 ids of incoming coordinate sets
+ *
+ * !Important - to enable accelerated performance, ids should be prefixed
+ * with a 0, even when only a single spline is fit, ids will be {0, 0}
+ * 
+ * @param[in] int32 prefix_sum of incoming coordinate sets
+ *
+ * !Important - to enable accelerated performance, this prefix_sum is the
+ * combined inclusive and exclusive scans and as such should have the same
+ * length as ids.
+ *
+ * For example, in the unit test case, the minimum input set for 3 splines is
+ * {0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4} but the prefix scans for
+ * this input array is {0, 5, 10, 15}
+ *
+ * @return cudf::table_view (4, (M*len(ids))) table of coefficients for spline interpolation where M is (len(ids)-1).
 **/
-std::unique_ptr<cudf::experimental::table> cubicspline_full(cudf::column_view t,
+std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
+                                         cudf::column_view t,
                                          cudf::column_view y,
                                          cudf::column_view ids,
                                          cudf::column_view prefix_sums);
