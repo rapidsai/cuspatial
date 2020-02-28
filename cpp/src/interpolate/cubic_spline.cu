@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "cuspatial/cubicspline.hpp"
+#include "cuspatial/cubic_spline.hpp"
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/filling.hpp>
