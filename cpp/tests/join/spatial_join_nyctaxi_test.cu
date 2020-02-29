@@ -96,6 +96,7 @@ struct rec_cnyc
 
         if (eFlatType == wkbMultiPolygon || eFlatType == wkbGeometryCollection )             
         {      
+            printf("warning: wkbMultiPolygon or wkbGeometryCollection..................\n");
             OGRGeometryCollection *poGC = (OGRGeometryCollection *) poShape;
             for(int i = 0; i < poGC->getNumGeometries(); i++ )
             {
@@ -114,21 +115,60 @@ struct rec_cnyc
 
     int ReadLayer(const OGRLayerH layer,std::vector<int>& g_len_v,std::vector<int>&f_len_v,
          std::vector<int>& r_len_v,std::vector<double>& x_v, std::vector<double>& y_v,
-         	std::vector<OGRGeometry *>& polygon_vec )         
+         	uint8_t type, std::vector<OGRGeometry *>& polygon_vec )         
     {
         int num_feature=0;
         OGR_L_ResetReading(layer );
         OGRFeatureH hFeat;
+        
         while( (hFeat = OGR_L_GetNextFeature( layer )) != NULL )
         {
             OGRGeometry *poShape=(OGRGeometry *)OGR_F_GetGeometryRef( hFeat );
-            polygon_vec.push_back(poShape);
+            
             if(poShape==NULL)
             {
             	printf("Invalid Shape\n");
             	exit(-1);
             }
-            
+ 	    if(type!=0&&type!=1&&type!=2)
+	    {
+	    	printf("unknown type to setup polygons (0 for all, 1 for simple polygon and 2 for multi-polygon): type=%d\n",type);
+	    	exit(-1);
+	    }
+           
+            if(type==1 ||type==2)
+            {
+		if(type==1)
+		{
+		    if(poShape->getGeometryType()!=wkbPolygon) //wkbGeometryType=3 
+		    {
+		       //printf("%d exp_type=%d geom_type==%d\n",num_feature,type,poShape->getGeometryType());
+		       OGR_F_Destroy( hFeat );
+		       continue;
+		    }
+		}
+		if(type==2)
+		{
+		    if(poShape->getGeometryType()!=wkbMultiPolygon)//wkbGeometryType =6
+		    {
+		       //printf("%d exp_type=%d geom_type==%d\n",num_feature,type,poShape->getGeometryType());
+		       OGR_F_Destroy( hFeat );
+		       continue;
+		    }
+		}
+	    }
+            OGRGeometry *newShape;
+            if(poShape->getGeometryType()==wkbPolygon)
+           	newShape=new OGRPolygon(*((OGRPolygon *) poShape));
+            else if(poShape->getGeometryType()==wkbMultiPolygon)
+            	newShape=new OGRMultiPolygon(*((OGRMultiPolygon *) poShape));
+            else
+            {
+            	printf("unsuported geometry type, exiting.........\n");
+            	exit(-1);
+            }
+            polygon_vec.push_back(newShape);
+              
             std::vector<double> aPointX;
             std::vector<double> aPointY;
             std::vector<int> aPartSize;
@@ -197,8 +237,8 @@ float calc_time(const char *msg,timeval t0, timeval t1)
 
 struct SpatialJoinNYCTaxi : public GdfTest 
 {    
-    const uint32_t num_compare_samples=100000;
-    const uint32_t num_print_interval=1000;
+    uint32_t num_compare_samples=100000;
+    uint32_t num_print_interval=10000;
     
     uint32_t num_pnt=0;
     uint32_t * d_pnt_id=NULL;
@@ -223,7 +263,7 @@ struct SpatialJoinNYCTaxi : public GdfTest
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
 
-    void setup_polygons(double& x1,double& y1,double& x2,double& y2)
+    void setup_polygons(double& x1,double& y1,double& x2,double& y2,uint8_t type)
     {
         const char* env_p = std::getenv("CUSPATIAL_DATA");
         CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_DATA environmental variable must be set");
@@ -242,7 +282,9 @@ struct SpatialJoinNYCTaxi : public GdfTest
 	    exit(-1);
         }
         OGRLayerH hLayer = GDALDatasetGetLayer( hDS,0 );
-        int num_f=ReadLayer(hLayer,g_len_v,f_len_v,r_len_v,x_v,y_v,h_polygon_vec);
+        
+        //type: 0 for all, 1 for simple polygon and 2 for multi-polygon
+        int num_f=ReadLayer(hLayer,g_len_v,f_len_v,r_len_v,x_v,y_v,type,h_polygon_vec);
         assert(num_f>0);
 
         uint32_t num_group=g_len_v.size();
@@ -447,17 +489,27 @@ if(0)
     void compare_full_random()
     {
           
-	printf("compare_full_random: # of h_polygon_vec=%lu\n",h_polygon_vec.size());
+	num_compare_samples=num_pnt;
+	printf("compare_full_random: # of h_polygon_vec=%lu num_compare_samples=%d\n",h_polygon_vec.size(),num_compare_samples);
 	std::vector<uint32_t> h_pnt_idx_vec;
 	std::vector<uint32_t> h_pnt_len_vec;
 	std::vector<uint32_t> h_poly_idx_vec;
 	
-        std::seed_seq seed{0};
-        std::mt19937 g(seed);
-        std::uniform_int_distribution<> dist_rand (0,num_compare_samples-1);
-        uint32_t nums[num_compare_samples];
-        std::generate(nums, nums+num_compare_samples, [&] () mutable { return dist_rand(g); });	
-
+        uint32_t *nums=NULL;
+        if(num_compare_samples<num_pnt)
+        {       	
+		std::seed_seq seed{0};
+		std::mt19937 g(seed);
+		std::uniform_int_distribution<> dist_rand (0,num_pnt-1);
+		nums=new uint32_t[num_compare_samples];
+		assert(nums!=NULL);
+		std::generate(nums, nums+num_compare_samples, [&] () mutable { return dist_rand(g); });	
+        }
+        else if(num_compare_samples==num_pnt)
+        	nums=new uint32_t[num_compare_samples];
+        else
+             printf("num_compare_samples=%d must be less or equal to num_pnt=%d\n",num_compare_samples,num_pnt);
+        assert(nums!=NULL);
 	timeval t0,t1;
 	gettimeofday(&t0, NULL);
         
@@ -488,6 +540,7 @@ if(0)
  	            t2=t3;
  	    }
 	}
+	delete[] nums;
 	printf("h_pnt_idx_vec.size()=%lu\n",h_pnt_idx_vec.size());
 	printf("h_poly_idx_vec.size()=%lu\n",h_poly_idx_vec.size());
  
@@ -604,11 +657,11 @@ TEST_F(SpatialJoinNYCTaxi, test)
 {
     const uint32_t num_level=15;
     const uint32_t min_size=512;
-    const uint32_t first_n=6;
+    const uint32_t first_n=1;
     
     std::cout<<"loading NYC taxi zone shapefile data..........."<<std::endl;  
     double poly_x1,poly_y1,poly_x2,poly_y2;
-    this->setup_polygons(poly_x1,poly_y1,poly_x2,poly_y2);
+    this->setup_polygons(poly_x1,poly_y1,poly_x2,poly_y2,2);
         
     std::cout<<"loading NYC taxi pickup locations..........."<<std::endl;  
     double pnt_x1,pnt_y1,pnt_x2,pnt_y2;
