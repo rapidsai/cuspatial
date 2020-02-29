@@ -263,7 +263,7 @@ if(0)
     CUDF_EXPECTS(b_pos<=curr_len,"out of boundary"); 
     RMM_TRY(RMM_FREE(d_poly_sbbox,stream));d_poly_sbbox=NULL;    
 
-    std::unique_ptr<cudf::column> lev_col = cudf::make_numeric_column(
+    /*std::unique_ptr<cudf::column> lev_col = cudf::make_numeric_column(
        cudf::data_type(cudf::type_id::INT8), b_pos,cudf::mask_state::UNALLOCATED,  stream, mr);      
     uint8_t *d_pq_lev=cudf::mutable_column_device_view::create(lev_col->mutable_view(), stream)->data<uint8_t>();
     CUDF_EXPECTS(d_pq_lev!=NULL,"lev"); 
@@ -273,7 +273,7 @@ if(0)
        cudf::data_type(cudf::type_id::INT8), b_pos,cudf::mask_state::UNALLOCATED,  stream, mr);      
     uint8_t *d_pq_type=cudf::mutable_column_device_view::create(type_col->mutable_view(), stream)->data<uint8_t>();
     CUDF_EXPECTS(d_pq_type!=NULL,"type"); 
-    thrust::copy(exec_policy,d_pq_type_out,d_pq_type_out+b_pos,d_pq_type);
+    thrust::copy(exec_policy,d_pq_type_out,d_pq_type_out+b_pos,d_pq_type);*/
   
     std::unique_ptr<cudf::column> poly_idx_col = cudf::make_numeric_column(
        cudf::data_type(cudf::type_id::INT32), b_pos,cudf::mask_state::UNALLOCATED,  stream, mr);      
@@ -296,13 +296,13 @@ if(0)
  {
     printf("total pairs =%d\n",b_pos);
 
-    thrust::device_ptr<uint8_t> d_pq_lev_ptr=thrust::device_pointer_cast(d_pq_lev);		
+    /*thrust::device_ptr<uint8_t> d_pq_lev_ptr=thrust::device_pointer_cast(d_pq_lev);		
     printf("lev\n");
     thrust::copy(d_pq_lev_ptr,d_pq_lev_ptr+b_pos,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 	
 
     thrust::device_ptr<uint8_t> d_pq_type_ptr=thrust::device_pointer_cast(d_pq_type);		
     printf("type\n");
-    thrust::copy(d_pq_type_ptr,d_pq_type_ptr+b_pos,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 	
+    thrust::copy(d_pq_type_ptr,d_pq_type_ptr+b_pos,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;*/ 	
 
     thrust::device_ptr<uint32_t> d_poly_idx_ptr=thrust::device_pointer_cast(d_pq_poly_idx);		
     printf("d_ply_idx\n");
@@ -316,8 +316,8 @@ if(0)
 
   
    std::vector<std::unique_ptr<cudf::column>> pair_cols;
-   pair_cols.push_back(std::move(lev_col));
-   pair_cols.push_back(std::move(type_col));
+   //pair_cols.push_back(std::move(lev_col));
+   //pair_cols.push_back(std::move(type_col));
    pair_cols.push_back(std::move(poly_idx_col));
    pair_cols.push_back(std::move(quad_idx_col));
    return pair_cols;    

@@ -456,9 +456,8 @@ struct pip_refine_processor {
        const uint32_t *d_qt_length= quadtree.column(3).data<uint32_t>();
        const uint32_t *d_qt_fpos=   quadtree.column(4).data<uint32_t>();
        
-       //column 0 and 1 of table pq_pair are for debug use only
-       const uint32_t *d_pq_poly_id=   pq_pair.column(2).data<uint32_t>();
-       const uint32_t *d_pq_quad_id=   pq_pair.column(3).data<uint32_t>();
+       const uint32_t *d_pq_poly_id=   pq_pair.column(0).data<uint32_t>();
+       const uint32_t *d_pq_quad_id=   pq_pair.column(1).data<uint32_t>();
              
        uint32_t num_pair=pq_pair.num_rows();
        uint32_t num_node=quadtree.num_rows();

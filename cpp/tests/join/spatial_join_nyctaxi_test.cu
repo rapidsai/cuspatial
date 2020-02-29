@@ -113,7 +113,8 @@ struct rec_cnyc
     }
 
     int ReadLayer(const OGRLayerH layer,std::vector<int>& g_len_v,std::vector<int>&f_len_v,
-         std::vector<int>& r_len_v,std::vector<double>& x_v, std::vector<double>& y_v)         
+         std::vector<int>& r_len_v,std::vector<double>& x_v, std::vector<double>& y_v,
+         	std::vector<OGRGeometry *>& polygon_vec )         
     {
         int num_feature=0;
         OGR_L_ResetReading(layer );
@@ -121,6 +122,7 @@ struct rec_cnyc
         while( (hFeat = OGR_L_GetNextFeature( layer )) != NULL )
         {
             OGRGeometry *poShape=(OGRGeometry *)OGR_F_GetGeometryRef( hFeat );
+            polygon_vec.push_back(poShape);
             if(poShape==NULL)
             {
             	printf("Invalid Shape\n");
@@ -195,7 +197,9 @@ float calc_time(const char *msg,timeval t0, timeval t1)
 
 struct SpatialJoinNYCTaxi : public GdfTest 
 {    
-    const uint32_t num_debug_print=10000;
+    const uint32_t num_compare_samples=100000;
+    const uint32_t num_print_interval=1000;
+    
     uint32_t num_pnt=0;
     uint32_t * d_pnt_id=NULL;
     double *d_pnt_x=NULL,*d_pnt_y=NULL;
@@ -208,9 +212,11 @@ struct SpatialJoinNYCTaxi : public GdfTest
     uint32_t *h_poly_fpos=NULL,*h_poly_rpos=NULL;
     double *h_poly_x=NULL,*h_poly_y=NULL;
 
-    uint32_t *h_pp_pnt_idx=NULL,*h_pp_poly_idx=NULL;
     uint32_t *d_pp_pnt_idx=NULL,*d_pp_poly_idx=NULL;   
-   
+    uint32_t *h_pp_pnt_idx=NULL,*h_pp_poly_idx=NULL;
+    
+    std::vector<OGRGeometry *> h_polygon_vec;
+    
     std::unique_ptr<cudf::column> col_poly_fpos,col_poly_rpos,col_poly_x,col_poly_y;
     uint32_t num_quadrants=0,num_pq_pairs=0,num_pp_pairs=0;
     
@@ -236,7 +242,7 @@ struct SpatialJoinNYCTaxi : public GdfTest
 	    exit(-1);
         }
         OGRLayerH hLayer = GDALDatasetGetLayer( hDS,0 );
-        int num_f=ReadLayer(hLayer,g_len_v,f_len_v,r_len_v,x_v,y_v);
+        int num_f=ReadLayer(hLayer,g_len_v,f_len_v,r_len_v,x_v,y_v,h_polygon_vec);
         assert(num_f>0);
 
         uint32_t num_group=g_len_v.size();
@@ -414,7 +420,11 @@ struct SpatialJoinNYCTaxi : public GdfTest
         
         gettimeofday(&t1, NULL);
         float gpu_time=calc_time("gpu end-to-end computing time",t0,t1);
-        
+  
+        num_pq_pairs=pq_pair_tbl->num_rows();
+        const uint32_t * d_tmp_poly_id=pq_pair_tbl->view().column(0).data<uint32_t>();
+        const uint32_t * d_tmp_pnt_id=pq_pair_tbl->view().column(1).data<uint32_t>();
+ 
         num_pp_pairs=pip_pair_tbl->num_rows();
    	const uint32_t * d_temp_poly_idx=pip_pair_tbl->view().column(0).data<uint32_t>();
         const uint32_t * d_temp_pnt_idx=pip_pair_tbl->view().column(1).data<uint32_t>();
@@ -422,63 +432,46 @@ if(0)
 {
         printf("d_temp_pnt_idx\n");
         thrust::device_ptr<const uint32_t> temp_pnt_idx_ptr=thrust::device_pointer_cast(d_temp_pnt_idx);
-        thrust::copy(temp_pnt_idx_ptr,temp_pnt_idx_ptr+num_debug_print,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
+        thrust::copy(temp_pnt_idx_ptr,temp_pnt_idx_ptr+num_compare_samples,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
 
         printf("pp_poly_idx\n");
         thrust::device_ptr<const uint32_t> temp_poly_idx_ptr=thrust::device_pointer_cast(d_temp_poly_idx);
-        thrust::copy(temp_poly_idx_ptr,temp_poly_idx_ptr+num_debug_print,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
+        thrust::copy(temp_poly_idx_ptr,temp_poly_idx_ptr+num_compare_samples,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
 }        
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_pnt_idx),num_pp_pairs*sizeof(uint32_t), 0));
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_poly_idx),num_pp_pairs*sizeof(uint32_t), 0));
         HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_pnt_idx, d_temp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_poly_idx, d_temp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_poly_idx, d_temp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );        
     }
     
-    void run_compare()
+    void compare_full_random()
     {
-        const char* env_p = std::getenv("CUSPATIAL_DATA");
-        CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_DATA environmental variable must be set");
-        //from https://s3.amazonaws.com/nyc-tlc/misc/taxi_zones.zip
-        std::string shape_filename=std::string(env_p)+std::string("taxi_zones.shp"); 
-        std::cout<<"Using shapefile "<<shape_filename<<std::endl;
-
-        GDALAllRegister();
-        const char *file_name=shape_filename.c_str();
-        GDALDatasetH hDS = GDALOpenEx(file_name, GDAL_OF_VECTOR, NULL, NULL, NULL );
-        if(hDS==NULL)
-        {
-	    printf("Failed to open ESRI Shapefile dataset %s\n",file_name);
-	    exit(-1);
-        }
-        
-        OGRLayerH layer = GDALDatasetGetLayer( hDS,0 );
-        std::vector<OGRGeometry *> polygons;
-        OGR_L_ResetReading( layer );
-    	OGRFeatureH hFeat;
-        while( (hFeat = OGR_L_GetNextFeature( layer )) != NULL )
-        {
-    		OGRGeometry *poShape=(OGRGeometry *)OGR_F_GetGeometryRef( hFeat );
-		polygons.push_back(poShape);
-	}
-	printf("run_compare: # of polygons=%lu\n",polygons.size());
-
-	timeval t0,t1;
-	gettimeofday(&t0, NULL);
-
+          
+	printf("compare_full_random: # of h_polygon_vec=%lu\n",h_polygon_vec.size());
 	std::vector<uint32_t> h_pnt_idx_vec;
 	std::vector<uint32_t> h_pnt_len_vec;
 	std::vector<uint32_t> h_poly_idx_vec;
 	
-	//for(uint32_t i=0;i<num_pnt;i++)
-	for(uint32_t i=0;i<num_debug_print;i++)
+        std::seed_seq seed{0};
+        std::mt19937 g(seed);
+        std::uniform_int_distribution<> dist_rand (0,num_compare_samples-1);
+        uint32_t nums[num_compare_samples];
+        std::generate(nums, nums+num_compare_samples, [&] () mutable { return dist_rand(g); });	
+
+	timeval t0,t1;
+	gettimeofday(&t0, NULL);
+        
+        char  msg[100];
+	timeval t2,t3;
+	gettimeofday(&t2, NULL);
+	for(uint32_t k=0;k<num_compare_samples;k++)
 	{
-	    if(i%100==0)
-	    	printf("i=%d\n",i);
+	    uint32_t i=nums[k];	
 	    OGRPoint pnt(h_pnt_x[i],h_pnt_y[i]);
 	    std::vector<uint32_t> temp_vec;
-	    for(uint32_t j=0;j<polygons.size();j++)
+	    for(uint32_t j=0;j<h_polygon_vec.size();j++)
 	    {
-		if(polygons[j]->Contains(&pnt))
+		if(h_polygon_vec[j]->Contains(&pnt))
 		  temp_vec.push_back(j);
 	    }
 	    if(temp_vec.size()>0)
@@ -487,6 +480,13 @@ if(0)
 	    	h_pnt_idx_vec.push_back(i);
 	    	h_poly_idx_vec.insert(h_poly_idx_vec.end(),temp_vec.begin(),temp_vec.end());
 	    }
+            if(k>0 && k%num_print_interval==0)
+            {
+	    	    gettimeofday(&t3, NULL);    
+ 	            sprintf(msg,"loop=%d runtime for the last %d iterations is\n",k,num_print_interval);
+ 	            float cpu_time_per_interval=calc_time(msg,t2,t3);
+ 	            t2=t3;
+ 	    }
 	}
 	printf("h_pnt_idx_vec.size()=%lu\n",h_pnt_idx_vec.size());
 	printf("h_poly_idx_vec.size()=%lu\n",h_poly_idx_vec.size());
@@ -542,9 +542,9 @@ if(0)
 if(0)
 {
      	printf("temp_pnt_idx:\n");
- 	thrust::copy(h_temp_pnt_idx,h_temp_pnt_idx+num_debug_print,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ 	thrust::copy(h_temp_pnt_idx,h_temp_pnt_idx+num_compare_samples,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
  	printf("temp_poly_idx:\n");
- 	thrust::copy(h_temp_poly_idx,h_temp_poly_idx+num_debug_print,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ 	thrust::copy(h_temp_poly_idx,h_temp_poly_idx+num_compare_samples,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
 }                
         RMM_TRY(RMM_FREE(d_pp_pnt_idx,0));d_pp_pnt_idx=NULL;
         RMM_TRY(RMM_FREE(d_pp_poly_idx,0));d_pp_poly_idx=NULL;
@@ -583,7 +583,7 @@ if(0)
  	delete[] h_temp_pnt_idx;
  	delete[] h_temp_poly_idx;
     }
-    
+          
     void tear_down()
     {
         delete[] h_poly_fpos;h_poly_fpos=NULL;
@@ -628,7 +628,7 @@ TEST_F(SpatialJoinNYCTaxi, test)
     this->run_test(bbox_x1,bbox_y1,bbox_x2,bbox_y2,scale,num_level,min_size);
     
     std::cout<<"running GDAL CPU code for comparison..........."<<std::endl;
-    this->run_compare();   
+    this->compare_full_random();   
     
     this->tear_down();
 }

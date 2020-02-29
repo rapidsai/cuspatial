@@ -84,7 +84,7 @@ if(0)
 }
 
     //sorting points based on Morton code based on the first paragrah of Section 4.2 of ref. 
-    thrust::stable_sort_by_key(exec_policy,d_p_pntkey, d_p_pntkey+point_len,d_pnt_iter);
+    thrust::sort_by_key(exec_policy,d_p_pntkey, d_p_pntkey+point_len,d_pnt_iter);
     size_t num_run = thrust::reduce_by_key(exec_policy,d_p_pntkey,d_p_pntkey+point_len,
     	thrust::constant_iterator<int>(1),d_p_runkey,d_p_runlen).first -d_p_runkey;
     RMM_FREE(d_p_pntkey,stream);d_p_pntkey=NULL;
