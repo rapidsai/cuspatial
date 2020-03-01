@@ -115,9 +115,9 @@ struct rec_cnyc
 
     int ReadLayer(const OGRLayerH layer,std::vector<int>& g_len_v,std::vector<int>&f_len_v,
          std::vector<int>& r_len_v,std::vector<double>& x_v, std::vector<double>& y_v,
-         	uint8_t type, std::vector<OGRGeometry *>& polygon_vec )         
+         	uint8_t type, std::vector<OGRGeometry *>& polygon_vec, std::vector<uint32_t>& idx_vec)         
     {
-        int num_feature=0;
+        uint32_t num_feature=0,num_seq=0;
         OGR_L_ResetReading(layer );
         OGRFeatureH hFeat;
         
@@ -144,6 +144,7 @@ struct rec_cnyc
 		    {
 		       //printf("%d exp_type=%d geom_type==%d\n",num_feature,type,poShape->getGeometryType());
 		       OGR_F_Destroy( hFeat );
+		       num_seq++;
 		       continue;
 		    }
 		}
@@ -153,6 +154,7 @@ struct rec_cnyc
 		    {
 		       //printf("%d exp_type=%d geom_type==%d\n",num_feature,type,poShape->getGeometryType());
 		       OGR_F_Destroy( hFeat );
+		       num_seq++;
 		       continue;
 		    }
 		}
@@ -168,7 +170,7 @@ struct rec_cnyc
             	exit(-1);
             }
             polygon_vec.push_back(newShape);
-              
+            idx_vec.push_back(num_seq++);  
             std::vector<double> aPointX;
             std::vector<double> aPointY;
             std::vector<int> aPartSize;
@@ -238,7 +240,7 @@ float calc_time(const char *msg,timeval t0, timeval t1)
 struct SpatialJoinNYCTaxi : public GdfTest 
 {    
     uint32_t num_compare_samples=100000;
-    uint32_t num_print_interval=10000;
+    uint32_t num_print_interval=1000;
     
     uint32_t num_pnt=0;
     uint32_t * d_pnt_id=NULL;
@@ -251,14 +253,27 @@ struct SpatialJoinNYCTaxi : public GdfTest
     double *d_poly_x=NULL,*d_poly_y=NULL;
     uint32_t *h_poly_fpos=NULL,*h_poly_rpos=NULL;
     double *h_poly_x=NULL,*h_poly_y=NULL;
+    
+    uint32_t num_quadrants=0;
+    uint32_t *d_qt_length=NULL,*d_qt_fpos=NULL;   
+    
+    uint32_t num_pq_pairs=0;
+    uint32_t *d_pq_quad_idx=NULL,*d_pq_poly_idx=NULL;   
 
-    uint32_t *d_pp_pnt_idx=NULL,*d_pp_poly_idx=NULL;   
+    uint32_t num_pp_pairs=0;
+    uint32_t *d_pp_pnt_idx=NULL,*d_pp_poly_idx=NULL;
     uint32_t *h_pp_pnt_idx=NULL,*h_pp_poly_idx=NULL;
     
     std::vector<OGRGeometry *> h_polygon_vec;
+    std::vector<uint32_t> org_poly_idx_vec;
+    std::vector<uint32_t> h_pnt_idx_vec;
+    std::vector<uint32_t> h_pnt_len_vec;
+    std::vector<uint32_t> h_poly_idx_vec;
+    
+    uint32_t num_search_pnt=0,num_search_poly=0;
+    uint32_t *h_pnt_search_idx=NULL,*h_poly_search_idx=NULL;
     
     std::unique_ptr<cudf::column> col_poly_fpos,col_poly_rpos,col_poly_x,col_poly_y;
-    uint32_t num_quadrants=0,num_pq_pairs=0,num_pp_pairs=0;
     
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
@@ -283,8 +298,10 @@ struct SpatialJoinNYCTaxi : public GdfTest
         }
         OGRLayerH hLayer = GDALDatasetGetLayer( hDS,0 );
         
+        h_polygon_vec.clear();
+        org_poly_idx_vec.clear();
         //type: 0 for all, 1 for simple polygon and 2 for multi-polygon
-        int num_f=ReadLayer(hLayer,g_len_v,f_len_v,r_len_v,x_v,y_v,type,h_polygon_vec);
+        int num_f=ReadLayer(hLayer,g_len_v,f_len_v,r_len_v,x_v,y_v,type,h_polygon_vec,org_poly_idx_vec);
         assert(num_f>0);
 
         uint32_t num_group=g_len_v.size();
@@ -439,7 +456,15 @@ struct SpatialJoinNYCTaxi : public GdfTest
 
         std::unique_ptr<cudf::experimental::table> quadtree= 
       		cuspatial::quadtree_on_points(pnt_id_view,pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_level, min_size);
-        std::cout<<"# of quadrants="<<quadtree->view().num_rows()<<std::endl;
+        num_quadrants=quadtree->view().num_rows();
+        std::cout<<"# of quadrants="<<num_quadrants<<std::endl;
+        const uint32_t *d_temp_length=quadtree->view().column(3).data<uint32_t>();
+        const uint32_t *d_temp_fpos=quadtree->view().column(4).data<uint32_t>();
+        
+        RMM_TRY( RMM_ALLOC( (void**)&(d_qt_length),num_quadrants*sizeof(uint32_t), 0));
+        RMM_TRY( RMM_ALLOC( (void**)&(d_qt_fpos),num_quadrants*sizeof(uint32_t), 0));
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_qt_length, d_temp_length, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_qt_fpos, d_temp_fpos, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );        
      
         std::unique_ptr<cudf::experimental::table> bbox_tbl=
      	cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view()); 
@@ -462,10 +487,16 @@ struct SpatialJoinNYCTaxi : public GdfTest
         
         gettimeofday(&t1, NULL);
         float gpu_time=calc_time("gpu end-to-end computing time",t0,t1);
-  
+
         num_pq_pairs=pq_pair_tbl->num_rows();
-        const uint32_t * d_tmp_poly_id=pq_pair_tbl->view().column(0).data<uint32_t>();
-        const uint32_t * d_tmp_pnt_id=pq_pair_tbl->view().column(1).data<uint32_t>();
+        const uint32_t * d_tmp_poly_idx=pq_pair_tbl->view().column(0).data<uint32_t>();
+        const uint32_t * d_tmp_quad_idx=pq_pair_tbl->view().column(1).data<uint32_t>();
+  
+        RMM_TRY( RMM_ALLOC( (void**)&(d_pq_quad_idx),num_pq_pairs*sizeof(uint32_t), 0));
+        RMM_TRY( RMM_ALLOC( (void**)&(d_pq_poly_idx),num_pq_pairs*sizeof(uint32_t), 0));
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pq_quad_idx, d_tmp_quad_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pq_poly_idx, d_tmp_poly_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );        
+ 
  
         num_pp_pairs=pip_pair_tbl->num_rows();
    	const uint32_t * d_temp_poly_idx=pip_pair_tbl->view().column(0).data<uint32_t>();
@@ -483,18 +514,135 @@ if(0)
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_pnt_idx),num_pp_pairs*sizeof(uint32_t), 0));
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_poly_idx),num_pp_pairs*sizeof(uint32_t), 0));
         HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_pnt_idx, d_temp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_poly_idx, d_temp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );        
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_poly_idx, d_temp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );    
     }
+
+uint32_t compute_mismatch()
+{
+    printf("num_search_pnt=%d num_search_poly=%d\n",num_search_pnt,num_search_poly);
+
+if(0)
+{
+ 	printf("h_pnt_search_idx:\n");
+ 	thrust::copy(h_pnt_search_idx,h_pnt_search_idx+num_search_pnt,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+ 	printf("h_poly_search_idx:\n");
+ 	thrust::copy(h_poly_search_idx,h_poly_search_idx+num_search_pnt,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+}	
+  
+  	thrust::sort_by_key(thrust::device, d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pp_poly_idx);
+  	printf("after sort...................\n");
+
+        h_pp_poly_idx=new uint32_t[num_pp_pairs];
+        h_pp_pnt_idx=new uint32_t[num_pp_pairs];
+        assert(h_pp_poly_idx!=NULL && h_pp_pnt_idx!=NULL);
+ 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_poly_idx, d_pp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
+ 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_pnt_idx, d_pp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );               
+  	
+        uint32_t *d_pnt_lb=NULL,*d_pnt_ub=NULL;
+        bool *d_pnt_sign=NULL;
+        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_lb),num_pp_pairs*sizeof(uint32_t), 0));
+        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_ub),num_pp_pairs*sizeof(uint32_t), 0));
+        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_sign),num_pp_pairs*sizeof(bool), 0));
+ 	uint32_t *d_pnt_search_idx=NULL;
+        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_search_idx),num_search_pnt*sizeof(uint32_t), 0));
+   	HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_search_idx, h_pnt_search_idx, num_search_pnt * sizeof(uint32_t), cudaMemcpyHostToDevice) ); 
+        printf("after H->D transfer..................\n");
+       
+        thrust::lower_bound(thrust::device,d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pnt_search_idx,d_pnt_search_idx+num_search_pnt,d_pnt_lb);
+        thrust::upper_bound(thrust::device,d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pnt_search_idx,d_pnt_search_idx+num_search_pnt,d_pnt_ub);
+        thrust::binary_search(thrust::device,d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pnt_search_idx,d_pnt_search_idx+num_search_pnt,d_pnt_sign);
+        printf("after GPU search...................\n");
+        
+   	uint32_t * h_pnt_lb=new uint32_t[num_search_pnt];
+  	uint32_t * h_pnt_ub=new uint32_t[num_search_pnt];
+  	bool *h_pnt_sign=new bool[num_search_pnt];
+  	assert(h_pnt_lb!=NULL && h_pnt_ub!=NULL && h_pnt_sign!=NULL);
+  	
+  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pnt_lb, d_pnt_lb, num_search_pnt * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
+  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pnt_ub, d_pnt_ub, num_search_pnt * sizeof(uint32_t), cudaMemcpyDeviceToHost) );   
+  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pnt_sign, d_pnt_sign, num_search_pnt * sizeof(bool), cudaMemcpyDeviceToHost) );
+
+        RMM_TRY(RMM_FREE(d_pnt_lb,0));d_pnt_lb=NULL;
+        RMM_TRY(RMM_FREE(d_pnt_ub,0));d_pnt_ub=NULL;
+        RMM_TRY(RMM_FREE(d_pnt_sign,0));d_pnt_sign=NULL;
+        printf("after H->D transfer..................\n");
+ 
+    	FILE *fp=NULL;
+      	if((fp=fopen("debug.csv","w"))==NULL)
+      	{
+      		printf("can not open debug.txt for output");
+      		exit(-1);
+     	}
+ 	uint32_t bpos=0,epos=h_pnt_len_vec[0], mis_match=0;
+ 	for(uint32_t i=0;i<num_search_pnt;i++)
+ 	{
+ 		//printf("i=%d idx=%d sign=%d lb=%d ub=%d\n",i,h_pnt_search_idx[i],h_pnt_sign[i],h_pnt_lb[i],h_pnt_ub[i]);
+ 		if(!h_pnt_sign[i])
+ 		{
+ 			printf("i=%d key=%d does not hit\n",i,h_pnt_search_idx[i]);
+ 			mis_match++;
+ 		}
+ 		else
+ 		{
+			std::set<uint32_t> gpu_set(h_pp_poly_idx+h_pnt_lb[i],h_pp_poly_idx+h_pnt_ub[i]);
+			std::set<uint32_t> cpu_set(h_poly_search_idx+bpos,h_poly_search_idx+epos);
+			if(gpu_set!=cpu_set)
+			{
+				uint32_t pntid=h_pnt_search_idx[i];
+if(1)
+{
+				printf("i=%d key=%d g_size=%lu c_size=%lu lb=%d ub=%d pointid=%d\n",
+					i,h_pnt_search_idx[i],gpu_set.size(),cpu_set.size(),h_pnt_lb[i],h_pnt_ub[i],pntid);
+				printf("gpu_set\n");
+				thrust::copy(gpu_set.begin(),gpu_set.end(),std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+				printf("cpu_set\n");
+}				thrust::copy(cpu_set.begin(),cpu_set.end(),std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+				
+				fprintf(fp,"%d,%10.2f,%10.2f",pntid,h_pnt_x[pntid],h_pnt_y[pntid]);
+				uint32_t gpu_len=h_pnt_ub[i]-h_pnt_lb[i];
+				std::string ss="";
+				if(gpu_len>0)
+				{
+					ss+=std::to_string(org_poly_idx_vec[h_pp_poly_idx[h_pnt_lb[i]]]);
+					for(uint32_t j=1;j<gpu_len;j++)
+					    ss+=("|"+std::to_string(org_poly_idx_vec[h_pp_poly_idx[h_pnt_lb[i]+j]]));
+				}
+				else
+				   ss="-1";
+				fprintf(fp,",%s",ss.c_str());
+				ss="";
+				if(h_pnt_len_vec[i]>0)
+				{
+					ss+=std::to_string(org_poly_idx_vec[h_poly_search_idx[bpos]]);
+					for(uint32_t j=1;j<gpu_len;j++)
+					    ss+=("|"+std::to_string(org_poly_idx_vec[h_poly_search_idx[bpos+j]]));
+				}
+				else 
+				   ss="-1";
+				fprintf(fp,",%s\n",ss.c_str());
+				mis_match++;
+			}
+		}
+ 		if(i!=num_search_pnt-1)
+ 		{
+ 			bpos=epos;epos+=h_pnt_len_vec[i];
+ 		}	
+ 	}
+ 	fclose(fp);
+ 	delete[] h_pnt_lb;
+ 	delete[] h_pnt_ub;
+ 	delete[] h_pnt_sign;
+ 	printf("total mismatch=%d\n",mis_match);
+ 	return mis_match;
+ }	
     
     void compare_full_random()
     {
-          
-	num_compare_samples=num_pnt;
-	printf("compare_full_random: # of h_polygon_vec=%lu num_compare_samples=%d\n",h_polygon_vec.size(),num_compare_samples);
-	std::vector<uint32_t> h_pnt_idx_vec;
-	std::vector<uint32_t> h_pnt_len_vec;
-	std::vector<uint32_t> h_poly_idx_vec;
-	
+        h_pnt_idx_vec.clear();
+        h_pnt_len_vec.clear();
+        h_poly_idx_vec.clear();        
+	//num_compare_samples=num_pnt;
+	printf("compare_full_random: # of h_polygon_vec=%lu num_compare_samples=%d\n",h_polygon_vec.size(),num_compare_samples);	
         uint32_t *nums=NULL;
         if(num_compare_samples<num_pnt)
         {       	
@@ -510,6 +658,7 @@ if(0)
         else
              printf("num_compare_samples=%d must be less or equal to num_pnt=%d\n",num_compare_samples,num_pnt);
         assert(nums!=NULL);
+
 	timeval t0,t1;
 	gettimeofday(&t0, NULL);
         
@@ -541,102 +690,111 @@ if(0)
  	    }
 	}
 	delete[] nums;
-	printf("h_pnt_idx_vec.size()=%lu\n",h_pnt_idx_vec.size());
-	printf("h_poly_idx_vec.size()=%lu\n",h_poly_idx_vec.size());
+        num_search_pnt=h_pnt_idx_vec.size();
+        num_search_poly=h_poly_idx_vec.size();
+	printf("h_pnt_idx_vec.size()=%d\n",num_search_pnt);
+	printf("h_poly_idx_vec.size()=%d\n",num_search_poly);
+	printf("num_pp_pairs=%d\n",num_pp_pairs);	
  
         gettimeofday(&t1, NULL);
         float cpu_time=calc_time("cpu all-pair computing time",t0,t1);
         
-        uint32_t num_search_pnt=h_pnt_idx_vec.size();
-        uint32_t num_search_poly=h_poly_idx_vec.size();
-        uint32_t *h_pnt_sign_idx=&h_pnt_idx_vec[0];
-        uint32_t *h_poly_search_idx=&h_poly_idx_vec[0];
-        assert(h_pnt_sign_idx!=NULL && h_poly_search_idx!=NULL);
-                   
-        thrust::sort_by_key(thrust::device, d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pp_poly_idx);
-        uint32_t *d_pnt_lb=NULL,*d_pnt_ub=NULL;
-        bool *d_pnt_sign=NULL;
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_lb),num_pp_pairs*sizeof(uint32_t), 0));
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_ub),num_pp_pairs*sizeof(uint32_t), 0));
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_sign),num_pp_pairs*sizeof(bool), 0));
-if(0)
-{
- 	printf("h_pnt_sign_idx:\n");
- 	thrust::copy(h_pnt_sign_idx,h_pnt_sign_idx+num_search_pnt,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
- 	printf("h_poly_search_idx:\n");
- 	thrust::copy(h_poly_search_idx,h_poly_search_idx+num_search_pnt,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
-}	
- 	uint32_t *d_pnt_search_idx=NULL;
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_search_idx),num_pp_pairs*sizeof(uint32_t), 0));
-   	HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_search_idx, h_pnt_sign_idx, num_search_pnt * sizeof(uint32_t), cudaMemcpyHostToDevice) ); 
-        
-        thrust::lower_bound(thrust::device,d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pnt_search_idx,d_pnt_search_idx+num_search_pnt,d_pnt_lb);
-        thrust::upper_bound(thrust::device,d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pnt_search_idx,d_pnt_search_idx+num_search_pnt,d_pnt_ub);
-        thrust::upper_bound(thrust::device,d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pnt_search_idx,d_pnt_search_idx+num_search_pnt,d_pnt_sign);
-        RMM_TRY(RMM_FREE(d_pnt_search_idx,0));d_pnt_search_idx=NULL;
- 
-  	uint32_t * h_pnt_lb=new uint32_t[num_search_pnt];
-  	uint32_t * h_pnt_ub=new uint32_t[num_search_pnt];
-  	bool *h_pnt_sign=new bool[num_search_pnt];
-  	assert(h_pnt_lb!=NULL && h_pnt_ub!=NULL && h_pnt_sign!=NULL);
-  	
-  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pnt_lb, d_pnt_lb, num_search_pnt * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
-  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pnt_ub, d_pnt_ub, num_search_pnt * sizeof(uint32_t), cudaMemcpyDeviceToHost) );   
-  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pnt_sign, d_pnt_sign, num_search_pnt * sizeof(bool), cudaMemcpyDeviceToHost) );
-        RMM_TRY(RMM_FREE(d_pnt_lb,0));d_pnt_lb=NULL;
-        RMM_TRY(RMM_FREE(d_pnt_ub,0));d_pnt_ub=NULL;
-        RMM_TRY(RMM_FREE(d_pnt_ub,0));d_pnt_ub=NULL;
-        
-        uint32_t *h_temp_poly_idx=new uint32_t[num_pp_pairs];
-        uint32_t *h_temp_pnt_idx=new uint32_t[num_pp_pairs];
-        assert(h_temp_poly_idx!=NULL && h_temp_pnt_idx!=NULL);
- 	HANDLE_CUDA_ERROR( cudaMemcpy( h_temp_poly_idx, d_pp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
- 	HANDLE_CUDA_ERROR( cudaMemcpy( h_temp_pnt_idx, d_pp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );       
-if(0)
-{
-     	printf("temp_pnt_idx:\n");
- 	thrust::copy(h_temp_pnt_idx,h_temp_pnt_idx+num_compare_samples,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
- 	printf("temp_poly_idx:\n");
- 	thrust::copy(h_temp_poly_idx,h_temp_poly_idx+num_compare_samples,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
-}                
-        RMM_TRY(RMM_FREE(d_pp_pnt_idx,0));d_pp_pnt_idx=NULL;
-        RMM_TRY(RMM_FREE(d_pp_poly_idx,0));d_pp_poly_idx=NULL;
-        RMM_TRY(RMM_FREE(d_pnt_lb,0));d_pnt_lb=NULL;
-        RMM_TRY(RMM_FREE(d_pnt_ub,0));d_pnt_ub=NULL;
+        h_pnt_search_idx=&h_pnt_idx_vec[0];
+        h_poly_search_idx=&h_poly_idx_vec[0];
+        assert(h_pnt_search_idx!=NULL && h_poly_search_idx!=NULL); 
+        printf("h_pnt_search_idx[0]=%d h_poly_search_idx[0]=%d\n",h_pnt_search_idx[0],h_poly_search_idx[0]);
+     }
+  
+    void compare_matched_pairs()
+    {
+ 	//num_pq_pairs=10;
+
+ 	h_pnt_idx_vec.clear();
+        h_pnt_len_vec.clear();
+        h_poly_idx_vec.clear();        
 	
- 	uint32_t bpos=0,epos=h_pnt_len_vec[0], mis_match=0;
- 	for(uint32_t i=0;i<num_search_pnt;i++)
- 	{
- 		//printf("i=%d key=%d sign=%d lb=%d ub=%d\n",i,h_pnt_sign_idx[i],h_pnt_sign[i],h_pnt_lb[i],h_pnt_ub[i]);
- 		if(!h_pnt_sign[i])
- 		{
- 			printf("i=%d key=%d does not hit\n",i,h_pnt_sign_idx[i]);
- 			mis_match++;
- 		}
- 		else
- 		{
-			std::set<uint32_t> gpu_set(h_temp_poly_idx+h_pnt_lb[i],h_temp_poly_idx+h_pnt_ub[i]);
-			std::set<uint32_t> cpu_set(h_poly_search_idx+bpos,h_poly_search_idx+epos);
-			if(gpu_set!=cpu_set)
-			{
-				printf("i=%d key=%d g_size=%lu c_size=%lu\n",i,h_pnt_sign_idx[i],gpu_set.size(),cpu_set.size());
-				printf("gpu_set\n");
-				thrust::copy(gpu_set.begin(),gpu_set.end(),std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
-				printf("cpu_set\n");
-				thrust::copy(cpu_set.begin(),cpu_set.end(),std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
-				mis_match++;
-			}
+ 	printf("num_quadrants=%d num_pq_pairs=%d\n",num_quadrants,num_pq_pairs);
+        uint32_t *h_qt_length=new uint32_t[num_quadrants];
+        uint32_t *h_qt_fpos=new uint32_t[num_quadrants];
+        assert(h_qt_length!=NULL && h_qt_length!=NULL);
+ 	HANDLE_CUDA_ERROR( cudaMemcpy( h_qt_length, d_qt_length, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
+ 	HANDLE_CUDA_ERROR( cudaMemcpy( h_qt_fpos, d_qt_fpos, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToHost) );       
+        
+        uint32_t *h_pq_poly_idx=new uint32_t[num_pq_pairs];
+        uint32_t *h_pq_quad_idx=new uint32_t[num_pq_pairs];
+        assert(h_pq_poly_idx!=NULL && h_pq_quad_idx!=NULL);
+        
+ 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pq_poly_idx, d_pq_poly_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
+ 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pq_quad_idx, d_pq_quad_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );       
+
+if(0)
+{
+        printf("d_pq_quad_idx\n");
+        thrust::device_ptr<uint32_t> pq_quad_idx_ptr=thrust::device_pointer_cast(d_pq_quad_idx);
+        thrust::copy(pq_quad_idx_ptr,pq_quad_idx_ptr+100,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
+
+        printf("d_pq_poly_idx\n");
+        thrust::device_ptr<uint32_t> pq_poly_idx_ptr=thrust::device_pointer_cast(d_pq_poly_idx);
+        thrust::copy(pq_poly_idx_ptr,pq_poly_idx_ptr+100,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
+} 
+	h_pnt_idx_vec.clear();
+	h_pnt_len_vec.clear();
+	h_poly_idx_vec.clear();
+	
+ 	timeval t0,t1;
+	gettimeofday(&t0, NULL);
+        
+        char  msg[100];
+	timeval t2,t3;
+	uint32_t p=0;
+	gettimeofday(&t2, NULL);
+	for(uint32_t k=0;k<num_pq_pairs;k++)
+	{
+	    uint32_t qid=h_pq_quad_idx[k];
+	    uint32_t qlen=h_qt_length[qid];
+	    uint32_t fpos=h_qt_fpos[qid];
+	    //printf("k=%d qid=%ud qlen=%ud fpos=%ud\n",k,qid,qlen,fpos);
+	    for(uint32_t i=0;i<qlen;i++)
+	    {
+		    assert(fpos+i<num_pnt);
+		    OGRPoint pnt(h_pnt_x[fpos+i],h_pnt_y[fpos+i]);
+		    std::vector<uint32_t> temp_vec;
+		    for(uint32_t j=0;j<h_polygon_vec.size();j++)
+		    {
+			if(h_polygon_vec[j]->Contains(&pnt))
+			  temp_vec.push_back(j);
+		    }
+		    if(temp_vec.size()>0)
+		    {
+			h_pnt_len_vec.push_back(temp_vec.size());
+			h_pnt_idx_vec.push_back(i);
+			h_poly_idx_vec.insert(h_poly_idx_vec.end(),temp_vec.begin(),temp_vec.end());
+		    }
+		    if(p>0 && p%num_print_interval==0)
+		    {
+			    gettimeofday(&t3, NULL);    
+			    sprintf(msg,"loop=%d quad=%d runtime for the last %d iterations is\n",p,k,num_print_interval);
+			    float cpu_time_per_interval=calc_time(msg,t2,t3);
+			    t2=t3;
+		    }
+		    p++;
 		}
- 		if(i!=num_search_pnt-1)
- 		{
- 			bpos=epos;epos+=h_pnt_len_vec[i];
- 		}	
- 	}
- 	printf("total mismatch=%d\n",mis_match);
- 	delete[] h_temp_pnt_idx;
- 	delete[] h_temp_poly_idx;
+	}
+        gettimeofday(&t1, NULL);
+        float cpu_time=calc_time("cpu matched-pair computing time",t0,t1);          
+        
+        num_search_pnt=h_pnt_idx_vec.size();
+        num_search_poly=h_poly_idx_vec.size();
+	printf("h_pnt_idx_vec.size()=%d\n",num_search_pnt);
+	printf("h_poly_idx_vec.size()=%d\n",num_search_poly);
+	printf("num_pp_pairs=%d\n",num_pp_pairs);    
+        h_pnt_search_idx=&h_pnt_idx_vec[0];
+        h_poly_search_idx=&h_poly_idx_vec[0];
+        assert(h_pnt_search_idx!=NULL && h_poly_search_idx!=NULL); 
+        printf("h_pnt_search_idx[0]=%d h_poly_search_idx[0]=%d\n",h_pnt_search_idx[0],h_poly_search_idx[0]);
     }
-          
+    
+    
     void tear_down()
     {
         delete[] h_poly_fpos;h_poly_fpos=NULL;
@@ -647,8 +805,8 @@ if(0)
         delete[] h_pnt_x; h_pnt_x=NULL;
         delete[] h_pnt_y; h_pnt_y=NULL; 
         
-        delete[] h_pp_poly_idx; h_pp_poly_idx=NULL;
-        delete[] h_pp_pnt_idx; h_pp_pnt_idx=NULL;
+        delete[] h_pp_pnt_idx;
+	delete[] h_pp_poly_idx;
     }
  
 };
@@ -661,7 +819,10 @@ TEST_F(SpatialJoinNYCTaxi, test)
     
     std::cout<<"loading NYC taxi zone shapefile data..........."<<std::endl;  
     double poly_x1,poly_y1,poly_x2,poly_y2;
-    this->setup_polygons(poly_x1,poly_y1,poly_x2,poly_y2,2);
+    
+    uint8_t type=2; //multi-polygons only  
+    //uint8_t type=0; //all polygons
+    this->setup_polygons(poly_x1,poly_y1,poly_x2,poly_y2,type);
         
     std::cout<<"loading NYC taxi pickup locations..........."<<std::endl;  
     double pnt_x1,pnt_y1,pnt_x2,pnt_y2;
@@ -681,8 +842,11 @@ TEST_F(SpatialJoinNYCTaxi, test)
     this->run_test(bbox_x1,bbox_y1,bbox_x2,bbox_y2,scale,num_level,min_size);
     
     std::cout<<"running GDAL CPU code for comparison..........."<<std::endl;
-    this->compare_full_random();   
+    //this->compare_full_random();   
     
+    this->compare_matched_pairs();
+    
+    this->compute_mismatch();
     this->tear_down();
 }
 
