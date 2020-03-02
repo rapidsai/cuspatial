@@ -238,10 +238,7 @@ float calc_time(const char *msg,timeval t0, timeval t1)
 
 
 struct SpatialJoinNYCTaxi : public GdfTest 
-{    
-    uint32_t num_compare_samples=100000;
-    uint32_t num_print_interval=1000;
-    
+{        
     uint32_t num_pnt=0;
     uint32_t * d_pnt_id=NULL;
     double *d_pnt_x=NULL,*d_pnt_y=NULL;
@@ -501,16 +498,6 @@ struct SpatialJoinNYCTaxi : public GdfTest
         num_pp_pairs=pip_pair_tbl->num_rows();
    	const uint32_t * d_temp_poly_idx=pip_pair_tbl->view().column(0).data<uint32_t>();
         const uint32_t * d_temp_pnt_idx=pip_pair_tbl->view().column(1).data<uint32_t>();
-if(0)
-{
-        printf("d_temp_pnt_idx\n");
-        thrust::device_ptr<const uint32_t> temp_pnt_idx_ptr=thrust::device_pointer_cast(d_temp_pnt_idx);
-        thrust::copy(temp_pnt_idx_ptr,temp_pnt_idx_ptr+num_compare_samples,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
-
-        printf("pp_poly_idx\n");
-        thrust::device_ptr<const uint32_t> temp_poly_idx_ptr=thrust::device_pointer_cast(d_temp_poly_idx);
-        thrust::copy(temp_poly_idx_ptr,temp_poly_idx_ptr+num_compare_samples,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
-}        
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_pnt_idx),num_pp_pairs*sizeof(uint32_t), 0));
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_poly_idx),num_pp_pairs*sizeof(uint32_t), 0));
         HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_pnt_idx, d_temp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
@@ -573,19 +560,27 @@ if(0)
       		printf("can not open debug.txt for output");
       		exit(-1);
      	}
- 	uint32_t bpos=0,epos=h_pnt_len_vec[0], mis_match=0;
+ 	uint32_t bpos=0,epos=h_pnt_len_vec[0], num_mis_match=0,num_not_found=0;
  	for(uint32_t i=0;i<num_search_pnt;i++)
  	{
  		//printf("i=%d idx=%d sign=%d lb=%d ub=%d\n",i,h_pnt_search_idx[i],h_pnt_sign[i],h_pnt_lb[i],h_pnt_ub[i]);
  		if(!h_pnt_sign[i])
  		{
- 			printf("i=%d key=%d does not hit\n",i,h_pnt_search_idx[i]);
- 			mis_match++;
+ 			printf("i=%d pntid=%d does not hit\n",i,h_pnt_search_idx[i]);
+ 			uint32_t pntid=h_pnt_search_idx[i];
+ 			uint32_t polyid=org_poly_idx_vec[h_poly_search_idx[i]];
+ 			fprintf(fp,"%d, %10.2f, %10.2f, -1, %d\n",pntid,h_pnt_x[pntid],h_pnt_y[pntid],polyid);
+ 			num_not_found++;
  		}
  		else
  		{
-			std::set<uint32_t> gpu_set(h_pp_poly_idx+h_pnt_lb[i],h_pp_poly_idx+h_pnt_ub[i]);
-			std::set<uint32_t> cpu_set(h_poly_search_idx+bpos,h_poly_search_idx+epos);
+			std::set<uint32_t> gpu_set;
+			for(uint32_t j=h_pnt_lb[i];j<h_pnt_ub[i];j++)
+				gpu_set.insert(org_poly_idx_vec[h_pp_poly_idx[j]]);
+			std::set<uint32_t> cpu_set;
+			for(uint32_t j=bpos;j<epos;j++)
+				cpu_set.insert(org_poly_idx_vec[h_poly_search_idx[j]]);
+				
 			if(gpu_set!=cpu_set)
 			{
 				uint32_t pntid=h_pnt_search_idx[i];
@@ -614,13 +609,13 @@ if(1)
 				if(h_pnt_len_vec[i]>0)
 				{
 					ss+=std::to_string(org_poly_idx_vec[h_poly_search_idx[bpos]]);
-					for(uint32_t j=1;j<gpu_len;j++)
-					    ss+=("|"+std::to_string(org_poly_idx_vec[h_poly_search_idx[bpos+j]]));
+					for(uint32_t j=bpos+1;j<epos;j++)
+					    ss+=("|"+std::to_string(org_poly_idx_vec[h_poly_search_idx[j]]));
 				}
 				else 
 				   ss="-1";
 				fprintf(fp,",%s\n",ss.c_str());
-				mis_match++;
+				num_mis_match++;
 			}
 		}
  		if(i!=num_search_pnt-1)
@@ -632,31 +627,35 @@ if(1)
  	delete[] h_pnt_lb;
  	delete[] h_pnt_ub;
  	delete[] h_pnt_sign;
- 	printf("total mismatch=%d\n",mis_match);
- 	return mis_match;
+ 	printf("num_search_pnt=%d num_not_found=%d num_mis_match=%d\n",num_search_pnt,num_not_found,num_mis_match);
+ 	return num_mis_match;
  }	
     
-    void compare_full_random()
+    void compare_full_random(uint32_t num_samples,uint32_t num_print_interval)
     {
         h_pnt_idx_vec.clear();
         h_pnt_len_vec.clear();
         h_poly_idx_vec.clear();        
-	//num_compare_samples=num_pnt;
-	printf("compare_full_random: # of h_polygon_vec=%lu num_compare_samples=%d\n",h_polygon_vec.size(),num_compare_samples);	
+
+	printf("compare_full_random: num_quadrants=%d num_pq_pairs=%d num_pp_pair=%d num_samples=%d \n",
+		num_quadrants,num_pq_pairs,num_pp_pairs,num_samples);
         uint32_t *nums=NULL;
-        if(num_compare_samples<num_pnt)
+        if(num_samples<num_pnt)
         {       	
 		std::seed_seq seed{0};
 		std::mt19937 g(seed);
 		std::uniform_int_distribution<> dist_rand (0,num_pnt-1);
-		nums=new uint32_t[num_compare_samples];
+		nums=new uint32_t[num_samples];
 		assert(nums!=NULL);
-		std::generate(nums, nums+num_compare_samples, [&] () mutable { return dist_rand(g); });	
+		std::generate(nums, nums+num_samples, [&] () mutable { return dist_rand(g); });	
         }
-        else if(num_compare_samples==num_pnt)
-        	nums=new uint32_t[num_compare_samples];
+        else if(num_samples==num_pnt)
+        {
+        	nums=new uint32_t[num_samples];
+        	std::generate(nums, nums+num_pnt, [n = 0] () mutable { return n++; });
+        }
         else
-             printf("num_compare_samples=%d must be less or equal to num_pnt=%d\n",num_compare_samples,num_pnt);
+             printf("num_samples=%d must be less or equal to num_pnt=%d\n",num_samples,num_pnt);
         assert(nums!=NULL);
 
 	timeval t0,t1;
@@ -665,10 +664,10 @@ if(1)
         char  msg[100];
 	timeval t2,t3;
 	gettimeofday(&t2, NULL);
-	for(uint32_t k=0;k<num_compare_samples;k++)
+	for(uint32_t k=0;k<num_samples;k++)
 	{
-	    uint32_t i=nums[k];	
-	    OGRPoint pnt(h_pnt_x[i],h_pnt_y[i]);
+	    uint32_t pntid=nums[k];	
+	    OGRPoint pnt(h_pnt_x[pntid],h_pnt_y[pntid]);
 	    std::vector<uint32_t> temp_vec;
 	    for(uint32_t j=0;j<h_polygon_vec.size();j++)
 	    {
@@ -678,7 +677,7 @@ if(1)
 	    if(temp_vec.size()>0)
 	    {
 	    	h_pnt_len_vec.push_back(temp_vec.size());
-	    	h_pnt_idx_vec.push_back(i);
+	    	h_pnt_idx_vec.push_back(pntid);
 	    	h_poly_idx_vec.insert(h_poly_idx_vec.end(),temp_vec.begin(),temp_vec.end());
 	    }
             if(k>0 && k%num_print_interval==0)
@@ -699,22 +698,44 @@ if(1)
         gettimeofday(&t1, NULL);
         float cpu_time=calc_time("cpu all-pair computing time",t0,t1);
         
+        //global vectors, use their data pointers
         h_pnt_search_idx=&h_pnt_idx_vec[0];
         h_poly_search_idx=&h_poly_idx_vec[0];
         assert(h_pnt_search_idx!=NULL && h_poly_search_idx!=NULL); 
         printf("h_pnt_search_idx[0]=%d h_poly_search_idx[0]=%d\n",h_pnt_search_idx[0],h_poly_search_idx[0]);
      }
   
-    void compare_matched_pairs()
+    void compare_matched_pairs(uint32_t num_samples,uint32_t num_print_interval)
     {
- 	num_pq_pairs=10;
-
- 	h_pnt_idx_vec.clear();
+        h_pnt_idx_vec.clear();
         h_pnt_len_vec.clear();
         h_poly_idx_vec.clear();        
-	
- 	printf("num_quadrants=%d num_pq_pairs=%d\n",num_quadrants,num_pq_pairs);
-        uint32_t *h_qt_length=new uint32_t[num_quadrants];
+
+	printf("compare_matched_pairs: num_quadrants=%d num_pq_pairs=%d num_pp_pair=%d num_samples=%d \n",
+		num_quadrants,num_pq_pairs,num_pp_pairs,num_samples);
+
+
+        uint32_t *nums=NULL;
+        //random quadrants
+        if(num_samples<num_pq_pairs)
+        {       	
+		std::seed_seq seed{0};
+		std::mt19937 g(seed);
+		std::uniform_int_distribution<> dist_rand (0,num_pq_pairs-1);
+		nums=new uint32_t[num_samples];
+		assert(nums!=NULL);
+		std::generate(nums, nums+num_samples, [&] () mutable { return dist_rand(g); });	
+        }
+        else if(num_samples==num_pq_pairs)
+        {
+        	nums=new uint32_t[num_samples];
+        	std::generate(nums, nums+num_pq_pairs, [n = 0] () mutable { return n++; });
+        }
+        else
+             printf("compare_matched_pairs: num_samples=%d must be less or equal to num_pq_pairs=%d\n",num_samples,num_pq_pairs);
+        assert(nums!=NULL);
+ 
+ 	uint32_t *h_qt_length=new uint32_t[num_quadrants];
         uint32_t *h_qt_fpos=new uint32_t[num_quadrants];
         assert(h_qt_length!=NULL && h_qt_length!=NULL);
  	HANDLE_CUDA_ERROR( cudaMemcpy( h_qt_length, d_qt_length, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
@@ -737,9 +758,6 @@ if(0)
         thrust::device_ptr<uint32_t> pq_poly_idx_ptr=thrust::device_pointer_cast(d_pq_poly_idx);
         thrust::copy(pq_poly_idx_ptr,pq_poly_idx_ptr+100,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
 } 
-	h_pnt_idx_vec.clear();
-	h_pnt_len_vec.clear();
-	h_poly_idx_vec.clear();
 	
  	timeval t0,t1;
 	gettimeofday(&t0, NULL);
@@ -748,12 +766,12 @@ if(0)
 	timeval t2,t3;
 	uint32_t p=0;
 	gettimeofday(&t2, NULL);
-	for(uint32_t k=0;k<num_pq_pairs;k++)
+	for(uint32_t k=0;k<num_samples;k++)
 	{
-	    uint32_t qid=h_pq_quad_idx[k];
+	    uint32_t qid=h_pq_quad_idx[nums[k]];
 	    uint32_t qlen=h_qt_length[qid];
 	    uint32_t fpos=h_qt_fpos[qid];
-	    //printf("k=%d qid=%ud qlen=%ud fpos=%ud\n",k,qid,qlen,fpos);
+	    //printf("k=%d qid=%u qlen=%u fpos=%u\n",k,qid,qlen,fpos);
 	    for(uint32_t i=0;i<qlen;i++)
 	    {
 		    assert(fpos+i<num_pnt);
@@ -767,7 +785,8 @@ if(0)
 		    if(temp_vec.size()>0)
 		    {
 			h_pnt_len_vec.push_back(temp_vec.size());
-			h_pnt_idx_vec.push_back(i);
+			uint32_t pntid=fpos+i;
+			h_pnt_idx_vec.push_back(pntid);
 			h_poly_idx_vec.insert(h_poly_idx_vec.end(),temp_vec.begin(),temp_vec.end());
 		    }
 		    if(p>0 && p%num_print_interval==0)
@@ -815,7 +834,7 @@ TEST_F(SpatialJoinNYCTaxi, test)
 {
     const uint32_t num_level=15;
     const uint32_t min_size=512;
-    const uint32_t first_n=1;
+    const uint32_t first_n=12;
     
     std::cout<<"loading NYC taxi zone shapefile data..........."<<std::endl;  
     double poly_x1,poly_y1,poly_x2,poly_y2;
@@ -842,9 +861,13 @@ TEST_F(SpatialJoinNYCTaxi, test)
     this->run_test(bbox_x1,bbox_y1,bbox_x2,bbox_y2,scale,num_level,min_size);
     
     std::cout<<"running GDAL CPU code for comparison..........."<<std::endl;
-    //this->compare_full_random();   
+  
+    uint32_t num_samples=num_pq_pairs;
+    uint32_t num_print_interval=10000;
+  
+    //this->compare_full_random(num_samples,num_print_interval);   
     
-    this->compare_matched_pairs();
+    this->compare_matched_pairs(num_samples,num_print_interval);
     
     this->compute_mismatch();
     this->tear_down();
