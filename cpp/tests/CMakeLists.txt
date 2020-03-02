@@ -10,7 +10,7 @@ endif()
 # - common test utils -----------------------------------------------------------------------------
 
 find_library(CUDFTESTUTIL_LIBRARY "libcudftestutil.a"
-             HINTS "$ENV{CUDF_ROOT}/lib")
+             HINTS "$ENV{CUDF_ROOT}/cpp/build/tests/")
 
 message(STATUS "CUDFTESTUTIL: CUDFTESTUTIL_LIBRARY set to ${CUDFTESTUTIL_LIBRARY}")
 message(STATUS "CUDFTESTUTIL: CUDF_TEST_INCLUDE set to ${CUDF_TEST_INCLUDE}")

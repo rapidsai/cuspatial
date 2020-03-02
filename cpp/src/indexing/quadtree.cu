@@ -278,7 +278,7 @@ if(0)
     assert(d_p_tmp_seq!=NULL);
 
     uint32_t *d_p_tmp_neln=NULL;
-    RMM_TRY( RMM_ALLOC( (void**)&(d_p_tmp_neln),num_leaf_nodes* sizeof(uint32_t),stream));
+    RMM_TRY( RMM_ALLOC( (void**)&(d_p_tmp_neln),num_valid_nodes* sizeof(uint32_t),stream));
     assert(d_p_tmp_neln!=NULL);
 
     uint32_t *d_p_tmp_npos=NULL;

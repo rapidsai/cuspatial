@@ -707,7 +707,7 @@ if(1)
   
     void compare_matched_pairs()
     {
- 	//num_pq_pairs=10;
+ 	num_pq_pairs=10;
 
  	h_pnt_idx_vec.clear();
         h_pnt_len_vec.clear();

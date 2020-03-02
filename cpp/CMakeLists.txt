@@ -136,7 +136,7 @@ endif (RMM_INCLUDE AND RMM_LIBRARY)
 # - CUDF -------------------------------------------------------------------------------------------
 
 find_path(CUDF_INCLUDE "cudf"
-          HINTS "$ENV{CUDF_ROOT}/cpp/include")
+          HINTS "$ENV{CUDF_ROOT}/include")
 
 find_library(CUDF_LIBRARY "cudf"
              HINTS "$ENV{CUDF_ROOT}/lib")
