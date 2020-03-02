@@ -11,7 +11,7 @@ from cuspatial._lib.interpolate import (
 )
 
 
-def cubic_spline_coefficients(x, y, ids, prefix_sums):
+def _cubic_spline_coefficients(x, y, ids, prefix_sums):
     x_c = x._column
     y_c = y._column
     ids_c = ids._column
@@ -22,7 +22,7 @@ def cubic_spline_coefficients(x, y, ids, prefix_sums):
     return result
 
 
-def cubic_spline_fit(points, points_ids, prefixes, original_t, c):
+def _cubic_spline_fit(points, points_ids, prefixes, original_t, c):
     points_c = points._column
     points_ids_c = points_ids._column
     prefixes_c = prefixes._column
@@ -108,7 +108,7 @@ class CubicSpline:
         Utility method used by __init__ once members have been initialized.
         """
         if isinstance(self.y, Series):
-            return cubic_spline_coefficients(self.t, self.y, self.ids, self.prefix)
+            return _cubic_spline_coefficients(self.t, self.y, self.ids, self.prefix)
         else:
             c = {}
             for col in self.y.columns:
@@ -125,7 +125,7 @@ class CubicSpline:
                 self.groups = groups.astype("int32")
             else:
                 self.groups = Series(np.repeat(0, len(self.t))).astype("int32")
-            result = cubic_spline_fit(
+            result = _cubic_spline_fit(
                 coordinates, self.groups, self.prefix, self.t, self.c
             )
             return Series(result)
@@ -133,6 +133,6 @@ class CubicSpline:
             result = DataFrame()
             for col in self.y.columns:
                 result[col] = Series(
-                    cubic_spline_fit(self.c[col], coordinates)
+                    _cubic_spline_fit(self.c[col], coordinates)
                 )
             return result
