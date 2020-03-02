@@ -27,18 +27,7 @@
 #include <cudf/table/table.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 #include <cuspatial/cubic_spline.hpp>
-
-static void HandleCudaError( cudaError_t err,
-                         const char *file,
-                         int line ) {
-    if (err != cudaSuccess) {
-        printf( "%s in %s at line %d\n", cudaGetErrorString( err ),
-                file, line );
-        exit( EXIT_FAILURE );
-    }
-}
-#define HANDLE_CUDA_ERROR( err ) (HandleCudaError( err, __FILE__, __LINE__ ))
-
+#include <cuspatial/utility.hpp>
 
 struct CubicSplineTest : public GdfTest 
 {
@@ -46,7 +35,7 @@ struct CubicSplineTest : public GdfTest
 };
 
 template<typename T>
-auto make_col(T* const points, int length) {
+auto make_device_column(T* const points, int length) {
     T *d_p = NULL;
     RMM_TRY( RMM_ALLOC( &d_p, length * sizeof(T), 0));
     assert(d_p != NULL);    
@@ -79,10 +68,10 @@ TEST_F(CubicSplineTest, test_coefficients_single)
     int ids[ids_len] = {0, 0};
     int prefix[ids_len] = {0, 5};
    
-    cudf::column t_column = make_col<float>(t, point_len);
-    cudf::column y_column = make_col<float>(y, point_len);
-    cudf::column ids_column = make_col<int>(ids, ids_len);
-    cudf::column prefix_column = make_col<int>(prefix, ids_len);
+    cudf::column t_column = make_device_column<float>(t, point_len);
+    cudf::column y_column = make_device_column<float>(y, point_len);
+    cudf::column ids_column = make_device_column<int>(ids, ids_len);
+    cudf::column prefix_column = make_device_column<int>(prefix, ids_len);
 
     std::unique_ptr<cudf::experimental::table> splines =
         cuspatial::cubicspline_coefficients(
@@ -112,10 +101,10 @@ TEST_F(CubicSplineTest, test_coefficients_full)
     int ids[ids_len] = {0, 0, 1, 2};
     int prefix[ids_len] = {0, 5, 10, 15};
    
-    cudf::column t_column = make_col<float>(t, point_len);
-    cudf::column y_column = make_col<float>(y, point_len);
-    cudf::column ids_column = make_col<int>(ids, ids_len);
-    cudf::column prefix_column = make_col<int>(prefix, ids_len);
+    cudf::column t_column = make_device_column<float>(t, point_len);
+    cudf::column y_column = make_device_column<float>(y, point_len);
+    cudf::column ids_column = make_device_column<int>(ids, ids_len);
+    cudf::column prefix_column = make_device_column<int>(prefix, ids_len);
 
     std::unique_ptr<cudf::experimental::table> splines =
         cuspatial::cubicspline_coefficients(
@@ -146,11 +135,11 @@ TEST_F(CubicSplineTest, test_interpolate_single)
     int prefix[ids_len] = {0, 5};
     int point_ids[point_len] = {0, 0, 0, 0, 0};
     
-    cudf::column t_column = make_col<float>(t, point_len);
-    cudf::column x_column = make_col<float>(x, point_len);
-    cudf::column ids_column = make_col<int>(ids, ids_len);
-    cudf::column prefix_column = make_col<int>(prefix, ids_len);
-    cudf::column point_ids_column = make_col<int>(point_ids, point_len);
+    cudf::column t_column = make_device_column<float>(t, point_len);
+    cudf::column x_column = make_device_column<float>(x, point_len);
+    cudf::column ids_column = make_device_column<int>(ids, ids_len);
+    cudf::column prefix_column = make_device_column<int>(prefix, ids_len);
+    cudf::column point_ids_column = make_device_column<int>(point_ids, point_len);
 
     std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_coefficients(t_column, x_column, ids_column, prefix_column);
 
@@ -178,11 +167,11 @@ TEST_F(CubicSplineTest, test_interpolate_full)
     int prefix[ids_len] = {0, 5, 10, 15};
     int point_ids[point_len] = {0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2};
    
-    cudf::column t_column = make_col<float>(t, point_len);
-    cudf::column x_column = make_col<float>(x, point_len);
-    cudf::column ids_column = make_col<int>(ids, ids_len);
-    cudf::column prefix_column = make_col<int>(prefix, ids_len);
-    cudf::column point_ids_column = make_col<int>(point_ids, point_len);
+    cudf::column t_column = make_device_column<float>(t, point_len);
+    cudf::column x_column = make_device_column<float>(x, point_len);
+    cudf::column ids_column = make_device_column<int>(ids, ids_len);
+    cudf::column prefix_column = make_device_column<int>(prefix, ids_len);
+    cudf::column point_ids_column = make_device_column<int>(point_ids, point_len);
 
     std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_coefficients(t_column, x_column, ids_column, prefix_column);
 

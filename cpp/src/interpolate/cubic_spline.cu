@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,81 +14,16 @@
  * limitations under the License.
  */
 
-#include "cuspatial/cubic_spline.hpp"
+#include <cuspatial/cubic_spline.hpp>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/filling.hpp>
 #include <cudf/scalar/scalar.hpp>
 #include "cusparse.h"
+#include <cuspatial/utility.hpp>
 #include <thrust/device_vector.h>
 
 namespace { // anonymous
-
-void HANDLE_CUSPARSE_STATUS(cusparseStatus_t status) {
-  if(status != CUSPARSE_STATUS_SUCCESS) {
-    const char* status_string;
-    switch(status) {
-      case CUSPARSE_STATUS_SUCCESS:
-          status_string = "CUSPARSE_STATUS_SUCCESS";
-          break;
-      case CUSPARSE_STATUS_NOT_INITIALIZED:
-          status_string = "CUSPARSE_STATUS_NOT_INITIALIZED";
-          break;
-      case CUSPARSE_STATUS_ALLOC_FAILED:
-          status_string = "CUSPARSE_STATUS_ALLOC_FAILED";
-          break;
-      case CUSPARSE_STATUS_INVALID_VALUE:
-          status_string = "CUSPARSE_STATUS_INVALID_VALUE";
-          break;
-      case CUSPARSE_STATUS_ARCH_MISMATCH:
-          status_string = "CUSPARSE_STATUS_ARCH_MISMATCH";
-          break;
-      case CUSPARSE_STATUS_EXECUTION_FAILED:
-          status_string = "CUSPARSE_STATUS_EXECUTION_FAILED";
-          break;
-      case CUSPARSE_STATUS_INTERNAL_ERROR:
-          status_string = "CUSPARSE_STATUS_INTERNAL_ERROR";
-          break;
-      case CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
-          status_string = "CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED";
-          break;
-      default:
-          status_string = "UNKNOWN";
-    }
-    printf("Cusparse error status %s\n", status_string);
-    CUDF_EXPECTS(status != CUSPARSE_STATUS_SUCCESS, "Fail");
-  }
-}
-
-#define ALLOW_PRINT 0
-#if ALLOW_PRINT
-
-template<typename T>
-void tPrint(thrust::detail::normal_iterator<T> start, thrust::detail::normal_iterator<T> stop, const char* name="None") {
-    std::cout << name << " size: " << stop-start << " ";
-    thrust::copy(start, stop, std::ostream_iterator<float>(std::cout, " "));
-    std::cout << "\n";
-}
-
-template<typename T>
-void tPrint(rmm::device_vector<T> vec, const char* name="None") {
-  tPrint(vec.begin(), vec.end(), name);
-}
-
-void tPrint(cudf::mutable_column_view col, const char* name="None") {
-  rmm::device_vector<float> vec = rmm::device_vector<float>(col.data<float>(), col.data<float>()+col.size());
-  tPrint(vec.begin(), vec.end(), name);
-}
-
-void tPrint(cudf::column_view col, const char* name="None") {
-  rmm::device_vector<float> vec = rmm::device_vector<float>(col.data<float>(), col.data<float>()+col.size());
-  tPrint(vec.begin(), vec.end(), name);
-}
-#define TPRINT(vec, name) (tPrint( vec, name))
-
-#else
-#define TPRINT(vec, name) {}
-#endif
 
 struct parallel_search {
   template <typename T>
@@ -409,7 +344,7 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     cusparseHandle_t handle;
     cudaMalloc(&handle, sizeof(cusparseHandle_t));
     cusparseStatus = cusparseCreate(&handle);
-    HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    detail::HANDLE_CUSPARSE_STATUS(cusparseStatus);
     size_t pBufferSize;
     cusparseStatus = cusparseSgtsv2StridedBatch_bufferSizeExt(
         handle,
@@ -422,7 +357,7 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
         y.size()/(prefixes.size()-1),
         &pBufferSize
     );
-    HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    detail::HANDLE_CUSPARSE_STATUS(cusparseStatus);
     rmm::device_vector<float> pBuffer(pBufferSize);
     cusparseStatus = cusparseSgtsv2StridedBatch(
         handle,
@@ -435,9 +370,9 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
         y.size()/(prefixes.size()-1),
         thrust::raw_pointer_cast(pBuffer.data())
     );
-    HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    detail::HANDLE_CUSPARSE_STATUS(cusparseStatus);
     cusparseStatus = cusparseDestroy(handle);
-    HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    detail::HANDLE_CUSPARSE_STATUS(cusparseStatus);
 
     int dn = n - (prefixes.size()-1);
     // Finally, compute coefficients via Horner's scheme
