@@ -79,15 +79,14 @@ def test_class_coefs():
 
 
 def test_min():
-    result = cuspatial.cubic_spline_2(
+    result = cuspatial.CubicSpline(
         cudf.Series([0, 1, 2, 3, 4]).astype("float32"),
         cudf.Series([3, 2, 3, 4, 3]).astype("float32"),
-        cudf.Series([0, 0]).astype("int32"),
         cudf.Series([0, 5]).astype("int32"),
     )
     print(result)
     assert_eq(
-        result,
+        result.c,
         cudf.DataFrame(
             {
                 "d3": [0.5, -0.5, -0.5, 0.5],
@@ -101,18 +100,18 @@ def test_min():
 
 
 def test_cusparse():
-    result = cuspatial.cubic_spline_2(
+    result = cuspatial.CubicSpline(
         cudf.Series([0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4]).astype(
             "float32"
         ),
         cudf.Series([3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3]).astype(
             "float32"
         ),
-        cudf.Series([0, 0, 1, 2]).astype("int32"),
-        cudf.Series([0, 5, 10, 15]).astype("int32"),
+        prefixes=cudf.Series([0, 5, 10, 15]).astype("int32"),
     )
+    print(result.c)
     assert_eq(
-        result,
+        result.c,
         cudf.DataFrame(
             {
                 "d3": [

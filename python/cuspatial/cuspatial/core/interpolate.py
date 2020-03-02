@@ -6,35 +6,17 @@ from cudf import DataFrame, Series
 from cudf.core.index import RangeIndex
 
 from cuspatial._lib.interpolate import (
-    cubicspline_full,
+    cubicspline_coefficients,
     cubicspline_interpolate,
 )
 
 
-def cubic_spline_2(x, y, ids, prefix_sums):
-    """
-    Fits each column of the input DataFrame `y` to a hermetic cubic spline.
-
-    Parameters
-    ----------
-    x : cudf.Series
-        time sample values. Must be monotonically increasing.
-    y : cudf.DataFrame
-        columns to have curves fit to according to x
-    ids_and_end_coordinates: cudf.DataFrame
-                             ids and final positions of each set of
-                             trajectories
-
-    Returns
-    -------
-    m x n DataFrame of trajectory curve coefficients.
-    m is len(ids_and_end_coordinates), n is 4 * len(y.columns)
-    """
+def cubic_spline_coefficients(x, y, ids, prefix_sums):
     x_c = x._column
     y_c = y._column
     ids_c = ids._column
     prefix_c = prefix_sums._column
-    result_table = cubicspline_full(x_c, y_c, ids_c, prefix_c)
+    result_table = cubicspline_coefficients(x_c, y_c, ids_c, prefix_c)
     result_table._index = RangeIndex(result_table._num_rows)
     result = DataFrame._from_table(result_table)
     return result
@@ -52,7 +34,36 @@ def cubic_spline_fit(points, points_ids, prefixes, original_t, c):
 
 
 class CubicSpline:
+    """
+    Fits each column of the input Series `y` to a hermetic cubic spline.
+
+    Parameters
+    ----------
+    t : cudf.Series
+        time sample values. Must be monotonically increasing.
+    y : cudf.Series
+        columns to have curves fit to according to x
+    ids (Optional) : cudf.Series
+        ids of each spline
+    size (Optional) : cudf.Series
+        fixed size of each spline
+    prefixes (Optional) : cudf.Series
+        alternative to `size`, allows splines of varying
+        length. Not yet fully supported.
+
+    Returns
+    -------
+    CubicSpline object `o`. `o.c` contains the coefficients that can be
+    used to compute new points along the spline fitting the original `t`
+    data. `o(n)` interpolates the spline coordinates along new input
+    values `n`.
+    """
     def __init__(self, t, y, ids=None, size=None, prefixes=None):
+        """
+        Computes various error preconditions on the input data, then
+        calls C++/Thrust code to compute cubic splines for each set of input
+        coordinates in parallel.
+        """
         # error protections:
         if len(t) < 5:
             raise ValueError(
@@ -93,15 +104,22 @@ class CubicSpline:
         self.c = self._compute_coefficients()
 
     def _compute_coefficients(self):
+        """
+        Utility method used by __init__ once members have been initialized.
+        """
         if isinstance(self.y, Series):
-            return cubic_spline_2(self.t, self.y, self.ids, self.prefix)
+            return cubic_spline_coefficients(self.t, self.y, self.ids, self.prefix)
         else:
             c = {}
             for col in self.y.columns:
-                c[col] = cubic_spline_2(self.t, self.y, self.ids, self.prefix)
+                c[col] = cubic_spline_coefficients(self.t, self.y, self.ids, self.prefix)
             return c
 
     def __call__(self, coordinates, groups=None):
+        """
+        Interpolates new input values `coordinates` using the `.c` DataFrame
+        or map of DataFrames.
+        """
         if isinstance(self.y, Series):
             if groups is not None:
                 self.groups = groups.astype("int32")

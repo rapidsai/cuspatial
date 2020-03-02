@@ -7,7 +7,7 @@
 from cudf._libxx.table cimport *
 
 cdef extern from "cubic_spline.hpp" namespace "cuspatial" nogil:
-    cdef unique_ptr[table] cpp_cubicspline_cusparse "cuspatial::cubicspline_coefficients" (  # NOQA: E501
+    cdef unique_ptr[table] cpp_cubicspline_coefficients "cuspatial::cubicspline_coefficients" (  # NOQA: E501
         column_view t,
         column_view x,
         column_view ids,
