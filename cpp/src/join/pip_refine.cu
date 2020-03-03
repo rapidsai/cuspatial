@@ -266,13 +266,13 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
          
      uint32_t *d_pq_poly_id=NULL,*d_pq_quad_id=NULL,*d_quad_offset=NULL,*d_quad_len=NULL;
      RMM_TRY( RMM_ALLOC( &d_pq_poly_id,num_pq_pair* sizeof(uint32_t), 0));
-     HANDLE_CUDA_ERROR( cudaMemset(d_pq_poly_id,0,num_pq_pair*sizeof(uint32_t)) ); 
+     HANDLE_CUDA_ERROR( cudaMemset(d_pq_poly_id,0,num_pq_pair) ); 
      RMM_TRY( RMM_ALLOC( &d_pq_quad_id,num_pq_pair* sizeof(uint32_t), 0));
-     HANDLE_CUDA_ERROR( cudaMemset(d_pq_quad_id,0,num_pq_pair*sizeof(uint32_t)) ); 
+     HANDLE_CUDA_ERROR( cudaMemset(d_pq_quad_id,0,num_pq_pair) ); 
      RMM_TRY( RMM_ALLOC( &d_quad_offset,num_pq_pair* sizeof(uint32_t), 0));
-     HANDLE_CUDA_ERROR( cudaMemset(d_quad_offset,0,num_pq_pair*sizeof(uint32_t)) );
+     HANDLE_CUDA_ERROR( cudaMemset(d_quad_offset,0,num_pq_pair) );
      RMM_TRY( RMM_ALLOC( &d_quad_len,num_pq_pair* sizeof(uint32_t), 0));
-     HANDLE_CUDA_ERROR( cudaMemset(d_quad_len,0,num_pq_pair*sizeof(uint32_t)) );
+     HANDLE_CUDA_ERROR( cudaMemset(d_quad_len,0,num_pq_pair) );
           
      thrust::exclusive_scan(exec_policy,d_num_units,d_num_units+num_org_pair,d_num_sum);
  if(0)
@@ -318,7 +318,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
       uint32_t *d_num_hits=NULL;
       RMM_TRY( RMM_ALLOC( &d_num_hits,num_pq_pair* sizeof(uint32_t), 0));
       assert(d_num_hits!=NULL);
-      HANDLE_CUDA_ERROR( cudaMemset(d_num_hits,0,num_pq_pair*sizeof(uint32_t)) ); 
+      HANDLE_CUDA_ERROR( cudaMemset(d_num_hits,0,num_pq_pair) ); 
    
      thrust::exclusive_scan_by_key(exec_policy,d_quad_offset,d_quad_offset+num_pq_pair,
      	thrust::constant_iterator<int>(1),d_quad_offset);

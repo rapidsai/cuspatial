@@ -105,7 +105,7 @@ if(0)
      
     RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_numchild),num_level*num_run* sizeof(uint32_t),stream));
     assert(d_pnt_numchild!=NULL);
-    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_numchild,0,num_run*sizeof(uint32_t)) ); 
+    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_numchild,0,num_run)); 
     
     //generating keys of paraent quadrants and numbers of child quadrants of "full quadrants" 
     //based on the second of paragraph of Section 4.2 of ref. 
@@ -187,7 +187,7 @@ if(0)
     uint32_t *d_pnt_parentpos=NULL;
     RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_parentpos),num_child_nodes* sizeof(uint32_t),stream));
     assert(d_pnt_parentpos!=NULL); 
-    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_parentpos,0,num_child_nodes*sizeof(uint32_t)) );
+    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_parentpos,0,num_child_nodes) );
     
     //line 2 of algorithm in Fig. 5 in ref. 
     thrust::scatter(exec_policy,thrust::make_counting_iterator(0),
@@ -248,7 +248,7 @@ if(0)
            cudf::data_type(cudf::type_id::BOOL8), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);
     bool *d_pnt_qtsign=cudf::mutable_column_device_view::create(sign_col->mutable_view(), stream)->data<bool>();
     assert(d_pnt_qtsign!=NULL);
-    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_qtsign,0,num_valid_nodes*sizeof(bool)) );
+    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_qtsign,0,num_valid_nodes) );
 
     //line 6 of algorithm in Fig. 5 in ref. 
     thrust::transform(exec_policy,d_pnt_qtnlen,d_pnt_qtnlen+num_parent_nodes,d_pnt_qtsign,thrust::placeholders::_1 > min_size);
@@ -323,8 +323,8 @@ if(0)
     thrust::stable_sort_by_key(thrust::device,d_pnt_tmp_seq,d_pnt_tmp_seq+num_leaf_nodes,len_pos_iter);
     
     RMM_TRY(RMM_FREE(d_pnt_tmp_seq,stream));d_pnt_tmp_seq=NULL; 
-    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_qtnlen,0,num_valid_nodes*sizeof(uint32_t)) );
-    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_qtnpos,0,num_valid_nodes*sizeof(uint32_t)) );
+    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_qtnlen,0,num_valid_nodes) );
+    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_qtnpos,0,num_valid_nodes) );
    
     auto in_len_pos_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_tmp_neln,d_pnt_tmp_npos));
     auto out_len_pos_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_qtnlen,d_pnt_qtnpos));
