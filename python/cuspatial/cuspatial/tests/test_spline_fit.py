@@ -61,8 +61,8 @@ def test_zeros():
 
 
 def test_class_coefs():
-    t = cudf.Series([0, 1, 2, 3, 4])
-    x = cudf.Series([3, 2, 3, 4, 3])
+    t = cudf.Series([0, 1, 2, 3, 4]).astype("float32")
+    x = cudf.Series([3, 2, 3, 4, 3]).astype("float32")
     g = cuspatial.interpolate.CubicSpline(t, x)
     assert_eq(
         g.c,
@@ -165,7 +165,7 @@ def test_class_triple():
         "float32"
     )
     g = cuspatial.interpolate.CubicSpline(
-        t, x, prefixes=cudf.Series([0, 5, 10, 15])
+        t, x, prefixes=cudf.Series([0, 5, 10, 15]).astype("int32")
     )
     groups = np.array([np.repeat(0, 5), np.repeat(1, 5), np.repeat(2, 5)])
     assert_eq(g(t, groups=cudf.Series(groups)), x)
