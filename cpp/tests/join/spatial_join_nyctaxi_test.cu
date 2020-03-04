@@ -545,38 +545,12 @@ struct SpatialJoinNYCTaxi : public GdfTest
         RMM_TRY( RMM_ALLOC( (void**)&(d_qt_fpos),num_quadrants*sizeof(uint32_t), 0));
         HANDLE_CUDA_ERROR( cudaMemcpy( d_qt_length, d_temp_length, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
         HANDLE_CUDA_ERROR( cudaMemcpy( d_qt_fpos, d_temp_fpos, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );        
-     
-if(1)
-{
-        std::unique_ptr<cudf::experimental::table> bbox_tbl=
-     	cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view()); 
-        std::cout<<"# of polygon bboxes="<<bbox_tbl->view().num_rows()<<std::endl;
-        
-        const double *d_x1=bbox_tbl->view().column(0).data<double>();
-        const double *d_y1=bbox_tbl->view().column(1).data<double>();
-        const double *d_x2=bbox_tbl->view().column(2).data<double>();  
-        const double *d_y2=bbox_tbl->view().column(3).data<double>();
-        thrust::device_ptr<const double> x1_ptr=thrust::device_pointer_cast(d_x1);
-        thrust::device_ptr<const double> y1_ptr=thrust::device_pointer_cast(d_y1);
-        thrust::device_ptr<const double> x2_ptr=thrust::device_pointer_cast(d_x2);
-        thrust::device_ptr<const double> y2_ptr=thrust::device_pointer_cast(d_y2);
-      
-        thrust::host_vector<double> h_x1(x1_ptr,x1_ptr+num_poly);
-        thrust::host_vector<double> h_y1(y1_ptr,y1_ptr+num_poly);
-        thrust::host_vector<double> h_x2(x2_ptr,x2_ptr+num_poly);
-        thrust::host_vector<double> h_y2(y2_ptr,y2_ptr+num_poly);
-    
-        FILE *fp=NULL;
-        if((fp=fopen("poly_mbr_old.csv","w"))==NULL)
-        {
-            printf("can not open pp_pair_old.csv for output\n");
-  	    exit(-1);
-        }
-        for(uint32_t i=0;i<num_poly;i++)
-            fprintf(fp,"%10d, %15.5f, %15.5f, %15.5f, %15.5f\n",i,h_x1[i],h_y1[i],h_x2[i],h_y2[i]);
-        fclose(fp);    
-}
 
+//alternatively derive polygon bboxes from GDAL and then create bbox table for subsequent steps
+//also output bbox coordiantes as a CSV file for examination/comparison
+
+if(0)
+{
         std::unique_ptr<cudf::column> x1_col = cudf::make_numeric_column(
         cudf::data_type{cudf::experimental::type_to_id<double>()}, num_poly,cudf::mask_state::UNALLOCATED, stream, mr);
         double *d_x1=cudf::mutable_column_device_view::create(x1_col->mutable_view(), stream)->data<double>();
@@ -618,21 +592,18 @@ if(1)
 	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_y1, (void *)h_y1, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );
 	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_x2, (void *)h_x2, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );
 	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_y2, (void *)h_y2, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );
-	
- if(1)
- {
     
-    FILE *fp=NULL;
-    if((fp=fopen("poly_mbr.csv","w"))==NULL)
-    {
-        printf("can not open pp_pair.csv for output\n");
-  	   exit(-1);
-    }
-    for(uint32_t i=0;i<num_poly;i++)
+        FILE *fp=NULL;
+        if((fp=fopen("poly_mbr.csv","w"))==NULL)
+        {
+             printf("can not open pp_pair.csv for output\n");
+             exit(-1);
+        }
+        for(uint32_t i=0;i<num_poly;i++)
     	fprintf(fp,"%10d, %15.5f, %15.5f, %15.5f, %15.5f\n",i,h_x1[i],h_y1[i],h_x2[i],h_y2[i]);
-    fclose(fp);
-    write_shapefile("poly_mbr.shp",num_poly,h_x1,h_y1,h_x2,h_y2);
- }
+        fclose(fp);
+        write_shapefile("poly_mbr.shp",num_poly,h_x1,h_y1,h_x2,h_y2);
+
 
         std::vector<std::unique_ptr<cudf::column>> bbox_cols;
         bbox_cols.push_back(std::move(x1_col));
@@ -641,9 +612,38 @@ if(1)
         bbox_cols.push_back(std::move(y2_col));
         std::unique_ptr<cudf::experimental::table> bbox_tbl = 
             std::make_unique<cudf::experimental::table>(std::move(bbox_cols));
-        
-        exit(-1);
-        
+ }        
+
+      std::unique_ptr<cudf::experimental::table> bbox_tbl=
+        cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view()); 
+      std::cout<<"# of polygon bboxes="<<bbox_tbl->view().num_rows()<<std::endl;
+
+//output bbox coordiantes as a CSV file for examination/comparison
+
+        const double *d_x1=bbox_tbl->view().column(0).data<double>();
+        const double *d_y1=bbox_tbl->view().column(1).data<double>();
+        const double *d_x2=bbox_tbl->view().column(2).data<double>();  
+        const double *d_y2=bbox_tbl->view().column(3).data<double>();
+        thrust::device_ptr<const double> x1_ptr=thrust::device_pointer_cast(d_x1);
+        thrust::device_ptr<const double> y1_ptr=thrust::device_pointer_cast(d_y1);
+        thrust::device_ptr<const double> x2_ptr=thrust::device_pointer_cast(d_x2);
+        thrust::device_ptr<const double> y2_ptr=thrust::device_pointer_cast(d_y2);
+      
+        thrust::host_vector<double> h_x1(x1_ptr,x1_ptr+num_poly);
+        thrust::host_vector<double> h_y1(y1_ptr,y1_ptr+num_poly);
+        thrust::host_vector<double> h_x2(x2_ptr,x2_ptr+num_poly);
+        thrust::host_vector<double> h_y2(y2_ptr,y2_ptr+num_poly);
+    
+        FILE *fp=NULL;
+        if((fp=fopen("poly_mbr_old.csv","w"))==NULL)
+        {
+            printf("can not open pp_pair_old.csv for output\n");
+  	    exit(-1);
+        }
+        for(uint32_t i=0;i<num_poly;i++)
+            fprintf(fp,"%10d, %15.5f, %15.5f, %15.5f, %15.5f\n",i,h_x1[i],h_y1[i],h_x2[i],h_y2[i]);
+        fclose(fp);    
+   
         const cudf::table_view quad_view=quadtree->view();
         const cudf::table_view bbox_view=bbox_tbl->view();
      
@@ -1016,8 +1016,8 @@ TEST_F(SpatialJoinNYCTaxi, test)
     std::cout<<"loading NYC taxi zone shapefile data..........."<<std::endl;  
     double poly_x1,poly_y1,poly_x2,poly_y2;
       
-    uint8_t type=2; //multi-polygons only  
-    //uint8_t type=0; //all polygons
+    //uint8_t type=2; //multi-polygons only  
+    uint8_t type=0; //all polygons
     this->setup_polygons(poly_x1,poly_y1,poly_x2,poly_y2,type);
         
     std::cout<<"loading NYC taxi pickup locations..........."<<std::endl;  
