@@ -4,12 +4,14 @@
 # cython: language_level = 3
 # distutils: include_dirs = cuspatial/bindings/
 
-from cudf._libxx.table cimport table, \
-                               column_view, \
-                               table_view, \
-                               move, \
-                               unique_ptr, \
-                               column
+from cudf._libxx.table cimport (
+    table,
+    column_view,
+    table_view,
+    move,
+    unique_ptr,
+    column
+)
 
 cdef extern from "cubic_spline.hpp" namespace "cuspatial" nogil:
     cdef unique_ptr[table] cpp_cubicspline_coefficients \
