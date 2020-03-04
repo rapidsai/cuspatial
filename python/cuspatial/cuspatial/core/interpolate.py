@@ -81,6 +81,7 @@ class CubicSpline:
         new_points = curve(new_samples, prefix_sum*10)
 
     """
+
     def __init__(self, t, y, ids=None, size=None, prefixes=None):
         """
         Computes various error preconditions on the input data, then
@@ -108,13 +109,9 @@ class CubicSpline:
             self.ids = Series([0, 0]).astype("int32")
         else:
             if not isinstance(ids, Series):
-                raise TypeError(
-                    "cuspatial.CubicSpline requires a cudf.Series"
-                )
+                raise TypeError("cuspatial.CubicSpline requires a cudf.Series")
             if not ids.dtype == np.int32:
-                raise TypeError(
-                    "Error: int32 only supported at this time."
-                )
+                raise TypeError("Error: int32 only supported at this time.")
             self.ids = ids
         self.size = size if size is not None else len(t)
         if not isinstance(self.size, int):
@@ -124,21 +121,13 @@ class CubicSpline:
                 "Error: length of input is not a multiple of size"
             )
         if not isinstance(t, Series):
-            raise TypeError(
-                "cuspatial.CubicSpline requires a cudf.Series"
-            )
+            raise TypeError("cuspatial.CubicSpline requires a cudf.Series")
         if not t.dtype == np.float32:
-            raise TypeError(
-                "Error: float32 only supported at this time."
-            )
+            raise TypeError("Error: float32 only supported at this time.")
         if not isinstance(y, Series):
-            raise TypeError(
-                "cuspatial.CubicSpline requires a cudf.Series"
-            )
+            raise TypeError("cuspatial.CubicSpline requires a cudf.Series")
         if not y.dtype == np.float32:
-            raise TypeError(
-                "Error: float32 only supported at this time."
-            )
+            raise TypeError("Error: float32 only supported at this time.")
         self.t = t
         self.y = y
         if prefixes is None:
@@ -147,13 +136,9 @@ class CubicSpline:
             ).astype("int32")
         else:
             if not isinstance(prefixes, Series):
-                raise TypeError(
-                    "cuspatial.CubicSpline requires a cudf.Series"
-                )
+                raise TypeError("cuspatial.CubicSpline requires a cudf.Series")
             if not prefixes.dtype == np.int32:
-                raise TypeError(
-                    "Error: int32 only supported at this time."
-                )
+                raise TypeError("Error: int32 only supported at this time.")
             self.prefix = prefixes
 
         self.c = self._compute_coefficients()
