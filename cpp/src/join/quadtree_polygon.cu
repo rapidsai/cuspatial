@@ -168,7 +168,7 @@ if(0)
         uint32_t *d_expand_pos=NULL;
         RMM_TRY( RMM_ALLOC( &d_expand_pos,num_pair* sizeof(uint32_t), stream));
         CUDF_EXPECTS(d_expand_pos!=NULL,"Error allocating memory for expanded offset array on device");
-        HANDLE_CUDA_ERROR( cudaMemset(d_expand_pos,0,num_pair) );
+        HANDLE_CUDA_ERROR( cudaMemset(d_expand_pos,0,num_pair*sizeof(uint32_t)) );
 
         uint8_t *d_pq_lev_new=NULL,*d_pq_type_new=NULL;
         RMM_TRY( RMM_ALLOC( &d_pq_lev_new,num_pair* sizeof(uint8_t), stream));

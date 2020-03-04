@@ -62,8 +62,8 @@ struct bounding_box_processor {
         assert(d_first_ring_pos!=NULL);
         RMM_TRY( RMM_ALLOC( &d_vertex_pid,num_vertex* sizeof(uint32_t), stream));
         assert(d_vertex_pid!=NULL);
-        HANDLE_CUDA_ERROR( cudaMemset(d_first_ring_pos,0,num_poly) );
-        HANDLE_CUDA_ERROR( cudaMemset(d_vertex_pid,0,num_vertex) );
+        HANDLE_CUDA_ERROR( cudaMemset(d_first_ring_pos,0,num_poly*sizeof(uint32_t)) );
+        HANDLE_CUDA_ERROR( cudaMemset(d_vertex_pid,0,num_vertex*sizeof(uint32_t)) );
  
         thrust::adjacent_difference(exec_policy, d_ply_fpos,d_ply_fpos+num_poly,d_first_ring_pos);
         thrust::exclusive_scan(exec_policy,d_first_ring_pos,d_first_ring_pos+num_poly,d_first_ring_pos);
