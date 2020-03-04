@@ -21,7 +21,6 @@
 #include <cudf/scalar/scalar.hpp>
 #include "cusparse.h"
 #include <cuspatial/utility.hpp>
-#include <thrust/device_vector.h>
 
 namespace { // anonymous
 
@@ -246,11 +245,11 @@ namespace cuspatial
 {
 
 std::unique_ptr<cudf::column> cubicspline_interpolate(
-    cudf::column_view query_points,
-    cudf::column_view curve_ids,
-    cudf::column_view prefixes,
-    cudf::column_view source_points,
-    cudf::table_view coefficients
+    cudf::column_view const& query_points,
+    cudf::column_view const& curve_ids,
+    cudf::column_view const& prefixes,
+    cudf::column_view const& source_points,
+    cudf::table_view const& coefficients
 )
 {
     cudaStream_t stream=0;
@@ -275,10 +274,10 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
 }
 
 std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
-    cudf::column_view t,
-    cudf::column_view y,
-    cudf::column_view ids,
-    cudf::column_view prefixes
+    cudf::column_view const& t,
+    cudf::column_view const& y,
+    cudf::column_view const& ids,
+    cudf::column_view const& prefixes
 )
 {
     cudaStream_t stream=0;
@@ -295,17 +294,15 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     auto Dlu_col = make_numeric_column(y.type(), n, cudf::mask_state::UNALLOCATED, stream, mr);
     auto Dll_col = make_numeric_column(y.type(), n, cudf::mask_state::UNALLOCATED, stream, mr);
     auto u_col = make_numeric_column(y.type(), n, cudf::mask_state::UNALLOCATED, stream, mr);
-    cudf::mutable_column_view h_buffer = h_col->mutable_view();
-    cudf::mutable_column_view i_buffer = i_col->mutable_view();
-    cudf::mutable_column_view D_buffer = D_col->mutable_view();
-    cudf::mutable_column_view Dlu_buffer = Dll_col->mutable_view();
-    cudf::mutable_column_view Dll_buffer = Dll_col->mutable_view();
-    cudf::mutable_column_view u_buffer = u_col->mutable_view();
-    
-    cudf::experimental::scalar_type_t<float> zero;
-    zero.set_value(0.0);
-    cudf::experimental::scalar_type_t<float> one;
-    one.set_value(1.0);
+    auto h_buffer = h_col->mutable_view();
+    auto i_buffer = i_col->mutable_view();
+    auto D_buffer = D_col->mutable_view();
+    auto Dlu_buffer = Dll_col->mutable_view();
+    auto Dll_buffer = Dll_col->mutable_view();
+    auto u_buffer = u_col->mutable_view();
+   
+    auto zero = cudf::numeric_scalar<float>(0.0);
+    auto one = cudf::numeric_scalar<float>(1.0);
     cudf::experimental::fill_in_place(h_buffer, 0, h_col->size(), zero);
     cudf::experimental::fill_in_place(i_buffer, 0, i_col->size(), zero);
     cudf::experimental::fill_in_place(D_buffer, 0, D_col->size(), one);
@@ -342,29 +339,31 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     cusparseStatus = cusparseCreate(&handle);
     detail::HANDLE_CUSPARSE_STATUS(cusparseStatus);
     size_t pBufferSize;
+    int32_t batchStride = y.size() / (prefixes.size() - 1);
+    int32_t batchSize = batchStride;
     cusparseStatus = cusparseSgtsv2StridedBatch_bufferSizeExt(
         handle,
-        y.size()/(prefixes.size()-1),
+        batchSize,
         Dll_buffer.data<float>(),
         D_buffer.data<float>(),
         Dlu_buffer.data<float>(),
         u_buffer.data<float>(),
         prefixes.size()-1,
-        y.size()/(prefixes.size()-1),
+        batchStride,
         &pBufferSize
     );
     detail::HANDLE_CUSPARSE_STATUS(cusparseStatus);
     rmm::device_vector<float> pBuffer(pBufferSize);
     cusparseStatus = cusparseSgtsv2StridedBatch(
         handle,
-        y.size()/(prefixes.size()-1),
+        batchSize,
         Dll_buffer.data<float>(),
         D_buffer.data<float>(),
         Dlu_buffer.data<float>(),
         u_buffer.data<float>(),
         prefixes.size()-1,
-        y.size()/(prefixes.size()-1),
-        thrust::raw_pointer_cast(pBuffer.data())
+        batchStride,
+        thrust::raw_pointer_cast(pBuffer.data().get())
     );
     detail::HANDLE_CUSPARSE_STATUS(cusparseStatus);
     cusparseStatus = cusparseDestroy(handle);
@@ -376,10 +375,10 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     auto d2_col = make_numeric_column(y.type(), dn, cudf::mask_state::UNALLOCATED, stream, mr);
     auto d1_col = make_numeric_column(y.type(), dn, cudf::mask_state::UNALLOCATED, stream, mr);
     auto d0_col = make_numeric_column(y.type(), dn, cudf::mask_state::UNALLOCATED, stream, mr);
-    cudf::mutable_column_view d3 = d3_col->mutable_view();
-    cudf::mutable_column_view d2 = d2_col->mutable_view();
-    cudf::mutable_column_view d1 = d1_col->mutable_view();
-    cudf::mutable_column_view d0 = d0_col->mutable_view();
+    auto d3 = d3_col->mutable_view();
+    auto d2 = d2_col->mutable_view();
+    auto d1 = d1_col->mutable_view();
+    auto d0 = d0_col->mutable_view();
 
     coefficients_compute coefs;
     coefs.operator()<float>(t, y, prefixes, h_buffer, i_buffer, u_buffer, d3, d2, d1, d0, mr, stream);
