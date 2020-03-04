@@ -9,55 +9,31 @@ from cudf.tests.utils import assert_eq
 import cuspatial
 
 
-@pytest.mark.xfail(raises=TypeError, reason="size must be an integer")
-def test_bad_size_type():
-    # error handling
-    result = cuspatial.interpolate.CubicSpline(
-        cudf.Series([0, 0, 0, 0, 0]).astype("float32"),
-        cudf.Series([0]).astype("float32"),
-        cudf.Series([0]).astype("int32"),
-        cudf.Series([0, 1]).astype("int32"),
-    )
-    assert_eq(result, cudf.DataFrame([0, 0, 0, 0]))
-
-
-@pytest.mark.xfail(raises=TypeError, reason="have different length")
-def test_length_not_matching():
-    # error handling
-    result = cuspatial.interpolate.CubicSpline(
-        cudf.Series([0, 0, 0, 0, 0]).astype("float32"),
-        cudf.Series([0, 0, 0, 0]).astype("float32"),
-        cudf.Series([0]).astype("int32"),
-        0,
-    )
-    assert_eq(result, cudf.DataFrame([0, 0, 0, 0]))
-
-
-@pytest.mark.xfail(raises=ZeroDivisionError, reason="modulo by zero")
-def test_size_is_zero():
-    # error handling
-    result = cuspatial.interpolate.CubicSpline(
-        cudf.Series([0, 0, 0, 0, 0]).astype("float32"),
-        cudf.Series([0, 0, 0, 0, 0]).astype("float32"),
-        cudf.Series([0]).astype("int32"),
-        0,
-    )
-    assert_eq(result, cudf.DataFrame([0, 0, 0, 0]))
-
-
-@pytest.mark.xfail(raises=ValueError, reason="splines of length")
-def test_zeros():
-    result = cuspatial.interpolate.CubicSpline(
-        cudf.Series([0]).astype("float32"),
-        cudf.Series([0]).astype("float32"),
-        cudf.Series([0]).astype("int32"),
-        1,
-    )
-    print(result.c)
-    assert_eq(
-        result.c,
-        cudf.DataFrame({"d3": 0, "d2": 0, "d1": 0, "d0": 0}).astype("float32"),
-    )
+def test_errors():
+    # t and y must have the same length
+    with pytest.raises(TypeError):
+        result = cuspatial.interpolate.CubicSpline(
+            cudf.Series([0, 0, 0, 0, 0]).astype("float32"),
+            cudf.Series([0]).astype("float32"),
+            cudf.Series([0]).astype("int32"),
+            cudf.Series([0, 1]).astype("int32"),
+        )
+    # length must not be zero
+    with pytest.raises(ZeroDivisionError):
+        result = cuspatial.interpolate.CubicSpline(
+            cudf.Series([0, 0, 0, 0, 0]).astype("float32"),
+            cudf.Series([0, 0, 0, 0, 0]).astype("float32"),
+            cudf.Series([0]).astype("int32"),
+            0,
+        )
+    # Length must be greater than 4
+    with pytest.raises(ValueError):
+        result = cuspatial.interpolate.CubicSpline(
+            cudf.Series([0]).astype("float32"),
+            cudf.Series([0]).astype("float32"),
+            cudf.Series([0]).astype("int32"),
+            1,
+        )
 
 
 def test_class_coefs():
@@ -84,7 +60,6 @@ def test_min():
         cudf.Series([3, 2, 3, 4, 3]).astype("float32"),
         cudf.Series([0, 5]).astype("int32"),
     )
-    print(result)
     assert_eq(
         result.c,
         cudf.DataFrame(
@@ -109,7 +84,6 @@ def test_cusparse():
         ),
         prefixes=cudf.Series([0, 5, 10, 15]).astype("int32"),
     )
-    print(result.c)
     assert_eq(
         result.c,
         cudf.DataFrame(
