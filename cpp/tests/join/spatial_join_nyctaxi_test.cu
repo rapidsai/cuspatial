@@ -225,6 +225,87 @@ size_t read_point_binary(const char *fn,double*& h_pnt_x,double*& h_pnt_y)
     //gettimeofday(&t0, NULL);
 }
 
+/*void write_shapefile(const char * file_name,
+	const thrust::host_vector<double>& x1,const thrust::host_vector<double>& y1,
+	const thrust::host_vector<double>& x2,const thrust::host_vector<double>& y2)*/
+
+void write_shapefile(const char * file_name,uint32_t num_poly,
+	const double *x1,const double * y1,const double *x2,const double * y2)
+{
+   GDALAllRegister();
+   const char *pszDriverName = "ESRI Shapefile";
+   GDALDriver *poDriver= GetGDALDriverManager()->GetDriverByName(pszDriverName );
+
+   if( poDriver == NULL )
+   {
+    printf( "%s driver not available.\n", pszDriverName );
+    exit( 1 );
+    }
+
+   GDALDataset * poDS = poDriver->Create( file_name, 0, 0, 0, GDT_Unknown, NULL );
+   if( poDS == NULL )
+   {
+    printf( "Creation of output file failed.\n" );
+    exit( 1 );
+   }
+
+   OGRLayer *poLayer= poDS->CreateLayer( "bbox", NULL, wkbLineString, NULL );
+   if( poLayer == NULL )
+   {
+     printf( "Layer creation failed.\n" );
+     exit( 1 );
+   }
+
+   OGRFieldDefn oField0( "MID", OFTInteger );
+   OGRFieldDefn oField1( "x1", OFTReal );
+   OGRFieldDefn oField2( "y1", OFTReal );
+   OGRFieldDefn oField3( "x2", OFTReal );
+   OGRFieldDefn oField4( "y2", OFTReal );
+  
+   bool b0=(poLayer->CreateField( &oField0 ) != OGRERR_NONE);
+   bool b1=(poLayer->CreateField( &oField1 ) != OGRERR_NONE);
+   bool b2=(poLayer->CreateField( &oField2 ) != OGRERR_NONE);
+   bool b3=(poLayer->CreateField( &oField3 ) != OGRERR_NONE);
+   bool b4=(poLayer->CreateField( &oField4 ) != OGRERR_NONE);
+   if(b0||b1||b2||b3||b4)
+   {
+       printf( "Creating Name field failed.\n" );
+       exit( 1 );
+   }
+   uint32_t num_f=0;
+   for(uint32_t i=0;i<num_poly;i++)
+   {
+	 OGRFeature *poFeature=OGRFeature::CreateFeature( poLayer->GetLayerDefn() );
+	 assert(poFeature!=NULL);
+	 poFeature->SetField( "MID",(int)i);
+	 poFeature->SetField( "x1",x1[i]);
+	 poFeature->SetField( "y1",y1[i]);
+	 poFeature->SetField( "x2",x2[i]);
+	 poFeature->SetField( "y2",y2[i]);
+	 
+	 OGRLineString *ls=(OGRLinearRing*)OGRGeometryFactory::createGeometry(wkbLinearRing);	 
+	 ls->addPoint(x1[i],y1[i]);
+	 ls->addPoint(x1[i],y2[i]);
+	 ls->addPoint(x2[i],y2[i]);
+	 ls->addPoint(x2[i],y1[i]);
+	 ls->addPoint(x1[i],y1[i]);	 
+
+	 OGRPolygon *polygon=(OGRPolygon*)OGRGeometryFactory::createGeometry(wkbPolygon);
+	 polygon->addRing(ls);
+	 poFeature->SetGeometry(polygon);
+
+	 if( poLayer->CreateFeature( poFeature ) != OGRERR_NONE )
+	 {
+		 printf( "Failed to create feature in shapefile.\n" );
+		 exit( 1 );
+	 }
+	 OGRFeature::DestroyFeature( poFeature );
+	 num_f++;
+      }
+   GDALClose( poDS );
+   printf("num_poly=%d num_f=%d\n",num_poly,num_f);
+}  
+
 float calc_time(const char *msg,timeval t0, timeval t1)
 {
  	long d = t1.tv_sec*1000000+t1.tv_usec - t0.tv_sec * 1000000-t0.tv_usec;
@@ -233,6 +314,7 @@ float calc_time(const char *msg,timeval t0, timeval t1)
  		printf("%s ...%10.3f\n",msg,t);
  	return t;
 }
+
 
 //==========================================================================================================
 
@@ -301,10 +383,11 @@ struct SpatialJoinNYCTaxi : public GdfTest
         int num_f=ReadLayer(hLayer,g_len_v,f_len_v,r_len_v,x_v,y_v,type,h_polygon_vec,org_poly_idx_vec);
         assert(num_f>0);
 
-        uint32_t num_group=g_len_v.size();
-        uint32_t num_poly=f_len_v.size();
-        uint32_t num_ring=r_len_v.size();
-        uint32_t num_vertex=x_v.size();
+        //num_group=g_len_v.size();
+        num_poly=f_len_v.size();
+        num_ring=r_len_v.size();
+        num_vertex=x_v.size();
+
         //uint32_t num_temp=std::accumulate(r_len_v.begin(), r_len_v.end(),0);
         //printf("num_temp=%d num_vertex=%d\n",num_temp,num_vertex);
 
@@ -463,10 +546,104 @@ struct SpatialJoinNYCTaxi : public GdfTest
         HANDLE_CUDA_ERROR( cudaMemcpy( d_qt_length, d_temp_length, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
         HANDLE_CUDA_ERROR( cudaMemcpy( d_qt_fpos, d_temp_fpos, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );        
      
+if(1)
+{
         std::unique_ptr<cudf::experimental::table> bbox_tbl=
      	cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view()); 
         std::cout<<"# of polygon bboxes="<<bbox_tbl->view().num_rows()<<std::endl;
-     
+        
+        const double *d_x1=bbox_tbl->view().column(0).data<double>();
+        const double *d_y1=bbox_tbl->view().column(1).data<double>();
+        const double *d_x2=bbox_tbl->view().column(2).data<double>();  
+        const double *d_y2=bbox_tbl->view().column(3).data<double>();
+        thrust::device_ptr<const double> x1_ptr=thrust::device_pointer_cast(d_x1);
+        thrust::device_ptr<const double> y1_ptr=thrust::device_pointer_cast(d_y1);
+        thrust::device_ptr<const double> x2_ptr=thrust::device_pointer_cast(d_x2);
+        thrust::device_ptr<const double> y2_ptr=thrust::device_pointer_cast(d_y2);
+      
+        thrust::host_vector<double> h_x1(x1_ptr,x1_ptr+num_poly);
+        thrust::host_vector<double> h_y1(y1_ptr,y1_ptr+num_poly);
+        thrust::host_vector<double> h_x2(x2_ptr,x2_ptr+num_poly);
+        thrust::host_vector<double> h_y2(y2_ptr,y2_ptr+num_poly);
+    
+        FILE *fp=NULL;
+        if((fp=fopen("poly_mbr_old.csv","w"))==NULL)
+        {
+            printf("can not open pp_pair_old.csv for output\n");
+  	    exit(-1);
+        }
+        for(uint32_t i=0;i<num_poly;i++)
+            fprintf(fp,"%10d, %15.5f, %15.5f, %15.5f, %15.5f\n",i,h_x1[i],h_y1[i],h_x2[i],h_y2[i]);
+        fclose(fp);    
+}
+
+        std::unique_ptr<cudf::column> x1_col = cudf::make_numeric_column(
+        cudf::data_type{cudf::experimental::type_to_id<double>()}, num_poly,cudf::mask_state::UNALLOCATED, stream, mr);
+        double *d_x1=cudf::mutable_column_device_view::create(x1_col->mutable_view(), stream)->data<double>();
+        assert(d_x1!=NULL);
+   
+        std::unique_ptr<cudf::column> y1_col = cudf::make_numeric_column(
+        cudf::data_type{cudf::experimental::type_to_id<double>()}, num_poly,cudf::mask_state::UNALLOCATED, stream, mr);
+        double *d_y1=cudf::mutable_column_device_view::create(y1_col->mutable_view(), stream)->data<double>();
+        assert(d_y1!=NULL);
+
+        std::unique_ptr<cudf::column> x2_col = cudf::make_numeric_column(
+        cudf::data_type{cudf::experimental::type_to_id<double>()}, num_poly,cudf::mask_state::UNALLOCATED, stream, mr);
+        double *d_x2=cudf::mutable_column_device_view::create(x2_col->mutable_view(), stream)->data<double>();
+        assert(d_x2!=NULL);
+
+        std::unique_ptr<cudf::column> y2_col = cudf::make_numeric_column(
+        cudf::data_type{cudf::experimental::type_to_id<double>()}, num_poly,cudf::mask_state::UNALLOCATED, stream, mr);
+        double *d_y2=cudf::mutable_column_device_view::create(y2_col->mutable_view(), stream)->data<double>();
+        assert(d_y2!=NULL);
+                
+        double *h_x1=new double[num_poly];
+        double *h_y1=new double[num_poly];
+        double *h_x2=new double[num_poly];
+        double *h_y2=new double[num_poly];
+        assert(h_x1!=NULL && h_y1!=NULL && h_x2!=NULL && h_y2!=NULL);
+        
+        for(uint32_t i=0;i<num_poly;i++)
+        {
+        	OGREnvelope env;
+        	h_polygon_vec[i]->getEnvelope(&env);
+         	h_x1[i]=env.MinX;
+        	h_y1[i]=env.MinY;
+        	h_x2[i]=env.MaxX;
+        	h_y2[i]=env.MaxY;
+              	printf("%d %10.2f %10.2f %10.2f %10.2f\n",i,h_x1[i],h_y1[i],h_x2[i],h_y2[i]);
+	}
+
+	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_x1, (void *)h_x1, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );       
+	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_y1, (void *)h_y1, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );
+	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_x2, (void *)h_x2, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );
+	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_y2, (void *)h_y2, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );
+	
+ if(1)
+ {
+    
+    FILE *fp=NULL;
+    if((fp=fopen("poly_mbr.csv","w"))==NULL)
+    {
+        printf("can not open pp_pair.csv for output\n");
+  	   exit(-1);
+    }
+    for(uint32_t i=0;i<num_poly;i++)
+    	fprintf(fp,"%10d, %15.5f, %15.5f, %15.5f, %15.5f\n",i,h_x1[i],h_y1[i],h_x2[i],h_y2[i]);
+    fclose(fp);
+    write_shapefile("poly_mbr.shp",num_poly,h_x1,h_y1,h_x2,h_y2);
+ }
+
+        std::vector<std::unique_ptr<cudf::column>> bbox_cols;
+        bbox_cols.push_back(std::move(x1_col));
+        bbox_cols.push_back(std::move(y1_col));
+        bbox_cols.push_back(std::move(x2_col));
+        bbox_cols.push_back(std::move(y2_col));
+        std::unique_ptr<cudf::experimental::table> bbox_tbl = 
+            std::make_unique<cudf::experimental::table>(std::move(bbox_cols));
+        
+        exit(-1);
+        
         const cudf::table_view quad_view=quadtree->view();
         const cudf::table_view bbox_view=bbox_tbl->view();
      
@@ -502,7 +679,7 @@ struct SpatialJoinNYCTaxi : public GdfTest
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_poly_idx),num_pp_pairs*sizeof(uint32_t), 0));
         HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_pnt_idx, d_temp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
         HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_poly_idx, d_temp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );    
-    }
+}
 
 uint32_t compute_mismatch()
 {
@@ -524,7 +701,7 @@ if(0)
         assert(h_pp_poly_idx!=NULL && h_pp_pnt_idx!=NULL);
  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_poly_idx, d_pp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_pnt_idx, d_pp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );               
-  	
+
         uint32_t *d_pnt_lb=NULL,*d_pnt_ub=NULL;
         bool *d_pnt_sign=NULL;
         RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_lb),num_pp_pairs*sizeof(uint32_t), 0));
@@ -834,11 +1011,11 @@ TEST_F(SpatialJoinNYCTaxi, test)
 {
     const uint32_t num_level=15;
     const uint32_t min_size=512;
-    const uint32_t first_n=12;
+    const uint32_t first_n=6;
     
     std::cout<<"loading NYC taxi zone shapefile data..........."<<std::endl;  
     double poly_x1,poly_y1,poly_x2,poly_y2;
-    
+      
     uint8_t type=2; //multi-polygons only  
     //uint8_t type=0; //all polygons
     this->setup_polygons(poly_x1,poly_y1,poly_x2,poly_y2,type);
@@ -852,17 +1029,18 @@ TEST_F(SpatialJoinNYCTaxi, test)
     double length=(width>height)?width:height;
     double scale=length/((1<<num_level)+2);
     double bbox_x1=poly_x1-scale; 
-    double bbox_y1=poly_y1-scale;
+    double bbox_y1=poly_y1-scale;	
     double bbox_x2=poly_x2+scale; 
     double bbox_y2=poly_y2+scale;
     printf("Area of Interests: length=%15.10f scale=%15.10f\n",length,scale);
 
     std::cout<<"running test on NYC taxi trip data..........."<<std::endl;
+    
     this->run_test(bbox_x1,bbox_y1,bbox_x2,bbox_y2,scale,num_level,min_size);
     
     std::cout<<"running GDAL CPU code for comparison..........."<<std::endl;
   
-    uint32_t num_samples=num_pq_pairs;
+    uint32_t num_samples=100;
     uint32_t num_print_interval=10000;
   
     //this->compare_full_random(num_samples,num_print_interval);   

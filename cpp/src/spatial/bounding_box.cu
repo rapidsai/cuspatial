@@ -57,24 +57,60 @@ struct bounding_box_processor {
         const T *d_ply_y=y.data<T>();
 
         //compute bbox 
-        uint32_t *d_first_ring_pos=NULL,*d_vertex_pid=NULL;
-        RMM_TRY( RMM_ALLOC( &d_first_ring_pos,num_ring* sizeof(uint32_t),stream));
+        uint32_t *d_first_ring_pos=NULL,*d_temp_ring_pos=NULL,*d_vertex_pid=NULL;
+        RMM_TRY( RMM_ALLOC( &d_first_ring_pos,num_poly* sizeof(uint32_t),stream));
         assert(d_first_ring_pos!=NULL);
+        RMM_TRY( RMM_ALLOC( &d_temp_ring_pos,num_poly* sizeof(uint32_t),stream));
+        assert(d_temp_ring_pos!=NULL);       
         RMM_TRY( RMM_ALLOC( &d_vertex_pid,num_vertex* sizeof(uint32_t), stream));
         assert(d_vertex_pid!=NULL);
         HANDLE_CUDA_ERROR( cudaMemset(d_first_ring_pos,0,num_poly*sizeof(uint32_t)) );
         HANDLE_CUDA_ERROR( cudaMemset(d_vertex_pid,0,num_vertex*sizeof(uint32_t)) );
+
+if(1)
+{
+	printf("ring pos prefix sum\n"); 
+        thrust::device_ptr<const uint32_t> d_fpos_ptr=thrust::device_pointer_cast(d_ply_fpos);
+        thrust::copy(d_fpos_ptr,d_fpos_ptr+num_poly,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;  	
+
+	printf("vertex pos prefix sum\n"); 
+        thrust::device_ptr<const uint32_t> d_rpos_ptr=thrust::device_pointer_cast(d_ply_rpos);
+        thrust::copy(d_rpos_ptr,d_rpos_ptr+num_ring,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;  		
+}
  
-        thrust::adjacent_difference(exec_policy, d_ply_fpos,d_ply_fpos+num_poly,d_first_ring_pos);
-        thrust::exclusive_scan(exec_policy,d_first_ring_pos,d_first_ring_pos+num_poly,d_first_ring_pos);
-        thrust::gather(exec_policy,d_first_ring_pos,d_first_ring_pos+num_poly,d_ply_rpos,d_first_ring_pos);
+//        thrust::adjacent_difference(exec_policy, d_ply_fpos,d_ply_fpos+num_poly,d_first_ring_pos);
+//        thrust::exclusive_scan(exec_policy,d_first_ring_pos,d_first_ring_pos+num_poly,d_first_ring_pos);
+//        thrust::gather(exec_policy,d_first_ring_pos,d_first_ring_pos+num_poly,d_ply_rpos,d_temp_ring_pos);
+          
+          thrust::transform(exec_policy,d_ply_fpos,d_ply_fpos+num_poly,d_temp_ring_pos,thrust::placeholders::_1-1);
+          thrust::gather(exec_policy,d_temp_ring_pos,d_temp_ring_pos+num_poly,d_ply_rpos,d_first_ring_pos);
  
+ if(1)
+ {
+ 	 printf("prefix-sum numbers of points recorded at the last rings for all polygons\n"); 
+         thrust::device_ptr<uint32_t> d_num_points_ptr=thrust::device_pointer_cast(d_first_ring_pos);
+         thrust::copy(d_num_points_ptr,d_num_points_ptr+num_poly,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;  	
+ }
+
         thrust::adjacent_difference(exec_policy, d_first_ring_pos,d_first_ring_pos+num_poly,d_first_ring_pos);
+
+if(1)
+{
+	printf("numbers of vertices for all rings\n"); 
+        thrust::device_ptr<uint32_t> d_num_rings_ptr=thrust::device_pointer_cast(d_first_ring_pos);
+        thrust::copy(d_num_rings_ptr,d_num_rings_ptr+num_poly,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;  	
+}    
         thrust::exclusive_scan(exec_policy,d_first_ring_pos,d_first_ring_pos+num_poly,d_first_ring_pos);
         thrust::scatter(exec_policy,thrust::make_counting_iterator(0),
-        thrust::make_counting_iterator(0)+num_poly,d_first_ring_pos,d_vertex_pid);
+            thrust::make_counting_iterator(0)+num_poly,d_first_ring_pos,d_vertex_pid);
         thrust::inclusive_scan(exec_policy,d_vertex_pid,d_vertex_pid+num_vertex,d_vertex_pid,thrust::maximum<int>()); 
 
+if(1)
+{
+    printf("d_vertex_pid\n");
+    thrust::device_ptr<uint32_t> d_vertex_pid_ptr=thrust::device_pointer_cast(d_vertex_pid);
+    thrust::copy(d_vertex_pid_ptr,d_vertex_pid_ptr+num_vertex,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;  	
+}
         SBBox<T> *d_p_bbox=NULL;
         RMM_TRY( RMM_ALLOC( &d_p_bbox,num_poly* sizeof(SBBox<T>), stream) );
         assert(d_p_bbox!=NULL);    
@@ -82,8 +118,8 @@ struct bounding_box_processor {
 
         //reuse d_first_ring_pos to store sequential polygon index
         uint32_t num_bbox=thrust::reduce_by_key(exec_policy,d_vertex_pid,d_vertex_pid+num_vertex,
-        thrust::make_transform_iterator(d_vertex_iter,bbox_transformation<T>()),
-        d_first_ring_pos,d_p_bbox,thrust::equal_to<uint32_t>(),bbox_reduction<T>()).first-d_first_ring_pos;
+            thrust::make_transform_iterator(d_vertex_iter,bbox_transformation<T>()),
+            d_first_ring_pos,d_p_bbox,thrust::equal_to<uint32_t>(),bbox_reduction<T>()).first-d_first_ring_pos;
         std::cout<<"num_poly="<<num_poly<<",num_bbox="<<num_bbox<<std::endl;
         CUDF_EXPECTS(num_poly==num_bbox,"#of bbox after reduction should be the same as # of polys");
 
