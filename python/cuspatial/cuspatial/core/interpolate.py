@@ -17,7 +17,6 @@ def _cubic_spline_coefficients(x, y, ids, prefix_sums):
     ids_c = ids._column
     prefix_c = prefix_sums._column
     result_table = cubicspline_coefficients(x_c, y_c, ids_c, prefix_c)
-    result_table._index = RangeIndex(result_table._num_rows)
     result = DataFrame._from_table(result_table)
     return result
 
