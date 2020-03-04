@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,8 @@ namespace cuspatial {
  *
  * @param[in] query_points column of coordinate values to be interpolated.
  *
- * @param[in] curve_ids int32 column of ids associated with each query point.
+ * @param[in] spline_ids ids that identift the spline to interpolate each
+ * coordinate into.
  *
  * @param[in] offsets int32 column of offset of the source_points.
  * This is used to calculate which values from the coefficients are
@@ -38,14 +39,14 @@ namespace cuspatial {
  * to compute the coefficients matrix.  These source points are used to
  * identify which specific spline a given query_point is interpolated with.
  *
- * @param[in] coefficients table of splines produced by
+ * @param[in] coefficients table of spline coefficients produced by
  * cubicspline_coefficients.
  *
  * @return cudf::column `y` coordinates interpolated from `x` and `coefs`.
 **/
 std::unique_ptr<cudf::column> cubicspline_interpolate(
                                          cudf::column_view const& query_points,
-                                         cudf::column_view const& curve_ids,
+                                         cudf::column_view const& spline_ids,
                                          cudf::column_view const& offsets,
                                          cudf::column_view const& source_points,
                                          cudf::table_view const& coefficients);
@@ -56,13 +57,11 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
  * Computes coefficients for a natural cubic spline similar to the method
  * found on http://mathworld.wolfram.com/CubicSpline.html .
  *
- * This implementation is massively parallel and has two explicit
- * dependencies: The input data is arranged in parallel arrays and 
- * Structure-of-Array form wherein the values of many functions are
- * packed in sequence into a single array.
+ * The input data arrays `t` and `y` contain the vertices of many concatenated
+ * splines.
  *
- * This library currently requires that all input splines be the same
- * length. The minimum length supported by this algorithm is 5.
+ * Currently, all input splines must be the same length. The minimum supported
+ * length is 5.
  * 
  * @note Ids should be prefixed with a 0, even when only a single spline
  * is fit, ids will be {0, 0}
@@ -70,16 +69,11 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
  * @param[in] t column_view of independent coordinates for fitting splines
  * @param[in] y column_view of dependent variables to be fit along t axis
  * @param[in] ids of incoming coordinate sets
- * @param[in] offsets the index of the end of each coordinate set. Must begin
- * with 0, like the note above for ids.
+ * @param[in] offsets the exclusive scan of the spline sizes, prefixed by
+ * 0.
  *
- * !Important - to enable accelerated performance, this offset is the
- * combined inclusive and exclusive scans and as such should have the same
- * length as ids.
- *
- * For example, in the unit test case, the minimum input set for 3 splines is
- * {0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4} but the prefix scans for
- * this input array is {0, 5, 10, 15}
+ * For example, for 3 splines of 5 vertices each, the offsets input array
+ * is {0, 5, 10, 15}.
  *
  * @return cudf::table_view of coefficients for spline interpolation. The size
  * of the table is ((M-n), 4) where M is `t.size()` and and n is 

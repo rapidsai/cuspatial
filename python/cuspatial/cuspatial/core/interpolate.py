@@ -3,7 +3,6 @@
 import numpy as np
 
 from cudf import DataFrame, Series
-from cudf.core.index import RangeIndex
 
 from cuspatial._lib.interpolate import (
     cubicspline_coefficients,
@@ -66,7 +65,7 @@ class CubicSpline:
     This allows API parity with scipy. This isn't recommended, as scipy
     host based interpolation performance is likely to exceed GPU performance
     for a single curve.
-    
+
     cuspatial massively outperforms scipy however when many
     splines are fit simultaneously. Data must be arranged in a SoA format,
     and the inclusive/exclusive prefix_sum of the separate curves must also
@@ -77,7 +76,7 @@ class CubicSpline:
         prefix_sum = cudf.Series(np.arange(1000)*100).astype('int32')
         new_samples = cudf.Series(np.repeat(np.linspace(0, 100, 1000), 1000)
             .astype('float32'))
-        
+
         curve = cuspatial.CubicSpline(t, y, prefixes=prefix_sum)
         new_points = curve(new_samples, prefix_sum*10)
 
@@ -164,11 +163,15 @@ class CubicSpline:
         Utility method used by __init__ once members have been initialized.
         """
         if isinstance(self.y, Series):
-            return _cubic_spline_coefficients(self.t, self.y, self.ids, self.prefix)
+            return _cubic_spline_coefficients(
+                self.t, self.y, self.ids, self.prefix
+            )
         else:
             c = {}
             for col in self.y.columns:
-                c[col] = cubic_spline_coefficients(self.t, self.y, self.ids, self.prefix)
+                c[col] = _cubic_spline_coefficients(
+                    self.t, self.y, self.ids, self.prefix
+                )
             return c
 
     def __call__(self, coordinates, groups=None):

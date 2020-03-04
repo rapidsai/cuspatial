@@ -7,7 +7,12 @@
 
 from cudf._libxx.table cimport table, move, column, Column, Table
 
-cpdef cubicspline_coefficients(Column t, Column x, Column ids, Column prefixes):
+cpdef cubicspline_coefficients(
+    Column t,
+    Column x,
+    Column ids,
+    Column prefixes
+):
     t_v = t.view()
     x_v = x.view()
     ids_v = ids.view()

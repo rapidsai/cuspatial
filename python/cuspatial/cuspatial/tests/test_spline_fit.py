@@ -12,7 +12,7 @@ import cuspatial
 def test_errors():
     # t and y must have the same length
     with pytest.raises(TypeError):
-        result = cuspatial.interpolate.CubicSpline(
+        cuspatial.interpolate.CubicSpline(
             cudf.Series([0, 0, 0, 0, 0]).astype("float32"),
             cudf.Series([0]).astype("float32"),
             cudf.Series([0]).astype("int32"),
@@ -20,7 +20,7 @@ def test_errors():
         )
     # length must not be zero
     with pytest.raises(ZeroDivisionError):
-        result = cuspatial.interpolate.CubicSpline(
+        cuspatial.interpolate.CubicSpline(
             cudf.Series([0, 0, 0, 0, 0]).astype("float32"),
             cudf.Series([0, 0, 0, 0, 0]).astype("float32"),
             cudf.Series([0]).astype("int32"),
@@ -28,7 +28,7 @@ def test_errors():
         )
     # Length must be greater than 4
     with pytest.raises(ValueError):
-        result = cuspatial.interpolate.CubicSpline(
+        cuspatial.interpolate.CubicSpline(
             cudf.Series([0]).astype("float32"),
             cudf.Series([0]).astype("float32"),
             cudf.Series([0]).astype("int32"),
