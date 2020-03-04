@@ -88,7 +88,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CUSPATIAL_LIBRARY}"
                  )
 set(CUBIC_SPLINE_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/interpolate/cubic_spline_test.cu")
+   "${CMAKE_CURRENT_SOURCE_DIR}/interpolate/cubic_spline_test.cpp")
  ConfigureTest(CUBIC_SPLINE_TEST "${CUBIC_SPLINE_TEST_SRC}")
 
 set(COORDINATE_TRANSFORM_TEST_SRC
