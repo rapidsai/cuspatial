@@ -5,8 +5,7 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from libcpp.memory cimport make_unique
-from cudf._libxx.table cimport *
+from cudf._libxx.table cimport table, move, column, Column, Table
 
 cpdef cubicspline_coefficients(Column t, Column x, Column ids, Column prefixes):
     t_v = t.view()
