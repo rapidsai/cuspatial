@@ -1,8 +1,11 @@
 # cuSpatial 0.13.0 (TBD)
 
 ## New Features
+- PR #126 Create and build cuSpatial Docs 
 
 ## Improvements
+
+- PR #128 Use RMM's `DeviceBuffer` for Python allocations
 
 ## Bug Fixes
 

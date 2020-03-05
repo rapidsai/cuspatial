@@ -38,7 +38,7 @@ def spatial_bounds(
     >>>    cudf.Series([0, 2, 1, 3, 2]),
     >>>    cudf.Series([0, 2, 1, 3, 2]),
     >>>    cudf.Series([2, 3]),
-    >>>    cudf.Series([2, 5]),
+    >>>    cudf.Series([2, 5])
     >>> )
     >>> print(result)
         x1   y1   x2   y2
@@ -52,32 +52,30 @@ def spatial_bounds(
 
 def derive(x_coords, y_coords, object_ids, timestamps):
     """ Derive trajectories from points, timestamps, and ids.
+
     Parameters
     ----------
     {params}
 
     Returns
     -------
-    result_tuple : tuple (number of discovered trajectories,
-                          DataFrame
-                    id, length, and positions of trajectories for feeding into
-                    compute_distance_and_speed
+    result_tuple : tuple (number of discovered trajectories,DataFrame)
+    DataFrame    : id, length, and positions of trajectories
+                   for feeding into compute_distance_and_speed
 
     Examples
     --------
-        import cudf
-        num_trajectories, result = trajectory.derive(
-            cudf.Series([0, 1, 2, 3]),
-            cudf.Series([0, 0, 1, 1])
-            cudf.Series([0, 0, 1, 1])
-            cudf.Series([0, 10, 0, 10])
-        )
-        print(num_trajectories)
+    >>> num_trajectories, result = trajectory.derive(
+    >>>    cudf.Series([0, 1, 2, 3]),
+    >>>    cudf.Series([0, 0, 1, 1]),
+    >>>    cudf.Series([0, 0, 1, 1]),
+    >>>    cudf.Series([0, 10, 0, 10]))
+    >>> print(num_trajectories)
         2
-        print(result)
+    >>> print(result)
            trajectory_id  length  position
         0              0       2         2
-        1              1       2         4)
+        1              1       2         4
     """
     return cpp_derive_trajectories(x_coords, y_coords, object_ids, timestamps)
 
@@ -98,10 +96,10 @@ def distance_and_speed(x_coords, y_coords, timestamps, length, position):
     Examples
     --------
     Compute the distance and speed of the above derived trajectories
-        result = trajectory.distance_and_speed(x, y, timestamps,
+    >>> result = trajectory.distance_and_speed(x, y, timestamps,
                                                result['length'],
                                                result['position'])
-        print(result)
+    >>> print(result)
                        meters          speed
         trajectory_id
         0              1000.0  100000.000000
