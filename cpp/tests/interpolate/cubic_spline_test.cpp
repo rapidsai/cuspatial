@@ -67,7 +67,7 @@ TEST_F(CubicSplineTest, test_coefficients_single)
     int ids_len = 2;
     int ids[ids_len] = {0, 0};
     int prefix[ids_len] = {0, 5};
-   
+
     cudf::column t_column = make_device_column<float>(t, point_len);
     cudf::column y_column = make_device_column<float>(y, point_len);
     cudf::column ids_column = make_device_column<int>(ids, ids_len);
