@@ -334,14 +334,13 @@ struct SpatialJoinNYCTaxi : public GdfTest
     double *h_poly_x=NULL,*h_poly_y=NULL;
     
     uint32_t num_quadrants=0;
-    uint32_t *d_qt_length=NULL,*d_qt_fpos=NULL;   
+    uint32_t *h_qt_length=NULL,*h_qt_fpos=NULL;   
     
     uint32_t num_pq_pairs=0;
-    uint32_t *d_pq_quad_idx=NULL,*d_pq_poly_idx=NULL;   
+    uint32_t *h_pq_quad_idx=NULL,*h_pq_poly_idx=NULL;   
 
     uint32_t num_pp_pairs=0;
     uint32_t *d_pp_pnt_idx=NULL,*d_pp_poly_idx=NULL;
-    uint32_t *h_pp_pnt_idx=NULL,*h_pp_poly_idx=NULL;
     
     std::vector<OGRGeometry *> h_polygon_vec;
     std::vector<uint32_t> org_poly_idx_vec;
@@ -361,10 +360,19 @@ struct SpatialJoinNYCTaxi : public GdfTest
     {
         const char* env_p = std::getenv("CUSPATIAL_DATA");
         CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_DATA environmental variable must be set");
+        
         //from https://s3.amazonaws.com/nyc-tlc/misc/taxi_zones.zip
-        std::string shape_filename=std::string(env_p)+std::string("taxi_zones.shp"); 
+        //std::string shape_filename=std::string(env_p)+std::string("taxi_zones.shp"); 
+        
+        //NYC Community Districts: 71 polygons
+        //from https://www1.nyc.gov/assets/planning/download/zip/data-maps/open-data/nycd_11aav.zip
+        //std::string shape_filename=std::string(env_p)+std::string("nycd.shp"); 
+        
+        //NYC Census Tract 2000 data: 2216 polygons
+        //from: https://www1.nyc.gov/assets/planning/download/zip/data-maps/open-data/nyct2000_11aav.zip
+  	std::string shape_filename=std::string(env_p)+std::string("nyct2000.shp");
         std::cout<<"Using shapefile "<<shape_filename<<std::endl;
-
+	
         std::vector<int> g_len_v,f_len_v,r_len_v;
         std::vector<double> x_v, y_v;
         GDALAllRegister();
@@ -525,27 +533,23 @@ struct SpatialJoinNYCTaxi : public GdfTest
  
     void run_test(double x1,double y1,double x2,double y2,double scale,uint32_t num_level,uint32_t min_size)
     {       
-        timeval t0,t1;
-        gettimeofday(&t0, NULL);
-         
+        timeval t0,t1,t2,t3;
+ 
+        gettimeofday(&t0, NULL); 
         cudf::mutable_column_view pnt_id_view=col_pnt_id->mutable_view();
         cudf::mutable_column_view pnt_x_view=col_pnt_x->mutable_view();
         cudf::mutable_column_view pnt_y_view=col_pnt_y->mutable_view();
         std::cout<<"run_test::num_pnt_view="<<pnt_id_view.size()<<std::endl;
         std::cout<<"run_test::num_pnt="<<col_pnt_id->size()<<std::endl;
 
-        std::unique_ptr<cudf::experimental::table> quadtree= 
+       gettimeofday(&t2, NULL);
+       std::unique_ptr<cudf::experimental::table> quadtree= 
       		cuspatial::quadtree_on_points(pnt_id_view,pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_level, min_size);
         num_quadrants=quadtree->view().num_rows();
         std::cout<<"# of quadrants="<<num_quadrants<<std::endl;
-        const uint32_t *d_temp_length=quadtree->view().column(3).data<uint32_t>();
-        const uint32_t *d_temp_fpos=quadtree->view().column(4).data<uint32_t>();
-        
-        RMM_TRY( RMM_ALLOC( (void**)&(d_qt_length),num_quadrants*sizeof(uint32_t), 0));
-        RMM_TRY( RMM_ALLOC( (void**)&(d_qt_fpos),num_quadrants*sizeof(uint32_t), 0));
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_qt_length, d_temp_length, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_qt_fpos, d_temp_fpos, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );        
-
+        gettimeofday(&t3, NULL);
+        float quadtree_time=calc_time("quadtree constrution time=",t2,t3);
+                
 //alternatively derive polygon bboxes from GDAL and then create bbox table for subsequent steps
 //also output bbox coordiantes as a CSV file for examination/comparison
 
@@ -592,7 +596,7 @@ if(0)
 	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_y1, (void *)h_y1, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );
 	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_x2, (void *)h_x2, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );
 	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_y2, (void *)h_y2, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );
-    
+	
         FILE *fp=NULL;
         if((fp=fopen("poly_mbr.csv","w"))==NULL)
         {
@@ -613,12 +617,15 @@ if(0)
         std::unique_ptr<cudf::experimental::table> bbox_tbl = 
             std::make_unique<cudf::experimental::table>(std::move(bbox_cols));
  }        
-
-      std::unique_ptr<cudf::experimental::table> bbox_tbl=
-        cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view()); 
-      std::cout<<"# of polygon bboxes="<<bbox_tbl->view().num_rows()<<std::endl;
-
-//output bbox coordiantes as a CSV file for examination/comparison
+        gettimeofday(&t2, NULL);
+        std::unique_ptr<cudf::experimental::table> bbox_tbl=
+            cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view()); 
+        gettimeofday(&t3, NULL);
+	float polybbox_time=calc_time("compute polygon bbox time=",t2,t3);
+        std::cout<<"# of polygon bboxes="<<bbox_tbl->view().num_rows()<<std::endl;
+if(0)
+{
+	//output bbox coordiantes as a CSV file for examination/comparison
 
         const double *d_x1=bbox_tbl->view().column(0).data<double>();
         const double *d_y1=bbox_tbl->view().column(1).data<double>();
@@ -643,42 +650,81 @@ if(0)
         for(uint32_t i=0;i<num_poly;i++)
             fprintf(fp,"%10d, %15.5f, %15.5f, %15.5f, %15.5f\n",i,h_x1[i],h_y1[i],h_x2[i],h_y2[i]);
         fclose(fp);    
-   
+ }  
         const cudf::table_view quad_view=quadtree->view();
         const cudf::table_view bbox_view=bbox_tbl->view();
-     
+  
+        gettimeofday(&t2, NULL);
         std::unique_ptr<cudf::experimental::table> pq_pair_tbl=cuspatial::quad_bbox_join(
-         quad_view,bbox_view,x1,y1,x2,y2, scale,num_level, min_size);   
+            quad_view,bbox_view,x1,y1,x2,y2, scale,num_level, min_size);   
+ 	gettimeofday(&t3, NULL);
+ 	float filtering_time=calc_time("spatial filtering time=",t2,t3);         
         std::cout<<"# of polygon/quad pairs="<<pq_pair_tbl->view().num_rows()<<std::endl;
  
         const cudf::table_view pq_pair_view=pq_pair_tbl->view();
         const cudf::table_view pnt_view({pnt_id_view,pnt_x_view,pnt_y_view});
- 
+
+        gettimeofday(&t2, NULL); 
         std::unique_ptr<cudf::experimental::table> pip_pair_tbl=cuspatial::pip_refine(
        	  pq_pair_view,quad_view,pnt_view,
          col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view());   
+  	gettimeofday(&t3, NULL);
+ 	float refinement_time=calc_time("spatial refinement time=",t2,t3);                
         std::cout<<"# of polygon/point pairs="<<pip_pair_tbl->view().num_rows()<<std::endl;      
         
         gettimeofday(&t1, NULL);
         float gpu_time=calc_time("gpu end-to-end computing time",t0,t1);
-
-        num_pq_pairs=pq_pair_tbl->num_rows();
-        const uint32_t * d_tmp_poly_idx=pq_pair_tbl->view().column(0).data<uint32_t>();
-        const uint32_t * d_tmp_quad_idx=pq_pair_tbl->view().column(1).data<uint32_t>();
+        float  runtimes[4]={quadtree_time,polybbox_time,filtering_time,refinement_time};
+        float temp_time=0;
+        for(uint32_t i=0;i<4;i++)
+        {
+        	printf("%10.3f ",runtimes[i]);
+        	temp_time+=runtimes[i];
+        }
+        printf("\n%10.3f %10.3f\n",temp_time,gpu_time);
+           
+        const uint32_t *d_qt_length=quadtree->view().column(3).data<uint32_t>();
+	const uint32_t *d_qt_fpos=quadtree->view().column(4).data<uint32_t>();
+ 	
+  	h_qt_length=new uint32_t[num_quadrants];
+        h_qt_fpos=new uint32_t[num_quadrants];
+        assert(h_qt_length!=NULL && h_qt_fpos!=NULL);
+        printf("num_quadrants=%d %p %p %p %p\n",num_quadrants,(void *)h_qt_length,(void *)d_qt_length,(void *)h_qt_fpos,(void *)d_qt_fpos);
+          
+  	HANDLE_CUDA_ERROR( cudaMemcpy( h_qt_length, d_qt_length, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
+  	HANDLE_CUDA_ERROR( cudaMemcpy( h_qt_fpos, d_qt_fpos, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToHost) );      
   
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pq_quad_idx),num_pq_pairs*sizeof(uint32_t), 0));
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pq_poly_idx),num_pq_pairs*sizeof(uint32_t), 0));
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_pq_quad_idx, d_tmp_quad_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_pq_poly_idx, d_tmp_poly_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );        
+        num_pq_pairs=pq_pair_tbl->num_rows();
+        const uint32_t * d_pq_poly_idx=pq_pair_tbl->view().column(0).data<uint32_t>();
+        const uint32_t * d_pq_quad_idx=pq_pair_tbl->view().column(1).data<uint32_t>(); 
  
+        h_pq_poly_idx=new uint32_t[num_pq_pairs];
+        h_pq_quad_idx=new uint32_t[num_pq_pairs];
+        assert(h_pq_poly_idx!=NULL && h_pq_quad_idx!=NULL);
+         
+        HANDLE_CUDA_ERROR( cudaMemcpy( h_pq_poly_idx, d_pq_poly_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
+  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pq_quad_idx, d_pq_quad_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );       
  
+ if(0)
+ {
+         printf("d_pq_quad_idx\n");
+         thrust::device_ptr<const uint32_t> pq_quad_idx_ptr=thrust::device_pointer_cast(d_pq_quad_idx);
+         thrust::copy(pq_quad_idx_ptr,pq_quad_idx_ptr+100,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
+ 
+         printf("d_pq_poly_idx\n");
+         thrust::device_ptr<const uint32_t> pq_poly_idx_ptr=thrust::device_pointer_cast(d_pq_poly_idx);
+         thrust::copy(pq_poly_idx_ptr,pq_poly_idx_ptr+100,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
+ } 
+	
         num_pp_pairs=pip_pair_tbl->num_rows();
+   	//make a copy for d_pp_pnt_idx and d_pp_poly_idx as they will be sorted later
    	const uint32_t * d_temp_poly_idx=pip_pair_tbl->view().column(0).data<uint32_t>();
         const uint32_t * d_temp_pnt_idx=pip_pair_tbl->view().column(1).data<uint32_t>();
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_pnt_idx),num_pp_pairs*sizeof(uint32_t), 0));
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_poly_idx),num_pp_pairs*sizeof(uint32_t), 0));
         HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_pnt_idx, d_temp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
         HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_poly_idx, d_temp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );    
+
 }
 
 uint32_t compute_mismatch()
@@ -694,14 +740,14 @@ if(0)
 }	
   
   	thrust::sort_by_key(thrust::device, d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pp_poly_idx);
-  	printf("after sort...................\n");
-
+        
+        uint32_t *h_pp_pnt_idx=NULL,*h_pp_poly_idx=NULL;
         h_pp_poly_idx=new uint32_t[num_pp_pairs];
         h_pp_pnt_idx=new uint32_t[num_pp_pairs];
         assert(h_pp_poly_idx!=NULL && h_pp_pnt_idx!=NULL);
  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_poly_idx, d_pp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
- 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_pnt_idx, d_pp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );               
-
+ 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_pnt_idx, d_pp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );   
+ 	
         uint32_t *d_pnt_lb=NULL,*d_pnt_ub=NULL;
         bool *d_pnt_sign=NULL;
         RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_lb),num_pp_pairs*sizeof(uint32_t), 0));
@@ -804,6 +850,9 @@ if(1)
  	delete[] h_pnt_lb;
  	delete[] h_pnt_ub;
  	delete[] h_pnt_sign;
+        delete[] h_pp_pnt_idx;
+	delete[] h_pp_poly_idx;	
+ 	
  	printf("num_search_pnt=%d num_not_found=%d num_mis_match=%d\n",num_search_pnt,num_not_found,num_mis_match);
  	return num_mis_match;
  }	
@@ -819,7 +868,7 @@ if(1)
         uint32_t *nums=NULL;
         if(num_samples<num_pnt)
         {       	
-		std::seed_seq seed{0};
+		std::seed_seq seed{2};
 		std::mt19937 g(seed);
 		std::uniform_int_distribution<> dist_rand (0,num_pnt-1);
 		nums=new uint32_t[num_samples];
@@ -912,30 +961,6 @@ if(1)
              printf("compare_matched_pairs: num_samples=%d must be less or equal to num_pq_pairs=%d\n",num_samples,num_pq_pairs);
         assert(nums!=NULL);
  
- 	uint32_t *h_qt_length=new uint32_t[num_quadrants];
-        uint32_t *h_qt_fpos=new uint32_t[num_quadrants];
-        assert(h_qt_length!=NULL && h_qt_length!=NULL);
- 	HANDLE_CUDA_ERROR( cudaMemcpy( h_qt_length, d_qt_length, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
- 	HANDLE_CUDA_ERROR( cudaMemcpy( h_qt_fpos, d_qt_fpos, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToHost) );       
-        
-        uint32_t *h_pq_poly_idx=new uint32_t[num_pq_pairs];
-        uint32_t *h_pq_quad_idx=new uint32_t[num_pq_pairs];
-        assert(h_pq_poly_idx!=NULL && h_pq_quad_idx!=NULL);
-        
- 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pq_poly_idx, d_pq_poly_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
- 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pq_quad_idx, d_pq_quad_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );       
-
-if(0)
-{
-        printf("d_pq_quad_idx\n");
-        thrust::device_ptr<uint32_t> pq_quad_idx_ptr=thrust::device_pointer_cast(d_pq_quad_idx);
-        thrust::copy(pq_quad_idx_ptr,pq_quad_idx_ptr+100,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
-
-        printf("d_pq_poly_idx\n");
-        thrust::device_ptr<uint32_t> pq_poly_idx_ptr=thrust::device_pointer_cast(d_pq_poly_idx);
-        thrust::copy(pq_poly_idx_ptr,pq_poly_idx_ptr+100,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
-} 
-	
  	timeval t0,t1;
 	gettimeofday(&t0, NULL);
         
@@ -999,10 +1024,7 @@ if(0)
         delete[] h_poly_y; h_poly_y=NULL;
         
         delete[] h_pnt_x; h_pnt_x=NULL;
-        delete[] h_pnt_y; h_pnt_y=NULL; 
-        
-        delete[] h_pp_pnt_idx;
-	delete[] h_pp_poly_idx;
+        delete[] h_pnt_y; h_pnt_y=NULL;         
     }
  
 };
@@ -1011,7 +1033,7 @@ TEST_F(SpatialJoinNYCTaxi, test)
 {
     const uint32_t num_level=15;
     const uint32_t min_size=512;
-    const uint32_t first_n=6;
+    const uint32_t first_n=12;
     
     std::cout<<"loading NYC taxi zone shapefile data..........."<<std::endl;  
     double poly_x1,poly_y1,poly_x2,poly_y2;
@@ -1037,17 +1059,22 @@ TEST_F(SpatialJoinNYCTaxi, test)
     std::cout<<"running test on NYC taxi trip data..........."<<std::endl;
     
     this->run_test(bbox_x1,bbox_y1,bbox_x2,bbox_y2,scale,num_level,min_size);
-    
+ 
+ if(1)
+ {
     std::cout<<"running GDAL CPU code for comparison..........."<<std::endl;
   
-    uint32_t num_samples=100;
-    uint32_t num_print_interval=10000;
+    uint32_t num_print_interval=1000;
   
-    //this->compare_full_random(num_samples,num_print_interval);   
+    uint32_t num_pnt_samples=10000;
+    this->compare_full_random(num_pnt_samples,num_print_interval);   
     
-    this->compare_matched_pairs(num_samples,num_print_interval);
+    //uint32_t num_quad_samples=100;
+    //this->compare_matched_pairs(num_quad_samples,num_print_interval);
     
     this->compute_mismatch();
+    
     this->tear_down();
+ }
 }
 
