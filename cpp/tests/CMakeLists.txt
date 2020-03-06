@@ -90,41 +90,42 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  )
 
 set(SPATIAL_JOIN_FILTERING_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/join/quadtree_polygon_test.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/join/quadtree_polygon_test.cu")
 ConfigureTest(SPATIAL_JOIN_FILTERING_TEST "${SPATIAL_JOIN_FILTERING_SRC}")
 
 set(SPATIAL_JOIN_REFINEMENT_SMALL_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/join/pip_refine_test_small.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/join/pip_refine_test_small.cu")
 ConfigureTest(SPATIAL_JOIN_REFINEMENT_SMALL_TEST "${SPATIAL_JOIN_REFINEMENT_SMALL_SRC}")
 
 set(SPATIAL_JOIN_REFINEMENT_LARGE_SRC
-      "${CMAKE_CURRENT_SOURCE_DIR}/join/pip_refine_test_large.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/join/pip_refine_test_large.cu")
 ConfigureTest(SPATIAL_JOIN_REFINEMENT_LARGE_TEST "${SPATIAL_JOIN_REFINEMENT_LARGE_SRC}")
 
 set(SPATIAL_JOIN_NYCTAXI_SRC
-      "${CMAKE_CURRENT_SOURCE_DIR}/join/spatial_join_nyctaxi_test.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/join/spatial_join_test_utility.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/join/spatial_join_nyctaxi_test.cu")    
 ConfigureTest(SPATIAL_JOIN_NYCTAXIE_TEST "${SPATIAL_JOIN_NYCTAXI_SRC}")
 
 set(BOUNDING_BOX_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/bounding_box_test.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/bounding_box_test.cu")
 ConfigureTest(BOUNDING_BOX_TEST "${BOUNDING_BOX_TEST_SRC}")
 
 set(QUADTREE_POINT_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/indexing/quadtree_point_test.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/indexing/quadtree_point_test.cu")
 ConfigureTest(QUADTREE_POINT_TEST "${QUADTREE_POINT_TEST_SRC}")
 
 set(COORDINATE_TRANSFORM_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/coordinate_transform_toy.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/coordinate_transform_toy.cu")
 ConfigureTest(COORDINATE_TRANSFORM_TEST "${COORDINATE_TRANSFORM_TEST_SRC}")
 
 set(HAVERSINE_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/haversine_toy.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/haversine_toy.cu")
 ConfigureTest(HAVERSINE_TEST "${HAVERSINE_TEST_SRC}")
 
 set(HAUSDORFF_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_toy.cu"
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cu"
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_compare.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_toy.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_compare.cu")
 ConfigureTest(HAUSDORFF_TEST "${HAUSDORFF_TEST_SRC}")
 
 set(POINT_IN_POLYGON_TEST_SRC
