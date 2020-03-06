@@ -61,7 +61,7 @@ std::unique_ptr<cudf::column> cubicspline_interpolate_default(
                                          cudf::table_view const& coefficients);
 
 /**
- * @brief Create a table of coefficients from a column of coordinates.
+ * @brief Create a table of cubic spline coefficients from columns of coordinates.
  *
  * Computes coefficients for a natural cubic spline similar to the method
  * found on http://mathworld.wolfram.com/CubicSpline.html .
