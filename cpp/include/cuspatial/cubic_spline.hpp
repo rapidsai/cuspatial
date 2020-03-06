@@ -70,9 +70,7 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
  * @param[in] y column_view of dependent variables to be fit along t axis
  * @param[in] ids of incoming coordinate sets
  * @param[in] offsets the exclusive scan of the spline sizes, prefixed by
- * 0.
- *
- * For example, for 3 splines of 5 vertices each, the offsets input array
+ * 0. For example, for 3 splines of 5 vertices each, the offsets input array
  * is {0, 5, 10, 15}.
  *
  * @return cudf::table_view of coefficients for spline interpolation. The size

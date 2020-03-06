@@ -257,15 +257,14 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
     auto result = make_numeric_column(query_points.type(), query_points.size(), cudf::mask_state::UNALLOCATED, stream, mr);
     cudf::mutable_column_view search_result = result->mutable_view();
     
-    parallel_search search;
-    search.operator()<float>(query_points, curve_ids, prefixes, source_points, search_result, mr, stream);
+    //auto search_result = cudf::experimental::type_dispatcher(query_points.type(), parallel_search{}, query_points, curve_ids, prefixes, source_points, mr, stream);
+    cudf::experimental::type_dispatcher(query_points.type(), parallel_search{}, query_points, curve_ids, prefixes, source_points, search_result, mr, stream);
     TPRINT(search_result, "parallel_search_");
     TPRINT(query_points, "query_points_");
     TPRINT(curve_ids, "curve_ids_");
     TPRINT(prefixes, "prefixes_");
 
-    interpolate intrp;
-    intrp.operator()<float>(query_points, curve_ids, prefixes, coefficients, search_result, mr, stream);
+    cudf::experimental::type_dispatcher(query_points.type(), interpolate{}, query_points, curve_ids, prefixes, coefficients, search_result, mr, stream);
     TPRINT(query_points, "query_points_");
     TPRINT(curve_ids, "curve_ids_");
     TPRINT(prefixes, "prefixes_");
@@ -313,8 +312,6 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     TPRINT(D_buffer, "D_one");
     TPRINT(Dlu_buffer, "Dlu_zero");
     cudf::experimental::type_dispatcher(y.type(), compute_spline_tridiagonals{}, t, y, prefixes, D_buffer, Dlu_buffer, u_buffer, h_buffer, i_buffer, mr, stream);
-    //compute_spline_tridiagonals comp_tri;
-    //comp_tri.operator()<float>(t, y, prefixes, D_buffer, Dlu_buffer, u_buffer, h_buffer, i_buffer, mr, stream);
 
     TPRINT(h_buffer, "h_i");
     TPRINT(i_buffer, "i_i");
@@ -380,8 +377,7 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     auto d1 = d1_col->mutable_view();
     auto d0 = d0_col->mutable_view();
 
-    coefficients_compute coefs;
-    coefs.operator()<float>(t, y, prefixes, h_buffer, i_buffer, u_buffer, d3, d2, d1, d0, mr, stream);
+    cudf::experimental::type_dispatcher(y.type(), coefficients_compute{}, t, y, prefixes, h_buffer, i_buffer, u_buffer, d3, d2, d1, d0, mr, stream);
 
     TPRINT(h_buffer, "h_buffer_");
     TPRINT(i_buffer, "i_buffer_");
