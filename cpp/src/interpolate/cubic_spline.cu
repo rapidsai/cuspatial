@@ -249,11 +249,11 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
     cudf::column_view const& curve_ids,
     cudf::column_view const& prefixes,
     cudf::column_view const& source_points,
-    cudf::table_view const& coefficients
+    cudf::table_view const& coefficients,
+    rmm::mr::device_memory_resource *mr,
+    cudaStream_t stream
 )
 {
-    cudaStream_t stream=0;
-    rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
     auto result = make_numeric_column(query_points.type(), query_points.size(), cudf::mask_state::UNALLOCATED, stream, mr);
     cudf::mutable_column_view search_result = result->mutable_view();
     
@@ -272,15 +272,26 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
     return result;
 }
 
+std::unique_ptr<cudf::column> cubicspline_interpolate_default(
+    cudf::column_view const& query_points,
+    cudf::column_view const& curve_ids,
+    cudf::column_view const& prefixes,
+    cudf::column_view const& source_points,
+    cudf::table_view const& coefficients
+)
+{
+  return cubicspline_interpolate(query_points, curve_ids, prefixes, source_points, coefficients, rmm::mr::get_default_resource(), 0);
+}
+
 std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     cudf::column_view const& t,
     cudf::column_view const& y,
     cudf::column_view const& ids,
-    cudf::column_view const& prefixes
+    cudf::column_view const& prefixes,
+    rmm::mr::device_memory_resource *mr,
+    cudaStream_t stream
 )
 {
-    cudaStream_t stream=0;
-    rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
     TPRINT(t, "t_");
     TPRINT(y, "y_");
     TPRINT(ids, "ids");
@@ -299,7 +310,7 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     auto Dlu_buffer = Dll_col->mutable_view();
     auto Dll_buffer = Dll_col->mutable_view();
     auto u_buffer = u_col->mutable_view();
-   
+
     auto zero = cudf::numeric_scalar<float>(0.0);
     auto one = cudf::numeric_scalar<float>(1.0);
     cudf::experimental::fill_in_place(h_buffer, 0, h_col->size(), zero);
@@ -396,5 +407,14 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     table.push_back(std::move(d0_col));
     std::unique_ptr<cudf::experimental::table> result = std::make_unique<cudf::experimental::table>(move(table));
     return result;
+}
+std::unique_ptr<cudf::experimental::table> cubicspline_coefficients_default(
+    cudf::column_view const& t,
+    cudf::column_view const& y,
+    cudf::column_view const& ids,
+    cudf::column_view const& prefixes
+)
+{
+  return cubicspline_coefficients(t, y, ids, prefixes, rmm::mr::get_default_resource(), 0);
 }
 }

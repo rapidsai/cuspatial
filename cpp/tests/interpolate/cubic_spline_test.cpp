@@ -61,6 +61,9 @@ auto get_d_expect() {
 
 TEST_F(CubicSplineTest, test_coefficients_single)
 {
+    cudaStream_t stream = 0;
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource();
+
     int point_len = 5;
     float t[point_len] = {0, 1, 2, 3, 4};
     float y[point_len] = {3, 2, 3, 4, 3};
@@ -75,7 +78,7 @@ TEST_F(CubicSplineTest, test_coefficients_single)
 
     std::unique_ptr<cudf::experimental::table> splines =
         cuspatial::cubicspline_coefficients(
-            t_column, y_column, ids_column, prefix_column
+            t_column, y_column, ids_column, prefix_column, mr, stream
         );
 
     auto d_expect = get_d_expect();
@@ -94,13 +97,16 @@ TEST_F(CubicSplineTest, test_coefficients_single)
 
 TEST_F(CubicSplineTest, test_coefficients_full)
 {
+    cudaStream_t stream = 0;
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource();
+
     int point_len = 15;
     float t[point_len] = {0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
     float y[point_len] = {3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3};
     int ids_len = 4;
     int ids[ids_len] = {0, 0, 1, 2};
     int prefix[ids_len] = {0, 5, 10, 15};
-   
+ 
     cudf::column t_column = make_device_column<float>(t, point_len);
     cudf::column y_column = make_device_column<float>(y, point_len);
     cudf::column ids_column = make_device_column<int>(ids, ids_len);
@@ -108,7 +114,7 @@ TEST_F(CubicSplineTest, test_coefficients_full)
 
     std::unique_ptr<cudf::experimental::table> splines =
         cuspatial::cubicspline_coefficients(
-            t_column, y_column, ids_column, prefix_column
+            t_column, y_column, ids_column, prefix_column, mr, stream
         );
 
     auto d_expect = get_d_expect();
@@ -126,7 +132,10 @@ TEST_F(CubicSplineTest, test_coefficients_full)
 }
 
 TEST_F(CubicSplineTest, test_interpolate_single)
-{
+{ 
+    cudaStream_t stream = 0;
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource();
+
     int point_len = 5;
     float t[point_len] = {0, 1, 2, 3, 4};
     float x[point_len] = {3, 2, 3, 4, 3};
@@ -134,16 +143,16 @@ TEST_F(CubicSplineTest, test_interpolate_single)
     int ids[ids_len] = {0, 0};
     int prefix[ids_len] = {0, 5};
     int point_ids[point_len] = {0, 0, 0, 0, 0};
-    
+
     cudf::column t_column = make_device_column<float>(t, point_len);
     cudf::column x_column = make_device_column<float>(x, point_len);
     cudf::column ids_column = make_device_column<int>(ids, ids_len);
     cudf::column prefix_column = make_device_column<int>(prefix, ids_len);
     cudf::column point_ids_column = make_device_column<int>(point_ids, point_len);
 
-    std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_coefficients(t_column, x_column, ids_column, prefix_column);
+    std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_coefficients(t_column, x_column, ids_column, prefix_column, mr, stream);
 
-    std::unique_ptr<cudf::column> interpolates = cuspatial::cubicspline_interpolate(t_column, point_ids_column, prefix_column, t_column, splines->view());
+    std::unique_ptr<cudf::column> interpolates = cuspatial::cubicspline_interpolate(t_column, point_ids_column, prefix_column, t_column, splines->view(), mr, stream);
     
     cudf::column_view device_column = interpolates->view();
     std::vector<float> host_data;
@@ -159,6 +168,9 @@ TEST_F(CubicSplineTest, test_interpolate_single)
 
 TEST_F(CubicSplineTest, test_interpolate_full)
 {
+    cudaStream_t stream = 0;
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource();
+
     int point_len = 15;
     float t[point_len] = {0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
     float x[point_len] = {3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3};
@@ -166,16 +178,16 @@ TEST_F(CubicSplineTest, test_interpolate_full)
     int ids[ids_len] = {0, 0, 1, 2};
     int prefix[ids_len] = {0, 5, 10, 15};
     int point_ids[point_len] = {0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2};
-   
+
     cudf::column t_column = make_device_column<float>(t, point_len);
     cudf::column x_column = make_device_column<float>(x, point_len);
     cudf::column ids_column = make_device_column<int>(ids, ids_len);
     cudf::column prefix_column = make_device_column<int>(prefix, ids_len);
     cudf::column point_ids_column = make_device_column<int>(point_ids, point_len);
 
-    std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_coefficients(t_column, x_column, ids_column, prefix_column);
+    std::unique_ptr<cudf::experimental::table> splines = cuspatial::cubicspline_coefficients(t_column, x_column, ids_column, prefix_column, mr, stream);
 
-    std::unique_ptr<cudf::column> interpolates = cuspatial::cubicspline_interpolate(t_column, point_ids_column.view(), prefix_column, t_column, splines->view());
+    std::unique_ptr<cudf::column> interpolates = cuspatial::cubicspline_interpolate(t_column, point_ids_column.view(), prefix_column, t_column, splines->view(), mr, stream);
     
     cudf::column_view device_column = interpolates->view();
     std::vector<float> host_data;

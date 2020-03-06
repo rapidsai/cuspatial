@@ -49,6 +49,15 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
                                          cudf::column_view const& spline_ids,
                                          cudf::column_view const& offsets,
                                          cudf::column_view const& source_points,
+                                         cudf::table_view const& coefficients,
+                                         rmm::mr::device_memory_resource *mr,
+                                         cudaStream_t stream);
+
+std::unique_ptr<cudf::column> cubicspline_interpolate_default(
+                                         cudf::column_view const& query_points,
+                                         cudf::column_view const& spline_ids,
+                                         cudf::column_view const& offsets,
+                                         cudf::column_view const& source_points,
                                          cudf::table_view const& coefficients);
 
 /**
@@ -78,6 +87,14 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
  * `ids.size()-1`.
 **/
 std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
+                                         cudf::column_view const& t,
+                                         cudf::column_view const& y,
+                                         cudf::column_view const& ids,
+                                         cudf::column_view const& offsets,
+                                         rmm::mr::device_memory_resource *mr,
+                                         cudaStream_t stream);
+
+std::unique_ptr<cudf::experimental::table> cubicspline_coefficients_default(
                                          cudf::column_view const& t,
                                          cudf::column_view const& y,
                                          cudf::column_view const& ids,
