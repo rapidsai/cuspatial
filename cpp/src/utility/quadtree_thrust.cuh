@@ -35,10 +35,10 @@ struct xytoz
   xytoz(SBBox<T> _bbox,uint8_t _lev,double _scale): bbox(_bbox),lev(_lev),scale(_scale) {}
    
     __device__
-    uint32_t operator()(thrust::tuple<uint32_t,double,double> loc )
+    uint32_t operator()(thrust::tuple<double,double> loc )
     {	
-	double x=thrust::get<1>(loc);
-	double y=thrust::get<2>(loc);
+	double x=thrust::get<0>(loc);
+	double y=thrust::get<1>(loc);
 	if(x<thrust::get<0>(bbox.first)||x>thrust::get<0>(bbox.second)||y<thrust::get<1>(bbox.first)||y>thrust::get<1>(bbox.second))
 		return (1<<(2*lev)-1);
 	else

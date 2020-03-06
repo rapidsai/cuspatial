@@ -78,8 +78,9 @@ TEST_F(QuadtreePolygonBBoxJoinTest, test1)
     cudf::mutable_column_view x(cudf::data_type{cudf::FLOAT64},point_len,d_p_x);
     cudf::mutable_column_view y(cudf::data_type{cudf::FLOAT64},point_len,d_p_y);
     
-    std::unique_ptr<cudf::experimental::table> quadtree= cuspatial::quadtree_on_points(id,x,y,x1,y1,x2,y2, scale,num_levels, min_size);
-    std::cout<<"quadtree num cols="<<quadtree->view().num_columns()<<std::endl;
+    std::unique_ptr<cudf::experimental::table> quadtree= cuspatial::quadtree_on_points(x,y,x1,y1,x2,y2, scale,num_levels, min_size);
+    std::cout<<"quadtree num columns="<<quadtree->view().num_columns()<<std::endl;
+    std::cout<<"quadtree num rows="<<quadtree->view().num_rows()<<std::endl;
     
     uint32_t ply_fpos[]={1,2,3,4};
     uint32_t ply_rpos[]={4,10,14,19};

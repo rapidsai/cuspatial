@@ -37,6 +37,7 @@
 #include <cudf/table/table_view.hpp>
 #include <cudf/table/table.hpp>
 
+#include <utility/utility.hpp>
 #include <utility/helper_thrust.cuh>
 #include <utility/quadtree_thrust.cuh>
 #include <utility/bbox_thrust.cuh>
@@ -306,23 +307,12 @@ void write_shapefile(const char * file_name,uint32_t num_poly,
    printf("num_poly=%d num_f=%d\n",num_poly,num_f);
 }  
 
-float calc_time(const char *msg,timeval t0, timeval t1)
-{
- 	long d = t1.tv_sec*1000000+t1.tv_usec - t0.tv_sec * 1000000-t0.tv_usec;
- 	float t=(float)d/1000;
- 	if(msg!=NULL)
- 		printf("%s ...%10.3f\n",msg,t);
- 	return t;
-}
-
-
 //==========================================================================================================
 
 
 struct SpatialJoinNYCTaxi : public GdfTest 
 {        
     uint32_t num_pnt=0;
-    uint32_t * d_pnt_id=NULL;
     double *d_pnt_x=NULL,*d_pnt_y=NULL;
     double *h_pnt_x=NULL,*h_pnt_y=NULL;
     std::unique_ptr<cudf::column> col_pnt_id,col_pnt_x,col_pnt_y;
@@ -366,11 +356,11 @@ struct SpatialJoinNYCTaxi : public GdfTest
         
         //NYC Community Districts: 71 polygons
         //from https://www1.nyc.gov/assets/planning/download/zip/data-maps/open-data/nycd_11aav.zip
-        //std::string shape_filename=std::string(env_p)+std::string("nycd.shp"); 
+        //std::string shape_filename=std::string(env_p)+std::string("nycd_11a_av/nycd.shp"); 
         
         //NYC Census Tract 2000 data: 2216 polygons
         //from: https://www1.nyc.gov/assets/planning/download/zip/data-maps/open-data/nyct2000_11aav.zip
-  	std::string shape_filename=std::string(env_p)+std::string("nyct2000.shp");
+  	std::string shape_filename=std::string(env_p)+std::string("nyct2000_11a_av/nyct2000.shp");
         std::cout<<"Using shapefile "<<shape_filename<<std::endl;
 	
         std::vector<int> g_len_v,f_len_v,r_len_v;
@@ -511,13 +501,7 @@ struct SpatialJoinNYCTaxi : public GdfTest
         y1=*(std::min_element(h_pnt_y,h_pnt_y+num_pnt));
         y2=*(std::max_element(h_pnt_y,h_pnt_y+num_pnt));
         printf("read_point_catalog: x_min=%10.5f y_min=%10.5f, x_max=%10.5f, y_max=%10.5f\n",x1,y1, x2,y2);
-        
-        col_pnt_id = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
-         	num_pnt, cudf::mask_state::UNALLOCATED, stream, mr );      
-        d_pnt_id=cudf::mutable_column_device_view::create(col_pnt_id->mutable_view(), stream)->data<uint32_t>();
-        assert(d_pnt_id!=NULL);
-        thrust::sequence(thrust::device,d_pnt_id,d_pnt_id+num_pnt);
-      
+       
         col_pnt_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
         	num_pnt, cudf::mask_state::UNALLOCATED, stream, mr );      
         d_pnt_x=cudf::mutable_column_device_view::create(col_pnt_x->mutable_view(), stream)->data<double>();
@@ -536,19 +520,17 @@ struct SpatialJoinNYCTaxi : public GdfTest
         timeval t0,t1,t2,t3;
  
         gettimeofday(&t0, NULL); 
-        cudf::mutable_column_view pnt_id_view=col_pnt_id->mutable_view();
         cudf::mutable_column_view pnt_x_view=col_pnt_x->mutable_view();
         cudf::mutable_column_view pnt_y_view=col_pnt_y->mutable_view();
-        std::cout<<"run_test::num_pnt_view="<<pnt_id_view.size()<<std::endl;
-        std::cout<<"run_test::num_pnt="<<col_pnt_id->size()<<std::endl;
+        std::cout<<"run_test::num_pnt="<<col_pnt_x->size()<<std::endl;
 
        gettimeofday(&t2, NULL);
        std::unique_ptr<cudf::experimental::table> quadtree= 
-      		cuspatial::quadtree_on_points(pnt_id_view,pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_level, min_size);
+      		cuspatial::quadtree_on_points(pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_level, min_size);
         num_quadrants=quadtree->view().num_rows();
         std::cout<<"# of quadrants="<<num_quadrants<<std::endl;
         gettimeofday(&t3, NULL);
-        float quadtree_time=calc_time("quadtree constrution time=",t2,t3);
+        float quadtree_time=cuspatial::calc_time("quadtree constrution time=",t2,t3);
                 
 //alternatively derive polygon bboxes from GDAL and then create bbox table for subsequent steps
 //also output bbox coordiantes as a CSV file for examination/comparison
@@ -621,7 +603,7 @@ if(0)
         std::unique_ptr<cudf::experimental::table> bbox_tbl=
             cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view()); 
         gettimeofday(&t3, NULL);
-	float polybbox_time=calc_time("compute polygon bbox time=",t2,t3);
+	float polybbox_time=cuspatial::calc_time("compute polygon bbox time=",t2,t3);
         std::cout<<"# of polygon bboxes="<<bbox_tbl->view().num_rows()<<std::endl;
 if(0)
 {
@@ -658,22 +640,22 @@ if(0)
         std::unique_ptr<cudf::experimental::table> pq_pair_tbl=cuspatial::quad_bbox_join(
             quad_view,bbox_view,x1,y1,x2,y2, scale,num_level, min_size);   
  	gettimeofday(&t3, NULL);
- 	float filtering_time=calc_time("spatial filtering time=",t2,t3);         
+ 	float filtering_time=cuspatial::calc_time("spatial filtering time=",t2,t3);         
         std::cout<<"# of polygon/quad pairs="<<pq_pair_tbl->view().num_rows()<<std::endl;
  
         const cudf::table_view pq_pair_view=pq_pair_tbl->view();
-        const cudf::table_view pnt_view({pnt_id_view,pnt_x_view,pnt_y_view});
+        const cudf::table_view pnt_view({pnt_x_view,pnt_y_view});
 
         gettimeofday(&t2, NULL); 
         std::unique_ptr<cudf::experimental::table> pip_pair_tbl=cuspatial::pip_refine(
        	  pq_pair_view,quad_view,pnt_view,
          col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view());   
   	gettimeofday(&t3, NULL);
- 	float refinement_time=calc_time("spatial refinement time=",t2,t3);                
+ 	float refinement_time=cuspatial::calc_time("spatial refinement time=",t2,t3);                
         std::cout<<"# of polygon/point pairs="<<pip_pair_tbl->view().num_rows()<<std::endl;      
         
         gettimeofday(&t1, NULL);
-        float gpu_time=calc_time("gpu end-to-end computing time",t0,t1);
+        float gpu_time=cuspatial::calc_time("gpu end-to-end computing time",t0,t1);
         float  runtimes[4]={quadtree_time,polybbox_time,filtering_time,refinement_time};
         float temp_time=0;
         for(uint32_t i=0;i<4;i++)
@@ -723,14 +705,17 @@ if(0)
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_pnt_idx),num_pp_pairs*sizeof(uint32_t), 0));
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_poly_idx),num_pp_pairs*sizeof(uint32_t), 0));
         HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_pnt_idx, d_temp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_poly_idx, d_temp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );    
-
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_poly_idx, d_temp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );   
+        
+        //copy back sorted points to CPU for verification
+        HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_x, d_pnt_x,num_pnt * sizeof(double), cudaMemcpyDeviceToHost ) );    
+        HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_y, d_pnt_y,num_pnt * sizeof(double), cudaMemcpyDeviceToHost ) );    
 }
 
 uint32_t compute_mismatch()
 {
     printf("num_search_pnt=%d num_search_poly=%d\n",num_search_pnt,num_search_poly);
-
+ 
 if(0)
 {
  	printf("h_pnt_search_idx:\n");
@@ -910,7 +895,7 @@ if(1)
             {
 	    	    gettimeofday(&t3, NULL);    
  	            sprintf(msg,"loop=%d runtime for the last %d iterations is\n",k,num_print_interval);
- 	            float cpu_time_per_interval=calc_time(msg,t2,t3);
+ 	            float cpu_time_per_interval=cuspatial::calc_time(msg,t2,t3);
  	            t2=t3;
  	    }
 	}
@@ -922,7 +907,7 @@ if(1)
 	printf("num_pp_pairs=%d\n",num_pp_pairs);	
  
         gettimeofday(&t1, NULL);
-        float cpu_time=calc_time("cpu all-pair computing time",t0,t1);
+        float cpu_time=cuspatial::calc_time("cpu all-pair computing time",t0,t1);
         
         //global vectors, use their data pointers
         h_pnt_search_idx=&h_pnt_idx_vec[0];
@@ -995,14 +980,14 @@ if(1)
 		    {
 			    gettimeofday(&t3, NULL);    
 			    sprintf(msg,"loop=%d quad=%d runtime for the last %d iterations is\n",p,k,num_print_interval);
-			    float cpu_time_per_interval=calc_time(msg,t2,t3);
+			    float cpu_time_per_interval=cuspatial::calc_time(msg,t2,t3);
 			    t2=t3;
 		    }
 		    p++;
 		}
 	}
         gettimeofday(&t1, NULL);
-        float cpu_time=calc_time("cpu matched-pair computing time",t0,t1);          
+        float cpu_time=cuspatial::calc_time("cpu matched-pair computing time",t0,t1);          
         
         num_search_pnt=h_pnt_idx_vec.size();
         num_search_poly=h_poly_idx_vec.size();
@@ -1033,19 +1018,19 @@ TEST_F(SpatialJoinNYCTaxi, test)
 {
     const uint32_t num_level=15;
     const uint32_t min_size=512;
-    const uint32_t first_n=12;
-    
-    std::cout<<"loading NYC taxi zone shapefile data..........."<<std::endl;  
-    double poly_x1,poly_y1,poly_x2,poly_y2;
-      
-    //uint8_t type=2; //multi-polygons only  
-    uint8_t type=0; //all polygons
-    this->setup_polygons(poly_x1,poly_y1,poly_x2,poly_y2,type);
-        
+    const uint32_t first_n=12; 
+          
     std::cout<<"loading NYC taxi pickup locations..........."<<std::endl;  
     double pnt_x1,pnt_y1,pnt_x2,pnt_y2;
     this->setup_points(pnt_x1,pnt_y1,pnt_x2,pnt_y2,first_n);
  
+    std::cout<<"loading NYC taxi zone shapefile data..........."<<std::endl;  
+    double poly_x1,poly_y1,poly_x2,poly_y2;
+       
+    //uint8_t type=2; //multi-polygons only  
+    uint8_t type=0; //all polygons
+    this->setup_polygons(poly_x1,poly_y1,poly_x2,poly_y2,type);
+  
     double width=poly_x2-poly_x1;
     double height=poly_y2-poly_y1;
     double length=(width>height)?width:height;
@@ -1060,10 +1045,10 @@ TEST_F(SpatialJoinNYCTaxi, test)
     
     this->run_test(bbox_x1,bbox_y1,bbox_x2,bbox_y2,scale,num_level,min_size);
  
- if(1)
+ if(1) 
  {
     std::cout<<"running GDAL CPU code for comparison..........."<<std::endl;
-  
+
     uint32_t num_print_interval=1000;
   
     uint32_t num_pnt_samples=10000;

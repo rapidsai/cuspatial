@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include <time.h>
+#include <sys/time.h>
+
 #include <thrust/gather.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
@@ -28,6 +31,7 @@
 #include <cudf/table/table_view.hpp>
 #include <cudf/table/table.hpp>
 
+#include <utility/utility.hpp>
 #include <utility/helper_thrust.cuh>
 #include <utility/join_thrust.cuh>
 #include <cuspatial/spatial_jion.hpp>
@@ -126,7 +130,7 @@ __global__ void quad_pip_phase1_kernel(const uint32_t * pq_poly_id,const uint32_
 template <typename T>
 __global__ void quad_pip_phase2_kernel(const uint32_t * pq_poly_id,const uint32_t *pq_quad_id,
 	uint32_t *block_offset,uint32_t * block_length,
-	const uint32_t *qt_fpos, const T*  pnt_x,const T*  pnt_y, const uint32_t* pnt_id,
+	const uint32_t *qt_fpos, const T*  pnt_x,const T*  pnt_y,
 	const uint32_t*  poly_fpos,const uint32_t*  poly_rpos,const T*  poly_x,const T*  poly_y,
         uint32_t *d_num_hits,uint32_t *d_res_poly_id,uint32_t *d_res_pnt_id)      
 {  
@@ -221,7 +225,7 @@ __global__ void quad_pip_phase2_kernel(const uint32_t * pq_poly_id,const uint32_
     	//	blockIdx.x,threadIdx.x,qid,pid,tid,mem_offset,num,warp_offset,pos); 
     		
         d_res_poly_id[pos]=pid;
-        d_res_pnt_id[pos]=pnt_id[tid];
+        d_res_pnt_id[pos]=tid;
       } 
       __syncthreads();
 }
@@ -231,7 +235,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
 	uint32_t num_org_pair,const uint32_t * d_org_poly_id,const uint32_t * d_org_quad_id,
 	uint32_t num_node,const uint32_t *d_qt_key,const uint8_t *d_qt_lev,
 	const bool *d_qt_sign, const uint32_t *d_qt_length, const uint32_t *d_qt_fpos,
-	const uint32_t num_pnt,const uint32_t * d_pnt_id,const T *d_pnt_x, const T *d_pnt_y,
+	const uint32_t num_pnt,const T *d_pnt_x, const T *d_pnt_y,
 	const uint32_t num_poly,const uint32_t * d_poly_fpos,
 	const uint32_t * d_poly_rpos,const T *d_poly_x, const T *d_poly_y,
 	rmm::mr::device_memory_resource* mr, cudaStream_t stream)	
@@ -350,14 +354,16 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
       thrust::copy(d_quad_len_ptr,d_quad_len_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
    
   }
-         
+     timeval t0,t1,t2,t3;
+     gettimeofday(&t0, NULL); 
      printf("running quad_pip_phase1_kernel\n");
      quad_pip_phase1_kernel<T> <<< num_pq_pair, threads_per_block >>> 
      	(const_cast<uint32_t*>(d_pq_poly_id),const_cast<uint32_t*>(d_pq_quad_id),
      	 const_cast<uint32_t*>(d_quad_offset),const_cast<uint32_t*>(d_quad_len),
      		d_qt_fpos,d_pnt_x,d_pnt_y,d_poly_fpos,d_poly_rpos,d_poly_x,d_poly_y,d_num_hits);
      HANDLE_CUDA_ERROR( cudaDeviceSynchronize() );
- 
+     gettimeofday(&t1, NULL); 
+     float refine_phase1_time=cuspatial::calc_time("refine_phase1_time time=",t0,t1);
  
  if(0)
  {
@@ -384,6 +390,8 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
      uint32_t total_hits=thrust::reduce(exec_policy,d_num_hits,d_num_hits+num_valid_pair);
      printf("total_hits=%d\n",total_hits);
      thrust::exclusive_scan(exec_policy,d_num_hits,d_num_hits+num_valid_pair,d_num_hits);
+     gettimeofday(&t2, NULL); 
+     float refine_rebalance_time=cuspatial::calc_time("refine_rebalance_time time=",t1,t2);
  
  if(0)
  {
@@ -407,10 +415,12 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
      quad_pip_phase2_kernel<T> <<< num_valid_pair, threads_per_block >>> 
         (d_pq_poly_id,d_pq_quad_id,
          d_quad_offset,d_quad_len,
-     	d_qt_fpos,d_pnt_x,d_pnt_y,d_pnt_id,
+     	d_qt_fpos,d_pnt_x,d_pnt_y,
      	d_poly_fpos,d_poly_rpos,d_poly_x,d_poly_y,
      	d_num_hits,d_res_poly_id,d_res_pnt_id);   
      HANDLE_CUDA_ERROR( cudaDeviceSynchronize() );
+     gettimeofday(&t3, NULL); 
+     float refine_phase2_time=cuspatial::calc_time("refine_phase2_time time=",t2,t3);
         
 if(0)
 {
@@ -446,9 +456,8 @@ struct pip_refine_processor {
        const T *d_poly_x=poly_x.data<T>();
        const T *d_poly_y=poly_y.data<T>();
   
-       const uint32_t *d_pnt_id=pnt.column(0).data<uint32_t>();       
-       const T *d_pnt_x=pnt.column(1).data<T>();
-       const T *d_pnt_y=pnt.column(2).data<T>();
+       const T *d_pnt_x=pnt.column(0).data<T>();
+       const T *d_pnt_y=pnt.column(1).data<T>();
 
        const uint32_t *d_qt_key=    quadtree.column(0).data<uint32_t>();
        const uint8_t  *d_qt_lev=    quadtree.column(1).data<uint8_t>();
@@ -467,7 +476,7 @@ struct pip_refine_processor {
        std::vector<std::unique_ptr<cudf::column>> pair_cols=
        		dowork(num_pair,d_pq_poly_id,d_pq_quad_id,
        			num_node,d_qt_key,d_qt_lev,d_qt_sign,d_qt_length,d_qt_fpos,
-       			num_pnt,d_pnt_id,d_pnt_x,d_pnt_y,
+       			num_pnt,d_pnt_x,d_pnt_y,
        			num_poly,d_poly_fpos,d_poly_rpos,d_poly_x,d_poly_y,
        			mr,stream);
        	
@@ -499,7 +508,7 @@ std::unique_ptr<cudf::experimental::table> pip_refine(
 	
 	
 {   
-   cudf::data_type pnt_dtype=pnt.column(1).type();
+   cudf::data_type pnt_dtype=pnt.column(0).type();
    cudf::data_type poly_dtype=poly_x.type();
    CUDF_EXPECTS(pnt_dtype==poly_dtype,"point and polygon must have the same data type");
    

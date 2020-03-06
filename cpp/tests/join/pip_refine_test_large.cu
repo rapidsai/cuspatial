@@ -42,9 +42,8 @@
 struct PIPRefineTestLarge : public GdfTest 
 {    
     uint32_t num_pnt=0;
-    uint32_t * d_pnt_id=NULL;
     double *d_pnt_x=NULL,*d_pnt_y=NULL;
-    std::unique_ptr<cudf::column> pnt_id,pnt_x,pnt_y;
+    std::unique_ptr<cudf::column> pnt_x,pnt_y;
     
     uint32_t num_poly=0,num_ring=0,num_vertex=0;
     uint32_t *d_poly_id=NULL,*d_poly_fpos=NULL,*d_poly_rpos=NULL;
@@ -120,13 +119,7 @@ struct PIPRefineTestLarge : public GdfTest
          pos+=quad_pnt_nums[i];
     }
     assert(pos==num_pnt);
-     
-    pnt_id = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
-     	num_pnt, cudf::mask_state::UNALLOCATED, stream, mr );      
-    d_pnt_id=cudf::mutable_column_device_view::create(pnt_id->mutable_view(), stream)->data<uint32_t>();
-    assert(d_pnt_id!=NULL);
-    thrust::sequence(thrust::device,d_pnt_id,d_pnt_id+num_pnt);
-  
+       
     pnt_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
     	num_pnt, cudf::mask_state::UNALLOCATED, stream, mr );      
     d_pnt_x=cudf::mutable_column_device_view::create(pnt_x->mutable_view(), stream)->data<double>();
@@ -142,14 +135,12 @@ struct PIPRefineTestLarge : public GdfTest
  
 void run_test(double x1,double y1,double x2,double y2,double scale,uint32_t num_levels,uint32_t min_size)
 {       
-     cudf::mutable_column_view pnt_id_view=pnt_id->mutable_view();
      cudf::mutable_column_view pnt_x_view=pnt_x->mutable_view();
      cudf::mutable_column_view pnt_y_view=pnt_y->mutable_view();
-     std::cout<<"run_test::num_pnt_view="<<pnt_id_view.size()<<std::endl;
-     std::cout<<"run_test::num_pnt="<<pnt_id->size()<<std::endl;
+     std::cout<<"run_test::num_pnt="<<pnt_x->size()<<std::endl;
 
      std::unique_ptr<cudf::experimental::table> quadtree= 
-     	cuspatial::quadtree_on_points(pnt_id_view,pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_levels, min_size);
+     	cuspatial::quadtree_on_points(pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_levels, min_size);
      std::cout<<"run_test: quadtree num cols="<<quadtree->view().num_columns()<<std::endl;
      
      std::unique_ptr<cudf::experimental::table> bbox_tbl=
@@ -164,7 +155,7 @@ void run_test(double x1,double y1,double x2,double y2,double scale,uint32_t num_
      std::cout<<"polygon/quad num pair="<<pq_pair_tbl->view().num_columns()<<std::endl;
  
      const cudf::table_view pq_pair_view=pq_pair_tbl->view();
-     const cudf::table_view pnt_view({pnt_id_view,pnt_x_view,pnt_y_view});
+     const cudf::table_view pnt_view({pnt_x_view,pnt_y_view});
  
      std::unique_ptr<cudf::experimental::table> pip_pair_tbl=cuspatial::pip_refine(
          pq_pair_view,quad_view,pnt_view,

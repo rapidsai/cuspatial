@@ -125,14 +125,12 @@ struct PIPRefineTestSmall : public GdfTest
   
 void run_test(double x1,double y1,double x2,double y2,double scale,uint32_t num_levels,uint32_t min_size)
 {       
-     cudf::mutable_column_view pnt_id_view=pnt_id->mutable_view();
      cudf::mutable_column_view pnt_x_view=pnt_x->mutable_view();
      cudf::mutable_column_view pnt_y_view=pnt_y->mutable_view();
-     std::cout<<"run_test::num_pnt_view="<<pnt_id_view.size()<<std::endl;
-     std::cout<<"run_test::num_pnt="<<pnt_id->size()<<std::endl;
+     std::cout<<"run_test::num_pnt="<<pnt_x_view.size()<<std::endl;
 
      std::unique_ptr<cudf::experimental::table> quadtree= 
-     	cuspatial::quadtree_on_points(pnt_id_view,pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_levels, min_size);
+     	cuspatial::quadtree_on_points(pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_levels, min_size);
      std::cout<<"run_test: quadtree num cols="<<quadtree->view().num_columns()<<std::endl;
      
      std::unique_ptr<cudf::experimental::table> bbox_tbl=
@@ -147,7 +145,7 @@ void run_test(double x1,double y1,double x2,double y2,double scale,uint32_t num_
      std::cout<<"polygon/quad num pair="<<pq_pair_tbl->view().num_columns()<<std::endl;
  
      const cudf::table_view pq_pair_view=pq_pair_tbl->view();
-     const cudf::table_view pnt_view({pnt_id_view,pnt_x_view,pnt_y_view});
+     const cudf::table_view pnt_view({pnt_x_view,pnt_y_view});
  
      std::unique_ptr<cudf::experimental::table> pip_pair_tbl=cuspatial::pip_refine(
          pq_pair_view,quad_view,pnt_view,

@@ -65,11 +65,10 @@ TEST_F(QuadtreeOnPointIndexingTest, test1)
     assert(d_p_id!=NULL);
     thrust::sequence(thrust::device,d_p_id,d_p_id+point_len);
 
-    cudf::mutable_column_view id(cudf::data_type{cudf::INT32},point_len,d_p_id);
     cudf::mutable_column_view x(cudf::data_type{cudf::FLOAT64},point_len,d_p_x);
     cudf::mutable_column_view y(cudf::data_type{cudf::FLOAT64},point_len,d_p_y);
     
-    std::unique_ptr<cudf::experimental::table> qidx= cuspatial::quadtree_on_points(id,x,y,x1,y1,x2,y2, scale,num_levels, min_size);
+    std::unique_ptr<cudf::experimental::table> qidx= cuspatial::quadtree_on_points(x,y,x1,y1,x2,y2, scale,num_levels, min_size);
     std::cout<<"num cols="<<qidx->view().num_columns()<<std::endl;
 }
 
