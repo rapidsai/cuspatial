@@ -221,6 +221,7 @@ if(0)
    
     //line 4 of algorithm in Fig. 5 in ref. 
     HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_pnt_templen, (void *)d_pnt_qtnlen, end_pos * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
+
     //line 5 of algorithm in Fig. 5 in ref. 
     int num_valid_nodes = thrust::remove_if(exec_policy,iter_in,iter_in+num_child_nodes,remove_discard(d_pnt_templen,min_size))-iter_in;
     RMM_FREE(d_pnt_templen,stream);d_pnt_templen=NULL;

@@ -101,11 +101,12 @@ struct SpatialJoinNYCTaxi : public GdfTest
         
         //NYC Community Districts: 71 polygons
         //from https://www1.nyc.gov/assets/planning/download/zip/data-maps/open-data/nycd_11aav.zip
-        //std::string shape_filename=std::string(env_p)+std::string("nycd_11a_av/nycd.shp"); 
+        std::string shape_filename=std::string(env_p)+std::string("nycd_11a_av/nycd.shp"); 
         
         //NYC Census Tract 2000 data: 2216 polygons
         //from: https://www1.nyc.gov/assets/planning/download/zip/data-maps/open-data/nyct2000_11aav.zip
-  	std::string shape_filename=std::string(env_p)+std::string("nyct2000_11a_av/nyct2000.shp");
+  	//std::string shape_filename=std::string(env_p)+std::string("nyct2000_11a_av/nyct2000.shp");
+        
         std::cout<<"Using shapefile "<<shape_filename<<std::endl;
 	
         std::vector<int> g_len_v,f_len_v,r_len_v;
@@ -694,6 +695,7 @@ if(1)
 	for(uint32_t k=0;k<num_samples;k++)
 	{
 	    uint32_t qid=h_pq_quad_idx[nums[k]];
+	    uint32_t pid=h_pq_poly_idx[nums[k]];
 	    uint32_t qlen=h_qt_length[qid];
 	    uint32_t fpos=h_qt_fpos[qid];
 	    //printf("k=%d qid=%u qlen=%u fpos=%u\n",k,qid,qlen,fpos);
@@ -702,17 +704,12 @@ if(1)
 		    assert(fpos+i<num_pnt);
 		    OGRPoint pnt(h_pnt_x[fpos+i],h_pnt_y[fpos+i]);
 		    std::vector<uint32_t> temp_vec;
-		    for(uint32_t j=0;j<h_polygon_vec.size();j++)
-		    {
-			if(h_polygon_vec[j]->Contains(&pnt))
-			  temp_vec.push_back(j);
-		    }
-		    if(temp_vec.size()>0)
-		    {
-			h_pnt_len_vec.push_back(temp_vec.size());
+	            if(h_polygon_vec[pid]->Contains(&pnt))
+	            {
+			h_pnt_len_vec.push_back(1);
 			uint32_t pntid=fpos+i;
 			h_pnt_idx_vec.push_back(pntid);
-			h_poly_idx_vec.insert(h_poly_idx_vec.end(),temp_vec.begin(),temp_vec.end());
+			h_poly_idx_vec.push_back(pid);			
 		    }
 		    if(p>0 && p%num_print_interval==0)
 		    {
@@ -787,12 +784,12 @@ TEST_F(SpatialJoinNYCTaxi, test)
  {
     std::cout<<"running GDAL CPU code for comparison..........."<<std::endl;
 
-    uint32_t num_print_interval=1000;
+    uint32_t num_print_interval=100000;
   
-    uint32_t num_pnt_samples=10000;
+    uint32_t num_pnt_samples=100000;
     this->compare_full_random(num_pnt_samples,num_print_interval);   
     
-    //uint32_t num_quad_samples=100;
+    //uint32_t num_quad_samples=10000;
     //this->compare_matched_pairs(num_quad_samples,num_print_interval);
     
     this->compute_mismatch();

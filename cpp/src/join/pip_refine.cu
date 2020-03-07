@@ -50,7 +50,7 @@ __global__ void quad_pip_phase1_kernel(const uint32_t * pq_poly_id,const uint32_
     __shared__ uint32_t qid,pid,num_point,first_pos,qpos,num_adjusted;
     
     //assume #of points/threads no more than num_threads_per_warp*max_warps_per_block (32*32)
-    __shared__ uint32_t data[max_warps_per_block];
+    __shared__ uint16_t data[max_warps_per_block];
     //assuming 1d 
     if(threadIdx.x==0)
     {
@@ -58,17 +58,17 @@ __global__ void quad_pip_phase1_kernel(const uint32_t * pq_poly_id,const uint32_
     	pid=pq_poly_id[blockIdx.x];
   	qpos=block_offset[blockIdx.x];
     	num_point=block_length[blockIdx.x];
-    	first_pos=qt_fpos[qid]+qpos; 
+    	first_pos=qt_fpos[qid]+qpos;  
     	num_adjusted=((num_point-1)/num_threads_per_warp+1)*num_threads_per_warp;
        	//printf("block=%d qid=%d pid=%d num_point=%d first_pos=%d\n",
     	//	blockIdx.x,qid,pid,num_point,first_pos);	
     }
      __syncthreads();
      
-    if((threadIdx.x>=max_warps_per_block)&&(threadIdx.x>=num_adjusted))
+/*    if((threadIdx.x>=max_warps_per_block)&&(threadIdx.x>=num_adjusted))
     	return;
     __syncthreads();
-    
+*/    
     if(threadIdx.x<max_warps_per_block)
         data[threadIdx.x]=0;
     __syncthreads();
@@ -104,7 +104,7 @@ __global__ void quad_pip_phase1_kernel(const uint32_t * pq_poly_id,const uint32_
       }
       __syncthreads();
 
-      unsigned mask = __ballot_sync(0xFFFFFFFF, threadIdx.x < num_point);
+      unsigned mask = __ballot_sync(0xFFFFFFFF, threadIdx.x < num_adjusted);
       uint32_t vote=__ballot_sync(mask,in_polygon);
       //printf("p1: block=%d thread=%d tid=%d in_polygon=%d mask=%08x vote=%08x\n",blockIdx.x,threadIdx.x,tid,in_polygon,mask,vote);
       
@@ -248,8 +248,8 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
      printf("num_pq_pair=%d\n",num_pq_pair);
      
      uint32_t *d_num_units=NULL,*d_num_sum=NULL;
-     RMM_TRY( RMM_ALLOC( &d_num_units,num_org_pair* sizeof(uint32_t), 0));
-     RMM_TRY( RMM_ALLOC( &d_num_sum,num_org_pair* sizeof(uint32_t), 0));
+     RMM_TRY( RMM_ALLOC( &d_num_units,num_org_pair* sizeof(uint32_t), stream));
+     RMM_TRY( RMM_ALLOC( &d_num_sum,num_org_pair* sizeof(uint32_t), stream));
      assert(d_num_units!=NULL && d_num_sum!=NULL);
      thrust::transform(exec_policy,d_org_quad_id,d_org_quad_id+num_org_pair,
      	d_num_units,get_num_units(d_qt_length,threads_per_block));
@@ -269,13 +269,13 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
  }
          
      uint32_t *d_pq_poly_id=NULL,*d_pq_quad_id=NULL,*d_quad_offset=NULL,*d_quad_len=NULL;
-     RMM_TRY( RMM_ALLOC( &d_pq_poly_id,num_pq_pair* sizeof(uint32_t), 0));
+     RMM_TRY( RMM_ALLOC( &d_pq_poly_id,num_pq_pair* sizeof(uint32_t), stream));
      HANDLE_CUDA_ERROR( cudaMemset(d_pq_poly_id,0,num_pq_pair*sizeof(uint32_t)) ); 
-     RMM_TRY( RMM_ALLOC( &d_pq_quad_id,num_pq_pair* sizeof(uint32_t), 0));
+     RMM_TRY( RMM_ALLOC( &d_pq_quad_id,num_pq_pair* sizeof(uint32_t), stream));
      HANDLE_CUDA_ERROR( cudaMemset(d_pq_quad_id,0,num_pq_pair*sizeof(uint32_t)) ); 
-     RMM_TRY( RMM_ALLOC( &d_quad_offset,num_pq_pair* sizeof(uint32_t), 0));
+     RMM_TRY( RMM_ALLOC( &d_quad_offset,num_pq_pair* sizeof(uint32_t), stream));
      HANDLE_CUDA_ERROR( cudaMemset(d_quad_offset,0,num_pq_pair*sizeof(uint32_t)) );
-     RMM_TRY( RMM_ALLOC( &d_quad_len,num_pq_pair* sizeof(uint32_t), 0));
+     RMM_TRY( RMM_ALLOC( &d_quad_len,num_pq_pair* sizeof(uint32_t), stream));
      HANDLE_CUDA_ERROR( cudaMemset(d_quad_len,0,num_pq_pair*sizeof(uint32_t)) );
           
      thrust::exclusive_scan(exec_policy,d_num_units,d_num_units+num_org_pair,d_num_sum);
@@ -296,7 +296,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
      thrust::copy(d_quad_offset_ptr,d_quad_offset_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
  }
      thrust::inclusive_scan(exec_policy,d_quad_offset,d_quad_offset+num_pq_pair,d_quad_offset,thrust::maximum<int>());
-     RMM_FREE(d_num_sum,0);d_num_sum=NULL;
+     RMM_FREE(d_num_sum,stream);d_num_sum=NULL;
   
      
  if(0)
@@ -320,7 +320,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
       thrust::copy(d_quad_id_ptr,d_quad_id_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
  }
       uint32_t *d_num_hits=NULL;
-      RMM_TRY( RMM_ALLOC( &d_num_hits,num_pq_pair* sizeof(uint32_t), 0));
+      RMM_TRY( RMM_ALLOC( &d_num_hits,num_pq_pair* sizeof(uint32_t), stream));
       assert(d_num_hits!=NULL);
       HANDLE_CUDA_ERROR( cudaMemset(d_num_hits,0,num_pq_pair*sizeof(uint32_t)) ); 
    
@@ -354,6 +354,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
       thrust::copy(d_quad_len_ptr,d_quad_len_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
    
   }
+    
      timeval t0,t1,t2,t3;
      gettimeofday(&t0, NULL); 
      printf("running quad_pip_phase1_kernel\n");
@@ -390,6 +391,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
      uint32_t total_hits=thrust::reduce(exec_policy,d_num_hits,d_num_hits+num_valid_pair);
      printf("total_hits=%d\n",total_hits);
      thrust::exclusive_scan(exec_policy,d_num_hits,d_num_hits+num_valid_pair,d_num_hits);
+
      gettimeofday(&t2, NULL); 
      float refine_rebalance_time=cuspatial::calc_time("refine_rebalance_time time=",t1,t2);
  
@@ -428,7 +430,7 @@ if(0)
  
  	thrust::device_ptr<uint32_t> d_res_poly_ptr=thrust::device_pointer_cast(d_res_poly_id);		
  	printf("d_res_poly_id\n");
-         thrust::copy(d_res_poly_ptr,d_res_poly_ptr+total_hits,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
+        thrust::copy(d_res_poly_ptr,d_res_poly_ptr+total_hits,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
  
  	thrust::device_ptr<uint32_t> d_res_pnt_ptr=thrust::device_pointer_cast(d_res_pnt_id);		
  	printf("d_res_pnt_id\n");

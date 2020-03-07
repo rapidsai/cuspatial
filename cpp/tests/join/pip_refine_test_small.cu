@@ -127,22 +127,26 @@ void run_test(double x1,double y1,double x2,double y2,double scale,uint32_t num_
 {       
      cudf::mutable_column_view pnt_x_view=pnt_x->mutable_view();
      cudf::mutable_column_view pnt_y_view=pnt_y->mutable_view();
-     std::cout<<"run_test::num_pnt="<<pnt_x_view.size()<<std::endl;
+     uint32_t local_num_pnt=pnt_x_view.size();
+     std::cout<<"run_test::local_num_pnt="<<num_pnt<<std::endl;
 
      std::unique_ptr<cudf::experimental::table> quadtree= 
      	cuspatial::quadtree_on_points(pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_levels, min_size);
-     std::cout<<"run_test: quadtree num cols="<<quadtree->view().num_columns()<<std::endl;
-     
+     uint32_t num_quad_nodes=quadtree->view().num_rows();
+     std::cout<<"run_test: # quadtree nodes="<<num_quad_nodes<<std::endl;
+ 
      std::unique_ptr<cudf::experimental::table> bbox_tbl=
      	cuspatial::polygon_bbox(poly_fpos->view(),poly_rpos->view(),poly_x->view(),poly_y->view()); 
-     std::cout<<"polygon bbox="<<bbox_tbl->view().num_rows()<<std::endl;
+     uint32_t local_num_poly=bbox_tbl->view().num_rows();
+     std::cout<<"run_test: # polygon bbox="<<local_num_poly<<std::endl;
      
      const cudf::table_view quad_view=quadtree->view();
      const cudf::table_view bbox_view=bbox_tbl->view();
      
      std::unique_ptr<cudf::experimental::table> pq_pair_tbl=cuspatial::quad_bbox_join(
          quad_view,bbox_view,x1,y1,x2,y2, scale,num_levels, min_size);   
-     std::cout<<"polygon/quad num pair="<<pq_pair_tbl->view().num_columns()<<std::endl;
+     uint32_t  num_pq_pairs=pq_pair_tbl->view().num_rows();
+     std::cout<<"run_test: # polygon/quad pairs="<<num_pq_pairs<<std::endl;
  
      const cudf::table_view pq_pair_view=pq_pair_tbl->view();
      const cudf::table_view pnt_view({pnt_x_view,pnt_y_view});
@@ -150,9 +154,33 @@ void run_test(double x1,double y1,double x2,double y2,double scale,uint32_t num_
      std::unique_ptr<cudf::experimental::table> pip_pair_tbl=cuspatial::pip_refine(
          pq_pair_view,quad_view,pnt_view,
          poly_fpos->view(),poly_rpos->view(),poly_x->view(),poly_y->view());   
-     std::cout<<"polygon/point num pair="<<pip_pair_tbl->view().num_columns()<<std::endl;
+     uint32_t num_pp_pairs=pip_pair_tbl->view().num_rows();
+     std::cout<<"run_test: # polygon/point pair="<<num_pp_pairs<<std::endl;
+
+if(0)
+{        
+        //note that pnt x/y have been sorted 
+        double *h_pnt_x=new double[num_pnt];
+        double *h_pnt_y=new double[num_pnt];
+        HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_x, d_pnt_x,num_pnt * sizeof(double), cudaMemcpyDeviceToHost ) );    
+        HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_y, d_pnt_y,num_pnt * sizeof(double), cudaMemcpyDeviceToHost ) );    
+        
+        for(uint32_t i=0;i<num_pnt;i++)
+             printf("%10d, %15.5f, %15.5f\n",i,h_pnt_x[i],h_pnt_y[i]);
+        printf("\n\n");
+       
+        const uint32_t * d_pp_poly_idx=pip_pair_tbl->view().column(0).data<uint32_t>();
+        const uint32_t * d_pp_pnt_idx=pip_pair_tbl->view().column(1).data<uint32_t>();      
+        uint32_t *h_pp_poly_idx=new uint32_t[num_pp_pairs];
+        uint32_t *h_pp_pnt_idx=new uint32_t[num_pp_pairs];
+        assert(h_pp_poly_idx!=NULL && h_pp_pnt_idx!=NULL);
+ 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_poly_idx, d_pp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
+ 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_pnt_idx, d_pp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );   
+         
+        for(uint32_t i=0;i<num_pp_pairs;i++)
+             printf("%10d, %15.5f, %15.5f, %10d\n",i,h_pnt_x[h_pp_pnt_idx[i]],h_pnt_y[h_pp_pnt_idx[i]],h_pp_poly_idx[i]);
 }
- 
+    } 
 };
 
 TEST_F(PIPRefineTestSmall, test_point_small)
