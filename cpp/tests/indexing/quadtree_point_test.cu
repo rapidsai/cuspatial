@@ -60,16 +60,38 @@ TEST_F(QuadtreeOnPointIndexingTest, test1)
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_y, yy, point_len * sizeof(double), cudaMemcpyHostToDevice ) );     
     
       
-    uint32_t * d_p_id=NULL;
-    RMM_TRY( RMM_ALLOC( &d_p_id,point_len* sizeof(uint32_t), stream));
-    assert(d_p_id!=NULL);
-    thrust::sequence(thrust::device,d_p_id,d_p_id+point_len);
-
     cudf::mutable_column_view x(cudf::data_type{cudf::FLOAT64},point_len,d_p_x);
-    cudf::mutable_column_view y(cudf::data_type{cudf::FLOAT64},point_len,d_p_y);
+    cudf::mutable_column_view y(cudf::data_type{cudf::FLOAT64},point_len,d_p_y);    
+    std::unique_ptr<cudf::experimental::table> quadtree= cuspatial::quadtree_on_points(x,y,x1,y1,x2,y2, scale,num_levels, min_size);
+    cudf::table_view quad_view=quadtree->view();
+    std::cout<<"num cols="<<quad_view.num_columns()<<" num rows="<<quad_view.num_rows()<<std::endl;
     
-    std::unique_ptr<cudf::experimental::table> qidx= cuspatial::quadtree_on_points(x,y,x1,y1,x2,y2, scale,num_levels, min_size);
-    std::cout<<"num cols="<<qidx->view().num_columns()<<std::endl;
+if(1)
+{
+
+    thrust::device_ptr<const uint32_t> d_key_ptr=thrust::device_pointer_cast(quad_view.column(0).data<uint32_t>());
+    thrust::device_ptr<const uint8_t> d_lev_ptr=thrust::device_pointer_cast(quad_view.column(1).data<uint8_t>());   
+    thrust::device_ptr<const bool> d_sign_ptr=thrust::device_pointer_cast(quad_view.column(2).data<bool>());   
+    thrust::device_ptr<const uint32_t> d_len_ptr=thrust::device_pointer_cast(quad_view.column(3).data<uint32_t>());	
+    thrust::device_ptr<const uint32_t> d_fpos_ptr=thrust::device_pointer_cast(quad_view.column(4).data<uint32_t>());   
+ 
+    printf("key\n");
+    thrust::copy(d_key_ptr,d_key_ptr+quad_view.num_rows(),std::ostream_iterator<const uint32_t>(std::cout, " "));std::cout<<std::endl;
+    
+    printf("lev\n");
+    //change from uint8_t to uint32_t in ostream_iterator to output numbers instead of special chars
+    thrust::copy(d_lev_ptr,d_lev_ptr+quad_view.num_rows(),std::ostream_iterator<const uint32_t>(std::cout, " "));std::cout<<std::endl;
+   
+    printf("sign\n");
+    thrust::copy(d_sign_ptr,d_sign_ptr+quad_view.num_rows(),std::ostream_iterator<const bool>(std::cout, " "));std::cout<<std::endl;
+    
+    printf("length\n");
+    thrust::copy(d_len_ptr,d_len_ptr+quad_view.num_rows(),std::ostream_iterator<const uint32_t>(std::cout, " "));std::cout<<std::endl;
+    
+    printf("fpos\n");
+    thrust::copy(d_fpos_ptr,d_fpos_ptr+quad_view.num_rows(),std::ostream_iterator<const uint32_t>(std::cout, " "));std::cout<<std::endl;
+}       
+
 }
 
 

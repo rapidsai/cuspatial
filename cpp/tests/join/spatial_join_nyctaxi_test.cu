@@ -101,11 +101,11 @@ struct SpatialJoinNYCTaxi : public GdfTest
         
         //NYC Community Districts: 71 polygons
         //from https://www1.nyc.gov/assets/planning/download/zip/data-maps/open-data/nycd_11aav.zip
-        std::string shape_filename=std::string(env_p)+std::string("nycd_11a_av/nycd.shp"); 
+        //std::string shape_filename=std::string(env_p)+std::string("nycd_11a_av/nycd.shp"); 
         
         //NYC Census Tract 2000 data: 2216 polygons
         //from: https://www1.nyc.gov/assets/planning/download/zip/data-maps/open-data/nyct2000_11aav.zip
-  	//std::string shape_filename=std::string(env_p)+std::string("nyct2000_11a_av/nyct2000.shp");
+  	std::string shape_filename=std::string(env_p)+std::string("nyct2000_11a_av/nyct2000.shp");
         
         std::cout<<"Using shapefile "<<shape_filename<<std::endl;
 	
@@ -786,11 +786,11 @@ TEST_F(SpatialJoinNYCTaxi, test)
 
     uint32_t num_print_interval=100000;
   
-    uint32_t num_pnt_samples=100000;
-    this->compare_full_random(num_pnt_samples,num_print_interval);   
+    //uint32_t num_pnt_samples=10000;
+    //this->compare_full_random(num_pnt_samples,num_print_interval);   
     
-    //uint32_t num_quad_samples=10000;
-    //this->compare_matched_pairs(num_quad_samples,num_print_interval);
+    uint32_t num_quad_samples=10000;
+    this->compare_matched_pairs(num_quad_samples,num_print_interval);
     
     this->compute_mismatch();
     
