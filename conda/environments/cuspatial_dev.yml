@@ -6,6 +6,6 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - cudf=0.12.*
+  - cudf=0.14.*
   - cudatoolkit=9.2
   - gdal>=2.4.*
