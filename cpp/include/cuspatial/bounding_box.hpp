@@ -22,6 +22,6 @@ namespace cuspatial {
  * @note: .
 **/
 std::unique_ptr<cudf::experimental::table> polygon_bbox(
-	cudf::column_view,cudf::column_view,cudf::column_view,cudf::column_view);
+	const cudf::column_view&,const cudf::column_view&,const cudf::column_view&,const cudf::column_view&);
 
 }  // namespace cuspatial

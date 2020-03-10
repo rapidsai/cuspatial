@@ -48,7 +48,7 @@ struct bounding_box_processor {
         uint32_t num_poly=fpos.size();
         uint32_t num_ring=rpos.size();
         uint32_t num_vertex=x.size();
-        std::cout<<"num_poly="<<num_poly<<",num_ring="<<num_ring<<",num_vertex="<<num_vertex<<std::endl;
+        std::cout<<"bounding_box_processor: num_poly="<<num_poly<<",num_ring="<<num_ring<<",num_vertex="<<num_vertex<<std::endl;
         auto exec_policy = rmm::exec_policy(stream)->on(stream);
 
         const uint32_t *d_ply_fpos=fpos.data<uint32_t>();
@@ -81,7 +81,7 @@ if(0)
           thrust::transform(exec_policy,d_ply_fpos,d_ply_fpos+num_poly,d_temp_ring_pos,thrust::placeholders::_1-1);
           thrust::gather(exec_policy,d_temp_ring_pos,d_temp_ring_pos+num_poly,d_ply_rpos,d_first_ring_pos);
           RMM_TRY(RMM_FREE(d_temp_ring_pos,stream));d_temp_ring_pos=NULL; 
- 
+
  if(0)
  {
  	 printf("prefix-sum numbers of points recorded at the last rings for all polygons\n"); 
@@ -152,6 +152,7 @@ if(0)
         bbox_cols.push_back(std::move(y2_col));
         std::unique_ptr<cudf::experimental::table> destination_table = 
             std::make_unique<cudf::experimental::table>(std::move(bbox_cols));
+        std::cout<<"completing bounding_box_processor.................."<<std::endl;
         return destination_table;
     }
 
@@ -171,8 +172,8 @@ if(0)
 namespace cuspatial {
 
 std::unique_ptr<cudf::experimental::table> polygon_bbox(
-    cudf::column_view fpos,cudf::column_view rpos,
-    cudf::column_view x,cudf::column_view y)
+    const cudf::column_view& fpos,const cudf::column_view& rpos,
+    const cudf::column_view& x,const cudf::column_view& y)
 {
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
