@@ -48,6 +48,6 @@ namespace cuspatial {
 std::unique_ptr<cudf::experimental::table> quadtree_on_points(
     cudf::mutable_column_view& x,cudf::mutable_column_view& y,
 	double x1,double y1,double x2,double y2,
-	double scale, int num_level, int min_size)
+	double scale, int num_level, int min_size);
 
 }// namespace cuspatial

@@ -423,6 +423,12 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(
   cudf::mutable_column_view& x,cudf::mutable_column_view& y,
 	double x1,double y1,double x2,double y2, double scale, int num_level, int min_size)
 {
+    CUDF_EXPECTS(x.size()==y.size(),"x and y columns might have the same lenght");  
+    CUDF_EXPECTS(x1<x2 && y1<y2, "invalid bounding box (x1,y1,x2,y2)");
+    CUDF_EXPECTS(scale>0, "scale must be positive");
+    CUDF_EXPECTS(num_level>=0 && num_level<16, "maximum of levels might be in [0,16)");
+    CUDF_EXPECTS(min_size>0, "minimum number of points for a non-leaf node must be larger than zero");
+     
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
 

@@ -40,9 +40,6 @@ namespace
 
 typedef thrust::tuple<double, double,double,double,double,uint32_t,uint32_t> quad_point_parameters;
 
-/*
-
-*/
 template<typename T>
 std::vector<std::unique_ptr<cudf::column>> dowork(
     uint32_t num_node,const uint32_t *d_p_qtkey,const uint8_t *d_p_qtlev,
@@ -91,9 +88,13 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
 
 if(0)
 {
+   std::cout<<"qt lev"<<std::endl;
+   thrust::device_ptr<const uint8_t> d_lev_ptr=thrust::device_pointer_cast(d_p_qtlev);
+   thrust::copy(d_lev_ptr,d_lev_ptr+num_node,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
+
    std::cout<<"qt sign"<<std::endl;
    thrust::device_ptr<const bool> d_sign_ptr=thrust::device_pointer_cast(d_p_qtsign);
-   thrust::copy(d_sign_ptr,d_sign_ptr+num_node,std::ostream_iterator<bool>(std::cout, " "));std::cout<<std::endl;
+   thrust::copy(d_sign_ptr,d_sign_ptr+num_node,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
 }
 
     auto ploy_bbox_iter=thrust::make_zip_iterator(
@@ -126,9 +127,10 @@ if(0)
     std::cout<<"num_poly="<<num_poly<<std::endl;
     std::cout<<"num_pair="<<num_pair<<std::endl;
 
-    uint8_t *d_pq_lev_temp=NULL,*d_pq_type_temp=NULL;
+    uint8_t *d_pq_lev_temp=NULL;
     RMM_TRY( RMM_ALLOC( &d_pq_lev_temp,num_pair* sizeof(uint8_t), stream));
     CUDF_EXPECTS(d_pq_lev_temp!=NULL,"Error allocating memory for temporal level array on device");
+    uint8_t *d_pq_type_temp=NULL;
     RMM_TRY( RMM_ALLOC( &d_pq_type_temp,num_pair* sizeof(uint8_t), stream));
     CUDF_EXPECTS(d_pq_type_temp!=NULL,"Error allocating memory for temporal type array on device");
 
