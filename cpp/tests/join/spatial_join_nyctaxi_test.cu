@@ -144,7 +144,7 @@ struct SpatialJoinNYCTaxi : public GdfTest
         std::copy_n(r_len_v.begin(),num_ring,h_poly_rpos);
         std::copy_n(x_v.begin(),num_vertex,h_poly_x);
         std::copy_n(y_v.begin(),num_vertex,h_poly_y);
-        printf("num_poly=%d num_ring=%d num_vertex=%d\n",num_poly,num_ring,num_vertex);
+        printf("setup_polygons: num_poly=%d num_ring=%d num_vertex=%d\n",num_poly,num_ring,num_vertex);
 
         x1=*(std::min_element(x_v.begin(),x_v.end()));
         x2=*(std::max_element(x_v.begin(),x_v.end()));
@@ -278,7 +278,7 @@ struct SpatialJoinNYCTaxi : public GdfTest
         gettimeofday(&t3, NULL);
         float quadtree_time=cuspatial::calc_time("quadtree constrution time=",t2,t3);
 
-//compute polygon bbox on GPU                
+	//compute polygon bbox on GPU                
         gettimeofday(&t2, NULL);
         std::unique_ptr<cudf::experimental::table> bbox_tbl=
             cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view()); 
