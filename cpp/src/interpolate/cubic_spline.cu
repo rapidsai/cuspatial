@@ -26,33 +26,34 @@ namespace { // anonymous
 
 struct parallel_search {
   template <typename T>
-  std::enable_if_t<std::is_floating_point<T>::value, void>
+  std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>>
   operator()(cudf::column_view const& t,
-                  cudf::column_view const& curve_ids,
-                  cudf::column_view const& prefixes,
-                  cudf::column_view const& query_coords,
-                  cudf::mutable_column_view const& result,
-                  rmm::mr::device_memory_resource *mr,
-                  cudaStream_t stream) {
-      const T* T_ = t.data<T>();
-      const int32_t* CURVE_IDS_ = curve_ids.data<int32_t>();
-      const int32_t* PREFIXES_ = prefixes.data<int32_t>();
-      const T* QUERY_COORDS_ = query_coords.data<T>();
-      T* RESULT_ = result.data<T>();
+             cudf::column_view const& curve_ids,
+             cudf::column_view const& prefixes,
+             cudf::column_view const& query_coords,
+             rmm::mr::device_memory_resource *mr,
+             cudaStream_t stream) {
+      const T* p_t = t.data<T>();
+      const int32_t* p_curve_ids = curve_ids.data<int32_t>();
+      const int32_t* p_prefixes = prefixes.data<int32_t>();
+      const T* p_query_coords = query_coords.data<T>();
+      auto result = cudf::make_numeric_column(t.type(), t.size(),
+              cudf::mask_state::UNALLOCATED, stream, mr);
+      T* p_result = result->mutable_view().data<T>();
       thrust::for_each(rmm::exec_policy(stream)->on(stream),
         thrust::make_counting_iterator<int>(0),
         thrust::make_counting_iterator<int>(query_coords.size()),
-        [T_, CURVE_IDS_, PREFIXES_, QUERY_COORDS_, RESULT_] __device__
+        [p_t, p_curve_ids, p_prefixes, p_query_coords, p_result] __device__
         (int index) {
-          int curve = CURVE_IDS_[index];
-          int len = PREFIXES_[curve+1] - PREFIXES_[curve];
-          int h = PREFIXES_[curve];
-          int dh = PREFIXES_[curve] - (curve);
+          int curve = p_curve_ids[index];
+          int len = p_prefixes[curve+1] - p_prefixes[curve];
+          int h = p_prefixes[curve];
+          int dh = p_prefixes[curve] - (curve);
           // O(n) search, can do log(n) easily
           for(int32_t i = 0 ; i < len ; ++i) {
-            if((T_[h+i]+0.0001 - QUERY_COORDS_[index]) > 0.00001) {
-              RESULT_[index] = dh+i-1;
-              if(i == 0) RESULT_[index] = index-curve;
+            if((p_t[h+i]+0.0001 - p_query_coords[index]) > 0.00001) {
+              p_result[index] = dh+i-1;
+              if(i == 0) p_result[index] = index-curve;
               return;
             }
           }
@@ -60,18 +61,13 @@ struct parallel_search {
           // This will use the final set of coefficients
           // for t_ values that are outside of the original
           // interpolation range.
-          RESULT_[index] = h+len - 2;
+          p_result[index] = h+len - 2;
       });
+      return result;
   };
-  template <typename T>
-  std::enable_if_t<not std::is_floating_point<T>::value, void>
-  operator()(cudf::column_view const& t,
-                  cudf::column_view const& curve_ids,
-                  cudf::column_view const& prefixes,
-                  cudf::column_view const& query_coords,
-                  cudf::mutable_column_view const& result,
-                  rmm::mr::device_memory_resource *mr,
-                  cudaStream_t stream) {
+  template <typename T, typename... Args>
+  std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>>
+  operator()(Args&&... args) {
       CUDF_FAIL("Non-floating point operation is not supported.");
   }
 };
@@ -254,22 +250,18 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
     cudaStream_t stream
 )
 {
-    auto result = make_numeric_column(query_points.type(), query_points.size(), cudf::mask_state::UNALLOCATED, stream, mr);
-    cudf::mutable_column_view search_result = result->mutable_view();
-    
-    //auto search_result = cudf::experimental::type_dispatcher(query_points.type(), parallel_search{}, query_points, curve_ids, prefixes, source_points, mr, stream);
-    cudf::experimental::type_dispatcher(query_points.type(), parallel_search{}, query_points, curve_ids, prefixes, source_points, search_result, mr, stream);
+    auto search_result = cudf::experimental::type_dispatcher(query_points.type(), parallel_search{}, query_points, curve_ids, prefixes, source_points, mr, stream);
     TPRINT(search_result, "parallel_search_");
     TPRINT(query_points, "query_points_");
     TPRINT(curve_ids, "curve_ids_");
     TPRINT(prefixes, "prefixes_");
 
-    cudf::experimental::type_dispatcher(query_points.type(), interpolate{}, query_points, curve_ids, prefixes, coefficients, search_result, mr, stream);
+    cudf::experimental::type_dispatcher(query_points.type(), interpolate{}, query_points, curve_ids, prefixes, coefficients, search_result->mutable_view(), mr, stream);
     TPRINT(query_points, "query_points_");
     TPRINT(curve_ids, "curve_ids_");
     TPRINT(prefixes, "prefixes_");
     TPRINT(search_result, "interpolate_");
-    return result;
+    return search_result;
 }
 
 std::unique_ptr<cudf::column> cubicspline_interpolate_default(
@@ -371,7 +363,7 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
         u_buffer.data<float>(),
         prefixes.size()-1,
         batchStride,
-        thrust::raw_pointer_cast(pBuffer.data().get())
+        pBuffer.data().get()
     );
     detail::HANDLE_CUSPARSE_STATUS(cusparseStatus);
     cusparseStatus = cusparseDestroy(handle);
