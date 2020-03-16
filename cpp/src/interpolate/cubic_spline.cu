@@ -77,33 +77,33 @@ struct interpolate {
   std::enable_if_t<std::is_floating_point<T>::value, void>
   operator()(cudf::column_view const& t,
                   cudf::column_view const& ids,
-                  cudf::column_view const& coef_indexes,
+                  cudf::column_view const& coef_indices,
                   cudf::table_view const& coefficients,
                   cudf::mutable_column_view const& result,
                   rmm::mr::device_memory_resource *mr,
                   cudaStream_t stream) {
-      const T* T_ = t.data<T>();
-      const int32_t* IDS_ = ids.data<int32_t>();
-      const int32_t* COEF_INDEXES_ = coef_indexes.data<int32_t>();
-      const T* D3_ = coefficients.column(3).data<T>();
-      const T* D2_ = coefficients.column(2).data<T>();
-      const T* D1_ = coefficients.column(1).data<T>();
-      const T* D0_ = coefficients.column(0).data<T>();
-      T* RESULT_ = result.data<T>();
+      const T* p_t = t.data<T>();
+      const int32_t* p_ids = ids.data<int32_t>();
+      const int32_t* p_coef_indices = coef_indices.data<int32_t>();
+      const T* p_d3 = coefficients.column(3).data<T>();
+      const T* p_d2 = coefficients.column(2).data<T>();
+      const T* p_d1 = coefficients.column(1).data<T>();
+      const T* p_d0 = coefficients.column(0).data<T>();
+      T* p_result = result.data<T>();
       thrust::for_each(rmm::exec_policy(stream)->on(stream),
         thrust::make_counting_iterator<int>(0),
         thrust::make_counting_iterator<int>(t.size()),
-        [T_, IDS_, COEF_INDEXES_, D3_, D2_, D1_, D0_, RESULT_] __device__
+        [p_t, p_ids, p_coef_indices, p_d3, p_d2, p_d1, p_d0, p_result] __device__
         (int index) {
-          int h = RESULT_[index];
-          RESULT_[index] = D3_[h] + T_[index] * (D2_[h] + T_[index] * (D1_[h] + (T_[index] * D0_[h])));
+          int h = p_result[index];
+          p_result[index] = p_d3[h] + p_t[index] * (p_d2[h] + p_t[index] * (p_d1[h] + (p_t[index] * p_d0[h])));
       });
   };
   template <typename T>
   std::enable_if_t<not std::is_floating_point<T>::value, void>
   operator()(cudf::column_view const& t,
                   cudf::column_view const& ids,
-                  cudf::column_view const& coef_indexes,
+                  cudf::column_view const& coef_indices,
                   cudf::table_view const& coefficients,
                   cudf::mutable_column_view const& result,
                   rmm::mr::device_memory_resource *mr,
@@ -127,35 +127,35 @@ struct coefficients_compute {
                   cudf::mutable_column_view const& d0,
                   rmm::mr::device_memory_resource *mr,
                   cudaStream_t stream) {
-      const T* T_ = t.data<T>();
-      const T* Y_ = y.data<T>();
-      const int32_t* PREFIXES = prefixes.data<int32_t>();
-      T* H_ = h.data<T>();
-      T* I_ = i.data<T>();
+      const T* p_t = t.data<T>();
+      const T* p_y = y.data<T>();
+      const int32_t* p_prefixes = prefixes.data<int32_t>();
+      T* p_h = h.data<T>();
+      T* p_i = i.data<T>();
       T* Z_ = z.data<T>();
-      T* D3_ = d3.data<T>();
-      T* D2_ = d2.data<T>();
-      T* D1_ = d1.data<T>();
-      T* D0_ = d0.data<T>();
+      T* p_d3 = d3.data<T>();
+      T* p_d2 = d2.data<T>();
+      T* p_d1 = d1.data<T>();
+      T* p_d0 = d0.data<T>();
       thrust::for_each(rmm::exec_policy(stream)->on(stream),
         thrust::make_counting_iterator<int>(1),
         thrust::make_counting_iterator<int>(prefixes.size()),
-        [T_, Y_, PREFIXES, H_, I_, Z_, D3_, D2_, D1_, D0_] __device__
+        [p_t, p_y, p_prefixes, p_h, p_i, Z_, p_d3, p_d2, p_d1, p_d0] __device__
         (int index) {
-          int n = PREFIXES[index] - PREFIXES[index-1];
-          int h = PREFIXES[index-1];
-          int dh = PREFIXES[index-1] - (index-1);
+          int n = p_prefixes[index] - p_prefixes[index-1];
+          int h = p_prefixes[index-1];
+          int dh = p_prefixes[index-1] - (index-1);
           int ci = 0;
           for(ci = 0 ; ci < n-1 ; ++ci) {
-            T a = Y_[h+ci];
-            T b = I_[h+ci] - H_[h+ci] * (Z_[h+ci+1] + 2 * Z_[h+ci]) / 6;
+            T a = p_y[h+ci];
+            T b = p_i[h+ci] - p_h[h+ci] * (Z_[h+ci+1] + 2 * Z_[h+ci]) / 6;
             T c = Z_[h+ci] / 2.0;
-            T d = (Z_[h+ci+1] - Z_[h+ci]) / 6 * H_[h+ci];
-            T t = T_[h+ci];
-            D3_[dh+ci] = d;
-            D2_[dh+ci] = c - 3 * d * t;
-            D1_[dh+ci] = b - t * (2*c - t * (3 * d));
-            D0_[dh+ci] = a - t * (b - t * (c - t * d)); // horners
+            T d = (Z_[h+ci+1] - Z_[h+ci]) / 6 * p_h[h+ci];
+            T t = p_t[h+ci];
+            p_d3[dh+ci] = d;
+            p_d2[dh+ci] = c - 3 * d * t;
+            p_d1[dh+ci] = b - t * (2*c - t * (3 * d));
+            p_d0[dh+ci] = a - t * (b - t * (c - t * d)); // horners
           }
       });
   };
@@ -190,32 +190,32 @@ struct compute_spline_tridiagonals {
                   cudf::mutable_column_view const& i,
                   rmm::mr::device_memory_resource *mr,
                   cudaStream_t stream) {
-      const T* T_ = t.data<T>();
-      const T* Y_ = y.data<T>();
-      const int32_t* PREFIXES = prefixes.data<int32_t>();
-      T* D_ = D.data<T>();
-      T* Dlu_ = Dlu.data<T>();
-      T* U_ = u.data<T>();
-      T* H_ = h.data<T>();
-      T* I_ = i.data<T>();
+      const T* p_t = t.data<T>();
+      const T* p_y = y.data<T>();
+      const int32_t* p_prefixes = prefixes.data<int32_t>();
+      T* p_d = D.data<T>();
+      T* p_dlu = Dlu.data<T>();
+      T* p_u = u.data<T>();
+      T* p_h = h.data<T>();
+      T* p_i = i.data<T>();
       thrust::for_each(rmm::exec_policy(stream)->on(stream),
         thrust::make_counting_iterator<int>(1),
         thrust::make_counting_iterator<int>(prefixes.size()),
-        [T_, Y_, PREFIXES, D_, Dlu_, U_, H_, I_] __device__
+        [p_t, p_y, p_prefixes, p_d, p_dlu, p_u, p_h, p_i] __device__
         (int index) {
-          int n = PREFIXES[index] - PREFIXES[index-1];
-          int h = PREFIXES[index-1];
+          int n = p_prefixes[index] - p_prefixes[index-1];
+          int h = p_prefixes[index-1];
           int ci = 0;
           for(ci = 0 ; ci < n-1 ; ++ci) {
-            H_[h + ci] = T_[h+ci+1] - T_[h+ci];
-            I_[h + ci] = (Y_[h+ci+1] - Y_[h+ci]) / H_[h + ci];
+            p_h[h + ci] = p_t[h+ci+1] - p_t[h+ci];
+            p_i[h + ci] = (p_y[h+ci+1] - p_y[h+ci]) / p_h[h + ci];
           }
           for(ci = 0 ; ci < n-2 ; ++ci) {
-            D_[h+ci+1] = (H_[h+ci+1]+H_[h+(n-2)-ci]) * 2;
-            U_[h+ci+1] = (I_[h+ci+1] - I_[h+(n-2)-ci]) * 6;
+            p_d[h+ci+1] = (p_h[h+ci+1]+p_h[h+(n-2)-ci]) * 2;
+            p_u[h+ci+1] = (p_i[h+ci+1] - p_i[h+(n-2)-ci]) * 6;
           }
           for(ci = 0 ; ci < n-3 ; ++ci) {
-            Dlu_[h+ci+1] = I_[h+ci+1];
+            p_dlu[h+ci+1] = p_i[h+ci+1];
           }
       });
   }
