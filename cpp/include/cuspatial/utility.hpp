@@ -16,6 +16,7 @@
 
 #include "cusparse.h"
 
+namespace cuspatial {
 namespace detail {
 
 void HANDLE_CUSPARSE_STATUS(cusparseStatus_t status) {
@@ -99,3 +100,4 @@ void tPrint(cudf::column_view col, const char* name="None") {
 #define TPRINT(vec, name) {}
 #endif
 
+} // cuspatial namespace
