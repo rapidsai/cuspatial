@@ -132,7 +132,7 @@ struct coefficients_compute {
       const int32_t* p_prefixes = prefixes.data<int32_t>();
       T* p_h = h.data<T>();
       T* p_i = i.data<T>();
-      T* Z_ = z.data<T>();
+      T* p_z = z.data<T>();
       T* p_d3 = d3.data<T>();
       T* p_d2 = d2.data<T>();
       T* p_d1 = d1.data<T>();
@@ -140,7 +140,7 @@ struct coefficients_compute {
       thrust::for_each(rmm::exec_policy(stream)->on(stream),
         thrust::make_counting_iterator<int>(1),
         thrust::make_counting_iterator<int>(prefixes.size()),
-        [p_t, p_y, p_prefixes, p_h, p_i, Z_, p_d3, p_d2, p_d1, p_d0] __device__
+        [p_t, p_y, p_prefixes, p_h, p_i, p_z, p_d3, p_d2, p_d1, p_d0] __device__
         (int index) {
           int n = p_prefixes[index] - p_prefixes[index-1];
           int h = p_prefixes[index-1];
@@ -148,9 +148,9 @@ struct coefficients_compute {
           int ci = 0;
           for(ci = 0 ; ci < n-1 ; ++ci) {
             T a = p_y[h+ci];
-            T b = p_i[h+ci] - p_h[h+ci] * (Z_[h+ci+1] + 2 * Z_[h+ci]) / 6;
-            T c = Z_[h+ci] / 2.0;
-            T d = (Z_[h+ci+1] - Z_[h+ci]) / 6 * p_h[h+ci];
+            T b = p_i[h+ci] - p_h[h+ci] * (p_z[h+ci+1] + 2 * p_z[h+ci]) / 6;
+            T c = p_z[h+ci] / 2.0;
+            T d = (p_z[h+ci+1] - p_z[h+ci]) / 6 * p_h[h+ci];
             T t = p_t[h+ci];
             p_d3[dh+ci] = d;
             p_d2[dh+ci] = c - 3 * d * t;
