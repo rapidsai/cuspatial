@@ -49,11 +49,11 @@ TEST_F(QuadtreeOnPointIndexingTest, test1)
 
     cudaStream_t stream=0;
 
-    double *d_p_x=NULL,*d_p_y=NULL;
+    double *d_p_x=nullptr,*d_p_y=nullptr;
     RMM_TRY( RMM_ALLOC( &d_p_x,point_len* sizeof(double), stream));
-    assert(d_p_x!=NULL);
+    assert(d_p_x!=nullptr);
     RMM_TRY( RMM_ALLOC( &d_p_y,point_len* sizeof(double), stream));
-    assert(d_p_y!=NULL);    
+    assert(d_p_y!=nullptr);    
 
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_x, xx, point_len * sizeof(double), cudaMemcpyHostToDevice ) );    
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_y, yy, point_len * sizeof(double), cudaMemcpyHostToDevice ) );     

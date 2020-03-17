@@ -21,9 +21,6 @@
 #include <algorithm>
 #include <functional>
 
-#include <thrust/sort.h>
-#include <thrust/binary_search.h>
-
 #include <gtest/gtest.h>
 #include <utilities/legacy/error_utils.hpp>
 #include <tests/utilities/legacy/cudf_test_utils.cuh>
@@ -46,84 +43,83 @@
 #include <cuspatial/bounding_box.hpp>
 #include <cuspatial/spatial_jion.hpp>
 
-extern  int ReadLayer(const OGRLayerH layer,std::vector<int>& g_len_v,std::vector<int>&f_len_v,
-         std::vector<int>& r_len_v,std::vector<double>& x_v, std::vector<double>& y_v,
-         	uint8_t type, std::vector<OGRGeometry *>& polygon_vec, std::vector<uint32_t>& idx_vec);
-
-extern  size_t read_point_binary(const char *fn,double*& h_pnt_x,double*& h_pnt_y);    
-
-void write_shapefile(const char * file_name,uint32_t num_poly,
-	const double *x1,const double * y1,const double *x2,const double * y2);
+#include "spatial_join_test_utility.hpp"
 
 struct SpatialJoinNYCTaxi : public GdfTest 
 {        
-    uint32_t num_pnt=0;
-    double *d_pnt_x=NULL,*d_pnt_y=NULL;
-    double *h_pnt_x=NULL,*h_pnt_y=NULL;
+    uint32_t num_pnts=0;
+    double *d_pnt_x=nullptr,*d_pnt_y=nullptr;
+    double *h_pnt_x=nullptr,*h_pnt_y=nullptr;
     std::unique_ptr<cudf::column> col_pnt_id,col_pnt_x,col_pnt_y;
-    
+
     uint32_t num_poly=0,num_ring=0,num_vertex=0;
-    uint32_t *d_poly_fpos=NULL,*d_poly_rpos=NULL;
-    double *d_poly_x=NULL,*d_poly_y=NULL;
-    uint32_t *h_poly_fpos=NULL,*h_poly_rpos=NULL;
-    double *h_poly_x=NULL,*h_poly_y=NULL;
-    
+    uint32_t *d_poly_fpos=nullptr,*d_poly_rpos=nullptr;
+    double *d_poly_x=nullptr,*d_poly_y=nullptr;
+    uint32_t *h_poly_fpos=nullptr,*h_poly_rpos=nullptr;
+    double *h_poly_x=nullptr,*h_poly_y=nullptr;
+
     uint32_t num_quadrants=0;
-    uint32_t *h_qt_length=NULL,*h_qt_fpos=NULL;   
-    
+    uint32_t *h_qt_length=nullptr,*h_qt_fpos=nullptr;   
+
     uint32_t num_pq_pairs=0;
-    uint32_t *h_pq_quad_idx=NULL,*h_pq_poly_idx=NULL;   
+    uint32_t *h_pq_quad_idx=nullptr,*h_pq_poly_idx=nullptr;   
 
     uint32_t num_pp_pairs=0;
-    uint32_t *d_pp_pnt_idx=NULL,*d_pp_poly_idx=NULL;
-    
+    uint32_t *d_pp_pnt_idx=nullptr,*d_pp_poly_idx=nullptr;
+
     std::vector<OGRGeometry *> h_polygon_vec;
     std::vector<uint32_t> org_poly_idx_vec;
     std::vector<uint32_t> h_pnt_idx_vec;
     std::vector<uint32_t> h_pnt_len_vec;
     std::vector<uint32_t> h_poly_idx_vec;
-    
+
     uint32_t num_search_pnt=0,num_search_poly=0;
-    uint32_t *h_pnt_search_idx=NULL,*h_poly_search_idx=NULL;
-    
+    uint32_t *h_pnt_search_idx=nullptr,*h_poly_search_idx=nullptr;
+
     std::unique_ptr<cudf::column> col_poly_fpos,col_poly_rpos,col_poly_x,col_poly_y;
-    
+
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
 
     void setup_polygons(double& x1,double& y1,double& x2,double& y2,uint8_t type)
     {
         const char* env_p = std::getenv("CUSPATIAL_DATA");
-        CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_DATA environmental variable must be set");
+        CUDF_EXPECTS(env_p!=nullptr,"CUSPATIAL_DATA environmental variable must be set");
         
+        //comment/uncoment the next few lines to select one of the three polygon datasets for tests
+        //note that the polygons and the points need to use the same projection 
+        //all the three polygon datasets use epsg:2263 (unit is foot) for NYC/Long Island area 
+        
+        //#1: NYC taxi zone: 263 polygons
         //from https://s3.amazonaws.com/nyc-tlc/misc/taxi_zones.zip
         //std::string shape_filename=std::string(env_p)+std::string("taxi_zones.shp"); 
         
-        //NYC Community Districts: 71 polygons
+        //#2: NYC Community Districts: 71 polygons
         //from https://www1.nyc.gov/assets/planning/download/zip/data-maps/open-data/nycd_11aav.zip
         //std::string shape_filename=std::string(env_p)+std::string("nycd_11a_av/nycd.shp"); 
         
-        //NYC Census Tract 2000 data: 2216 polygons
+        //#3: NYC Census Tract 2000 data: 2216 polygons
         //from: https://www1.nyc.gov/assets/planning/download/zip/data-maps/open-data/nyct2000_11aav.zip
-  	std::string shape_filename=std::string(env_p)+std::string("nyct2000_11a_av/nyct2000.shp");
+        std::string shape_filename=std::string(env_p)+std::string("nyct2000_11a_av/nyct2000.shp");
         
         std::cout<<"Using shapefile "<<shape_filename<<std::endl;
-	
+    
         std::vector<int> g_len_v,f_len_v,r_len_v;
         std::vector<double> x_v, y_v;
         GDALAllRegister();
         const char *file_name=shape_filename.c_str();
-        GDALDatasetH hDS = GDALOpenEx(file_name, GDAL_OF_VECTOR, NULL, NULL, NULL );
-        if(hDS==NULL)
+        GDALDatasetH hDS = GDALOpenEx(file_name, GDAL_OF_VECTOR, nullptr, nullptr, nullptr );
+        if(hDS==nullptr)
         {
-	    printf("Failed to open ESRI Shapefile dataset %s\n",file_name);
-	    exit(-1);
+            std::cout<<"Failed to open ESRI Shapefile dataset "<< file_name<<std::endl;
+            exit(-1);
         }
         OGRLayerH hLayer = GDALDatasetGetLayer( hDS,0 );
-        
+
         h_polygon_vec.clear();
         org_poly_idx_vec.clear();
-        //type: 0 for all, 1 for simple polygon and 2 for multi-polygon
+        
+        //type: 0 for all, 1 for simple polygons and 2 for multi-polygons
         int num_f=ReadLayer(hLayer,g_len_v,f_len_v,r_len_v,x_v,y_v,type,h_polygon_vec,org_poly_idx_vec);
         assert(num_f>0);
 
@@ -131,9 +127,6 @@ struct SpatialJoinNYCTaxi : public GdfTest
         num_poly=f_len_v.size();
         num_ring=r_len_v.size();
         num_vertex=x_v.size();
-
-        //uint32_t num_temp=std::accumulate(r_len_v.begin(), r_len_v.end(),0);
-        //printf("num_temp=%d num_vertex=%d\n",num_temp,num_vertex);
 
         h_poly_fpos=new uint32_t[num_poly];
         h_poly_rpos=new uint32_t[num_ring];
@@ -144,53 +137,54 @@ struct SpatialJoinNYCTaxi : public GdfTest
         std::copy_n(r_len_v.begin(),num_ring,h_poly_rpos);
         std::copy_n(x_v.begin(),num_vertex,h_poly_x);
         std::copy_n(y_v.begin(),num_vertex,h_poly_y);
-        printf("setup_polygons: num_poly=%d num_ring=%d num_vertex=%d\n",num_poly,num_ring,num_vertex);
-
+        std::cout<<"setup_polygons: num_poly="<<num_poly<<" num_ring="<<num_ring<<" num_vertex="<<num_vertex<<std::endl;
+ 
         x1=*(std::min_element(x_v.begin(),x_v.end()));
         x2=*(std::max_element(x_v.begin(),x_v.end()));
         y1=*(std::min_element(y_v.begin(),y_v.end()));
         y2=*(std::max_element(y_v.begin(),y_v.end()));
-        printf("read_polygon_shape: x_min=%10.5f y_min=%10.5f, x_max=%10.5f, y_max=%10.5f\n",x1,y1, x2,y2);
+        std::cout<<"read_polygon_shape: x_min="<<x1<<"  y_min="<<y1<<" x_max="<<x2<<" y_max="<<y2<<std::endl;
 
         col_poly_fpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
-    		num_poly, cudf::mask_state::UNALLOCATED, stream, mr );      
+            num_poly, cudf::mask_state::UNALLOCATED, stream, mr );      
         d_poly_fpos=cudf::mutable_column_device_view::create(col_poly_fpos->mutable_view(), stream)->data<uint32_t>();
-        assert(d_poly_fpos!=NULL);
+        assert(d_poly_fpos!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_fpos, h_poly_fpos, num_poly * sizeof(uint32_t), cudaMemcpyHostToDevice ) ); 
 
         col_poly_rpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
-    		num_ring, cudf::mask_state::UNALLOCATED, stream, mr );      
+            num_ring, cudf::mask_state::UNALLOCATED, stream, mr );      
         d_poly_rpos=cudf::mutable_column_device_view::create(col_poly_rpos->mutable_view(), stream)->data<uint32_t>();
-        assert(d_poly_rpos!=NULL);
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_rpos, h_poly_rpos, num_ring * sizeof(uint32_t), cudaMemcpyHostToDevice ) ); 
+        assert(d_poly_rpos!=nullptr);
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_rpos, h_poly_rpos, num_ring * sizeof(uint32_t), cudaMemcpyHostToDevice ) );
 
         col_poly_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
-    		num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
+            num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
         d_poly_x=cudf::mutable_column_device_view::create(col_poly_x->mutable_view(), stream)->data<double>();
-        assert(d_poly_x!=NULL);
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_x, h_poly_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) ); 
+        assert(d_poly_x!=nullptr);
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_x, h_poly_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );
 
         col_poly_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
-    		num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
+            num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
         d_poly_y=cudf::mutable_column_device_view::create(col_poly_y->mutable_view(), stream)->data<double>();
-        assert(d_poly_y!=NULL);
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_y, h_poly_y, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );   
+        assert(d_poly_y!=nullptr);
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_y, h_poly_y, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );
 
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_fpos, h_poly_fpos, num_poly * sizeof(uint32_t), cudaMemcpyHostToDevice ) );    
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_rpos, h_poly_rpos, num_ring * sizeof(uint32_t), cudaMemcpyHostToDevice ) );     
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_fpos, h_poly_fpos, num_poly * sizeof(uint32_t), cudaMemcpyHostToDevice ) );
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_rpos, h_poly_rpos, num_ring * sizeof(uint32_t), cudaMemcpyHostToDevice ) );
         thrust::inclusive_scan(thrust::device,d_poly_fpos,d_poly_fpos+num_poly,d_poly_fpos);
         thrust::inclusive_scan(thrust::device,d_poly_rpos,d_poly_rpos+num_ring,d_poly_rpos);
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_x, h_poly_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );    
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_y, h_poly_y, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );     	
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_x, h_poly_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_y, h_poly_y, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );
     }
   
     void setup_points(double& x1,double& y1,double& x2,double& y2, uint32_t first_n)
     {
         const char* env_p = std::getenv("CUSPATIAL_DATA");
-        CUDF_EXPECTS(env_p!=NULL,"CUSPATIAL_DATA environmental variable must be set");
+        CUDF_EXPECTS(env_p!=nullptr,"CUSPATIAL_DATA environmental variable must be set");
         
         //from https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page; 
-        //pickup/drop-off locations are extracted and the lon/lat coordiates are converted to EPSG 2263 projection  
+        //pickup/drop-off locations are extracted and the lon/lat coordiates are converted to epsg:2263 projection
+        
         std::string catalog_filename=std::string(env_p)+std::string("2009.cat"); 
         std::cout<<"Using catalog file "<<catalog_filename<<std::endl;
         
@@ -199,20 +193,20 @@ struct SpatialJoinNYCTaxi : public GdfTest
         std::vector<double *> y_vec;
         uint32_t num=0;
         const char *file_name=catalog_filename.c_str();
-        FILE *fp=NULL;
-        if((fp=fopen(file_name,"r"))==NULL)
+        FILE *fp=nullptr;
+        if((fp=fopen(file_name,"r"))==nullptr)
         {
-   	    printf("Failed to open point catalog file %s\n",file_name);
-	    exit(-2);      	
+           std::cout<<"Failed to open point catalog file "<<file_name<<std::endl;
+           exit(-2);          
         }
         while(!feof(fp))
         {
              char str[500];
              int n1=fscanf(fp,"%s",str);
-             printf("processing point data file %s\n",str);
-             double *tmp_x=NULL,*tmp_y=NULL;
+             std::cout<<"processing point data file "<<str<<std::endl;
+             double *tmp_x=nullptr,*tmp_y=nullptr;
              size_t temp_len=read_point_binary(str,tmp_x,tmp_y);
-             assert(tmp_x!=NULL && tmp_y!=NULL);
+             assert(tmp_x!=nullptr && tmp_y!=nullptr);
              num++;
              len_vec.push_back(temp_len);
              x_vec.push_back(tmp_x);
@@ -222,531 +216,239 @@ struct SpatialJoinNYCTaxi : public GdfTest
         fclose(fp);
 
         for(uint32_t i=0;i<num;i++)
-    	    num_pnt+=len_vec[i];
-    
+            num_pnts+=len_vec[i];
+
         uint32_t p=0;
-        h_pnt_x=new double[num_pnt];
-        h_pnt_y=new double[num_pnt];
-        assert(h_pnt_x!=NULL && h_pnt_y!=NULL);
+        h_pnt_x=new double[num_pnts];
+        h_pnt_y=new double[num_pnts];
+        assert(h_pnt_x!=nullptr && h_pnt_y!=nullptr);
         for(uint32_t i=0;i<num;i++)
         {
             double *tmp_x=x_vec[i];
-    	    double *tmp_y=y_vec[i];
-    	    assert(tmp_x!=NULL && tmp_y!=NULL);
-    	    int len=len_vec[i];
-    	    std::copy(tmp_x,tmp_x+len,h_pnt_x+p);
-    	    std::copy(tmp_y,tmp_y+len,h_pnt_y+p);
-    	    p+=len;
-    	    delete[] tmp_x;
-    	    delete[] tmp_y;
+            double *tmp_y=y_vec[i];
+            assert(tmp_x!=nullptr && tmp_y!=nullptr);
+            int len=len_vec[i];
+            std::copy(tmp_x,tmp_x+len,h_pnt_x+p);
+            std::copy(tmp_y,tmp_y+len,h_pnt_y+p);
+            p+=len;
+            delete[] tmp_x;
+            delete[] tmp_y;
         }
-        assert(p==num_pnt);
+        assert(p==num_pnts);
 
-        x1=*(std::min_element(h_pnt_x,h_pnt_x+num_pnt));
-        x2=*(std::max_element(h_pnt_x,h_pnt_x+num_pnt));
-        y1=*(std::min_element(h_pnt_y,h_pnt_y+num_pnt));
-        y2=*(std::max_element(h_pnt_y,h_pnt_y+num_pnt));
-        printf("read_point_catalog: x_min=%10.5f y_min=%10.5f, x_max=%10.5f, y_max=%10.5f\n",x1,y1, x2,y2);
-       
+        x1=*(std::min_element(h_pnt_x,h_pnt_x+num_pnts));
+        x2=*(std::max_element(h_pnt_x,h_pnt_x+num_pnts));
+        y1=*(std::min_element(h_pnt_y,h_pnt_y+num_pnts));
+        y2=*(std::max_element(h_pnt_y,h_pnt_y+num_pnts));
+        std::cout<<"read_point_catalog: x_min="<<x1<<"  y_min="<<y1<<" x_max="<<x2<<" y_max="<<y2<<std::endl;
+
         col_pnt_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
-        	num_pnt, cudf::mask_state::UNALLOCATED, stream, mr );      
+            num_pnts, cudf::mask_state::UNALLOCATED, stream, mr );      
         d_pnt_x=cudf::mutable_column_device_view::create(col_pnt_x->mutable_view(), stream)->data<double>();
-        assert(d_pnt_x!=NULL);
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_x, h_pnt_x, num_pnt * sizeof(double), cudaMemcpyHostToDevice ) );    
-    
+        assert(d_pnt_x!=nullptr);
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_x, h_pnt_x, num_pnts * sizeof(double), cudaMemcpyHostToDevice ) );
+
         col_pnt_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
-        	num_pnt, cudf::mask_state::UNALLOCATED, stream, mr );      
+            num_pnts, cudf::mask_state::UNALLOCATED, stream, mr );      
         d_pnt_y=cudf::mutable_column_device_view::create(col_pnt_y->mutable_view(), stream)->data<double>();
-        assert(d_pnt_y!=NULL);    
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_y, h_pnt_y, num_pnt * sizeof(double), cudaMemcpyHostToDevice ) );    
-    } 
- 
+        assert(d_pnt_y!=nullptr);    
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_y, h_pnt_y, num_pnts * sizeof(double), cudaMemcpyHostToDevice ) );
+    }
+
     void run_test(double x1,double y1,double x2,double y2,double scale,uint32_t num_level,uint32_t min_size)
-    {       
+    {
         timeval t0,t1,t2,t3;
- 
-        gettimeofday(&t0, NULL); 
+
+        gettimeofday(&t0, nullptr); 
         cudf::mutable_column_view pnt_x_view=col_pnt_x->mutable_view();
         cudf::mutable_column_view pnt_y_view=col_pnt_y->mutable_view();
-        std::cout<<"run_test::num_pnt="<<col_pnt_x->size()<<std::endl;
+        std::cout<<"run_test::num_pnts="<<col_pnt_x->size()<<std::endl;
 
-        gettimeofday(&t2, NULL);
+        gettimeofday(&t2, nullptr);
         std::unique_ptr<cudf::experimental::table> quadtree= 
-      		cuspatial::quadtree_on_points(pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_level, min_size);
+            cuspatial::quadtree_on_points(pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_level, min_size);
         num_quadrants=quadtree->view().num_rows();
         std::cout<<"# of quadrants="<<num_quadrants<<std::endl;
-        gettimeofday(&t3, NULL);
+        gettimeofday(&t3, nullptr);
         float quadtree_time=cuspatial::calc_time("quadtree constrution time=",t2,t3);
 
-	//compute polygon bbox on GPU                
-        gettimeofday(&t2, NULL);
+        //compute polygon bbox on GPU                
+        gettimeofday(&t2, nullptr);
         std::unique_ptr<cudf::experimental::table> bbox_tbl=
-            cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view()); 
-        gettimeofday(&t3, NULL);
-	float polybbox_time=cuspatial::calc_time("compute polygon bbox time=",t2,t3);
+            cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view());
+        gettimeofday(&t3, nullptr);
+        float polybbox_time=cuspatial::calc_time("compute polygon bbox time=",t2,t3);
         std::cout<<"# of polygon bboxes="<<bbox_tbl->view().num_rows()<<std::endl;
 
-//output to files for manual verification
+//output to csv and shapefile for manual/visual verification
 if(0)
 {
-	//output bbox coordiantes as a CSV file for examination/comparison
+        double *h_x1=nullptr,*h_y1=nullptr,*h_x2=nullptr,*h_y2=nullptr;
+        bbox_table_to_csv(bbox_tbl,"gpu_mbr.csv",h_x1,h_y1,h_x2,h_y2);
+        write_shapefile("gpu_bbox.shp",this->num_poly,h_x1,h_y1,h_x2,h_y2);
+}
 
-        const double *d_x1=bbox_tbl->view().column(0).data<double>();
-        const double *d_y1=bbox_tbl->view().column(1).data<double>();
-        const double *d_x2=bbox_tbl->view().column(2).data<double>();  
-        const double *d_y2=bbox_tbl->view().column(3).data<double>();
-        thrust::device_ptr<const double> x1_ptr=thrust::device_pointer_cast(d_x1);
-        thrust::device_ptr<const double> y1_ptr=thrust::device_pointer_cast(d_y1);
-        thrust::device_ptr<const double> x2_ptr=thrust::device_pointer_cast(d_x2);
-        thrust::device_ptr<const double> y2_ptr=thrust::device_pointer_cast(d_y2);
-      
-        thrust::host_vector<double> h_x1(x1_ptr,x1_ptr+num_poly);
-        thrust::host_vector<double> h_y1(y1_ptr,y1_ptr+num_poly);
-        thrust::host_vector<double> h_x2(x2_ptr,x2_ptr+num_poly);
-        thrust::host_vector<double> h_y2(y2_ptr,y2_ptr+num_poly);
-    
-        FILE *fp=NULL;
-        if((fp=fopen("poly_mbr_gpu.csv","w"))==NULL)
-        {
-            printf("can not open pp_pair_old.csv for output\n");
-  	    exit(-1);
-        }
-        for(uint32_t i=0;i<num_poly;i++)
-            fprintf(fp,"%10d, %15.5f, %15.5f, %15.5f, %15.5f\n",i,h_x1[i],h_y1[i],h_x2[i],h_y2[i]);
-        fclose(fp);    
- } 
- 
- //alternatively, derive polygon bboxes from GDAL on GPU and then create bbox table for subsequent steps
- //also output bbox coordiantes as a CSV file for examination/comparison
- if(0)
- {
-         std::unique_ptr<cudf::column> x1_col = cudf::make_numeric_column(
-         cudf::data_type{cudf::experimental::type_to_id<double>()}, num_poly,cudf::mask_state::UNALLOCATED, stream, mr);
-         double *d_x1=cudf::mutable_column_device_view::create(x1_col->mutable_view(), stream)->data<double>();
-         assert(d_x1!=NULL);
-    
-         std::unique_ptr<cudf::column> y1_col = cudf::make_numeric_column(
-         cudf::data_type{cudf::experimental::type_to_id<double>()}, num_poly,cudf::mask_state::UNALLOCATED, stream, mr);
-         double *d_y1=cudf::mutable_column_device_view::create(y1_col->mutable_view(), stream)->data<double>();
-         assert(d_y1!=NULL);
- 
-         std::unique_ptr<cudf::column> x2_col = cudf::make_numeric_column(
-         cudf::data_type{cudf::experimental::type_to_id<double>()}, num_poly,cudf::mask_state::UNALLOCATED, stream, mr);
-         double *d_x2=cudf::mutable_column_device_view::create(x2_col->mutable_view(), stream)->data<double>();
-         assert(d_x2!=NULL);
- 
-         std::unique_ptr<cudf::column> y2_col = cudf::make_numeric_column(
-         cudf::data_type{cudf::experimental::type_to_id<double>()}, num_poly,cudf::mask_state::UNALLOCATED, stream, mr);
-         double *d_y2=cudf::mutable_column_device_view::create(y2_col->mutable_view(), stream)->data<double>();
-         assert(d_y2!=NULL);
-                 
-         double *h_x1=new double[num_poly];
-         double *h_y1=new double[num_poly];
-         double *h_x2=new double[num_poly];
-         double *h_y2=new double[num_poly];
-         assert(h_x1!=NULL && h_y1!=NULL && h_x2!=NULL && h_y2!=NULL);
-         
-         for(uint32_t i=0;i<num_poly;i++)
-         {
-         	OGREnvelope env;
-         	h_polygon_vec[i]->getEnvelope(&env);
-          	h_x1[i]=env.MinX;
-         	h_y1[i]=env.MinY;
-         	h_x2[i]=env.MaxX;
-         	h_y2[i]=env.MaxY;
-               	printf("%d %10.2f %10.2f %10.2f %10.2f\n",i,h_x1[i],h_y1[i],h_x2[i],h_y2[i]);
- 	}
- 
- 	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_x1, (void *)h_x1, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );       
- 	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_y1, (void *)h_y1, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );
- 	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_x2, (void *)h_x2, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );
- 	HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_y2, (void *)h_y2, num_poly * sizeof(double), cudaMemcpyHostToDevice ) );
- 	
-         FILE *fp=NULL;
-         if((fp=fopen("poly_mbr_cpu.csv","w"))==NULL)
-         {
-              printf("can not open pp_pair.csv for output\n");
-              exit(-1);
-         }
-         for(uint32_t i=0;i<num_poly;i++)
-     	 fprintf(fp,"%10d, %15.5f, %15.5f, %15.5f, %15.5f\n",i,h_x1[i],h_y1[i],h_x2[i],h_y2[i]);
-         fclose(fp);
-         write_shapefile("poly_mbr.shp",num_poly,h_x1,h_y1,h_x2,h_y2);
- 
- 
-         std::vector<std::unique_ptr<cudf::column>> bbox_cols;
-         bbox_cols.push_back(std::move(x1_col));
-         bbox_cols.push_back(std::move(y1_col));
-         bbox_cols.push_back(std::move(x2_col));
-         bbox_cols.push_back(std::move(y2_col));
-         std::unique_ptr<cudf::experimental::table> bbox_tbl = 
-             std::make_unique<cudf::experimental::table>(std::move(bbox_cols));
- }        
-  
+        //alternatively, derive polygon bboxes from GDAL on GPU and then create bbox table for subsequent steps
+        //also output bbox coordiantes as a CSV file for examination/comparison
+
+        /*
+        gettimeofday(&t2, nullptr);
+        std::unique_ptr<cudf::experimental::table> bbox_tbl=bbox_tbl_cpu(h_polygon_vec);
+        gettimeofday(&t3, nullptr)
+        float polybbox_time=cuspatial::calc_time("compute polygon bbox time=",t2,t3);
+        std::cout<<"# of polygon bboxes="<<bbox_tbl->view().num_rows()<<std::endl;
+        */
+
+        //spatial filtering
         const cudf::table_view quad_view=quadtree->view();
         const cudf::table_view bbox_view=bbox_tbl->view();
-  
-        gettimeofday(&t2, NULL);
+
+        gettimeofday(&t2, nullptr);
         std::unique_ptr<cudf::experimental::table> pq_pair_tbl=cuspatial::quad_bbox_join(
-            quad_view,bbox_view,x1,y1,x2,y2, scale,num_level, min_size);   
- 	gettimeofday(&t3, NULL);
- 	float filtering_time=cuspatial::calc_time("spatial filtering time=",t2,t3);         
+            quad_view,bbox_view,x1,y1,x2,y2, scale,num_level, min_size);
+        gettimeofday(&t3, nullptr);
+        float filtering_time=cuspatial::calc_time("spatial filtering time=",t2,t3);
         std::cout<<"# of polygon/quad pairs="<<pq_pair_tbl->view().num_rows()<<std::endl;
- 
+
+        //spatial refinement
         const cudf::table_view pq_pair_view=pq_pair_tbl->view();
         const cudf::table_view pnt_view({pnt_x_view,pnt_y_view});
 
-        gettimeofday(&t2, NULL); 
+        gettimeofday(&t2, nullptr); 
         std::unique_ptr<cudf::experimental::table> pip_pair_tbl=cuspatial::pip_refine(
-       	  pq_pair_view,quad_view,pnt_view,
-         col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view());   
-  	gettimeofday(&t3, NULL);
- 	float refinement_time=cuspatial::calc_time("spatial refinement time=",t2,t3);                
-        std::cout<<"# of polygon/point pairs="<<pip_pair_tbl->view().num_rows()<<std::endl;      
-        
-        gettimeofday(&t1, NULL);
+            pq_pair_view,quad_view,pnt_view,
+        col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view());
+        gettimeofday(&t3, nullptr);
+        float refinement_time=cuspatial::calc_time("spatial refinement time=",t2,t3);
+        std::cout<<"# of polygon/point pairs="<<pip_pair_tbl->view().num_rows()<<std::endl;
+
+        gettimeofday(&t1, nullptr);
         float gpu_time=cuspatial::calc_time("gpu end-to-end computing time",t0,t1);
+
+        //summierize runtimes
         float  runtimes[4]={quadtree_time,polybbox_time,filtering_time,refinement_time};
-        float temp_time=0;
+        const char  *msg_type[4]={"quadtree_time","polybbox_time","filtering_time","refinement_time"};
+        float total_time=0;
         for(uint32_t i=0;i<4;i++)
         {
-        	printf("%10.3f ",runtimes[i]);
-        	temp_time+=runtimes[i];
+            std::cout<<msg_type[i]<<"= "<<runtimes[i]<<std::endl;
+            total_time+=runtimes[i];
         }
-        printf("\n%10.3f %10.3f\n",temp_time,gpu_time);
-           
+        std::cout<<std::endl;
+        std::cout<<"total_time="<<total_time<<std::endl;
+        std::cout<<"gpu end-to-tend time"<<gpu_time<<std::endl;
+
+        //setup variables for verifications
         const uint32_t *d_qt_length=quadtree->view().column(3).data<uint32_t>();
-	const uint32_t *d_qt_fpos=quadtree->view().column(4).data<uint32_t>();
- 	
-  	h_qt_length=new uint32_t[num_quadrants];
+        const uint32_t *d_qt_fpos=quadtree->view().column(4).data<uint32_t>();
+
+        h_qt_length=new uint32_t[num_quadrants];
         h_qt_fpos=new uint32_t[num_quadrants];
-        assert(h_qt_length!=NULL && h_qt_fpos!=NULL);
-        printf("num_quadrants=%d %p %p %p %p\n",num_quadrants,(void *)h_qt_length,(void *)d_qt_length,(void *)h_qt_fpos,(void *)d_qt_fpos);
-          
-  	HANDLE_CUDA_ERROR( cudaMemcpy( h_qt_length, d_qt_length, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
-  	HANDLE_CUDA_ERROR( cudaMemcpy( h_qt_fpos, d_qt_fpos, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToHost) );      
-  
+        assert(h_qt_length!=nullptr && h_qt_fpos!=nullptr);
+
+        HANDLE_CUDA_ERROR( cudaMemcpy( h_qt_length, d_qt_length, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
+        HANDLE_CUDA_ERROR( cudaMemcpy( h_qt_fpos, d_qt_fpos, num_quadrants * sizeof(uint32_t), cudaMemcpyDeviceToHost) );
+
         num_pq_pairs=pq_pair_tbl->num_rows();
         const uint32_t * d_pq_poly_idx=pq_pair_tbl->view().column(0).data<uint32_t>();
-        const uint32_t * d_pq_quad_idx=pq_pair_tbl->view().column(1).data<uint32_t>(); 
- 
+        const uint32_t * d_pq_quad_idx=pq_pair_tbl->view().column(1).data<uint32_t>();
+
         h_pq_poly_idx=new uint32_t[num_pq_pairs];
         h_pq_quad_idx=new uint32_t[num_pq_pairs];
-        assert(h_pq_poly_idx!=NULL && h_pq_quad_idx!=NULL);
-         
+        assert(h_pq_poly_idx!=nullptr && h_pq_quad_idx!=nullptr);
+
         HANDLE_CUDA_ERROR( cudaMemcpy( h_pq_poly_idx, d_pq_poly_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
-  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pq_quad_idx, d_pq_quad_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );       
- 	
+        HANDLE_CUDA_ERROR( cudaMemcpy( h_pq_quad_idx, d_pq_quad_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );
+
         num_pp_pairs=pip_pair_tbl->num_rows();
-   	//make a copy for d_pp_pnt_idx and d_pp_poly_idx as they will be sorted later
-   	const uint32_t * d_temp_poly_idx=pip_pair_tbl->view().column(0).data<uint32_t>();
+        //make a copy for d_pp_pnt_idx and d_pp_poly_idx as they will be sorted later
+        const uint32_t * d_temp_poly_idx=pip_pair_tbl->view().column(0).data<uint32_t>();
         const uint32_t * d_temp_pnt_idx=pip_pair_tbl->view().column(1).data<uint32_t>();
+        
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_pnt_idx),num_pp_pairs*sizeof(uint32_t), 0));
         RMM_TRY( RMM_ALLOC( (void**)&(d_pp_poly_idx),num_pp_pairs*sizeof(uint32_t), 0));
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_pnt_idx, d_temp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) ); 
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_poly_idx, d_temp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );   
-        
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_pnt_idx, d_temp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_poly_idx, d_temp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );
+
         //copy back sorted points to CPU for verification
-        HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_x, d_pnt_x,num_pnt * sizeof(double), cudaMemcpyDeviceToHost ) );    
-        HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_y, d_pnt_y,num_pnt * sizeof(double), cudaMemcpyDeviceToHost ) );    
-}
+        HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_x, d_pnt_x,num_pnts * sizeof(double), cudaMemcpyDeviceToHost ) );
+        HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_y, d_pnt_y,num_pnts * sizeof(double), cudaMemcpyDeviceToHost ) );
+    }
 
-uint32_t compute_mismatch()
-{
-    printf("num_search_pnt=%d num_search_poly=%d\n",num_search_pnt,num_search_poly);
- 
-if(0)
-{
- 	printf("h_pnt_search_idx:\n");
- 	thrust::copy(h_pnt_search_idx,h_pnt_search_idx+num_search_pnt,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
- 	printf("h_poly_search_idx:\n");
- 	thrust::copy(h_poly_search_idx,h_poly_search_idx+num_search_pnt,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
-}	
-  
-  	thrust::sort_by_key(thrust::device, d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pp_poly_idx);
-        
-        uint32_t *h_pp_pnt_idx=NULL,*h_pp_poly_idx=NULL;
-        h_pp_poly_idx=new uint32_t[num_pp_pairs];
-        h_pp_pnt_idx=new uint32_t[num_pp_pairs];
-        assert(h_pp_poly_idx!=NULL && h_pp_pnt_idx!=NULL);
- 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_poly_idx, d_pp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
- 	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_pnt_idx, d_pp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );   
- 	
-        uint32_t *d_pnt_lb=NULL,*d_pnt_ub=NULL;
-        bool *d_pnt_sign=NULL;
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_lb),num_pp_pairs*sizeof(uint32_t), 0));
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_ub),num_pp_pairs*sizeof(uint32_t), 0));
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_sign),num_pp_pairs*sizeof(bool), 0));
- 	uint32_t *d_pnt_search_idx=NULL;
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_search_idx),num_search_pnt*sizeof(uint32_t), 0));
-   	HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_search_idx, h_pnt_search_idx, num_search_pnt * sizeof(uint32_t), cudaMemcpyHostToDevice) ); 
-        printf("after H->D transfer..................\n");
-       
-        thrust::lower_bound(thrust::device,d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pnt_search_idx,d_pnt_search_idx+num_search_pnt,d_pnt_lb);
-        thrust::upper_bound(thrust::device,d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pnt_search_idx,d_pnt_search_idx+num_search_pnt,d_pnt_ub);
-        thrust::binary_search(thrust::device,d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pnt_search_idx,d_pnt_search_idx+num_search_pnt,d_pnt_sign);
-        printf("after GPU search...................\n");
-        
-   	uint32_t * h_pnt_lb=new uint32_t[num_search_pnt];
-  	uint32_t * h_pnt_ub=new uint32_t[num_search_pnt];
-  	bool *h_pnt_sign=new bool[num_search_pnt];
-  	assert(h_pnt_lb!=NULL && h_pnt_ub!=NULL && h_pnt_sign!=NULL);
-  	
-  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pnt_lb, d_pnt_lb, num_search_pnt * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
-  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pnt_ub, d_pnt_ub, num_search_pnt * sizeof(uint32_t), cudaMemcpyDeviceToHost) );   
-  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pnt_sign, d_pnt_sign, num_search_pnt * sizeof(bool), cudaMemcpyDeviceToHost) );
-
-        RMM_TRY(RMM_FREE(d_pnt_lb,0));d_pnt_lb=NULL;
-        RMM_TRY(RMM_FREE(d_pnt_ub,0));d_pnt_ub=NULL;
-        RMM_TRY(RMM_FREE(d_pnt_sign,0));d_pnt_sign=NULL;
-        printf("after H->D transfer..................\n");
- 
-    	FILE *fp=NULL;
-      	if((fp=fopen("debug.csv","w"))==NULL)
-      	{
-      		printf("can not open debug.txt for output");
-      		exit(-1);
-     	}
- 	uint32_t bpos=0,epos=h_pnt_len_vec[0], num_mis_match=0,num_not_found=0;
- 	for(uint32_t i=0;i<num_search_pnt;i++)
- 	{
- 		//printf("i=%d idx=%d sign=%d lb=%d ub=%d\n",i,h_pnt_search_idx[i],h_pnt_sign[i],h_pnt_lb[i],h_pnt_ub[i]);
- 		if(!h_pnt_sign[i])
- 		{
- 			printf("i=%d pntid=%d does not hit\n",i,h_pnt_search_idx[i]);
- 			uint32_t pntid=h_pnt_search_idx[i];
- 			uint32_t polyid=org_poly_idx_vec[h_poly_search_idx[i]];
- 			fprintf(fp,"%d, %10.2f, %10.2f, -1, %d\n",pntid,h_pnt_x[pntid],h_pnt_y[pntid],polyid);
- 			num_not_found++;
- 		}
- 		else
- 		{
-			std::set<uint32_t> gpu_set;
-			for(uint32_t j=h_pnt_lb[i];j<h_pnt_ub[i];j++)
-				gpu_set.insert(org_poly_idx_vec[h_pp_poly_idx[j]]);
-			std::set<uint32_t> cpu_set;
-			for(uint32_t j=bpos;j<epos;j++)
-				cpu_set.insert(org_poly_idx_vec[h_poly_search_idx[j]]);
-				
-			if(gpu_set!=cpu_set)
-			{
-				uint32_t pntid=h_pnt_search_idx[i];
-if(1)
-{
-				printf("i=%d key=%d g_size=%lu c_size=%lu lb=%d ub=%d pointid=%d\n",
-					i,h_pnt_search_idx[i],gpu_set.size(),cpu_set.size(),h_pnt_lb[i],h_pnt_ub[i],pntid);
-				printf("gpu_set\n");
-				thrust::copy(gpu_set.begin(),gpu_set.end(),std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
-				printf("cpu_set\n");
-}				thrust::copy(cpu_set.begin(),cpu_set.end(),std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
-				
-				fprintf(fp,"%d,%10.2f,%10.2f",pntid,h_pnt_x[pntid],h_pnt_y[pntid]);
-				uint32_t gpu_len=h_pnt_ub[i]-h_pnt_lb[i];
-				std::string ss="";
-				if(gpu_len>0)
-				{
-					ss+=std::to_string(org_poly_idx_vec[h_pp_poly_idx[h_pnt_lb[i]]]);
-					for(uint32_t j=1;j<gpu_len;j++)
-					    ss+=("|"+std::to_string(org_poly_idx_vec[h_pp_poly_idx[h_pnt_lb[i]+j]]));
-				}
-				else
-				   ss="-1";
-				fprintf(fp,",%s",ss.c_str());
-				ss="";
-				if(h_pnt_len_vec[i]>0)
-				{
-					ss+=std::to_string(org_poly_idx_vec[h_poly_search_idx[bpos]]);
-					for(uint32_t j=bpos+1;j<epos;j++)
-					    ss+=("|"+std::to_string(org_poly_idx_vec[h_poly_search_idx[j]]));
-				}
-				else 
-				   ss="-1";
-				fprintf(fp,",%s\n",ss.c_str());
-				num_mis_match++;
-			}
-		}
- 		if(i!=num_search_pnt-1)
- 		{
- 			bpos=epos;epos+=h_pnt_len_vec[i];
- 		}	
- 	}
- 	fclose(fp);
- 	delete[] h_pnt_lb;
- 	delete[] h_pnt_ub;
- 	delete[] h_pnt_sign;
-        delete[] h_pp_pnt_idx;
-	delete[] h_pp_poly_idx;	
- 	
- 	printf("num_search_pnt=%d num_not_found=%d num_mis_match=%d\n",num_search_pnt,num_not_found,num_mis_match);
- 	return num_mis_match;
- }	
-    
-    void compare_full_random(uint32_t num_samples,uint32_t num_print_interval)
+    void compare_random_points(uint32_t num_samples,uint32_t num_print_interval)
     {
-        h_pnt_idx_vec.clear();
-        h_pnt_len_vec.clear();
-        h_poly_idx_vec.clear();        
-
-	printf("compare_full_random: num_quadrants=%d num_pq_pairs=%d num_pp_pair=%d num_samples=%d \n",
-		num_quadrants,num_pq_pairs,num_pp_pairs,num_samples);
-        uint32_t *nums=NULL;
-        if(num_samples<num_pnt)
-        {       	
-		std::seed_seq seed{2};
-		std::mt19937 g(seed);
-		std::uniform_int_distribution<> dist_rand (0,num_pnt-1);
-		nums=new uint32_t[num_samples];
-		assert(nums!=NULL);
-		std::generate(nums, nums+num_samples, [&] () mutable { return dist_rand(g); });	
-        }
-        else if(num_samples==num_pnt)
-        {
-        	nums=new uint32_t[num_samples];
-        	std::generate(nums, nums+num_pnt, [n = 0] () mutable { return n++; });
-        }
-        else
-             printf("num_samples=%d must be less or equal to num_pnt=%d\n",num_samples,num_pnt);
-        assert(nums!=NULL);
-
-	timeval t0,t1;
-	gettimeofday(&t0, NULL);
+        std::cout<<"compare_random_points: num_quadrants="<<this->num_quadrants
+            <<" num_pp_pair="<<this->num_pp_pairs<<" num_samples="<<num_samples<<std::endl;
         
-        char  msg[100];
-	timeval t2,t3;
-	gettimeofday(&t2, NULL);
-	for(uint32_t k=0;k<num_samples;k++)
-	{
-	    uint32_t pntid=nums[k];	
-	    OGRPoint pnt(h_pnt_x[pntid],h_pnt_y[pntid]);
-	    std::vector<uint32_t> temp_vec;
-	    for(uint32_t j=0;j<h_polygon_vec.size();j++)
-	    {
-		if(h_polygon_vec[j]->Contains(&pnt))
-		  temp_vec.push_back(j);
-	    }
-	    if(temp_vec.size()>0)
-	    {
-	    	h_pnt_len_vec.push_back(temp_vec.size());
-	    	h_pnt_idx_vec.push_back(pntid);
-	    	h_poly_idx_vec.insert(h_poly_idx_vec.end(),temp_vec.begin(),temp_vec.end());
-	    }
-            if(k>0 && k%num_print_interval==0)
-            {
-	    	    gettimeofday(&t3, NULL);    
- 	            sprintf(msg,"loop=%d runtime for the last %d iterations is\n",k,num_print_interval);
- 	            float cpu_time_per_interval=cuspatial::calc_time(msg,t2,t3);
- 	            t2=t3;
- 	    }
-	}
-	delete[] nums;
-        num_search_pnt=h_pnt_idx_vec.size();
-        num_search_poly=h_poly_idx_vec.size();
-	printf("h_pnt_idx_vec.size()=%d\n",num_search_pnt);
-	printf("h_poly_idx_vec.size()=%d\n",num_search_poly);
-	printf("num_pp_pairs=%d\n",num_pp_pairs);	
+        std::vector<uint32_t> nums;
+        gen_rand_idx(nums,this->num_pnts,num_samples);
  
-        gettimeofday(&t1, NULL);
+        timeval t0,t1;
+        gettimeofday(&t0, nullptr);
+
+
+        //h_pnt_idx_vec, h_pnt_len_vec and h_poly_idx_vec will be cleared first
+        rand_points_gdal_pip_test(num_print_interval,nums, this->h_polygon_vec,this->h_pnt_idx_vec,
+            this->h_pnt_len_vec,this->h_poly_idx_vec,this->h_pnt_x,this->h_pnt_y);
+        gettimeofday(&t1, nullptr);
         float cpu_time=cuspatial::calc_time("cpu all-pair computing time",t0,t1);
-        
+
+        this->num_search_pnt=h_pnt_idx_vec.size();
+        this->num_search_poly=h_poly_idx_vec.size();
+
+        std::cout<<"num_search_pnt"<<this->num_search_pnt<<std::endl;
+        std::cout<<"num_search_poly"<<this->num_search_poly<<std::endl;
+        std::cout<<"num_pp_pairs="<<this->num_pp_pairs<<std::endl;
+
         //global vectors, use their data pointers
-        h_pnt_search_idx=&h_pnt_idx_vec[0];
-        h_poly_search_idx=&h_poly_idx_vec[0];
-        assert(h_pnt_search_idx!=NULL && h_poly_search_idx!=NULL); 
-        printf("h_pnt_search_idx[0]=%d h_poly_search_idx[0]=%d\n",h_pnt_search_idx[0],h_poly_search_idx[0]);
+        this->h_pnt_search_idx=&h_pnt_idx_vec[0];
+        this->h_poly_search_idx=&h_poly_idx_vec[0];
+        assert(h_pnt_search_idx!=nullptr && h_poly_search_idx!=nullptr);
      }
-  
+
     void compare_matched_pairs(uint32_t num_samples,uint32_t num_print_interval)
     {
-        h_pnt_idx_vec.clear();
-        h_pnt_len_vec.clear();
-        h_poly_idx_vec.clear();        
+        std::cout<<"compare_random_points: num_quadrants="<<this->num_quadrants<<" num_pq_pairs"<<this->num_pq_pairs
+            <<" num_pp_pair="<<this->num_pp_pairs<<" num_samples="<<num_samples<<std::endl;
 
-	printf("compare_matched_pairs: num_quadrants=%d num_pq_pairs=%d num_pp_pair=%d num_samples=%d \n",
-		num_quadrants,num_pq_pairs,num_pp_pairs,num_samples);
+        std::vector<uint32_t> nums;
+        gen_rand_idx(nums,this->num_pq_pairs,num_samples);
 
+        timeval t0,t1;
+        gettimeofday(&t0, nullptr);
 
-        uint32_t *nums=NULL;
-        //random quadrants
-        if(num_samples<num_pq_pairs)
-        {       	
-		std::seed_seq seed{0};
-		std::mt19937 g(seed);
-		std::uniform_int_distribution<> dist_rand (0,num_pq_pairs-1);
-		nums=new uint32_t[num_samples];
-		assert(nums!=NULL);
-		std::generate(nums, nums+num_samples, [&] () mutable { return dist_rand(g); });	
-        }
-        else if(num_samples==num_pq_pairs)
-        {
-        	nums=new uint32_t[num_samples];
-        	std::generate(nums, nums+num_pq_pairs, [n = 0] () mutable { return n++; });
-        }
-        else
-             printf("compare_matched_pairs: num_samples=%d must be less or equal to num_pq_pairs=%d\n",num_samples,num_pq_pairs);
-        assert(nums!=NULL);
+        matched_pairs_gdal_pip_test(num_print_interval,nums,
+            this->h_pq_quad_idx,this->h_pq_poly_idx,this->h_qt_length,this->h_qt_fpos,
+            this->h_polygon_vec,this->h_pnt_idx_vec,this->h_pnt_len_vec,this->h_poly_idx_vec,
+            this->h_pnt_x,this->h_pnt_y);
  
- 	timeval t0,t1;
-	gettimeofday(&t0, NULL);
-        
-        char  msg[100];
-	timeval t2,t3;
-	uint32_t p=0;
-	gettimeofday(&t2, NULL);
-	for(uint32_t k=0;k<num_samples;k++)
-	{
-	    uint32_t qid=h_pq_quad_idx[nums[k]];
-	    uint32_t pid=h_pq_poly_idx[nums[k]];
-	    uint32_t qlen=h_qt_length[qid];
-	    uint32_t fpos=h_qt_fpos[qid];
-	    //printf("k=%d qid=%u qlen=%u fpos=%u\n",k,qid,qlen,fpos);
-	    for(uint32_t i=0;i<qlen;i++)
-	    {
-		    assert(fpos+i<num_pnt);
-		    OGRPoint pnt(h_pnt_x[fpos+i],h_pnt_y[fpos+i]);
-		    std::vector<uint32_t> temp_vec;
-	            if(h_polygon_vec[pid]->Contains(&pnt))
-	            {
-			h_pnt_len_vec.push_back(1);
-			uint32_t pntid=fpos+i;
-			h_pnt_idx_vec.push_back(pntid);
-			h_poly_idx_vec.push_back(pid);			
-		    }
-		    if(p>0 && p%num_print_interval==0)
-		    {
-			    gettimeofday(&t3, NULL);    
-			    sprintf(msg,"loop=%d quad=%d runtime for the last %d iterations is\n",p,k,num_print_interval);
-			    float cpu_time_per_interval=cuspatial::calc_time(msg,t2,t3);
-			    t2=t3;
-		    }
-		    p++;
-		}
-	}
-        gettimeofday(&t1, NULL);
+        gettimeofday(&t1, nullptr);
         float cpu_time=cuspatial::calc_time("cpu matched-pair computing time",t0,t1);          
+
+        this->num_search_pnt=h_pnt_idx_vec.size();
+        this->num_search_poly=h_poly_idx_vec.size();
+
+        std::cout<<"num_search_pnt"<<this->num_search_pnt<<std::endl;
+        std::cout<<"num_search_poly"<<this->num_search_poly<<std::endl;
+        std::cout<<"num_pp_pairs="<<this->num_pp_pairs<<std::endl;
         
-        num_search_pnt=h_pnt_idx_vec.size();
-        num_search_poly=h_poly_idx_vec.size();
-	printf("h_pnt_idx_vec.size()=%d\n",num_search_pnt);
-	printf("h_poly_idx_vec.size()=%d\n",num_search_poly);
-	printf("num_pp_pairs=%d\n",num_pp_pairs);    
-        h_pnt_search_idx=&h_pnt_idx_vec[0];
-        h_poly_search_idx=&h_poly_idx_vec[0];
-        assert(h_pnt_search_idx!=NULL && h_poly_search_idx!=NULL); 
-        printf("h_pnt_search_idx[0]=%d h_poly_search_idx[0]=%d\n",h_pnt_search_idx[0],h_poly_search_idx[0]);
+        //global vectors, use their data pointers
+        this->h_pnt_search_idx=&h_pnt_idx_vec[0];
+        this->h_poly_search_idx=&h_poly_idx_vec[0];
+        assert(this->h_pnt_search_idx!=nullptr && this->h_poly_search_idx!=nullptr); 
     }
-    
-    
+
     void tear_down()
     {
-        delete[] h_poly_fpos;h_poly_fpos=NULL;
-        delete[] h_poly_rpos;h_poly_rpos=NULL;
-        delete[] h_poly_x; h_poly_x=NULL;
-        delete[] h_poly_y; h_poly_y=NULL;
+        delete[] h_poly_fpos;h_poly_fpos=nullptr;
+        delete[] h_poly_rpos;h_poly_rpos=nullptr;
+        delete[] h_poly_x; h_poly_x=nullptr;
+        delete[] h_poly_y; h_poly_y=nullptr;
         
-        delete[] h_pnt_x; h_pnt_x=NULL;
-        delete[] h_pnt_y; h_pnt_y=NULL;         
+        delete[] h_pnt_x; h_pnt_x=nullptr;
+        delete[] h_pnt_y; h_pnt_y=nullptr;
     }
- 
+
 };
 
 TEST_F(SpatialJoinNYCTaxi, test)
@@ -754,47 +456,59 @@ TEST_F(SpatialJoinNYCTaxi, test)
     const uint32_t num_level=15;
     const uint32_t min_size=512;
     const uint32_t first_n=12; 
-          
-    std::cout<<"loading NYC taxi pickup locations..........."<<std::endl;  
+
+    std::cout<<"loading NYC taxi pickup locations..........."<<std::endl;
     double pnt_x1,pnt_y1,pnt_x2,pnt_y2;
     this->setup_points(pnt_x1,pnt_y1,pnt_x2,pnt_y2,first_n);
- 
-    std::cout<<"loading NYC taxi zone shapefile data..........."<<std::endl;  
+
+    std::cout<<"loading NYC taxi zone shapefile data..........."<<std::endl;
     double poly_x1,poly_y1,poly_x2,poly_y2;
-       
+
     //uint8_t type=2; //multi-polygons only  
     uint8_t type=0; //all polygons
     this->setup_polygons(poly_x1,poly_y1,poly_x2,poly_y2,type);
-  
+
     double width=poly_x2-poly_x1;
     double height=poly_y2-poly_y1;
     double length=(width>height)?width:height;
     double scale=length/((1<<num_level)+2);
-    double bbox_x1=poly_x1-scale; 
-    double bbox_y1=poly_y1-scale;	
+    double bbox_x1=poly_x1-scale;
+    double bbox_y1=poly_y1-scale;
     double bbox_x2=poly_x2+scale; 
     double bbox_y2=poly_y2+scale;
     printf("Area of Interests: length=%15.10f scale=%15.10f\n",length,scale);
 
     std::cout<<"running test on NYC taxi trip data..........."<<std::endl;
-    
+
     this->run_test(bbox_x1,bbox_y1,bbox_x2,bbox_y2,scale,num_level,min_size);
- 
- if(1) 
- {
+
+//turn off verification by changing 1 to 0 in the if statement 
+//two types of verification/comparison: random points and random quadrant/polygon pairs
+
+if(1)
+{
     std::cout<<"running GDAL CPU code for comparison..........."<<std::endl;
 
-    uint32_t num_print_interval=100000;
-  
-    //uint32_t num_pnt_samples=10000;
-    //this->compare_full_random(num_pnt_samples,num_print_interval);   
-    
-    uint32_t num_quad_samples=10000;
-    this->compare_matched_pairs(num_quad_samples,num_print_interval);
-    
-    this->compute_mismatch();
-    
+    uint32_t num_print_interval=1000;
+
+    // pick either type 1 or type 2, but not both
+
+    //type 1: random points
+    uint32_t num_pnt_samples=10000;
+    this->compare_random_points(num_pnt_samples,num_print_interval);
+
+    //type 2: random quadrant/polygon pairs
+    //uint32_t num_quad_samples=10000;
+    //this->compare_matched_pairs(num_quad_samples,num_print_interval);
+
+    compute_mismatch(this->num_search_pnt,this->num_pp_pairs,
+        this->org_poly_idx_vec,this->h_pnt_len_vec,
+        this->h_pnt_search_idx,this->h_poly_search_idx,
+        this->d_pp_pnt_idx,this->d_pp_poly_idx,
+        this->h_pnt_x,this->h_pnt_y);
+
     this->tear_down();
- }
 }
+
+}//TEST_F
 

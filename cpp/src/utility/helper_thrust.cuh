@@ -15,7 +15,7 @@ static void HandleCudaError( cudaError_t err,
 template <typename T>
 struct get_vec_element
 {
-    T *d_p_vec=NULL;
+    T *d_p_vec=nullptr;
     get_vec_element(T *_d_p_vec):d_p_vec(_d_p_vec){}
     
     __device__ 

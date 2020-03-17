@@ -57,25 +57,25 @@ TEST_F(BoundingBoxTest, test1)
     std::unique_ptr<cudf::column> fpos_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
     	num_poly, cudf::mask_state::UNALLOCATED, stream, mr );      
     uint32_t *d_p_fpos=cudf::mutable_column_device_view::create(fpos_col->mutable_view(), stream)->data<uint32_t>();
-    assert(d_p_fpos!=NULL);
+    assert(d_p_fpos!=nullptr);
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_fpos, poly_fpos, num_poly * sizeof(uint32_t), cudaMemcpyHostToDevice ) ); 
 
     std::unique_ptr<cudf::column> rpos_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
     	num_ring, cudf::mask_state::UNALLOCATED, stream, mr );      
     uint32_t *d_p_rpos=cudf::mutable_column_device_view::create(rpos_col->mutable_view(), stream)->data<uint32_t>();
-    assert(d_p_rpos!=NULL);
+    assert(d_p_rpos!=nullptr);
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_rpos, poly_rpos, num_ring * sizeof(uint32_t), cudaMemcpyHostToDevice ) ); 
 
     std::unique_ptr<cudf::column> x_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
     	num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
     double *d_p_x=cudf::mutable_column_device_view::create(x_col->mutable_view(), stream)->data<double>();
-    assert(d_p_x!=NULL);
+    assert(d_p_x!=nullptr);
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_x, poly_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) ); 
 
     std::unique_ptr<cudf::column> y_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
         num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
     double *d_p_y=cudf::mutable_column_device_view::create(y_col->mutable_view(), stream)->data<double>();
-    assert(d_p_y!=NULL);
+    assert(d_p_y!=nullptr);
     HANDLE_CUDA_ERROR( cudaMemcpy( d_p_y, poly_y, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) ); 
 
     //GPU computation
@@ -90,7 +90,7 @@ TEST_F(BoundingBoxTest, test1)
     double *c_ry1=new double[num_poly];
     double *c_rx2=new double[num_poly];
     double *c_ry2=new double[num_poly];
-    assert(c_rx1!=NULL && c_ry1!=NULL && c_rx2!=NULL && c_ry2!=NULL);
+    assert(c_rx1!=nullptr && c_ry1!=nullptr && c_rx2!=nullptr && c_ry2!=nullptr);
 
     for(uint32_t fid=0;fid<num_poly;fid++)
     {
@@ -123,7 +123,7 @@ TEST_F(BoundingBoxTest, test1)
     double *h_ry1=new double[num_poly];
     double *h_rx2=new double[num_poly];
     double *h_ry2=new double[num_poly];
-    assert(h_rx1!=NULL && h_ry1!=NULL && h_rx2!=NULL && h_ry2!=NULL);
+    assert(h_rx1!=nullptr && h_ry1!=nullptr && h_rx2!=nullptr && h_ry2!=nullptr);
 
     EXPECT_EQ(cudaMemcpy(h_rx1,d_rx1,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
     EXPECT_EQ(cudaMemcpy(h_ry1,d_ry1,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);

@@ -97,7 +97,7 @@ struct what2output
 template<typename T>
 struct gen_quad_bbox
 {
-    uint32_t *d_p_key=NULL;
+    uint32_t *d_p_key=nullptr;
     double scale;
     SBBox<T> aoi_bbox;
     uint8_t *d_p_lev;
@@ -145,7 +145,7 @@ struct flatten_z_code
 
 struct qt_get_fpos
 {
-    uint32_t *d_p_qtfpos=NULL;
+    uint32_t *d_p_qtfpos=nullptr;
     qt_get_fpos(uint32_t *_d_p_qtfpos):d_p_qtfpos(_d_p_qtfpos){}
 
     __device__ 
@@ -181,7 +181,7 @@ struct qt_not_type
 
 struct update_quad
 {
-    const uint32_t *d_p_qtfpos=NULL,*d_seq_pos=NULL;
+    const uint32_t *d_p_qtfpos=nullptr,*d_seq_pos=nullptr;
 
     update_quad(const uint32_t *_d_p_qtfpos,const uint32_t *_d_seq_pos):
         d_p_qtfpos(_d_p_qtfpos),d_seq_pos(_d_seq_pos){}

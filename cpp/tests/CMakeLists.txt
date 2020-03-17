@@ -103,6 +103,7 @@ ConfigureTest(SPATIAL_JOIN_REFINEMENT_LARGE_TEST "${SPATIAL_JOIN_REFINEMENT_LARG
 
 set(SPATIAL_JOIN_NYCTAXI_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/join/spatial_join_test_utility.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/join/spatial_join_test_utility.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/join/spatial_join_nyctaxi_test.cu")    
 ConfigureTest(SPATIAL_JOIN_NYCTAXIE_TEST "${SPATIAL_JOIN_NYCTAXI_SRC}")
 

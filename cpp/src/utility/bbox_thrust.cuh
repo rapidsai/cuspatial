@@ -111,9 +111,9 @@ struct pairwise_test_intersection
 {
   uint32_t M;
   uint32_t num_node;
-  const uint32_t *d_p_key=NULL;
-  const uint8_t *d_p_lev=NULL;
-  const bool *d_p_qtsign=NULL;
+  const uint32_t *d_p_key=nullptr;
+  const uint8_t *d_p_lev=nullptr;
+  const bool *d_p_qtsign=nullptr;
   double scale;
   SBBox<double> aoi_bbox;
   const SBBox<T> *ply_bbox;
@@ -164,9 +164,9 @@ struct twolist_test_intersection
 {
   uint32_t M;
   uint32_t num_node;
-  const uint32_t *d_p_key=NULL;
-  const uint8_t *d_p_lev=NULL;
-  const bool *d_p_qtsign=NULL;
+  const uint32_t *d_p_key=nullptr;
+  const uint8_t *d_p_lev=nullptr;
+  const bool *d_p_qtsign=nullptr;
   double scale;
   SBBox<double> aoi_bbox;
   const SBBox<T> *ply_bbox;
