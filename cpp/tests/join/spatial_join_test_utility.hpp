@@ -24,7 +24,8 @@ uint32_t compute_mismatch(uint32_t num_search_pnt,uint32_t num_pp_pairs,
 	const std::vector<uint32_t>&  org_poly_idx_vec, const std::vector<uint32_t>& h_pnt_len_vec,
 	const uint32_t *h_pnt_search_idx,const uint32_t * h_poly_search_idx,
 	uint32_t * d_pp_pnt_idx,uint32_t *d_pp_poly_idx,
-	const double *h_pnt_x, const double * h_pnt_y);
+	const double *h_pnt_x, const double * h_pnt_y,
+	rmm::mr::device_memory_resource* mr, cudaStream_t stream);
 
 
 void rand_points_gdal_pip_test(uint32_t num_print_interval,const std::vector<uint32_t>& indices,

@@ -374,7 +374,7 @@ if(0)
      		d_qt_fpos,d_pnt_x,d_pnt_y,d_poly_fpos,d_poly_rpos,d_poly_x,d_poly_y,d_num_hits);
      HANDLE_CUDA_ERROR( cudaDeviceSynchronize() );
      gettimeofday(&t1, nullptr); 
-     float refine_phase1_time=cuspatial::calc_time("refine_phase1_time time=",t0,t1);
+     float refine_phase1_time=cuspatial::calc_time("refine_phase1_time (ms) = ",t0,t1);
  
  if(0)
  {
@@ -405,7 +405,7 @@ if(0)
      thrust::exclusive_scan(exec_policy,d_num_hits,d_num_hits+num_valid_pair,d_num_hits);
 
      gettimeofday(&t2, nullptr); 
-     float refine_rebalance_time=cuspatial::calc_time("refine_rebalance_time time=",t1,t2);
+     float refine_rebalance_time=cuspatial::calc_time("refine_rebalance_time(ms) = ",t1,t2);
  
  if(0)
  {
@@ -435,7 +435,7 @@ if(0)
      	d_num_hits,d_res_poly_idx,d_res_pnt_idx);   
      HANDLE_CUDA_ERROR( cudaDeviceSynchronize() );
      gettimeofday(&t3, nullptr); 
-     float refine_phase2_time=cuspatial::calc_time("refine_phase2_time time=",t2,t3);
+     float refine_phase2_time=cuspatial::calc_time("refine_phase2_time(ms) = ",t2,t3);
         
 if(0)
 {

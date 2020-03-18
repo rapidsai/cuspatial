@@ -48,35 +48,66 @@
 struct SpatialJoinNYCTaxi : public GdfTest 
 {        
     uint32_t num_pnts=0;
-    double *d_pnt_x=nullptr,*d_pnt_y=nullptr;
-    double *h_pnt_x=nullptr,*h_pnt_y=nullptr;
-    std::unique_ptr<cudf::column> col_pnt_id,col_pnt_x,col_pnt_y;
-
-    uint32_t num_poly=0,num_ring=0,num_vertex=0;
-    uint32_t *d_poly_fpos=nullptr,*d_poly_rpos=nullptr;
-    double *d_poly_x=nullptr,*d_poly_y=nullptr;
-    uint32_t *h_poly_fpos=nullptr,*h_poly_rpos=nullptr;
-    double *h_poly_x=nullptr,*h_poly_y=nullptr;
 
     uint32_t num_quadrants=0;
-    uint32_t *h_qt_length=nullptr,*h_qt_fpos=nullptr;   
 
     uint32_t num_pq_pairs=0;
-    uint32_t *h_pq_quad_idx=nullptr,*h_pq_poly_idx=nullptr;   
 
     uint32_t num_pp_pairs=0;
+   
+    //point x/y on device, shared between setup_points and run_test
+    double *d_pnt_x=nullptr,*d_pnt_y=nullptr;
+
+    //point x/y on host
+    double *h_pnt_x=nullptr,*h_pnt_y=nullptr;
+
+    uint32_t num_poly=0,num_ring=0,num_vertex=0;
+
+    //polygon/ring indices
+    uint32_t *h_poly_fpos=nullptr,*h_poly_rpos=nullptr;
+
+    //polygon vertices x/y
+    double *h_poly_x=nullptr,*h_poly_y=nullptr;
+
+    //quadtree length/fpos
+    uint32_t *h_qt_length=nullptr,*h_qt_fpos=nullptr;   
+
+    //quadrant/polygon pairs
+    uint32_t *h_pq_quad_idx=nullptr,*h_pq_poly_idx=nullptr;   
+    
+    //point/polygon pairs on device; shared between run_test and compute_mismatch
     uint32_t *d_pp_pnt_idx=nullptr,*d_pp_poly_idx=nullptr;
 
+    //poygons using GDAL/OGRGeometry structure
     std::vector<OGRGeometry *> h_polygon_vec;
+
+    //sequential idx 0..num_poly-1 to index h_polygon_vec
+    //needed when actual polygons in spatial join are only a subset, e.g., multi-polygons only  
     std::vector<uint32_t> org_poly_idx_vec;
+
+    //point idx that intersect with at least one polygon based on GDAL OGRGeometry.Contains 
     std::vector<uint32_t> h_pnt_idx_vec;
+    
+    //# of poylgons that are contain points indexed by h_pnt_idx_vec at the same index
     std::vector<uint32_t> h_pnt_len_vec;
+
+    #polygon indices for those contain points in h_pnt_idx_vec; sequentially concatenated
     std::vector<uint32_t> h_poly_idx_vec;
 
-    uint32_t num_search_pnt=0,num_search_poly=0;
+    //#of points and #of polygons that contain them, as computed by GDAL API
+    uint32_t num_search_pnts=0,num_search_polys=0;
+
+    //pointers to the first elements of h_pnt_idx_vec and h_poly_idx_vec, respectively
+    //h_pnt_search_idx will be copied to device and used as keys to search for polygon indices computed by GPU
+    //For each point, the polygon index sets computed by CPU and GPU are compared to identify a mismatch
     uint32_t *h_pnt_search_idx=nullptr,*h_poly_search_idx=nullptr;
 
-    std::unique_ptr<cudf::column> col_poly_fpos,col_poly_rpos,col_poly_x,col_poly_y;
+    std::unique_ptr<cudf::column> col_pnt_x,col_pnt_y;
+
+    std::unique_ptr<cudf::column> col_poly_fpos,col_poly_rpos,col_poly_x,col_poly_y;    
+
+    //memory allocated for these structures could be released dynamically, should this be an issue
+    std::unique_ptr<cudf::experimental::table> quadtree_tbl,bbox_tbl,pq_pair_tbl,pip_pair_tbl;
 
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
@@ -138,7 +169,8 @@ struct SpatialJoinNYCTaxi : public GdfTest
         std::copy_n(x_v.begin(),num_vertex,h_poly_x);
         std::copy_n(y_v.begin(),num_vertex,h_poly_y);
         std::cout<<"setup_polygons: num_poly="<<num_poly<<" num_ring="<<num_ring<<" num_vertex="<<num_vertex<<std::endl;
- 
+
+        //note that the bbox of all polygons will used as the Area of Intersects (AOI) to join points with polygons 
         x1=*(std::min_element(x_v.begin(),x_v.end()));
         x2=*(std::max_element(x_v.begin(),x_v.end()));
         y1=*(std::min_element(y_v.begin(),y_v.end()));
@@ -147,25 +179,25 @@ struct SpatialJoinNYCTaxi : public GdfTest
 
         col_poly_fpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
             num_poly, cudf::mask_state::UNALLOCATED, stream, mr );      
-        d_poly_fpos=cudf::mutable_column_device_view::create(col_poly_fpos->mutable_view(), stream)->data<uint32_t>();
+        uint32_t *d_poly_fpos=cudf::mutable_column_device_view::create(col_poly_fpos->mutable_view(), stream)->data<uint32_t>();
         assert(d_poly_fpos!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_fpos, h_poly_fpos, num_poly * sizeof(uint32_t), cudaMemcpyHostToDevice ) ); 
 
         col_poly_rpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
             num_ring, cudf::mask_state::UNALLOCATED, stream, mr );      
-        d_poly_rpos=cudf::mutable_column_device_view::create(col_poly_rpos->mutable_view(), stream)->data<uint32_t>();
+        uint32_t *d_poly_rpos=cudf::mutable_column_device_view::create(col_poly_rpos->mutable_view(), stream)->data<uint32_t>();
         assert(d_poly_rpos!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_rpos, h_poly_rpos, num_ring * sizeof(uint32_t), cudaMemcpyHostToDevice ) );
 
         col_poly_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
             num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
-        d_poly_x=cudf::mutable_column_device_view::create(col_poly_x->mutable_view(), stream)->data<double>();
+        double *d_poly_x=cudf::mutable_column_device_view::create(col_poly_x->mutable_view(), stream)->data<double>();
         assert(d_poly_x!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_x, h_poly_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );
 
         col_poly_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
             num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
-        d_poly_y=cudf::mutable_column_device_view::create(col_poly_y->mutable_view(), stream)->data<double>();
+        double *d_poly_y=cudf::mutable_column_device_view::create(col_poly_y->mutable_view(), stream)->data<double>();
         assert(d_poly_y!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_y, h_poly_y, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );
 
@@ -265,22 +297,21 @@ struct SpatialJoinNYCTaxi : public GdfTest
         std::cout<<"run_test::num_pnts="<<col_pnt_x->size()<<std::endl;
 
         gettimeofday(&t2, nullptr);
-        std::unique_ptr<cudf::experimental::table> quadtree= 
-            cuspatial::quadtree_on_points(pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_level, min_size);
-        num_quadrants=quadtree->view().num_rows();
+        quadtree_tbl= cuspatial::quadtree_on_points(pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_level, min_size);
+        num_quadrants=quadtree_tbl->view().num_rows();
         std::cout<<"# of quadrants="<<num_quadrants<<std::endl;
         gettimeofday(&t3, nullptr);
-        float quadtree_time=cuspatial::calc_time("quadtree constrution time=",t2,t3);
+        float quadtree_time=cuspatial::calc_time("quadtree_tbl constrution time=",t2,t3);
 
         //compute polygon bbox on GPU                
         gettimeofday(&t2, nullptr);
-        std::unique_ptr<cudf::experimental::table> bbox_tbl=
-            cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view());
+        bbox_tbl=cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),
+            col_poly_x->view(),col_poly_y->view());
         gettimeofday(&t3, nullptr);
         float polybbox_time=cuspatial::calc_time("compute polygon bbox time=",t2,t3);
         std::cout<<"# of polygon bboxes="<<bbox_tbl->view().num_rows()<<std::endl;
 
-//output to csv and shapefile for manual/visual verification
+//output to csv file and shapefile for manual/visual verification
 if(0)
 {
         double *h_x1=nullptr,*h_y1=nullptr,*h_x2=nullptr,*h_y2=nullptr;
@@ -290,6 +321,7 @@ if(0)
 
         //alternatively, derive polygon bboxes from GDAL on GPU and then create bbox table for subsequent steps
         //also output bbox coordiantes as a CSV file for examination/comparison
+        //set flag in bbox_tbl_cpu to output bboxes to csv file and shapefile
 
         /*
         gettimeofday(&t2, nullptr);
@@ -300,11 +332,11 @@ if(0)
         */
 
         //spatial filtering
-        const cudf::table_view quad_view=quadtree->view();
+        const cudf::table_view quad_view=quadtree_tbl->view();
         const cudf::table_view bbox_view=bbox_tbl->view();
 
         gettimeofday(&t2, nullptr);
-        std::unique_ptr<cudf::experimental::table> pq_pair_tbl=cuspatial::quad_bbox_join(
+        pq_pair_tbl=cuspatial::quad_bbox_join(
             quad_view,bbox_view,x1,y1,x2,y2, scale,num_level, min_size);
         gettimeofday(&t3, nullptr);
         float filtering_time=cuspatial::calc_time("spatial filtering time=",t2,t3);
@@ -315,7 +347,7 @@ if(0)
         const cudf::table_view pnt_view({pnt_x_view,pnt_y_view});
 
         gettimeofday(&t2, nullptr); 
-        std::unique_ptr<cudf::experimental::table> pip_pair_tbl=cuspatial::pip_refine(
+        pip_pair_tbl=cuspatial::pip_refine(
             pq_pair_view,quad_view,pnt_view,
         col_poly_fpos->view(),col_poly_rpos->view(),col_poly_x->view(),col_poly_y->view());
         gettimeofday(&t3, nullptr);
@@ -323,7 +355,7 @@ if(0)
         std::cout<<"# of polygon/point pairs="<<pip_pair_tbl->view().num_rows()<<std::endl;
 
         gettimeofday(&t1, nullptr);
-        float gpu_time=cuspatial::calc_time("gpu end-to-end computing time",t0,t1);
+        float gpu_time=cuspatial::calc_time("gpu end-to-end computing time=",t0,t1);
 
         //summierize runtimes
         float  runtimes[4]={quadtree_time,polybbox_time,filtering_time,refinement_time};
@@ -339,8 +371,8 @@ if(0)
         std::cout<<"gpu end-to-tend time"<<gpu_time<<std::endl;
 
         //setup variables for verifications
-        const uint32_t *d_qt_length=quadtree->view().column(3).data<uint32_t>();
-        const uint32_t *d_qt_fpos=quadtree->view().column(4).data<uint32_t>();
+        const uint32_t *d_qt_length=quadtree_tbl->view().column(3).data<uint32_t>();
+        const uint32_t *d_qt_fpos=quadtree_tbl->view().column(4).data<uint32_t>();
 
         h_qt_length=new uint32_t[num_quadrants];
         h_qt_fpos=new uint32_t[num_quadrants];
@@ -361,14 +393,9 @@ if(0)
         HANDLE_CUDA_ERROR( cudaMemcpy( h_pq_quad_idx, d_pq_quad_idx, num_pq_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) );
 
         num_pp_pairs=pip_pair_tbl->num_rows();
-        //make a copy for d_pp_pnt_idx and d_pp_poly_idx as they will be sorted later
-        const uint32_t * d_temp_poly_idx=pip_pair_tbl->view().column(0).data<uint32_t>();
-        const uint32_t * d_temp_pnt_idx=pip_pair_tbl->view().column(1).data<uint32_t>();
         
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pp_pnt_idx),num_pp_pairs*sizeof(uint32_t), 0));
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pp_poly_idx),num_pp_pairs*sizeof(uint32_t), 0));
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_pnt_idx, d_temp_pnt_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_pp_poly_idx, d_temp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToDevice) );
+        this->d_pp_poly_idx=pip_pair_tbl->mutable_view().column(0).data<uint32_t>();
+        this->d_pp_pnt_idx=pip_pair_tbl->mutable_view().column(1).data<uint32_t>();
 
         //copy back sorted points to CPU for verification
         HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_x, d_pnt_x,num_pnts * sizeof(double), cudaMemcpyDeviceToHost ) );
@@ -386,19 +413,18 @@ if(0)
         timeval t0,t1;
         gettimeofday(&t0, nullptr);
 
-
         //h_pnt_idx_vec, h_pnt_len_vec and h_poly_idx_vec will be cleared first
         rand_points_gdal_pip_test(num_print_interval,nums, this->h_polygon_vec,this->h_pnt_idx_vec,
             this->h_pnt_len_vec,this->h_poly_idx_vec,this->h_pnt_x,this->h_pnt_y);
         gettimeofday(&t1, nullptr);
-        float cpu_time=cuspatial::calc_time("cpu all-pair computing time",t0,t1);
+        float cpu_time=cuspatial::calc_time("cpu all-pair computing time = ",t0,t1);
 
-        this->num_search_pnt=h_pnt_idx_vec.size();
-        this->num_search_poly=h_poly_idx_vec.size();
+        this->num_search_pnts=h_pnt_idx_vec.size();
+        this->num_search_polys=h_poly_idx_vec.size();
 
-        std::cout<<"num_search_pnt"<<this->num_search_pnt<<std::endl;
-        std::cout<<"num_search_poly"<<this->num_search_poly<<std::endl;
-        std::cout<<"num_pp_pairs="<<this->num_pp_pairs<<std::endl;
+        std::cout<<"num_search_pnts = "<<this->num_search_pnts<<std::endl;
+        std::cout<<"num_search_polys= "<<this->num_search_polys<<std::endl;
+        std::cout<<"num_pp_pairs = "<<this->num_pp_pairs<<std::endl;
 
         //global vectors, use their data pointers
         this->h_pnt_search_idx=&h_pnt_idx_vec[0];
@@ -425,12 +451,12 @@ if(0)
         gettimeofday(&t1, nullptr);
         float cpu_time=cuspatial::calc_time("cpu matched-pair computing time",t0,t1);          
 
-        this->num_search_pnt=h_pnt_idx_vec.size();
-        this->num_search_poly=h_poly_idx_vec.size();
+        this->num_search_pnts=h_pnt_idx_vec.size();
+        this->num_search_polys=h_poly_idx_vec.size();
 
-        std::cout<<"num_search_pnt"<<this->num_search_pnt<<std::endl;
-        std::cout<<"num_search_poly"<<this->num_search_poly<<std::endl;
-        std::cout<<"num_pp_pairs="<<this->num_pp_pairs<<std::endl;
+        std::cout<<"compare_matched_pairs:num_search_pnts"<<this->num_search_pnts<<std::endl;
+        std::cout<<"compare_matched_pairs:num_search_polys"<<this->num_search_polys<<std::endl;
+        std::cout<<"compare_matched_pairs:num_pp_pairs="<<this->num_pp_pairs<<std::endl;
         
         //global vectors, use their data pointers
         this->h_pnt_search_idx=&h_pnt_idx_vec[0];
@@ -489,23 +515,23 @@ if(1)
 {
     std::cout<<"running GDAL CPU code for comparison..........."<<std::endl;
 
-    uint32_t num_print_interval=1000;
+    uint32_t num_print_interval=100;
 
     // pick either type 1 or type 2, but not both
 
     //type 1: random points
-    uint32_t num_pnt_samples=10000;
+    uint32_t num_pnt_samples=1000;
     this->compare_random_points(num_pnt_samples,num_print_interval);
 
     //type 2: random quadrant/polygon pairs
     //uint32_t num_quad_samples=10000;
     //this->compare_matched_pairs(num_quad_samples,num_print_interval);
 
-    compute_mismatch(this->num_search_pnt,this->num_pp_pairs,
+    compute_mismatch(this->num_search_pnts,this->num_pp_pairs,
         this->org_poly_idx_vec,this->h_pnt_len_vec,
         this->h_pnt_search_idx,this->h_poly_search_idx,
         this->d_pp_pnt_idx,this->d_pp_poly_idx,
-        this->h_pnt_x,this->h_pnt_y);
+        this->h_pnt_x,this->h_pnt_y,mr,stream);
 
     this->tear_down();
 }

@@ -48,18 +48,21 @@ TEST_F(QuadtreeOnPointIndexingTest, test1)
     assert(sizeof(yy)/sizeof(double)==point_len);
 
     cudaStream_t stream=0;
+    rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
 
-    double *d_p_x=nullptr,*d_p_y=nullptr;
-    RMM_TRY( RMM_ALLOC( &d_p_x,point_len* sizeof(double), stream));
-    assert(d_p_x!=nullptr);
-    RMM_TRY( RMM_ALLOC( &d_p_y,point_len* sizeof(double), stream));
-    assert(d_p_y!=nullptr);    
+    rmm::device_buffer *db_pnt_x=new rmm::device_buffer(point_len* sizeof(double),stream,mr);
+    CUDF_EXPECTS(db_pnt_x!=nullptr, "Error allocating memory for x coordiantes of points");
+    double *d_pnt_x=static_cast<double *>(db_pnt_x->data());
 
-    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_x, xx, point_len * sizeof(double), cudaMemcpyHostToDevice ) );    
-    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_y, yy, point_len * sizeof(double), cudaMemcpyHostToDevice ) );     
+    rmm::device_buffer *db_pnt_y=new rmm::device_buffer(point_len* sizeof(double),stream,mr);
+    CUDF_EXPECTS(db_pnt_y!=nullptr, "Error allocating memory for y coordiantes of points");
+    double *d_pnt_y=static_cast<double *>(db_pnt_y->data());
 
-    cudf::mutable_column_view x(cudf::data_type{cudf::FLOAT64},point_len,d_p_x);
-    cudf::mutable_column_view y(cudf::data_type{cudf::FLOAT64},point_len,d_p_y);    
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_x, xx, point_len * sizeof(double), cudaMemcpyHostToDevice ) );    
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_y, yy, point_len * sizeof(double), cudaMemcpyHostToDevice ) );     
+
+    cudf::mutable_column_view x(cudf::data_type{cudf::FLOAT64},point_len,d_pnt_x);
+    cudf::mutable_column_view y(cudf::data_type{cudf::FLOAT64},point_len,d_pnt_y);    
 
     std::unique_ptr<cudf::experimental::table> quadtree= cuspatial::quadtree_on_points(x,y,x1,y1,x2,y2, scale,num_levels, min_size);
 

@@ -18,10 +18,9 @@ uint32_t compute_mismatch(uint32_t num_search_pnt,uint32_t num_pp_pairs,
 	const std::vector<uint32_t>&  org_poly_idx_vec, const std::vector<uint32_t>& h_pnt_len_vec,
 	const uint32_t *h_pnt_search_idx,const uint32_t * h_poly_search_idx, 
 	uint32_t * d_pp_pnt_idx,uint32_t *d_pp_poly_idx,
-	const double *h_pnt_x, const double * h_pnt_y)
-{
-    std::cout<<"num_search_pnt="<<num_search_pnt<<std::endl;
- 
+	const double *h_pnt_x, const double * h_pnt_y,
+	rmm::mr::device_memory_resource* mr, cudaStream_t stream)
+{ 
 if(0)
 {
  	std::cout<<"h_pnt_search_idx"<<std::endl;
@@ -35,14 +34,22 @@ if(0)
         uint32_t *h_pp_poly_idx=NULL;
         h_pp_poly_idx=new uint32_t[num_pp_pairs];
  	HANDLE_CUDA_ERROR( cudaMemcpy( h_pp_poly_idx, d_pp_poly_idx, num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost) ); 
- 	
-        uint32_t *d_pnt_lb=NULL,*d_pnt_ub=NULL;
-        bool *d_pnt_sign=NULL;
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_lb),num_pp_pairs*sizeof(uint32_t), 0));
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_ub),num_pp_pairs*sizeof(uint32_t), 0));
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_sign),num_pp_pairs*sizeof(bool), 0));
- 	uint32_t *d_pnt_search_idx=NULL;
-        RMM_TRY( RMM_ALLOC( (void**)&(d_pnt_search_idx),num_search_pnt*sizeof(uint32_t), 0));
+
+        rmm::device_buffer *db_pnt_lb=new rmm::device_buffer(num_pp_pairs* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_lb!=nullptr, "Error allocating memory for lower bounds array in serching polygon idx based on point idx");
+        uint32_t *d_pnt_lb=static_cast<uint32_t *>(db_pnt_lb->data());
+ 
+        rmm::device_buffer *db_pnt_ub=new rmm::device_buffer(num_pp_pairs* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_ub!=nullptr, "Error allocating memory for upper bounds array in serching polygon idx based on point idx");
+        uint32_t *d_pnt_ub=static_cast<uint32_t *>(db_pnt_ub->data());
+
+        rmm::device_buffer *db_pnt_sign=new rmm::device_buffer(num_pp_pairs* sizeof(bool),stream,mr);
+        CUDF_EXPECTS(db_pnt_sign!=nullptr, "Error allocating memory for sign array in serching polygon idx based on point idx");
+        bool *d_pnt_sign=static_cast<bool *>(db_pnt_sign->data());
+
+        rmm::device_buffer *db_pnt_search_idx=new rmm::device_buffer(num_search_pnt* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_search_idx!=nullptr, "Error allocating memory for point idx array being used as search keys");
+        uint32_t *d_pnt_search_idx=static_cast<uint32_t *>(db_pnt_search_idx->data());
    	HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_search_idx, h_pnt_search_idx, num_search_pnt * sizeof(uint32_t), cudaMemcpyHostToDevice) ); 
        
         thrust::lower_bound(thrust::device,d_pp_pnt_idx,d_pp_pnt_idx+num_pp_pairs,d_pnt_search_idx,d_pnt_search_idx+num_search_pnt,d_pnt_lb);
@@ -58,9 +65,10 @@ if(0)
   	HANDLE_CUDA_ERROR( cudaMemcpy( h_pnt_ub, d_pnt_ub, num_search_pnt * sizeof(uint32_t), cudaMemcpyDeviceToHost) );   
   	HANDLE_CUDA_ERROR( cudaMemcpy( h_pnt_sign, d_pnt_sign, num_search_pnt * sizeof(bool), cudaMemcpyDeviceToHost) );
 
-        RMM_TRY(RMM_FREE(d_pnt_lb,0));d_pnt_lb=NULL;
-        RMM_TRY(RMM_FREE(d_pnt_ub,0));d_pnt_ub=NULL;
-        RMM_TRY(RMM_FREE(d_pnt_sign,0));d_pnt_sign=NULL;
+        delete db_pnt_lb; db_pnt_lb=NULL;
+        delete db_pnt_ub; db_pnt_ub=NULL;
+        delete db_pnt_sign; db_pnt_sign=NULL;
+        delete db_pnt_search_idx; db_pnt_search_idx=NULL;
         std::cout<<"after H->D transfer.................."<<std::endl;
  
     	//uncoment to write debug info to file
@@ -135,7 +143,7 @@ if(0)
  			bpos=epos;epos+=h_pnt_len_vec[i];
  		}	
  	}
- 	fclose(fp);
+ 	//fclose(fp);
  	delete[] h_pnt_lb;
  	delete[] h_pnt_ub;
  	delete[] h_pnt_sign;
