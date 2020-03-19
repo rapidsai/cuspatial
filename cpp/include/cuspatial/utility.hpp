@@ -70,7 +70,7 @@ static void HandleCudaError( cudaError_t err,
 
 // Macro block for printing cudf::columns
 
-#define ALLOW_PRINT 0
+#define ALLOW_PRINT 1
 #if ALLOW_PRINT
 
 template<typename T>
