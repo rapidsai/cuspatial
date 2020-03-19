@@ -286,6 +286,7 @@ if(0)
     rmm::device_buffer *db_quad_offset = new rmm::device_buffer(num_pq_pair* sizeof(uint32_t),stream,mr);
     CUDF_EXPECTS(db_quad_offset!=nullptr, "Error allocating memory for array of sub-pair offsets )");
     uint32_t *d_quad_offset=static_cast<uint32_t *>(db_quad_offset->data());
+    HANDLE_CUDA_ERROR( cudaMemset(d_quad_offset,0,num_pq_pair*sizeof(uint32_t)) );
 
     rmm::device_buffer *db_quad_len = new rmm::device_buffer(num_pq_pair* sizeof(uint32_t),stream,mr);
     CUDF_EXPECTS(db_quad_len!=nullptr, "Error allocating memory for array of sub-pair length )");

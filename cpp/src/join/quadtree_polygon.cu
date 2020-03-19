@@ -353,7 +353,7 @@ if(0)
         }
         std::cout<<"level="<<i<<" output_nodes_pos="<<output_nodes_pos<<" curr_cap="<<curr_cap<<std::endl;
     }
-    std::cout<<"final: output_nodes_pos="<<output_nodes_pos;
+    std::cout<<"final: output_nodes_pos="<<output_nodes_pos<<std::endl;
     CUDF_EXPECTS(output_nodes_pos<=curr_cap,"output arrays: out of boundary"); 
 
     //d_poly_bbox is no longer needed, delete the associated device buffer and relase memory 
@@ -380,7 +380,7 @@ if(0)
     delete db_poly_idx_out; db_poly_idx_out=nullptr;
     delete db_quad_idx_out; db_quad_idx_out=nullptr;
 
-if(0)
+if(1)
 {
     std::cout<<"total pairs="<<output_nodes_pos<<std::endl;
 
