@@ -74,7 +74,7 @@ std::unique_ptr<cudf::experimental::table> quad_bbox_join(
 **/
 
 std::unique_ptr<cudf::experimental::table> pip_refine(
-	cudf::table_view const& pq_pair,cudf::table_view const& quadtree,cudf::table_view const& pnt,
-	cudf::column_view const& poly_fpos,cudf::column_view const& poly_rpos,
-	cudf::column_view const& poly_x,cudf::column_view const& poly_y);
+    cudf::table_view const& pq_pair,cudf::table_view const& quadtree,cudf::table_view const& pnt,
+    cudf::column_view const& poly_fpos,cudf::column_view const& poly_rpos,
+    cudf::column_view const& poly_x,cudf::column_view const& poly_y);
 }// namespace cuspatial

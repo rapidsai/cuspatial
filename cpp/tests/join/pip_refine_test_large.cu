@@ -41,6 +41,15 @@
 #include <cuspatial/bounding_box.hpp>
 #include <cuspatial/spatial_jion.hpp>
 
+/*
+* The test uses the same quadtree structure as in pip_refine_test_small. 
+* However, the numbers of randomlly generated points under all quadrants (min_size) are increased 
+* to be more than the number of threads per-block (currently fixed to 256, but can be set between 32 
+* 2048 (CUDA Compute Capacity 7.0, multiples of warp size, which is 32)
+* The test is designed to fully test the two kernels in the refinment code, including both warp level
+* reduce and scan, vote and popc. Thrust primitives to dvide quadrants into sub-blocks are also tested. 
+*/
+
 struct PIPRefineTestLarge : public GdfTest 
 {
     uint32_t num_pnts=0;

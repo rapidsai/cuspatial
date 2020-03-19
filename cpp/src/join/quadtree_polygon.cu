@@ -349,7 +349,7 @@ if(0)
 
             //update pair_output_iter
             pair_output_iter=thrust::make_zip_iterator(thrust::make_tuple(
-            	d_pq_lev_out,d_pq_type_out,d_poly_idx_out,d_quad_idx_out));
+                d_pq_lev_out,d_pq_type_out,d_poly_idx_out,d_quad_idx_out));
         }
         std::cout<<"level="<<i<<" output_nodes_pos="<<output_nodes_pos<<" curr_cap="<<curr_cap<<std::endl;
     }

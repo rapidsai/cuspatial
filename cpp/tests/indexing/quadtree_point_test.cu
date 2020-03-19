@@ -297,11 +297,11 @@ if(0)
     
     for(uint32_t i=0;i<n_key;i++)
     {
-    	EXPECT_EQ(h_key[i],c_key[i]);
-    	EXPECT_EQ(h_lev[i],c_lev[i]);
-    	EXPECT_EQ(h_sign[i],c_sign[i]);
-    	EXPECT_EQ(h_len[i],c_len[i]);
-    	EXPECT_EQ(h_fpos[i],c_fpos[i]);
+        EXPECT_EQ(h_key[i],c_key[i]);
+        EXPECT_EQ(h_lev[i],c_lev[i]);
+        EXPECT_EQ(h_sign[i],c_sign[i]);
+        EXPECT_EQ(h_len[i],c_len[i]);
+        EXPECT_EQ(h_fpos[i],c_fpos[i]);
     }
 
     delete [] h_key; h_key=nullptr;

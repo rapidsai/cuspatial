@@ -39,6 +39,13 @@
 #include <cuspatial/bounding_box.hpp>
 #include <cuspatial/spatial_jion.hpp>
 
+/*
+* A small test that it is suitable for manually visualizing point-polygon pairing results in a GIS environment
+* GPU results are compared with expected values embeded in code 
+* However, the number of points in each quadrant is less than 32, the two kernels for 
+* point-in-polygon test are not fully tested. This is left for pip_refine_test_large. 
+*/
+
 struct PIPRefineTestSmall : public GdfTest 
 {
     uint32_t num_pnt=0;
@@ -62,7 +69,7 @@ struct PIPRefineTestSmall : public GdfTest
         this->num_ring=sizeof(h_ply_rpos)/sizeof(uint32_t);
         this->num_vertex=sizeof(h_ply_x)/sizeof(double);
         assert(this->num_vertex==sizeof(h_ply_y)/sizeof(double));
-        assert(this->num_vertex=h_ply_rpos[num_ring-1]); 	
+        assert(this->num_vertex=h_ply_rpos[num_ring-1]);
         std::cout<<"setup_polygons:num_poly="<<this->num_poly<<std::endl;
         std::cout<<"setup_polygons:num_ring="<<this->num_ring<<std::endl;
         std::cout<<"setup_polygons:num_vertex="<<this->num_vertex<<std::endl;

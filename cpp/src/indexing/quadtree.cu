@@ -118,7 +118,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,
             d_pnt_pntlen+begin_pos,
             d_pnt_parentkey+end_pos,d_pnt_pntlen+end_pos).first-(d_pnt_parentkey+end_pos);
 
-        lev_num[k]=nk; lev_bpos[k]=begin_pos; lev_epos[k]=end_pos; 	 
+        lev_num[k]=nk; lev_bpos[k]=begin_pos; lev_epos[k]=end_pos; 
 
         std::cout<<"lev="<<k<<" begin_pos="<<begin_pos<<" end_pos="<<end_pos<<" nk="<<nk<<" nn="<<nn<<std::endl;
         begin_pos=end_pos; end_pos+=nk; 
