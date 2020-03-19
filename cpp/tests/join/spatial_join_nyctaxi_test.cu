@@ -46,30 +46,30 @@
 #include "spatial_join_test_utility.hpp"
 
 /*
-* Test code for running spatial join code on GPUs with GDAL-based CPU verification
+* Test code for running spatial join on GPUs with GDAL-based CPU verification.
 * Different from spatial_join_refinement_small and spatial_join_refinement_large,
-* where the expected results can be either embedded in code or compute all on CPU
-* for yearly NYC taxitrip data that would take donzes of hours or even more, 
-* a sampling-based verificaiton is needed. 
+* where the expected results can be either embedded in code or computed on CPU (using GDAL API),
+* for yearly NYC taxitrip data, that would take donzes of hours or even more. 
+* A sampling-based verificaiton is thus needed. 
 *
-* Two sampling strategies are provided: sampling on points and sampling on quadrant-polygon pairs
+* Two sampling strategies are provided: sampling on points and sampling on quadrant-polygon pairs.
 *
 * Furthermore, sophisticated polygons such as multi-polgyons and polygons with holes, 
 * are challenging for verfication/debugging purposes .
-*
 * This test code allows picking up two types of polygons, i.e., single-ring (classical) 
 * and multi-ring polygons and their combinations (all). 
 *
 * The comparison/vericiation code is also accelerated by using a composition of 
 * lower_bound/upper_bound/binary_search paralell primiitves in Thrust. 
-* Searching std::vector is just too slow 
+* Searching std::vector on CPU is just too slow for this prurpose.   
 
 * As the relationship between points and polygons is many-to-many, the verification gives three metrics: 
 * num_search_pnt: numbers of points (from both sampling strategies) that are within at least
-* one polygons by CPU code; there would be mismatches if num_search_pnt does not agree with num_pp_pairs;
+* one polygons by CPU code; Disagreement between num_search_pnt and num_pp_pairs indciate mismatches;
 * num_not_found: # of point indices of GDAL/CPU results can not be found in GPU results
-* num_mis_match: for the same point index,if its assoicated polygon sets are different 
+* num_mis_match: for the same point index,if its assoicated non-empty polygon sets are different 
 * between CPU and GPU results, num_mis_match will be increased by 1.
+
 * For a perfert agreement between CPU and GPU results, 
 * (num_search_pnt==num_pp_pairs && num_not_found==0 && num_mis_match==0);
 *
@@ -184,25 +184,25 @@ struct SpatialJoinNYCTaxi : public GdfTest
         std::cout<<"read_polygon_bbox: x_min="<<x1<<"  y_min="<<y1<<" x_max="<<x2<<" y_max="<<y2<<std::endl;
 
         //create columns for polygons and populate their data arrays from host values
-        col_poly_fpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
+        col_poly_fpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32},
             num_poly, cudf::mask_state::UNALLOCATED, stream, mr );      
         uint32_t *d_poly_fpos=cudf::mutable_column_device_view::create(col_poly_fpos->mutable_view(), stream)->data<uint32_t>();
         assert(d_poly_fpos!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_fpos, h_poly_flen, num_poly * sizeof(uint32_t), cudaMemcpyHostToDevice ) ); 
 
-        this->col_poly_rpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
+        this->col_poly_rpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32},
             num_ring, cudf::mask_state::UNALLOCATED, stream, mr );      
         uint32_t *d_poly_rpos=cudf::mutable_column_device_view::create(col_poly_rpos->mutable_view(), stream)->data<uint32_t>();
         assert(d_poly_rpos!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_rpos, h_poly_rlen, num_ring * sizeof(uint32_t), cudaMemcpyHostToDevice ) );
 
-        this->col_poly_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
+        this->col_poly_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64},
             num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
         double *d_poly_x=cudf::mutable_column_device_view::create(col_poly_x->mutable_view(), stream)->data<double>();
         assert(d_poly_x!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_x, h_poly_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );
 
-        this->col_poly_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
+        this->col_poly_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64},
             num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
         double *d_poly_y=cudf::mutable_column_device_view::create(col_poly_y->mutable_view(), stream)->data<double>();
         assert(d_poly_y!=nullptr);
@@ -213,15 +213,15 @@ struct SpatialJoinNYCTaxi : public GdfTest
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_rpos, h_poly_rlen, num_ring * sizeof(uint32_t), cudaMemcpyHostToDevice ) );
         
         delete[] h_poly_flen;h_poly_flen=nullptr;
-	delete[] h_poly_rlen;h_poly_rlen=nullptr;
+        delete[] h_poly_rlen;h_poly_rlen=nullptr;
 
         //in-place scan (prefix-sum) to accumulate lengths to offsets 
         thrust::inclusive_scan(thrust::device,d_poly_fpos,d_poly_fpos+num_poly,d_poly_fpos);
         thrust::inclusive_scan(thrust::device,d_poly_rpos,d_poly_rpos+num_ring,d_poly_rpos);
-        
+
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_x, h_poly_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_y, h_poly_y, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );
-        
+
         return SBBox<double>(thrust::make_tuple(x1,y1), thrust::make_tuple(x2,y2));
     }
 
@@ -320,7 +320,7 @@ struct SpatialJoinNYCTaxi : public GdfTest
         gettimeofday(&t3, nullptr);
         float quadtree_time=cuspatial::calc_time("quadtree_tbl constrution time=",t2,t3);
 
-        //compute polygon bbox on GPU                
+        //compute polygon bbox on GPU
         gettimeofday(&t2, nullptr);
         this->bbox_tbl=cuspatial::polygon_bbox(col_poly_fpos->view(),col_poly_rpos->view(),
             col_poly_x->view(),col_poly_y->view());
@@ -460,7 +460,7 @@ if(0)
     {
         delete[] this->h_poly_x; this->h_poly_x=nullptr;
         delete[] this->h_poly_y; this->h_poly_y=nullptr;
-        
+
         delete[] this->h_pnt_x; this->h_pnt_x=nullptr;
         delete[] h_pnt_y; h_pnt_y=nullptr;
         
@@ -472,6 +472,14 @@ if(0)
     }
 
 };
+
+/* 
+ * There could be multple configureations (minior ones are inside parentheses): 
+ * pick one of three polygon datasets
+ * choose from compare_random_points and compare_matched_pairs 
+ * (vary first_n from 1-12 to pick the points of the first n months) 
+ * (set poly_type to 0,1,2 where 0 is the deafult)
+*/
 
 TEST_F(SpatialJoinNYCTaxi, test)
 {
@@ -535,10 +543,9 @@ TEST_F(SpatialJoinNYCTaxi, test)
 
     this->run_test(bbox_x1,bbox_y1,bbox_x2,bbox_y2,scale,num_level,min_size);
 
-    //turn off verification by changing 1 to 0 in the if statement 
-    //two types of verification/comparison: random points and random quadrant/polygon pairs
-
     std::cout<<"running GDAL CPU code for comparison/verification..........."<<std::endl;
+
+    //two types of verification/comparison: random points and random quadrant/polygon pairs
 
     uint32_t num_print_interval=100;
 
@@ -554,7 +561,7 @@ TEST_F(SpatialJoinNYCTaxi, test)
     //h_pnt_search_idx and h_poly_search_idx do not need to be freed as the destructor of std::vector does it
     uint32_t * h_pnt_search_idx=&(h_pnt_idx_vec[0]);
     uint32_t * h_poly_search_idx=&(h_poly_idx_vec[0]);
-    
+
     bool verified=compute_mismatch(this->num_pp_pairs,this->org_poly_idx_vec,
         h_pnt_search_idx,this->h_pnt_len_vec,h_poly_search_idx,
         this->d_pp_pnt_idx,this->d_pp_poly_idx,   

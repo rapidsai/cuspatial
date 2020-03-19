@@ -10,6 +10,7 @@
 //placeholder for structus and functions needed to run NYC taxi experiments
 //they will be incorporated into the new io module of cuspatial in a later release
 
+//=================================================================================================
 struct rec_cnyc
 {
     int xf,yf,xt,yt;
@@ -31,7 +32,6 @@ void VertexFromLinearRing(OGRLinearRing const& poRing, std::vector<double> &aPoi
     aPartSize.push_back( nCount );
 }
 
-
 /*
     *Read a Polygon (could be with multiple rings) into x/y/size vectors
 */
@@ -44,9 +44,9 @@ void LinearRingFromPolygon(OGRPolygon const & poPolygon, std::vector<double> &aP
         VertexFromLinearRing( *(poPolygon.getInteriorRing(i)),aPointX, aPointY, aPartSize );
 }
 
- /*
-  * Read a Geometry (could be MultiPolygon/GeometryCollection) into x/y/size vectors
- */
+/*
+ * Read a Geometry (could be MultiPolygon/GeometryCollection) into x/y/size vectors
+*/
 
 void PolygonFromGeometry(OGRGeometry const *poShape, std::vector<double> &aPointX,
     std::vector<double> &aPointY,std::vector<int> &aPartSize )
@@ -259,6 +259,11 @@ void write_shapefile(const char * file_name,uint32_t num_poly,
     }
     GDALClose( poDS );
 }
+//==========================================================================================================
+
+/*
+* helper c++ modules for testing spatial jion
+*/
 
 void polyvec_to_bbox(const std::vector<OGRGeometry *>& h_polygon_vec,const char * file_name,
     double * & h_x1,double * & h_y1,double * & h_x2,double * & h_y2)
@@ -399,4 +404,3 @@ void matched_pairs_gdal_pip_test(uint32_t num_print_interval,const std::vector<u
         }
     }
 }
-//==========================================================================================================

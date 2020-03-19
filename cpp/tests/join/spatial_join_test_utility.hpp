@@ -1,5 +1,7 @@
 #include <cudf/table/table.hpp>
 
+//internal helper function defintions, documentation TBD
+
 int ReadLayer(const OGRLayerH layer,std::vector<int>& g_len_v,std::vector<int>&f_len_v,
         std::vector<int>& r_len_v,std::vector<double>& x_v, std::vector<double>& y_v,
         uint8_t type, std::vector<OGRGeometry *>& polygon_vec, std::vector<uint32_t>& idx_vec);
