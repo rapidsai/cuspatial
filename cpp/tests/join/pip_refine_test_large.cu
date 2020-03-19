@@ -74,32 +74,32 @@ struct PIPRefineTestLarge : public GdfTest
         std::cout<<"setup_polygons:num_rings="<<this->num_rings<<std::endl;
         std::cout<<"setup_polygons:num_vertices="<<this->num_vertices<<std::endl;
 
-        poly_fpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
-            num_polys, cudf::mask_state::UNALLOCATED, stream, mr );      
+        this->poly_fpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
+            this->num_polys, cudf::mask_state::UNALLOCATED, stream, mr );      
         uint32_t *d_poly_fpos=cudf::mutable_column_device_view::create(poly_fpos->mutable_view(), stream)->data<uint32_t>();
         assert(d_poly_fpos!=nullptr);
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_fpos, h_poly_fpos, num_polys * sizeof(uint32_t), cudaMemcpyHostToDevice ) );
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_fpos, h_poly_fpos, this->num_polys * sizeof(uint32_t), cudaMemcpyHostToDevice ) );
 
-        poly_rpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32},
+        this->poly_rpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32},
             num_rings, cudf::mask_state::UNALLOCATED, stream, mr );      
-        uint32_t * d_poly_rpos=cudf::mutable_column_device_view::create(poly_rpos->mutable_view(), stream)->data<uint32_t>();
+        uint32_t * d_poly_rpos=cudf::mutable_column_device_view::create(this->poly_rpos->mutable_view(), stream)->data<uint32_t>();
         assert(d_poly_rpos!=nullptr);
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_rpos, h_poly_rpos, num_rings * sizeof(uint32_t), cudaMemcpyHostToDevice ) );
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_rpos, h_poly_rpos, this->num_rings * sizeof(uint32_t), cudaMemcpyHostToDevice ) );
 
-        poly_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64},
+        this->poly_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64},
             num_vertices, cudf::mask_state::UNALLOCATED, stream, mr );
-        double *d_poly_x=cudf::mutable_column_device_view::create(poly_x->mutable_view(), stream)->data<double>();
+        double *d_poly_x=cudf::mutable_column_device_view::create(this->poly_x->mutable_view(), stream)->data<double>();
         assert(d_poly_x!=nullptr);
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_x, h_poly_x, num_vertices * sizeof(double), cudaMemcpyHostToDevice ) );
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_x, h_poly_x, this->num_vertices * sizeof(double), cudaMemcpyHostToDevice ) );
 
-        poly_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
+        this->poly_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
             num_vertices, cudf::mask_state::UNALLOCATED, stream, mr );      
-        double *d_poly_y=cudf::mutable_column_device_view::create(poly_y->mutable_view(), stream)->data<double>();
+        double *d_poly_y=cudf::mutable_column_device_view::create(this->poly_y->mutable_view(), stream)->data<double>();
         assert(d_poly_y!=nullptr);
-        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_y, h_poly_y, num_vertices * sizeof(double), cudaMemcpyHostToDevice ) );
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_y, h_poly_y, this->num_vertices * sizeof(double), cudaMemcpyHostToDevice ) );
 
         //populte h_polygon_vec for verification later
-        h_polygon_vec.clear();
+        this->h_polygon_vec.clear();
         uint32_t rc=0,vc=0;
         for(uint32_t fid=0;fid<num_polys;fid++)
         {
@@ -118,182 +118,186 @@ struct PIPRefineTestLarge : public GdfTest
                 polygon->addRing(ls);
                 rc++;
             }
-            h_polygon_vec.push_back(polygon);
+            this->h_polygon_vec.push_back(polygon);
         }
-        printf("rc=%d vc=%d\n",rc,vc);
+        std::cout<<"rc="<<rc<<" vc="<<vc<<std::endl;
     }
 
-void setup_points(double x1,double y1,double x2,double y2,double scale,uint32_t num_levels,uint32_t min_size)
-{
-    //9 leaf quadrants, the same as the small point dataset
-    double quads[9][5]={{0,2,0,2},{3,4,0,1},{2,3,1,2},{4,6,0,2},{3,4,2,3},{2,3,3,4},{6,7,2,3},{7,8,3,4},{0,4,4,8}};
-
-    //for each quadrant, generate min_size points in the quadrant 
-    //min_size should be set to be large than 32 to test the correctness of the two CUDA kernels for spatial refinement
-    std::vector<uint32_t> quad_pnt_nums(9);
-    std::generate(quad_pnt_nums.begin(), quad_pnt_nums.end(), [&] () mutable { return min_size; });
-
-    std::copy(quad_pnt_nums.begin(),quad_pnt_nums.end(),std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
-    num_pnts=std::accumulate(quad_pnt_nums.begin(), quad_pnt_nums.end(),0);
-    std::cout<<"setup_points:num_pnts="<<this->num_pnts<<std::endl;
-
-    h_pnt_x=new double[num_pnts];
-    h_pnt_y=new double[num_pnts];
-    assert(h_pnt_x!=nullptr && h_pnt_y!=nullptr);
-    
-    std::seed_seq seed{0};
-    std::mt19937 g(seed);
-    int pos=0;
-
-    for(uint32_t i=0;i<9;i++)
+    void setup_points(double x1,double y1,double x2,double y2,double scale,uint32_t num_levels,uint32_t min_size)
     {
-        std::uniform_real_distribution<double> dist_x {quads[i][0], quads[i][1]};
-        std::uniform_real_distribution<double> dist_y {quads[i][2], quads[i][3]};
-        std::generate(h_pnt_x+pos, h_pnt_x+pos+quad_pnt_nums[i], [&] () mutable { return dist_x(g); });
-        std::generate(h_pnt_y+pos, h_pnt_y+pos+quad_pnt_nums[i], [&] () mutable { return dist_y(g); });
-        pos+=quad_pnt_nums[i];
+        //9 leaf quadrants, the same as the small point dataset
+        const uint32_t num_quads=9;
+        
+        double quads[num_quads][4]={{0,2,0,2},{3,4,0,1},{2,3,1,2},{4,6,0,2},{3,4,2,3},{2,3,3,4},{6,7,2,3},{7,8,3,4},{0,4,4,8}};
+
+        //for each quadrant, generate min_size points in the quadrant 
+        //min_size should be set to be large than 32 to test the correctness of the two CUDA kernels for spatial refinement
+        std::vector<uint32_t> quad_pnt_nums(9);
+        std::generate(quad_pnt_nums.begin(), quad_pnt_nums.end(), [&] () mutable { return min_size; });
+
+        std::copy(quad_pnt_nums.begin(),quad_pnt_nums.end(),std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
+        num_pnts=std::accumulate(quad_pnt_nums.begin(), quad_pnt_nums.end(),0);
+        std::cout<<"setup_points:num_pnts="<<this->num_pnts<<std::endl;
+
+        this->h_pnt_x=new double[num_pnts];
+        this->h_pnt_y=new double[num_pnts];
+        assert(this->h_pnt_x!=nullptr && this->h_pnt_y!=nullptr);
+
+        std::seed_seq seed{time(0)};
+        std::mt19937 g(seed);
+        uint32_t pos=0;
+
+        for(uint32_t i=0;i<num_quads;i++)
+        {
+            std::uniform_real_distribution<double> dist_x {quads[i][0], quads[i][1]};
+            std::uniform_real_distribution<double> dist_y {quads[i][2], quads[i][3]};
+            std::generate(h_pnt_x+pos, h_pnt_x+pos+quad_pnt_nums[i], [&] () mutable { return dist_x(g); });
+            std::generate(h_pnt_y+pos, h_pnt_y+pos+quad_pnt_nums[i], [&] () mutable { return dist_y(g); });
+            pos+=quad_pnt_nums[i];
+        }
+        assert(pos==num_pnts);
+
+        pnt_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
+            num_pnts, cudf::mask_state::UNALLOCATED, stream, mr );      
+        double *d_pnt_x=cudf::mutable_column_device_view::create(pnt_x->mutable_view(), stream)->data<double>();
+        assert(d_pnt_x!=nullptr);
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_x, this->h_pnt_x, num_pnts * sizeof(double), cudaMemcpyHostToDevice ) );
+
+        pnt_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
+            num_pnts, cudf::mask_state::UNALLOCATED, stream, mr );      
+        double *d_pnt_y=cudf::mutable_column_device_view::create(pnt_y->mutable_view(), stream)->data<double>();
+        assert(d_pnt_y!=nullptr);    
+        HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_y, this->h_pnt_y, num_pnts * sizeof(double), cudaMemcpyHostToDevice ) );
     }
-    assert(pos==num_pnts);
 
-    pnt_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
-        num_pnts, cudf::mask_state::UNALLOCATED, stream, mr );      
-    double *d_pnt_x=cudf::mutable_column_device_view::create(pnt_x->mutable_view(), stream)->data<double>();
-    assert(d_pnt_x!=nullptr);
-    HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_x, h_pnt_x, num_pnts * sizeof(double), cudaMemcpyHostToDevice ) );
+    void run_test(double x1,double y1,double x2,double y2,double scale,uint32_t num_levels,uint32_t min_size)
+    {
+        cudf::mutable_column_view pnt_x_view=pnt_x->mutable_view();
+        cudf::mutable_column_view pnt_y_view=pnt_y->mutable_view();
+        std::cout<<"run_test::num_pnts="<<pnt_x->size()<<std::endl;
 
-    pnt_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
-        num_pnts, cudf::mask_state::UNALLOCATED, stream, mr );      
-    double *d_pnt_y=cudf::mutable_column_device_view::create(pnt_y->mutable_view(), stream)->data<double>();
-    assert(d_pnt_y!=nullptr);    
-    HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_y, h_pnt_y, num_pnts * sizeof(double), cudaMemcpyHostToDevice ) );
-}
+        std::unique_ptr<cudf::experimental::table> quadtree= 
+            cuspatial::quadtree_on_points(pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_levels, min_size);
 
-void run_test(double x1,double y1,double x2,double y2,double scale,uint32_t num_levels,uint32_t min_size)
-{
-    cudf::mutable_column_view pnt_x_view=pnt_x->mutable_view();
-    cudf::mutable_column_view pnt_y_view=pnt_y->mutable_view();
-    std::cout<<"run_test::num_pnts="<<pnt_x->size()<<std::endl;
+        double * d_pnt_x=pnt_x_view.data<double>();
+        double * d_pnt_y=pnt_y_view.data<double>();
+        HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_x, d_pnt_x,num_pnts * sizeof(double), cudaMemcpyDeviceToHost ) );
+        HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_y, d_pnt_y,num_pnts * sizeof(double), cudaMemcpyDeviceToHost ) );
 
-    std::unique_ptr<cudf::experimental::table> quadtree= 
-        cuspatial::quadtree_on_points(pnt_x_view,pnt_y_view,x1,y1,x2,y2, scale,num_levels, min_size);
 
-    double * d_pnt_x=pnt_x_view.data<double>();
-    double * d_pnt_y=pnt_y_view.data<double>();
-    HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_x, d_pnt_x,num_pnts * sizeof(double), cudaMemcpyDeviceToHost ) );
-    HANDLE_CUDA_ERROR( cudaMemcpy(h_pnt_y, d_pnt_y,num_pnts * sizeof(double), cudaMemcpyDeviceToHost ) );
+        std::unique_ptr<cudf::experimental::table> bbox_tbl=
+            cuspatial::polygon_bbox(poly_fpos->view(),poly_rpos->view(),poly_x->view(),poly_y->view());
 
- 
-    std::unique_ptr<cudf::experimental::table> bbox_tbl=
-        cuspatial::polygon_bbox(poly_fpos->view(),poly_rpos->view(),poly_x->view(),poly_y->view());
+        const cudf::table_view quad_view=quadtree->view();
+        const cudf::table_view bbox_view=bbox_tbl->view();
 
-    const cudf::table_view quad_view=quadtree->view();
-    const cudf::table_view bbox_view=bbox_tbl->view();
+        std::unique_ptr<cudf::experimental::table> pq_pair_tbl=cuspatial::quad_bbox_join(
+            quad_view,bbox_view,x1,y1,x2,y2, scale,num_levels, min_size);
 
-    std::unique_ptr<cudf::experimental::table> pq_pair_tbl=cuspatial::quad_bbox_join(
-        quad_view,bbox_view,x1,y1,x2,y2, scale,num_levels, min_size);
+        const cudf::table_view pq_pair_view=pq_pair_tbl->view();
+        const cudf::table_view pnt_view({pnt_x_view,pnt_y_view});
 
-    const cudf::table_view pq_pair_view=pq_pair_tbl->view();
-    const cudf::table_view pnt_view({pnt_x_view,pnt_y_view});
+        std::unique_ptr<cudf::experimental::table> pip_pair_tbl=cuspatial::pip_refine(
+            pq_pair_view,quad_view,pnt_view,
+            poly_fpos->view(),poly_rpos->view(),poly_x->view(),poly_y->view());
 
-    std::unique_ptr<cudf::experimental::table> pip_pair_tbl=cuspatial::pip_refine(
-        pq_pair_view,quad_view,pnt_view,
-        poly_fpos->view(),poly_rpos->view(),poly_x->view(),poly_y->view());
+        cudf::table_view  pip_pair_view= pip_pair_tbl->view();
+        this->num_pp_pairs=pip_pair_view.num_rows();
+        std::cout<<"run_test: # polygon/point pair="<<num_pp_pairs<<std::endl;
+        CUDF_EXPECTS(pip_pair_view.num_columns()==2,"a polygon-quadrant pair table must have 2 columns");
 
-    cudf::table_view  pip_pair_view= pip_pair_tbl->view();
-    this->num_pp_pairs=pip_pair_view.num_rows();
-    std::cout<<"run_test: # polygon/point pair="<<num_pp_pairs<<std::endl;
-    CUDF_EXPECTS(pip_pair_view.num_columns()==2,"a polygon-quadrant pair table must have 2 columns");
+        const uint32_t * d_pp_poly_idx=pip_pair_tbl->view().column(0).data<uint32_t>();
+        const uint32_t * d_pp_pnt_idx=pip_pair_tbl->view().column(1).data<uint32_t>();
 
-    const uint32_t * d_pp_poly_idx=pip_pair_tbl->view().column(0).data<uint32_t>();
-    const uint32_t * d_pp_pnt_idx=pip_pair_tbl->view().column(1).data<uint32_t>();
+        this->h_pp_pnt_idx=new uint32_t[this->num_pp_pairs];
+        this->h_pp_poly_idx=new uint32_t[this->num_pp_pairs];
+        assert(this->h_pp_pnt_idx!=nullptr && this->h_pp_poly_idx!=nullptr);
 
-    this->h_pp_pnt_idx=new uint32_t[num_pp_pairs];
-    this->h_pp_poly_idx=new uint32_t[num_pp_pairs];
-    assert(h_pp_pnt_idx!=nullptr && h_pp_poly_idx!=nullptr);
-    
-    HANDLE_CUDA_ERROR( cudaMemcpy(h_pp_poly_idx, d_pp_poly_idx,num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost ) );   
-    HANDLE_CUDA_ERROR( cudaMemcpy(h_pp_pnt_idx, d_pp_pnt_idx,num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost ) );       
-}
+        HANDLE_CUDA_ERROR( cudaMemcpy(h_pp_poly_idx, d_pp_poly_idx,num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost ) );
+        HANDLE_CUDA_ERROR( cudaMemcpy(h_pp_pnt_idx, d_pp_pnt_idx,num_pp_pairs * sizeof(uint32_t), cudaMemcpyDeviceToHost ) );
+    }
 
-void run_verify()
-{
+    void run_verify()
+    {
 
 if(0)
 {   
-    std::cout<<"polygon index"<<std::endl;
-    thrust::copy(h_pp_poly_idx,h_pp_poly_idx+num_pp_pairs,std::ostream_iterator<const uint32_t>(std::cout, " "));std::cout<<std::endl;
+        std::cout<<"polygon index"<<std::endl;
+        thrust::copy(h_pp_poly_idx,h_pp_poly_idx+num_pp_pairs,std::ostream_iterator<const uint32_t>(std::cout, " "));std::cout<<std::endl;
 
-    std::cout<<"point index"<<std::endl;
-    thrust::copy(h_pp_pnt_idx,h_pp_pnt_idx+num_pp_pairs,std::ostream_iterator<const uint32_t>(std::cout, " "));std::cout<<std::endl;
+        std::cout<<"point index"<<std::endl;
+        thrust::copy(h_pp_pnt_idx,h_pp_pnt_idx+num_pp_pairs,std::ostream_iterator<const uint32_t>(std::cout, " "));std::cout<<std::endl;
 }
 
-    thrust::sort_by_key(thrust::host,this->h_pp_pnt_idx,h_pp_pnt_idx+this->num_pp_pairs,this->h_pp_poly_idx);
+        thrust::sort_by_key(thrust::host,this->h_pp_pnt_idx,h_pp_pnt_idx+this->num_pp_pairs,this->h_pp_poly_idx);
 
-    uint32_t * c_p_pnt_idx=new uint32_t[this->num_pp_pairs];
-    uint32_t * c_p_pnt_len=new uint32_t[this->num_pp_pairs];
-    assert(c_p_pnt_idx!=nullptr && c_p_pnt_len!=nullptr);
+        uint32_t * c_p_pnt_idx=new uint32_t[this->num_pp_pairs];
+        uint32_t * c_p_pnt_len=new uint32_t[this->num_pp_pairs];
+        assert(c_p_pnt_idx!=nullptr && c_p_pnt_len!=nullptr);
 
-    uint32_t num_search_pnts=thrust::reduce_by_key(thrust::host,this->h_pp_pnt_idx,
-        this->h_pp_pnt_idx+this->num_pp_pairs, thrust::constant_iterator<int>(1),
-        c_p_pnt_idx,c_p_pnt_len).first-c_p_pnt_idx;
-    std::cout<<"num_search_pnts="<<num_search_pnts<<std::endl;
+        uint32_t num_search_pnts=thrust::reduce_by_key(thrust::host,this->h_pp_pnt_idx,
+            this->h_pp_pnt_idx+this->num_pp_pairs, thrust::constant_iterator<uint32_t>(1),
+            c_p_pnt_idx,c_p_pnt_len).first-c_p_pnt_idx;
+        std::cout<<"num_search_pnts="<<num_search_pnts<<std::endl;
 
-    std::vector<uint32_t> c_pnt_idx_vec(c_p_pnt_idx,c_p_pnt_idx+num_search_pnts); 
-    std::vector<uint32_t> c_pnt_len_vec(c_p_pnt_len,c_p_pnt_len+num_search_pnts);
+        std::vector<uint32_t> c_pnt_idx_vec(c_p_pnt_idx,c_p_pnt_idx+num_search_pnts); 
+        std::vector<uint32_t> c_pnt_len_vec(c_p_pnt_len,c_p_pnt_len+num_search_pnts);
 
-    delete [] c_p_pnt_idx;
-    delete [] c_p_pnt_len;
+        delete [] c_p_pnt_idx;
+        delete [] c_p_pnt_len;
 
-    std::vector<uint32_t> h_pnt_idx_vec;
-    std::vector<uint32_t> h_pnt_len_vec;
-    std::vector<uint32_t> h_poly_idx_vec;
+        std::vector<uint32_t> h_pnt_idx_vec;
+        std::vector<uint32_t> h_pnt_len_vec;
+        std::vector<uint32_t> h_poly_idx_vec;
 
-    for(uint32_t k=0;k<num_pnts;k++)
-    {
-        OGRPoint pnt(h_pnt_x[k],h_pnt_y[k]);
-        std::vector<uint32_t> temp_vec;
-        for(uint32_t j=0;j<h_polygon_vec.size();j++)
+        for(uint32_t k=0;k<num_pnts;k++)
         {
-            if(h_polygon_vec[j]->Contains(&pnt))
-                temp_vec.push_back(j);
+            OGRPoint pnt(h_pnt_x[k],h_pnt_y[k]);
+            std::vector<uint32_t> temp_vec;
+            for(uint32_t j=0;j<this->h_polygon_vec.size();j++)
+            {
+                if(this->h_polygon_vec[j]->Contains(&pnt))
+                    temp_vec.push_back(j);
+            }
+            if(temp_vec.size()>0)
+            {
+                h_pnt_len_vec.push_back(temp_vec.size());
+                h_pnt_idx_vec.push_back(k);
+                h_poly_idx_vec.insert(h_poly_idx_vec.end(),temp_vec.begin(),temp_vec.end());
+            }
         }
-        if(temp_vec.size()>0)
-        {
-            h_pnt_len_vec.push_back(temp_vec.size());
-            h_pnt_idx_vec.push_back(k);
-            h_poly_idx_vec.insert(h_poly_idx_vec.end(),temp_vec.begin(),temp_vec.end());
-        }
-     }
-     CUDF_EXPECTS(c_pnt_idx_vec==h_pnt_idx_vec,"resulting point indices must be the same");
-     CUDF_EXPECTS(c_pnt_len_vec==h_pnt_len_vec,"resulting numbers of polygons must be the same");
+        CUDF_EXPECTS(c_pnt_idx_vec==h_pnt_idx_vec,"resulting point indices must be the same");
+        CUDF_EXPECTS(c_pnt_len_vec==h_pnt_len_vec,"resulting numbers of polygons must be the same");
 
-     uint32_t c_p=0,h_p=0;
-     for(uint32_t k=0;k<h_pnt_idx_vec.size();k++)
-     {
-     	EXPECT_EQ(c_pnt_idx_vec[k],h_pnt_idx_vec[k]);
-     	EXPECT_EQ(c_pnt_len_vec[k],h_pnt_len_vec[k]);
-     	std::vector<uint32_t> h_vec(h_poly_idx_vec.begin()+h_p,h_poly_idx_vec.begin()+h_p+h_pnt_len_vec[k]);
-     	std::vector<uint32_t> c_vec(h_pp_poly_idx+c_p,h_pp_poly_idx+c_p+c_pnt_len_vec[k]);
-     	CUDF_EXPECTS(h_vec==c_vec,"each polygon idx vec must be the same"); 
-     	h_p+=h_pnt_len_vec[k];
-     	c_p+=c_pnt_len_vec[k];
-     }
-     std::cout<<"verified"<<std::endl;
-}
+        uint32_t c_p=0,h_p=0;
+        for(uint32_t k=0;k<h_pnt_idx_vec.size();k++)
+        {
+            EXPECT_EQ(c_pnt_idx_vec[k],h_pnt_idx_vec[k]);
+            EXPECT_EQ(c_pnt_len_vec[k],h_pnt_len_vec[k]);
+            std::vector<uint32_t> h_vec(h_poly_idx_vec.begin()+h_p,h_poly_idx_vec.begin()+h_p+h_pnt_len_vec[k]);
+            std::vector<uint32_t> c_vec(h_pp_poly_idx+c_p,h_pp_poly_idx+c_p+c_pnt_len_vec[k]);
+            CUDF_EXPECTS(h_vec==c_vec,"each polygon idx vec must be the same"); 
+            h_p+=h_pnt_len_vec[k];
+            c_p+=c_pnt_len_vec[k];
+        }
+        std::cout<<"pip_refine_test_large: verified"<<std::endl;
+    }
+
     void tear_down()
-    {        
+    {
         delete[] h_pnt_x; h_pnt_x=nullptr;
         delete[] h_pnt_y; h_pnt_y=nullptr;
-        
+
         delete[] h_pp_pnt_idx; h_pp_pnt_idx=nullptr;
         delete[] h_pp_poly_idx; h_pp_poly_idx=nullptr;
     }
+
 };
 
 TEST_F(PIPRefineTestLarge, test)
 {
     const uint32_t num_levels=3;
-    const uint32_t min_size=200;
+    const uint32_t min_size=400;
     double scale=1.0;
     double x1=0,x2=8,y1=0,y2=8;
 
@@ -305,6 +309,7 @@ TEST_F(PIPRefineTestLarge, test)
     
     std::cout<<"verifying CPU and GPU results..........."<<std::endl;
     this->run_verify();
+    std::cout<<"Verified"<< std::endl;
     
     this->tear_down();
 }

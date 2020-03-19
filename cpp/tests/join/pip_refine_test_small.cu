@@ -42,14 +42,11 @@
 struct PIPRefineTestSmall : public GdfTest 
 {
     uint32_t num_pnt=0;
-    uint32_t * d_pnt_id=nullptr;
-    double *d_pnt_x=nullptr,*d_pnt_y=nullptr;
-    std::unique_ptr<cudf::column> pnt_id,pnt_x,pnt_y;
+    
+    std::unique_ptr<cudf::column> pnt_x,pnt_y;
 
     uint32_t num_poly=0,num_ring=0,num_vertex=0;
-    uint32_t *d_poly_id=nullptr,*d_poly_fpos=nullptr,*d_poly_rpos=nullptr;
-    double *d_poly_x=nullptr,*d_poly_y=nullptr;
-    
+
     std::unique_ptr<cudf::column> poly_fpos,poly_rpos,poly_x ,poly_y;
 
     cudaStream_t stream=0;
@@ -61,36 +58,36 @@ struct PIPRefineTestSmall : public GdfTest
         uint32_t h_ply_rpos[]={4,10,14,19};
         double h_ply_x[] = {2.488450,1.333584,3.460720,2.488450,5.039823,5.561707,7.103516,7.190674,5.998939,5.039823,5.998939,5.573720,6.703534,5.998939,2.088115,1.034892,2.415080,3.208660,2.088115};
         double h_ply_y[] = {5.856625,5.008840,4.586599,5.856625,4.229242,1.825073,1.503906,4.025879,5.653384,4.229242,1.235638,0.197808,0.086693,1.235638,4.541529,3.530299,2.896937,3.745936,4.541529};
-        num_poly=sizeof(h_ply_fpos)/sizeof(uint32_t);
-        num_ring=sizeof(h_ply_rpos)/sizeof(uint32_t);
-        num_vertex=sizeof(h_ply_x)/sizeof(double);
-        assert(num_vertex==sizeof(h_ply_y)/sizeof(double));
-        assert(num_vertex=h_ply_rpos[num_ring-1]); 	
+        this->num_poly=sizeof(h_ply_fpos)/sizeof(uint32_t);
+        this->num_ring=sizeof(h_ply_rpos)/sizeof(uint32_t);
+        this->num_vertex=sizeof(h_ply_x)/sizeof(double);
+        assert(this->num_vertex==sizeof(h_ply_y)/sizeof(double));
+        assert(this->num_vertex=h_ply_rpos[num_ring-1]); 	
         std::cout<<"setup_polygons:num_poly="<<this->num_poly<<std::endl;
         std::cout<<"setup_polygons:num_ring="<<this->num_ring<<std::endl;
         std::cout<<"setup_polygons:num_vertex="<<this->num_vertex<<std::endl;
 
-        poly_fpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32},
+        this->poly_fpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32},
             num_poly, cudf::mask_state::UNALLOCATED, stream, mr );
-        d_poly_fpos=cudf::mutable_column_device_view::create(poly_fpos->mutable_view(), stream)->data<uint32_t>();
+        uint32_t *d_poly_fpos=cudf::mutable_column_device_view::create(poly_fpos->mutable_view(), stream)->data<uint32_t>();
         assert(d_poly_fpos!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_fpos, h_ply_fpos, num_poly * sizeof(uint32_t), cudaMemcpyHostToDevice ) );
 
-        poly_rpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32},
+        this->poly_rpos = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32},
             num_ring, cudf::mask_state::UNALLOCATED, stream, mr );
-        d_poly_rpos=cudf::mutable_column_device_view::create(poly_rpos->mutable_view(), stream)->data<uint32_t>();
+        uint32_t *d_poly_rpos=cudf::mutable_column_device_view::create(poly_rpos->mutable_view(), stream)->data<uint32_t>();
         assert(d_poly_rpos!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_rpos, h_ply_rpos, num_ring * sizeof(uint32_t), cudaMemcpyHostToDevice ) );
 
-        poly_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
+        this->poly_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
             num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
-        d_poly_x=cudf::mutable_column_device_view::create(poly_x->mutable_view(), stream)->data<double>();
+        double *d_poly_x=cudf::mutable_column_device_view::create(poly_x->mutable_view(), stream)->data<double>();
         assert(d_poly_x!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_x, h_ply_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );
 
-        poly_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64},
+        this->poly_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64},
             num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
-        d_poly_y=cudf::mutable_column_device_view::create(poly_y->mutable_view(), stream)->data<double>();
+        double *d_poly_y=cudf::mutable_column_device_view::create(poly_y->mutable_view(), stream)->data<double>();
         assert(d_poly_y!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_poly_y, h_ply_y, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) );
     }
@@ -104,21 +101,15 @@ struct PIPRefineTestSmall : public GdfTest
         assert(sizeof(h_pnt_y)/sizeof(double)==num_pnt);
         std::cout<<"setup_points:num_pnt="<<this->num_pnt<<std::endl;
 
-        pnt_id = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32},
-            num_pnt, cudf::mask_state::UNALLOCATED, stream, mr );
-        d_pnt_id=cudf::mutable_column_device_view::create(pnt_id->mutable_view(), stream)->data<uint32_t>();
-        assert(d_pnt_id!=nullptr);
-        thrust::sequence(thrust::device,d_pnt_id,d_pnt_id+num_pnt);
-
-        pnt_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64},
+        this->pnt_x = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64},
             num_pnt, cudf::mask_state::UNALLOCATED, stream, mr );      
-        d_pnt_x=cudf::mutable_column_device_view::create(pnt_x->mutable_view(), stream)->data<double>();
+        double *d_pnt_x=cudf::mutable_column_device_view::create(pnt_x->mutable_view(), stream)->data<double>();
         assert(d_pnt_x!=nullptr);
         HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_x, h_pnt_x, num_pnt * sizeof(double), cudaMemcpyHostToDevice ) );
 
-        pnt_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
+        this->pnt_y = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
             num_pnt, cudf::mask_state::UNALLOCATED, stream, mr );
-        d_pnt_y=cudf::mutable_column_device_view::create(pnt_y->mutable_view(), stream)->data<double>();
+        double *d_pnt_y=cudf::mutable_column_device_view::create(pnt_y->mutable_view(), stream)->data<double>();
         assert(d_pnt_y!=nullptr);    
         HANDLE_CUDA_ERROR( cudaMemcpy( d_pnt_y, h_pnt_y, num_pnt * sizeof(double), cudaMemcpyHostToDevice ) );
     }
@@ -139,7 +130,7 @@ struct PIPRefineTestSmall : public GdfTest
             cuspatial::polygon_bbox(poly_fpos->view(),poly_rpos->view(),poly_x->view(),poly_y->view()); 
         uint32_t local_num_poly=bbox_tbl->view().num_rows();
         std::cout<<"run_test: # polygon bbox="<<local_num_poly<<std::endl;
-     
+
         const cudf::table_view quad_view=quadtree->view();
         const cudf::table_view bbox_view=bbox_tbl->view();
 
@@ -190,20 +181,21 @@ if(0)
              EXPECT_EQ(h_pp_poly_idx[i],c_pp_poly_idx[i]);
              EXPECT_EQ(h_pp_pnt_idx[i], c_pp_pnt_idx[i]);
         }
-
         delete[] h_pp_poly_idx;
         delete[] h_pp_pnt_idx;
     }
 };
 
-TEST_F(PIPRefineTestSmall, test_point_small)
+TEST_F(PIPRefineTestSmall, test_small)
 {
      const uint32_t num_levels=3;
      const uint32_t min_size=12;
      double scale=1.0;
      double x1=0,x2=8,y1=0,y2=8;
-     
+
      this->setup_polygons();
      this->setup_points(x1,y1,x2,y2,scale,num_levels,min_size);
      this->run_test(x1,y1,x2,y2,scale,num_levels,min_size);
+     std::cout<<"Verified"<< std::endl;
 }
+

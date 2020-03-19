@@ -168,7 +168,7 @@ if(0)
         std::unique_ptr<cudf::experimental::table> destination_table = 
             std::make_unique<cudf::experimental::table>(std::move(bbox_cols));
 
-        std::cout<<"completing bounding_box_processor.................."<<std::endl;
+        //std::cout<<"completing bounding_box_processor.................."<<std::endl;
         return destination_table;
 }
 

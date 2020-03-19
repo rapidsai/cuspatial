@@ -463,11 +463,19 @@ std::unique_ptr<cudf::experimental::table> quad_bbox_join(
     double x1,double y1,double x2,double y2, double scale, uint32_t num_level, uint32_t min_size)
 {   
  
-    CUDF_EXPECTS(quadtree.num_columns()==5,"a quadtree table must have 5 columns");  
-    CUDF_EXPECTS(poly_bbox.num_columns()==4,"a polygon bboxe table must have 4 columns");  
+    CUDF_EXPECTS(quadtree.num_columns()==5,"quadtree table must have 5 columns");  
+    
+    CUDF_EXPECTS(poly_bbox.num_columns()==4,"polygon bbox table must have 4 columns");  
+    
+    CUDF_EXPECTS(quadtree.num_rows()>0 && poly_bbox.num_rows()>0,
+        "neither quadtree table nor polygon bbox table can be empty");
+    
     CUDF_EXPECTS(x1<x2 && y1<y2, "invalid bounding box (x1,y1,x2,y2)");
+    
     CUDF_EXPECTS(scale>0, "scale must be positive");
+    
     CUDF_EXPECTS(num_level<16, "maximum of levels might be in [0,16)");
+    
     CUDF_EXPECTS(min_size>0, "minimum number of points for a non-leaf node must be larger than zero"); 
    
     cudaStream_t stream=0;

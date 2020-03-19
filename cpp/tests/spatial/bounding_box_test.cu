@@ -36,7 +36,83 @@ struct BoundingBoxTest : public GdfTest
  
 };
 
-TEST_F(BoundingBoxTest, test1)
+TEST_F(BoundingBoxTest, test_empty)
+{
+    cudf::column fpos_col,rpos_col;
+    cudf::column x_col,y_col;
+
+    EXPECT_THROW (cuspatial::polygon_bbox(fpos_col,rpos_col,x_col,y_col),cudf::logic_error);    
+}
+
+TEST_F(BoundingBoxTest, test_one)
+{
+    uint32_t poly_fpos[]={1};
+    uint32_t poly_rpos[]={4};
+    double poly_x[] = {2.488450,1.333584,3.460720,2.488450};
+    double poly_y[] = {5.856625,5.008840,4.586599,5.856625};
+
+    uint32_t num_poly=sizeof(poly_fpos)/sizeof(uint32_t);
+    uint32_t num_ring=sizeof(poly_rpos)/sizeof(uint32_t);
+    uint32_t num_vertex=sizeof(poly_x)/sizeof(double);   
+    std::cout<<"num_poly="<<num_poly<<",num_ring="<<num_ring<<",num_vertex="<<num_vertex<<std::endl;
+
+    cudaStream_t stream=0;
+    rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
+    
+    std::unique_ptr<cudf::column> fpos_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
+    	num_poly, cudf::mask_state::UNALLOCATED, stream, mr );      
+    uint32_t *d_p_fpos=cudf::mutable_column_device_view::create(fpos_col->mutable_view(), stream)->data<uint32_t>();
+    assert(d_p_fpos!=nullptr);
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_fpos, poly_fpos, num_poly * sizeof(uint32_t), cudaMemcpyHostToDevice ) ); 
+
+    std::unique_ptr<cudf::column> rpos_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::INT32}, 
+    	num_ring, cudf::mask_state::UNALLOCATED, stream, mr );      
+    uint32_t *d_p_rpos=cudf::mutable_column_device_view::create(rpos_col->mutable_view(), stream)->data<uint32_t>();
+    assert(d_p_rpos!=nullptr);
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_rpos, poly_rpos, num_ring * sizeof(uint32_t), cudaMemcpyHostToDevice ) ); 
+
+    std::unique_ptr<cudf::column> x_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
+    	num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
+    double *d_p_x=cudf::mutable_column_device_view::create(x_col->mutable_view(), stream)->data<double>();
+    assert(d_p_x!=nullptr);
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_x, poly_x, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) ); 
+
+    std::unique_ptr<cudf::column> y_col = cudf::make_numeric_column( cudf::data_type{cudf::type_id::FLOAT64}, 
+        num_vertex, cudf::mask_state::UNALLOCATED, stream, mr );      
+    double *d_p_y=cudf::mutable_column_device_view::create(y_col->mutable_view(), stream)->data<double>();
+    assert(d_p_y!=nullptr);
+    HANDLE_CUDA_ERROR( cudaMemcpy( d_p_y, poly_y, num_vertex * sizeof(double), cudaMemcpyHostToDevice ) ); 
+
+    //GPU computation
+    std::unique_ptr<cudf::experimental::table> bbox_tbl=cuspatial::polygon_bbox(
+        *fpos_col,*rpos_col,*x_col,*y_col);
+
+    CUDF_EXPECTS(bbox_tbl->view().num_columns()==4, "bbox table must have 4 columns");
+    CUDF_EXPECTS((uint32_t)(bbox_tbl->num_rows())==num_poly,"resutling #of bounding boxes must be the same as # of polygons");    
+  
+    const double *d_rx1=bbox_tbl->get_column(0).view().data<double>();
+    const double *d_ry1=bbox_tbl->get_column(1).view().data<double>();
+    const double *d_rx2=bbox_tbl->get_column(2).view().data<double>();
+    const double *d_ry2=bbox_tbl->get_column(3).view().data<double>();
+  
+    double *h_rx1=new double[num_poly];
+    double *h_ry1=new double[num_poly];
+    double *h_rx2=new double[num_poly];
+    double *h_ry2=new double[num_poly];
+    assert(h_rx1!=nullptr && h_ry1!=nullptr && h_rx2!=nullptr && h_ry2!=nullptr);
+
+    EXPECT_EQ(cudaMemcpy(h_rx1,d_rx1,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
+    EXPECT_EQ(cudaMemcpy(h_ry1,d_ry1,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
+    EXPECT_EQ(cudaMemcpy(h_rx2,d_rx2,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
+    EXPECT_EQ(cudaMemcpy(h_ry2,d_ry2,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
+
+    EXPECT_NEAR(h_rx1[0],1.333584, 1e-9);
+    EXPECT_NEAR(h_ry1[0],4.586599, 1e-9);
+    EXPECT_NEAR(h_rx2[0],3.460720, 1e-9);
+    EXPECT_NEAR(h_ry2[0],5.856625, 1e-9);
+}
+
+TEST_F(BoundingBoxTest, test_small)
 {
     uint32_t poly_fpos[]={1,2,3,4};
     uint32_t poly_rpos[]={4,10,14,19};
@@ -82,7 +158,7 @@ TEST_F(BoundingBoxTest, test1)
     std::unique_ptr<cudf::experimental::table> bbox_tbl=cuspatial::polygon_bbox(
         *fpos_col,*rpos_col,*x_col,*y_col);
 
-    std::cout<<"num cols="<<bbox_tbl->view().num_columns()<<std::endl; 
+    CUDF_EXPECTS(bbox_tbl->view().num_columns()==4, "bbox table must have 4 columns");
     CUDF_EXPECTS((uint32_t)(bbox_tbl->num_rows())==num_poly,"resutling #of bounding boxes must be the same as # of polygons");
 
     //CPU computation
@@ -119,36 +195,6 @@ TEST_F(BoundingBoxTest, test1)
     const double *d_rx2=bbox_tbl->get_column(2).view().data<double>();
     const double *d_ry2=bbox_tbl->get_column(3).view().data<double>();
 
-    double *h_rx1=new double[num_poly];
-    double *h_ry1=new double[num_poly];
-    double *h_rx2=new double[num_poly];
-    double *h_ry2=new double[num_poly];
-    assert(h_rx1!=nullptr && h_ry1!=nullptr && h_rx2!=nullptr && h_ry2!=nullptr);
-
-    EXPECT_EQ(cudaMemcpy(h_rx1,d_rx1,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
-    EXPECT_EQ(cudaMemcpy(h_ry1,d_ry1,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
-    EXPECT_EQ(cudaMemcpy(h_rx2,d_rx2,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
-    EXPECT_EQ(cudaMemcpy(h_ry2,d_ry2,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
-    
-    for(uint32_t i=0;i<num_poly;i++)
-    {
-    	EXPECT_NEAR(c_rx1[i], h_rx1[i], 1e-9);
-    	EXPECT_NEAR(c_ry1[i], h_ry1[i], 1e-9);
-    	EXPECT_NEAR(c_rx2[i], h_rx2[i], 1e-9);
-    	EXPECT_NEAR(c_ry2[i], h_ry2[i], 1e-9);
-    }
-    
-    delete[] c_rx1; 
-    delete[] c_ry1;
-    delete[] c_rx2;
-    delete[] c_ry2;
-
-    delete[] h_rx1; 
-    delete[] h_ry1;
-    delete[] h_rx2;
-    delete[] h_ry2;
-    
-    
 if(0)
 {
 
@@ -168,6 +214,36 @@ if(0)
     thrust::device_ptr<const double> y2_ptr=thrust::device_pointer_cast(d_ry2);
     thrust::copy(y2_ptr,y2_ptr+num_poly,std::ostream_iterator<double>(std::cout, " "));std::cout<<std::endl;
 }
+
+    double *h_rx1=new double[num_poly];
+    double *h_ry1=new double[num_poly];
+    double *h_rx2=new double[num_poly];
+    double *h_ry2=new double[num_poly];
+    assert(h_rx1!=nullptr && h_ry1!=nullptr && h_rx2!=nullptr && h_ry2!=nullptr);
+
+    EXPECT_EQ(cudaMemcpy(h_rx1,d_rx1,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
+    EXPECT_EQ(cudaMemcpy(h_ry1,d_ry1,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
+    EXPECT_EQ(cudaMemcpy(h_rx2,d_rx2,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
+    EXPECT_EQ(cudaMemcpy(h_ry2,d_ry2,num_poly*sizeof(double),cudaMemcpyDeviceToHost),cudaSuccess);
+
+    for(uint32_t i=0;i<num_poly;i++)
+    {
+        EXPECT_NEAR(c_rx1[i], h_rx1[i], 1e-9);
+        EXPECT_NEAR(c_ry1[i], h_ry1[i], 1e-9);
+        EXPECT_NEAR(c_rx2[i], h_rx2[i], 1e-9);
+        EXPECT_NEAR(c_ry2[i], h_ry2[i], 1e-9);
+    }
+    std::cout<<"bounding_box_test: verified"<<std::endl;
+
+    delete[] c_rx1; 
+    delete[] c_ry1;
+    delete[] c_rx2;
+    delete[] c_ry2;
+
+    delete[] h_rx1; 
+    delete[] h_ry1;
+    delete[] h_rx2;
+    delete[] h_ry2;    
 
 }
 

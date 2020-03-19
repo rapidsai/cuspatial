@@ -70,40 +70,40 @@ std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,
     CUDF_EXPECTS(db_pnt_runlen!=nullptr,"error allocating memory for intermediate array of numbers of points in quadrants");
     uint32_t *d_pnt_runlen=static_cast<uint32_t *>(db_pnt_runlen->data());
 
-    uint32_t num_run = thrust::reduce_by_key(exec_policy,d_pnt_pntkey,d_pnt_pntkey+point_len,
+    uint32_t num_top_quads = thrust::reduce_by_key(exec_policy,d_pnt_pntkey,d_pnt_pntkey+point_len,
             thrust::constant_iterator<int>(1),d_pnt_runkey,d_pnt_runlen).first -d_pnt_runkey;
-    std::cout<<"num_run="<<num_run<<std::endl;
+    std::cout<<"num_top_quads="<<num_top_quads<<std::endl;
     
     //allocate sufficient GPU memory for "full quadrants" (Secection 4.1 of ref.)
-    //assuming num_level*num_run is far less than num_pnt, allocating d_pnt_parentkey/d_pnt_pntlen/d_pnt_numchild is accetable
+    //assuming num_level*num_top_quads is far less than num_pnt, allocating d_pnt_parentkey/d_pnt_pntlen/d_pnt_numchild is accetable
     //as d_pnt_pntkey/d_pnt_parentkey/d_pnt_runlen are freed before the allocations and peak memory usage will not increase
         
-    rmm::device_buffer *db_pnt_parentkey=new rmm::device_buffer(num_level*num_run* sizeof(uint32_t),stream,mr);
+    rmm::device_buffer *db_pnt_parentkey=new rmm::device_buffer(num_level*num_top_quads* sizeof(uint32_t),stream,mr);
     CUDF_EXPECTS(db_pnt_parentkey!=nullptr," error allocating memory for full array of quadrant keys");
     uint32_t *d_pnt_parentkey=static_cast<uint32_t *>(db_pnt_parentkey->data());
-    HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_pnt_parentkey, (void *)d_pnt_runkey, num_run * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
+    HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_pnt_parentkey, (void *)d_pnt_runkey, num_top_quads * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
 
     delete db_pnt_runkey; db_pnt_runkey=nullptr;
     
-    rmm::device_buffer *db_pnt_pntlen=new  rmm::device_buffer(num_level*num_run* sizeof(uint32_t),stream,mr);
+    rmm::device_buffer *db_pnt_pntlen=new  rmm::device_buffer(num_level*num_top_quads* sizeof(uint32_t),stream,mr);
     CUDF_EXPECTS(db_pnt_pntlen!=nullptr," error allocating memory for full array of numbers of points in quadrants");
     uint32_t *d_pnt_pntlen=static_cast<uint32_t *>(db_pnt_pntlen->data());
-    HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_pnt_pntlen, (void *)d_pnt_runlen, num_run * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
+    HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_pnt_pntlen, (void *)d_pnt_runlen, num_top_quads * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
 
     delete db_pnt_runlen; db_pnt_runlen=nullptr;
     
-    rmm::device_buffer *db_pnt_numchild=new  rmm::device_buffer(num_level*num_run* sizeof(uint32_t),stream,mr);
+    rmm::device_buffer *db_pnt_numchild=new  rmm::device_buffer(num_level*num_top_quads* sizeof(uint32_t),stream,mr);
     CUDF_EXPECTS(db_pnt_numchild!=nullptr," error allocating memory for full array of numbers of child nodes in quadrants");
     uint32_t *d_pnt_numchild=static_cast<uint32_t *>(db_pnt_numchild->data());
-    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_numchild,0,num_run*sizeof(uint32_t)) );
+    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_numchild,0,num_top_quads*sizeof(uint32_t)) );
        
     //generating keys of paraent quadrants and numbers of child quadrants of "full quadrants" 
     //based on the second of paragraph of Section 4.2 of ref.
     //keeping track of the number of quadrants, their begining/ending positions for each level 
     
     int lev_num[num_level],lev_bpos[num_level],lev_epos[num_level];
-    lev_num[num_level-1]=num_run;
-    uint32_t begin_pos=0, end_pos=num_run;
+    lev_num[num_level-1]=num_top_quads;
+    uint32_t begin_pos=0, end_pos=num_top_quads;
     for(int k=num_level-1;k>=0;k--)
     {
         uint32_t nk=thrust::reduce_by_key(exec_policy,
@@ -122,15 +122,15 @@ std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,
 
         std::cout<<"lev="<<k<<" begin_pos="<<begin_pos<<" end_pos="<<end_pos<<" nk="<<nk<<" nn="<<nn<<std::endl;
         begin_pos=end_pos; end_pos+=nk; 
-}
+    }
 
-/*
- *allocate three temporal arrays for parent key,number of children,
- *and the number of points in each quadrant, respectively
- *d_pnt_fullkey will be copied to the data array of the key column after revmoing invlaid quadtree ndoes
- *d_pnt_qtclen and d_pnt_qtnlen will be combined to generate the final length array
- *see fig.1 of ref. 
-*/
+    /*
+    * allocate three temporal arrays for parent key,number of children,
+    * and the number of points in each quadrant, respectively
+    * d_pnt_fullkey will be copied to the data array of the key column after revmoing invlaid quadtree ndoes
+    * d_pnt_qtclen and d_pnt_qtnlen will be combined to generate the final length array
+    * see fig.1 of ref. 
+    */
     rmm::device_buffer *db_pnt_fullkey=new  rmm::device_buffer(end_pos* sizeof(uint32_t),stream,mr);
     CUDF_EXPECTS(db_pnt_fullkey!=nullptr," error allocating memory for compacted array of quadrant keys");
     uint32_t *d_pnt_fullkey=static_cast<uint32_t *>(db_pnt_fullkey->data());
@@ -168,10 +168,10 @@ std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,
     CUDF_EXPECTS(num_count_nodes==begin_pos,"number of quadtree nodes veryifcation failed");
     std::cout<<"num_count_nodes="<<num_count_nodes<<std::endl;
 
-/*
- *delete oversized nodes for memroy efficiency
- *num_count_nodes should be typically much smaller than num_level*num_run 
-*/
+    /*
+     *delete oversized nodes for memroy efficiency
+     *num_count_nodes should be typically much smaller than num_level*num_top_quads 
+    */
     delete db_pnt_parentkey; db_pnt_parentkey=nullptr;
     delete db_pnt_numchild; db_pnt_numchild=nullptr;
     delete db_pnt_pntlen; db_pnt_pntlen=nullptr;
@@ -181,206 +181,260 @@ std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,
         num_parent_nodes+=lev_num[k];
     std::cout<<"num_parent_nodes="<<num_parent_nodes<<std::endl;
 
-    //temporal device memory for vector expansion
-    rmm::device_buffer *db_pnt_tmppos=new rmm::device_buffer(num_parent_nodes* sizeof(uint32_t),stream,mr);
-    CUDF_EXPECTS(db_pnt_tmppos!=nullptr," error allocating memory for temporal array for vector expansion");
-    uint32_t *d_pnt_tmppos=static_cast<uint32_t *>(db_pnt_tmppos->data());
+    //five columns in the quadtree structure
+    std::unique_ptr<cudf::column> key_col,lev_col,sign_col,length_col,fpos_col;
+       
+    //if the top level nodes are already all leaf nodes, special care is needed
+    if(num_parent_nodes>0)
+    {
+        //temporal device memory for vector expansion
+        rmm::device_buffer *db_pnt_tmppos=new rmm::device_buffer(num_parent_nodes* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_tmppos!=nullptr," error allocating memory for temporal array for vector expansion");
+        uint32_t *d_pnt_tmppos=static_cast<uint32_t *>(db_pnt_tmppos->data());
 
-    //line 1 of algorithm in Fig. 5 in ref. 
-    thrust::exclusive_scan(exec_policy,d_pnt_qtclen,d_pnt_qtclen+num_parent_nodes,d_pnt_tmppos);
-    size_t num_child_nodes=thrust::reduce(exec_policy,d_pnt_qtclen,d_pnt_qtclen+num_parent_nodes);
-    std::cout<<"num_child_nodes="<<num_child_nodes<<std::endl;
+        //line 1 of algorithm in Fig. 5 in ref. 
+        thrust::exclusive_scan(exec_policy,d_pnt_qtclen,d_pnt_qtclen+num_parent_nodes,d_pnt_tmppos);
+        size_t num_child_nodes=thrust::reduce(exec_policy,d_pnt_qtclen,d_pnt_qtclen+num_parent_nodes);
+        std::cout<<"num_child_nodes="<<num_child_nodes<<std::endl;
 
-    rmm::device_buffer *db_pnt_parentpos=new rmm::device_buffer(num_child_nodes* sizeof(uint32_t),stream,mr);
-    CUDF_EXPECTS(db_pnt_parentpos!=nullptr," error allocating memory for array of parent node positions");
-    uint32_t *d_pnt_parentpos=static_cast<uint32_t *>(db_pnt_parentpos->data());
-    std::cout<<"after line 1"<<std::endl;
+        rmm::device_buffer *db_pnt_parentpos=new rmm::device_buffer(num_child_nodes* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_parentpos!=nullptr," error allocating memory for array of parent node positions");
+        uint32_t *d_pnt_parentpos=static_cast<uint32_t *>(db_pnt_parentpos->data());
 
-    //line 2 of algorithm in Fig. 5 in ref. 
-    thrust::scatter(exec_policy,thrust::make_counting_iterator(0),
-        thrust::make_counting_iterator(0)+num_parent_nodes,d_pnt_tmppos,d_pnt_parentpos);
+        //line 2 of algorithm in Fig. 5 in ref. 
+        thrust::scatter(exec_policy,thrust::make_counting_iterator(0),
+            thrust::make_counting_iterator(0)+num_parent_nodes,d_pnt_tmppos,d_pnt_parentpos);
 
-    delete db_pnt_tmppos;db_pnt_tmppos=nullptr;
-    std::cout<<"after line 2"<<std::endl;
+        delete db_pnt_tmppos;db_pnt_tmppos=nullptr;
 
-    //line 3 of algorithm in Fig. 5 in ref. 
-    thrust::inclusive_scan(exec_policy,d_pnt_parentpos,d_pnt_parentpos+num_child_nodes,d_pnt_parentpos,thrust::maximum<int>()); 
-    std::cout<<"after line 3"<<std::endl;
-/*
- *counting the number of nodes whose children have numbers of points no less than min_size;
- *note that we start at level 2 as level nodes (whose parents are the root node -level 0) need to be kept
-*/
-    auto iter_in=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_fullkey+lev_num[1],d_pnt_fulllev+lev_num[1],
-        d_pnt_qtclen+lev_num[1],d_pnt_qtnlen+lev_num[1],d_pnt_parentpos));
+        //line 3 of algorithm in Fig. 5 in ref. 
+        thrust::inclusive_scan(exec_policy,d_pnt_parentpos,d_pnt_parentpos+num_child_nodes,d_pnt_parentpos,thrust::maximum<int>()); 
 
-    int num_invalid_parent_nodes = thrust::count_if(exec_policy,iter_in,iter_in+(num_parent_nodes-lev_num[1]),
-        remove_discard(d_pnt_qtnlen,min_size));
+        /*
+         *counting the number of nodes whose children have numbers of points no less than min_size;
+         *note that we start at level 2 as level nodes (whose parents are the root node -level 0) need to be kept
+        */
+        auto iter_in=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_fullkey+lev_num[1],d_pnt_fulllev+lev_num[1],
+            d_pnt_qtclen+lev_num[1],d_pnt_qtnlen+lev_num[1],d_pnt_parentpos));
 
-    CUDF_EXPECTS(num_invalid_parent_nodes<=num_parent_nodes, 
-        "check on number of invalid parent nodes less than number of parent nodes failed");
+        int num_invalid_parent_nodes = thrust::count_if(exec_policy,iter_in,iter_in+(num_parent_nodes-lev_num[1]),
+            remove_discard(d_pnt_qtnlen,min_size));
 
-    num_parent_nodes-=num_invalid_parent_nodes;
+        CUDF_EXPECTS(num_invalid_parent_nodes<=num_parent_nodes, 
+            "check on number of invalid parent nodes no more than number of parent nodes failed");
 
-    std::cout<<"after:num_parent_nodes="<<num_parent_nodes<<std::endl;
+        num_parent_nodes-=num_invalid_parent_nodes;
 
-    //line 4 of algorithm in Fig. 5 in ref. 
-    rmm::device_buffer *db_pnt_templen=new rmm::device_buffer(end_pos* sizeof(uint32_t),stream,mr);
-    CUDF_EXPECTS(db_pnt_templen!=nullptr," error allocating memory for the copy array of numbers of points in quadrants");
-    uint32_t *d_pnt_templen=static_cast<uint32_t *>(db_pnt_templen->data()); 
-    HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_pnt_templen, (void *)d_pnt_qtnlen, end_pos * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
+        std::cout<<"after:num_parent_nodes="<<num_parent_nodes<<std::endl;
 
-    //line 5 of algorithm in Fig. 5 in ref. 
-    int num_valid_nodes = thrust::remove_if(exec_policy,iter_in,iter_in+num_child_nodes,remove_discard(d_pnt_templen,min_size))-iter_in;
-    std::cout<<"num_valid_nodes="<<num_valid_nodes<<std::endl;
+        //line 4 of algorithm in Fig. 5 in ref. 
+        rmm::device_buffer *db_pnt_templen=new rmm::device_buffer(end_pos* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_templen!=nullptr," error allocating memory for the copy array of numbers of points in quadrants");
+        uint32_t *d_pnt_templen=static_cast<uint32_t *>(db_pnt_templen->data()); 
+        HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_pnt_templen, (void *)d_pnt_qtnlen, end_pos * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
 
-    delete db_pnt_templen; db_pnt_templen=nullptr;
-    delete db_pnt_parentpos; db_pnt_parentpos=nullptr;
+       //line 5 of algorithm in Fig. 5 in ref. 
+        int num_valid_nodes = thrust::remove_if(exec_policy,iter_in,iter_in+num_child_nodes,remove_discard(d_pnt_templen,min_size))-iter_in;
+        std::cout<<"num_valid_nodes="<<num_valid_nodes<<std::endl;
 
-    //add back level 1 nodes
-    num_valid_nodes+=lev_num[1];
-    std::cout<<"num_invalid_parent_nodes="<<num_invalid_parent_nodes<<std::endl;
-    std::cout<<"num_valid_nodes="<<num_valid_nodes<<std::endl;    
+        delete db_pnt_templen; db_pnt_templen=nullptr;
+        delete db_pnt_parentpos; db_pnt_parentpos=nullptr;
 
-/*
- *preparing the key column for output 
- *Note: only the first num_valid_nodes elements should in the output array
-*/
-    std::unique_ptr<cudf::column> key_col = cudf::make_numeric_column(
-       cudf::data_type(cudf::type_id::INT32), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);      
-    uint32_t *d_pnt_qtkey=cudf::mutable_column_device_view::create(key_col->mutable_view(), stream)->data<uint32_t>();
-    CUDF_EXPECTS(d_pnt_qtkey!=nullptr," error allocating storage memory for key column");
+        //add back level 1 nodes
+        num_valid_nodes+=lev_num[1];
+        std::cout<<"num_invalid_parent_nodes="<<num_invalid_parent_nodes<<std::endl;
+        std::cout<<"num_valid_nodes="<<num_valid_nodes<<std::endl;    
+        
+        /*
+         *preparing the key column for output 
+         *Note: only the first num_valid_nodes elements should in the output array
+        */
+        key_col = cudf::make_numeric_column(
+           cudf::data_type(cudf::type_id::INT32), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);      
+        uint32_t *d_pnt_qtkey=cudf::mutable_column_device_view::create(key_col->mutable_view(), stream)->data<uint32_t>();
+        CUDF_EXPECTS(d_pnt_qtkey!=nullptr," error allocating storage memory for key column");
   
-    thrust::copy(exec_policy,d_pnt_fullkey,d_pnt_fullkey+num_valid_nodes,d_pnt_qtkey);
+        thrust::copy(exec_policy,d_pnt_fullkey,d_pnt_fullkey+num_valid_nodes,d_pnt_qtkey);
 
-    delete db_pnt_fullkey; db_pnt_fullkey=nullptr;
+        delete db_pnt_fullkey; db_pnt_fullkey=nullptr;
 
-    std::unique_ptr<cudf::column> lev_col = cudf::make_numeric_column(
-       cudf::data_type(cudf::type_id::INT8), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);      
-    uint8_t *d_pnt_qtlev=cudf::mutable_column_device_view::create(lev_col->mutable_view(), stream)->data<uint8_t>();
-    CUDF_EXPECTS(d_pnt_qtlev!=nullptr," error allocating storage memory for level column");
+        lev_col = cudf::make_numeric_column(
+           cudf::data_type(cudf::type_id::INT8), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);      
+        uint8_t *d_pnt_qtlev=cudf::mutable_column_device_view::create(lev_col->mutable_view(), stream)->data<uint8_t>();
+        CUDF_EXPECTS(d_pnt_qtlev!=nullptr," error allocating storage memory for level column");
 
-    thrust::copy(exec_policy,d_pnt_fulllev,d_pnt_fulllev+num_valid_nodes,d_pnt_qtlev);
+        thrust::copy(exec_policy,d_pnt_fulllev,d_pnt_fulllev+num_valid_nodes,d_pnt_qtlev);
 
-    delete db_pnt_fulllev; db_pnt_fulllev=nullptr;   
+        delete db_pnt_fulllev; db_pnt_fulllev=nullptr;   
 
-    //preparing the sign/indicator array for output
-    std::unique_ptr<cudf::column> sign_col = cudf::make_numeric_column(
+        //preparing the sign/indicator array for output
+        sign_col = cudf::make_numeric_column(
            cudf::data_type(cudf::type_id::BOOL8), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);
-    bool *d_pnt_qtsign=cudf::mutable_column_device_view::create(sign_col->mutable_view(), stream)->data<bool>();
-    CUDF_EXPECTS(d_pnt_qtsign!=nullptr," error allocating storage memory for sign column");
-    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_qtsign,0,num_valid_nodes*sizeof(bool)) );
+   
+        bool *d_pnt_qtsign=cudf::mutable_column_device_view::create(sign_col->mutable_view(), stream)->data<bool>();
+        CUDF_EXPECTS(d_pnt_qtsign!=nullptr," error allocating storage memory for sign column");
+        HANDLE_CUDA_ERROR( cudaMemset(d_pnt_qtsign,0,num_valid_nodes*sizeof(bool)) );
 
-    //line 6 of algorithm in Fig. 5 in ref. 
-    thrust::transform(exec_policy,d_pnt_qtnlen,d_pnt_qtnlen+num_parent_nodes,d_pnt_qtsign,thrust::placeholders::_1 > min_size);
+        //line 6 of algorithm in Fig. 5 in ref. 
+        thrust::transform(exec_policy,d_pnt_qtnlen,d_pnt_qtnlen+num_parent_nodes,d_pnt_qtsign,thrust::placeholders::_1 > min_size);
 
-    //line 7 of algorithm in Fig. 5 in ref. 
-    thrust::replace_if(exec_policy,d_pnt_qtnlen,d_pnt_qtnlen+num_parent_nodes,d_pnt_qtsign,thrust::placeholders::_1,0);
+        //line 7 of algorithm in Fig. 5 in ref. 
+        thrust::replace_if(exec_policy,d_pnt_qtnlen,d_pnt_qtnlen+num_parent_nodes,d_pnt_qtsign,thrust::placeholders::_1,0);
 
-    //allocating two temporal array:the first child position array and first point position array,respectively
-    //later they will be used to generate the final position array 
+        //allocating two temporal array:the first child position array and first point position array,respectively
+        //later they will be used to generate the final position array 
 
-    rmm::device_buffer *db_pnt_qtnpos=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
-    CUDF_EXPECTS(db_pnt_qtnpos!=nullptr,"  error allocating memory for array of first point positions");
-    uint32_t *d_pnt_qtnpos=static_cast<uint32_t *>(db_pnt_qtnpos->data()); 
+        rmm::device_buffer *db_pnt_qtnpos=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_qtnpos!=nullptr,"  error allocating memory for array of first point positions");
+        uint32_t *d_pnt_qtnpos=static_cast<uint32_t *>(db_pnt_qtnpos->data()); 
 
-    rmm::device_buffer *db_pnt_qtcpos=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
-    CUDF_EXPECTS(db_pnt_qtcpos!=nullptr,"  error allocating memory for array of first quadtree node positions");
-    uint32_t *d_pnt_qtcpos=static_cast<uint32_t *>(db_pnt_qtcpos->data()); 
+        rmm::device_buffer *db_pnt_qtcpos=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_qtcpos!=nullptr,"  error allocating memory for array of first quadtree node positions");
+        uint32_t *d_pnt_qtcpos=static_cast<uint32_t *>(db_pnt_qtcpos->data()); 
 
-/*
-*revision to line 8 of algorithm in Fig. 5 in ref. 
-*ajust nlen and npos based on last-level z-order code
-*/
+        /*
+         *revision to line 8 of algorithm in Fig. 5 in ref. 
+         *ajust nlen and npos based on last-level z-order code
+       */
 
-    rmm::device_buffer *db_pnt_tmp_key=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
-    CUDF_EXPECTS(db_pnt_tmp_key!=nullptr,"  error allocating memory for array of temporal keys in reordering first point positions");
-    uint32_t *d_pnt_tmp_key=static_cast<uint32_t *>(db_pnt_tmp_key->data()); 
-    HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_pnt_tmp_key, (void *)d_pnt_qtkey, 
+        rmm::device_buffer *db_pnt_tmp_key=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_tmp_key!=nullptr,"  error allocating memory for array of temporal keys in reordering first point positions");
+        uint32_t *d_pnt_tmp_key=static_cast<uint32_t *>(db_pnt_tmp_key->data()); 
+        HANDLE_CUDA_ERROR( cudaMemcpy( (void *)d_pnt_tmp_key, (void *)d_pnt_qtkey, 
         num_valid_nodes * sizeof(uint32_t), cudaMemcpyDeviceToDevice ) );
 
-    rmm::device_buffer *db_pnt_tmp_lpos=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
-    CUDF_EXPECTS(db_pnt_tmp_lpos!=nullptr,"  error allocating memory for array of temporal leaf node positions in reordering first point positions");
-    uint32_t *d_pnt_tmp_lpos=static_cast<uint32_t *>(db_pnt_tmp_lpos->data()); 
+        rmm::device_buffer *db_pnt_tmp_lpos=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_tmp_lpos!=nullptr,"  error allocating memory for array of temporal leaf node positions in reordering first point positions");
+        uint32_t *d_pnt_tmp_lpos=static_cast<uint32_t *>(db_pnt_tmp_lpos->data()); 
 
-    auto key_lev_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_qtkey,d_pnt_qtlev,d_pnt_qtsign));
-    thrust::transform(exec_policy,key_lev_iter,key_lev_iter+num_valid_nodes,d_pnt_tmp_key,flatten_z_code(num_level));
+        auto key_lev_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_qtkey,d_pnt_qtlev,d_pnt_qtsign));
+        thrust::transform(exec_policy,key_lev_iter,key_lev_iter+num_valid_nodes,d_pnt_tmp_key,flatten_z_code(num_level));
 
-    uint32_t num_leaf_nodes=thrust::copy_if(exec_policy,thrust::make_counting_iterator(0),
-       thrust::make_counting_iterator(0)+num_valid_nodes,d_pnt_qtsign,d_pnt_tmp_lpos,!thrust::placeholders::_1)-d_pnt_tmp_lpos;
+        uint32_t num_leaf_nodes=thrust::copy_if(exec_policy,thrust::make_counting_iterator(0),
+           thrust::make_counting_iterator(0)+num_valid_nodes,d_pnt_qtsign,d_pnt_tmp_lpos,!thrust::placeholders::_1)-d_pnt_tmp_lpos;
 
-    std::cout<<"num_leaf_nodes="<<num_leaf_nodes<<std::endl;
+        std::cout<<"num_leaf_nodes="<<num_leaf_nodes<<std::endl;
 
-    rmm::device_buffer *db_pnt_tmp_seq=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
-    CUDF_EXPECTS(db_pnt_tmp_seq!=nullptr,"  error allocating memory for array of sequential numbers in reordering first point positions");
-    uint32_t *d_pnt_tmp_seq=static_cast<uint32_t *>(db_pnt_tmp_seq->data()); 
+        rmm::device_buffer *db_pnt_tmp_seq=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_tmp_seq!=nullptr,"  error allocating memory for array of sequential numbers in reordering first point positions");
+        uint32_t *d_pnt_tmp_seq=static_cast<uint32_t *>(db_pnt_tmp_seq->data()); 
 
-    rmm::device_buffer *db_pnt_tmp_nlen=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
-    CUDF_EXPECTS(db_pnt_tmp_nlen!=nullptr,"  error allocating memory for array of sequential numbers in reordering first point positions");
-    uint32_t *d_pnt_tmp_nlen=static_cast<uint32_t *>(db_pnt_tmp_nlen->data()); 
+        rmm::device_buffer *db_pnt_tmp_nlen=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_tmp_nlen!=nullptr,"  error allocating memory for array of sequential numbers in reordering first point positions");
+        uint32_t *d_pnt_tmp_nlen=static_cast<uint32_t *>(db_pnt_tmp_nlen->data()); 
 
-    rmm::device_buffer *db_pnt_tmp_npos=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
-    CUDF_EXPECTS(db_pnt_tmp_npos!=nullptr,"  error allocating memory for array of sequential numbers in reordering first point positions");
-    uint32_t *d_pnt_tmp_npos=static_cast<uint32_t *>(db_pnt_tmp_npos->data()); 
+        rmm::device_buffer *db_pnt_tmp_npos=new rmm::device_buffer(num_valid_nodes* sizeof(uint32_t),stream,mr);
+        CUDF_EXPECTS(db_pnt_tmp_npos!=nullptr,"  error allocating memory for array of sequential numbers in reordering first point positions");
+        uint32_t *d_pnt_tmp_npos=static_cast<uint32_t *>(db_pnt_tmp_npos->data()); 
 
-    thrust::sequence(exec_policy,d_pnt_tmp_seq,d_pnt_tmp_seq+num_valid_nodes);
+        thrust::sequence(exec_policy,d_pnt_tmp_seq,d_pnt_tmp_seq+num_valid_nodes);
 
-    thrust::copy(exec_policy,d_pnt_qtnlen,d_pnt_qtnlen+num_valid_nodes,d_pnt_tmp_nlen);   
+        thrust::copy(exec_policy,d_pnt_qtnlen,d_pnt_qtnlen+num_valid_nodes,d_pnt_tmp_nlen);   
 
-    auto seq_len_pos=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_tmp_seq,d_pnt_tmp_nlen));
+        auto seq_len_pos=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_tmp_seq,d_pnt_tmp_nlen));
 
-    thrust::stable_sort_by_key(exec_policy,d_pnt_tmp_key,d_pnt_tmp_key+num_valid_nodes,seq_len_pos);
+        thrust::stable_sort_by_key(exec_policy,d_pnt_tmp_key,d_pnt_tmp_key+num_valid_nodes,seq_len_pos);
 
-    thrust::remove_if(exec_policy,d_pnt_tmp_nlen,d_pnt_tmp_nlen+num_valid_nodes,d_pnt_tmp_nlen,thrust::placeholders::_1==0);
+        thrust::remove_if(exec_policy,d_pnt_tmp_nlen,d_pnt_tmp_nlen+num_valid_nodes,d_pnt_tmp_nlen,thrust::placeholders::_1==0);
 
-    //only the first num_leaf_nodes are needed after the above removal (copy_if and remove_if should return the same numbers
-    thrust::exclusive_scan(exec_policy,d_pnt_tmp_nlen,d_pnt_tmp_nlen+num_leaf_nodes,d_pnt_tmp_npos);
+        //only the first num_leaf_nodes are needed after the above removal (copy_if and remove_if should return the same numbers
+        thrust::exclusive_scan(exec_policy,d_pnt_tmp_nlen,d_pnt_tmp_nlen+num_leaf_nodes,d_pnt_tmp_npos);
 
-    auto len_pos_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_tmp_nlen,d_pnt_tmp_npos));
+        auto len_pos_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_tmp_nlen,d_pnt_tmp_npos));
 
-    thrust::stable_sort_by_key(thrust::device,d_pnt_tmp_seq,d_pnt_tmp_seq+num_leaf_nodes,len_pos_iter);
+        thrust::stable_sort_by_key(thrust::device,d_pnt_tmp_seq,d_pnt_tmp_seq+num_leaf_nodes,len_pos_iter);
 
-    delete db_pnt_tmp_seq; db_pnt_tmp_seq=nullptr; 
+        delete db_pnt_tmp_seq; db_pnt_tmp_seq=nullptr; 
 
-    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_qtnlen,0,num_valid_nodes*sizeof(uint32_t)) );
-    HANDLE_CUDA_ERROR( cudaMemset(d_pnt_qtnpos,0,num_valid_nodes*sizeof(uint32_t)) );
+        HANDLE_CUDA_ERROR( cudaMemset(d_pnt_qtnlen,0,num_valid_nodes*sizeof(uint32_t)) );
+        HANDLE_CUDA_ERROR( cudaMemset(d_pnt_qtnpos,0,num_valid_nodes*sizeof(uint32_t)) );
 
-    auto in_len_pos_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_tmp_nlen,d_pnt_tmp_npos));
-    auto out_len_pos_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_qtnlen,d_pnt_qtnpos));
-    thrust::scatter(thrust::device,in_len_pos_iter,in_len_pos_iter+num_leaf_nodes,d_pnt_tmp_lpos,out_len_pos_iter);
+        auto in_len_pos_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_tmp_nlen,d_pnt_tmp_npos));
+        auto out_len_pos_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_qtnlen,d_pnt_qtnpos));
+        thrust::scatter(thrust::device,in_len_pos_iter,in_len_pos_iter+num_leaf_nodes,d_pnt_tmp_lpos,out_len_pos_iter);
     
-    delete db_pnt_tmp_lpos; db_pnt_tmp_lpos=nullptr;
-    delete db_pnt_tmp_nlen; db_pnt_tmp_nlen=nullptr;
-    delete db_pnt_tmp_npos; db_pnt_tmp_npos=nullptr;
+        delete db_pnt_tmp_lpos; db_pnt_tmp_lpos=nullptr;
+        delete db_pnt_tmp_nlen; db_pnt_tmp_nlen=nullptr;
+        delete db_pnt_tmp_npos; db_pnt_tmp_npos=nullptr;
 
-    //line 9 of algorithm in Fig. 5 in ref. 
-    thrust::replace_if(exec_policy,d_pnt_qtclen,d_pnt_qtclen+num_valid_nodes,d_pnt_qtsign,!thrust::placeholders::_1,0);
+        //line 9 of algorithm in Fig. 5 in ref. 
+        thrust::replace_if(exec_policy,d_pnt_qtclen,d_pnt_qtclen+num_valid_nodes,d_pnt_qtsign,!thrust::placeholders::_1,0);
 
-    //line 10 of algorithm in Fig. 5 in ref. 
-    thrust::exclusive_scan(exec_policy,d_pnt_qtclen,d_pnt_qtclen+num_valid_nodes,d_pnt_qtcpos,lev_num[1]);   
+        //line 10 of algorithm in Fig. 5 in ref. 
+        thrust::exclusive_scan(exec_policy,d_pnt_qtclen,d_pnt_qtclen+num_valid_nodes,d_pnt_qtcpos,lev_num[1]);   
 
-   //preparing the length and fpos array for output 
+        //preparing the length and fpos array for output 
+ 
+        length_col = cudf::make_numeric_column(
+        cudf::data_type(cudf::type_id::INT32), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);
+        uint32_t *d_pnt_qtlength=cudf::mutable_column_device_view::create(length_col->mutable_view(), stream)->data<uint32_t>();
+        CUDF_EXPECTS(d_pnt_qtlength!=nullptr," error allocating memory storage for length column");
 
-    std::unique_ptr<cudf::column> length_col = cudf::make_numeric_column(
-    cudf::data_type(cudf::type_id::INT32), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);
-    uint32_t *d_pnt_qtlength=cudf::mutable_column_device_view::create(length_col->mutable_view(), stream)->data<uint32_t>();
-    CUDF_EXPECTS(d_pnt_qtlength!=nullptr," error allocating memory storage for length column");
+        fpos_col = cudf::make_numeric_column(
+            cudf::data_type(cudf::type_id::INT32), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);
+        uint32_t *d_pnt_qtfpos=cudf::mutable_column_device_view::create(fpos_col->mutable_view(), stream)->data<uint32_t>();
+        CUDF_EXPECTS(d_pnt_qtfpos!=nullptr," error allocating memory storage for fpos column");
 
-    std::unique_ptr<cudf::column> fpos_col = cudf::make_numeric_column(
-    cudf::data_type(cudf::type_id::INT32), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);
-    uint32_t *d_pnt_qtfpos=cudf::mutable_column_device_view::create(fpos_col->mutable_view(), stream)->data<uint32_t>();
-    CUDF_EXPECTS(d_pnt_qtfpos!=nullptr," error allocating memory storage for fpos column");
+        //line 11 of algorithm in Fig. 5 in ref. 
+        auto iter_len_in=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_qtclen,d_pnt_qtnlen,d_pnt_qtsign));
+        auto iter_pos_in=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_qtcpos,d_pnt_qtnpos,d_pnt_qtsign));
+        thrust::transform(exec_policy,iter_len_in,iter_len_in+num_valid_nodes,d_pnt_qtlength,what2output());
+        thrust::transform(exec_policy,iter_pos_in,iter_pos_in+num_valid_nodes,d_pnt_qtfpos,what2output());
 
-    //line 11 of algorithm in Fig. 5 in ref. 
-    auto iter_len_in=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_qtclen,d_pnt_qtnlen,d_pnt_qtsign));
-    auto iter_pos_in=thrust::make_zip_iterator(thrust::make_tuple(d_pnt_qtcpos,d_pnt_qtnpos,d_pnt_qtsign));
-    thrust::transform(exec_policy,iter_len_in,iter_len_in+num_valid_nodes,d_pnt_qtlength,what2output());
-    thrust::transform(exec_policy,iter_pos_in,iter_pos_in+num_valid_nodes,d_pnt_qtfpos,what2output());
+        delete db_pnt_qtnpos; db_pnt_qtnpos=nullptr;
+        delete db_pnt_qtcpos; db_pnt_qtcpos=nullptr;
+        delete db_pnt_qtnlen; db_pnt_qtnlen=nullptr;
+        delete db_pnt_qtclen; db_pnt_qtclen=nullptr;
+    }
+    else
+    {
+        uint32_t num_valid_nodes=num_top_quads;
+        std::cout<<"quadtree:num_valid_nodes="<<num_valid_nodes<<std::endl;
+        key_col = cudf::make_numeric_column(
+            cudf::data_type(cudf::type_id::INT32), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);      
+        uint32_t *d_pnt_qtkey=cudf::mutable_column_device_view::create(key_col->mutable_view(), stream)->data<uint32_t>();
+        CUDF_EXPECTS(d_pnt_qtkey!=nullptr," error allocating storage memory for key column");
+        thrust::copy(exec_policy,d_pnt_fullkey,d_pnt_fullkey+num_valid_nodes,d_pnt_qtkey);
+        delete db_pnt_fullkey; db_pnt_fullkey=nullptr;
 
-    delete db_pnt_qtnpos; db_pnt_qtnpos=nullptr;
-    delete db_pnt_qtcpos; db_pnt_qtcpos=nullptr;
-    delete db_pnt_qtnlen; db_pnt_qtnlen=nullptr;
-    delete db_pnt_qtclen; db_pnt_qtclen=nullptr;
+        lev_col = cudf::make_numeric_column(
+           cudf::data_type(cudf::type_id::INT8), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);      
+        uint8_t *d_pnt_qtlev=cudf::mutable_column_device_view::create(lev_col->mutable_view(), stream)->data<uint8_t>();
+        CUDF_EXPECTS(d_pnt_qtlev!=nullptr," error allocating storage memory for level column");
+        thrust::copy(exec_policy,d_pnt_fulllev,d_pnt_fulllev+num_valid_nodes,d_pnt_qtlev); 
 
+if(1)
+{
+        rmm::device_vector<uint8_t> d_temp_lev(num_valid_nodes);
+        thrust::fill(d_temp_lev.begin(),d_temp_lev.end(),0);
+        bool lev_res = thrust::equal(exec_policy,d_pnt_qtlev,d_pnt_qtlev+num_valid_nodes,d_temp_lev.begin());
+        CUDF_EXPECTS(lev_res," top level quadrants must have lev=0");
+}
+        delete db_pnt_fulllev; db_pnt_fulllev=nullptr;
+
+        sign_col = cudf::make_numeric_column(
+           cudf::data_type(cudf::type_id::BOOL8), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);      
+        bool *d_pnt_qtsign=cudf::mutable_column_device_view::create(sign_col->mutable_view(), stream)->data<bool>();
+        rmm::device_vector<bool> d_temp_sign(num_valid_nodes);
+        thrust::fill(d_temp_sign.begin(),d_temp_sign.end(),0);
+        thrust::copy(exec_policy,d_temp_sign.begin(),d_temp_sign.end(),d_pnt_qtsign);
+        
+        length_col = cudf::make_numeric_column(
+            cudf::data_type(cudf::type_id::INT32), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);
+        uint32_t *d_pnt_qtlength=cudf::mutable_column_device_view::create(length_col->mutable_view(), stream)->data<uint32_t>();
+        CUDF_EXPECTS(d_pnt_qtlength!=nullptr," error allocating memory storage for length column");
+        thrust::copy(exec_policy,d_pnt_qtnlen,d_pnt_qtnlen+num_valid_nodes,d_pnt_qtlength);
+        delete db_pnt_qtnlen; db_pnt_qtnlen=nullptr;
+
+        fpos_col = cudf::make_numeric_column(
+            cudf::data_type(cudf::type_id::INT32), num_valid_nodes,cudf::mask_state::UNALLOCATED,  stream, mr);
+        uint32_t *d_pnt_qtfpos=cudf::mutable_column_device_view::create(fpos_col->mutable_view(), stream)->data<uint32_t>();
+        CUDF_EXPECTS(d_pnt_qtfpos!=nullptr," error allocating memory storage for fpos column");        
+        thrust::exclusive_scan(exec_policy,d_pnt_qtlength,d_pnt_qtlength+num_valid_nodes,d_pnt_qtfpos);
+       
+        delete db_pnt_qtclen; db_pnt_qtclen=nullptr;
+    }
+        
     std::vector<std::unique_ptr<cudf::column>> quad_cols;
     quad_cols.push_back(std::move(key_col));
     quad_cols.push_back(std::move(lev_col));
@@ -442,12 +496,13 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(
     cudf::mutable_column_view& x,cudf::mutable_column_view& y,
     double x1,double y1,double x2,double y2, double scale, int num_level, int min_size)
 {
-    CUDF_EXPECTS(x.size()==y.size(),"x and y columns might have the same lenght");  
+    CUDF_EXPECTS(x.size()==y.size(),"x and y columns might have the same lenght"); 
+    CUDF_EXPECTS(x.size()>0,"point dataset can not be empty");
     CUDF_EXPECTS(x1<x2 && y1<y2, "invalid bounding box (x1,y1,x2,y2)");
     CUDF_EXPECTS(scale>0, "scale must be positive");
     CUDF_EXPECTS(num_level>=0 && num_level<16, "maximum of levels might be in [0,16)");
     CUDF_EXPECTS(min_size>0, "minimum number of points for a non-leaf node must be larger than zero");
-
+  
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
 

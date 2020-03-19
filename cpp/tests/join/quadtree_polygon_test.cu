@@ -41,7 +41,57 @@ struct QuadtreePolygonBBoxJoinTest : public GdfTest
  
 };
 
-TEST_F(QuadtreePolygonBBoxJoinTest, test1)
+TEST_F(QuadtreePolygonBBoxJoinTest, test_empty)
+{
+    const uint32_t num_levels=1;
+    uint32_t min_size=1;
+    double scale=1.0;
+    double x1=0,x2=1,y1=0,y2=1;
+
+    std::unique_ptr<cudf::column> key_col=std::make_unique<cudf::column>
+        (cudf::data_type(cudf::type_id::INT32), 0, rmm::device_buffer{});
+    std::unique_ptr<cudf::column> lev_col=std::make_unique<cudf::column>
+        (cudf::data_type(cudf::type_id::INT8), 0, rmm::device_buffer{});
+    std::unique_ptr<cudf::column> sign_col=std::make_unique<cudf::column>
+        (cudf::data_type(cudf::type_id::BOOL8), 0, rmm::device_buffer{});
+    std::unique_ptr<cudf::column> length_col=std::make_unique<cudf::column>
+        (cudf::data_type(cudf::type_id::INT32), 0, rmm::device_buffer{});
+    std::unique_ptr<cudf::column> fpos_col=std::make_unique<cudf::column>
+        (cudf::data_type(cudf::type_id::INT32), 0, rmm::device_buffer{});
+
+    std::vector<std::unique_ptr<cudf::column>> quad_cols;
+    quad_cols.push_back(std::move(key_col));
+    quad_cols.push_back(std::move(lev_col));
+    quad_cols.push_back(std::move(sign_col));
+    quad_cols.push_back(std::move(length_col));
+    quad_cols.push_back(std::move(fpos_col));
+    
+    std::unique_ptr<cudf::experimental::table> quad_tbl = 
+        std::make_unique<cudf::experimental::table>(std::move(quad_cols));
+ 
+    std::unique_ptr<cudf::column> x1_col=std::make_unique<cudf::column>
+        (cudf::data_type(cudf::type_id::FLOAT64), 0, rmm::device_buffer{});
+    std::unique_ptr<cudf::column> y1_col=std::make_unique<cudf::column>
+        (cudf::data_type(cudf::type_id::FLOAT64), 0, rmm::device_buffer{});
+    std::unique_ptr<cudf::column> x2_col=std::make_unique<cudf::column>
+        (cudf::data_type(cudf::type_id::FLOAT64), 0, rmm::device_buffer{});
+    std::unique_ptr<cudf::column> y2_col=std::make_unique<cudf::column>
+        (cudf::data_type(cudf::type_id::FLOAT64), 0, rmm::device_buffer{});
+
+    std::vector<std::unique_ptr<cudf::column>> bbox_cols;
+    bbox_cols.push_back(std::move(x1_col));
+    bbox_cols.push_back(std::move(y1_col));
+    bbox_cols.push_back(std::move(x2_col));
+    bbox_cols.push_back(std::move(y2_col));
+
+   std::unique_ptr<cudf::experimental::table> bbox_tbl = 
+        std::make_unique<cudf::experimental::table>(std::move(bbox_cols));
+     
+    EXPECT_THROW ( cuspatial::quad_bbox_join(quad_tbl->view(),bbox_tbl->view(),
+        x1,y1,x2,y2, scale,num_levels, min_size), cudf::logic_error);       
+}
+
+TEST_F(QuadtreePolygonBBoxJoinTest, test_small)
 {
     cudaStream_t stream=0;
     rmm::mr::device_memory_resource* mr=rmm::mr::get_default_resource();
@@ -58,6 +108,8 @@ TEST_F(QuadtreePolygonBBoxJoinTest, test1)
     double yy[71]={1.3472225743317712, 0.5431061133894604, 0.1448705855995005, 0.8138440641113271, 1.9022922214961997, 1.5177694304735412, 1.8762161698642947, 0.2621847215928189, 0.027638405909631958, 0.3338651960183463, 0.9937713340192049, 0.9376313558467103, 0.33184908855075124, 0.09804238103130436, 0.7485845679979923, 0.2346381514128677, 1.1809465376402173, 1.419555755682142, 1.2372448404986038, 1.2774712415624014, 1.902015274420646, 1.2420487904041893, 1.0484414482621331, 0.9606291981013242, 1.9486902798139454, 0.021365525588281198, 1.8996548860019926, 0.3234041700489503, 1.9531893897409585, 0.7800065259479418, 1.942673409259531, 0.5659923375279095, 2.8709552313924487, 2.693039435509084, 2.57810040095543, 2.4612194182614333, 2.3345952955903906, 3.3999020934055837, 3.2296461832828114, 3.6607732238530897, 3.7672478678985257, 3.0668114607133137, 3.8159308233351266, 3.8812819070357545, 3.6045900851589048, 2.5470532680258002, 2.983311357415729, 2.2235950639628523, 2.5239201807166616, 2.8765450351723674, 2.5605928243991434, 2.9754616970668213, 2.174562817047202, 3.380784914178574, 3.063690547962938, 3.380489849365283, 3.623862886287816, 3.538128217886674, 3.4154469467473447, 3.253257011908445, 4.209727933188015, 7.478882372510933, 7.474216636277054, 6.896038613284851, 7.513564222799629, 6.885401350515916, 6.194330707468438, 5.823535317960799, 6.789029097334483, 5.188939408363776, 5.788316610960881};
     assert(sizeof(yy)/sizeof(double)==point_len);
         
+   //no need to delete db_pnt_x and db_pnt_y, as they are taken over by mutable_column_views x/y
+
     rmm::device_buffer *db_pnt_x=new rmm::device_buffer(point_len* sizeof(double),stream,mr);
     CUDF_EXPECTS(db_pnt_x!=nullptr, "Error allocating memory for x coordiantes of points");
     double *d_pnt_x=static_cast<double *>(db_pnt_x->data());
@@ -161,5 +213,5 @@ if(1)
     
     delete[] h_poly_idx;
     delete[] h_quad_idx;
-
+    
 }

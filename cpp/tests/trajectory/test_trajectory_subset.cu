@@ -50,7 +50,7 @@ void test_subset(std::vector<int32_t> ids_to_keep)
     std::vector<int64_t> ms_vector(sequence.begin(), sequence.end()); 
     
     //randomize sequence
-    std::seed_seq seed{0};
+    std::seed_seq seed{time(0)};
     std::mt19937 g(seed);
     
     std::shuffle(sequence.begin(), sequence.end(), g);

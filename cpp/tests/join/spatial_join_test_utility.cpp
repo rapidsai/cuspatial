@@ -297,7 +297,7 @@ void gen_rand_idx(std::vector<uint32_t>& indices,uint32_t num_counts, uint32_t n
 {
     if(num_samples<num_counts)
     {
-        std::seed_seq seed{2};
+        std::seed_seq seed{time(0)};
         std::mt19937 g(seed);
         std::uniform_int_distribution<> dist_rand (0,num_counts-1);
         indices.resize(num_samples);
