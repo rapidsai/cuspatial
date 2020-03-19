@@ -40,7 +40,7 @@ struct parallel_search {
       const T* p_query_coords = query_coords.data<T>();
       auto result = cudf::make_numeric_column(curve_ids.type(), t.size(),
               cudf::mask_state::UNALLOCATED, stream, mr);
-      T* p_result = result->mutable_view().data<T>();
+      int32_t* p_result = result->mutable_view().data<int32_t>();
       thrust::for_each(rmm::exec_policy(stream)->on(stream),
         thrust::make_counting_iterator<int>(0),
         thrust::make_counting_iterator<int>(query_coords.size()),
@@ -260,16 +260,16 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
 {
     auto coefficient_indices = cudf::experimental::type_dispatcher(query_points.type(), parallel_search{}, query_points, curve_ids, prefixes, source_points, mr, stream);
     //TPRINT(coefficient_indices->mutable_view(), "parallel_search_");
-    TPRINT(query_points, "query_points_");
-    TPRINT(curve_ids, "curve_ids_");
-    TPRINT(prefixes, "prefixes_");
+    //TPRINT(query_points, "query_points_");
+    //TPRINT(curve_ids, "curve_ids_");
+    //TPRINT(prefixes, "prefixes_");
 
     auto result = cudf::experimental::type_dispatcher(query_points.type(), interpolate{}, query_points, curve_ids, coefficient_indices->view(), coefficients, mr, stream);
-    TPRINT(query_points, "query_points_");
-    TPRINT(curve_ids, "curve_ids_");
-    TPRINT(prefixes, "prefixes_");
+    //TPRINT(query_points, "query_points_");
+    //TPRINT(curve_ids, "curve_ids_");
+    //TPRINT(prefixes, "prefixes_");
     //cudf::column_view result_view = result->view();
-    //TPRINT(result_view, "interpolate_");
+    ////TPRINT(result_view, "interpolate_");
     return result;
 }
 
@@ -282,10 +282,11 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     cudaStream_t stream
 )
 {
-    TPRINT(t, "t_");
-    TPRINT(y, "y_");
-    TPRINT(ids, "ids");
-    TPRINT(prefixes, "prefixes");
+    //rmm::device_vector<float>::iterator t_rd = rmm::device_vector<float>(t.data<float>());
+    //TPRINT(t, "t_");
+    //TPRINT(y, "y_");
+    //TPRINT(ids, "ids");
+    //TPRINT(prefixes, "prefixes");
 
     int64_t n = y.size();
     auto h_col = make_numeric_column(y.type(), n, cudf::mask_state::UNALLOCATED, stream, mr);
@@ -309,16 +310,16 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     cudf::experimental::fill_in_place(Dlu_buffer, 0, Dlu_col->size(), zero);
     cudf::experimental::fill_in_place(u_buffer, 0, u_col->size(), zero);
     
-    TPRINT(h_buffer, "h_zero");
-    TPRINT(D_buffer, "D_one");
-    TPRINT(Dlu_buffer, "Dlu_zero");
+    //TPRINT(h_buffer, "h_zero");
+    //TPRINT(D_buffer, "D_one");
+    //TPRINT(Dlu_buffer, "Dlu_zero");
     cudf::experimental::type_dispatcher(y.type(), compute_spline_tridiagonals{}, t, y, prefixes, D_buffer, Dlu_buffer, u_buffer, h_buffer, i_buffer, mr, stream);
 
-    TPRINT(h_buffer, "h_i");
-    TPRINT(i_buffer, "i_i");
-    TPRINT(D_buffer, "D_i");
-    TPRINT(Dlu_buffer, "Dlu_i");
-    TPRINT(u_buffer, "u_i");
+    //TPRINT(h_buffer, "h_i");
+    //TPRINT(i_buffer, "i_i");
+    //TPRINT(D_buffer, "D_i");
+    //TPRINT(Dlu_buffer, "Dlu_i");
+    //TPRINT(u_buffer, "u_i");
 
     // cusparse solve n length m tridiagonal systems
     // 4. call cusparse<T>gtsv2() to solve
@@ -380,14 +381,14 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
 
     cudf::experimental::type_dispatcher(y.type(), coefficients_compute{}, t, y, prefixes, h_buffer, i_buffer, u_buffer, d3, d2, d1, d0, mr, stream);
 
-    TPRINT(h_buffer, "h_buffer_");
-    TPRINT(i_buffer, "i_buffer_");
-    TPRINT(u_buffer, "u_buffer_");
+    //TPRINT(h_buffer, "h_buffer_");
+    //TPRINT(i_buffer, "i_buffer_");
+    //TPRINT(u_buffer, "u_buffer_");
 
-    TPRINT(d3, "d3");
-    TPRINT(d2, "d2");
-    TPRINT(d1, "d1");
-    TPRINT(d0, "d0");
+    //TPRINT(d3, "d3");
+    //TPRINT(d2, "d2");
+    //TPRINT(d1, "d1");
+    //TPRINT(d0, "d0");
     
     // Place d3..0 into a table and return
     std::vector<std::unique_ptr<cudf::column>> table;

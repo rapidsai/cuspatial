@@ -70,9 +70,9 @@ static void HandleCudaError( cudaError_t err,
 
 // Macro block for printing cudf::columns
 
-#define ALLOW_PRINT 1
+#define ALLOW_PRINT 0
 #if ALLOW_PRINT
-/*
+
 template<typename T>
 void tPrint(thrust::detail::normal_iterator<T> start, thrust::detail::normal_iterator<T> stop, const char* name="None") {
     std::cout << name << " size: " << stop-start << " ";
@@ -95,7 +95,6 @@ void tPrint(cudf::column_view col, const char* name="None") {
   tPrint(vec.begin(), vec.end(), name);
 }
 #define TPRINT(vec, name) (tPrint( vec, name))
-*/
 
 #else
 #define TPRINT(vec, name) {}
