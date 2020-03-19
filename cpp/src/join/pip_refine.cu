@@ -268,7 +268,7 @@ if(0)
 
 if(0)
 {
-    std::cout<<"preprocess: d_num_sums<<std::endl;
+    std::cout<<"preprocess: d_num_sums"<<std::endl;
     thrust::device_ptr<uint32_t> d_num_sum_ptr=thrust::device_pointer_cast(d_num_sums);
     thrust::copy(d_num_sum_ptr,d_num_sum_ptr+num_org_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
 }
@@ -297,7 +297,7 @@ if(0)
 
 if(0)
 {
-    std::cout<<"preprocess:d_quad_offset (after scatter)<<std::endl;
+    std::cout<<"preprocess:d_quad_offset (after scatter)"<<std::endl;
     thrust::device_ptr<uint32_t> d_quad_offset_ptr=thrust::device_pointer_cast(d_quad_offset);
     thrust::copy(d_quad_offset_ptr,d_quad_offset_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
 }
@@ -380,7 +380,7 @@ if(0)
 
 if(0)
 {
-    std::cout<<"phase1 results: d_num_hits (before reduce)"<<std:;endl;
+    std::cout<<"phase1 results: d_num_hits (before reduce)"<<std::endl;
     thrust::device_ptr<uint32_t> d_num_hits_ptr=thrust::device_pointer_cast(d_num_hits);
     thrust::copy(d_num_hits_ptr,d_num_hits_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
 }
@@ -410,7 +410,7 @@ if(0)
  
 if(0)
 {
-    std::cout<<"phase1 results:d_num_hits(after reduce)<<std::endl;
+    std::cout<<"phase1 results:d_num_hits(after reduce)"<<std::endl;
     thrust::device_ptr<uint32_t> d_num_hits_ptr=thrust::device_pointer_cast(d_num_hits);
     thrust::copy(d_num_hits_ptr,d_num_hits_ptr+num_valid_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl; 
 }

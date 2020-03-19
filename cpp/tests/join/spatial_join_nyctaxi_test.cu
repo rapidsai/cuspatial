@@ -568,7 +568,6 @@ TEST_F(SpatialJoinNYCTaxi, test)
         this->h_pnt_x,this->h_pnt_y,mr,stream);
     std::string msg=verified ? "verified" : "mismatch";
     std::cout<<"comparison/verification result: " << msg << std::endl;
-}
 
     this->tear_down();
 
