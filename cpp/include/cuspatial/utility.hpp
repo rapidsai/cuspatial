@@ -64,7 +64,7 @@ static void HandleCudaError( cudaError_t err,
         exit( EXIT_FAILURE );
     }
 }
-#define HANDLE_CUDA_ERROR( err ) (detail::HandleCudaError( err, __FILE__, __LINE__ ))
+#define HANDLE_CUDA_ERROR( err ) (cuspatial::detail::HandleCudaError( err, __FILE__, __LINE__ ))
 
 } // detail namespace
 

@@ -24,6 +24,7 @@
 
 namespace { // anonymous
 
+// This functor performs one linear search for each input point in query_coords
 struct parallel_search {
   template <typename T>
   std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>>
@@ -72,6 +73,8 @@ struct parallel_search {
   }
 };
 
+// This functor simply computes the interpolation of each coordinate `t[i]`
+// using the coefficients from row `coef_indices[i]`.
 struct interpolate {
   template <typename T>
   std::enable_if_t<std::is_floating_point<T>::value, void>
@@ -112,6 +115,8 @@ struct interpolate {
   }
 };
 
+// This functor computes the coefficients table for the cubic hermite spline
+// specified by the inputs `t` and `y`.
 struct coefficients_compute {
   template <typename T>
   std::enable_if_t<std::is_floating_point<T>::value, void>
@@ -177,6 +182,8 @@ struct coefficients_compute {
   }
 };
 
+// Computes the diagonal `D` of a large sparse matrix, and also the upper and
+// lower diagonals `Dlu`, which in this case are equal.
 struct compute_spline_tridiagonals {
   template<typename T>
   std::enable_if_t<std::is_floating_point<T>::value, void>
@@ -240,6 +247,11 @@ struct compute_spline_tridiagonals {
 namespace cuspatial
 {
 
+namespace detail
+{
+
+  // Computes f(query_points) by calculating which set of coefficients should be
+// used and then interpolating them. See cubic_spline.hpp
 std::unique_ptr<cudf::column> cubicspline_interpolate(
     cudf::column_view const& query_points,
     cudf::column_view const& curve_ids,
@@ -262,17 +274,6 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
     TPRINT(prefixes, "prefixes_");
     TPRINT(search_result, "interpolate_");
     return search_result;
-}
-
-std::unique_ptr<cudf::column> cubicspline_interpolate_default(
-    cudf::column_view const& query_points,
-    cudf::column_view const& curve_ids,
-    cudf::column_view const& prefixes,
-    cudf::column_view const& source_points,
-    cudf::table_view const& coefficients
-)
-{
-  return cubicspline_interpolate(query_points, curve_ids, prefixes, source_points, coefficients, rmm::mr::get_default_resource(), 0);
 }
 
 std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
@@ -400,13 +401,30 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     std::unique_ptr<cudf::experimental::table> result = std::make_unique<cudf::experimental::table>(move(table));
     return result;
 }
-std::unique_ptr<cudf::experimental::table> cubicspline_coefficients_default(
+
+} // namespace detail
+
+// Calls the interpolate function using default memory resources.
+std::unique_ptr<cudf::column> cubicspline_interpolate(
+    cudf::column_view const& query_points,
+    cudf::column_view const& curve_ids,
+    cudf::column_view const& prefixes,
+    cudf::column_view const& source_points,
+    cudf::table_view const& coefficients
+)
+{
+  return cuspatial::detail::cubicspline_interpolate(query_points, curve_ids, prefixes, source_points, coefficients, rmm::mr::get_default_resource(), 0);
+}
+
+// Calls the coeffiecients  function using default memory resources.
+std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     cudf::column_view const& t,
     cudf::column_view const& y,
     cudf::column_view const& ids,
     cudf::column_view const& prefixes
 )
 {
-  return cubicspline_coefficients(t, y, ids, prefixes, rmm::mr::get_default_resource(), 0);
+  return cuspatial::detail::cubicspline_coefficients(t, y, ids, prefixes, rmm::mr::get_default_resource(), 0);
 }
-}
+
+} // namespace cuspatial
