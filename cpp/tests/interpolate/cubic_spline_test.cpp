@@ -18,10 +18,8 @@
 #include <sys/time.h>
 #include <string>
 
-#include <gtest/gtest.h>
-#include <utilities/legacy/error_utils.hpp>
-#include <tests/utilities/legacy/cudf_test_utils.cuh>
-#include <tests/utilities/legacy/cudf_test_fixtures.h>
+#include <tests/utilities/base_fixture.hpp>
+#include <tests/utilities/column_utilities.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cudf/table/table_view.hpp>
 #include <cudf/table/table.hpp>
@@ -29,10 +27,7 @@
 #include <cuspatial/cubic_spline.hpp>
 #include <cuspatial/utility.hpp>
 
-struct CubicSplineTest : public GdfTest 
-{
- 
-};
+struct CubicSplineTest : public cudf::test::BaseFixture {};
 
 template<typename T>
 auto make_device_column(T* const points, int length) {
