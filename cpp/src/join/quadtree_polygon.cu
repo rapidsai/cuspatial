@@ -380,7 +380,7 @@ if(0)
     delete db_poly_idx_out; db_poly_idx_out=nullptr;
     delete db_quad_idx_out; db_quad_idx_out=nullptr;
 
-if(1)
+if(0)
 {
     std::cout<<"total pairs="<<output_nodes_pos<<std::endl;
 

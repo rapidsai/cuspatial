@@ -404,7 +404,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,
         CUDF_EXPECTS(d_pnt_qtlev!=nullptr," error allocating storage memory for level column");
         thrust::copy(exec_policy->on(stream),d_pnt_fulllev,d_pnt_fulllev+num_valid_nodes,d_pnt_qtlev); 
 
-if(1)
+if(0)
 {
         rmm::device_vector<uint8_t> d_temp_lev(num_valid_nodes);
         thrust::fill(d_temp_lev.begin(),d_temp_lev.end(),0);

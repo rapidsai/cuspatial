@@ -182,7 +182,7 @@ TEST_F(QuadtreePolygonBBoxJoinTest, test_small)
     const uint32_t *d_poly_idx=pq_pair_view.column(0).data<uint32_t>();
     const uint32_t *d_quad_idx=pq_pair_view.column(1).data<uint32_t>();
 
-if(1)
+if(0)
 {
 
     thrust::device_ptr<const uint32_t> poly_idx_ptr=thrust::device_pointer_cast(d_poly_idx);
