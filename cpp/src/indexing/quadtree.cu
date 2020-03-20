@@ -200,6 +200,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(cudf::size_type point_len,
         rmm::device_buffer *db_pnt_parentpos=new rmm::device_buffer(num_child_nodes* sizeof(uint32_t),stream,mr);
         CUDF_EXPECTS(db_pnt_parentpos!=nullptr," error allocating memory for array of parent node positions");
         uint32_t *d_pnt_parentpos=static_cast<uint32_t *>(db_pnt_parentpos->data());
+        HANDLE_CUDA_ERROR( cudaMemset(d_pnt_parentpos,0,num_child_nodes*sizeof(uint32_t)) );
 
         //line 2 of algorithm in Fig. 5 in ref. 
         thrust::scatter(exec_policy,thrust::make_counting_iterator(0),
