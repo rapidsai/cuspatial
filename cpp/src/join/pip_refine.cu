@@ -229,10 +229,10 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
     rmm::mr::device_memory_resource* mr, cudaStream_t stream)
                                          
 {
-    auto exec_policy = rmm::exec_policy(stream)->on(stream);
+    auto exec_policy = rmm::exec_policy(stream);
 
     //compute the total number of sub-pairs (units) using transform_reduce
-    uint32_t num_pq_pair=thrust::transform_reduce(exec_policy,d_org_quad_idx,
+    uint32_t num_pq_pair=thrust::transform_reduce(exec_policy->on(stream),d_org_quad_idx,
         d_org_quad_idx+num_org_pair,get_num_units(d_qt_length,threads_per_block),0, thrust::plus<uint32_t>());
      std::cout<<"num_pq_pair="<<num_pq_pair<<std::endl;
 
@@ -246,7 +246,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
     uint32_t *d_num_sums=static_cast<uint32_t *>(db_num_sums->data());
 
     //computes numbers of sub-pairs for each quadrant-polygon pairs
-    thrust::transform(exec_policy,d_org_quad_idx,d_org_quad_idx+num_org_pair,
+    thrust::transform(exec_policy->on(stream),d_org_quad_idx,d_org_quad_idx+num_org_pair,
         d_num_units,get_num_units(d_qt_length,threads_per_block));
 
 if(0)
@@ -264,7 +264,7 @@ if(0)
     thrust::copy(d_num_units_ptr,d_num_units_ptr+num_org_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
 }
 
-    thrust::exclusive_scan(exec_policy,d_num_units,d_num_units+num_org_pair,d_num_sums);
+    thrust::exclusive_scan(exec_policy->on(stream),d_num_units,d_num_units+num_org_pair,d_num_sums);
 
 if(0)
 {
@@ -293,7 +293,7 @@ if(0)
     uint32_t *d_quad_len=static_cast<uint32_t *>(db_quad_len->data());
 
     //scatter 0..num_org_pair to d_quad_offset using d_num_sums as map 
-    thrust::scatter(exec_policy,thrust::make_counting_iterator(0),
+    thrust::scatter(exec_policy->on(stream),thrust::make_counting_iterator(0),
         thrust::make_counting_iterator(0)+num_org_pair,d_num_sums,d_quad_offset);
 
 if(0)
@@ -303,7 +303,7 @@ if(0)
     thrust::copy(d_quad_offset_ptr,d_quad_offset_ptr+num_pq_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
 }
     //copy idx of orginal pairs to all sub-pairs
-    thrust::inclusive_scan(exec_policy,d_quad_offset,d_quad_offset+num_pq_pair,d_quad_offset,thrust::maximum<int>());
+    thrust::inclusive_scan(exec_policy->on(stream),d_quad_offset,d_quad_offset+num_pq_pair,d_quad_offset,thrust::maximum<int>());
 
     //d_num_sums is no longer needed, delete db_num_sums and release its associated memory
     delete db_num_sums; db_num_sums=nullptr;
@@ -316,8 +316,8 @@ if(0)
 }
 
     //gather polygon idx and quadrant idx from original pairs into sub-pairs 
-    thrust::gather(exec_policy,d_quad_offset,d_quad_offset+num_pq_pair,d_org_poly_idx,d_pq_poly_idx);
-    thrust::gather(exec_policy,d_quad_offset,d_quad_offset+num_pq_pair,d_org_quad_idx,d_pq_quad_idx);
+    thrust::gather(exec_policy->on(stream),d_quad_offset,d_quad_offset+num_pq_pair,d_org_poly_idx,d_pq_poly_idx);
+    thrust::gather(exec_policy->on(stream),d_quad_offset,d_quad_offset+num_pq_pair,d_org_quad_idx,d_pq_quad_idx);
 
 if(0)
 {
@@ -338,13 +338,13 @@ if(0)
     HANDLE_CUDA_ERROR( cudaMemset(d_num_hits,0,num_pq_pair*sizeof(uint32_t)) );
 
     //generate offsets of sub-paris within the orginal pairs
-    thrust::exclusive_scan_by_key(exec_policy,d_quad_offset,d_quad_offset+num_pq_pair,
+    thrust::exclusive_scan_by_key(exec_policy->on(stream),d_quad_offset,d_quad_offset+num_pq_pair,
         thrust::constant_iterator<int>(1),d_quad_offset);
 
     //assemble components in input/output iterators; note d_quad_offset used in both input and output
     auto qid_bid_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pq_quad_idx,d_quad_offset));
     auto offset_length_iter=thrust::make_zip_iterator(thrust::make_tuple(d_quad_offset,d_quad_len));
-    thrust::transform(exec_policy,qid_bid_iter,qid_bid_iter+num_pq_pair,
+    thrust::transform(exec_policy->on(stream),qid_bid_iter,qid_bid_iter+num_pq_pair,
         offset_length_iter,gen_offset_length(threads_per_block,d_qt_length));
 
 if(0)
@@ -388,7 +388,7 @@ if(0)
  
     //remove poly-quad pair with zero hits
     auto valid_pq_pair_iter=thrust::make_zip_iterator(thrust::make_tuple(d_pq_poly_idx,d_pq_quad_idx,d_quad_offset,d_quad_len,d_num_hits));
-    uint32_t num_valid_pair=thrust::remove_if(exec_policy,valid_pq_pair_iter,valid_pq_pair_iter+num_pq_pair,
+    uint32_t num_valid_pair=thrust::remove_if(exec_policy->on(stream),valid_pq_pair_iter,valid_pq_pair_iter+num_pq_pair,
     valid_pq_pair_iter,pq_remove_zero())-valid_pq_pair_iter;   
     std::cout<<"num_valid_pair="<<num_valid_pair<<std::endl;
 
@@ -400,11 +400,11 @@ if(0)
         thrust::copy(d_num_hits_ptr,d_num_hits_ptr+num_valid_pair,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
  }
       
-     uint32_t total_hits=thrust::reduce(exec_policy,d_num_hits,d_num_hits+num_valid_pair);
+     uint32_t total_hits=thrust::reduce(exec_policy->on(stream),d_num_hits,d_num_hits+num_valid_pair);
      std::cout<<"total_hits="<<total_hits<<std::endl;
      
      //prefix sum on numbers to generate offsets
-     thrust::exclusive_scan(exec_policy,d_num_hits,d_num_hits+num_valid_pair,d_num_hits);
+     thrust::exclusive_scan(exec_policy->on(stream),d_num_hits,d_num_hits+num_valid_pair,d_num_hits);
 
      gettimeofday(&t2, nullptr); 
      float refine_rebalance_time=cuspatial::calc_time("refine_rebalance_time(ms) = ",t1,t2);

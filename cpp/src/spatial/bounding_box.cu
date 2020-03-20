@@ -51,7 +51,7 @@ struct bounding_box_processor {
 
         //std::cout<<"bounding_box_processor: num_poly="<<num_poly<<",num_ring="<<num_ring<<",num_vertex="<<num_vertex<<std::endl;
 
-        auto exec_policy = rmm::exec_policy(stream)->on(stream);
+        auto exec_policy = rmm::exec_policy(stream);
 
         const uint32_t *d_ply_fpos=fpos.data<uint32_t>();
         const uint32_t *d_ply_rpos=rpos.data<uint32_t>();
@@ -86,8 +86,8 @@ if(0)
         thrust::copy(d_rpos_ptr,d_rpos_ptr+num_ring,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
 }
 
-        thrust::transform(exec_policy,d_ply_fpos,d_ply_fpos+num_poly,d_temp_ring_pos,thrust::placeholders::_1-1);
-        thrust::gather(exec_policy,d_temp_ring_pos,d_temp_ring_pos+num_poly,d_ply_rpos,d_first_ring_pos);
+        thrust::transform(exec_policy->on(stream),d_ply_fpos,d_ply_fpos+num_poly,d_temp_ring_pos,thrust::placeholders::_1-1);
+        thrust::gather(exec_policy->on(stream),d_temp_ring_pos,d_temp_ring_pos+num_poly,d_ply_rpos,d_first_ring_pos);
 
         delete db_temp_ring_pos; db_temp_ring_pos=nullptr;
 
@@ -98,7 +98,7 @@ if(0)
         thrust::copy(d_num_points_ptr,d_num_points_ptr+num_poly,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
 }
 
-        thrust::adjacent_difference(exec_policy, d_first_ring_pos,d_first_ring_pos+num_poly,d_first_ring_pos);
+        thrust::adjacent_difference(exec_policy->on(stream), d_first_ring_pos,d_first_ring_pos+num_poly,d_first_ring_pos);
 
 if(0)
 {
@@ -106,10 +106,10 @@ if(0)
         thrust::device_ptr<uint32_t> d_num_rings_ptr=thrust::device_pointer_cast(d_first_ring_pos);
         thrust::copy(d_num_rings_ptr,d_num_rings_ptr+num_poly,std::ostream_iterator<uint32_t>(std::cout, " "));std::cout<<std::endl;
 }    
-        thrust::exclusive_scan(exec_policy,d_first_ring_pos,d_first_ring_pos+num_poly,d_first_ring_pos);
-        thrust::scatter(exec_policy,thrust::make_counting_iterator(0),
+        thrust::exclusive_scan(exec_policy->on(stream),d_first_ring_pos,d_first_ring_pos+num_poly,d_first_ring_pos);
+        thrust::scatter(exec_policy->on(stream),thrust::make_counting_iterator(0),
             thrust::make_counting_iterator(0)+num_poly,d_first_ring_pos,d_vertex_pid);
-        thrust::inclusive_scan(exec_policy,d_vertex_pid,d_vertex_pid+num_vertex,d_vertex_pid,thrust::maximum<int>());
+        thrust::inclusive_scan(exec_policy->on(stream),d_vertex_pid,d_vertex_pid+num_vertex,d_vertex_pid,thrust::maximum<int>());
 if(0)
 {
         printf("d_vertex_pid\n");
@@ -125,7 +125,7 @@ if(0)
         auto d_vertex_iter=thrust::make_zip_iterator(thrust::make_tuple(d_ply_x,d_ply_y));
 
         //reuse d_first_ring_pos to store sequential polygon index
-        uint32_t num_bbox=thrust::reduce_by_key(exec_policy,d_vertex_pid,d_vertex_pid+num_vertex,
+        uint32_t num_bbox=thrust::reduce_by_key(exec_policy->on(stream),d_vertex_pid,d_vertex_pid+num_vertex,
             thrust::make_transform_iterator(d_vertex_iter,bbox_transformation<T>()),
             d_first_ring_pos,d_p_bbox,thrust::equal_to<uint32_t>(),bbox_reduction<T>()).first-d_first_ring_pos;
         std::cout<<"num_poly="<<num_poly<<",num_bbox="<<num_bbox<<std::endl;
@@ -156,7 +156,7 @@ if(0)
         assert(y2!=nullptr);
 
         auto out_bbox_iter=thrust::make_zip_iterator(thrust::make_tuple(x1,y1,x2,y2));
-        thrust::transform(exec_policy,d_p_bbox,d_p_bbox+num_bbox,out_bbox_iter,bbox2tuple<T>());
+        thrust::transform(exec_policy->on(stream),d_p_bbox,d_p_bbox+num_bbox,out_bbox_iter,bbox2tuple<T>());
 
         delete db_bbox; db_bbox=nullptr;
 

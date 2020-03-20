@@ -60,7 +60,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
     std::cout<<"num_level="<<num_level<<std::endl;
     std::cout<<"match: min_size="<<min_size<<std::endl;
 
-    auto exec_policy = rmm::exec_policy(stream)->on(stream);
+    auto exec_policy = rmm::exec_policy(stream);
 
     rmm::device_buffer *db_poly_bbox=new rmm::device_buffer(num_poly* sizeof(SBBox<T>),stream,mr);
     CUDF_EXPECTS(db_poly_bbox!=nullptr, "Error allocating memory for polygon bounding boxes on device");
@@ -99,11 +99,11 @@ if(0)
    //assemble arrays of columns to an array of bbox (x1,y1,x2,y2) 
     auto ploy_bbox_iter=thrust::make_zip_iterator(
         thrust::make_tuple(poly_x1,poly_y1,poly_x2,poly_y2));
-    thrust::transform(exec_policy,ploy_bbox_iter,ploy_bbox_iter+num_poly,d_poly_sbbox,tuple2bbox<T>());
+    thrust::transform(exec_policy->on(stream),ploy_bbox_iter,ploy_bbox_iter+num_poly,d_poly_sbbox,tuple2bbox<T>());
 
     //couting the number of top level nodes to begin with
     //the number could be stored explicitly, but count_if should be fast enough
-    uint32_t num_top_lev_children=thrust::count_if(exec_policy,d_p_qtlev,
+    uint32_t num_top_lev_children=thrust::count_if(exec_policy->on(stream),d_p_qtlev,
         d_p_qtlev+num_node,thrust::placeholders::_1==0);  
 
     //the matched quadrant-polygon pairs are dynamic and can not be pre-allocated in a fixed manner
@@ -169,15 +169,15 @@ if(0)
         thrust::make_tuple(d_pq_lev_temp,d_pq_type_temp,d_poly_idx_temp,d_quad_idx_temp));
 
     //paring up all top level quadrants and all polygons and store the result in pair_output_temp_iter
-    thrust::transform(exec_policy,pair_counting_iter,pair_counting_iter+num_pair,pair_output_temp_iter,
+    thrust::transform(exec_policy->on(stream),pair_counting_iter,pair_counting_iter+num_pair,pair_output_temp_iter,
         pairwise_test_intersection<T>(num_level,num_top_lev_children,aoi_bbox,scale,d_p_qtkey,d_p_qtlev,d_p_qtsign,d_poly_sbbox));
 
     //copy intersected (quadrant,polygon) pairs that involve leaf qudrants to outputs directly (type 0)
-    uint32_t num_leaf_pair=thrust::copy_if(exec_policy,pair_output_temp_iter,pair_output_temp_iter+num_pair,
+    uint32_t num_leaf_pair=thrust::copy_if(exec_policy->on(stream),pair_output_temp_iter,pair_output_temp_iter+num_pair,
         pair_output_iter+output_nodes_pos,qt_is_type(0))-(pair_output_iter+output_nodes_pos);
 
     //remove all the (quadrant,polygon) pairs that quadrants do not intersect with polygon bboxes
-    uint32_t num_nonleaf_pair=thrust::remove_if(exec_policy,pair_output_temp_iter,pair_output_temp_iter+num_pair,
+    uint32_t num_nonleaf_pair=thrust::remove_if(exec_policy->on(stream),pair_output_temp_iter,pair_output_temp_iter+num_pair,
         pair_output_temp_iter,qt_not_type(1))-pair_output_temp_iter;
 
     std::cout<<"num_leaf_pair="<<num_leaf_pair<<" ,num_nonleaf_pair="<<num_nonleaf_pair<<std::endl;
@@ -193,11 +193,11 @@ if(0)
         uint32_t *d_quad_nchild=static_cast<uint32_t *>(db_quad_nchild->data());
 
         //retrieve the numbers of child quadrants and store them in d_quad_nchild
-        thrust::transform(exec_policy,d_quad_idx_temp,d_quad_idx_temp+num_nonleaf_pair,
+        thrust::transform(exec_policy->on(stream),d_quad_idx_temp,d_quad_idx_temp+num_nonleaf_pair,
               d_quad_nchild,get_vec_element<const uint32_t>(d_p_qtlength));
 
         //compute the total number of child nodes using a reduction
-        num_pair=thrust::reduce(exec_policy,d_quad_nchild,d_quad_nchild+num_nonleaf_pair);
+        num_pair=thrust::reduce(exec_policy->on(stream),d_quad_nchild,d_quad_nchild+num_nonleaf_pair);
         std::cout<<"num_pair after gathering child nodes="<<num_pair<<std::endl;
 
         //allocate memory for the next level 
@@ -225,31 +225,31 @@ if(0)
 
         //exclusive scan on the numbers to compute the offsets 
         auto counting_iter=thrust::make_counting_iterator(0);
-            thrust::exclusive_scan(exec_policy,d_quad_nchild,d_quad_nchild+num_nonleaf_pair,d_quad_nchild);
+            thrust::exclusive_scan(exec_policy->on(stream),d_quad_nchild,d_quad_nchild+num_nonleaf_pair,d_quad_nchild);
 
         //use the offset as the map to scatter sequential numbers 0..num_nonleaf_pair to d_expand_pos
-        thrust::scatter(exec_policy,counting_iter,counting_iter+num_nonleaf_pair,d_quad_nchild,d_expand_pos);
+        thrust::scatter(exec_policy->on(stream),counting_iter,counting_iter+num_nonleaf_pair,d_quad_nchild,d_expand_pos);
 
         //d_quad_nchild is no longer needed, so delete its asociated device_buffer and release memory
         delete db_quad_nchild; db_quad_nchild=nullptr;
 
         //inclusive scan with maximum functor to fill the empty elements with their left-most non-empty elements
         //d_expand_pos is now a full array with each element stores the sequene idx of a quadrant's parent
-        thrust::inclusive_scan(exec_policy,d_expand_pos,d_expand_pos+num_pair,d_expand_pos,thrust::maximum<int>());
+        thrust::inclusive_scan(exec_policy->on(stream),d_expand_pos,d_expand_pos+num_pair,d_expand_pos,thrust::maximum<int>());
 
         //assemble the {_lev,_type,_poly_id,_quad_id) arrays as a zipped iterator
         auto pair_output_expanded_iter=thrust::make_zip_iterator(thrust::make_tuple
             (d_pq_lev_expanded,d_pq_type_expanded,d_poly_idx_expanded,d_quad_idx_expanded));
 
         //use d_expand_pos as the map to gather info on non-leaf quadrants for their respective child quadrants
-        thrust::gather(exec_policy,d_expand_pos,d_expand_pos+num_pair,pair_output_temp_iter,pair_output_expanded_iter);
+        thrust::gather(exec_policy->on(stream),d_expand_pos,d_expand_pos+num_pair,pair_output_temp_iter,pair_output_expanded_iter);
  
         //generate sequential idx within each parent quadrants; used with fpos array to retrieve child quadrants
         rmm::device_buffer *db_seq_pos = new rmm::device_buffer(num_pair* sizeof(uint32_t),stream,mr);
         CUDF_EXPECTS(db_seq_pos!=nullptr, "Error allocating memory for sequence index  array on device");
         uint32_t *d_seq_pos=static_cast<uint32_t *>(db_seq_pos->data());
 
-        thrust::exclusive_scan_by_key(exec_policy,d_expand_pos,d_expand_pos+num_pair,
+        thrust::exclusive_scan_by_key(exec_policy->on(stream),d_expand_pos,d_expand_pos+num_pair,
             thrust::constant_iterator<int>(1),d_seq_pos);
 
         //d_expand_pos is no long needed; delete associated device_buffer and release memory
@@ -258,7 +258,7 @@ if(0)
         //retrieve child quadrants, given fpos of paranet quadrants (d_p_qtfpos) and offsets child quarants  
         auto update_quad_iter=thrust::make_zip_iterator(thrust::make_tuple(
             d_quad_idx_expanded,thrust::make_counting_iterator(0)));     
-        thrust::transform(exec_policy,update_quad_iter,update_quad_iter+num_pair,d_quad_idx_expanded,
+        thrust::transform(exec_policy->on(stream),update_quad_iter,update_quad_iter+num_pair,d_quad_idx_expanded,
             update_quad(d_p_qtfpos,d_seq_pos));
 
         //d_seq_pos is no long needed; delete related device_buffer 
@@ -268,15 +268,15 @@ if(0)
         //three possible types: intersection and leaf nodes==>0, intersection and non-leaf nodes==>1, non-intersection==>2
         //pair_output_expanded_iter has four components; polygon/quadrant idx repeated to work with copy_if/remove_if next 
         auto pq_pair_iterator=thrust::make_zip_iterator(thrust::make_tuple(d_poly_idx_expanded,d_quad_idx_expanded));
-        thrust::transform(exec_policy,pq_pair_iterator,pq_pair_iterator+num_pair,pair_output_expanded_iter,
+        thrust::transform(exec_policy->on(stream),pq_pair_iterator,pq_pair_iterator+num_pair,pair_output_expanded_iter,
             twolist_test_intersection<T>(num_level,aoi_bbox,scale,d_p_qtkey,d_p_qtlev,d_p_qtsign,d_poly_sbbox));
 
         //copy type 0 (intersection and leaf nodes) to output directly 
-        num_leaf_pair=thrust::copy_if(exec_policy,pair_output_expanded_iter,pair_output_expanded_iter+num_pair,
+        num_leaf_pair=thrust::copy_if(exec_policy->on(stream),pair_output_expanded_iter,pair_output_expanded_iter+num_pair,
             pair_output_iter+output_nodes_pos,qt_is_type(0))-(pair_output_iter+output_nodes_pos);
 
         //keep type 1(intersection and non-leaf nodes) only 
-        num_nonleaf_pair=thrust::remove_if(exec_policy,pair_output_expanded_iter,pair_output_expanded_iter+num_pair,
+        num_nonleaf_pair=thrust::remove_if(exec_policy->on(stream),pair_output_expanded_iter,pair_output_expanded_iter+num_pair,
             pair_output_expanded_iter,qt_not_type(1))-pair_output_expanded_iter;
 
         std::cout<<"level="<<i<<std::endl;
@@ -366,13 +366,13 @@ if(0)
        cudf::data_type(cudf::type_id::INT32), output_nodes_pos,cudf::mask_state::UNALLOCATED,  stream, mr);
     uint32_t *d_pq_poly_idx=cudf::mutable_column_device_view::create(poly_idx_col->mutable_view(), stream)->data<uint32_t>();
     CUDF_EXPECTS(d_pq_poly_idx!=nullptr,"Error in accessing data array of polygon index column"); 
-    thrust::copy(exec_policy,d_poly_idx_out,d_poly_idx_out+output_nodes_pos,d_pq_poly_idx);
+    thrust::copy(exec_policy->on(stream),d_poly_idx_out,d_poly_idx_out+output_nodes_pos,d_pq_poly_idx);
 
     std::unique_ptr<cudf::column> quad_idx_col = cudf::make_numeric_column(
        cudf::data_type(cudf::type_id::INT32), output_nodes_pos,cudf::mask_state::UNALLOCATED,  stream, mr);
     uint32_t *d_pq_quad_idx=cudf::mutable_column_device_view::create(quad_idx_col->mutable_view(), stream)->data<uint32_t>();
     CUDF_EXPECTS(d_pq_quad_idx!=nullptr,"Error in accessing data array of quadrant index column"); 
-    thrust::copy(exec_policy,d_quad_idx_out,d_quad_idx_out+output_nodes_pos,d_pq_quad_idx);
+    thrust::copy(exec_policy->on(stream),d_quad_idx_out,d_quad_idx_out+output_nodes_pos,d_pq_quad_idx);
 
     //the output arrays are no longer needed; delete device buffers and release memory
     delete db_pq_lev_out; db_pq_lev_out=nullptr;
