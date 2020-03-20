@@ -206,7 +206,7 @@ namespace cuspatial
                               pm.num_feature * sizeof(int32_t),
                               cudaMemcpyHostToDevice, stream) );
         //prefix-sum: len to pos
-        thrust::inclusive_scan(rmm::exec_policy(stream)->(stream), temp, temp + pm.num_feature, temp);
+        thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream), temp, temp + pm.num_feature, temp);
         gdf_column_view_augmented(ply_fpos, temp, nullptr, pm.num_feature,
                               GDF_INT32, 0,
                               gdf_dtype_extra_info{TIME_UNIT_NONE}, "f_pos");
@@ -215,7 +215,7 @@ namespace cuspatial
         CUDA_TRY( cudaMemcpyAsync(temp, pm.ring_length,
                               pm.num_ring * sizeof(int32_t),
                               cudaMemcpyHostToDevice, stream) );
-        thrust::inclusive_scan(rmm::exec_policy(stream)->(stream), temp, temp + pm.num_feature, temp);
+        thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream), temp, temp + pm.num_feature, temp);
         gdf_column_view_augmented(ply_rpos, temp, nullptr, pm.num_ring,
                               GDF_INT32, 0,
                               gdf_dtype_extra_info{TIME_UNIT_NONE}, "r_pos");
