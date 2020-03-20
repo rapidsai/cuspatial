@@ -249,7 +249,7 @@ endif(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
-                    "${CMAKE_SOURCE_DIR}/thirdparty/cub"
+                    "${CMAKE_SOURCE_DIR}/../thirdparty/cub"
                     "${GDAL_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
                     "${CUDF_SRC_INCLUDE}"

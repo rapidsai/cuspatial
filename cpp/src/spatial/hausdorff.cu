@@ -111,6 +111,8 @@ struct Hausdorff_functor {
         int num_set=vertex_counts.size;
         int block_sz = num_set*num_set;
 
+        cudaStream_t stream{0};
+
         T *temp_matrix{nullptr};
         RMM_TRY( RMM_ALLOC(&temp_matrix, block_sz * sizeof(T), stream) );
 
