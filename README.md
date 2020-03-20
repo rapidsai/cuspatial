@@ -48,6 +48,8 @@ environment created in step 3 is active.
 
 ```
 git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
+cd $CUSPATIAL_HOME
+git submodule sync --recursive && git submodule update --init --recursive
 ```
 
 3. Compile and install 
