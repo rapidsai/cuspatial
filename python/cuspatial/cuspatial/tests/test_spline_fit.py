@@ -141,7 +141,7 @@ def test_class_triple():
     g = cuspatial.interpolate.CubicSpline(
         t, x, prefixes=cudf.Series([0, 5, 10, 15]).astype("int32")
     )
-    groups = np.array(
-        [np.repeat(0, 5), np.repeat(1, 5), np.repeat(2, 5)], 15, 1
-    )
+    groups = np.ravel(np.array(
+        [np.repeat(0, 5), np.repeat(1, 5), np.repeat(2, 5)]
+    ))
     assert_eq(g(t, groups=cudf.Series(groups)), x)
