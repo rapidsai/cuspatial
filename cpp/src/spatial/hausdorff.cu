@@ -112,7 +112,6 @@ struct Hausdorff_functor {
         int block_sz = num_set*num_set;
 
         cudaStream_t stream{0};
-        auto exec_policy = rmm::exec_policy(stream)->on(stream);
 
         T *temp_matrix{nullptr};
         RMM_TRY( RMM_ALLOC(&temp_matrix, block_sz * sizeof(T), stream) );
@@ -120,7 +119,7 @@ struct Hausdorff_functor {
         uint32_t *vertex_positions{nullptr};
         RMM_TRY( RMM_ALLOC((void**)&vertex_positions, sizeof(uint32_t)*num_set, stream) );
         uint32_t *vertex_counts_ptr=static_cast<uint32_t*>(vertex_counts.data);
-        thrust::inclusive_scan(exec_policy,vertex_counts_ptr,vertex_counts_ptr+num_set,vertex_positions);
+        thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),vertex_counts_ptr,vertex_counts_ptr+num_set,vertex_positions);
 
         int block_x = block_sz, block_y = 1;
         if (block_sz > 65535)
