@@ -15,7 +15,7 @@ In order to build the docs, we need the conda dev environment from cuspatial and
 #be in the same directory as your Makefile
 make html
 ```
-This should run Sphinx in your shell, and outputs to `build/html/index.html`.
+This runs Sphinx in your shell, and outputs to `build/html/index.html`.
 
 
 ## View docs web page by opening HTML in browser:
