@@ -19,6 +19,7 @@
 ## Bug Fixes
 
 - PR #123 Update references to error utils after libcudf changes
+- PR #136 Remove build erroring for deprecation warnings
 
 # cuSpatial 0.12.0 (04 Feb 2020)
 
