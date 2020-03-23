@@ -5,6 +5,7 @@
 ## Improvements
 
 ## Bug Fixes
+- PR #141 fix invalid pointer bug in rmm::exec_policy(stream)->on(steram) and wrong num_ring for multi-polygons 
 
 # cuSpatial 0.13.0 (TBD)
 
