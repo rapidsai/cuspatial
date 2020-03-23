@@ -1,4 +1,5 @@
 # cuSpatial 0.14.0 (Date TBD)
+- PR #114 Adding featurs on quadtree indexing and PIP-based spatial join 
 
 ## New Features
 
