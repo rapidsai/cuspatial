@@ -77,6 +77,9 @@ struct sw_point_functor
         T q_right = get_scalar<T>(right);
         T q_bottom = get_scalar<T>(bottom);
         T q_top = get_scalar<T>(top);
+        
+        cudaStream_t stream{0};
+        auto exec_policy = rmm::exec_policy(stream);    
 
         CUDF_EXPECTS(q_left < q_right,
                      "left must be less than right in a spatial window query");
@@ -88,7 +91,7 @@ struct sw_point_functor
             static_cast<T*>(x.data), static_cast<T*>(y.data)));
 
         int num_hits =
-            thrust::count_if(rmm::exec_policy(0)->on(0), in_it, in_it + x.size,
+            thrust::count_if(exec_policy->on(stream), in_it, in_it + x.size,
                              spatial_window_functor_xy<T>(q_left, q_bottom,
                                                           q_right, q_top));
 
@@ -99,7 +102,7 @@ struct sw_point_functor
 
         auto out_it =
             thrust::make_zip_iterator(thrust::make_tuple(temp_x, temp_y));
-        thrust::copy_if(rmm::exec_policy(0)->on(0), in_it, in_it + x.size, out_it,
+        thrust::copy_if(exec_policy->on(stream), in_it, in_it + x.size, out_it,
                         spatial_window_functor_xy<T>(q_left, q_bottom,
                                                      q_right, q_top));
 

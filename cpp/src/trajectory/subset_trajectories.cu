@@ -55,6 +55,10 @@ struct subset_functor {
                              gdf_column& out_x, gdf_column& out_y,
                              gdf_column& out_id, gdf_column& out_timestamp)
     {
+
+        cudaStream_t stream{0};
+        auto exec_policy = rmm::exec_policy(stream);    
+
         gdf_size_type num_hit{0};
         gdf_size_type num_id{id.size};
         gdf_size_type num_rec{in_id.size};
@@ -64,12 +68,12 @@ struct subset_functor {
             int32_t* id_ptr = static_cast<int32_t*>(id.data);
 
             rmm::device_vector<int32_t> temp_id(id_ptr, id_ptr + num_id);
-            thrust::sort(rmm::exec_policy(0)->on(0), temp_id.begin(), temp_id.end());
+            thrust::sort(exec_policy->on(stream), temp_id.begin(), temp_id.end());
             thrust::device_vector<bool> hit_vec(num_rec);
-            thrust::binary_search(rmm::exec_policy(0)->on(0), temp_id.cbegin(), temp_id.cend(),
+            thrust::binary_search(exec_policy->on(stream), temp_id.cbegin(), temp_id.cend(),
                                 in_id_ptr, in_id_ptr + num_rec, hit_vec.begin());
 
-            num_hit = thrust::count(rmm::exec_policy(0)->on(0), hit_vec.begin(),
+            num_hit = thrust::count(exec_policy->on(stream), hit_vec.begin(),
                                     hit_vec.end(), true);
 
             if (num_hit > 0) {
@@ -87,7 +91,7 @@ struct subset_functor {
                     static_cast<int32_t*>(out_id.data),
                     static_cast<cudf::timestamp*>(out_timestamp.data)));
 
-                auto end = thrust::copy_if(rmm::exec_policy(0)->on(0), in_itr, in_itr + num_rec,
+                auto end = thrust::copy_if(exec_policy->on(stream), in_itr, in_itr + num_rec,
                                            hit_vec.begin(), out_itr, is_true());
                 gdf_size_type num_keep = end - out_itr;
 
