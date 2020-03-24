@@ -43,6 +43,9 @@ struct derive_trajectories_functor {
                              gdf_column& length,
                              gdf_column& offset)
     {
+        cudaStream_t stream{0};
+        auto exec_policy = rmm::exec_policy(stream);    
+
         T* x_ptr = static_cast<T*>(x.data);
         T* y_ptr = static_cast<T*>(y.data);
         int32_t* id_ptr = static_cast<int32_t*>(object_id.data);
@@ -50,16 +53,16 @@ struct derive_trajectories_functor {
             static_cast<cudf::timestamp*>(timestamp.data);
 
         gdf_size_type num_rec = object_id.size;
-        thrust::stable_sort_by_key(rmm::exec_policy(0)->on(0), time_ptr, time_ptr + num_rec,
+        thrust::stable_sort_by_key(exec_policy->on(stream), time_ptr, time_ptr + num_rec,
             thrust::make_zip_iterator(thrust::make_tuple(id_ptr, x_ptr, y_ptr)));
-        thrust::stable_sort_by_key(rmm::exec_policy(0)->on(0), id_ptr, id_ptr+num_rec,
+        thrust::stable_sort_by_key(exec_policy->on(stream), id_ptr, id_ptr+num_rec,
             thrust::make_zip_iterator(thrust::make_tuple(time_ptr, x_ptr, y_ptr)));
 
         //allocate sufficient memory to hold id, cnt and pos before reduce_by_key
         rmm::device_vector<gdf_size_type> obj_count(num_rec);
         rmm::device_vector<gdf_size_type> obj_id(num_rec);
 
-        auto end = thrust::reduce_by_key(rmm::exec_policy(0)->on(0), id_ptr, id_ptr + num_rec,
+        auto end = thrust::reduce_by_key(exec_policy->on(stream), id_ptr, id_ptr + num_rec,
                                          thrust::constant_iterator<int>(1),
                                          obj_id.begin(),
                                          obj_count.begin());
@@ -72,9 +75,9 @@ struct derive_trajectories_functor {
         RMM_TRY( RMM_ALLOC(&traj_count, num_traj * sizeof(gdf_size_type), 0) );
         RMM_TRY( RMM_ALLOC(&traj_pos, num_traj * sizeof(gdf_size_type), 0) );
 
-        thrust::copy_n(rmm::exec_policy(0)->on(0), obj_id.begin(), num_traj, traj_id);
-        thrust::copy_n(rmm::exec_policy(0)->on(0), obj_count.begin(), num_traj, traj_count);
-        thrust::inclusive_scan(rmm::exec_policy(0)->on(0), traj_count, traj_count +num_traj,
+        thrust::copy_n(exec_policy->on(stream), obj_id.begin(), num_traj, traj_id);
+        thrust::copy_n(exec_policy->on(stream), obj_count.begin(), num_traj, traj_count);
+        thrust::inclusive_scan(exec_policy->on(stream), traj_count, traj_count +num_traj,
                                traj_pos);
 
         gdf_column_view(&trajectory_id, traj_id, nullptr, num_traj, GDF_INT32);

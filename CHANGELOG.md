@@ -5,6 +5,7 @@
 ## Improvements
 
 ## Bug Fixes
+- PR #141 fix dangling exec_policy pointer and invalid num_ring argument.
 
 # cuSpatial 0.13.0 (TBD)
 
