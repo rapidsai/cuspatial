@@ -47,9 +47,7 @@ environment created in step 3 is active.
 2. clone the cuSpatial repo
 
 ```
-git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
-cd $CUSPATIAL_HOME
-git submodule sync --recursive && git submodule update --init --recursive
+git clone --recurse-submodules https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
 ```
 
 3. Compile and install 
