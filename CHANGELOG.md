@@ -5,7 +5,7 @@
 ## Improvements
 
 ## Bug Fixes
-- PR #141 fix invalid pointer bug in 'auto exec_policy=rmm::exec_policy(stream)->on(stream)' and wrong num_ring for multi-polygons 
+- PR #141 fix dangling exec_policy pointer and invalid num_ring argument.
 
 # cuSpatial 0.13.0 (TBD)
 
