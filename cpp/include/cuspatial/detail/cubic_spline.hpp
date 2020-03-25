@@ -21,6 +21,7 @@
 #include <cudf/table/table.hpp>
 
 namespace cuspatial {
+namespace detail {
 
 /**
  * @brief Create a table of cubic spline coefficients from columns of coordinates.
@@ -43,17 +44,20 @@ namespace cuspatial {
  * @param[in] offsets the exclusive scan of the spline sizes, prefixed by
  * 0. For example, for 3 splines of 5 vertices each, the offsets input array
  * is {0, 5, 10, 15}.
+ * @param[in] mr the optional caller specified RMM memory resource
+ * @param[in] stream the optional caller specified cudaStream
  *
  * @return cudf::table_view of coefficients for spline interpolation. The size
  * of the table is ((M-n), 4) where M is `t.size()` and and n is 
  * `ids.size()-1`.
 **/
-std::unique_ptr<cudf::column> cubicspline_interpolate(
-                                         cudf::column_view const& query_points,
-                                         cudf::column_view const& spline_ids,
+std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
+                                         cudf::column_view const& t,
+                                         cudf::column_view const& y,
+                                         cudf::column_view const& ids,
                                          cudf::column_view const& offsets,
-                                         cudf::column_view const& source_points,
-                                         cudf::table_view const& coefficients);
+                                         rmm::mr::device_memory_resource *mr,
+                                         cudaStream_t stream);
 
 /**
  * @brief Compute cubic interpolations of a set of points based on their
@@ -70,12 +74,18 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
  * identify which specific spline a given query_point is interpolated with.
  * @param[in] coefficients table of spline coefficients produced by
  * cubicspline_coefficients.
+ * @param[in] mr the optional caller specified RMM memory resource
+ * @param[in] stream the optional caller specified cudaStream
  *
  * @return cudf::column `y` coordinates interpolated from `x` and `coefs`.
 **/
-std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
-                                         cudf::column_view const& t,
-                                         cudf::column_view const& y,
-                                         cudf::column_view const& ids,
-                                         cudf::column_view const& offsets);
-}// namespace cuspatial
+std::unique_ptr<cudf::column> cubicspline_interpolate(
+                                         cudf::column_view const& query_points,
+                                         cudf::column_view const& spline_ids,
+                                         cudf::column_view const& offsets,
+                                         cudf::column_view const& source_points,
+                                         cudf::table_view const& coefficients,
+                                         rmm::mr::device_memory_resource *mr,
+                                         cudaStream_t stream);
+} // namespace detail
+} // namespace cuspatial
