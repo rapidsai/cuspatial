@@ -1,7 +1,7 @@
 # cuSpatial 0.14.0 (Date TBD)
 
 ## New Features
-
+- PR 143 construct quadtree on large-scale point data
 ## Improvements
 
 ## Bug Fixes
