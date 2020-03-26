@@ -1,6 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
 import numpy as np
+import cupy as cp
 
 from cudf import DataFrame, Series
 
@@ -35,27 +36,6 @@ class CubicSpline:
     """
     Fits each column of the input Series `y` to a hermetic cubic spline.
 
-    Parameters
-    ----------
-    t : cudf.Series
-        time sample values. Must be monotonically increasing.
-    y : cudf.Series
-        columns to have curves fit to according to x
-    ids (Optional) : cudf.Series
-        ids of each spline
-    size (Optional) : cudf.Series
-        fixed size of each spline
-    prefixes (Optional) : cudf.Series
-        alternative to `size`, allows splines of varying
-        length. Not yet fully supported.
-
-    Returns
-    -------
-    CubicSpline object `o`. `o.c` contains the coefficients that can be
-    used to compute new points along the spline fitting the original `t`
-    data. `o(n)` interpolates the spline coordinates along new input
-    values `n`.
-
     cuspatial.CubicSpline supports two usage patterns: The first is
     identical to scipy.interpolate.CubicSpline:
 
@@ -71,9 +51,9 @@ class CubicSpline:
     and the inclusive/exclusive prefix_sum of the separate curves must also
     be passed to the function.
 
-        t = cudf.Series(np.repeat(np.arange(100), 1000)).astype('float32')
+        t = cudf.Series(np.repeat(cp.arange(100), 1000)).astype('float32')
         y = cudf.Series(np.random.random(100*1000)).astype('float32')
-        prefix_sum = cudf.Series(np.arange(1000)*100).astype('int32')
+        prefix_sum = cudf.Series(cp.arange(1000)*100).astype('int32')
         new_samples = cudf.Series(np.repeat(np.linspace(0, 100, 1000), 1000)
             .astype('float32'))
 
@@ -87,7 +67,29 @@ class CubicSpline:
         Computes various error preconditions on the input data, then
         calls C++/Thrust code to compute cubic splines for each set of input
         coordinates in parallel.
+
+        Parameters
+        ----------
+        t : cudf.Series
+            time sample values. Must be monotonically increasing.
+        y : cudf.Series
+            columns to have curves fit to according to x
+        ids (Optional) : cudf.Series
+            ids of each spline
+        size (Optional) : cudf.Series
+            fixed size of each spline
+        prefixes (Optional) : cudf.Series
+            alternative to `size`, allows splines of varying
+            length. Not yet fully supported.
+
+        Returns
+        -------
+        CubicSpline object `o`. `o.c` contains the coefficients that can be
+        used to compute new points along the spline fitting the original `t`
+        data. `o(n)` interpolates the spline coordinates along new input
+        values `n`.
         """
+
         # error protections:
         if len(t) < 5:
             raise ValueError(
@@ -132,7 +134,7 @@ class CubicSpline:
         self.y = y
         if prefixes is None:
             self.prefix = Series(
-                np.arange((len(t) / self.size) + 1) * self.size
+                cp.arange((len(t) / self.size) + 1) * self.size
             ).astype("int32")
         else:
             if not isinstance(prefixes, Series):
@@ -168,7 +170,7 @@ class CubicSpline:
             if groups is not None:
                 self.groups = groups.astype("int32")
             else:
-                self.groups = Series(np.repeat(0, len(self.t))).astype("int32")
+                self.groups = Series(cp.repeat(0, len(self.t))).astype("int32")
             result = _cubic_spline_fit(
                 coordinates, self.groups, self.prefix, self.t, self.c
             )

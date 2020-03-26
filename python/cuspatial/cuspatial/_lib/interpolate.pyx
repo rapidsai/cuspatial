@@ -1,4 +1,4 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
 # cython: profile=False
 # distutils: language = c++
@@ -6,7 +6,7 @@
 # cython: language_level = 3
 
 from cudf._libxx.table cimport table, Table
-from cudf._libxx.move cimport move
+from cudf._libxx.move cimport move, unique_ptr
 from cudf._libxx.column cimport column, Column
 
 cpdef cubicspline_coefficients(
