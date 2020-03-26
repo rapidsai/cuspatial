@@ -1,7 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
-import numpy as np
 import cupy as cp
+import numpy as np
 
 from cudf import DataFrame, Series
 
@@ -170,7 +170,9 @@ class CubicSpline:
             if groups is not None:
                 self.groups = groups.astype("int32")
             else:
-                self.groups = Series(cp.repeat(0, len(self.t))).astype("int32")
+                self.groups = Series(
+                    cp.repeat(cp.array(0), len(self.t))
+                ).astype("int32")
             result = _cubic_spline_fit(
                 coordinates, self.groups, self.prefix, self.t, self.c
             )
