@@ -19,6 +19,7 @@
 ## Improvements
 
 - PR #128 Use RMM's `DeviceBuffer` for Python allocations
+- PR #142 Disable deprecation warnings by default
 - PR #138 Update Build instructions in the README
 
 ## Bug Fixes
