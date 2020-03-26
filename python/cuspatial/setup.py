@@ -11,6 +11,11 @@ from Cython.Build import cythonize
 from setuptools import find_packages, setup
 from setuptools.extension import Extension
 
+try:
+    from Cython.Distutils.build_ext import new_build_ext as build_ext
+except ImportError:
+    from setuptools.command.build_ext import build_ext
+
 install_requires = ["numba", "cython"]
 cython_files = ["cuspatial/_lib/**/*.pyx"]
 
@@ -52,6 +57,15 @@ extensions = [
     )
 ]
 
+for e in extensions:
+    e.cython_directives = dict(
+        profile=False, language_level=3, embedsignature=True
+    )
+
+cmdclass = dict()
+cmdclass.update(versioneer.get_cmdclass())
+cmdclass["build_ext"] = build_ext
+
 setup(
     name="cuspatial",
     version=versioneer.get_version(),
@@ -73,10 +87,10 @@ setup(
     ],
     # Include the separately-compiled shared library
     setup_requires=["cython"],
-    ext_modules=cythonize(extensions),
+    ext_modules=extensions,
     packages=find_packages(include=["cuspatial", "cuspatial.*"]),
     package_data={"cuspatial._lib": ["*.pxd"]},
-    cmdclass=versioneer.get_cmdclass(),
+    cmdclass=cmdclass,
     install_requires=install_requires,
     zip_safe=False,
 )
