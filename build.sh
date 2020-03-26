@@ -107,10 +107,10 @@ if (( ${NUMARGS} == 0 )) || hasArg cuspatial; then
 
     cd ${REPODIR}/python/cuspatial
     if [[ ${INSTALL_TARGET} != "" ]]; then
-        python setup.py build_ext -j${PARALLEL_LEVEL} --inplace
+        PARALLEL_LEVEL=${PARALLEL_LEVEL} python setup.py build_ext --inplace
         python setup.py install --single-version-externally-managed --record=record.txt
     else
-        python setup.py build_ext -j${PARALLEL_LEVEL} --inplace --library-dir=${LIBCUSPATIAL_BUILD_DIR}
+        PARALLEL_LEVEL=${PARALLEL_LEVEL} python setup.py build_ext --inplace --library-dir=${LIBCUSPATIAL_BUILD_DIR}
     fi
 fi
 
