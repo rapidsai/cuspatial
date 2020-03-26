@@ -1,7 +1,9 @@
 # cuSpatial 0.14.0 (Date TBD)
 
 ## New Features
+- PR 145 compute polygon bounding boxes using parallel primitives
 - PR 143 construct quadtree on large-scale point data
+
 ## Improvements
 
 ## Bug Fixes
