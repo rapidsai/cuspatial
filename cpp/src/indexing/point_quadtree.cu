@@ -23,7 +23,7 @@
 #include <cudf/table/table.hpp>
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
-#include <cuspatial/quadtree.hpp>
+#include <cuspatial/point_quadtree.hpp>
 #include <utility/helper_thrust.cuh>
 #include <utility/quadtree_thrust.cuh>
 
