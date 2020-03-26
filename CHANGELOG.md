@@ -12,7 +12,9 @@
 # cuSpatial 0.13.0 (TBD)
 
 ## New Features
+
 - PR #126 Create and build cuSpatial Docs 
+- PR #130 Add cubic spline fit and interpolation
 
 ## Improvements
 
@@ -22,6 +24,7 @@
 
 - PR #123 Update references to error utils after libcudf changes
 - PR #136 Remove build erroring for deprecation warnings
+
 
 # cuSpatial 0.12.0 (04 Feb 2020)
 
