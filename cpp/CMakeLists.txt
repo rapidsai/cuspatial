@@ -296,13 +296,16 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
                     "${CMAKE_SOURCE_DIR}/../thirdparty/cub"
                     "${CMAKE_SOURCE_DIR}/../thirdparty/libcudacxx/include"
-                    "${GDAL_INCLUDE_DIR}"
+                    "${GDAL_INCLUDE_DIRS}"
                     "${RMM_INCLUDE}"
                     "${CUDF_SRC_INCLUDE}"
                     "${CUDF_INCLUDE}"
                     "${CUB_INCLUDE}"
                     "${JITIFY_INCLUDE}")
 
+if(CONDA_INCLUDE_DIRS)
+    include_directories("${CONDA_INCLUDE_DIRS}")
+endif(CONDA_INCLUDE_DIRS)
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
@@ -311,10 +314,13 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CMAKE_BINARY_DIR}/lib"
                  "${FLATBUFFERS_LIBRARY_DIR}"
                  "${GDAL_LIBRARIES}"
-                 "${CONDA_LINK_DIRS}"
                  "${GTEST_LIBRARY_DIR}"
                  "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}")
+
+if(CONDA_LINK_DIRS)
+    link_directories("${CONDA_LINK_DIRS}")
+endif(CONDA_LINK_DIRS)
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
