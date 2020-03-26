@@ -252,6 +252,7 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
                     "${CMAKE_SOURCE_DIR}/../thirdparty/cub"
+                    "${CMAKE_SOURCE_DIR}/../thirdparty/libcudacxx/include"
                     "${GDAL_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
                     "${CUDF_SRC_INCLUDE}"
@@ -278,6 +279,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 
 add_library(cuspatial SHARED
             src/indexing/point_quadtree.cu
+            src/interpolate/cubic_spline.cu
             src/io/shp/polygon_shapefile_reader.cu
             src/io/soa/polygon_soa_reader.cu
             src/io/soa/point_soa_reader.cu
@@ -312,7 +314,7 @@ endif(USE_NVTX)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(cuspatial cudf rmm cudart cuda nvrtc gdal)
+target_link_libraries(cuspatial cudf rmm cudart cuda cusparse nvrtc gdal)
 
 
 ###################################################################################################

@@ -64,7 +64,8 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}"
                     "${CMAKE_SOURCE_DIR}/src"
-                    "${CMAKE_SOURCE_DIR}/thirdparty/cub"
+                    "${CMAKE_SOURCE_DIR}/../thirdparty/cub"
+                    "${CMAKE_SOURCE_DIR}/../thirdparty/libcudacxx/include"
                     "${CMAKE_SOURCE_DIR}/thirdparty/dlpack/include"
                     "${GTEST_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
@@ -86,6 +87,10 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CUDF_LIBRARY}"
                  "${CUSPATIAL_LIBRARY}"
                  )
+set(CUBIC_SPLINE_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/interpolate/cubic_spline_test.cpp")
+ ConfigureTest(CUBIC_SPLINE_TEST "${CUBIC_SPLINE_TEST_SRC}")
+
 set(COORDINATE_TRANSFORM_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/coordinate_transform_toy.cu")
 ConfigureTest(COORDINATE_TRANSFORM_TEST "${COORDINATE_TRANSFORM_TEST_SRC}")
