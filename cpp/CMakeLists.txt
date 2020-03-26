@@ -87,7 +87,7 @@ endif(CMAKE_BUILD_TYPE MATCHES Debug)
 set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--disable-new-dtags")
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,--disable-new-dtags")
 
-option(BUILD_TESTS "Configure CMake to build tests" OFF)
+option(BUILD_TESTS "Configure CMake to build tests" ON)
 
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 
@@ -136,14 +136,15 @@ endif (RMM_INCLUDE AND RMM_LIBRARY)
 # - CUDF -------------------------------------------------------------------------------------------
 
 find_path(CUDF_INCLUDE "cudf"
-          HINTS "$ENV{CUDF_ROOT}/cpp/include")
+          HINTS "$ENV{CUDF_HOME}/cpp/include")
 
 find_library(CUDF_LIBRARY "cudf"
-             HINTS "$ENV{CUDF_ROOT}/lib")
+             HINTS "$ENV{CUDF_HOME}/lib")
 
 SET(CUDF_SRC_INCLUDE "$ENV{CUDF_HOME}/cpp/src")
 SET(CUB_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/cub")
 SET(JITIFY_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/jitify")
+SET(SIMT_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/libcudacxx/include")
 SET(CUDF_TEST_INCLUDE "$ENV{CUDF_HOME}/cpp/")
 
 message(STATUS "CUDF: CUDF_HOME set to $ENV{CUDF_HOME}")
@@ -152,6 +153,7 @@ message(STATUS "CUDF: CUDF_INCLUDE set to ${CUDF_INCLUDE}")
 message(STATUS "CUDF SRC: CUDF_SRC_INCLUDE set to ${CUDF_SRC_INCLUDE}")
 message(STATUS "CUDF: CUB_INCLUDE set to ${CUB_INCLUDE}")
 message(STATUS "CUDF: JITIFY_INCLUDE set to ${JITIFY_INCLUDE}")
+message(STATUS "CUDF: SIMT_INCLUDE set to ${SIMT_INCLUDE}")
 message(STATUS "CUDF: CUDF_TEST_INCLUDE set to ${CUDF_TEST_INCLUDE}")
 
 add_library(cudf SHARED IMPORTED ${CUDF_LIBRARY})
@@ -255,7 +257,8 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CUDF_SRC_INCLUDE}"
                     "${CUDF_INCLUDE}"
                     "${CUB_INCLUDE}"
-                    "${JITIFY_INCLUDE}")
+                    "${JITIFY_INCLUDE}"
+                    "${SIMT_INCLUDE}")
 
 
 ###################################################################################################
