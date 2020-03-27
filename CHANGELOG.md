@@ -3,6 +3,7 @@
 ## New Features
 
 ## Improvements
+- PR #147 Update Conda/CMake configs to match other RAPIDS projects
 
 ## Bug Fixes
 - PR #141 fix dangling exec_policy pointer and invalid num_ring argument.

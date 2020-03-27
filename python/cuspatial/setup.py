@@ -33,6 +33,11 @@ if not os.path.isdir(CUDA_HOME):
 
 cuda_include_dir = os.path.join(CUDA_HOME, "include")
 
+try:
+    nthreads = int(os.environ.get("PARALLEL_LEVEL", "0") or "0")
+except Exception:
+    nthreads = 0
+
 extensions = [
     Extension(
         "*",
@@ -73,7 +78,13 @@ setup(
     ],
     # Include the separately-compiled shared library
     setup_requires=["cython"],
-    ext_modules=cythonize(extensions),
+    ext_modules=cythonize(
+        extensions,
+        nthreads=nthreads,
+        compiler_directives=dict(
+            profile=False, language_level=3, embedsignature=True
+        ),
+    ),
     packages=find_packages(include=["cuspatial", "cuspatial.*"]),
     package_data={"cuspatial._lib": ["*.pxd"]},
     cmdclass=versioneer.get_cmdclass(),
