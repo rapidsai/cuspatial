@@ -168,7 +168,7 @@ template <typename T>
 void read_polygon_soa(const char *poly_filename,struct polygons<T>* ply)
 {
     CUDF_EXPECTS(ply!=nullptr,"input pointer to polygons<T> can not be null ");
-    memset(ply,0, sizeof(polygons<T>));
+    *ply = polygons<T>{};
 
     FILE *fp=fopen(poly_filename,"rb");
     CUDF_EXPECTS(fp!=nullptr,"can not open the input polygon file");
