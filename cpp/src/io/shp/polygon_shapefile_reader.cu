@@ -193,8 +193,7 @@ namespace cuspatial
         memset(ply_x,0,sizeof(gdf_column));
         memset(ply_y,0,sizeof(gdf_column));
 
-        polygons<double> pm;
-        memset(&pm,0,sizeof(pm));
+        polygons<double> pm{};
         polygon_from_shapefile(filename,pm);
         if (pm.num_feature <=0) return;
 
