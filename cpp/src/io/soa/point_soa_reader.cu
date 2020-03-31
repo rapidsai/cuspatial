@@ -20,7 +20,7 @@
 #include <cuda_runtime.h>
 #include <cudf/types.h>
 #include <cudf/legacy/column.hpp>
-#include <utilities/legacy/error_utils.hpp>
+#include <cudf/utilities/error.hpp>
 #include <rmm/rmm.h>
 #include <cuspatial/soa_readers.hpp>
 #include <utility/utility.hpp>

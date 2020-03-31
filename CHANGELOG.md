@@ -1,3 +1,22 @@
+# cuSpatial 0.13.0 (31 Mar 2020)
+
+## New Features
+
+- PR #126 Create and build cuSpatial Docs 
+- PR #130 Add cubic spline fit and interpolation
+
+## Improvements
+
+- PR #128 Use RMM's `DeviceBuffer` for Python allocations
+- PR #142 Disable deprecation warnings by default
+- PR #138 Update Build instructions in the README
+
+## Bug Fixes
+
+- PR #123 Update references to error utils after libcudf changes
+- PR #136 Remove build erroring for deprecation warnings
+
+
 # cuSpatial 0.12.0 (04 Feb 2020)
 
 ## New Features
