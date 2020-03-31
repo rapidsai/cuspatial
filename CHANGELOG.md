@@ -1,4 +1,4 @@
-# cuSpatial 0.13.0 (TBD)
+# cuSpatial 0.13.0 (31 Mar 2020)
 
 ## New Features
 
