@@ -6,8 +6,8 @@
 # cython: language_level = 3
 
 
-from cudf._lib.cudf import *
-from cudf._lib.cudf cimport *
+from cudf._lib.legacy.cudf import *
+from cudf._lib.legacy.cudf cimport *
 from cudf import Series
 from libcpp.pair cimport pair
 

@@ -1,10 +1,12 @@
+# Copyright (c) 2020, NVIDIA CORPORATION.
+
 # cython: profile=False
 # distutils: language = c++
 # cython: embedsignature = True
 # cython: language_level = 3
 # distutils: include_dirs = cuspatial/bindings/
 
-from cudf._lib.cudf cimport gdf_column
+from cudf._lib.legacy.cudf cimport gdf_column
 
 cdef extern from "shapefile_readers.hpp" namespace "cuspatial" nogil:
     cdef gdf_column read_polygon_shapefile(
