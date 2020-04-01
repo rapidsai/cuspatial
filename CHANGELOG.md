@@ -3,13 +3,16 @@
 ## New Features
 
 ## Improvements
+
 - PR #147 Update Conda/CMake configs to match other RAPIDS projects
 - PR #163 Fix cudf legacy Cython imports/cimports
 
 ## Bug Fixes
+
 - PR #141 fix dangling exec_policy pointer and invalid num_ring argument.
 
-# cuSpatial 0.13.0 (TBD)
+
+# cuSpatial 0.13.0 (31 Mar 2020)
 
 ## New Features
 
