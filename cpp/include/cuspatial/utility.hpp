@@ -14,57 +14,37 @@
  * limitations under the License.
  */
 
+#include <string>
+#include <stdexcept>
 #include "cusparse.h"
 
 namespace cuspatial {
+
+struct cusparse_error : public std::runtime_error {
+  cusparse_error(std::string const& message) : std::runtime_error(message) {}
+};
+
 namespace detail {
 
-void HANDLE_CUSPARSE_STATUS(cusparseStatus_t status) {
-  if(status != CUSPARSE_STATUS_SUCCESS) {
-    const char* status_string;
-    switch(status) {
-      case CUSPARSE_STATUS_SUCCESS:
-          status_string = "CUSPARSE_STATUS_SUCCESS";
-          break;
-      case CUSPARSE_STATUS_NOT_INITIALIZED:
-          status_string = "CUSPARSE_STATUS_NOT_INITIALIZED";
-          break;
-      case CUSPARSE_STATUS_ALLOC_FAILED:
-          status_string = "CUSPARSE_STATUS_ALLOC_FAILED";
-          break;
-      case CUSPARSE_STATUS_INVALID_VALUE:
-          status_string = "CUSPARSE_STATUS_INVALID_VALUE";
-          break;
-      case CUSPARSE_STATUS_ARCH_MISMATCH:
-          status_string = "CUSPARSE_STATUS_ARCH_MISMATCH";
-          break;
-      case CUSPARSE_STATUS_EXECUTION_FAILED:
-          status_string = "CUSPARSE_STATUS_EXECUTION_FAILED";
-          break;
-      case CUSPARSE_STATUS_INTERNAL_ERROR:
-          status_string = "CUSPARSE_STATUS_INTERNAL_ERROR";
-          break;
-      case CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
-          status_string = "CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED";
-          break;
-      default:
-          status_string = "UNKNOWN";
-    }
-    printf("Cusparse error status %s\n", status_string);
-    CUDF_EXPECTS(status != CUSPARSE_STATUS_SUCCESS, "Fail");
-  }
+inline void throw_cusparse_error(cusparseStatus_t error,
+                                 const char* file,
+                                 unsigned int line)
+{
+  // would be nice to include `cusparseGetErrorName(error)` and
+  // `cusparseGetErrorString(error)`, but those aren't introduced until
+  // cuda 10.1 (and not in the initial release).
+  throw cuspatial::cusparse_error(
+      std::string{"CUSPARSE error encountered at: " + std::string{file} + ":" +
+                  std::to_string(line) + ": " + std::to_string(error)});
 }
 
-static void HandleCudaError( cudaError_t err,
-                         const char *file,
-                         int line ) {
-    if (err != cudaSuccess) {
-        printf( "%s in %s at line %d\n", cudaGetErrorString( err ),
-                file, line );
-        exit( EXIT_FAILURE );
-    }
-}
-#define HANDLE_CUDA_ERROR( err ) (cuspatial::detail::HandleCudaError( err, __FILE__, __LINE__ ))
+#define CUSPARSE_TRY(call)                                                 \
+  do {                                                                     \
+    cusparseStatus_t status = (call);                                      \
+    if (CUSPARSE_STATUS_SUCCESS != status) {                               \
+      cuspatial::detail::throw_cusparse_error(status, __FILE__, __LINE__); \
+    }                                                                      \
+  } while (0);
 
 } // detail namespace
 
