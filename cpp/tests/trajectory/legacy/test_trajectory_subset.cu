@@ -22,7 +22,7 @@
 #include <tests/utilities/legacy/cudf_test_fixtures.h>
 #include <tests/utilities/legacy/column_wrapper.cuh>
 
-#include <cuspatial/trajectory.hpp>
+#include <cuspatial/legacy/trajectory.hpp>
 
 struct TrajectorySubsetTest : public GdfTest 
 {

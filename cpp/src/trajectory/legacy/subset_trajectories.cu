@@ -27,7 +27,7 @@
 
 #include <utility/utility.hpp>
 #include <utility/trajectory_thrust.cuh>
-#include <cuspatial/trajectory.hpp>
+#include <cuspatial/legacy/trajectory.hpp>
 
 namespace{
 
