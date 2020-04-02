@@ -19,7 +19,7 @@
 #include <type_traits>
 #include <thrust/device_vector.h>
 
-#include <cuspatial/trajectory.hpp>
+#include <cuspatial/legacy/trajectory.hpp>
 
 #include <cudf/legacy/column.hpp>
 
