@@ -25,6 +25,7 @@
 #include <cudf/legacy/column.hpp>
 #include <cudf/utilities/error.hpp>
 #include <cuspatial/shapefile_readers.hpp>
+#include <cuspatial/error.hpp>
 #include <utility/utility.hpp>
 
 #include <ogrsf_frmts.h>
@@ -89,7 +90,7 @@ namespace
         else if (eFlatType == wkbPolygon)
             LinearRingFromPolygon(*((OGRPolygon *) poShape),aPointX, aPointY, aPartSize );
         else
-           CUDF_EXPECTS(0, "must be polygonal geometry." );    
+           CUSPATIAL_EXPECTS(0, "must be polygonal geometry." );    
     }
 
      /*
@@ -114,7 +115,7 @@ namespace
         while( (hFeat = OGR_L_GetNextFeature( layer )) != NULL )
         {
             OGRGeometry *poShape=(OGRGeometry *)OGR_F_GetGeometryRef( hFeat );
-            CUDF_EXPECTS(poShape!=NULL,"Invalid Shape");
+            CUSPATIAL_EXPECTS(poShape!=NULL,"Invalid Shape");
             
             std::vector<double> aPointX;
             std::vector<double> aPointY;
@@ -152,11 +153,11 @@ namespace cuspatial
         GDALAllRegister();
 
         GDALDatasetH hDS = GDALOpenEx( filename, GDAL_OF_VECTOR, NULL, NULL, NULL );
-        CUDF_EXPECTS(hDS!=NULL,"Failed to open ESRI Shapefile dataset");
+        CUSPATIAL_EXPECTS(hDS!=NULL,"Failed to open ESRI Shapefile dataset");
         OGRLayerH hLayer = GDALDatasetGetLayer( hDS,0 );
-        CUDF_EXPECTS(hLayer!=NULL,"Failed to open the first layer");
+        CUSPATIAL_EXPECTS(hLayer!=NULL,"Failed to open the first layer");
         int num_f=ReadLayer(hLayer,g_len_v,f_len_v,r_len_v,x_v,y_v);
-        CUDF_EXPECTS(num_f>0,"Shapefile must have at lest one polygon");
+        CUSPATIAL_EXPECTS(num_f>0,"Shapefile must have at lest one polygon");
         
         pm.num_group=g_len_v.size();
         pm.num_feature=f_len_v.size();
@@ -167,10 +168,10 @@ namespace cuspatial
         pm.ring_length=new uint32_t[ pm.num_ring];
         pm.x=new double [pm.num_vertex];
         pm.y=new double [pm.num_vertex];
-        CUDF_EXPECTS(pm.group_length !=nullptr, "NULL group_length pointer");
-        CUDF_EXPECTS(pm.feature_length != nullptr, "NULL feature_length pointer");
-        CUDF_EXPECTS(pm.ring_length != nullptr, "NULL ring_length pointer");
-        CUDF_EXPECTS(pm.x != nullptr && pm.y != nullptr, "NULL polygon x/y data pointer");
+        CUSPATIAL_EXPECTS(pm.group_length !=nullptr, "NULL group_length pointer");
+        CUSPATIAL_EXPECTS(pm.feature_length != nullptr, "NULL feature_length pointer");
+        CUSPATIAL_EXPECTS(pm.ring_length != nullptr, "NULL ring_length pointer");
+        CUSPATIAL_EXPECTS(pm.x != nullptr && pm.y != nullptr, "NULL polygon x/y data pointer");
 
         std::copy_n(g_len_v.begin(),pm.num_group,pm.group_length);
         std::copy_n(f_len_v.begin(),pm.num_feature,pm.feature_length);

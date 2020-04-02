@@ -70,7 +70,7 @@ struct parallel_search {
   template <typename T, typename... Args>
   std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>>
   operator()(Args&&... args) {
-      CUDF_FAIL("Non-floating point operation is not supported.");
+      CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
 };
 
@@ -108,7 +108,7 @@ struct interpolate {
   template <typename T, typename... Args>
   std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>>
   operator()(Args&&... args) {
-      CUDF_FAIL("Non-floating point operation is not supported.");
+      CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
 };
 
@@ -175,7 +175,7 @@ struct coefficients_compute {
                   cudf::mutable_column_view const& d0,
                   rmm::mr::device_memory_resource *mr,
                   cudaStream_t stream) {
-      CUDF_FAIL("Non-floating point operation is not supported.");
+      CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
 };
 
@@ -235,7 +235,7 @@ struct compute_spline_tridiagonals {
                   cudf::mutable_column_view const& i,
                   rmm::mr::device_memory_resource *mr,
                   cudaStream_t stream) {
-      CUDF_FAIL("Non-floating point operation is not supported.");
+      CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
 };
 

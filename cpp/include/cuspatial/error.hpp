@@ -14,16 +14,81 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <cusparse.h>
 #include <string>
 #include <stdexcept>
 
 namespace cuspatial {
 
+/**---------------------------------------------------------------------------*
+ * @brief Exception thrown when logical precondition is violated.
+ *
+ * This exception should not be thrown directly and is instead thrown by the
+ * CUSPATIAL_EXPECTS macro.
+ *
+ *---------------------------------------------------------------------------**/
+struct logic_error : public std::logic_error {
+    logic_error(char const* const message) : std::logic_error(message) {}
+    logic_error(std::string const& message) : std::logic_error(message) {}
+};
+
+/**---------------------------------------------------------------------------*
+ * @brief Exception thrown when logical precondition is violated.
+ *
+ * This exception should not be thrown directly and is instead thrown by the
+ * CUSPATIAL_EXPECTS macro.
+ *
+ *---------------------------------------------------------------------------**/
 struct cusparse_error : public std::runtime_error {
   cusparse_error(std::string const& message) : std::runtime_error(message) {}
 };
 
+} // namespace cuspatial
+
+#define STRINGIFY_DETAIL(x) #x
+#define CUSPATIAL_STRINGIFY(x) STRINGIFY_DETAIL(x)
+
+/**---------------------------------------------------------------------------*
+ * @brief Macro for checking (pre-)conditions that throws an exception when  
+ * a condition is violated.
+ * 
+ * Example usage:
+ * 
+ * @code
+ * CUSPATIAL_EXPECTS(lhs->dtype == rhs->dtype, "Column type mismatch");
+ * @endcode
+ *
+ * @param[in] cond Expression that evaluates to true or false
+ * @param[in] reason String literal description of the reason that cond is
+ * expected to be true
+ * @throw cuspatial::logic_error if the condition evaluates to false.
+ *---------------------------------------------------------------------------**/
+#define CUSPATIAL_EXPECTS(cond, reason)                                               \
+    (!!(cond))                                                                        \
+        ? static_cast<void>(0)                                                        \
+        : throw cuspatial::logic_error("cuSpatial failure at: " __FILE__              \
+                                       ":" CUSPATIAL_STRINGIFY(__LINE__) ": " reason)
+
+/**---------------------------------------------------------------------------*
+ * @brief Indicates that an erroneous code path has been taken.
+ *
+ * In host code, throws a `cuspatial::logic_error`.
+ *
+ *
+ * Example usage:
+ * ```
+ * CUSPATIAL_FAIL("Non-arithmetic operation is not supported");
+ * ```
+ * 
+ * @param[in] reason String literal description of the reason
+ *---------------------------------------------------------------------------**/
+#define CUSPATIAL_FAIL(reason) \
+    throw cuspatial::logic_error("cuSpatial failure at: " __FILE__              \
+                                 ":" CUSPATIAL_STRINGIFY(__LINE__) ": " reason)
+
+namespace cuspatial {
 namespace detail {
 
 inline void throw_cusparse_error(cusparseStatus_t error,
@@ -38,6 +103,17 @@ inline void throw_cusparse_error(cusparseStatus_t error,
                     std::to_string(line) + ": " + std::to_string(error)});
 }
 
+} // namespace detail
+} // namespace cuspatial
+
+/**---------------------------------------------------------------------------*
+ * @brief Error checking macro for cuSPARSE runtime API functions.
+ *
+ * Invokes a cuSPARSE runtime API function call, if the call does not return
+ * CUSPARSE_STATUS_SUCCESS, invokes cudaGetLastError() to clear the error and
+ * throws an exception detailing the cuSPARSE error that occurred.
+ *
+ *---------------------------------------------------------------------------**/
 #define CUSPARSE_TRY(call)                                                   \
     do {                                                                     \
         cusparseStatus_t status = (call);                                    \
@@ -46,14 +122,3 @@ inline void throw_cusparse_error(cusparseStatus_t error,
         }                                                                    \
     } while (0);
 
-} // namespace detail
-
-#define CUSPATIAL_EXPECTS(cond, reason)                                               \
-    (!!(cond))                                                                        \
-        ? static_cast<void>(0)                                                        \
-        : throw cuspatial::logic_error("cuSpatial failure at: " __FILE__              \
-                                       ":" CUSPATIAL_STRINGIFY(__LINE__) ": " reason)
-
-#define CUSPATIAL_FAIL(reason) CUSPATIAL_EXPECTS(false, reason)
-
-} // namespace cuspatial

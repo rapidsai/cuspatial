@@ -25,6 +25,7 @@
 #include <thrust/device_vector.h>
 #include <utility/utility.hpp>
 #include <cuspatial/haversine.hpp>
+#include <cuspatial/error.hpp>
 
 
 namespace {
@@ -81,7 +82,7 @@ struct haversine_functor {
     template <typename T, std::enable_if_t< !is_supported<T>() >* = nullptr>
     gdf_column operator()(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2)
     {
-        CUDF_FAIL("Non-floating point operation is not supported");
+        CUSPATIAL_FAIL("Non-floating point operation is not supported");
     }
 };
 
@@ -101,12 +102,12 @@ namespace cuspatial{
 
 gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2 )
 {
-    CUDF_EXPECTS(x1.data != nullptr && y1.data != nullptr && x2.data != nullptr && y2.data != nullptr,"point lon/lat cannot be empty");
-    CUDF_EXPECTS(x1.dtype == x2.dtype && x2.dtype==y1.dtype && y1.dtype==y2.dtype, "x1/x2/y1/y2 type mismatch");
-    CUDF_EXPECTS(x1.size == x2.size && x2.size==y1.size && y1.size==y2.size, "x1/x2/y1/y2 size mismatch");
+    CUSPATIAL_EXPECTS(x1.data != nullptr && y1.data != nullptr && x2.data != nullptr && y2.data != nullptr,"point lon/lat cannot be empty");
+    CUSPATIAL_EXPECTS(x1.dtype == x2.dtype && x2.dtype==y1.dtype && y1.dtype==y2.dtype, "x1/x2/y1/y2 type mismatch");
+    CUSPATIAL_EXPECTS(x1.size == x2.size && x2.size==y1.size && y1.size==y2.size, "x1/x2/y1/y2 size mismatch");
 
     //future versions might allow pnt_(x/y) have null_count>0, which might be useful for taking query results as inputs
-    CUDF_EXPECTS(x1.null_count == 0 && y1.null_count == 0 && x2.null_count == 0 && y2.null_count == 0, "this version does not support x1/x2/y1/y2 contains nulls");
+    CUSPATIAL_EXPECTS(x1.null_count == 0 && y1.null_count == 0 && x2.null_count == 0 && y2.null_count == 0, "this version does not support x1/x2/y1/y2 contains nulls");
 
     gdf_column h_d = cudf::type_dispatcher( x1.dtype, haversine_functor(), x1,y1,x2,y2);
 

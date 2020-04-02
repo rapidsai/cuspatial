@@ -19,6 +19,7 @@
 #include <type_traits>
 #include <utility/utility.hpp>
 #include <cuspatial/point_in_polygon.hpp>
+#include <cuspatial/error.hpp>
 
 #include <cudf/legacy/column.hpp>
 
@@ -105,7 +106,7 @@ struct pip_functor {
 			  gdf_column const & ply_x,gdf_column const & ply_y)
 
     {
-        CUDF_FAIL("Non-floating point operation is not supported");
+        CUSPATIAL_FAIL("Non-floating point operation is not supported");
     }
 };
 
@@ -125,21 +126,21 @@ gdf_column point_in_polygon_bitmap(const gdf_column& points_x,
                                    const gdf_column& poly_y)
 {
 
-    CUDF_EXPECTS(points_y.data != nullptr && points_x.data != nullptr, "query point data cannot be empty");
-    CUDF_EXPECTS(points_y.dtype == points_x.dtype, "polygon vertex and point temp_bitmap type mismatch for x array ");
+    CUSPATIAL_EXPECTS(points_y.data != nullptr && points_x.data != nullptr, "query point data cannot be empty");
+    CUSPATIAL_EXPECTS(points_y.dtype == points_x.dtype, "polygon vertex and point temp_bitmap type mismatch for x array ");
 
     //future versions might allow pnt_(x/y) have null_count>0, which might be useful for taking query results as inputs
-    CUDF_EXPECTS(points_x.null_count == 0 && points_y.null_count == 0, "this version does not support points_x/points_y contains nulls");
+    CUSPATIAL_EXPECTS(points_x.null_count == 0 && points_y.null_count == 0, "this version does not support points_x/points_y contains nulls");
 
-    CUDF_EXPECTS(poly_fpos.data != nullptr &&poly_rpos.data!=nullptr, "polygon index cannot be empty");
-    CUDF_EXPECTS(poly_fpos.size >0 && (size_t)poly_fpos.size<=sizeof(uint32_t)*8, "#polygon of polygons can not exceed bitmap capacity (32 for unsigned int)");
-    CUDF_EXPECTS(poly_y.data != nullptr && poly_x.data != nullptr, "polygon temp_bitmap cannot be empty");
-    CUDF_EXPECTS(poly_fpos.size <=poly_rpos.size,"#of polygons must be equal or less than # of rings (one polygon has at least one ring");
-    CUDF_EXPECTS(poly_y.size == poly_x.size, "polygon vertice sizes mismatch between x/y arrays");
-    CUDF_EXPECTS(points_y.size == points_x.size, "query points size mismatch from between x/y arrays");
-    CUDF_EXPECTS(poly_y.dtype == poly_x.dtype, "polygon vertex temp_bitmap type mismatch between x/y arrays");
-    CUDF_EXPECTS(poly_y.dtype == points_y.dtype, "polygon vertex and point temp_bitmap type mismatch for y array");
-    CUDF_EXPECTS(poly_x.null_count == 0 && poly_y.null_count == 0, "polygon should not contain nulls");
+    CUSPATIAL_EXPECTS(poly_fpos.data != nullptr &&poly_rpos.data!=nullptr, "polygon index cannot be empty");
+    CUSPATIAL_EXPECTS(poly_fpos.size >0 && (size_t)poly_fpos.size<=sizeof(uint32_t)*8, "#polygon of polygons can not exceed bitmap capacity (32 for unsigned int)");
+    CUSPATIAL_EXPECTS(poly_y.data != nullptr && poly_x.data != nullptr, "polygon temp_bitmap cannot be empty");
+    CUSPATIAL_EXPECTS(poly_fpos.size <=poly_rpos.size,"#of polygons must be equal or less than # of rings (one polygon has at least one ring");
+    CUSPATIAL_EXPECTS(poly_y.size == poly_x.size, "polygon vertice sizes mismatch between x/y arrays");
+    CUSPATIAL_EXPECTS(points_y.size == points_x.size, "query points size mismatch from between x/y arrays");
+    CUSPATIAL_EXPECTS(poly_y.dtype == poly_x.dtype, "polygon vertex temp_bitmap type mismatch between x/y arrays");
+    CUSPATIAL_EXPECTS(poly_y.dtype == points_y.dtype, "polygon vertex and point temp_bitmap type mismatch for y array");
+    CUSPATIAL_EXPECTS(poly_x.null_count == 0 && poly_y.null_count == 0, "polygon should not contain nulls");
 
     gdf_column res_bm = cudf::type_dispatcher(points_x.dtype, pip_functor(),
                                               points_x, points_y, poly_fpos,
