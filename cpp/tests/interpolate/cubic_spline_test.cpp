@@ -26,6 +26,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 #include <cuspatial/cubic_spline.hpp>
 #include <cuspatial/utility.hpp>
+#include <cuspatial/error.hpp>
 
 struct CubicSplineTest : public cudf::test::BaseFixture {};
 

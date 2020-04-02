@@ -21,6 +21,7 @@
 #include <cudf/scalar/scalar.hpp>
 #include "cusparse.h"
 #include <cuspatial/utility.hpp>
+#include <cuspatial/error.hpp>
 
 namespace { // anonymous
 
