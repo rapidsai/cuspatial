@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cusparse.h>
 #include <string>
 #include <stdexcept>
 
@@ -32,17 +31,6 @@ namespace cuspatial {
 struct logic_error : public std::logic_error {
     logic_error(char const* const message) : std::logic_error(message) {}
     logic_error(std::string const& message) : std::logic_error(message) {}
-};
-
-/**---------------------------------------------------------------------------*
- * @brief Exception thrown when logical precondition is violated.
- *
- * This exception should not be thrown directly and is instead thrown by the
- * CUSPATIAL_EXPECTS macro.
- *
- *---------------------------------------------------------------------------**/
-struct cusparse_error : public std::runtime_error {
-  cusparse_error(std::string const& message) : std::runtime_error(message) {}
 };
 
 } // namespace cuspatial
@@ -91,34 +79,5 @@ struct cusparse_error : public std::runtime_error {
 namespace cuspatial {
 namespace detail {
 
-inline void throw_cusparse_error(cusparseStatus_t error,
-                                 const char* file,
-                                 unsigned int line)
-{
-    // would be nice to include `cusparseGetErrorName(error)` and
-    // `cusparseGetErrorString(error)`, but those aren't introduced until
-    // cuda 10.1 (and not in the initial release).
-    throw cuspatial::cusparse_error(
-        std::string{"CUSPARSE error encountered at: " + std::string{file} + ":" +
-                    std::to_string(line) + ": " + std::to_string(error)});
-}
-
 } // namespace detail
 } // namespace cuspatial
-
-/**---------------------------------------------------------------------------*
- * @brief Error checking macro for cuSPARSE runtime API functions.
- *
- * Invokes a cuSPARSE runtime API function call, if the call does not return
- * CUSPARSE_STATUS_SUCCESS, invokes cudaGetLastError() to clear the error and
- * throws an exception detailing the cuSPARSE error that occurred.
- *
- *---------------------------------------------------------------------------**/
-#define CUSPARSE_TRY(call)                                                   \
-    do {                                                                     \
-        cusparseStatus_t status = (call);                                    \
-        if (CUSPARSE_STATUS_SUCCESS != status) {                             \
-        cuspatial::detail::throw_cusparse_error(status, __FILE__, __LINE__); \
-        }                                                                    \
-    } while (0);
-
