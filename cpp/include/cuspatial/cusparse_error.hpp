@@ -53,8 +53,8 @@ inline void throw_cusparse_error(cusparseStatus_t error,
  * @brief Error checking macro for cuSPARSE runtime API functions.
  *
  * Invokes a cuSPARSE runtime API function call, if the call does not return
- * CUSPARSE_STATUS_SUCCESS, invokes cudaGetLastError() to clear the error and
- * throws an exception detailing the cuSPARSE error that occurred.
+ * CUSPARSE_STATUS_SUCCESS, throws an exception detailing the cuSPARSE error
+ * that occurred.
  *
  *---------------------------------------------------------------------------**/
 #define CUSPARSE_TRY(call)                                                   \
