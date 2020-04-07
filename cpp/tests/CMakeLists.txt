@@ -38,21 +38,6 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
 endfunction(ConfigureTest)
 
-option(CMAKE_ENABLE_BENCHMARKS "Enable building cuSpatial benchmarks" OFF)
-
-function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
-    if(CMAKE_ENABLE_BENCHMARKS)
-        add_executable(${CMAKE_BENCH_NAME}
-                    ${CMAKE_BENCH_SRC})
-        set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-        target_link_libraries(${CMAKE_BENCH_NAME} cuspatial cudf cudftestutil)
-        set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
-                                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bench")
-        add_test(NAME ${CMAKE_BENCH_NAME} COMMAND ${CMAKE_BENCH_NAME})
-    endif(CMAKE_ENABLE_BENCHMARKS)
-endfunction(ConfigureBench)
-
-
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
 
