@@ -23,6 +23,8 @@
 #include <tests/utilities/column_utilities.hpp>
 #include <tests/utilities/timestamp_utilities.cuh>
 
+#include "tests/utilities/cuspatial_gmock.hpp"
+
 namespace cuspatial {
 namespace test {
 
@@ -60,7 +62,7 @@ inline std::unique_ptr<cudf::experimental::table> make_test_trajectories_table(
 
   auto sorted = cudf::experimental::sort_by_key(
       cudf::table_view{{id, ts, x, y}}, cudf::table_view{{id, ts}});
-    
+
   return sorted;
 }
 
