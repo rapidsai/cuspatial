@@ -18,33 +18,50 @@
 
 #include <cudf/types.hpp>
 #include <memory>
+#include <rmm/mr/device/default_memory_resource.hpp>
 
 namespace cuspatial {
 namespace experimental {
 
 /**
- * @brief Derive trajectories from object ids, points, timestamps.
+ * @brief Derive trajectories from sorted object ids.
  *
- * Groups the input cols by the given ids, aggregates id counts, and takes the
- * min timestamp, x, and y values from each group.
+ * Groups the input object ids to determine unique trajectories. Returns a
+ * table with the trajectory ids, the number of objects in each trajectory,
+ * and the offset position of the first object for each trajectory in the
+ * input object ids column.
  *
  * @param[in] id column of object (e.g., vehicle) ids
- * @param[in] x column of x coordinates relative to a camera origin
- * @param[in] y column of y coordinates relative to a camera origin
- * @param[in] timestamp column of timestamps to sort the grouped results
  * @param[in] mr The optional resource to use for all allocations
  *
- * @return a cudf table with the following three int32 columns:
- *   * trajectory ids - the unique ids from the input object ids column
- *   * trajectory counts - the number of of points in the derived trajectories
- *   * trajectory offsets - the cumulative sum of end positions for each group
- *
- * The table is lexicographically sorted ascending by: id, timestamp, x, and y
+ * @return a sorted table with the following three int32 columns:
+ *   * trajectory id - the unique ids from the input object ids column
+ *   * trajectory length - the number of objects in the derived trajectories
+ *   * trajectory offset - the cumulative sum of start positions for each group
  */
 std::unique_ptr<cudf::experimental::table> derive_trajectories(
-    cudf::column_view const& id, cudf::column_view const& x,
-    cudf::column_view const& y, cudf::column_view const& timestamp,
-    rmm::mr::device_memory_resource* mr);
+    cudf::column_view const& id,
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+
+/**
+ * @brief Compute the distance and speed of trajectories
+ *
+ * Trajectories are derived from coordinate data using `derive_trajectories`.
+ *
+ * @param[in] x coordinates (km) (sorted by id, timestamp)
+ * @param[in] y coordinates (km) (sorted by id, timestamp)
+ * @param[in] timestamp column (sorted by id, timestamp)
+ * @param[in] length the number of points column (sorted by id, timestamp)
+ * @param[in] offset position of each trajectory's first object, used to index
+ * timestamp/x/y columns (sorted by id, timestamp)
+ *
+ * @return a sorted cudf table of distances (meters) and speeds (meters/second)
+ */
+std::unique_ptr<cudf::experimental::table> trajectory_distance_and_speed(
+    cudf::column_view const& x, cudf::column_view const& y,
+    cudf::column_view const& timestamp, cudf::column_view const& length,
+    cudf::column_view const& offset,
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace experimental
 }  // namespace cuspatial
