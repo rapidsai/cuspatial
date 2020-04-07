@@ -21,6 +21,7 @@
 #include <utility/utility.hpp>
 #include <utility/trajectory_thrust.cuh>
 #include <cuspatial/legacy/trajectory.hpp>
+#include <cuspatial/error.hpp>
 
 #include <cudf/legacy/column.hpp>
 
@@ -115,7 +116,7 @@ struct sbbox_functor {
                     gdf_column& bbox_x1, gdf_column& bbox_y1,
                     gdf_column& bbox_x2, gdf_column& bbox_y2)
     {
-        CUDF_FAIL("Non-floating point operation is not supported");
+        CUSPATIAL_FAIL("Non-floating point operation is not supported");
     }
 };
 
@@ -135,19 +136,19 @@ void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
                                gdf_column& bbox_x2, gdf_column& bbox_y2)
 {
 
-    CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
+    CUSPATIAL_EXPECTS(x.data != nullptr && y.data != nullptr &&
                  length.data != nullptr && offset.data != nullptr,
                  "Null data pointer");
-    CUDF_EXPECTS(x.size == y.size && length.size == offset.size,
+    CUSPATIAL_EXPECTS(x.size == y.size && length.size == offset.size,
                  "Data size mismatch");
 
     // future versions might allow x/y/pos/len have null_count>0, which might be
     // useful for taking query results as inputs
-    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
+    CUSPATIAL_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
                  length.null_count==0 &&  offset.null_count==0,
                  "Null data support not implemented");
 
-    CUDF_EXPECTS(x.size >= offset.size,
+    CUSPATIAL_EXPECTS(x.size >= offset.size,
                  "one trajectory must have at least one point");
 
     cudf::type_dispatcher(x.dtype, sbbox_functor(), x, y, length, offset,

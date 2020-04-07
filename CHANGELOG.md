@@ -7,6 +7,7 @@
 - PR #147 Update Conda/CMake configs to match other RAPIDS projects
 - PR #163 Fix cudf legacy Cython imports/cimports
 - PR #166 Move trajectory.hpp files to legacy
+- PR #167 Align utility.hpp with libcudf style
 
 ## Bug Fixes
 

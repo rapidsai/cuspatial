@@ -24,6 +24,7 @@
 #include <cudf/legacy/column.hpp>
 #include <cudf/utilities/error.hpp>
 #include <cuspatial/soa_readers.hpp>
+#include <cuspatial/error.hpp>
 #include <utility/utility.hpp>
 
 namespace cuspatial
@@ -37,7 +38,7 @@ namespace cuspatial
                       gdf_column* ply_fpos, gdf_column* ply_rpos,
                       gdf_column* ply_x, gdf_column* ply_y)
     {
-        CUDF_EXPECTS(ply_fpos != nullptr && ply_rpos != nullptr &&
+        CUSPATIAL_EXPECTS(ply_fpos != nullptr && ply_rpos != nullptr &&
                  ply_x != nullptr && ply_y != nullptr,
                  "Null column pointer");
 
