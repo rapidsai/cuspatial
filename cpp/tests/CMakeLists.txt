@@ -23,19 +23,24 @@ endif (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
 
+option(BUILD_LEGACY_TESTS "Build cuSpatial legacy tests" ON)
+
 function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
-    add_executable(${CMAKE_TEST_NAME}
-                   ${CMAKE_TEST_SRC})
-    set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial cudf
-                          cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES} NVCategory
-                          NVStrings nvrtc gdal)
-    if(USE_NVTX)
-        target_link_libraries(${CMAKE_TEST_NAME} ${NVTX_LIBRARY})
-    endif(USE_NVTX)
-    set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
-                            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
-    add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
+    string(REGEX MATCH "LEGACY_(.*)?_TEST" is_legacy_test "${CMAKE_TEST_NAME}")
+    if(BUILD_LEGACY_TESTS OR (NOT is_legacy_test))
+        add_executable(${CMAKE_TEST_NAME}
+                    ${CMAKE_TEST_SRC})
+        set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial cudf
+                            cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES} NVCategory
+                            NVStrings nvrtc gdal)
+        if(USE_NVTX)
+            target_link_libraries(${CMAKE_TEST_NAME} ${NVTX_LIBRARY})
+        endif(USE_NVTX)
+        set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
+                                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
+        add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
+    endif(BUILD_LEGACY_TESTS OR (NOT is_legacy_test))
 endfunction(ConfigureTest)
 
 ###################################################################################################
