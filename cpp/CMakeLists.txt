@@ -324,6 +324,7 @@ endif(CONDA_LINK_DIRS)
 
 add_library(cuspatial SHARED
             src/interpolate/cubic_spline.cu
+            src/io/shp/polygon_shapefile_reader.cpp
             src/io/shp/polygon_shapefile_reader.cu
             src/io/soa/polygon_soa_reader.cu
             src/io/soa/point_soa_reader.cu

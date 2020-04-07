@@ -20,7 +20,8 @@
 #include <cudf/filling.hpp>
 #include <cudf/scalar/scalar.hpp>
 #include "cusparse.h"
-#include <cuspatial/utility.hpp>
+#include <cuspatial/error.hpp>
+#include <cuspatial/cusparse_error.hpp>
 
 namespace { // anonymous
 
@@ -69,7 +70,7 @@ struct parallel_search {
   template <typename T, typename... Args>
   std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>>
   operator()(Args&&... args) {
-      CUDF_FAIL("Non-floating point operation is not supported.");
+      CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
 };
 
@@ -107,7 +108,7 @@ struct interpolate {
   template <typename T, typename... Args>
   std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>>
   operator()(Args&&... args) {
-      CUDF_FAIL("Non-floating point operation is not supported.");
+      CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
 };
 
@@ -174,7 +175,7 @@ struct coefficients_compute {
                   cudf::mutable_column_view const& d0,
                   rmm::mr::device_memory_resource *mr,
                   cudaStream_t stream) {
-      CUDF_FAIL("Non-floating point operation is not supported.");
+      CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
 };
 
@@ -234,7 +235,7 @@ struct compute_spline_tridiagonals {
                   cudf::mutable_column_view const& i,
                   rmm::mr::device_memory_resource *mr,
                   cudaStream_t stream) {
-      CUDF_FAIL("Non-floating point operation is not supported.");
+      CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
 };
 
@@ -385,16 +386,17 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
     // dl, d, du: vectors of the diagonal
     // B: (ldb, n) dimensional dense matrix to be solved for
     // ldb: leading dimension of B
-    // pBuffer: get size of thisu by gtsv2_bufferSizeExt 
-    cusparseStatus_t cusparseStatus;
+    // pBuffer: get size of thisu by gtsv2_bufferSizeExt
     cusparseHandle_t handle;
-    cudaMalloc(&handle, sizeof(cusparseHandle_t));
-    cusparseStatus = cusparseCreate(&handle);
-    detail::HANDLE_CUSPARSE_STATUS(cusparseStatus);
+
+    CUDA_TRY(cudaMalloc(&handle, sizeof(cusparseHandle_t)));
+    CUSPARSE_TRY(cusparseCreate(&handle));
+
     size_t pBufferSize;
     int32_t batchStride = y.size() / (prefixes.size() - 1);
     int32_t batchSize = batchStride;
-    cusparseStatus = cusparseSgtsv2StridedBatch_bufferSizeExt(
+
+    CUSPARSE_TRY(cusparseSgtsv2StridedBatch_bufferSizeExt(
         handle,
         batchSize,
         Dll_buffer.data<float>(),
@@ -404,10 +406,11 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
         prefixes.size()-1,
         batchStride,
         &pBufferSize
-    );
-    detail::HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    ));
+
     rmm::device_vector<float> pBuffer(pBufferSize);
-    cusparseStatus = cusparseSgtsv2StridedBatch(
+
+    CUSPARSE_TRY(cusparseSgtsv2StridedBatch(
         handle,
         batchSize,
         Dll_buffer.data<float>(),
@@ -417,10 +420,9 @@ std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
         prefixes.size()-1,
         batchStride,
         pBuffer.data().get()
-    );
-    detail::HANDLE_CUSPARSE_STATUS(cusparseStatus);
-    cusparseStatus = cusparseDestroy(handle);
-    detail::HANDLE_CUSPARSE_STATUS(cusparseStatus);
+    ));
+
+    CUSPARSE_TRY(cusparseDestroy(handle));
 
     int dn = n - (prefixes.size()-1);
     // Finally, compute coefficients via Horner's scheme

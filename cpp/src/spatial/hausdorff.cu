@@ -24,6 +24,7 @@
 
 #include <utility/utility.hpp>
 #include <cuspatial/hausdorff.hpp>
+#include <cuspatial/error.hpp>
 
 namespace {
 
@@ -149,7 +150,7 @@ struct Hausdorff_functor {
     gdf_column  operator()(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts)
 
     {
-        CUDF_FAIL("Non-floating point operation is not supported");
+        CUSPATIAL_FAIL("Non-floating point operation is not supported");
     }
 };
 
@@ -165,15 +166,15 @@ namespace cuspatial {
 gdf_column directed_hausdorff_distance(const gdf_column& x,const gdf_column& y,const gdf_column& vertex_counts)
 
 {
-    CUDF_EXPECTS(x.data != nullptr &&y.data!=nullptr && vertex_counts.data!=nullptr,
+    CUSPATIAL_EXPECTS(x.data != nullptr &&y.data!=nullptr && vertex_counts.data!=nullptr,
     	"x/y/vertex_counts data can not be null");
-    CUDF_EXPECTS(x.size == y.size ,"x/y/must have the same size");
+    CUSPATIAL_EXPECTS(x.size == y.size ,"x/y/must have the same size");
 
     //future versions might allow x/y/vertex_counts have null_count>0, which might be useful for taking query results as inputs
-    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 && vertex_counts.null_count==0,
+    CUSPATIAL_EXPECTS(x.null_count == 0 && y.null_count == 0 && vertex_counts.null_count==0,
     	"this version does not support x/y/vertex_counts contains nulls");
 
-    CUDF_EXPECTS(x.size >= vertex_counts.size ,"one trajectory must have at least one point");
+    CUSPATIAL_EXPECTS(x.size >= vertex_counts.size ,"one trajectory must have at least one point");
 
 
     gdf_column dist =cudf::type_dispatcher(x.dtype, Hausdorff_functor(), x,y,vertex_counts);
