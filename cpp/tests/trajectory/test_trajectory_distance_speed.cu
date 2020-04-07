@@ -66,10 +66,10 @@ TEST_F(TrajectoryDistanceSpeedTest,
     speed[id] = dist[id] / (static_cast<double>(dt.count()) / 1000);  // m/s
   }
 
-  cudf::test::expect_columns_equal(
+  cudf::test::expect_columns_equivalent(
       velocity->get_column(0),
       cudf::test::fixed_width_column_wrapper<double>(dist.begin(), dist.end()));
-  cudf::test::expect_columns_equal(
+  cudf::test::expect_columns_equivalent(
       velocity->get_column(1), cudf::test::fixed_width_column_wrapper<double>(
                                    speed.begin(), speed.end()));
 }

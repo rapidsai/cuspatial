@@ -56,14 +56,14 @@ __global__ void compute_distance_and_speed_kernel(
         timestamp.element<Timestamp>(end) - timestamp.element<Timestamp>(idx));
 
     if (len < 2) {
-      speed.element<double>(tid) = -2.0;
-      distance.element<double>(tid) = -2.0;
+      speed.element<Element>(tid) = -2.0;
+      distance.element<Element>(tid) = -2.0;
     } else if (time_ms.count() == 0) {
-      speed.element<double>(tid) = -3.0;
-      distance.element<double>(tid) = -3.0;
+      speed.element<Element>(tid) = -3.0;
+      distance.element<Element>(tid) = -3.0;
     } else {
       // Naive reduction of one trajectory group per thread
-      double dist_km{0.0};
+      Element dist_km{0.0};
       for (int32_t i = idx; i < end; ++i) {
         auto const x0 = x.element<Element>(i + 0);
         auto const x1 = x.element<Element>(i + 1);
@@ -71,8 +71,8 @@ __global__ void compute_distance_and_speed_kernel(
         auto const y1 = y.element<Element>(i + 1);
         dist_km += sqrt(pow(x1 - x0, 2) + pow(y1 - y0, 2));
       }
-      distance.element<double>(tid) = dist_km * 1000;  // km to m
-      speed.element<double>(tid) = dist_km * 1000000 / time_ms.count();  // m/s
+      distance.element<Element>(tid) = dist_km * 1000;  // km to m
+      speed.element<Element>(tid) = dist_km * 1000000 / time_ms.count();  // m/s
     }
   }
 }
