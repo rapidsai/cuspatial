@@ -35,7 +35,7 @@ TEST_F(TrajectoryDistanceSpeedTest,
   auto offsets = grouped->get_column(2);
 
   auto velocity =
-      cuspatial::experimental::compute_velocities(xs, ys, ts, lengths, offsets);
+      cuspatial::experimental::compute_velocities(xs, ys, ts, lengths, offsets, this->mr());
 
   auto h_xs = cudf::test::to_host<double>(xs).first;
   auto h_ys = cudf::test::to_host<double>(ys).first;
@@ -49,11 +49,11 @@ TEST_F(TrajectoryDistanceSpeedTest,
 
   // compute expected distance and speed
   for (auto id : h_id) {
-    cudf::size_type len = h_lengths[id];
-    cudf::size_type idx = h_offsets[id];
-    cudf::size_type end = len + idx - 1;
+    int32_t len = h_lengths[id];
+    int32_t idx = h_offsets[id];
+    int32_t end = len + idx - 1;
     cudf::timestamp_ms::duration dt{0};
-    for (cudf::size_type i = idx; i < end; i++) {
+    for (int32_t i = idx; i < end; i++) {
       auto const x0 = h_xs[i + 0];
       auto const x1 = h_xs[i + 1];
       auto const y0 = h_ys[i + 0];

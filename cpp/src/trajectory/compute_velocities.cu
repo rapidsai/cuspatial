@@ -116,8 +116,6 @@ struct dispatch_timestamp {
             *cudf::mutable_column_device_view::create(*cols.at(0), stream),
             *cudf::mutable_column_device_view::create(*cols.at(1), stream));
 
-    // syncronize stream
-    CUDA_TRY(cudaStreamSynchronize(stream));
     // check for errors
     CHECK_CUDA(stream);
 
@@ -177,22 +175,25 @@ std::unique_ptr<cudf::experimental::table> compute_velocities(
     cudf::column_view const& x, cudf::column_view const& y,
     cudf::column_view const& timestamp, cudf::column_view const& length,
     cudf::column_view const& offset, rmm::mr::device_memory_resource* mr) {
-  CUDF_EXPECTS(!x.is_empty() && !length.is_empty(),
-               "Insufficient trajectory data");
-  CUDF_EXPECTS(x.size() == y.size() && x.size() == timestamp.size() &&
-                   length.size() == offset.size(),
-               "Data size mismatch");
-  CUDF_EXPECTS(cudf::is_timestamp(timestamp.type()),
-               "Invalid timestamp datatype");
-  CUDF_EXPECTS(length.type().id() == cudf::INT32,
-               "Invalid trajectory length type");
-  CUDF_EXPECTS(offset.type().id() == cudf::INT32,
-               "Invalid trajectory offset type");
-  CUDF_EXPECTS(x.null_count() == 0 && y.null_count() == 0 &&
-                   timestamp.null_count() == 0 && offset.null_count() == 0,
-               "NULL support unimplemented");
-  CUDF_EXPECTS(offset.size() > 0 && x.size() >= offset.size(),
-               "Insufficient trajectory data");
+  CUSPATIAL_EXPECTS(!x.is_empty() && !length.is_empty(),
+                    "Insufficient trajectory data");
+  CUSPATIAL_EXPECTS(x.size() == y.size() && x.size() == timestamp.size() &&
+                        length.size() == offset.size(),
+                    "Data size mismatch");
+  CUSPATIAL_EXPECTS(x.type().id() == y.type().id() &&
+                        length.type().id() == offset.type().id(),
+                    "Data type mismatch");
+  CUSPATIAL_EXPECTS(cudf::is_timestamp(timestamp.type()),
+                    "Invalid timestamp datatype");
+  CUSPATIAL_EXPECTS(length.type().id() == cudf::INT32,
+                    "Invalid trajectory length type");
+  CUSPATIAL_EXPECTS(offset.type().id() == cudf::INT32,
+                    "Invalid trajectory offset type");
+  CUSPATIAL_EXPECTS(x.null_count() == 0 && y.null_count() == 0 &&
+                        timestamp.null_count() == 0 && offset.null_count() == 0,
+                    "NULL support unimplemented");
+  CUSPATIAL_EXPECTS(offset.size() > 0 && x.size() >= offset.size(),
+                    "Insufficient trajectory data");
 
   return detail::compute_velocities(x, y, timestamp, length, offset, mr, 0);
 }
