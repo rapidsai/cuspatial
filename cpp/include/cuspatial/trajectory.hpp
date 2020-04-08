@@ -64,5 +64,28 @@ std::unique_ptr<cudf::experimental::table> compute_velocities(
     cudf::column_view const& offset,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
+/**
+ * @brief Compute the spatial bounding boxes of trajectories
+ *
+ * Trajectories are derived from coordinate data using `derive_trajectories`.
+ *
+ * @param[in] x coordinates (km) (sorted by id, timestamp)
+ * @param[in] y coordinates (km) (sorted by id, timestamp)
+ * @param[in] length the number of points column (sorted by id, timestamp)
+ * @param[in] offset position of each trajectory's first object, used to index
+ * timestamp/x/y columns (sorted by id, timestamp)
+ * @param[in] mr The optional resource to use for all allocations
+ *
+ * @return a cudf table of bounding boxes with four columns:
+ *   * x1 - the x coordinate of each bounding boxes' lower left corner
+ *   * y1 - the y coordinate of each bounding boxes' lower left corner
+ *   * x2 - the x coordinate of each bounding boxes' upper right corner
+ *   * y2 - the y coordinate of each bounding boxes' upper right corner
+ */
+std::unique_ptr<cudf::experimental::table> compute_bounding_boxes(
+    cudf::column_view const& x, cudf::column_view const& y,
+    cudf::column_view const& length, cudf::column_view const& offset,
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+
 }  // namespace experimental
 }  // namespace cuspatial

@@ -133,9 +133,9 @@ set(DERIVE_TRAJECTORIES_TEST_SRC
 "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_derive_trajectories.cu")
 ConfigureTest(DERIVE_TRAJECTORIES_TEST "${DERIVE_TRAJECTORIES_TEST_SRC}")
 
-# set(TRAJECTORY_SPATIAL_BOUND_SRC
-# "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/trajectory_spatial_bounds_toy.cu")
-# ConfigureTest(TRAJECTORY_SPATIAL_BOUND_TEST "${TRAJECTORY_SPATIAL_BOUND_SRC}")
+set(COMPUTE_BOUNDING_BOXES_TEST_SRC
+"${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_compute_bounding_boxes.cu")
+ConfigureTest(COMPUTE_BOUNDING_BOXES_TEST "${COMPUTE_BOUNDING_BOXES_TEST_SRC}")
 
 # set(TRAJECTORY_SUBSET_TEST_SRC
 # "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_trajectory_subset.cu")

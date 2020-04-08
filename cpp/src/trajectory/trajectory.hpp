@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuspatial/error.hpp>
 #include <cuspatial/trajectory.hpp>
 
 namespace cuspatial {
@@ -34,7 +35,7 @@ namespace detail {
  * @param[in] mr The optional resource to use for all allocations
  * @param[in] stream Optional CUDA stream on which to schedule allocations
  *
- * @return a sorted table with the following three int32 columns:
+ * @return a sorted table with three int32 columns:
  *   * trajectory id - the unique ids from the input object ids column
  *   * trajectory length - the number of objects in the derived trajectories
  *   * trajectory offset - the cumulative sum of end positions for each group
@@ -63,6 +64,32 @@ std::unique_ptr<cudf::experimental::table> derive_trajectories(
 std::unique_ptr<cudf::experimental::table> compute_velocities(
     cudf::column_view const& x, cudf::column_view const& y,
     cudf::column_view const& timestamp, cudf::column_view const& length,
+    cudf::column_view const& offset,
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(),
+    cudaStream_t stream = 0);
+
+/**
+ * @brief Compute the spatial bounding boxes of trajectories
+ *
+ * Trajectories are derived from coordinate data using `derive_trajectories`.
+ *
+ * @param[in] x coordinates (km) (sorted by id, timestamp)
+ * @param[in] y coordinates (km) (sorted by id, timestamp)
+ * @param[in] length the number of points column (sorted by id, timestamp)
+ * @param[in] offset position of each trajectory's first object, used to index
+ * timestamp/x/y columns (sorted by id, timestamp)
+ * @param[in] mr The optional resource to use for all allocations
+ * @param[in] stream Optional CUDA stream on which to schedule allocations
+ *
+ * @return a cudf table of bounding boxes with four columns:
+ *   * x1 - the x coordinate of each bounding boxes' lower left corner
+ *   * y1 - the y coordinate of each bounding boxes' lower left corner
+ *   * x2 - the x coordinate of each bounding boxes' upper right corner
+ *   * y2 - the y coordinate of each bounding boxes' upper right corner
+ */
+std::unique_ptr<cudf::experimental::table> compute_bounding_boxes(
+    cudf::column_view const& x, cudf::column_view const& y,
+    cudf::column_view const& length,
     cudf::column_view const& offset,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(),
     cudaStream_t stream = 0);
