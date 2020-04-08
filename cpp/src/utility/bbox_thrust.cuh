@@ -35,7 +35,7 @@ std::ostream& operator << (std::ostream& os, const SBBox<T> & bbox)
     T x2=thrust::get<0>(bbox.second);
     T y2=thrust::get<1>(bbox.second);
 
-    os << "("<< x1 <<"," << y1 <<"," << x2 << "," << y2 <<std::endl;
+    os << "("<< x1 <<"," << y1 <<"," << x2 << "," << y2 << ")" << std::endl;
     return os;
 }
 
