@@ -34,33 +34,31 @@ TEST_F(TrajectoryDistanceSpeedTest,
   auto lengths = grouped->get_column(1);
   auto offsets = grouped->get_column(2);
 
-  auto trajectory_ids =
-      cudf::test::to_host<int32_t>(grouped->get_column(0)).first;
+  auto velocity =
+      cuspatial::experimental::compute_velocities(xs, ys, ts, lengths, offsets);
 
-  auto velocity = cuspatial::experimental::trajectory_distance_and_speed(
-      xs, ys, ts, lengths, offsets);
+  auto h_xs = cudf::test::to_host<double>(xs).first;
+  auto h_ys = cudf::test::to_host<double>(ys).first;
+  auto h_ts = cudf::test::to_host<cudf::timestamp_ms>(ts).first;
+  auto h_id = cudf::test::to_host<int32_t>(grouped->get_column(0)).first;
+  auto h_lengths = cudf::test::to_host<int32_t>(lengths).first;
+  auto h_offsets = cudf::test::to_host<int32_t>(offsets).first;
 
-  auto xs_h = cudf::test::to_host<double>(xs).first;
-  auto ys_h = cudf::test::to_host<double>(ys).first;
-  auto ts_h = cudf::test::to_host<cudf::timestamp_ms>(ts).first;
-  auto lengths_h = cudf::test::to_host<int32_t>(lengths).first;
-  auto offsets_h = cudf::test::to_host<int32_t>(offsets).first;
-
-  std::vector<double> dist(trajectory_ids.size());
-  std::vector<double> speed(trajectory_ids.size());
+  std::vector<double> dist(h_id.size());
+  std::vector<double> speed(h_id.size());
 
   // compute expected distance and speed
-  for (auto id : trajectory_ids) {
-    cudf::size_type len = lengths_h[id];
-    cudf::size_type idx = offsets_h[id];
+  for (auto id : h_id) {
+    cudf::size_type len = h_lengths[id];
+    cudf::size_type idx = h_offsets[id];
     cudf::size_type end = len + idx - 1;
     cudf::timestamp_ms::duration dt{0};
     for (cudf::size_type i = idx; i < end; i++) {
-      auto const x0 = xs_h[i + 0];
-      auto const x1 = xs_h[i + 1];
-      auto const y0 = ys_h[i + 0];
-      auto const y1 = ys_h[i + 1];
-      dt += (ts_h[i + 1] - ts_h[i]);
+      auto const x0 = h_xs[i + 0];
+      auto const x1 = h_xs[i + 1];
+      auto const y0 = h_ys[i + 0];
+      auto const y1 = h_ys[i + 1];
+      dt += (h_ts[i + 1] - h_ts[i]);
       dist[id] += sqrt(pow(x1 - x0, 2) + pow(y1 - y0, 2)) * 1000;  // km to m
     }
     speed[id] = dist[id] / (static_cast<double>(dt.count()) / 1000);  // m/s

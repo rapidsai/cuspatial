@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <math.h>
-
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
@@ -32,7 +30,7 @@ namespace experimental {
 namespace {
 
 template <typename Element, typename Timestamp>
-__global__ void compute_distance_and_speed_kernel(
+__global__ void compute_velocities_kernel(
     // Point X
     cudf::column_device_view const x,
     // Point Y
@@ -77,61 +75,53 @@ __global__ void compute_distance_and_speed_kernel(
   }
 }
 
-template <typename Element, typename Timestamp>
-std::unique_ptr<cudf::experimental::table> compute_distance_and_speed(
-    cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& timestamp, cudf::column_view const& length,
-    cudf::column_view const& offset,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(),
-    cudaStream_t stream = 0) {
-  // Construct output columns
-  auto size = offset.size();
-  auto type = cudf::data_type{cudf::FLOAT64};
-  std::vector<std::unique_ptr<cudf::column>> cols{};
-  cols.reserve(2);
-  // allocate distance output column
-  cols.push_back(cudf::make_numeric_column(
-      type, size, cudf::mask_state::UNALLOCATED, stream, mr));
-  // allocate speed output column
-  cols.push_back(cudf::make_numeric_column(
-      type, size, cudf::mask_state::UNALLOCATED, stream, mr));
-
-  // Query for launch bounds
-  cudf::size_type block_size{0};
-  cudf::size_type min_grid_size{0};
-  CUDA_TRY(cudaOccupancyMaxPotentialBlockSize(
-      &min_grid_size, &block_size,
-      compute_distance_and_speed_kernel<Element, Timestamp>));
-
-  cudf::experimental::detail::grid_1d grid{size, block_size};
-
-  // Call compute kernel
-  compute_distance_and_speed_kernel<Element, Timestamp>
-      <<<grid.num_blocks, block_size, 0, stream>>>(
-          *cudf::column_device_view::create(x, stream),
-          *cudf::column_device_view::create(y, stream),
-          *cudf::column_device_view::create(timestamp, stream),
-          *cudf::column_device_view::create(length, stream),
-          *cudf::column_device_view::create(offset, stream),
-          *cudf::mutable_column_device_view::create(*cols.at(0), stream),
-          *cudf::mutable_column_device_view::create(*cols.at(1), stream));
-
-  // syncronize stream
-  CUDA_TRY(cudaStreamSynchronize(stream));
-  CHECK_CUDA(stream);
-
-  return std::make_unique<cudf::experimental::table>(std::move(cols));
-};
-
 template <typename Element>
 struct dispatch_timestamp {
-  template <typename T, typename E = Element>
-  std::enable_if_t<cudf::is_timestamp<T>(),
+  template <typename Timestamp>
+  std::enable_if_t<cudf::is_timestamp<Timestamp>(),
                    std::unique_ptr<cudf::experimental::table>>
   operator()(cudf::column_view const& x, cudf::column_view const& y,
              cudf::column_view const& timestamp,
-             cudf::column_view const& length, cudf::column_view const& offset) {
-    return compute_distance_and_speed<E, T>(x, y, timestamp, length, offset);
+             cudf::column_view const& length, cudf::column_view const& offset,
+             rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
+    // Construct output columns
+    auto size = offset.size();
+    auto type = cudf::data_type{cudf::experimental::type_to_id<Element>()};
+    std::vector<std::unique_ptr<cudf::column>> cols{};
+    cols.reserve(2);
+    // allocate distance output column
+    cols.push_back(cudf::make_numeric_column(
+        type, size, cudf::mask_state::UNALLOCATED, stream, mr));
+    // allocate speed output column
+    cols.push_back(cudf::make_numeric_column(
+        type, size, cudf::mask_state::UNALLOCATED, stream, mr));
+
+    // Query for launch bounds
+    cudf::size_type block_size{0};
+    cudf::size_type min_grid_size{0};
+    CUDA_TRY(cudaOccupancyMaxPotentialBlockSize(
+        &min_grid_size, &block_size,
+        compute_velocities_kernel<Element, Timestamp>));
+
+    cudf::experimental::detail::grid_1d grid{size, block_size};
+
+    // Call compute kernel
+    compute_velocities_kernel<Element, Timestamp>
+        <<<grid.num_blocks, block_size, 0, stream>>>(
+            *cudf::column_device_view::create(x, stream),
+            *cudf::column_device_view::create(y, stream),
+            *cudf::column_device_view::create(timestamp, stream),
+            *cudf::column_device_view::create(length, stream),
+            *cudf::column_device_view::create(offset, stream),
+            *cudf::mutable_column_device_view::create(*cols.at(0), stream),
+            *cudf::mutable_column_device_view::create(*cols.at(1), stream));
+
+    // syncronize stream
+    CUDA_TRY(cudaStreamSynchronize(stream));
+    // check for errors
+    CHECK_CUDA(stream);
+
+    return std::make_unique<cudf::experimental::table>(std::move(cols));
   }
 
   template <typename Timestamp>
@@ -139,7 +129,8 @@ struct dispatch_timestamp {
                    std::unique_ptr<cudf::experimental::table>>
   operator()(cudf::column_view const& x, cudf::column_view const& y,
              cudf::column_view const& timestamp,
-             cudf::column_view const& length, cudf::column_view const& offset) {
+             cudf::column_view const& length, cudf::column_view const& offset,
+             rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
     CUDF_FAIL("Timestamp must be a timestamp type");
   }
 };
@@ -150,10 +141,11 @@ struct dispatch_element {
                    std::unique_ptr<cudf::experimental::table>>
   operator()(cudf::column_view const& x, cudf::column_view const& y,
              cudf::column_view const& timestamp,
-             cudf::column_view const& length, cudf::column_view const& offset) {
-    return cudf::experimental::type_dispatcher(timestamp.type(),
-                                               dispatch_timestamp<Element>{}, x,
-                                               y, timestamp, length, offset);
+             cudf::column_view const& length, cudf::column_view const& offset,
+             rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
+    return cudf::experimental::type_dispatcher(
+        timestamp.type(), dispatch_timestamp<Element>{}, x, y, timestamp,
+        length, offset, mr, stream);
   }
 
   template <typename Element>
@@ -161,14 +153,27 @@ struct dispatch_element {
                    std::unique_ptr<cudf::experimental::table>>
   operator()(cudf::column_view const& x, cudf::column_view const& y,
              cudf::column_view const& timestamp,
-             cudf::column_view const& length, cudf::column_view const& offset) {
+             cudf::column_view const& length, cudf::column_view const& offset,
+             rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
     CUDF_FAIL("X and Y must be floating point types");
   }
 };
 
 }  // namespace
 
-std::unique_ptr<cudf::experimental::table> trajectory_distance_and_speed(
+namespace detail {
+std::unique_ptr<cudf::experimental::table> compute_velocities(
+    cudf::column_view const& x, cudf::column_view const& y,
+    cudf::column_view const& timestamp, cudf::column_view const& length,
+    cudf::column_view const& offset, rmm::mr::device_memory_resource* mr,
+    cudaStream_t stream) {
+  return cudf::experimental::type_dispatcher(x.type(), dispatch_element{}, x, y,
+                                             timestamp, length, offset, mr,
+                                             stream);
+}
+}  // namespace detail
+
+std::unique_ptr<cudf::experimental::table> compute_velocities(
     cudf::column_view const& x, cudf::column_view const& y,
     cudf::column_view const& timestamp, cudf::column_view const& length,
     cudf::column_view const& offset, rmm::mr::device_memory_resource* mr) {
@@ -189,8 +194,7 @@ std::unique_ptr<cudf::experimental::table> trajectory_distance_and_speed(
   CUDF_EXPECTS(offset.size() > 0 && x.size() >= offset.size(),
                "Insufficient trajectory data");
 
-  return cudf::experimental::type_dispatcher(x.type(), dispatch_element{}, x, y,
-                                             timestamp, length, offset);
+  return detail::compute_velocities(x, y, timestamp, length, offset, mr, 0);
 }
 
 }  // namespace experimental

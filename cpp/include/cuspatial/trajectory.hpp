@@ -54,10 +54,11 @@ std::unique_ptr<cudf::experimental::table> derive_trajectories(
  * @param[in] length the number of points column (sorted by id, timestamp)
  * @param[in] offset position of each trajectory's first object, used to index
  * timestamp/x/y columns (sorted by id, timestamp)
+ * @param[in] mr The optional resource to use for all allocations
  *
  * @return a sorted cudf table of distances (meters) and speeds (meters/second)
  */
-std::unique_ptr<cudf::experimental::table> trajectory_distance_and_speed(
+std::unique_ptr<cudf::experimental::table> compute_velocities(
     cudf::column_view const& x, cudf::column_view const& y,
     cudf::column_view const& timestamp, cudf::column_view const& length,
     cudf::column_view const& offset,

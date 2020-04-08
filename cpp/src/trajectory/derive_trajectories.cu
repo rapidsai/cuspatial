@@ -39,8 +39,6 @@ std::unique_ptr<cudf::experimental::table> derive_trajectories(
   using typename cudf::table_view;
   using namespace cudf::experimental;
 
-  groupby::groupby groupby{table_view{{id}}};
-
   std::vector<groupby::aggregation_request> reqs{};
   reqs.reserve(2);
 
@@ -53,7 +51,7 @@ std::unique_ptr<cudf::experimental::table> derive_trajectories(
   reqs[1].aggregations.push_back(make_nth_element_aggregation(0));
 
   // do the needful
-  auto result = groupby.aggregate(reqs, mr);
+  auto result = groupby::groupby{table_view{{id}}}.aggregate(reqs, mr);
 
   // extract the aggregation results
   std::vector<std::unique_ptr<cudf::column>> cols{};

@@ -44,6 +44,29 @@ std::unique_ptr<cudf::experimental::table> derive_trajectories(
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(),
     cudaStream_t stream = 0);
 
+/**
+ * @brief Compute the distance and speed of trajectories
+ *
+ * Trajectories are derived from coordinate data using `derive_trajectories`.
+ *
+ * @param[in] x coordinates (km) (sorted by id, timestamp)
+ * @param[in] y coordinates (km) (sorted by id, timestamp)
+ * @param[in] timestamp column (sorted by id, timestamp)
+ * @param[in] length the number of points column (sorted by id, timestamp)
+ * @param[in] offset position of each trajectory's first object, used to index
+ * timestamp/x/y columns (sorted by id, timestamp)
+ * @param[in] mr The optional resource to use for all allocations
+ * @param[in] stream Optional CUDA stream on which to schedule allocations
+ *
+ * @return a sorted cudf table of distances (meters) and speeds (meters/second)
+ */
+std::unique_ptr<cudf::experimental::table> compute_velocities(
+    cudf::column_view const& x, cudf::column_view const& y,
+    cudf::column_view const& timestamp, cudf::column_view const& length,
+    cudf::column_view const& offset,
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(),
+    cudaStream_t stream = 0);
+
 }  // namespace detail
 }  // namespace experimental
 }  // namespace cuspatial
