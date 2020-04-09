@@ -8,6 +8,7 @@
 - PR #163 Fix cudf legacy Cython imports/cimports
 - PR #166 Move trajectory.hpp files to legacy
 - PR #167 Align utility.hpp with libcudf style
+- PR #173 Move hausdorff.hpp files to legacy
 - PR #172 Move coordinate_transform.hpp files to legacy
 - PR #170 Update coordinate_transform.hpp to libcudf++
 

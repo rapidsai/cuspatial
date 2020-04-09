@@ -58,9 +58,9 @@ Note that a "build" dir is created automatically under $CUSPATIAL_HOME/cpp
 
 Some tests using inline data can be run directly, e.g.,
 ```
-$CUSPATIAL_HOME/cpp/build/gtests/HAUSDORFF_TEST
+$CUSPATIAL_HOME/cpp/build/gtests/LEGACY_HAUSDORFF_TEST
 $CUSPATIAL_HOME/cpp/build/gtests/POINT_IN_POLYGON_TEST
-python python/cuspatial/cuspatial/tests/test_hausdorff_distance.py
+python python/cuspatial/cuspatial/tests/legacy/test_hausdorff_distance.py
 python python/cuspatial/cuspatial/tests/test_pip.py
 ```
 

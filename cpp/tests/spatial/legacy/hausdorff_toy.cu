@@ -22,7 +22,7 @@
 
 #include <gtest/gtest.h>
 #include <utilities/legacy/error_utils.hpp>
-#include <cuspatial/hausdorff.hpp> 
+#include <cuspatial/legacy/hausdorff.hpp>
 
 #include <tests/utilities/legacy/column_wrapper.cuh>
 #include <tests/utilities/legacy/cudf_test_utils.cuh>
