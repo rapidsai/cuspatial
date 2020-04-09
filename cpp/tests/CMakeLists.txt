@@ -92,7 +92,7 @@ set(CUBIC_SPLINE_TEST_SRC
  ConfigureTest(CUBIC_SPLINE_TEST "${CUBIC_SPLINE_TEST_SRC}")
 
 set(COORDINATE_TRANSFORM_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/coordinate_transform_toy.cu")
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/coordinate_transform_test.cu")
 ConfigureTest(COORDINATE_TRANSFORM_TEST "${COORDINATE_TRANSFORM_TEST_SRC}")
 
 set(HAVERSINE_TEST_SRC
