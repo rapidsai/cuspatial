@@ -23,7 +23,7 @@
 #include <cudf/legacy/column.hpp>
 
 #include <utility/utility.hpp>
-#include <cuspatial/hausdorff.hpp>
+#include <cuspatial/legacy/hausdorff.hpp>
 #include <cuspatial/error.hpp>
 
 namespace {
@@ -158,7 +158,7 @@ struct Hausdorff_functor {
 
 /**
 * @brief compute Hausdorff distances among all pairs of a set of trajectories
-* see hausdorff.hpp
+* see legacy/hausdorff.hpp
 */
 
 namespace cuspatial {

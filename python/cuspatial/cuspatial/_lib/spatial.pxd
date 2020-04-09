@@ -34,7 +34,7 @@ cdef extern from "haversine.hpp" namespace "cuspatial" nogil:
         const gdf_column& y2
     ) except +
 
-cdef extern from "hausdorff.hpp" namespace "cuspatial" nogil:
+cdef extern from "legacy/hausdorff.hpp" namespace "cuspatial" nogil:
     gdf_column& directed_hausdorff_distance(
         const gdf_column& coor_x,
         const gdf_column& coor_y,
