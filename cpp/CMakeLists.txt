@@ -335,6 +335,7 @@ add_library(cuspatial SHARED
             src/spatial/haversine.cu
             src/spatial/hausdorff.cu
             src/spatial/lonlat_to_coordinate.cu
+            src/spatial/legacy/lonlat_to_coordinate.cu
             src/trajectory/derive_trajectories.cu
             src/trajectory/compute_bounding_boxes.cu
             src/trajectory/compute_velocities.cu
