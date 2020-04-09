@@ -99,11 +99,11 @@ set(HAVERSINE_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/haversine_toy.cu")
 ConfigureTest(HAVERSINE_TEST "${HAVERSINE_TEST_SRC}")
 
-set(HAUSDORFF_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_toy.cu"
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cu"
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_compare.cu")
-ConfigureTest(HAUSDORFF_TEST "${HAUSDORFF_TEST_SRC}")
+set(LEGACY_HAUSDORFF_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/hausdorff_toy.cu"
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/hausdorff_test.cu"
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/hausdorff_compare.cu")
+ConfigureTest(LEGACY_HAUSDORFF_TEST "${LEGACY_HAUSDORFF_TEST_SRC}")
 
 set(POINT_IN_POLYGON_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_toy.cu"
