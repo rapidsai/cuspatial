@@ -24,7 +24,7 @@ TEST_F(DeriveTrajectoriesTest, DerivesThreeTrajectories) {
   auto sorted = cuspatial::test::make_test_trajectories_table(size);
   auto object_id = sorted->get_column(0);
   cudf::test::expect_columns_equal(
-      *cuspatial::experimental::derive_trajectories(object_id, this->mr()),
+      *cuspatial::experimental::compute_trajectory_offsets(object_id, this->mr()),
       cudf::test::fixed_width_column_wrapper<int32_t>{2 * size / 3,
                                                       5 * size / 6, size});
 }

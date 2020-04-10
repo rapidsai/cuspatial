@@ -125,13 +125,13 @@ set(LEGACY_TRAJECTORY_SUBSET_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/legacy/test_trajectory_subset.cu")
 ConfigureTest(LEGACY_TRAJECTORY_SUBSET_TEST "${LEGACY_TRAJECTORY_SUBSET_TEST_SRC}")
 
-set(compute_speed_and_distance_TEST_SRC
+set(COMPUTE_SPEED_AND_DISTANCE_TEST_SRC
 "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_compute_speed_and_distance.cu")
-ConfigureTest(compute_speed_and_distance_TEST "${compute_speed_and_distance_TEST_SRC}")
+ConfigureTest(COMPUTE_SPEED_AND_DISTANCE_TEST "${COMPUTE_SPEED_AND_DISTANCE_TEST_SRC}")
 
-set(DERIVE_TRAJECTORIES_TEST_SRC
-"${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_derive_trajectories.cu")
-ConfigureTest(DERIVE_TRAJECTORIES_TEST "${DERIVE_TRAJECTORIES_TEST_SRC}")
+set(COMPUTE_TRAJECTORY_OFFSETS_TEST_SRC
+"${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_compute_trajectory_offsets.cu")
+ConfigureTest(COMPUTE_TRAJECTORY_OFFSETS_TEST "${COMPUTE_TRAJECTORY_OFFSETS_TEST_SRC}")
 
 set(COMPUTE_BOUNDING_BOXES_TEST_SRC
 "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_compute_bounding_boxes.cu")

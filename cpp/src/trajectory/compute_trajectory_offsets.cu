@@ -28,7 +28,7 @@ namespace cuspatial {
 namespace experimental {
 namespace detail {
 
-std::unique_ptr<cudf::column> derive_trajectories(
+std::unique_ptr<cudf::column> compute_trajectory_offsets(
     cudf::column_view const& object_id, rmm::mr::device_memory_resource* mr,
     cudaStream_t stream) {
   auto policy = rmm::exec_policy(stream);
@@ -50,11 +50,11 @@ std::unique_ptr<cudf::column> derive_trajectories(
 }
 }  // namespace detail
 
-std::unique_ptr<cudf::column> derive_trajectories(
+std::unique_ptr<cudf::column> compute_trajectory_offsets(
     cudf::column_view const& object_id, rmm::mr::device_memory_resource* mr) {
   CUSPATIAL_EXPECTS(object_id.type().id() == cudf::INT32,
                     "Invalid object_id datatype");
-  return detail::derive_trajectories(object_id, mr, 0);
+  return detail::compute_trajectory_offsets(object_id, mr, 0);
 }
 }  // namespace experimental
 }  // namespace cuspatial

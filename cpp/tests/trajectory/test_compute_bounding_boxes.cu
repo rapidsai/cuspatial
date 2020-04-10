@@ -30,7 +30,7 @@ TEST_F(TrajectoryDistanceSpeedTest,
   auto xs = sorted->get_column(2);
   auto ys = sorted->get_column(3);
 
-  auto offsets = cuspatial::experimental::derive_trajectories(id, this->mr());
+  auto offsets = cuspatial::experimental::compute_trajectory_offsets(id, this->mr());
 
   auto bounding_boxes =
       cuspatial::experimental::compute_bounding_boxes(xs, ys, *offsets, this->mr());

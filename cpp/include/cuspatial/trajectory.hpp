@@ -24,7 +24,7 @@ namespace cuspatial {
 namespace experimental {
 
 /**
- * @brief Derive trajectories from sorted object ids.
+ * @brief Derive trajectory offsets from sorted object ids.
  *
  * Groups the input object ids to determine unique trajectories. Returns a
  * table with the trajectory ids, the number of objects in each trajectory,
@@ -36,14 +36,15 @@ namespace experimental {
  *
  * @return an int32 column of end positions for each trajectory's last object
  */
-std::unique_ptr<cudf::column> derive_trajectories(
+std::unique_ptr<cudf::column> compute_trajectory_offsets(
     cudf::column_view const& object_id,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
  * @brief Compute the distance and speed of trajectories
  *
- * Trajectories are derived from coordinate data using `derive_trajectories`.
+ * Trajectories are derived from coordinate data using
+ * `compute_trajectory_offsets`.
  *
  * @param[in] x coordinates (km) (sorted by id, timestamp)
  * @param[in] y coordinates (km) (sorted by id, timestamp)
@@ -62,7 +63,8 @@ std::unique_ptr<cudf::experimental::table> compute_speed_and_distance(
 /**
  * @brief Compute the spatial bounding boxes of trajectories
  *
- * Trajectories are derived from coordinate data using `derive_trajectories`.
+ * Trajectories are derived from coordinate data using
+ * `compute_trajectory_offsets`.
  *
  * @param[in] x coordinates (km) (sorted by id, timestamp)
  * @param[in] y coordinates (km) (sorted by id, timestamp)
