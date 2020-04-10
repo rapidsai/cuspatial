@@ -23,37 +23,33 @@ struct TrajectoryDistanceSpeedTest : public cudf::test::BaseFixture {};
 constexpr cudf::size_type size{1000};
 
 TEST_F(TrajectoryDistanceSpeedTest,
-       ComputeDistanceAndSpeedForThreeTrajectories) {
+       ComputeBoundingBoxesForThreeTrajectories) {
   auto sorted = cuspatial::test::make_test_trajectories_table(size);
   auto id = sorted->get_column(0);
   auto ts = sorted->get_column(1);
   auto xs = sorted->get_column(2);
   auto ys = sorted->get_column(3);
 
-  auto grouped = cuspatial::experimental::derive_trajectories(id, this->mr());
-  auto lengths = grouped->get_column(1);
-  auto offsets = grouped->get_column(2);
+  auto offsets = cuspatial::experimental::derive_trajectories(id, this->mr());
 
   auto bounding_boxes =
-      cuspatial::experimental::compute_bounding_boxes(xs, ys, lengths, offsets, this->mr());
+      cuspatial::experimental::compute_bounding_boxes(xs, ys, *offsets, this->mr());
 
   auto h_xs = cudf::test::to_host<double>(xs).first;
   auto h_ys = cudf::test::to_host<double>(ys).first;
   auto h_ts = cudf::test::to_host<cudf::timestamp_ms>(ts).first;
-  auto h_id = cudf::test::to_host<int32_t>(grouped->get_column(0)).first;
-  auto h_lengths = cudf::test::to_host<int32_t>(lengths).first;
-  auto h_offsets = cudf::test::to_host<int32_t>(offsets).first;
+  auto h_offsets = cudf::test::to_host<int32_t>(*offsets).first;
 
-  std::vector<double> bbox_x1(h_id.size());
-  std::vector<double> bbox_y1(h_id.size());
-  std::vector<double> bbox_x2(h_id.size());
-  std::vector<double> bbox_y2(h_id.size());
+  std::vector<double> bbox_x1(h_offsets.size());
+  std::vector<double> bbox_y1(h_offsets.size());
+  std::vector<double> bbox_x2(h_offsets.size());
+  std::vector<double> bbox_y2(h_offsets.size());
 
   // compute expected bounding boxes
-  for (auto id : h_id) {
-    int32_t len = h_lengths[id];
-    int32_t idx = h_offsets[id];
-    int32_t end = len + idx - 1;
+  for (size_t tid = 0; tid < h_offsets.size(); ++tid) {
+    auto end = h_offsets[tid] - 1;
+    auto idx = tid == 0 ? 0 : h_offsets[tid - 1];
+
     auto x1 = h_xs[idx];
     auto y1 = h_ys[idx];
     auto x2 = h_xs[idx];
@@ -66,10 +62,10 @@ TEST_F(TrajectoryDistanceSpeedTest,
       y2 = std::max(y2, h_ys[i]);
     }
 
-    bbox_x1[id] = x1;
-    bbox_y1[id] = y1;
-    bbox_x2[id] = x2;
-    bbox_y2[id] = y2;
+    bbox_x1[tid] = x1;
+    bbox_y1[tid] = y1;
+    bbox_x2[tid] = x2;
+    bbox_y2[tid] = y2;
   }
 
   cudf::test::expect_columns_equivalent(

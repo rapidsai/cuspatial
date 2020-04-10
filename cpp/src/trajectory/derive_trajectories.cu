@@ -15,14 +15,10 @@
  */
 
 #include <rmm/thrust_rmm_allocator.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
 
 #include <cudf/column/column_factories.hpp>
-#include <cudf/column/column_view.hpp>
-#include <cudf/copying.hpp>
-#include <cudf/groupby.hpp>
-#include <cudf/sorting.hpp>
-#include <cudf/table/table.hpp>
-#include <cudf/table/table_view.hpp>
 #include <memory>
 #include <vector>
 
@@ -32,54 +28,33 @@ namespace cuspatial {
 namespace experimental {
 namespace detail {
 
-std::unique_ptr<cudf::experimental::table> derive_trajectories(
-    cudf::column_view const& id, rmm::mr::device_memory_resource* mr,
+std::unique_ptr<cudf::column> derive_trajectories(
+    cudf::column_view const& object_id, rmm::mr::device_memory_resource* mr,
     cudaStream_t stream) {
-  using typename cudf::column;
-  using typename cudf::table_view;
-  using namespace cudf::experimental;
-
-  std::vector<groupby::aggregation_request> reqs{};
-  reqs.reserve(2);
-
-  // append count ids aggregation
-  reqs.push_back(groupby::aggregation_request{id});
-  reqs[0].aggregations.push_back(make_count_aggregation());
-
-  // append nth_element aggregation to force method=sort
-  reqs.push_back(groupby::aggregation_request{id});
-  reqs[1].aggregations.push_back(make_nth_element_aggregation(0));
-
-  // do the needful
-  auto result = groupby::groupby{table_view{{id}}}.aggregate(reqs, mr);
-
-  // extract the aggregation results
-  std::vector<std::unique_ptr<cudf::column>> cols{};
-  cols.reserve(3);
-  // Append ids output column
-  cols.push_back(std::move(result.first->release()[0]));
-  // Append lengths output column
-  cols.push_back(std::move(result.second[0].results[0]));
-  // Append offsets output column. Use `allocate_like` to
-  // ensure the `lengths` null_mask is retained if exists
-  cols.push_back(cudf::experimental::allocate_like(
-      *cols.at(1), mask_allocation_policy::RETAIN, mr));
-
-  // cumulative sum to fill offsets
   auto policy = rmm::exec_policy(stream);
-  thrust::exclusive_scan(policy->on(stream),
-                         cols.at(1)->view().begin<int32_t>(),
-                         cols.at(1)->view().end<int32_t>(),
-                         cols.at(2)->mutable_view().begin<int32_t>());
+  rmm::device_vector<int32_t> lengths(object_id.size());
+  auto grouped = thrust::reduce_by_key(
+      policy->on(stream), object_id.begin<int32_t>(), object_id.end<int32_t>(),
+      thrust::make_constant_iterator(1), thrust::make_discard_iterator(),
+      lengths.begin());
 
-  return std::make_unique<table>(std::move(cols));
+  auto offsets = cudf::make_numeric_column(
+      cudf::data_type{cudf::INT32},
+      thrust::distance(lengths.begin(), grouped.second),
+      cudf::mask_state::UNALLOCATED, stream, mr);
+
+  thrust::inclusive_scan(policy->on(stream), lengths.begin(), lengths.end(),
+                         offsets->mutable_view().begin<int32_t>());
+
+  return offsets;
 }
 }  // namespace detail
 
-std::unique_ptr<cudf::experimental::table> derive_trajectories(
-    cudf::column_view const& id, rmm::mr::device_memory_resource* mr) {
-  CUDF_EXPECTS(id.type().id() == cudf::INT32, "Invalid trajectory ID datatype");
-  return detail::derive_trajectories(id, mr, 0);
+std::unique_ptr<cudf::column> derive_trajectories(
+    cudf::column_view const& object_id, rmm::mr::device_memory_resource* mr) {
+  CUSPATIAL_EXPECTS(object_id.type().id() == cudf::INT32,
+                    "Invalid object_id datatype");
+  return detail::derive_trajectories(object_id, mr, 0);
 }
 }  // namespace experimental
 }  // namespace cuspatial

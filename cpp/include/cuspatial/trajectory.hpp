@@ -34,13 +34,10 @@ namespace experimental {
  * @param[in] id column of object (e.g., vehicle) ids
  * @param[in] mr The optional resource to use for all allocations
  *
- * @return a sorted table with the following three int32 columns:
- *   * trajectory id - the unique ids from the input object ids column
- *   * trajectory length - the number of objects in the derived trajectories
- *   * trajectory offset - the cumulative sum of start positions for each group
+ * @return an int32 column of end positions for each trajectory's last object
  */
-std::unique_ptr<cudf::experimental::table> derive_trajectories(
-    cudf::column_view const& id,
+std::unique_ptr<cudf::column> derive_trajectories(
+    cudf::column_view const& object_id,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
@@ -51,17 +48,15 @@ std::unique_ptr<cudf::experimental::table> derive_trajectories(
  * @param[in] x coordinates (km) (sorted by id, timestamp)
  * @param[in] y coordinates (km) (sorted by id, timestamp)
  * @param[in] timestamp column (sorted by id, timestamp)
- * @param[in] length the number of points column (sorted by id, timestamp)
- * @param[in] offset position of each trajectory's first object, used to index
+ * @param[in] end position for each trajectory's last object, used to index
  * timestamp/x/y columns (sorted by id, timestamp)
  * @param[in] mr The optional resource to use for all allocations
  *
  * @return a sorted cudf table of distances (meters) and speeds (meters/second)
  */
-std::unique_ptr<cudf::experimental::table> compute_velocities(
+std::unique_ptr<cudf::experimental::table> compute_speed_and_distance(
     cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& timestamp, cudf::column_view const& length,
-    cudf::column_view const& offset,
+    cudf::column_view const& timestamp, cudf::column_view const& offset,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
@@ -71,8 +66,7 @@ std::unique_ptr<cudf::experimental::table> compute_velocities(
  *
  * @param[in] x coordinates (km) (sorted by id, timestamp)
  * @param[in] y coordinates (km) (sorted by id, timestamp)
- * @param[in] length the number of points column (sorted by id, timestamp)
- * @param[in] offset position of each trajectory's first object, used to index
+ * @param[in] end position for each trajectory's last object, used to index
  * timestamp/x/y columns (sorted by id, timestamp)
  * @param[in] mr The optional resource to use for all allocations
  *
@@ -84,7 +78,7 @@ std::unique_ptr<cudf::experimental::table> compute_velocities(
  */
 std::unique_ptr<cudf::experimental::table> compute_bounding_boxes(
     cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& length, cudf::column_view const& offset,
+    cudf::column_view const& offset,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace experimental

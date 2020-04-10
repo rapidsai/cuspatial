@@ -35,8 +35,6 @@ __global__ void compute_bounding_boxes_kernel(
     cudf::column_device_view const x,
     // Point Y
     cudf::column_device_view const y,
-    // Number of trips per trajectory
-    cudf::column_device_view const length,
     // Offset for each trip in the group of trajectories
     cudf::column_device_view const offset,
     cudf::mutable_column_device_view bbox_x1,
@@ -44,10 +42,9 @@ __global__ void compute_bounding_boxes_kernel(
     cudf::mutable_column_device_view bbox_x2,
     cudf::mutable_column_device_view bbox_y2) {
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid < length.size()) {
-    auto const len = length.element<int32_t>(tid);
-    auto const idx = offset.element<int32_t>(tid);
-    auto const end = idx + len - 1;
+  if (tid < offset.size()) {
+    auto const end = offset.element<int32_t>(tid) - 1;
+    auto const idx = tid == 0 ? 0 : offset.element<int32_t>(tid - 1);
 
     auto x1 = x.element<Element>(idx);
     auto y1 = y.element<Element>(idx);
@@ -73,7 +70,7 @@ struct dispatch_element {
   std::enable_if_t<std::is_floating_point<Element>::value,
                    std::unique_ptr<cudf::experimental::table>>
   operator()(cudf::column_view const& x, cudf::column_view const& y,
-             cudf::column_view const& length, cudf::column_view const& offset,
+             cudf::column_view const& offset,
              rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
     // Construct output columns
     auto size = offset.size();
@@ -106,7 +103,6 @@ struct dispatch_element {
         <<<grid.num_blocks, block_size, 0, stream>>>(
             *cudf::column_device_view::create(x, stream),
             *cudf::column_device_view::create(y, stream),
-            *cudf::column_device_view::create(length, stream),
             *cudf::column_device_view::create(offset, stream),
             *cudf::mutable_column_device_view::create(*cols.at(0), stream),
             *cudf::mutable_column_device_view::create(*cols.at(1), stream),
@@ -123,7 +119,7 @@ struct dispatch_element {
   std::enable_if_t<not std::is_floating_point<Element>::value,
                    std::unique_ptr<cudf::experimental::table>>
   operator()(cudf::column_view const& x, cudf::column_view const& y,
-             cudf::column_view const& length, cudf::column_view const& offset,
+             cudf::column_view const& offset,
              rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
     CUDF_FAIL("X and Y must be floating point types");
   }
@@ -134,35 +130,28 @@ struct dispatch_element {
 namespace detail {
 std::unique_ptr<cudf::experimental::table> compute_bounding_boxes(
     cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& length, cudf::column_view const& offset,
-    rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
+    cudf::column_view const& offset, rmm::mr::device_memory_resource* mr,
+    cudaStream_t stream) {
   return cudf::experimental::type_dispatcher(x.type(), dispatch_element{}, x, y,
-                                             length, offset, mr, stream);
+                                             offset, mr, stream);
 }
 }  // namespace detail
 
 std::unique_ptr<cudf::experimental::table> compute_bounding_boxes(
     cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& length, cudf::column_view const& offset,
-    rmm::mr::device_memory_resource* mr) {
-  CUSPATIAL_EXPECTS(!x.is_empty() && !length.is_empty(),
+    cudf::column_view const& offset, rmm::mr::device_memory_resource* mr) {
+  CUSPATIAL_EXPECTS(!(x.is_empty() || y.is_empty() || offset.is_empty()),
                     "Insufficient trajectory data");
-  CUSPATIAL_EXPECTS(x.size() == y.size() && length.size() == offset.size(),
-                    "Data size mismatch");
-  CUSPATIAL_EXPECTS(x.type().id() == y.type().id() &&
-                        length.type().id() == offset.type().id(),
-                    "Data type mismatch");
-  CUSPATIAL_EXPECTS(length.type().id() == cudf::INT32,
-                    "Invalid trajectory length type");
+  CUSPATIAL_EXPECTS(x.size() == y.size(), "Data size mismatch");
+  CUSPATIAL_EXPECTS(x.type().id() == y.type().id(), "Data type mismatch");
   CUSPATIAL_EXPECTS(offset.type().id() == cudf::INT32,
                     "Invalid trajectory offset type");
-  CUSPATIAL_EXPECTS(
-      x.null_count() == 0 && y.null_count() == 0 && offset.null_count() == 0,
-      "NULL support unimplemented");
+  CUSPATIAL_EXPECTS(!(x.has_nulls() || y.has_nulls() || offset.has_nulls()),
+                    "NULL support unimplemented");
   CUSPATIAL_EXPECTS(offset.size() > 0 && x.size() >= offset.size(),
                     "Insufficient trajectory data");
 
-  return detail::compute_bounding_boxes(x, y, length, offset, mr, 0);
+  return detail::compute_bounding_boxes(x, y, offset, mr, 0);
 }
 
 }  // namespace experimental

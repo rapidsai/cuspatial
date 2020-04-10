@@ -46,7 +46,7 @@ inline std::unique_ptr<cudf::experimental::table> make_test_trajectories_table(
   auto ids_iter = cudf::test::make_counting_transform_iterator(
       0, [&](auto i) { return ids[map[i]]; });
   auto doubles_iter = cudf::test::make_counting_transform_iterator(
-      0, [&](auto i) { return rand_double.generate(); });
+      0, [&](auto i) { return 10000 * rand_double.generate(); });
 
   auto id = cudf::test::fixed_width_column_wrapper<int32_t>(ids_iter,
                                                             ids_iter + size);
