@@ -334,6 +334,7 @@ add_library(cuspatial SHARED
             src/spatial/point_in_polygon.cu
             src/spatial/haversine.cu
             src/spatial/legacy/hausdorff.cu
+            src/spatial/hausdorff.cu
             src/spatial/lonlat_to_coordinate.cu
             src/trajectory/legacy/trajectory_spatial_bound.cu
             src/trajectory/legacy/trajectory_distance_speed.cu
