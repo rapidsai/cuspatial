@@ -337,7 +337,7 @@ add_library(cuspatial SHARED
             src/spatial/legacy/lonlat_to_coordinate.cu
             src/trajectory/compute_trajectory_offsets.cu
             src/trajectory/compute_bounding_boxes.cu
-            src/trajectory/compute_speed_and_distance.cu
+            src/trajectory/compute_distance_and_speed.cu
             src/trajectory/legacy/trajectory_spatial_bound.cu
             src/trajectory/legacy/trajectory_distance_speed.cu
             src/trajectory/legacy/derive_trajectories.cu

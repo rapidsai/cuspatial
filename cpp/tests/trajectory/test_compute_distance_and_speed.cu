@@ -32,7 +32,7 @@ TEST_F(TrajectoryDistanceSpeedTest,
 
   auto offsets = cuspatial::experimental::compute_trajectory_offsets(id, this->mr());
 
-  auto velocity = cuspatial::experimental::compute_speed_and_distance(
+  auto velocity = cuspatial::experimental::compute_distance_and_speed(
       xs, ys, ts, *offsets, this->mr());
 
   auto h_xs = cudf::test::to_host<double>(xs).first;

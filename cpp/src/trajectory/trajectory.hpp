@@ -58,7 +58,7 @@ std::unique_ptr<cudf::column> compute_trajectory_offsets(
  *
  * @return a sorted cudf table of distances (meters) and speeds (meters/second)
  */
-std::unique_ptr<cudf::experimental::table> compute_speed_and_distance(
+std::unique_ptr<cudf::experimental::table> compute_distance_and_speed(
     cudf::column_view const& x, cudf::column_view const& y,
     cudf::column_view const& timestamp, cudf::column_view const& offset,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(),

@@ -30,7 +30,7 @@ namespace experimental {
 namespace {
 
 template <typename Element, typename Timestamp>
-__global__ void compute_speed_and_distance_kernel(
+__global__ void compute_distance_and_speed_kernel(
     // Point X
     cudf::column_device_view const x,
     // Point Y
@@ -98,12 +98,12 @@ struct dispatch_timestamp {
     cudf::size_type min_grid_size{0};
     CUDA_TRY(cudaOccupancyMaxPotentialBlockSize(
         &min_grid_size, &block_size,
-        compute_speed_and_distance_kernel<Element, Timestamp>));
+        compute_distance_and_speed_kernel<Element, Timestamp>));
 
     cudf::experimental::detail::grid_1d grid{size, block_size};
 
     // Call compute kernel
-    compute_speed_and_distance_kernel<Element, Timestamp>
+    compute_distance_and_speed_kernel<Element, Timestamp>
         <<<grid.num_blocks, block_size, 0, stream>>>(
             *cudf::column_device_view::create(x, stream),
             *cudf::column_device_view::create(y, stream),
@@ -156,7 +156,7 @@ struct dispatch_element {
 }  // namespace
 
 namespace detail {
-std::unique_ptr<cudf::experimental::table> compute_speed_and_distance(
+std::unique_ptr<cudf::experimental::table> compute_distance_and_speed(
     cudf::column_view const& x, cudf::column_view const& y,
     cudf::column_view const& timestamp, cudf::column_view const& offset,
     rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
@@ -165,7 +165,7 @@ std::unique_ptr<cudf::experimental::table> compute_speed_and_distance(
 }
 }  // namespace detail
 
-std::unique_ptr<cudf::experimental::table> compute_speed_and_distance(
+std::unique_ptr<cudf::experimental::table> compute_distance_and_speed(
     cudf::column_view const& x, cudf::column_view const& y,
     cudf::column_view const& timestamp, cudf::column_view const& offset,
     rmm::mr::device_memory_resource* mr) {
@@ -185,7 +185,7 @@ std::unique_ptr<cudf::experimental::table> compute_speed_and_distance(
   CUSPATIAL_EXPECTS(offset.size() > 0 && x.size() >= offset.size(),
                     "Insufficient trajectory data");
 
-  return detail::compute_speed_and_distance(x, y, timestamp, offset, mr, 0);
+  return detail::compute_distance_and_speed(x, y, timestamp, offset, mr, 0);
 }
 
 }  // namespace experimental
