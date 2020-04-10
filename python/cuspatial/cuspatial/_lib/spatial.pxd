@@ -18,7 +18,7 @@ cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
         const gdf_column& ply_y
     ) except +
 
-cdef extern from "coordinate_transform.hpp" namespace "cuspatial" nogil:
+cdef extern from "legacy/coordinate_transform.hpp" namespace "cuspatial" nogil:
     cdef pair[gdf_column, gdf_column] lonlat_to_coord(
         const gdf_scalar& cam_x,
         const gdf_scalar& cam_y,
