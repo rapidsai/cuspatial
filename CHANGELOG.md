@@ -15,6 +15,7 @@
 
 - PR #141 Fix dangling exec_policy pointer and invalid num_ring argument.
 - PR #169 Fix shapefile reader compilation with GCC 7.x / CUDA 10.2
+- PR #175 Address RMM API change requiring rmmInitialize(nullptr)
 
 
 # cuSpatial 0.13.0 (31 Mar 2020)
