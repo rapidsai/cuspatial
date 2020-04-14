@@ -19,7 +19,8 @@
 #include <type_traits>
 #include <thrust/device_vector.h>
 
-#include <cuspatial/trajectory.hpp>
+#include <cuspatial/legacy/trajectory.hpp>
+#include <cuspatial/error.hpp>
 
 #include <cudf/legacy/column.hpp>
 
@@ -120,7 +121,7 @@ struct distspeed_functor
                                                 const gdf_column& length,
                                                 const gdf_column& offset)
     {
-        CUDF_FAIL("Non-floating point operation is not supported");
+        CUSPATIAL_FAIL("Non-floating point operation is not supported");
     }
 };
 
@@ -141,23 +142,23 @@ trajectory_distance_and_speed(const gdf_column& x, const gdf_column& y,
                               const gdf_column& offset)
 {
 
-    CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
+    CUSPATIAL_EXPECTS(x.data != nullptr && y.data != nullptr &&
                  timestamp.data != nullptr && length.data != nullptr &&
                  offset.data != nullptr,
                  "Null input data");
-    CUDF_EXPECTS(x.size == y.size && x.size == timestamp.size &&
+    CUSPATIAL_EXPECTS(x.size == y.size && x.size == timestamp.size &&
                  length.size == offset.size, "Data size mismatch");
-    CUDF_EXPECTS(timestamp.dtype == GDF_TIMESTAMP,
+    CUSPATIAL_EXPECTS(timestamp.dtype == GDF_TIMESTAMP,
                  "Invalid timestamp datatype");
-    CUDF_EXPECTS(length.dtype == GDF_INT32,
+    CUSPATIAL_EXPECTS(length.dtype == GDF_INT32,
                  "Invalid trajectory length datatype");
-    CUDF_EXPECTS(offset.dtype == GDF_INT32,
+    CUSPATIAL_EXPECTS(offset.dtype == GDF_INT32,
                  "Invalid trajectory offset datatype");
-    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
+    CUSPATIAL_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
                  timestamp.null_count == 0 &&
                  length.null_count == 0 && offset.null_count == 0,
                  "NULL support unimplemented");
-    CUDF_EXPECTS(x.size >= offset.size ,
+    CUSPATIAL_EXPECTS(x.size >= offset.size ,
                  "Insufficient trajectory data");
 
     std::pair<gdf_column,gdf_column> res_pair =

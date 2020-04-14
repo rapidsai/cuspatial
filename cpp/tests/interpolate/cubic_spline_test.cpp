@@ -25,7 +25,7 @@
 #include <cudf/table/table.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 #include <cuspatial/cubic_spline.hpp>
-#include <cuspatial/utility.hpp>
+#include <cuspatial/error.hpp>
 
 struct CubicSplineTest : public cudf::test::BaseFixture {};
 
@@ -34,7 +34,7 @@ auto make_device_column(T* const points, int length) {
     T *d_p = nullptr;
     RMM_TRY( RMM_ALLOC( &d_p, length * sizeof(T), 0));
     assert(d_p != nullptr);    
-    HANDLE_CUDA_ERROR( cudaMemcpy( d_p, points, length * sizeof(T), cudaMemcpyHostToDevice ) );
+    CUDA_TRY( cudaMemcpy( d_p, points, length * sizeof(T), cudaMemcpyHostToDevice ) );
     cudf::column_view col(cudf::data_type{cudf::experimental::type_to_id<T>()}, length, d_p);
     cudf::column result(col);
     RMM_FREE(d_p, 0);

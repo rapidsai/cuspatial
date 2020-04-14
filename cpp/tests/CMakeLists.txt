@@ -91,19 +91,19 @@ set(CUBIC_SPLINE_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/interpolate/cubic_spline_test.cpp")
  ConfigureTest(CUBIC_SPLINE_TEST "${CUBIC_SPLINE_TEST_SRC}")
 
-set(COORDINATE_TRANSFORM_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/coordinate_transform_toy.cu")
-ConfigureTest(COORDINATE_TRANSFORM_TEST "${COORDINATE_TRANSFORM_TEST_SRC}")
+set(LEGACY_COORDINATE_TRANSFORM_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/coordinate_transform_test.cu")
+ConfigureTest(LEGACY_COORDINATE_TRANSFORM_TEST "${LEGACY_COORDINATE_TRANSFORM_TEST_SRC}")
 
 set(HAVERSINE_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/haversine_toy.cu")
 ConfigureTest(HAVERSINE_TEST "${HAVERSINE_TEST_SRC}")
 
-set(HAUSDORFF_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_toy.cu"
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cu"
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_compare.cu")
-ConfigureTest(HAUSDORFF_TEST "${HAUSDORFF_TEST_SRC}")
+set(LEGACY_HAUSDORFF_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/hausdorff_toy.cu"
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/hausdorff_test.cu"
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/hausdorff_compare.cu")
+ConfigureTest(LEGACY_HAUSDORFF_TEST "${LEGACY_HAUSDORFF_TEST_SRC}")
 
 set(POINT_IN_POLYGON_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_toy.cu"
@@ -123,18 +123,18 @@ set(SPATIAL_WINDOW_POINT_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/query/spatial_window_test_toy.cu")
 ConfigureTest(SPATIAL_WINDOW_POINT_TEST "${SPATIAL_WINDOW_POINT_TEST_SRC}")
 
-set(TRAJECTORY_DISTANCE_SPEED_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_trajectory_distance_speed.cu")
-ConfigureTest(TRAJECTORY_DISTANCE_SPEED_TEST "${TRAJECTORY_DISTANCE_SPEED_TEST_SRC}")
+set(LEGACY_TRAJECTORY_DISTANCE_SPEED_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/legacy/test_trajectory_distance_speed.cu")
+ConfigureTest(LEGACY_TRAJECTORY_DISTANCE_SPEED_TEST "${LEGACY_TRAJECTORY_DISTANCE_SPEED_TEST_SRC}")
 
-set(TRAJECTORY_DERIVE_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_trajectory_derive.cu")
-ConfigureTest(TRAJECTORY_DERIVE_TEST "${TRAJECTORY_DERIVE_TEST_SRC}")
+set(LEGACY_TRAJECTORY_DERIVE_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/legacy/test_trajectory_derive.cu")
+ConfigureTest(LEGACY_TRAJECTORY_DERIVE_TEST "${LEGACY_TRAJECTORY_DERIVE_TEST_SRC}")
 
-set(TRAJECTORY_SPATIAL_BOUND_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/trajectory_spatial_bounds_toy.cu")
-ConfigureTest(TRAJECTORY_SPATIAL_BOUND_TEST "${TRAJECTORY_SPATIAL_BOUND_SRC}")
+set(LEGACY_TRAJECTORY_SPATIAL_BOUND_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/legacy/trajectory_spatial_bounds_toy.cu")
+ConfigureTest(LEGACY_TRAJECTORY_SPATIAL_BOUND_TEST "${LEGACY_TRAJECTORY_SPATIAL_BOUND_SRC}")
 
-set(TRAJECTORY_SUBSET_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_trajectory_subset.cu")
-ConfigureTest(TRAJECTORY_SUBSET_TEST "${TRAJECTORY_SUBSET_TEST_SRC}")
+set(LEGACY_TRAJECTORY_SUBSET_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/legacy/test_trajectory_subset.cu")
+ConfigureTest(LEGACY_TRAJECTORY_SUBSET_TEST "${LEGACY_TRAJECTORY_SUBSET_TEST_SRC}")

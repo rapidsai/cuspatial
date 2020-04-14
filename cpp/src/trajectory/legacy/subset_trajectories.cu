@@ -27,7 +27,8 @@
 
 #include <utility/utility.hpp>
 #include <utility/trajectory_thrust.cuh>
-#include <cuspatial/trajectory.hpp>
+#include <cuspatial/legacy/trajectory.hpp>
+#include <cuspatial/error.hpp>
 
 namespace{
 
@@ -95,7 +96,7 @@ struct subset_functor {
                                            hit_vec.begin(), out_itr, is_true());
                 gdf_size_type num_keep = end - out_itr;
 
-                CUDF_EXPECTS(num_hit == num_keep,
+                CUSPATIAL_EXPECTS(num_hit == num_keep,
                             "count_if and copy_if result mismatch");
             }
         }
@@ -110,7 +111,7 @@ struct subset_functor {
                              gdf_column& out_x, gdf_column& out_y,
                              gdf_column& out_id, gdf_column& out_ts)
     {
-        CUDF_FAIL("Non-floating point operation is not supported");
+        CUSPATIAL_FAIL("Non-floating point operation is not supported");
     }
 };
 
@@ -128,19 +129,19 @@ gdf_size_type subset_trajectory_id(const gdf_column& id,
                                    gdf_column& out_id,
                                    gdf_column& out_timestamp)
 {
-    CUDF_EXPECTS(in_x.data != nullptr && in_x.data != nullptr &&
+    CUSPATIAL_EXPECTS(in_x.data != nullptr && in_x.data != nullptr &&
                  in_id.data != nullptr && in_timestamp.data != nullptr,
                  "Null input data");
-    CUDF_EXPECTS(in_x.size == in_y.size && in_x.size == in_id.size &&
+    CUSPATIAL_EXPECTS(in_x.size == in_y.size && in_x.size == in_id.size &&
                  in_x.size == in_timestamp.size,
                  "Data size mismatch");
-    CUDF_EXPECTS(in_id.dtype == GDF_INT32,
+    CUSPATIAL_EXPECTS(in_id.dtype == GDF_INT32,
                  "Invalid trajectory ID datatype");
-    CUDF_EXPECTS(id.dtype == in_id.dtype,
+    CUSPATIAL_EXPECTS(id.dtype == in_id.dtype,
                  "Trajectory ID datatype mismatch");
-    CUDF_EXPECTS(in_timestamp.dtype == GDF_TIMESTAMP,
+    CUSPATIAL_EXPECTS(in_timestamp.dtype == GDF_TIMESTAMP,
                  "Invalid timestamp datatype");
-    CUDF_EXPECTS(in_x.null_count == 0 && in_y.null_count == 0 &&
+    CUSPATIAL_EXPECTS(in_x.null_count == 0 && in_y.null_count == 0 &&
                  in_id.null_count==0 && in_timestamp.null_count==0,
                  "NULL support unimplemented");
 

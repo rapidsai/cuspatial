@@ -25,6 +25,7 @@
 
 #include <utility/utility.hpp>
 #include <cuspatial/query.hpp>
+#include <cuspatial/error.hpp>
 
 namespace {
 
@@ -81,9 +82,9 @@ struct sw_point_functor
         cudaStream_t stream{0};
         auto exec_policy = rmm::exec_policy(stream);    
 
-        CUDF_EXPECTS(q_left < q_right,
+        CUSPATIAL_EXPECTS(q_left < q_right,
                      "left must be less than right in a spatial window query");
-        CUDF_EXPECTS(q_bottom < q_top,
+        CUSPATIAL_EXPECTS(q_bottom < q_top,
                      "bottom must be less than top in a spatial window query");
 
         
@@ -123,7 +124,7 @@ struct sw_point_functor
                                                 const gdf_column& x,
                                                 const gdf_column& y)
     {
-       CUDF_FAIL("Non-floating point operation is not supported");
+       CUSPATIAL_FAIL("Non-floating point operation is not supported");
     }
 };
 
@@ -142,10 +143,10 @@ std::pair<gdf_column,gdf_column> spatial_window_points(const gdf_scalar& left,
                                                        const gdf_column& x,
                                                        const gdf_column& y)
 {
-    CUDF_EXPECTS(x.dtype == y.dtype, "point type mismatch between x/y arrays");
-    CUDF_EXPECTS(x.size == y.size, "#of points mismatch between x/y arrays");
+    CUSPATIAL_EXPECTS(x.dtype == y.dtype, "point type mismatch between x/y arrays");
+    CUSPATIAL_EXPECTS(x.size == y.size, "#of points mismatch between x/y arrays");
 
-    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0,
+    CUSPATIAL_EXPECTS(x.null_count == 0 && y.null_count == 0,
                  "this version does not support point data that contains nulls");
 
     std::pair<gdf_column,gdf_column> res =

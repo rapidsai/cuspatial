@@ -5,9 +5,9 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from cudf._libxx.table cimport table, Table
-from cudf._libxx.move cimport move, unique_ptr
-from cudf._libxx.column cimport column, Column
+from cudf._lib.table cimport table, Table
+from cudf._lib.move cimport move, unique_ptr
+from cudf._lib.column cimport column, Column
 
 cpdef cubicspline_coefficients(
     Column t,

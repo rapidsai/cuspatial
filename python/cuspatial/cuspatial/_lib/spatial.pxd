@@ -5,7 +5,7 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from cudf._lib.cudf cimport *
+from cudf._lib.legacy.cudf cimport *
 from libcpp.pair cimport pair
 
 cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
@@ -18,7 +18,7 @@ cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
         const gdf_column& ply_y
     ) except +
 
-cdef extern from "coordinate_transform.hpp" namespace "cuspatial" nogil:
+cdef extern from "legacy/coordinate_transform.hpp" namespace "cuspatial" nogil:
     cdef pair[gdf_column, gdf_column] lonlat_to_coord(
         const gdf_scalar& cam_x,
         const gdf_scalar& cam_y,
@@ -34,7 +34,7 @@ cdef extern from "haversine.hpp" namespace "cuspatial" nogil:
         const gdf_column& y2
     ) except +
 
-cdef extern from "hausdorff.hpp" namespace "cuspatial" nogil:
+cdef extern from "legacy/hausdorff.hpp" namespace "cuspatial" nogil:
     gdf_column& directed_hausdorff_distance(
         const gdf_column& coor_x,
         const gdf_column& coor_y,

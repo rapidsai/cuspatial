@@ -22,7 +22,8 @@
 
 #include <utility/utility.hpp>
 #include <utility/trajectory_thrust.cuh>
-#include <cuspatial/trajectory.hpp>
+#include <cuspatial/legacy/trajectory.hpp>
+#include <cuspatial/error.hpp>
 
 #include <cudf/legacy/column.hpp>
 
@@ -94,7 +95,7 @@ struct derive_trajectories_functor {
                              gdf_column& trajectory_id,
                              gdf_column& length, gdf_column& offset)
     {
-        CUDF_FAIL("Non-floating point operation is not supported");
+        CUSPATIAL_FAIL("Non-floating point operation is not supported");
     }
 };
 
@@ -115,17 +116,17 @@ gdf_size_type derive_trajectories(const gdf_column& x, const gdf_column& y,
                                   gdf_column& length,
                                   gdf_column& offset)
 {
-    CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
+    CUSPATIAL_EXPECTS(x.data != nullptr && y.data != nullptr &&
                  object_id.data != nullptr && timestamp.data != nullptr,
                  "Null input data");
-    CUDF_EXPECTS(x.size == y.size && x.size == object_id.size &&
+    CUSPATIAL_EXPECTS(x.size == y.size && x.size == object_id.size &&
                  x.size == timestamp.size ,
                  "Data size mismatch");
-    CUDF_EXPECTS(object_id.dtype == GDF_INT32,
+    CUSPATIAL_EXPECTS(object_id.dtype == GDF_INT32,
                  "Invalid trajectory ID datatype");
-    CUDF_EXPECTS(timestamp.dtype == GDF_TIMESTAMP,
+    CUSPATIAL_EXPECTS(timestamp.dtype == GDF_TIMESTAMP,
                  "Invalid timestamp datatype");
-    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
+    CUSPATIAL_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
                  object_id.null_count==0 && timestamp.null_count==0,
                  "NULL support unimplemented");
 

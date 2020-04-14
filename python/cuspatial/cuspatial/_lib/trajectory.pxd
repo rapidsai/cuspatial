@@ -5,10 +5,10 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from cudf._lib.cudf cimport *
+from cudf._lib.legacy.cudf cimport *
 from libcpp.pair cimport pair
 
-cdef extern from "trajectory.hpp" namespace "cuspatial" nogil:
+cdef extern from "legacy/trajectory.hpp" namespace "cuspatial" nogil:
 
     cdef size_type derive_trajectories(
         const gdf_column& coor_x,

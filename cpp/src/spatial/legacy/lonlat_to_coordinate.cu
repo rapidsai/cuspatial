@@ -21,7 +21,8 @@
 #include <thrust/device_vector.h>
 
 #include <utility/utility.hpp>
-#include <cuspatial/coordinate_transform.hpp>
+#include <cuspatial/legacy/coordinate_transform.hpp>
+#include <cuspatial/error.hpp>
 
 #include <cudf/legacy/column.hpp>
 
@@ -94,7 +95,7 @@ struct ll2coord_functor {
     std::pair<gdf_column,gdf_column> operator()(const gdf_scalar  & cam_lon,const gdf_scalar  & cam_lat,
     	const gdf_column  & in_lon,const gdf_column  & in_lat)
     {
-        CUDF_FAIL("Non-floating point operation is not supported");
+        CUSPATIAL_FAIL("Non-floating point operation is not supported");
     }
 };
 
@@ -114,13 +115,13 @@ std::pair<gdf_column,gdf_column> lonlat_to_coord(const gdf_scalar& cam_lon, cons
 
     double cx=*((double*)(&(cam_lon.data)));
     double cy=*((double*)(&(cam_lat.data)));
-    CUDF_EXPECTS(cx >=-180 && cx <=180 && cy >=-90 && cy <=90,
+    CUSPATIAL_EXPECTS(cx >=-180 && cx <=180 && cy >=-90 && cy <=90,
     	"camera origin must have valid lat/lon values [-180,-90,180,90]");
-    CUDF_EXPECTS(in_lon.data != nullptr &&in_lat.data!=nullptr, "input point cannot be empty");
-    CUDF_EXPECTS(in_lon.size == in_lat.size, "input x and y arrays must have the same length");
+    CUSPATIAL_EXPECTS(in_lon.data != nullptr &&in_lat.data!=nullptr, "input point cannot be empty");
+    CUSPATIAL_EXPECTS(in_lon.size == in_lat.size, "input x and y arrays must have the same length");
 
     //future versions might allow in_(x/y) have null_count>0, which might be useful for taking query results as inputs
-    CUDF_EXPECTS(in_lon.null_count == 0 && in_lat.null_count == 0, "this version does not support point in_lon/in_lat contains nulls");
+    CUSPATIAL_EXPECTS(in_lon.null_count == 0 && in_lat.null_count == 0, "this version does not support point in_lon/in_lat contains nulls");
 
     auto res=cudf::type_dispatcher(in_lon.dtype, ll2coord_functor(), cam_lon,cam_lat,in_lon,in_lat);
 
