@@ -19,8 +19,10 @@
 #include <thrust/functional.h>
 #include <thrust/pair.h>
 #include <thrust/tuple.h>
-#include "bbox_thrust.cuh"
-#include "z_order.cuh"
+
+#include "utility/bbox_thrust.cuh"
+#include "utility/z_order.cuh"
+
 namespace {
 
 template <typename T>

@@ -18,8 +18,10 @@
 
 #include <thrust/functional.h>
 #include <thrust/pair.h>
+
 #include <ostream>
-#include <utility/z_order.cuh>
+
+#include "utility/z_order.cuh"
 
 namespace {
 
