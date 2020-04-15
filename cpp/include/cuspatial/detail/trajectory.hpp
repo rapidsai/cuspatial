@@ -24,21 +24,29 @@ namespace experimental {
 namespace detail {
 
 /**
- * @brief Derive trajectories from sorted object ids.
+ * @brief Derive trajectories from points, timestamps, and object ids.
  *
  * Groups the input object ids to determine unique trajectories. Returns a
  * table with the trajectory ids, the number of objects in each trajectory,
  * and the offset position of the first object for each trajectory in the
  * input object ids column.
  *
- * @param[in] id column of object (e.g., vehicle) ids
+ * @param[in] x coordinates (km) (sorted by id, timestamp)
+ * @param[in] y coordinates (km) (sorted by id, timestamp)
+ * @param[in] object_id column of object (e.g., vehicle) ids
+ * @param[in] timestamp column (sorted by id, timestamp)
  * @param[in] mr The optional resource to use for all allocations
  * @param[in] stream Optional CUDA stream on which to schedule allocations
  *
- * @return an int32 column of end positions for each trajectory's last object
+ * @return an `std::pair<table, column>`:
+ *  1. table of (object_id, timestamp, x, y) sorted by (object_id, timestamp)
+ *  2. int32 column of end positions for each trajectory's last object
  */
-std::unique_ptr<cudf::column> compute_trajectory_offsets(
-    cudf::column_view const& object_id,
+std::pair<std::unique_ptr<cudf::experimental::table>,
+          std::unique_ptr<cudf::column>>
+derive_trajectories(
+    cudf::column_view const& x, cudf::column_view const& y,
+    cudf::column_view const& object_id, cudf::column_view const& timestamp,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(),
     cudaStream_t stream = 0);
 
@@ -46,7 +54,7 @@ std::unique_ptr<cudf::column> compute_trajectory_offsets(
  * @brief Compute the distance and speed of trajectories
  *
  * Trajectories are derived from coordinate data using
- * `compute_trajectory_offsets`.
+ * `derive_trajectories`.
  *
  * @param[in] x coordinates (km) (sorted by id, timestamp)
  * @param[in] y coordinates (km) (sorted by id, timestamp)
@@ -68,7 +76,7 @@ std::unique_ptr<cudf::experimental::table> compute_distance_and_speed(
  * @brief Compute the spatial bounding boxes of trajectories
  *
  * Trajectories are derived from coordinate data using
- * `compute_trajectory_offsets`.
+ * `derive_trajectories`.
  *
  * @param[in] x coordinates (km) (sorted by id, timestamp)
  * @param[in] y coordinates (km) (sorted by id, timestamp)
