@@ -18,20 +18,17 @@
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
+#include <cudf/detail/sorting.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
-#include <cudf/utilities/legacy/type_dispatcher.hpp>
+// #include <cudf/utilities/legacy/type_dispatcher.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
-#include <cuspatial/point_quadtree.hpp>
-#include <utility/helper_thrust.cuh>
-#include <utility/quadtree_thrust.cuh>
+#include <cuspatial/detail/point_quadtree.hpp>
 #include <vector>
 
-typedef thrust::tuple<double, double, double, double, double, uint32_t,
-                      uint32_t>
-    quad_point_parameters;
+#include "utility/quadtree_thrust.cuh"
 
-namespace {  // anonymous
+namespace {
 
 /*
  *quadtree indexing on points using the bottom-up algorithm described at ref.
@@ -103,9 +100,9 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
   CUDF_EXPECTS(db_pnt_parentkey != nullptr,
                " error allocating memory for full array of quadrant keys");
   uint32_t *d_pnt_parentkey = static_cast<uint32_t *>(db_pnt_parentkey->data());
-  HANDLE_CUDA_ERROR(cudaMemcpy((void *)d_pnt_parentkey, (void *)d_pnt_runkey,
-                               num_top_quads * sizeof(uint32_t),
-                               cudaMemcpyDeviceToDevice));
+  CUDA_TRY(cudaMemcpy((void *)d_pnt_parentkey, (void *)d_pnt_runkey,
+                      num_top_quads * sizeof(uint32_t),
+                      cudaMemcpyDeviceToDevice));
 
   delete db_pnt_runkey;
   db_pnt_runkey = nullptr;
@@ -116,9 +113,9 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
                " error allocating memory for full array of numbers of points "
                "in quadrants");
   uint32_t *d_pnt_pntlen = static_cast<uint32_t *>(db_pnt_pntlen->data());
-  HANDLE_CUDA_ERROR(cudaMemcpy((void *)d_pnt_pntlen, (void *)d_pnt_runlen,
-                               num_top_quads * sizeof(uint32_t),
-                               cudaMemcpyDeviceToDevice));
+  CUDA_TRY(cudaMemcpy((void *)d_pnt_pntlen, (void *)d_pnt_runlen,
+                      num_top_quads * sizeof(uint32_t),
+                      cudaMemcpyDeviceToDevice));
 
   delete db_pnt_runlen;
   db_pnt_runlen = nullptr;
@@ -129,8 +126,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
                " error allocating memory for full array of numbers of child "
                "nodes in quadrants");
   uint32_t *d_pnt_numchild = static_cast<uint32_t *>(db_pnt_numchild->data());
-  HANDLE_CUDA_ERROR(
-      cudaMemset(d_pnt_numchild, 0, num_top_quads * sizeof(uint32_t)));
+  CUDA_TRY(cudaMemset(d_pnt_numchild, 0, num_top_quads * sizeof(uint32_t)));
 
   // generating keys of paraent quadrants and numbers of child quadrants of
   // "full quadrants" based on the second of paragraph of Section 4.2 of ref.
@@ -281,7 +277,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
                  " error allocating memory for array of parent node positions");
     uint32_t *d_pnt_parentpos =
         static_cast<uint32_t *>(db_pnt_parentpos->data());
-    HANDLE_CUDA_ERROR(
+    CUDA_TRY(
         cudaMemset(d_pnt_parentpos, 0, num_child_nodes * sizeof(uint32_t)));
 
     // line 2 of algorithm in Fig. 5 in ref.
@@ -326,9 +322,8 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
                  " error allocating memory for the copy array of numbers of "
                  "points in quadrants");
     uint32_t *d_pnt_templen = static_cast<uint32_t *>(db_pnt_templen->data());
-    HANDLE_CUDA_ERROR(cudaMemcpy((void *)d_pnt_templen, (void *)d_pnt_qtnlen,
-                                 end_pos * sizeof(uint32_t),
-                                 cudaMemcpyDeviceToDevice));
+    CUDA_TRY(cudaMemcpy((void *)d_pnt_templen, (void *)d_pnt_qtnlen,
+                        end_pos * sizeof(uint32_t), cudaMemcpyDeviceToDevice));
 
     // line 5 of algorithm in Fig. 5 in ref.
     int num_valid_nodes =
@@ -393,8 +388,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
                              ->data<bool>();
     CUDF_EXPECTS(d_pnt_qtsign != nullptr,
                  " error allocating storage memory for sign column");
-    HANDLE_CUDA_ERROR(
-        cudaMemset(d_pnt_qtsign, 0, num_valid_nodes * sizeof(bool)));
+    CUDA_TRY(cudaMemset(d_pnt_qtsign, 0, num_valid_nodes * sizeof(bool)));
 
     // line 6 of algorithm in Fig. 5 in ref.
     thrust::transform(exec_policy->on(stream), d_pnt_qtnlen,
@@ -435,9 +429,9 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
                  "  error allocating memory for array of temporal keys in "
                  "reordering first point positions");
     uint32_t *d_pnt_tmp_key = static_cast<uint32_t *>(db_pnt_tmp_key->data());
-    HANDLE_CUDA_ERROR(cudaMemcpy((void *)d_pnt_tmp_key, (void *)d_pnt_qtkey,
-                                 num_valid_nodes * sizeof(uint32_t),
-                                 cudaMemcpyDeviceToDevice));
+    CUDA_TRY(cudaMemcpy((void *)d_pnt_tmp_key, (void *)d_pnt_qtkey,
+                        num_valid_nodes * sizeof(uint32_t),
+                        cudaMemcpyDeviceToDevice));
 
     rmm::device_buffer *db_pnt_tmp_lpos =
         new rmm::device_buffer(num_valid_nodes * sizeof(uint32_t), stream, mr);
@@ -512,10 +506,8 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
     delete db_pnt_tmp_seq;
     db_pnt_tmp_seq = nullptr;
 
-    HANDLE_CUDA_ERROR(
-        cudaMemset(d_pnt_qtnlen, 0, num_valid_nodes * sizeof(uint32_t)));
-    HANDLE_CUDA_ERROR(
-        cudaMemset(d_pnt_qtnpos, 0, num_valid_nodes * sizeof(uint32_t)));
+    CUDA_TRY(cudaMemset(d_pnt_qtnlen, 0, num_valid_nodes * sizeof(uint32_t)));
+    CUDA_TRY(cudaMemset(d_pnt_qtnpos, 0, num_valid_nodes * sizeof(uint32_t)));
 
     auto in_len_pos_iter = thrust::make_zip_iterator(
         thrust::make_tuple(d_pnt_tmp_nlen, d_pnt_tmp_npos));
@@ -672,36 +664,26 @@ struct quadtree_point_processor {
   template <typename T,
             std::enable_if_t<std::is_floating_point<T>::value> * = nullptr>
   std::unique_ptr<cudf::experimental::table> operator()(
-      cudf::mutable_column_view &x, cudf::mutable_column_view &y,
-      quad_point_parameters qpi, rmm::mr::device_memory_resource *mr,
-      cudaStream_t stream) {
-    T *d_pnt_x = cudf::mutable_column_device_view::create(x, stream)->data<T>();
-    T *d_pnt_y = cudf::mutable_column_device_view::create(y, stream)->data<T>();
-    double x1 = thrust::get<0>(qpi);
-    double y1 = thrust::get<1>(qpi);
-    double x2 = thrust::get<2>(qpi);
-    double y2 = thrust::get<3>(qpi);
+      cudf::mutable_column_view& x, cudf::mutable_column_view& y, double const x1,
+      double const y1, double const x2, double const y2, double const scale,
+      int32_t const num_level, int32_t const min_size,
+      rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
     SBBox<double> bbox(thrust::make_tuple(x1, y1), thrust::make_tuple(x2, y2));
-    double scale = thrust::get<4>(qpi);
-    uint32_t num_level = thrust::get<5>(qpi);
-    uint32_t min_size = thrust::get<6>(qpi);
 
     std::vector<std::unique_ptr<cudf::column>> quad_cols =
-        dowork<T>(x.size(), d_pnt_x, d_pnt_y, bbox, scale, num_level, min_size,
-                  mr, stream);
+        dowork<T>(x.size(), x.data<T>(), y.data<T>(), bbox, scale, num_level,
+                  min_size, mr, stream);
 
-    std::unique_ptr<cudf::experimental::table> destination_table =
-        std::make_unique<cudf::experimental::table>(std::move(quad_cols));
-
-    return destination_table;
+    return std::make_unique<cudf::experimental::table>(std::move(quad_cols));
   }
 
   template <typename T,
             std::enable_if_t<!std::is_floating_point<T>::value> * = nullptr>
   std::unique_ptr<cudf::experimental::table> operator()(
-      cudf::mutable_column_view &x, cudf::mutable_column_view &y,
-      quad_point_parameters qpi, rmm::mr::device_memory_resource *mr,
-      cudaStream_t stream) {
+      cudf::mutable_column_view& x, cudf::mutable_column_view& y, double const x1,
+      double const y1, double const x2, double const y2, double const scale,
+      int32_t const num_level, int32_t const min_size,
+      rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
     CUDF_FAIL("Non-floating point operation is not supported");
   }
 };
@@ -710,10 +692,25 @@ struct quadtree_point_processor {
 
 namespace cuspatial {
 
+namespace detail {
+
 std::unique_ptr<cudf::experimental::table> quadtree_on_points(
-    cudf::mutable_column_view &x, cudf::mutable_column_view &y, double x1,
-    double y1, double x2, double y2, double scale, int num_level,
-    int min_size) {
+    cudf::mutable_column_view x, cudf::mutable_column_view y, double const x1,
+    double const y1, double const x2, double const y2, double const scale,
+    int32_t const num_level, int32_t const min_size,
+    rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
+  return cudf::experimental::type_dispatcher(
+      x.type(), quadtree_point_processor{}, x, y, x1, y1, x2, y2, scale,
+      num_level, min_size, mr, stream);
+}
+
+}  // namespace detail
+
+std::unique_ptr<cudf::experimental::table> quadtree_on_points(
+    cudf::mutable_column_view x, cudf::mutable_column_view y, double const x1,
+    double const y1, double const x2, double const y2, double const scale,
+    int32_t const num_level, int32_t const min_size,
+    rmm::mr::device_memory_resource *mr) {
   CUDF_EXPECTS(x.size() == y.size(),
                "x and y columns might have the same lenght");
   CUDF_EXPECTS(x.size() > 0, "point dataset can not be empty");
@@ -725,13 +722,8 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(
       min_size > 0,
       "minimum number of points for a non-leaf node must be larger than zero");
 
-  cudaStream_t stream = 0;
-  rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource();
-
-  quad_point_parameters qpi =
-      thrust::make_tuple(x1, y1, x2, y2, scale, num_level, min_size);
-  return cudf::experimental::type_dispatcher(
-      x.type(), quadtree_point_processor{}, x, y, qpi, mr, stream);
+  return detail::quadtree_on_points(x, y, x1, y1, x2, y2, scale, num_level,
+                                    min_size, mr, 0);
 }
 
 }  // namespace cuspatial

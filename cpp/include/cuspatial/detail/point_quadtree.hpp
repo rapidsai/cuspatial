@@ -15,10 +15,11 @@
  */
 
 #pragma once
-#include <cudf/types.hpp>
-#include <memory>
+
+#include <cuspatial/point_quadtree.hpp>
 
 namespace cuspatial {
+namespace detail {
 
 /**
  * @brief construct a quadtree structure from points.
@@ -42,6 +43,7 @@ namespace cuspatial {
  * `min_size` is typically set to the number of threads in a block used in
  * the two CUDA kernels needed in the spatial refinement step.
  * @param[in] mr The optional resource to use for all allocations
+ * @param[in] stream Optional CUDA stream on which to schedule allocations
  *
  * @return cuDF table with five columns for a complete quadtree:
  * key, lev, sign, length, fpos
@@ -52,6 +54,9 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(
     cudf::mutable_column_view x, cudf::mutable_column_view y, double const x1,
     double const y1, double const x2, double const y2, double const scale,
     int32_t const num_level, int32_t const min_size,
-    rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource());
+    rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource(),
+    cudaStream_t stream = 0);
+
+}  // namespace detail
 
 }  // namespace cuspatial
