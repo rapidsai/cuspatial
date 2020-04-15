@@ -2,6 +2,7 @@
 
 ## New Features
 - PR 143 construct quadtree on large-scale point data
+
 ## Improvements
 
 - PR #147 Update Conda/CMake configs to match other RAPIDS projects
