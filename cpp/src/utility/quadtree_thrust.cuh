@@ -39,7 +39,7 @@ struct xytoz {
     double y = thrust::get<1>(loc);
     if (x < thrust::get<0>(bbox.first) || x > thrust::get<0>(bbox.second) ||
         y < thrust::get<1>(bbox.first) || y > thrust::get<1>(bbox.second))
-      return (1 << (2 * lev) - 1);
+      return (1 << (2 * lev)) - 1;
     else {
       uint16_t a = (uint16_t)((x - thrust::get<0>(bbox.first)) / scale);
       uint16_t b = (uint16_t)((y - thrust::get<1>(bbox.first)) / scale);
