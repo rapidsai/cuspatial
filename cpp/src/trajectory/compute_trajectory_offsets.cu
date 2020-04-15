@@ -19,10 +19,9 @@
 #include <thrust/iterator/discard_iterator.h>
 
 #include <cudf/column/column_factories.hpp>
+#include <cuspatial/detail/trajectory.hpp>
 #include <memory>
 #include <vector>
-
-#include "trajectory.hpp"
 
 namespace cuspatial {
 namespace experimental {

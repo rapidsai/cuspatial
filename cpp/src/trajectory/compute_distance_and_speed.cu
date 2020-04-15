@@ -21,8 +21,7 @@
 #include <cudf/table/table.hpp>
 #include <cudf/utilities/traits.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
-
-#include "trajectory.hpp"
+#include <cuspatial/detail/trajectory.hpp>
 
 namespace cuspatial {
 namespace experimental {
