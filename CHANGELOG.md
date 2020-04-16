@@ -10,6 +10,7 @@
 - PR #167 Align utility.hpp with libcudf style
 - PR #173 Move hausdorff.hpp files to legacy
 - PR #172 Move coordinate_transform.hpp files to legacy
+- PR #176 Move soa_readers.hpp to legacy
 
 ## Bug Fixes
 
