@@ -22,49 +22,48 @@
 #include <cudf/legacy/column.hpp>
 #include <cudf/utilities/error.hpp>
 #include <rmm/rmm.h>
-#include <cuspatial/legacy/soa_readers.hpp>
+#include <cuspatial/soa_readers.hpp>
 #include <utility/utility.hpp>
 
 namespace cuspatial
 {
+namespace detail
+{
+    std::pair<cudf::column, cudf::column> read_lonlat_points_soa(const char *filename,
+        cudaStream_t stream, rmm::device_memory_resource* mr)
+    {
+        // Read the lon and lat points from the soa file into host memory
+        double* p_lon=nullptr, *p_lat=nullptr;
+        int num_p = read_point_lonlat<double>(filename, p_lon, p_lat);
+
+        // Allocate a cudf::column with the lon host memory
+        auto lon = cudf::test::fixed_width_column_wrapper<double>(p_lon, stream, mr);
+        auto lat = cudf::test::fixed_width_column_wrapper<double>(p_lat, stream, mr);
+
+        return std::pair<lon, lat>
+    }
+   
+    std::pair<cudf::column, cudf::column> read_xy_points_soa(const char* filename,
+        cudaStream_t stream, rmm::device_memory_resource* mr) 
+    {
+        double * p_x=nullptr, *p_y=nullptr;
+        int num_p = read_point_xy<double>(filename,p_x,p_y);
+
+        auto x = cudf::test::fixed_width_column_wrapper<double>(p_x, stream, mr);
+        auto y = cudf::test::fixed_width_column_wrapper<double>(p_y, stream, mr);
+       
+        return std::make_pair(x, y);
+    }	
+} // detail namespace
+
     /**
     * @brief read lon/lat from file into two columns; data type is fixed to double (GDF_FLOAT64)
     *
     * see soa_readers.hpp
     */
-    std::pair<gdf_column, gdf_column>  read_lonlat_points_soa(const char *filename)                                  
+    std::pair<cudf::column, cudf::column> read_lonlat_points_soa(const char *filename)
     {
-
-        cudaStream_t stream{0};
-
-        double * p_lon=nullptr, *p_lat=nullptr;
-        int num_p=read_point_lonlat<double>(filename,p_lon,p_lat);
-       
-        gdf_column pnt_lon,pnt_lat;
-        memset(&pnt_lon,0,sizeof(gdf_column));
-        memset(&pnt_lat,0,sizeof(gdf_column));
-	    
-        double* temp_lon{nullptr};
-        RMM_TRY( RMM_ALLOC(&temp_lon, num_p * sizeof(double), 0) );
-        CUDA_TRY( cudaMemcpyAsync(temp_lon, p_lon,
-                                  num_p * sizeof(double) , 
-                                  cudaMemcpyHostToDevice,stream) );		
-        gdf_column_view_augmented(&pnt_lon, temp_lon, nullptr, num_p,
-                              GDF_FLOAT64, 0,
-                              gdf_dtype_extra_info{TIME_UNIT_NONE}, "lon");          
-        delete[] p_lon;
-
-        double* temp_lat{nullptr};
-        RMM_TRY( RMM_ALLOC(&temp_lat, num_p * sizeof(double), 0) );
-        CUDA_TRY( cudaMemcpyAsync(temp_lat, p_lat,
-                                  num_p * sizeof(double) , 
-                                  cudaMemcpyHostToDevice,stream) );		
-        gdf_column_view_augmented(&pnt_lat, temp_lat, nullptr, num_p,
-                              GDF_FLOAT64, 0,
-                              gdf_dtype_extra_info{TIME_UNIT_NONE}, "lat");          
-        delete[] p_lat;
-	    
-        return std::make_pair(pnt_lon,pnt_lat);
+      return detail::read_lonlat_points_soa(filename, cudaStream_t{0}, rmm::mr::get_default_resource());
     }
 	
     /**
@@ -72,36 +71,8 @@ namespace cuspatial
     *
     * see soa_readers.hpp
     */
-    std::pair<gdf_column, gdf_column>  read_xy_points_soa(const char *filename)                              
+    std::pair<cudf::column, cudf::column> read_xy_points_soa(const char *filename)                              
     {
-        double * p_x=nullptr, *p_y=nullptr;
-        int num_p=read_point_xy<double>(filename,p_x,p_y);
-       
-        gdf_column pnt_x,pnt_y;
-        memset(&pnt_x,0,sizeof(gdf_column));
-        memset(&pnt_y,0,sizeof(gdf_column));
-	    
-        double* temp_x{nullptr};
-        RMM_TRY( RMM_ALLOC(&temp_x, num_p * sizeof(double), 0) );
-        cudaStream_t stream{0};
-        CUDA_TRY( cudaMemcpyAsync(temp_x, p_x,
-                                  num_p * sizeof(double) , 
-                                  cudaMemcpyHostToDevice,stream) );		
-        gdf_column_view_augmented(&pnt_x, temp_x, nullptr, num_p,
-                              GDF_FLOAT64, 0,
-                              gdf_dtype_extra_info{TIME_UNIT_NONE}, "x");          
-        delete[] p_x;
-
-        double* temp_y{nullptr};
-        RMM_TRY( RMM_ALLOC(&temp_y, num_p * sizeof(double), 0) );
-        CUDA_TRY( cudaMemcpyAsync(temp_y, p_y,
-                                  num_p * sizeof(double) , 
-                                  cudaMemcpyHostToDevice,stream) );		
-        gdf_column_view_augmented(&pnt_y, temp_y, nullptr, num_p,
-                              GDF_FLOAT64, 0,
-                              gdf_dtype_extra_info{TIME_UNIT_NONE}, "y");          
-        delete[] p_y;
-	    
-        return std::make_pair(pnt_x,pnt_y);
+      return detail::read_xy_points_soa(filename, cudaStream_t{0}, rmm::mr::get_default_resource());
     }	
 }
