@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 #pragma once
 
-typedef struct gdf_column_ gdf_column; // forward declaration
-
 namespace cuspatial {
 
 /**
@@ -25,54 +23,56 @@ namespace cuspatial {
  *
  * @param[in] filename: file to read
  *
- * @return gdf_column storing the uint32_t data
+ * @return column storing the uint32_t data
  **/
-gdf_column read_uint32_soa(const char *filename);
+std::unique_ptr<cudf::column> read_uint32_soa(const char *filename);
 
 /**
  * @brief read timestamp data from file as column
  *
  * @param[in] filename: file to read
  *
- * @return gdf_column storing its_timestamp data
+ * @return column storing its_timestamp data
 **/
-gdf_column read_timestamp_soa(const char *filename);
+std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename);
 
 /**
- * @brief read lon/lat from file as two columns; data type is fixed to double (GDF_FLOAT64)
+ * @brief read lon/lat from file as two columns; data type is fixed to double
  *
  * @param[in] filename: file name of point data in location_3d layout (lon/lat/alt but alt is omitted)
  *
- * @return gdf_columns storing x and y data
+ * @return columns storing x and y data
 **/
-std::pair<gdf_column, gdf_column>  read_lonlat_points_soa(const char *filename);
+std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
+read_lonlat_points_soa(const char *filename);
 
 /**
- * @brief read x/y from file as two columns; data type is fixed to double (GDF_FLOAT64)
+ * @brief read x/y from file as two columns; data type is fixed to double
  * 
  * @param[in] filename: file name of point data in coordinate_2d layout (x/y)
  * 
- * @return gdf_columns storing x and y data
+ * @return columns storing x and y data
 **/
-std::pair<gdf_column, gdf_column>  read_xy_points_soa(const char *filename);
+std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
+read_xy_points_soa(const char *filename);
 
 /**
  * @brief read polygon data from file in SoA format
  * 
- * data type of vertices is fixed to double (GDF_FLOAT64)
+ * data type of vertices is fixed to double
  *
  * @param[in] filename: polygon data filename
- * @param[out] ply_fpos: index polygons: prefix sum of number of rings of all
- *             polygons
- * @param[out] ply_rpos: index rings: prefix sum of number of vertices of all
- *             rings
- * @param[out] ply_x: x coordinates of concatenated polygons
- * @param[out] ply_y: y coordinates of concatenated polygons
  *
  * @note: x/y can be lon/lat.
+ *
+ * @return: vector of columns
+ *          column(0): index polygons: prefix sum of number of rings of all
+ *                     polygons
+ *          column(1): index rings: prefix sum of number of vertices of all
+ *                     rings
+ *          column(2): x coordinates of concatenated polygons
+ *          column(3): y coordinates of concatenated polygons
 **/
-void read_polygon_soa(const char *filename,
-                      gdf_column* ply_fpos, gdf_column* ply_rpos,
-                      gdf_column* ply_x, gdf_column* ply_y);
+std::vector<cudf::column> read_polygon_soa(const char *filename);
 
 }// namespace cuspatial
