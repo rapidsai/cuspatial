@@ -23,7 +23,7 @@
 #include <cudf/types.h>
 #include <cudf/legacy/column.hpp>
 #include <cudf/utilities/error.hpp>
-#include <cuspatial/soa_readers.hpp>
+#include <cuspatial/legacy/soa_readers.hpp>
 #include <cuspatial/error.hpp>
 #include <utility/utility.hpp>
 
