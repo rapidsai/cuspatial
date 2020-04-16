@@ -19,7 +19,7 @@
 
 #include <gtest/gtest.h>
 #include <utilities/legacy/error_utils.hpp>
-#include <cuspatial/soa_readers.hpp>
+#include <cuspatial/legacy/soa_readers.hpp>
 #include <cuspatial/point_in_polygon.hpp>
 #include "pip_util.h"
 
