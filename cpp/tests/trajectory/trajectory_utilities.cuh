@@ -28,7 +28,8 @@
 namespace cuspatial {
 namespace test {
 
-inline std::unique_ptr<cudf::experimental::table> make_test_trajectories_table(
+template <typename T>
+std::unique_ptr<cudf::experimental::table> make_test_trajectories_table(
     cudf::size_type size) {
   std::vector<int32_t> ids(size);
   std::vector<int32_t> map(size);
@@ -42,18 +43,21 @@ inline std::unique_ptr<cudf::experimental::table> make_test_trajectories_table(
   std::seed_seq seed{0};
   std::shuffle(map.begin(), map.end(), std::mt19937{seed});
 
-  auto rand_double = cudf::test::UniformRandomGenerator<double>{};
+  auto rand_float = cudf::test::UniformRandomGenerator<T>{};
   auto ids_iter = cudf::test::make_counting_transform_iterator(
       0, [&](auto i) { return ids[map[i]]; });
-  auto doubles_iter = cudf::test::make_counting_transform_iterator(
-      0, [&](auto i) { return 10000 * rand_double.generate(); });
+  auto floats_iter =
+      cudf::test::make_counting_transform_iterator(0, [&](auto i) {
+        return static_cast<T>(40000 * rand_float.generate() *
+                              (rand_float.generate() > 0.5 ? 1 : -1));
+      });
 
   auto id = cudf::test::fixed_width_column_wrapper<int32_t>(ids_iter,
                                                             ids_iter + size);
-  auto x = cudf::test::fixed_width_column_wrapper<double>(doubles_iter,
-                                                          doubles_iter + size);
-  auto y = cudf::test::fixed_width_column_wrapper<double>(doubles_iter,
-                                                          doubles_iter + size);
+  auto x = cudf::test::fixed_width_column_wrapper<T>(floats_iter,
+                                                     floats_iter + size);
+  auto y = cudf::test::fixed_width_column_wrapper<T>(floats_iter,
+                                                     floats_iter + size);
   auto ts = cudf::test::generate_timestamps<cudf::timestamp_ms>(
       size,
       cudf::timestamp_ms{-2500000000000},  // Sat, 11 Oct 1890 19:33:20 GMT

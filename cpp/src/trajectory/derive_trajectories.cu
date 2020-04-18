@@ -53,7 +53,7 @@ derive_trajectories(cudf::column_view const& x, cudf::column_view const& y,
       thrust::distance(lengths.begin(), grouped.second),
       cudf::mask_state::UNALLOCATED, stream, mr);
 
-  thrust::inclusive_scan(policy->on(stream), lengths.begin(), lengths.end(),
+  thrust::exclusive_scan(policy->on(stream), lengths.begin(), lengths.end(),
                          offsets->mutable_view().begin<int32_t>());
 
   return std::make_pair(std::move(sorted), std::move(offsets));

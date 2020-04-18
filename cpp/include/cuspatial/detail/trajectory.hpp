@@ -66,9 +66,9 @@ derive_trajectories(
  *
  * @return a sorted cudf table of distances (meters) and speeds (meters/second)
  */
-std::unique_ptr<cudf::experimental::table> compute_distance_and_speed(
+std::unique_ptr<cudf::experimental::table> trajectory_distance_and_speed(
     cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& timestamp, cudf::column_view const& offset,
+    cudf::column_view const& object_id, cudf::column_view const& timestamp,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(),
     cudaStream_t stream = 0);
 
@@ -91,9 +91,9 @@ std::unique_ptr<cudf::experimental::table> compute_distance_and_speed(
  *   * x2 - the x coordinate of each bounding boxes' upper right corner
  *   * y2 - the y coordinate of each bounding boxes' upper right corner
  */
-std::unique_ptr<cudf::experimental::table> compute_bounding_boxes(
+std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
     cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& offset,
+    cudf::column_view const& object_id,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(),
     cudaStream_t stream = 0);
 

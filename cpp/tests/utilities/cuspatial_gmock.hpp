@@ -16,7 +16,7 @@
 
 #pragma once
 
-//TODO after legacy are removed
+// TODO after legacy are removed
 //#include "cuspatial_gtest.hpp"
 //#include <gmock/gmock.h>
 
@@ -33,25 +33,30 @@
 // Utility for testing the expectation that an expression x throws the specified
 // exception whose what() message ends with the msg
 #ifndef EXPECT_THROW_MESSAGE
-#define EXPECT_THROW_MESSAGE(x, exception, startswith, endswith)     \
-do { \
-  EXPECT_THROW({                                                     \
-    try { x; }                                                       \
-    catch (const exception &e) {                                     \
-    ASSERT_NE(nullptr, e.what());                                    \
-    EXPECT_THAT(e.what(), testing::StartsWith((startswith)));        \
-    EXPECT_THAT(e.what(), testing::EndsWith((endswith)));            \
-    throw;                                                           \
-  }}, exception);                                                    \
-} while (0)
+#define EXPECT_THROW_MESSAGE(x, exception, startswith, endswith)      \
+  do {                                                                \
+    EXPECT_THROW(                                                     \
+        {                                                             \
+          try {                                                       \
+            x;                                                        \
+          } catch (const exception &e) {                              \
+            ASSERT_NE(nullptr, e.what());                             \
+            EXPECT_THAT(e.what(), testing::StartsWith((startswith))); \
+            EXPECT_THAT(e.what(), testing::EndsWith((endswith)));     \
+            throw;                                                    \
+          }                                                           \
+        },                                                            \
+        exception);                                                   \
+  } while (0)
 #endif
 
 #define CUSPATIAL_EXPECT_THROW_MESSAGE(x, msg) \
-EXPECT_THROW_MESSAGE(x, cuspatial::logic_error, "cuSpatial failure at:", msg)
+  EXPECT_THROW_MESSAGE(x, cuspatial::logic_error, "cuSpatial failure at:", msg)
 
 #ifndef CUDA_EXPECT_THROW_MESSAGE
-#define CUDA_EXPECT_THROW_MESSAGE(x, msg) \
-EXPECT_THROW_MESSAGE(x, cuspatial::cuda_error, "CUDA error encountered at:", msg)
+#define CUDA_EXPECT_THROW_MESSAGE(x, msg)        \
+  EXPECT_THROW_MESSAGE(x, cuspatial::cuda_error, \
+                       "CUDA error encountered at:", msg)
 #endif
 
 /**---------------------------------------------------------------------------*
@@ -61,7 +66,10 @@ EXPECT_THROW_MESSAGE(x, cuspatial::cuda_error, "CUDA error encountered at:", msg
  *
  * @param statement The statement to be tested
  *---------------------------------------------------------------------------**/
-#define CUSPATIAL_EXPECT_NO_THROW(statement)                 \
-try{ statement; } catch (std::exception& e)             \
-    { FAIL() << "statement:" << #statement << std::endl \
-             << "reason: " << e.what() << std::endl; }
+#define CUSPATIAL_EXPECT_NO_THROW(statement)          \
+  try {                                               \
+    statement;                                        \
+  } catch (std::exception & e) {                      \
+    FAIL() << "statement:" << #statement << std::endl \
+           << "reason: " << e.what() << std::endl;    \
+  }

@@ -24,7 +24,7 @@ struct DeriveTrajectoriesTest : public cudf::test::BaseFixture {};
 constexpr cudf::size_type size{1000};
 
 TEST_F(DeriveTrajectoriesTest, DerivesThreeTrajectories) {
-  auto sorted = cuspatial::test::make_test_trajectories_table(size);
+  auto sorted = cuspatial::test::make_test_trajectories_table<double>(size);
   auto id = sorted->get_column(0);
   auto ts = sorted->get_column(1);
   auto xs = sorted->get_column(2);
@@ -34,5 +34,5 @@ TEST_F(DeriveTrajectoriesTest, DerivesThreeTrajectories) {
   cudf::test::expect_tables_equal(*results.first, *sorted);
   cudf::test::expect_columns_equal(
       *results.second, cudf::test::fixed_width_column_wrapper<int32_t>{
-                           2 * size / 3, 5 * size / 6, size});
+                           0, 2 * size / 3, 5 * size / 6});
 }
