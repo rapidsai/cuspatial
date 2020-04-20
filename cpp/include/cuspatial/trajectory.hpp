@@ -24,71 +24,73 @@ namespace cuspatial {
 namespace experimental {
 
 /**
- * @brief Derive trajectories from points, timestamps, and object ids.
+ * @brief Derive trajectories from object ids, points, and timestamps.
  *
  * Groups the input object ids to determine unique trajectories. Returns a
  * table with the trajectory ids, the number of objects in each trajectory,
  * and the offset position of the first object for each trajectory in the
  * input object ids column.
  *
- * @param[in] x coordinates (km) (sorted by id, timestamp)
- * @param[in] y coordinates (km) (sorted by id, timestamp)
  * @param[in] object_id column of object (e.g., vehicle) ids
- * @param[in] timestamp column (sorted by id, timestamp)
+ * @param[in] x coordinates (in kilometers)
+ * @param[in] y coordinates (in kilometers)
+ * @param[in] timestamp column of timestamps in any resolution
  * @param[in] mr The optional resource to use for all allocations
  *
  * @return an `std::pair<table, column>`:
- *  1. table of (object_id, timestamp, x, y) sorted by (object_id, timestamp)
+ *  1. table of (object_id, x, y, timestamp) sorted by (object_id, timestamp)
  *  2. int32 column of end positions for each trajectory's last object
  */
 std::pair<std::unique_ptr<cudf::experimental::table>,
           std::unique_ptr<cudf::column>>
 derive_trajectories(
-    cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& object_id, cudf::column_view const& timestamp,
+    cudf::column_view const& object_id, cudf::column_view const& x,
+    cudf::column_view const& y, cudf::column_view const& timestamp,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
- * @brief Compute the distance and speed of trajectories
+ * @brief Compute the distance and speed of objects in a trajectory. Groups the
+ * timestamp, x, and y, columns by object id to determine unique trajectories,
+ * then computes the average distance and speed for all routes in each
+ * trajectory.
  *
- * Trajectories are derived from coordinate data using
- * `compute_trajectory_offsets`.
+ * @note Assumes object_id, timestamp, x, y presorted by (object_id, timestamp).
  *
- * @param[in] x coordinates (km) (sorted by id, timestamp)
- * @param[in] y coordinates (km) (sorted by id, timestamp)
- * @param[in] timestamp column (sorted by id, timestamp)
- * @param[in] end position for each trajectory's last object, used to index
- * timestamp/x/y columns (sorted by id, timestamp)
+ * @param[in] object_id column of object (e.g., vehicle) ids
+ * @param[in] x coordinates (in kilometers)
+ * @param[in] y coordinates (in kilometers)
+ * @param[in] timestamp column of timestamps in any resolution
  * @param[in] mr The optional resource to use for all allocations
  *
- * @return a sorted cudf table of distances (meters) and speeds (meters/second)
+ * @return a cuDF table of distances (meters) and speeds (meters/second) whose
+ * length is the number of unique object ids, sorted by object_id.
  */
 std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
-    cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& object_id, cudf::column_view const& timestamp,
+    cudf::column_view const& object_id, cudf::column_view const& x,
+    cudf::column_view const& y, cudf::column_view const& timestamp,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
- * @brief Compute the spatial bounding boxes of trajectories
+ * @brief Compute the spatial bounding boxes of trajectories. Groups the x, y,
+ * and timestamp columns by object id to determine unique trajectories, then
+ * computes the minimum bounding box to contain all routes in each trajectory.
  *
- * Trajectories are derived from coordinate data using
- * `compute_trajectory_offsets`.
+ * @note Assumes object_id, timestamp, x, y presorted by (object_id, timestamp).
  *
- * @param[in] x coordinates (km) (sorted by id, timestamp)
- * @param[in] y coordinates (km) (sorted by id, timestamp)
- * @param[in] end position for each trajectory's last object, used to index
- * timestamp/x/y columns (sorted by id, timestamp)
+ * @param[in] object_id column of object (e.g., vehicle) ids
+ * @param[in] x coordinates (in kilometers)
+ * @param[in] y coordinates (in kilometers)
  * @param[in] mr The optional resource to use for all allocations
  *
  * @return a cudf table of bounding boxes with four columns:
- *   * x1 - the x coordinate of each bounding boxes' lower left corner
- *   * y1 - the y coordinate of each bounding boxes' lower left corner
- *   * x2 - the x coordinate of each bounding boxes' upper right corner
- *   * y2 - the y coordinate of each bounding boxes' upper right corner
+ *   * x1 - the lower-left x-coordinate of each bounding box
+ *   * y1 - the lower-left y-coordinate of each bounding box
+ *   * x2 - the upper-right x-coordinate of each bounding box
+ *   * y2 - the upper-right y-coordinate of each bounding box
  */
 std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
-    cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& object_id,
+    cudf::column_view const& object_id, cudf::column_view const& x,
+    cudf::column_view const& y,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace experimental

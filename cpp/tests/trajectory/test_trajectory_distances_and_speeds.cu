@@ -31,22 +31,24 @@ TYPED_TEST(TrajectoryDistanceSpeedTest,
            ComputeDistanceAndSpeedForThreeTrajectories) {
   using T = TypeParam;
 
-  auto test_data = cuspatial::test::make_test_trajectories_table<T>(size);
+  auto test_data =
+      cuspatial::test::make_test_trajectories_table<T>(size, this->mr());
 
   std::unique_ptr<cudf::column> offsets;
   std::unique_ptr<cudf::experimental::table> sorted;
 
   std::tie(sorted, offsets) = cuspatial::experimental::derive_trajectories(
-      test_data->get_column(2), test_data->get_column(3),
-      test_data->get_column(0), test_data->get_column(1), this->mr());
+      test_data->get_column(0), test_data->get_column(1),
+      test_data->get_column(2), test_data->get_column(3), this->mr());
 
   auto id = sorted->get_column(0);
-  auto ts = sorted->get_column(1);
-  auto xs = sorted->get_column(2);
-  auto ys = sorted->get_column(3);
+  auto xs = sorted->get_column(1);
+  auto ys = sorted->get_column(2);
+  auto ts = sorted->get_column(3);
 
-  auto distance_and_speed = cuspatial::experimental::trajectory_distances_and_speeds(
-      xs, ys, id, ts, this->mr());
+  auto distance_and_speed =
+      cuspatial::experimental::trajectory_distances_and_speeds(id, xs, ys, ts,
+                                                               this->mr());
 
   using Rep = typename cudf::timestamp_ms::rep;
 

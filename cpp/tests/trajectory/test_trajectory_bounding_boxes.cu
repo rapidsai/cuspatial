@@ -23,6 +23,8 @@ template <typename T>
 struct TrajectoryBoundingBoxesTest : public cudf::test::BaseFixture {};
 
 TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, cudf::test::FloatingPointTypes);
+// TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, float);
+// TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, double);
 
 constexpr cudf::size_type size{1000};
 
@@ -30,26 +32,25 @@ TYPED_TEST(TrajectoryBoundingBoxesTest,
            ComputeBoundingBoxesForThreeTrajectories) {
   using T = TypeParam;
 
-  auto test_data = cuspatial::test::make_test_trajectories_table<T>(size);
+  auto test_data =
+      cuspatial::test::make_test_trajectories_table<T>(size, this->mr());
 
   std::unique_ptr<cudf::column> offsets;
   std::unique_ptr<cudf::experimental::table> sorted;
 
   std::tie(sorted, offsets) = cuspatial::experimental::derive_trajectories(
-      test_data->get_column(2), test_data->get_column(3),
-      test_data->get_column(0), test_data->get_column(1), this->mr());
+      test_data->get_column(0), test_data->get_column(1),
+      test_data->get_column(2), test_data->get_column(3), this->mr());
 
   auto id = sorted->get_column(0);
-  auto ts = sorted->get_column(1);
-  auto xs = sorted->get_column(2);
-  auto ys = sorted->get_column(3);
+  auto xs = sorted->get_column(1);
+  auto ys = sorted->get_column(2);
 
-  auto bounding_boxes =
-      cuspatial::experimental::trajectory_bounding_boxes(xs, ys, id, this->mr());
+  auto bounding_boxes = cuspatial::experimental::trajectory_bounding_boxes(
+      id, xs, ys, this->mr());
 
   auto h_xs = cudf::test::to_host<T>(xs).first;
   auto h_ys = cudf::test::to_host<T>(ys).first;
-  auto h_ts = cudf::test::to_host<cudf::timestamp_ms>(ts).first;
   auto h_offsets = cudf::test::to_host<int32_t>(*offsets).first;
 
   std::vector<T> bbox_x1(h_offsets.size());

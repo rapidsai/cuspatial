@@ -24,13 +24,14 @@ struct DeriveTrajectoriesTest : public cudf::test::BaseFixture {};
 constexpr cudf::size_type size{1000};
 
 TEST_F(DeriveTrajectoriesTest, DerivesThreeTrajectories) {
-  auto sorted = cuspatial::test::make_test_trajectories_table<double>(size);
+  auto sorted =
+      cuspatial::test::make_test_trajectories_table<double>(size, this->mr());
   auto id = sorted->get_column(0);
-  auto ts = sorted->get_column(1);
-  auto xs = sorted->get_column(2);
-  auto ys = sorted->get_column(3);
+  auto xs = sorted->get_column(1);
+  auto ys = sorted->get_column(2);
+  auto ts = sorted->get_column(3);
   auto results =
-      cuspatial::experimental::derive_trajectories(xs, ys, id, ts, this->mr());
+      cuspatial::experimental::derive_trajectories(id, xs, ys, ts, this->mr());
   cudf::test::expect_tables_equal(*results.first, *sorted);
   cudf::test::expect_columns_equal(
       *results.second, cudf::test::fixed_width_column_wrapper<int32_t>{

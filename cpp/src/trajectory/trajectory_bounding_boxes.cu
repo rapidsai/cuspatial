@@ -35,9 +35,10 @@ struct dispatch_element {
   template <typename Element>
   std::enable_if_t<std::is_floating_point<Element>::value,
                    std::unique_ptr<cudf::experimental::table>>
-  operator()(cudf::column_view const& x, cudf::column_view const& y,
-             cudf::column_view const& object_id,
-             rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
+  operator()(cudf::column_view const& object_id, cudf::column_view const& x,
+             cudf::column_view const& y, rmm::mr::device_memory_resource* mr,
+             cudaStream_t stream) {
+
     auto policy = rmm::exec_policy(stream);
 
     // Compute output columns size
@@ -107,9 +108,9 @@ struct dispatch_element {
   template <typename Element>
   std::enable_if_t<not std::is_floating_point<Element>::value,
                    std::unique_ptr<cudf::experimental::table>>
-  operator()(cudf::column_view const& x, cudf::column_view const& y,
-             cudf::column_view const& object_id,
-             rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
+  operator()(cudf::column_view const& object_id, cudf::column_view const& x,
+             cudf::column_view const& y, rmm::mr::device_memory_resource* mr,
+             cudaStream_t stream) {
     CUDF_FAIL("X and Y must be floating point types");
   }
 };
@@ -118,36 +119,35 @@ struct dispatch_element {
 
 namespace detail {
 std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
-    cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& object_id, rmm::mr::device_memory_resource* mr,
+    cudf::column_view const& object_id, cudf::column_view const& x,
+    cudf::column_view const& y, rmm::mr::device_memory_resource* mr,
     cudaStream_t stream) {
-  return cudf::experimental::type_dispatcher(x.type(), dispatch_element{}, x, y,
-                                             object_id, mr, stream);
+  return cudf::experimental::type_dispatcher(x.type(), dispatch_element{},
+                                             object_id, x, y, mr, stream);
 }
 }  // namespace detail
 
 std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
-    cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& object_id, rmm::mr::device_memory_resource* mr) {
-  CUSPATIAL_EXPECTS(x.size() == y.size(), "Data size mismatch");
+    cudf::column_view const& object_id, cudf::column_view const& x,
+    cudf::column_view const& y, rmm::mr::device_memory_resource* mr) {
+  CUSPATIAL_EXPECTS(object_id.size() == x.size() && x.size() == y.size(),
+                    "Data size mismatch");
   CUSPATIAL_EXPECTS(x.type().id() == y.type().id(), "Data type mismatch");
   CUSPATIAL_EXPECTS(object_id.type().id() == cudf::INT32,
                     "Invalid object_id type");
   CUSPATIAL_EXPECTS(!(x.has_nulls() || y.has_nulls() || object_id.has_nulls()),
                     "NULL support unimplemented");
-  CUSPATIAL_EXPECTS(object_id.size() > 0 && x.size() >= object_id.size(),
-                    "Insufficient trajectory data");
 
-  if (x.is_empty() || y.is_empty() || object_id.is_empty()) {
+  if (object_id.is_empty() || x.is_empty() || y.is_empty()) {
     std::vector<std::unique_ptr<cudf::column>> cols(4);
     cols.push_back(cudf::experimental::empty_like(x));
+    cols.push_back(cudf::experimental::empty_like(y));
     cols.push_back(cudf::experimental::empty_like(x));
-    cols.push_back(cudf::experimental::empty_like(x));
-    cols.push_back(cudf::experimental::empty_like(x));
+    cols.push_back(cudf::experimental::empty_like(y));
     return std::make_unique<cudf::experimental::table>(std::move(cols));
   }
 
-  return detail::trajectory_bounding_boxes(x, y, object_id, mr, 0);
+  return detail::trajectory_bounding_boxes(object_id, x, y, mr, 0);
 }
 
 }  // namespace experimental

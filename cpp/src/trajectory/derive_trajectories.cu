@@ -19,6 +19,7 @@
 #include <thrust/iterator/discard_iterator.h>
 
 #include <cudf/column/column_factories.hpp>
+#include <cudf/copying.hpp>
 #include <cudf/detail/sorting.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
@@ -32,12 +33,12 @@ namespace detail {
 
 std::pair<std::unique_ptr<cudf::experimental::table>,
           std::unique_ptr<cudf::column>>
-derive_trajectories(cudf::column_view const& x, cudf::column_view const& y,
-                    cudf::column_view const& object_id,
+derive_trajectories(cudf::column_view const& object_id,
+                    cudf::column_view const& x, cudf::column_view const& y,
                     cudf::column_view const& timestamp,
                     rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
   auto sorted = cudf::experimental::detail::sort_by_key(
-      cudf::table_view{{object_id, timestamp, x, y}},
+      cudf::table_view{{object_id, x, y, timestamp}},
       cudf::table_view{{object_id, timestamp}}, {}, {}, mr, stream);
 
   auto policy = rmm::exec_policy(stream);
@@ -62,13 +63,10 @@ derive_trajectories(cudf::column_view const& x, cudf::column_view const& y,
 
 std::pair<std::unique_ptr<cudf::experimental::table>,
           std::unique_ptr<cudf::column>>
-derive_trajectories(cudf::column_view const& x, cudf::column_view const& y,
-                    cudf::column_view const& object_id,
+derive_trajectories(cudf::column_view const& object_id,
+                    cudf::column_view const& x, cudf::column_view const& y,
                     cudf::column_view const& timestamp,
                     rmm::mr::device_memory_resource* mr) {
-  CUSPATIAL_EXPECTS(!(x.is_empty() || y.is_empty() || object_id.is_empty() ||
-                      timestamp.is_empty()),
-                    "Insufficient trajectory data");
   CUSPATIAL_EXPECTS(x.size() == y.size() && x.size() == object_id.size() &&
                         x.size() == timestamp.size(),
                     "Data size mismatch");
@@ -79,7 +77,19 @@ derive_trajectories(cudf::column_view const& x, cudf::column_view const& y,
   CUSPATIAL_EXPECTS(!(x.has_nulls() || y.has_nulls() || object_id.has_nulls() ||
                       timestamp.has_nulls()),
                     "NULL support unimplemented");
-  return detail::derive_trajectories(x, y, object_id, timestamp, mr, 0);
+  if (object_id.is_empty() || x.is_empty() || y.is_empty() ||
+      timestamp.is_empty()) {
+    std::vector<std::unique_ptr<cudf::column>> cols{};
+    cols.reserve(4);
+    cols.push_back(cudf::experimental::empty_like(object_id));
+    cols.push_back(cudf::experimental::empty_like(x));
+    cols.push_back(cudf::experimental::empty_like(y));
+    cols.push_back(cudf::experimental::empty_like(timestamp));
+    return std::make_pair(
+        std::make_unique<cudf::experimental::table>(std::move(cols)),
+        cudf::make_empty_column(cudf::data_type{cudf::INT32}));
+  }
+  return detail::derive_trajectories(object_id, x, y, timestamp, mr, 0);
 }
 }  // namespace experimental
 }  // namespace cuspatial
