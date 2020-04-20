@@ -203,7 +203,7 @@ struct dispatch_element {
 }  // namespace
 
 namespace detail {
-std::unique_ptr<cudf::experimental::table> trajectory_distance_and_speed(
+std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
     cudf::column_view const& x, cudf::column_view const& y,
     cudf::column_view const& object_id, cudf::column_view const& timestamp,
     rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
@@ -212,7 +212,7 @@ std::unique_ptr<cudf::experimental::table> trajectory_distance_and_speed(
 }
 }  // namespace detail
 
-std::unique_ptr<cudf::experimental::table> trajectory_distance_and_speed(
+std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
     cudf::column_view const& x, cudf::column_view const& y,
     cudf::column_view const& object_id, cudf::column_view const& timestamp,
     rmm::mr::device_memory_resource* mr) {
@@ -236,7 +236,7 @@ std::unique_ptr<cudf::experimental::table> trajectory_distance_and_speed(
     return std::make_unique<cudf::experimental::table>(std::move(cols));
   }
 
-  return detail::trajectory_distance_and_speed(x, y, object_id, timestamp, mr, 0);
+  return detail::trajectory_distances_and_speeds(x, y, object_id, timestamp, mr, 0);
 }
 
 }  // namespace experimental

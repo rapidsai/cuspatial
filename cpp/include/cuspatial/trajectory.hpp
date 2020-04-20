@@ -63,7 +63,7 @@ derive_trajectories(
  *
  * @return a sorted cudf table of distances (meters) and speeds (meters/second)
  */
-std::unique_ptr<cudf::experimental::table> trajectory_distance_and_speed(
+std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
     cudf::column_view const& x, cudf::column_view const& y,
     cudf::column_view const& object_id, cudf::column_view const& timestamp,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
