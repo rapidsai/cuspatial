@@ -51,7 +51,7 @@ derive_trajectories(
     cudaStream_t stream = 0);
 
 /**
- * @brief Compute the distance and speed of trajectories
+ * @brief Compute the distance and speed of trajectories.
  *
  * Trajectories are derived from coordinate data using
  * `derive_trajectories`.
@@ -73,7 +73,7 @@ std::unique_ptr<cudf::experimental::table> trajectory_distance_and_speed(
     cudaStream_t stream = 0);
 
 /**
- * @brief Compute the spatial bounding boxes of trajectories
+ * @brief Compute the spatial bounding boxes of trajectories.
  *
  * Trajectories are derived from coordinate data using
  * `derive_trajectories`.
@@ -86,10 +86,10 @@ std::unique_ptr<cudf::experimental::table> trajectory_distance_and_speed(
  * @param[in] stream Optional CUDA stream on which to schedule allocations
  *
  * @return a cudf table of bounding boxes with four columns:
- *   * x1 - the x coordinate of each bounding boxes' lower left corner
- *   * y1 - the y coordinate of each bounding boxes' lower left corner
- *   * x2 - the x coordinate of each bounding boxes' upper right corner
- *   * y2 - the y coordinate of each bounding boxes' upper right corner
+ *   * x1 - the lower-left x-coordinate of each bounding box
+ *   * y1 - the lower-left y-coordinate of each bounding box
+ *   * x2 - the upper-right x-coordinate of each bounding box
+ *   * y2 - the upper-right y-coordinate of each bounding box
  */
 std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
     cudf::column_view const& x, cudf::column_view const& y,
