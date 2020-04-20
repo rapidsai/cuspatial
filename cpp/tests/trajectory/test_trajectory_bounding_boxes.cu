@@ -22,12 +22,7 @@
 template <typename T>
 struct TrajectoryBoundingBoxesTest : public cudf::test::BaseFixture {};
 
-// This causes a kernel launch failure in cudf::experimental::sort_by_key?
-// TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, cudf::test::FloatingPointTypes);
-
-// So do one of these for now:
-// TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, float);
-TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, double);
+TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, cudf::test::FloatingPointTypes);
 
 constexpr cudf::size_type size{1000};
 

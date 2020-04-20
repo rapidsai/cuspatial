@@ -23,12 +23,7 @@
 template <typename T>
 struct TrajectoryDistanceSpeedTest : public cudf::test::BaseFixture {};
 
-// This causes a kernel launch failure in cudf::experimental::sort_by_key?
-// TYPED_TEST_CASE(TrajectoryDistanceSpeedTest, cudf::test::FloatingPointTypes);
-
-// So do one of these for now:
-// TYPED_TEST_CASE(TrajectoryDistanceSpeedTest, float);
-TYPED_TEST_CASE(TrajectoryDistanceSpeedTest, double);
+TYPED_TEST_CASE(TrajectoryDistanceSpeedTest, cudf::test::FloatingPointTypes);
 
 constexpr cudf::size_type size{1000};
 
@@ -74,13 +69,11 @@ TYPED_TEST(TrajectoryDistanceSpeedTest,
     } else {
       double dist_km{0.0};
       for (size_t i = idx; i < end - 1; i++) {
-        T x0 = h_xs[i + 0];
-        T x1 = h_xs[i + 1];
-        T y0 = h_ys[i + 0];
-        T y1 = h_ys[i + 1];
-        double dx = static_cast<double>(x1 - x0);
-        double dy = static_cast<double>(y1 - y0);
-        dist_km += std::hypot(dx, dy);
+        auto x0 = static_cast<double>(h_xs[i + 0]);
+        auto x1 = static_cast<double>(h_xs[i + 1]);
+        auto y0 = static_cast<double>(h_ys[i + 0]);
+        auto y1 = static_cast<double>(h_ys[i + 1]);
+        dist_km += std::hypot(x1 - x0, y1 - y0);
       }
       distance[tid] = dist_km * 1000.0;                 // km to m
       speed[tid] = (distance[tid] * 1000.0) / time_ms;  // m/s

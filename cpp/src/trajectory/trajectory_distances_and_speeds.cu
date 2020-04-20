@@ -112,13 +112,12 @@ struct dispatch_timestamp {
           if (id0 == id1) {
             Timestamp t0 = thrust::get<0>(curr);
             Timestamp t1 = thrust::get<0>(next);
-            Element x0 = thrust::get<2>(curr);
-            Element x1 = thrust::get<2>(next);
-            Element y0 = thrust::get<3>(curr);
-            Element y1 = thrust::get<3>(next);
-            double dx = static_cast<double>(x1 - x0);
-            double dy = static_cast<double>(y1 - y0);
-            return thrust::make_tuple((t1 - t0).count(), hypot(dx, dy),  //
+            auto x0 = static_cast<double>(thrust::get<2>(curr));
+            auto x1 = static_cast<double>(thrust::get<2>(next));
+            auto y0 = static_cast<double>(thrust::get<3>(curr));
+            auto y1 = static_cast<double>(thrust::get<3>(next));
+            return thrust::make_tuple((t1 - t0).count(),
+                                      hypot(x1 - x0, y1 - y0),  //
                                       Element{}, Element{}, int32_t{});
           }
           return thrust::make_tuple(Rep{}, double{}, Element{}, Element{},
@@ -236,7 +235,8 @@ std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
     return std::make_unique<cudf::experimental::table>(std::move(cols));
   }
 
-  return detail::trajectory_distances_and_speeds(x, y, object_id, timestamp, mr, 0);
+  return detail::trajectory_distances_and_speeds(x, y, object_id, timestamp, mr,
+                                                 0);
 }
 
 }  // namespace experimental
