@@ -23,8 +23,6 @@ template <typename T>
 struct TrajectoryBoundingBoxesTest : public cudf::test::BaseFixture {};
 
 TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, cudf::test::FloatingPointTypes);
-// TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, float);
-// TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, double);
 
 constexpr cudf::size_type size{1000};
 
