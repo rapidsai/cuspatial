@@ -37,6 +37,13 @@ namespace experimental {
  * @param[in] timestamp column of timestamps in any resolution
  * @param[in] mr The optional resource to use for all allocations
  *
+ * @throw cuspatial::logic_error If object_id isn't cudf::INT32
+ * @throw cuspatial::logic_error If x and y are different types
+ * @throw cuspatial::logic_error If timestamp isn't a cudf::TIMESTAMP type
+ * @throw cuspatial::logic_error If object_id, x, y, or timestamp contain nulls
+ * @throw cuspatial::logic_error If object_id, x, y, and timestamp are different
+ * sizes
+ *
  * @return an `std::pair<table, column>`:
  *  1. table of (object_id, x, y, timestamp) sorted by (object_id, timestamp)
  *  2. int32 column of end positions for each trajectory's last object
@@ -62,6 +69,13 @@ derive_trajectories(
  * @param[in] timestamp column of timestamps in any resolution
  * @param[in] mr The optional resource to use for all allocations
  *
+ * @throw cuspatial::logic_error If object_id isn't cudf::INT32
+ * @throw cuspatial::logic_error If x and y are different types
+ * @throw cuspatial::logic_error If timestamp isn't a cudf::TIMESTAMP type
+ * @throw cuspatial::logic_error If object_id, x, y, or timestamp contain nulls
+ * @throw cuspatial::logic_error If object_id, x, y, and timestamp are different
+ * sizes
+ *
  * @return a cuDF table of distances (meters) and speeds (meters/second) whose
  * length is the number of unique object ids, sorted by object_id.
  */
@@ -82,11 +96,16 @@ std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
  * @param[in] y coordinates (in kilometers)
  * @param[in] mr The optional resource to use for all allocations
  *
+ * @throw cuspatial::logic_error If object_id isn't cudf::INT32
+ * @throw cuspatial::logic_error If x and y are different types
+ * @throw cuspatial::logic_error If object_id, x, or y contain nulls
+ * @throw cuspatial::logic_error If object_id, x, and y are different sizes
+ *
  * @return a cudf table of bounding boxes with four columns:
- *   * x1 - the lower-left x-coordinate of each bounding box
- *   * y1 - the lower-left y-coordinate of each bounding box
- *   * x2 - the upper-right x-coordinate of each bounding box
- *   * y2 - the upper-right y-coordinate of each bounding box
+ *   * x1 - the lower-left x-coordinate of each bounding box in kilometers
+ *   * y1 - the lower-left y-coordinate of each bounding box in kilometers
+ *   * x2 - the upper-right x-coordinate of each bounding box in kilometers
+ *   * y2 - the upper-right y-coordinate of each bounding box in kilometers
  */
 std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
     cudf::column_view const& object_id, cudf::column_view const& x,
