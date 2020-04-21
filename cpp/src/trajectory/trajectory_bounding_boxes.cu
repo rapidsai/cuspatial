@@ -41,13 +41,14 @@ struct dispatch_element {
 
     auto policy = rmm::exec_policy(stream);
 
-    // Compute output columns size
-    rmm::device_vector<int32_t> unique_keys(object_id.size());
-    auto last_key_pos =
-        thrust::unique_copy(policy->on(stream), object_id.begin<int32_t>(),
-                            object_id.end<int32_t>(), unique_keys.begin());
-    auto size = thrust::distance(unique_keys.begin(), last_key_pos);
-    unique_keys.~device_vector();
+    // Compute output column size
+    auto size = [&]() {
+      rmm::device_vector<int32_t> unique_keys(object_id.size());
+      auto last_key_pos =
+          thrust::unique_copy(policy->on(stream), object_id.begin<int32_t>(),
+                              object_id.end<int32_t>(), unique_keys.begin());
+      return thrust::distance(unique_keys.begin(), last_key_pos);
+    }();
 
     // Construct output columns
     auto type = cudf::data_type{cudf::experimental::type_to_id<Element>()};
