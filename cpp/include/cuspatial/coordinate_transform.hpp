@@ -22,22 +22,22 @@
 namespace cuspatial {
 
 /**
- * @brief Translates lon/lat relative to origin and converts to x/y coordinates.
+ * @brief Translates lon/lat relative to origin and converts to cartesian (x/y) coordinates.
  *
  * @param[in] origin_lon: longitude of origin
  * @param[in] origin_lat: latitude of origin
  * @param[in] input_lon: longitudes to transform
  * @param[in] input_lat: latitudes to transform
  *
- * @returns a pair of columns storing transformed x/y coordinates
+ * @returns a pair of columns containing cartesian coordinates in kilometers
  */
 
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-lonlat_to_coord(double origin_lon,
-                double origin_lat,
-                cudf::column_view const& input_lon,
-                cudf::column_view const& input_lat,
-                rmm::mr::device_memory_resource *mr =
-                  rmm::mr::get_default_resource());
+lonlat_to_cartesian(double origin_lon,
+                    double origin_lat,
+                    cudf::column_view const& input_lon,
+                    cudf::column_view const& input_lat,
+                    rmm::mr::device_memory_resource *mr =
+                      rmm::mr::get_default_resource());
 
 }  // namespace cuspatial

@@ -17,7 +17,6 @@
 
 #include <type_traits>
 #include <utility>
-#include <thrust/for_each.h>
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column.hpp>
@@ -28,7 +27,10 @@ namespace {
 
 using pair_of_columns = std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>;
 
-struct ll2coord_functor
+constexpr double earth_circumference_km = 40000.0;
+constexpr double earth_circumference_km_per_degree = earth_circumference_km / 360.0;
+
+struct lonlat_to_cartesian_functor
 {
     template <typename T, typename... Args>
     std::enable_if_t<not std::is_floating_point<T>::value, pair_of_columns>
@@ -49,34 +51,35 @@ struct ll2coord_functor
         auto size = input_lon.size();
         auto tid = cudf::experimental::type_to_id<T>();
         auto type = cudf::data_type{ tid };
-        auto d_input_lon = cudf::column_device_view::create(input_lon);
-        auto d_input_lat = cudf::column_device_view::create(input_lat);
-        auto output_lon = cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
-        auto output_lat = cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
-        auto d_output_lon = cudf::mutable_column_device_view::create(output_lon->mutable_view());
-        auto d_output_lat = cudf::mutable_column_device_view::create(output_lat->mutable_view());
+        auto output_x = cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
+        auto output_y = cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
 
-        auto iter = thrust::make_counting_iterator<cudf::size_type>(0);
+        auto input_iters = thrust::make_tuple(input_lon.begin<T>(),
+                                              input_lat.begin<T>());
 
-        thrust::for_each(iter,
-                         iter + size,
-                         [origin_lon=origin_lon,    origin_lat=origin_lat,
-                              in_lon=*d_input_lon,      in_lat=*d_input_lat,
-                             out_lon=*d_output_lon,    out_lat=*d_output_lat]
-                         __device__(cudf::size_type idx) mutable
-                         {
-                            out_lon.element<T>(idx) = (origin_lon - in_lon.element<T>(idx))
-                                * 40000.0
-                                * cos((origin_lat + in_lon.element<T>(idx)) * M_PI / 360)
-                                / 360;
+        auto output_iters = thrust::make_tuple(output_x->mutable_view().begin<T>(),
+                                               output_y->mutable_view().begin<T>());
 
-                            out_lat.element<T>(idx) = (origin_lat - in_lat.element<T>(idx))
-                                * 40000.0
-                                / 360;
-                         });
+        auto input_zip = thrust::make_zip_iterator(input_iters);
+        auto output_zip = thrust::make_zip_iterator(output_iters);
 
-        return std::make_pair(std::move(output_lon),
-                              std::move(output_lat));
+        auto to_cartesian = [=] __device__ (auto lonlat) {
+            auto lon = thrust::get<0>(lonlat);
+            auto lat = thrust::get<1>(lonlat);
+            return thrust::make_tuple<T, T>(
+                
+                (origin_lon - lon) * earth_circumference_km_per_degree * cos((origin_lat + lat) * M_PI / 360),
+                (origin_lat - lat) * earth_circumference_km_per_degree);
+        };
+
+        thrust::transform(rmm::exec_policy(stream)->on(stream),
+                          input_zip,
+                          input_zip + input_lon.size(),
+                          output_zip,
+                          to_cartesian);
+
+        return std::make_pair(std::move(output_x),
+                              std::move(output_y));
     }
 };
 
@@ -85,11 +88,11 @@ struct ll2coord_functor
 namespace cuspatial {
 
 pair_of_columns
-lonlat_to_coord(double origin_lon,
-                double origin_lat,
-                cudf::column_view const& input_lon,
-                cudf::column_view const& input_lat,
-                rmm::mr::device_memory_resource *mr)
+lonlat_to_cartesian(double origin_lon,
+                    double origin_lat,
+                    cudf::column_view const& input_lon,
+                    cudf::column_view const& input_lat,
+                    rmm::mr::device_memory_resource *mr)
 {
     CUSPATIAL_EXPECTS(origin_lon >= -180 &&
                       origin_lon <=  180 &&
@@ -98,7 +101,10 @@ lonlat_to_coord(double origin_lon,
                       "origin must have valid longitude [-180, 180] and latitude [-90, 90]");
 
     CUSPATIAL_EXPECTS(input_lon.size() == input_lat.size(),
-                      "input x and y arrays must have the same length");
+                      "inputs must have the same length");
+
+    CUSPATIAL_EXPECTS(input_lon.type() == input_lat.type(),
+                      "inputs must have the same type");
 
     CUSPATIAL_EXPECTS(not input_lon.has_nulls() &&
                       not input_lat.has_nulls(),
@@ -106,7 +112,7 @@ lonlat_to_coord(double origin_lon,
 
     cudaStream_t stream = 0;
 
-    return cudf::experimental::type_dispatcher(input_lon.type(), ll2coord_functor(),
+    return cudf::experimental::type_dispatcher(input_lon.type(), lonlat_to_cartesian_functor(),
                                                origin_lon, origin_lat, input_lon, input_lat, mr, stream);
 }
 
