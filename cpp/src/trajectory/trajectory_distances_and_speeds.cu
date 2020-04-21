@@ -171,7 +171,7 @@ struct dispatch_timestamp {
              cudf::column_view const& timestamp, cudf::column_view const& x,
              cudf::column_view const& y, rmm::mr::device_memory_resource* mr,
              cudaStream_t stream) {
-    CUDF_FAIL("Timestamp must be a timestamp type");
+    CUSPATIAL_FAIL("Timestamp must be a timestamp type");
   }
 };
 
@@ -193,7 +193,7 @@ struct dispatch_element {
   operator()(cudf::column_view const& object_id, cudf::column_view const& x,
              cudf::column_view const& y, cudf::column_view const& timestamp,
              rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
-    CUDF_FAIL("X and Y must be floating point types");
+    CUSPATIAL_FAIL("X and Y must be floating point types");
   }
 };
 

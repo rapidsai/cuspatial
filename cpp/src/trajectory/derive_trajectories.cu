@@ -70,10 +70,10 @@ derive_trajectories(cudf::column_view const& object_id,
   CUSPATIAL_EXPECTS(x.size() == y.size() && x.size() == object_id.size() &&
                         x.size() == timestamp.size(),
                     "Data size mismatch");
-  CUSPATIAL_EXPECTS(cudf::is_timestamp(timestamp.type()),
-                    "Invalid object_id datatype");
   CUSPATIAL_EXPECTS(object_id.type().id() == cudf::INT32,
                     "Invalid object_id datatype");
+  CUSPATIAL_EXPECTS(cudf::is_timestamp(timestamp.type()),
+                    "Invalid timestamp datatype");
   CUSPATIAL_EXPECTS(!(x.has_nulls() || y.has_nulls() || object_id.has_nulls() ||
                       timestamp.has_nulls()),
                     "NULL support unimplemented");

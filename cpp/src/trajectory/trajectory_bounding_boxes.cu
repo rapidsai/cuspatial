@@ -38,7 +38,6 @@ struct dispatch_element {
   operator()(cudf::column_view const& object_id, cudf::column_view const& x,
              cudf::column_view const& y, rmm::mr::device_memory_resource* mr,
              cudaStream_t stream) {
-
     auto policy = rmm::exec_policy(stream);
 
     // Compute output column size
@@ -112,7 +111,7 @@ struct dispatch_element {
   operator()(cudf::column_view const& object_id, cudf::column_view const& x,
              cudf::column_view const& y, rmm::mr::device_memory_resource* mr,
              cudaStream_t stream) {
-    CUDF_FAIL("X and Y must be floating point types");
+    CUSPATIAL_FAIL("X and Y must be floating point types");
   }
 };
 
