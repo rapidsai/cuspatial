@@ -61,10 +61,10 @@ def test_triple():
     pnt_y2 = []
     for i in cities:
         for j in cities:
-            pnt_x1.append(cities[i][0])
-            pnt_y1.append(cities[i][1])
-            pnt_x2.append(cities[j][0])
-            pnt_y2.append(cities[j][1])
+            pnt_x1.append(cities[i].iloc[0])
+            pnt_y1.append(cities[i].iloc[1])
+            pnt_x2.append(cities[j].iloc[0])
+            pnt_y2.append(cities[j].iloc[1])
     distance = cuspatial.haversine_distance(
         cudf.Series(pnt_x1),
         cudf.Series(pnt_y1),
