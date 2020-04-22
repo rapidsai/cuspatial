@@ -28,16 +28,9 @@
 #include <tests/utilities/column_utilities.hpp>
 #include <tests/utilities/column_wrapper.hpp>
 
-struct CubicSplineTest : public cudf::test::BaseFixture {};
+#include "tests/utilities/table_utilities.hpp"
 
-auto get_d_expect() {
-  std::vector<float> d3_expect{{0.5, -0.5, -0.5, 0.5}};
-  std::vector<float> d2_expect{{0, 3, 3, -6}};
-  std::vector<float> d1_expect{{-1.5, -4.5, -4.5, 22.5}};
-  std::vector<float> d0_expect{{3, 4, 4, -23}};
-  return std::vector<std::vector<float>>{
-      {d3_expect, d2_expect, d1_expect, d0_expect}};
-}
+struct CubicSplineTest : public cudf::test::BaseFixture {};
 
 TEST_F(CubicSplineTest, test_coefficients_single) {
   cudf::test::fixed_width_column_wrapper<float> t_column{{0, 1, 2, 3, 4}};
@@ -48,12 +41,18 @@ TEST_F(CubicSplineTest, test_coefficients_single) {
   auto splines = cuspatial::cubicspline_coefficients(t_column, y_column,
                                                      ids_column, prefix_column);
 
-  auto d_expect = get_d_expect();
-  for (unsigned int i = 0; i < d_expect.size(); ++i) {
-    cudf::test::expect_columns_equivalent(
-        splines->get_column(i), cudf::test::fixed_width_column_wrapper<float>(
-                                    d_expect[i].begin(), d_expect[i].end()));
-  }
+  cudf::test::fixed_width_column_wrapper<float> detail3_expected{
+      {0.5, -0.5, -0.5, 0.5}};
+  cudf::test::fixed_width_column_wrapper<float> detail2_expected{
+      {0.0, 3.0, 3.0, -6.0}};
+  cudf::test::fixed_width_column_wrapper<float> detail1_expected{
+      {-1.5, -4.5, -4.5, 22.5}};
+  cudf::test::fixed_width_column_wrapper<float> detail0_expected{
+      {3.0, 4.0, 4.0, -23.0}};
+
+  cudf::test::expect_tables_equivalent(
+      *splines, cudf::table_view{{detail3_expected, detail2_expected,
+                                  detail1_expected, detail0_expected}});
 }
 
 TEST_F(CubicSplineTest, test_coefficients_full) {
@@ -67,15 +66,18 @@ TEST_F(CubicSplineTest, test_coefficients_full) {
   auto splines = cuspatial::cubicspline_coefficients(t_column, y_column,
                                                      ids_column, prefix_column);
 
-  auto d_expect = get_d_expect();
-  for (unsigned int i = 0; i < d_expect.size(); ++i) {
-    auto h_expected_col = d_expect[i];
-    auto h_actual_col =
-        cudf::test::to_host<float>(splines->get_column(i)).first;
-    for (unsigned int j = 0; j < h_actual_col.size(); ++j) {
-      EXPECT_EQ(h_expected_col[j % h_expected_col.size()], h_actual_col[j]);
-    }
-  }
+  cudf::test::fixed_width_column_wrapper<float> detail3_expected{
+      {0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5}};
+  cudf::test::fixed_width_column_wrapper<float> detail2_expected{
+      {0.0, 3.0, 3.0, -6.0, 0.0, 3.0, 3.0, -6.0, 0.0, 3.0, 3.0, -6.0}};
+  cudf::test::fixed_width_column_wrapper<float> detail1_expected{
+      {-1.5, -4.5, -4.5, 22.5, -1.5, -4.5, -4.5, 22.5, -1.5, -4.5, -4.5, 22.5}};
+  cudf::test::fixed_width_column_wrapper<float> detail0_expected{
+      {3.0, 4.0, 4.0, -23.0, 3.0, 4.0, 4.0, -23.0, 3.0, 4.0, 4.0, -23.0}};
+
+  cudf::test::expect_tables_equivalent(
+      *splines, cudf::table_view{{detail3_expected, detail2_expected,
+                                  detail1_expected, detail0_expected}});
 }
 
 TEST_F(CubicSplineTest, test_interpolate_single) {
@@ -88,11 +90,11 @@ TEST_F(CubicSplineTest, test_interpolate_single) {
   auto splines = cuspatial::cubicspline_coefficients(t_column, x_column,
                                                      ids_column, prefix_column);
 
-  auto interpolates = cuspatial::cubicspline_interpolate(
-      t_column, point_ids_column, prefix_column, t_column, splines->view());
+  auto interpolants = cuspatial::cubicspline_interpolate(
+      t_column, point_ids_column, prefix_column, t_column, *splines);
 
   cudf::test::expect_columns_equivalent(
-      *interpolates,
+      *interpolants,
       cudf::test::fixed_width_column_wrapper<float>{{3, 2, 3, 4, 3}});
 }
 
@@ -109,10 +111,10 @@ TEST_F(CubicSplineTest, test_interpolate_full) {
   auto splines = cuspatial::cubicspline_coefficients(t_column, x_column,
                                                      ids_column, prefix_column);
 
-  auto interpolates = cuspatial::cubicspline_interpolate(
-      t_column, point_ids_column, prefix_column, t_column, splines->view());
+  auto interpolants = cuspatial::cubicspline_interpolate(
+      t_column, point_ids_column, prefix_column, t_column, *splines);
 
   cudf::test::expect_columns_equivalent(
-      *interpolates, cudf::test::fixed_width_column_wrapper<float>{
+      *interpolants, cudf::test::fixed_width_column_wrapper<float>{
                          {3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3}});
 }
