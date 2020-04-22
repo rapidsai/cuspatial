@@ -31,11 +31,11 @@ namespace experimental {
  * and the offset position of the first object for each trajectory in the
  * input object ids column.
  *
- * @param[in] object_id column of object (e.g., vehicle) ids
- * @param[in] x coordinates (in kilometers)
- * @param[in] y coordinates (in kilometers)
- * @param[in] timestamp column of timestamps in any resolution
- * @param[in] mr The optional resource to use for all allocations
+ * @param object_id column of object (e.g., vehicle) ids
+ * @param x coordinates (in kilometers)
+ * @param y coordinates (in kilometers)
+ * @param timestamp column of timestamps in any resolution
+ * @param mr The optional resource to use for all allocations
  *
  * @throw cuspatial::logic_error If object_id isn't cudf::INT32
  * @throw cuspatial::logic_error If x and y are different types
@@ -63,11 +63,11 @@ derive_trajectories(
  *
  * @note Assumes object_id, timestamp, x, y presorted by (object_id, timestamp).
  *
- * @param[in] object_id column of object (e.g., vehicle) ids
- * @param[in] x coordinates (in kilometers)
- * @param[in] y coordinates (in kilometers)
- * @param[in] timestamp column of timestamps in any resolution
- * @param[in] mr The optional resource to use for all allocations
+ * @param object_id column of object (e.g., vehicle) ids
+ * @param x coordinates (in kilometers)
+ * @param y coordinates (in kilometers)
+ * @param timestamp column of timestamps in any resolution
+ * @param mr The optional resource to use for all allocations
  *
  * @throw cuspatial::logic_error If object_id isn't cudf::INT32
  * @throw cuspatial::logic_error If x and y are different types
@@ -91,10 +91,10 @@ std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
  *
  * @note Assumes object_id, timestamp, x, y presorted by (object_id, timestamp).
  *
- * @param[in] object_id column of object (e.g., vehicle) ids
- * @param[in] x coordinates (in kilometers)
- * @param[in] y coordinates (in kilometers)
- * @param[in] mr The optional resource to use for all allocations
+ * @param object_id column of object (e.g., vehicle) ids
+ * @param x coordinates (in kilometers)
+ * @param y coordinates (in kilometers)
+ * @param mr The optional resource to use for all allocations
  *
  * @throw cuspatial::logic_error If object_id isn't cudf::INT32
  * @throw cuspatial::logic_error If x and y are different types
