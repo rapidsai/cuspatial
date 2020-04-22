@@ -41,13 +41,7 @@ struct dispatch_element {
     auto policy = rmm::exec_policy(stream);
 
     // Compute output column size
-    auto size = [&]() {
-      rmm::device_vector<int32_t> unique_keys(object_id.size());
-      auto last_key_pos =
-          thrust::unique_copy(policy->on(stream), object_id.begin<int32_t>(),
-                              object_id.end<int32_t>(), unique_keys.begin());
-      return thrust::distance(unique_keys.begin(), last_key_pos);
-    }();
+    auto size = detail::count_unique_ids(object_id, stream);
 
     // Construct output columns
     auto type = cudf::data_type{cudf::experimental::type_to_id<Element>()};
