@@ -48,6 +48,23 @@ TYPED_TEST(LonLatToCartesianTest, Single)
     cudf::test::expect_columns_equal(expected_lon, res_pair.first->view(), true);
     cudf::test::expect_columns_equal(expected_lat, res_pair.second->view(), true);
 }
+
+TYPED_TEST(LonLatToCartesianTest, Extremes)
+{
+    using T = TypeParam;
+    auto camera_lon = 0;
+    auto camera_lat = 0;
+    auto point_lon = fixed_width_column_wrapper<T>({   0.0,  0.0, -180.0, 180.0, 45.0, -180.0 });
+    auto point_lat = fixed_width_column_wrapper<T>({ -90.0, 90.0,    0.0,   0.0,  0.0,  -90.0 });
+
+    auto res_pair = cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat);
+
+    auto expected_lon = fixed_width_column_wrapper<T>({     0.0,      0.0, 20000.0, -20000.0, -5000.0, 14142.13562373095192015 });
+    auto expected_lat = fixed_width_column_wrapper<T>({ 10000.0, -10000.0,     0.0,      0.0,     0.0, 10000.0 });
+
+    cudf::test::expect_columns_equal(expected_lon, res_pair.first->view(), true);
+    cudf::test::expect_columns_equal(expected_lat, res_pair.second->view(), true);
+}
    
 TYPED_TEST(LonLatToCartesianTest, Multiple)
 {
