@@ -47,8 +47,8 @@ TYPED_TEST(TrajectoryDistanceSpeedTest,
   auto ts = sorted->get_column(3);
 
   auto distance_and_speed =
-      cuspatial::experimental::trajectory_distances_and_speeds(id, xs, ys, ts,
-                                                               this->mr());
+      cuspatial::experimental::trajectory_distances_and_speeds(
+          offsets->size(), id, xs, ys, ts, this->mr());
 
   using Rep = typename cudf::timestamp_ms::rep;
 

@@ -45,7 +45,7 @@ TYPED_TEST(TrajectoryBoundingBoxesTest,
   auto ys = sorted->get_column(2);
 
   auto bounding_boxes = cuspatial::experimental::trajectory_bounding_boxes(
-      id, xs, ys, this->mr());
+      offsets->size(), id, xs, ys, this->mr());
 
   auto h_xs = cudf::test::to_host<T>(xs).first;
   auto h_ys = cudf::test::to_host<T>(ys).first;

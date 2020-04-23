@@ -46,7 +46,7 @@ namespace experimental {
  *
  * @return an `std::pair<table, column>`:
  *  1. table of (object_id, x, y, timestamp) sorted by (object_id, timestamp)
- *  2. int32 column of end positions for each trajectory's last object
+ *  2. int32 column of start positions for each trajectory's first object
  */
 std::pair<std::unique_ptr<cudf::experimental::table>,
           std::unique_ptr<cudf::column>>
@@ -63,6 +63,7 @@ derive_trajectories(
  *
  * @note Assumes object_id, timestamp, x, y presorted by (object_id, timestamp).
  *
+ * @param num_trajectories number of trajectories (unique object ids)
  * @param object_id column of object (e.g., vehicle) ids
  * @param x coordinates (in kilometers)
  * @param y coordinates (in kilometers)
@@ -77,11 +78,12 @@ derive_trajectories(
  * sizes
  *
  * @return a cuDF table of distances (meters) and speeds (meters/second) whose
- * length is the number of unique object ids, sorted by object_id.
+ * length is `num_trajectories`, sorted by object_id.
  */
 std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
-    cudf::column_view const& object_id, cudf::column_view const& x,
-    cudf::column_view const& y, cudf::column_view const& timestamp,
+    cudf::size_type num_trajectories, cudf::column_view const& object_id,
+    cudf::column_view const& x, cudf::column_view const& y,
+    cudf::column_view const& timestamp,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
@@ -101,15 +103,16 @@ std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
  * @throw cuspatial::logic_error If object_id, x, or y contain nulls
  * @throw cuspatial::logic_error If object_id, x, and y are different sizes
  *
- * @return a cudf table of bounding boxes with four columns:
+ * @return a cudf table of bounding boxes with length `num_trajectories` and
+ * four columns:
  *   * x1 - the lower-left x-coordinate of each bounding box in kilometers
  *   * y1 - the lower-left y-coordinate of each bounding box in kilometers
  *   * x2 - the upper-right x-coordinate of each bounding box in kilometers
  *   * y2 - the upper-right y-coordinate of each bounding box in kilometers
  */
 std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
-    cudf::column_view const& object_id, cudf::column_view const& x,
-    cudf::column_view const& y,
+    cudf::size_type num_trajectories, cudf::column_view const& object_id,
+    cudf::column_view const& x, cudf::column_view const& y,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace experimental

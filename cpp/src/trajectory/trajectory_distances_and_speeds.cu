@@ -53,25 +53,23 @@ struct dispatch_timestamp {
   template <typename Timestamp>
   std::enable_if_t<cudf::is_timestamp<Timestamp>(),
                    std::unique_ptr<cudf::experimental::table>>
-  operator()(cudf::column_view const& object_id, cudf::column_view const& x,
+  operator()(cudf::size_type num_trajectories,
+             cudf::column_view const& object_id, cudf::column_view const& x,
              cudf::column_view const& y, cudf::column_view const& timestamp,
              rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
     auto policy = rmm::exec_policy(stream);
-
-    // Compute output column size
-    auto size = detail::count_unique_ids(object_id, stream);
 
     // Construct output columns
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(2);
     // allocate distance output column
-    cols.push_back(
-        cudf::make_numeric_column(cudf::data_type{cudf::FLOAT64}, size,
-                                  cudf::mask_state::UNALLOCATED, stream, mr));
+    cols.push_back(cudf::make_numeric_column(
+        cudf::data_type{cudf::FLOAT64}, num_trajectories,
+        cudf::mask_state::UNALLOCATED, stream, mr));
     // allocate speed output column
-    cols.push_back(
-        cudf::make_numeric_column(cudf::data_type{cudf::FLOAT64}, size,
-                                  cudf::mask_state::UNALLOCATED, stream, mr));
+    cols.push_back(cudf::make_numeric_column(
+        cudf::data_type{cudf::FLOAT64}, num_trajectories,
+        cudf::mask_state::UNALLOCATED, stream, mr));
 
     using Rep = typename Timestamp::rep;
     using Dur = typename Timestamp::duration;
@@ -123,8 +121,8 @@ struct dispatch_timestamp {
                            thrust::make_constant_iterator<double>(0),
                            thrust::make_constant_iterator<double>(0)));
 
-    rmm::device_vector<Rep> durations_tmp(size);
-    rmm::device_vector<double> distances_tmp(size);
+    rmm::device_vector<Rep> durations_tmp(num_trajectories);
+    rmm::device_vector<double> distances_tmp(num_trajectories);
     auto duration_distances_and_speed =
         thrust::make_zip_iterator(thrust::make_tuple(
             durations_tmp.begin(),                       // reduced duration
@@ -161,7 +159,8 @@ struct dispatch_timestamp {
   template <typename Timestamp>
   std::enable_if_t<not cudf::is_timestamp<Timestamp>(),
                    std::unique_ptr<cudf::experimental::table>>
-  operator()(cudf::column_view const& object_id,
+  operator()(cudf::size_type num_trajectories,
+             cudf::column_view const& object_id,
              cudf::column_view const& timestamp, cudf::column_view const& x,
              cudf::column_view const& y, rmm::mr::device_memory_resource* mr,
              cudaStream_t stream) {
@@ -173,18 +172,20 @@ struct dispatch_element {
   template <typename Element>
   std::enable_if_t<std::is_floating_point<Element>::value,
                    std::unique_ptr<cudf::experimental::table>>
-  operator()(cudf::column_view const& object_id, cudf::column_view const& x,
+  operator()(cudf::size_type num_trajectories,
+             cudf::column_view const& object_id, cudf::column_view const& x,
              cudf::column_view const& y, cudf::column_view const& timestamp,
              rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
     return cudf::experimental::type_dispatcher(
-        timestamp.type(), dispatch_timestamp<Element>{}, object_id, x, y,
-        timestamp, mr, stream);
+        timestamp.type(), dispatch_timestamp<Element>{}, num_trajectories,
+        object_id, x, y, timestamp, mr, stream);
   }
 
   template <typename Element>
   std::enable_if_t<not std::is_floating_point<Element>::value,
                    std::unique_ptr<cudf::experimental::table>>
-  operator()(cudf::column_view const& object_id, cudf::column_view const& x,
+  operator()(cudf::size_type num_trajectories,
+             cudf::column_view const& object_id, cudf::column_view const& x,
              cudf::column_view const& y, cudf::column_view const& timestamp,
              rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
     CUSPATIAL_FAIL("X and Y must be floating point types");
@@ -195,18 +196,20 @@ struct dispatch_element {
 
 namespace detail {
 std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
-    cudf::column_view const& object_id, cudf::column_view const& x,
-    cudf::column_view const& y, cudf::column_view const& timestamp,
-    rmm::mr::device_memory_resource* mr, cudaStream_t stream) {
-  return cudf::experimental::type_dispatcher(
-      x.type(), dispatch_element{}, object_id, x, y, timestamp, mr, stream);
+    cudf::size_type num_trajectories, cudf::column_view const& object_id,
+    cudf::column_view const& x, cudf::column_view const& y,
+    cudf::column_view const& timestamp, rmm::mr::device_memory_resource* mr,
+    cudaStream_t stream) {
+  return cudf::experimental::type_dispatcher(x.type(), dispatch_element{},
+                                             num_trajectories, object_id, x, y,
+                                             timestamp, mr, stream);
 }
 }  // namespace detail
 
 std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
-    cudf::column_view const& object_id, cudf::column_view const& x,
-    cudf::column_view const& y, cudf::column_view const& timestamp,
-    rmm::mr::device_memory_resource* mr) {
+    cudf::size_type num_trajectories, cudf::column_view const& object_id,
+    cudf::column_view const& x, cudf::column_view const& y,
+    cudf::column_view const& timestamp, rmm::mr::device_memory_resource* mr) {
   CUSPATIAL_EXPECTS(x.size() == y.size() && x.size() == object_id.size() &&
                         x.size() == timestamp.size(),
                     "Data size mismatch");
@@ -218,8 +221,8 @@ std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
   CUSPATIAL_EXPECTS(!(x.has_nulls() || y.has_nulls() || timestamp.has_nulls() ||
                       object_id.has_nulls()),
                     "NULL support unimplemented");
-  if (x.is_empty() || y.is_empty() || object_id.is_empty() ||
-      timestamp.is_empty()) {
+  if (num_trajectories == 0 || x.is_empty() || y.is_empty() ||
+      object_id.is_empty() || timestamp.is_empty()) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(2);
     cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::FLOAT64}));
@@ -227,8 +230,8 @@ std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
     return std::make_unique<cudf::experimental::table>(std::move(cols));
   }
 
-  return detail::trajectory_distances_and_speeds(object_id, x, y, timestamp, mr,
-                                                 0);
+  return detail::trajectory_distances_and_speeds(num_trajectories, object_id, x,
+                                                 y, timestamp, mr, 0);
 }
 
 }  // namespace experimental
