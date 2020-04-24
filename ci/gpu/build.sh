@@ -78,15 +78,15 @@ else
     logger "Check GPU usage..."
     nvidia-smi
 
-    # TODO
-    # logger "GoogleTests..."
-    # cd $WORKSPACE/cpp/build
+    TODO
+    logger "GoogleTests..."
+    cd $WORKSPACE/cpp/build
 
-    # for gt in ${WORKSPACE}/cpp/build/gtests/* ; do
-    #     test_name=$(basename ${gt})
-    #     echo "Running GoogleTest $test_name"
-    #     ${gt} --gtest_output=xml:${WORKSPACE}/test-results/
-    # done
+    for gt in ${WORKSPACE}/cpp/build/gtests/* ; do
+        test_name=$(basename ${gt})
+        echo "Running GoogleTest $test_name"
+        ${gt} --gtest_output=xml:${WORKSPACE}/test-results/
+    done
 
     logger "Download/Generate Test Data"
     #TODO
