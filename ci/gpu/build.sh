@@ -78,7 +78,6 @@ else
     logger "Check GPU usage..."
     nvidia-smi
 
-    TODO
     logger "GoogleTests..."
     cd $WORKSPACE/cpp/build
 
