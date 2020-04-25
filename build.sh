@@ -18,8 +18,8 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean libcuspatial cuspatial -v -g -n -h --show_depr_warn"
-HELP="$0 [clean] [libcuspatial] [cuspatial] [-v] [-g] [-n] [-h] [--show_depr_warn]
+VALIDARGS="clean libcuspatial cuspatial tests -v -g -n -h -l --show_depr_warn"
+HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--show_depr_warn]
    clean            - remove all existing build artifacts and configuration (start
                       over)
    libcuspatial     - build the libcuspatial C++ code only
@@ -29,6 +29,7 @@ HELP="$0 [clean] [libcuspatial] [cuspatial] [-v] [-g] [-n] [-h] [--show_depr_war
    -g               - build for debug
    -n               - no install step
    -h               - print this text
+   -l               - build legacy tests
    --show_depr_warn - show cmake deprecation warnings
    default action (no args) is to build and install 'libcuspatial' then
    'cuspatial' targets
@@ -40,6 +41,7 @@ BUILD_DIRS="${LIBCUSPATIAL_BUILD_DIR} ${CUSPATIAL_BUILD_DIR}"
 # Set defaults for vars modified by flags to this script
 VERBOSE=""
 BUILD_TESTS=OFF
+BUILD_LEGACY_TESTS=OFF
 BUILD_TYPE=Release
 INSTALL_TARGET=install
 BUILD_DISABLE_DEPRECATION_WARNING=ON
@@ -82,6 +84,9 @@ fi
 if hasArg --show-_depr_warn; then
     BUILD_DISABLE_DEPRECATION_WARNING=OFF
 fi
+if hasArg -l; then
+    BUILD_LEGACY_TESTS=ON
+fi
 
 if hasArg tests; then
     BUILD_TESTS=ON
@@ -110,6 +115,7 @@ if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
     cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
           -DCMAKE_CXX11_ABI=ON \
           -DBUILD_TESTS=${BUILD_TESTS} \
+          -DBUILD_LEGACY_TESTS=${BUILD_LEGACY_TESTS} \
           -DDISABLE_DEPRECATION_WARN=${BUILD_DISABLE_DEPRECATION_WARNING} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
     make -j ${PARALLEL_LEVEL} install VERBOSE=${VERBOSE}
