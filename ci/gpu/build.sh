@@ -66,7 +66,7 @@ git submodule update --init --remote --recursive
 
 logger "Build cuSpatial"
 cd $WORKSPACE
-./build.sh clean libcuspatial cuspatial
+./build.sh clean libcuspatial cuspatial tests
 
 ###############################################################################
 # TEST - Run libcuspatial and cuSpatial Unit Tests
