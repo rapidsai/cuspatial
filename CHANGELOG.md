@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #179 Add Point in Polygon Notebook
+
 ## Improvements
 
 - PR #147 Update Conda/CMake configs to match other RAPIDS projects
