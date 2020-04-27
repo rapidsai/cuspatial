@@ -25,7 +25,7 @@ namespace cuspatial {
  *
  * @return column storing the uint32_t data
  **/
-std::unique_ptr<cudf::column> read_uint32_soa(const char *filename);
+std::unique_ptr<cudf::column> read_uint32_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
 /**
  * @brief read timestamp data from file as column
@@ -34,7 +34,7 @@ std::unique_ptr<cudf::column> read_uint32_soa(const char *filename);
  *
  * @return column storing its_timestamp data
 **/
-std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename);
+std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
 /**
  * @brief read lon/lat from file as two columns; data type is fixed to double
@@ -44,7 +44,7 @@ std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename);
  * @return columns storing x and y data
 **/
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-read_lonlat_points_soa(const char *filename);
+read_lonlat_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
 /**
  * @brief read x/y from file as two columns; data type is fixed to double
@@ -54,7 +54,7 @@ read_lonlat_points_soa(const char *filename);
  * @return columns storing x and y data
 **/
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-read_xy_points_soa(const char *filename);
+read_xy_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
 /**
  * @brief read polygon data from file in SoA format
@@ -73,6 +73,6 @@ read_xy_points_soa(const char *filename);
  *          column(2): x coordinates of concatenated polygons
  *          column(3): y coordinates of concatenated polygons
 **/
-std::vector<cudf::column> read_polygon_soa(const char *filename);
+std::vector<cudf::column> read_polygon_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
 }// namespace cuspatial
