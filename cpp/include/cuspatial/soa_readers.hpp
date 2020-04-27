@@ -18,6 +18,8 @@
 
 namespace cuspatial {
 
+namespace experimental {
+
 /**
  * @brief read uint32_t data from file as column
  *
@@ -74,5 +76,7 @@ read_xy_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
  *          column(3): y coordinates of concatenated polygons
 **/
 std::vector<cudf::column> read_polygon_soa(const char *filename, rmm::mr::device_memory_resource* mr);
+
+} // namespace experimental
 
 }// namespace cuspatial
