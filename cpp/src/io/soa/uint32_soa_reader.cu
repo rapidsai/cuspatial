@@ -22,37 +22,28 @@
 #include <rmm/rmm.h>
 #include <cudf/types.h>
 #include <cudf/legacy/column.hpp>
-#include <cuspatial/legacy/soa_readers.hpp>
+#include <cuspatial/soa_readers.hpp>
 #include <utility/utility.hpp>
+#include "cudf/utilities/type_dispatcher.hpp"
 
 namespace cuspatial
 {
     /**
-     * @brief read uint32_t (unsigned integer with 32 bit fixed length) data from file as column
+     * @brief read int32_t (unsigned integer with 32 bit fixed length) data from file as column
 	 
      * see soa_readers.hpp
     */
 
-    gdf_column read_uint32_soa(const char *filename)                                
+    std::unique_ptr<cudf::column> read_int32_soa(const char *filename)
     {
-        gdf_column values;
-        memset(&values,0,sizeof(gdf_column));
-    		
-        uint32_t *data=nullptr;
-        size_t num_l=read_field<uint32_t>(filename,data);
-        if(data==nullptr) 
-            return values;
-        
-        uint32_t* temp_val{nullptr};
-        RMM_TRY( RMM_ALLOC(&temp_val, num_l * sizeof(uint32_t), 0) );
-        cudaStream_t stream{0};
-        CUDA_TRY( cudaMemcpyAsync(temp_val, data,
-                                  num_l * sizeof(uint32_t) , 
-                                  cudaMemcpyHostToDevice,stream) );		
-        gdf_column_view_augmented(&values, temp_val, nullptr, num_l,
-                               GDF_INT32, 0,
-                               gdf_dtype_extra_info{TIME_UNIT_NONE}, "id");  		
-        return values;
-    }//read_uint32_soa
+        std::vector<int32_t> ints = read_field_to_vec<int32_t>(filename);
+
+        auto tid = cudf::experimental::type_to_id<int32_t>();
+        auto type = cudf::data_type{ tid };
+        rmm::device_buffer dbuff(ints.data(), ints.size() * sizeof(int32_t));
+        auto d_ints = std::make_unique<cudf::column>(
+            type, ints.size(), dbuff);
+        return d_ints;
+    }//read_int32_soa
     
 }//cuspatial

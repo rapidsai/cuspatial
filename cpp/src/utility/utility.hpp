@@ -305,11 +305,4 @@ size_t write_field_from_vec(const char *filename, std::vector<T> field)
     return t;
  }
 
-
-//materialization with three data types/structs: uint32_t, location_3d and its_timestamp
-template size_t read_field(const char *,uint32_t *&);
-template size_t read_field(const char *,location_3d<double>*&);
-template size_t read_field(const char *,location_3d<float>*&);
-template size_t read_field(const char *,its_timestamp* &);
-
 } // namespace cuspatial

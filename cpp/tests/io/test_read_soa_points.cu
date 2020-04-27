@@ -26,12 +26,18 @@
 using namespace cudf::test;
 
 template <typename T>
-struct SoaTest : public BaseFixture {};
+struct INT64Test : public BaseFixture {};
 
-using TestTypes = Types<int64_t>;
-TYPED_TEST_CASE(SoaTest, TestTypes);
+using TestTypesInt64 = Types<int64_t>;
+TYPED_TEST_CASE(INT64Test, TestTypesInt64);
 
-TYPED_TEST(SoaTest, Empty)
+template <typename T>
+struct UINT32Test : public BaseFixture {};
+
+using TestTypesInt32 = Types<int32_t>;
+TYPED_TEST_CASE(UINT32Test, TestTypesInt32);
+
+TYPED_TEST(INT64Test, Empty)
 {
     using T = TypeParam;
 
@@ -57,7 +63,7 @@ TYPED_TEST(SoaTest, Empty)
 }
 
 
-TYPED_TEST(SoaTest, Single)
+TYPED_TEST(INT64Test, Single)
 {
     using T = TypeParam;
 
@@ -82,7 +88,7 @@ TYPED_TEST(SoaTest, Single)
 	expect_columns_equal(read_result->view(), write_column, true);
 }
 
-TYPED_TEST(SoaTest, Triple)
+TYPED_TEST(INT64Test, Triple)
 {
     using T = TypeParam;
 
@@ -107,7 +113,7 @@ TYPED_TEST(SoaTest, Triple)
 	expect_columns_equal(read_result->view(), write_column, true);
 }
 
-TYPED_TEST(SoaTest, Negative)
+TYPED_TEST(INT64Test, Negative)
 {
     using T = TypeParam;
 
@@ -131,3 +137,111 @@ TYPED_TEST(SoaTest, Negative)
 
 	expect_columns_equal(read_result->view(), write_column, true);
 }
+
+TYPED_TEST(UINT32Test, EmptyUint32)
+{
+    using T = TypeParam;
+
+    TempDirTestEnvironment* const temp_env = static_cast<TempDirTestEnvironment*>(
+        ::testing::AddGlobalTestEnvironment(new TempDirTestEnvironment));
+    temp_env->SetUp();
+
+    auto write_column = fixed_width_column_wrapper<T>({});
+    auto to_host_result = to_host<T>(write_column).first;
+    std::vector<T> h_write_column(to_host_result.size());
+    thrust::copy(to_host_result.begin(), to_host_result.end(),
+        h_write_column.begin());
+
+    size_t write_result = cuspatial::write_field_from_vec(
+        temp_env->get_temp_filepath("soa_int32.tmp").c_str(), h_write_column);
+    CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
+
+    auto read_result = cuspatial::read_int32_soa(
+        temp_env->get_temp_filepath("soa_int32.tmp").c_str()
+    );
+
+	expect_columns_equal(read_result->view(), write_column, true);
+}
+
+
+TYPED_TEST(UINT32Test, SingleUint32)
+{
+    using T = TypeParam;
+
+    TempDirTestEnvironment* const temp_env = static_cast<TempDirTestEnvironment*>(
+        ::testing::AddGlobalTestEnvironment(new TempDirTestEnvironment));
+    temp_env->SetUp();
+
+    auto write_column = fixed_width_column_wrapper<T>({0});
+    std::cout << "Cmon idiot test" << std::endl;
+    std::cout << "Cmon idiot test2" << std::endl;
+    auto to_host_result = to_host<T>(write_column).first;
+    std::cout << "Cmon idiot test2.1" << std::endl;
+    std::vector<T> h_write_column(to_host_result.size());
+    std::cout << "Cmon idiot test2.2" << std::endl;
+    thrust::copy(to_host_result.begin(), to_host_result.end(),
+        h_write_column.begin());
+    std::cout << "Cmon idiot test3" << std::endl;
+
+    size_t write_result = cuspatial::write_field_from_vec(
+        temp_env->get_temp_filepath("soa_int32.tmp").c_str(), h_write_column);
+    CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
+
+    std::cout << "Cmon idiot test4" << std::endl;
+    auto read_result = cuspatial::read_int32_soa(
+        temp_env->get_temp_filepath("soa_int32.tmp").c_str()
+    );
+    std::cout << "Cmon idiot test5" << std::endl;
+	expect_columns_equal(read_result->view(), write_column, true);
+}
+
+TYPED_TEST(UINT32Test, TripleUint32)
+{
+    using T = TypeParam;
+
+    TempDirTestEnvironment* const temp_env = static_cast<TempDirTestEnvironment*>(
+        ::testing::AddGlobalTestEnvironment(new TempDirTestEnvironment));
+    temp_env->SetUp();
+
+    auto write_column = fixed_width_column_wrapper<T>({0, 1, 2});
+    auto to_host_result = to_host<T>(write_column).first;
+    std::vector<T> h_write_column(to_host_result.size());
+    thrust::copy(to_host_result.begin(), to_host_result.end(),
+        h_write_column.begin());
+
+    size_t write_result = cuspatial::write_field_from_vec(
+        temp_env->get_temp_filepath("soa_int32.tmp").c_str(), h_write_column);
+    CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
+
+    auto read_result = cuspatial::read_int32_soa(
+        temp_env->get_temp_filepath("soa_int32.tmp").c_str()
+    );
+
+	expect_columns_equal(read_result->view(), write_column, true);
+}
+
+TYPED_TEST(UINT32Test, NegativeUint32)
+{
+    using T = TypeParam;
+
+    TempDirTestEnvironment* const temp_env = static_cast<TempDirTestEnvironment*>(
+        ::testing::AddGlobalTestEnvironment(new TempDirTestEnvironment));
+    temp_env->SetUp();
+
+    auto write_column = fixed_width_column_wrapper<T>({-1, -2});
+    auto to_host_result = to_host<T>(write_column).first;
+    std::vector<T> h_write_column(to_host_result.size());
+    thrust::copy(to_host_result.begin(), to_host_result.end(),
+        h_write_column.begin());
+
+    size_t write_result = cuspatial::write_field_from_vec(
+        temp_env->get_temp_filepath("soa_int32.tmp").c_str(), h_write_column);
+    CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
+
+    auto read_result = cuspatial::read_int32_soa(
+        temp_env->get_temp_filepath("soa_int32.tmp").c_str()
+    );
+
+	expect_columns_equal(read_result->view(), write_column, true);
+}
+

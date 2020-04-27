@@ -22,13 +22,13 @@
 namespace cuspatial {
 
 /**
- * @brief read uint32_t data from file as column
+ * @brief read int32_t data from file as column
  *
  * @param[in] filename: file to read
  *
- * @return column storing the uint32_t data
+ * @return column storing the int32_t data
  **/
-std::unique_ptr<cudf::column> read_uint32_soa(const char *filename);
+std::unique_ptr<cudf::column> read_int32_soa(const char *filename);
 
 /**
  * @brief read timestamp data from file as column
