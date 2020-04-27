@@ -22,6 +22,7 @@ export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=4
 export CUDA_REL=${CUDA_VERSION%.*}
 export CUDF_HOME="${WORKSPACE}/cudf"
+export CUSPATIAL_HOME="${WORKSPACE}"
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
