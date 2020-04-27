@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include <memory>
+#include "cudf/column/column.hpp"
+
 #pragma once
 
 namespace cuspatial {

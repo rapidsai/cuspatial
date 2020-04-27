@@ -14,25 +14,44 @@
  * limitations under the License.
  */
 
-#include <type_traits>
 #include <tests/utilities/base_fixture.hpp>
 #include <tests/utilities/column_utilities.hpp>
 #include <tests/utilities/column_wrapper.hpp>
 #include <tests/utilities/cudf_gtest.hpp>
 #include <tests/utilities/type_lists.hpp>
-#include <cuspatial/coordinate_transform.hpp>
+#include <cuspatial/error.hpp>
+#include <cuspatial/soa_readers.hpp>
+#include "utility/utility.hpp"
+
+using namespace cudf::test;
 
 template <typename T>
-struct ShiftTest : public cudf::test::BaseFixture {};
+struct SoaTest : public BaseFixture {};
 
-TYPED_TEST_CASE(ShiftTest, cudf::test::FloatingPointTypes);
+using TestTypes = Types<int64_t>;
+TYPED_TEST_CASE(SoaTest, TestTypes);
 
-TYPED_TEST(SoaPointsTest, SoaPointsTest)
+TYPED_TEST(SoaTest, Single)
 {
-		using T = TypeParam;
-		auto point_lon = { -90.664973, -90.665393, -90.664976, -90.664537 };
-		auto point_lat = {  42.493894,  42.491520,  42.491420,  42.493823 };
-		// write lonlat to file in soa format
-		// read
-		// compare gpu results
+    using T = TypeParam;
+
+    TempDirTestEnvironment* const temp_env = static_cast<TempDirTestEnvironment*>(
+        ::testing::AddGlobalTestEnvironment(new TempDirTestEnvironment));
+    temp_env->SetUp();
+
+    auto write_column = fixed_width_column_wrapper<T>({0, 1, 2});
+    auto to_host_result = to_host<T>(write_column).first;
+    std::vector<T> h_write_column(to_host_result.size());
+    thrust::copy(to_host_result.begin(), to_host_result.end(),
+        h_write_column.begin());
+
+    size_t write_result = cuspatial::write_field_from_vec(
+        temp_env->get_temp_filepath("soa_its.tmp").c_str(), h_write_column);
+    CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
+
+    auto read_result = cuspatial::read_timestamp_soa(
+        temp_env->get_temp_filepath("soa_its.tmp").c_str()
+    );
+
+	expect_columns_equal(read_result->view(), write_column, true);
 }

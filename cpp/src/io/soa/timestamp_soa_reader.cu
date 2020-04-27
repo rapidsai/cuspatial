@@ -5,9 +5,11 @@
 #include <cudf/utilities/error.hpp>
 #include <rmm/rmm.h>
 #include <cudf/types.h>
-#include <cudf/legacy/column.hpp>
-#include <cuspatial/legacy/soa_readers.hpp>
+#include <cudf/column/column.hpp>
+#include <cuspatial/soa_readers.hpp>
 #include <utility/utility.hpp>
+#include "cudf/utilities/type_dispatcher.hpp"
+#include "rmm/thrust_rmm_allocator.h"
 
 namespace cuspatial
 {
@@ -17,28 +19,20 @@ namespace cuspatial
     * see soa_readers.hpp
     */
 
-    gdf_column read_timestamp_soa(const char *filename)                      
+    // TODO: define timestamp to cuspatial timestamp kernel here
+    // Reason: No more its_timestamp - its_timestamp is always converted to libcudf++
+    // timestamp.
+
+    std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename)
     {
-        gdf_column ts;
-        memset(&ts,0,sizeof(gdf_column));
-    		
-        struct its_timestamp * timestamp=nullptr;
-        size_t num_t=read_field<its_timestamp>(filename,timestamp);
-        if(timestamp==nullptr) 
-            return ts;
- 
-        its_timestamp* temp_ts{nullptr};
-        RMM_TRY( RMM_ALLOC(&temp_ts, num_t * sizeof(its_timestamp), 0) );
-        cudaStream_t stream{0};
-        CUDA_TRY( cudaMemcpyAsync(temp_ts, timestamp,
-                                  num_t * sizeof(its_timestamp) , 
-                                  cudaMemcpyHostToDevice,stream) );		
-        gdf_column_view_augmented(&ts, temp_ts, nullptr, num_t,
-                               GDF_INT64, 0,
-                               gdf_dtype_extra_info{TIME_UNIT_NONE}, "timestamp");          
-  	delete[] timestamp;
-  
+        std::vector<its_timestamp> timestamp = read_field_to_vec<its_timestamp>(filename);
+
+        auto tid = cudf::experimental::type_to_id<int64_t>();
+        auto type = cudf::data_type{ tid };
+        rmm::device_buffer dbuff(timestamp.data(), timestamp.size() * sizeof(its_timestamp));
+        auto ts = std::make_unique<cudf::column>(
+            type, timestamp.size(), dbuff);
         return ts;
-    }//read_timestamp_soa
-    
+    }
+
 }//cuspatial

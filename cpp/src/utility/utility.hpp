@@ -273,6 +273,38 @@ size_t read_field(const char *filename,T*& field)
     fclose(fp);
     return num_ringec;
 }
+template<class T>
+std::vector<T> read_field_to_vec(const char *filename)
+{
+    FILE *fp{nullptr};
+    if((fp=fopen(filename,"rb"))==nullptr)
+    CUDF_EXPECTS(fp!=nullptr, "Can not open input file");
+
+    fseek(fp, 0, SEEK_END);
+    size_t size = ftell(fp);
+    CUDF_EXPECTS(size%sizeof(T)==0, "sizeof(T) does not divide file length");
+    size_t num_ringec = size/sizeof(T);
+    fseek(fp, 0, SEEK_SET);
+
+    auto field = std::vector<T>(num_ringec);
+    size_t t = std::fread((void*)&field[0], sizeof(T), num_ringec, fp);
+    CUDF_EXPECTS(t==num_ringec, "Wrong number of data items read from file");
+    fclose(fp);
+    return field;
+}
+template<class T>
+size_t write_field_from_vec(const char *filename, std::vector<T> field)
+{
+    FILE *fp{nullptr};
+    if((fp=fopen(filename,"wb"))==nullptr)
+    CUDF_EXPECTS(fp!=nullptr, "Can not open output file");
+
+    size_t t = fwrite(field.data(), sizeof(T), field.size(), fp);
+    CUDF_EXPECTS(t==field.size(), "Wrong number of data items written to file");
+    fclose(fp);
+    return t;
+ }
+
 
 //materialization with three data types/structs: uint32_t, location_3d and its_timestamp
 template size_t read_field(const char *,uint32_t *&);
