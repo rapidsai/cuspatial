@@ -37,7 +37,7 @@ std::unique_ptr<cudf::column> read_uint32_soa(const char *filename, rmm::mr::dev
 std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
 /**
- * @brief read lon/lat from file as two columns; data type is fixed to double
+ * @brief read lon/lat from file as two columns; data type is fixed to FLOAT64
  *
  * @param[in] filename: file name of point data in location_3d layout (lon/lat/alt but alt is omitted)
  *
@@ -47,7 +47,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
 read_lonlat_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
 /**
- * @brief read x/y from file as two columns; data type is fixed to double
+ * @brief read x/y from file as two columns; data type is fixed to FLOAT64
  * 
  * @param[in] filename: file name of point data in coordinate_2d layout (x/y)
  * 
@@ -59,7 +59,7 @@ read_xy_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 /**
  * @brief read polygon data from file in SoA format
  * 
- * data type of vertices is fixed to double
+ * data type of vertices is fixed to FLOAT64
  *
  * @param[in] filename: polygon data filename
  *
