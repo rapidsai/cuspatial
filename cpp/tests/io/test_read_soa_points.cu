@@ -31,6 +31,32 @@ struct SoaTest : public BaseFixture {};
 using TestTypes = Types<int64_t>;
 TYPED_TEST_CASE(SoaTest, TestTypes);
 
+TYPED_TEST(SoaTest, Empty)
+{
+    using T = TypeParam;
+
+    TempDirTestEnvironment* const temp_env = static_cast<TempDirTestEnvironment*>(
+        ::testing::AddGlobalTestEnvironment(new TempDirTestEnvironment));
+    temp_env->SetUp();
+
+    auto write_column = fixed_width_column_wrapper<T>({});
+    auto to_host_result = to_host<T>(write_column).first;
+    std::vector<T> h_write_column(to_host_result.size());
+    thrust::copy(to_host_result.begin(), to_host_result.end(),
+        h_write_column.begin());
+
+    size_t write_result = cuspatial::write_field_from_vec(
+        temp_env->get_temp_filepath("soa_its.tmp").c_str(), h_write_column);
+    CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
+
+    auto read_result = cuspatial::read_timestamp_soa(
+        temp_env->get_temp_filepath("soa_its.tmp").c_str()
+    );
+
+	expect_columns_equal(read_result->view(), write_column, true);
+}
+
+
 TYPED_TEST(SoaTest, Single)
 {
     using T = TypeParam;
@@ -39,7 +65,57 @@ TYPED_TEST(SoaTest, Single)
         ::testing::AddGlobalTestEnvironment(new TempDirTestEnvironment));
     temp_env->SetUp();
 
+    auto write_column = fixed_width_column_wrapper<T>({0});
+    auto to_host_result = to_host<T>(write_column).first;
+    std::vector<T> h_write_column(to_host_result.size());
+    thrust::copy(to_host_result.begin(), to_host_result.end(),
+        h_write_column.begin());
+
+    size_t write_result = cuspatial::write_field_from_vec(
+        temp_env->get_temp_filepath("soa_its.tmp").c_str(), h_write_column);
+    CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
+
+    auto read_result = cuspatial::read_timestamp_soa(
+        temp_env->get_temp_filepath("soa_its.tmp").c_str()
+    );
+
+	expect_columns_equal(read_result->view(), write_column, true);
+}
+
+TYPED_TEST(SoaTest, Triple)
+{
+    using T = TypeParam;
+
+    TempDirTestEnvironment* const temp_env = static_cast<TempDirTestEnvironment*>(
+        ::testing::AddGlobalTestEnvironment(new TempDirTestEnvironment));
+    temp_env->SetUp();
+
     auto write_column = fixed_width_column_wrapper<T>({0, 1, 2});
+    auto to_host_result = to_host<T>(write_column).first;
+    std::vector<T> h_write_column(to_host_result.size());
+    thrust::copy(to_host_result.begin(), to_host_result.end(),
+        h_write_column.begin());
+
+    size_t write_result = cuspatial::write_field_from_vec(
+        temp_env->get_temp_filepath("soa_its.tmp").c_str(), h_write_column);
+    CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
+
+    auto read_result = cuspatial::read_timestamp_soa(
+        temp_env->get_temp_filepath("soa_its.tmp").c_str()
+    );
+
+	expect_columns_equal(read_result->view(), write_column, true);
+}
+
+TYPED_TEST(SoaTest, Negative)
+{
+    using T = TypeParam;
+
+    TempDirTestEnvironment* const temp_env = static_cast<TempDirTestEnvironment*>(
+        ::testing::AddGlobalTestEnvironment(new TempDirTestEnvironment));
+    temp_env->SetUp();
+
+    auto write_column = fixed_width_column_wrapper<T>({-1, -2});
     auto to_host_result = to_host<T>(write_column).first;
     std::vector<T> h_write_column(to_host_result.size());
     thrust::copy(to_host_result.begin(), to_host_result.end(),
