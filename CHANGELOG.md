@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #182 Local gpuCI build script
+
 ## Improvements
 
 - PR #147 Update Conda/CMake configs to match other RAPIDS projects
