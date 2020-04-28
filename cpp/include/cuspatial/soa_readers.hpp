@@ -35,7 +35,7 @@ std::unique_ptr<cudf::column> read_uint32_soa(const char *filename, rmm::mr::dev
  *
  * @param[in] filename: file to read
  *
- * @return column storing its_timestamp data
+ * @return cudf::column of timestamp data.
 **/
 std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
