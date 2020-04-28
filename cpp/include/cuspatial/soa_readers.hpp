@@ -72,7 +72,7 @@ read_xy_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
  * @return: vector of columns
  *          column(0): index polygons: prefix sum of number of rings of all
  *                     polygons
- *          column(1): index rings: prefix sum of number of vertices of all
+ *          column(1): index rings: INT64 offset to the start of each ring in the vertex data.
  *                     rings
  *          column(2): x coordinates of concatenated polygons
  *          column(3): y coordinates of concatenated polygons
