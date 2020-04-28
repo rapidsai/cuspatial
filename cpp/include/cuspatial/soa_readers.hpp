@@ -21,61 +21,75 @@
 
 namespace cuspatial {
 
+namespace experimental {
+
 /**
  * @brief read int32_t data from file as column
  *
- * @param[in] filename: file to read
+ * @param[in] filepath path to file.
+ * @param[in] mr Optional resource to use for allocation
  *
  * @return column storing the int32_t data
  **/
-std::unique_ptr<cudf::column> read_int32_soa(const char *filename);
+std::unique_ptr<cudf::column> read_int32_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
 /**
- * @brief read timestamp data from file as column
+ * @brief Read a column of timestamp data from file.
  *
- * @param[in] filename: file to read
+ * @param[in] filepath path to file.
+ * @param[in] mr Optional resource to use for allocating output device memory.
  *
- * @return column storing its_timestamp data
+ * @return cudf::column of timestamp data.
 **/
-std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename);
+std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
 /**
- * @brief read lon/lat from file as two columns; data type is fixed to double
+ * @brief read lon/lat from file as two columns; data type is fixed to FLOAT64
  *
- * @param[in] filename: file name of point data in location_3d layout (lon/lat/alt but alt is omitted)
+ * 
+ * The file referred to by `filepath` contains data in location_3d layout (longitude/latitude/altitude, but altitude is not returned).
  *
- * @return columns storing x and y data
+ * @param[in] filepath path to file.
+ * @param[in] mr Optional resource to use for allocating output device memory.
+ *
+ * @return A `std::pair` of two `FLOAT64` `cudf::column`s containing longitude and latitude data.
 **/
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-read_lonlat_points_soa(const char *filename);
+read_lonlat_points(std::string filepath, 
+                   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
- * @brief read x/y from file as two columns; data type is fixed to double
+ * @brief Read x and y coordinate columns from file.
  * 
- * @param[in] filename: file name of point data in coordinate_2d layout (x/y)
+* 
+ * The file referred to by `filepath` contains data in coordinate_2d layout (x/y).
+ *
+ * @param[in] filepath path to file.
+ * @param[in] mr Optional resource to use for allocating output device memory.
  * 
- * @return columns storing x and y data
+ * @return A `std::pair` of two `FLOAT64` `cudf::column`s containing x and y data.
 **/
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-read_xy_points_soa(const char *filename);
+read_xy_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
 /**
- * @brief read polygon data from file in SoA format
+ * @brief Read polygon data from file.
  * 
- * data type of vertices is fixed to double
  *
- * @param[in] filename: polygon data filename
+ * @param[in] filepath path to file.
+ * @param[in] mr Optional resource to use for allocating output device memory.
  *
- * @note: x/y can be lon/lat.
+ * @note x/y can also be longitude and latitude.
  *
- * @return: vector of columns
- *          column(0): index polygons: prefix sum of number of rings of all
- *                     polygons
- *          column(1): index rings: prefix sum of number of vertices of all
- *                     rings
- *          column(2): x coordinates of concatenated polygons
- *          column(3): y coordinates of concatenated polygons
+ * @return `std::vector` of `cudf::column`s:
+ *          column(0): index polygons: INT64 offsets to the start of each polygon. The size of this column equals the number of polygons.
+ *          column(1): index rings: INT64 offset to the start of each ring in the vertex data.
+ *          column(2): FLOAT64 x-coordinates of concatenated polygons.
+ *          column(3): FLOAT64 y-coordinates of concatenated polygons.
 **/
-std::vector<std::unique_ptr<cudf::column>> read_polygon_soa(const char *filename);
+std::vector<std::unique_ptr<cudf::column>> read_polygon_soa(const char *filename,
+              rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+
+} // namespace experimental
 
 }// namespace cuspatial

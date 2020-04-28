@@ -59,8 +59,8 @@ def test_triple():
     pnt_y1 = []
     pnt_x2 = []
     pnt_y2 = []
-    for i in cities.columns:
-        for j in cities.columns:
+    for i in cities:
+        for j in cities:
             pnt_x1.append(cities[i].iloc[0])
             pnt_y1.append(cities[i].iloc[1])
             pnt_x2.append(cities[j].iloc[0])
