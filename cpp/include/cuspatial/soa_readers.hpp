@@ -71,7 +71,7 @@ read_xy_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
  *
  * @param[in] filename: polygon data filename
  *
- * @note: x/y can be lon/lat.
+ * @note x/y can also be longitude and latitude.
  *
  * @return: vector of columns
  *          column(0): index polygons: prefix sum of number of rings of all
