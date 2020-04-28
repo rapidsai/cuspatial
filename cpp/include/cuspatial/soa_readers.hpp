@@ -49,7 +49,7 @@ std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename, rmm::mr::
  * @param[in] filepath path to file.
  * @param[in] mr Optional resource to use for allocating output device memory.
  *
- * @return columns storing x and y data
+ * @return A `std::pair` of two `FLOAT64` `cudf::column`s containing longitude and latitude data.
 **/
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
 read_lonlat_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
