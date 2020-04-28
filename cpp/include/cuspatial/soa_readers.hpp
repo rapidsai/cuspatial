@@ -21,14 +21,14 @@ namespace cuspatial {
 namespace experimental {
 
 /**
- * @brief read uint32_t data from file as column
+ * @brief read int32_t data from file as column
  *
  * @param[in] filepath path to file.
  * @param[in] mr Optional resource to use for allocation
  *
  * @return cudf::column of integer data.
  **/
-std::unique_ptr<cudf::column> read_uint32_soa(const char *filename, rmm::mr::device_memory_resource* mr);
+std::unique_ptr<cudf::column> read_int32_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
 /**
  * @brief Read a column of timestamp data from file.
