@@ -35,7 +35,7 @@ namespace experimental {
  * @param x coordinates (in kilometers)
  * @param y coordinates (in kilometers)
  * @param timestamp column of timestamps in any resolution
- * @param mr The optional resource to use for all allocations
+ * @param mr The optional resource to use for output device memory allocations
  *
  * @throw cuspatial::logic_error If object_id isn't cudf::INT32
  * @throw cuspatial::logic_error If x and y are different types
@@ -68,7 +68,7 @@ derive_trajectories(
  * @param x coordinates (in kilometers)
  * @param y coordinates (in kilometers)
  * @param timestamp column of timestamps in any resolution
- * @param mr The optional resource to use for all allocations
+ * @param mr The optional resource to use for output device memory allocations
  *
  * @throw cuspatial::logic_error If object_id isn't cudf::INT32
  * @throw cuspatial::logic_error If x and y are different types
@@ -96,7 +96,7 @@ std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
  * @param object_id column of object (e.g., vehicle) ids
  * @param x coordinates (in kilometers)
  * @param y coordinates (in kilometers)
- * @param mr The optional resource to use for all allocations
+ * @param mr The optional resource to use for output device memory allocations
  *
  * @throw cuspatial::logic_error If object_id isn't cudf::INT32
  * @throw cuspatial::logic_error If x and y are different types
