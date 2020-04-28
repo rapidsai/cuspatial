@@ -43,7 +43,11 @@ std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename, rmm::mr::
 /**
  * @brief read lon/lat from file as two columns; data type is fixed to FLOAT64
  *
- * @param[in] filename: file name of point data in location_3d layout (lon/lat/alt but alt is omitted)
+ * 
+ * The file referred to by `filepath` contains data in location_3d layout (longitude/latitude/altitude, but altitude is not returned).
+ *
+ * @param[in] filepath path to file.
+ * @param[in] mr Optional resource to use for allocating output device memory.
  *
  * @return columns storing x and y data
 **/
