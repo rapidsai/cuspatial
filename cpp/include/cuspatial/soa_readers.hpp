@@ -31,7 +31,7 @@ namespace experimental {
 std::unique_ptr<cudf::column> read_uint32_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 
 /**
- * @brief read timestamp data from file as column
+ * @brief Read a column of timestamp data from file.
  *
  * @param[in] filename: file to read
  *
