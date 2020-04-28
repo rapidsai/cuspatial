@@ -23,7 +23,8 @@ namespace experimental {
 /**
  * @brief read uint32_t data from file as column
  *
- * @param[in] filename: file to read
+ * @param[in] filepath path to file.
+ * @param[in] mr Optional resource to use for allocation
  *
  * @return column storing the uint32_t data
  **/
