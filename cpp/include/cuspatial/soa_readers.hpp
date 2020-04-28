@@ -60,7 +60,7 @@ read_lonlat_points(std::string filepath,
  * 
  * @param[in] filename: file name of point data in coordinate_2d layout (x/y)
  * 
- * @return columns storing x and y data
+ * @return A `std::pair` of two `FLOAT64` `cudf::column`s containing x and y data.
 **/
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
 read_xy_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
