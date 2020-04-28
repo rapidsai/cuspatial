@@ -76,6 +76,6 @@ read_xy_points_soa(const char *filename);
  *          column(2): x coordinates of concatenated polygons
  *          column(3): y coordinates of concatenated polygons
 **/
-std::vector<cudf::column> read_polygon_soa(const char *filename);
+std::vector<std::unique_ptr<cudf::column>> read_polygon_soa(const char *filename);
 
 }// namespace cuspatial

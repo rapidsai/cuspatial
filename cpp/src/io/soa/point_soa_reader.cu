@@ -42,8 +42,10 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> read_lon
     auto type = cudf::data_type{ tid };
 
     // Allocate a cudf::column with the lon host memory
-    auto lon = std::make_unique<cudf::column>(cudf::column(type, num_p, rmm::device_buffer(p_lon, num_p)));
-    auto lat = std::make_unique<cudf::column>(cudf::column(type, num_p, rmm::device_buffer(p_lat, num_p)));
+    auto lon = std::make_unique<cudf::column>(cudf::column(type,
+        num_p, rmm::device_buffer(p_lon, num_p)));
+    auto lat = std::make_unique<cudf::column>(cudf::column(type,
+        num_p, rmm::device_buffer(p_lat, num_p)));
 
     return std::make_pair(std::move(lon), std::move(lat));
 }
@@ -57,8 +59,10 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> read_xy_
     auto tid = cudf::experimental::type_to_id<double>();
     auto type = cudf::data_type{ tid };
 
-    auto x = std::make_unique<cudf::column>(cudf::column(type, num_p, rmm::device_buffer(p_x, num_p)));
-    auto y = std::make_unique<cudf::column>(cudf::column(type, num_p, rmm::device_buffer(p_y, num_p)));
+    auto x = std::make_unique<cudf::column>(cudf::column(type,
+        num_p, rmm::device_buffer(p_x, num_p)));
+    auto y = std::make_unique<cudf::column>(cudf::column(type,
+        num_p, rmm::device_buffer(p_y, num_p)));
    
     return std::make_pair(std::move(x), std::move(y));
 }

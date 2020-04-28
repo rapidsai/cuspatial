@@ -238,3 +238,7 @@ TYPED_TEST(UINT32Test, NegativeUint32)
 	expect_columns_equal(read_result->view(), write_column, true);
 }
 
+// TODO:
+// Test read_points_lonlat
+// Test read_points_xy
+
