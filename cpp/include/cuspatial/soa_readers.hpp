@@ -52,7 +52,8 @@ std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename, rmm::mr::
  * @return A `std::pair` of two `FLOAT64` `cudf::column`s containing longitude and latitude data.
 **/
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-read_lonlat_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
+read_lonlat_points(std::string filepath, 
+                   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
  * @brief read x/y from file as two columns; data type is fixed to FLOAT64
