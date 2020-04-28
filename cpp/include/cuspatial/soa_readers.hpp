@@ -67,7 +67,6 @@ read_xy_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
 /**
  * @brief read polygon data from file in SoA format
  * 
- * data type of vertices is fixed to FLOAT64
  *
  * @param[in] filename: polygon data filename
  *
