@@ -77,7 +77,9 @@ read_xy_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
  *          column(2): x coordinates of concatenated polygons
  *          column(3): y coordinates of concatenated polygons
 **/
-std::vector<cudf::column> read_polygon_soa(const char *filename, rmm::mr::device_memory_resource* mr);
+std::vector<cudf::column>
+read_polygons(std::string filepath, 
+              rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 } // namespace experimental
 
