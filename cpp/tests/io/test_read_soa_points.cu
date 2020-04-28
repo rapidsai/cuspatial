@@ -173,25 +173,18 @@ TYPED_TEST(UINT32Test, SingleUint32)
     temp_env->SetUp();
 
     auto write_column = fixed_width_column_wrapper<T>({0});
-    std::cout << "Cmon idiot test" << std::endl;
-    std::cout << "Cmon idiot test2" << std::endl;
     auto to_host_result = to_host<T>(write_column).first;
-    std::cout << "Cmon idiot test2.1" << std::endl;
     std::vector<T> h_write_column(to_host_result.size());
-    std::cout << "Cmon idiot test2.2" << std::endl;
     thrust::copy(to_host_result.begin(), to_host_result.end(),
         h_write_column.begin());
-    std::cout << "Cmon idiot test3" << std::endl;
 
     size_t write_result = cuspatial::write_field_from_vec(
         temp_env->get_temp_filepath("soa_int32.tmp").c_str(), h_write_column);
     CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
 
-    std::cout << "Cmon idiot test4" << std::endl;
     auto read_result = cuspatial::read_int32_soa(
         temp_env->get_temp_filepath("soa_int32.tmp").c_str()
     );
-    std::cout << "Cmon idiot test5" << std::endl;
 	expect_columns_equal(read_result->view(), write_column, true);
 }
 
