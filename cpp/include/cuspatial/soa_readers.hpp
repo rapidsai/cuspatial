@@ -56,7 +56,7 @@ read_lonlat_points(std::string filepath,
                    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
- * @brief read x/y from file as two columns; data type is fixed to FLOAT64
+ * @brief Read x and y coordinate columns from file.
  * 
  * @param[in] filename: file name of point data in coordinate_2d layout (x/y)
  * 
