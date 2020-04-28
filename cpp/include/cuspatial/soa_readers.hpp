@@ -58,7 +58,11 @@ read_lonlat_points(std::string filepath,
 /**
  * @brief Read x and y coordinate columns from file.
  * 
- * @param[in] filename: file name of point data in coordinate_2d layout (x/y)
+* 
+ * The file referred to by `filepath` contains data in coordinate_2d layout (x/y).
+ *
+ * @param[in] filepath path to file.
+ * @param[in] mr Optional resource to use for allocating output device memory.
  * 
  * @return A `std::pair` of two `FLOAT64` `cudf::column`s containing x and y data.
 **/
