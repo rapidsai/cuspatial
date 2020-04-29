@@ -79,9 +79,9 @@ __global__ void kernel_hausdorff_full(int trajectory_count,
 
         dist_sqrd_shared[threadIdx.x] = -1;
 
-        __syncthreads(); // not sure if this is necessary
+        __syncthreads();
 
-        if (threadIdx.x < max_threads) // not sure why this condition exists.
+        if (threadIdx.x < max_threads)
         {
             dist_sqrd_shared[threadIdx.x] = min_dist_sqrd;
         }
@@ -96,10 +96,10 @@ __global__ void kernel_hausdorff_full(int trajectory_count,
                                                     dist_sqrd_shared[threadIdx.x + offset]);
             }
 
-            __syncthreads(); // in a loop? yikes!
+            __syncthreads();
         }
 
-        __syncthreads(); // but we just did this, right?
+        __syncthreads();
 
         if (threadIdx.x == 0)
         {
@@ -151,7 +151,8 @@ struct hausdorff_functor
 
         auto kernel = kernel_hausdorff_full<T>;
 
-        int block_x = result->size(), block_y = 1;
+        int block_x = result->size();
+        int block_y = 1;
 
         if (result->size() > 65535)
         {
