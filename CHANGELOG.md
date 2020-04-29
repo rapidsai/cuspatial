@@ -11,11 +11,14 @@
 - PR #167 Align utility.hpp with libcudf style
 - PR #173 Move hausdorff.hpp files to legacy
 - PR #172 Move coordinate_transform.hpp files to legacy
+- PR #170 Update coordinate_transform.hpp to libcudf++
 
 ## Bug Fixes
 
 - PR #141 Fix dangling exec_policy pointer and invalid num_ring argument.
 - PR #169 Fix shapefile reader compilation with GCC 7.x / CUDA 10.2
+- PR #178 Fix broken haversine tests introduced by upstream CUDF PRs.
+- PR #175 Address RMM API changes by eliminating the use of the RMM_API
 
 
 # cuSpatial 0.13.0 (31 Mar 2020)
