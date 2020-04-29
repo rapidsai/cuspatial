@@ -26,7 +26,7 @@
 
 namespace {
 
-// const uint32_t NUM_THREADS = 1024;
+const uint32_t NUM_THREADS = 1024;
 
 template<typename T>
 constexpr auto magnitude_squared(T a, T b) {
@@ -35,9 +35,9 @@ constexpr auto magnitude_squared(T a, T b) {
 
 template <typename T>
 __global__ void kernel_hausdorff_full(int trajectory_count,
-                                      T* xs,
-                                      T* ys,
-                                      uint32_t* pos,
+                                      T const* xs,
+                                      T const* ys,
+                                      cudf::size_type* trajectory_offsets,
                                       T* results)
 {
     int block_idx = blockIdx.y * gridDim.x + blockIdx.x;
@@ -45,16 +45,16 @@ __global__ void kernel_hausdorff_full(int trajectory_count,
     if (block_idx < trajectory_count * trajectory_count)
     {
         int a_idx   = block_idx % trajectory_count;
-        int a_begin = a_idx == 0 ? 0 : pos[a_idx - 1];
-        int a_end   =                  pos[a_idx];
+        int a_begin = a_idx == 0 ? 0 : trajectory_offsets[a_idx - 1];
+        int a_end   =                  trajectory_offsets[a_idx];
 
         int b_idx   = block_idx / trajectory_count;
-        int b_begin = b_idx == 0 ? 0 : pos[b_idx - 1];
-        int b_end   =                  pos[b_idx];
+        int b_begin = b_idx == 0 ? 0 : trajectory_offsets[b_idx - 1];
+        int b_end   =                  trajectory_offsets[b_idx];
 
         T min_dist_sqrd = 1e20;
 
-        int max_threads = b_end - b_begin; // why b vs a? minimum length of the two, I guess?
+        int max_threads = b_end - b_begin;
 
         if (threadIdx.x < max_threads)
         {
@@ -70,7 +70,7 @@ __global__ void kernel_hausdorff_full(int trajectory_count,
             }
         }
 
-        if (min_dist_sqrd > 1e10) // this may make some of the following statements uncessary.
+        if (min_dist_sqrd > 1e10)
         {
             min_dist_sqrd = -1;
         }
@@ -86,7 +86,7 @@ __global__ void kernel_hausdorff_full(int trajectory_count,
             dist_sqrd_shared[threadIdx.x] = min_dist_sqrd;
         }
 
-        __syncthreads(); // not sure if this is necessary
+        __syncthreads();
 
         for (int offset = blockDim.x / 2; offset > 0; offset >>= 1)
         {
@@ -134,15 +134,41 @@ struct hausdorff_functor
                                                     stream,
                                                     mr);
 
+        if (result->size() == 0)
+        {
+            return result;
+        }
+
         auto d_x = cudf::column_device_view::create(x);
         auto d_y = cudf::column_device_view::create(y);
         auto d_trajectory_lengths = cudf::column_device_view::create(trajectory_lengths);
         auto d_trajectory_offsets = rmm::device_vector<cudf::size_type>(trajectory_lengths.size());
 
-        thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
+        thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
                                                 d_trajectory_lengths->begin<cudf::size_type>(),
                                                 d_trajectory_lengths->end<cudf::size_type>(),
                                                 d_trajectory_offsets.begin());
+
+        auto kernel = kernel_hausdorff_full<T>;
+
+        int block_x = result->size(), block_y = 1;
+
+        if (result->size() > 65535)
+        {
+            block_y = ceil((float) result->size() / 65535.0);
+            block_x = 65535;
+        }
+
+        dim3 grid(block_x, block_y);
+        dim3 block(NUM_THREADS);
+
+        kernel<<<grid, block, 0, stream>>>(
+            trajectory_lengths.size(),
+            x.data<T>(),
+            y.data<T>(),
+            d_trajectory_offsets.data().get(),
+            result->mutable_view().data<T>()
+        );
 
         return result;
     }
@@ -155,7 +181,7 @@ namespace cuspatial {
 std::unique_ptr<cudf::column>
 directed_hausdorff_distance(cudf::column_view const& x,
                             cudf::column_view const& y,
-                            cudf::column_view const& trajector_lengths,
+                            cudf::column_view const& trajectory_lengths,
                             rmm::mr::device_memory_resource *mr)
 {
     CUSPATIAL_EXPECTS(x.type() == y.type(), "inputs `x` and `y` must have same type.");
@@ -163,16 +189,16 @@ directed_hausdorff_distance(cudf::column_view const& x,
 
     CUSPATIAL_EXPECTS(not x.has_nulls() and
                       not y.has_nulls() and
-                      not trajector_lengths.has_nulls(),
+                      not trajectory_lengths.has_nulls(),
                       "inputs must not have nulls.");
 
-    CUSPATIAL_EXPECTS(x.size() >= trajector_lengths.size(),
+    CUSPATIAL_EXPECTS(x.size() >= trajectory_lengths.size(),
                       "At least one vertex is required for each trajectory");
 
     cudaStream_t stream = 0;
 
     return cudf::experimental::type_dispatcher(x.type(), hausdorff_functor(),
-                                               x, y, trajector_lengths, mr, stream);
+                                               x, y, trajectory_lengths, mr, stream);
 }
 
 } // namespace cuspatial
