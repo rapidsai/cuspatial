@@ -340,6 +340,9 @@ add_library(cuspatial SHARED
             src/spatial/legacy/hausdorff.cu
             src/spatial/legacy/lonlat_to_coordinate.cu
             src/spatial/lonlat_to_cartesian.cu
+            src/trajectory/derive_trajectories.cu
+            src/trajectory/trajectory_bounding_boxes.cu
+            src/trajectory/trajectory_distances_and_speeds.cu
             src/trajectory/legacy/trajectory_spatial_bound.cu
             src/trajectory/legacy/trajectory_distance_speed.cu
             src/trajectory/legacy/derive_trajectories.cu

@@ -12,6 +12,7 @@
 - PR #173 Move hausdorff.hpp files to legacy
 - PR #172 Move coordinate_transform.hpp files to legacy
 - PR #170 Update coordinate_transform.hpp to libcudf++
+- PR #171 Update trajectory.hpp to libcudf++
 
 ## Bug Fixes
 
