@@ -22,26 +22,24 @@
 namespace cuspatial {
 
 /**
- * @brief compute Hausdorff distances among all pairs of a set of trajectories
+ * @brief computes Hausdorff distances for all pairs of a collection of spaces
  * 
  * https://en.wikipedia.org/wiki/Hausdorff_distance
  *
- * `vertex_counts` is used to compute the starting offset of each trajectory
- * in `x` and `y`
+ * `points_per_space` is used to compute the offset of the first point in each space.
  * 
- * @param[in] x: x coordinates of the input trajectories
- * @param[in] y: y coordinates of the input trajectories
- * @param[in] vertex_counts: numbers of vertices in each trajectory
+ * @param[in] xs: x coordinate of points in space
+ * @param[in] ys: y coordinate of points in space
+ * @param[in] points_per_space: number of points in each space
  *
- * @returns Flattened (1D) column of all-pairs directed Hausdorff distances
- *          among trajectories (i,j)
+ * @returns A flattened matrix of all Hausdorff distances for each pair of spaces
  * 
- * @note Hausdorff distance is not symmetrical
+ * @note Hausdorff distances are asymmetrical
  */
 std::unique_ptr<cudf::column>
-directed_hausdorff_distance(cudf::column_view const& x,
-                            cudf::column_view const& y,
-                            cudf::column_view const& vertex_counts,
+directed_hausdorff_distance(cudf::column_view const& xs,
+                            cudf::column_view const& ys,
+                            cudf::column_view const& points_per_space,
                             rmm::mr::device_memory_resource *mr =
                               rmm::mr::get_default_resource());
 

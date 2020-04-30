@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <vector>
+
 #include <tests/utilities/base_fixture.hpp>
 #include <tests/utilities/column_wrapper.hpp>
 #include <tests/utilities/cudf_gtest.hpp>
@@ -21,6 +23,8 @@
 #include <tests/utilities/type_lists.hpp>
 
 #include <cuspatial/hausdorff.hpp>
+
+#include <thrust/iterator/constant_iterator.h>
 
 using namespace cudf;
 using namespace test;
@@ -48,7 +52,7 @@ TYPED_TEST(HausdorffTest, Empty)
     expect_columns_equal(expected, actual->view());
 }
 
-TYPED_TEST(HausdorffTest, SingleElementTrajectory)
+TYPED_TEST(HausdorffTest, SingleTrajectorySingleElement)
 {
     using T = TypeParam;
 
@@ -63,7 +67,7 @@ TYPED_TEST(HausdorffTest, SingleElementTrajectory)
     expect_columns_equal(expected, actual->view());
 }
 
-TYPED_TEST(HausdorffTest, Old)
+TYPED_TEST(HausdorffTest, TwoShortTrajectories)
 {
     using T = TypeParam;
 
@@ -73,6 +77,48 @@ TYPED_TEST(HausdorffTest, Old)
 
     auto expected = cudf::test::fixed_width_column_wrapper<T>({ 0, 5,
                                                                 13, 0 });
+
+    auto actual = cuspatial::directed_hausdorff_distance(x, y, trajectories);
+
+    expect_columns_equal(expected, actual->view(), true);
+}
+
+TYPED_TEST(HausdorffTest, 10kTrajectoriesSingleElement)
+{
+    using T = TypeParam;
+
+    constexpr cudf::size_type trajectory_count = 10000;
+    constexpr cudf::size_type elements_per_trajectory = 1;
+
+    auto zero_iter = thrust::make_constant_iterator<T>(0);
+    auto stride_iter = thrust::make_constant_iterator<cudf::size_type>(elements_per_trajectory);
+
+    auto x = cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + trajectory_count);
+    auto y = cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + trajectory_count);
+    auto trajectories = cudf::test::fixed_width_column_wrapper<cudf::size_type>(stride_iter, stride_iter + trajectory_count);
+
+    auto expected = cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + (trajectory_count * trajectory_count));
+
+    auto actual = cuspatial::directed_hausdorff_distance(x, y, trajectories);
+
+    expect_columns_equal(expected, actual->view(), true);
+}
+
+TYPED_TEST(HausdorffTest, 2Trajectories500kElements)
+{
+    using T = TypeParam;
+
+    constexpr cudf::size_type trajectory_count = 2;
+    constexpr cudf::size_type elements_per_trajectory = 500000;
+
+    auto zero_iter = thrust::make_constant_iterator<T>(0);
+    auto stride_iter = thrust::make_constant_iterator<cudf::size_type>(elements_per_trajectory);
+
+    auto x = cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + (elements_per_trajectory * trajectory_count));
+    auto y = cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + (elements_per_trajectory * trajectory_count));
+    auto trajectories = cudf::test::fixed_width_column_wrapper<cudf::size_type>(stride_iter, stride_iter + trajectory_count);
+
+    auto expected = cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + (trajectory_count * trajectory_count));
 
     auto actual = cuspatial::directed_hausdorff_distance(x, y, trajectories);
 

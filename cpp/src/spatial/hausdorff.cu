@@ -2,12 +2,12 @@
  * Copyright (c) 2019-2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * you mpoint_a_y not use this file except in compliance with the License.
+ * You mpoint_a_y obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * Unless required point_b_y applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -34,38 +34,41 @@ constexpr auto magnitude_squared(T a, T b) {
 }
 
 template <typename T>
-__global__ void kernel_hausdorff_full(int trajectory_count,
+__global__ void kernel_hausdorff(int num_spaces,
                                       T const* xs,
                                       T const* ys,
-                                      cudf::size_type* trajectory_offsets,
+                                      cudf::size_type* space_offsets,
                                       T* results)
 {
-    int block_idx = blockIdx.y * gridDim.x + blockIdx.x;
+    auto block_idx = blockIdx.y * gridDim.x + blockIdx.x;
+    auto num_space_pairs = num_spaces * num_spaces;
 
-    if (block_idx < trajectory_count * trajectory_count)
+    // each block processes a single pair of spaces.
+    if (block_idx < num_space_pairs)
     {
-        int a_idx   = block_idx % trajectory_count;
-        int a_begin = a_idx == 0 ? 0 : trajectory_offsets[a_idx - 1];
-        int a_end   =                  trajectory_offsets[a_idx];
+        int space_a_idx   = block_idx % num_spaces;
+        int space_a_begin = space_a_idx == 0 ? 0 : space_offsets[space_a_idx - 1];
+        int space_a_end   =                        space_offsets[space_a_idx];
 
-        int b_idx   = block_idx / trajectory_count;
-        int b_begin = b_idx == 0 ? 0 : trajectory_offsets[b_idx - 1];
-        int b_end   =                  trajectory_offsets[b_idx];
+        int space_b_idx   = block_idx / num_spaces;
+        int space_b_begin = space_b_idx == 0 ? 0 : space_offsets[space_b_idx - 1];
+        int space_b_end   =                        space_offsets[space_b_idx];
 
         T min_dist_sqrd = 1e20;
 
-        int max_threads = b_end - b_begin;
+        int num_points_in_b = space_b_end - space_b_begin;
 
-        if (threadIdx.x < max_threads)
+        if (threadIdx.x < num_points_in_b)
         {
-            T bx = xs[b_begin + threadIdx.x];
-            T by = ys[b_begin + threadIdx.x];
+            T point_b_x = xs[space_b_begin + threadIdx.x];
+            T point_b_y = ys[space_b_begin + threadIdx.x];
 
-            for (int i = a_begin; i < a_end; i++)
+            for (int i = space_a_begin; i < space_a_end; i++)
             {
-                T ax = xs[i];
-                T ay = ys[i];
-                T dist_sqrd = magnitude_squared(bx - ax, by - ay);
+                T point_a_x = xs[i];
+                T point_a_y = ys[i];
+                T dist_sqrd = magnitude_squared(point_b_x - point_a_x, point_b_y - point_a_y);
+
                 min_dist_sqrd = min(min_dist_sqrd, dist_sqrd);
             }
         }
@@ -75,15 +78,15 @@ __global__ void kernel_hausdorff_full(int trajectory_count,
             min_dist_sqrd = -1;
         }
 
-        __shared__ T dist_sqrd_shared[1024];
+        __shared__ T dist_sqrd[1024];
 
-        dist_sqrd_shared[threadIdx.x] = -1;
+        dist_sqrd[threadIdx.x] = -1;
 
         __syncthreads();
 
-        if (threadIdx.x < max_threads)
+        if (threadIdx.x < num_points_in_b)
         {
-            dist_sqrd_shared[threadIdx.x] = min_dist_sqrd;
+            dist_sqrd[threadIdx.x] = min_dist_sqrd;
         }
 
         __syncthreads();
@@ -92,8 +95,8 @@ __global__ void kernel_hausdorff_full(int trajectory_count,
         {
             if (threadIdx.x < offset)
             {
-                dist_sqrd_shared[threadIdx.x] = max(dist_sqrd_shared[threadIdx.x],
-                                                    dist_sqrd_shared[threadIdx.x + offset]);
+                dist_sqrd[threadIdx.x] = max(dist_sqrd[threadIdx.x],
+                                             dist_sqrd[threadIdx.x + offset]);
             }
 
             __syncthreads();
@@ -103,9 +106,7 @@ __global__ void kernel_hausdorff_full(int trajectory_count,
 
         if (threadIdx.x == 0)
         {
-            // can maybe avoid this conditional by using a negate and abs trick.
-            //                 = sqrt(abs(max(-1e10, dist_sqrd_shared[0]);
-            results[block_idx] = (dist_sqrd_shared[0] < 0) ? 1e10 : sqrt(dist_sqrd_shared[0]);
+            results[block_idx] = (dist_sqrd[0] < 0) ? 1e10 : sqrt(dist_sqrd[0]);
         }
     }
 }
@@ -142,14 +143,14 @@ struct hausdorff_functor
         auto d_x = cudf::column_device_view::create(x);
         auto d_y = cudf::column_device_view::create(y);
         auto d_trajectory_lengths = cudf::column_device_view::create(trajectory_lengths);
-        auto d_trajectory_offsets = rmm::device_vector<cudf::size_type>(trajectory_lengths.size());
+        auto d_space_offsets = rmm::device_vector<cudf::size_type>(trajectory_lengths.size());
 
         thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
                                                 d_trajectory_lengths->begin<cudf::size_type>(),
                                                 d_trajectory_lengths->end<cudf::size_type>(),
-                                                d_trajectory_offsets.begin());
+                                                d_space_offsets.begin());
 
-        auto kernel = kernel_hausdorff_full<T>;
+        auto kernel = kernel_hausdorff<T>;
 
         int block_x = result->size();
         int block_y = 1;
@@ -167,7 +168,7 @@ struct hausdorff_functor
             trajectory_lengths.size(),
             x.data<T>(),
             y.data<T>(),
-            d_trajectory_offsets.data().get(),
+            d_space_offsets.data().get(),
             result->mutable_view().data<T>()
         );
 
