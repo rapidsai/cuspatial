@@ -6,6 +6,18 @@ if(NOT CMAKE_CUDA_COMPILER)
   message(SEND_ERROR "CMake cannot locate a CUDA compiler")
 endif()
 
+# Ensure CMake passes PIE flags to the linker
+# see: https://cmake.org/cmake/help/latest/policy/CMP0083.html#policy:CMP0083
+cmake_policy(SET CMP0083 NEW)
+
+# Check and warn if PIE flags aren't supported by the linker
+include(CheckPIESupported)
+check_pie_supported(OUTPUT_VARIABLE pie_linker_status LANGUAGES C CXX)
+if((NOT CMAKE_C_LINK_PIE_SUPPORTED) OR (NOT CMAKE_CXX_LINK_PIE_SUPPORTED))
+  message(WARNING "PIE is not supported at link time: ${pie_linker_status}.\n"
+                  "PIE link options will not be passed to linker.")
+endif((NOT CMAKE_C_LINK_PIE_SUPPORTED) OR (NOT CMAKE_CXX_LINK_PIE_SUPPORTED))
+
 ###################################################################################################
 # - common test utils -----------------------------------------------------------------------------
 
