@@ -16,10 +16,10 @@ message(STATUS "CUDFTESTUTIL: CUDFTESTUTIL_LIBRARY set to ${CUDFTESTUTIL_LIBRARY
 message(STATUS "CUDFTESTUTIL: CUDF_TEST_INCLUDE set to ${CUDF_TEST_INCLUDE}")
 
 add_library(cudftestutil STATIC IMPORTED ${CUDFTESTUTIL_LIBRARY})
+set_property(TARGET cudftestutil PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 if (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
     set_target_properties(cudftestutil PROPERTIES IMPORTED_LOCATION ${CUDFTESTUTIL_LIBRARY})
-    set_target_properties(cudftestutil PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
 
 ###################################################################################################
