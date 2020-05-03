@@ -8,8 +8,12 @@
 
 from cudf._lib.legacy.cudf import *
 from cudf._lib.legacy.cudf cimport *
+from libcpp.memory cimport unique_ptr
+from cudf._lib.column cimport Column
+from cudf._lib.cpp.column.column cimport column
 from cudf import Series
 from libcpp.pair cimport pair
+from cuspatial._lib.move cimport move
 
 from libc.stdlib cimport calloc, malloc, free
 
@@ -84,31 +88,26 @@ cpdef cpp_haversine_distance(x1, y1, x2, y2):
 
     return result
 
-cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
-    cam_lon = np.float64(cam_lon)
-    cam_lat = np.float64(cam_lat)
-    in_lon = in_lon.astype('float64')._column
-    in_lat = in_lat.astype('float64')._column
-    cdef gdf_scalar* c_cam_lon = gdf_scalar_from_scalar(cam_lon)
-    cdef gdf_scalar* c_cam_lat = gdf_scalar_from_scalar(cam_lat)
-    cdef gdf_column* c_in_lon = column_view_from_column(in_lon)
-    cdef gdf_column* c_in_lat = column_view_from_column(in_lat)
+cdef cpp_lonlat2coord(origin_lon, origin_lat, Column input_lon, Column input_lat):
+    cdef double c_origin_lon = np.float64(origin_lon)
+    cdef double c_origin_lat = np.float64(origin_lat)
+    cdef column_view c_input_lon = input_lon.view()
+    cdef column_view c_input_lat = input_lat.view()
 
-    cpdef pair[gdf_column, gdf_column] coords
+    cdef pair[unique_ptr[column], unique_ptr[column]] result
 
     with nogil:
-        coords = lonlat_to_coord(
-            c_cam_lon[0],
-            c_cam_lat[0],
-            c_in_lon[0],
-            c_in_lat[0]
+        result = move(
+            lonlat_to_cartesian(
+                c_origin_lon,
+                c_origin_lat,
+                c_input_lon,
+                c_input_lat
+            )
         )
 
-    free(c_in_lon)
-    free(c_in_lat)
-
-    return (Series(gdf_column_to_column(&coords.first)),
-            Series(gdf_column_to_column(&coords.second)))
+    return (Column.from_unique_ptr(move(result.first)),
+            Column.from_unique_ptr(move(result.second)))
 
 cpdef cpp_directed_hausdorff_distance(coor_x, coor_y, cnt):
     coor_x = coor_x.astype('float64')._column

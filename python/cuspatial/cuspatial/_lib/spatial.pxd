@@ -5,8 +5,11 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from cudf._lib.legacy.cudf cimport *
 from libcpp.pair cimport pair
+from libcpp.memory cimport unique_ptr
+from cudf._lib.legacy.cudf cimport *
+from cudf._lib.cpp.column.column cimport column
+from cudf._lib.cpp.column.column_view cimport column_view
 
 cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
     cdef gdf_column point_in_polygon_bitmap(
@@ -18,12 +21,12 @@ cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
         const gdf_column& ply_y
     ) except +
 
-cdef extern from "legacy/coordinate_transform.hpp" namespace "cuspatial" nogil:
-    cdef pair[gdf_column, gdf_column] lonlat_to_coord(
-        const gdf_scalar& cam_x,
-        const gdf_scalar& cam_y,
-        const gdf_column& in_x,
-        const gdf_column& in_y
+cdef extern from "coordinate_transform.hpp" namespace "cuspatial" nogil:
+    cdef pair[unique_ptr[column], unique_ptr[column]] lonlat_to_cartesian(
+        const double origin_lon,
+        const double origin_lat,
+        const column_view& input_lon,
+        const column_view& input_lat
     ) except +
 
 cdef extern from "haversine.hpp" namespace "cuspatial" nogil:

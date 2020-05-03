@@ -88,16 +88,16 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
 
 
 def lonlat_to_xy_km_coordinates(
-    camera_lon, camera_lat, lon_coords, lat_coords
+    origin_lon, origin_lat, input_lon, input_lat
 ):
     """ Convert lonlat coordinates to km x,y coordinates based on some camera
     origin.
 
     params
-    camera_lon: float64 - longitude camera
-    camera_lat: float64 - latitude camera
-    lon_coords: Series of longitude coords to convert to x
-    lat_coords: Series of latitude coords to convert to y
+    origin_lon: float64 - longitude camera
+    origin_lat: float64 - latitude camera
+    input_lon: Series of longitude coords to convert to x
+    input_lat: Series of latitude coords to convert to y
 
     Parameters
     ----------
@@ -106,7 +106,7 @@ def lonlat_to_xy_km_coordinates(
     returns
     DataFrame: 'x', 'y' columns for new km positions of coords
     """
-    result = cpp_lonlat2coord(camera_lon, camera_lat, lon_coords, lat_coords)
+    result = cpp_lonlat2coord(origin_lon, origin_lat, input_lon._column, input_lat._column)
     return DataFrame({"x": result[0], "y": result[1]})
 
 
