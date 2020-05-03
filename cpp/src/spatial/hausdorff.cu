@@ -137,9 +137,9 @@ struct hausdorff_functor
                                space_offsets.begin());
 
         // utilize one block per result (pair of spaces).
-        int max_block_size = 65535;
-        int block_x = min(result->size(), max_block_size);
-        int block_y = ceil(result->size() / (float) max_block_size);
+        int max_thread_count = 65535;
+        int block_x = min(result->size(), max_thread_count);
+        int block_y = ceil(result->size() / (float) max_thread_count);
 
         const uint32_t NUM_THREADS = 1024;
         dim3 grid(block_x, block_y);
