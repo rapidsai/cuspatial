@@ -12,6 +12,7 @@ from libcpp.pair cimport pair
 from cudf import Series
 from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column cimport column
+from cudf._lib.cpp.column.column_view cimport column_view
 from cudf._lib.legacy.cudf cimport *
 from cudf._lib.legacy.cudf import *
 from cuspatial._lib.cpp.coordinate_transform cimport (

@@ -6,10 +6,6 @@
 # cython: language_level = 3
 
 from libcpp.pair cimport pair
-from libcpp.memory cimport unique_ptr
-from cudf._lib.legacy.cudf cimport *
-from cudf._lib.cpp.column.column cimport column
-from cudf._lib.cpp.column.column_view cimport column_view
 
 cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
     cdef gdf_column point_in_polygon_bitmap(
