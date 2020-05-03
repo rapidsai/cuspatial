@@ -2,8 +2,8 @@
  * Copyright (c) 2019-2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you mpoint_a_y not use this file except in compliance with the License.
- * You mpoint_a_y obtain a copy of the License at
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -137,9 +137,9 @@ struct hausdorff_functor
                                space_offsets.begin());
 
         // utilize one block per result (pair of spaces).
-        int max_block_size = 65535;
-        int block_x = min(result->size(), max_block_size);
-        int block_y = ceil(result->size() / (float) max_block_size);
+        int max_thread_count = 65535;
+        int block_x = min(result->size(), max_thread_count);
+        int block_y = ceil(result->size() / (float) max_thread_count);
 
         const uint32_t NUM_THREADS = 1024;
         dim3 grid(block_x, block_y);
