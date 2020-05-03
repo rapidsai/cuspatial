@@ -1,5 +1,5 @@
 // /*
-//  * Copyright (c) 2019, NVIDIA CORPORATION.
+//  * Copyright (c) 2020, NVIDIA CORPORATION.
 //  *
 //  * Licensed under the Apache License, Version 2.0 (the "License");
 //  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 #include "rmm/mr/device/device_memory_resource.hpp"
 #include "rmm/thrust_rmm_allocator.h"
 #include <cuspatial/constants.hpp>
- 
+
 namespace {
 
 template<typename T>
@@ -73,7 +73,7 @@ struct haversine_functor
                                                     stream,
                                                     mr);
 
-        if (result->size() == 0)
+        if (size == 0)
         {
             return result;
         }
@@ -88,7 +88,7 @@ struct haversine_functor
 
         thrust::transform(rmm::exec_policy(stream)->on(stream),
                           input_iter,
-                          input_iter + a_lon.size(),
+                          input_iter + size,
                           result->mutable_view().begin<T>(),
                           [] __device__ (auto inputs) {
                               return calculate_haversine_distance(thrust::get<0>(inputs),
@@ -101,45 +101,44 @@ struct haversine_functor
         return result;
     }
 };
- 
+
 } // anonymous namespace
- 
+
 namespace cuspatial {
 
 namespace detail {
-    std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
-                                                     cudf::column_view const& a_lat,
-                                                     cudf::column_view const& b_lon,
-                                                     cudf::column_view const& b_lat,
-                                                     double radius,
-                                                     rmm::mr::device_memory_resource* mr,
-                                                     cudaStream_t stream)
-{
 
+std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
+                                                 cudf::column_view const& a_lat,
+                                                 cudf::column_view const& b_lon,
+                                                 cudf::column_view const& b_lat,
+                                                 double radius,
+                                                 rmm::mr::device_memory_resource* mr,
+                                                 cudaStream_t stream)
+{
     CUSPATIAL_EXPECTS(radius > 0,
-                        "radius must be positive.");
+                      "radius must be positive.");
 
     CUSPATIAL_EXPECTS(not a_lon.has_nulls() and
-                        not a_lat.has_nulls() and
-                        not b_lon.has_nulls() and
-                        not b_lat.has_nulls(),
-                        "locations must not contain nulls.");
+                      not a_lat.has_nulls() and
+                      not b_lon.has_nulls() and
+                      not b_lat.has_nulls(),
+                      "locations must not contain nulls.");
 
     CUSPATIAL_EXPECTS(a_lat.type() == a_lon.type() and
-                        b_lon.type() == a_lon.type() and
-                        b_lat.type() == a_lon.type(),
-                        "locations must have the same type.");
+                      b_lon.type() == a_lon.type() and
+                      b_lat.type() == a_lon.type(),
+                      "locations must have the same type.");
 
     CUSPATIAL_EXPECTS(a_lat.size() == a_lon.size() and
-                        b_lon.size() == a_lon.size() and
-                        b_lat.size() == a_lon.size(),
-                        "locations must have the same size.");
+                      b_lon.size() == a_lon.size() and
+                      b_lat.size() == a_lon.size(),
+                      "locations must have the same size.");
 
     return cudf::experimental::type_dispatcher(a_lon.type(), haversine_functor{}, a_lon, a_lat, b_lon, b_lat, radius, mr, stream);
 }
-}
 
-// namspace detail
+} // namspace detail
 
 std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
                                                  cudf::column_view const& a_lat,
@@ -152,4 +151,3 @@ std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
 }
 
 } // namespace cuspatial
- 
