@@ -330,7 +330,7 @@ add_library(cuspatial SHARED
             src/io/soa/uint32_soa_reader.cu
             src/io/soa/timestamp_soa_reader.cu
             src/query/spatial_window_points.cu
-            src/spatial/point_in_polygon.cu
+            src/spatial/legacy/point_in_polygon.cu
             src/spatial/haversine.cu
             src/spatial/legacy/hausdorff.cu
             src/spatial/legacy/lonlat_to_coordinate.cu
