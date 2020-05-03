@@ -12,6 +12,7 @@
 - PR #172 Move coordinate_transform.hpp files to legacy
 - PR #170 Update coordinate_transform.hpp to libcudf++
 - PR #183 Add libcuspatial benchmark scaffolding
+- PR #190 Port coordinate_transform.hpp cython files
 
 ## Bug Fixes
 
