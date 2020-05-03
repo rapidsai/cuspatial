@@ -6,16 +6,18 @@
 # cython: language_level = 3
 
 
-from cudf._lib.legacy.cudf import *
-from cudf._lib.legacy.cudf cimport *
+from libc.stdlib cimport malloc, free
 from libcpp.memory cimport unique_ptr
+from libcpp.pair cimport pair
+from cudf import Series
 from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column cimport column
-from cudf import Series
-from libcpp.pair cimport pair
+from cudf._lib.legacy.cudf cimport *
+from cudf._lib.legacy.cudf import *
+from cuspatial._lib.cpp.coordinate_transform cimport (
+    lonlat_to_cartesian as cpp_lonlat_to_cartesian
+)
 from cuspatial._lib.move cimport move
-
-from libc.stdlib cimport calloc, malloc, free
 
 cpdef cpp_point_in_polygon_bitmap(
     points_x, points_y, poly_fpos, poly_rpos, poly_x, poly_y
@@ -88,7 +90,12 @@ cpdef cpp_haversine_distance(x1, y1, x2, y2):
 
     return result
 
-cdef cpp_lonlat2coord(origin_lon, origin_lat, Column input_lon, Column input_lat):
+def lonlat_to_cartesian(
+    origin_lon,
+    origin_lat,
+    Column input_lon,
+    Column input_lat
+):
     cdef double c_origin_lon = np.float64(origin_lon)
     cdef double c_origin_lat = np.float64(origin_lat)
     cdef column_view c_input_lon = input_lon.view()
@@ -98,7 +105,7 @@ cdef cpp_lonlat2coord(origin_lon, origin_lat, Column input_lon, Column input_lat
 
     with nogil:
         result = move(
-            lonlat_to_cartesian(
+            cpp_lonlat_to_cartesian(
                 c_origin_lon,
                 c_origin_lat,
                 c_input_lon,

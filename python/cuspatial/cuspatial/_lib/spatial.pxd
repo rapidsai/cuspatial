@@ -1,4 +1,4 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
 # cython: profile=False
 # distutils: language = c++
@@ -19,14 +19,6 @@ cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
         const gdf_column& ply_rpos,
         const gdf_column& ply_x,
         const gdf_column& ply_y
-    ) except +
-
-cdef extern from "coordinate_transform.hpp" namespace "cuspatial" nogil:
-    cdef pair[unique_ptr[column], unique_ptr[column]] lonlat_to_cartesian(
-        const double origin_lon,
-        const double origin_lat,
-        const column_view& input_lon,
-        const column_view& input_lat
     ) except +
 
 cdef extern from "haversine.hpp" namespace "cuspatial" nogil:
