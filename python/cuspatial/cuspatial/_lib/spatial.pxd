@@ -26,7 +26,7 @@ cdef extern from "legacy/coordinate_transform.hpp" namespace "cuspatial" nogil:
         const gdf_column& in_y
     ) except +
 
-cdef extern from "haversine.hpp" namespace "cuspatial" nogil:
+cdef extern from "legacy/haversine.hpp" namespace "cuspatial" nogil:
     gdf_column haversine_distance(
         const gdf_column& x1,
         const gdf_column& y1,
