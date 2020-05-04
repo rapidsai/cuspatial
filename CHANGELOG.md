@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #182 Local gpuCI build script
+
 ## Improvements
 
 - PR #147 Update Conda/CMake configs to match other RAPIDS projects
@@ -11,6 +13,8 @@
 - PR #173 Move hausdorff.hpp files to legacy
 - PR #172 Move coordinate_transform.hpp files to legacy
 - PR #170 Update coordinate_transform.hpp to libcudf++
+- PR #183 Add libcuspatial benchmark scaffolding
+- PR #186 Move haversine.hpp files to legacy
 - PR #171 Update trajectory.hpp to libcudf++
 
 ## Bug Fixes
