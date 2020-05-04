@@ -6,10 +6,6 @@ if(NOT CMAKE_CUDA_COMPILER)
   message(SEND_ERROR "CMake cannot locate a CUDA compiler")
 endif()
 
-# Ensure CMake doesn't pass PIE flags to the linker
-# see: https://cmake.org/cmake/help/latest/policy/CMP0083.html#policy:CMP0083
-cmake_policy(SET CMP0083 OLD)
-
 ###################################################################################################
 # - common test utils -----------------------------------------------------------------------------
 
@@ -20,7 +16,6 @@ message(STATUS "CUDFTESTUTIL: CUDFTESTUTIL_LIBRARY set to ${CUDFTESTUTIL_LIBRARY
 message(STATUS "CUDFTESTUTIL: CUDF_TEST_INCLUDE set to ${CUDF_TEST_INCLUDE}")
 
 add_library(cudftestutil STATIC IMPORTED ${CUDFTESTUTIL_LIBRARY})
-set_property(TARGET cudftestutil PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 if (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
     set_target_properties(cudftestutil PROPERTIES IMPORTED_LOCATION ${CUDFTESTUTIL_LIBRARY})
@@ -36,7 +31,7 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     if(BUILD_LEGACY_TESTS OR (NOT is_legacy_test))
         add_executable(${CMAKE_TEST_NAME}
                     ${CMAKE_TEST_SRC})
-        set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE OFF)
         target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial cudf
                             cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES} NVCategory
                             NVStrings nvrtc gdal)
