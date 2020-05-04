@@ -99,9 +99,9 @@ set(COORDINATE_TRANSFORM_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/coordinate_transform_test.cu")
 ConfigureTest(COORDINATE_TRANSFORM_TEST "${COORDINATE_TRANSFORM_TEST_SRC}")
 
-set(HAVERSINE_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/haversine_toy.cu")
-ConfigureTest(HAVERSINE_TEST "${HAVERSINE_TEST_SRC}")
+set(LEGACY_HAVERSINE_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/haversine_toy.cu")
+ConfigureTest(LEGACY_HAVERSINE_TEST "${LEGACY_HAVERSINE_TEST_SRC}")
 
 set(LEGACY_HAUSDORFF_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/hausdorff_toy.cu"
