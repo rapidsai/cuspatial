@@ -27,12 +27,6 @@
 
 using namespace cudf::test;
 
-template<typename T>
-T reinterpret(std::conditional_t<std::is_same<double, T>::value, int64_t, int32_t> value)
-{
-    return *reinterpret_cast<T*>(&value);
-}
-
 template <typename T>
 struct HaversineTest : public BaseFixture {};
 
@@ -80,12 +74,12 @@ TYPED_TEST(HaversineTest, EquivolentPoints)
 
     auto const count = 3;
 
-    auto a_lon = fixed_width_column_wrapper<T>({ -180 });
-    auto a_lat = fixed_width_column_wrapper<T>({    0 });
-    auto b_lon = fixed_width_column_wrapper<T>({  180 });
-    auto b_lat = fixed_width_column_wrapper<T>({    0 });
+    auto a_lon = fixed_width_column_wrapper<T>({ -180,  180 });
+    auto a_lat = fixed_width_column_wrapper<T>({    0,   30 });
+    auto b_lon = fixed_width_column_wrapper<T>({  180, -180 });
+    auto b_lat = fixed_width_column_wrapper<T>({    0,   30 });
 
-    auto expected = fixed_width_column_wrapper<T>({ reinterpret<T>(4430261783215946468) /* nearly zero */ });
+    auto expected = fixed_width_column_wrapper<T>({ 1.5604449514735574e-12, 1.3513849691832763e-12 });
 
     auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
 
