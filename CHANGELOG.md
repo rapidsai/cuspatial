@@ -13,7 +13,7 @@
 - PR #170 Update coordinate_transform.hpp to libcudf++
 - PR #183 Add libcuspatial benchmark scaffolding
 - PR #186 Move haversine.hpp files to legacy
-- PR #158 Move point_in_polygon.hpp files to legacy
+- PR #191 Move point_in_polygon.hpp files to legacy
 
 ## Bug Fixes
 
