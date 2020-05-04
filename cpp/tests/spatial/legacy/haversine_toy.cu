@@ -15,7 +15,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <cuspatial/haversine.hpp> 
+#include <cuspatial/legacy/haversine.hpp> 
 #include <utilities/legacy/error_utils.hpp>
 
 #include <tests/utilities/legacy/cudf_test_utils.cuh>
