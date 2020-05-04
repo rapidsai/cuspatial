@@ -6,6 +6,8 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - clang=8.0.1
+  - clang-tools=8.0.1
   - cudf=0.14.*
   - cudatoolkit=10.1
   - gdal>=2.4.*
