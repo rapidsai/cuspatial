@@ -86,6 +86,7 @@ cpdef cpp_haversine_distance(x1, y1, x2, y2):
 
     return result
 
+
 def lonlat_to_cartesian(
     double origin_lon,
     double origin_lat,
@@ -109,6 +110,7 @@ def lonlat_to_cartesian(
 
     return (Column.from_unique_ptr(move(result.first)),
             Column.from_unique_ptr(move(result.second)))
+
 
 cpdef cpp_directed_hausdorff_distance(coor_x, coor_y, cnt):
     coor_x = coor_x.astype('float64')._column
