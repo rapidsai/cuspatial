@@ -33,7 +33,7 @@ namespace cuspatial {
 
  * @returns pair of gdf_columns of query results of in_x and in_y columns.
  */
- std::pair<gdf_column,gdf_column> spatial_window_points(const gdf_scalar& left,
+std::pair<gdf_column, gdf_column> spatial_window_points(const gdf_scalar& left,
                                                         const gdf_scalar& bottom,
                                                         const gdf_scalar& right,
                                                         const gdf_scalar& top,

@@ -37,22 +37,23 @@ namespace cuspatial {
  * @param[out] length: #of points in the derived trajectories
  * @param[out] offset: position offsets of trajectories used to index x, y,
  *                  object_id and timestamp
- * 
+ *
  * @return number of derived trajectories
  */
-gdf_size_type derive_trajectories(const gdf_column& x, const gdf_column& y,
+gdf_size_type derive_trajectories(const gdf_column& x,
+                                  const gdf_column& y,
                                   const gdf_column& object_id,
                                   const gdf_column& timestamp,
                                   gdf_column& trajectory_id,
-                                  gdf_column& length, gdf_column& offset);
-
+                                  gdf_column& length,
+                                  gdf_column& offset);
 
 /**
  * @brief Compute the distance and speed of trajectories
  *
  * Trajectories are typically derived from coordinate data using
  * derive_trajectories().
- * 
+ *
  * @param[in] x: x coordinates (km) relative to a camera origin and ordered by
  *            (id,timestamp)
  * @param[in] y: y coordinates (km) relative to a camera origin and ordered by
@@ -68,12 +69,11 @@ gdf_size_type derive_trajectories(const gdf_column& x, const gdf_column& y,
  * if needed. Duration can be computed on CPU by fetching begining/ending
  * timestamps of a trajectory in the timestamp array
  */
-std::pair<gdf_column,gdf_column>
-trajectory_distance_and_speed(const gdf_column& x, const gdf_column& y,
-                              const gdf_column& timestamp,
-                              const gdf_column& length,
-                              const gdf_column& offset);
-
+std::pair<gdf_column, gdf_column> trajectory_distance_and_speed(const gdf_column& x,
+                                                                const gdf_column& y,
+                                                                const gdf_column& timestamp,
+                                                                const gdf_column& length,
+                                                                const gdf_column& offset);
 
 /**
  * @brief compute spatial bounding boxes of trajectories
@@ -98,11 +98,14 @@ trajectory_distance_and_speed(const gdf_column& x, const gdf_column& y,
  * there is no such a need; Similar to the discussion in derive_trajectories,
  * temporal 1D bounding box can be retrieved directly
  */
-void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
+void trajectory_spatial_bounds(const gdf_column& x,
+                               const gdf_column& y,
                                const gdf_column& length,
                                const gdf_column& offset,
-                               gdf_column& bbox_x1, gdf_column& bbox_y1,
-                               gdf_column& bbox_x2, gdf_column& bbox_y2);
+                               gdf_column& bbox_x1,
+                               gdf_column& bbox_y1,
+                               gdf_column& bbox_x2,
+                               gdf_column& bbox_y2);
 
 /**
  * @brief Return a subset of trajectories selected by ID
@@ -116,13 +119,13 @@ void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
  * @param[out] out_y: output y coordinates ordered by (in_id,in_ts)
  * @param[out] out_id: output ids ordered by (in_id,in_ts)
  * @param[out] out_timestamp: output timestamp ordered by (in_id,in_ts)
- * 
+ *
  * @return number of trajectories returned
- * 
- * @note the output columns are allocated by this function but they must 
+ *
+ * @note the output columns are allocated by this function but they must
  * be deallocated by the caller.
- * 
- * @note this function is likely to be removed in the future since it is 
+ *
+ * @note this function is likely to be removed in the future since it is
  * redundant to cuDF functionality
  *
  * @note: the API is useful for integrating with cuDF and serial Python APIs,

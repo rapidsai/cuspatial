@@ -16,7 +16,7 @@
 
 #pragma once
 
-typedef struct gdf_column_ gdf_column; // forward declaration
+typedef struct gdf_column_ gdf_column;  // forward declaration
 
 namespace cuspatial {
 
@@ -35,30 +35,31 @@ gdf_column read_uint32_soa(const char *filename);
  * @param[in] filename: file to read
  *
  * @return gdf_column storing its_timestamp data
-**/
+ **/
 gdf_column read_timestamp_soa(const char *filename);
 
 /**
  * @brief read lon/lat from file as two columns; data type is fixed to double (GDF_FLOAT64)
  *
- * @param[in] filename: file name of point data in location_3d layout (lon/lat/alt but alt is omitted)
+ * @param[in] filename: file name of point data in location_3d layout (lon/lat/alt but alt is
+ *omitted)
  *
  * @return gdf_columns storing x and y data
-**/
-std::pair<gdf_column, gdf_column>  read_lonlat_points_soa(const char *filename);
+ **/
+std::pair<gdf_column, gdf_column> read_lonlat_points_soa(const char *filename);
 
 /**
  * @brief read x/y from file as two columns; data type is fixed to double (GDF_FLOAT64)
- * 
+ *
  * @param[in] filename: file name of point data in coordinate_2d layout (x/y)
- * 
+ *
  * @return gdf_columns storing x and y data
-**/
-std::pair<gdf_column, gdf_column>  read_xy_points_soa(const char *filename);
+ **/
+std::pair<gdf_column, gdf_column> read_xy_points_soa(const char *filename);
 
 /**
  * @brief read polygon data from file in SoA format
- * 
+ *
  * data type of vertices is fixed to double (GDF_FLOAT64)
  *
  * @param[in] filename: polygon data filename
@@ -70,9 +71,11 @@ std::pair<gdf_column, gdf_column>  read_xy_points_soa(const char *filename);
  * @param[out] ply_y: y coordinates of concatenated polygons
  *
  * @note: x/y can be lon/lat.
-**/
+ **/
 void read_polygon_soa(const char *filename,
-                      gdf_column* ply_fpos, gdf_column* ply_rpos,
-                      gdf_column* ply_x, gdf_column* ply_y);
+                      gdf_column *ply_fpos,
+                      gdf_column *ply_rpos,
+                      gdf_column *ply_x,
+                      gdf_column *ply_y);
 
-}// namespace cuspatial
+}  // namespace cuspatial

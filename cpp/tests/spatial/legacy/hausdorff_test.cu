@@ -14,62 +14,57 @@
  * limitations under the License.
  */
 
-#include <time.h>
 #include <sys/time.h>
+#include <time.h>
 
 #include <gtest/gtest.h>
 #include <utilities/legacy/error_utils.hpp>
 
-#include <cuspatial/soa_readers.hpp> 
 #include <cuspatial/legacy/hausdorff.hpp>
-#include <utility/utility.hpp> 
-#include "hausdorff_util.h" 
+#include <cuspatial/soa_readers.hpp>
+#include <utility/utility.hpp>
+#include "hausdorff_util.h"
 
-#include <tests/utilities/legacy/cudf_test_utils.cuh>
 #include <tests/utilities/legacy/cudf_test_fixtures.h>
+#include <tests/utilities/legacy/cudf_test_utils.cuh>
 
-struct is_true
-{
-	__device__
-	bool operator()(const thrust::tuple<double, double>& t)
-	{
-		double v1= thrust::get<0>(t);
-		double v2= thrust::get<1>(t);
-		return(fabs(v1-v2)>0.001); //1-meter (uint in km)
-	}
+struct is_true {
+  __device__ bool operator()(const thrust::tuple<double, double> &t)
+  {
+    double v1 = thrust::get<0>(t);
+    double v2 = thrust::get<1>(t);
+    return (fabs(v1 - v2) > 0.001);  // 1-meter (uint in km)
+  }
 };
 
+struct HausdorffTest : public GdfTest {
+  gdf_column pnt_x, pnt_y, cnt;
+  size_t free_mem = 0, total_mem = 0;
 
-struct HausdorffTest : public GdfTest 
-{
-    
-    gdf_column pnt_x,pnt_y,cnt;
-    size_t free_mem = 0, total_mem = 0;
-    
-    void set_initialize(const char *point_fn, const char *cnt_fn)
-    {
-    
-      cudaMemGetInfo(&free_mem, &total_mem);
-      std::cout<<"GPU total_mem="<<total_mem<<std::endl;
-      std::cout<<"beginning GPU free_mem="<<free_mem<<std::endl;
-      
-      struct timeval t0,t1;
-      gettimeofday(&t0, nullptr);
-      
-      auto points=cuspatial::read_xy_points_soa(point_fn);
-      pnt_x=points.first;
-      pnt_y=points.second;
-      cnt=cuspatial::read_uint32_soa(cnt_fn);
-      
-      gettimeofday(&t1, nullptr);
-      float data_load_time=cuspatial::calc_time("point/cnt data loading time=", t0,t1);
-      CUDF_EXPECTS(pnt_x.size>0 && pnt_y.size>0 && cnt.size>=0,"invalid # of points/trajectories");
-      CUDF_EXPECTS(pnt_x.size==pnt_y.size, "x and y columns must have the same size");
-      CUDF_EXPECTS(pnt_y.size >=cnt.size ,"a point set must have at least one point");      
-    }
+  void set_initialize(const char *point_fn, const char *cnt_fn)
+  {
+    cudaMemGetInfo(&free_mem, &total_mem);
+    std::cout << "GPU total_mem=" << total_mem << std::endl;
+    std::cout << "beginning GPU free_mem=" << free_mem << std::endl;
+
+    struct timeval t0, t1;
+    gettimeofday(&t0, nullptr);
+
+    auto points = cuspatial::read_xy_points_soa(point_fn);
+    pnt_x       = points.first;
+    pnt_y       = points.second;
+    cnt         = cuspatial::read_uint32_soa(cnt_fn);
+
+    gettimeofday(&t1, nullptr);
+    float data_load_time = cuspatial::calc_time("point/cnt data loading time=", t0, t1);
+    CUDF_EXPECTS(pnt_x.size > 0 && pnt_y.size > 0 && cnt.size >= 0,
+                 "invalid # of points/trajectories");
+    CUDF_EXPECTS(pnt_x.size == pnt_y.size, "x and y columns must have the same size");
+    CUDF_EXPECTS(pnt_y.size >= cnt.size, "a point set must have at least one point");
+  }
 };
 
-#if 0 // disable until data files are available
+#if 0  // disable until data files are available
 TEST_F(HausdorffTest, hausdorfftest)
 {
     //currently using hard coded paths; to be updated

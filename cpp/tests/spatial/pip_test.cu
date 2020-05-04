@@ -14,68 +14,67 @@
  * limitations under the License.
  */
 
-#include <time.h>
 #include <sys/time.h>
+#include <time.h>
 
 #include <gtest/gtest.h>
-#include <utilities/legacy/error_utils.hpp>
-#include <cuspatial/soa_readers.hpp>
 #include <cuspatial/point_in_polygon.hpp>
+#include <cuspatial/soa_readers.hpp>
+#include <utilities/legacy/error_utils.hpp>
 #include "pip_util.h"
 
-#include <tests/utilities/legacy/cudf_test_utils.cuh>
 #include <tests/utilities/legacy/cudf_test_fixtures.h>
+#include <tests/utilities/legacy/cudf_test_utils.cuh>
 
 template <typename T>
-struct PIPTest : public GdfTest 
-{
-    T * x=nullptr, *y=nullptr;
-    int point_len=-1;
-    gdf_column f_pos,r_pos,poly_x,poly_y,pnt_x,pnt_y;
-    size_t free_mem = 0, total_mem = 0;
-    
-    int set_initialize(const char *poly_filename, const char *point_filename)
-    {
-        cudaMemGetInfo(&free_mem, &total_mem);
-        std::cout<<"GPU total_mem="<<total_mem<<std::endl;
-        std::cout<<"beginning GPU free_mem="<<free_mem<<std::endl;
-        
-        struct timeval t0,t1,t2;
-        gettimeofday(&t0, nullptr);
-        cuspatial::read_polygon_soa(poly_filename,&f_pos,&r_pos,&poly_x,&poly_y);
-        gettimeofday(&t1, nullptr);
-        float ply_load_time=cuspatial::calc_time("polygon data loading time ......",t0,t1);      
-        
-        auto xy_pair=cuspatial::read_lonlat_points_soa(point_filename);   
-        pnt_x=xy_pair.first;
-        pnt_y=xy_pair.second;
-        gettimeofday(&t2, nullptr);
-        float pnt_load_time=cuspatial::calc_time("point data loading time ......",t1,t2); 
-        point_len=pnt_x.size;
-        return (0);
-    }
-    
-    std::vector<uint32_t> exec_gpu_pip()
-    {      
-        gdf_column result_bitmap =
-            cuspatial::point_in_polygon_bitmap(this->pnt_x, this->pnt_y,
-                                               this->f_pos, this->r_pos,
-                                               this->poly_x, this->poly_y); 
-        std::vector<uint32_t> h_result(this->point_len);
-        EXPECT_EQ(cudaMemcpy(h_result.data(), result_bitmap.data,
-                             this->point_len * sizeof(uint32_t),
-                             cudaMemcpyDeviceToHost), cudaSuccess);
-        gdf_column_free(&result_bitmap);
-        return h_result;
-    }
+struct PIPTest : public GdfTest {
+  T *x = nullptr, *y = nullptr;
+  int point_len = -1;
+  gdf_column f_pos, r_pos, poly_x, poly_y, pnt_x, pnt_y;
+  size_t free_mem = 0, total_mem = 0;
+
+  int set_initialize(const char *poly_filename, const char *point_filename)
+  {
+    cudaMemGetInfo(&free_mem, &total_mem);
+    std::cout << "GPU total_mem=" << total_mem << std::endl;
+    std::cout << "beginning GPU free_mem=" << free_mem << std::endl;
+
+    struct timeval t0, t1, t2;
+    gettimeofday(&t0, nullptr);
+    cuspatial::read_polygon_soa(poly_filename, &f_pos, &r_pos, &poly_x, &poly_y);
+    gettimeofday(&t1, nullptr);
+    float ply_load_time = cuspatial::calc_time("polygon data loading time ......", t0, t1);
+
+    auto xy_pair = cuspatial::read_lonlat_points_soa(point_filename);
+    pnt_x        = xy_pair.first;
+    pnt_y        = xy_pair.second;
+    gettimeofday(&t2, nullptr);
+    float pnt_load_time = cuspatial::calc_time("point data loading time ......", t1, t2);
+    point_len           = pnt_x.size;
+    return (0);
+  }
+
+  std::vector<uint32_t> exec_gpu_pip()
+  {
+    gdf_column result_bitmap = cuspatial::point_in_polygon_bitmap(
+      this->pnt_x, this->pnt_y, this->f_pos, this->r_pos, this->poly_x, this->poly_y);
+    std::vector<uint32_t> h_result(this->point_len);
+    EXPECT_EQ(cudaMemcpy(h_result.data(),
+                         result_bitmap.data,
+                         this->point_len * sizeof(uint32_t),
+                         cudaMemcpyDeviceToHost),
+              cudaSuccess);
+    gdf_column_free(&result_bitmap);
+    return h_result;
+  }
 };
 
-//typedef testing::Types<int16_t, int32_t, int64_t, float, double> NumericTypes;
+// typedef testing::Types<int16_t, int32_t, int64_t, float, double> NumericTypes;
 typedef testing::Types<double> NumericTypes;
 
 TYPED_TEST_CASE(PIPTest, NumericTypes);
 
-#if  0 // disable until data files are checked in
+#if 0  // disable until data files are checked in
 TYPED_TEST(PIPTest, piptest)
 {
     std::string pnt_filename =std::string("../../data/locust.location");

@@ -16,7 +16,7 @@
 
 #pragma once
 
-typedef struct gdf_column_ gdf_column; // forward declaration
+typedef struct gdf_column_ gdf_column;  // forward declaration
 
 namespace cuspatial {
 
@@ -36,7 +36,7 @@ namespace cuspatial {
  * @returns gdf_column of type GDF_INT32; the jth bit of the ith element of the
  *          returned GDF_INT32 array is 1 if the ith point is in the jth polygon
  *
- * Note: The # of polygons, i.e., ply_fpos.size cannot exceed 
+ * Note: The # of polygons, i.e., ply_fpos.size cannot exceed
  * 32 == sizeof(uint32_t)*8. It is possible to use larger integers to
  * accommodate more polygons (e.g., 64/128) in the future. For more polygons,
  * the polygons need to be indexed and the problem essentially becomes a spatial

@@ -27,7 +27,8 @@ VERSION_REGEX = re.compile(r"clang-format version ([0-9.]+)")
 # NOTE: populate this list with more top-level dirs as we add more of them to the cuspatial repo
 DEFAULT_DIRS = ["cpp/include",
                 "cpp/src",
-                "cpp/tests"]
+                "cpp/tests",
+                "cpp/benchmarks"]
 
 
 def parse_args():

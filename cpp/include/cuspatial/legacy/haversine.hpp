@@ -16,13 +16,13 @@
 
 #pragma once
 
-typedef struct gdf_column_ gdf_column; // forward declaration
+typedef struct gdf_column_ gdf_column;  // forward declaration
 
 namespace cuspatial {
 
 /**
  * brief Compute Haversine distances among pairs of longitude/latitude locations
- * 
+ *
  * @param[in] x1: longitude coordinates of the starting points
  * @param[in] y1: latitude coordinates of the starting points
  * @param[in] x2: longitude coordinates of the ending points
@@ -31,7 +31,9 @@ namespace cuspatial {
  * @return array of distances in kilometers (km) for all (x1,y1) and (x2,y2)
  *         point pairs
  */
-gdf_column haversine_distance(const gdf_column& x1, const gdf_column& y1,
-                              const gdf_column& x2, const gdf_column& y2);
+gdf_column haversine_distance(const gdf_column& x1,
+                              const gdf_column& y1,
+                              const gdf_column& x2,
+                              const gdf_column& y2);
 
 }  // namespace cuspatial

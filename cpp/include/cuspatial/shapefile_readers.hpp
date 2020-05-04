@@ -16,7 +16,7 @@
 
 #pragma once
 
-typedef struct gdf_column_ gdf_column; // forward declaration
+typedef struct gdf_column_ gdf_column;  // forward declaration
 
 namespace cuspatial {
 
@@ -34,9 +34,11 @@ namespace cuspatial {
  * @param[out] ply_y: y coordinates of concatenated polygons
  *
  * @note: x/y can be lon/lat.
-**/
-void read_polygon_shapefile(const char *filename,
-                      gdf_column* ply_fpos, gdf_column* ply_rpos,
-                      gdf_column* ply_x, gdf_column* ply_y);
+ **/
+void read_polygon_shapefile(const char* filename,
+                            gdf_column* ply_fpos,
+                            gdf_column* ply_rpos,
+                            gdf_column* ply_x,
+                            gdf_column* ply_y);
 
-}// namespace cuspatial
+}  // namespace cuspatial

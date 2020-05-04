@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <string>
 #include <stdexcept>
+#include <string>
 
 namespace cuspatial {
 
@@ -29,21 +29,21 @@ namespace cuspatial {
  *
  *---------------------------------------------------------------------------**/
 struct logic_error : public std::logic_error {
-    logic_error(char const* const message) : std::logic_error(message) {}
-    logic_error(std::string const& message) : std::logic_error(message) {}
+  logic_error(char const* const message) : std::logic_error(message) {}
+  logic_error(std::string const& message) : std::logic_error(message) {}
 };
 
-} // namespace cuspatial
+}  // namespace cuspatial
 
 #define STRINGIFY_DETAIL(x) #x
 #define CUSPATIAL_STRINGIFY(x) STRINGIFY_DETAIL(x)
 
 /**---------------------------------------------------------------------------*
- * @brief Macro for checking (pre-)conditions that throws an exception when  
+ * @brief Macro for checking (pre-)conditions that throws an exception when
  * a condition is violated.
- * 
+ *
  * Example usage:
- * 
+ *
  * @code
  * CUSPATIAL_EXPECTS(lhs->dtype == rhs->dtype, "Column type mismatch");
  * @endcode
@@ -53,11 +53,10 @@ struct logic_error : public std::logic_error {
  * expected to be true
  * @throw cuspatial::logic_error if the condition evaluates to false.
  *---------------------------------------------------------------------------**/
-#define CUSPATIAL_EXPECTS(cond, reason)                                               \
-    (!!(cond))                                                                        \
-        ? static_cast<void>(0)                                                        \
-        : throw cuspatial::logic_error("cuSpatial failure at: " __FILE__              \
-                                       ":" CUSPATIAL_STRINGIFY(__LINE__) ": " reason)
+#define CUSPATIAL_EXPECTS(cond, reason)                                       \
+  (!!(cond)) ? static_cast<void>(0)                                           \
+             : throw cuspatial::logic_error("cuSpatial failure at: " __FILE__ \
+                                            ":" CUSPATIAL_STRINGIFY(__LINE__) ": " reason)
 
 /**---------------------------------------------------------------------------*
  * @brief Indicates that an erroneous code path has been taken.
@@ -69,15 +68,15 @@ struct logic_error : public std::logic_error {
  * ```
  * CUSPATIAL_FAIL("Non-arithmetic operation is not supported");
  * ```
- * 
+ *
  * @param[in] reason String literal description of the reason
  *---------------------------------------------------------------------------**/
-#define CUSPATIAL_FAIL(reason) \
-    throw cuspatial::logic_error("cuSpatial failure at: " __FILE__              \
-                                 ":" CUSPATIAL_STRINGIFY(__LINE__) ": " reason)
+#define CUSPATIAL_FAIL(reason)                                   \
+  throw cuspatial::logic_error("cuSpatial failure at: " __FILE__ \
+                               ":" CUSPATIAL_STRINGIFY(__LINE__) ": " reason)
 
 namespace cuspatial {
 namespace detail {
 
-} // namespace detail
-} // namespace cuspatial
+}  // namespace detail
+}  // namespace cuspatial
