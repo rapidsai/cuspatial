@@ -92,13 +92,11 @@ cpdef cpp_haversine_distance(x1, y1, x2, y2):
     return result
 
 def lonlat_to_cartesian(
-    origin_lon,
-    origin_lat,
+    double origin_lon,
+    double origin_lat,
     Column input_lon,
     Column input_lat
 ):
-    cdef double c_origin_lon = np.float64(origin_lon)
-    cdef double c_origin_lat = np.float64(origin_lat)
     cdef column_view c_input_lon = input_lon.view()
     cdef column_view c_input_lat = input_lat.view()
 
@@ -107,8 +105,8 @@ def lonlat_to_cartesian(
     with nogil:
         result = move(
             cpp_lonlat_to_cartesian(
-                c_origin_lon,
-                c_origin_lat,
+                origin_lon,
+                origin_lat,
                 c_input_lon,
                 c_input_lat
             )
