@@ -15,6 +15,7 @@
 - PR #170 Update coordinate_transform.hpp to libcudf++
 - PR #183 Add libcuspatial benchmark scaffolding
 - PR #186 Move haversine.hpp files to legacy
+- PR #195 Fix PIP docs
 
 ## Bug Fixes
 
