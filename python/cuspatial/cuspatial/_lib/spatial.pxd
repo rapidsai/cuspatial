@@ -5,6 +5,7 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
+from cudf._lib.legacy.cudf cimport *
 from libcpp.pair cimport pair
 
 cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
@@ -17,7 +18,7 @@ cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
         const gdf_column& ply_y
     ) except +
 
-cdef extern from "haversine.hpp" namespace "cuspatial" nogil:
+cdef extern from "legacy/haversine.hpp" namespace "cuspatial" nogil:
     gdf_column haversine_distance(
         const gdf_column& x1,
         const gdf_column& y1,
