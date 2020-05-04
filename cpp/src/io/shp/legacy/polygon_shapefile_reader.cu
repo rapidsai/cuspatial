@@ -24,7 +24,7 @@
 #include <cudf/types.h>
 #include <cudf/legacy/column.hpp>
 #include <cudf/utilities/error.hpp>
-#include <cuspatial/shapefile_readers.hpp>
+#include <cuspatial/legacy/shapefile_readers.hpp>
 #include <cuspatial/error.hpp>
 #include <utility/utility.hpp>
 

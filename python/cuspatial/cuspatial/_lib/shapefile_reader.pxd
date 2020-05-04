@@ -8,7 +8,7 @@
 
 from cudf._lib.legacy.cudf cimport gdf_column
 
-cdef extern from "shapefile_readers.hpp" namespace "cuspatial" nogil:
+cdef extern from "legacy/shapefile_readers.hpp" namespace "cuspatial" nogil:
     cdef gdf_column read_polygon_shapefile(
         const char *pnt_fn,
         gdf_column *f_pos,
