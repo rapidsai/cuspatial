@@ -15,6 +15,7 @@
 - PR #170 Update coordinate_transform.hpp to libcudf++
 - PR #183 Add libcuspatial benchmark scaffolding
 - PR #186 Move haversine.hpp files to legacy
+- PR #190 Port coordinate_transform.hpp cython files
 - PR #171 Update trajectory.hpp to libcudf++
 
 ## Bug Fixes

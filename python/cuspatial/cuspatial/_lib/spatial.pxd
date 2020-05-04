@@ -1,9 +1,4 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
-
-# cython: profile=False
-# distutils: language = c++
-# cython: embedsignature = True
-# cython: language_level = 3
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
 from cudf._lib.legacy.cudf cimport *
 from libcpp.pair cimport pair
@@ -16,14 +11,6 @@ cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
         const gdf_column& ply_rpos,
         const gdf_column& ply_x,
         const gdf_column& ply_y
-    ) except +
-
-cdef extern from "legacy/coordinate_transform.hpp" namespace "cuspatial" nogil:
-    cdef pair[gdf_column, gdf_column] lonlat_to_coord(
-        const gdf_scalar& cam_x,
-        const gdf_scalar& cam_y,
-        const gdf_column& in_x,
-        const gdf_column& in_y
     ) except +
 
 cdef extern from "legacy/haversine.hpp" namespace "cuspatial" nogil:
