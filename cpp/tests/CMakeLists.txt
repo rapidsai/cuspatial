@@ -109,11 +109,11 @@ set(LEGACY_HAUSDORFF_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/hausdorff_compare.cu")
 ConfigureTest(LEGACY_HAUSDORFF_TEST "${LEGACY_HAUSDORFF_TEST_SRC}")
 
-set(POINT_IN_POLYGON_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_toy.cu"
-    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_test.cu"
-    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_compare.cu")
-ConfigureTest(POINT_IN_POLYGON_TEST "${POINT_IN_POLYGON_TEST_SRC}")
+set(LEGACY_POINT_IN_POLYGON_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/pip_toy.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/pip_test.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/pip_compare.cu")
+ConfigureTest(LEGACY_POINT_IN_POLYGON_TEST "${LEGACY_POINT_IN_POLYGON_TEST_SRC}")
 
 set(LEGACY_SHAPEFILE_POLYGON_READER_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/io/legacy/read_shapefile_polygon_test.cu")

@@ -2,7 +2,7 @@ from .core import interpolate
 from .core.gis import (
     directed_hausdorff_distance,
     haversine_distance,
-    lonlat_to_xy_km_coordinates,
+    lonlat_to_cartesian,
     point_in_polygon_bitmap,
     window_points,
 )
