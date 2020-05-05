@@ -16,6 +16,7 @@
 - PR #183 Add libcuspatial benchmark scaffolding
 - PR #186 Move haversine.hpp files to legacy
 - PR #190 Port coordinate_transform.hpp cython files
+- PR #191 Move point_in_polygon.hpp files to legacy
 
 ## Bug Fixes
 

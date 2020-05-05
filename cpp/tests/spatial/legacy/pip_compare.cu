@@ -19,7 +19,7 @@
 
 #include <gtest/gtest.h>
 #include <utilities/legacy/error_utils.hpp>
-#include <cuspatial/point_in_polygon.hpp>
+#include <cuspatial/legacy/point_in_polygon.hpp>
 #include "pip_util.h"
 
 #include <tests/utilities/legacy/cudf_test_utils.cuh>
