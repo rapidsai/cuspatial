@@ -16,5 +16,5 @@ GIS
 ---
 .. automethod:: cuspatial.core.gis.directed_hausdorff_distance 
 .. automethod:: cuspatial.core.gis.haversine_distance
-.. automethod:: cuspatial.core.gis.lonlat_to_xy_km_coordinates
+.. automethod:: cuspatial.core.gis.lonlat_to_cartesian
 .. automethod:: cuspatial.core.gis.window_points
