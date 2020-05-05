@@ -273,8 +273,7 @@ if(BUILD_BENCHMARKS)
   if(GBENCH_FOUND)
     message(STATUS "Google C++ Benchmarking Framework (Google Benchmark) found in ${GBENCH_ROOT}")
     include_directories(${GBENCH_INCLUDE_DIR})
-    # TODO: Uncomment this when benchmarks folder exists
-    # add_subdirectory(${CMAKE_SOURCE_DIR}/benchmarks)
+    add_subdirectory(${CMAKE_SOURCE_DIR}/benchmarks)
   else()
     message(AUTHOR_WARNING "Google C++ Benchmarking Framework (Google Benchmark) not found: automated tests are disabled.")
   endif(GBENCH_FOUND)
@@ -332,9 +331,10 @@ add_library(cuspatial SHARED
             src/io/soa/timestamp_soa_reader.cu
             src/query/spatial_window_points.cu
             src/spatial/point_in_polygon.cu
-            src/spatial/haversine.cu
+            src/spatial/legacy/haversine.cu
             src/spatial/legacy/hausdorff.cu
             src/spatial/legacy/lonlat_to_coordinate.cu
+            src/spatial/lonlat_to_cartesian.cu
             src/trajectory/legacy/trajectory_spatial_bound.cu
             src/trajectory/legacy/trajectory_distance_speed.cu
             src/trajectory/legacy/derive_trajectories.cu
