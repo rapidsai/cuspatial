@@ -31,7 +31,7 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     if(BUILD_LEGACY_TESTS OR (NOT is_legacy_test))
         add_executable(${CMAKE_TEST_NAME}
                     ${CMAKE_TEST_SRC})
-        set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE OFF)
+        set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
         target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial cudf
                             cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES} NVCategory
                             NVStrings nvrtc gdal)
