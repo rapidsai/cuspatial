@@ -3,7 +3,7 @@
 from cudf._lib.legacy.cudf cimport *
 from libcpp.pair cimport pair
 
-cdef extern from "point_in_polygon.hpp" namespace "cuspatial" nogil:
+cdef extern from "legacy/point_in_polygon.hpp" namespace "cuspatial" nogil:
     cdef gdf_column point_in_polygon_bitmap(
         const gdf_column& pnt_x,
         const gdf_column& pnt_y,

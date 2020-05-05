@@ -329,14 +329,14 @@ endif(CONDA_LINK_DIRS)
 
 add_library(cuspatial SHARED
             src/interpolate/cubic_spline.cu
-            src/io/shp/polygon_shapefile_reader.cpp
-            src/io/shp/polygon_shapefile_reader.cu
+            src/io/shp/legacy/polygon_shapefile_reader.cpp
+            src/io/shp/legacy/polygon_shapefile_reader.cu
             src/io/soa/polygon_soa_reader.cu
             src/io/soa/point_soa_reader.cu
             src/io/soa/uint32_soa_reader.cu
             src/io/soa/timestamp_soa_reader.cu
             src/query/spatial_window_points.cu
-            src/spatial/point_in_polygon.cu
+            src/spatial/legacy/point_in_polygon.cu
             src/spatial/legacy/haversine.cu
             src/spatial/legacy/hausdorff.cu
             src/spatial/legacy/lonlat_to_coordinate.cu
