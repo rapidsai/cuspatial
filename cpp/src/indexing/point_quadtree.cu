@@ -87,7 +87,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
           thrust::constant_iterator<int>(1), d_pnt_runkey, d_pnt_runlen)
           .first -
       d_pnt_runkey;
-  std::cout << "num_top_quads=" << num_top_quads << std::endl;
+  std::cerr << "num_top_quads=" << num_top_quads << std::endl;
 
   // allocate sufficient GPU memory for "full quadrants" (Secection 4.1 of ref.)
   // assuming num_level*num_top_quads is far less than num_pnt, allocating
@@ -163,7 +163,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
     lev_bpos[k] = begin_pos;
     lev_epos[k] = end_pos;
 
-    std::cout << "lev=" << k << " begin_pos=" << begin_pos
+    std::cerr << "lev=" << k << " begin_pos=" << begin_pos
               << " end_pos=" << end_pos << " nk=" << nk << " nn=" << nn
               << std::endl;
     begin_pos = end_pos;
@@ -232,7 +232,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
   // Note: root node (size is 1) not counted in num_count_nodes
   CUDF_EXPECTS(num_count_nodes == begin_pos,
                "number of quadtree nodes veryifcation failed");
-  std::cout << "num_count_nodes=" << num_count_nodes << std::endl;
+  std::cerr << "num_count_nodes=" << num_count_nodes << std::endl;
 
   /*
    *delete oversized nodes for memroy efficiency
@@ -248,7 +248,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
 
   int num_parent_nodes = 0;
   for (uint32_t k = 1; k < num_level; k++) num_parent_nodes += lev_num[k];
-  std::cout << "num_parent_nodes=" << num_parent_nodes << std::endl;
+  std::cerr << "num_parent_nodes=" << num_parent_nodes << std::endl;
 
   // five columns in the quadtree structure
   std::unique_ptr<cudf::column> key_col, lev_col, sign_col, length_col,
@@ -269,7 +269,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
                            d_pnt_qtclen + num_parent_nodes, d_pnt_tmppos);
     size_t num_child_nodes = thrust::reduce(
         exec_policy->on(stream), d_pnt_qtclen, d_pnt_qtclen + num_parent_nodes);
-    std::cout << "num_child_nodes=" << num_child_nodes << std::endl;
+    std::cerr << "num_child_nodes=" << num_child_nodes << std::endl;
 
     rmm::device_buffer *db_pnt_parentpos =
         new rmm::device_buffer(num_child_nodes * sizeof(uint32_t), stream, mr);
@@ -313,7 +313,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
 
     num_parent_nodes -= num_invalid_parent_nodes;
 
-    std::cout << "after:num_parent_nodes=" << num_parent_nodes << std::endl;
+    std::cerr << "after:num_parent_nodes=" << num_parent_nodes << std::endl;
 
     // line 4 of algorithm in Fig. 5 in ref.
     rmm::device_buffer *db_pnt_templen =
@@ -331,7 +331,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
                           iter_in + num_child_nodes,
                           remove_discard(d_pnt_templen, min_size)) -
         iter_in;
-    std::cout << "num_valid_nodes=" << num_valid_nodes << std::endl;
+    std::cerr << "num_valid_nodes=" << num_valid_nodes << std::endl;
 
     delete db_pnt_templen;
     db_pnt_templen = nullptr;
@@ -340,9 +340,9 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
 
     // add back level 1 nodes
     num_valid_nodes += lev_num[1];
-    std::cout << "num_invalid_parent_nodes=" << num_invalid_parent_nodes
+    std::cerr << "num_invalid_parent_nodes=" << num_invalid_parent_nodes
               << std::endl;
-    std::cout << "num_valid_nodes=" << num_valid_nodes << std::endl;
+    std::cerr << "num_valid_nodes=" << num_valid_nodes << std::endl;
 
     /*
      *preparing the key column for output
@@ -453,7 +453,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
             d_pnt_tmp_lpos, !thrust::placeholders::_1) -
         d_pnt_tmp_lpos;
 
-    std::cout << "num_leaf_nodes=" << num_leaf_nodes << std::endl;
+    std::cerr << "num_leaf_nodes=" << num_leaf_nodes << std::endl;
 
     rmm::device_buffer *db_pnt_tmp_seq =
         new rmm::device_buffer(num_valid_nodes * sizeof(uint32_t), stream, mr);
@@ -576,7 +576,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(
     db_pnt_qtclen = nullptr;
   } else {
     uint32_t num_valid_nodes = num_top_quads;
-    std::cout << "quadtree:num_valid_nodes=" << num_valid_nodes << std::endl;
+    std::cerr << "quadtree:num_valid_nodes=" << num_valid_nodes << std::endl;
     key_col = cudf::make_numeric_column(
         cudf::data_type(cudf::type_id::INT32), num_valid_nodes,
         cudf::mask_state::UNALLOCATED, stream, mr);
@@ -664,9 +664,9 @@ struct quadtree_point_processor {
   template <typename T,
             std::enable_if_t<std::is_floating_point<T>::value> * = nullptr>
   std::unique_ptr<cudf::experimental::table> operator()(
-      cudf::mutable_column_view& x, cudf::mutable_column_view& y, double const x1,
-      double const y1, double const x2, double const y2, double const scale,
-      int32_t const num_level, int32_t const min_size,
+      cudf::mutable_column_view &x, cudf::mutable_column_view &y,
+      double const x1, double const y1, double const x2, double const y2,
+      double const scale, int32_t const num_level, int32_t const min_size,
       rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
     SBBox<double> bbox(thrust::make_tuple(x1, y1), thrust::make_tuple(x2, y2));
 
@@ -680,9 +680,9 @@ struct quadtree_point_processor {
   template <typename T,
             std::enable_if_t<!std::is_floating_point<T>::value> * = nullptr>
   std::unique_ptr<cudf::experimental::table> operator()(
-      cudf::mutable_column_view& x, cudf::mutable_column_view& y, double const x1,
-      double const y1, double const x2, double const y2, double const scale,
-      int32_t const num_level, int32_t const min_size,
+      cudf::mutable_column_view &x, cudf::mutable_column_view &y,
+      double const x1, double const y1, double const x2, double const y2,
+      double const scale, int32_t const num_level, int32_t const min_size,
       rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
     CUDF_FAIL("Non-floating point operation is not supported");
   }
@@ -706,24 +706,25 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(
 
 }  // namespace detail
 
-std::unique_ptr<cudf::experimental::table> quadtree_on_points(
-    cudf::mutable_column_view x, cudf::mutable_column_view y, double const x1,
-    double const y1, double const x2, double const y2, double const scale,
-    int32_t const num_level, int32_t const min_size,
-    rmm::mr::device_memory_resource *mr) {
-  CUDF_EXPECTS(x.size() == y.size(),
-               "x and y columns might have the same lenght");
-  CUDF_EXPECTS(x.size() > 0, "point dataset can not be empty");
-  CUDF_EXPECTS(x1 < x2 && y1 < y2, "invalid bounding box (x1,y1,x2,y2)");
-  CUDF_EXPECTS(scale > 0, "scale must be positive");
-  CUDF_EXPECTS(num_level >= 0 && num_level < 16,
-               "maximum of levels might be in [0,16)");
-  CUDF_EXPECTS(
-      min_size > 0,
-      "minimum number of points for a non-leaf node must be larger than zero");
+// std::unique_ptr<cudf::experimental::table> quadtree_on_points(
+//     cudf::mutable_column_view x, cudf::mutable_column_view y, double const
+//     x1, double const y1, double const x2, double const y2, double const
+//     scale, int32_t const num_level, int32_t const min_size,
+//     rmm::mr::device_memory_resource *mr) {
+//   CUDF_EXPECTS(x.size() == y.size(),
+//                "x and y columns might have the same lenght");
+//   CUDF_EXPECTS(x.size() > 0, "point dataset can not be empty");
+//   CUDF_EXPECTS(x1 < x2 && y1 < y2, "invalid bounding box (x1,y1,x2,y2)");
+//   CUDF_EXPECTS(scale > 0, "scale must be positive");
+//   CUDF_EXPECTS(num_level >= 0 && num_level < 16,
+//                "maximum of levels might be in [0,16)");
+//   CUDF_EXPECTS(
+//       min_size > 0,
+//       "minimum number of points for a non-leaf node must be larger than
+//       zero");
 
-  return detail::quadtree_on_points(x, y, x1, y1, x2, y2, scale, num_level,
-                                    min_size, mr, 0);
-}
+//   return detail::quadtree_on_points(x, y, x1, y1, x2, y2, scale, num_level,
+//                                     min_size, mr, 0);
+// }
 
 }  // namespace cuspatial
