@@ -22,6 +22,7 @@
 - PR #193 Move shapefile_readers.hpp files to legacy
 - PR #196 Move utilities/utilities.hpp to legacy
 - PR #171 Update trajectory.hpp to libcudf++
+- PR #195 Fix PIP docs
 
 ## Bug Fixes
 
