@@ -26,7 +26,7 @@
 #include <cudf/utilities/error.hpp>
 #include <cuspatial/legacy/shapefile_readers.hpp>
 #include <cuspatial/error.hpp>
-#include <utility/utility.hpp>
+#include <utility/legacy/utility.hpp>
 
 namespace cuspatial
 {
