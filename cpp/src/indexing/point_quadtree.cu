@@ -67,21 +67,29 @@ inline std::unique_ptr<cudf::column> make_fixed_width_column(
       cudf::mask_state::UNALLOCATED, stream, mr);
 }
 
-template <typename T, typename PointToKeyFunc>
-inline std::unique_ptr<cudf::column> compute_z_keys(
-    cudf::mutable_column_view &x, cudf::mutable_column_view &y,
-    cudaStream_t stream, PointToKeyFunc func) {
-  auto policy = rmm::exec_policy(stream);
-  auto points = make_zip_iterator(x.begin<T>(), y.begin<T>());
-  auto keys = make_fixed_width_column<int32_t>(x.size(), stream);
-
+template <typename T>
+inline rmm::device_vector<uint32_t> compute_point_keys(
+    cudf::mutable_column_view &x, cudf::mutable_column_view &y, double const x1,
+    double const y1, double const x2, double const y2, double const scale,
+    cudf::size_type const num_levels, cudaStream_t stream) {
   // Compute Morton codes (z-order) for each point
-  thrust::transform(policy->on(stream), points, points + x.size(),
-                    keys->mutable_view().begin<uint32_t>(), func);
+  auto policy = rmm::exec_policy(stream);
+  rmm::device_vector<uint32_t> keys(x.size());
+  auto points = make_zip_iterator(x.begin<T>(), y.begin<T>());
+  thrust::transform(
+      policy->on(stream), points, points + x.size(), keys.begin(),
+      [x1, y1, x2, y2, num_levels, scale] __device__(auto const &point) {
+        T x, y;
+        thrust::tie(x, y) = point;
+        if (x < x1 || x > x2 || y < y1 || y > y2) {
+          // If the point is outside the bbox, return a max_level key
+          return static_cast<uint32_t>((1 << (2 * num_levels)) - 1);
+        }
+        return z_order((x - x1) / scale, (y - y1) / scale);
+      });
+
   // Sort the points and codes
-  thrust::sort_by_key(policy->on(stream),
-                      keys->mutable_view().begin<uint32_t>(),
-                      keys->mutable_view().end<uint32_t>(), points);
+  thrust::sort_by_key(policy->on(stream), keys.begin(), keys.end(), points);
 
   return keys;
 }
@@ -196,9 +204,9 @@ inline rmm::device_vector<uint32_t> compute_parent_positions(
     rmm::device_vector<uint32_t> const &quad_child_count,
     cudf::size_type const num_parent_nodes,
     cudf::size_type const num_child_nodes, cudaStream_t stream) {
-  // compute parent node start positions
+  // Compute parent node start positions
   auto policy = rmm::exec_policy(stream);
-  // wrap in an IEFE so `position_map` is freed on return
+  // Wraped in an IIFE so `position_map` is freed on return
   auto parent_pos = [&]() {
     rmm::device_vector<uint32_t> position_map(num_parent_nodes);
     // line 1 of algorithm in Fig. 5 in ref.
@@ -574,28 +582,33 @@ inline std::unique_ptr<cudf::experimental::table> construct_quadtree(
     double const y1, double const x2, double const y2, double const scale,
     cudf::size_type const num_levels, cudf::size_type const min_size,
     rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
-  // Compute z-order for each point
-  auto point_keys = compute_z_keys<T>(
-      x, y, stream,
-      [x1, y1, x2, y2, num_levels, scale] __device__(auto const &point) {
-        T x, y;
-        thrust::tie(x, y) = point;
-        if (x < x1 || x > x2 || y < y1 || y > y2) {
-          // If the point is outside the bbox, return a max_level key
-          return static_cast<uint32_t>((1 << (2 * num_levels)) - 1);
-        }
-        return z_order((x - x1) / scale, (y - y1) / scale);
-      });
+  // Compute point keys and sort into top-level quadrants
+  // (i.e. quads at level `num_levels - 1`)
+  cudf::size_type num_top_quads{};
+  rmm::device_vector<uint32_t> quad_keys{};
+  rmm::device_vector<uint32_t> quad_point_count{};
+  // Wrapped in IIFE so `point_keys` is freed on return
+  std::tie(num_top_quads, quad_keys, quad_point_count) = [&]() {
+    // Compute Morton code (z-order) keys for each point
+    auto point_keys =
+        compute_point_keys<T>(x, y, x1, y1, x2, y2, scale, num_levels, stream);
 
-  rmm::device_vector<uint32_t> quad_keys(x.size());
-  rmm::device_vector<uint32_t> quad_point_count(x.size());
+    rmm::device_vector<uint32_t> quad_keys(x.size());
+    rmm::device_vector<uint32_t> quad_point_count(x.size());
+
+    // Construct quadrants at the finest level of detail,
+    // i.e. the quadtree nodes furthest from the root.
+    auto num_top_quads = compute_full_quads(
+        point_keys.begin(), point_keys.end(),
+        thrust::make_constant_iterator<uint32_t>(1), quad_keys.begin(),
+        quad_point_count.begin(), thrust::plus<uint32_t>(), stream);
+
+    return std::make_tuple(num_top_quads, quad_keys, quad_point_count);
+  }();
+
+  // Allocate this here so there's a chance RMM reuses
+  // the temporary memory allocated in the closure above
   rmm::device_vector<uint32_t> quad_child_count(x.size());
-
-  auto const num_top_quads = compute_full_quads(
-      point_keys->view().template begin<uint32_t>(),
-      point_keys->view().template end<uint32_t>(),
-      thrust::make_constant_iterator<uint32_t>(1), quad_keys.begin(),
-      quad_point_count.begin(), thrust::plus<uint32_t>(), stream);
 
   std::vector<uint32_t> b_pos{};
   std::vector<uint32_t> e_pos{};
