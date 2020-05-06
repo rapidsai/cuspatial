@@ -326,7 +326,6 @@ endif(CONDA_LINK_DIRS)
 
 add_library(cuspatial SHARED
             src/indexing/point_quadtree.cu
-            src/indexing/point_quadtree2.cu
             src/interpolate/cubic_spline.cu
             src/io/shp/legacy/polygon_shapefile_reader.cpp
             src/io/shp/legacy/polygon_shapefile_reader.cu
