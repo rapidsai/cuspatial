@@ -346,7 +346,7 @@ add_library(cuspatial SHARED
             src/trajectory/legacy/trajectory_distance_speed.cu
             src/trajectory/legacy/derive_trajectories.cu
             src/trajectory/legacy/subset_trajectories.cu
-            src/utility/utility.cpp)
+            src/utility/legacy/utility.cpp)
 
 #Override RPATH for cuspatial
 SET_TARGET_PROPERTIES(cuspatial PROPERTIES BUILD_RPATH "\$ORIGIN")
