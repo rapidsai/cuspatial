@@ -48,12 +48,7 @@ namespace {
 template <typename Vector>
 inline auto shrink_vector(Vector &v, cudf::size_type size) {
   v.resize(size, 0);
-  // if (v.size() > static_cast<size_t>(size)) {
-  //   v.resize(size, 0);
-  //   v.shrink_to_fit();
-  // } else if (v.capacity() > static_cast<size_t>(size)) {
-  //   v.shrink_to_fit();
-  // }
+  v.shrink_to_fit();
   return v;
 }
 
@@ -62,16 +57,6 @@ inline auto make_zip_iterator(Ts... its) {
   return thrust::make_zip_iterator(
       thrust::make_tuple(std::forward<Ts>(its)...));
 }
-
-template <typename T>
-inline T *mutable_begin(rmm::device_vector<T> const &v) {
-  return const_cast<T *>(v.data().get());
-}
-
-// template <typename T>
-// inline T *mutable_end(rmm::device_vector<T> const &v) {
-//   return const_cast<T *>(v.data().get() + v.size());
-// }
 
 template <typename T>
 inline std::unique_ptr<cudf::column> make_fixed_width_column(
@@ -83,7 +68,7 @@ inline std::unique_ptr<cudf::column> make_fixed_width_column(
 }
 
 template <typename T, typename PointToKeyFunc>
-inline std::unique_ptr<cudf::column> compute_point_keys(
+inline std::unique_ptr<cudf::column> compute_z_keys(
     cudf::mutable_column_view &x, cudf::mutable_column_view &y,
     cudaStream_t stream, PointToKeyFunc func) {
   auto policy = rmm::exec_policy(stream);
@@ -92,10 +77,11 @@ inline std::unique_ptr<cudf::column> compute_point_keys(
 
   // Compute Morton codes (z-order) for each point
   thrust::transform(policy->on(stream), points, points + x.size(),
-                    keys->mutable_view().begin<int32_t>(), func);
+                    keys->mutable_view().begin<uint32_t>(), func);
   // Sort the points and codes
-  thrust::sort_by_key(policy->on(stream), keys->mutable_view().begin<int32_t>(),
-                      keys->mutable_view().end<int32_t>(), points);
+  thrust::sort_by_key(policy->on(stream),
+                      keys->mutable_view().begin<uint32_t>(),
+                      keys->mutable_view().end<uint32_t>(), points);
 
   return keys;
 }
@@ -124,17 +110,18 @@ struct tuple_sum {
 };
 
 template <typename KeysIterator, typename ValsIterator>
-inline std::tuple<cudf::size_type, cudf::size_type,
-                  std::vector<cudf::size_type>, std::vector<cudf::size_type>>
-compute_full_levels(int32_t const num_levels, int32_t const num_top_quads,
+inline std::tuple<cudf::size_type, cudf::size_type, std::vector<uint32_t>,
+                  std::vector<uint32_t>>
+compute_full_levels(cudf::size_type const num_levels,
+                    cudf::size_type const num_top_quads,
                     KeysIterator keys_begin,
                     ValsIterator quad_point_count_begin,
                     ValsIterator quad_child_count_begin, cudaStream_t stream) {
   // begin/end offsets
-  cudf::size_type begin_pos{0};
-  cudf::size_type end_pos{num_top_quads};
-  std::vector<cudf::size_type> b_pos(num_levels);
-  std::vector<cudf::size_type> e_pos(num_levels);
+  cudf::size_type begin{0};
+  cudf::size_type end{num_top_quads};
+  std::vector<uint32_t> b_pos(num_levels);
+  std::vector<uint32_t> e_pos(num_levels);
 
   // iterator for the parent level's quad node keys
   auto parent_keys = thrust::make_transform_iterator(
@@ -146,146 +133,153 @@ compute_full_levels(int32_t const num_levels, int32_t const num_top_quads,
 
   // iterator for the current level's initial values
   auto child_values = make_zip_iterator(
-      quad_point_count_begin, thrust::make_constant_iterator<int32_t>(1));
+      quad_point_count_begin, thrust::make_constant_iterator<uint32_t>(1));
 
-  for (cudf::size_type i = num_levels - 1; i >= 0; --i) {
-    auto num_nodes =
-        compute_full_quads(parent_keys + begin_pos, parent_keys + end_pos,
-                           child_values + begin_pos, keys_begin + end_pos,
-                           child_nodes + end_pos, tuple_sum<int32_t>{}, stream);
-    e_pos[i] = end_pos;
-    b_pos[i] = begin_pos;
-    begin_pos = end_pos;
-    end_pos += num_nodes;
+  for (cudf::size_type level = num_levels - 1; level >= 0; --level) {
+    auto range = compute_full_quads(
+        parent_keys + begin, parent_keys + end, child_values + begin,
+        keys_begin + end, child_nodes + end, tuple_sum<uint32_t>{}, stream);
+    e_pos[level] = end;
+    b_pos[level] = begin;
+    begin = end;
+    end += range;
   }
 
   return std::make_tuple(
       // count the number of parent nodes (excluding leaf nodes)
-      end_pos - num_top_quads - 1,  //
-      end_pos, b_pos, e_pos);
+      end - num_top_quads - 1,  //
+      end, b_pos, e_pos);
 }
 
-inline std::tuple<rmm::device_vector<uint32_t>, rmm::device_vector<int32_t>,
-                  rmm::device_vector<int32_t>, rmm::device_vector<int8_t>>
-reverse_quadtree_order(rmm::device_vector<uint32_t> const &quad_keys_in,
-                       rmm::device_vector<int32_t> const &quad_point_count_in,
-                       rmm::device_vector<int32_t> const &quad_child_count_in,
-                       std::vector<int32_t> b_pos, std::vector<int32_t> e_pos,
-                       cudf::size_type const num_levels, cudaStream_t stream) {
+inline std::tuple<rmm::device_vector<uint32_t>, rmm::device_vector<uint32_t>,
+                  rmm::device_vector<uint32_t>, rmm::device_vector<int8_t>>
+reverse_tree_levels(rmm::device_vector<uint32_t> const &quad_keys_in,
+                    rmm::device_vector<uint32_t> const &quad_point_count_in,
+                    rmm::device_vector<uint32_t> const &quad_child_count_in,
+                    std::vector<uint32_t> b_pos, std::vector<uint32_t> e_pos,
+                    cudf::size_type const num_levels, cudaStream_t stream) {
   auto policy = rmm::exec_policy(stream);
   rmm::device_vector<uint32_t> quad_keys(quad_keys_in.size());
   rmm::device_vector<int8_t> quad_level(quad_keys_in.size());
-  rmm::device_vector<int32_t> quad_point_count(quad_point_count_in.size());
-  rmm::device_vector<int32_t> quad_child_count(quad_child_count_in.size());
+  rmm::device_vector<uint32_t> quad_point_count(quad_point_count_in.size());
+  rmm::device_vector<uint32_t> quad_child_count(quad_child_count_in.size());
   cudf::size_type offset{0};
 
-  for (cudf::size_type i{0}; i < num_levels; ++i) {
-    std::cerr << "i=" << i << ", offset=" << offset
-              << ", range=" << (e_pos[i] - b_pos[i]) << ", bpos=" << b_pos[i]
-              << ", epos=" << e_pos[i] << std::endl;
-
+  for (cudf::size_type level{0}; level < num_levels; ++level) {
+    cudf::size_type end = e_pos[level];
+    cudf::size_type begin = b_pos[level];
+    cudf::size_type range = e_pos[level] - b_pos[level];
     thrust::fill(policy->on(stream), quad_level.begin() + offset,
-                 quad_level.begin() + offset + (e_pos[i] - b_pos[i]), i);
-    thrust::copy(policy->on(stream), quad_keys_in.begin() + b_pos[i],
-                 quad_keys_in.begin() + e_pos[i], quad_keys.begin() + offset);
-    thrust::copy(policy->on(stream), quad_point_count_in.begin() + b_pos[i],
-                 quad_point_count_in.begin() + e_pos[i],
+                 quad_level.begin() + offset + range, level);
+    thrust::copy(policy->on(stream), quad_keys_in.begin() + begin,
+                 quad_keys_in.begin() + end, quad_keys.begin() + offset);
+    thrust::copy(policy->on(stream), quad_point_count_in.begin() + begin,
+                 quad_point_count_in.begin() + end,
                  quad_point_count.begin() + offset);
-    thrust::copy(policy->on(stream), quad_child_count_in.begin() + b_pos[i],
-                 quad_child_count_in.begin() + e_pos[i],
+    thrust::copy(policy->on(stream), quad_child_count_in.begin() + begin,
+                 quad_child_count_in.begin() + end,
                  quad_child_count.begin() + offset);
-    offset += (e_pos[i] - b_pos[i]);
+    // thrust::reduce(policy->on(stream), quad_point_count_in.begin() + begin,
+    //                quad_point_count_in.begin() + end);
+    offset += range;
   }
 
   // Shrink vectors' underlying device allocations to reduce peak memory usage
-  return std::make_tuple(shrink_vector(quad_keys, offset),
-                         shrink_vector(quad_point_count, offset),
-                         shrink_vector(quad_child_count, offset),
-                         shrink_vector(quad_level, offset));
+  quad_keys.shrink_to_fit();
+  quad_point_count.shrink_to_fit();
+  quad_child_count.shrink_to_fit();
+  quad_level.shrink_to_fit();
+
+  return std::make_tuple(quad_keys, quad_point_count, quad_child_count,
+                         quad_level);
 }
 
-inline rmm::device_vector<int32_t> compute_parent_positions(
-    rmm::device_vector<int32_t> const &quad_child_count,
+inline rmm::device_vector<uint32_t> compute_parent_positions(
+    rmm::device_vector<uint32_t> const &quad_child_count,
     cudf::size_type const num_parent_nodes,
     cudf::size_type const num_child_nodes, cudaStream_t stream) {
   // compute parent node start positions
   auto policy = rmm::exec_policy(stream);
+  // wrap in an IEFE so `position_map` is freed on return
   auto parent_pos = [&]() {
-    rmm::device_vector<int32_t> position_map(num_parent_nodes);
+    rmm::device_vector<uint32_t> position_map(num_parent_nodes);
     // line 1 of algorithm in Fig. 5 in ref.
     thrust::exclusive_scan(policy->on(stream), quad_child_count.begin(),
                            quad_child_count.begin() + num_parent_nodes,
                            position_map.begin());
     // line 2 of algorithm in Fig. 5 in ref.
-    rmm::device_vector<int32_t> parent_pos(num_child_nodes);
+    rmm::device_vector<uint32_t> parent_pos(num_child_nodes);
     thrust::scatter(policy->on(stream), thrust::make_counting_iterator(0),
                     thrust::make_counting_iterator(0) + num_parent_nodes,
                     position_map.begin(), parent_pos.begin());
     return parent_pos;
   }();
+
   // line 3 of algorithm in Fig. 5 in ref.
   thrust::inclusive_scan(policy->on(stream), parent_pos.begin(),
                          parent_pos.begin() + num_child_nodes,
-                         parent_pos.begin(), thrust::maximum<int>());
+                         parent_pos.begin(), thrust::maximum<uint32_t>());
 
   return parent_pos;
 }
 
-inline std::pair<cudf::size_type, cudf::size_type> remove_unqualified_quads(
+inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
+    rmm::device_vector<uint32_t> &quad_keys,
+    rmm::device_vector<uint32_t> &quad_point_count,
+    rmm::device_vector<uint32_t> &quad_child_count,
+    rmm::device_vector<int8_t> &quad_level,
     cudf::size_type const num_parent_nodes,
     cudf::size_type const num_child_nodes, cudf::size_type const min_size,
-    cudf::size_type const level_1_size,
-    rmm::device_vector<uint32_t> const &quad_keys,
-    rmm::device_vector<int32_t> const &quad_point_count,
-    rmm::device_vector<int32_t> const &quad_child_count,
-    rmm::device_vector<int8_t> const &quad_level,
-    rmm::device_vector<int32_t> const &parent_pos, cudaStream_t stream) {
-  //
+    cudf::size_type const level_1_size, cudaStream_t stream) {
+  // remove invalid nodes, return number of valid nodes left
   auto policy = rmm::exec_policy(stream);
+  // compute parent node start positions
+  auto parent_positions = compute_parent_positions(
+      quad_child_count, num_parent_nodes, num_child_nodes, stream);
   auto parent_point_counts = thrust::make_permutation_iterator(
-      quad_point_count.begin(), parent_pos.begin());
-  // Count the number of nodes whose children have fewer than `min_size` number
-  // of points. Start counting nodes at level 2, since children of the root node
-  // should not be discarded.
-  auto num_invalid_parent_nodes = [&]() {
-    return thrust::count_if(
-        policy->on(stream), parent_point_counts + level_1_size,
-        parent_point_counts + (num_parent_nodes - level_1_size),
-        // i.e. quad_point_count[parent_pos] <= min_size
-        [min_size] __device__(auto const n) { return n <= min_size; });
-  }();
+      quad_point_count.begin(), parent_positions.begin());
+
+  // Count the number of nodes whose children have fewer points than `min_size`.
+  // Start counting nodes at level 2, since children of the root node should not
+  // be discarded.
+  auto num_invalid_parent_nodes = thrust::count_if(
+      policy->on(stream), parent_point_counts,
+      parent_point_counts + (num_parent_nodes - level_1_size),
+      // i.e. quad_point_count[parent_pos] <= min_size
+      [min_size] __device__(auto const n) { return n <= min_size; });
 
   // line 4 of algorithm in Fig. 5 in ref.
-  // remove invalid nodes, return the number of valid nodes left
-  auto num_valid_nodes = [&]() {
-    // line 5 of algorithm in Fig. 5 in ref.
-    // no longer necessary since we're using permutation iterator stencil
-    // rmm::device_vector<int32_t> copy(quad_point_count.size());
-    // thrust::copy(policy->on(stream), quad_point_count.begin(),
-    //              quad_point_count.end(), copy.begin());
-    auto iter = make_zip_iterator(
-        mutable_begin(quad_keys), mutable_begin(quad_level),
-        mutable_begin(quad_child_count), mutable_begin(quad_point_count));
-    auto result = thrust::remove_if(
-        policy->on(stream), iter + level_1_size, iter + num_child_nodes,
-        parent_point_counts + level_1_size,
-        // i.e. quad_point_count[parent_pos] <= min_size
-        [min_size] __device__(auto const n) { return n <= min_size; });
-    return thrust::distance(iter, result) +
-           level_1_size;  // add back level 1 nodes
-  }();
+  // revision to line 4: copy unnecessary if using permutation_iterator stencil
+
+  // Remove quad nodes fewer points than min_size.
+  // Start counting nodes at level 2, since children of the root node should not
+  // be discarded.
+  // line 5 of algorithm in Fig. 5 in ref.
+  auto tree = make_zip_iterator(quad_keys.begin() + level_1_size,
+                                quad_point_count.begin() + level_1_size,
+                                quad_child_count.begin() + level_1_size,
+                                quad_level.begin() + level_1_size);
+
+  auto last_valid = thrust::remove_if(
+      policy->on(stream), tree, tree + num_child_nodes, parent_point_counts,
+      // i.e. quad_point_count[parent_pos] <= min_size
+      [min_size] __device__(auto const n) { return n <= min_size; });
+
+  // add the number of level 1 nodes back in to num_valid_nodes
+  auto num_valid_nodes = thrust::distance(tree, last_valid) + level_1_size;
 
   return std::make_pair(num_invalid_parent_nodes, num_valid_nodes);
 }
 
 inline std::unique_ptr<cudf::column> construct_non_leaf_indicator(
-    rmm::device_vector<int32_t> const &quad_point_count,
+    rmm::device_vector<uint32_t> &quad_point_count,
     cudf::size_type const num_parent_nodes,
     cudf::size_type const num_valid_nodes, cudf::size_type const min_size,
     rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
+  //
+  auto policy = rmm::exec_policy(stream);
   // Construct the indicator output column
   auto indicator = make_fixed_width_column<bool>(num_valid_nodes, stream, mr);
-  auto policy = rmm::exec_policy(stream);
 
   // line 6 of algorithm in Fig. 5 in ref.
   thrust::transform(policy->on(stream), quad_point_count.begin(),
@@ -294,18 +288,27 @@ inline std::unique_ptr<cudf::column> construct_non_leaf_indicator(
                     thrust::placeholders::_1 > min_size);
 
   // line 7 of algorithm in Fig. 5 in ref.
-  thrust::replace_if(policy->on(stream), mutable_begin(quad_point_count),
-                     mutable_begin(quad_point_count) + num_parent_nodes,
+  thrust::replace_if(policy->on(stream), quad_point_count.begin(),
+                     quad_point_count.begin() + num_parent_nodes,
                      indicator->view().begin<bool>(), thrust::placeholders::_1,
                      0);
+
+  if (num_valid_nodes > num_parent_nodes) {
+    // zero-fill the rest of the indicator column because
+    // device_memory_resources aren't required to initialize allocations
+    thrust::fill(policy->on(stream),
+                 indicator->mutable_view().begin<bool>() + num_parent_nodes,
+                 indicator->mutable_view().end<bool>(), 0);
+  }
+
   return indicator;
 }
 
-inline rmm::device_vector<int32_t> compute_leaf_positions(
+inline rmm::device_vector<uint32_t> compute_leaf_positions(
     cudf::column_view const &indicator, cudf::size_type const num_valid_nodes,
     cudaStream_t stream) {
   auto policy = rmm::exec_policy(stream);
-  rmm::device_vector<int32_t> leaf_pos(num_valid_nodes);
+  rmm::device_vector<uint32_t> leaf_pos(num_valid_nodes);
   auto result = thrust::copy_if(
       policy->on(stream), thrust::make_counting_iterator(0),
       thrust::make_counting_iterator(0) + num_valid_nodes,
@@ -314,109 +317,116 @@ inline rmm::device_vector<int32_t> compute_leaf_positions(
   return shrink_vector(leaf_pos, thrust::distance(leaf_pos.begin(), result));
 }
 
-inline rmm::device_vector<int32_t> flatten_point_keys(
+inline rmm::device_vector<uint32_t> flatten_point_keys(
     rmm::device_vector<uint32_t> const &quad_keys,
     rmm::device_vector<int8_t> const &quad_level,
     cudf::column_view const &indicator, cudf::size_type const num_valid_nodes,
     cudf::size_type const num_levels, cudaStream_t stream) {
-  rmm::device_vector<int32_t> flattened_keys(num_valid_nodes);
+  rmm::device_vector<uint32_t> flattened_keys(num_valid_nodes);
   auto policy = rmm::exec_policy(stream);
   auto keys_and_levels = make_zip_iterator(
       quad_keys.begin(), quad_level.begin(), indicator.begin<bool>());
   thrust::transform(
       policy->on(stream), keys_and_levels, keys_and_levels + num_valid_nodes,
-      flattened_keys.begin(), [M = num_levels] __device__(auto const &tup) {
-        bool is_node{};
-        int32_t key{}, level{};
-        thrust::tie(key, level, is_node) = tup;
+      flattened_keys.begin(), [M = num_levels] __device__(auto const &val) {
+        bool is_node{false};
+        uint32_t key{}, level{};
+        thrust::tie(key, level, is_node) = val;
         return is_node ? 0xFFFFFFFF : (key << (2 * (M - 1 - level)));
       });
-  return shrink_vector(flattened_keys, num_valid_nodes);
+  flattened_keys.shrink_to_fit();
+  return flattened_keys;
 }
 
-inline rmm::device_vector<int32_t> compute_flattened_first_point_positions(
+inline rmm::device_vector<uint32_t> compute_flattened_first_point_positions(
     rmm::device_vector<uint32_t> const &quad_keys,
     rmm::device_vector<int8_t> const &quad_level,
-    rmm::device_vector<int32_t> const &quad_point_count,
+    rmm::device_vector<uint32_t> &quad_point_count,
     cudf::column_view const &indicator, cudf::size_type const num_valid_nodes,
     cudf::size_type const num_levels, cudaStream_t stream) {
   //
-  // adjust quad_point_count and quad_point_pos based on last-level z-order code
+  // Adjust quad_point_count and quad_point_pos based on the last level's
+  // z-order keys
   //
   auto policy = rmm::exec_policy(stream);
-  rmm::device_vector<int32_t> initial_sort_indices(num_valid_nodes);
-  thrust::sequence(policy->on(stream), initial_sort_indices.begin(),
-                   initial_sort_indices.end());
 
-  rmm::device_vector<int32_t> quad_point_count_tmp(num_valid_nodes);
-  thrust::copy(policy->on(stream), quad_point_count.begin(),
-               quad_point_count.end(), quad_point_count_tmp.begin());
-
-  // Sort initial indices and temporary quad_point_counts by the flattened
-  // z-order codes
-  [&]() {
+  rmm::device_vector<uint32_t> initial_sort_indices{};
+  rmm::device_vector<uint32_t> quad_point_count_tmp{};
+  // Sort initial indices and temporary point counts by the flattened keys
+  std::tie(initial_sort_indices, quad_point_count_tmp) = [&]() {
     auto flattened_keys = flatten_point_keys(
         quad_keys, quad_level, indicator, num_valid_nodes, num_levels, stream);
-    // sort indices and temporary quad_point_counts
+
+    rmm::device_vector<uint32_t> initial_sort_indices(num_valid_nodes);
+    thrust::sequence(policy->on(stream), initial_sort_indices.begin(),
+                     initial_sort_indices.end());
+
+    rmm::device_vector<uint32_t> quad_point_count_tmp(num_valid_nodes);
+    thrust::copy(policy->on(stream), quad_point_count.begin(),
+                 quad_point_count.end(), quad_point_count_tmp.begin());
+
+    // sort indices and temporary point counts
     thrust::stable_sort_by_key(policy->on(stream), flattened_keys.begin(),
                                flattened_keys.end(),
                                make_zip_iterator(initial_sort_indices.begin(),
                                                  quad_point_count_tmp.begin()));
 
-    thrust::remove_if(policy->on(stream), mutable_begin(quad_point_count_tmp),
-                      mutable_begin(quad_point_count_tmp) + num_valid_nodes,
+    thrust::remove_if(policy->on(stream), quad_point_count_tmp.begin(),
+                      quad_point_count_tmp.begin() + num_valid_nodes,
                       quad_point_count_tmp.begin(),
                       thrust::placeholders::_1 == 0);
+
+    initial_sort_indices.shrink_to_fit();
+    quad_point_count_tmp.shrink_to_fit();
+
+    return std::make_pair(initial_sort_indices, quad_point_count_tmp);
   }();
 
   auto leaf_pos = compute_leaf_positions(indicator, num_valid_nodes, stream);
-  auto num_leaf_nodes = leaf_pos.size();
 
-  std::cerr << "num_leaf_nodes=" << num_leaf_nodes << std::endl;
-  std::cout << "leaf_pos length: " << leaf_pos.size() << std::endl;
-  thrust::copy(thrust::host, leaf_pos.begin(), leaf_pos.end(),
-               std::ostream_iterator<int32_t>(std::cout, " "));
-  std::cout << std::endl;
+  // Shrink the vector's underlying device allocations.
+  // Only the first `num_leaf_nodes` are needed after removal, since
+  // copy_if and remove_if should remove the same number of elements.
+  shrink_vector(quad_point_count_tmp, leaf_pos.size());
+  shrink_vector(initial_sort_indices, leaf_pos.size());
 
-  // shrink vector's underlying device allocation
-  shrink_vector(quad_point_count_tmp, num_leaf_nodes);
+  rmm::device_vector<uint32_t> quad_point_f_pos_tmp(leaf_pos.size());
 
-  rmm::device_vector<int32_t> quad_first_point_pos(num_leaf_nodes);
-
-  // only the first num_leaf_nodes are needed after the above removal (copy_if
-  // and remove_if should return the same numbers
   thrust::exclusive_scan(policy->on(stream), quad_point_count_tmp.begin(),
                          quad_point_count_tmp.end(),
-                         quad_first_point_pos.begin());
+                         quad_point_f_pos_tmp.begin());
+
+  auto count_and_f_pos = make_zip_iterator(quad_point_count_tmp.begin(),
+                                           quad_point_f_pos_tmp.begin());
 
   thrust::stable_sort_by_key(policy->on(stream), initial_sort_indices.begin(),
-                             initial_sort_indices.begin() + num_leaf_nodes,
-                             make_zip_iterator(quad_point_count_tmp.begin(),
-                                               quad_first_point_pos.begin()));
+                             initial_sort_indices.end(), count_and_f_pos);
 
-  rmm::device_vector<int32_t> quad_point_pos(num_valid_nodes);
-  auto count_and_pos_iter = make_zip_iterator(quad_point_count_tmp.begin(),
-                                              quad_first_point_pos.begin());
+  rmm::device_vector<uint32_t> quad_point_f_pos(num_valid_nodes);
 
-  thrust::scatter(policy->on(stream), count_and_pos_iter,
-                  count_and_pos_iter + num_leaf_nodes, leaf_pos.begin(),
-                  make_zip_iterator(mutable_begin(quad_point_count),
-                                    mutable_begin(quad_point_pos)));
+  thrust::scatter(
+      policy->on(stream), count_and_f_pos, count_and_f_pos + leaf_pos.size(),
+      leaf_pos.begin(),
+      make_zip_iterator(quad_point_count.begin(), quad_point_f_pos.begin()));
 
-  return shrink_vector(quad_point_pos, num_valid_nodes);
+  quad_point_f_pos.shrink_to_fit();
+
+  return quad_point_f_pos;
 }
 
-template <typename T>
+template <typename TypeOut, typename TypeIn>
 inline std::unique_ptr<cudf::column> copy_if_else(
-    rmm::device_vector<T> const &a, rmm::device_vector<T> const &b,
-    cudf::column_view const &bools, cudf::size_type const size,
-    rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
+    rmm::device_vector<TypeIn> const &lhs,
+    rmm::device_vector<TypeIn> const &rhs, cudf::column_view const &mask,
+    cudf::size_type const size, rmm::mr::device_memory_resource *mr,
+    cudaStream_t stream) {
+  // for each value in `mask` copy from `lhs` if true, else `rhs`
   auto policy = rmm::exec_policy(stream);
-  auto output = make_fixed_width_column<T>(size, stream, mr);
-  auto iter = make_zip_iterator(bools.begin<bool>(), a.begin(), b.begin());
+  auto output = make_fixed_width_column<TypeOut>(size, stream, mr);
+  auto iter = make_zip_iterator(mask.begin<bool>(), lhs.begin(), rhs.begin());
 
   thrust::transform(policy->on(stream), iter, iter + size,
-                    output->mutable_view().template begin<T>(),
+                    output->mutable_view().template begin<TypeIn>(),
                     // return bool ? lhs : rhs
                     [] __device__(auto const &t) {
                       return thrust::get<0>(t) ? thrust::get<1>(t)
@@ -427,42 +437,29 @@ inline std::unique_ptr<cudf::column> copy_if_else(
 }
 
 inline std::unique_ptr<cudf::experimental::table> make_full_quadtree(
-    rmm::device_vector<uint32_t> const &quad_keys,
-    rmm::device_vector<int32_t> const &quad_point_count,
-    rmm::device_vector<int32_t> const &quad_child_count,
-    rmm::device_vector<int8_t> const &quad_level,
-    cudf::size_type num_parent_nodes, cudf::size_type const quad_tree_size,
-    cudf::size_type const num_levels, cudf::size_type const min_size,
-    cudf::size_type const level_1_size, rmm::mr::device_memory_resource *mr,
-    cudaStream_t stream) {
+    rmm::device_vector<uint32_t> &quad_keys,
+    rmm::device_vector<uint32_t> &quad_point_count,
+    rmm::device_vector<uint32_t> &quad_child_count,
+    rmm::device_vector<int8_t> &quad_level, cudf::size_type num_parent_nodes,
+    cudf::size_type const quad_tree_size, cudf::size_type const num_levels,
+    cudf::size_type const min_size, cudf::size_type const level_1_size,
+    rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
   auto policy = rmm::exec_policy(stream);
   // count the number of child nodes
   auto num_child_nodes =
       thrust::reduce(policy->on(stream), quad_child_count.begin(),
                      quad_child_count.begin() + num_parent_nodes);
 
-  std::cerr << "num_child_nodes=" << num_child_nodes << std::endl;
-  std::cerr << "num_parent_nodes=" << num_parent_nodes << std::endl;
-
   cudf::size_type num_valid_nodes{0};
   cudf::size_type num_invalid_parent_nodes{0};
 
-  std::tie(num_invalid_parent_nodes, num_valid_nodes) = [&]() {
-    // compute parent node start positions
-    auto parent_pos = compute_parent_positions(
-        quad_child_count, num_parent_nodes, num_child_nodes, stream);
-    // prune quadrants with fewer points than required
-    return remove_unqualified_quads(
-        num_parent_nodes, num_child_nodes, min_size, level_1_size, quad_keys,
-        quad_point_count, quad_child_count, quad_level, parent_pos, stream);
-  }();
+  // prune quadrants with fewer points than required
+  std::tie(num_invalid_parent_nodes, num_valid_nodes) =
+      remove_unqualified_quads(quad_keys, quad_point_count, quad_child_count,
+                               quad_level, num_parent_nodes, num_child_nodes,
+                               min_size, level_1_size, stream);
 
   num_parent_nodes -= num_invalid_parent_nodes;
-
-  std::cerr << "num_invalid_parent_nodes=" << num_invalid_parent_nodes
-            << std::endl;
-  std::cerr << "num_parent_nodes=" << num_parent_nodes << std::endl;
-  std::cerr << "num_valid_nodes=" << num_valid_nodes << std::endl;
 
   // construct indicator output column
   // line 6 and 7 of algorithm in Fig. 5 in ref.
@@ -480,10 +477,10 @@ inline std::unique_ptr<cudf::experimental::table> make_full_quadtree(
         num_levels, stream);
 
     // line 9 and 10 of algorithm in Fig. 5 in ref.
-    rmm::device_vector<int32_t> quad_child_pos(num_valid_nodes);
+    rmm::device_vector<uint32_t> quad_child_pos(num_valid_nodes);
     // line 9 of algorithm in Fig. 5 in ref.
-    thrust::replace_if(policy->on(stream), mutable_begin(quad_child_count),
-                       mutable_begin(quad_child_count) + num_valid_nodes,
+    thrust::replace_if(policy->on(stream), quad_child_count.begin(),
+                       quad_child_count.begin() + num_valid_nodes,
                        indicator->view().begin<int8_t>(),
                        !thrust::placeholders::_1, 0);
 
@@ -495,20 +492,20 @@ inline std::unique_ptr<cudf::experimental::table> make_full_quadtree(
     // shrink intermediate device allocation
     shrink_vector(quad_child_pos, num_valid_nodes);
 
-    return copy_if_else(quad_child_pos, quad_point_pos, *indicator,
-                        num_valid_nodes, mr, stream);
+    return copy_if_else<int32_t>(quad_child_pos, quad_point_pos, *indicator,
+                                 num_valid_nodes, mr, stream);
   }();
 
   // Construct the lengths output column
-  auto lengths = copy_if_else(quad_child_count, quad_point_count, *indicator,
-                              num_valid_nodes, mr, stream);
+  auto lengths = copy_if_else<int32_t>(quad_child_count, quad_point_count,
+                                       *indicator, num_valid_nodes, mr, stream);
 
   // Construct the keys output column
   auto keys = make_fixed_width_column<int32_t>(num_valid_nodes, stream, mr);
 
   // Copy quad keys to keys output column
   thrust::copy(policy->on(stream), quad_keys.begin(), quad_keys.end(),
-               keys->mutable_view().begin<int32_t>());
+               keys->mutable_view().begin<uint32_t>());
 
   // Construct the levels output column
   auto levels = make_fixed_width_column<int8_t>(num_valid_nodes, stream, mr);
@@ -529,7 +526,7 @@ inline std::unique_ptr<cudf::experimental::table> make_full_quadtree(
 
 inline std::unique_ptr<cudf::experimental::table> make_empty_quadtree(
     rmm::device_vector<uint32_t> const &quad_keys,
-    rmm::device_vector<int32_t> const &quad_point_count,
+    rmm::device_vector<uint32_t> const &quad_point_count,
     int32_t const num_top_quads, rmm::mr::device_memory_resource *mr,
     cudaStream_t stream) {
   auto keys = make_fixed_width_column<int32_t>(num_top_quads, stream, mr);
@@ -542,12 +539,12 @@ inline std::unique_ptr<cudf::experimental::table> make_empty_quadtree(
   // copy quad keys from the front of the quad_keys list
   thrust::copy(policy->on(stream), quad_keys.begin(),
                quad_keys.begin() + num_top_quads,
-               keys->mutable_view().begin<int32_t>());
+               keys->mutable_view().begin<uint32_t>());
 
   // copy point counts from the front of the quad_point_count list
   thrust::copy(policy->on(stream), quad_point_count.begin(),
                quad_point_count.begin() + num_top_quads,
-               lengths->mutable_view().begin<int32_t>());
+               lengths->mutable_view().begin<uint32_t>());
 
   // All leaves are children of the root node (level 0)
   thrust::fill(policy->on(stream), levels->mutable_view().begin<int8_t>(),
@@ -558,9 +555,9 @@ inline std::unique_ptr<cudf::experimental::table> make_empty_quadtree(
                indicator->mutable_view().end<bool>(), false);
 
   // compute f_pos offsets from sizes
-  thrust::exclusive_scan(policy->on(stream), lengths->view().begin<int32_t>(),
-                         lengths->view().end<int32_t>(),
-                         f_pos->mutable_view().begin<int32_t>());
+  thrust::exclusive_scan(policy->on(stream), lengths->view().begin<uint32_t>(),
+                         lengths->view().end<uint32_t>(),
+                         f_pos->mutable_view().begin<uint32_t>());
 
   std::vector<std::unique_ptr<cudf::column>> cols{};
   cols.reserve(5);
@@ -579,95 +576,59 @@ inline std::unique_ptr<cudf::experimental::table> construct_quad_tree(
     cudf::size_type const num_levels, cudf::size_type const min_size,
     rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
   // Compute z-order for each point
-  auto point_keys = compute_point_keys<T>(
+  auto point_keys = compute_z_keys<T>(
       x, y, stream,
       [x1, y1, x2, y2, num_levels, scale] __device__(auto const &point) {
         T x, y;
         thrust::tie(x, y) = point;
         if (x < x1 || x > x2 || y < y1 || y > y2) {
-          // if point is outside the bbox, return max_key so this point is
-          // placed at the end
+          // If the point is outside the bbox, return a max_level key
           return static_cast<uint32_t>((1 << (2 * num_levels)) - 1);
         }
         return z_order((x - x1) / scale, (y - y1) / scale);
       });
 
   rmm::device_vector<uint32_t> quad_keys(x.size());
-  rmm::device_vector<int32_t> quad_point_count(x.size());
-  rmm::device_vector<int32_t> quad_child_count(x.size());
+  rmm::device_vector<uint32_t> quad_point_count(x.size());
+  rmm::device_vector<uint32_t> quad_child_count(x.size());
 
   auto const num_top_quads = compute_full_quads(
       point_keys->view().template begin<uint32_t>(),
       point_keys->view().template end<uint32_t>(),
-      thrust::make_constant_iterator<int32_t>(1), quad_keys.begin(),
-      quad_point_count.begin(), thrust::plus<int32_t>(), stream);
+      thrust::make_constant_iterator<uint32_t>(1), quad_keys.begin(),
+      quad_point_count.begin(), thrust::plus<uint32_t>(), stream);
 
-  std::cerr << "num_top_quads=" << num_top_quads << std::endl;
+  std::vector<uint32_t> b_pos{};
+  std::vector<uint32_t> e_pos{};
+  cudf::size_type quad_tree_size{};
+  cudf::size_type num_parent_nodes{};
 
-  // Shrink vectors' underlying device allocations to reduce peak memory usage
-  // shrink_vector(quad_keys, num_levels * num_top_quads);
-  // shrink_vector(quad_point_count, num_levels * num_top_quads);
-  // shrink_vector(quad_child_count, num_levels * num_top_quads);
-
-  std::vector<int32_t> b_pos{};
-  std::vector<int32_t> e_pos{};
-  cudf::size_type quad_tree_size{0};
-  cudf::size_type num_parent_nodes{0};
-
-  // compute full quads for the tree at each level
+  // compute "full" quads for the tree at each level
   std::tie(num_parent_nodes, quad_tree_size, b_pos, e_pos) =
       compute_full_levels(num_levels, num_top_quads, quad_keys.begin(),
                           quad_point_count.begin(), quad_child_count.begin(),
                           stream);
-
-  std::cerr << "quad_tree_size=" << quad_tree_size << std::endl;
-  std::cerr << "num_parent_nodes=" << num_parent_nodes << std::endl;
 
   // Shrink vectors' underlying device allocations to reduce peak memory usage
   shrink_vector(quad_keys, quad_tree_size);
   shrink_vector(quad_point_count, quad_tree_size);
   shrink_vector(quad_child_count, quad_tree_size);
 
-  // perf: if the top level nodes are all leaf nodes, return early
+  // Optimization: can return early if the top level nodes are all leaves
   if (num_parent_nodes <= 0) {
     return make_empty_quadtree(quad_keys, quad_point_count, num_top_quads, mr,
                                stream);
   }
 
-  // reverse the order of quadtree nodes for easier manipulation
-  // skip the root node
   rmm::device_vector<uint32_t> quad_keys_f{};
-  rmm::device_vector<int32_t> quad_point_count_f{};
-  rmm::device_vector<int32_t> quad_child_count_f{};
+  rmm::device_vector<uint32_t> quad_point_count_f{};
+  rmm::device_vector<uint32_t> quad_child_count_f{};
   rmm::device_vector<int8_t> quad_level_f{};
 
+  // Reverse the quadtree nodes for easier manipulation (skips the root node)
   std::tie(quad_keys_f, quad_point_count_f, quad_child_count_f, quad_level_f) =
-      reverse_quadtree_order(quad_keys, quad_point_count, quad_child_count,
-                             b_pos, e_pos, num_levels, stream);
-
-  // std::cout << "quad_keys_f length: " << quad_keys_f.size() << std::endl;
-  // thrust::copy(thrust::host, quad_keys_f.begin(), quad_keys_f.end(),
-  //              std::ostream_iterator<int32_t>(std::cout, " "));
-  // std::cout << std::endl;
-
-  // std::cout << "quad_point_count_f length: " << quad_point_count_f.size()
-  //           << std::endl;
-  // thrust::copy(thrust::host, quad_point_count_f.begin(),
-  //              quad_point_count_f.end(),
-  //              std::ostream_iterator<int32_t>(std::cout, " "));
-  // std::cout << std::endl;
-
-  // std::cout << "quad_child_count_f length: " << quad_child_count_f.size()
-  //           << std::endl;
-  // thrust::copy(thrust::host, quad_child_count_f.begin(),
-  //              quad_child_count_f.end(),
-  //              std::ostream_iterator<int32_t>(std::cout, " "));
-  // std::cout << std::endl;
-
-  // std::cout << "quad_level_f length: " << quad_level_f.size() << std::endl;
-  // thrust::copy(thrust::host, quad_level_f.begin(), quad_level_f.end(),
-  //              std::ostream_iterator<int32_t>(std::cout, " "));
-  // std::cout << std::endl;
+      reverse_tree_levels(quad_keys, quad_point_count, quad_child_count, b_pos,
+                          e_pos, num_levels, stream);
 
   return make_full_quadtree(quad_keys_f, quad_point_count_f, quad_child_count_f,
                             quad_level_f, num_parent_nodes, quad_tree_size,
@@ -718,14 +679,12 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(
       min_size > 0,
       "minimum number of points for a non-leaf node must be larger than zero");
 
-  if (true) {
-    return cudf::experimental::type_dispatcher(
-        x.type(), dispatch_construct_quadtree{}, x, y, x1, y1, x2, y2, scale,
-        num_levels, min_size, mr, cudaStream_t{0});
-  }
+  // detail::quadtree_on_points(x, y, x1, y1, x2, y2, scale, num_levels,
+  // min_size, mr, 0);
 
-  return detail::quadtree_on_points(x, y, x1, y1, x2, y2, scale, num_levels,
-                                    min_size, mr, 0);
+  return cudf::experimental::type_dispatcher(
+      x.type(), dispatch_construct_quadtree{}, x, y, x1, y1, x2, y2, scale,
+      num_levels, min_size, mr, cudaStream_t{0});
 }
 
 }  // namespace cuspatial
