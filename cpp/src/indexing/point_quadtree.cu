@@ -179,8 +179,6 @@ reverse_tree_levels(rmm::device_vector<uint32_t> const &quad_keys_in,
     thrust::copy(policy->on(stream), quad_child_count_in.begin() + begin,
                  quad_child_count_in.begin() + end,
                  quad_child_count.begin() + offset);
-    // thrust::reduce(policy->on(stream), quad_point_count_in.begin() + begin,
-    //                quad_point_count_in.begin() + end);
     offset += range;
   }
 
@@ -251,7 +249,7 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
   // line 4 of algorithm in Fig. 5 in ref.
   // revision to line 4: copy unnecessary if using permutation_iterator stencil
 
-  // Remove quad nodes fewer points than min_size.
+  // Remove quad nodes with fewer points than `min_size`.
   // Start counting nodes at level 2, since children of the root node should not
   // be discarded.
   // line 5 of algorithm in Fig. 5 in ref.
@@ -441,9 +439,9 @@ inline std::unique_ptr<cudf::experimental::table> make_full_quadtree(
     rmm::device_vector<uint32_t> &quad_point_count,
     rmm::device_vector<uint32_t> &quad_child_count,
     rmm::device_vector<int8_t> &quad_level, cudf::size_type num_parent_nodes,
-    cudf::size_type const quad_tree_size, cudf::size_type const num_levels,
-    cudf::size_type const min_size, cudf::size_type const level_1_size,
-    rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
+    cudf::size_type const num_levels, cudf::size_type const min_size,
+    cudf::size_type const level_1_size, rmm::mr::device_memory_resource *mr,
+    cudaStream_t stream) {
   auto policy = rmm::exec_policy(stream);
   // count the number of child nodes
   auto num_child_nodes =
@@ -632,9 +630,8 @@ inline std::unique_ptr<cudf::experimental::table> construct_quadtree(
                           e_pos, num_levels, stream);
 
   return make_full_quadtree(quad_keys_f, quad_point_count_f, quad_child_count_f,
-                            quad_level_f, num_parent_nodes, quad_tree_size,
-                            num_levels, min_size, e_pos[0] - b_pos[0], mr,
-                            stream);
+                            quad_level_f, num_parent_nodes, num_levels,
+                            min_size, e_pos[0] - b_pos[0], mr, stream);
 }
 
 struct dispatch_construct_quadtree {
