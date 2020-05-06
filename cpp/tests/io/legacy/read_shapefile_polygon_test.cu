@@ -22,8 +22,8 @@
 #include <utilities/legacy/error_utils.hpp>
 #include <tests/utilities/legacy/cudf_test_utils.cuh>
 #include <tests/utilities/legacy/cudf_test_fixtures.h>
-#include <cuspatial/shapefile_readers.hpp>
-#include <utility/utility.hpp> 
+#include <cuspatial/legacy/shapefile_readers.hpp>
+#include <utility/legacy/utility.hpp>
 
 
 struct ReadShapefilePolygonTest : public GdfTest 

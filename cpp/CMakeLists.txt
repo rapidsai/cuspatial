@@ -323,14 +323,14 @@ endif(CONDA_LINK_DIRS)
 
 add_library(cuspatial SHARED
             src/interpolate/cubic_spline.cu
-            src/io/shp/polygon_shapefile_reader.cpp
-            src/io/shp/polygon_shapefile_reader.cu
+            src/io/shp/legacy/polygon_shapefile_reader.cpp
+            src/io/shp/legacy/polygon_shapefile_reader.cu
             src/io/soa/polygon_soa_reader.cu
             src/io/soa/point_soa_reader.cu
             src/io/soa/uint32_soa_reader.cu
             src/io/soa/timestamp_soa_reader.cu
             src/query/spatial_window_points.cu
-            src/spatial/point_in_polygon.cu
+            src/spatial/legacy/point_in_polygon.cu
             src/spatial/legacy/haversine.cu
             src/spatial/legacy/hausdorff.cu
             src/spatial/legacy/lonlat_to_coordinate.cu
@@ -339,7 +339,7 @@ add_library(cuspatial SHARED
             src/trajectory/legacy/trajectory_distance_speed.cu
             src/trajectory/legacy/derive_trajectories.cu
             src/trajectory/legacy/subset_trajectories.cu
-            src/utility/utility.cpp)
+            src/utility/legacy/utility.cpp)
 
 #Override RPATH for cuspatial
 SET_TARGET_PROPERTIES(cuspatial PROPERTIES BUILD_RPATH "\$ORIGIN")
