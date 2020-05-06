@@ -18,6 +18,7 @@
 - PR #190 Port coordinate_transform.hpp cython files
 - PR #191 Move point_in_polygon.hpp files to legacy
 - PR #193 Move shapefile_readers.hpp files to legacy
+- PR #196 Move utilities/utilities.hpp to legacy
 
 ## Bug Fixes
 
