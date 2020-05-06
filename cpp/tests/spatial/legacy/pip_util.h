@@ -17,7 +17,7 @@
 #pragma once
 
 #include <cuspatial/types.hpp>
-#include <utility/utility.hpp>
+#include <utility/legacy/utility.hpp>
 
 namespace cuspatial
 {

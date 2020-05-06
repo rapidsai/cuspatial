@@ -18,7 +18,9 @@
 #include <string.h>
 #include <algorithm>
 #include <cuspatial/error.hpp>
+#include <cudf/types.hpp>
 #include <utility/utility.hpp>
+
 
 #include <ogrsf_frmts.h>
 
@@ -27,137 +29,118 @@ namespace
     /*
      * Read a LinearRing into x/y/size vectors
     */
-    void VertexFromLinearRing(OGRLinearRing const& poRing,
-                              std::vector<double>& aPointX,
-                              std::vector<double>& aPointY,
-                              std::vector<int>& aPartSize)
+    int ReadRing(OGRLinearRing const& ring,
+                 std::vector<double>& xs,
+                 std::vector<double>& ys)
     {
-        int nCount    = poRing.getNumPoints();
-        int nNewCount = aPointX.size() + nCount;
+        int num_vertices = ring.getNumPoints();
 
-        aPointX.reserve(nNewCount);
-        aPointY.reserve(nNewCount);
-
-        for (int i = nCount-1; i >= 0; i--)
+        // append points in reverse order
+        for (int i = num_vertices - 1; i >= 0; i--) 
         {
-            aPointX.push_back(poRing.getX(i));
-            aPointY.push_back(poRing.getY(i));
+            xs.push_back(ring.getX(i));
+            ys.push_back(ring.getY(i));
         }
 
-        aPartSize.push_back(nCount);
+        return num_vertices;
     }
 
     /*
     * Read a Polygon (could be with multiple rings) into x/y/size vectors
     */
-    void LinearRingFromPolygon(OGRPolygon const& poPolygon,
-                               std::vector<double>& aPointX,
-                               std::vector<double>& aPointY,
-                               std::vector<int>& aPartSize )
+    int ReadPolygon(OGRPolygon const& polygon,
+                    std::vector<int>& ring_lengths,
+                    std::vector<double>& xs,
+                    std::vector<double>& ys)
     {
+        auto num_vertices = ReadRing(*(polygon.getExteriorRing()), xs, ys);
+        ring_lengths.push_back(num_vertices);
 
-        VertexFromLinearRing(*(poPolygon.getExteriorRing()),
-                             aPointX,
-                             aPointY,
-                             aPartSize);
+        int num_interior_rings = polygon.getNumInteriorRings();
 
-        for (int i = 0; i < poPolygon.getNumInteriorRings(); i++)
+        for (int i = 0; i < num_interior_rings; i++)
         {
-            VertexFromLinearRing(*(poPolygon.getInteriorRing(i)),
-                                 aPointX,
-                                 aPointY,
-                                 aPartSize);
+            auto num_vertices = ReadRing(*(polygon.getInteriorRing(i)), xs, ys);
+            ring_lengths.push_back(num_vertices);
         }
+
+        return 1 + num_interior_rings;
     }
 
     /*
     * Read a Geometry (could be MultiPolygon / GeometryCollection) into x / y / size vectors
     */
-    void PolygonFromGeometry(OGRGeometry const* poShape,
-                             std::vector<double>& aPointX,
-                             std::vector<double>& aPointY,
-                             std::vector<int>& aPartSize )
+    int ReadGeometryFeature(OGRGeometry const* geometry,
+                            std::vector<int>& ring_lengths,
+                            std::vector<double>& xs,
+                            std::vector<double>& ys)
     {
-        OGRwkbGeometryType eFlatType = wkbFlatten(poShape->getGeometryType());
+        OGRwkbGeometryType geometry_type = wkbFlatten(geometry->getGeometryType());
 
-        if (eFlatType == wkbMultiPolygon || eFlatType == wkbGeometryCollection)
+        if (geometry_type == wkbPolygon)
         {
-            OGRGeometryCollection *poGC = (OGRGeometryCollection *) poShape;
+            return ReadPolygon(*((OGRPolygon *) geometry), ring_lengths, xs, ys);
+        }
 
-            for (int i = 0; i < poGC->getNumGeometries(); i++)
+        if (geometry_type == wkbMultiPolygon || geometry_type == wkbGeometryCollection)
+        {
+            OGRGeometryCollection *geometry_collection = (OGRGeometryCollection *) geometry;
+
+            int num_rings = 0;
+
+            for (int i = 0; i < geometry_collection->getNumGeometries(); i++)
             {
-                PolygonFromGeometry(poGC->getGeometryRef(i),
-                                    aPointX,
-                                    aPointY,
-                                    aPartSize);
+                num_rings += ReadGeometryFeature(geometry_collection->getGeometryRef(i),
+                                                 ring_lengths,
+                                                 xs,
+                                                 ys);
             }
-        }
-        else if (eFlatType == wkbPolygon)
-        {
-            LinearRingFromPolygon(*((OGRPolygon *) poShape),
-                                  aPointX,
-                                  aPointY,
-                                  aPartSize);
 
+            return num_rings;
         }
-        else
-        {
-            CUDF_FAIL("must be polygonal geometry.");
-        }
+        
+        CUSPATIAL_FAIL("must be polygonal geometry.");
     }
 
     /*
     * Read a GDALDatasetH layer (corresponding to a shapefile) into five vectors
     *
     * layer: OGRLayerH layer holding polygon data
-    * g_len_v: vector of group lengths,   i.e. numbers of features/polygons (should be 1 for a single layer / g_len_v)
+    * group_lengths: vector of group lengths,   i.e. numbers of features/polygons (should be 1 for a single layer / group lengths)
     * feature_lengths: vector of feature lengths, i.e. numbers of rings in features/polygons
     * ring_lengths: vector of ring lengths,    i.e. numbers of vertices in rings
     * xs:     The x component of vertices
     * ys:     The y component of vertices
     * returns number of features/polygons
     */
-    int ReadLayer(const OGRLayerH layer,std::vector<int>& g_len_v,
+    int ReadLayer(const OGRLayerH layer,
                   std::vector<int>& feature_lengths,
                   std::vector<int>& ring_lengths,
                   std::vector<double>& xs,
                   std::vector<double>& ys)
     {
-        int num_feature = 0;
+        int num_features = 0;
 
         OGR_L_ResetReading(layer);
 
         OGRFeatureH feature;
 
-        while ((feature = OGR_L_GetNextFeature(layer)) != NULL)
+        while ((feature = OGR_L_GetNextFeature(layer)) != nullptr)
         {
-            auto shape = (OGRGeometry*) OGR_F_GetGeometryRef(feature);
+            auto geometry = (OGRGeometry*) OGR_F_GetGeometryRef(feature);
 
-            CUDF_EXPECTS(shape != NULL, "Invalid Shape");
+            CUSPATIAL_EXPECTS(geometry != nullptr, "Invalid Shape");
 
-            std::vector<double> xs_temp;
-            std::vector<double> ys_temp;
-            std::vector<int> ring_lengths_temp;
-
-            PolygonFromGeometry(shape, xs_temp, ys_temp, ring_lengths_temp);
-
-            xs.insert(xs.end(), xs_temp.begin(), xs_temp.end());
-            ys.insert(ys.end(), ys_temp.begin(), ys_temp.end());
-
-            ring_lengths.insert(ring_lengths.end(),
-                                ring_lengths_temp.begin(),
-                                ring_lengths_temp.end());
-
-            feature_lengths.push_back(ring_lengths_temp.size());
+            auto num_rings = ReadGeometryFeature(geometry, ring_lengths, xs, ys);
 
             OGR_F_Destroy(feature);
 
-            num_feature++;
+            feature_lengths.push_back(num_rings);
+
+            num_features++;
         }
 
-        g_len_v.push_back(num_feature);
-
-        return num_feature;
+        return num_features;
     }
 }
 
@@ -165,64 +148,44 @@ namespace cuspatial
 {
 namespace detail
 {
-    /*
-    * Read a polygon shapefile and fill in a polygons structure
-    * ToDo: read associated relational data into a CUDF Table
-    *
-    * filename: ESRI shapefile name (wtih .shp extension
-    * pm: structure polygons (fixed to double type) to hold polygon data
+/*
+* Read a polygon shapefile and fill in a polygons structure
+* ToDo: read associated relational data into a CUDF Table
+*
+* filename: ESRI shapefile name (wtih .shp extension
+* pm: structure polygons (fixed to double type) to hold polygon data
 
-    * Note: only the first layer is read - shapefiles have only one layer in GDALDatasetH model
-    */
+* Note: only the first layer is read - shapefiles have only one layer in GDALDatasetH model
+*/
 
-    polygons<double> polygon_from_shapefile(const char *filename)
-    {
-        std::vector<int> g_len_v;
-        std::vector<int> feature_lengths;
-        std::vector<int> ring_lengths;
-        std::vector<double> xs, ys;
+polygons read_polygon_shapefile(const char *filename)
+{
+    GDALAllRegister();
 
-        GDALAllRegister();
+    GDALDatasetH dataset = GDALOpenEx(filename, GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
 
-        GDALDatasetH dataset = GDALOpenEx(filename, GDAL_OF_VECTOR, NULL, NULL, NULL);
+    CUSPATIAL_EXPECTS(dataset != nullptr, "Failed to open ESRI Shapefile dataset");
 
-        CUDF_EXPECTS(dataset != NULL, "Failed to open ESRI Shapefile dataset");
+    OGRLayerH dataset_layer = GDALDatasetGetLayer(dataset, 0);
 
-        OGRLayerH dataset_layer = GDALDatasetGetLayer(dataset, 0);
+    CUSPATIAL_EXPECTS(dataset_layer != nullptr, "Failed to open the first layer");
 
-        CUDF_EXPECTS(dataset_layer != NULL, "Failed to open the first layer");
+    auto poly = polygons();
 
-        int num_f = ReadLayer(dataset_layer,
-                              g_len_v,
-                              feature_lengths,
-                              ring_lengths,
-                              xs,
-                              ys);
+    int num_features = ReadLayer(dataset_layer,
+                                 poly.feature_lengths,
+                                 poly.ring_lengths,
+                                 poly.xs,
+                                 poly.ys);
 
-        CUDF_EXPECTS(num_f > 0, "Shapefile must have at lest one polygon");
+    CUSPATIAL_EXPECTS(num_features > 0, "Shapefile must have at lest one polygon");
+    
+    poly.group_lengths.push_back(num_features);
+    poly.shrink_to_fit();
 
-        polygons<double> result = {
-            static_cast<uint32_t>(g_len_v.size()),
-            static_cast<uint32_t>(feature_lengths.size()),
-            static_cast<uint32_t>(ring_lengths.size()),
-            static_cast<uint32_t>(xs.size()),
-            new uint32_t[g_len_v.size()],
-            new uint32_t[feature_lengths.size()],
-            new uint32_t[ring_lengths.size()],
-            nullptr,
-            nullptr,
-            nullptr,
-            new double[static_cast<uint32_t>(xs.size())],
-            new double[static_cast<uint32_t>(ys.size())]
-        };
+    return poly;
+}
 
-        std::copy_n(g_len_v.begin(),         result.num_group,   result.group_length);
-        std::copy_n(feature_lengths.begin(), result.num_feature, result.feature_length);
-        std::copy_n(ring_lengths.begin(),    result.num_ring,    result.ring_length);
-        std::copy_n(xs.begin(),              result.num_vertex,  result.x);
-        std::copy_n(ys.begin(),              result.num_vertex,  result.y);
-
-        return result;
-    }
 } // namespace detail
+
 } // namespace cuspatial

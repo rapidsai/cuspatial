@@ -20,7 +20,7 @@
 #include <utility>
 #include <thrust/device_vector.h>
 
-#include <utility/utility.hpp>
+#include <utility/legacy/utility.hpp>
 #include <cuspatial/legacy/coordinate_transform.hpp>
 #include <cuspatial/error.hpp>
 

@@ -14,78 +14,48 @@
  * limitations under the License.
  */
 
-// #include <stdio.h>
-// #include <string.h>
-// #include <math.h>
-// #include <algorithm>
-// #include <cuda_runtime.h>
-// #include <thrust/device_vector.h>
-// #include <rmm/thrust_rmm_allocator.h>
-// #include <cudf/types.h>
-// #include <cudf/legacy/column.hpp>
-// #include <cudf/utilities/error.hpp>
-// #include <cuspatial/legacy/shapefile_readers.hpp>
-// #include <cuspatial/error.hpp>
-// #include <utility/utility.hpp>
-
 #include <cudf/column/column.hpp>
 #include <cudf/table/table.hpp>
-#include <cudf/column/column_view.hpp>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/types.hpp>
 #include <rmm/thrust_rmm_allocator.h>
 #include <memory>
 #include <string>
-#include "rmm/device_buffer.hpp"
-#include "utility/utility.hpp"
+#include <utility/utility.hpp>
 
-namespace cuspatial
-{
-    // probably just import this here.
-// namespace detail
-// {
-//     /*
-//     * Read a polygon shapefile and fill in a polygons structure
-//     * ToDo: read associated relational data into a CUDF Table
-//     *
-//     * filename: ESRI shapefile name (wtih .shp extension
-//     * pm: structure polygons (fixed to double type) to hold polygon data
+namespace cuspatial {
 
-//     * Note: only the first layer is read - shapefiles have only one layer in GDALDataset model
-//     */
-//     void polygon_from_shapefile(std::string const& filename, polygons<double>& pm);
-// } // namespace detail
+namespace detail {
 
-/*
-* read polygon data from file in ESRI Shapefile format; data type of vertices is fixed to double (GDF_FLOAT64)
-* see shp_readers.hpp
-*/
+polygons read_polygon_shapefile(const char *filename);
+
+} // namespace detail
 
 std::unique_ptr<cudf::experimental::table>
 read_polygon_shapefile(std::string const& filename,
                        rmm::mr::device_memory_resource* mr,
                        cudaStream_t stream)
 {
-    auto pm = polygons<double>{};
+    auto poly = detail::read_polygon_shapefile(filename.c_str());
 
     auto tid  = cudf::experimental::type_to_id<double>();
     auto type = cudf::data_type{tid};
 
-    auto polygon_offsets = cudf::make_fixed_width_column(type, pm.num_feature);
-    auto ring_offsets    = cudf::make_fixed_width_column(type, pm.num_ring);
-    auto point_x         = cudf::make_fixed_width_column(type, pm.num_vertex);
-    auto point_y         = cudf::make_fixed_width_column(type, pm.num_vertex);
+    auto polygon_offsets = cudf::make_fixed_width_column(type, poly.feature_lengths.size());
+    auto ring_offsets    = cudf::make_fixed_width_column(type, poly.ring_lengths.size());
+    auto xs              = cudf::make_fixed_width_column(type, poly.xs.size());
+    auto ys              = cudf::make_fixed_width_column(type, poly.ys.size());
 
-    thrust::copy(pm.feature_length,
-                 pm.feature_length + pm.num_feature,
-                 polygon_offsets->mutable_view().end<cudf::size_type>());
+    thrust::copy(poly.feature_lengths.begin(),
+                 poly.feature_lengths.end(),
+                 polygon_offsets->mutable_view().begin<cudf::size_type>());
 
-    thrust::copy(pm.ring_length,
-                 pm.ring_length + pm.num_ring,
-                 ring_offsets->mutable_view().end<cudf::size_type>());
+    thrust::copy(poly.ring_lengths.begin(),
+                 poly.ring_lengths.end(),
+                 ring_offsets->mutable_view().begin<cudf::size_type>());
 
-    thrust::copy(pm.x, pm.x + pm.num_vertex, ring_offsets->mutable_view().end<double>());
-    thrust::copy(pm.y, pm.y + pm.num_vertex, ring_offsets->mutable_view().end<double>());
+    thrust::copy(poly.xs.begin(), poly.xs.end(), xs->mutable_view().begin<double>());
+    thrust::copy(poly.ys.begin(), poly.ys.end(), ys->mutable_view().begin<double>());
 
     // transform polygon lengths to polygon offsets
     thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
