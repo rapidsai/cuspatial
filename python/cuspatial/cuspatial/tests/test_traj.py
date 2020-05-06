@@ -182,57 +182,51 @@ def test_spatial_bounds_two_and_three():
 
 
 def test_derive_trajectories_zeros():
-    num_trajectories = cuspatial.derive(
-        cudf.Series([0]), cudf.Series([0]), cudf.Series([0]), cudf.Series([0])
+    objects, traj_offsets = cuspatial.derive(
+        cudf.Series([0]), # object_id
+        cudf.Series([0]), # x
+        cudf.Series([0]), # y
+        cudf.Series([0]), # timestamp
     )
-    assert num_trajectories[0] == 1
-    assert_eq(
-        num_trajectories[1],
-        cudf.DataFrame(
-            {
-                "trajectory_id": cudf.Series([0]).astype("int32"),
-                "length": cudf.Series([1]).astype("int32"),
-                "position": cudf.Series([1]).astype("int32"),
-            }
-        ),
-    )
+    assert_eq(traj_offsets, cudf.Series([0], dtype="int32"))
+    assert_eq(objects, cudf.DataFrame({
+        "object_id": cudf.Series([0], dtype="int32"),
+        "x": cudf.Series([0], dtype="float32"),
+        "y": cudf.Series([0], dtype="float32"),
+        "timestamp": cudf.Series([0], dtype="datetime64[ms]"),
+    }))
 
 
 def test_derive_trajectories_ones():
-    num_trajectories = cuspatial.derive(
-        cudf.Series([1]), cudf.Series([1]), cudf.Series([1]), cudf.Series([1])
+    objects, traj_offsets = cuspatial.derive(
+        cudf.Series([1]), # object_id
+        cudf.Series([1]), # x
+        cudf.Series([1]), # y
+        cudf.Series([1]), # timestamp
     )
-    assert num_trajectories[0] == 1
-    assert_eq(
-        num_trajectories[1],
-        cudf.DataFrame(
-            {
-                "trajectory_id": cudf.Series([1]).astype("int32"),
-                "length": cudf.Series([1]).astype("int32"),
-                "position": cudf.Series([1]).astype("int32"),
-            }
-        ),
-    )
+    assert_eq(traj_offsets, cudf.Series([0], dtype="int32"))
+    assert_eq(objects, cudf.DataFrame({
+        "object_id": cudf.Series([1], dtype="int32"),
+        "x": cudf.Series([1], dtype="float32"),
+        "y": cudf.Series([1], dtype="float32"),
+        "timestamp": cudf.Series([1], dtype="datetime64[ms]"),
+    }))
 
 
 def test_derive_trajectories_two():
-    num_trajectories = cuspatial.derive(
-        cudf.Series([0, 1]),
-        cudf.Series([0, 1]),
-        cudf.Series([0, 1]),
-        cudf.Series([0, 1]),
+    objects, traj_offsets = cuspatial.derive(
+        cudf.Series([0, 1]), # object_id
+        cudf.Series([0, 1]), # x
+        cudf.Series([0, 1]), # y
+        cudf.Series([0, 1]), # timestamp
     )
-    assert num_trajectories[0] == 2
-    assert_eq(
-        num_trajectories[1],
-        cudf.DataFrame(
-            {
-                "trajectory_id": cudf.Series([0, 1]).astype("int32"),
-                "length": cudf.Series([1, 1]).astype("int32"),
-                "position": cudf.Series([1, 2]).astype("int32"),
-            }
-        ),
-    )
+    assert_eq(traj_offsets, cudf.Series([0, 1], dtype="int32"))
+    assert_eq(objects, cudf.DataFrame({
+        "object_id": cudf.Series([0, 1], dtype="int32"),
+        "x": cudf.Series([0, 1], dtype="float32"),
+        "y": cudf.Series([0, 1], dtype="float32"),
+        "timestamp": cudf.Series([0, 1], dtype="datetime64[ms]"),
+    }))
 
 
 def test_derive_trajectories_many():
