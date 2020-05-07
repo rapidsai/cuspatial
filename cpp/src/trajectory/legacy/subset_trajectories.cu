@@ -25,7 +25,7 @@
 
 #include <rmm/thrust_rmm_allocator.h>
 
-#include <utility/utility.hpp>
+#include <utility/legacy/utility.hpp>
 #include <utility/trajectory_thrust.cuh>
 #include <cuspatial/legacy/trajectory.hpp>
 #include <cuspatial/error.hpp>

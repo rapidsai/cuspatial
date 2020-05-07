@@ -17,8 +17,8 @@
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
 #include <utilities/legacy/cuda_utils.hpp>
 #include <type_traits>
-#include <utility/utility.hpp>
-#include <cuspatial/point_in_polygon.hpp>
+#include <utility/legacy/utility.hpp>
+#include <cuspatial/legacy/point_in_polygon.hpp>
 #include <cuspatial/error.hpp>
 
 #include <cudf/legacy/column.hpp>
@@ -116,7 +116,7 @@ namespace cuspatial {
 
 /*
  * Point-in-Polygon (PIP) tests among a column of points and a column of
- * polygons. See point_in_polygon.hpp
+ * polygons. See legacy/point_in_polygon.hpp
  */
 gdf_column point_in_polygon_bitmap(const gdf_column& points_x,
                                    const gdf_column& points_y,

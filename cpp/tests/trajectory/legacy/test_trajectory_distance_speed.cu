@@ -22,6 +22,8 @@
 
 #include <cuspatial/legacy/trajectory.hpp> 
 
+#include "tests/utilities/cuspatial_gmock.hpp"
+
 struct TrajectoryDistanceSpeed : public GdfTest 
 {
 };
@@ -130,7 +132,7 @@ TEST_F(TrajectoryDistanceSpeed, BadData)
     gdf_column_view(&bad_offset, 0, 0, 0, GDF_INT32);
 
     // null pointers
-    CUDF_EXPECT_THROW_MESSAGE(
+    CUSPATIAL_EXPECT_THROW_MESSAGE(
         cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
                                                  bad_length, bad_offset),
         "Null input data");
@@ -144,7 +146,7 @@ TEST_F(TrajectoryDistanceSpeed, BadData)
     bad_length.size = 3;
     bad_offset.size = 3;
 
-    CUDF_EXPECT_THROW_MESSAGE(
+    CUSPATIAL_EXPECT_THROW_MESSAGE(
         cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
                                                  bad_length, bad_offset),
         "Data size mismatch");
@@ -153,7 +155,7 @@ TEST_F(TrajectoryDistanceSpeed, BadData)
     bad_y.size = 10;
     bad_offset.size = 4;
 
-    CUDF_EXPECT_THROW_MESSAGE(
+    CUSPATIAL_EXPECT_THROW_MESSAGE(
         cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
                                                  bad_length, bad_offset),
         "Data size mismatch");
@@ -161,7 +163,7 @@ TEST_F(TrajectoryDistanceSpeed, BadData)
     bad_offset.size = 3;
     bad_length.dtype = GDF_FLOAT32;
 
-    CUDF_EXPECT_THROW_MESSAGE(
+    CUSPATIAL_EXPECT_THROW_MESSAGE(
         cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
                                                  bad_length, bad_offset),
         "Invalid trajectory length datatype");
@@ -169,7 +171,7 @@ TEST_F(TrajectoryDistanceSpeed, BadData)
     bad_length.dtype = GDF_INT32;
     bad_offset.dtype = GDF_FLOAT32;
 
-    CUDF_EXPECT_THROW_MESSAGE(
+    CUSPATIAL_EXPECT_THROW_MESSAGE(
         cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
                                                  bad_length, bad_offset),
         "Invalid trajectory offset datatype");
@@ -177,14 +179,14 @@ TEST_F(TrajectoryDistanceSpeed, BadData)
     bad_offset.dtype = GDF_INT32;
     bad_timestamp.dtype = GDF_DATE32;
 
-    CUDF_EXPECT_THROW_MESSAGE(
+    CUSPATIAL_EXPECT_THROW_MESSAGE(
         cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
                                                  bad_length, bad_offset),
         "Invalid timestamp datatype");
 
     bad_timestamp.dtype = GDF_TIMESTAMP;
     bad_x.null_count = 5;
-    CUDF_EXPECT_THROW_MESSAGE(
+    CUSPATIAL_EXPECT_THROW_MESSAGE(
         cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
                                                  bad_length, bad_offset),
         "NULL support unimplemented");
@@ -193,7 +195,7 @@ TEST_F(TrajectoryDistanceSpeed, BadData)
     bad_x.size = 1;
     bad_y.size = 1;
     bad_timestamp.size = 1;
-    CUDF_EXPECT_THROW_MESSAGE(
+    CUSPATIAL_EXPECT_THROW_MESSAGE(
         cuspatial::trajectory_distance_and_speed(bad_x, bad_y, bad_timestamp, 
                                                  bad_length, bad_offset),
         "Insufficient trajectory data");
