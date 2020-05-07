@@ -26,6 +26,8 @@
 
 namespace {
 
+constexpr uint32_t NUM_THREADS = 1024;
+
 template<typename T>
 constexpr auto magnitude_squared(T a, T b) {
     return a * a + b * b;
@@ -42,61 +44,59 @@ __global__ void kernel_hausdorff(int num_spaces,
     auto num_results = num_spaces * num_spaces;
 
     // each block processes a single result / pair of spaces
-    if (block_idx >= num_results)
+    if (block_idx < num_results)
     {
-        return;
-    }
+        int space_a_idx   = block_idx % num_spaces;
+        int space_a_begin = space_a_idx == 0 ? 0 : space_offsets[space_a_idx - 1];
+        int space_a_end   =                        space_offsets[space_a_idx];
 
-    int space_a_idx   = block_idx % num_spaces;
-    int space_a_begin = space_a_idx == 0 ? 0 : space_offsets[space_a_idx - 1];
-    int space_a_end   =                        space_offsets[space_a_idx];
+        int space_b_idx   = block_idx / num_spaces;
+        int space_b_begin = space_b_idx == 0 ? 0 : space_offsets[space_b_idx - 1];
+        int space_b_end   =                        space_offsets[space_b_idx];
 
-    int space_b_idx   = block_idx / num_spaces;
-    int space_b_begin = space_b_idx == 0 ? 0 : space_offsets[space_b_idx - 1];
-    int space_b_end   =                        space_offsets[space_b_idx];
+        T min_dist_sqrd = 1e20;
 
-    T min_dist_sqrd = 1e20;
+        int num_points_in_b = space_b_end - space_b_begin;
 
-    int num_points_in_b = space_b_end - space_b_begin;
-
-    if (threadIdx.x < num_points_in_b)
-    {
-        T point_b_x = xs[space_b_begin + threadIdx.x];
-        T point_b_y = ys[space_b_begin + threadIdx.x];
-
-        for (int i = space_a_begin; i < space_a_end; i++)
+        if (threadIdx.x < num_points_in_b)
         {
-            T point_a_x = xs[i];
-            T point_a_y = ys[i];
-            T dist_sqrd = magnitude_squared(point_b_x - point_a_x, point_b_y - point_a_y);
+            T point_b_x = xs[space_b_begin + threadIdx.x];
+            T point_b_y = ys[space_b_begin + threadIdx.x];
 
-            min_dist_sqrd = min(min_dist_sqrd, dist_sqrd);
+            for (int i = space_a_begin; i < space_a_end; i++)
+            {
+                T point_a_x = xs[i];
+                T point_a_y = ys[i];
+                T dist_sqrd = magnitude_squared(point_b_x - point_a_x, point_b_y - point_a_y);
+
+                min_dist_sqrd = min(min_dist_sqrd, dist_sqrd);
+            }
         }
-    }
 
-    if (min_dist_sqrd > 1e10)
-    {
-        min_dist_sqrd = -1;
-    }
-
-    __shared__ T dist_sqrd[1024];
-
-    dist_sqrd[threadIdx.x] = threadIdx.x < num_points_in_b ? min_dist_sqrd : -1;
-
-    for (int offset = blockDim.x / 2; offset > 0; offset >>= 1)
-    {
-        __syncthreads();
-
-        if (threadIdx.x < offset)
+        if (min_dist_sqrd > 1e10)
         {
-            dist_sqrd[threadIdx.x] = max(dist_sqrd[threadIdx.x],
-                                            dist_sqrd[threadIdx.x + offset]);
+            min_dist_sqrd = -1;
         }
-    }
 
-    if (threadIdx.x == 0)
-    {
-        results[block_idx] = (dist_sqrd[0] < 0) ? 1e10 : sqrt(dist_sqrd[0]);
+        __shared__ T dist_sqrd[NUM_THREADS];
+
+        dist_sqrd[threadIdx.x] = threadIdx.x < num_points_in_b ? min_dist_sqrd : -1;
+
+        for (int offset = blockDim.x / 2; offset > 0; offset >>= 1)
+        {
+            __syncthreads();
+
+            if (threadIdx.x < offset)
+            {
+                dist_sqrd[threadIdx.x] = max(dist_sqrd[threadIdx.x],
+                                                dist_sqrd[threadIdx.x + offset]);
+            }
+        }
+
+        if (threadIdx.x == 0)
+        {
+            results[block_idx] = (dist_sqrd[0] < 0) ? 1e10 : sqrt(dist_sqrd[0]);
+        }
     }
 }
 
@@ -141,7 +141,6 @@ struct hausdorff_functor
         int block_x = min(result->size(), max_thread_count);
         int block_y = ceil(result->size() / (float) max_thread_count);
 
-        const uint32_t NUM_THREADS = 1024;
         dim3 grid(block_x, block_y);
         dim3 block(NUM_THREADS);
 
