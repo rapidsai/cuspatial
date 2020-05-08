@@ -24,9 +24,9 @@
 #include <cudf/utilities/error.hpp>
 #include <cuspatial/soa_readers.hpp>
 #include <cuspatial/error.hpp>
-#include <utility/utility.hpp>
 #include "cudf/utilities/type_dispatcher.hpp"
 #include "rmm/thrust_rmm_allocator.h"
+#include <utility/legacy/utility.hpp>
 
 namespace cuspatial
 {

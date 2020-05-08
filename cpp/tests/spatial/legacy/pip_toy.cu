@@ -17,7 +17,7 @@
 #include <vector>
 #include <string>
 #include <gtest/gtest.h>
-#include <cuspatial/point_in_polygon.hpp>
+#include <cuspatial/legacy/point_in_polygon.hpp>
 #include "pip_util.h"
 
 #include <tests/utilities/legacy/column_wrapper.cuh>

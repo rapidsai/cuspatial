@@ -1,17 +1,19 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-# cython: profile=False
-# distutils: language = c++
-# cython: embedsignature = True
-# cython: language_level = 3
 
-
-from cudf._lib.legacy.cudf import *
-from cudf._lib.legacy.cudf cimport *
-from cudf import Series
+from libc.stdlib cimport malloc, free
+from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
-
-from libc.stdlib cimport calloc, malloc, free
+from cudf import Series
+from cudf._lib.column cimport Column
+from cudf._lib.cpp.column.column cimport column
+from cudf._lib.cpp.column.column_view cimport column_view
+from cudf._lib.legacy.cudf cimport *
+from cudf._lib.legacy.cudf import *
+from cuspatial._lib.cpp.coordinate_transform cimport (
+    lonlat_to_cartesian as cpp_lonlat_to_cartesian
+)
+from cuspatial._lib.move cimport move
 
 cpdef cpp_point_in_polygon_bitmap(
     points_x, points_y, poly_fpos, poly_rpos, poly_x, poly_y
@@ -84,31 +86,31 @@ cpdef cpp_haversine_distance(x1, y1, x2, y2):
 
     return result
 
-cpdef cpp_lonlat2coord(cam_lon, cam_lat, in_lon, in_lat):
-    cam_lon = np.float64(cam_lon)
-    cam_lat = np.float64(cam_lat)
-    in_lon = in_lon.astype('float64')._column
-    in_lat = in_lat.astype('float64')._column
-    cdef gdf_scalar* c_cam_lon = gdf_scalar_from_scalar(cam_lon)
-    cdef gdf_scalar* c_cam_lat = gdf_scalar_from_scalar(cam_lat)
-    cdef gdf_column* c_in_lon = column_view_from_column(in_lon)
-    cdef gdf_column* c_in_lat = column_view_from_column(in_lat)
 
-    cpdef pair[gdf_column, gdf_column] coords
+def lonlat_to_cartesian(
+    double origin_lon,
+    double origin_lat,
+    Column input_lon,
+    Column input_lat
+):
+    cdef column_view c_input_lon = input_lon.view()
+    cdef column_view c_input_lat = input_lat.view()
+
+    cdef pair[unique_ptr[column], unique_ptr[column]] result
 
     with nogil:
-        coords = lonlat_to_coord(
-            c_cam_lon[0],
-            c_cam_lat[0],
-            c_in_lon[0],
-            c_in_lat[0]
+        result = move(
+            cpp_lonlat_to_cartesian(
+                origin_lon,
+                origin_lat,
+                c_input_lon,
+                c_input_lat
+            )
         )
 
-    free(c_in_lon)
-    free(c_in_lat)
+    return (Column.from_unique_ptr(move(result.first)),
+            Column.from_unique_ptr(move(result.second)))
 
-    return (Series(gdf_column_to_column(&coords.first)),
-            Series(gdf_column_to_column(&coords.second)))
 
 cpdef cpp_directed_hausdorff_distance(coor_x, coor_y, cnt):
     coor_x = coor_x.astype('float64')._column

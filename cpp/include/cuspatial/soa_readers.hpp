@@ -20,7 +20,6 @@
 #pragma once
 
 namespace cuspatial {
-
 namespace experimental {
 
 /**
@@ -31,7 +30,8 @@ namespace experimental {
  *
  * @return column storing the int32_t data
  **/
-std::unique_ptr<cudf::column> read_int32_soa(const char *filename, rmm::mr::device_memory_resource* mr);
+std::unique_ptr<cudf::column> read_int32_soa(const char *filename,
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
  * @brief Read a column of timestamp data from file.
@@ -41,7 +41,8 @@ std::unique_ptr<cudf::column> read_int32_soa(const char *filename, rmm::mr::devi
  *
  * @return cudf::column of timestamp data.
 **/
-std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename, rmm::mr::device_memory_resource* mr);
+std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename,
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
  * @brief read lon/lat from file as two columns; data type is fixed to FLOAT64
@@ -56,7 +57,7 @@ std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename, rmm::mr::
 **/
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
 read_lonlat_points(std::string filepath, 
-                   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
  * @brief Read x and y coordinate columns from file.
@@ -70,7 +71,8 @@ read_lonlat_points(std::string filepath,
  * @return A `std::pair` of two `FLOAT64` `cudf::column`s containing x and y data.
 **/
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-read_xy_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
+read_xy_points_soa(const char *filename,
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
  * @brief Read polygon data from file.
@@ -87,8 +89,9 @@ read_xy_points_soa(const char *filename, rmm::mr::device_memory_resource* mr);
  *          column(2): FLOAT64 x-coordinates of concatenated polygons.
  *          column(3): FLOAT64 y-coordinates of concatenated polygons.
 **/
-std::vector<std::unique_ptr<cudf::column>> read_polygon_soa(const char *filename,
-              rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+std::vector<std::unique_ptr<cudf::column>>
+read_polygon_soa(const char *filename,
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 } // namespace experimental
 
