@@ -173,21 +173,19 @@ directed_hausdorff_distance(cudf::column_view const& xs,
                             cudf::column_view const& points_per_space,
                             rmm::mr::device_memory_resource *mr)
 {
-    CUSPATIAL_EXPECTS(xs.type() == ys.type(), "inputs `xs` and `ys` must have same type.");
-    CUSPATIAL_EXPECTS(xs.size() == ys.size(), "inputs `xs` and `ys` must have same length.");
+    CUSPATIAL_EXPECTS(xs.type() == ys.type(), "Inputs `xs` and `ys` must have same type.");
+    CUSPATIAL_EXPECTS(xs.size() == ys.size(), "Inputs `xs` and `ys` must have same length.");
 
     CUSPATIAL_EXPECTS(not xs.has_nulls() and
                       not ys.has_nulls() and
                       not points_per_space.has_nulls(),
-                      "inputs must not have nulls.");
+                      "Inputs must not have nulls.");
 
     CUSPATIAL_EXPECTS(xs.size() >= points_per_space.size(),
                       "At least one point is required for each space");
 
-    if (points_per_space.size() > MAX_NUM_SPACES)
-    {
-        CUSPATIAL_FAIL("Total number of spaces must not exceed " CUSPATIAL_STRINGIFY(MAX_NUM_SPACES));
-    }
+    CUSPATIAL_EXPECTS(points_per_space.size() <= MAX_NUM_SPACES,
+                      "Total number of spaces must not exceed " CUSPATIAL_STRINGIFY(MAX_NUM_SPACES));
 
     cudaStream_t stream = 0;
 

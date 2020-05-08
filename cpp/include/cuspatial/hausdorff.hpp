@@ -73,6 +73,8 @@ namespace cuspatial {
  *
  * @returns Hausdorff distances for each pair of spaces
  *
+ * @throw cudf::cuda_error if `points_per_space` contains negative values
+ *
  * @note Hausdorff distances are asymmetrical
  */
 std::unique_ptr<cudf::column>
