@@ -24,6 +24,8 @@
 
 #include <cuspatial/legacy/trajectory.hpp>
 
+#include "tests/utilities/cuspatial_gmock.hpp"
+
 struct TrajectorySubsetTest : public GdfTest 
 {
 };
@@ -133,7 +135,7 @@ TEST_F(TrajectorySubsetTest, BadData)
     gdf_column_view(&bad_timestamp, 0, 0, 0, GDF_TIMESTAMP);
 
     // null pointers
-    CUDF_EXPECT_THROW_MESSAGE(cuspatial::subset_trajectory_id(bad_id,
+    CUSPATIAL_EXPECT_THROW_MESSAGE(cuspatial::subset_trajectory_id(bad_id,
                                                               bad_x, bad_y,
                                                               bad_in_id,
                                                               bad_timestamp,
@@ -150,7 +152,7 @@ TEST_F(TrajectorySubsetTest, BadData)
     bad_in_id.size = 10;
     bad_timestamp.size = 10;
     
-    CUDF_EXPECT_THROW_MESSAGE(cuspatial::subset_trajectory_id(bad_id,
+    CUSPATIAL_EXPECT_THROW_MESSAGE(cuspatial::subset_trajectory_id(bad_id,
                                                               bad_x, bad_y,
                                                               bad_in_id,
                                                               bad_timestamp,
@@ -163,7 +165,7 @@ TEST_F(TrajectorySubsetTest, BadData)
     bad_y.size = 10;
     bad_in_id.dtype = GDF_FLOAT32;
 
-    CUDF_EXPECT_THROW_MESSAGE(cuspatial::subset_trajectory_id(bad_id,
+    CUSPATIAL_EXPECT_THROW_MESSAGE(cuspatial::subset_trajectory_id(bad_id,
                                                               bad_x, bad_y,
                                                               bad_in_id,
                                                               bad_timestamp,
@@ -175,7 +177,7 @@ TEST_F(TrajectorySubsetTest, BadData)
     bad_in_id.dtype = GDF_INT32;
     bad_id.dtype = GDF_INT8;
 
-    CUDF_EXPECT_THROW_MESSAGE(cuspatial::subset_trajectory_id(bad_id,
+    CUSPATIAL_EXPECT_THROW_MESSAGE(cuspatial::subset_trajectory_id(bad_id,
                                                               bad_x, bad_y,
                                                               bad_in_id,
                                                               bad_timestamp,
@@ -187,7 +189,7 @@ TEST_F(TrajectorySubsetTest, BadData)
     bad_id.dtype = GDF_INT32;
     bad_timestamp.dtype = GDF_DATE32;
 
-    CUDF_EXPECT_THROW_MESSAGE(cuspatial::subset_trajectory_id(bad_id,
+    CUSPATIAL_EXPECT_THROW_MESSAGE(cuspatial::subset_trajectory_id(bad_id,
                                                               bad_x, bad_y,
                                                               bad_in_id,
                                                               bad_timestamp,
@@ -198,7 +200,7 @@ TEST_F(TrajectorySubsetTest, BadData)
 
     bad_timestamp.dtype = GDF_TIMESTAMP;
     bad_x.null_count = 5;
-    CUDF_EXPECT_THROW_MESSAGE(cuspatial::subset_trajectory_id(bad_id,
+    CUSPATIAL_EXPECT_THROW_MESSAGE(cuspatial::subset_trajectory_id(bad_id,
                                                               bad_x, bad_y,
                                                               bad_in_id,
                                                               bad_timestamp,

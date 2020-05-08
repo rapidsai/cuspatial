@@ -1,6 +1,6 @@
 #include <string.h>
 #include <algorithm>
-#include <utility/utility.hpp>
+#include <utility/legacy/utility.hpp>
 #include "traj_util.h"
 
 /**

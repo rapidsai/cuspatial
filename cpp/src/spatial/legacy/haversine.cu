@@ -23,8 +23,8 @@
 #include <utilities/legacy/cuda_utils.hpp>
 #include <type_traits>
 #include <thrust/device_vector.h>
-#include <utility/utility.hpp>
-#include <cuspatial/haversine.hpp>
+#include <utility/legacy/utility.hpp>
+#include <cuspatial/legacy/haversine.hpp>
 #include <cuspatial/error.hpp>
 
 

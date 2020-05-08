@@ -23,7 +23,7 @@
 #include <cudf/types.h>
 #include <cudf/legacy/column.hpp>
 #include <cuspatial/legacy/soa_readers.hpp>
-#include <utility/utility.hpp>
+#include <utility/legacy/utility.hpp>
 
 namespace cuspatial
 {

@@ -112,6 +112,12 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-
 # TODO: remove `no-maybe-unitialized` used to suppress warnings in rmm::exec_policy
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Werror=cross-execution-space-call -Xcompiler -Wall,-Werror,-Wno-error=deprecated-declarations")
 
+option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
+if(DISABLE_DEPRECATION_WARNING)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wno-deprecated-declarations")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+endif(DISABLE_DEPRECATION_WARNING)
+
 # Option to enable line info in CUDA device compilation to allow introspection when profiling / memchecking
 option(CMAKE_CUDA_LINEINFO "Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler" OFF)
 if (CMAKE_CUDA_LINEINFO)
@@ -273,8 +279,7 @@ if(BUILD_BENCHMARKS)
   if(GBENCH_FOUND)
     message(STATUS "Google C++ Benchmarking Framework (Google Benchmark) found in ${GBENCH_ROOT}")
     include_directories(${GBENCH_INCLUDE_DIR})
-    # TODO: Uncomment this when benchmarks folder exists
-    # add_subdirectory(${CMAKE_SOURCE_DIR}/benchmarks)
+    add_subdirectory(${CMAKE_SOURCE_DIR}/benchmarks)
   else()
     message(AUTHOR_WARNING "Google C++ Benchmarking Framework (Google Benchmark) not found: automated tests are disabled.")
   endif(GBENCH_FOUND)
@@ -324,22 +329,26 @@ endif(CONDA_LINK_DIRS)
 
 add_library(cuspatial SHARED
             src/interpolate/cubic_spline.cu
-            src/io/shp/polygon_shapefile_reader.cpp
-            src/io/shp/polygon_shapefile_reader.cu
+            src/io/shp/legacy/polygon_shapefile_reader.cpp
+            src/io/shp/legacy/polygon_shapefile_reader.cu
             src/io/soa/polygon_soa_reader.cu
             src/io/soa/point_soa_reader.cu
             src/io/soa/uint32_soa_reader.cu
             src/io/soa/timestamp_soa_reader.cu
-            src/query/spatial_window_points.cu
-            src/spatial/point_in_polygon.cu
-            src/spatial/haversine.cu
+            src/query/legacy/spatial_window_points.cu
+            src/spatial/legacy/point_in_polygon.cu
+            src/spatial/legacy/haversine.cu
             src/spatial/legacy/hausdorff.cu
             src/spatial/legacy/lonlat_to_coordinate.cu
+            src/spatial/lonlat_to_cartesian.cu
+            src/trajectory/derive_trajectories.cu
+            src/trajectory/trajectory_bounding_boxes.cu
+            src/trajectory/trajectory_distances_and_speeds.cu
             src/trajectory/legacy/trajectory_spatial_bound.cu
             src/trajectory/legacy/trajectory_distance_speed.cu
             src/trajectory/legacy/derive_trajectories.cu
             src/trajectory/legacy/subset_trajectories.cu
-            src/utility/utility.cpp)
+            src/utility/legacy/utility.cpp)
 
 #Override RPATH for cuspatial
 SET_TARGET_PROPERTIES(cuspatial PROPERTIES BUILD_RPATH "\$ORIGIN")

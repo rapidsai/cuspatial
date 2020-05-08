@@ -25,7 +25,7 @@
 #include <cudf/utilities/error.hpp>
 #include <cuspatial/legacy/soa_readers.hpp>
 #include <cuspatial/error.hpp>
-#include <utility/utility.hpp>
+#include <utility/legacy/utility.hpp>
 
 namespace cuspatial
 {
