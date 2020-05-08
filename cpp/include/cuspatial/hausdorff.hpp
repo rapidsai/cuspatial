@@ -27,7 +27,7 @@ namespace cuspatial {
  * https://en.wikipedia.org/wiki/Hausdorff_distance
  *
  * Example in 1D (this function operates in 2D):
- *
+ * ```
  * spaces
  * [0 2 5] [9] [3 7]
  *
@@ -65,6 +65,7 @@ namespace cuspatial {
  *
  * returned as concatenation of columns
  * [0 2 4 3 0 2 9 6 0]
+ * ```
  *
  * @param[in] xs: x component of points
  * @param[in] ys: y component of points
