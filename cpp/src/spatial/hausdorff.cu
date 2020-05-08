@@ -26,7 +26,9 @@
 
 namespace {
 
-constexpr uint32_t NUM_THREADS = 1024;
+constexpr cudf::size_type MAX_NUM_SPACES = 46340; // floor(sqrt(numeric_limits<size_type>::max()))
+constexpr cudf::size_type MAX_NUM_BLOCKS_X = 65535;
+constexpr cudf::size_type MAX_NUM_THREADS_PER_BLOCK = 1024;
 
 template<typename T>
 constexpr auto magnitude_squared(T a, T b) {
@@ -78,7 +80,7 @@ __global__ void kernel_hausdorff(int num_spaces,
             min_dist_sqrd = -1;
         }
 
-        __shared__ T dist_sqrd[NUM_THREADS];
+        __shared__ T dist_sqrd[MAX_NUM_THREADS_PER_BLOCK];
 
         dist_sqrd[threadIdx.x] = threadIdx.x < num_points_in_b ? min_dist_sqrd : -1;
 
@@ -136,17 +138,20 @@ struct hausdorff_functor
                                points_per_space.end<cudf::size_type>(),
                                space_offsets.begin());
 
-        // utilize one block per result (pair of spaces).
-        int max_thread_count = 65535;
-        int block_x = min(result->size(), max_thread_count);
-        int block_y = ceil(result->size() / (float) max_thread_count);
+        if (space_offsets.back() > xs.size())
+        {
+            CUSPATIAL_FAIL("Sum of `points_per_space` must not exceed total number of points.");
+        }
 
-        dim3 grid(block_x, block_y);
-        dim3 block(NUM_THREADS);
+        // utilize one block per result (pair of spaces).
+        int num_blocks_x = min(result->size(), MAX_NUM_BLOCKS_X);
+        int num_blocks_y = ceil(result->size() / (float) MAX_NUM_BLOCKS_X);
+
+        dim3 grid(num_blocks_x, num_blocks_y);
 
         auto kernel = kernel_hausdorff<T>;
 
-        kernel<<<grid, block, 0, stream>>>(
+        kernel<<<grid, MAX_NUM_THREADS_PER_BLOCK, 0, stream>>>(
             points_per_space.size(),
             xs.data<T>(),
             ys.data<T>(),
@@ -177,7 +182,12 @@ directed_hausdorff_distance(cudf::column_view const& xs,
                       "inputs must not have nulls.");
 
     CUSPATIAL_EXPECTS(xs.size() >= points_per_space.size(),
-                      "At least one vertex is required for each trajectory");
+                      "At least one point is required for each space");
+
+    if (points_per_space.size() > MAX_NUM_SPACES)
+    {
+        CUSPATIAL_FAIL("Total number of spaces must not exceed " CUSPATIAL_STRINGIFY(MAX_NUM_SPACES));
+    }
 
     cudaStream_t stream = 0;
 
