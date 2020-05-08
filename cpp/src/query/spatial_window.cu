@@ -14,101 +14,80 @@
  * limitations under the License.
  */
 
+#include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_view.hpp>
 #include <cudf/copying.hpp>
+#include <cudf/detail/copy_if.cuh>
 
 #include <cuspatial/error.hpp>
 
 #include <memory>
+#include <type_traits>
 
-#if 0
 namespace {
- 
-/**
-*@brief Thrust functor for spatial window query on point data (x/y)
-*
-*/
+
+// Functor to filter out points that are not inside the query window
+// This is passed to cudf::detail::copy_if
 template <typename T>
-struct spatial_window_functor_xy {
-  T left, bottom, right, top;
+struct spatial_window_filter {
+  spatial_window_filter(double left,
+                        double bottom,
+                        double right,
+                        double top,
+                        cudf::column_device_view const& x,
+                        cudf::column_device_view const& y)
+    : left{left}, bottom{bottom}, right{right}, top{top}, points_x{x}, points_y{y}
+  {
+  }
 
-  __device__ spatial_window_functor_xy(T left, T bottom, T right, T top)
-      : left(left), bottom(bottom), right(right), top(top) {}
-
-  __device__ bool operator()(const thrust::tuple<T, T>& t) {
-    T x = thrust::get<0>(t);
-    T y = thrust::get<1>(t);
+  __device__ inline bool operator()(cudf::size_type i)
+  {
+    auto x = points_x.data<T>()[i];
+    auto y = points_y.data<T>()[i];
     return x > left && x < right && y > bottom && y < top;
   }
+
+ protected:
+  double left;
+  double bottom;
+  double right;
+  double top;
+  cudf::column_device_view points_x;
+  cudf::column_device_view points_y;
 };
- 
-struct sw_point_functor {
-  template <typename T>
-  static constexpr bool is_supported() {
-    return std::is_floating_point<T>::value;
+
+// Type-dispatch functor that creates the spatial window filter of the correct type.
+// Only floating point types are supported.
+struct spatial_window_dispatch {
+  template <typename T, std::enable_if_t<std::is_floating_point<T>::value>* = nullptr>
+  std::unique_ptr<cudf::experimental::table> operator()(double left,
+                                                        double bottom,
+                                                        double right,
+                                                        double top,
+                                                        cudf::table_view const& xy,
+                                                        cudaStream_t stream,
+                                                        rmm::mr::device_memory_resource* mr)
+  {
+    auto device_x = cudf::column_device_view::create(xy.column(0), stream);
+    auto device_y = cudf::column_device_view::create(xy.column(1), stream);
+    return cudf::experimental::detail::copy_if(
+      xy, spatial_window_filter<T>{left, bottom, right, top, *device_x, *device_y}, mr, stream);
   }
 
-  template <typename T>
-  T get_scalar(const gdf_scalar v) {
-    T ret{};  // Safe type pun, compiler should optimize away the memcpy
-    memcpy(&ret, &v.data, sizeof(T));
-    return ret;
-  }
-
-  template <typename T, std::enable_if_t<is_supported<T>()>* = nullptr>
-  std::pair<gdf_column, gdf_column> operator()(
-      const gdf_scalar left, const gdf_scalar bottom, const gdf_scalar right,
-      const gdf_scalar top, const gdf_column& x, const gdf_column& y) {
-    T q_left = get_scalar<T>(left);
-    T q_right = get_scalar<T>(right);
-    T q_bottom = get_scalar<T>(bottom);
-    T q_top = get_scalar<T>(top);
-
-    cudaStream_t stream{0};
-    auto exec_policy = rmm::exec_policy(stream);
-
-    CUSPATIAL_EXPECTS(q_left < q_right,
-                      "left must be less than right in a spatial window query");
-    CUSPATIAL_EXPECTS(q_bottom < q_top,
-                      "bottom must be less than top in a spatial window query");
-
-    auto in_it = thrust::make_zip_iterator(
-        thrust::make_tuple(static_cast<T*>(x.data), static_cast<T*>(y.data)));
-
-    int num_hits = thrust::count_if(
-        exec_policy->on(stream), in_it, in_it + x.size,
-        spatial_window_functor_xy<T>(q_left, q_bottom, q_right, q_top));
-
-    T* temp_x{nullptr};
-    T* temp_y{nullptr};
-    RMM_TRY(RMM_ALLOC(&temp_x, num_hits * sizeof(T), 0));
-    RMM_TRY(RMM_ALLOC(&temp_y, num_hits * sizeof(T), 0));
-
-    auto out_it = thrust::make_zip_iterator(thrust::make_tuple(temp_x, temp_y));
-    thrust::copy_if(
-        exec_policy->on(stream), in_it, in_it + x.size, out_it,
-        spatial_window_functor_xy<T>(q_left, q_bottom, q_right, q_top));
-
-    gdf_column out_x{}, out_y{};
-
-    gdf_column_view_augmented(&out_x, temp_x, nullptr, num_hits, x.dtype, 0,
-                              gdf_dtype_extra_info{TIME_UNIT_NONE}, "x");
-    gdf_column_view_augmented(&out_y, temp_y, nullptr, num_hits, y.dtype, 0,
-                              gdf_dtype_extra_info{TIME_UNIT_NONE}, "y");
-    return std::make_pair(out_x, out_y);
-  }
-
-  template <typename T, std::enable_if_t<!is_supported<T>()>* = nullptr>
-  std::pair<gdf_column, gdf_column> operator()(
-      const gdf_scalar left, const gdf_scalar bottom, const gdf_scalar right,
-      const gdf_scalar top, const gdf_column& x, const gdf_column& y) {
-    CUSPATIAL_FAIL("Non-floating point operation is not supported");
+  template <typename T, std::enable_if_t<not std::is_floating_point<T>::value>* = nullptr>
+  std::unique_ptr<cudf::experimental::table> operator()(double left,
+                                                        double bottom,
+                                                        double right,
+                                                        double top,
+                                                        cudf::table_view const& xy,
+                                                        cudaStream_t stream,
+                                                        rmm::mr::device_memory_resource* mr)
+  {
+    CUSPATIAL_FAIL("Only floating-point types supported");
   }
 };
- 
+
 }  // namespace
-
-#endif
 
 namespace cuspatial {
 
@@ -117,25 +96,33 @@ namespace detail {
 /*
  * Return all points (x,y) that fall within a query window (x1,y1,x2,y2)
  * see query.hpp
+ *
+ * Detail version that takes a stream.
  */
-std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-points_in_spatial_window(double left, double bottom, double right, double top,
-                         cudf::column_view const& x, cudf::column_view const& y,
-                         cudaStream_t stream,
-                         rmm::mr::device_memory_resource* mr) {
-  CUSPATIAL_EXPECTS(x.type() == y.type(),
-                    "point type mismatch between x/y arrays");
-  CUSPATIAL_EXPECTS(x.size() == y.size(),
-                    "#of points mismatch between x/y arrays");
+std::unique_ptr<cudf::experimental::table> points_in_spatial_window(
+  double left,
+  double bottom,
+  double right,
+  double top,
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  cudaStream_t stream,
+  rmm::mr::device_memory_resource* mr)
+{
+  CUSPATIAL_EXPECTS(x.type() == y.type(), "point type mismatch between x/y arrays");
+  CUSPATIAL_EXPECTS(x.size() == y.size(), "#of points mismatch between x/y arrays");
 
-  CUSPATIAL_EXPECTS(not(x.has_nulls() || y.has_nulls()),
-                    "NULL point data not supported");
+  CUSPATIAL_EXPECTS(not(x.has_nulls() || y.has_nulls()), "NULL point data not supported");
 
-  // std::pair<gdf_column, gdf_column> res = cudf::type_dispatcher(
-  //    x.dtype, sw_point_functor(), left, bottom, right, top, x, y);
-
-  return std::make_pair(cudf::experimental::empty_like(x),
-                        cudf::experimental::empty_like(y));
+  return cudf::experimental::type_dispatcher(x.type(),
+                                             spatial_window_dispatch(),
+                                             left,
+                                             bottom,
+                                             right,
+                                             top,
+                                             cudf::table_view{{x, y}},
+                                             stream,
+                                             mr);
 }
 
 }  // namespace detail
@@ -144,12 +131,16 @@ points_in_spatial_window(double left, double bottom, double right, double top,
  * Return all points (x,y) that fall within a query window (x1,y1,x2,y2)
  * see query.hpp
  */
-std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-points_in_spatial_window(double left, double bottom, double right, double top,
-                         cudf::column_view const& x, cudf::column_view const& y,
-                         rmm::mr::device_memory_resource* mr) {
-  return detail::points_in_spatial_window(left, bottom, right, top, x, y, 0,
-                                          mr);
+std::unique_ptr<cudf::experimental::table> points_in_spatial_window(
+  double left,
+  double bottom,
+  double right,
+  double top,
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  rmm::mr::device_memory_resource* mr)
+{
+  return detail::points_in_spatial_window(left, bottom, right, top, x, y, 0, mr);
 }
 
 }  // namespace cuspatial
