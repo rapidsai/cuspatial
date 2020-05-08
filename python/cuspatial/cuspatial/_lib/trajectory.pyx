@@ -44,7 +44,7 @@ cpdef trajectory_bounding_boxes(size_type num_trajectories,
     cdef column_view c_id = object_id.view()
     cdef column_view c_x = x.view()
     cdef column_view c_y = y.view()
-    cdef pair[unique_ptr[column], unique_ptr[column]] result
+    cdef unique_ptr[table] result
     with nogil:
         result = move(cpp_trajectory_bounding_boxes(
             num_trajectories, c_id, c_x, c_y
@@ -62,7 +62,7 @@ cpdef trajectory_distances_and_speeds(size_type num_trajectories,
     cdef column_view c_x = x.view()
     cdef column_view c_y = y.view()
     cdef column_view c_ts = timestamp.view()
-    cdef pair[unique_ptr[column], unique_ptr[column]] result
+    cdef unique_ptr[table] result
     with nogil:
         result = move(cpp_trajectory_distances_and_speeds(
             num_trajectories, c_id, c_x, c_y, c_ts
