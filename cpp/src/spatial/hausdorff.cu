@@ -139,12 +139,6 @@ struct hausdorff_functor
                                points_per_space.end<cudf::size_type>(),
                                space_offsets.begin());
 
-        CUSPATIAL_EXPECTS(space_offsets.back() <= xs.size(),
-                          "Sum of `points_per_space` must not exceed total number of points.");
-
-        CUSPATIAL_EXPECTS(space_offsets.front() >= 0,
-                          "Sum of `points_per_space` must be >= 0.");
-
         // utilize one block per result (pair of spaces).
         int num_blocks_x = min(result->size(), MAX_NUM_BLOCKS_X);
         int num_blocks_y = ceil(result->size() / (float) MAX_NUM_BLOCKS_X);
