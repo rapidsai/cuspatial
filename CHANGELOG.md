@@ -22,6 +22,7 @@
 - PR #196 Move utilities/utilities.hpp to legacy
 - PR #195 Fix PIP docs
 - PR #197 Move query.hpp files to legacy
+- PR #176 Define new reader APIs and move soa_readers.hpp to legacy
 
 ## Bug Fixes
 
