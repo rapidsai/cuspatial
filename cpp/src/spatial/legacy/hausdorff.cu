@@ -22,7 +22,7 @@
 #include <rmm/thrust_rmm_allocator.h>
 #include <cudf/legacy/column.hpp>
 
-#include <utility/utility.hpp>
+#include <utility/legacy/utility.hpp>
 #include <cuspatial/legacy/hausdorff.hpp>
 #include <cuspatial/error.hpp>
 
