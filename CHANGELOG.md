@@ -21,6 +21,7 @@
 - PR #193 Move shapefile_readers.hpp files to legacy
 - PR #196 Move utilities/utilities.hpp to legacy
 - PR #195 Fix PIP docs
+- PR #197 Move query.hpp files to legacy
 - PR #174 Update hausdorff.hpp to libcudf++
 
 ## Bug Fixes
