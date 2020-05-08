@@ -23,6 +23,7 @@
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cuspatial/error.hpp>
+#include <cudf/utilities/error.hpp>
 
 namespace {
 
@@ -138,10 +139,11 @@ struct hausdorff_functor
                                points_per_space.end<cudf::size_type>(),
                                space_offsets.begin());
 
-        if (space_offsets.back() > xs.size())
-        {
-            CUSPATIAL_FAIL("Sum of `points_per_space` must not exceed total number of points.");
-        }
+        CUSPATIAL_EXPECTS(space_offsets.back() <= xs.size(),
+                          "Sum of `points_per_space` must not exceed total number of points.");
+
+        CUSPATIAL_EXPECTS(space_offsets.front() >= 0,
+                          "Sum of `points_per_space` must be >= 0.");
 
         // utilize one block per result (pair of spaces).
         int num_blocks_x = min(result->size(), MAX_NUM_BLOCKS_X);
@@ -158,6 +160,8 @@ struct hausdorff_functor
             space_offsets.data().get(),
             result->mutable_view().data<T>()
         );
+
+        CUDA_TRY(cudaGetLastError());
 
         return result;
     }
