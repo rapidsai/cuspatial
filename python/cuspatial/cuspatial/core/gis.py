@@ -111,12 +111,7 @@ def lonlat_to_cartesian(origin_lon, origin_lat, input_lon, input_lat):
 
 
 def point_in_polygon_bitmap(
-    x_points,
-    y_points,
-    polygon_ids,
-    polygon_end_indices,
-    polygons_x,
-    polygons_y,
+    x_points, y_points, polygon_fpos, polygon_rpos, polygons_x, polygons_y
 ):
     """ Compute from a set of points and a set of polygons which points fall
     within which polygons. Note that `polygons_(x,y)` must be specified as
@@ -126,9 +121,8 @@ def point_in_polygon_bitmap(
     params
     x_points: x coordinates of points to test
     y_points: y coordinates of points to test
-    polygon_ids: a unique integer id for each polygon
-    polygon_end_indices: the (n+1)th vertex of the final coordinate of each
-                         polygon in the next parameters
+    polygon_fpos: the (n+1)th ring coordinate for each feature/polygon.
+    polygon_rpos: the (n+1)th vertex of each ring
     polygons_x: x closed coordinates of all polygon points
     polygons_y: y closed coordinates of all polygon points
 
@@ -139,20 +133,21 @@ def point_in_polygon_bitmap(
     Examples
     --------
         result = cuspatial.point_in_polygon_bitmap(
-            cudf.Series([0, -8, 6.0]), # x coordinates of 3 query points
+            cudf.Series([0, -8, 6.0]]), # x coordinates of 3 query points
             cudf.Series([0, -8, 6.0]), # y coordinates of 3 query points
-            cudf.Series([1, 2]), # unique id of two polygons
-            cudf.Series([5, 10]), # position of last vertex in each polygon
+            cudf.Series([1, 2], index=['nyc', 'dc']), # ring positions of
+                    # two polygons each with one ring
+            cudf.Series([4, 8]), # positions of last vertex in each ring
             # polygon coordinates, x and y. Note [-10, -10] and [0, 0] repeat
             # the start/end coordinate of the two polygons.
-            cudf.Series([-10.0, 5, 5, -10, -10, 0, 10, 10, 0, 0]),
-            cudf.Series([-10.0, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
+            cudf.Series([-10, 5, 5, -10, -10, 0, 10, 10, 0, 0]),
+            cudf.Series([-10, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
         )
         # The result of point_in_polygon_bitmap is a DataFrame of Boolean
         # values indicating whether each point (rows) falls within
         # each polygon (columns).
         print(result)
-                   in_polygon_1  in_polygon_2
+                    nyc            dc
         0          True          True
         1          True         False
         2         False          True
@@ -161,28 +156,25 @@ def point_in_polygon_bitmap(
         # Point 1: (-8, -8) falls in the first polygon
         # Point 2: (6.0, 6.0) falls in the second polygon
 
+    note
+    input Series x and y will not be index aligned, but computed as
+    sequential arrays.
+
     returns
     DataFrame: a DataFrame of Boolean values indicating whether each point
     falls within each polygon.
     """
     bitmap_result = cpp_point_in_polygon_bitmap(
-        x_points,
-        y_points,
-        polygon_ids,
-        polygon_end_indices,
-        polygons_x,
-        polygons_y,
+        x_points, y_points, polygon_fpos, polygon_rpos, polygons_x, polygons_y
     )
 
     result_binary = gis_utils.pip_bitmap_column_to_binary_array(
-        polygon_bitmap_column=bitmap_result, width=len(polygon_ids)
+        polygon_bitmap_column=bitmap_result, width=len(polygon_fpos)
     )
     result_bools = DataFrame.from_gpu_matrix(
         result_binary
     )._apply_support_method("astype", dtype="bool")
-    result_bools.columns = [
-        f"in_polygon_{x}" for x in list(reversed(polygon_ids))
-    ]
+    result_bools.columns = [x for x in list(reversed(polygon_fpos.index))]
     result_bools = result_bools[list(reversed(result_bools.columns))]
     return result_bools
 

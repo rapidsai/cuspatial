@@ -24,7 +24,7 @@
 #include <thrust/device_vector.h>
 #include <utilities/legacy/error_utils.hpp>
 #include <cuspatial/legacy/coordinate_transform.hpp>
-#include <utility/utility.hpp>
+#include <utility/legacy/utility.hpp>
 
 #include <tests/utilities/legacy/column_wrapper.cuh>
 #include <tests/utilities/legacy/cudf_test_utils.cuh>
