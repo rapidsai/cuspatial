@@ -22,6 +22,8 @@
 
 #include <cuspatial/legacy/trajectory.hpp> 
 
+#include "tests/utilities/cuspatial_gmock.hpp"
+
 struct TrajectoryDerive : public GdfTest 
 {
 };
@@ -101,12 +103,12 @@ TEST_F(TrajectoryDerive, BadData)
     gdf_column_view(&bad_timestamp, 0, 0, 0, GDF_TIMESTAMP);
 
     // null pointers
-    CUDF_EXPECT_THROW_MESSAGE(cuspatial::derive_trajectories(bad_x, bad_y,
-                                                             bad_in_id,
-                                                             bad_timestamp,
-                                                             out_id,
-                                                             out_len, 
-                                                             out_offset),
+    CUSPATIAL_EXPECT_THROW_MESSAGE(cuspatial::derive_trajectories(bad_x, bad_y,
+                                                                  bad_in_id,
+                                                                  bad_timestamp,
+                                                                  out_id,
+                                                                  out_len, 
+                                                                  out_offset),
         "Null input data");
     
     // size mismatch
@@ -117,44 +119,44 @@ TEST_F(TrajectoryDerive, BadData)
     bad_in_id.size = 10;
     bad_timestamp.size = 10;
     
-    CUDF_EXPECT_THROW_MESSAGE(cuspatial::derive_trajectories(bad_x, bad_y,
-                                                             bad_in_id,
-                                                             bad_timestamp,
-                                                             out_id,
-                                                             out_len, 
-                                                             out_offset),
+    CUSPATIAL_EXPECT_THROW_MESSAGE(cuspatial::derive_trajectories(bad_x, bad_y,
+                                                                  bad_in_id,
+                                                                  bad_timestamp,
+                                                                  out_id,
+                                                                  out_len, 
+                                                                  out_offset),
         "Data size mismatch");
 
     // Invalid ID datatype
     bad_y.size = 10;
     bad_in_id.dtype = GDF_FLOAT32;
 
-    CUDF_EXPECT_THROW_MESSAGE(cuspatial::derive_trajectories(bad_x, bad_y,
-                                                             bad_in_id,
-                                                             bad_timestamp,
-                                                             out_id,
-                                                             out_len, 
-                                                             out_offset),
+    CUSPATIAL_EXPECT_THROW_MESSAGE(cuspatial::derive_trajectories(bad_x, bad_y,
+                                                                  bad_in_id,
+                                                                  bad_timestamp,
+                                                                  out_id,
+                                                                  out_len, 
+                                                                  out_offset),
         "Invalid trajectory ID datatype");
 
     bad_in_id.dtype = GDF_INT32;
     bad_timestamp.dtype = GDF_DATE32;
 
-    CUDF_EXPECT_THROW_MESSAGE(cuspatial::derive_trajectories(bad_x, bad_y,
-                                                             bad_in_id,
-                                                             bad_timestamp,
-                                                             out_id,
-                                                             out_len, 
-                                                             out_offset),
+    CUSPATIAL_EXPECT_THROW_MESSAGE(cuspatial::derive_trajectories(bad_x, bad_y,
+                                                                  bad_in_id,
+                                                                  bad_timestamp,
+                                                                  out_id,
+                                                                  out_len, 
+                                                                  out_offset),
         "Invalid timestamp datatype");
 
     bad_timestamp.dtype = GDF_TIMESTAMP;
     bad_x.null_count = 5;
-    CUDF_EXPECT_THROW_MESSAGE(cuspatial::derive_trajectories(bad_x, bad_y,
-                                                             bad_in_id,
-                                                             bad_timestamp,
-                                                             out_id,
-                                                             out_len, 
-                                                             out_offset),
+    CUSPATIAL_EXPECT_THROW_MESSAGE(cuspatial::derive_trajectories(bad_x, bad_y,
+                                                                  bad_in_id,
+                                                                  bad_timestamp,
+                                                                  out_id,
+                                                                  out_len, 
+                                                                  out_offset),
         "NULL support unimplemented");
 }
