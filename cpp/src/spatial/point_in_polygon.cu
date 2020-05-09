@@ -217,6 +217,9 @@ point_in_polygon(cudf::column_view const& test_points_x,
     CUSPATIAL_EXPECTS(poly_ring_offsets.size() >= poly_offsets.size(),
                       "Each polygon must have at least one ring.");
 
+    CUSPATIAL_EXPECTS(test_points_x.size() => poly_offsets.size() * 3,
+                      "Each ring must have at least three vertices.");
+
     return cuspatial::detail::point_in_polygon(test_points_x,
                                                test_points_y,
                                                poly_offsets,

@@ -27,13 +27,13 @@
 using namespace cudf::test;
 
 template <typename T>
-struct LonLatToCartesianTest : public BaseFixture {};
+struct PointInPolygonTest : public BaseFixture {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = Types<double>;
-TYPED_TEST_CASE(LonLatToCartesianTest, TestTypes);
+TYPED_TEST_CASE(PointInPolygonTest, TestTypes);
 
-TYPED_TEST(LonLatToCartesianTest, Empty)
+TYPED_TEST(PointInPolygonTest, Empty)
 {
     using T = TypeParam;
 
@@ -56,7 +56,7 @@ TYPED_TEST(LonLatToCartesianTest, Empty)
     expect_columns_equal(expected, actual->view(), true);
 }
 
-TYPED_TEST(LonLatToCartesianTest, TwoPolygonsOneRingEach)
+TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
 {
     using T = TypeParam;
 
@@ -79,7 +79,7 @@ TYPED_TEST(LonLatToCartesianTest, TwoPolygonsOneRingEach)
     expect_columns_equal(expected, actual->view(), true);
 }
 
-TYPED_TEST(LonLatToCartesianTest, OnePolygonTwoRings)
+TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
 {
     using T = TypeParam;
 
@@ -106,7 +106,7 @@ TYPED_TEST(LonLatToCartesianTest, OnePolygonTwoRings)
     expect_columns_equal(expected, actual->view(), true);
 }
 
-TYPED_TEST(LonLatToCartesianTest, EdgesOfSquare)
+TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
 {
     using T = TypeParam;
 
@@ -138,7 +138,7 @@ TYPED_TEST(LonLatToCartesianTest, EdgesOfSquare)
     expect_columns_equal(expected, actual->view(), true);
 }
 
-TYPED_TEST(LonLatToCartesianTest, CornersOfSquare)
+TYPED_TEST(PointInPolygonTest, CornersOfSquare)
 {
     using T = TypeParam;
 
