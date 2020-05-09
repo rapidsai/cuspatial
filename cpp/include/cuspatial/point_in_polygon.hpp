@@ -18,7 +18,7 @@
 
 #include <memory>
 #include <cudf/column/column.hpp>
-#include <cudf/column_view/column_view.hpp>
+#include <cudf/column/column_view.hpp>
 #include "cudf/types.hpp"
 
 namespace cuspatial {
@@ -27,9 +27,8 @@ namespace cuspatial {
  * @brief Point-in-Polygon (PIP) tests between a column of points and a
  *        column of polygons
  *
- * Inputs follow the ESRI shapefile format. Polygons are represented by a set of rings, which are in turn represented
- * by a set of line segments. Clockwise rings represent a positive space, and anti-clockwise rings represent a
- * negative space.
+ * Performs collision detection for each test point against at most 32 polygons. Polygons are
+ * a collection of one or more rings. Rings are a collection of three or more vertices.
  *
  * @param[in] test_points_x:     x component of target points
  * @param[in] test_points_y:     y component of target points
@@ -38,19 +37,35 @@ namespace cuspatial {
  * @param[in] poly_points_x:     x component of polygon points
  * @param[in] poly_points_y:     y component of polygon points
  *
- * @returns gdf_column of type GDF_INT32; the jth bit of the ith element of the
- *          returned int32_t column is set if the ith point is in the jth polygon
+ * @returns A column of cudf::size_type containing one element per input point. Each bit
+ * represents a hit or miss for each of the input polygons in least-significant-bit order.
+ * i.e. `output[3] & 0x0010` indicates a hit or miss for the 3rd point against the 2nd polygon.
  *
- * Note: The Number of polygons, i.e. (poly_offsets.size) cannot exceed mask size of
- * `32 == sizeof(uint32_t) * 8`.
+ * @note Limit 32 polygons per call. Polygons may contain multiple rings.
+ * @note Direction of rings does not matter.
+ * @note This algorithm supports the ESRI shapefile format, but assumes all polygons are "clean" (as
+ * defined by the format), and does _not_ verify whether the input adheres to the shapefile format.
+ * @note Overlapping rings negate each other. This behavior is not limited to a single negation,
+ * allowing for "islands" within the same polygon.
+ *
+ *   poly w/two rings         poly w/four rings
+ * +-----------+          +------------------------+
+ * :███████████:          :████████████████████████:
+ * :███████████:          :██+------------------+██:
+ * :██████+----:------+   :██:  +----+  +----+  :██:
+ * :██████:    :██████:   :██:  :████:  :████:  :██:
+ * +------;----+██████:   :██:  :----:  :----:  :██:
+ *        :███████████:   :██+------------------+██:
+ *        :███████████:   :████████████████████████:
+ *        +-----------+   +------------------------+
  */
 std::unique_ptr<cudf::column>
-point_in_polygon_bitmap(cudf::column_view const& test_points_x,
-                        cudf::column_view const& test_points_y,
-                        cudf::column_view const& poly_offsets,
-                        cudf::column_view const& poly_ring_offsets, 
-                        cudf::column_view const& poly_points_x,
-                        cudf::column_view const& poly_points_y,
-                        rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+point_in_polygon(cudf::column_view const& test_points_x,
+                 cudf::column_view const& test_points_y,
+                 cudf::column_view const& poly_offsets,
+                 cudf::column_view const& poly_ring_offsets,
+                 cudf::column_view const& poly_points_x,
+                 cudf::column_view const& poly_points_y,
+                 rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial

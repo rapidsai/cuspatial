@@ -23,7 +23,7 @@
 #include <cudf/utilities/legacy/type_dispatcher.hpp>
 #include <utilities/legacy/cuda_utils.hpp>
 #include <type_traits>
-#include <utility/utility.hpp>
+#include <utility/legacy/utility.hpp>
 #include <cuspatial/legacy/point_in_polygon.hpp>
 #include <cuspatial/error.hpp>
 
@@ -32,6 +32,8 @@
 #include "rmm/mr/device/device_memory_resource.hpp"
 
 namespace {
+
+using hit_mask_type = int32_t;
 
 template <typename T>
 __global__ void point_in_polygon_kernel(cudf::size_type num_test_points,
@@ -42,15 +44,15 @@ __global__ void point_in_polygon_kernel(cudf::size_type num_test_points,
                                         const cudf::size_type* const __restrict__ poly_ring_offsets,
                                         const T* const __restrict__ poly_points_x,
                                         const T* const __restrict__ poly_points_y,
-                                        uint32_t* const __restrict__ result)
+                                        hit_mask_type* const __restrict__ result)
 {
-    uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    hit_mask_type idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (idx >= num_test_points) {
+    if (idx > num_test_points) {
         return;
     }
 
-    uint32_t hit_mask = 0;
+    hit_mask_type hit_mask = 0;
 
     T x = test_points_x[idx];
     T y = test_points_y[idx];
@@ -76,14 +78,14 @@ __global__ void point_in_polygon_kernel(cudf::size_type num_test_points,
                 T bx = poly_points_x[point_idx + 1];
                 T by = poly_points_y[point_idx + 1];
 
-                auto y_between_ay_by = ay <= y && y < by;              // is y in range [ay, by) when ay < by?
-                auto y_between_by_ay = by <= y && y < ay;              // is y in range [by, ay) when by < ay?
+                auto y_between_ay_by = ay <= y && y < by; // is y in range [ay, by) when ay < by?
+                auto y_between_by_ay = by <= y && y < ay; // is y in range [by, ay) when by < ay?
                 auto y_in_bounds = y_between_ay_by || y_between_by_ay; // is y in range [by, ay]?
-                auto run = bx - ax;
+                auto run  = bx - ax;
                 auto rise = by - ay;
-                auto rise_to_y =  y - ay;
+                auto rise_to_point =  y - ay;
 
-                if (y_in_bounds && x < (run / rise) * rise_to_y + ax) {
+                if (y_in_bounds && x < (run / rise) * rise_to_point + ax) {
                     point_is_within = not point_is_within;
                 }
             }
@@ -94,8 +96,6 @@ __global__ void point_in_polygon_kernel(cudf::size_type num_test_points,
 
     result[idx] = hit_mask;
 }
-
-using hit_mask_type = uint32_t;
 
 struct point_in_polygon_functor
 {
@@ -125,10 +125,16 @@ struct point_in_polygon_functor
         auto size = test_points_y.size();
         auto tid = cudf::experimental::type_to_id<hit_mask_type>();
         auto type = cudf::data_type{ tid };
-        auto result = cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
+        auto results = cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
+
+        if (results->size() == 0)
+        {
+            return results;
+        }
 
         constexpr cudf::size_type block_size = 256;
-        cudf::experimental::detail::grid_1d grid{result->size(), block_size, 1};
+
+        cudf::experimental::detail::grid_1d grid{results->size(), block_size, 1};
 
         auto kernel = point_in_polygon_kernel<T>;
 
@@ -141,10 +147,10 @@ struct point_in_polygon_functor
             poly_ring_offsets.begin<cudf::size_type>(),
             poly_points_x.begin<T>(),
             poly_points_y.begin<T>(),
-            result->mutable_view().begin<hit_mask_type>()
+            results->mutable_view().begin<hit_mask_type>()
         );
 
-        return result;
+        return results;
     }
 };
 
@@ -155,19 +161,22 @@ namespace cuspatial {
 namespace detail {
 
 std::unique_ptr<cudf::column>
-point_in_polygon_bitmap(cudf::column_view const& test_points_x,
-                        cudf::column_view const& test_points_y,
-                        cudf::column_view const& poly_offsets,
-                        cudf::column_view const& poly_ring_offsets,
-                        cudf::column_view const& poly_points_y,
-                        cudf::column_view const& poly_points_x,
-                        rmm::mr::device_memory_resource* mr,
-                        cudaStream_t stream)
+point_in_polygon(cudf::column_view const& test_points_x,
+                 cudf::column_view const& test_points_y,
+                 cudf::column_view const& poly_offsets,
+                 cudf::column_view const& poly_ring_offsets,
+                 cudf::column_view const& poly_points_y,
+                 cudf::column_view const& poly_points_x,
+                 rmm::mr::device_memory_resource* mr,
+                 cudaStream_t stream)
 {
     return cudf::experimental::type_dispatcher(test_points_x.type(), point_in_polygon_functor(),
-                                               test_points_x,  test_points_y,
-                                               poly_offsets, poly_ring_offsets,
-                                               poly_points_y,    poly_points_x,
+                                               test_points_x,
+                                               test_points_y,
+                                               poly_offsets,
+                                               poly_ring_offsets,
+                                               poly_points_y,
+                                               poly_points_x,
                                                mr,
                                                stream);
 }
@@ -175,13 +184,13 @@ point_in_polygon_bitmap(cudf::column_view const& test_points_x,
 }
 
 std::unique_ptr<cudf::column>
-point_in_polygon_bitmap(cudf::column_view const& test_points_x,
-                        cudf::column_view const& test_points_y,
-                        cudf::column_view const& poly_offsets,
-                        cudf::column_view const& poly_ring_offsets,
-                        cudf::column_view const& poly_points_y,
-                        cudf::column_view const& poly_points_x,
-                        rmm::mr::device_memory_resource* mr)
+point_in_polygon(cudf::column_view const& test_points_x,
+                 cudf::column_view const& test_points_y,
+                 cudf::column_view const& poly_offsets,
+                 cudf::column_view const& poly_ring_offsets,
+                 cudf::column_view const& poly_points_y,
+                 cudf::column_view const& poly_points_x,
+                 rmm::mr::device_memory_resource* mr)
 {
     CUSPATIAL_EXPECTS(test_points_x.size() == test_points_x.size() and
                       poly_points_x.size() == poly_points_y.size(),
@@ -200,21 +209,20 @@ point_in_polygon_bitmap(cudf::column_view const& test_points_x,
                       not poly_points_x.has_nulls(),
                       "Polygon points must not contain nulls");
 
-    CUSPATIAL_EXPECTS(poly_offsets.size() > 0 &&
-                      poly_offsets.size() <= (cudf::size_type) sizeof(uint32_t) * 8,
-                      "Number of polygons cannot exceed bitmap capacity (32 for uint32_t)");
+    CUSPATIAL_EXPECTS(poly_offsets.size() <= (cudf::size_type) sizeof(hit_mask_type) * 8,
+                      "Number of polygons cannot exceed bitmap capacity (32 for hit_mask_type)");
 
     CUSPATIAL_EXPECTS(poly_ring_offsets.size() >= poly_offsets.size(),
                       "Each polygon must have at least one ring.");
 
-    return cuspatial::detail::point_in_polygon_bitmap(test_points_x,
-                                                      test_points_y,
-                                                      poly_offsets,
-                                                      poly_ring_offsets,
-                                                      poly_points_y,
-                                                      poly_points_x,
-                                                      mr,
-                                                      0);
+    return cuspatial::detail::point_in_polygon(test_points_x,
+                                               test_points_y,
+                                               poly_offsets,
+                                               poly_ring_offsets,
+                                               poly_points_y,
+                                               poly_points_x,
+                                               mr,
+                                               0);
 }
 
 } // namespace cuspatial
