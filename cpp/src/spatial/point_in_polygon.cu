@@ -33,8 +33,6 @@
 
 namespace {
 
-using hit_mask_type = int32_t;
-
 template <typename T>
 __global__ void point_in_polygon_kernel(cudf::size_type num_test_points,
                                         const T* const __restrict__ test_points_x,
@@ -44,15 +42,15 @@ __global__ void point_in_polygon_kernel(cudf::size_type num_test_points,
                                         const cudf::size_type* const __restrict__ poly_ring_offsets,
                                         const T* const __restrict__ poly_points_x,
                                         const T* const __restrict__ poly_points_y,
-                                        hit_mask_type* const __restrict__ result)
+                                        cudf::size_type* const __restrict__ result)
 {
-    hit_mask_type idx = blockIdx.x * blockDim.x + threadIdx.x;
+    cudf::size_type idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (idx > num_test_points) {
         return;
     }
 
-    hit_mask_type hit_mask = 0;
+    cudf::size_type hit_mask = 0;
 
     T x = test_points_x[idx];
     T y = test_points_y[idx];
@@ -123,9 +121,13 @@ struct point_in_polygon_functor
                cudaStream_t stream)
     {
         auto size = test_points_y.size();
-        auto tid = cudf::experimental::type_to_id<hit_mask_type>();
+        auto tid = cudf::experimental::type_to_id<cudf::size_type>();
         auto type = cudf::data_type{ tid };
-        auto results = cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
+        auto results = cudf::make_fixed_width_column(type,
+                                                     size,
+                                                     cudf::mask_state::UNALLOCATED,
+                                                     stream,
+                                                     mr);
 
         if (results->size() == 0)
         {
@@ -147,7 +149,7 @@ struct point_in_polygon_functor
             poly_ring_offsets.begin<cudf::size_type>(),
             poly_points_x.begin<T>(),
             poly_points_y.begin<T>(),
-            results->mutable_view().begin<hit_mask_type>()
+            results->mutable_view().begin<cudf::size_type>()
         );
 
         return results;
@@ -209,8 +211,8 @@ point_in_polygon(cudf::column_view const& test_points_x,
                       not poly_points_x.has_nulls(),
                       "Polygon points must not contain nulls");
 
-    CUSPATIAL_EXPECTS(poly_offsets.size() <= (cudf::size_type) sizeof(hit_mask_type) * 8,
-                      "Number of polygons cannot exceed bitmap capacity (32 for hit_mask_type)");
+    CUSPATIAL_EXPECTS(poly_offsets.size() <= (cudf::size_type) sizeof(cudf::size_type) * 8,
+                      "Number of polygons cannot exceed bitmap capacity (32 for cudf::size_type)");
 
     CUSPATIAL_EXPECTS(poly_ring_offsets.size() >= poly_offsets.size(),
                       "Each polygon must have at least one ring.");
