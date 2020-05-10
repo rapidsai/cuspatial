@@ -275,6 +275,11 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
   // add the number of level 1 nodes back in to num_valid_nodes
   auto num_valid_nodes = thrust::distance(tree, last_valid) + level_1_size;
 
+  shrink_vector(quad_keys, num_valid_nodes);
+  shrink_vector(quad_point_count, num_valid_nodes);
+  shrink_vector(quad_child_count, num_valid_nodes);
+  shrink_vector(quad_levels, num_valid_nodes);
+
   return std::make_pair(num_invalid_parent_nodes, num_valid_nodes);
 }
 
