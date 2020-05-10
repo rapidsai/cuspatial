@@ -30,6 +30,7 @@
 - PR #169 Fix shapefile reader compilation with GCC 7.x / CUDA 10.2
 - PR #178 Fix broken haversine tests introduced by upstream CUDF PRs.
 - PR #175 Address RMM API changes by eliminating the use of the RMM_API
+- PR #199 Fix coordinate transform tests
 
 
 # cuSpatial 0.13.0 (31 Mar 2020)
