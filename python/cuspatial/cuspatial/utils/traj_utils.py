@@ -1,15 +1,12 @@
-from cudf.utils.dtypes import (
-    numeric_normalize_types,
-    is_datetime_dtype,
-)
-
 import numpy as np
+
+from cudf.utils.dtypes import is_datetime_dtype
 
 
 def normalize_point_columns(xs, ys):
     """
     Normalize the input columns by inferring a common floating point dtype.
-    
+
     If the common dtype isn't a floating point dtype, promote the common dtype
     to float64.
 

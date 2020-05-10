@@ -9,13 +9,13 @@ from cudf._lib.cpp.types cimport size_type
 
 
 cdef extern from "cuspatial/trajectory.hpp" \
-    namespace "cuspatial::experimental" nogil:
+        namespace "cuspatial::experimental" nogil:
 
     cdef pair[unique_ptr[table], unique_ptr[column]] derive_trajectories(
-         const column_view& object_id,
-         const column_view& x,
-         const column_view& y,
-         const column_view& timestamp
+        const column_view& object_id,
+        const column_view& x,
+        const column_view& y,
+        const column_view& timestamp
     ) except +
 
     cdef unique_ptr[table] trajectory_bounding_boxes(

@@ -7,11 +7,7 @@ from .core.gis import (
     window_points,
 )
 from .core.interpolate import CubicSpline
-from .core.trajectory import (
-    derive,
-    distance_and_speed,
-    spatial_bounds,
-)
+from .core.trajectory import derive, distance_and_speed, spatial_bounds
 from .io.shapefile import read_polygon_shapefile
 from .io.soa import (
     read_its_timestamps,

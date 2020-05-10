@@ -14,34 +14,38 @@ def test_spatial_bounds_empty_float32():
         0,
         cudf.Series(),
         cudf.Series([], dtype=np.float32),
-        cudf.Series([], dtype=np.float32)
+        cudf.Series([], dtype=np.float32),
     )
     assert_eq(
         result,
-        cudf.DataFrame({
-            "x1": cudf.Series([], dtype=np.float32), 
-            "y1": cudf.Series([], dtype=np.float32), 
-            "x2": cudf.Series([], dtype=np.float32), 
-            "y2": cudf.Series([], dtype=np.float32),
-        }),
+        cudf.DataFrame(
+            {
+                "x1": cudf.Series([], dtype=np.float32),
+                "y1": cudf.Series([], dtype=np.float32),
+                "x2": cudf.Series([], dtype=np.float32),
+                "y2": cudf.Series([], dtype=np.float32),
+            }
+        ),
     )
 
 
-def test_spatial_bounds_empty_float32():
+def test_spatial_bounds_empty_float64():
     result = cuspatial.spatial_bounds(
         0,
         cudf.Series(),
         cudf.Series([], dtype=np.float64),
-        cudf.Series([], dtype=np.float64)
+        cudf.Series([], dtype=np.float64),
     )
     assert_eq(
         result,
-        cudf.DataFrame({
-            "x1": cudf.Series([], dtype=np.float64), 
-            "y1": cudf.Series([], dtype=np.float64), 
-            "x2": cudf.Series([], dtype=np.float64), 
-            "y2": cudf.Series([], dtype=np.float64),
-        }),
+        cudf.DataFrame(
+            {
+                "x1": cudf.Series([], dtype=np.float64),
+                "y1": cudf.Series([], dtype=np.float64),
+                "x2": cudf.Series([], dtype=np.float64),
+                "y2": cudf.Series([], dtype=np.float64),
+            }
+        ),
     )
 
 
@@ -67,10 +71,7 @@ def test_spatial_bounds_ones():
 
 def test_spatial_bounds_zero_to_one():
     result = cuspatial.spatial_bounds(
-        1,
-        cudf.Series([0, 0]),
-        cudf.Series([0, 0]),
-        cudf.Series([0, 1]),
+        1, cudf.Series([0, 0]), cudf.Series([0, 0]), cudf.Series([0, 1]),
     )
     assert_eq(
         result,
@@ -80,10 +81,7 @@ def test_spatial_bounds_zero_to_one():
 
 def test_spatial_bounds_zero_to_one_xy():
     result = cuspatial.spatial_bounds(
-        1,
-        cudf.Series([0, 0]),
-        cudf.Series([0, 1]),
-        cudf.Series([0, 1]),
+        1, cudf.Series([0, 0]), cudf.Series([0, 1]), cudf.Series([0, 1]),
     )
     assert_eq(
         result,
@@ -153,50 +151,65 @@ def test_spatial_bounds_two_and_three():
 
 def test_derive_trajectories_zeros():
     objects, traj_offsets = cuspatial.derive(
-        cudf.Series([0]), # object_id
-        cudf.Series([0]), # x
-        cudf.Series([0]), # y
-        cudf.Series([0]), # timestamp
+        cudf.Series([0]),  # object_id
+        cudf.Series([0]),  # x
+        cudf.Series([0]),  # y
+        cudf.Series([0]),  # timestamp
     )
     assert_eq(traj_offsets, cudf.Series([0], dtype="int32"))
-    assert_eq(objects, cudf.DataFrame({
-        "object_id": cudf.Series([0], dtype="int32"),
-        "x": cudf.Series([0], dtype="float64"),
-        "y": cudf.Series([0], dtype="float64"),
-        "timestamp": cudf.Series([0], dtype="datetime64[ms]"),
-    }))
+    assert_eq(
+        objects,
+        cudf.DataFrame(
+            {
+                "object_id": cudf.Series([0], dtype="int32"),
+                "x": cudf.Series([0], dtype="float64"),
+                "y": cudf.Series([0], dtype="float64"),
+                "timestamp": cudf.Series([0], dtype="datetime64[ms]"),
+            }
+        ),
+    )
 
 
 def test_derive_trajectories_ones():
     objects, traj_offsets = cuspatial.derive(
-        cudf.Series([1]), # object_id
-        cudf.Series([1]), # x
-        cudf.Series([1]), # y
-        cudf.Series([1]), # timestamp
+        cudf.Series([1]),  # object_id
+        cudf.Series([1]),  # x
+        cudf.Series([1]),  # y
+        cudf.Series([1]),  # timestamp
     )
     assert_eq(traj_offsets, cudf.Series([0], dtype="int32"))
-    assert_eq(objects, cudf.DataFrame({
-        "object_id": cudf.Series([1], dtype="int32"),
-        "x": cudf.Series([1], dtype="float64"),
-        "y": cudf.Series([1], dtype="float64"),
-        "timestamp": cudf.Series([1], dtype="datetime64[ms]"),
-    }))
+    assert_eq(
+        objects,
+        cudf.DataFrame(
+            {
+                "object_id": cudf.Series([1], dtype="int32"),
+                "x": cudf.Series([1], dtype="float64"),
+                "y": cudf.Series([1], dtype="float64"),
+                "timestamp": cudf.Series([1], dtype="datetime64[ms]"),
+            }
+        ),
+    )
 
 
 def test_derive_trajectories_two():
     objects, traj_offsets = cuspatial.derive(
-        cudf.Series([0, 1]), # object_id
-        cudf.Series([0, 1]), # x
-        cudf.Series([0, 1]), # y
-        cudf.Series([0, 1]), # timestamp
+        cudf.Series([0, 1]),  # object_id
+        cudf.Series([0, 1]),  # x
+        cudf.Series([0, 1]),  # y
+        cudf.Series([0, 1]),  # timestamp
     )
     assert_eq(traj_offsets, cudf.Series([0, 1], dtype="int32"))
-    assert_eq(objects, cudf.DataFrame({
-        "object_id": cudf.Series([0, 1], dtype="int32"),
-        "x": cudf.Series([0, 1], dtype="float64"),
-        "y": cudf.Series([0, 1], dtype="float64"),
-        "timestamp": cudf.Series([0, 1], dtype="datetime64[ms]"),
-    }))
+    assert_eq(
+        objects,
+        cudf.DataFrame(
+            {
+                "object_id": cudf.Series([0, 1], dtype="int32"),
+                "x": cudf.Series([0, 1], dtype="float64"),
+                "y": cudf.Series([0, 1], dtype="float64"),
+                "timestamp": cudf.Series([0, 1], dtype="datetime64[ms]"),
+            }
+        ),
+    )
 
 
 def test_derive_trajectories_many():
@@ -207,7 +220,7 @@ def test_derive_trajectories_many():
     timestamp = cudf.Series(np.random.randint(0, 10, 10))
     objects, traj_offsets = cuspatial.derive(object_id, xs, ys, timestamp)
 
-    sorted_idxs = cudf.DataFrame({'id': object_id, 'ts': timestamp}).argsort()
+    sorted_idxs = cudf.DataFrame({"id": object_id, "ts": timestamp}).argsort()
     assert_eq(traj_offsets, cudf.Series([0, 1, 2, 5, 6, 8, 9], dtype="int32"))
     print(objects)
     assert_eq(
@@ -215,21 +228,24 @@ def test_derive_trajectories_many():
         cudf.DataFrame(
             {
                 "object_id": object_id.sort_values().reset_index(drop=True),
-                "x": xs.take(sorted_idxs).reset_index(drop=True).astype("float64"),
-                "y": ys.take(sorted_idxs).reset_index(drop=True).astype("float64"),
-                "timestamp": timestamp.take(sorted_idxs).reset_index(drop=True).astype("datetime64[ms]")
+                "x": xs.take(sorted_idxs)
+                .reset_index(drop=True)
+                .astype("float64"),
+                "y": ys.take(sorted_idxs)
+                .reset_index(drop=True)
+                .astype("float64"),
+                "timestamp": timestamp.take(sorted_idxs)
+                .reset_index(drop=True)
+                .astype("datetime64[ms]"),
             },
-            index=cudf.core.index.RangeIndex(0, 10)
+            index=cudf.core.index.RangeIndex(0, 10),
         ),
     )
 
 
 def test_distance_and_speed_zeros():
     objects, traj_offsets = cuspatial.derive(
-        [0], # object_id
-        [0], # xs
-        [0], # ys
-        [0], # timestamp
+        [0], [0], [0], [0],  # object_id  # xs  # ys  # timestamp
     )
     result = cuspatial.distance_and_speed(
         len(traj_offsets),
@@ -244,10 +260,7 @@ def test_distance_and_speed_zeros():
 
 def test_distance_and_speed_ones():
     objects, traj_offsets = cuspatial.derive(
-        [1], # object_id
-        [1], # xs
-        [1], # ys
-        [1], # timestamp
+        [1], [1], [1], [1],  # object_id  # xs  # ys  # timestamp
     )
     result = cuspatial.distance_and_speed(
         len(traj_offsets),
@@ -262,10 +275,10 @@ def test_distance_and_speed_ones():
 
 def test_one_one_meter_one_second():
     objects, traj_offsets = cuspatial.derive(
-        [0, 0],         # object_id
-        [0.0, 0.001],   # xs
-        [0.0, 0.0],     # ys
-        [0, 1000]       # timestamp
+        [0, 0],  # object_id
+        [0.0, 0.001],  # xs
+        [0.0, 0.0],  # ys
+        [0, 1000],  # timestamp
     )
     result = cuspatial.distance_and_speed(
         len(traj_offsets),
@@ -280,10 +293,10 @@ def test_one_one_meter_one_second():
 
 def test_two_trajectories_one_meter_one_second():
     objects, traj_offsets = cuspatial.derive(
-        [0, 0, 1, 1],           # object_id
-        [0.0, 0.001, 0.0, 0.0], # xs
-        [0.0, 0.0, 0.0, 0.001], # ys
-        [0, 1000, 0, 1000]      # timestamp
+        [0, 0, 1, 1],  # object_id
+        [0.0, 0.001, 0.0, 0.0],  # xs
+        [0.0, 0.0, 0.0, 0.001],  # ys
+        [0, 1000, 0, 1000],  # timestamp
     )
     result = cuspatial.distance_and_speed(
         len(traj_offsets),
@@ -298,10 +311,10 @@ def test_two_trajectories_one_meter_one_second():
 
 def test_distance_and_speed_single_trajectory():
     objects, traj_offsets = cuspatial.derive(
-        [0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2],                  # object_id
-        [1.0, 2.0, 3.0, 5.0, 7.0, 1.0, 2.0, 3.0, 6.0, 0.0, 3.0, 6.0], # xs
-        [0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0], # ys
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]                # timestamp
+        [0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2],  # object_id
+        [1.0, 2.0, 3.0, 5.0, 7.0, 1.0, 2.0, 3.0, 6.0, 0.0, 3.0, 6.0],  # xs
+        [0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0],  # ys
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],  # timestamp
     )
     result = cuspatial.distance_and_speed(
         len(traj_offsets),
@@ -344,21 +357,15 @@ def test_distance_and_speed_single_trajectory():
 def test_distance_and_speed_timestamp_types(timestamp_type):
     objects, traj_offsets = cuspatial.derive(
         # object_id
-        cudf.Series(
-            [0, 0, 1, 1]
-        ),
+        cudf.Series([0, 0, 1, 1]),
         # xs
-        cudf.Series(
-            [0.0, 0.001, 0.0, 0.0] # 1 meter in x
-        ),
+        cudf.Series([0.0, 0.001, 0.0, 0.0]),  # 1 meter in x
         # ys
-        cudf.Series(
-            [0.0, 0.0, 0.0, 0.001] # 1 meter in y
-        ),
+        cudf.Series([0.0, 0.0, 0.0, 0.001]),  # 1 meter in y
         # timestamp
-        cudf.Series(
-            [0, timestamp_type[1], 0, timestamp_type[1]]
-        ).astype(timestamp_type[0])
+        cudf.Series([0, timestamp_type[1], 0, timestamp_type[1]]).astype(
+            timestamp_type[0]
+        ),
     )
     result = cuspatial.distance_and_speed(
         len(traj_offsets),
