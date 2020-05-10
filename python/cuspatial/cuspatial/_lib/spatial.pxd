@@ -28,7 +28,7 @@ cdef extern from "legacy/hausdorff.hpp" namespace "cuspatial" nogil:
         const gdf_column& cnt
     ) except +
 
-cdef extern from "query.hpp" namespace "cuspatial" nogil:
+cdef extern from "legacy/query.hpp" namespace "cuspatial" nogil:
     cdef pair[gdf_column, gdf_column] spatial_window_points(
         const gdf_scalar& left,
         const gdf_scalar& bottom,

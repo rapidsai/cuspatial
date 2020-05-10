@@ -22,7 +22,7 @@
 #include <cudf/legacy/column.hpp>
 #include <cudf/utilities/error.hpp>
 #include <rmm/rmm.h>
-#include <cuspatial/soa_readers.hpp>
+#include <cuspatial/legacy/soa_readers.hpp>
 #include <utility/legacy/utility.hpp>
 
 namespace cuspatial
