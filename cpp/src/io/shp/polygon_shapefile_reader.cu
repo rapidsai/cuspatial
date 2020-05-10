@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-#include <utility/utility.hpp>
 #include <cuspatial/error.hpp>
 
-#include <cudf/column/column_factories.hpp>
 #include <cudf/column/column.hpp>
-#include <cudf/table/table.hpp>
 #include <cudf/types.hpp>
+#include <cudf/utilities/type_dispatcher.hpp>
 
-#include <thrust/copy.h>
+#include <rmm/device_buffer.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/thrust_rmm_allocator.h>
+
 #include <thrust/scan.h>
 
 #include <memory>
@@ -31,16 +32,33 @@
 namespace cuspatial {
 namespace detail {
 
-polygon_vectors read_polygon_shapefile(std::string const& filename);
+template<typename T>
+std::unique_ptr<cudf::column>
+make_column(std::vector<T> source, cudaStream_t stream, rmm::mr::device_memory_resource* mr)
+{
+    auto tid = cudf::experimental::type_to_id<T>();
+    auto type = cudf::data_type{tid};
+    auto buffer = rmm::device_buffer(source.data(), sizeof(T) * source.size(), stream, mr);
+    return std::make_unique<cudf::column>(type, source.size(), buffer);
+}
 
-std::unique_ptr<cudf::experimental::table>
+std::tuple<std::vector<cudf::size_type>,
+           std::vector<cudf::size_type>,
+           std::vector<double>,
+           std::vector<double>>
+read_polygon_shapefile(std::string const& filename);
+
+std::tuple<std::unique_ptr<cudf::column>,
+           std::unique_ptr<cudf::column>,
+           std::unique_ptr<cudf::column>,
+           std::unique_ptr<cudf::column>>
 read_polygon_shapefile(std::string const& filename,
                        rmm::mr::device_memory_resource* mr,
                        cudaStream_t stream)
 {
     CUSPATIAL_EXPECTS(not filename.empty(), "Filename cannot be empty.");
 
-    auto poly = detail::read_polygon_shapefile(filename);
+    auto poly_vectors = detail::read_polygon_shapefile(filename);
 
     auto index_tid = cudf::experimental::type_to_id<cudf::size_type>();
     auto point_tid = cudf::experimental::type_to_id<double>();
@@ -48,52 +66,35 @@ read_polygon_shapefile(std::string const& filename,
     auto index_type = cudf::data_type{index_tid};
     auto point_type = cudf::data_type{point_tid};
 
-    auto polygon_offsets = cudf::make_fixed_width_column(index_type, poly.feature_lengths.size());
-    auto ring_offsets    = cudf::make_fixed_width_column(index_type, poly.ring_lengths.size());
-    auto xs              = cudf::make_fixed_width_column(point_type, poly.xs.size());
-    auto ys              = cudf::make_fixed_width_column(point_type, poly.ys.size());
-
-    thrust::copy(poly.feature_lengths.cbegin(),
-                 poly.feature_lengths.cend(),
-                 polygon_offsets->mutable_view().begin<cudf::size_type>());
-
-    thrust::copy(poly.ring_lengths.cbegin(),
-                 poly.ring_lengths.cend(),
-                 ring_offsets->mutable_view().begin<cudf::size_type>());
-
-    thrust::copy(poly.xs.cbegin(),
-                 poly.xs.cend(),
-                 xs->mutable_view().begin<double>());
-
-    thrust::copy(poly.ys.cbegin(),
-                 poly.ys.cend(),
-                 ys->mutable_view().begin<double>());
+    auto polygon_offsets = make_column<cudf::size_type>(std::get<0>(poly_vectors), stream, mr);
+    auto ring_offsets    = make_column<cudf::size_type>(std::get<1>(poly_vectors), stream, mr);
+    auto xs              = make_column<double>(std::get<2>(poly_vectors), stream, mr);
+    auto ys              = make_column<double>(std::get<3>(poly_vectors), stream, mr);
 
     // transform polygon lengths to polygon offsets
-    thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
+    thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
                            polygon_offsets->view().begin<cudf::size_type>(),
                            polygon_offsets->view().end<cudf::size_type>(),
                            polygon_offsets->mutable_view().begin<cudf::size_type>());
 
     // transform ring lengths to ring offsets
-    thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
+    thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
                            ring_offsets->view().begin<cudf::size_type>(),
                            ring_offsets->view().end<cudf::size_type>(),
                            ring_offsets->mutable_view().begin<cudf::size_type>());
 
-    std::vector<std::unique_ptr<cudf::column>> columns;
-    columns.reserve(4);
-    columns.emplace_back(std::move(polygon_offsets));
-    columns.emplace_back(std::move(ring_offsets));
-    columns.emplace_back(std::move(xs));
-    columns.emplace_back(std::move(ys));
-
-    return std::make_unique<cudf::experimental::table>(std::move(columns));
+    return std::make_tuple(std::move(polygon_offsets),
+                           std::move(ring_offsets),
+                           std::move(xs),
+                           std::move(ys));
 }
 
 } // namespace detail
 
-std::unique_ptr<cudf::experimental::table>
+std::tuple<std::unique_ptr<cudf::column>,
+           std::unique_ptr<cudf::column>,
+           std::unique_ptr<cudf::column>,
+           std::unique_ptr<cudf::column>>
 read_polygon_shapefile(std::string const& filename, rmm::mr::device_memory_resource* mr)
 {
     return detail::read_polygon_shapefile(filename, mr, 0);
