@@ -22,6 +22,7 @@
 - PR #196 Move utilities/utilities.hpp to legacy
 - PR #195 Fix PIP docs
 - PR #197 Move query.hpp files to legacy
+- PR #201 Update trajectory cython to libcudf++
 
 ## Bug Fixes
 
