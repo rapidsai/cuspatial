@@ -6,6 +6,9 @@ from .core.gis import (
     point_in_polygon_bitmap,
     window_points,
 )
+from .core.indexing import (
+    quadtree_on_points
+)
 from .core.interpolate import CubicSpline
 from .core.trajectory import (
     derive,
