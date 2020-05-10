@@ -64,14 +64,18 @@ struct spatial_window_dispatch {
                                                         double bottom,
                                                         double right,
                                                         double top,
-                                                        cudf::table_view const& xy,
+                                                        cudf::column_view const& x,
+                                                        cudf::column_view const& y,
                                                         cudaStream_t stream,
                                                         rmm::mr::device_memory_resource* mr)
   {
-    auto device_x = cudf::column_device_view::create(xy.column(0), stream);
-    auto device_y = cudf::column_device_view::create(xy.column(1), stream);
+    auto device_x = cudf::column_device_view::create(x, stream);
+    auto device_y = cudf::column_device_view::create(y, stream);
     return cudf::experimental::detail::copy_if(
-      xy, spatial_window_filter<T>{left, bottom, right, top, *device_x, *device_y}, mr, stream);
+      cudf::table_view{{x, y}},
+      spatial_window_filter<T>{left, bottom, right, top, *device_x, *device_y},
+      mr,
+      stream);
   }
 
   template <typename T, std::enable_if_t<not std::is_floating_point<T>::value>* = nullptr>
@@ -79,7 +83,8 @@ struct spatial_window_dispatch {
                                                         double bottom,
                                                         double right,
                                                         double top,
-                                                        cudf::table_view const& xy,
+                                                        cudf::column_view const& x,
+                                                        cudf::column_view const& y,
                                                         cudaStream_t stream,
                                                         rmm::mr::device_memory_resource* mr)
   {
@@ -109,20 +114,13 @@ std::unique_ptr<cudf::experimental::table> points_in_spatial_window(
   cudaStream_t stream,
   rmm::mr::device_memory_resource* mr)
 {
-  CUSPATIAL_EXPECTS(x.type() == y.type(), "point type mismatch between x/y arrays");
-  CUSPATIAL_EXPECTS(x.size() == y.size(), "#of points mismatch between x/y arrays");
+  CUSPATIAL_EXPECTS(x.type() == y.type(), "Type mismatch between x and y arrays");
+  CUSPATIAL_EXPECTS(x.size() == y.size(), "Size mismatch between x and y arrays");
 
   CUSPATIAL_EXPECTS(not(x.has_nulls() || y.has_nulls()), "NULL point data not supported");
 
-  return cudf::experimental::type_dispatcher(x.type(),
-                                             spatial_window_dispatch(),
-                                             left,
-                                             bottom,
-                                             right,
-                                             top,
-                                             cudf::table_view{{x, y}},
-                                             stream,
-                                             mr);
+  return cudf::experimental::type_dispatcher(
+    x.type(), spatial_window_dispatch(), left, bottom, right, top, x, y, stream, mr);
 }
 
 }  // namespace detail
