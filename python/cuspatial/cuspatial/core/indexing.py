@@ -1,13 +1,14 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+import numpy as np
+
 from cudf.core import DataFrame
 from cudf.core.column import as_column
 
 from cuspatial._lib.quadtree import (
-    quadtree_on_points as cpp_quadtree_on_points
+    quadtree_on_points as cpp_quadtree_on_points,
 )
 
-import numpy as np
 
 def quadtree_on_points(xs, ys, x1, y1, x2, y2, scale, num_levels, min_size):
     """ Construct a quadtree from a set of points for a given area-of-interest
@@ -27,9 +28,16 @@ def quadtree_on_points(xs, ys, x1, y1, x2, y2, scale, num_levels, min_size):
         dtype = np.float32 if dtype.itemsize <= 4 else np.float64
     xs, ys = xs.astype(dtype), ys.astype(dtype)
 
-    return DataFrame._from_table(cpp_quadtree_on_points(
-        xs, ys,
-        min(x1, x2), min(y1, y2),
-        max(x1, x2), max(y1, y2),
-        scale, num_levels, min_size
-    ))
+    return DataFrame._from_table(
+        cpp_quadtree_on_points(
+            xs,
+            ys,
+            min(x1, x2),
+            min(y1, y2),
+            max(x1, x2),
+            max(y1, y2),
+            scale,
+            num_levels,
+            min_size,
+        )
+    )
