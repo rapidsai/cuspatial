@@ -23,6 +23,7 @@
 - PR #195 Fix PIP docs
 - PR #197 Move query.hpp files to legacy
 - PR #176 Define new reader APIs and move soa_readers.hpp to legacy
+- PR #200 Update shapefile_readers.hpp to libcudf++
 
 ## Bug Fixes
 
