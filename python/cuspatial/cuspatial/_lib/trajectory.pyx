@@ -35,8 +35,8 @@ cpdef derive_trajectories(Column object_id, Column x,
     table = Table.from_unique_ptr(
         move(result.first),
         column_names=["object_id", "x", "y", "timestamp"]
-    ),
-    return (table, Column.from_unique_ptr(move(result.second)))
+    )
+    return table, Column.from_unique_ptr(move(result.second))
 
 
 cpdef trajectory_bounding_boxes(size_type num_trajectories,

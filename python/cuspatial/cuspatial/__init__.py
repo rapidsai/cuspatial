@@ -11,7 +11,6 @@ from .core.trajectory import (
     derive,
     distance_and_speed,
     spatial_bounds,
-    subset_trajectory_id,
 )
 from .io.shapefile import read_polygon_shapefile
 from .io.soa import (
