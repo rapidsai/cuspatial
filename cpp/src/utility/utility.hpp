@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
+#include <cudf/column/column.hpp>
 #include <cudf/types.hpp>
 #include <vector>
 
 namespace cuspatial {
+namespace detail {
 
-struct polygons
+struct polygon_vectors
 {
-    std::vector<cudf::size_type> group_lengths;
     std::vector<cudf::size_type> feature_lengths;
     std::vector<cudf::size_type> ring_lengths;
     std::vector<double> xs;
@@ -29,7 +30,6 @@ struct polygons
 
     void shrink_to_fit()
     {
-        group_lengths.shrink_to_fit();
         feature_lengths.shrink_to_fit();
         ring_lengths.shrink_to_fit();
         xs.shrink_to_fit();
@@ -37,4 +37,5 @@ struct polygons
     }
 };
 
-}
+} // namespace detail
+} // namespace cuspatial

@@ -24,18 +24,19 @@ namespace cuspatial {
 /**
  * @brief read polygon data from an ESRI Shapefile.
  *
- * data type of vertices is fixed to double (GDF_FLOAT64)
+ * @param[in] filename: ESRI Shapefile file path (usually end sin .shp)
+ * @param[in] mr:       Optional, The resource to use for all allocations
  *
- * @param[in] filename: polygon data filename in ESRI Shapefile format
- * @param[out] poly_offsets: index polygons: prefix sum of number of rings of all
- *             polygons
- * @param[out] poly_ring_offsets: index rings: prefix sum of number of vertices of all
- *             rings
- * @param[out] poly_points_x: x coordinates of concatenated polygons
- * @param[out] poly_points_y: y coordinates of concatenated polygons
+ * @return Vector containing 4 columns representing one or more polygons:
+ *  INT32:   beginning index of the first ring in each polygon
+ *  INT32:   beginning index of the first point in each ring
+ *  FLOAT64: x component of polygon points
+ *  FLOAT64: y component of polygon points
  *
- * @note: x/y can be lon/lat.
+ * @note The number of polygons is equal to the length of the first column
+ *
 **/
-std::unique_ptr<cudf::table> read_polygon_shapefile(const char *filename);
+std::vector<std::unique_ptr<cudf::column>>
+read_polygon_shapefile(std::string const& filename rmm::mr::device_memory_resource* mr,);
 
 } // namespace cuspatial
