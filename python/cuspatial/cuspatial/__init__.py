@@ -6,7 +6,7 @@ from .core.gis import (
     point_in_polygon_bitmap
 )
 from .core.interpolate import CubicSpline
-from .core.spatial_window import window_points
+from .core.spatial_window import points_in_spatial_window
 from .core.trajectory import (
     derive,
     distance_and_speed,
