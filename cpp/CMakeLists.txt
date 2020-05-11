@@ -335,8 +335,8 @@ add_library(cuspatial SHARED
             src/io/soa/point_soa_reader.cu
             src/io/soa/uint32_soa_reader.cu
             src/io/soa/timestamp_soa_reader.cu
-            src/query/spatial_window.cu
-            src/query/legacy/spatial_window_points.cu
+            src/spatial_window/spatial_window.cu
+            src/spatial_window/legacy/spatial_window_points.cu
             src/spatial/legacy/point_in_polygon.cu
             src/spatial/legacy/haversine.cu
             src/spatial/legacy/hausdorff.cu
