@@ -1,6 +1,4 @@
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
-
-from cudf._lib.legacy.cudf cimport *
+# Copyright (c) 2020, NVIDIA CORPORATION.
 
 from cudf._lib.column cimport column, column_view
 from cudf._lib.table cimport table, table_view
