@@ -30,10 +30,10 @@ namespace {
 // This is passed to cudf::detail::copy_if
 template <typename T>
 struct spatial_window_filter {
-  spatial_window_filter(double left,
-                        double bottom,
-                        double right,
-                        double top,
+  spatial_window_filter(T left,
+                        T bottom,
+                        T right,
+                        T top,
                         cudf::column_device_view const& x,
                         cudf::column_device_view const& y)
     : left{left}, bottom{bottom}, right{right}, top{top}, points_x{x}, points_y{y}
@@ -48,10 +48,10 @@ struct spatial_window_filter {
   }
 
  protected:
-  double left;
-  double bottom;
-  double right;
-  double top;
+  T left;
+  T bottom;
+  T right;
+  T top;
   cudf::column_device_view points_x;
   cudf::column_device_view points_y;
 };
@@ -71,11 +71,15 @@ struct spatial_window_dispatch {
   {
     auto device_x = cudf::column_device_view::create(x, stream);
     auto device_y = cudf::column_device_view::create(y, stream);
-    return cudf::experimental::detail::copy_if(
-      cudf::table_view{{x, y}},
-      spatial_window_filter<T>{left, bottom, right, top, *device_x, *device_y},
-      mr,
-      stream);
+    return cudf::experimental::detail::copy_if(cudf::table_view{{x, y}},
+                                               spatial_window_filter<T>{static_cast<T>(left),
+                                                                        static_cast<T>(bottom),
+                                                                        static_cast<T>(right),
+                                                                        static_cast<T>(top),
+                                                                        *device_x,
+                                                                        *device_y},
+                                               mr,
+                                               stream);
   }
 
   template <typename T, std::enable_if_t<not std::is_floating_point<T>::value>* = nullptr>
