@@ -9,17 +9,10 @@ import cuspatial
 
 
 def test_zeros():
-    with pytest.raises(RuntimeError):
-        result = cuspatial.window_points(  # noqa: F841
-            0, 0, 0, 0, cudf.Series([0.0]), cudf.Series([0.0])
-        )
-
-
-def test_ones():
-    with pytest.raises(RuntimeError):
-        result = cuspatial.window_points(  # noqa: F841
-            0, 0, 0, 0, cudf.Series([0.0]), cudf.Series([0.0])
-        )
+    result = cuspatial.window_points(  # noqa: F841
+        0, 0, 0, 0, cudf.Series([0.0]), cudf.Series([0.0])
+    )
+    assert(result.empty)
 
 
 def test_centered():
@@ -42,14 +35,14 @@ def test_corners(coords):
 
 def test_pair():
     result = cuspatial.window_points(
-        -1.1, -1.1, 1.1, 1.1, cudf.Series([0, 1]), cudf.Series([1, 0])
+        -1.1, -1.1, 1.1, 1.1, cudf.Series([0.0, 1.0]), cudf.Series([1.0, 0.0])
     )
-    assert_eq(result, cudf.DataFrame({"x": [0.0, 1], "y": [1, 0.0]}))
+    assert_eq(result, cudf.DataFrame({"x": [0.0, 1.0], "y": [1.0, 0.0]}))
 
 
 def test_oob():
     result = cuspatial.window_points(
-        -1, -1, 1, 1, cudf.Series([-2, 2]), cudf.Series([2, -2])
+        -1, -1, 1, 1, cudf.Series([-2.0, 2.0]), cudf.Series([2.0, -2.0])
     )
     assert_eq(result, cudf.DataFrame({"x": [], "y": []}))
 
