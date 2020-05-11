@@ -88,15 +88,10 @@ struct spatial_window_dispatch {
       stream);
   }
 
-  template <typename T, std::enable_if_t<not std::is_floating_point<T>::value>* = nullptr>
-  std::unique_ptr<cudf::experimental::table> operator()(double window_min_x,
-                                                        double window_max_x,
-                                                        double window_min_y,
-                                                        double window_max_y,
-                                                        cudf::column_view const& x,
-                                                        cudf::column_view const& y,
-                                                        cudaStream_t stream,
-                                                        rmm::mr::device_memory_resource* mr)
+  template <typename T,
+            std::enable_if_t<not std::is_floating_point<T>::value>* = nullptr,
+            typename... Args>
+  std::unique_ptr<cudf::experimental::table> operator()(Args&&...)
   {
     CUSPATIAL_FAIL("Only floating-point types supported");
   }
