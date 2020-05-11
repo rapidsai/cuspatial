@@ -69,8 +69,8 @@ inline std::unique_ptr<cudf::column> make_fixed_width_column(
 
 template <typename T>
 inline rmm::device_vector<uint32_t> compute_point_keys(
-    cudf::mutable_column_view &x, cudf::mutable_column_view &y, double const x1,
-    double const y1, double const x2, double const y2, double const scale,
+    cudf::mutable_column_view &x, cudf::mutable_column_view &y, T const x1,
+    T const y1, T const x2, T const y2, T const scale,
     cudf::size_type const num_levels, cudaStream_t stream) {
   // Compute Morton codes (z-order) for each point
   auto policy = rmm::exec_policy(stream);
@@ -584,8 +584,8 @@ inline std::unique_ptr<cudf::experimental::table> make_leaf_tree(
 
 template <typename T>
 inline std::unique_ptr<cudf::experimental::table> construct_quadtree(
-    cudf::mutable_column_view &x, cudf::mutable_column_view &y, double const x1,
-    double const y1, double const x2, double const y2, double const scale,
+    cudf::mutable_column_view &x, cudf::mutable_column_view &y, T const x1,
+    T const y1, T const x2, T const y2, T const scale,
     cudf::size_type const num_levels, cudf::size_type const min_size,
     rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
   //
@@ -735,8 +735,10 @@ struct dispatch_construct_quadtree {
       double const x1, double const y1, double const x2, double const y2,
       double const scale, int32_t const num_level, int32_t const min_size,
       rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
-    return construct_quadtree<T>(x, y, x1, y1, x2, y2, scale, num_level,
-                                 min_size, mr, stream);
+    return construct_quadtree<T>(x, y, static_cast<T>(x1), static_cast<T>(y1),
+                                 static_cast<T>(x2), static_cast<T>(y2),
+                                 static_cast<T>(scale), num_level, min_size, mr,
+                                 stream);
   }
 
   template <typename T,
