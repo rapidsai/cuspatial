@@ -42,8 +42,8 @@ struct spatial_window_filter {
 
   __device__ inline bool operator()(cudf::size_type i)
   {
-    auto x = points_x.data<T>()[i];
-    auto y = points_y.data<T>()[i];
+    auto x = points_x.element<T>(i);
+    auto y = points_y.element<T>(i);
     return x > left && x < right && y > bottom && y < top;
   }
 
