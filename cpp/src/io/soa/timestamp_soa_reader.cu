@@ -8,11 +8,12 @@
 #include <cudf/column/column.hpp>
 #include <cuspatial/soa_readers.hpp>
 #include "cudf/utilities/type_dispatcher.hpp"
+#include "rmm/mr/device/device_memory_resource.hpp"
 #include "rmm/thrust_rmm_allocator.h"
 #include <utility/legacy/utility.hpp>
 
-namespace cuspatial
-{
+namespace cuspatial {
+namespace experimental {
     /**
 	* @brief read timestamp (ts: Time type) data from file as column
 	 
@@ -23,9 +24,9 @@ namespace cuspatial
     // Reason: No more its_timestamp - its_timestamp is always converted to libcudf++
     // timestamp.
 
-    std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename)
+    std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename, rmm::mr::device_memory_resource *mr)
     {
-        std::vector<its_timestamp> timestamp = read_field_to_vec<its_timestamp>(filename);
+        std::vector<its_timestamp> timestamp = cuspatial::detail::read_field_to_vec<its_timestamp>(filename);
 
         auto tid = cudf::experimental::type_to_id<int64_t>();
         auto type = cudf::data_type{ tid };
@@ -35,4 +36,5 @@ namespace cuspatial
         return ts;
     }
 
+}//experimental
 }//cuspatial

@@ -27,17 +27,17 @@
 #include <cuspatial/legacy/soa_readers.hpp>
 #include <utility/legacy/utility.hpp>
 
-namespace cuspatial
-{
+namespace cuspatial {
+namespace experimental {
     /**
      * @brief read int32_t (unsigned integer with 32 bit fixed length) data from file as column
 	 
      * see soa_readers.hpp
     */
 
-    std::unique_ptr<cudf::column> read_int32_soa(const char *filename)
+    std::unique_ptr<cudf::column> read_int32_soa(const char *filename, rmm::mr::device_memory_resource* mr)
     {
-        std::vector<int32_t> ints = read_field_to_vec<int32_t>(filename);
+        std::vector<int32_t> ints = cuspatial::detail::read_field_to_vec<int32_t>(filename);
 
         auto tid = cudf::experimental::type_to_id<int32_t>();
         auto type = cudf::data_type{ tid };
@@ -46,5 +46,6 @@ namespace cuspatial
             type, ints.size(), dbuff);
         return d_ints;
     }//read_int32_soa
-    
-}//cuspatial
+
+}// experimental
+}// cuspatial

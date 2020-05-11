@@ -69,6 +69,8 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> read_xy_
 
 } // detail namespace
 
+namespace experimental {
+
 /**
 * @brief read lon/lat from file into two columns; data type is fixed to double (GDF_FLOAT64)
 *
@@ -90,5 +92,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> read_xy_
     auto result = detail::read_xy_points_soa(filename, cudaStream_t{0}, rmm::mr::get_default_resource());
     return result;
 }
+
+} // experimental namespace
 
 } // cuspatial namespace

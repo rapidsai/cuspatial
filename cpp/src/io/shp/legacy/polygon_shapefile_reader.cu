@@ -58,7 +58,7 @@ void read_polygon_shapefile(const char *filename,
     memset(ply_x,0,sizeof(gdf_column));
     memset(ply_y,0,sizeof(gdf_column));
 
-    polygons<double> pm{};
+    cuspatial::detail::polygons<double> pm{};
     detail::polygon_from_shapefile(filename,pm);
     if (pm.num_feature <=0) return;
 

@@ -21,7 +21,7 @@
 #include <tests/utilities/type_lists.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/soa_readers.hpp>
-#include "utility/utility.hpp"
+#include "utility/legacy/utility.hpp"
 
 using namespace cudf::test;
 
@@ -51,11 +51,11 @@ TYPED_TEST(INT64Test, Empty)
     thrust::copy(to_host_result.begin(), to_host_result.end(),
         h_write_column.begin());
 
-    size_t write_result = cuspatial::write_field_from_vec(
+    size_t write_result = cuspatial::detail::write_field_from_vec(
         temp_env->get_temp_filepath("soa_its.tmp").c_str(), h_write_column);
     CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
 
-    auto read_result = cuspatial::read_timestamp_soa(
+    auto read_result = cuspatial::experimental::read_timestamp_soa(
         temp_env->get_temp_filepath("soa_its.tmp").c_str()
     );
 
@@ -77,11 +77,11 @@ TYPED_TEST(INT64Test, Single)
     thrust::copy(to_host_result.begin(), to_host_result.end(),
         h_write_column.begin());
 
-    size_t write_result = cuspatial::write_field_from_vec(
+    size_t write_result = cuspatial::detail::write_field_from_vec(
         temp_env->get_temp_filepath("soa_its.tmp").c_str(), h_write_column);
     CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
 
-    auto read_result = cuspatial::read_timestamp_soa(
+    auto read_result = cuspatial::experimental::read_timestamp_soa(
         temp_env->get_temp_filepath("soa_its.tmp").c_str()
     );
 
@@ -102,11 +102,11 @@ TYPED_TEST(INT64Test, Triple)
     thrust::copy(to_host_result.begin(), to_host_result.end(),
         h_write_column.begin());
 
-    size_t write_result = cuspatial::write_field_from_vec(
+    size_t write_result = cuspatial::detail::write_field_from_vec(
         temp_env->get_temp_filepath("soa_its.tmp").c_str(), h_write_column);
     CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
 
-    auto read_result = cuspatial::read_timestamp_soa(
+    auto read_result = cuspatial::experimental::read_timestamp_soa(
         temp_env->get_temp_filepath("soa_its.tmp").c_str()
     );
 
@@ -127,11 +127,11 @@ TYPED_TEST(INT64Test, Negative)
     thrust::copy(to_host_result.begin(), to_host_result.end(),
         h_write_column.begin());
 
-    size_t write_result = cuspatial::write_field_from_vec(
+    size_t write_result = cuspatial::detail::write_field_from_vec(
         temp_env->get_temp_filepath("soa_its.tmp").c_str(), h_write_column);
     CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
 
-    auto read_result = cuspatial::read_timestamp_soa(
+    auto read_result = cuspatial::experimental::read_timestamp_soa(
         temp_env->get_temp_filepath("soa_its.tmp").c_str()
     );
 
@@ -152,11 +152,11 @@ TYPED_TEST(UINT32Test, EmptyUint32)
     thrust::copy(to_host_result.begin(), to_host_result.end(),
         h_write_column.begin());
 
-    size_t write_result = cuspatial::write_field_from_vec(
+    size_t write_result = cuspatial::detail::write_field_from_vec(
         temp_env->get_temp_filepath("soa_int32.tmp").c_str(), h_write_column);
     CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
 
-    auto read_result = cuspatial::read_int32_soa(
+    auto read_result = cuspatial::experimental::read_int32_soa(
         temp_env->get_temp_filepath("soa_int32.tmp").c_str()
     );
 
@@ -178,11 +178,11 @@ TYPED_TEST(UINT32Test, SingleUint32)
     thrust::copy(to_host_result.begin(), to_host_result.end(),
         h_write_column.begin());
 
-    size_t write_result = cuspatial::write_field_from_vec(
+    size_t write_result = cuspatial::detail::write_field_from_vec(
         temp_env->get_temp_filepath("soa_int32.tmp").c_str(), h_write_column);
     CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
 
-    auto read_result = cuspatial::read_int32_soa(
+    auto read_result = cuspatial::experimental::read_int32_soa(
         temp_env->get_temp_filepath("soa_int32.tmp").c_str()
     );
 	expect_columns_equal(read_result->view(), write_column, true);
@@ -202,11 +202,11 @@ TYPED_TEST(UINT32Test, TripleUint32)
     thrust::copy(to_host_result.begin(), to_host_result.end(),
         h_write_column.begin());
 
-    size_t write_result = cuspatial::write_field_from_vec(
+    size_t write_result = cuspatial::detail::write_field_from_vec(
         temp_env->get_temp_filepath("soa_int32.tmp").c_str(), h_write_column);
     CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
 
-    auto read_result = cuspatial::read_int32_soa(
+    auto read_result = cuspatial::experimental::read_int32_soa(
         temp_env->get_temp_filepath("soa_int32.tmp").c_str()
     );
 
@@ -227,11 +227,11 @@ TYPED_TEST(UINT32Test, NegativeUint32)
     thrust::copy(to_host_result.begin(), to_host_result.end(),
         h_write_column.begin());
 
-    size_t write_result = cuspatial::write_field_from_vec(
+    size_t write_result = cuspatial::detail::write_field_from_vec(
         temp_env->get_temp_filepath("soa_int32.tmp").c_str(), h_write_column);
     CUSPATIAL_EXPECTS(write_result==h_write_column.size(), "Wrote an empty vec");
 
-    auto read_result = cuspatial::read_int32_soa(
+    auto read_result = cuspatial::experimental::read_int32_soa(
         temp_env->get_temp_filepath("soa_int32.tmp").c_str()
     );
 

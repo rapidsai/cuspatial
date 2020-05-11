@@ -20,6 +20,7 @@
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
 #include <rmm/rmm.h>
+#include <memory>
 #include <cudf/types.h>
 #include <cudf/utilities/error.hpp>
 #include <cuspatial/soa_readers.hpp>
@@ -28,8 +29,8 @@
 #include "rmm/thrust_rmm_allocator.h"
 #include <utility/legacy/utility.hpp>
 
-namespace cuspatial
-{
+namespace cuspatial {
+namespace experimental {
     /*
     * read polygon data from file in SoA format; data type of vertices is fixed to FLOAT64
     * see soa_readers.hpp
@@ -37,8 +38,8 @@ namespace cuspatial
 
     std::vector<std::unique_ptr<cudf::column>> read_polygon_soa(const char *filename)
     {
-        struct polygons<double> pm;
-        read_polygon_soa<double>(filename, &pm);
+        struct cuspatial::detail::polygons<double> pm;
+        cuspatial::detail::read_polygon_soa<double>(filename, &pm);
 
         cudaStream_t stream{0};
         auto exec_policy = rmm::exec_policy(stream);    
@@ -79,4 +80,5 @@ namespace cuspatial
         return result;
     }
 
+}// namespace experimental
 }// namespace cuspatial

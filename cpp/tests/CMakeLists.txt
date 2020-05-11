@@ -79,7 +79,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CUSPATIAL_LIBRARY}"
                  )
  set(SOA_READER_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/io/test_read_soa_points.cu")
+   "${CMAKE_CURRENT_SOURCE_DIR}/io/test_read_soa_points.cpp")
  ConfigureTest(SOA_READER_TEST "${SOA_READER_TEST_SRC}")
 
 set(CUBIC_SPLINE_TEST_SRC

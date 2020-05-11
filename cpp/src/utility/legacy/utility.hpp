@@ -24,8 +24,8 @@
 #include <cuspatial/types.hpp>
 #include <cudf/utilities/error.hpp>
 
-namespace cuspatial
-{
+namespace cuspatial {
+namespace detail {
 
 /**
  * @brief  Data structure defines a set of polygons with multiple rings
@@ -305,4 +305,5 @@ size_t write_field_from_vec(const char *filename, std::vector<T> field)
     return t;
  }
 
+} // namespace detail
 } // namespace cuspatial
