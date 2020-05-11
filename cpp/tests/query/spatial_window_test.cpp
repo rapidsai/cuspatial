@@ -37,7 +37,6 @@ TYPED_TEST_CASE(SpatialWindowTest, TestTypes);
 TYPED_TEST(SpatialWindowTest, SimpleTest)
 {
   using T = TypeParam;
-  // assuming x/y are in the unit of killometers (km);
 
   auto points_x = cudf::test::fixed_width_column_wrapper<T>(
     {1.0, 2.0, 3.0, 5.0, 7.0, 1.0, 2.0, 3.0, 6.0, 0.0, 3.0, 6.0});
@@ -47,7 +46,26 @@ TYPED_TEST(SpatialWindowTest, SimpleTest)
   auto expected_points_x = cudf::test::fixed_width_column_wrapper<T>({3.0, 5.0, 2.0});
   auto expected_points_y = cudf::test::fixed_width_column_wrapper<T>({2.0, 3.0, 5.0});
 
-  auto result = cuspatial::points_in_spatial_window(1.5, 1.5, 5.5, 5.5, points_x, points_y);
+  auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y);
+
+  cudf::test::expect_columns_equivalent(result->get_column(0), expected_points_x, true);
+  cudf::test::expect_columns_equivalent(result->get_column(1), expected_points_y, true);
+}
+
+// Test that windows with min/max reversed still work
+TYPED_TEST(SpatialWindowTest, ReversedWindow)
+{
+  using T = TypeParam;
+
+  auto points_x = cudf::test::fixed_width_column_wrapper<T>(
+    {1.0, 2.0, 3.0, 5.0, 7.0, 1.0, 2.0, 3.0, 6.0, 0.0, 3.0, 6.0});
+  auto points_y = cudf::test::fixed_width_column_wrapper<T>(
+    {0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0});
+
+  auto expected_points_x = cudf::test::fixed_width_column_wrapper<T>({3.0, 5.0, 2.0});
+  auto expected_points_y = cudf::test::fixed_width_column_wrapper<T>({2.0, 3.0, 5.0});
+
+  auto result = cuspatial::points_in_spatial_window(5.5, 1.5, 5.5, 1.5, points_x, points_y);
 
   cudf::test::expect_columns_equivalent(result->get_column(0), expected_points_x, true);
   cudf::test::expect_columns_equivalent(result->get_column(1), expected_points_y, true);
@@ -62,7 +80,7 @@ TEST_F(SpatialWindowErrorTest, TypeMismatch)
   auto points_y = cudf::test::fixed_width_column_wrapper<double>({0.0, 1.0, 2.0});
 
   EXPECT_THROW(
-    auto result = cuspatial::points_in_spatial_window(1.5, 1.5, 5.5, 5.5, points_x, points_y),
+    auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y),
     cuspatial::logic_error);
 }
 
@@ -72,7 +90,7 @@ TEST_F(SpatialWindowErrorTest, SizeMismatch)
   auto points_y = cudf::test::fixed_width_column_wrapper<double>({0.0});
 
   EXPECT_THROW(
-    auto result = cuspatial::points_in_spatial_window(1.5, 1.5, 5.5, 5.5, points_x, points_y),
+    auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y),
     cuspatial::logic_error);
 }
 
@@ -95,6 +113,6 @@ TYPED_TEST(SpatialWindowUnsupportedTypesTest, ShouldThrow)
   auto points_y = cudf::test::fixed_width_column_wrapper<TypeParam>({0.0, 1.0, 2.0});
 
   EXPECT_THROW(
-    auto result = cuspatial::points_in_spatial_window(1.5, 1.5, 5.5, 5.5, points_x, points_y),
+    auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y),
     cuspatial::logic_error);
 }

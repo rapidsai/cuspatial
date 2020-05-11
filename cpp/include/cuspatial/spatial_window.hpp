@@ -22,26 +22,27 @@
 namespace cuspatial {
 
 /**
- * @brief Find all points (x,y) that fall within a query window (left, bottom, right, top).
+ * @brief Find all points (x,y) that fall within a rectangular query window.
  *
- * A point (x, y) is in the window if `x > left && x < right && y > bottom && y < top`.
+ * A point (x, y) is in the window if `x > window_min_x && x < window_min_y && y > window_min_y && y
+ * < window_max_y`.
  *
- * @param[in] left   x-coordinate of left edge of the query window
- * @param[in] bottom y-coordinate of bottom of the query window
- * @param[in] right  x-coordinate of right edge of the query window
- * @param[in] top    y-coordinate of top of the query window
- * @param[in] x      x-coordinates of points to be queried
- * @param[in] y      y-coordinates of points to be queried
- * @param[in] mr     Optional `device_memory_resource` to use for allocating the output table
+ * @param[in] window_min_x lower x-coordinate of the query window
+ * @param[in] window_max_x upper x-coordinate of the query window
+ * @param[in] window_min_y lower y-coordinate of the query window
+ * @param[in] window_max_y upper y-coordinate of the query window
+ * @param[in] x            x-coordinates of points to be queried
+ * @param[in] y            y-coordinates of points to be queried
+ * @param[in] mr           Optional `device_memory_resource` to use for allocating the output table
  *
  * @returns A table with two columns of the same type as the input columns. Columns 0, 1 are the
  * (x, y) coordinates of the points in the input that fall within the query window.
  */
 std::unique_ptr<cudf::experimental::table> points_in_spatial_window(
-  double left,
-  double bottom,
-  double right,
-  double top,
+  double window_min_x,
+  double window_max_x,
+  double window_min_y,
+  double window_max_y,
   cudf::column_view const& x,
   cudf::column_view const& y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
