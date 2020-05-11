@@ -16,6 +16,7 @@ message(STATUS "CUDFTESTUTIL: CUDFTESTUTIL_LIBRARY set to ${CUDFTESTUTIL_LIBRARY
 message(STATUS "CUDFTESTUTIL: CUDF_TEST_INCLUDE set to ${CUDF_TEST_INCLUDE}")
 
 add_library(cudftestutil STATIC IMPORTED ${CUDFTESTUTIL_LIBRARY})
+
 if (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
     set_target_properties(cudftestutil PROPERTIES IMPORTED_LOCATION ${CUDFTESTUTIL_LIBRARY})
 endif (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
@@ -23,35 +24,25 @@ endif (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
 
+option(BUILD_LEGACY_TESTS "Build cuSpatial legacy tests" ON)
+
 function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
-    add_executable(${CMAKE_TEST_NAME}
-                   ${CMAKE_TEST_SRC})
-    set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial cudf
-                          cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES} NVCategory
-                          NVStrings nvrtc gdal)
-    if(USE_NVTX)
-        target_link_libraries(${CMAKE_TEST_NAME} ${NVTX_LIBRARY})
-    endif(USE_NVTX)
-    set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
-                            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
-    add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
+    string(REGEX MATCH "LEGACY_(.*)?_TEST" is_legacy_test "${CMAKE_TEST_NAME}")
+    if(BUILD_LEGACY_TESTS OR (NOT is_legacy_test))
+        add_executable(${CMAKE_TEST_NAME}
+                    ${CMAKE_TEST_SRC})
+        set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial cudf
+                            cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES} NVCategory
+                            NVStrings nvrtc gdal)
+        if(USE_NVTX)
+            target_link_libraries(${CMAKE_TEST_NAME} ${NVTX_LIBRARY})
+        endif(USE_NVTX)
+        set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
+                                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
+        add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
+    endif(BUILD_LEGACY_TESTS OR (NOT is_legacy_test))
 endfunction(ConfigureTest)
-
-option(CMAKE_ENABLE_BENCHMARKS "Enable building cuSpatial benchmarks" OFF)
-
-function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
-    if(CMAKE_ENABLE_BENCHMARKS)
-        add_executable(${CMAKE_BENCH_NAME}
-                    ${CMAKE_BENCH_SRC})
-        set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-        target_link_libraries(${CMAKE_BENCH_NAME} cuspatial cudf cudftestutil)
-        set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
-                                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bench")
-        add_test(NAME ${CMAKE_BENCH_NAME} COMMAND ${CMAKE_BENCH_NAME})
-    endif(CMAKE_ENABLE_BENCHMARKS)
-endfunction(ConfigureBench)
-
 
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
@@ -113,19 +104,19 @@ set(LEGACY_HAUSDORFF_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/hausdorff_compare.cu")
 ConfigureTest(LEGACY_HAUSDORFF_TEST "${LEGACY_HAUSDORFF_TEST_SRC}")
 
-set(POINT_IN_POLYGON_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_toy.cu"
-    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_test.cu"
-    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/pip_compare.cu")
-ConfigureTest(POINT_IN_POLYGON_TEST "${POINT_IN_POLYGON_TEST_SRC}")
+set(LEGACY_POINT_IN_POLYGON_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/pip_toy.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/pip_test.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/pip_compare.cu")
+ConfigureTest(LEGACY_POINT_IN_POLYGON_TEST "${LEGACY_POINT_IN_POLYGON_TEST_SRC}")
 
-set(SHAPEFILE_POYGON_READER_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/io/read_shapefile_polygon_test.cu")
-ConfigureTest(SHAPEFILE_POLYGON_READER_TEST "${SHAPEFILE_POYGON_READER_TEST_SRC}")
+set(LEGACY_SHAPEFILE_POLYGON_READER_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/io/legacy/read_shapefile_polygon_test.cu")
+ConfigureTest(LEGACY_SHAPEFILE_POLYGON_READER_TEST "${LEGACY_SHAPEFILE_POLYGON_READER_TEST_SRC}")
 
-set(SPATIAL_WINDOW_POINT_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/query/spatial_window_test_toy.cu")
-ConfigureTest(SPATIAL_WINDOW_POINT_TEST "${SPATIAL_WINDOW_POINT_TEST_SRC}")
+set(LEGACY_SPATIAL_WINDOW_POINT_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/query/legacy/spatial_window_test_toy.cu")
+ConfigureTest(LEGACY_SPATIAL_WINDOW_POINT_TEST "${LEGACY_SPATIAL_WINDOW_POINT_TEST_SRC}")
 
 set(LEGACY_TRAJECTORY_DISTANCE_SPEED_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/legacy/test_trajectory_distance_speed.cu")
@@ -142,3 +133,15 @@ ConfigureTest(LEGACY_TRAJECTORY_SPATIAL_BOUND_TEST "${LEGACY_TRAJECTORY_SPATIAL_
 set(LEGACY_TRAJECTORY_SUBSET_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/legacy/test_trajectory_subset.cu")
 ConfigureTest(LEGACY_TRAJECTORY_SUBSET_TEST "${LEGACY_TRAJECTORY_SUBSET_TEST_SRC}")
+
+set(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_SRC
+"${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_trajectory_distances_and_speeds.cu")
+ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST "${TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_SRC}")
+
+set(DERIVE_TRAJECTORIES_TEST_SRC
+"${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_derive_trajectories.cu")
+ConfigureTest(DERIVE_TRAJECTORIES_TEST "${DERIVE_TRAJECTORIES_TEST_SRC}")
+
+set(TRAJECTORY_BOUNDING_BOXES_TEST_SRC
+"${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_trajectory_bounding_boxes.cu")
+ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST "${TRAJECTORY_BOUNDING_BOXES_TEST_SRC}")

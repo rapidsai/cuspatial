@@ -9,7 +9,7 @@
 from cudf._lib.legacy.cudf cimport *
 from libcpp.pair cimport pair
 
-cdef extern from "soa_readers.hpp" namespace "cuspatial" nogil:
+cdef extern from "legacy/soa_readers.hpp" namespace "cuspatial" nogil:
     cdef gdf_column read_uint32_soa(
         const char *pnt_fn
     ) except +
