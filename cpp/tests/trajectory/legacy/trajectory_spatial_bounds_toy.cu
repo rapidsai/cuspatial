@@ -25,7 +25,7 @@
 #include <utilities/legacy/error_utils.hpp>
 #include <cuspatial/types.hpp> 
 #include <cuspatial/legacy/trajectory.hpp> 
-#include <utility/utility.hpp>
+#include <utility/legacy/utility.hpp>
 #include <utility/trajectory_thrust.cuh>
 
 #include <tests/utilities/legacy/column_wrapper.cuh>

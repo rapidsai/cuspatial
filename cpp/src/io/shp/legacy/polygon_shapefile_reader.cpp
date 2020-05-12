@@ -24,8 +24,8 @@
 #include <cudf/types.h>
 #include <cudf/legacy/column.hpp>
 #include <cudf/utilities/error.hpp>
-#include <cuspatial/shapefile_readers.hpp>
-#include <utility/utility.hpp>
+#include <cuspatial/legacy/shapefile_readers.hpp>
+#include <utility/legacy/utility.hpp>
 
 #include <ogrsf_frmts.h>
 

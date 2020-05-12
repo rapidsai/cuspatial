@@ -6,8 +6,8 @@
 #include <rmm/rmm.h>
 #include <cudf/types.h>
 #include <cudf/legacy/column.hpp>
-#include <cuspatial/soa_readers.hpp>
-#include <utility/utility.hpp>
+#include <cuspatial/legacy/soa_readers.hpp>
+#include <utility/legacy/utility.hpp>
 
 namespace cuspatial
 {
