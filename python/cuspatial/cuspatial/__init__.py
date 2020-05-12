@@ -4,9 +4,9 @@ from .core.gis import (
     haversine_distance,
     lonlat_to_cartesian,
     point_in_polygon_bitmap,
-    window_points,
 )
 from .core.interpolate import CubicSpline
+from .core.spatial_window import points_in_spatial_window
 from .core.trajectory import derive, distance_and_speed, spatial_bounds
 from .io.shapefile import read_polygon_shapefile
 from .io.soa import (
