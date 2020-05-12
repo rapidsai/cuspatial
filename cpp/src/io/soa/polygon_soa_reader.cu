@@ -19,14 +19,13 @@
 #include <math.h>
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
-#include <rmm/rmm.h>
+#include <rmm/thrust_rmm_allocator.h>
 #include <memory>
 #include <cudf/types.h>
 #include <cudf/utilities/error.hpp>
 #include <cuspatial/soa_readers.hpp>
 #include <cuspatial/error.hpp>
-#include "cudf/utilities/type_dispatcher.hpp"
-#include "rmm/thrust_rmm_allocator.h"
+#include <cudf/utilities/type_dispatcher.hpp>
 #include <utility/legacy/utility.hpp>
 
 namespace cuspatial {

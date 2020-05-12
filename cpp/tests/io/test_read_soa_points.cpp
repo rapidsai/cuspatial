@@ -32,10 +32,16 @@ using TestTypesInt64 = Types<int64_t>;
 TYPED_TEST_CASE(INT64Test, TestTypesInt64);
 
 template <typename T>
-struct UINT32Test : public BaseFixture {};
+struct INTTest : public BaseFixture {};
 
 using TestTypesInt32 = Types<int32_t>;
-TYPED_TEST_CASE(UINT32Test, TestTypesInt32);
+TYPED_TEST_CASE(INTTest, TestTypesInt32);
+
+template <typename T>
+struct POLYGONSOATest : public BaseFixture {};
+
+using TestTypesPolygonSoa = Types<double>;
+TYPED_TEST_CASE(POLYGONSOATest, TestTypesPolygonSoa);
 
 TYPED_TEST(INT64Test, Empty)
 {
@@ -138,7 +144,7 @@ TYPED_TEST(INT64Test, Negative)
 	expect_columns_equal(read_result->view(), write_column, true);
 }
 
-TYPED_TEST(UINT32Test, EmptyUint32)
+TYPED_TEST(INTTest, EmptyUint32)
 {
     using T = TypeParam;
 
@@ -164,7 +170,7 @@ TYPED_TEST(UINT32Test, EmptyUint32)
 }
 
 
-TYPED_TEST(UINT32Test, SingleUint32)
+TYPED_TEST(INTTest, SingleUint32)
 {
     using T = TypeParam;
 
@@ -188,7 +194,7 @@ TYPED_TEST(UINT32Test, SingleUint32)
 	expect_columns_equal(read_result->view(), write_column, true);
 }
 
-TYPED_TEST(UINT32Test, TripleUint32)
+TYPED_TEST(INTTest, TripleUint32)
 {
     using T = TypeParam;
 
@@ -213,7 +219,7 @@ TYPED_TEST(UINT32Test, TripleUint32)
 	expect_columns_equal(read_result->view(), write_column, true);
 }
 
-TYPED_TEST(UINT32Test, NegativeUint32)
+TYPED_TEST(INTTest, NegativeUint32)
 {
     using T = TypeParam;
 
@@ -241,4 +247,41 @@ TYPED_TEST(UINT32Test, NegativeUint32)
 // TODO:
 // Test read_points_lonlat
 // Test read_points_xy
+
+TYPED_TEST(POLYGONSOATest, PolygonSoaTest)
+{
+    using T = TypeParam;
+
+    TempDirTestEnvironment* const temp_env = static_cast<TempDirTestEnvironment*>(
+        ::testing::AddGlobalTestEnvironment(new TempDirTestEnvironment));
+    temp_env->SetUp();
+
+    uint32_t length[] {4};
+    T points[] {1.0, 2.0, 3.0, 4.0};
+
+    // create a polygon
+    struct cuspatial::detail::polygons<T> polygon;
+    polygon.num_group = 1;
+    polygon.num_feature = 1;
+    polygon.num_ring = 1;
+    polygon.num_vertex = 1;
+    polygon.group_length = length;
+    polygon.feature_length = length;
+    polygon.ring_length = length;
+    polygon.x = points;
+    polygon.y = points;
+
+    // write polygon
+    cuspatial::detail::write_polygon_soa<T>(
+        temp_env->get_temp_filepath("soa_polygons.tmp"), &polygon);
+
+    // read polygon
+    struct cuspatial::detail::polygons<T> new_poly;
+    cuspatial::detail::read_polygon_soa<T>(
+        temp_env->get_temp_filepath("soa_polygons.tmp").c_str(), &new_poly);
+
+    // validate read polygon is same as written polygon
+    CUSPATIAL_EXPECTS(polygon.num_group == new_poly.num_group,
+        "Number of groups inequal");
+}
 

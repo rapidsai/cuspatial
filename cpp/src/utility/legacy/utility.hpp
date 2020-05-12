@@ -153,6 +153,34 @@ template int read_point_xy(const char *filename,double *& x, double *& y);
 template int read_point_xy(const char *filename,float *& x, float *& y);
 
 /**
+ * @brief write polygon vector to file
+ *
+ * @param[in] poly_filename: name of the binary file to story polygon structs
+ * @param[in] polygons: std::vector<polygon> of polygon objects to write
+ **/
+template <typename T>
+void write_polygon_soa(std::string polygon_filename, polygons<T> *polygons)
+{
+    FILE *fp = fopen(polygon_filename.c_str(), "wb");
+
+    size_t write_result = 0;
+    write_result = fwrite((void*)(&polygons->num_group), sizeof(int), 1, fp);
+    write_result = fwrite((void*)(&polygons->num_feature), sizeof(int), 1, fp);
+    write_result = fwrite((void*)(&polygons->num_ring), sizeof(int), 1, fp);
+    write_result = fwrite((void*)(&polygons->num_vertex), sizeof(int), 1, fp);
+    write_result = fwrite((void*)polygons->group_length, sizeof(int), polygons->num_group, fp);
+    write_result = fwrite((void*)polygons->feature_length, sizeof(int), polygons->num_feature, fp);
+    write_result = fwrite((void*)polygons->ring_length, sizeof(int), polygons->num_ring, fp);
+    write_result = fwrite((void*)polygons->x, sizeof(T), polygons->num_vertex, fp);
+    write_result = fwrite((void*)polygons->y, sizeof(T), polygons->num_vertex, fp);
+
+    fclose(fp);
+}
+
+void write_polygon_soa(std::string polygon_filename, struct polygons<double> *ply);
+void write_polygon_soa(std::string polygon_filename, struct polygons<float> *ply);
+
+/**
  * @brief read polygon data into a polygons structure.
  * 
  * Arrays in the structure, initially nullptrs, are populated upon completion
@@ -195,9 +223,9 @@ void read_polygon_soa(const char *poly_filename,struct polygons<T>* ply)
 
     //brief outputs to check whether the numbers look reasonable or as expected
     //std::cout<<"# of groups="<< ply->num_group<<std::endl;
-    std::cout<<"# of features="<<ply->num_feature<<std::endl;
-    std::cout<<"# of rings="<< ply->num_ring<<std::endl;
-    std::cout<<"# of vertices="<< ply->num_vertex<<std::endl;
+    //td::cout<<"# of features="<<ply->num_feature<<std::endl;
+    //td::cout<<"# of rings="<< ply->num_ring<<std::endl;
+    //std::cout<<"# of vertices="<< ply->num_vertex<<std::endl;
     size_t len=(4+ply->num_group+ply->num_feature+ply->num_ring)*sizeof(int)+2*ply->num_vertex*sizeof(T);
     CUDF_EXPECTS(len==sz,"expecting file size and read size are the same");
 
