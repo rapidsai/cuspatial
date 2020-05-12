@@ -10,7 +10,7 @@ from cuspatial._lib.trajectory import (
     trajectory_bounding_boxes as cpp_trajectory_bounding_boxes,
     trajectory_distances_and_speeds as cpp_trajectory_distances_and_speeds,
 )
-from cuspatial.utils.traj_utils import (
+from cuspatial.utils.column_utils import (
     normalize_point_columns,
     normalize_timestamp_column,
 )
