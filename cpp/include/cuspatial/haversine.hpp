@@ -16,32 +16,33 @@
 
 #pragma once
 
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cuspatial/constants.hpp>
- 
+#include <rmm/mr/device/device_memory_resource.hpp>
+
 namespace cuspatial {
 
 /**
  * brief Compute haversine distances between points in set A to the corresponding points in set B.
  *
  * https://en.wikipedia.org/wiki/Haversine_formula
- * 
+ *
  * @param[in]  a_lon: longitude of points in set A
  * @param[in]  a_lat:  latitude of points in set A
  * @param[in]  b_lon: longitude of points in set B
  * @param[in]  b_lat:  latitude of points in set B
- * @param[in] radius: radius of the sphere on which the points reside. default: 6371.0 (aprx. radius of earth in km)
+ * @param[in] radius: radius of the sphere on which the points reside. default: 6371.0 (aprx. radius
+ * of earth in km)
  *
  * @return array of distances for all (a_lon[i], a_lat[i]) and (b_lon[i], b_lat[i]) point pairs
  */
-std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
-                                                 cudf::column_view const& a_lat,
-                                                 cudf::column_view const& b_lon,
-                                                 cudf::column_view const& b_lat,
-                                                 double const radius = EARTH_RADIUS_KM,
-                                                 rmm::mr::device_memory_resource* mr =
-                                                   rmm::mr::get_default_resource());
+std::unique_ptr<cudf::column> haversine_distance(
+  cudf::column_view const& a_lon,
+  cudf::column_view const& a_lat,
+  cudf::column_view const& b_lon,
+  cudf::column_view const& b_lat,
+  double const radius                 = EARTH_RADIUS_KM,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial

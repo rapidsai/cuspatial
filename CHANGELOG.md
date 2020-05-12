@@ -25,6 +25,7 @@
 - PR #195 Fix PIP docs
 - PR #197 Move query.hpp files to legacy
 - PR #198 Port spatial_window queries to libcudf++
+- PR #189 Update haversine.hpp files to libcudf++
 
 ## Bug Fixes
 
