@@ -28,7 +28,7 @@ namespace experimental {
 namespace detail {
 
 /**
- * @copydoc cudf::experimental::derive_trajectories()
+ * @copydoc cuspatial::experimental::derive_trajectories()
  * @param stream Optional CUDA stream on which to schedule allocations
  */
 std::pair<std::unique_ptr<cudf::experimental::table>,
@@ -40,7 +40,7 @@ derive_trajectories(
     cudaStream_t stream = 0);
 
 /**
- * @copydoc cudf::experimental::trajectory_distances_and_speeds()
+ * @copydoc cuspatial::experimental::trajectory_distances_and_speeds()
  * @param stream Optional CUDA stream on which to schedule allocations
  */
 std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
@@ -51,7 +51,7 @@ std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
     cudaStream_t stream = 0);
 
 /**
- * @copydoc cudf::experimental::trajectory_bounding_boxes()
+ * @copydoc cuspatial::experimental::trajectory_bounding_boxes()
  * @param stream Optional CUDA stream on which to schedule allocations
  */
 std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
