@@ -27,19 +27,19 @@ namespace cuspatial {
  * @brief Point-in-Polygon (PIP) tests between a column of points and a
  *        column of polygons
  *
- * Performs collision detection for each test point against at most 32 polygons. Polygons are
- * a collection of one or more rings. Rings are a collection of three or more vertices.
+ * Tests whether points are inside at most 32 polygons. Polygons are a collection of one or more
+ * rings. Rings are a collection of three or more vertices.
  *
- * @param[in] test_points_x:     x component of target points
- * @param[in] test_points_y:     y component of target points
+ * @param[in] test_points_x:     x-coordinates of points to test
+ * @param[in] test_points_y:     y-coordinates of points to test
  * @param[in] poly_offsets:      beginning index of the first ring in each polygon
  * @param[in] poly_ring_offsets: beginning index of the first point in each ring
- * @param[in] poly_points_x:     x component of polygon points
- * @param[in] poly_points_y:     y component of polygon points
+ * @param[in] poly_points_x:     x-coordinates of polygon points
+ * @param[in] poly_points_y:     y-coordinates of polygon points
  *
  * @returns A column of cudf::size_type containing one element per input point. Each bit
  * represents a hit or miss for each of the input polygons in least-significant-bit order.
- * i.e. `output[3] & 0x0010` indicates a hit or miss for the 3rd point against the 2nd polygon.
+ * i.e. `output[3] & 0b0010` indicates a hit or miss for the 3rd point against the 2nd polygon.
  *
  * @note Limit 32 polygons per call. Polygons may contain multiple rings.
  * @note Direction of rings does not matter.

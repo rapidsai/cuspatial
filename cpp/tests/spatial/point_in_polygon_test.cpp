@@ -56,18 +56,41 @@ TYPED_TEST(PointInPolygonTest, Empty)
     expect_columns_equal(expected, actual->view(), true);
 }
 
+TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
+{
+    using T = TypeParam;
+
+    auto xs = fixed_width_column_wrapper<T>({ -2.0, 2.0,  0.0, 0.0, -0.5, 0.5,  0.0, 0.0 });
+    auto ys = fixed_width_column_wrapper<T>({  0.0, 0.0, -2.0, 2.0,  0.0, 0.0, -0.5, 0.5 });
+    auto poly_offsets = fixed_width_column_wrapper<cudf::size_type>({ 0 });
+    auto poly_ring_offsets = fixed_width_column_wrapper<cudf::size_type>({ 0 });
+    auto poly_point_ys = fixed_width_column_wrapper<T>({ -1.0,  1.0, 1.0, -1.0, -1.0 });
+    auto poly_point_xs = fixed_width_column_wrapper<T>({ -1.0, -1.0, 1.0,  1.0, -1.0 });
+
+    auto expected = fixed_width_column_wrapper<int32_t>({ false, false, false, false, true, true, true, true });
+
+    auto actual = cuspatial::point_in_polygon(xs,
+                                              ys,
+                                              poly_offsets,
+                                              poly_ring_offsets,
+                                              poly_point_xs,
+                                              poly_point_ys);
+
+    expect_columns_equal(expected, actual->view(), true);
+}
+
 TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
 {
     using T = TypeParam;
 
-    auto xs = fixed_width_column_wrapper<T>({ 0.0, -0.6, -0.6,  0.6,  0.6 });
-    auto ys = fixed_width_column_wrapper<T>({ 0.0, -0.6,  0.6,  0.6, -0.6 });
-    auto poly_offsets = fixed_width_column_wrapper<cudf::size_type>({ 1, 2 });
-    auto poly_ring_offsets = fixed_width_column_wrapper<cudf::size_type>({ 4, 8 });
-    auto poly_point_xs = fixed_width_column_wrapper<T>({ -1.0,  0.0,  1.0,  0.0, -1.0, -1.0,  1.0,  1.0 });
-    auto poly_point_ys = fixed_width_column_wrapper<T>({  0.0,  1.0,  0.0, -1.0, -1.0,  1.0,  1.0, -1.0 });
+    auto xs = fixed_width_column_wrapper<T>({ -2.0, 2.0,  0.0, 0.0, -0.5, 0.5,  0.0, 0.0 });
+    auto ys = fixed_width_column_wrapper<T>({  0.0, 0.0, -2.0, 2.0,  0.0, 0.0, -0.5, 0.5 });
+    auto poly_offsets = fixed_width_column_wrapper<cudf::size_type>({ 0, 1 });
+    auto poly_ring_offsets = fixed_width_column_wrapper<cudf::size_type>({ 0, 5 });
+    auto poly_point_ys = fixed_width_column_wrapper<T>({ -1.0, -1.0, 1.0,  1.0, -1.0, 0.0, 1.0,  0.0, -1.0, 0.0 });
+    auto poly_point_xs = fixed_width_column_wrapper<T>({ -1.0,  1.0, 1.0, -1.0, -1.0, 1.0, 0.0, -1.0,  0.0, 1.0 });
 
-    auto expected = fixed_width_column_wrapper<int32_t>({ 0b11, 0b11, 0b10, 0b10, 0b10 });
+    auto expected = fixed_width_column_wrapper<int32_t>({ 0b00, 0b00, 0b00, 0b00, 0b11, 0b11, 0b11, 0b11 });
 
     auto actual = cuspatial::point_in_polygon(xs,
                                               ys,
@@ -85,14 +108,14 @@ TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
 
     auto xs = fixed_width_column_wrapper<T>({ 0.0, -0.4, -0.6,  0.0,  0.0 });
     auto ys = fixed_width_column_wrapper<T>({ 0.0,  0.0,  0.0,  0.4, -0.6 });
-    auto poly_offsets = fixed_width_column_wrapper<cudf::size_type>({ 2 });
-    auto poly_ring_offsets = fixed_width_column_wrapper<cudf::size_type>({ 4, 8 });
+    auto poly_offsets = fixed_width_column_wrapper<cudf::size_type>({ 0 });
+    auto poly_ring_offsets = fixed_width_column_wrapper<cudf::size_type>({ 0, 5 });
 
     //   2x2 square, center  |  1x1 square, center
     auto poly_point_xs = fixed_width_column_wrapper<T>({
-        -1.0, -1.0, 1.0,  1.0, -0.5, -0.5, 0.5,  0.5 });
+        -1.0, -1.0, 1.0,  1.0, -1.0, -0.5, -0.5, 0.5,  0.5, -0.5 });
     auto poly_point_ys = fixed_width_column_wrapper<T>({
-        -1.0,  1.0, 1.0, -1.0, -0.5,  0.5, 0.5, -0.5 });
+        -1.0,  1.0, 1.0, -1.0, -1.0, -0.5,  0.5, 0.5, -0.5, -0.5 });
 
     auto expected = fixed_width_column_wrapper<int32_t>({ 0b0, 0b0, 0b1, 0b0, 0b1 });
 
@@ -112,17 +135,17 @@ TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
 
     auto xs = fixed_width_column_wrapper<T>({ 0.0 });
     auto ys = fixed_width_column_wrapper<T>({ 0.0 });
-    auto poly_offsets = fixed_width_column_wrapper<cudf::size_type>({ 1, 2, 3, 4 });
-    auto poly_ring_offsets = fixed_width_column_wrapper<cudf::size_type>({ 4, 8, 12, 16 });
+    auto poly_offsets = fixed_width_column_wrapper<cudf::size_type>({ 0, 1, 2, 3 });
+    auto poly_ring_offsets = fixed_width_column_wrapper<cudf::size_type>({ 0, 5, 10, 15 });
 
     // 0: rect on min x side
     // 1: rect on max x side
     // 2: rect on min y side
     // 3: rect on max y side
     auto poly_point_xs = fixed_width_column_wrapper<T>({
-        -1.0,  0.0, 0.0, -1.0,  0.0,  1.0, 1.0, 0.0, -1.0, -1.0, 1.0,  1.0, -1.0, -1.0, 1.0, 1.0 });
+        -1.0,  0.0, 0.0, -1.0, -1.0,  0.0,  1.0, 1.0, 0.0,  0.0, -1.0, -1.0, 1.0,  1.0, -1.0, -1.0, -1.0, 1.0, 1.0, -1.0 });
     auto poly_point_ys = fixed_width_column_wrapper<T>({
-        -1.0, -1.0, 1.0,  1.0, -1.0, -1.0, 1.0, 1.0, -1.0,  0.0, 0.0, -1.0,  0.0,  1.0, 1.0, 0.0 });
+        -1.0, -1.0, 1.0,  1.0, -1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0,  0.0, 0.0, -1.0, 1.0,   0.0,  1.0, 1.0, 0.0,  0.0 });
 
     // point is included in rects on min x and y sides, but not on max x or y sides.
     // this behavior is inconsistent, and not necessarily intentional.
@@ -144,17 +167,17 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
 
     auto xs = fixed_width_column_wrapper<T>({ 0.0 });
     auto ys = fixed_width_column_wrapper<T>({ 0.0 });
-    auto poly_offsets = fixed_width_column_wrapper<cudf::size_type>({ 1, 2, 3, 4 });
-    auto poly_ring_offsets = fixed_width_column_wrapper<cudf::size_type>({ 4, 8, 12, 16 });
+    auto poly_offsets = fixed_width_column_wrapper<cudf::size_type>({ 0, 1, 2, 3 });
+    auto poly_ring_offsets = fixed_width_column_wrapper<cudf::size_type>({ 0, 4, 8, 12 });
 
     // 0: min x min y corner
     // 1: min x max y corner
     // 2: max x min y corner
     // 3: max x max y corner
     auto poly_point_xs = fixed_width_column_wrapper<T>({
-        -1.0, -1.0, 0.0,  0.0, -1.0, -1.0, 0.0, -1.0,  0.0, 0.0, 1.0,  1.0, 0.0, 0.0, 1.0, 1.0 });
+        -1.0, -1.0, 0.0,  0.0, -1.0, -1.0, -1.0, 0.0, -1.0, -1.0,  0.0, 0.0, 1.0,  1.0,  0.0, 0.0, 0.0, 1.0, 1.0, 0.0 });
     auto poly_point_ys = fixed_width_column_wrapper<T>({
-        -1.0,  0.0, 0.0, -1.0,  0.0,  1.0, 1.0,  0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, 1.0, 0.0 });
+        -1.0,  0.0, 0.0, -1.0, -1.0,  0.0,  1.0, 1.0,  0.0,  0.0, -1.0, 0.0, 0.0, -1.0, -1.0, 0.0, 1.0, 1.0, 0.0, 0.0 });
 
     // point is only included on the max x max y corner.
     // this behavior is inconsistent, and not necessarily intentional.
