@@ -24,8 +24,7 @@
 namespace cuspatial {
 
 /**
- * @brief Point-in-Polygon (PIP) tests between a column of points and a
- *        column of polygons
+ * @brief Tests whether the specified points are inside any of the specified polygons.
  *
  * Tests whether points are inside at most 32 polygons. Polygons are a collection of one or more
  * rings. Rings are a collection of three or more vertices.

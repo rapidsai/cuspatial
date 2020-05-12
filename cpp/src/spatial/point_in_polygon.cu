@@ -129,7 +129,7 @@ struct point_in_polygon_functor
                rmm::mr::device_memory_resource* mr,
                cudaStream_t stream)
     {
-        auto size = test_points_y.size();
+        auto size = test_points_x.size();
         auto tid = cudf::experimental::type_to_id<int32_t>();
         auto type = cudf::data_type{ tid };
         auto results = cudf::make_fixed_width_column(type,
@@ -222,14 +222,14 @@ point_in_polygon(cudf::column_view const& test_points_x,
                       not poly_points_y.has_nulls(),
                       "Polygon points must not contain nulls");
 
-    CUSPATIAL_EXPECTS(poly_offsets.size() <= (cudf::size_type) sizeof(cudf::size_type) * 8,
-                      "Number of polygons cannot exceed bitmap capacity (32 for cudf::size_type)");
+    CUSPATIAL_EXPECTS(poly_offsets.size() <= (cudf::size_type) sizeof(int32_t) * 8,
+                      "Number of polygons cannot exceed bitmap capacity (32 for int32_t)");
 
     CUSPATIAL_EXPECTS(poly_ring_offsets.size() >= poly_offsets.size(),
                       "Each polygon must have at least one ring");
 
     CUSPATIAL_EXPECTS(poly_points_x.size() >= poly_offsets.size() * 4,
-                      "Each ring must have at least four vertices (3 + 1 repeated)");
+                      "Each ring must have at least four vertices");
 
     return cuspatial::detail::point_in_polygon(test_points_x,
                                                test_points_y,
