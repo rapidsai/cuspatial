@@ -25,7 +25,7 @@ def derive(object_ids, xs, ys, timestamps):
 
     Returns
     -------
-    result    : tuple (DataFrame, offsets of of discovered trajectories)
+    result    : tuple (DataFrame, offsets of discovered trajectories)
     DataFrame : object_id, x, y, and timestamps sorted by
                 (object_id, timestamp) for calling spatial_bounds and
                 distance_and_speed
