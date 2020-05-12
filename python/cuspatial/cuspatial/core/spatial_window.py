@@ -7,11 +7,17 @@ from cuspatial._lib import spatial_window
 
 
 def points_in_spatial_window(min_x, max_x, min_y, max_y, xs, ys):
-    """ Return only the subset of coordinates that fall within the numerically
-    closed borders [,] of the defined bounding box.
+    """ Return only the subset of coordinates that fall within a
+    rectangular window.
 
     A point (x, y) is inside the query window if and only if
     min_x < x < max_x AND min_y < y < max_y
+
+    The window is specified by minimum and maximum x and y
+    coordinates.
+
+    Swaps min_x and max_x if min_x > max_x.
+    Swaps min_y and max_y if min_y > max_y.
 
     params
     min_x: lower x-coordinate of the query window
