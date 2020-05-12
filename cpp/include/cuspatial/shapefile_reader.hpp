@@ -25,7 +25,7 @@ namespace cuspatial {
  * @brief read polygon data from an ESRI Shapefile.
  *
  * @param[in] filename: ESRI Shapefile file path (usually ends in .shp)
- * @param[in] mr:       Optional, The resource to use for all allocations
+ * @param[in] mr:       Optional, The resource to use to allocate the returned data
  *
  * @return Tuple of 4 columns representing one or more polygons:
  *  0 - INT32:   beginning index of the first ring in each polygon
