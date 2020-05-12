@@ -119,6 +119,10 @@ set(LEGACY_HAUSDORFF_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/hausdorff_compare.cu")
 ConfigureTest(LEGACY_HAUSDORFF_TEST "${LEGACY_HAUSDORFF_TEST_SRC}")
 
+set(HAUSDORFF_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cpp")
+ConfigureTest(HAUSDORFF_TEST "${HAUSDORFF_TEST_SRC}")
+
 set(LEGACY_POINT_IN_POLYGON_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/pip_toy.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/pip_test.cu"
