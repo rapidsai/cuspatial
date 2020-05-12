@@ -205,7 +205,7 @@ point_in_polygon(cudf::column_view const& test_points_x,
                  cudf::column_view const& poly_points_y,
                  rmm::mr::device_memory_resource* mr)
 {
-    CUSPATIAL_EXPECTS(test_points_x.size() == test_points_x.size() and
+    CUSPATIAL_EXPECTS(test_points_x.size() == test_points_y.size() and
                       poly_points_x.size() == poly_points_y.size(),
                       "All points must have both x and y values");
 
