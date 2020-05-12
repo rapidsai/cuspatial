@@ -31,18 +31,24 @@
 struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {};
 
 TEST_F(QuadtreeOnPointIndexingTest, test_empty) {
+  using namespace cudf::test;
   const uint32_t num_levels = 1;
   uint32_t min_size = 1;
   double scale = 1.0;
   double x1 = 0, x2 = 1, y1 = 0, y2 = 1;
 
-  cudf::column x_col, y_col;
-  cudf::mutable_column_view pnt_x_view = x_col.mutable_view();
-  cudf::mutable_column_view pnt_y_view = y_col.mutable_view();
+  fixed_width_column_wrapper<double> x({});
+  fixed_width_column_wrapper<double> y({});
 
-  EXPECT_THROW(cuspatial::quadtree_on_points(pnt_x_view, pnt_y_view, x1, y1, x2,
-                                             y2, scale, num_levels, min_size),
-               cuspatial::logic_error);
+  std::unique_ptr<cudf::experimental::table> quadtree =
+      cuspatial::quadtree_on_points(x, y, x1, y1, x2, y2, scale, num_levels,
+                                    min_size);
+  CUSPATIAL_EXPECTS(
+      quadtree->num_columns() == 5,
+      "a quadtree table must have 5 columns (key,lev,sign,length,fpos)");
+
+  CUSPATIAL_EXPECTS(quadtree->num_rows() == 0,
+                    "the resulting quadtree must have a single quadrant");
 }
 
 TEST_F(QuadtreeOnPointIndexingTest, test_single) {
