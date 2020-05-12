@@ -18,7 +18,7 @@ def points_in_spatial_window(min_x, max_x, min_y, max_y, xs, ys):
     max_x: upper x-coordinate of the query window
     min_y: lower y-coordinate of the query window
     max_y: upper y-coordinate of the query window
-    
+
     xs: Series of x-coordinates that may fall within the window
     ys: Series of y-coordinates that may fall within the window
 
@@ -30,8 +30,7 @@ def points_in_spatial_window(min_x, max_x, min_y, max_y, xs, ys):
     -------
     DataFrame: subset of x, y pairs above that fall within the window
     """
-    result = spatial_window.points_in_spatial_window(min_x, max_x,
-                                                     min_y, max_y,
-                                                     as_column(xs),
-                                                     as_column(ys))
+    result = spatial_window.points_in_spatial_window(
+        min_x, max_x, min_y, max_y, as_column(xs), as_column(ys)
+    )
     return DataFrame._from_table(result)

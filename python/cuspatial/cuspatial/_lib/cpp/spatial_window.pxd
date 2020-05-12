@@ -5,7 +5,7 @@ from cudf._lib.table cimport table, table_view
 from cudf._lib.move cimport move, unique_ptr
 
 cdef extern from "spatial_window.hpp" namespace "cuspatial" nogil:
-    cdef unique_ptr[table] cpp_points_in_spatial_window \
+    cdef unique_ptr[table] points_in_spatial_window \
         "cuspatial::points_in_spatial_window" (
         double window_min_x,
         double window_max_x,

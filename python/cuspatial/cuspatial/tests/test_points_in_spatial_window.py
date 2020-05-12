@@ -12,7 +12,7 @@ def test_zeros():
     result = cuspatial.points_in_spatial_window(  # noqa: F841
         0, 0, 0, 0, cudf.Series([0.0]), cudf.Series([0.0])
     )
-    assert(result.empty)
+    assert result.empty
 
 
 def test_centered():

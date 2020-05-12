@@ -3,7 +3,7 @@ from .core.gis import (
     directed_hausdorff_distance,
     haversine_distance,
     lonlat_to_cartesian,
-    point_in_polygon_bitmap
+    point_in_polygon_bitmap,
 )
 from .core.interpolate import CubicSpline
 from .core.spatial_window import points_in_spatial_window
