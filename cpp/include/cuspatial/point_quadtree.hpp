@@ -51,7 +51,7 @@ namespace cuspatial {
 std::unique_ptr<cudf::experimental::table> quadtree_on_points(
     cudf::mutable_column_view x, cudf::mutable_column_view y, double const x1,
     double const y1, double const x2, double const y2, double const scale,
-    int32_t const num_level, int32_t const min_size,
+    cudf::size_type const num_level, cudf::size_type const min_size,
     rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial

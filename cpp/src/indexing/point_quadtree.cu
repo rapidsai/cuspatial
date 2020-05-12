@@ -733,8 +733,9 @@ struct dispatch_construct_quadtree {
   inline std::unique_ptr<cudf::experimental::table> operator()(
       cudf::mutable_column_view &x, cudf::mutable_column_view &y,
       double const x1, double const y1, double const x2, double const y2,
-      double const scale, int32_t const num_level, int32_t const min_size,
-      rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
+      double const scale, cudf::size_type const num_level,
+      cudf::size_type const min_size, rmm::mr::device_memory_resource *mr,
+      cudaStream_t stream) {
     return construct_quadtree<T>(x, y, static_cast<T>(x1), static_cast<T>(y1),
                                  static_cast<T>(x2), static_cast<T>(y2),
                                  static_cast<T>(scale), num_level, min_size, mr,
@@ -746,8 +747,9 @@ struct dispatch_construct_quadtree {
   inline std::unique_ptr<cudf::experimental::table> operator()(
       cudf::mutable_column_view &x, cudf::mutable_column_view &y,
       double const x1, double const y1, double const x2, double const y2,
-      double const scale, int32_t const num_level, int32_t const min_size,
-      rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
+      double const scale, cudf::size_type const num_level,
+      cudf::size_type const min_size, rmm::mr::device_memory_resource *mr,
+      cudaStream_t stream) {
     CUDF_FAIL("Non-floating point operation is not supported");
   }
 };
@@ -761,7 +763,7 @@ namespace detail {
 std::unique_ptr<cudf::experimental::table> quadtree_on_points(
     cudf::mutable_column_view x, cudf::mutable_column_view y, double const x1,
     double const y1, double const x2, double const y2, double const scale,
-    int32_t const num_levels, int32_t const min_size,
+    cudf::size_type const num_levels, cudf::size_type const min_size,
     rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
   return cudf::experimental::type_dispatcher(
       x.type(), dispatch_construct_quadtree{}, x, y, x1, y1, x2, y2, scale,
@@ -773,7 +775,7 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(
 std::unique_ptr<cudf::experimental::table> quadtree_on_points(
     cudf::mutable_column_view x, cudf::mutable_column_view y, double const x1,
     double const y1, double const x2, double const y2, double const scale,
-    int32_t const num_levels, int32_t const min_size,
+    cudf::size_type const num_levels, cudf::size_type const min_size,
     rmm::mr::device_memory_resource *mr) {
   CUSPATIAL_EXPECTS(x.size() == y.size(),
                     "x and y columns might have the same length");
