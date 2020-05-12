@@ -1,4 +1,19 @@
-﻿cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+﻿#=============================================================================
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#=============================================================================
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
 project(CUSPATIAL_TESTS LANGUAGES C CXX CUDA)
 
@@ -104,6 +119,10 @@ set(LEGACY_HAUSDORFF_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/hausdorff_compare.cu")
 ConfigureTest(LEGACY_HAUSDORFF_TEST "${LEGACY_HAUSDORFF_TEST_SRC}")
 
+set(HAUSDORFF_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cpp")
+ConfigureTest(HAUSDORFF_TEST "${HAUSDORFF_TEST_SRC}")
+
 set(LEGACY_POINT_IN_POLYGON_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/pip_toy.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/legacy/pip_test.cu"
@@ -115,7 +134,7 @@ set(LEGACY_SHAPEFILE_POLYGON_READER_TEST_SRC
 ConfigureTest(LEGACY_SHAPEFILE_POLYGON_READER_TEST "${LEGACY_SHAPEFILE_POLYGON_READER_TEST_SRC}")
 
 set(LEGACY_SPATIAL_WINDOW_POINT_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/query/legacy/spatial_window_test_toy.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial_window/legacy/spatial_window_test_toy.cu")
 ConfigureTest(LEGACY_SPATIAL_WINDOW_POINT_TEST "${LEGACY_SPATIAL_WINDOW_POINT_TEST_SRC}")
 
 set(LEGACY_TRAJECTORY_DISTANCE_SPEED_TEST_SRC
@@ -145,3 +164,7 @@ ConfigureTest(DERIVE_TRAJECTORIES_TEST "${DERIVE_TRAJECTORIES_TEST_SRC}")
 set(TRAJECTORY_BOUNDING_BOXES_TEST_SRC
 "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_trajectory_bounding_boxes.cu")
 ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST "${TRAJECTORY_BOUNDING_BOXES_TEST_SRC}")
+
+set(SPATIAL_WINDOW_POINT_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial_window/spatial_window_test.cpp")
+ConfigureTest(SPATIAL_WINDOW_POINT_TEST "${SPATIAL_WINDOW_POINT_TEST_SRC}")
