@@ -27,6 +27,9 @@ namespace cuspatial {
  * A point (x, y) is in the window if `x > window_min_x && x < window_min_y && y > window_min_y && y
  * < window_max_y`.
  *
+ * Swaps `window_min_x` and `window_max_x` if `window_min_x > window_max_x`.
+ * Swaps `window_min_y` and `window_max_y` if `window_min_y > window_max_y`.
+ *
  * @param[in] window_min_x lower x-coordinate of the query window
  * @param[in] window_max_x upper x-coordinate of the query window
  * @param[in] window_min_y lower y-coordinate of the query window
