@@ -14,18 +14,22 @@
 //  * limitations under the License.
 //  */
 
-#include <cmath>
-#include <memory>
-#include <type_traits>
+#include <cuspatial/error.hpp>
+#include <cuspatial/constants.hpp>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
-#include <cuspatial/error.hpp>
-#include "rmm/mr/device/device_memory_resource.hpp"
-#include "rmm/thrust_rmm_allocator.h"
-#include <cuspatial/constants.hpp>
+#include <cudf/copying.hpp>
+#include <cudf/types.hpp>
+
+#include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/thrust_rmm_allocator.h>
+
+#include <cmath>
+#include <memory>
+#include <type_traits>
 
 namespace {
 
@@ -62,21 +66,15 @@ struct haversine_functor
                cudf::column_view const& b_lon,
                cudf::column_view const& b_lat,
                double radius,
-               rmm::mr::device_memory_resource* mr,
-               cudaStream_t stream)
+               cudaStream_t stream,
+               rmm::mr::device_memory_resource* mr)
     {
-        auto size = a_lon.size();
-        auto tid = cudf::experimental::type_to_id<T>();
-        auto result = cudf::make_fixed_width_column(cudf::data_type{ tid },
-                                                    size,
-                                                    cudf::mask_state::UNALLOCATED,
-                                                    stream,
-                                                    mr);
-
-        if (size == 0)
-        {
-            return result;
+        if (a_lon.is_empty()) {
+            return cudf::experimental::empty_like(a_lon);
         }
+
+        auto mask_policy = cudf::experimental::mask_allocation_policy::NEVER;
+        auto result = cudf::experimental::allocate_like(a_lon, a_lon.size(), mask_policy);
 
         auto input_tuple = thrust::make_tuple(thrust::make_constant_iterator<T>(radius),
                                               a_lon.begin<T>(),
@@ -88,7 +86,7 @@ struct haversine_functor
 
         thrust::transform(rmm::exec_policy(stream)->on(stream),
                           input_iter,
-                          input_iter + size,
+                          input_iter + result->size(),
                           result->mutable_view().begin<T>(),
                           [] __device__ (auto inputs) {
                               return calculate_haversine_distance(thrust::get<0>(inputs),
@@ -113,8 +111,8 @@ std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
                                                  cudf::column_view const& b_lon,
                                                  cudf::column_view const& b_lat,
                                                  double radius,
-                                                 rmm::mr::device_memory_resource* mr,
-                                                 cudaStream_t stream)
+                                                 cudaStream_t stream,
+                                                 rmm::mr::device_memory_resource* mr)
 {
     CUSPATIAL_EXPECTS(radius > 0,
                       "radius must be positive.");
@@ -123,19 +121,19 @@ std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
                       not a_lat.has_nulls() and
                       not b_lon.has_nulls() and
                       not b_lat.has_nulls(),
-                      "locations must not contain nulls.");
+                      "coordinates must not contain nulls.");
 
     CUSPATIAL_EXPECTS(a_lat.type() == a_lon.type() and
                       b_lon.type() == a_lon.type() and
                       b_lat.type() == a_lon.type(),
-                      "locations must have the same type.");
+                      "coordinates must have the same type.");
 
     CUSPATIAL_EXPECTS(a_lat.size() == a_lon.size() and
                       b_lon.size() == a_lon.size() and
                       b_lat.size() == a_lon.size(),
-                      "locations must have the same size.");
+                      "coordinates must have the same size.");
 
-    return cudf::experimental::type_dispatcher(a_lon.type(), haversine_functor{}, a_lon, a_lat, b_lon, b_lat, radius, mr, stream);
+    return cudf::experimental::type_dispatcher(a_lon.type(), haversine_functor{}, a_lon, a_lat, b_lon, b_lat, radius, stream, mr);
 }
 
 } // namspace detail
@@ -147,7 +145,7 @@ std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
                                                  double radius,
                                                  rmm::mr::device_memory_resource* mr)
 {
-    return cuspatial::detail::haversine_distance(a_lon, a_lat, b_lon, b_lat, radius, mr, 0);
+    return cuspatial::detail::haversine_distance(a_lon, a_lat, b_lon, b_lat, radius, 0, mr);
 }
 
 } // namespace cuspatial
