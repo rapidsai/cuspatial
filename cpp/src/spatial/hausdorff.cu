@@ -27,6 +27,8 @@
 
 namespace {
 
+using size_type = cudf::size_type;
+
 constexpr cudf::size_type MAX_NUM_SPACES = 46340; // floor(sqrt(numeric_limits<size_type>::max()))
 constexpr cudf::size_type MAX_NUM_BLOCKS_X = 65535;
 constexpr cudf::size_type MAX_NUM_THREADS_PER_BLOCK = 1024;
@@ -37,10 +39,10 @@ constexpr auto magnitude_squared(T a, T b) {
 }
 
 template <typename T>
-__global__ void kernel_hausdorff(int num_spaces,
+__global__ void kernel_hausdorff(size_type num_spaces,
                                  T const* xs,
                                  T const* ys,
-                                 cudf::size_type* space_offsets,
+                                 size_type* space_offsets,
                                  T* results)
 {
     auto block_idx = blockIdx.y * gridDim.x + blockIdx.x;
@@ -49,24 +51,24 @@ __global__ void kernel_hausdorff(int num_spaces,
     // each block processes a single result / pair of spaces
     if (block_idx < num_results)
     {
-        int space_a_idx   = block_idx % num_spaces;
-        int space_a_begin = space_a_idx == 0 ? 0 : space_offsets[space_a_idx - 1];
-        int space_a_end   =                        space_offsets[space_a_idx];
+        size_type space_a_idx   = block_idx % num_spaces;
+        size_type space_a_begin = space_a_idx == 0 ? 0 : space_offsets[space_a_idx - 1];
+        size_type space_a_end   =                        space_offsets[space_a_idx];
 
-        int space_b_idx   = block_idx / num_spaces;
-        int space_b_begin = space_b_idx == 0 ? 0 : space_offsets[space_b_idx - 1];
-        int space_b_end   =                        space_offsets[space_b_idx];
+        size_type space_b_idx   = block_idx / num_spaces;
+        size_type space_b_begin = space_b_idx == 0 ? 0 : space_offsets[space_b_idx - 1];
+        size_type space_b_end   =                        space_offsets[space_b_idx];
 
         T min_dist_sqrd = 1e20;
 
-        int num_points_in_b = space_b_end - space_b_begin;
+        size_type num_points_in_b = space_b_end - space_b_begin;
 
         if (threadIdx.x < num_points_in_b)
         {
             T point_b_x = xs[space_b_begin + threadIdx.x];
             T point_b_y = ys[space_b_begin + threadIdx.x];
 
-            for (int i = space_a_begin; i < space_a_end; i++)
+            for (size_type i = space_a_begin; i < space_a_end; i++)
             {
                 T point_a_x = xs[i];
                 T point_a_y = ys[i];
@@ -85,7 +87,7 @@ __global__ void kernel_hausdorff(int num_spaces,
 
         dist_sqrd[threadIdx.x] = threadIdx.x < num_points_in_b ? min_dist_sqrd : -1;
 
-        for (int offset = blockDim.x / 2; offset > 0; offset >>= 1)
+        for (size_type offset = blockDim.x / 2; offset > 0; offset >>= 1)
         {
             __syncthreads();
 
@@ -140,8 +142,8 @@ struct hausdorff_functor
                                space_offsets.begin());
 
         // utilize one block per result (pair of spaces).
-        int num_blocks_x = min(result->size(), MAX_NUM_BLOCKS_X);
-        int num_blocks_y = ceil(result->size() / (float) MAX_NUM_BLOCKS_X);
+        size_type num_blocks_x = min(result->size(), MAX_NUM_BLOCKS_X);
+        size_type num_blocks_y = ceil(result->size() / (float) MAX_NUM_BLOCKS_X);
 
         dim3 grid(num_blocks_x, num_blocks_y);
 

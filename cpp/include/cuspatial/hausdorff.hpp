@@ -34,9 +34,11 @@ namespace cuspatial {
  * spaces represented as points per space and concatenation of all points
  * [0 2 5 9 3 7] [3 1 2]
  *
+ * note: the following matrices are visually separated to highlight the relationship of a pair of
+ * points with the pair of spaces from which it is produced
+ *
  * cartesian product of all
- * points visually seperated
- * by pair of spaces            distance between points
+ * points by pair of spaces     distance between points
  * +----------+----+-------+    +---------+---+------+
  * : 00 02 05 : 09 : 03 07 :    : 0  2  5 : 9 : 3  7 :
  * : 20 22 25 : 29 : 23 27 :    : 2  0  3 : 7 : 1  5 :
