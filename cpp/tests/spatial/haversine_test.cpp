@@ -15,15 +15,18 @@
  */
 
 
-#include <type_traits>
 #include <tests/utilities/base_fixture.hpp>
 #include <tests/utilities/column_wrapper.hpp>
 #include <tests/utilities/column_utilities.hpp>
 #include <tests/utilities/type_lists.hpp>
+
 #include <cuspatial/haversine.hpp>
 #include <cuspatial/error.hpp>
+
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/constant_iterator.h>
+
+#include <type_traits>
 
 using namespace cudf::test;
 
@@ -68,7 +71,7 @@ TYPED_TEST(HaversineTest, Zero)
     expect_columns_equal(expected, actual->view(), true);
 }
    
-TYPED_TEST(HaversineTest, EquivolentPoints)
+TYPED_TEST(HaversineTest, EquivalentPoints)
 {
     using T = TypeParam;
 
@@ -100,19 +103,20 @@ TYPED_TEST(HaversineTest, MismatchSize)
 }
 
 template <typename T>
-struct Haversine : public BaseFixture {};
+struct HaversineUnsopportedTypesTest : public BaseFixture {};
 
-using UnsupportedTypesTest = RemoveIf<ContainedIn<Types<float, double>>, AllTypes>;
-TYPED_TEST_CASE(Haversine, UnsupportedTypesTest);
+using UnsupportedTypes = RemoveIf<ContainedIn<Types<float, double>>, AllTypes>;
+TYPED_TEST_CASE(HaversineUnsopportedTypesTest, UnsupportedTypes);
 
-// TYPED_TEST(Haversine, MismatchSize)
-// {
-//     using T = TypeParam;
-//     auto camera_lon = 0;
-//     auto camera_lat = 0;
-//     auto point_lon = fixed_width_column_wrapper<T>({ 0 });
-//     auto point_lat = fixed_width_column_wrapper<T>({ 0 });
+TYPED_TEST(HaversineUnsopportedTypesTest, MismatchSize)
+{
+    using T = TypeParam;
 
-//     EXPECT_THROW(cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat),
-//                  cuspatial::logic_error);
-// }
+    auto a_lon = fixed_width_column_wrapper<T>({ 0 });
+    auto a_lat = fixed_width_column_wrapper<T>({ 0 });
+    auto b_lon = fixed_width_column_wrapper<T>({ 0 });
+    auto b_lat = fixed_width_column_wrapper<T>({ 0 });
+
+    EXPECT_THROW(cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat),
+                 cuspatial::logic_error);
+}
