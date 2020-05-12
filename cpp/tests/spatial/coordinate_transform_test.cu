@@ -46,8 +46,8 @@ TYPED_TEST(LonLatToCartesianTest, Single)
     auto expected_lon = fixed_width_column_wrapper<T>({ -0.01126195531216838 });
     auto expected_lat = fixed_width_column_wrapper<T>({ -0.21375777777718794 });
 
-    expect_columns_equal(expected_lon, res_pair.first->view(), true);
-    expect_columns_equal(expected_lat, res_pair.second->view(), true);
+    expect_columns_equivalent(expected_lon, res_pair.first->view(), true);
+    expect_columns_equivalent(expected_lat, res_pair.second->view(), true);
 }
 
 TYPED_TEST(LonLatToCartesianTest, Extremes)
@@ -63,8 +63,8 @@ TYPED_TEST(LonLatToCartesianTest, Extremes)
     auto expected_lon = fixed_width_column_wrapper<T>({     0.0,      0.0, 20000.0, -20000.0, -5000.0, 14142.13562373095192015 });
     auto expected_lat = fixed_width_column_wrapper<T>({ 10000.0, -10000.0,     0.0,      0.0,     0.0, 10000.0 });
 
-    expect_columns_equal(expected_lon, res_pair.first->view(), true);
-    expect_columns_equal(expected_lat, res_pair.second->view(), true);
+    expect_columns_equivalent(expected_lon, res_pair.first->view(), true);
+    expect_columns_equivalent(expected_lat, res_pair.second->view(), true);
 }
    
 TYPED_TEST(LonLatToCartesianTest, Multiple)
@@ -81,8 +81,8 @@ TYPED_TEST(LonLatToCartesianTest, Multiple)
     auto expected_lon = fixed_width_column_wrapper<T>({ -0.01126195531216838, 0.02314864865181343, -0.01101638630252916, -0.04698301003584082 });
     auto expected_lat = fixed_width_column_wrapper<T>({ -0.21375777777718794, 0.05002000000015667,  0.06113111111163663, -0.20586888888847929 });
 
-    expect_columns_equal(expected_lon, res_pair.first->view(), true);
-    expect_columns_equal(expected_lat, res_pair.second->view(), true);
+    expect_columns_equivalent(expected_lon, res_pair.first->view(), true);
+    expect_columns_equivalent(expected_lat, res_pair.second->view(), true);
 }
 
 TYPED_TEST(LonLatToCartesianTest, Empty)
@@ -98,8 +98,8 @@ TYPED_TEST(LonLatToCartesianTest, Empty)
     auto expected_lon = fixed_width_column_wrapper<T>({ });
     auto expected_lat = fixed_width_column_wrapper<T>({ });
 
-    expect_columns_equal(expected_lon, res_pair.first->view(), true);
-    expect_columns_equal(expected_lat, res_pair.second->view(), true);
+    expect_columns_equivalent(expected_lon, res_pair.first->view(), true);
+    expect_columns_equivalent(expected_lat, res_pair.second->view(), true);
 }
    
 TYPED_TEST(LonLatToCartesianTest, NullableNoNulls)
@@ -115,8 +115,8 @@ TYPED_TEST(LonLatToCartesianTest, NullableNoNulls)
     auto expected_lon = fixed_width_column_wrapper<T>({ -0.01126195531216838 });
     auto expected_lat = fixed_width_column_wrapper<T>({ -0.21375777777718794 });
 
-    expect_columns_equal(expected_lon, res_pair.first->view(), true);
-    expect_columns_equal(expected_lat, res_pair.second->view(), true);
+    expect_columns_equivalent(expected_lon, res_pair.first->view(), true);
+    expect_columns_equivalent(expected_lat, res_pair.second->view(), true);
 }
    
 TYPED_TEST(LonLatToCartesianTest, NullabilityMixedNoNulls)
@@ -132,8 +132,8 @@ TYPED_TEST(LonLatToCartesianTest, NullabilityMixedNoNulls)
     auto expected_lon = fixed_width_column_wrapper<T>({ -0.01126195531216838 });
     auto expected_lat = fixed_width_column_wrapper<T>({ -0.21375777777718794 });
 
-    expect_columns_equal(expected_lon, res_pair.first->view(), true);
-    expect_columns_equal(expected_lat, res_pair.second->view(), true);
+    expect_columns_equivalent(expected_lon, res_pair.first->view(), true);
+    expect_columns_equivalent(expected_lat, res_pair.second->view(), true);
 }
    
 TYPED_TEST(LonLatToCartesianTest, NullableWithNulls)
