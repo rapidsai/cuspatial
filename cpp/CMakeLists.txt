@@ -341,6 +341,7 @@ add_library(cuspatial SHARED
             src/spatial/legacy/haversine.cu
             src/spatial/haversine.cu
             src/spatial/legacy/hausdorff.cu
+            src/spatial/hausdorff.cu
             src/spatial/legacy/lonlat_to_coordinate.cu
             src/spatial/lonlat_to_cartesian.cu
             src/trajectory/derive_trajectories.cu
