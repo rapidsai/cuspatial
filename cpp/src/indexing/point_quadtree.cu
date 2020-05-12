@@ -777,7 +777,6 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(
     rmm::mr::device_memory_resource *mr) {
   CUSPATIAL_EXPECTS(x.size() == y.size(),
                     "x and y columns might have the same length");
-  CUSPATIAL_EXPECTS(x.size() > 0, "point dataset can not be empty");
   CUSPATIAL_EXPECTS(x1 < x2 && y1 < y2, "invalid bounding box (x1,y1,x2,y2)");
   CUSPATIAL_EXPECTS(scale > 0, "scale must be positive");
   CUSPATIAL_EXPECTS(num_levels >= 0 && num_levels < 16,
@@ -785,7 +784,16 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(
   CUSPATIAL_EXPECTS(
       min_size > 0,
       "minimum number of points for a non-leaf node must be larger than zero");
-
+  if (x.is_empty() || y.is_empty()) {
+    std::vector<std::unique_ptr<cudf::column>> cols{};
+    cols.reserve(5);
+    cols.push_back(make_fixed_width_column<int32_t>(0, 0, mr));
+    cols.push_back(make_fixed_width_column<int8_t>(0, 0, mr));
+    cols.push_back(make_fixed_width_column<bool>(0, 0, mr));
+    cols.push_back(make_fixed_width_column<int32_t>(0, 0, mr));
+    cols.push_back(make_fixed_width_column<int32_t>(0, 0, mr));
+    return std::make_unique<cudf::experimental::table>(std::move(cols));
+  }
   return detail::quadtree_on_points(x, y, x1, y1, x2, y2, scale, num_levels,
                                     min_size, mr, cudaStream_t{0});
 }

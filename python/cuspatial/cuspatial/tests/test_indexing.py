@@ -8,21 +8,32 @@ from cudf.tests.utils import assert_eq
 
 import cuspatial
 
+bbox_1 = (0, 0, 1, 1)
+bbox_2 = (0, 0, 2, 2)
+
 
 def test_empty():
-    # empty should throw
-    with pytest.raises(RuntimeError):
-        cuspatial.quadtree_on_points(
-            cudf.Series([]),  # x
-            cudf.Series([]),  # y
-            0,
-            0,
-            1,
-            1,  # bbox
-            1,
-            1,
-            1,  # scale, num_levels, min_size
-        )
+    # empty should not throw
+    quadtree = cuspatial.quadtree_on_points(
+        cudf.Series([]),  # x
+        cudf.Series([]),  # y
+        *bbox_1,  # bbox
+        1,
+        1,
+        1,  # scale, num_levels, min_size
+    )
+    assert_eq(
+        quadtree,
+        cudf.DataFrame(
+            {
+                "key": cudf.Series([], dtype=np.int32),
+                "level": cudf.Series([], dtype=np.int8),
+                "is_node": cudf.Series([], dtype=np.bool_),
+                "length": cudf.Series([], dtype=np.int32),
+                "offset": cudf.Series([], dtype=np.int32),
+            }
+        ),
+    )
 
 
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
@@ -30,10 +41,7 @@ def test_one_point(dtype):
     quadtree = cuspatial.quadtree_on_points(
         cudf.Series([0.5]).astype(dtype),  # x
         cudf.Series([0.5]).astype(dtype),  # y
-        0,
-        0,
-        1,
-        1,  # bbox
+        *bbox_1,  # bbox
         1,
         1,
         1,  # scale, num_levels, min_size
@@ -57,10 +65,7 @@ def test_two_points(dtype):
     quadtree = cuspatial.quadtree_on_points(
         cudf.Series([0.5, 1.5]).astype(dtype),  # x
         cudf.Series([0.5, 1.5]).astype(dtype),  # y
-        0,
-        0,
-        2,
-        2,  # bbox
+        *bbox_2,  # bbox
         1,
         1,
         1,  # scale, num_levels, min_size
