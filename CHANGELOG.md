@@ -14,6 +14,8 @@
 - PR #173 Move hausdorff.hpp files to legacy
 - PR #172 Move coordinate_transform.hpp files to legacy
 - PR #170 Update coordinate_transform.hpp to libcudf++
+- PR #174 Update hausdorff.hpp to libcudf++
+- PR #176 Define new reader APIs and move soa_readers.hpp to legacy
 - PR #183 Add libcuspatial benchmark scaffolding
 - PR #186 Move haversine.hpp files to legacy
 - PR #190 Port coordinate_transform.hpp cython files
@@ -22,8 +24,7 @@
 - PR #196 Move utilities/utilities.hpp to legacy
 - PR #195 Fix PIP docs
 - PR #197 Move query.hpp files to legacy
-- PR #176 Define new reader APIs and move soa_readers.hpp to legacy
-- PR #174 Update hausdorff.hpp to libcudf++
+- PR #198 Port spatial_window queries to libcudf++
 
 ## Bug Fixes
 
@@ -31,6 +32,7 @@
 - PR #169 Fix shapefile reader compilation with GCC 7.x / CUDA 10.2
 - PR #178 Fix broken haversine tests introduced by upstream CUDF PRs.
 - PR #175 Address RMM API changes by eliminating the use of the RMM_API
+- PR #199 Fix coordinate transform tests
 
 
 # cuSpatial 0.13.0 (31 Mar 2020)
