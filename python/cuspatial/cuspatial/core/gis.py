@@ -1,11 +1,14 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
+import numpy as np
+
 from cudf import DataFrame
+from cudf.core.column import as_column
 
 from cuspatial._lib.spatial import (
     cpp_directed_hausdorff_distance,
-    cpp_haversine_distance,
     cpp_point_in_polygon_bitmap,
+    haversine_distance as cpp_haversine_distance,
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
 )
 from cuspatial.utils import gis_utils
@@ -83,6 +86,18 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
     returns
     Series: distance between all pairs of lat/lon coords
     """
+    # Todo: Replace with call to `normalize_point_columns` in trajectory PR
+    p1_lon = as_column(p1_lon)
+    p1_lat = as_column(p1_lat)
+    p2_lon = as_column(p2_lon)
+    p2_lat = as_column(p2_lat)
+    dtype = np.result_type(
+        p1_lon.dtype, p1_lat.dtype, p2_lon.dtype, p2_lat.dtype
+    )
+    if not np.issubdtype(dtype, np.floating):
+        dtype = np.float32 if dtype.itemsize <= 4 else np.float64
+    p1_lon, p1_lat = p1_lon.astype(dtype), p1_lat.astype(dtype)
+    p2_lon, p2_lat = p2_lon.astype(dtype), p2_lat.astype(dtype)
     return cpp_haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat)
 
 
