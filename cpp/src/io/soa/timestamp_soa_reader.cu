@@ -3,7 +3,7 @@
 #include <math.h>
 #include <cuda_runtime.h>
 #include <cudf/utilities/error.hpp>
-#include <rmm/rmm.h>
+#include <rmm/thrust_rmm_allocator.h>
 #include <cudf/types.h>
 #include <cudf/column/column.hpp>
 #include <cuspatial/soa_readers.hpp>
