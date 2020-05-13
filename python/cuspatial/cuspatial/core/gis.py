@@ -8,7 +8,7 @@ from cuspatial._lib.point_in_polygon import (
 )
 from cuspatial._lib.spatial import (
     cpp_directed_hausdorff_distance,
-    cpp_haversine_distance,
+    haversine_distance as cpp_haversine_distance,
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
 )
 from cuspatial.utils import gis_utils
@@ -87,6 +87,12 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
     returns
     Series: distance between all pairs of lat/lon coords
     """
+    p1_lon, p1_lat, p2_lon, p2_lat = normalize_point_columns(
+        as_column(p1_lon),
+        as_column(p1_lat),
+        as_column(p2_lon),
+        as_column(p2_lat),
+    )
     return cpp_haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat)
 
 

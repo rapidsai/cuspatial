@@ -29,6 +29,7 @@
 - PR #201 Update trajectory cython to libcudf++
 - PR #189 Update haversine.hpp files to libcudf++
 - PR #203 Port point_in_polygon.hpp cython files
+- PR #202 Update haversine cython to libcudf++
 
 ## Bug Fixes
 
