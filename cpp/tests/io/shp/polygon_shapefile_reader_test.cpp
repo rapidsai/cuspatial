@@ -59,7 +59,7 @@ void test(std::string const& shapefile_name,
 struct PolygonShapefileReaderTest : public BaseFixture {
 };
 
-TEST_F(PolygonShapefileReaderTest, NonExistantFile)
+TEST_F(PolygonShapefileReaderTest, NonExistentFile)
 {
   auto shape_filename = get_shapefile_path("non_exist.shp");
   EXPECT_THROW(cuspatial::read_polygon_shapefile(shape_filename), cuspatial::logic_error);
