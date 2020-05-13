@@ -222,8 +222,8 @@ point_in_polygon(cudf::column_view const& test_points_x,
                       not poly_points_y.has_nulls(),
                       "Polygon points must not contain nulls");
 
-    CUSPATIAL_EXPECTS(poly_offsets.size() <= (cudf::size_type) sizeof(int32_t) * 8,
-                      "Number of polygons cannot exceed bitmap capacity (32 for int32_t)");
+    CUSPATIAL_EXPECTS(poly_offsets.size() <= std::numeric_limits<int32_t>::digits,
+                      "Number of polygons cannot exceed 31");
 
     CUSPATIAL_EXPECTS(poly_ring_offsets.size() >= poly_offsets.size(),
                       "Each polygon must have at least one ring");
