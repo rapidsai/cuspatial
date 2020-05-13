@@ -1,7 +1,5 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
-import numpy as np
-
 from cudf import DataFrame
 from cudf.core.column import as_column
 
@@ -12,9 +10,7 @@ from cuspatial._lib.spatial import (
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
 )
 from cuspatial.utils import gis_utils
-from cuspatial.utils.column_utils import (
-    normalize_point_columns,
-)
+from cuspatial.utils.column_utils import normalize_point_columns
 
 
 def directed_hausdorff_distance(x, y, count):
@@ -90,8 +86,10 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
     Series: distance between all pairs of lat/lon coords
     """
     p1_lon, p1_lat, p2_lon, p2_lat = normalize_point_columns(
-        as_column(p1_lon), as_column(p1_lat),
-        as_column(p2_lon), as_column(p2_lat)
+        as_column(p1_lon),
+        as_column(p1_lat),
+        as_column(p2_lon),
+        as_column(p2_lat),
     )
     return cpp_haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat)
 
