@@ -27,6 +27,7 @@
 - PR #176 Define new reader APIs and move soa_readers.hpp to legacy
 - PR #198 Port spatial_window queries to libcudf++
 - PR #192 Update point_in_polygon.hpp to libcudf++
+- PR #203 Port point_in_polygon.hpp cython files
 
 ## Bug Fixes
 
