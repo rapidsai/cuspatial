@@ -178,8 +178,8 @@ point_in_polygon(cudf::column_view const& test_points_x,
                  cudf::column_view const& test_points_y,
                  cudf::column_view const& poly_offsets,
                  cudf::column_view const& poly_ring_offsets,
-                 cudf::column_view const& poly_points_y,
                  cudf::column_view const& poly_points_x,
+                 cudf::column_view const& poly_points_y,
                  rmm::mr::device_memory_resource* mr,
                  cudaStream_t stream)
 {

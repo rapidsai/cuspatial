@@ -5,7 +5,7 @@ import numpy as np
 from cudf.utils.dtypes import is_datetime_dtype
 
 
-def normalize_point_columns(xs, ys):
+def normalize_point_columns(*cols):
     """
     Normalize the input columns by inferring a common floating point dtype.
 
@@ -20,10 +20,10 @@ def normalize_point_columns(xs, ys):
     -------
     tuple : the input columns cast to the inferred common floating point dtype
     """
-    dtype = np.result_type(xs.dtype, ys.dtype)
+    dtype = np.result_type(*cols)
     if not np.issubdtype(dtype, np.floating):
         dtype = np.float32 if dtype.itemsize <= 4 else np.float64
-    return xs.astype(dtype), ys.astype(dtype)
+    return (x.astype(dtype) for x in cols)
 
 
 def normalize_timestamp_column(ts, fallback_dtype="datetime64[ms]"):
