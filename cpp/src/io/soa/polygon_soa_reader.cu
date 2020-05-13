@@ -35,10 +35,10 @@ namespace experimental {
     * see soa_readers.hpp
     */
 
-    std::vector<std::unique_ptr<cudf::column>> read_polygon_soa(const char *filename)
+    std::vector<std::unique_ptr<cudf::column>> read_polygon_soa(std::string const& filename)
     {
         struct cuspatial::detail::polygons<double> pm;
-        cuspatial::detail::read_polygon_soa<double>(filename, &pm);
+        cuspatial::detail::read_polygon_soa<double>(filename.c_str(), &pm);
 
         cudaStream_t stream{0};
         auto exec_policy = rmm::exec_policy(stream);    

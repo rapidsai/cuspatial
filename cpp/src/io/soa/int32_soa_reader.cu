@@ -35,9 +35,9 @@ namespace experimental {
      * see soa_readers.hpp
     */
 
-    std::unique_ptr<cudf::column> read_int32_soa(const char *filename, rmm::mr::device_memory_resource* mr)
+    std::unique_ptr<cudf::column> read_int32_soa(std::string const& filename, rmm::mr::device_memory_resource* mr)
     {
-        std::vector<int32_t> ints = cuspatial::detail::read_field_to_vec<int32_t>(filename);
+        std::vector<int32_t> ints = cuspatial::detail::read_field_to_vec<int32_t>(filename.c_str());
 
         auto tid = cudf::experimental::type_to_id<int32_t>();
         auto type = cudf::data_type{ tid };

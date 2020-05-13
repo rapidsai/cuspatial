@@ -30,7 +30,7 @@ namespace experimental {
  *
  * @return column storing the int32_t data
  **/
-std::unique_ptr<cudf::column> read_int32_soa(const char *filename,
+std::unique_ptr<cudf::column> read_int32_soa(std::string const& filename,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
@@ -41,7 +41,7 @@ std::unique_ptr<cudf::column> read_int32_soa(const char *filename,
  *
  * @return cudf::column of timestamp data.
 **/
-std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename,
+std::unique_ptr<cudf::column> read_timestamp_soa(std::string const& filename,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
@@ -71,7 +71,7 @@ read_lonlat_points(std::string filepath,
  * @return A `std::pair` of two `FLOAT64` `cudf::column`s containing x and y data.
 **/
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-read_xy_points_soa(const char *filename,
+read_xy_points_soa(std::string const& filename,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
@@ -90,7 +90,7 @@ read_xy_points_soa(const char *filename,
  *          column(3): FLOAT64 y-coordinates of concatenated polygons.
 **/
 std::vector<std::unique_ptr<cudf::column>>
-read_polygon_soa(const char *filename,
+read_polygon_soa(std::string const& filename,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 } // namespace experimental

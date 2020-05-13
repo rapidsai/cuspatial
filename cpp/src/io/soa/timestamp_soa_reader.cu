@@ -24,9 +24,9 @@ namespace experimental {
     // Reason: No more its_timestamp - its_timestamp is always converted to libcudf++
     // timestamp.
 
-    std::unique_ptr<cudf::column> read_timestamp_soa(const char *filename, rmm::mr::device_memory_resource *mr)
+    std::unique_ptr<cudf::column> read_timestamp_soa(std::string const& filename, rmm::mr::device_memory_resource *mr)
     {
-        std::vector<its_timestamp> timestamp = cuspatial::detail::read_field_to_vec<its_timestamp>(filename);
+        std::vector<its_timestamp> timestamp = cuspatial::detail::read_field_to_vec<its_timestamp>(filename.c_str());
 
         auto tid = cudf::experimental::type_to_id<int64_t>();
         auto type = cudf::data_type{ tid };

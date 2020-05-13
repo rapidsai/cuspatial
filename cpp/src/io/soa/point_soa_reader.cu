@@ -31,12 +31,13 @@ namespace cuspatial
 namespace detail
 {
 
-std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> read_lonlat_points_soa(const char *filename,
+std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
+read_lonlat_points_soa(std::string const& filename,
     cudaStream_t stream, rmm::mr::device_memory_resource* mr)
 {
     // Read the lon and lat points from the soa file into host memory
     double* p_lon=nullptr, *p_lat=nullptr;
-    int num_p = read_point_lonlat<double>(filename, p_lon, p_lat);
+    int num_p = read_point_lonlat<double>(filename.c_str(), p_lon, p_lat);
 
     auto tid = cudf::experimental::type_to_id<double>();
     auto type = cudf::data_type{ tid };
@@ -50,11 +51,12 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> read_lon
     return std::make_pair(std::move(lon), std::move(lat));
 }
 
-std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> read_xy_points_soa(const char* filename,
+std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
+read_xy_points_soa(std::string const& filename,
     cudaStream_t stream, rmm::mr::device_memory_resource* mr)
 {
     double * p_x=nullptr, *p_y=nullptr;
-    int num_p = read_point_xy<double>(filename,p_x,p_y);
+    int num_p = read_point_xy<double>(filename.c_str(), p_x, p_y);
 
     auto tid = cudf::experimental::type_to_id<double>();
     auto type = cudf::data_type{ tid };
@@ -76,9 +78,9 @@ namespace experimental {
 *
 * see soa_readers.hpp
 */
-std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> read_lonlat_points_soa(const char *filename)
+std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> read_lonlat_points_soa(std::string const& filename)
 {
-    auto result = detail::read_lonlat_points_soa(filename, cudaStream_t{0}, rmm::mr::get_default_resource());
+    auto result = detail::read_lonlat_points_soa(filename.c_str(), cudaStream_t{0}, rmm::mr::get_default_resource());
     return result;
 }
 
@@ -87,9 +89,9 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> read_lon
 *
 * see soa_readers.hpp
 */
-std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> read_xy_points_soa(const char *filename)
+std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> read_xy_points_soa(std::string const& filename)
 {
-    auto result = detail::read_xy_points_soa(filename, cudaStream_t{0}, rmm::mr::get_default_resource());
+    auto result = detail::read_xy_points_soa(filename.c_str(), cudaStream_t{0}, rmm::mr::get_default_resource());
     return result;
 }
 
