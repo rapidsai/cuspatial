@@ -1,11 +1,6 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
 from cudf._lib.move cimport *
-from cudf._lib.cpp.column.column cimport column
-from cudf._lib.cpp.table.table cimport table
-
-from libcpp.pair cimport pair
-from libcpp.vector cimport vector
 
 
 # Note: declaring `move()` with `except +` doesn't work.
