@@ -24,9 +24,9 @@
 - PR #196 Move utilities/utilities.hpp to legacy
 - PR #195 Fix PIP docs
 - PR #197 Move query.hpp files to legacy
-- PR #176 Define new reader APIs and move soa_readers.hpp to legacy
 - PR #198 Port spatial_window queries to libcudf++
 - PR #192 Update point_in_polygon.hpp to libcudf++
+- PR #201 Update trajectory cython to libcudf++
 - PR #203 Port point_in_polygon.hpp cython files
 
 ## Bug Fixes
