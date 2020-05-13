@@ -3,13 +3,6 @@
 from cudf._lib.legacy.cudf cimport *
 from libcpp.pair cimport pair
 
-cdef extern from "legacy/haversine.hpp" namespace "cuspatial" nogil:
-    gdf_column haversine_distance(
-        const gdf_column& x1,
-        const gdf_column& y1,
-        const gdf_column& x2,
-        const gdf_column& y2
-    ) except +
 
 cdef extern from "legacy/hausdorff.hpp" namespace "cuspatial" nogil:
     gdf_column& directed_hausdorff_distance(

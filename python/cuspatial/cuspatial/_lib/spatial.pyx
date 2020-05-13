@@ -13,38 +13,25 @@ from cudf._lib.legacy.cudf import *
 from cuspatial._lib.cpp.coordinate_transform cimport (
     lonlat_to_cartesian as cpp_lonlat_to_cartesian
 )
+
+from cuspatial._lib.cpp.spatial cimport (
+    haversine_distance as cpp_haversine_distance
+)
+
 from cuspatial._lib.move cimport move
 
-cpdef cpp_haversine_distance(x1, y1, x2, y2):
-    x1 = x1.astype('float64')._column
-    y1 = y1.astype('float64')._column
-    x2 = x2.astype('float64')._column
-    y2 = y2.astype('float64')._column
+cpdef haversine_distance(Column x1, Column y1, Column x2, Column y2):
+    cdef column_view c_x1 = x1.view()
+    cdef column_view c_y1 = y1.view()
+    cdef column_view c_x2 = x2.view()
+    cdef column_view c_y2 = y2.view()
 
-    cdef gdf_column* c_x1 = column_view_from_column(x1)
-    cdef gdf_column* c_y1 = column_view_from_column(y1)
-    cdef gdf_column* c_x2 = column_view_from_column(x2)
-    cdef gdf_column* c_y2 = column_view_from_column(y2)
-
-    cdef gdf_column* c_h_dist = <gdf_column*>malloc(sizeof(gdf_column))
+    cdef unique_ptr[column] c_result
 
     with nogil:
-        c_h_dist[0] = haversine_distance(
-            c_x1[0],
-            c_y1[0],
-            c_x2[0],
-            c_y2[0]
-        )
+        c_result = move(cpp_haversine_distance(c_x1, c_y1, c_x2, c_y2))
 
-    free(c_x1)
-    free(c_y1)
-    free(c_x2)
-    free(c_y2)
-
-    result = Series(gdf_column_to_column(c_h_dist))
-    free(c_h_dist)
-
-    return result
+    return Column.from_unique_ptr(move(c_result))
 
 
 def lonlat_to_cartesian(
