@@ -27,7 +27,6 @@
 #include <rmm/thrust_rmm_allocator.h>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <cmath>
 #include <memory>
 #include <type_traits>
 
@@ -44,11 +43,11 @@ __device__ T calculate_haversine_distance(T radius, T a_lon, T a_lat, T b_lon, T
   // haversine formula
   auto x        = (bx - ax) / 2;
   auto y        = (by - ay) / 2;
-  auto sinysqrd = std::sin(y) * std::sin(y);
-  auto sinxsqrd = std::sin(x) * std::sin(x);
-  auto scale    = std::cos(ay) * std::cos(by);
+  auto sinysqrd = sin(y) * sin(y);
+  auto sinxsqrd = sin(x) * sin(x);
+  auto scale    = cos(ay) * cos(by);
 
-  return 2 * radius * std::asin(std::sqrt(sinysqrd + sinxsqrd * scale));
+  return 2 * radius * asin(sqrt(sinysqrd + sinxsqrd * scale));
 };
 
 struct haversine_functor {
@@ -74,7 +73,7 @@ struct haversine_functor {
     auto mask_policy = cudf::experimental::mask_allocation_policy::NEVER;
     auto result      = cudf::experimental::allocate_like(a_lon, a_lon.size(), mask_policy);
 
-    auto input_tuple = thrust::make_tuple(thrust::make_constant_iterator<T>(radius),
+    auto input_tuple = thrust::make_tuple(thrust::make_constant_iterator(static_cast<T>(radius)),
                                           a_lon.begin<T>(),
                                           a_lat.begin<T>(),
                                           b_lon.begin<T>(),
