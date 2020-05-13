@@ -14,105 +14,108 @@
  * limitations under the License.
  */
 
+#include <tests/utilities/base_fixture.hpp>
+#include <tests/utilities/column_utilities.hpp>
+#include <tests/utilities/column_wrapper.hpp>
+#include <tests/utilities/type_lists.hpp>
+
+#include <cuspatial/error.hpp>
+#include <cuspatial/haversine.hpp>
+
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 
 #include <type_traits>
-#include <tests/utilities/base_fixture.hpp>
-#include <tests/utilities/column_wrapper.hpp>
-#include <tests/utilities/column_utilities.hpp>
-#include <tests/utilities/type_lists.hpp>
-#include <cuspatial/haversine.hpp>
-#include <cuspatial/error.hpp>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/constant_iterator.h>
 
 using namespace cudf::test;
 
 template <typename T>
-struct HaversineTest : public BaseFixture {};
+struct HaversineTest : public BaseFixture {
+};
 
 // float and double are logically the same but would require seperate tests due to precision.
 using TestTypes = Types<double>;
 TYPED_TEST_CASE(HaversineTest, TestTypes);
-   
+
 TYPED_TEST(HaversineTest, Empty)
 {
-    using T = TypeParam;
+  using T = TypeParam;
 
-    auto a_lon = fixed_width_column_wrapper<T>({});
-    auto a_lat = fixed_width_column_wrapper<T>({});
-    auto b_lon = fixed_width_column_wrapper<T>({});
-    auto b_lat = fixed_width_column_wrapper<T>({});
+  auto a_lon = fixed_width_column_wrapper<T>({});
+  auto a_lat = fixed_width_column_wrapper<T>({});
+  auto b_lon = fixed_width_column_wrapper<T>({});
+  auto b_lat = fixed_width_column_wrapper<T>({});
 
-    auto expected = fixed_width_column_wrapper<T>({});
+  auto expected = fixed_width_column_wrapper<T>({});
 
-    auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
+  auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
 
-    expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), true);
 }
-   
+
 TYPED_TEST(HaversineTest, Zero)
 {
-    using T = TypeParam;
+  using T = TypeParam;
 
-    auto const count = 3;
+  auto const count = 3;
 
-    auto a_lon = fixed_width_column_wrapper<T>({ 0 });
-    auto a_lat = fixed_width_column_wrapper<T>({ 0 });
-    auto b_lon = fixed_width_column_wrapper<T>({ 0 });
-    auto b_lat = fixed_width_column_wrapper<T>({ 0 });
+  auto a_lon = fixed_width_column_wrapper<T>({0});
+  auto a_lat = fixed_width_column_wrapper<T>({0});
+  auto b_lon = fixed_width_column_wrapper<T>({0});
+  auto b_lat = fixed_width_column_wrapper<T>({0});
 
-    auto expected = fixed_width_column_wrapper<T>({ 0 });
+  auto expected = fixed_width_column_wrapper<T>({0});
 
-    auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
+  auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
 
-    expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), true);
 }
-   
-TYPED_TEST(HaversineTest, EquivolentPoints)
+
+TYPED_TEST(HaversineTest, EquivalentPoints)
 {
-    using T = TypeParam;
+  using T = TypeParam;
 
-    auto const count = 3;
+  auto const count = 3;
 
-    auto a_lon = fixed_width_column_wrapper<T>({ -180,  180 });
-    auto a_lat = fixed_width_column_wrapper<T>({    0,   30 });
-    auto b_lon = fixed_width_column_wrapper<T>({  180, -180 });
-    auto b_lat = fixed_width_column_wrapper<T>({    0,   30 });
+  auto a_lon = fixed_width_column_wrapper<T>({-180, 180});
+  auto a_lat = fixed_width_column_wrapper<T>({0, 30});
+  auto b_lon = fixed_width_column_wrapper<T>({180, -180});
+  auto b_lat = fixed_width_column_wrapper<T>({0, 30});
 
-    auto expected = fixed_width_column_wrapper<T>({ 1.5604449514735574e-12, 1.3513849691832763e-12 });
+  auto expected = fixed_width_column_wrapper<T>({1.5604449514735574e-12, 1.3513849691832763e-12});
 
-    auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
+  auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
 
-    expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), true);
 }
-   
+
 TYPED_TEST(HaversineTest, MismatchSize)
 {
-    using T = TypeParam;
+  using T = TypeParam;
 
-    auto a_lon = fixed_width_column_wrapper<T>({ 0 });
-    auto a_lat = fixed_width_column_wrapper<T>({ 0, 1 });
-    auto b_lon = fixed_width_column_wrapper<T>({ 0 });
-    auto b_lat = fixed_width_column_wrapper<T>({ 0 });
+  auto a_lon = fixed_width_column_wrapper<T>({0});
+  auto a_lat = fixed_width_column_wrapper<T>({0, 1});
+  auto b_lon = fixed_width_column_wrapper<T>({0});
+  auto b_lat = fixed_width_column_wrapper<T>({0});
 
-    EXPECT_THROW(cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat),
-                 cuspatial::logic_error);
+  EXPECT_THROW(cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat), cuspatial::logic_error);
 }
 
 template <typename T>
-struct Haversine : public BaseFixture {};
+struct HaversineUnsupportedTypesTest : public BaseFixture {
+};
 
-using UnsupportedTypesTest = RemoveIf<ContainedIn<Types<float, double>>, AllTypes>;
-TYPED_TEST_CASE(Haversine, UnsupportedTypesTest);
+using UnsupportedTypes = RemoveIf<ContainedIn<Types<float, double>>, AllTypes>;
+TYPED_TEST_CASE(HaversineUnsupportedTypesTest, UnsupportedTypes);
 
-// TYPED_TEST(Haversine, MismatchSize)
-// {
-//     using T = TypeParam;
-//     auto camera_lon = 0;
-//     auto camera_lat = 0;
-//     auto point_lon = fixed_width_column_wrapper<T>({ 0 });
-//     auto point_lat = fixed_width_column_wrapper<T>({ 0 });
+TYPED_TEST(HaversineUnsupportedTypesTest, MismatchSize)
+{
+  using T = TypeParam;
 
-//     EXPECT_THROW(cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat),
-//                  cuspatial::logic_error);
-// }
+  auto a_lon = fixed_width_column_wrapper<T>({0});
+  auto a_lat = fixed_width_column_wrapper<T>({0});
+  auto b_lon = fixed_width_column_wrapper<T>({0});
+  auto b_lat = fixed_width_column_wrapper<T>({0});
+
+  EXPECT_THROW(cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat), cuspatial::logic_error);
+}
