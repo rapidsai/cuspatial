@@ -35,13 +35,9 @@ namespace cuspatial {
  *
  * @note The number of polygons is equal to the length of the first column
  *
-**/
-std::tuple<std::unique_ptr<cudf::column>,
-           std::unique_ptr<cudf::column>,
-           std::unique_ptr<cudf::column>,
-           std::unique_ptr<cudf::column>>
-read_polygon_shapefile(std::string const& filename,
-                       rmm::mr::device_memory_resource* mr =
-                         rmm::mr::get_default_resource());
+ **/
+std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
+  std::string const& filename,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
-} // namespace cuspatial
+}  // namespace cuspatial
