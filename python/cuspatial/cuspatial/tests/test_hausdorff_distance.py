@@ -18,23 +18,23 @@ def test_zeros():
 
 def test_empty_x():
     with pytest.raises(RuntimeError):
-        distance = cuspatial.directed_hausdorff_distance(  # noqa: F841
+        cuspatial.directed_hausdorff_distance(
             cudf.Series(), cudf.Series([0]), cudf.Series([0])
         )
 
 
 def test_empty_y():
     with pytest.raises(RuntimeError):
-        distance = cuspatial.directed_hausdorff_distance(  # noqa: F841
+        cuspatial.directed_hausdorff_distance(
             cudf.Series([0]), cudf.Series(), cudf.Series([0])
         )
 
 
-def test_empty_counts():
-    with pytest.raises(RuntimeError):
-        distance = cuspatial.directed_hausdorff_distance(  # noqa: F841
-            cudf.Series([0]), cudf.Series([0]), cudf.Series()
-        )
+def test_no_spaces():
+    result = cuspatial.directed_hausdorff_distance(
+        cudf.Series([0]), cudf.Series([0]), cudf.Series()
+    )
+    assert_eq(cudf.DataFrame([]), result)
 
 
 def test_large():
