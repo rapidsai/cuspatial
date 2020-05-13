@@ -65,7 +65,7 @@ python python/cuspatial/cuspatial/tests/test_pip.py
 ```
 
 Some other tests involve I/O from data files under $CUSPATIAL_HOME/test_fixtures.
-For example, $CUSPATIAL_HOME/cpp/build/gtests/SHAPEFILE_POLYGON_READER_TEST requires three
+For example, $CUSPATIAL_HOME/cpp/build/gtests/SHAPEFILE_READER_TEST requires three
 pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. They are available at 
 $CUSPATIAL_HOME/test_fixtures/shapefiles <br>
 
