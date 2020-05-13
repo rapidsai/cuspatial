@@ -20,46 +20,6 @@ from cuspatial._lib.cpp.spatial cimport (
 
 from cuspatial._lib.move cimport move
 
-cpdef cpp_point_in_polygon_bitmap(
-    points_x, points_y, poly_fpos, poly_rpos, poly_x, poly_y
-):
-    points_x = points_x.astype('float64')._column
-    points_y = points_y.astype('float64')._column
-    poly_fpos = poly_fpos.astype('int32')._column
-    poly_rpos = poly_rpos.astype('int32')._column
-    poly_x = poly_x.astype('float64')._column
-    poly_y = poly_y.astype('float64')._column
-    cdef gdf_column* c_points_x = column_view_from_column(points_x)
-    cdef gdf_column* c_points_y = column_view_from_column(points_y)
-
-    cdef gdf_column* c_poly_fpos = column_view_from_column(poly_fpos)
-    cdef gdf_column* c_poly_rpos = column_view_from_column(poly_rpos)
-
-    cdef gdf_column* c_poly_x = column_view_from_column(poly_x)
-    cdef gdf_column* c_poly_y = column_view_from_column(poly_y)
-    cdef gdf_column* result_bitmap = <gdf_column*>malloc(sizeof(gdf_column))
-
-    with nogil:
-        result_bitmap[0] = point_in_polygon_bitmap(
-            c_points_x[0],
-            c_points_y[0],
-            c_poly_fpos[0],
-            c_poly_rpos[0],
-            c_poly_x[0],
-            c_poly_y[0]
-        )
-
-    free(c_points_x)
-    free(c_points_y)
-    free(c_poly_fpos)
-    free(c_poly_rpos)
-    free(c_poly_x)
-    free(c_poly_y)
-    result = gdf_column_to_column(result_bitmap)
-    free(result_bitmap)
-
-    return result
-
 cpdef haversine_distance(Column x1, Column y1, Column x2, Column y2):
     cdef column_view c_x1 = x1.view()
     cdef column_view c_y1 = y1.view()
