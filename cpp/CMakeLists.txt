@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2018-2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -339,10 +339,14 @@ add_library(cuspatial SHARED
             src/io/soa/legacy/uint32_soa_reader.cu
             src/io/soa/legacy/timestamp_soa_reader.cu
             src/io/soa/legacy/polygon_soa_reader.cu
-            src/query/legacy/spatial_window_points.cu
+            src/spatial_window/legacy/spatial_window_points.cu
+            src/spatial_window/spatial_window.cu
+            src/spatial/point_in_polygon.cu
             src/spatial/legacy/point_in_polygon.cu
             src/spatial/legacy/haversine.cu
+            src/spatial/haversine.cu
             src/spatial/legacy/hausdorff.cu
+            src/spatial/hausdorff.cu
             src/spatial/legacy/lonlat_to_coordinate.cu
             src/spatial/lonlat_to_cartesian.cu
             src/trajectory/derive_trajectories.cu

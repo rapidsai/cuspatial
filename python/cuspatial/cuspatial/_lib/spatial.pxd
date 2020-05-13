@@ -3,23 +3,6 @@
 from cudf._lib.legacy.cudf cimport *
 from libcpp.pair cimport pair
 
-cdef extern from "legacy/point_in_polygon.hpp" namespace "cuspatial" nogil:
-    cdef gdf_column point_in_polygon_bitmap(
-        const gdf_column& pnt_x,
-        const gdf_column& pnt_y,
-        const gdf_column& ply_fpos,
-        const gdf_column& ply_rpos,
-        const gdf_column& ply_x,
-        const gdf_column& ply_y
-    ) except +
-
-cdef extern from "legacy/haversine.hpp" namespace "cuspatial" nogil:
-    gdf_column haversine_distance(
-        const gdf_column& x1,
-        const gdf_column& y1,
-        const gdf_column& x2,
-        const gdf_column& y2
-    ) except +
 
 cdef extern from "legacy/hausdorff.hpp" namespace "cuspatial" nogil:
     gdf_column& directed_hausdorff_distance(
