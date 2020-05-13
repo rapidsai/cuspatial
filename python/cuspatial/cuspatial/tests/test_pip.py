@@ -219,8 +219,8 @@ def test_two_points_in_two_rings():
         cudf.Series([0, 4]),
         cudf.Series([0]),
         cudf.Series([0, 4]),
-        cudf.Series([-1, 0,  1, -1, -1, 0, 1, -1]),
-        cudf.Series([-1, 1, -1, -1,  3, 5, 3,  3]),
+        cudf.Series([-1, 0, 1, -1, -1, 0, 1, -1]),
+        cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
     )
     expected = cudf.DataFrame({0: [True, True]})
     assert_eq(expected, result)

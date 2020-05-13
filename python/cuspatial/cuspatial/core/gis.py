@@ -1,14 +1,14 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
-from cudf import DataFrame, Series
+from cudf import DataFrame
 
+from cuspatial._lib.point_in_polygon import (
+    point_in_polygon as cpp_point_in_polygon,
+)
 from cuspatial._lib.spatial import (
     cpp_directed_hausdorff_distance,
     cpp_haversine_distance,
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
-)
-from cuspatial._lib.point_in_polygon import (
-    point_in_polygon as cpp_point_in_polygon
 )
 from cuspatial.utils import gis_utils
 
@@ -117,7 +117,7 @@ def point_in_polygon(
     poly_offsets,
     poly_ring_offsets,
     poly_points_x,
-    poly_points_y
+    poly_points_y,
 ):
     """ Compute from a set of points and a set of polygons which points fall
     within which polygons. Note that `polygons_(x,y)` must be specified as
@@ -180,7 +180,7 @@ def point_in_polygon(
         poly_offsets._column,
         poly_ring_offsets._column,
         poly_points_x._column,
-        poly_points_y._column
+        poly_points_y._column,
     )
 
     result = gis_utils.pip_bitmap_column_to_binary_array(

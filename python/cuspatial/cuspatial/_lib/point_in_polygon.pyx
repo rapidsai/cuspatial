@@ -4,6 +4,7 @@ from cudf._lib.move cimport move, unique_ptr
 from cuspatial._lib.cpp.point_in_polygon \
     cimport point_in_polygon as cpp_point_in_polygon
 
+
 def point_in_polygon(
     Column test_points_x,
     Column test_points_y,
