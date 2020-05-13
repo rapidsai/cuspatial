@@ -23,7 +23,7 @@ pnt_lon, pnt_lat = cuspatial.read_points_lonlat(data_dir + "locust.location")
 fpos, rpos, plyx, plyy = cuspatial.read_polygon(data_dir + "itsroi.ply")
 
 start = time.time()
-bm = cuspatial.point_in_polygon_bitmap(
+bm = cuspatial.point_in_polygon(
     pnt_lon, pnt_lat, fpos, rpos, plyx, plyy
 )
 end = time.time()
