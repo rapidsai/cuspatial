@@ -30,6 +30,7 @@
 - PR #189 Update haversine.hpp files to libcudf++
 - PR #203 Port point_in_polygon.hpp cython files
 - PR #202 Update haversine cython to libcudf++
+- PR #181 Port soa file readers to libcudf++
 
 ## Bug Fixes
 
