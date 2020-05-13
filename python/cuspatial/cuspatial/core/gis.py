@@ -1,4 +1,4 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
 from cudf import DataFrame
 
@@ -6,7 +6,6 @@ from cuspatial._lib.spatial import (
     cpp_directed_hausdorff_distance,
     cpp_haversine_distance,
     cpp_point_in_polygon_bitmap,
-    cpp_spatial_window_points,
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
 )
 from cuspatial.utils import gis_utils
@@ -177,27 +176,3 @@ def point_in_polygon_bitmap(
     result_bools.columns = [x for x in list(reversed(polygon_fpos.index))]
     result_bools = result_bools[list(reversed(result_bools.columns))]
     return result_bools
-
-
-def window_points(left, bottom, right, top, x, y):
-    """ Return only the subset of coordinates that fall within the numerically
-    closed borders [,] of the defined bounding box.
-
-    params
-    left: x coordinate of window left boundary
-    bottom: y coordinate of window bottom boundary
-    right: x coordinate of window right boundary
-    top: y coordinate of window top boundary
-    x: Series of x coordinates that may fall within the window
-    y: Series of y coordinates that may fall within the window
-
-    Parameters
-    ----------
-    {params}
-
-    Returns
-    -------
-    DataFrame: subset of x, y pairs above that fall within the window
-    """
-    result = cpp_spatial_window_points(left, bottom, right, top, x, y)
-    return DataFrame({"x": result[0], "y": result[1]})
