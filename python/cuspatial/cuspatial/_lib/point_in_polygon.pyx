@@ -13,13 +13,6 @@ def point_in_polygon(
     Column poly_points_x,
     Column poly_points_y
 ):
-    test_points_x = test_points_x.astype('float64')
-    test_points_y = test_points_y.astype('float64')
-    poly_offsets = poly_offsets.astype('int32')
-    poly_ring_offsets = poly_ring_offsets.astype('int32')
-    poly_points_x = poly_points_x.astype('float64')
-    poly_points_y = poly_points_y.astype('float64')
-
     cdef column_view c_test_points_x = test_points_x.view()
     cdef column_view c_test_points_y = test_points_y.view()
     cdef column_view c_poly_offsets = poly_offsets.view()

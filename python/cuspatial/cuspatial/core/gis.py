@@ -1,6 +1,7 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
 from cudf import DataFrame
+from cudf.core.column import as_column
 
 from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_point_in_polygon,
@@ -11,6 +12,7 @@ from cuspatial._lib.spatial import (
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
 )
 from cuspatial.utils import gis_utils
+from cuspatial.utils.column_utils import normalize_point_columns
 
 
 def directed_hausdorff_distance(x, y, count):
@@ -174,13 +176,25 @@ def point_in_polygon(
     if len(poly_offsets) == 0:
         return DataFrame()
 
+    (
+        test_points_x,
+        test_points_y,
+        poly_points_x,
+        poly_points_y,
+    ) = normalize_point_columns(
+        as_column(test_points_x),
+        as_column(test_points_y),
+        as_column(poly_points_x),
+        as_column(poly_points_y),
+    )
+
     result = cpp_point_in_polygon(
-        test_points_x._column,
-        test_points_y._column,
-        poly_offsets._column,
-        poly_ring_offsets._column,
-        poly_points_x._column,
-        poly_points_y._column,
+        test_points_x,
+        test_points_y,
+        as_column(poly_offsets, dtype="int32"),
+        as_column(poly_ring_offsets, dtype="int32"),
+        poly_points_x,
+        poly_points_y,
     )
 
     result = gis_utils.pip_bitmap_column_to_binary_array(
