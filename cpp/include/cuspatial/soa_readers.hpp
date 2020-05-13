@@ -28,7 +28,7 @@ namespace experimental {
  * @param[in] filepath path to file.
  * @param[in] mr Optional resource to use for allocation
  *
- * @return column storing the int32_t data
+ * @return cudf::column of integer data\.
  **/
 std::unique_ptr<cudf::column> read_int32_soa(std::string const& filename,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
