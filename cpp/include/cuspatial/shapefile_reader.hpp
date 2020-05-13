@@ -27,7 +27,7 @@ namespace cuspatial {
  * @param[in] filename: ESRI Shapefile file path (usually ends in .shp)
  * @param[in] mr:       Optional, The resource to use to allocate the returned data
  *
- * @return Tuple of 4 columns representing one or more polygons:
+ * @return Vector of 4 columns representing one or more polygons:
  *  0 - INT32:   beginning index of the first ring in each polygon
  *  1 - INT32:   beginning index of the first point in each ring
  *  2 - FLOAT64: x component of polygon points
