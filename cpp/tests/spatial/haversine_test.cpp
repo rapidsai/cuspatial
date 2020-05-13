@@ -102,13 +102,13 @@ TYPED_TEST(HaversineTest, MismatchSize)
 }
 
 template <typename T>
-struct HaversineUnsopportedTypesTest : public BaseFixture {
+struct HaversineUnsupportedTypesTest : public BaseFixture {
 };
 
 using UnsupportedTypes = RemoveIf<ContainedIn<Types<float, double>>, AllTypes>;
-TYPED_TEST_CASE(HaversineUnsopportedTypesTest, UnsupportedTypes);
+TYPED_TEST_CASE(HaversineUnsupportedTypesTest, UnsupportedTypes);
 
-TYPED_TEST(HaversineUnsopportedTypesTest, MismatchSize)
+TYPED_TEST(HaversineUnsupportedTypesTest, MismatchSize)
 {
   using T = TypeParam;
 
