@@ -1,3 +1,6 @@
+# Copyright (c) 2020, NVIDIA CORPORATION.
+
+
 def get_ts_struct(ts):
     y = ts & 0x3F
     ts = ts >> 6
