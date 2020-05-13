@@ -16,7 +16,7 @@ from cuspatial.utils.column_utils import (
 )
 
 
-def derive(object_ids, xs, ys, timestamps):
+def derive_trajectories(object_ids, xs, ys, timestamps):
     """ Derive trajectories from object ids, points, and timestamps.
 
     Parameters
@@ -32,7 +32,7 @@ def derive(object_ids, xs, ys, timestamps):
 
     Examples
     --------
-    >>> objects, traj_offsets = trajectory.derive(
+    >>> objects, traj_offsets = cuspatial.derive_trajectories(
     >>>    cudf.Series([0, 0, 1, 1]),   # object_id
     >>>    cudf.Series([0, 1, 2, 3]),   # x
     >>>    cudf.Series([0, 0, 1, 1]),   # y
@@ -56,7 +56,7 @@ def derive(object_ids, xs, ys, timestamps):
     return DataFrame._from_table(objects), Series(data=traj_offsets)
 
 
-def spatial_bounds(num_trajectories, object_ids, xs, ys):
+def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
     """ Compute the bounding boxes of sets of trajectories.
 
     Parameters
@@ -72,7 +72,7 @@ def spatial_bounds(num_trajectories, object_ids, xs, ys):
     >>>    cudf.Series([0, 1, 2, 3]),   # x
     >>>    cudf.Series([0, 0, 1, 1]),   # y
     >>>    cudf.Series([0, 10, 0, 10])) # timestamp
-    >>> traj_bounding_boxes = trajectory.spatial_bounds(
+    >>> traj_bounding_boxes = cuspatial.trajectory_bounding_boxes(
     >>>     len(traj_offsets),
     >>>     objects['object_id'],
     >>>     objects['x'],
@@ -89,7 +89,9 @@ def spatial_bounds(num_trajectories, object_ids, xs, ys):
     )
 
 
-def distance_and_speed(num_trajectories, object_ids, xs, ys, timestamps):
+def trajectory_distances_and_speeds(
+    num_trajectories, object_ids, xs, ys, timestamps
+):
     """ Compute the distance traveled and speed of sets of trajectories
 
     Parameters
@@ -105,12 +107,14 @@ def distance_and_speed(num_trajectories, object_ids, xs, ys, timestamps):
     Examples
     --------
     Compute the distance and speed of derived trajectories
-    >>> objects, traj_offsets = trajectory.derive(...)
-    >>> dists_and_speeds = trajectory.distance_and_speed(len(traj_offsets)
-    >>>                                                  objects['object_id'],
-    >>>                                                  objects['x'],
-    >>>                                                  objects['y'],
-    >>>                                                  objects['timestamp'])
+    >>> objects, traj_offsets = cuspatial.derive_trajectories(...)
+    >>> dists_and_speeds = cuspatial.trajectory_distances_and_speeds(
+    >>>     len(traj_offsets)
+    >>>     objects['object_id'],
+    >>>     objects['x'],
+    >>>     objects['y'],
+    >>>     objects['timestamp']
+    >>> )
     >>> print(dists_and_speeds)
                        distance          speed
         trajectory_id

@@ -7,7 +7,11 @@ from .core.gis import (
 )
 from .core.interpolate import CubicSpline
 from .core.spatial_window import points_in_spatial_window
-from .core.trajectory import derive, distance_and_speed, spatial_bounds
+from .core.trajectory import (
+    derive_trajectories,
+    trajectory_bounding_boxes,
+    trajectory_distances_and_speeds,
+)
 from .io.shapefile import read_polygon_shapefile
 from .io.soa import (
     read_its_timestamps,
