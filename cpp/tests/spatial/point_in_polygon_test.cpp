@@ -196,6 +196,58 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
     expect_columns_equal(expected, actual->view(), true);
 }
 
+TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
+{
+    using T = TypeParam;
+
+    auto counting_iter = thrust::make_counting_iterator(0);
+    auto poly_point_xs_iter = thrust::make_transform_iterator(counting_iter, [](auto idx) {
+        switch (idx % 5) {
+            case 0:
+            case 1:
+                return -1.0;
+            case 2:
+            case 3:
+                return  1.0;
+            case 4:
+                return -1.0;
+        }
+    });
+    auto poly_point_ys_iter = thrust::make_transform_iterator(counting_iter, [](auto idx) {
+        switch (idx % 5) {
+            case 0:
+                return -1.0;
+            case 1:
+            case 2:
+                return  1.0;
+            case 3:
+            case 4:
+                return -1.0;
+        }
+    });
+    auto poly_ring_offsets_iter = thrust::make_transform_iterator(counting_iter, [](auto idx){
+        return idx * 5;
+    });
+
+    auto test_point_xs = wrapper<T>({ 0.0, 2.0 });
+    auto test_point_ys = wrapper<T>({ 0.0, 0.0 });
+    auto poly_offsets = wrapper<cudf::size_type>(counting_iter, counting_iter + 31);
+    auto poly_ring_offsets = wrapper<cudf::size_type>(poly_ring_offsets_iter, poly_ring_offsets_iter + 31);
+    auto poly_point_xs = wrapper<T>(poly_point_xs_iter, poly_point_xs_iter + (5 * 31));
+    auto poly_point_ys = wrapper<T>(poly_point_ys_iter, poly_point_ys_iter + (5 * 31));
+
+    auto expected = wrapper<int32_t>({ 0b1111111111111111111111111111111,
+                                       0b0000000000000000000000000000000 });
+
+    auto actual = cuspatial::point_in_polygon(test_point_xs,
+                                              test_point_ys,
+                                              poly_offsets,
+                                              poly_ring_offsets,
+                                              poly_point_xs,
+                                              poly_point_ys);
+
+    expect_columns_equal(expected, actual->view(), true);
+}
 
 template<typename T>
 struct PointInPolygonUnsupportedTypesTest : public BaseFixture {};
