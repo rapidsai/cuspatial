@@ -18,8 +18,8 @@ from cuspatial.utils.column_utils import normalize_point_columns
 
 
 def directed_hausdorff_distance(xs, ys, points_per_space):
-    """ Compute the directed Hausdorff distances between all pairs of
-    trajectories.
+    """Compute the directed Hausdorff distances between all pairs of
+    spaces.
 
     params
     xs: x-coordinates
