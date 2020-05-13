@@ -210,6 +210,7 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
             case 3:
                 return  1.0;
             case 4:
+            default:
                 return -1.0;
         }
     });
@@ -222,6 +223,7 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
                 return  1.0;
             case 3:
             case 4:
+            default:
                 return -1.0;
         }
     });
