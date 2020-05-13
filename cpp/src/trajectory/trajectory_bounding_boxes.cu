@@ -135,7 +135,8 @@ std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
 
   if (num_trajectories == 0 || object_id.is_empty() || x.is_empty() ||
       y.is_empty()) {
-    std::vector<std::unique_ptr<cudf::column>> cols(4);
+    std::vector<std::unique_ptr<cudf::column>> cols{};
+    cols.reserve(4);
     cols.push_back(cudf::experimental::empty_like(x));
     cols.push_back(cudf::experimental::empty_like(y));
     cols.push_back(cudf::experimental::empty_like(x));
