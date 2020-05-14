@@ -30,6 +30,7 @@
 - PR #200 Update shapefile_readers.hpp to libcudf++
 - PR #203 Port point_in_polygon.hpp cython files
 - PR #202 Update haversine cython to libcudf++
+- PR #204 Port shapefile_readers.hpp cython files
 - PR #205 Port hausdorff.hpp cython to libcudf++
 
 ## Bug Fixes

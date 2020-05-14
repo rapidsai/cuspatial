@@ -2,7 +2,9 @@
 
 from cudf import DataFrame, Series
 
-from cuspatial._lib.shapefile_reader import cpp_read_polygon_shapefile
+from cuspatial._lib.shapefile_reader import (
+    read_polygon_shapefile as cpp_read_polygon_shapefile,
+)
 
 
 def read_polygon_shapefile(filename):
