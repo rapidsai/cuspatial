@@ -156,7 +156,7 @@ if(0)
         assert(y2!=nullptr);
 
         auto out_bbox_iter=thrust::make_zip_iterator(thrust::make_tuple(x1,y1,x2,y2));
-        thrust::transform(exec_policy->on(stream),d_p_bbox,d_p_bbox+num_bbox,out_bbox_iter,bbox2tuple<T>());
+        thrust::transform(exec_policy->on(stream),d_p_bbox,d_p_bbox+num_bbox,out_bbox_iter,bbox2tuple<T>(0));
 
         delete db_bbox; db_bbox=nullptr;
 
