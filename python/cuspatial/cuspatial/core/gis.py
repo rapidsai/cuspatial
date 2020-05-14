@@ -73,8 +73,7 @@ def directed_hausdorff_distance(xs, ys, points_per_space):
         return DataFrame()
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     result = cpp_directed_hausdorff_distance(
-        xs, ys,
-        as_column(points_per_space, dtype="int32"),
+        xs, ys, as_column(points_per_space, dtype="int32"),
     )
     result = result.data_array_view
     result = result.reshape(num_spaces, num_spaces)
