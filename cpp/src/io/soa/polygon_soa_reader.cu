@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,70 +14,119 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <cuda_runtime.h>
-#include <thrust/device_vector.h>
 #include <rmm/thrust_rmm_allocator.h>
+
 #include <memory>
-#include <cudf/types.h>
+
+#include <cudf/column/column_factories.hpp>
+#include <cudf/types.hpp>
 #include <cudf/utilities/error.hpp>
-#include <cuspatial/soa_readers.hpp>
-#include <cuspatial/error.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
-#include <utility/legacy/utility.hpp>
+
+#include <cuspatial/error.hpp>
+#include <cuspatial/soa_readers.hpp>
+
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+
+#include <fstream>
 
 namespace cuspatial {
 namespace experimental {
-    /*
-    * read polygon data from file in SoA format; data type of vertices is fixed to FLOAT64
-    * see soa_readers.hpp
-    */
+namespace detail {
 
-    std::vector<std::unique_ptr<cudf::column>> read_polygon_soa(std::string const& filename)
-    {
-        struct cuspatial::detail::polygons<double> pm;
-        cuspatial::detail::read_polygon_soa<double>(filename.c_str(), &pm);
+template <typename T>
+std::vector<std::unique_ptr<cudf::column>> read_polygon_soa(std::string const &filename,
+                                                            cudaStream_t stream,
+                                                            rmm::mr::device_memory_resource *mr)
+{
+  // Read the size of the soa file
+  std::ifstream file(filename, std::ios::in | std::ios::binary);
+  file.unsetf(std::ios::skipws);
+  file.seekg(0, std::ios::end);
+  size_t nbytes = file.tellg();
+  file.seekg(0, std::ios::beg);
 
-        cudaStream_t stream{0};
-        auto exec_policy = rmm::exec_policy(stream);    
+  int32_t num_groups{};
+  int32_t num_feats{};
+  int32_t num_rings{};
+  int32_t num_vertices{};
 
-        auto tid_int32 = cudf::experimental::type_to_id<int32_t>();
-        auto type_int32 = cudf::data_type{ tid_int32 };
-        auto tid_float4 = cudf::experimental::type_to_id<float4>();
-        auto type_float4 = cudf::data_type{ tid_float4 };
+  file.read(reinterpret_cast<char *>(&num_groups), 0 * sizeof(int32_t));
+  file.read(reinterpret_cast<char *>(&num_feats), 1 * sizeof(int32_t));
+  file.read(reinterpret_cast<char *>(&num_rings), 2 * sizeof(int32_t));
+  file.read(reinterpret_cast<char *>(&num_vertices), 3 * sizeof(int32_t));
+  file.seekg(16, std::ios::cur);
 
-        rmm::device_buffer fpos_buffer(pm.feature_length, pm.num_feature * sizeof(int32_t));
-        auto fpos = std::make_unique<cudf::column>(cudf::column(type_int32, pm.num_feature, fpos_buffer));
-        auto fpos_begin = fpos->view().begin<int32_t>();
-        auto mutable_fpos = fpos->mutable_view().begin<int32_t>();
-        thrust::inclusive_scan(fpos_begin, fpos_begin + pm.num_feature, mutable_fpos);
+  CUSPATIAL_EXPECTS(num_groups > 0 && num_feats > 0 && num_rings > 0 && num_vertices > 0,
+                    "numbers of groups/features/rings/vertices must be positive");
+  CUSPATIAL_EXPECTS(num_groups <= num_feats && num_feats <= num_rings && num_rings <= num_vertices,
+                    "numbers of groups/features/rings/vertices must be in increasing order");
 
-        rmm::device_buffer rpos_buffer(pm.ring_length, pm.num_ring * sizeof(int32_t));
-        auto rpos = std::make_unique<cudf::column>(cudf::column(type_int32, pm.num_ring, rpos_buffer));
-        auto rpos_begin = rpos->view().begin<int32_t>();
-        auto mutable_rpos = rpos->mutable_view().begin<int32_t>();
-        thrust::inclusive_scan(rpos_begin, rpos_begin + pm.num_ring, mutable_rpos);
+  CUSPATIAL_EXPECTS(nbytes == ((4 + num_groups + num_feats + num_rings) * sizeof(int32_t) +
+                               (2 * num_vertices * sizeof(T))),
+                    "expecting file size and read size are the same");
 
-        rmm::device_buffer x_buffer(pm.x, pm.num_vertex * sizeof(float4));
-        auto x = std::make_unique<cudf::column>(cudf::column(type_float4, pm.num_vertex, x_buffer));
-        rmm::device_buffer y_buffer(pm.y, pm.num_vertex * sizeof(float4));
-        auto y = std::make_unique<cudf::column>(cudf::column(type_float4, pm.num_vertex, y_buffer));
+  auto f_pos = cudf::make_numeric_column(
+    cudf::data_type{cudf::INT32}, num_feats, cudf::mask_state::UNALLOCATED, stream, mr);
+  auto r_pos = cudf::make_numeric_column(
+    cudf::data_type{cudf::INT32}, num_rings, cudf::mask_state::UNALLOCATED, stream, mr);
 
-        delete[] pm.feature_length;
-        delete[] pm.ring_length;
-        delete[] pm.x;
-        delete[] pm.y;
-        delete[] pm.group_length;
+  // read features into column
+  [&]() {
+    std::vector<int32_t> feats(num_feats);
+    file.read(reinterpret_cast<char *>(feats.data()), feats.size() * sizeof(int32_t));
+    thrust::inclusive_scan(feats.begin(), feats.end(), f_pos->mutable_view().begin<int32_t>());
+    file.seekg(feats.size() * sizeof(int32_t), std::ios::cur);
+  }();
 
-        std::vector<std::unique_ptr<cudf::column>> result;
-        result.push_back(std::move(rpos));
-        result.push_back(std::move(fpos));
-        result.push_back(std::move(x));
-        result.push_back(std::move(y));
-        return result;
-    }
+  // read rings into column
+  [&]() {
+    std::vector<int32_t> rings(num_rings);
+    file.read(reinterpret_cast<char *>(rings.data()), rings.size() * sizeof(int32_t));
+    thrust::inclusive_scan(rings.begin(), rings.end(), r_pos->mutable_view().begin<int32_t>());
+    file.seekg(rings.size() * sizeof(int32_t), std::ios::cur);
+  }();
 
-}// namespace experimental
-}// namespace cuspatial
+  auto x_col = cudf::make_numeric_column(cudf::data_type{cudf::experimental::type_to_id<T>()},
+                                         num_vertices,
+                                         cudf::mask_state::UNALLOCATED,
+                                         stream,
+                                         mr);
+  auto y_col = cudf::make_numeric_column(cudf::data_type{cudf::experimental::type_to_id<T>()},
+                                         num_vertices,
+                                         cudf::mask_state::UNALLOCATED,
+                                         stream,
+                                         mr);
+
+  // read vertices into device column
+  [&]() {
+    std::vector<T> vert(num_vertices);
+    file.read(reinterpret_cast<char *>(vert.data()), vert.size() * sizeof(T));
+    thrust::copy(vert.begin(), vert.end(), x_col->mutable_view().begin<T>());
+    file.seekg(vert.size() * sizeof(T), std::ios::cur);
+    thrust::copy(vert.begin(), vert.end(), y_col->mutable_view().begin<T>());
+    file.seekg(vert.size() * sizeof(T), std::ios::cur);
+  }();
+
+  std::vector<std::unique_ptr<cudf::column>> cols{};
+  cols.push_back(std::move(r_pos));
+  cols.push_back(std::move(f_pos));
+  cols.push_back(std::move(x_col));
+  cols.push_back(std::move(y_col));
+  return cols;
+}
+}  // namespace detail
+
+/*
+ * read polygon data from file in SoA format; data type of vertices is fixed to FLOAT64
+ * see soa_readers.hpp
+ */
+std::vector<std::unique_ptr<cudf::column>> read_polygon_soa(std::string const &filename,
+                                                            rmm::mr::device_memory_resource *mr)
+{
+  return detail::read_polygon_soa<double>(filename, 0, mr);
+}
+
+}  // namespace experimental
+}  // namespace cuspatial

@@ -14,38 +14,58 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <cuda_runtime.h>
-#include <cudf/utilities/error.hpp>
-#include <rmm/thrust_rmm_allocator.h>
-#include <cudf/types.h>
-#include <cudf/legacy/column.hpp>
+#include <cudf/column/column_factories.hpp>
+#include <cudf/types.hpp>
+#include <cudf/utilities/type_dispatcher.hpp>
+
 #include <cuspatial/soa_readers.hpp>
-#include "cudf/utilities/type_dispatcher.hpp"
-#include <cuspatial/legacy/soa_readers.hpp>
-#include <utility/legacy/utility.hpp>
+
+#include <rmm/thrust_rmm_allocator.h>
+#include <rmm/device_buffer.hpp>
+
+// #include <thrust/iterator/transform_output_iterator.h>
+
+#include <fstream>
+
+namespace {
+
+template <typename Element>
+std::unique_ptr<cudf::column> read_values(std::string const& filename,
+                                          cudaStream_t stream,
+                                          rmm::mr::device_memory_resource* mr)
+{
+  // Read the size of the soa file
+  std::ifstream file(filename, std::ios::in | std::ios::binary);
+  file.unsetf(std::ios::skipws);
+  file.seekg(0, std::ios::end);
+  size_t nbytes = file.tellg();
+  file.seekg(0, std::ios::beg);
+
+  // Read the file into memory
+  std::vector<Element> vec(nbytes / sizeof(Element));
+  file.read(reinterpret_cast<char*>(vec.data()), nbytes);
+
+  // Copy the data to device buffer and return the column
+  return std::make_unique<cudf::column>(cudf::data_type{cudf::experimental::type_to_id<Element>()},
+                                        nbytes / sizeof(Element),
+                                        rmm::device_buffer{vec.data(), nbytes, stream, mr});
+}
+
+};  // namespace
 
 namespace cuspatial {
 namespace experimental {
-    /**
-     * @brief read int32_t (unsigned integer with 32 bit fixed length) data from file as column
-	 
-     * see soa_readers.hpp
-    */
+/**
+ * @brief read int32_t (unsigned integer with 32 bit fixed length) data from file as column
 
-    std::unique_ptr<cudf::column> read_int32_soa(std::string const& filename, rmm::mr::device_memory_resource* mr)
-    {
-        std::vector<int32_t> ints = cuspatial::detail::read_field_to_vec<int32_t>(filename.c_str());
+ * see soa_readers.hpp
+*/
 
-        auto tid = cudf::experimental::type_to_id<int32_t>();
-        auto type = cudf::data_type{ tid };
-        rmm::device_buffer dbuff(ints.data(), ints.size() * sizeof(int32_t));
-        auto d_ints = std::make_unique<cudf::column>(
-            type, ints.size(), dbuff);
-        return d_ints;
-    }//read_int32_soa
+std::unique_ptr<cudf::column> read_int32_soa(std::string const& filename,
+                                             rmm::mr::device_memory_resource* mr)
+{
+  return read_values<int32_t>(filename, 0, mr);
+}
 
-}// experimental
-}// cuspatial
+}  // namespace experimental
+}  // namespace cuspatial
