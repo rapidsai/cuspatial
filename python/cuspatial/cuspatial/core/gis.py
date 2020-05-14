@@ -3,11 +3,13 @@
 from cudf import DataFrame
 from cudf.core.column import as_column
 
+from cuspatial._lib.hausdorff import (
+    directed_hausdorff_distance as cpp_directed_hausdorff_distance,
+)
 from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_point_in_polygon,
 )
 from cuspatial._lib.spatial import (
-    cpp_directed_hausdorff_distance,
     haversine_distance as cpp_haversine_distance,
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
 )
@@ -15,14 +17,14 @@ from cuspatial.utils import gis_utils
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
-def directed_hausdorff_distance(x, y, count):
-    """ Compute the directed Hausdorff distances between all pairs of
-    trajectories.
+def directed_hausdorff_distance(xs, ys, points_per_space):
+    """Compute the directed Hausdorff distances between all pairs of
+    spaces.
 
     params
-    x: x coordinates
-    y: y coordinates
-    count: size of each trajectory
+    xs: x-coordinates
+    ys: y-coordinates
+    points_per_space: number of points in each space
 
     Parameters
     ----------
@@ -30,9 +32,10 @@ def directed_hausdorff_distance(x, y, count):
 
     Example
     -------
-    The directed Hausdorff distance from one trajectory to another is the
-    greatest of all the distances from a point in the first trajectory to
-    the closest point in the second.
+    The directed Hausdorff distance from one space to another is the greatest
+    of all the distances between any point in the first space to the closest
+    point in the second.
+
     [Wikipedia](https://en.wikipedia.org/wiki/Hausdorff_distance)
 
     Consider a pair of lines on a grid.
@@ -62,12 +65,19 @@ def directed_hausdorff_distance(x, y, count):
     Returns
     -------
     DataFrame: The pairwise directed distance matrix with one row and one
-    column per input trajectory; the value at row i, column j represents the
-    hausdorff distance from trajectory i to trajectory j.
+    column per input space; the value at row i, column j represents the
+    hausdorff distance from space i to space j.
     """
-    result = cpp_directed_hausdorff_distance(x, y, count)
-    dim = len(count)
-    return DataFrame.from_gpu_matrix(result.to_gpu_array().reshape(dim, dim))
+    num_spaces = len(points_per_space)
+    if num_spaces == 0:
+        return DataFrame()
+    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    result = cpp_directed_hausdorff_distance(
+        xs, ys, as_column(points_per_space, dtype="int32"),
+    )
+    result = result.data_array_view
+    result = result.reshape(num_spaces, num_spaces)
+    return DataFrame.from_gpu_matrix(result)
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):

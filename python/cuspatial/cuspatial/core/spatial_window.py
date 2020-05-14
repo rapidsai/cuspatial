@@ -4,6 +4,7 @@ from cudf import DataFrame
 from cudf.core.column import as_column
 
 from cuspatial._lib import spatial_window
+from cuspatial.utils.column_utils import normalize_point_columns
 
 
 def points_in_spatial_window(min_x, max_x, min_y, max_y, xs, ys):
@@ -36,7 +37,8 @@ def points_in_spatial_window(min_x, max_x, min_y, max_y, xs, ys):
     -------
     DataFrame: subset of x, y pairs above that fall within the window
     """
+    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     result = spatial_window.points_in_spatial_window(
-        min_x, max_x, min_y, max_y, as_column(xs), as_column(ys)
+        min_x, max_x, min_y, max_y, xs, ys
     )
     return DataFrame._from_table(result)

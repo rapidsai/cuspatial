@@ -59,23 +59,6 @@ def lonlat_to_cartesian(
             Column.from_unique_ptr(move(result.second)))
 
 
-cpdef cpp_directed_hausdorff_distance(coor_x, coor_y, cnt):
-    coor_x = coor_x.astype('float64')._column
-    coor_y = coor_y.astype('float64')._column
-    cnt = cnt.astype('int32')._column
-    cdef gdf_column* c_coor_x = column_view_from_column(coor_x)
-    cdef gdf_column* c_coor_y = column_view_from_column(coor_y)
-    cdef gdf_column* c_cnt = column_view_from_column(cnt)
-    cdef gdf_column* c_dist = <gdf_column*>malloc(sizeof(gdf_column))
-    with nogil:
-        c_dist[0] = directed_hausdorff_distance(
-            c_coor_x[0],
-            c_coor_y[0],
-            c_cnt[0]
-        )
-
-    return Series(gdf_column_to_column(c_dist))
-
 cpdef cpp_spatial_window_points(left, bottom, right, top, x, y):
     left = np.float64(left)
     bottom = np.float64(bottom)
