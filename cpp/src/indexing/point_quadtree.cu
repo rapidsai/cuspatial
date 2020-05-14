@@ -78,7 +78,7 @@ inline rmm::device_vector<uint32_t> compute_point_keys(
   auto points = make_zip_iterator(x.begin<T>(), y.begin<T>());
   thrust::transform(
       policy->on(stream), points, points + x.size(), keys.begin(),
-      [x1, y1, x2, y2, num_levels, scale] __device__(auto const &point) {
+      [=] __device__(auto const &point) {
         T x, y;
         thrust::tie(x, y) = point;
         if (x < x1 || x > x2 || y < y1 || y > y2) {
@@ -96,10 +96,10 @@ inline rmm::device_vector<uint32_t> compute_point_keys(
 
 template <typename InputIterator1, typename InputIterator2,
           typename OutputIterator1, typename OutputIterator2,
-          typename BinaryPred>
+          typename BinaryOp>
 inline cudf::size_type construct_quadrant(
     InputIterator1 keys_begin, InputIterator1 keys_end, InputIterator2 vals_in,
-    OutputIterator1 keys_out, OutputIterator2 vals_out, BinaryPred binary_op,
+    OutputIterator1 keys_out, OutputIterator2 vals_out, BinaryOp binary_op,
     cudaStream_t stream) {
   auto policy = rmm::exec_policy(stream);
   auto result = thrust::reduce_by_key(policy->on(stream), keys_begin, keys_end,
@@ -590,7 +590,7 @@ inline std::unique_ptr<cudf::experimental::table> construct_quadtree(
     rmm::mr::device_memory_resource *mr, cudaStream_t stream) {
   //
   // Construct a quad tree from the input (unsorted) x/y points. The bounding
-  // box defined by the x1, y1, x2, and y2 paramters is used to compute keys
+  // box defined by the x1, y1, x2, and y2 parameters is used to compute keys
   // in a one-dimensional Z-order curve (i.e. Morton codes) for each point.
   //
   // The keys and points are sorted, then the keys are used to construct a
@@ -743,14 +743,10 @@ struct dispatch_construct_quadtree {
   }
 
   template <typename T,
-            std::enable_if_t<!std::is_floating_point<T>::value> * = nullptr>
-  inline std::unique_ptr<cudf::experimental::table> operator()(
-      cudf::mutable_column_view &x, cudf::mutable_column_view &y,
-      double const x1, double const y1, double const x2, double const y2,
-      double const scale, cudf::size_type const num_level,
-      cudf::size_type const min_size, rmm::mr::device_memory_resource *mr,
-      cudaStream_t stream) {
-    CUDF_FAIL("Non-floating point operation is not supported");
+            std::enable_if_t<!std::is_floating_point<T>::value> * = nullptr,
+            typename Args...>
+  inline std::unique_ptr<cudf::experimental::table> operator()(Args...) {
+    CUDF_FAIL("Only floating-point types are supported");
   }
 };
 
@@ -778,14 +774,14 @@ std::unique_ptr<cudf::experimental::table> quadtree_on_points(
     cudf::size_type const num_levels, cudf::size_type const min_size,
     rmm::mr::device_memory_resource *mr) {
   CUSPATIAL_EXPECTS(x.size() == y.size(),
-                    "x and y columns might have the same length");
+                    "x and y columns must have the same length");
   CUSPATIAL_EXPECTS(x1 < x2 && y1 < y2, "invalid bounding box (x1,y1,x2,y2)");
   CUSPATIAL_EXPECTS(scale > 0, "scale must be positive");
   CUSPATIAL_EXPECTS(num_levels >= 0 && num_levels < 16,
-                    "maximum of levels might be in [0,16)");
+                    "maximum depth must be positive and less than 16");
   CUSPATIAL_EXPECTS(
       min_size > 0,
-      "minimum number of points for a non-leaf node must be larger than zero");
+      "minimum number of points for a non-leaf node must be positive");
   if (x.is_empty() || y.is_empty()) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(5);
