@@ -278,7 +278,8 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial SHARED
-            src/join/quadtree_polygon_filtering.cu
+            src/join/quadtree_poly_filtering.cu
+            src/spatial/polyline_bounding_box.cu
             src/spatial/polygon_bounding_box.cu
             src/indexing/point_quadtree.cu
             src/interpolate/cubic_spline.cu
