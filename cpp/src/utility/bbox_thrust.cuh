@@ -79,6 +79,11 @@ struct bbox_transformation
 template<typename T>
 struct bbox2tuple
 {
+    T _R=0;
+    
+    bbox2tuple(T R):_R(R){}
+    
+    
     __device__
     thrust::tuple<T,T,T,T> operator()(const SBBox<T>& bbox)
     {
@@ -87,7 +92,7 @@ struct bbox2tuple
         T y1=thrust::get<1>(bbox.first);
         T y2=thrust::get<1>(bbox.second);
         //printf("bbox2tuple: %10.5f %10.5f %10.5f %10.5f\n",x1,y1,x2,y2);
-        return thrust::make_tuple(x1,y1,x2,y2);
+        return thrust::make_tuple(x1-_R,y1-_R,x2+_R,y2+_R);
     }
 };
 

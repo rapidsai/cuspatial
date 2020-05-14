@@ -77,4 +77,29 @@ std::unique_ptr<cudf::experimental::table> pip_refine(
     cudf::table_view const& pq_pair,cudf::table_view const& quadtree,cudf::table_view const& pnt,
     cudf::column_view const& poly_fpos,cudf::column_view const& poly_rpos,
     cudf::column_view const& poly_x,cudf::column_view const& poly_y);
+
+/**
+ * @brief given a vector of paired of quadrants and polylines, for each points in a quadrant,
+ * find its nearest polylines and the corresponding distance between the point and the polygon
+ *
+ * @param[in] pq_pair: table of two arrays for (quadrant,polyline) pairs derived from spatial filtering
+ *
+ * @param[in] quadtree: table of five arrays derived from quadtree indexing on points (key,lev,sign, lenght, fpos)
+ *
+ * @param[in] pnt: table of two arrays for points (x,y)
+ * note that points are in-place sorted in quadtree construction and have different orders than the orginal input points.
+ *
+ * @param[in] spos: polyline offset array to vertex
+ *
+ * @param[in] poly_x: polygon x coordiante array.
+ *
+ * @param[in] poly_y: polygon y coordiante array.
+ *
+ * @return a table of three columns: (point-idx, polyline-idx, point-to-polyline-distance)
+ **/
+std::unique_ptr<cudf::experimental::table> p2p_nn_refine(
+    cudf::table_view const& pq_pair,cudf::table_view const& quadtree,cudf::table_view const& pnt,
+    cudf::column_view const& poly_spos,
+    cudf::column_view const& poly_x,cudf::column_view const& poly_y);
+
 }// namespace cuspatial
