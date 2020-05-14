@@ -21,8 +21,6 @@
 
 #include <cuspatial/soa_readers.hpp>
 
-#include <rmm/thrust_rmm_allocator.h>
-
 #include <utility/legacy/utility.hpp>
 
 #include <rmm/thrust_rmm_allocator.h>

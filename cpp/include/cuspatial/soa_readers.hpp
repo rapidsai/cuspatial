@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cudf/types.hpp>
+#include <rmm/mr/device/default_memory_resource.hpp>
 
 #include <memory>
 #include <vector>
