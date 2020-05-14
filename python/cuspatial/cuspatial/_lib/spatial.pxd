@@ -4,13 +4,6 @@ from cudf._lib.legacy.cudf cimport *
 from libcpp.pair cimport pair
 
 
-cdef extern from "legacy/hausdorff.hpp" namespace "cuspatial" nogil:
-    gdf_column& directed_hausdorff_distance(
-        const gdf_column& coor_x,
-        const gdf_column& coor_y,
-        const gdf_column& cnt
-    ) except +
-
 cdef extern from "legacy/query.hpp" namespace "cuspatial" nogil:
     cdef pair[gdf_column, gdf_column] spatial_window_points(
         const gdf_scalar& left,

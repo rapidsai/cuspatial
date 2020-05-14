@@ -2,7 +2,7 @@
 
 from cudf._lib.table cimport table, Table
 from cudf._lib.move cimport move, unique_ptr
-from cudf._lib.column cimport column, Column
+from cudf._lib.column cimport column, column_view, Column
 
 from cuspatial._lib.cpp.spatial_window \
     cimport points_in_spatial_window as cpp_points_in_spatial_window
@@ -15,8 +15,8 @@ cpdef points_in_spatial_window(
     Column x,
     Column y
 ):
-    x_v = x.view()
-    y_v = y.view()
+    cdef column_view x_v = x.view()
+    cdef column_view y_v = y.view()
 
     cdef unique_ptr[table] c_result
 
