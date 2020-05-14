@@ -131,6 +131,10 @@ struct dispatch_timestamp {
             cols.at(1)->mutable_view().begin<double>())  // speed
         );
 
+    using Period =
+        typename simt::std::ratio_divide<typename Timestamp::period,
+                                         typename Seconds::period>::type;
+
     // Reduce the intermediate durations and kilometer distances into meter
     // distances and speeds in meters/second
     thrust::reduce_by_key(
@@ -142,11 +146,13 @@ struct dispatch_timestamp {
         duration_distances_and_speed,     // values_output
         thrust::equal_to<int32_t>(),      // binary_pred
         [] __device__(auto a, auto b) {   // binary_op
-          Dur time_d = Dur(thrust::get<0>(a)) + Dur(thrust::get<0>(b));
-          auto time_s = simt::std::chrono::duration_cast<Seconds>(time_d);
+          auto time_d = Dur(thrust::get<0>(a)) + Dur(thrust::get<0>(b));
+          auto time_s = static_cast<double>(time_d.count()) *
+                        static_cast<double>(Period::num) /
+                        static_cast<double>(Period::den);
           double dist_km = thrust::get<1>(a) + thrust::get<1>(b);
-          double dist_m = dist_km * 1000.0;            // km to m
-          double speed_m_s = dist_m / time_s.count();  // m/ms to m/s
+          double dist_m = dist_km * 1000.0;    // km to m
+          double speed_m_s = dist_m / time_s;  // m/ms to m/s
           return thrust::make_tuple(time_d.count(), dist_km, dist_m, speed_m_s);
         });
 

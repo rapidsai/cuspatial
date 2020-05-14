@@ -16,7 +16,6 @@
 - PR #172 Move coordinate_transform.hpp files to legacy
 - PR #170 Update coordinate_transform.hpp to libcudf++
 - PR #174 Update hausdorff.hpp to libcudf++
-- PR #176 Define new reader APIs and move soa_readers.hpp to legacy
 - PR #183 Add libcuspatial benchmark scaffolding
 - PR #186 Move haversine.hpp files to legacy
 - PR #190 Port coordinate_transform.hpp cython files
@@ -27,6 +26,14 @@
 - PR #195 Fix PIP docs
 - PR #197 Move query.hpp files to legacy
 - PR #198 Port spatial_window queries to libcudf++
+- PR #192 Update point_in_polygon.hpp to libcudf++
+- PR #201 Update trajectory cython to libcudf++
+- PR #189 Update haversine.hpp files to libcudf++
+- PR #200 Update shapefile_readers.hpp to libcudf++
+- PR #203 Port point_in_polygon.hpp cython files
+- PR #202 Update haversine cython to libcudf++
+- PR #204 Port shapefile_readers.hpp cython files
+- PR #205 Port hausdorff.hpp cython to libcudf++
 
 ## Bug Fixes
 
