@@ -326,8 +326,10 @@ endif(CONDA_LINK_DIRS)
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial SHARED
+            src/join/p2p_nn_refine.cu
             src/join/pip_refine.cu
-            src/join/quadtree_polygon_filtering.cu
+            src/join/quadtree_poly_filtering.cu
+            src/spatial/polyline_bounding_box.cu
             src/spatial/polygon_bounding_box.cu
             src/indexing/point_quadtree.cu
             src/interpolate/cubic_spline.cu
