@@ -31,7 +31,7 @@
 #include <utility/helper_thrust.cuh>
 #include <utility/bbox_thrust.cuh>
 #include <utility/bbox_thrust.cuh>
-#include <cuspatial/polygon_bounding_box.hpp>
+#include <cuspatial/polyline_bounding_box.hpp>
 
 namespace
 {
