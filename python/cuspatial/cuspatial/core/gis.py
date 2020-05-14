@@ -71,12 +71,12 @@ def directed_hausdorff_distance(xs, ys, points_per_space):
     num_spaces = len(points_per_space)
     if num_spaces == 0:
         return DataFrame()
+    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     result = cpp_directed_hausdorff_distance(
-        xs.astype("float64")._column,
-        ys.astype("float64")._column,
-        points_per_space.astype("int32")._column,
+        xs, ys,
+        as_column(points_per_space, dtype="int32"),
     )
-    result = result.to_gpu_array()
+    result = result.data_array_view
     result = result.reshape(num_spaces, num_spaces)
     return DataFrame.from_gpu_matrix(result)
 
