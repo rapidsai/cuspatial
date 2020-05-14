@@ -36,7 +36,7 @@
 #include <utility/bbox_thrust.cuh>
 
 #include <cuspatial/quadtree.hpp>
-#include <cuspatial/bounding_box.hpp>
+#include <cuspatial/polygon_bounding_box.hpp>
 #include <cuspatial/spatial_jion.hpp>
 
 /*
