@@ -19,7 +19,7 @@ x2 = Series(df["End_Lon"])
 y2 = Series(df["End_Lat"])
 end = time.time()
 print(
-    "data frame to gdf column conversion time in ms={}".format(
+    "data frame to column conversion time in ms={}".format(
         (end - start) * 1000
     )
 )
