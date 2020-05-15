@@ -20,12 +20,9 @@
 #include <cudf/detail/utilities/cuda.cuh>
 #include <cudf/column/column_view.hpp>
 
-#include <cudf/utilities/legacy/type_dispatcher.hpp>
-#include <utilities/legacy/cuda_utils.hpp>
 #include <type_traits>
 #include <cuspatial/error.hpp>
 
-#include <cudf/legacy/column.hpp>
 #include "cudf/utilities/type_dispatcher.hpp"
 #include "rmm/mr/device/device_memory_resource.hpp"
 
