@@ -8,80 +8,89 @@ from cudf.tests.utils import assert_eq
 import cuspatial
 
 
-def test_empty():
-    result = cuspatial.directed_hausdorff_distance(
-        cudf.Series(), cudf.Series(), cudf.Series()
+def _test_hausdorff_from_list_of_spaces(spaces):
+    return cuspatial.directed_hausdorff_distance(
+        [x for space in spaces for (x, y) in space],
+        [y for space in spaces for (x, y) in space],
+        [len(space) for space in spaces],
     )
-    assert_eq(cudf.DataFrame([]), result)
+
+
+def test_empty():
+    actual = _test_hausdorff_from_list_of_spaces([])
+
+    expected = cudf.DataFrame([])
+
+    assert_eq(expected, actual)
 
 
 def test_zeros():
-    distance = cuspatial.directed_hausdorff_distance(
-        cudf.Series([0.0]), cudf.Series([0.0]), cudf.Series([1])
-    )
-    assert_eq(distance, cudf.DataFrame([0.0]))
+    actual = _test_hausdorff_from_list_of_spaces([[(0, 0)]])
+
+    expected = cudf.DataFrame([0.0])
+
+    assert_eq(expected, actual)
 
 
 def test_empty_x():
     with pytest.raises(RuntimeError):
         cuspatial.directed_hausdorff_distance(
-            cudf.Series(), cudf.Series([0]), cudf.Series([0])
+            [], [0.0], [0],
         )
 
 
 def test_empty_y():
     with pytest.raises(RuntimeError):
         cuspatial.directed_hausdorff_distance(
-            cudf.Series([0]), cudf.Series(), cudf.Series([0])
+            [0.0], [], [0],
         )
 
 
 def test_large():
-    xs = [0.0, 0.0, -1.0, -1.0]
-    ys = [0.0, 1.0, 0.0, 1.0]
-    space_offsets = [2, 4]
-
-    distance = cuspatial.directed_hausdorff_distance(
-        cudf.Series(xs), cudf.Series(ys), cudf.Series(space_offsets)
+    actual = _test_hausdorff_from_list_of_spaces(
+        [[(0.0, 0.0), (0.0, 1.0)], [(-1.0, 0.0), (-1.0, 1.0)]]
     )
 
-    assert_eq(distance, cudf.DataFrame({0: [0.0, 1.0], 1: [1.0, 0.0]}))
+    expected = cudf.DataFrame({0: [0.0, 1.0], 1: [1.0, 0.0]})
+
+    assert_eq(expected, actual)
 
 
 def test_count_one():
-    distance = cuspatial.directed_hausdorff_distance(
-        cudf.Series([0.0, 0.0]), cudf.Series([0.0, 1.0]), cudf.Series([1, 1])
-    )
-    assert_eq(distance, cudf.DataFrame({0: [0.0, 1.0], 1: [1.0, 0.0]}))
+    actual = _test_hausdorff_from_list_of_spaces([[(0.0, 0.0)], [(0.0, 1.0)]])
+
+    expected = cudf.DataFrame({0: [0.0, 1.0], 1: [1.0, 0.0]})
+
+    assert_eq(expected, actual)
 
 
 def test_count_two():
-    distance = cuspatial.directed_hausdorff_distance(
-        cudf.Series([0.0, 0.0, 1.0, 0.0]),
-        cudf.Series([0.0, -1.0, 1.0, -1.0]),
-        cudf.Series([2, 2]),
+    actual = _test_hausdorff_from_list_of_spaces(
+        [[(0.0, 0.0), (0.0, -1.0)], [(1.0, 1.0), (0.0, -1.0)]]
     )
-    assert_eq(
-        distance, cudf.DataFrame({0: [0, 1.4142135623730951], 1: [1, 0.0]})
+
+    expected = cudf.DataFrame(
+        {0: [0.0, 1.4142135623730951], 1: [1.0, 0.0000000000000000]}
     )
+
+    assert_eq(expected, actual)
 
 
 def test_values():
-    ys = [0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0]
-    xs = [1.0, 2.0, 3.0, 5.0, 7.0, 0.0, 2.0, 3.0, 6.0, 1.0, 3.0, 6.0]
-    space_offsets = [5, 4, 3]
-
-    distance = cuspatial.directed_hausdorff_distance(
-        cudf.Series(xs), cudf.Series(ys), cudf.Series(space_offsets)
+    actual = _test_hausdorff_from_list_of_spaces(
+        [
+            [(0.0, 1.0), (1.0, 2.0), (2.0, 3.0), (3.0, 5.0), (1.0, 7.0)],
+            [(3.0, 0.0), (5.0, 2.0), (6.0, 3.0), (5.0, 6.0)],
+            [(4.0, 1.0), (7.0, 3.0), (4.0, 6.0)],
+        ]
     )
 
-    assert_eq(
-        distance,
-        cudf.DataFrame(
-            {
-                0: [0, 3.605551, 4.472136],
-                1: [4.123106, 0.0, 1.414214],
-                2: [4.0, 1.414214, 0.0],
-            }
-        ),
+    expected = cudf.DataFrame(
+        {
+            0: [0.000000, 3.605551, 4.472136],
+            1: [4.123106, 0.000000, 1.414214],
+            2: [4.000000, 1.414214, 0.000000],
+        }
     )
+
+    assert_eq(expected, actual)
