@@ -34,6 +34,7 @@
 - PR #202 Update haversine cython to libcudf++
 - PR #204 Port shapefile_readers.hpp cython files
 - PR #205 Port hausdorff.hpp cython to libcudf++
+- PR #206 Remove legacy code.
 
 ## Bug Fixes
 

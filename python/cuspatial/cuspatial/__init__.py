@@ -14,10 +14,3 @@ from .core.trajectory import (
     trajectory_distances_and_speeds,
 )
 from .io.shapefile import read_polygon_shapefile
-from .io.soa import (
-    read_its_timestamps,
-    read_points_lonlat,
-    read_points_xy_km,
-    read_polygon,
-    read_uint,
-)
