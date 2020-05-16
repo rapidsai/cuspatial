@@ -37,11 +37,11 @@
 #include <random>
 
 template <typename T>
-T random_number(T min, T max)
+T random_float(T min, T max)
 {
   static unsigned seed = 73311337;
   static std::mt19937 engine{seed};
-  static std::uniform_int_distribution<T> uniform{min, max};
+  static std::uniform_real_distribution<T> uniform{min, max};
 
   return uniform(engine);
 }
@@ -55,7 +55,8 @@ static void BM_hausdorff(benchmark::State& state)
   auto counting_iter = thrust::counting_iterator<int32_t>();
   auto random_double_iter = thrust::make_transform_iterator(
     counting_iter,
-    [](auto idx){ return random_number<double>(-100, 100); });
+    [](auto idx){ return random_float<double>(-100.0, 100.0); }
+  );
 
   auto num_points_per_space_iter = thrust::make_transform_iterator(
     counting_iter,
