@@ -39,10 +39,11 @@ constexpr auto magnitude_squared(T a, T b) {
 }
 
 template <typename T>
-__global__ void kernel_hausdorff(size_type num_spaces,
+__global__ void kernel_hausdorff(size_type const num_spaces,
+                                 size_type const* space_offsets,
+                                 size_type const num_points,
                                  T const* xs,
                                  T const* ys,
-                                 size_type* space_offsets,
                                  T* results)
 {
     auto block_idx = blockIdx.y * gridDim.x + blockIdx.x;
@@ -51,13 +52,19 @@ __global__ void kernel_hausdorff(size_type num_spaces,
     // each block processes a single result / pair of spaces
     if (block_idx < num_results)
     {
-        size_type space_a_idx   = block_idx % num_spaces;
-        size_type space_a_begin = space_a_idx == 0 ? 0 : space_offsets[space_a_idx - 1];
-        size_type space_a_end   =                        space_offsets[space_a_idx];
+        size_type space_a_idx      = block_idx % num_spaces;
+        size_type space_a_idx_next = space_a_idx + 1;
+        size_type space_a_begin    = space_offsets[space_a_idx];
+        size_type space_a_end      = space_a_idx_next < num_spaces
+                                    ? space_offsets[space_a_idx_next]
+                                    : num_points;
 
-        size_type space_b_idx   = block_idx / num_spaces;
-        size_type space_b_begin = space_b_idx == 0 ? 0 : space_offsets[space_b_idx - 1];
-        size_type space_b_end   =                        space_offsets[space_b_idx];
+        size_type space_b_idx      = block_idx / num_spaces;
+        size_type space_b_idx_next = space_b_idx + 1;
+        size_type space_b_begin    = space_offsets[space_b_idx];
+        size_type space_b_end      = space_b_idx_next < num_spaces
+                                    ? space_offsets[space_b_idx_next]
+                                    : num_points;
 
         T min_dist_sqrd = 1e20;
 
@@ -118,13 +125,14 @@ struct hausdorff_functor
     std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>>
     operator()(cudf::column_view const& xs,
                cudf::column_view const& ys,
-               cudf::column_view const& points_per_space,
+               cudf::column_view const& space_offsets,
                rmm::mr::device_memory_resource *mr,
                cudaStream_t stream)
     {
+        auto num_results = space_offsets.size() * space_offsets.size();
         auto tid = cudf::experimental::type_to_id<T>();
         auto result = cudf::make_fixed_width_column(cudf::data_type{ tid },
-                                                    points_per_space.size() * points_per_space.size(),
+                                                    num_results,
                                                     cudf::mask_state::UNALLOCATED,
                                                     stream,
                                                     mr);
@@ -134,14 +142,6 @@ struct hausdorff_functor
             return result;
         }
 
-        auto space_offsets = rmm::device_vector<cudf::size_type>(points_per_space.size());
-
-        thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
-                               points_per_space.begin<cudf::size_type>(),
-                               points_per_space.end<cudf::size_type>(),
-                               space_offsets.begin());
-
-        // utilize one block per result (pair of spaces).
         size_type num_blocks_x = min(result->size(), MAX_NUM_BLOCKS_X);
         size_type num_blocks_y = ceil(result->size() / (float) MAX_NUM_BLOCKS_X);
 
@@ -150,10 +150,11 @@ struct hausdorff_functor
         auto kernel = kernel_hausdorff<T>;
 
         kernel<<<grid, MAX_NUM_THREADS_PER_BLOCK, 0, stream>>>(
-            points_per_space.size(),
+            space_offsets.size(),
+            space_offsets.data<int32_t>(),
+            xs.size(),
             xs.data<T>(),
             ys.data<T>(),
-            space_offsets.data().get(),
             result->mutable_view().data<T>()
         );
 
