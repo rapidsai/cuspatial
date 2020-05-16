@@ -23,15 +23,13 @@
 #include <tests/utilities/column_utilities.hpp>
 #include <tests/utilities/timestamp_utilities.cuh>
 
-#include "tests/utilities/cuspatial_gmock.hpp"
-
 namespace cuspatial {
 namespace test {
 
 template <typename T>
 std::unique_ptr<cudf::experimental::table> make_test_trajectories_table(
-    cudf::size_type size,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource()) {
+  cudf::size_type size, rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
+{
   std::vector<int32_t> ids(size);
   std::vector<int32_t> map(size);
   std::iota(map.begin(), map.end(), 0);
@@ -45,29 +43,23 @@ std::unique_ptr<cudf::experimental::table> make_test_trajectories_table(
   std::shuffle(map.begin(), map.end(), std::mt19937{seed});
 
   auto rand_float = cudf::test::UniformRandomGenerator<T>{};
-  auto ids_iter = cudf::test::make_counting_transform_iterator(
-      0, [&](auto i) { return ids[map[i]]; });
-  auto floats_iter =
-      cudf::test::make_counting_transform_iterator(0, [&](auto i) {
-        return static_cast<T>(40000 * rand_float.generate() *
-                              (rand_float.generate() > 0.5 ? 1 : -1));
-      });
+  auto ids_iter =
+    cudf::test::make_counting_transform_iterator(0, [&](auto i) { return ids[map[i]]; });
+  auto floats_iter = cudf::test::make_counting_transform_iterator(0, [&](auto i) {
+    return static_cast<T>(40000 * rand_float.generate() * (rand_float.generate() > 0.5 ? 1 : -1));
+  });
 
-  auto id = cudf::test::fixed_width_column_wrapper<int32_t>(ids_iter,
-                                                            ids_iter + size);
-  auto x = cudf::test::fixed_width_column_wrapper<T>(floats_iter,
-                                                     floats_iter + size);
-  auto y = cudf::test::fixed_width_column_wrapper<T>(floats_iter,
-                                                     floats_iter + size);
+  auto id = cudf::test::fixed_width_column_wrapper<int32_t>(ids_iter, ids_iter + size);
+  auto x  = cudf::test::fixed_width_column_wrapper<T>(floats_iter, floats_iter + size);
+  auto y  = cudf::test::fixed_width_column_wrapper<T>(floats_iter, floats_iter + size);
   auto ts = cudf::test::generate_timestamps<cudf::timestamp_ms>(
-      size,
-      cudf::timestamp_ms{-2500000000000},  // Sat, 11 Oct 1890 19:33:20 GMT
-      cudf::timestamp_ms{2500000000000}    // Mon, 22 Mar 2049 04:26:40 GMT
+    size,
+    cudf::timestamp_ms{-2500000000000},  // Sat, 11 Oct 1890 19:33:20 GMT
+    cudf::timestamp_ms{2500000000000}    // Mon, 22 Mar 2049 04:26:40 GMT
   );
 
   auto sorted = cudf::experimental::detail::sort_by_key(
-      cudf::table_view{{id, x, y, ts}}, cudf::table_view{{id, ts}}, {}, {}, mr,
-      0);
+    cudf::table_view{{id, x, y, ts}}, cudf::table_view{{id, ts}}, {}, {}, mr, 0);
 
   return sorted;
 }
