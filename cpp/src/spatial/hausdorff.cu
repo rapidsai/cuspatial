@@ -15,6 +15,7 @@
  */
 
 #include <memory>
+#include <ostream>
 #include <type_traits>
 #include <cudf/types.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
@@ -24,93 +25,104 @@
 #include <cudf/column/column_view.hpp>
 #include <cuspatial/error.hpp>
 #include <cudf/utilities/error.hpp>
+#include "rmm/mr/device/device_memory_resource.hpp"
+#include "rmm/thrust_rmm_allocator.h"
+
+#include <thrust/iterator/discard_iterator.h>
 
 namespace {
 
 using size_type = cudf::size_type;
-
-constexpr cudf::size_type MAX_NUM_SPACES = 46340; // floor(sqrt(numeric_limits<size_type>::max()))
-constexpr cudf::size_type MAX_NUM_BLOCKS_X = 65535;
-constexpr cudf::size_type MAX_NUM_THREADS_PER_BLOCK = 1024;
+using position = thrust::tuple<size_type, size_type>;
 
 template<typename T>
 constexpr auto magnitude_squared(T a, T b) {
     return a * a + b * b;
 }
 
-template <typename T>
-__global__ void kernel_hausdorff(size_type const num_spaces,
-                                 size_type const* space_offsets,
-                                 size_type const num_points,
-                                 T const* xs,
-                                 T const* ys,
-                                 T* results)
+template<typename Iterator>
+void print_table(Iterator source, size_type rows, size_type columns)
 {
-    auto block_idx = blockIdx.y * gridDim.x + blockIdx.x;
-    auto num_results = num_spaces * num_spaces;
-
-    // each block processes a single result / pair of spaces
-    if (block_idx < num_results)
-    {
-        size_type space_a_idx      = block_idx % num_spaces;
-        size_type space_a_idx_next = space_a_idx + 1;
-        size_type space_a_begin    = space_offsets[space_a_idx];
-        size_type space_a_end      = space_a_idx_next < num_spaces
-                                    ? space_offsets[space_a_idx_next]
-                                    : num_points;
-
-        size_type space_b_idx      = block_idx / num_spaces;
-        size_type space_b_idx_next = space_b_idx + 1;
-        size_type space_b_begin    = space_offsets[space_b_idx];
-        size_type space_b_end      = space_b_idx_next < num_spaces
-                                    ? space_offsets[space_b_idx_next]
-                                    : num_points;
-
-        T min_dist_sqrd = 1e20;
-
-        size_type num_points_in_b = space_b_end - space_b_begin;
-
-        if (threadIdx.x < num_points_in_b)
-        {
-            T point_b_x = xs[space_b_begin + threadIdx.x];
-            T point_b_y = ys[space_b_begin + threadIdx.x];
-
-            for (size_type i = space_a_begin; i < space_a_end; i++)
-            {
-                T point_a_x = xs[i];
-                T point_a_y = ys[i];
-                T dist_sqrd = magnitude_squared(point_b_x - point_a_x, point_b_y - point_a_y);
-
-                min_dist_sqrd = min(min_dist_sqrd, dist_sqrd);
-            }
+    for (size_type row = 0; row < rows; row++) {
+        for (size_type col = 0; col < columns; col++) {
+            auto idx = (col * rows) + row;
+            std::cout << *(source + idx) << " ";
         }
-
-        if (min_dist_sqrd > 1e10)
-        {
-            min_dist_sqrd = -1;
-        }
-
-        __shared__ T dist_sqrd[MAX_NUM_THREADS_PER_BLOCK];
-
-        dist_sqrd[threadIdx.x] = threadIdx.x < num_points_in_b ? min_dist_sqrd : -1;
-
-        for (size_type offset = blockDim.x / 2; offset > 0; offset >>= 1)
-        {
-            __syncthreads();
-
-            if (threadIdx.x < offset)
-            {
-                dist_sqrd[threadIdx.x] = max(dist_sqrd[threadIdx.x],
-                                                dist_sqrd[threadIdx.x + offset]);
-            }
-        }
-
-        if (threadIdx.x == 0)
-        {
-            results[block_idx] = (dist_sqrd[0] < 0) ? 1e10 : sqrt(dist_sqrd[0]);
-        }
+        std::cout << std::endl;
     }
 }
+
+template<typename T>
+auto make_column(
+    size_type size,
+    cudaStream_t stream = 0,
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource()
+)
+{
+    auto tid = cudf::experimental::type_to_id<T>();
+
+    return cudf::make_fixed_width_column(
+        cudf::data_type{ tid },
+        size,
+        cudf::mask_state::UNALLOCATED,
+        stream,
+        mr);
+}
+
+template<typename T>
+struct distance_functor
+{
+    cudf::column_device_view xs;
+    cudf::column_device_view ys;
+
+    T __device__ operator() (size_type idx)
+    {
+        auto row = idx % xs.size();
+        auto col = idx / xs.size();
+        return (row + 1) * 10 + (col + 1);
+    }
+};
+
+template<typename T, typename SpaceLookup>
+struct min_key_functor
+{
+    size_type num_points;
+    SpaceLookup space_lookup;
+
+    position __device__ operator() (size_type idx)
+    {
+        size_type row = idx % num_points;
+        size_type col = idx / num_points;
+        return thrust::make_tuple(*(space_lookup + row), col);
+    }
+};
+
+template<typename T, typename SpaceLookup>
+struct max_key_functor
+{
+    size_type num_spaces;
+    SpaceLookup space_lookup;
+
+    position __device__ operator() (size_type idx)
+    {
+        auto row = idx % num_spaces;
+        auto col = idx / num_spaces;
+        return thrust::make_tuple(row, *(space_lookup + col));
+    }
+};
+
+template<typename T>
+struct repr_key
+{
+    T __device__ operator()(position idx){
+
+        auto row = thrust::get<0>(idx);
+        auto col = thrust::get<1>(idx);
+        return (row + 1) * 10 + (col + 1);
+
+        // return thrust::get<1>(idx) * 10 11 + thrust::get<0>(idx);
+    }
+};
 
 struct hausdorff_functor
 {
@@ -129,38 +141,157 @@ struct hausdorff_functor
                rmm::mr::device_memory_resource *mr,
                cudaStream_t stream)
     {
-        auto num_results = space_offsets.size() * space_offsets.size();
-        auto tid = cudf::experimental::type_to_id<T>();
-        auto result = cudf::make_fixed_width_column(cudf::data_type{ tid },
-                                                    num_results,
-                                                    cudf::mask_state::UNALLOCATED,
-                                                    stream,
-                                                    mr);
+        auto num_points = xs.size();
+        auto num_spaces = space_offsets.size();
+        auto num_results = num_spaces * num_spaces;
 
-        if (result->size() == 0)
+        if (num_results == 0)
         {
-            return result;
+            return make_column<T>(0, stream, mr);
         }
 
-        size_type num_blocks_x = min(result->size(), MAX_NUM_BLOCKS_X);
-        size_type num_blocks_y = ceil(result->size() / (float) MAX_NUM_BLOCKS_X);
+        // ===== Make Device ======================================================================
 
-        dim3 grid(num_blocks_x, num_blocks_y);
+        auto d_xs = cudf::column_device_view::create(xs);
+        auto d_ys = cudf::column_device_view::create(xs);
+        auto d_space_offsets = cudf::column_device_view::create(xs);
 
-        auto kernel = kernel_hausdorff<T>;
+        // ===== Make Lookup ======================================================================
 
-        kernel<<<grid, MAX_NUM_THREADS_PER_BLOCK, 0, stream>>>(
-            space_offsets.size(),
-            space_offsets.data<int32_t>(),
-            xs.size(),
-            xs.data<T>(),
-            ys.data<T>(),
-            result->mutable_view().data<T>()
+        std::cout << "===== Lookup =================================================" << std::endl;
+
+        auto temp_space_lookup = rmm::device_vector<size_type>(num_points);
+
+        thrust::scatter(
+            rmm::exec_policy(stream)->on(stream),
+            thrust::make_constant_iterator(1),
+            thrust::make_constant_iterator(1) + num_spaces - 1,
+            space_offsets.begin<size_type>() + 1,
+            temp_space_lookup.begin()
         );
 
-        CUDA_TRY(cudaGetLastError());
+        thrust::inclusive_scan(
+            rmm::exec_policy(stream)->on(stream),
+            temp_space_lookup.cbegin(),
+            temp_space_lookup.cend(),
+            temp_space_lookup.begin()
+        );
 
-        return result;
+        rmm::device_vector<size_type> h_temp_space_lookup = temp_space_lookup;
+
+        print_table(h_temp_space_lookup.begin(), 1, num_points);
+
+        // ===== Make Cartesian ===================================================================
+
+        std::cout << "===== Cartesian ==============================================" << std::endl;
+
+        auto num_cartesian = num_points * num_points;
+        auto temp_cartesian = rmm::device_vector<T>(num_cartesian);
+
+        auto selector = distance_functor<T>{ *d_xs, *d_ys };
+
+        thrust::transform(
+            rmm::exec_policy(stream)->on(stream),
+            thrust::make_counting_iterator(0),
+            thrust::make_counting_iterator(0) + num_cartesian,
+            temp_cartesian.begin(),
+            selector
+        );
+
+        thrust::host_vector<T> h_temp_cartesian = temp_cartesian;
+
+        print_table(h_temp_cartesian.begin(), num_points, num_points);
+
+        // ===== Make Min Reduction ===============================================================
+
+        std::cout << "===== Min Reduction ==========================================" << std::endl;
+
+        auto num_minimums = num_spaces * num_points;
+        auto temp_minimums = rmm::device_vector<T>(num_minimums);
+
+        auto count = thrust::make_counting_iterator<size_type>(0);
+
+        auto min_key_iter = thrust::make_transform_iterator(
+            count,
+            min_key_functor<T, decltype(temp_space_lookup.begin())>{num_points, temp_space_lookup.begin()}
+        );
+
+        thrust::reduce_by_key(
+            rmm::exec_policy(stream)->on(stream),
+            min_key_iter,
+            min_key_iter + num_cartesian,
+            temp_cartesian.begin(),
+            thrust::discard_iterator<position>(),
+            temp_minimums.begin(),
+            thrust::equal_to<position>(),
+            thrust::minimum<T>()
+        );
+
+        thrust::host_vector<T> h_temp_minimums = temp_minimums;
+        
+        // print_table(h_temp_minimums.begin(), num_spaces, num_points);
+
+        // std::cout << "===== Min Reduction : Boop ===================================" << std::endl;
+
+        auto min_key_repr_iter = thrust::make_transform_iterator(min_key_iter, repr_key<size_type>{});
+
+        thrust::copy(
+            rmm::exec_policy(stream)->on(stream),
+            min_key_repr_iter,
+            min_key_repr_iter + num_cartesian,
+            temp_cartesian.begin()
+        );
+
+        h_temp_cartesian = temp_cartesian;
+        print_table(h_temp_cartesian.begin(), num_points, num_points);
+        std::cout << "===== Min Reduction : Boop ===================================" << std::endl;
+        print_table(h_temp_minimums.begin(), num_spaces, num_points);
+
+        // ===== Make Max Reduction ===============================================================
+
+        std::cout << "===== Max Reduction ==========================================" << std::endl;
+
+        rmm::device_vector<T> temp_maximums(num_results);
+
+        auto max_key_iter = thrust::make_transform_iterator(
+            count,
+            max_key_functor<T, decltype(temp_space_lookup.begin())>{num_spaces, temp_space_lookup.begin()}
+        );
+
+        thrust::reduce_by_key(
+            rmm::exec_policy(stream)->on(stream),
+            max_key_iter,
+            max_key_iter + num_minimums,
+            temp_minimums.begin(),
+            thrust::discard_iterator<position>(),
+            temp_maximums.begin(),
+            thrust::equal_to<position>(),
+            thrust::plus<T>()
+        );
+
+        thrust::host_vector<T> h_temp_maximums = temp_maximums;
+
+        // print_table(h_temp_maximums.begin(), num_spaces, num_spaces);
+
+        // std::cout << "===== Max Reduction : Boop ===================================" << std::endl;
+
+        auto max_key_repr_iter = thrust::make_transform_iterator(max_key_iter, repr_key<size_type>{});
+
+        thrust::copy(
+            rmm::exec_policy(stream)->on(stream),
+            max_key_repr_iter,
+            max_key_repr_iter + num_minimums,
+            temp_minimums.begin()
+        );
+
+        h_temp_minimums = temp_minimums;
+        print_table(temp_minimums.begin(), num_spaces, num_points);
+        std::cout << "===== Max Reduction : Boop ===================================" << std::endl;
+        print_table(h_temp_maximums.begin(), num_spaces, num_spaces);
+
+        std::cout << "===== Return =================================================" << std::endl;
+
+        return make_column<T>(1, stream, mr);
     }
 };
 
@@ -184,9 +315,6 @@ directed_hausdorff_distance(cudf::column_view const& xs,
 
     CUSPATIAL_EXPECTS(xs.size() >= points_per_space.size(),
                       "At least one point is required for each space");
-
-    CUSPATIAL_EXPECTS(points_per_space.size() <= MAX_NUM_SPACES,
-                      "Total number of spaces must not exceed " CUSPATIAL_STRINGIFY(MAX_NUM_SPACES));
 
     cudaStream_t stream = 0;
 
