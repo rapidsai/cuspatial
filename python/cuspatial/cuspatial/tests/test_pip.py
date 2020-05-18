@@ -12,11 +12,11 @@ from cuspatial.utils import gis_utils
 
 def test_missing_0():
     with pytest.raises(RuntimeError):
-        result = cuspatial.point_in_polygon_bitmap(  # noqa: F841
+        cuspatial.point_in_polygon(
             cudf.Series(),
             cudf.Series([0.0]),
-            cudf.Series([0.0]),
-            cudf.Series([0.0]),
+            cudf.Series([0]),
+            cudf.Series([0]),
             cudf.Series([0.0]),
             cudf.Series([0.0]),
         )
@@ -24,34 +24,36 @@ def test_missing_0():
 
 def test_missing_1():
     with pytest.raises(RuntimeError):
-        result = cuspatial.point_in_polygon_bitmap(  # noqa: F841
+        cuspatial.point_in_polygon(
             cudf.Series([0.0]),
             cudf.Series(),
-            cudf.Series([0.0]),
-            cudf.Series([0.0]),
+            cudf.Series([0]),
+            cudf.Series([0]),
             cudf.Series([0.0]),
             cudf.Series([0.0]),
         )
 
 
 def test_missing_2():
-    with pytest.raises(RuntimeError):
-        result = cuspatial.point_in_polygon_bitmap(  # noqa: F841
-            cudf.Series([0.0]),
-            cudf.Series([0.0]),
-            cudf.Series(),
-            cudf.Series([0.0]),
-            cudf.Series([0.0]),
-            cudf.Series([0.0]),
-        )
+    result = cuspatial.point_in_polygon(
+        cudf.Series([0.0]),
+        cudf.Series([0.0]),
+        cudf.Series(),
+        cudf.Series([0]),
+        cudf.Series([0.0]),
+        cudf.Series([0.0]),
+    )
+
+    expected = cudf.DataFrame()
+    assert_eq(expected, result)
 
 
 def test_missing_3():
     with pytest.raises(RuntimeError):
-        result = cuspatial.point_in_polygon_bitmap(  # noqa: F841
+        cuspatial.point_in_polygon(
             cudf.Series([0.0]),
             cudf.Series([0.0]),
-            cudf.Series([0.0]),
+            cudf.Series([0]),
             cudf.Series(),
             cudf.Series([0.0]),
             cudf.Series([0.0]),
@@ -60,11 +62,11 @@ def test_missing_3():
 
 def test_missing_4():
     with pytest.raises(RuntimeError):
-        result = cuspatial.point_in_polygon_bitmap(  # noqa: F841
+        cuspatial.point_in_polygon(
             cudf.Series([0.0]),
             cudf.Series([0.0]),
-            cudf.Series([0.0]),
-            cudf.Series([0.0]),
+            cudf.Series([0]),
+            cudf.Series([0]),
             cudf.Series(),
             cudf.Series([0.0]),
         )
@@ -72,68 +74,171 @@ def test_missing_4():
 
 def test_missing_5():
     with pytest.raises(RuntimeError):
-        result = cuspatial.point_in_polygon_bitmap(  # noqa: F841
+        cuspatial.point_in_polygon(
             cudf.Series([0.0]),
             cudf.Series([0.0]),
-            cudf.Series([0.0]),
-            cudf.Series([0.0]),
+            cudf.Series([0]),
+            cudf.Series([0]),
             cudf.Series([0.0]),
             cudf.Series(),
         )
 
 
 def test_zeros():
-    result = cuspatial.point_in_polygon_bitmap(
-        cudf.Series([0.0]),
-        cudf.Series([0.0]),
-        cudf.Series([0.0]),
-        cudf.Series([0.0]),
-        cudf.Series([0.0]),
-        cudf.Series([0.0]),
-    )
-    expected = cudf.DataFrame({"in_polygon_0.0": False})
-    assert_eq(result, expected)
+    with pytest.raises(RuntimeError):
+        cuspatial.point_in_polygon(
+            cudf.Series([0.0]),
+            cudf.Series([0.0]),
+            cudf.Series([0]),
+            cudf.Series([0]),
+            cudf.Series([0.0]),
+            cudf.Series([0.0]),
+        )
 
 
 def test_one_point_in():
-    result = cuspatial.point_in_polygon_bitmap(
+    result = cuspatial.point_in_polygon(
+        cudf.Series([0.0]),
+        cudf.Series([0.0]),
         cudf.Series([0]),
         cudf.Series([0]),
-        cudf.Series([1]),
-        cudf.Series([3]),
-        cudf.Series([-1, 0, 1]),
-        cudf.Series([-1, 1, -1]),
+        cudf.Series([-1, 0, 1, -1]),
+        cudf.Series([-1, 1, -1, -1]),
     )
-    expected = cudf.DataFrame({"in_polygon_1": True})
-    assert_eq(result, expected)
+    expected = cudf.DataFrame({0: True})
+    assert_eq(expected, result)
 
 
 def test_one_point_out():
-    result = cuspatial.point_in_polygon_bitmap(
+    result = cuspatial.point_in_polygon(
         cudf.Series([1]),
         cudf.Series([1]),
-        cudf.Series([1]),
-        cudf.Series([3]),
-        cudf.Series([-1, 0, 1]),
-        cudf.Series([-1, 1, -1]),
+        cudf.Series([0]),
+        cudf.Series([0]),
+        cudf.Series([-1, 0, 1, -1]),
+        cudf.Series([-1, 1, -1, -1]),
     )
-    expected = cudf.DataFrame({"in_polygon_1": False})
-    assert_eq(result, expected)
+    expected = cudf.DataFrame({0: False})
+    assert_eq(expected, result)
 
 
-def test_dataset():
-    result = cuspatial.point_in_polygon_bitmap(
+def test_one_point_in_two_rings():
+    result = cuspatial.point_in_polygon(
+        cudf.Series([0]),
+        cudf.Series([0]),
+        cudf.Series([0]),
+        cudf.Series([0, 4]),
+        cudf.Series([-1, 0, 1, -1, -1, 0, 1, -1]),
+        cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
+    )
+    expected = cudf.DataFrame({0: True})
+    assert_eq(expected, result)
+
+
+def xxxtest_one_point_in_two_rings():
+    result = cuspatial.point_in_polygon(
+        cudf.Series([0]),
+        cudf.Series([0]),
+        cudf.Series([0]),
+        cudf.Series([0, 3]),
+        cudf.Series([-1, 0, 1, -1, -1, 0, 1, -1]),
+        cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
+    )
+    expected = cudf.DataFrame({0: True})
+    assert_eq(expected, result)
+
+
+def test_one_point_out_two_rings():
+    result = cuspatial.point_in_polygon(
+        cudf.Series([1]),
+        cudf.Series([1]),
+        cudf.Series([0]),
+        cudf.Series([0, 4]),
+        cudf.Series([-1, 0, 1, -1, -1, 0, 1, -1]),
+        cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
+    )
+    expected = cudf.DataFrame({0: False})
+    assert_eq(expected, result)
+
+
+def xxxtest_one_point_out_two_rings():
+    result = cuspatial.point_in_polygon(
+        cudf.Series([1]),
+        cudf.Series([1]),
+        cudf.Series([0]),
+        cudf.Series([0, 3]),
+        cudf.Series([-1, 0, 1, -1, -1, 0, 1, -1]),
+        cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
+    )
+    expected = cudf.DataFrame({0: False})
+    assert_eq(expected, result)
+
+
+def test_one_point_in_one_out_two_rings():
+    result = cuspatial.point_in_polygon(
+        cudf.Series([0, 1]),
+        cudf.Series([0, 1]),
+        cudf.Series([0]),
+        cudf.Series([0, 4]),
+        cudf.Series([-1, 0, 1, -1, -1, 0, 1, -1]),
+        cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
+    )
+    expected = cudf.DataFrame({0: [True, False]})
+    assert_eq(expected, result)
+
+
+def test_one_point_out_one_in_two_rings():
+    result = cuspatial.point_in_polygon(
+        cudf.Series([1, 0]),
+        cudf.Series([1, 0]),
+        cudf.Series([0]),
+        cudf.Series([0, 4]),
+        cudf.Series([-1, 0, 1, -1, -1, 0, 1, -1]),
+        cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
+    )
+    expected = cudf.DataFrame({0: [False, True]})
+    assert_eq(expected, result)
+
+
+def test_two_points_out_two_rings():
+    result = cuspatial.point_in_polygon(
+        cudf.Series([1, -1]),
+        cudf.Series([1, 1]),
+        cudf.Series([0]),
+        cudf.Series([0, 4]),
+        cudf.Series([-1, 0, 1, -1, -1, 0, 1, -1]),
+        cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
+    )
+    expected = cudf.DataFrame({0: [False, False]})
+    assert_eq(expected, result)
+
+
+def test_two_points_in_two_rings():
+    result = cuspatial.point_in_polygon(
+        cudf.Series([0, 0]),
+        cudf.Series([0, 4]),
+        cudf.Series([0]),
+        cudf.Series([0, 4]),
+        cudf.Series([-1, 0, 1, -1, -1, 0, 1, -1]),
+        cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
+    )
+    expected = cudf.DataFrame({0: [True, True]})
+    assert_eq(expected, result)
+
+
+def test_three_points_two_features():
+    result = cuspatial.point_in_polygon(
         cudf.Series([0, -8, 6.0]),
         cudf.Series([0, -8, 6.0]),
-        cudf.Series([1, 2]),
-        cudf.Series([5, 10]),
+        cudf.Series([0, 1]),
+        cudf.Series([0, 5]),
         cudf.Series([-10.0, 5, 5, -10, -10, 0, 10, 10, 0, 0]),
         cudf.Series([-10.0, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
     )
     expected = cudf.DataFrame()
-    expected["in_polygon_1"] = [True, True, False]
-    expected["in_polygon_2"] = [True, False, True]
-    assert_eq(result, expected)
+    expected[0] = [True, True, False]
+    expected[1] = [True, False, True]
+    assert_eq(expected, result)
 
 
 def test_pip_bitmap_column_to_binary_array():

@@ -56,8 +56,7 @@
 
  */
 
-#ifndef CUDF_BENCH_SYNCHRONIZATION_H
-#define CUDF_BENCH_SYNCHRONIZATION_H
+#pragma once
 
 // Google Benchmark library
 #include <benchmark/benchmark.h>
@@ -92,5 +91,3 @@ class cuda_event_timer {
   cudaStream_t stream;
   benchmark::State* p_state;
 };
-
-#endif

@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2018-2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -111,6 +111,12 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-
 # set warnings as errors
 # TODO: remove `no-maybe-unitialized` used to suppress warnings in rmm::exec_policy
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Werror=cross-execution-space-call -Xcompiler -Wall,-Werror,-Wno-error=deprecated-declarations")
+
+option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
+if(DISABLE_DEPRECATION_WARNING)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wno-deprecated-declarations")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+endif(DISABLE_DEPRECATION_WARNING)
 
 # Option to enable line info in CUDA device compilation to allow introspection when profiling / memchecking
 option(CMAKE_CUDA_LINEINFO "Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler" OFF)
@@ -325,21 +331,14 @@ add_library(cuspatial SHARED
             src/interpolate/cubic_spline.cu
             src/io/shp/polygon_shapefile_reader.cpp
             src/io/shp/polygon_shapefile_reader.cu
-            src/io/soa/polygon_soa_reader.cu
-            src/io/soa/point_soa_reader.cu
-            src/io/soa/uint32_soa_reader.cu
-            src/io/soa/timestamp_soa_reader.cu
-            src/query/spatial_window_points.cu
             src/spatial/point_in_polygon.cu
-            src/spatial/legacy/haversine.cu
-            src/spatial/legacy/hausdorff.cu
-            src/spatial/legacy/lonlat_to_coordinate.cu
+            src/spatial_window/spatial_window.cu
+            src/spatial/haversine.cu
+            src/spatial/hausdorff.cu
             src/spatial/lonlat_to_cartesian.cu
-            src/trajectory/legacy/trajectory_spatial_bound.cu
-            src/trajectory/legacy/trajectory_distance_speed.cu
-            src/trajectory/legacy/derive_trajectories.cu
-            src/trajectory/legacy/subset_trajectories.cu
-            src/utility/utility.cpp)
+            src/trajectory/derive_trajectories.cu
+            src/trajectory/trajectory_bounding_boxes.cu
+            src/trajectory/trajectory_distances_and_speeds.cu)
 
 #Override RPATH for cuspatial
 SET_TARGET_PROPERTIES(cuspatial PROPERTIES BUILD_RPATH "\$ORIGIN")

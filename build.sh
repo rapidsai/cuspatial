@@ -18,12 +18,13 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean libcuspatial cuspatial -v -g -n -h --show_depr_warn"
-HELP="$0 [clean] [libcuspatial] [cuspatial] [-v] [-g] [-n] [-h] [--show_depr_warn]
+VALIDARGS="clean libcuspatial cuspatial tests -v -g -n -h --show_depr_warn"
+HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--show_depr_warn]
    clean            - remove all existing build artifacts and configuration (start
                       over)
    libcuspatial     - build the libcuspatial C++ code only
    cuspatial        - build the cuspatial Python package
+   tests            - build tests
    -v               - verbose build mode
    -g               - build for debug
    -n               - no install step
@@ -38,6 +39,7 @@ BUILD_DIRS="${LIBCUSPATIAL_BUILD_DIR} ${CUSPATIAL_BUILD_DIR}"
 
 # Set defaults for vars modified by flags to this script
 VERBOSE=""
+BUILD_TESTS=OFF
 BUILD_TYPE=Release
 INSTALL_TARGET=install
 BUILD_DISABLE_DEPRECATION_WARNING=ON
@@ -81,6 +83,10 @@ if hasArg --show-_depr_warn; then
     BUILD_DISABLE_DEPRECATION_WARNING=OFF
 fi
 
+if hasArg tests; then
+    BUILD_TESTS=ON
+fi
+
 # If clean given, run it prior to any other steps
 if hasArg clean; then
     # If the dirs to clean are mounted dirs in a container, the
@@ -103,7 +109,8 @@ if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
     cd ${LIBCUSPATIAL_BUILD_DIR}
     cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
           -DCMAKE_CXX11_ABI=ON \
-          -DDISABLE_DEPRECATION_WARN=${BUILD_DISABLE_DEPRECATION_WARNING} \
+          -DBUILD_TESTS=${BUILD_TESTS} \
+          -DDISABLE_DEPRECATION_WARNING=${BUILD_DISABLE_DEPRECATION_WARNING} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
     make -j ${PARALLEL_LEVEL} install VERBOSE=${VERBOSE}
 fi

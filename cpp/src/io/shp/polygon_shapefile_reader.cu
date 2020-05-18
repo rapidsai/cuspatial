@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,102 +14,80 @@
  * limitations under the License.
  */
 
-#include <cuda_runtime.h>
-#include <cudf/types.h>
-#include <math.h>
-#include <rmm/thrust_rmm_allocator.h>
-#include <stdio.h>
-#include <string.h>
-#include <thrust/device_vector.h>
-#include <algorithm>
-#include <cudf/legacy/column.hpp>
-#include <cudf/utilities/error.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/shapefile_readers.hpp>
-#include <utility/utility.hpp>
+
+#include <cudf/column/column.hpp>
+#include <cudf/types.hpp>
+#include <cudf/utilities/type_dispatcher.hpp>
+
+#include <rmm/thrust_rmm_allocator.h>
+#include <rmm/device_buffer.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
+
+#include <thrust/scan.h>
+
+#include <memory>
+#include <string>
 
 namespace cuspatial {
 namespace detail {
-/*
-* Read a polygon shapefile and fill in a polygons structure
-* ToDo: read associated relational data into a CUDF Table
-*
-* filename: ESRI shapefile name (wtih .shp extension
-* pm: structure polygons (fixed to double type) to hold polygon data
 
-* Note: only the first layer is read - shapefiles have only one layer in GDALDataset model
-*/
-void polygon_from_shapefile(const char* filename, polygons<double>& pm);
+template <typename T>
+std::unique_ptr<cudf::column> make_column(std::vector<T> source,
+                                          cudaStream_t stream,
+                                          rmm::mr::device_memory_resource* mr)
+{
+  auto tid    = cudf::experimental::type_to_id<T>();
+  auto type   = cudf::data_type{tid};
+  auto buffer = rmm::device_buffer(source.data(), sizeof(T) * source.size(), stream, mr);
+  return std::make_unique<cudf::column>(type, source.size(), buffer);
+}
+
+std::tuple<std::vector<cudf::size_type>,
+           std::vector<cudf::size_type>,
+           std::vector<double>,
+           std::vector<double>>
+read_polygon_shapefile(std::string const& filename);
+
+std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
+  std::string const& filename, rmm::mr::device_memory_resource* mr, cudaStream_t stream)
+{
+  CUSPATIAL_EXPECTS(not filename.empty(), "Filename cannot be empty.");
+
+  auto poly_vectors = detail::read_polygon_shapefile(filename);
+
+  auto polygon_offsets = make_column<cudf::size_type>(std::get<0>(poly_vectors), stream, mr);
+  auto ring_offsets    = make_column<cudf::size_type>(std::get<1>(poly_vectors), stream, mr);
+  auto xs              = make_column<double>(std::get<2>(poly_vectors), stream, mr);
+  auto ys              = make_column<double>(std::get<3>(poly_vectors), stream, mr);
+
+  // transform polygon lengths to polygon offsets
+  thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
+                         polygon_offsets->view().begin<cudf::size_type>(),
+                         polygon_offsets->view().end<cudf::size_type>(),
+                         polygon_offsets->mutable_view().begin<cudf::size_type>());
+
+  // transform ring lengths to ring offsets
+  thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
+                         ring_offsets->view().begin<cudf::size_type>(),
+                         ring_offsets->view().end<cudf::size_type>(),
+                         ring_offsets->mutable_view().begin<cudf::size_type>());
+
+  std::vector<std::unique_ptr<cudf::column>> poly_columns{};
+  poly_columns.reserve(4);
+  poly_columns.push_back(std::move(polygon_offsets));
+  poly_columns.push_back(std::move(ring_offsets));
+  poly_columns.push_back(std::move(xs));
+  poly_columns.push_back(std::move(ys));
+  return poly_columns;
+}
+
 }  // namespace detail
 
-/*
- * read polygon data from file in ESRI Shapefile format; data type of vertices is fixed to double
- * (GDF_FLOAT64) see shp_readers.hpp
- */
-
-void read_polygon_shapefile(const char* filename,
-                            gdf_column* ply_fpos,
-                            gdf_column* ply_rpos,
-                            gdf_column* ply_x,
-                            gdf_column* ply_y)
+std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
+  std::string const& filename, rmm::mr::device_memory_resource* mr)
 {
-  memset(ply_fpos, 0, sizeof(gdf_column));
-  memset(ply_rpos, 0, sizeof(gdf_column));
-  memset(ply_x, 0, sizeof(gdf_column));
-  memset(ply_y, 0, sizeof(gdf_column));
-
-  polygons<double> pm{};
-  detail::polygon_from_shapefile(filename, pm);
-  if (pm.num_feature <= 0) return;
-
-  cudaStream_t stream{0};
-  auto exec_policy = rmm::exec_policy(stream);
-
-  int32_t* temp{nullptr};
-  RMM_TRY(RMM_ALLOC(&temp, pm.num_feature * sizeof(int32_t), stream));
-  CUDA_TRY(cudaMemcpyAsync(
-    temp, pm.feature_length, pm.num_feature * sizeof(int32_t), cudaMemcpyHostToDevice, stream));
-  // prefix-sum: len to pos
-  thrust::inclusive_scan(exec_policy->on(stream), temp, temp + pm.num_feature, temp);
-  gdf_column_view_augmented(ply_fpos,
-                            temp,
-                            nullptr,
-                            pm.num_feature,
-                            GDF_INT32,
-                            0,
-                            gdf_dtype_extra_info{TIME_UNIT_NONE},
-                            "f_pos");
-
-  RMM_TRY(RMM_ALLOC(&temp, pm.num_ring * sizeof(int32_t), stream));
-  CUDA_TRY(cudaMemcpyAsync(
-    temp, pm.ring_length, pm.num_ring * sizeof(int32_t), cudaMemcpyHostToDevice, stream));
-  thrust::inclusive_scan(exec_policy->on(stream), temp, temp + pm.num_ring, temp);
-  gdf_column_view_augmented(ply_rpos,
-                            temp,
-                            nullptr,
-                            pm.num_ring,
-                            GDF_INT32,
-                            0,
-                            gdf_dtype_extra_info{TIME_UNIT_NONE},
-                            "r_pos");
-
-  RMM_TRY(RMM_ALLOC(&temp, pm.num_vertex * sizeof(double), stream));
-  CUDA_TRY(
-    cudaMemcpyAsync(temp, pm.x, pm.num_vertex * sizeof(double), cudaMemcpyHostToDevice, stream));
-  gdf_column_view_augmented(
-    ply_x, temp, nullptr, pm.num_vertex, GDF_FLOAT64, 0, gdf_dtype_extra_info{TIME_UNIT_NONE}, "x");
-
-  RMM_TRY(RMM_ALLOC(&temp, pm.num_vertex * sizeof(double), stream));
-  CUDA_TRY(
-    cudaMemcpyAsync(temp, pm.y, pm.num_vertex * sizeof(double), cudaMemcpyHostToDevice, stream));
-  gdf_column_view_augmented(
-    ply_y, temp, nullptr, pm.num_vertex, GDF_FLOAT64, 0, gdf_dtype_extra_info{TIME_UNIT_NONE}, "y");
-
-  delete[] pm.feature_length;
-  delete[] pm.ring_length;
-  delete[] pm.x;
-  delete[] pm.y;
-  delete[] pm.group_length;
+  return detail::read_polygon_shapefile(filename, mr, 0);
 }
 
 }  // namespace cuspatial
