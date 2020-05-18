@@ -88,6 +88,7 @@ inline std::pair<rmm::device_vector<uint32_t>, std::unique_ptr<cudf::column>> co
   T const y2,
   T const scale,
   cudf::size_type const num_levels,
+  rmm::mr::device_memory_resource *mr,
   cudaStream_t stream)
 {
   rmm::device_vector<uint32_t> keys(x.size());
@@ -105,7 +106,7 @@ inline std::pair<rmm::device_vector<uint32_t>, std::unique_ptr<cudf::column>> co
                       return cuspatial::utility::z_order((x - x1) / scale, (y - y1) / scale);
                     });
 
-  auto indices = make_fixed_width_column<int32_t>(keys.size());
+  auto indices = make_fixed_width_column<int32_t>(keys.size(), stream, mr);
   thrust::sequence(rmm::exec_policy(stream)->on(stream),
                    indices->mutable_view().begin<int32_t>(),
                    indices->mutable_view().end<int32_t>());
@@ -773,7 +774,8 @@ construct_quadtree(cudf::column_view const &x,
     // (i.e. quads at level `num_levels - 1`)
 
     // Compute Morton code (z-order) keys for each point
-    auto keys_and_indices = compute_point_keys<T>(x, y, x1, y1, x2, y2, scale, num_levels, stream);
+    auto keys_and_indices =
+      compute_point_keys<T>(x, y, x1, y1, x2, y2, scale, num_levels, mr, stream);
 
     auto &point_keys    = keys_and_indices.first;
     auto &point_indices = keys_and_indices.second;
