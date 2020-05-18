@@ -160,15 +160,39 @@ TYPED_TEST(HausdorffTest, FromPython)
 {
     using T = TypeParam;
 
-    // auto x = cudf::test::fixed_width_column_wrapper<T>({ 0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0 });
-    // auto y = cudf::test::fixed_width_column_wrapper<T>({ 1.0, 2.0, 3.0, 5.0, 7.0, 0.0, 2.0, 3.0, 6.0, 1.0, 3.0, 6.0 });
-    auto x = cudf::test::fixed_width_column_wrapper<T>({ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 });
-    auto y = cudf::test::fixed_width_column_wrapper<T>({ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 });
-    auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({ 0, 4, 7 });
+    auto x = cudf::test::fixed_width_column_wrapper<T>({ 0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0 });
+    auto y = cudf::test::fixed_width_column_wrapper<T>({ 1.0, 2.0, 3.0, 5.0, 7.0, 0.0, 2.0, 3.0, 6.0, 1.0, 3.0, 6.0 });
+    // auto x = cudf::test::fixed_width_column_wrapper<T>({ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 });
+    // auto y = cudf::test::fixed_width_column_wrapper<T>({ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 });
+    auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({ 0, 5, 9 });
 
-    auto expected = cudf::test::fixed_width_column_wrapper<T>({});
+    // auto expected = cudf::test::fixed_width_column_wrapper<T>({});
+    auto expected = cudf::test::fixed_width_column_wrapper<T>({
+        0.00000, 4.24264, 5.65685,
+        4.24264, 0.00000, 1.41421,
+        5.65685, 2.82843, 0.00000,
+    });
 
     auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets);
 
-    expect_columns_equal(expected, actual->view());
+    expect_columns_equal(expected, actual->view(), true);
 }
+
+// TYPED_TEST(HausdorffTest, Desmos)
+// {
+//     using T = TypeParam;
+
+//     auto x = cudf::test::fixed_width_column_wrapper<T>({ 0.13, -0.42, -0.40, -0.60, -0.50, -0.18,  0.02 });
+//     auto y = cudf::test::fixed_width_column_wrapper<T>({ 0.21, -0.28, -1.07, -1.00, -0.10,  0.01,  0.37 });
+//     auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({ 0, 3 });
+
+//     // auto expected = cudf::test::fixed_width_column_wrapper<T>({});
+//     auto expected = cudf::test::fixed_width_column_wrapper<T>({
+//         0.000000, 3.605551,
+//         0.000000, 0.000000
+//     });
+
+//     auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets);
+
+//     expect_columns_equal(expected, actual->view(), true);
+// }

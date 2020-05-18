@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <iomanip>
 #include <memory>
 #include <ostream>
 #include <type_traits>
@@ -46,7 +47,7 @@ void print_table(Iterator source, size_type rows, size_type columns)
     for (size_type row = 0; row < rows; row++) {
         for (size_type col = 0; col < columns; col++) {
             auto idx = (col * rows) + row;
-            std::cout << *(source + idx) << " ";
+            std::cout << std::setprecision(4) << std::fixed << *(source + idx) << " ";
         }
         std::cout << std::endl;
     }
@@ -79,7 +80,14 @@ struct distance_functor
     {
         auto row = idx % xs.size();
         auto col = idx / xs.size();
-        return (row + 1) * 10 + (col + 1);
+        auto a_x = xs.element<T>(row);
+        auto a_y = ys.element<T>(row);
+        auto b_x = xs.element<T>(col);
+        auto b_y = ys.element<T>(col);
+
+        return hypot(b_x - a_x, b_y - a_y);
+
+        // return (row + 1) * 10 + (col + 1);
     }
 };
 
@@ -105,9 +113,9 @@ struct max_key_functor
 
     position __device__ operator() (size_type idx)
     {
-        auto row = idx % num_spaces;
-        auto col = idx / num_spaces;
-        return thrust::make_tuple(row, *(space_lookup + col));
+        // auto row = idx % num_spaces;
+        // auto col = idx / num_spaces;
+        return thrust::make_tuple(0, *(space_lookup + idx));
     }
 };
 
@@ -118,9 +126,7 @@ struct repr_key
 
         auto row = thrust::get<0>(idx);
         auto col = thrust::get<1>(idx);
-        return (row + 1) * 10 + (col + 1);
-
-        // return thrust::get<1>(idx) * 10 11 + thrust::get<0>(idx);
+        return row * 10 + col + 11;
     }
 };
 
@@ -153,8 +159,7 @@ struct hausdorff_functor
         // ===== Make Device ======================================================================
 
         auto d_xs = cudf::column_device_view::create(xs);
-        auto d_ys = cudf::column_device_view::create(xs);
-        auto d_space_offsets = cudf::column_device_view::create(xs);
+        auto d_ys = cudf::column_device_view::create(ys);
 
         // ===== Make Lookup ======================================================================
 
@@ -180,6 +185,11 @@ struct hausdorff_functor
         rmm::device_vector<size_type> h_temp_space_lookup = temp_space_lookup;
 
         print_table(h_temp_space_lookup.begin(), 1, num_points);
+
+
+        auto count = thrust::make_counting_iterator<size_type>(0);
+        auto lookup_count = thrust::make_transform_iterator(count, [num_points]__device__(size_type idx) { return idx % num_points; });
+        auto lookup = thrust::make_permutation_iterator(temp_space_lookup.begin(), lookup_count);
 
         // ===== Make Cartesian ===================================================================
 
@@ -209,11 +219,9 @@ struct hausdorff_functor
         auto num_minimums = num_spaces * num_points;
         auto temp_minimums = rmm::device_vector<T>(num_minimums);
 
-        auto count = thrust::make_counting_iterator<size_type>(0);
-
         auto min_key_iter = thrust::make_transform_iterator(
             count,
-            min_key_functor<T, decltype(temp_space_lookup.begin())>{num_points, temp_space_lookup.begin()}
+            min_key_functor<T, decltype(lookup)>{num_points, lookup}
         );
 
         thrust::reduce_by_key(
@@ -228,10 +236,6 @@ struct hausdorff_functor
         );
 
         thrust::host_vector<T> h_temp_minimums = temp_minimums;
-        
-        // print_table(h_temp_minimums.begin(), num_spaces, num_points);
-
-        // std::cout << "===== Min Reduction : Boop ===================================" << std::endl;
 
         auto min_key_repr_iter = thrust::make_transform_iterator(min_key_iter, repr_key<size_type>{});
 
@@ -242,9 +246,6 @@ struct hausdorff_functor
             temp_cartesian.begin()
         );
 
-        h_temp_cartesian = temp_cartesian;
-        print_table(h_temp_cartesian.begin(), num_points, num_points);
-        std::cout << "===== Min Reduction : Boop ===================================" << std::endl;
         print_table(h_temp_minimums.begin(), num_spaces, num_points);
 
         // ===== Make Max Reduction ===============================================================
@@ -253,45 +254,46 @@ struct hausdorff_functor
 
         rmm::device_vector<T> temp_maximums(num_results);
 
-        auto max_key_iter = thrust::make_transform_iterator(
+        auto perm = thrust::make_transform_iterator(
             count,
-            max_key_functor<T, decltype(temp_space_lookup.begin())>{num_spaces, temp_space_lookup.begin()}
-        );
+            [num_spaces, num_points]
+            __device__
+            (size_type idx) { return (idx * num_spaces) % (num_points * num_spaces) + (idx * num_spaces) / (num_points * num_spaces); });
+
+        auto temp_minimums_trans = thrust::make_permutation_iterator(temp_minimums.begin(), perm);
+
+        // auto max_key_iter = thrust::make_transform_iterator(
+        //     count,
+        //     max_key_functor<T, decltype(lookup)>{num_spaces, lookup}
+        // );
 
         thrust::reduce_by_key(
             rmm::exec_policy(stream)->on(stream),
-            max_key_iter,
-            max_key_iter + num_minimums,
-            temp_minimums.begin(),
+            lookup,
+            lookup + num_minimums,
+            temp_minimums_trans,
             thrust::discard_iterator<position>(),
             temp_maximums.begin(),
             thrust::equal_to<position>(),
-            thrust::plus<T>()
+            thrust::maximum<T>()
         );
 
         thrust::host_vector<T> h_temp_maximums = temp_maximums;
 
-        // print_table(h_temp_maximums.begin(), num_spaces, num_spaces);
-
-        // std::cout << "===== Max Reduction : Boop ===================================" << std::endl;
-
-        auto max_key_repr_iter = thrust::make_transform_iterator(max_key_iter, repr_key<size_type>{});
-
-        thrust::copy(
-            rmm::exec_policy(stream)->on(stream),
-            max_key_repr_iter,
-            max_key_repr_iter + num_minimums,
-            temp_minimums.begin()
-        );
-
-        h_temp_minimums = temp_minimums;
-        print_table(temp_minimums.begin(), num_spaces, num_points);
-        std::cout << "===== Max Reduction : Boop ===================================" << std::endl;
         print_table(h_temp_maximums.begin(), num_spaces, num_spaces);
 
         std::cout << "===== Return =================================================" << std::endl;
 
-        return make_column<T>(1, stream, mr);
+        auto result = make_column<T>(num_results, stream, mr);
+
+        thrust::copy(
+            rmm::exec_policy(stream)->on(stream),
+            temp_maximums.begin(),
+            temp_maximums.end(),
+            result->mutable_view().template begin<T>()
+        );
+
+        return result;
     }
 };
 

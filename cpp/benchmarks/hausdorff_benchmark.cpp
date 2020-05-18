@@ -89,7 +89,7 @@ class HausdorffBenchmark : public cudf::benchmark {
     BM_hausdorff(state);                                                   \
   }                                                                        \
   BENCHMARK_REGISTER_F(HausdorffBenchmark, name)                           \
-    ->RangeMultiplier(32)                                                  \
+    ->RangeMultiplier(8)                                                   \
     ->Range(1 << 10, 1 << 30)                                              \
     ->UseManualTime()                                                      \
     ->Unit(benchmark::kMillisecond);
