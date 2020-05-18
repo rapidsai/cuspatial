@@ -15,7 +15,9 @@
  */
 
 #pragma once
+
 #include <cudf/types.hpp>
+
 #include <memory>
 
 namespace cuspatial {
@@ -25,44 +27,42 @@ namespace cuspatial {
  *
  * @see http://www.adms-conf.org/2019-camera-ready/zhang_adms19.pdf for details.
  *
- * @param x Column of x coordiantes before[in]/after[out] sorting
- * @param y Column of y coordiantes before[in]/after[out] sorting
- * @param x1 the lower-left x-coordinate of the area of interest bounding box
- * @param y1 the lower-left y-coordinate of the area of interest bounding box
- * @param x2 the upper-right x-coordinate of the area of interest bounding box
- * @param y2 the upper-right y-coordinate of the area of interest bounding box
- * @param scale Grid cell size along both x and y dimensions. Scale is applied
- * to x1 and y1 to convert x/y coodiantes into a Morton code in 2D space
- * @param num_level Largest depth of quadtree nodes. The value should be less
- * than 16 as uint32_t is used for Morton code representation. The actual number
- * of levels may be less than num_level when # of points are small and/or
- * min_size (next) is large.
- * @param min_size Minimum number of points for a non-leaf quadtree node. All
- * non-last-level quadrants should have less than `min_size` points. Last-level
- * quadrants are permited to have more than `min_size` points. `min_size` is
- * typically set to the number of threads in a block used in the two CUDA
- * kernels needed in the spatial refinement step.
- * @param mr The optional resource to use for output device memory allocations
+ * @note `scale` is applied to x_min and y_min to convert x and y coodiantes into a Morton code in
+ * 2D space.
+ * @note `max_depth` should be less than 16 as uint32_t is used for Morton code representation. The
+ * actual number of levels may be less than `max_depth` when the number of points is small and/or
+ * `min_size` is large.
+ * @note All parent quadrants should have fewer than `min_size` number of points. Leaf quadrants are
+ * permited to have more than `min_size` points.
  *
- * @return cudf table with five columns for a complete quadtree:
- *   *     key - cudf::INT32 column of quad node keys
- *   *   level - cudf::INT8 column of quadtree levels
- *   * is_node - cudf::BOOL8 column of bools indicating whether the node is a
- *               leaf or not
- *   *  length - cudf::INT32 column of number of child nodes (if is_node) or
- *               number of points (if not is_node)
- *   *  offset - cudf::INT32 column of first child position (if is_node) or
- *               first point position (if not is_node)
+ * @param x Column of x-coordinates for each point.
+ * @param y Column of y-coordinates for each point.
+ * @param x_min The lower-left x-coordinate of the area of interest bounding box.
+ * @param x_max The upper-right x-coordinate of the area of interest bounding box.
+ * @param y_min The lower-left y-coordinate of the area of interest bounding box.
+ * @param y_max The upper-right y-coordinate of the area of interest bounding box.
+ * @param scale Scale to apply to each x and y distance from x_min and y_min.
+ * @param max_depth Maximum quadtree depth.
+ * @param min_size Minimum number of points for a non-leaf quadtree node.
+ * @param mr The optional resource to use for output device memory allocations.
+ *
+ * @return Pair of INT32 column of sorted keys to point indices, and cudf table with five
+ * columns for a complete quadtree:
+ *   *     key - INT32 column of quad node keys
+ *   *   level - INT8 column of quadtree levels
+ *   * is_node - BOOL8 column indicating whether the node is a leaf or not
+ *   *  length - INT32 column for the number of child nodes (if is_node), or number of points
+ *   *  offset - INT32 column for the first child position (if is_node), or first point position
  */
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::experimental::table>>
 quadtree_on_points(cudf::column_view const& x,
                    cudf::column_view const& y,
-                   double const x1,
-                   double const y1,
-                   double const x2,
-                   double const y2,
+                   double const x_min,
+                   double const x_max,
+                   double const y_min,
+                   double const y_max,
                    double const scale,
-                   cudf::size_type const num_level,
+                   cudf::size_type const max_depth,
                    cudf::size_type const min_size,
                    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 

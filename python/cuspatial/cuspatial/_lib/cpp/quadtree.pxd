@@ -11,11 +11,11 @@ cdef extern from "cuspatial/point_quadtree.hpp" namespace "cuspatial" nogil:
     cdef pair[unique_ptr[column], unique_ptr[table]] quadtree_on_points(
         column_view x,
         column_view y,
-        double x1,
-        double y1,
-        double x2,
-        double y2,
+        double x_min,
+        double x_max,
+        double y_min,
+        double y_max,
         double scale,
-        int num_levels,
+        int max_depth,
         int min_size
     ) except +

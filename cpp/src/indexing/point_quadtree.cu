@@ -79,17 +79,17 @@ inline std::unique_ptr<cudf::column> make_fixed_width_column(
  * point index to sorted z-order.
  */
 template <typename T>
-inline std::pair<rmm::device_vector<uint32_t>, std::unique_ptr<cudf::column>> compute_point_keys(
-  cudf::column_view const &x,
-  cudf::column_view const &y,
-  T const x1,
-  T const y1,
-  T const x2,
-  T const y2,
-  T const scale,
-  cudf::size_type const num_levels,
-  rmm::mr::device_memory_resource *mr,
-  cudaStream_t stream)
+inline std::pair<rmm::device_vector<uint32_t>, std::unique_ptr<cudf::column>>
+compute_point_keys_and_sorted_indices(cudf::column_view const &x,
+                                      cudf::column_view const &y,
+                                      T const x_min,
+                                      T const x_max,
+                                      T const y_min,
+                                      T const y_max,
+                                      T const scale,
+                                      cudf::size_type const max_depth,
+                                      rmm::mr::device_memory_resource *mr,
+                                      cudaStream_t stream)
 {
   rmm::device_vector<uint32_t> keys(x.size());
   thrust::transform(rmm::exec_policy(stream)->on(stream),
@@ -99,18 +99,20 @@ inline std::pair<rmm::device_vector<uint32_t>, std::unique_ptr<cudf::column>> co
                     [=] __device__(auto const &point) {
                       T x, y;
                       thrust::tie(x, y) = point;
-                      if (x < x1 || x > x2 || y < y1 || y > y2) {
+                      if (x < x_min || x > x_max || y < y_min || y > y_max) {
                         // If the point is outside the bbox, return a max_level key
-                        return static_cast<uint32_t>((1 << (2 * num_levels)) - 1);
+                        return static_cast<uint32_t>((1 << (2 * max_depth)) - 1);
                       }
-                      return cuspatial::utility::z_order((x - x1) / scale, (y - y1) / scale);
+                      return cuspatial::utility::z_order((x - x_min) / scale, (y - y_min) / scale);
                     });
 
   auto indices = make_fixed_width_column<int32_t>(keys.size(), stream, mr);
+
   thrust::sequence(rmm::exec_policy(stream)->on(stream),
-                   indices->mutable_view().begin<int32_t>(),
-                   indices->mutable_view().end<int32_t>());
-  // Sort the points and codes
+                   indices->mutable_view().begin<uint32_t>(),
+                   indices->mutable_view().end<uint32_t>());
+
+  // Sort the codes and point indices
   thrust::stable_sort_by_key(rmm::exec_policy(stream)->on(stream),
                              keys.begin(),
                              keys.end(),
@@ -166,7 +168,7 @@ inline std::tuple<cudf::size_type,
                   cudf::size_type,
                   std::vector<cudf::size_type>,
                   std::vector<cudf::size_type>>
-build_tree_levels(cudf::size_type const num_levels,
+build_tree_levels(cudf::size_type const max_depth,
                   cudf::size_type const num_top_quads,
                   KeysIterator keys_begin,
                   ValsIterator quad_point_count_begin,
@@ -176,8 +178,8 @@ build_tree_levels(cudf::size_type const num_levels,
   // begin/end offsets
   cudf::size_type begin{0};
   cudf::size_type end{num_top_quads};
-  std::vector<cudf::size_type> begin_pos(num_levels);
-  std::vector<cudf::size_type> end_pos(num_levels);
+  std::vector<cudf::size_type> begin_pos(max_depth);
+  std::vector<cudf::size_type> end_pos(max_depth);
 
   // iterator for the parent level's quad node keys
   auto parent_keys = thrust::make_transform_iterator(
@@ -190,7 +192,7 @@ build_tree_levels(cudf::size_type const num_levels,
   auto child_values =
     make_zip_iterator(quad_point_count_begin, thrust::make_constant_iterator<uint32_t>(1));
 
-  for (cudf::size_type level = num_levels - 1; level >= 0; --level) {
+  for (cudf::size_type level = max_depth - 1; level >= 0; --level) {
     auto num_full_quads = build_tree_level(parent_keys + begin,
                                            parent_keys + end,
                                            child_values + begin,
@@ -212,6 +214,26 @@ build_tree_levels(cudf::size_type const num_levels,
     std::move(end_pos));
 }
 
+/**
+ * @brief Reverse the quadtree nodes for easier manipulation (skipping the root node).
+ *
+ * The `build_tree_levels` function builds the quadtree from the bottom up, placing the leaf nodes
+ * at the front of the quadtree vectors, and the root node at the end. This function reverses the
+ * order of the levels, so the level just below the root node is at the front, and the leaves are at
+ * the end.
+ *
+ * @param quad_keys_in
+ * @param quad_point_count_in
+ * @param quad_child_count_in
+ * @param begin_pos
+ * @param end_pos
+ * @param max_depth
+ * @param stream
+ * @return std::tuple<rmm::device_vector<uint32_t>,
+ * rmm::device_vector<uint32_t>,
+ * rmm::device_vector<uint32_t>,
+ * rmm::device_vector<int8_t>>
+ */
 inline std::tuple<rmm::device_vector<uint32_t>,
                   rmm::device_vector<uint32_t>,
                   rmm::device_vector<uint32_t>,
@@ -221,7 +243,7 @@ reverse_tree_levels(rmm::device_vector<uint32_t> const &quad_keys_in,
                     rmm::device_vector<uint32_t> const &quad_child_count_in,
                     std::vector<cudf::size_type> begin_pos,
                     std::vector<cudf::size_type> end_pos,
-                    cudf::size_type const num_levels,
+                    cudf::size_type const max_depth,
                     cudaStream_t stream)
 {
   rmm::device_vector<uint32_t> quad_keys(quad_keys_in.size());
@@ -230,7 +252,7 @@ reverse_tree_levels(rmm::device_vector<uint32_t> const &quad_keys_in,
   rmm::device_vector<uint32_t> quad_child_count(quad_child_count_in.size());
   cudf::size_type offset{0};
 
-  for (cudf::size_type level{0}; level < num_levels; ++level) {
+  for (cudf::size_type level{0}; level < max_depth; ++level) {
     cudf::size_type level_end   = end_pos[level];
     cudf::size_type level_begin = begin_pos[level];
     cudf::size_type num_quads   = level_end - level_begin;
@@ -419,7 +441,7 @@ inline rmm::device_vector<uint32_t> flatten_point_keys(
   rmm::device_vector<int8_t> const &quad_level,
   cudf::column_view const &indicator,
   cudf::size_type const num_valid_nodes,
-  cudf::size_type const num_levels,
+  cudf::size_type const max_depth,
   cudaStream_t stream)
 {
   rmm::device_vector<uint32_t> flattened_keys(num_valid_nodes);
@@ -429,7 +451,7 @@ inline rmm::device_vector<uint32_t> flatten_point_keys(
                     keys_and_levels,
                     keys_and_levels + num_valid_nodes,
                     flattened_keys.begin(),
-                    [last_level = num_levels - 1] __device__(auto const &val) {
+                    [last_level = max_depth - 1] __device__(auto const &val) {
                       bool is_node{false};
                       uint32_t key{}, level{};
                       thrust::tie(key, level, is_node) = val;
@@ -452,13 +474,13 @@ inline rmm::device_vector<uint32_t> compute_flattened_first_point_positions(
   rmm::device_vector<uint32_t> &quad_point_count,
   cudf::column_view const &indicator,
   cudf::size_type const num_valid_nodes,
-  cudf::size_type const num_levels,
+  cudf::size_type const max_depth,
   cudaStream_t stream)
 {
   // Sort initial indices and temporary point counts by the flattened keys
   auto sorted_order_and_point_counts = [&]() {
     auto flattened_keys =
-      flatten_point_keys(quad_keys, quad_level, indicator, num_valid_nodes, num_levels, stream);
+      flatten_point_keys(quad_keys, quad_level, indicator, num_valid_nodes, max_depth, stream);
 
     rmm::device_vector<uint32_t> initial_sort_indices(num_valid_nodes);
     thrust::sequence(rmm::exec_policy(stream)->on(stream),
@@ -537,7 +559,7 @@ inline rmm::device_vector<uint32_t> compute_flattened_first_point_positions(
  * @param quad_child_count
  * @param quad_levels
  * @param num_parent_nodes
- * @param num_levels
+ * @param max_depth
  * @param min_size
  * @param level_1_size
  * @param mr
@@ -550,7 +572,7 @@ inline std::unique_ptr<cudf::experimental::table> make_quad_tree(
   rmm::device_vector<uint32_t> &quad_child_count,
   rmm::device_vector<int8_t> &quad_levels,
   cudf::size_type num_parent_nodes,
-  cudf::size_type const num_levels,
+  cudf::size_type const max_depth,
   cudf::size_type const min_size,
   cudf::size_type const level_1_size,
   rmm::mr::device_memory_resource *mr,
@@ -590,7 +612,7 @@ inline std::unique_ptr<cudf::experimental::table> make_quad_tree(
     // revision to line 8: adjust quad_point_pos based on last-level z-order
     // code
     auto quad_point_pos = compute_flattened_first_point_positions(
-      quad_keys, quad_levels, quad_point_count, *is_node, num_valid_nodes, num_levels, stream);
+      quad_keys, quad_levels, quad_point_count, *is_node, num_valid_nodes, max_depth, stream);
 
     // rmm::device_vector<uint32_t> quad_child_pos(num_valid_nodes);
 
@@ -734,197 +756,201 @@ inline std::unique_ptr<cudf::experimental::table> make_leaf_tree(
   return std::make_unique<cudf::experimental::table>(std::move(cols));
 }
 
-//
-// Construct a quad tree from the input (unsorted) x/y points. The bounding
-// box defined by the x1, y1, x2, and y2 parameters is used to compute keys
-// in a one-dimensional Z-order curve (i.e. Morton codes) for each point.
-//
-// The keys and points are sorted, then the keys are used to construct a
-// quadtree from the "bottom" level, ascending to the root.
-//
-
+/**
+ * @brief Construct the full set of non-empty subquadrants from the lowest level leaves all the way
+ * up to the root.
+ *
+ * * If `num_parent_nodes` is <= 0, construct a leaf-only quadtree.
+ * * If `num_parent_nodes` is >= 1, swap each level's position return the swapped vectors. The
+ *   swapped vectors are used to construct the full quadtree. Freeing the pre-swapped vectors early
+ *   allows RMM to reuse this memory for subsequent temporary allocations during full quadtree
+ *   construction.
+ *
+ * @note Originally part of `dispatch_construct_quadtree`. Split out so `quad_keys`,
+ * `quad_point_count`, `quad_child_count`, and `quad_level` vectors are freed on return if we end up
+ * swapping the levels.
+ *
+ */
 template <typename T>
-inline std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::experimental::table>>
-construct_quadtree(cudf::column_view const &x,
-                   cudf::column_view const &y,
-                   T const x1,
-                   T const y1,
-                   T const x2,
-                   T const y2,
-                   T const scale,
-                   cudf::size_type const num_levels,
-                   cudf::size_type const min_size,
-                   rmm::mr::device_memory_resource *mr,
-                   cudaStream_t stream)
+inline auto make_full_levels(cudf::column_view const &x,
+                             cudf::column_view const &y,
+                             T const x_min,
+                             T const x_max,
+                             T const y_min,
+                             T const y_max,
+                             T const scale,
+                             cudf::size_type const max_depth,
+                             cudf::size_type const min_size,
+                             rmm::mr::device_memory_resource *mr,
+                             cudaStream_t stream)
 {
+  // Compute point keys and sort into top-level quadrants
+  // (i.e. quads at level `max_depth - 1`)
+
+  // Compute Morton code (z-order) keys for each point
+  auto keys_and_indices = compute_point_keys_and_sorted_indices<T>(
+    x, y, x_min, x_max, y_min, y_max, scale, max_depth, mr, stream);
+
+  auto &point_keys    = keys_and_indices.first;
+  auto &point_indices = keys_and_indices.second;
+
+  rmm::device_vector<uint32_t> quad_keys(x.size());
+  rmm::device_vector<uint32_t> quad_point_count(x.size());
+
+  // Construct quadrants at the finest level of detail, i.e. the quadrants
+  // furthest from the root. Reduces points with common z-order codes into
+  // the same quadrant.
+  auto num_top_quads = build_tree_level(point_keys.begin(),
+                                        point_keys.end(),
+                                        thrust::make_constant_iterator<uint32_t>(1),
+                                        quad_keys.begin(),
+                                        quad_point_count.begin(),
+                                        thrust::plus<uint32_t>(),
+                                        stream);
+
+  // Repurpose the `point_keys` vector now the points have been grouped into the leaf quadrants
+  auto &quad_child_count = point_keys;
+
   //
-  // Wrapped in an IIFE so the temporary `quad_keys`, `quad_point_count`,
-  // `quad_child_count`, and `quad_level` device vectors are freed on return.
+  // Compute "full" quads for the tree at each level. Starting from the quadrant at the bottom (at
+  // the finest level of detail), aggregates the number of points and children in each quadrant per
+  // level. The key for each quadrant is each unique key from the level underneath it shifted right
+  // two bits (parent_key = child_key >> 2), as illustrated here:
   //
-  // * If `num_parent_nodes` is <= 0, use the temporary vectors to construct a
-  //   leaf-only quadtree.
-  // * If `num_parent_nodes` is >= 1, reverse each level in the temporary
-  //   vectors and return the reversed vectors instead. The reversed vectors are
-  //   used to construct the full quadtree. Freeing the pre-reversed vectors
-  //   early allows RMM to reuse this memory for subsequent temporary
-  //   allocations during full quadtree construction.
+  // ------------------------------------------------------------------|
+  // initial point keys (sorted z-order Morton codes): [1, 3, 4, 7, 8] |
+  //                                                    ▾  ▾  ▾  ▾  ▾  |
+  //              .-------------------------------------`  :  :  :  :  |
+  //              :          .-----------------------------`  :  :  :  |
+  //              :          :          .---------------------`  :  :  |
+  //              :          :          :          .-------------`  :  |
+  //              :          :          :          :          .-----`  |
+  // ----------|--+----------+----------+----------+----------+--------|
+  //     level |        quadtree nodes [key, num children, num points] |
+  // ----------|--+----------+----------+----------+----------+--------|
+  //           |  ▾          ▾          ▾          ▾          ▾        |
+  // (start) 3 | [1, 0, 1]  [3, 0, 1]  [4, 0, 1]  [7, 0, 1]  [8, 0, 1] |
+  //           |     ▾          :          ▾          :          :     |
+  //           |     `---------.▾          `---------.▾          ▾     |
+  //         2 |            [0, 2, 2]             [1, 2, 2]  [2, 1, 1] |
+  //           |                ▾                     :          :     |
+  //           |                `--------------------.▾          ▾     |
+  //         1 |                                  [0, 2, 4]  [1, 1, 1] |
+  //           |                                      ▾          :     |
+  //           |                                      `---------.▾     |
+  //   (end) 0 |                                             [0, 2, 5] |
+  //                                                           (root)  |
   //
-  auto quads = [&]() {
-    // Compute point keys and sort into top-level quadrants
-    // (i.e. quads at level `num_levels - 1`)
+  auto quads = build_tree_levels(max_depth,
+                                 num_top_quads,
+                                 quad_keys.begin(),
+                                 quad_point_count.begin(),
+                                 quad_child_count.begin(),
+                                 stream);
 
-    // Compute Morton code (z-order) keys for each point
-    auto keys_and_indices =
-      compute_point_keys<T>(x, y, x1, y1, x2, y2, scale, num_levels, mr, stream);
+  auto &num_parent_nodes = std::get<0>(quads);
+  auto &quad_tree_size   = std::get<1>(quads);
+  auto &begin_pos        = std::get<2>(quads);
+  auto &end_pos          = std::get<3>(quads);
 
-    auto &point_keys    = keys_and_indices.first;
-    auto &point_indices = keys_and_indices.second;
-
-    rmm::device_vector<uint32_t> quad_keys(x.size());
-    rmm::device_vector<uint32_t> quad_point_count(x.size());
-
-    // Construct quadrants at the finest level of detail, i.e. the quadrants
-    // furthest from the root. Reduces points with common z-order codes into
-    // the same quadrant.
-    auto num_top_quads = build_tree_level(point_keys.begin(),
-                                          point_keys.end(),
-                                          thrust::make_constant_iterator<uint32_t>(1),
-                                          quad_keys.begin(),
-                                          quad_point_count.begin(),
-                                          thrust::plus<uint32_t>(),
-                                          stream);
-
-    // Repurpose the point_keys vector now that we have the top-level quads
-    auto &quad_child_count = point_keys;
-
-    //
-    // Compute "full" quads for the tree at each level. Starting from the
-    // quadrant at the bottom (at the finest level of detail), aggregates the
-    // number of points and children in each quadrant per level. The key for
-    // each quadrant is each unique key from the level underneath it shifted
-    // right two bits (parent_key = child_key >> 2), as illustrated here:
-    //
-    // ------------------------------------------------------------------|
-    // initial point keys (sorted z-order Morton codes): [1, 3, 4, 7, 8] |
-    //                                                    ▾  ▾  ▾  ▾  ▾  |
-    //              .-------------------------------------`  :  :  :  :  |
-    //              :          .-----------------------------`  :  :  :  |
-    //              :          :          .---------------------`  :  :  |
-    //              :          :          :          .-------------`  :  |
-    //              :          :          :          :          .-----`  |
-    // ----------|--+----------+----------+----------+----------+--------|
-    //     level |        quadtree nodes [key, num children, num points] |
-    // ----------|--+----------+----------+----------+----------+--------|
-    //           |  ▾          ▾          ▾          ▾          ▾        |
-    // (start) 3 | [1, 0, 1]  [3, 0, 1]  [4, 0, 1]  [7, 0, 1]  [8, 0, 1] |
-    //           |     ▾          :          ▾          :          :     |
-    //           |     `---------.▾          `---------.▾          ▾     |
-    //         2 |            [0, 2, 2]             [1, 2, 2]  [2, 1, 1] |
-    //           |                ▾                     :          :     |
-    //           |                `--------------------.▾          ▾     |
-    //         1 |                                  [0, 2, 4]  [1, 1, 1] |
-    //           |                                      ▾          :     |
-    //           |                                      `---------.▾     |
-    //   (end) 0 |                                             [0, 2, 5] |
-    //                                                           (root)  |
-    //
-    auto quads = build_tree_levels(num_levels,
-                                   num_top_quads,
-                                   quad_keys.begin(),
-                                   quad_point_count.begin(),
-                                   quad_child_count.begin(),
-                                   stream);
-
-    auto &num_parent_nodes = std::get<0>(quads);
-    auto &quad_tree_size   = std::get<1>(quads);
-    auto &begin_pos        = std::get<2>(quads);
-    auto &end_pos          = std::get<3>(quads);
-
-    // Shrink vectors' underlying device allocations to reduce peak memory usage
-    shrink_vector(quad_keys, quad_tree_size);
-    shrink_vector(quad_point_count, quad_tree_size);
-    shrink_vector(quad_child_count, quad_tree_size);
-
-    // Optimization: return early if the top level nodes are all leaves
-    if (num_parent_nodes <= 0) {
-      return std::make_tuple(std::move(point_indices),
-                             std::move(quad_keys),
-                             std::move(quad_point_count),
-                             std::move(quad_child_count),
-                             std::move(rmm::device_vector<int8_t>(quad_keys.size())),
-                             num_top_quads,
-                             num_parent_nodes,
-                             0);
-    }
-
-    // Reverse the quadtree nodes for easier manipulation (skips the root node)
-    auto reversed = reverse_tree_levels(
-      quad_keys, quad_point_count, quad_child_count, begin_pos, end_pos, num_levels, stream);
-
-    return std::make_tuple(std::move(point_indices),
-                           std::move(std::get<0>(reversed)),
-                           std::move(std::get<1>(reversed)),
-                           std::move(std::get<2>(reversed)),
-                           std::move(std::get<3>(reversed)),
-                           num_top_quads,
-                           num_parent_nodes,
-                           end_pos[0] - begin_pos[0]);
-  }();
-
-  std::unique_ptr<cudf::column> &point_indices   = std::get<0>(quads);
-  rmm::device_vector<uint32_t> &quad_keys        = std::get<1>(quads);
-  rmm::device_vector<uint32_t> &quad_point_count = std::get<2>(quads);
-  rmm::device_vector<uint32_t> &quad_child_count = std::get<3>(quads);
-  rmm::device_vector<int8_t> &quad_levels        = std::get<4>(quads);
-  cudf::size_type &num_top_quads                 = std::get<5>(quads);
-  cudf::size_type &num_parent_nodes              = std::get<6>(quads);
-  cudf::size_type &level_1_size                  = std::get<7>(quads);
+  // Shrink vectors' underlying device allocations to reduce peak memory usage
+  shrink_vector(quad_keys, quad_tree_size);
+  shrink_vector(quad_point_count, quad_tree_size);
+  shrink_vector(quad_child_count, quad_tree_size);
 
   // Optimization: return early if the top level nodes are all leaves
   if (num_parent_nodes <= 0) {
-    return std::make_pair(std::move(point_indices),
-                          make_leaf_tree(quad_keys, quad_point_count, num_top_quads, mr, stream));
+    return std::make_tuple(std::move(point_indices),
+                           std::move(quad_keys),
+                           std::move(quad_point_count),
+                           std::move(quad_child_count),
+                           std::move(rmm::device_vector<int8_t>(quad_keys.size())),
+                           num_top_quads,
+                           num_parent_nodes,
+                           0);
   }
 
-  return std::make_pair(std::move(point_indices),
-                        make_quad_tree(quad_keys,
-                                       quad_point_count,
-                                       quad_child_count,
-                                       quad_levels,
-                                       num_parent_nodes,
-                                       num_levels,
-                                       min_size,
-                                       level_1_size,
-                                       mr,
-                                       stream));
+  //
+  // Reverse the quadtree nodes for easier manipulation (skipping the root node).
+  //
+  // The `build_tree_levels` function builds the quadtree from the bottom up, placing the leaf nodes
+  // at the front of the quadtree vectors, and the root node at the end. This function reverses the
+  // order of the levels, so the level just below the root node is at the front, and the leaves are
+  // at the end.
+  auto reversed = reverse_tree_levels(
+    quad_keys, quad_point_count, quad_child_count, begin_pos, end_pos, max_depth, stream);
+
+  return std::make_tuple(std::move(point_indices),
+                         std::move(std::get<0>(reversed)),
+                         std::move(std::get<1>(reversed)),
+                         std::move(std::get<2>(reversed)),
+                         std::move(std::get<3>(reversed)),
+                         num_top_quads,
+                         num_parent_nodes,
+                         end_pos[0] - begin_pos[0]);
 }
 
+/*
+ * Construct a quad tree from the input (unsorted) x/y points. The bounding box defined by the
+ * x_min, y_min, x_max, and y_max parameters is used to compute keys in a one-dimensional Z-order
+ * curve (i.e. Morton codes) for each point.
+ *
+ * The keys are sorted and used to construct a quadtree from the "bottom" level, ascending to the
+ * root.
+ */
 struct dispatch_construct_quadtree {
   template <typename T, std::enable_if_t<std::is_floating_point<T>::value> * = nullptr>
   inline std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::experimental::table>>
   operator()(cudf::column_view const &x,
              cudf::column_view const &y,
-             double const x1,
-             double const y1,
-             double const x2,
-             double const y2,
+             double const x_min,
+             double const x_max,
+             double const y_min,
+             double const y_max,
              double const scale,
-             cudf::size_type const num_levels,
+             cudf::size_type const max_depth,
              cudf::size_type const min_size,
              rmm::mr::device_memory_resource *mr,
              cudaStream_t stream)
   {
-    return construct_quadtree<T>(x,
-                                 y,
-                                 static_cast<T>(x1),
-                                 static_cast<T>(y1),
-                                 static_cast<T>(x2),
-                                 static_cast<T>(y2),
-                                 static_cast<T>(scale),
-                                 num_levels,
-                                 min_size,
-                                 mr,
-                                 stream);
+    auto quads = make_full_levels<T>(x,
+                                     y,
+                                     static_cast<T>(x_min),
+                                     static_cast<T>(x_max),
+                                     static_cast<T>(y_min),
+                                     static_cast<T>(y_max),
+                                     scale,
+                                     max_depth,
+                                     min_size,
+                                     mr,
+                                     stream);
+
+    auto &point_indices    = std::get<0>(quads);
+    auto &quad_keys        = std::get<1>(quads);
+    auto &quad_point_count = std::get<2>(quads);
+    auto &quad_child_count = std::get<3>(quads);
+    auto &quad_levels      = std::get<4>(quads);
+    auto &num_top_quads    = std::get<5>(quads);
+    auto &num_parent_nodes = std::get<6>(quads);
+    auto &level_1_size     = std::get<7>(quads);
+
+    // Optimization: return early if the top level nodes are all leaves
+    if (num_parent_nodes <= 0) {
+      return std::make_pair(std::move(point_indices),
+                            make_leaf_tree(quad_keys, quad_point_count, num_top_quads, mr, stream));
+    }
+
+    return std::make_pair(std::move(point_indices),
+                          make_quad_tree(quad_keys,
+                                         quad_point_count,
+                                         quad_child_count,
+                                         quad_levels,
+                                         num_parent_nodes,
+                                         max_depth,
+                                         min_size,
+                                         level_1_size,
+                                         mr,
+                                         stream));
   }
 
   template <typename T,
@@ -946,12 +972,12 @@ namespace detail {
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::experimental::table>>
 quadtree_on_points(cudf::column_view const &x,
                    cudf::column_view const &y,
-                   double const x1,
-                   double const y1,
-                   double const x2,
-                   double const y2,
+                   double const x_min,
+                   double const x_max,
+                   double const y_min,
+                   double const y_max,
                    double const scale,
-                   cudf::size_type const num_levels,
+                   cudf::size_type const max_depth,
                    cudf::size_type const min_size,
                    rmm::mr::device_memory_resource *mr,
                    cudaStream_t stream)
@@ -960,12 +986,12 @@ quadtree_on_points(cudf::column_view const &x,
                                              dispatch_construct_quadtree{},
                                              x,
                                              y,
-                                             x1,
-                                             y1,
-                                             x2,
-                                             y2,
+                                             x_min,
+                                             x_max,
+                                             y_min,
+                                             y_max,
                                              scale,
-                                             num_levels,
+                                             max_depth,
                                              min_size,
                                              mr,
                                              stream);
@@ -976,19 +1002,20 @@ quadtree_on_points(cudf::column_view const &x,
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::experimental::table>>
 quadtree_on_points(cudf::column_view const &x,
                    cudf::column_view const &y,
-                   double const x1,
-                   double const y1,
-                   double const x2,
-                   double const y2,
+                   double const x_min,
+                   double const x_max,
+                   double const y_min,
+                   double const y_max,
                    double const scale,
-                   cudf::size_type const num_levels,
+                   cudf::size_type const max_depth,
                    cudf::size_type const min_size,
                    rmm::mr::device_memory_resource *mr)
 {
   CUSPATIAL_EXPECTS(x.size() == y.size(), "x and y columns must have the same length");
-  CUSPATIAL_EXPECTS(x1 < x2 && y1 < y2, "invalid bounding box (x1,y1,x2,y2)");
+  CUSPATIAL_EXPECTS(x_min < x_max && y_min < y_max,
+                    "invalid bounding box (x_min, x_max, y_min, y_max)");
   CUSPATIAL_EXPECTS(scale > 0, "scale must be positive");
-  CUSPATIAL_EXPECTS(num_levels >= 0 && num_levels < 16,
+  CUSPATIAL_EXPECTS(max_depth >= 0 && max_depth < 16,
                     "maximum depth must be positive and less than 16");
   CUSPATIAL_EXPECTS(min_size > 0, "minimum number of points for a non-leaf node must be positive");
   if (x.is_empty() || y.is_empty()) {
@@ -1003,7 +1030,7 @@ quadtree_on_points(cudf::column_view const &x,
                           std::make_unique<cudf::experimental::table>(std::move(cols)));
   }
   return detail::quadtree_on_points(
-    x, y, x1, y1, x2, y2, scale, num_levels, min_size, mr, cudaStream_t{0});
+    x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, mr, cudaStream_t{0});
 }
 
 }  // namespace cuspatial

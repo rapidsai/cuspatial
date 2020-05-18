@@ -8,8 +8,8 @@ from cudf.tests.utils import assert_eq
 
 import cuspatial
 
-bbox_1 = (0, 0, 1, 1)
-bbox_2 = (0, 0, 2, 2)
+bbox_1 = (0, 1, 0, 1)
+bbox_2 = (0, 2, 0, 2)
 
 
 def test_empty():
@@ -18,9 +18,9 @@ def test_empty():
         cudf.Series([]),  # x
         cudf.Series([]),  # y
         *bbox_1,  # bbox
-        1,
-        1,
-        1,  # scale, num_levels, min_size
+        1,  # scale
+        1,  # max_depth
+        1,  # min_size
     )
     assert_eq(
         quadtree,
@@ -42,9 +42,9 @@ def test_one_point(dtype):
         cudf.Series([0.5]).astype(dtype),  # x
         cudf.Series([0.5]).astype(dtype),  # y
         *bbox_1,  # bbox
-        1,
-        1,
-        1,  # scale, num_levels, min_size
+        1,  # scale
+        1,  # max_depth
+        1,  # min_size
     )
     assert_eq(
         quadtree,
@@ -66,9 +66,9 @@ def test_two_points(dtype):
         cudf.Series([0.5, 1.5]).astype(dtype),  # x
         cudf.Series([0.5, 1.5]).astype(dtype),  # y
         *bbox_2,  # bbox
-        1,
-        1,
-        1,  # scale, num_levels, min_size
+        1,  # scale
+        1,  # max_depth
+        1,  # min_size
     )
     assert_eq(
         quadtree,
@@ -241,13 +241,13 @@ def test_small_number_of_points(dtype):
         ).astype(
             dtype
         ),  # y
-        0,
-        0,
-        8,
-        8,  # bbox
-        1,
-        3,
-        12,  # scale, num_levels, min_size
+        0,  # x_min
+        8,  # x_max
+        0,  # y_min
+        8,  # y_max
+        1,  # scale
+        3,  # max_depth
+        12,  # min_size
     )
     assert_eq(
         quadtree,

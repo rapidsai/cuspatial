@@ -9,7 +9,9 @@ from cuspatial._lib.quadtree import (
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
-def quadtree_on_points(xs, ys, x1, y1, x2, y2, scale, num_levels, min_size):
+def quadtree_on_points(
+    xs, ys, x_min, x_max, y_min, y_max, scale, max_depth, min_size
+):
     """ Construct a quadtree from a set of points for a given area-of-interest
         bounding box.
 
@@ -24,12 +26,12 @@ def quadtree_on_points(xs, ys, x1, y1, x2, y2, scale, num_levels, min_size):
     points_order, quadtree = cpp_quadtree_on_points(
         xs,
         ys,
-        min(x1, x2),
-        min(y1, y2),
-        max(x1, x2),
-        max(y1, y2),
+        min(x_min, x_max),
+        max(x_min, x_max),
+        min(y_min, y_max),
+        max(y_min, y_max),
         scale,
-        num_levels,
+        max_depth,
         min_size,
     )
     return Series(points_order), DataFrame._from_table(quadtree)

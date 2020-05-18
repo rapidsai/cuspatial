@@ -17,16 +17,17 @@ from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 
 cpdef quadtree_on_points(Column x, Column y,
-                         double x1, double y1, double x2, double y2,
+                         double x_min, double x_max,
+                         double y_min, double y_max,
                          double scale,
-                         size_type num_levels,
+                         size_type max_depth,
                          size_type min_size):
     cdef column_view c_x = x.view()
     cdef column_view c_y = y.view()
     cdef pair[unique_ptr[column], unique_ptr[table]] result
     with nogil:
         result = move(cpp_quadtree_on_points(
-            c_x, c_y, x1, y1, x2, y2, scale, num_levels, min_size
+            c_x, c_y, x_min, x_max, y_min, y_max, scale, max_depth, min_size
         ))
     return (
         Column.from_unique_ptr(move(result.first)),

@@ -34,19 +34,21 @@ struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
 TEST_F(QuadtreeOnPointIndexingTest, test_empty)
 {
   using namespace cudf::test;
-  const uint32_t num_levels = 1;
-  uint32_t min_size         = 1;
-  double scale              = 1.0;
-  double x1 = 0, x2 = 1, y1 = 0, y2 = 1;
+  const uint32_t max_depth = 1;
+  uint32_t min_size        = 1;
+  double scale             = 1.0;
+  double x_min = 0, x_max = 1, y_min = 0, y_max = 1;
 
   fixed_width_column_wrapper<double> x({});
   fixed_width_column_wrapper<double> y({});
 
-  auto pair      = cuspatial::quadtree_on_points(x, y, x1, y1, x2, y2, scale, num_levels, min_size);
+  auto pair =
+    cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
   auto &quadtree = std::get<1>(pair);
 
-  CUSPATIAL_EXPECTS(quadtree->num_columns() == 5,
-                    "a quadtree table must have 5 columns (key,lev,sign,length,fpos)");
+  CUSPATIAL_EXPECTS(
+    quadtree->num_columns() == 5,
+    "a quadtree table must have 5 columns (keys, levels, is_node, lengths, offsets)");
 
   CUSPATIAL_EXPECTS(quadtree->num_rows() == 0,
                     "the resulting quadtree must have a single quadrant");
@@ -55,20 +57,22 @@ TEST_F(QuadtreeOnPointIndexingTest, test_empty)
 TEST_F(QuadtreeOnPointIndexingTest, test_single)
 {
   using namespace cudf::test;
-  const uint32_t num_levels = 1;
-  uint32_t min_size         = 1;
+  const uint32_t max_depth = 1;
+  uint32_t min_size        = 1;
 
   double scale = 1.0;
-  double x1 = 0, x2 = 1, y1 = 0, y2 = 1;
+  double x_min = 0, x_max = 1, y_min = 0, y_max = 1;
 
   fixed_width_column_wrapper<double> x({0.45});
   fixed_width_column_wrapper<double> y({0.45});
 
-  auto pair      = cuspatial::quadtree_on_points(x, y, x1, y1, x2, y2, scale, num_levels, min_size);
+  auto pair =
+    cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
   auto &quadtree = std::get<1>(pair);
 
-  CUSPATIAL_EXPECTS(quadtree->num_columns() == 5,
-                    "a quadtree table must have 5 columns (key,lev,sign,length,fpos)");
+  CUSPATIAL_EXPECTS(
+    quadtree->num_columns() == 5,
+    "a quadtree table must have 5 columns (keys, levels, is_node, lengths, offsets)");
 
   CUSPATIAL_EXPECTS(quadtree->num_rows() == 1,
                     "the resulting quadtree must have a single quadrant");
@@ -86,20 +90,22 @@ TEST_F(QuadtreeOnPointIndexingTest, test_two)
 {
   using namespace cudf::test;
 
-  const uint32_t num_levels = 1;
-  uint32_t min_size         = 1;
+  const uint32_t max_depth = 1;
+  uint32_t min_size        = 1;
 
   double scale = 1.0;
-  double x1 = 0, x2 = 2, y1 = 0, y2 = 2;
+  double x_min = 0, x_max = 2, y_min = 0, y_max = 2;
 
   fixed_width_column_wrapper<double> x({0.45, 1.45});
   fixed_width_column_wrapper<double> y({0.45, 1.45});
 
-  auto pair      = cuspatial::quadtree_on_points(x, y, x1, y1, x2, y2, scale, num_levels, min_size);
+  auto pair =
+    cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
   auto &quadtree = std::get<1>(pair);
 
-  CUSPATIAL_EXPECTS(quadtree->num_columns() == 5,
-                    "a quadtree table must have 5 columns (key,lev,sign,length,fpos)");
+  CUSPATIAL_EXPECTS(
+    quadtree->num_columns() == 5,
+    "a quadtree table must have 5 columns (keys, levels, is_node, lengths, offsets)");
 
   CUSPATIAL_EXPECTS(quadtree->num_rows() == 2, "the resulting quadtree must have 2 quadrants");
 
@@ -117,10 +123,10 @@ TEST_F(QuadtreeOnPointIndexingTest, test_small)
 {
   using namespace cudf::test;
 
-  const uint32_t num_levels = 3;
-  uint32_t min_size         = 12;
-  double scale              = 1.0;
-  double x1 = 0, x2 = 8, y1 = 0, y2 = 8;
+  const uint32_t max_depth = 3;
+  uint32_t min_size        = 12;
+  double scale             = 1.0;
+  double x_min = 0, x_max = 8, y_min = 0, y_max = 8;
 
   fixed_width_column_wrapper<double> x(
     {1.9804558865545805,  0.1895259128530169, 1.2591725716781235, 0.8178039499335275,
@@ -162,17 +168,13 @@ TEST_F(QuadtreeOnPointIndexingTest, test_small)
      7.513564222799629,    6.885401350515916,    6.194330707468438,  5.823535317960799,
      6.789029097334483,    5.188939408363776,    5.788316610960881});
 
-  auto pair      = cuspatial::quadtree_on_points(x, y, x1, y1, x2, y2, scale, num_levels, min_size);
+  auto pair =
+    cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
   auto &quadtree = std::get<1>(pair);
 
-  CUSPATIAL_EXPECTS(quadtree->num_columns() == 5,
-                    "a quadtree table must have 5 columns (key,lev,sign,length,fpos)");
-
-  cudf::test::print(quadtree->get_column(0), std::cerr << "keys:      ", ",");
-  cudf::test::print(quadtree->get_column(1), std::cerr << "levels:    ", ",");
-  cudf::test::print(quadtree->get_column(2), std::cerr << "indicator: ", ",");
-  cudf::test::print(quadtree->get_column(3), std::cerr << "lengths:   ", ",");
-  cudf::test::print(quadtree->get_column(4), std::cerr << "f_pos:     ", ",");
+  CUSPATIAL_EXPECTS(
+    quadtree->num_columns() == 5,
+    "a quadtree table must have 5 columns (keys, levels, is_node, lengths, offsets)");
 
   expect_tables_equal(
     *quadtree,
