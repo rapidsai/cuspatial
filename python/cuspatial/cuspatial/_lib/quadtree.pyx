@@ -1,6 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
-from cudf._lib.cpp.column.column_view cimport mutable_column_view
+from cudf._lib.cpp.column.column cimport column
+from cudf._lib.cpp.column.column_view cimport column_view
 from cudf._lib.cpp.table.table cimport table
 from cudf._lib.cpp.types cimport size_type
 from cudf._lib.column cimport Column
@@ -20,14 +21,17 @@ cpdef quadtree_on_points(Column x, Column y,
                          double scale,
                          size_type num_levels,
                          size_type min_size):
-    cdef mutable_column_view c_x = x.mutable_view()
-    cdef mutable_column_view c_y = y.mutable_view()
-    cdef unique_ptr[table] result
+    cdef column_view c_x = x.view()
+    cdef column_view c_y = y.view()
+    cdef pair[unique_ptr[column], unique_ptr[table]] result
     with nogil:
         result = move(cpp_quadtree_on_points(
             c_x, c_y, x1, y1, x2, y2, scale, num_levels, min_size
         ))
-    return Table.from_unique_ptr(
-        move(result),
-        column_names=["key", "level", "is_node", "length", "offset"]
+    return (
+        Column.from_unique_ptr(move(result.first)),
+        Table.from_unique_ptr(
+            move(result.second),
+            column_names=["key", "level", "is_node", "length", "offset"]
+        )
     )

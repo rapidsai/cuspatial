@@ -14,7 +14,7 @@ bbox_2 = (0, 0, 2, 2)
 
 def test_empty():
     # empty should not throw
-    quadtree = cuspatial.quadtree_on_points(
+    order, quadtree = cuspatial.quadtree_on_points(
         cudf.Series([]),  # x
         cudf.Series([]),  # y
         *bbox_1,  # bbox
@@ -38,7 +38,7 @@ def test_empty():
 
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
 def test_one_point(dtype):
-    quadtree = cuspatial.quadtree_on_points(
+    order, quadtree = cuspatial.quadtree_on_points(
         cudf.Series([0.5]).astype(dtype),  # x
         cudf.Series([0.5]).astype(dtype),  # y
         *bbox_1,  # bbox
@@ -62,7 +62,7 @@ def test_one_point(dtype):
 
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
 def test_two_points(dtype):
-    quadtree = cuspatial.quadtree_on_points(
+    order, quadtree = cuspatial.quadtree_on_points(
         cudf.Series([0.5, 1.5]).astype(dtype),  # x
         cudf.Series([0.5, 1.5]).astype(dtype),  # y
         *bbox_2,  # bbox
@@ -86,7 +86,7 @@ def test_two_points(dtype):
 
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
 def test_small_number_of_points(dtype):
-    quadtree = cuspatial.quadtree_on_points(
+    order, quadtree = cuspatial.quadtree_on_points(
         cudf.Series(
             [
                 1.9804558865545805,
