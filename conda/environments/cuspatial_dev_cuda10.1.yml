@@ -10,4 +10,4 @@ dependencies:
   - clang-tools=8.0.1
   - cudf=0.14.*
   - cudatoolkit=10.1
-  - gdal>=2.4.*
+  - gdal>=3.0.2
