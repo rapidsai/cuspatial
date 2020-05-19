@@ -31,10 +31,10 @@ struct xytoz {
   uint8_t lev;
   double scale;
 
-  xytoz(SBBox<T> _bbox, uint8_t _lev, double _scale)
-      : bbox(_bbox), lev(_lev), scale(_scale) {}
+  xytoz(SBBox<T> _bbox, uint8_t _lev, double _scale) : bbox(_bbox), lev(_lev), scale(_scale) {}
 
-  __device__ uint32_t operator()(thrust::tuple<double, double> loc) {
+  __device__ uint32_t operator()(thrust::tuple<double, double> loc)
+  {
     double x = thrust::get<0>(loc);
     double y = thrust::get<1>(loc);
     if (x < thrust::get<0>(bbox.first) || x > thrust::get<0>(bbox.second) ||
@@ -58,14 +58,13 @@ struct get_parent {
 
 struct remove_discard {
   uint32_t *p_len, limit, end_pos;
-  remove_discard(uint32_t *_p_len, uint32_t _limit)
-      : p_len(_p_len), limit(_limit) {}
+  remove_discard(uint32_t *_p_len, uint32_t _limit) : p_len(_p_len), limit(_limit) {}
 
-  __device__ bool operator()(
-      thrust::tuple<uint32_t, uint8_t, uint32_t, uint32_t, uint32_t> v) {
+  __device__ bool operator()(thrust::tuple<uint32_t, uint8_t, uint32_t, uint32_t, uint32_t> v)
+  {
     // uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
-    uint32_t key = thrust::get<0>(v);
-    uint8_t lev = thrust::get<1>(v);
+    uint32_t key  = thrust::get<0>(v);
+    uint8_t lev   = thrust::get<1>(v);
     uint32_t clen = thrust::get<2>(v);
     uint32_t nlen = thrust::get<3>(v);
     uint32_t ppos = thrust::get<4>(v);
@@ -77,7 +76,8 @@ struct remove_discard {
 };
 
 struct what2output {
-  __device__ uint32_t operator()(thrust::tuple<uint32_t, uint32_t, bool> v) {
+  __device__ uint32_t operator()(thrust::tuple<uint32_t, uint32_t, bool> v)
+  {
     return (thrust::get<2>(v) ? (thrust::get<0>(v)) : (thrust::get<1>(v)));
   }
 };
@@ -90,21 +90,20 @@ struct gen_quad_bbox {
   uint8_t *d_p_lev;
   uint32_t M;
 
-  gen_quad_bbox(uint32_t _M, SBBox<T> _aoi_bbox, double _scale,
-                uint32_t *_d_p_key, uint8_t *_d_p_lev)
-      : M(_M),
-        aoi_bbox(_aoi_bbox),
-        scale(_scale),
-        d_p_key(_d_p_key),
-        d_p_lev(_d_p_lev) {}
+  gen_quad_bbox(
+    uint32_t _M, SBBox<T> _aoi_bbox, double _scale, uint32_t *_d_p_key, uint8_t *_d_p_lev)
+    : M(_M), aoi_bbox(_aoi_bbox), scale(_scale), d_p_key(_d_p_key), d_p_lev(_d_p_lev)
+  {
+  }
 
-  __device__ SBBox<T> operator()(uint32_t p) const {
-    double s = scale * pow(2.0, M - 1 - d_p_lev[p]);
+  __device__ SBBox<T> operator()(uint32_t p) const
+  {
+    double s    = scale * pow(2.0, M - 1 - d_p_lev[p]);
     uint32_t zx = z_order_x(d_p_key[p]);
     uint32_t zy = z_order_y(d_p_key[p]);
-    double x0 = thrust::get<0>(aoi_bbox.first);
+    double x0   = thrust::get<0>(aoi_bbox.first);
     ;
-    double y0 = thrust::get<1>(aoi_bbox.first);
+    double y0  = thrust::get<1>(aoi_bbox.first);
     double qx1 = zx * s + x0;
     double qx2 = (zx + 1) * s + x0;
     double qy1 = zy * s + y0;
@@ -121,11 +120,11 @@ struct flatten_z_code {
 
   flatten_z_code(uint32_t _M) : M(_M) {}
 
-  __device__ uint32_t operator()(thrust::tuple<uint32_t, uint32_t, bool> v) {
+  __device__ uint32_t operator()(thrust::tuple<uint32_t, uint32_t, bool> v)
+  {
     uint32_t key = thrust::get<0>(v);
     uint32_t lev = thrust::get<1>(v);
-    uint32_t ret =
-        (thrust::get<2>(v)) ? 0xFFFFFFFF : (key << (2 * (M - 1 - lev)));
+    uint32_t ret = (thrust::get<2>(v)) ? 0xFFFFFFFF : (key << (2 * (M - 1 - lev)));
     // uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
     // printf("flatten_z_code: tid=%d key=%d lev=%d ret=%d\n",tid,key,lev,ret);
     return (ret);
@@ -143,8 +142,8 @@ struct qt_is_type {
   uint8_t type;
   qt_is_type(uint8_t _type) : type(_type) {}
 
-  __device__ bool operator()(
-      thrust::tuple<uint8_t, uint8_t, uint32_t, uint32_t> v) {
+  __device__ bool operator()(thrust::tuple<uint8_t, uint8_t, uint32_t, uint32_t> v)
+  {
     return thrust::get<1>(v) == type;
   }
 };
@@ -153,8 +152,8 @@ struct qt_not_type {
   uint8_t type;
   qt_not_type(uint8_t _type) : type(_type) {}
 
-  __device__ bool operator()(
-      thrust::tuple<uint8_t, uint8_t, uint32_t, uint32_t> v) {
+  __device__ bool operator()(thrust::tuple<uint8_t, uint8_t, uint32_t, uint32_t> v)
+  {
     return thrust::get<1>(v) != type;
   }
 };
@@ -163,14 +162,17 @@ struct update_quad {
   const uint32_t *d_p_qtfpos = nullptr, *d_seq_pos = nullptr;
 
   update_quad(const uint32_t *_d_p_qtfpos, const uint32_t *_d_seq_pos)
-      : d_p_qtfpos(_d_p_qtfpos), d_seq_pos(_d_seq_pos) {}
+    : d_p_qtfpos(_d_p_qtfpos), d_seq_pos(_d_seq_pos)
+  {
+  }
 
-  __device__ uint32_t operator()(thrust::tuple<uint32_t, uint32_t> v) {
+  __device__ uint32_t operator()(thrust::tuple<uint32_t, uint32_t> v)
+  {
     // assuming 1d grid
-    uint32_t qid = thrust::get<0>(v);
-    uint32_t sid = thrust::get<1>(v);
+    uint32_t qid  = thrust::get<0>(v);
+    uint32_t sid  = thrust::get<1>(v);
     uint32_t fpos = d_p_qtfpos[qid];
-    uint32_t seq = d_seq_pos[sid];
+    uint32_t seq  = d_seq_pos[sid];
     // uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
     // printf("update_quad:tid=%d qid=%d sid=%d fpos=%d
     // seq=%d\n",tid,qid,sid,fpos,seq);
