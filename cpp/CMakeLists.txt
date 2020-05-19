@@ -190,7 +190,7 @@ find_library(CUDF_LIBRARY "cudf"
 
 SET(CUDF_SRC_INCLUDE "$ENV{CUDF_HOME}/cpp/src")
 SET(CUB_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/cub")
-SET(JITIFY_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/jitify")
+SET(CUDACXX_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/libcudacxx/include")
 SET(CUDF_TEST_INCLUDE "$ENV{CUDF_HOME}/cpp/")
 
 message(STATUS "CUDF: CUDF_HOME set to $ENV{CUDF_HOME}")
@@ -198,7 +198,7 @@ message(STATUS "CUDF: CUDF_LIBRARY set to ${CUDF_LIBRARY}")
 message(STATUS "CUDF: CUDF_INCLUDE set to ${CUDF_INCLUDE}")
 message(STATUS "CUDF SRC: CUDF_SRC_INCLUDE set to ${CUDF_SRC_INCLUDE}")
 message(STATUS "CUDF: CUB_INCLUDE set to ${CUB_INCLUDE}")
-message(STATUS "CUDF: JITIFY_INCLUDE set to ${JITIFY_INCLUDE}")
+message(STATUS "CUDF: CUDACXX_INCLUDE set to ${CUDACXX_INCLUDE}")
 message(STATUS "CUDF: CUDF_TEST_INCLUDE set to ${CUDF_TEST_INCLUDE}")
 
 add_library(cudf SHARED IMPORTED ${CUDF_LIBRARY})
@@ -303,7 +303,7 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CUDF_SRC_INCLUDE}"
                     "${CUDF_INCLUDE}"
                     "${CUB_INCLUDE}"
-                    "${JITIFY_INCLUDE}")
+                    "${CUDACXX_INCLUDE}")
 
 if(CONDA_INCLUDE_DIRS)
     include_directories("${CONDA_INCLUDE_DIRS}")
@@ -328,6 +328,7 @@ endif(CONDA_LINK_DIRS)
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial SHARED
+            src/indexing/construction/point_quadtree.cu
             src/interpolate/cubic_spline.cu
             src/io/shp/polygon_shapefile_reader.cpp
             src/io/shp/polygon_shapefile_reader.cu

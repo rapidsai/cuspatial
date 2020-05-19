@@ -1,7 +1,7 @@
 # cuSpatial 0.14.0 (Date TBD)
 
 ## New Features
-
+- PR #143 Support constructing quadtrees on point data
 - PR #182 Local gpuCI build script
 
 ## Improvements
