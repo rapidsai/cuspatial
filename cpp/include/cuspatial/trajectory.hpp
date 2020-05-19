@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,128 +16,108 @@
 
 #pragma once
 
-#include <cudf/types.h>
+#include <cudf/types.hpp>
+#include <memory>
+#include <rmm/mr/device/default_memory_resource.hpp>
 
 namespace cuspatial {
+namespace experimental {
 
 /**
- * @brief derive trajectories from points, timestamps and object ids
+ * @brief Derive trajectories from object ids, points, and timestamps.
  *
- * Points are x/y coordinates relative to an origin. First sorts by object id
- * and timestamp and then groups by id.
+ * Groups the input object ids to determine unique trajectories. Returns a
+ * table with the trajectory ids, the number of objects in each trajectory,
+ * and the offset position of the first object for each trajectory in the
+ * input object ids column.
  *
- * @param[in/out] x: x coordinates relative to a camera origin
- *                  (before/after sorting)
- * @param[in/out] y: y coordinates relative to a camera origin
- *                   (before/after sorting)
- * @param[in/out] object_id: object (e.g., vehicle) id column (before/after
- *                sorting); upon completion, unique ids become trajectory ids
- * @param[in/out] timestamp: timestamp column (before/after sorting)
- * @param[out] trajectory_id: trajectory id column (see comments on oid)
- * @param[out] length: #of points in the derived trajectories
- * @param[out] offset: position offsets of trajectories used to index x, y,
- *                  object_id and timestamp
- * 
- * @return number of derived trajectories
+ * @param object_id column of object (e.g., vehicle) ids
+ * @param x coordinates (in kilometers)
+ * @param y coordinates (in kilometers)
+ * @param timestamp column of timestamps in any resolution
+ * @param mr The optional resource to use for output device memory allocations
+ *
+ * @throw cuspatial::logic_error If object_id isn't cudf::INT32
+ * @throw cuspatial::logic_error If x and y are different types
+ * @throw cuspatial::logic_error If timestamp isn't a cudf::TIMESTAMP type
+ * @throw cuspatial::logic_error If object_id, x, y, or timestamp contain nulls
+ * @throw cuspatial::logic_error If object_id, x, y, and timestamp are different
+ * sizes
+ *
+ * @return an `std::pair<table, column>`:
+ *  1. table of (object_id, x, y, timestamp) sorted by (object_id, timestamp)
+ *  2. int32 column of start positions for each trajectory's first object
  */
-gdf_size_type derive_trajectories(const gdf_column& x, const gdf_column& y,
-                                  const gdf_column& object_id,
-                                  const gdf_column& timestamp,
-                                  gdf_column& trajectory_id,
-                                  gdf_column& length, gdf_column& offset);
-
+std::pair<std::unique_ptr<cudf::experimental::table>, std::unique_ptr<cudf::column>>
+derive_trajectories(cudf::column_view const& object_id,
+                    cudf::column_view const& x,
+                    cudf::column_view const& y,
+                    cudf::column_view const& timestamp,
+                    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
- * @brief Compute the distance and speed of trajectories
+ * @brief Compute the distance and speed of objects in a trajectory. Groups the
+ * timestamp, x, and y, columns by object id to determine unique trajectories,
+ * then computes the average distance and speed for all routes in each
+ * trajectory.
  *
- * Trajectories are typically derived from coordinate data using
- * derive_trajectories().
- * 
- * @param[in] x: x coordinates (km) relative to a camera origin and ordered by
- *            (id,timestamp)
- * @param[in] y: y coordinates (km) relative to a camera origin and ordered by
- *            (id,timestamp)
- * @param[in] timestamp: timestamp (ms) column ordered by (id,timestamp)
- * @param[in] length: number of points column ordered by (id,timestamp)
- * @param[in] offset: offsets of trajectories used to index x/y/oid/ts
- *            ordered by (id,timestamp)
- * @param[out] dist: computed distances/lengths of trajectories in meters (m)
- * @param[out] speed: computed speed of trajectories in meters per second (m/s)
+ * @note Assumes object_id, timestamp, x, y presorted by (object_id, timestamp).
  *
- * Note: May output duration in the future (in addition to distance/speed)
- * if needed. Duration can be computed on CPU by fetching begining/ending
- * timestamps of a trajectory in the timestamp array
+ * @param num_trajectories number of trajectories (unique object ids)
+ * @param object_id column of object (e.g., vehicle) ids
+ * @param x coordinates (in kilometers)
+ * @param y coordinates (in kilometers)
+ * @param timestamp column of timestamps in any resolution
+ * @param mr The optional resource to use for output device memory allocations
+ *
+ * @throw cuspatial::logic_error If object_id isn't cudf::INT32
+ * @throw cuspatial::logic_error If x and y are different types
+ * @throw cuspatial::logic_error If timestamp isn't a cudf::TIMESTAMP type
+ * @throw cuspatial::logic_error If object_id, x, y, or timestamp contain nulls
+ * @throw cuspatial::logic_error If object_id, x, y, and timestamp are different
+ * sizes
+ *
+ * @return a cuDF table of distances (meters) and speeds (meters/second) whose
+ * length is `num_trajectories`, sorted by object_id.
  */
-std::pair<gdf_column,gdf_column>
-trajectory_distance_and_speed(const gdf_column& x, const gdf_column& y,
-                              const gdf_column& timestamp,
-                              const gdf_column& length,
-                              const gdf_column& offset);
-
+std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
+  cudf::size_type num_trajectories,
+  cudf::column_view const& object_id,
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  cudf::column_view const& timestamp,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
- * @brief compute spatial bounding boxes of trajectories
+ * @brief Compute the spatial bounding boxes of trajectories. Groups the x, y,
+ * and timestamp columns by object id to determine unique trajectories, then
+ * computes the minimum bounding box to contain all routes in each trajectory.
  *
- * @param[in] x: x coordinates relative to a camera origin and ordered by
- *            (id, timestamp)
- * @param[in] y: y coordinates relative to a camera origin and ordered by
- *            (id, timestamp)
- * @param[in] length: number of points column ordered by (id, timestamp)
- * @param[in] offset: offsets of trajectories used to index x/y ordered by
- *            (id,timestamp)
- * @param[out] bbox_x1: x coordinates of the lower-left corners of computed
- *             spatial bounding boxes
- * @param[out] bbox_y1: y coordinates of the lower-left corners of computed
- *             spatial bounding boxes
- * @param[out] bbox_x2: x coordinates of the upper-right corners of computed
- *             spatial bounding boxes
- * @param[out] bbox_y2: y coordinates of the upper-right corners of computed
- *             spatial bounding boxes
+ * @note Assumes object_id, timestamp, x, y presorted by (object_id, timestamp).
  *
- * Note: temporal 1D bounding box can be computed similary but it seems that
- * there is no such a need; Similar to the discussion in derive_trajectories,
- * temporal 1D bounding box can be retrieved directly
+ * @param object_id column of object (e.g., vehicle) ids
+ * @param x coordinates (in kilometers)
+ * @param y coordinates (in kilometers)
+ * @param mr The optional resource to use for output device memory allocations
+ *
+ * @throw cuspatial::logic_error If object_id isn't cudf::INT32
+ * @throw cuspatial::logic_error If x and y are different types
+ * @throw cuspatial::logic_error If object_id, x, or y contain nulls
+ * @throw cuspatial::logic_error If object_id, x, and y are different sizes
+ *
+ * @return a cudf table of bounding boxes with length `num_trajectories` and
+ * four columns:
+ *   * x1 - the lower-left x-coordinate of each bounding box in kilometers
+ *   * y1 - the lower-left y-coordinate of each bounding box in kilometers
+ *   * x2 - the upper-right x-coordinate of each bounding box in kilometers
+ *   * y2 - the upper-right y-coordinate of each bounding box in kilometers
  */
-void trajectory_spatial_bounds(const gdf_column& x, const gdf_column& y,
-                               const gdf_column& length,
-                               const gdf_column& offset,
-                               gdf_column& bbox_x1, gdf_column& bbox_y1,
-                               gdf_column& bbox_x2, gdf_column& bbox_y2);
+std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
+  cudf::size_type num_trajectories,
+  cudf::column_view const& object_id,
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
-/**
- * @brief Return a subset of trajectories selected by ID
-
- * @param[in] id: ids of trajectories whose x/y/len/pos data will be kept
- * @param[in] in_x: input x coordinates
- * @param[in] in_y: input y coordinates
- * @param[in] in_id: input ids of points
- * @param[in] in_timestamp: input timestamps of points
- * @param[out] out_x: output x coordinates ordered by (in_id,in_ts)
- * @param[out] out_y: output y coordinates ordered by (in_id,in_ts)
- * @param[out] out_id: output ids ordered by (in_id,in_ts)
- * @param[out] out_timestamp: output timestamp ordered by (in_id,in_ts)
- * 
- * @return number of trajectories returned
- * 
- * @note the output columns are allocated by this function but they must 
- * be deallocated by the caller.
- * 
- * @note this function is likely to be removed in the future since it is 
- * redundant to cuDF functionality
- *
- * @note: the API is useful for integrating with cuDF and serial Python APIs,
- * e.g., query based on trajectory level information using serial Python APIs or
- * cuDF APIs and identify a subset of trajectory IDs. These IDs can then be used
- * to retrieve x/y/len/pos data for futher processing.
- */
-gdf_size_type subset_trajectory_id(const gdf_column& id,
-                                   const gdf_column& in_x,
-                                   const gdf_column& in_y,
-                                   const gdf_column& in_id,
-                                   const gdf_column& in_timestamp,
-                                   gdf_column& out_x,
-                                   gdf_column& out_y,
-                                   gdf_column& out_id,
-                                   gdf_column& out_timestamp);
-
+}  // namespace experimental
 }  // namespace cuspatial

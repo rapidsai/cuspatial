@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2018-2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,7 +48,10 @@ set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
+
+    # Suppress parentheses warning which causes gmock to fail
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wno-parentheses")
 
     option(CMAKE_CXX11_ABI "Enable the GLIBCXX11 ABI" ON)
     if(CMAKE_CXX11_ABI)
@@ -61,15 +64,59 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endif(CMAKE_CXX11_ABI)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-#set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61")
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_60,code=sm_60")
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_70,code=compute_70")
+if(CMAKE_CUDA_COMPILER_VERSION)
+  # Compute the version. from  CMAKE_CUDA_COMPILER_VERSION
+  string(REGEX REPLACE "([0-9]+)\\.([0-9]+).*" "\\1" CUDA_VERSION_MAJOR ${CMAKE_CUDA_COMPILER_VERSION})
+  string(REGEX REPLACE "([0-9]+)\\.([0-9]+).*" "\\2" CUDA_VERSION_MINOR ${CMAKE_CUDA_COMPILER_VERSION})
+  set(CUDA_VERSION "${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR}" CACHE STRING "Version of CUDA as computed from nvcc.")
+  mark_as_advanced(CUDA_VERSION)
+endif()
+
+message(STATUS "CUDA_VERSION_MAJOR: ${CUDA_VERSION_MAJOR}")
+message(STATUS "CUDA_VERSION_MINOR: ${CUDA_VERSION_MINOR}")
+message(STATUS "CUDA_VERSION: ${CUDA_VERSION}")
+
+# Always set this convenience variable
+set(CUDA_VERSION_STRING "${CUDA_VERSION}")
+
+# Auto-detect available GPU compute architectures
+set(GPU_ARCHS "ALL" CACHE STRING
+  "List of GPU architectures (semicolon-separated) to be compiled for. Pass 'ALL' if you want to compile for all supported GPU architectures. Empty string means to auto-detect the GPUs on the current system")
+
+if("${GPU_ARCHS}" STREQUAL "")
+  include(cmake/EvalGpuArchs.cmake)
+  evaluate_gpu_archs(GPU_ARCHS)
+endif()
+
+if("${GPU_ARCHS}" STREQUAL "ALL")
+  set(GPU_ARCHS "60")
+  if((CUDA_VERSION_MAJOR EQUAL 9) OR (CUDA_VERSION_MAJOR GREATER 9))
+    set(GPU_ARCHS "${GPU_ARCHS};70")
+  endif()
+  if((CUDA_VERSION_MAJOR EQUAL 10) OR (CUDA_VERSION_MAJOR GREATER 10))
+    set(GPU_ARCHS "${GPU_ARCHS};75")
+  endif()
+endif()
+message("GPU_ARCHS = ${GPU_ARCHS}")
+
+foreach(arch ${GPU_ARCHS})
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_${arch},code=sm_${arch}")
+endforeach()
+
+list(GET GPU_ARCHS -1 ptx)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_${ptx},code=compute_${ptx}")
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
 
 # set warnings as errors
 # TODO: remove `no-maybe-unitialized` used to suppress warnings in rmm::exec_policy
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Werror cross-execution-space-call -Xcompiler -Wall,-Werror,-Wno-error=deprecated-declarations")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Werror=cross-execution-space-call -Xcompiler -Wall,-Werror,-Wno-error=deprecated-declarations")
+
+option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
+if(DISABLE_DEPRECATION_WARNING)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wno-deprecated-declarations")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+endif(DISABLE_DEPRECATION_WARNING)
 
 # Option to enable line info in CUDA device compilation to allow introspection when profiling / memchecking
 option(CMAKE_CUDA_LINEINFO "Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler" OFF)
@@ -143,8 +190,7 @@ find_library(CUDF_LIBRARY "cudf"
 
 SET(CUDF_SRC_INCLUDE "$ENV{CUDF_HOME}/cpp/src")
 SET(CUB_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/cub")
-SET(JITIFY_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/jitify")
-SET(SIMT_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/libcudacxx/include")
+SET(CUDACXX_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/libcudacxx/include")
 SET(CUDF_TEST_INCLUDE "$ENV{CUDF_HOME}/cpp/")
 
 message(STATUS "CUDF: CUDF_HOME set to $ENV{CUDF_HOME}")
@@ -152,8 +198,7 @@ message(STATUS "CUDF: CUDF_LIBRARY set to ${CUDF_LIBRARY}")
 message(STATUS "CUDF: CUDF_INCLUDE set to ${CUDF_INCLUDE}")
 message(STATUS "CUDF SRC: CUDF_SRC_INCLUDE set to ${CUDF_SRC_INCLUDE}")
 message(STATUS "CUDF: CUB_INCLUDE set to ${CUB_INCLUDE}")
-message(STATUS "CUDF: JITIFY_INCLUDE set to ${JITIFY_INCLUDE}")
-message(STATUS "CUDF: SIMT_INCLUDE set to ${SIMT_INCLUDE}")
+message(STATUS "CUDF: CUDACXX_INCLUDE set to ${CUDACXX_INCLUDE}")
 message(STATUS "CUDF: CUDF_TEST_INCLUDE set to ${CUDF_TEST_INCLUDE}")
 
 add_library(cudf SHARED IMPORTED ${CUDF_LIBRARY})
@@ -253,14 +298,16 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
                     "${CMAKE_SOURCE_DIR}/../thirdparty/cub"
                     "${CMAKE_SOURCE_DIR}/../thirdparty/libcudacxx/include"
-                    "${GDAL_INCLUDE_DIR}"
+                    "${GDAL_INCLUDE_DIRS}"
                     "${RMM_INCLUDE}"
                     "${CUDF_SRC_INCLUDE}"
                     "${CUDF_INCLUDE}"
                     "${CUB_INCLUDE}"
-                    "${JITIFY_INCLUDE}"
-                    "${SIMT_INCLUDE}")
+                    "${CUDACXX_INCLUDE}")
 
+if(CONDA_INCLUDE_DIRS)
+    include_directories("${CONDA_INCLUDE_DIRS}")
+endif(CONDA_INCLUDE_DIRS)
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
@@ -269,34 +316,32 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CMAKE_BINARY_DIR}/lib"
                  "${FLATBUFFERS_LIBRARY_DIR}"
                  "${GDAL_LIBRARIES}"
-                 "${CONDA_LINK_DIRS}"
                  "${GTEST_LIBRARY_DIR}"
                  "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}")
+
+if(CONDA_LINK_DIRS)
+    link_directories("${CONDA_LINK_DIRS}")
+endif(CONDA_LINK_DIRS)
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial SHARED
+            src/indexing/construction/point_quadtree.cu
+            src/interpolate/cubic_spline.cu
+            src/io/shp/polygon_shapefile_reader.cpp
+            src/io/shp/polygon_shapefile_reader.cu
             src/spatial/polyline_bounding_box.cu
             src/spatial/polygon_bounding_box.cu
-            src/indexing/point_quadtree.cu
-            src/interpolate/cubic_spline.cu
-            src/io/shp/polygon_shapefile_reader.cu
-            src/io/soa/polygon_soa_reader.cu
-            src/io/soa/point_soa_reader.cu
-            src/io/soa/uint32_soa_reader.cu
-            src/io/soa/timestamp_soa_reader.cu
-            src/query/spatial_window_points.cu
             src/spatial/point_in_polygon.cu
+            src/spatial_window/spatial_window.cu
             src/spatial/haversine.cu
             src/spatial/hausdorff.cu
-            src/spatial/lonlat_to_coordinate.cu
-            src/trajectory/trajectory_spatial_bound.cu
-            src/trajectory/trajectory_distance_speed.cu
+            src/spatial/lonlat_to_cartesian.cu
             src/trajectory/derive_trajectories.cu
-            src/trajectory/subset_trajectories.cu
-            src/utility/utility.cpp)
+            src/trajectory/trajectory_bounding_boxes.cu
+            src/trajectory/trajectory_distances_and_speeds.cu)
 
 #Override RPATH for cuspatial
 SET_TARGET_PROPERTIES(cuspatial PROPERTIES BUILD_RPATH "\$ORIGIN")

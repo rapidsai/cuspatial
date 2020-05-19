@@ -1,25 +1,30 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
 from cudf import DataFrame
+from cudf.core.column import as_column
 
+from cuspatial._lib.hausdorff import (
+    directed_hausdorff_distance as cpp_directed_hausdorff_distance,
+)
+from cuspatial._lib.point_in_polygon import (
+    point_in_polygon as cpp_point_in_polygon,
+)
 from cuspatial._lib.spatial import (
-    cpp_directed_hausdorff_distance,
-    cpp_haversine_distance,
-    cpp_lonlat2coord,
-    cpp_point_in_polygon_bitmap,
-    cpp_spatial_window_points,
+    haversine_distance as cpp_haversine_distance,
+    lonlat_to_cartesian as cpp_lonlat_to_cartesian,
 )
 from cuspatial.utils import gis_utils
+from cuspatial.utils.column_utils import normalize_point_columns
 
 
-def directed_hausdorff_distance(x, y, count):
-    """ Compute the directed Hausdorff distances between all pairs of
-    trajectories.
+def directed_hausdorff_distance(xs, ys, points_per_space):
+    """Compute the directed Hausdorff distances between all pairs of
+    spaces.
 
     params
-    x: x coordinates
-    y: y coordinates
-    count: size of each trajectory
+    xs: x-coordinates
+    ys: y-coordinates
+    points_per_space: number of points in each space
 
     Parameters
     ----------
@@ -27,9 +32,10 @@ def directed_hausdorff_distance(x, y, count):
 
     Example
     -------
-    The directed Hausdorff distance from one trajectory to another is the
-    greatest of all the distances from a point in the first trajectory to
-    the closest point in the second.
+    The directed Hausdorff distance from one space to another is the greatest
+    of all the distances between any point in the first space to the closest
+    point in the second.
+
     [Wikipedia](https://en.wikipedia.org/wiki/Hausdorff_distance)
 
     Consider a pair of lines on a grid.
@@ -59,12 +65,19 @@ def directed_hausdorff_distance(x, y, count):
     Returns
     -------
     DataFrame: The pairwise directed distance matrix with one row and one
-    column per input trajectory; the value at row i, column j represents the
-    hausdorff distance from trajectory i to trajectory j.
+    column per input space; the value at row i, column j represents the
+    hausdorff distance from space i to space j.
     """
-    result = cpp_directed_hausdorff_distance(x, y, count)
-    dim = len(count)
-    return DataFrame.from_gpu_matrix(result.to_gpu_array().reshape(dim, dim))
+    num_spaces = len(points_per_space)
+    if num_spaces == 0:
+        return DataFrame()
+    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    result = cpp_directed_hausdorff_distance(
+        xs, ys, as_column(points_per_space, dtype="int32"),
+    )
+    result = result.data_array_view
+    result = result.reshape(num_spaces, num_spaces)
+    return DataFrame.from_gpu_matrix(result)
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
@@ -84,20 +97,24 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
     returns
     Series: distance between all pairs of lat/lon coords
     """
+    p1_lon, p1_lat, p2_lon, p2_lat = normalize_point_columns(
+        as_column(p1_lon),
+        as_column(p1_lat),
+        as_column(p2_lon),
+        as_column(p2_lat),
+    )
     return cpp_haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat)
 
 
-def lonlat_to_xy_km_coordinates(
-    camera_lon, camera_lat, lon_coords, lat_coords
-):
+def lonlat_to_cartesian(origin_lon, origin_lat, input_lon, input_lat):
     """ Convert lonlat coordinates to km x,y coordinates based on some camera
     origin.
 
     params
-    camera_lon: float64 - longitude camera
-    camera_lat: float64 - latitude camera
-    lon_coords: Series of longitude coords to convert to x
-    lat_coords: Series of latitude coords to convert to y
+    origin_lon: float64 - longitude camera
+    origin_lat: float64 - latitude camera
+    input_lon: Series of longitude coords to convert to x
+    input_lat: Series of latitude coords to convert to y
 
     Parameters
     ----------
@@ -106,17 +123,19 @@ def lonlat_to_xy_km_coordinates(
     returns
     DataFrame: 'x', 'y' columns for new km positions of coords
     """
-    result = cpp_lonlat2coord(camera_lon, camera_lat, lon_coords, lat_coords)
+    result = cpp_lonlat_to_cartesian(
+        origin_lon, origin_lat, input_lon._column, input_lat._column
+    )
     return DataFrame({"x": result[0], "y": result[1]})
 
 
-def point_in_polygon_bitmap(
-    x_points,
-    y_points,
-    polygon_ids,
-    polygon_end_indices,
-    polygons_x,
-    polygons_y,
+def point_in_polygon(
+    test_points_x,
+    test_points_y,
+    poly_offsets,
+    poly_ring_offsets,
+    poly_points_x,
+    poly_points_y,
 ):
     """ Compute from a set of points and a set of polygons which points fall
     within which polygons. Note that `polygons_(x,y)` must be specified as
@@ -124,13 +143,12 @@ def point_in_polygon_bitmap(
     the same.
 
     params
-    x_points: x coordinates of points to test
-    y_points: y coordinates of points to test
-    polygon_ids: a unique integer id for each polygon
-    polygon_end_indices: the (n+1)th vertex of the final coordinate of each
-                         polygon in the next parameters
-    polygons_x: x closed coordinates of all polygon points
-    polygons_y: y closed coordinates of all polygon points
+    test_points_x: x-coordinate of test points
+    test_points_y: y-coordinate of test points
+    poly_offsets: beginning index of the first ring in each polygon
+    poly_ring_offsets: beginning index of the first point in each ring
+    poly_points_x: x closed-coordinate of polygon points
+    poly_points_y: y closed-coordinate of polygon points
 
     Parameters
     ----------
@@ -138,21 +156,22 @@ def point_in_polygon_bitmap(
 
     Examples
     --------
-        result = cuspatial.point_in_polygon_bitmap(
-            cudf.Series([0, -8, 6.0]), # x coordinates of 3 query points
+        result = cuspatial.point_in_polygon(
+            cudf.Series([0, -8, 6.0]]), # x coordinates of 3 query points
             cudf.Series([0, -8, 6.0]), # y coordinates of 3 query points
-            cudf.Series([1, 2]), # unique id of two polygons
-            cudf.Series([5, 10]), # position of last vertex in each polygon
+            cudf.Series([1, 2], index=['nyc', 'dc']), # ring positions of
+                    # two polygons each with one ring
+            cudf.Series([4, 8]), # positions of last vertex in each ring
             # polygon coordinates, x and y. Note [-10, -10] and [0, 0] repeat
             # the start/end coordinate of the two polygons.
-            cudf.Series([-10.0, 5, 5, -10, -10, 0, 10, 10, 0, 0]),
-            cudf.Series([-10.0, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
+            cudf.Series([-10, 5, 5, -10, -10, 0, 10, 10, 0, 0]),
+            cudf.Series([-10, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
         )
-        # The result of point_in_polygon_bitmap is a DataFrame of Boolean
+        # The result of point_in_polygon is a DataFrame of Boolean
         # values indicating whether each point (rows) falls within
         # each polygon (columns).
         print(result)
-                   in_polygon_1  in_polygon_2
+                    nyc            dc
         0          True          True
         1          True         False
         2         False          True
@@ -161,51 +180,44 @@ def point_in_polygon_bitmap(
         # Point 1: (-8, -8) falls in the first polygon
         # Point 2: (6.0, 6.0) falls in the second polygon
 
+    note
+    input Series x and y will not be index aligned, but computed as
+    sequential arrays.
+
     returns
     DataFrame: a DataFrame of Boolean values indicating whether each point
     falls within each polygon.
     """
-    bitmap_result = cpp_point_in_polygon_bitmap(
-        x_points,
-        y_points,
-        polygon_ids,
-        polygon_end_indices,
-        polygons_x,
-        polygons_y,
+
+    if len(poly_offsets) == 0:
+        return DataFrame()
+
+    (
+        test_points_x,
+        test_points_y,
+        poly_points_x,
+        poly_points_y,
+    ) = normalize_point_columns(
+        as_column(test_points_x),
+        as_column(test_points_y),
+        as_column(poly_points_x),
+        as_column(poly_points_y),
     )
 
-    result_binary = gis_utils.pip_bitmap_column_to_binary_array(
-        polygon_bitmap_column=bitmap_result, width=len(polygon_ids)
+    result = cpp_point_in_polygon(
+        test_points_x,
+        test_points_y,
+        as_column(poly_offsets, dtype="int32"),
+        as_column(poly_ring_offsets, dtype="int32"),
+        poly_points_x,
+        poly_points_y,
     )
-    result_bools = DataFrame.from_gpu_matrix(
-        result_binary
-    )._apply_support_method("astype", dtype="bool")
-    result_bools.columns = [
-        f"in_polygon_{x}" for x in list(reversed(polygon_ids))
-    ]
-    result_bools = result_bools[list(reversed(result_bools.columns))]
-    return result_bools
 
-
-def window_points(left, bottom, right, top, x, y):
-    """ Return only the subset of coordinates that fall within the numerically
-    closed borders [,] of the defined bounding box.
-
-    params
-    left: x coordinate of window left boundary
-    bottom: y coordinate of window bottom boundary
-    right: x coordinate of window right boundary
-    top: y coordinate of window top boundary
-    x: Series of x coordinates that may fall within the window
-    y: Series of y coordinates that may fall within the window
-
-    Parameters
-    ----------
-    {params}
-
-    Returns
-    -------
-    DataFrame: subset of x, y pairs above that fall within the window
-    """
-    result = cpp_spatial_window_points(left, bottom, right, top, x, y)
-    return DataFrame({"x": result[0], "y": result[1]})
+    result = gis_utils.pip_bitmap_column_to_binary_array(
+        polygon_bitmap_column=result, width=len(poly_offsets)
+    )
+    result = DataFrame.from_gpu_matrix(result)
+    result = result._apply_support_method("astype", dtype="bool")
+    result.columns = [x for x in list(reversed(poly_offsets.index))]
+    result = result[list(reversed(result.columns))]
+    return result

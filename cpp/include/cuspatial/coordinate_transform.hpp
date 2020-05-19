@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,27 @@
 
 #pragma once
 
-#include <cudf/types.h>
+#include <cudf/types.hpp>
+#include <memory>
 
 namespace cuspatial {
 
 /**
- * @brief transform 2D longitude/latitude coordinates to x/y coordinates
- *        relative to a camera origin
+ * @brief Translates lon/lat relative to origin and converts to cartesian (x/y) coordinates.
  *
- * @param[in] cam_lon: longitude of camera origin
- * @param[in] cam_lat: latitude of camera origin
- * @param[in] in_lon: longitude coordinates to transform
- * @param[in] in_lat: latitude coordinates to transform
+ * @param[in] origin_lon: longitude of origin
+ * @param[in] origin_lat: latitude of origin
+ * @param[in] input_lon: longitudes to transform
+ * @param[in] input_lat: latitudes to transform
  *
- * @returns a pair of columns storing transformed x/y coordinates
+ * @returns a pair of columns containing cartesian coordinates in kilometers
  */
-std::pair<gdf_column,gdf_column> lonlat_to_coord(const gdf_scalar& cam_lon,
-                                                 const gdf_scalar& cam_lat,
-                                                 const gdf_column& in_lon,
-                                                 const gdf_column& in_lat);
+
+std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> lonlat_to_cartesian(
+  double origin_lon,
+  double origin_lat,
+  cudf::column_view const& input_lon,
+  cudf::column_view const& input_lat,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial
