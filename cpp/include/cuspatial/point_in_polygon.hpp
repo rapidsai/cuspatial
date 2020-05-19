@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <memory>
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_view.hpp>
+#include <memory>
 #include "cudf/types.hpp"
 
 namespace cuspatial {
@@ -58,13 +58,13 @@ namespace cuspatial {
  *        :███████████:   :████████████████████████:
  *        +-----------+   +------------------------+
  */
-std::unique_ptr<cudf::column>
-point_in_polygon(cudf::column_view const& test_points_x,
-                 cudf::column_view const& test_points_y,
-                 cudf::column_view const& poly_offsets,
-                 cudf::column_view const& poly_ring_offsets,
-                 cudf::column_view const& poly_points_x,
-                 cudf::column_view const& poly_points_y,
-                 rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+std::unique_ptr<cudf::column> point_in_polygon(
+  cudf::column_view const& test_points_x,
+  cudf::column_view const& test_points_y,
+  cudf::column_view const& poly_offsets,
+  cudf::column_view const& poly_ring_offsets,
+  cudf::column_view const& poly_points_x,
+  cudf::column_view const& poly_points_y,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial

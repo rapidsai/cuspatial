@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <memory>
 #include <cudf/types.h>
+#include <memory>
 
 namespace cuspatial {
 
@@ -79,11 +79,10 @@ namespace cuspatial {
  *
  * @note Hausdorff distances are asymmetrical
  */
-std::unique_ptr<cudf::column>
-directed_hausdorff_distance(cudf::column_view const& xs,
-                            cudf::column_view const& ys,
-                            cudf::column_view const& points_per_space,
-                            rmm::mr::device_memory_resource *mr =
-                              rmm::mr::get_default_resource());
+std::unique_ptr<cudf::column> directed_hausdorff_distance(
+  cudf::column_view const& xs,
+  cudf::column_view const& ys,
+  cudf::column_view const& points_per_space,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial
