@@ -27,13 +27,13 @@ namespace cuspatial {
  *
  * @see http://www.adms-conf.org/2019-camera-ready/zhang_adms19.pdf for details.
  *
- * @note `scale` is applied to x_min and y_min to convert x and y coodiantes into a Morton code in
- * 2D space.
- * @note `max_depth` should be less than 16 as uint32_t is used for Morton code representation. The
- * actual number of levels may be less than `max_depth` when the number of points is small and/or
+ * @note `scale` is applied to (x - x_min) and (y - y_min) to convert coordinates into a Morton code
+ * in 2D space.
+ * @note `max_depth` should be less than 16, since Morton codes are represented as `uint32_t`. The
+ * eventual number of levels may be less than `max_depth` if the number of points is small or
  * `min_size` is large.
- * @note All parent quadrants should have fewer than `min_size` number of points. Leaf quadrants are
- * permited to have more than `min_size` points.
+ * @note All quadtree nodes should have fewer than `min_size` number of points except leaf
+ * quadrants, which are permitted to have more than `min_size` points.
  *
  * @param x Column of x-coordinates for each point.
  * @param y Column of y-coordinates for each point.
@@ -48,22 +48,22 @@ namespace cuspatial {
  *
  * @return Pair of INT32 column of sorted keys to point indices, and cudf table with five
  * columns for a complete quadtree:
- *   *     key - INT32 column of quad node keys
- *   *   level - INT8 column of quadtree levels
- *   * is_node - BOOL8 column indicating whether the node is a leaf or not
- *   *  length - INT32 column for the number of child nodes (if is_node), or number of points
- *   *  offset - INT32 column for the first child position (if is_node), or first point position
+ *     key - INT32 column of quad node keys
+ *   level - INT8 column of quadtree levels
+ * is_node - BOOL8 column indicating whether the node is a leaf or not
+ *  length - INT32 column for the number of child nodes (if is_node), or number of points
+ *  offset - INT32 column for the first child position (if is_node), or first point position
  */
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::experimental::table>>
 quadtree_on_points(cudf::column_view const& x,
                    cudf::column_view const& y,
-                   double const x_min,
-                   double const x_max,
-                   double const y_min,
-                   double const y_max,
-                   double const scale,
-                   cudf::size_type const max_depth,
-                   cudf::size_type const min_size,
+                   double x_min,
+                   double x_max,
+                   double y_min,
+                   double y_max,
+                   double scale,
+                   cudf::size_type max_depth,
+                   cudf::size_type min_size,
                    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial

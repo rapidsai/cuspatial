@@ -41,7 +41,7 @@ namespace cuspatial {
 namespace detail {
 
 inline rmm::device_vector<uint32_t> compute_leaf_positions(cudf::column_view const &indicator,
-                                                           cudf::size_type const num_valid_nodes,
+                                                           cudf::size_type num_valid_nodes,
                                                            cudaStream_t stream)
 {
   rmm::device_vector<uint32_t> leaf_pos(num_valid_nodes);
@@ -61,8 +61,8 @@ inline rmm::device_vector<uint32_t> flatten_point_keys(
   rmm::device_vector<uint32_t> const &quad_keys,
   rmm::device_vector<int8_t> const &quad_level,
   cudf::column_view const &indicator,
-  cudf::size_type const num_valid_nodes,
-  cudf::size_type const max_depth,
+  cudf::size_type num_valid_nodes,
+  cudf::size_type max_depth,
   cudaStream_t stream)
 {
   rmm::device_vector<uint32_t> flattened_keys(num_valid_nodes);
@@ -95,8 +95,8 @@ inline rmm::device_vector<uint32_t> compute_flattened_first_point_positions(
   rmm::device_vector<int8_t> const &quad_level,
   rmm::device_vector<uint32_t> &quad_point_count,
   cudf::column_view const &indicator,
-  cudf::size_type const num_valid_nodes,
-  cudf::size_type const max_depth,
+  cudf::size_type num_valid_nodes,
+  cudf::size_type max_depth,
   cudaStream_t stream)
 {
   // Sort initial indices and temporary point counts by the flattened keys
@@ -177,8 +177,8 @@ inline rmm::device_vector<uint32_t> compute_flattened_first_point_positions(
 
 inline rmm::device_vector<uint32_t> compute_parent_positions(
   rmm::device_vector<uint32_t> const &quad_child_count,
-  cudf::size_type const num_parent_nodes,
-  cudf::size_type const num_child_nodes,
+  cudf::size_type num_parent_nodes,
+  cudf::size_type num_child_nodes,
   cudaStream_t stream)
 {
   // Compute parent node start positions
@@ -229,10 +229,10 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
   rmm::device_vector<uint32_t> &quad_point_count,
   rmm::device_vector<uint32_t> &quad_child_count,
   rmm::device_vector<int8_t> &quad_levels,
-  cudf::size_type const num_parent_nodes,
-  cudf::size_type const num_child_nodes,
-  cudf::size_type const min_size,
-  cudf::size_type const level_1_size,
+  cudf::size_type num_parent_nodes,
+  cudf::size_type num_child_nodes,
+  cudf::size_type min_size,
+  cudf::size_type level_1_size,
   cudaStream_t stream)
 {
   // compute parent node start positions
@@ -299,9 +299,9 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
  */
 inline std::unique_ptr<cudf::column> construct_non_leaf_indicator(
   rmm::device_vector<uint32_t> &quad_point_count,
-  cudf::size_type const num_parent_nodes,
-  cudf::size_type const num_valid_nodes,
-  cudf::size_type const min_size,
+  cudf::size_type num_parent_nodes,
+  cudf::size_type num_valid_nodes,
+  cudf::size_type min_size,
   rmm::mr::device_memory_resource *mr,
   cudaStream_t stream)
 {
