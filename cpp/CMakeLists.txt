@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2018-2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -331,14 +331,20 @@ add_library(cuspatial SHARED
             src/interpolate/cubic_spline.cu
             src/io/shp/legacy/polygon_shapefile_reader.cpp
             src/io/shp/legacy/polygon_shapefile_reader.cu
+            src/io/shp/polygon_shapefile_reader.cpp
+            src/io/shp/polygon_shapefile_reader.cu
             src/io/soa/polygon_soa_reader.cu
             src/io/soa/point_soa_reader.cu
             src/io/soa/uint32_soa_reader.cu
             src/io/soa/timestamp_soa_reader.cu
-            src/query/spatial_window_points.cu
+            src/spatial/point_in_polygon.cu
+            src/spatial_window/spatial_window.cu
+            src/spatial_window/legacy/spatial_window_points.cu
             src/spatial/legacy/point_in_polygon.cu
             src/spatial/legacy/haversine.cu
+            src/spatial/haversine.cu
             src/spatial/legacy/hausdorff.cu
+            src/spatial/hausdorff.cu
             src/spatial/legacy/lonlat_to_coordinate.cu
             src/spatial/lonlat_to_cartesian.cu
             src/trajectory/derive_trajectories.cu

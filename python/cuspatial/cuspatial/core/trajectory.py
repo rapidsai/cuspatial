@@ -1,57 +1,23 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-import warnings
+import numpy as np
 
-import cudf
+from cudf.core import DataFrame, Series
+from cudf.core.column import as_column
 
 from cuspatial._lib.trajectory import (
-    cpp_derive_trajectories,
-    cpp_subset_trajectory_id,
-    cpp_trajectory_distance_and_speed,
-    cpp_trajectory_spatial_bounds,
+    derive_trajectories as cpp_derive_trajectories,
+    trajectory_bounding_boxes as cpp_trajectory_bounding_boxes,
+    trajectory_distances_and_speeds as cpp_trajectory_distances_and_speeds,
+)
+from cuspatial.utils.column_utils import (
+    normalize_point_columns,
+    normalize_timestamp_column,
 )
 
-warnings.warn("Duplicates cuDF functionality", DeprecationWarning)
 
-
-def subset_trajectory_id(trajectory_ids, in_x, in_y, point_ids, timestamps):
-    """
-    Deprecated
-    """
-    return cpp_subset_trajectory_id(
-        trajectory_ids, in_x, in_y, point_ids, timestamps
-    )
-
-
-def spatial_bounds(
-    x_coords, y_coords, trajectory_size, trajectory_end_position
-):
-    """ Compute the bounding boxes of sets of trajectories.
-
-    Parameters
-    ----------
-    {params}
-
-    Examples
-    --------
-    >>> result = trajectory.spatial_bounds(
-    >>>    cudf.Series([0, 2, 1, 3, 2]),
-    >>>    cudf.Series([0, 2, 1, 3, 2]),
-    >>>    cudf.Series([2, 3]),
-    >>>    cudf.Series([2, 5])
-    >>> )
-    >>> print(result)
-        x1   y1   x2   y2
-    0  0.0  0.0  2.0  2.0
-    1  1.0  1.0  3.0  3.0
-    """
-    return cpp_trajectory_spatial_bounds(
-        x_coords, y_coords, trajectory_size, trajectory_end_position
-    )
-
-
-def derive(x_coords, y_coords, object_ids, timestamps):
-    """ Derive trajectories from points, timestamps, and ids.
+def derive_trajectories(object_ids, xs, ys, timestamps):
+    """ Derive trajectories from object ids, points, and timestamps.
 
     Parameters
     ----------
@@ -59,29 +25,74 @@ def derive(x_coords, y_coords, object_ids, timestamps):
 
     Returns
     -------
-    result_tuple : tuple (number of discovered trajectories,DataFrame)
-    DataFrame    : id, length, and positions of trajectories
-                   for feeding into compute_distance_and_speed
+    result    : tuple (DataFrame, offsets of discovered trajectories)
+    DataFrame : object_id, x, y, and timestamps sorted by
+                (object_id, timestamp) for calling spatial_bounds and
+                distance_and_speed
 
     Examples
     --------
-    >>> num_trajectories, result = trajectory.derive(
-    >>>    cudf.Series([0, 1, 2, 3]),
-    >>>    cudf.Series([0, 0, 1, 1]),
-    >>>    cudf.Series([0, 0, 1, 1]),
-    >>>    cudf.Series([0, 10, 0, 10]))
-    >>> print(num_trajectories)
-        2
-    >>> print(result)
-           trajectory_id  length  position
-        0              0       2         2
-        1              1       2         4
+    >>> objects, traj_offsets = cuspatial.derive_trajectories(
+    >>>    cudf.Series([0, 0, 1, 1]),   # object_id
+    >>>    cudf.Series([0, 1, 2, 3]),   # x
+    >>>    cudf.Series([0, 0, 1, 1]),   # y
+    >>>    cudf.Series([0, 10, 0, 10])) # timestamp
+    >>> print(traj_offsets)
+        0  0
+        1  2
+    >>> print(objects)
+           object_id       x       y  timestamp
+        0          0       1       0          0
+        1          0       0       0         10
+        2          1       3       1          0
+        3          1       2       1         10
     """
-    return cpp_derive_trajectories(x_coords, y_coords, object_ids, timestamps)
+    object_ids = as_column(object_ids, dtype=np.int32)
+    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    timestamps = normalize_timestamp_column(as_column(timestamps))
+    objects, traj_offsets = cpp_derive_trajectories(
+        object_ids, xs, ys, timestamps
+    )
+    return DataFrame._from_table(objects), Series(data=traj_offsets)
 
 
-def distance_and_speed(x_coords, y_coords, timestamps, length, position):
-    """ Compute the distance travelled and speed of sets of trajectories
+def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
+    """ Compute the bounding boxes of sets of trajectories.
+
+    Parameters
+    ----------
+    {params}
+    result    : DataFrame of x1, y1, x2, y2 as minimum bounding boxes
+                (in kilometers) for each trajectory
+
+    Examples
+    --------
+    >>> objects, traj_offsets = trajectory.derive(
+    >>>    cudf.Series([0, 0, 1, 1]),   # object_id
+    >>>    cudf.Series([0, 1, 2, 3]),   # x
+    >>>    cudf.Series([0, 0, 1, 1]),   # y
+    >>>    cudf.Series([0, 10, 0, 10])) # timestamp
+    >>> traj_bounding_boxes = cuspatial.trajectory_bounding_boxes(
+    >>>     len(traj_offsets),
+    >>>     objects['object_id'],
+    >>>     objects['x'],
+    >>>     objects['y'])
+    >>> print(traj_bounding_boxes)
+        x1   y1   x2   y2
+    0  0.0  0.0  2.0  2.0
+    1  1.0  1.0  3.0  3.0
+    """
+    object_ids = as_column(object_ids, dtype=np.int32)
+    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    return DataFrame._from_table(
+        cpp_trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys)
+    )
+
+
+def trajectory_distances_and_speeds(
+    num_trajectories, object_ids, xs, ys, timestamps
+):
+    """ Compute the distance traveled and speed of sets of trajectories
 
     Parameters
     ----------
@@ -95,19 +106,28 @@ def distance_and_speed(x_coords, y_coords, timestamps, length, position):
 
     Examples
     --------
-    Compute the distance and speed of the above derived trajectories
-    >>> result = trajectory.distance_and_speed(x, y, timestamps,
-                                               result['length'],
-                                               result['position'])
-    >>> print(result)
-                       meters          speed
+    Compute the distance and speed of derived trajectories
+    >>> objects, traj_offsets = cuspatial.derive_trajectories(...)
+    >>> dists_and_speeds = cuspatial.trajectory_distances_and_speeds(
+    >>>     len(traj_offsets)
+    >>>     objects['object_id'],
+    >>>     objects['x'],
+    >>>     objects['y'],
+    >>>     objects['timestamp']
+    >>> )
+    >>> print(dists_and_speeds)
+                       distance          speed
         trajectory_id
-        0              1000.0  100000.000000
-        1              1000.0  111111.109375
+        0                1000.0  100000.000000
+        1                1000.0  111111.109375
     """
-    result = cpp_trajectory_distance_and_speed(
-        x_coords, y_coords, timestamps, length, position
+    object_ids = as_column(object_ids, dtype=np.int32)
+    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    timestamps = normalize_timestamp_column(as_column(timestamps))
+    df = DataFrame._from_table(
+        cpp_trajectory_distances_and_speeds(
+            num_trajectories, object_ids, xs, ys, timestamps
+        )
     )
-    df = cudf.DataFrame({"meters": result[0], "speed": result[1]})
     df.index.name = "trajectory_id"
     return df
