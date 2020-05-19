@@ -48,12 +48,12 @@ namespace experimental {
  *  1. table of (object_id, x, y, timestamp) sorted by (object_id, timestamp)
  *  2. int32 column of start positions for each trajectory's first object
  */
-std::pair<std::unique_ptr<cudf::experimental::table>,
-          std::unique_ptr<cudf::column>>
-derive_trajectories(
-    cudf::column_view const& object_id, cudf::column_view const& x,
-    cudf::column_view const& y, cudf::column_view const& timestamp,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+std::pair<std::unique_ptr<cudf::experimental::table>, std::unique_ptr<cudf::column>>
+derive_trajectories(cudf::column_view const& object_id,
+                    cudf::column_view const& x,
+                    cudf::column_view const& y,
+                    cudf::column_view const& timestamp,
+                    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
  * @brief Compute the distance and speed of objects in a trajectory. Groups the
@@ -81,10 +81,12 @@ derive_trajectories(
  * length is `num_trajectories`, sorted by object_id.
  */
 std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
-    cudf::size_type num_trajectories, cudf::column_view const& object_id,
-    cudf::column_view const& x, cudf::column_view const& y,
-    cudf::column_view const& timestamp,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  cudf::size_type num_trajectories,
+  cudf::column_view const& object_id,
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  cudf::column_view const& timestamp,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
  * @brief Compute the spatial bounding boxes of trajectories. Groups the x, y,
@@ -111,9 +113,11 @@ std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
  *   * y2 - the upper-right y-coordinate of each bounding box in kilometers
  */
 std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
-    cudf::size_type num_trajectories, cudf::column_view const& object_id,
-    cudf::column_view const& x, cudf::column_view const& y,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  cudf::size_type num_trajectories,
+  cudf::column_view const& object_id,
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace experimental
 }  // namespace cuspatial
