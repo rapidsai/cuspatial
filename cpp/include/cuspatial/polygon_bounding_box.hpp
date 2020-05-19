@@ -30,10 +30,11 @@ namespace cuspatial {
  * @param[in] y: polygon y coordiante array.
  *
  * @return experimental::table with four arrays of bounding boxes, x1,y1,x2,y2.
-*/
+ */
 
-std::unique_ptr<cudf::experimental::table> polygon_bbox(
-    const cudf::column_view& fpos,const cudf::column_view& rpos,
-    const cudf::column_view& x,const cudf::column_view& y);
+std::unique_ptr<cudf::experimental::table> polygon_bbox(const cudf::column_view& fpos,
+                                                        const cudf::column_view& rpos,
+                                                        const cudf::column_view& x,
+                                                        const cudf::column_view& y);
 
 }  // namespace cuspatial

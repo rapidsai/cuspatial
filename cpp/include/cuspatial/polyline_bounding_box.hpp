@@ -30,11 +30,11 @@ namespace cuspatial {
  * @param[in] R: expansion radius
  *
  * @return experimental::table with four arrays of bounding boxes, x1,y1,x2,y2.
-*/
+ */
 
-std::unique_ptr<cudf::experimental::table> polyline_bbox(
-    const cudf::column_view& spos,
-    const cudf::column_view& x,const cudf::column_view& y,
-    double R);
+std::unique_ptr<cudf::experimental::table> polyline_bbox(const cudf::column_view& spos,
+                                                         const cudf::column_view& x,
+                                                         const cudf::column_view& y,
+                                                         double R);
 
 }  // namespace cuspatial
