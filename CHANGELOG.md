@@ -3,6 +3,7 @@
 ## New Features
 
 - PR #182 Local gpuCI build script
+- PR #208 NYC Taxi Years Correlation Notebook (thanks @taureandyernv)
 
 ## Improvements
 
