@@ -5,6 +5,7 @@ from .core.gis import (
     lonlat_to_cartesian,
     point_in_polygon,
 )
+from .core.indexing import quadtree_on_points
 from .core.interpolate import CubicSpline
 from .core.spatial_window import points_in_spatial_window
 from .core.trajectory import (
@@ -13,10 +14,3 @@ from .core.trajectory import (
     trajectory_distances_and_speeds,
 )
 from .io.shapefile import read_polygon_shapefile
-from .io.soa import (
-    read_its_timestamps,
-    read_points_lonlat,
-    read_points_xy_km,
-    read_polygon,
-    read_uint,
-)
