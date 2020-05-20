@@ -2,9 +2,13 @@
 ## Intro
 These notebooks provide examples of how to use cuSpatial.  Some of these notebooks are designed to be self-contained with the `runtime` version of the [RAPIDS Docker Container](https://hub.docker.com/r/rapidsai/rapidsai/) and [RAPIDS Nightly Docker Containers](https://hub.docker.com/r/rapidsai/rapidsai-nightly) and can run on air-gapped systems, while others require an additional download.  You can quickly get this container using the install guide from the [RAPIDS.ai Getting Started page](https://rapids.ai/start.html#get-rapids)
 
-## Getting started notebooks
-For a good overview of how cuSpatial works, go to [our precompiled docs (external link)](https://docs.rapids.ai/api/cuspatial/stable/api.html) or [build the docs them locally yourself](../docs/source/) in the
-documentation tree, as well as read [our introductory blog (external link)](https://medium.com/rapids-ai/releasing-cuspatial-to-accelerate-geospatial-and-spatiotemporal-processing-b686d8b32a9)
+## Getting Started
+For a good overview of how cuSpatial works, 
+- Read our docs: [our precompiled docs (external link)](https://docs.rapids.ai/api/cuspatial/stable/api.html) or [build the docs them locally yourself](../docs/source/) in the
+documentation tree, 
+- Read [our introductory blog (external link)](https://medium.com/rapids-ai/releasing-cuspatial-to-accelerate-geospatial-and-spatiotemporal-processing-b686d8b32a9)
+- Run [our python demos](../python/cuspatial/demos)
+
 
 ## Notebook Information
 Notebook Title | Data set(s) | Notebook Description | External Download (Size)
