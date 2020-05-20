@@ -11,3 +11,4 @@ dependencies:
   - cudf=0.14.*
   - cudatoolkit=10.2
   - gdal>=3.0.2
+  - geopandas=0.7.0
