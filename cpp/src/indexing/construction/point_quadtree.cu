@@ -39,17 +39,16 @@ namespace {
 /**
  * @brief Constructs a complete quad tree
  */
-inline std::unique_ptr<cudf::experimental::table> make_quad_tree(
-  rmm::device_vector<uint32_t> &quad_keys,
-  rmm::device_vector<uint32_t> &quad_point_count,
-  rmm::device_vector<uint32_t> &quad_child_count,
-  rmm::device_vector<int8_t> &quad_levels,
-  cudf::size_type num_parent_nodes,
-  cudf::size_type max_depth,
-  cudf::size_type min_size,
-  cudf::size_type level_1_size,
-  rmm::mr::device_memory_resource *mr,
-  cudaStream_t stream)
+inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_vector<uint32_t> &quad_keys,
+                                                   rmm::device_vector<uint32_t> &quad_point_count,
+                                                   rmm::device_vector<uint32_t> &quad_child_count,
+                                                   rmm::device_vector<int8_t> &quad_levels,
+                                                   cudf::size_type num_parent_nodes,
+                                                   cudf::size_type max_depth,
+                                                   cudf::size_type min_size,
+                                                   cudf::size_type level_1_size,
+                                                   rmm::mr::device_memory_resource *mr,
+                                                   cudaStream_t stream)
 {
   // count the number of child nodes
   auto num_child_nodes = thrust::reduce(rmm::exec_policy(stream)->on(stream),
@@ -165,13 +164,13 @@ inline std::unique_ptr<cudf::experimental::table> make_quad_tree(
   cols.push_back(std::move(is_node));
   cols.push_back(std::move(lengths));
   cols.push_back(std::move(offsets));
-  return std::make_unique<cudf::experimental::table>(std::move(cols));
+  return std::make_unique<cudf::table>(std::move(cols));
 }
 
 /**
  * @brief Constructs a leaf-only quadtree
  */
-inline std::unique_ptr<cudf::experimental::table> make_leaf_tree(
+inline std::unique_ptr<cudf::table> make_leaf_tree(
   rmm::device_vector<uint32_t> const &quad_keys,
   rmm::device_vector<uint32_t> const &quad_point_count,
   cudf::size_type num_top_quads,
@@ -221,7 +220,7 @@ inline std::unique_ptr<cudf::experimental::table> make_leaf_tree(
   cols.push_back(std::move(is_node));
   cols.push_back(std::move(lengths));
   cols.push_back(std::move(offsets));
-  return std::make_unique<cudf::experimental::table>(std::move(cols));
+  return std::make_unique<cudf::table>(std::move(cols));
 }
 
 /*
@@ -236,25 +235,25 @@ struct dispatch_construct_quadtree {
   template <typename T,
             std::enable_if_t<!std::is_floating_point<T>::value> * = nullptr,
             typename... Args>
-  inline std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::experimental::table>>
-  operator()(Args &&...)
+  inline std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> operator()(
+    Args &&...)
   {
     CUDF_FAIL("Only floating-point types are supported");
   }
 
   template <typename T, std::enable_if_t<std::is_floating_point<T>::value> * = nullptr>
-  inline std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::experimental::table>>
-  operator()(cudf::column_view const &x,
-             cudf::column_view const &y,
-             double x_min,
-             double x_max,
-             double y_min,
-             double y_max,
-             double scale,
-             cudf::size_type max_depth,
-             cudf::size_type min_size,
-             rmm::mr::device_memory_resource *mr,
-             cudaStream_t stream)
+  inline std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> operator()(
+    cudf::column_view const &x,
+    cudf::column_view const &y,
+    double x_min,
+    double x_max,
+    double y_min,
+    double y_max,
+    double scale,
+    cudf::size_type max_depth,
+    cudf::size_type min_size,
+    rmm::mr::device_memory_resource *mr,
+    cudaStream_t stream)
   {
     // Construct the full set of non-empty subquadrants starting from the lowest level.
     // Corresponds to "Phase 1" of quadtree construction in ref.
@@ -302,18 +301,18 @@ struct dispatch_construct_quadtree {
 
 }  // namespace
 
-std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::experimental::table>>
-quadtree_on_points(cudf::column_view const &x,
-                   cudf::column_view const &y,
-                   double x_min,
-                   double x_max,
-                   double y_min,
-                   double y_max,
-                   double scale,
-                   cudf::size_type max_depth,
-                   cudf::size_type min_size,
-                   rmm::mr::device_memory_resource *mr,
-                   cudaStream_t stream)
+std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_on_points(
+  cudf::column_view const &x,
+  cudf::column_view const &y,
+  double x_min,
+  double x_max,
+  double y_min,
+  double y_max,
+  double scale,
+  cudf::size_type max_depth,
+  cudf::size_type min_size,
+  rmm::mr::device_memory_resource *mr,
+  cudaStream_t stream)
 {
   return cudf::experimental::type_dispatcher(x.type(),
                                              dispatch_construct_quadtree{},
@@ -332,17 +331,17 @@ quadtree_on_points(cudf::column_view const &x,
 
 }  // namespace detail
 
-std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::experimental::table>>
-quadtree_on_points(cudf::column_view const &x,
-                   cudf::column_view const &y,
-                   double x_min,
-                   double x_max,
-                   double y_min,
-                   double y_max,
-                   double scale,
-                   cudf::size_type max_depth,
-                   cudf::size_type min_size,
-                   rmm::mr::device_memory_resource *mr)
+std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_on_points(
+  cudf::column_view const &x,
+  cudf::column_view const &y,
+  double x_min,
+  double x_max,
+  double y_min,
+  double y_max,
+  double scale,
+  cudf::size_type max_depth,
+  cudf::size_type min_size,
+  rmm::mr::device_memory_resource *mr)
 {
   CUSPATIAL_EXPECTS(x.size() == y.size(), "x and y columns must have the same length");
   CUSPATIAL_EXPECTS(x_min < x_max && y_min < y_max,
@@ -360,7 +359,7 @@ quadtree_on_points(cudf::column_view const &x,
     cols.push_back(detail::make_fixed_width_column<int32_t>(0, 0, mr));
     cols.push_back(detail::make_fixed_width_column<int32_t>(0, 0, mr));
     return std::make_pair(detail::make_fixed_width_column<int32_t>(0, 0, mr),
-                          std::make_unique<cudf::experimental::table>(std::move(cols)));
+                          std::make_unique<cudf::table>(std::move(cols)));
   }
   return detail::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, mr, cudaStream_t{0});

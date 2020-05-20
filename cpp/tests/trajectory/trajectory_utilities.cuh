@@ -27,7 +27,7 @@ namespace cuspatial {
 namespace test {
 
 template <typename T>
-std::unique_ptr<cudf::experimental::table> make_test_trajectories_table(
+std::unique_ptr<cudf::table> make_test_trajectories_table(
   cudf::size_type size, rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
 {
   std::vector<int32_t> ids(size);

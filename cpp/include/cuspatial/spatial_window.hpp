@@ -41,7 +41,7 @@ namespace cuspatial {
  * @returns A table with two columns of the same type as the input columns. Columns 0, 1 are the
  * (x, y) coordinates of the points in the input that fall within the query window.
  */
-std::unique_ptr<cudf::experimental::table> points_in_spatial_window(
+std::unique_ptr<cudf::table> points_in_spatial_window(
   double window_min_x,
   double window_max_x,
   double window_min_y,

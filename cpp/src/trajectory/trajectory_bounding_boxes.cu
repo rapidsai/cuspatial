@@ -35,14 +35,13 @@ namespace {
 
 struct dispatch_element {
   template <typename Element>
-  std::enable_if_t<std::is_floating_point<Element>::value,
-                   std::unique_ptr<cudf::experimental::table>>
-  operator()(cudf::size_type num_trajectories,
-             cudf::column_view const& object_id,
-             cudf::column_view const& x,
-             cudf::column_view const& y,
-             rmm::mr::device_memory_resource* mr,
-             cudaStream_t stream)
+  std::enable_if_t<std::is_floating_point<Element>::value, std::unique_ptr<cudf::table>> operator()(
+    cudf::size_type num_trajectories,
+    cudf::column_view const& object_id,
+    cudf::column_view const& x,
+    cudf::column_view const& y,
+    rmm::mr::device_memory_resource* mr,
+    cudaStream_t stream)
   {
     auto policy = rmm::exec_policy(stream);
 
@@ -100,12 +99,11 @@ struct dispatch_element {
     // check for errors
     CHECK_CUDA(stream);
 
-    return std::make_unique<cudf::experimental::table>(std::move(cols));
+    return std::make_unique<cudf::table>(std::move(cols));
   }
 
   template <typename Element>
-  std::enable_if_t<not std::is_floating_point<Element>::value,
-                   std::unique_ptr<cudf::experimental::table>>
+  std::enable_if_t<not std::is_floating_point<Element>::value, std::unique_ptr<cudf::table>>
   operator()(cudf::size_type num_trajectories,
              cudf::column_view const& object_id,
              cudf::column_view const& x,
@@ -120,25 +118,23 @@ struct dispatch_element {
 }  // namespace
 
 namespace detail {
-std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
-  cudf::size_type num_trajectories,
-  cudf::column_view const& object_id,
-  cudf::column_view const& x,
-  cudf::column_view const& y,
-  rmm::mr::device_memory_resource* mr,
-  cudaStream_t stream)
+std::unique_ptr<cudf::table> trajectory_bounding_boxes(cudf::size_type num_trajectories,
+                                                       cudf::column_view const& object_id,
+                                                       cudf::column_view const& x,
+                                                       cudf::column_view const& y,
+                                                       rmm::mr::device_memory_resource* mr,
+                                                       cudaStream_t stream)
 {
   return cudf::experimental::type_dispatcher(
     x.type(), dispatch_element{}, num_trajectories, object_id, x, y, mr, stream);
 }
 }  // namespace detail
 
-std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
-  cudf::size_type num_trajectories,
-  cudf::column_view const& object_id,
-  cudf::column_view const& x,
-  cudf::column_view const& y,
-  rmm::mr::device_memory_resource* mr)
+std::unique_ptr<cudf::table> trajectory_bounding_boxes(cudf::size_type num_trajectories,
+                                                       cudf::column_view const& object_id,
+                                                       cudf::column_view const& x,
+                                                       cudf::column_view const& y,
+                                                       rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(object_id.size() == x.size() && x.size() == y.size(), "Data size mismatch");
   CUSPATIAL_EXPECTS(x.type().id() == y.type().id(), "Data type mismatch");
@@ -153,7 +149,7 @@ std::unique_ptr<cudf::experimental::table> trajectory_bounding_boxes(
     cols.push_back(cudf::experimental::empty_like(y));
     cols.push_back(cudf::experimental::empty_like(x));
     cols.push_back(cudf::experimental::empty_like(y));
-    return std::make_unique<cudf::experimental::table>(std::move(cols));
+    return std::make_unique<cudf::table>(std::move(cols));
   }
 
   return detail::trajectory_bounding_boxes(num_trajectories, object_id, x, y, mr, 0);

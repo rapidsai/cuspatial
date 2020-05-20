@@ -53,14 +53,14 @@ auto duplicate_first_element_iterator(cudf::column_view const& col, cudaStream_t
 template <typename Element>
 struct dispatch_timestamp {
   template <typename Timestamp>
-  std::enable_if_t<cudf::is_timestamp<Timestamp>(), std::unique_ptr<cudf::experimental::table>>
-  operator()(cudf::size_type num_trajectories,
-             cudf::column_view const& object_id,
-             cudf::column_view const& x,
-             cudf::column_view const& y,
-             cudf::column_view const& timestamp,
-             rmm::mr::device_memory_resource* mr,
-             cudaStream_t stream)
+  std::enable_if_t<cudf::is_timestamp<Timestamp>(), std::unique_ptr<cudf::table>> operator()(
+    cudf::size_type num_trajectories,
+    cudf::column_view const& object_id,
+    cudf::column_view const& x,
+    cudf::column_view const& y,
+    cudf::column_view const& timestamp,
+    rmm::mr::device_memory_resource* mr,
+    cudaStream_t stream)
   {
     auto policy = rmm::exec_policy(stream);
 
@@ -162,18 +162,18 @@ struct dispatch_timestamp {
     // check for errors
     CHECK_CUDA(stream);
 
-    return std::make_unique<cudf::experimental::table>(std::move(cols));
+    return std::make_unique<cudf::table>(std::move(cols));
   }
 
   template <typename Timestamp>
-  std::enable_if_t<not cudf::is_timestamp<Timestamp>(), std::unique_ptr<cudf::experimental::table>>
-  operator()(cudf::size_type num_trajectories,
-             cudf::column_view const& object_id,
-             cudf::column_view const& timestamp,
-             cudf::column_view const& x,
-             cudf::column_view const& y,
-             rmm::mr::device_memory_resource* mr,
-             cudaStream_t stream)
+  std::enable_if_t<not cudf::is_timestamp<Timestamp>(), std::unique_ptr<cudf::table>> operator()(
+    cudf::size_type num_trajectories,
+    cudf::column_view const& object_id,
+    cudf::column_view const& timestamp,
+    cudf::column_view const& x,
+    cudf::column_view const& y,
+    rmm::mr::device_memory_resource* mr,
+    cudaStream_t stream)
   {
     CUSPATIAL_FAIL("Timestamp must be a timestamp type");
   }
@@ -181,15 +181,14 @@ struct dispatch_timestamp {
 
 struct dispatch_element {
   template <typename Element>
-  std::enable_if_t<std::is_floating_point<Element>::value,
-                   std::unique_ptr<cudf::experimental::table>>
-  operator()(cudf::size_type num_trajectories,
-             cudf::column_view const& object_id,
-             cudf::column_view const& x,
-             cudf::column_view const& y,
-             cudf::column_view const& timestamp,
-             rmm::mr::device_memory_resource* mr,
-             cudaStream_t stream)
+  std::enable_if_t<std::is_floating_point<Element>::value, std::unique_ptr<cudf::table>> operator()(
+    cudf::size_type num_trajectories,
+    cudf::column_view const& object_id,
+    cudf::column_view const& x,
+    cudf::column_view const& y,
+    cudf::column_view const& timestamp,
+    rmm::mr::device_memory_resource* mr,
+    cudaStream_t stream)
   {
     return cudf::experimental::type_dispatcher(timestamp.type(),
                                                dispatch_timestamp<Element>{},
@@ -203,8 +202,7 @@ struct dispatch_element {
   }
 
   template <typename Element>
-  std::enable_if_t<not std::is_floating_point<Element>::value,
-                   std::unique_ptr<cudf::experimental::table>>
+  std::enable_if_t<not std::is_floating_point<Element>::value, std::unique_ptr<cudf::table>>
   operator()(cudf::size_type num_trajectories,
              cudf::column_view const& object_id,
              cudf::column_view const& x,
@@ -220,27 +218,25 @@ struct dispatch_element {
 }  // namespace
 
 namespace detail {
-std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
-  cudf::size_type num_trajectories,
-  cudf::column_view const& object_id,
-  cudf::column_view const& x,
-  cudf::column_view const& y,
-  cudf::column_view const& timestamp,
-  rmm::mr::device_memory_resource* mr,
-  cudaStream_t stream)
+std::unique_ptr<cudf::table> trajectory_distances_and_speeds(cudf::size_type num_trajectories,
+                                                             cudf::column_view const& object_id,
+                                                             cudf::column_view const& x,
+                                                             cudf::column_view const& y,
+                                                             cudf::column_view const& timestamp,
+                                                             rmm::mr::device_memory_resource* mr,
+                                                             cudaStream_t stream)
 {
   return cudf::experimental::type_dispatcher(
     x.type(), dispatch_element{}, num_trajectories, object_id, x, y, timestamp, mr, stream);
 }
 }  // namespace detail
 
-std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
-  cudf::size_type num_trajectories,
-  cudf::column_view const& object_id,
-  cudf::column_view const& x,
-  cudf::column_view const& y,
-  cudf::column_view const& timestamp,
-  rmm::mr::device_memory_resource* mr)
+std::unique_ptr<cudf::table> trajectory_distances_and_speeds(cudf::size_type num_trajectories,
+                                                             cudf::column_view const& object_id,
+                                                             cudf::column_view const& x,
+                                                             cudf::column_view const& y,
+                                                             cudf::column_view const& timestamp,
+                                                             rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(
     x.size() == y.size() && x.size() == object_id.size() && x.size() == timestamp.size(),
@@ -257,7 +253,7 @@ std::unique_ptr<cudf::experimental::table> trajectory_distances_and_speeds(
     cols.reserve(2);
     cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::FLOAT64}));
     cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::FLOAT64}));
-    return std::make_unique<cudf::experimental::table>(std::move(cols));
+    return std::make_unique<cudf::table>(std::move(cols));
   }
 
   return detail::trajectory_distances_and_speeds(

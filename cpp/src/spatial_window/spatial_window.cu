@@ -65,14 +65,14 @@ struct spatial_window_filter {
 // Only floating point types are supported.
 struct spatial_window_dispatch {
   template <typename T, std::enable_if_t<std::is_floating_point<T>::value>* = nullptr>
-  std::unique_ptr<cudf::experimental::table> operator()(double window_min_x,
-                                                        double window_max_x,
-                                                        double window_min_y,
-                                                        double window_max_y,
-                                                        cudf::column_view const& x,
-                                                        cudf::column_view const& y,
-                                                        cudaStream_t stream,
-                                                        rmm::mr::device_memory_resource* mr)
+  std::unique_ptr<cudf::table> operator()(double window_min_x,
+                                          double window_max_x,
+                                          double window_min_y,
+                                          double window_max_y,
+                                          cudf::column_view const& x,
+                                          cudf::column_view const& y,
+                                          cudaStream_t stream,
+                                          rmm::mr::device_memory_resource* mr)
   {
     auto device_x = cudf::column_device_view::create(x, stream);
     auto device_y = cudf::column_device_view::create(y, stream);
@@ -91,7 +91,7 @@ struct spatial_window_dispatch {
   template <typename T,
             std::enable_if_t<not std::is_floating_point<T>::value>* = nullptr,
             typename... Args>
-  std::unique_ptr<cudf::experimental::table> operator()(Args&&...)
+  std::unique_ptr<cudf::table> operator()(Args&&...)
   {
     CUSPATIAL_FAIL("Only floating-point types supported");
   }
@@ -109,15 +109,14 @@ namespace detail {
  *
  * Detail version that takes a stream.
  */
-std::unique_ptr<cudf::experimental::table> points_in_spatial_window(
-  double window_min_x,
-  double window_max_x,
-  double window_min_y,
-  double window_max_y,
-  cudf::column_view const& x,
-  cudf::column_view const& y,
-  cudaStream_t stream,
-  rmm::mr::device_memory_resource* mr)
+std::unique_ptr<cudf::table> points_in_spatial_window(double window_min_x,
+                                                      double window_max_x,
+                                                      double window_min_y,
+                                                      double window_max_y,
+                                                      cudf::column_view const& x,
+                                                      cudf::column_view const& y,
+                                                      cudaStream_t stream,
+                                                      rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(x.type() == y.type(), "Type mismatch between x and y arrays");
   CUSPATIAL_EXPECTS(x.size() == y.size(), "Size mismatch between x and y arrays");
@@ -142,14 +141,13 @@ std::unique_ptr<cudf::experimental::table> points_in_spatial_window(
  * Return all points (x,y) that fall within a query window (x1,y1,x2,y2)
  * see query.hpp
  */
-std::unique_ptr<cudf::experimental::table> points_in_spatial_window(
-  double window_min_x,
-  double window_max_x,
-  double window_min_y,
-  double window_max_y,
-  cudf::column_view const& x,
-  cudf::column_view const& y,
-  rmm::mr::device_memory_resource* mr)
+std::unique_ptr<cudf::table> points_in_spatial_window(double window_min_x,
+                                                      double window_max_x,
+                                                      double window_min_y,
+                                                      double window_max_y,
+                                                      cudf::column_view const& x,
+                                                      cudf::column_view const& y,
+                                                      rmm::mr::device_memory_resource* mr)
 {
   return detail::points_in_spatial_window(
     window_min_x, window_max_x, window_min_y, window_max_y, x, y, 0, mr);
