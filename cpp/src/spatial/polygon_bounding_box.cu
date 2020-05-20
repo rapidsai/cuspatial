@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,10 @@ namespace {
 
 struct bounding_box_processor {
   template <typename T, std::enable_if_t<std::is_floating_point<T>::value> * = nullptr>
-  std::unique_ptr<cudf::experimental::table> operator()(const cudf::column_view &fpos,
-                                                        const cudf::column_view &rpos,
-                                                        const cudf::column_view &x,
-                                                        const cudf::column_view &y,
+  std::unique_ptr<cudf::experimental::table> operator()(cudf::column_view const &fpos,
+                                                        cudf::column_view const &rpos,
+                                                        cudf::column_view const &x,
+                                                        cudf::column_view const &y,
                                                         rmm::mr::device_memory_resource *mr,
                                                         cudaStream_t stream)
   {
@@ -231,10 +231,10 @@ struct bounding_box_processor {
   }
 
   template <typename T, std::enable_if_t<!std::is_floating_point<T>::value> * = nullptr>
-  std::unique_ptr<cudf::experimental::table> operator()(const cudf::column_view &fpos,
-                                                        const cudf::column_view &rpos,
-                                                        const cudf::column_view &x,
-                                                        const cudf::column_view &y,
+  std::unique_ptr<cudf::experimental::table> operator()(cudf::column_view const &fpos,
+                                                        cudf::column_view const &rpos,
+                                                        cudf::column_view const &x,
+                                                        cudf::column_view const &y,
                                                         rmm::mr::device_memory_resource *mr,
                                                         cudaStream_t stream)
   {
@@ -246,10 +246,11 @@ struct bounding_box_processor {
 
 namespace cuspatial {
 
-std::unique_ptr<cudf::experimental::table> polygon_bbox(const cudf::column_view &fpos,
-                                                        const cudf::column_view &rpos,
-                                                        const cudf::column_view &x,
-                                                        const cudf::column_view &y)
+std::unique_ptr<cudf::experimental::table> polygon_bbox(cudf::column_view const &fpos,
+                                                        cudf::column_view const &rpos,
+                                                        cudf::column_view const &x,
+                                                        cudf::column_view const &y,
+                                                        rmm::mr::device_memory_resource *mr)
 {
   CUDF_EXPECTS(fpos.size() > 0, "number of polygons must be greater than 0");
   CUDF_EXPECTS(rpos.size() >= fpos.size(),
@@ -258,11 +259,8 @@ std::unique_ptr<cudf::experimental::table> polygon_bbox(const cudf::column_view 
                "numbers of vertices must be the same for both x and y columns");
   CUDF_EXPECTS(x.size() >= 4 * rpos.size(), "all rings must have at least 4 vertices");
 
-  cudaStream_t stream                 = 0;
-  rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource();
-
   return cudf::experimental::type_dispatcher(
-    x.type(), bounding_box_processor{}, fpos, rpos, x, y, mr, stream);
+    x.type(), bounding_box_processor{}, fpos, rpos, x, y, mr, cudaStream_t{0});
 }
 
 }  // namespace cuspatial

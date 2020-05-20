@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -202,7 +202,8 @@ namespace cuspatial {
 std::unique_ptr<cudf::experimental::table> polyline_bbox(const cudf::column_view &spos,
                                                          const cudf::column_view &x,
                                                          const cudf::column_view &y,
-                                                         double R)
+                                                         double R,
+                                                         rmm::mr::device_memory_resource *mr)
 {
   CUDF_EXPECTS(spos.size() > 0, "number of polylines must be greater than 0");
   CUDF_EXPECTS(x.size() == y.size(),
@@ -210,11 +211,8 @@ std::unique_ptr<cudf::experimental::table> polyline_bbox(const cudf::column_view
   CUDF_EXPECTS(x.size() >= 2 * spos.size(), "all polylines must have at least 2 vertices");
   CUDF_EXPECTS(R >= 0, "expansion radius must be greater or equal than 0");
 
-  cudaStream_t stream                 = 0;
-  rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource();
-
   return cudf::experimental::type_dispatcher(
-    x.type(), bounding_box_processor{}, spos, x, y, R, mr, stream);
+    x.type(), bounding_box_processor{}, spos, x, y, R, mr, cudaStream_t{0});
 }
 
 }  // namespace cuspatial

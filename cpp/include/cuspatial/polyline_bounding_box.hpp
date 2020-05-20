@@ -16,25 +16,28 @@
 
 #pragma once
 
+#include <cudf/types.hpp>
+
+#include <memory>
+
 namespace cuspatial {
 
 /**
  * @brief compute bounding boxes (bboxes) of a set of polygons
  *
- * @param[in] spos: polyline offset array to vertices
- *
- * @param[in] x: polygon x coordiante array.
- *
- * @param[in] y: polygon y coordiante array.
- *
- * @param[in] R: expansion radius
+ * @param spos polyline offset array to vertices
+ * @param x polygon x coordiante array.
+ * @param y polygon y coordiante array.
+ * @param R expansion radius
  *
  * @return experimental::table with four arrays of bounding boxes, x1,y1,x2,y2.
  */
 
-std::unique_ptr<cudf::experimental::table> polyline_bbox(const cudf::column_view& spos,
-                                                         const cudf::column_view& x,
-                                                         const cudf::column_view& y,
-                                                         double R);
+std::unique_ptr<cudf::experimental::table> polyline_bbox(
+  cudf::column_view const& spos,
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  double R,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial
