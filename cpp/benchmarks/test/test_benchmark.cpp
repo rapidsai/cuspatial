@@ -30,23 +30,18 @@
 
 static void BM_test(benchmark::State& state)
 {
-  for (auto _ : state) {
-    cuda_event_timer raii(state, true);
-  }
+  for (auto _ : state) { cuda_event_timer raii(state, true); }
 }
 
 class Test : public cudf::benchmark {
 };
 
-#define DUMMY_BM_BENCHMARK_DEFINE(name)                             \
-  BENCHMARK_DEFINE_F(Test, name)(::benchmark::State & state)        \
-  {                                                                 \
-    BM_test(state);                                                 \
-  }                                                                 \
-  BENCHMARK_REGISTER_F(Test, name)                                  \
-    ->RangeMultiplier(32)                                           \
-    ->Range(1 << 10, 1 << 30)                                       \
-    ->UseManualTime()                                               \
+#define DUMMY_BM_BENCHMARK_DEFINE(name)                                          \
+  BENCHMARK_DEFINE_F(Test, name)(::benchmark::State & state) { BM_test(state); } \
+  BENCHMARK_REGISTER_F(Test, name)                                               \
+    ->RangeMultiplier(32)                                                        \
+    ->Range(1 << 10, 1 << 30)                                                    \
+    ->UseManualTime()                                                            \
     ->Unit(benchmark::kMillisecond);
 
 DUMMY_BM_BENCHMARK_DEFINE(test);

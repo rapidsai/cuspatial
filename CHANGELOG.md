@@ -2,8 +2,9 @@
 
 ## New Features
 
-- PR #179 Add Point in Polygon Notebook
+- PR #143 Support constructing quadtrees on point data
 - PR #182 Local gpuCI build script
+- PR #179 Add Point in Polygon Notebook
 
 
 ## Improvements
@@ -19,6 +20,7 @@
 - PR #174 Update hausdorff.hpp to libcudf++
 - PR #183 Add libcuspatial benchmark scaffolding
 - PR #186 Move haversine.hpp files to legacy
+- PR #194 Add .clang-format & format all files
 - PR #190 Port coordinate_transform.hpp cython files
 - PR #191 Move point_in_polygon.hpp files to legacy
 - PR #193 Move shapefile_readers.hpp files to legacy
@@ -34,6 +36,7 @@
 - PR #202 Update haversine cython to libcudf++
 - PR #204 Port shapefile_readers.hpp cython files
 - PR #205 Port hausdorff.hpp cython to libcudf++
+- PR #206 Remove legacy code.
 
 ## Bug Fixes
 

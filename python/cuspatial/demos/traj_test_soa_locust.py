@@ -9,7 +9,31 @@ import numpy as np
 import pandas as pd
 
 import cuspatial
-import cuspatial.utils.traj_utils as tools
+
+
+def get_ts_struct(ts):
+    y = ts & 0x3F
+    ts = ts >> 6
+    m = ts & 0xF
+    ts = ts >> 4
+    d = ts & 0x1F
+    ts = ts >> 5
+    hh = ts & 0x1F
+    ts = ts >> 5
+    mm = ts & 0x3F
+    ts = ts >> 6
+    ss = ts & 0x3F
+    ts = ts >> 6
+    wd = ts & 0x8
+    ts = ts >> 3
+    yd = ts & 0x1FF
+    ts = ts >> 9
+    ms = ts & 0x3FF
+    ts = ts >> 10
+    pid = ts & 0x3FF
+
+    return y, m, d, hh, mm, ss, wd, yd, ms, pid
+
 
 data_dir = "./data/"
 df = pd.read_csv(data_dir + "its_camera_2.csv")
@@ -28,14 +52,14 @@ print(out1)
 out2 = format(ts_0, "064b")
 print(out2)
 
-y, m, d, hh, mm, ss, wd, yd, ms, pid = tools.get_ts_struct(ts_0)
+y, m, d, hh, mm, ss, wd, yd, ms, pid = get_ts_struct(ts_0)
 
 xys = cuspatial.lonlat_to_cartesian(
     cam_lon, cam_lat, lonlats["lon"], lonlats["lat"]
 )
 num_traj, trajectories = cuspatial.derive(xys["x"], xys["y"], ids, ts)
 #  = num_traj, tid, len, pos =
-y, m, d, hh, mm, ss, wd, yd, ms, pid = tools.get_ts_struct(ts_0)
+y, m, d, hh, mm, ss, wd, yd, ms, pid = get_ts_struct(ts_0)
 distspeed = cuspatial.distance_and_speed(
     xys["x"], xys["y"], ts, trajectories["length"], trajectories["position"]
 )

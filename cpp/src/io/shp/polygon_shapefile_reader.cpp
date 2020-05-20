@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <cuspatial/error.hpp>
 #include <ogrsf_frmts.h>
+#include <cuspatial/error.hpp>
 
 #include <cudf/types.hpp>
 
@@ -29,15 +29,15 @@ cudf::size_type read_ring(OGRLinearRing const& ring,
                           std::vector<double>& xs,
                           std::vector<double>& ys)
 {
-    cudf::size_type num_vertices = ring.getNumPoints();
+  cudf::size_type num_vertices = ring.getNumPoints();
 
-    // append points in reverse order
-    for (cudf::size_type i = num_vertices - 1; i >= 0; i--) {
-        xs.push_back(ring.getX(i));
-        ys.push_back(ring.getY(i));
-    }
+  // append points in reverse order
+  for (cudf::size_type i = num_vertices - 1; i >= 0; i--) {
+    xs.push_back(ring.getX(i));
+    ys.push_back(ring.getY(i));
+  }
 
-    return num_vertices;
+  return num_vertices;
 }
 
 cudf::size_type read_polygon(OGRPolygon const& polygon,
@@ -45,47 +45,44 @@ cudf::size_type read_polygon(OGRPolygon const& polygon,
                              std::vector<double>& xs,
                              std::vector<double>& ys)
 {
-    auto num_vertices = read_ring(*(polygon.getExteriorRing()), xs, ys);
+  auto num_vertices = read_ring(*(polygon.getExteriorRing()), xs, ys);
+  ring_lengths.push_back(num_vertices);
+
+  cudf::size_type num_interior_rings = polygon.getNumInteriorRings();
+
+  for (cudf::size_type i = 0; i < num_interior_rings; i++) {
+    auto num_vertices = read_ring(*(polygon.getInteriorRing(i)), xs, ys);
     ring_lengths.push_back(num_vertices);
+  }
 
-    cudf::size_type num_interior_rings = polygon.getNumInteriorRings();
-
-    for (cudf::size_type i = 0; i < num_interior_rings; i++) {
-        auto num_vertices = read_ring(*(polygon.getInteriorRing(i)), xs, ys);
-        ring_lengths.push_back(num_vertices);
-    }
-
-    return 1 + num_interior_rings;
+  return 1 + num_interior_rings;
 }
 
 cudf::size_type read_geometry_feature(OGRGeometry const* geometry,
-                          std::vector<int>& ring_lengths,
-                          std::vector<double>& xs,
-                          std::vector<double>& ys)
+                                      std::vector<int>& ring_lengths,
+                                      std::vector<double>& xs,
+                                      std::vector<double>& ys)
 {
-    OGRwkbGeometryType geometry_type = wkbFlatten(geometry->getGeometryType());
+  OGRwkbGeometryType geometry_type = wkbFlatten(geometry->getGeometryType());
 
-    if (geometry_type == wkbPolygon) {
-        return read_polygon(*((OGRPolygon *) geometry), ring_lengths, xs, ys);
+  if (geometry_type == wkbPolygon) {
+    return read_polygon(*((OGRPolygon*)geometry), ring_lengths, xs, ys);
+  }
+
+  if (geometry_type == wkbMultiPolygon || geometry_type == wkbGeometryCollection) {
+    auto* geometry_collection = (OGRGeometryCollection*)geometry;
+
+    int num_rings = 0;
+
+    for (int i = 0; i < geometry_collection->getNumGeometries(); i++) {
+      num_rings +=
+        read_geometry_feature(geometry_collection->getGeometryRef(i), ring_lengths, xs, ys);
     }
 
-    if (geometry_type == wkbMultiPolygon || geometry_type == wkbGeometryCollection) {
-        auto* geometry_collection = (OGRGeometryCollection*) geometry;
+    return num_rings;
+  }
 
-        int num_rings = 0;
-
-        for (int i = 0; i < geometry_collection->getNumGeometries(); i++)
-        {
-            num_rings += read_geometry_feature(geometry_collection->getGeometryRef(i),
-                                               ring_lengths,
-                                               xs,
-                                               ys);
-        }
-
-        return num_rings;
-    }
-
-    CUSPATIAL_FAIL("Shapefile reader supports polygon geometry only");
+  CUSPATIAL_FAIL("Shapefile reader supports polygon geometry only");
 }
 
 cudf::size_type read_layer(const OGRLayerH layer,
@@ -94,31 +91,30 @@ cudf::size_type read_layer(const OGRLayerH layer,
                            std::vector<double>& xs,
                            std::vector<double>& ys)
 {
-    cudf::size_type num_features = 0;
+  cudf::size_type num_features = 0;
 
-    OGR_L_ResetReading(layer);
+  OGR_L_ResetReading(layer);
 
-    OGRFeatureH feature;
+  OGRFeatureH feature;
 
-    while ((feature = OGR_L_GetNextFeature(layer)) != nullptr)
-    {
-        auto geometry = (OGRGeometry*) OGR_F_GetGeometryRef(feature);
+  while ((feature = OGR_L_GetNextFeature(layer)) != nullptr) {
+    auto geometry = (OGRGeometry*)OGR_F_GetGeometryRef(feature);
 
-        CUSPATIAL_EXPECTS(geometry != nullptr, "Invalid Shape");
+    CUSPATIAL_EXPECTS(geometry != nullptr, "Invalid Shape");
 
-        auto num_rings = read_geometry_feature(geometry, ring_lengths, xs, ys);
+    auto num_rings = read_geometry_feature(geometry, ring_lengths, xs, ys);
 
-        feature_lengths.push_back(num_rings);
+    feature_lengths.push_back(num_rings);
 
-        OGR_F_Destroy(feature);
+    OGR_F_Destroy(feature);
 
-        num_features++;
-    }
+    num_features++;
+  }
 
-    return num_features;
+  return num_features;
 }
 
-} // namespace
+}  // namespace
 
 namespace cuspatial {
 namespace detail {
@@ -129,33 +125,31 @@ std::tuple<std::vector<cudf::size_type>,
            std::vector<double>>
 read_polygon_shapefile(std::string const& filename)
 {
-    GDALAllRegister();
+  GDALAllRegister();
 
-    GDALDatasetH dataset = GDALOpenEx(filename.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
+  GDALDatasetH dataset = GDALOpenEx(filename.c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr);
 
-    CUSPATIAL_EXPECTS(dataset != nullptr, "ESRI Shapefile: Failed to open file");
+  CUSPATIAL_EXPECTS(dataset != nullptr, "ESRI Shapefile: Failed to open file");
 
-    OGRLayerH dataset_layer = GDALDatasetGetLayer(dataset, 0);
+  OGRLayerH dataset_layer = GDALDatasetGetLayer(dataset, 0);
 
-    CUSPATIAL_EXPECTS(dataset_layer != nullptr, "ESRI Shapefile: Failed to read first layer");
+  CUSPATIAL_EXPECTS(dataset_layer != nullptr, "ESRI Shapefile: Failed to read first layer");
 
-    std::vector<cudf::size_type> feature_lengths;
-    std::vector<cudf::size_type> ring_lengths;
-    std::vector<double> xs;
-    std::vector<double> ys;
+  std::vector<cudf::size_type> feature_lengths;
+  std::vector<cudf::size_type> ring_lengths;
+  std::vector<double> xs;
+  std::vector<double> ys;
 
-    int num_features = read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys);
+  int num_features = read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys);
 
-    feature_lengths.shrink_to_fit();
-    ring_lengths.shrink_to_fit();
-    xs.shrink_to_fit();
-    ys.shrink_to_fit();
+  feature_lengths.shrink_to_fit();
+  ring_lengths.shrink_to_fit();
+  xs.shrink_to_fit();
+  ys.shrink_to_fit();
 
-    return std::make_tuple(std::move(feature_lengths),
-                           std::move(ring_lengths),
-                           std::move(xs),
-                           std::move(ys));
+  return std::make_tuple(
+    std::move(feature_lengths), std::move(ring_lengths), std::move(xs), std::move(ys));
 }
 
-} // namespace detail
-} // namespace cuspatial
+}  // namespace detail
+}  // namespace cuspatial
