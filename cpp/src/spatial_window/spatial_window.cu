@@ -76,16 +76,15 @@ struct spatial_window_dispatch {
   {
     auto device_x = cudf::column_device_view::create(x, stream);
     auto device_y = cudf::column_device_view::create(y, stream);
-    return cudf::experimental::detail::copy_if(
-      cudf::table_view{{x, y}},
-      spatial_window_filter<T>{static_cast<T>(window_min_x),
-                               static_cast<T>(window_max_x),
-                               static_cast<T>(window_min_y),
-                               static_cast<T>(window_max_y),
-                               *device_x,
-                               *device_y},
-      mr,
-      stream);
+    return cudf::detail::copy_if(cudf::table_view{{x, y}},
+                                 spatial_window_filter<T>{static_cast<T>(window_min_x),
+                                                          static_cast<T>(window_max_x),
+                                                          static_cast<T>(window_min_y),
+                                                          static_cast<T>(window_max_y),
+                                                          *device_x,
+                                                          *device_y},
+                                 mr,
+                                 stream);
   }
 
   template <typename T,
@@ -123,16 +122,16 @@ std::unique_ptr<cudf::table> points_in_spatial_window(double window_min_x,
 
   CUSPATIAL_EXPECTS(not(x.has_nulls() || y.has_nulls()), "NULL point data not supported");
 
-  return cudf::experimental::type_dispatcher(x.type(),
-                                             spatial_window_dispatch(),
-                                             window_min_x,
-                                             window_max_x,
-                                             window_min_y,
-                                             window_max_y,
-                                             x,
-                                             y,
-                                             stream,
-                                             mr);
+  return cudf::type_dispatcher(x.type(),
+                               spatial_window_dispatch(),
+                               window_min_x,
+                               window_max_x,
+                               window_min_y,
+                               window_max_y,
+                               x,
+                               y,
+                               stream,
+                               mr);
 }
 
 }  // namespace detail

@@ -279,27 +279,27 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(cudf::column_view const& q
                                                       rmm::mr::device_memory_resource* mr,
                                                       cudaStream_t stream)
 {
-  auto coefficient_indices = cudf::experimental::type_dispatcher(query_points.type(),
-                                                                 parallel_search{},
-                                                                 query_points,
-                                                                 curve_ids,
-                                                                 prefixes,
-                                                                 source_points,
-                                                                 mr,
-                                                                 stream);
+  auto coefficient_indices = cudf::type_dispatcher(query_points.type(),
+                                                   parallel_search{},
+                                                   query_points,
+                                                   curve_ids,
+                                                   prefixes,
+                                                   source_points,
+                                                   mr,
+                                                   stream);
   // TPRINT(coefficient_indices->mutable_view(), "parallel_search_");
   // TPRINT(query_points, "query_points_");
   // TPRINT(curve_ids, "curve_ids_");
   // TPRINT(prefixes, "prefixes_");
 
-  auto result = cudf::experimental::type_dispatcher(query_points.type(),
-                                                    interpolate{},
-                                                    query_points,
-                                                    curve_ids,
-                                                    coefficient_indices->view(),
-                                                    coefficients,
-                                                    mr,
-                                                    stream);
+  auto result = cudf::type_dispatcher(query_points.type(),
+                                      interpolate{},
+                                      query_points,
+                                      curve_ids,
+                                      coefficient_indices->view(),
+                                      coefficients,
+                                      mr,
+                                      stream);
   // TPRINT(query_points, "query_points_");
   // TPRINT(curve_ids, "curve_ids_");
   // TPRINT(prefixes, "prefixes_");
@@ -371,27 +371,27 @@ std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t
 
   auto zero = cudf::numeric_scalar<float>(0.0);
   auto one  = cudf::numeric_scalar<float>(1.0);
-  cudf::experimental::fill_in_place(h_buffer, 0, h_col->size(), zero);
-  cudf::experimental::fill_in_place(i_buffer, 0, i_col->size(), zero);
-  cudf::experimental::fill_in_place(D_buffer, 0, D_col->size(), one);
-  cudf::experimental::fill_in_place(Dlu_buffer, 0, Dlu_col->size(), zero);
-  cudf::experimental::fill_in_place(u_buffer, 0, u_col->size(), zero);
+  cudf::fill_in_place(h_buffer, 0, h_col->size(), zero);
+  cudf::fill_in_place(i_buffer, 0, i_col->size(), zero);
+  cudf::fill_in_place(D_buffer, 0, D_col->size(), one);
+  cudf::fill_in_place(Dlu_buffer, 0, Dlu_col->size(), zero);
+  cudf::fill_in_place(u_buffer, 0, u_col->size(), zero);
 
   // TPRINT(h_buffer, "h_zero");
   // TPRINT(D_buffer, "D_one");
   // TPRINT(Dlu_buffer, "Dlu_zero");
-  cudf::experimental::type_dispatcher(y.type(),
-                                      compute_spline_tridiagonals{},
-                                      t,
-                                      y,
-                                      prefixes,
-                                      D_buffer,
-                                      Dlu_buffer,
-                                      u_buffer,
-                                      h_buffer,
-                                      i_buffer,
-                                      mr,
-                                      stream);
+  cudf::type_dispatcher(y.type(),
+                        compute_spline_tridiagonals{},
+                        t,
+                        y,
+                        prefixes,
+                        D_buffer,
+                        Dlu_buffer,
+                        u_buffer,
+                        h_buffer,
+                        i_buffer,
+                        mr,
+                        stream);
 
   // TPRINT(h_buffer, "h_i");
   // TPRINT(i_buffer, "i_i");
@@ -454,20 +454,20 @@ std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t
   auto d1     = d1_col->mutable_view();
   auto d0     = d0_col->mutable_view();
 
-  cudf::experimental::type_dispatcher(y.type(),
-                                      coefficients_compute{},
-                                      t,
-                                      y,
-                                      prefixes,
-                                      h_buffer,
-                                      i_buffer,
-                                      u_buffer,
-                                      d3,
-                                      d2,
-                                      d1,
-                                      d0,
-                                      mr,
-                                      stream);
+  cudf::type_dispatcher(y.type(),
+                        coefficients_compute{},
+                        t,
+                        y,
+                        prefixes,
+                        h_buffer,
+                        i_buffer,
+                        u_buffer,
+                        d3,
+                        d2,
+                        d1,
+                        d0,
+                        mr,
+                        stream);
 
   // TPRINT(h_buffer, "h_buffer_");
   // TPRINT(i_buffer, "i_buffer_");

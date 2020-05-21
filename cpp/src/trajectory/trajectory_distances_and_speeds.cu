@@ -190,15 +190,15 @@ struct dispatch_element {
     rmm::mr::device_memory_resource* mr,
     cudaStream_t stream)
   {
-    return cudf::experimental::type_dispatcher(timestamp.type(),
-                                               dispatch_timestamp<Element>{},
-                                               num_trajectories,
-                                               object_id,
-                                               x,
-                                               y,
-                                               timestamp,
-                                               mr,
-                                               stream);
+    return cudf::type_dispatcher(timestamp.type(),
+                                 dispatch_timestamp<Element>{},
+                                 num_trajectories,
+                                 object_id,
+                                 x,
+                                 y,
+                                 timestamp,
+                                 mr,
+                                 stream);
   }
 
   template <typename Element>
@@ -226,7 +226,7 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(cudf::size_type num
                                                              rmm::mr::device_memory_resource* mr,
                                                              cudaStream_t stream)
 {
-  return cudf::experimental::type_dispatcher(
+  return cudf::type_dispatcher(
     x.type(), dispatch_element{}, num_trajectories, object_id, x, y, timestamp, mr, stream);
 }
 }  // namespace detail

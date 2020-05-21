@@ -314,19 +314,19 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   rmm::mr::device_memory_resource *mr,
   cudaStream_t stream)
 {
-  return cudf::experimental::type_dispatcher(x.type(),
-                                             dispatch_construct_quadtree{},
-                                             x,
-                                             y,
-                                             x_min,
-                                             x_max,
-                                             y_min,
-                                             y_max,
-                                             scale,
-                                             max_depth,
-                                             min_size,
-                                             mr,
-                                             stream);
+  return cudf::type_dispatcher(x.type(),
+                               dispatch_construct_quadtree{},
+                               x,
+                               y,
+                               x_min,
+                               x_max,
+                               y_min,
+                               y_max,
+                               scale,
+                               max_depth,
+                               min_size,
+                               mr,
+                               stream);
 }
 
 }  // namespace detail

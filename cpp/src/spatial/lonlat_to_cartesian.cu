@@ -59,7 +59,7 @@ struct lonlat_to_cartesian_functor {
     cudaStream_t stream)
   {
     auto size = input_lon.size();
-    auto tid  = cudf::experimental::type_to_id<T>();
+    auto tid  = cudf::type_to_id<T>();
     auto type = cudf::data_type{tid};
     auto output_x =
       cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
@@ -103,14 +103,14 @@ pair_of_columns lonlat_to_cartesian(double origin_lon,
                                     rmm::mr::device_memory_resource* mr,
                                     cudaStream_t stream)
 {
-  return cudf::experimental::type_dispatcher(input_lon.type(),
-                                             lonlat_to_cartesian_functor(),
-                                             origin_lon,
-                                             origin_lat,
-                                             input_lon,
-                                             input_lat,
-                                             mr,
-                                             stream);
+  return cudf::type_dispatcher(input_lon.type(),
+                               lonlat_to_cartesian_functor(),
+                               origin_lon,
+                               origin_lat,
+                               input_lon,
+                               input_lat,
+                               mr,
+                               stream);
 }
 
 }  // namespace detail

@@ -46,7 +46,7 @@ struct dispatch_element {
     auto policy = rmm::exec_policy(stream);
 
     // Construct output columns
-    auto type = cudf::data_type{cudf::experimental::type_to_id<Element>()};
+    auto type = cudf::data_type{cudf::type_to_id<Element>()};
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(4);
     // allocate bbox_x1 output column
@@ -125,7 +125,7 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(cudf::size_type num_traje
                                                        rmm::mr::device_memory_resource* mr,
                                                        cudaStream_t stream)
 {
-  return cudf::experimental::type_dispatcher(
+  return cudf::type_dispatcher(
     x.type(), dispatch_element{}, num_trajectories, object_id, x, y, mr, stream);
 }
 }  // namespace detail
@@ -145,10 +145,10 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(cudf::size_type num_traje
   if (num_trajectories == 0 || object_id.is_empty() || x.is_empty() || y.is_empty()) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(4);
-    cols.push_back(cudf::experimental::empty_like(x));
-    cols.push_back(cudf::experimental::empty_like(y));
-    cols.push_back(cudf::experimental::empty_like(x));
-    cols.push_back(cudf::experimental::empty_like(y));
+    cols.push_back(cudf::empty_like(x));
+    cols.push_back(cudf::empty_like(y));
+    cols.push_back(cudf::empty_like(x));
+    cols.push_back(cudf::empty_like(y));
     return std::make_unique<cudf::table>(std::move(cols));
   }
 
