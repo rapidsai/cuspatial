@@ -239,7 +239,7 @@ struct dispatch_construct_quadtree {
   inline std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::experimental::table>>
   operator()(Args &&...)
   {
-    CUDF_FAIL("Only floating-point types are supported");
+    CUSPATIAL_FAIL("Only floating-point types are supported");
   }
 
   template <typename T, std::enable_if_t<std::is_floating_point<T>::value> * = nullptr>
