@@ -23,19 +23,23 @@
 namespace cuspatial {
 
 /**
- * @brief compute bounding boxes (bboxes) of a set of polygons
+ * @brief Compute bounding boxes for a set of polygons
  *
- * @param fpos: feature/polygon offset array to rings
- * @param rpos: ring offset array to vertex
- * @param x: polygon x coordiante array.
- * @param y: polygon y coordiante array.
+ * @param poly_offsets polygon to first ring offset
+ * @param ring_offsets ring to first point offset
+ * @param x polygon x-coordinates
+ * @param y polygon y-coordinates
  *
- * @return cudf table with four arrays of bounding boxes, x1, y1, x2, y2.
+ * @return a cudf table of bounding boxes as four columns of the same type as `x` and `y`:
+ * x1 - the lower-left x-coordinate of each bounding box
+ * y1 - the lower-left y-coordinate of each bounding box
+ * x2 - the upper-right x-coordinate of each bounding box
+ * y2 - the upper-right y-coordinate of each bounding box
  */
 
-std::unique_ptr<cudf::experimental::table> polygon_bbox(
-  cudf::column_view const& fpos,
-  cudf::column_view const& rpos,
+std::unique_ptr<cudf::experimental::table> polygon_bounding_boxes(
+  cudf::column_view const& poly_offsets,
+  cudf::column_view const& ring_offsets,
   cudf::column_view const& x,
   cudf::column_view const& y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
