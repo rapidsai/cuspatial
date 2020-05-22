@@ -57,8 +57,8 @@ TYPED_TEST(BoundingBoxTest, test_one)
 
   double const R{0};
   fixed_width_column_wrapper<int32_t> poly_offsets({0});
-  fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
-  fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599, 5.856625});
+  fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720});
+  fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599});
 
   auto bboxes = cuspatial::polyline_bounding_boxes(poly_offsets, x, y, R, this->mr());
 
