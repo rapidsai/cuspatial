@@ -56,11 +56,8 @@ inline std::unique_ptr<cudf::column> make_fixed_width_column(
   cudaStream_t stream                 = 0,
   rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource())
 {
-  return cudf::make_fixed_width_column(cudf::data_type{cudf::experimental::type_to_id<T>()},
-                                       size,
-                                       cudf::mask_state::UNALLOCATED,
-                                       stream,
-                                       mr);
+  return cudf::make_fixed_width_column(
+    cudf::data_type{cudf::type_to_id<T>()}, size, cudf::mask_state::UNALLOCATED, stream, mr);
 }
 
 }  // namespace detail
