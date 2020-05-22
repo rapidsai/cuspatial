@@ -52,6 +52,7 @@
 - PR #199 Fix coordinate transform tests
 - PR #212 Rename calls to cudf::experimental namespace to cudf::
 - PR #215 Replace legacy RMM calls
+- PR #218 Fix benchmark build by removing test_benchmark.cpp
 
 
 # cuSpatial 0.13.0 (31 Mar 2020)
