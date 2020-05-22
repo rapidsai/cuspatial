@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cudf/types.h>
+#include <cudf/types.hpp>
 #include <memory>
 
 namespace cuspatial {
