@@ -107,7 +107,7 @@ struct hausdorff_functor {
     rmm::mr::device_memory_resource* mr,
     cudaStream_t stream)
   {
-    auto tid    = cudf::experimental::type_to_id<T>();
+    auto tid    = cudf::type_to_id<T>();
     auto result = cudf::make_fixed_width_column(cudf::data_type{tid},
                                                 points_per_space.size() * points_per_space.size(),
                                                 cudf::mask_state::UNALLOCATED,
@@ -166,7 +166,7 @@ std::unique_ptr<cudf::column> directed_hausdorff_distance(cudf::column_view cons
 
   cudaStream_t stream = 0;
 
-  return cudf::experimental::type_dispatcher(
+  return cudf::type_dispatcher(
     xs.type(), hausdorff_functor(), xs, ys, points_per_space, mr, stream);
 }
 
