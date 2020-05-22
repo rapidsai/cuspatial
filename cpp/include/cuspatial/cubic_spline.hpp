@@ -72,9 +72,8 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(cudf::column_view const& q
  *
  * @return cudf::column `y` coordinates interpolated from `x` and `coefs`.
  **/
-std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
-  cudf::column_view const& t,
-  cudf::column_view const& y,
-  cudf::column_view const& ids,
-  cudf::column_view const& offsets);
+std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t,
+                                                      cudf::column_view const& y,
+                                                      cudf::column_view const& ids,
+                                                      cudf::column_view const& offsets);
 }  // namespace cuspatial

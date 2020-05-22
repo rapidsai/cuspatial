@@ -43,6 +43,8 @@
 - PR #178 Fix broken haversine tests introduced by upstream CUDF PRs.
 - PR #175 Address RMM API changes by eliminating the use of the RMM_API
 - PR #199 Fix coordinate transform tests
+- PR #212 Rename calls to cudf::experimental namespace to cudf::
+- PR #215 Replace legacy RMM calls
 
 
 # cuSpatial 0.13.0 (31 Mar 2020)
