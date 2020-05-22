@@ -25,10 +25,10 @@ namespace cuspatial {
 /**
  * @brief Compute bounding boxes for a set of polygons
  *
- * @param poly_offsets polygon to first ring offset
- * @param ring_offsets ring to first point offset
- * @param x polygon x-coordinates
- * @param y polygon y-coordinates
+ * @param poly_offsets Polygon to first ring offset
+ * @param ring_offsets Ring to first point offset
+ * @param x Polygon x-coordinates
+ * @param y Polygon y-coordinates
  *
  * @return a cudf table of bounding boxes as four columns of the same type as `x` and `y`:
  * x1 - the lower-left x-coordinate of each bounding box

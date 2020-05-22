@@ -23,18 +23,22 @@
 namespace cuspatial {
 
 /**
- * @brief compute bounding boxes (bboxes) of a set of polygons
+ * @brief Compute bounding boxes of a set of polylines
  *
- * @param spos polyline offset array to vertices
- * @param x polygon x coordiante array.
- * @param y polygon y coordiante array.
- * @param R expansion radius
+ * @param poly_offsets Polyline offset array to vertices
+ * @param x Polygon x-coordinates
+ * @param y Polygon y-coordinates
+ * @param R Expansion radius
  *
- * @return experimental::table with four arrays of bounding boxes, x1,y1,x2,y2.
+ * @return a cudf table of bounding boxes as four columns of the same type as `x` and `y`:
+ * x1 - the lower-left x-coordinate of each bounding box
+ * y1 - the lower-left y-coordinate of each bounding box
+ * x2 - the upper-right x-coordinate of each bounding box
+ * y2 - the upper-right y-coordinate of each bounding box
  */
 
-std::unique_ptr<cudf::experimental::table> polyline_bbox(
-  cudf::column_view const& spos,
+std::unique_ptr<cudf::experimental::table> polyline_bounding_boxes(
+  cudf::column_view const& poly_offsets,
   cudf::column_view const& x,
   cudf::column_view const& y,
   double R,
