@@ -68,10 +68,10 @@ struct haversine_functor {
     cudaStream_t stream,
     rmm::mr::device_memory_resource* mr)
   {
-    if (a_lon.is_empty()) { return cudf::experimental::empty_like(a_lon); }
+    if (a_lon.is_empty()) { return cudf::empty_like(a_lon); }
 
-    auto mask_policy = cudf::experimental::mask_allocation_policy::NEVER;
-    auto result      = cudf::experimental::allocate_like(a_lon, a_lon.size(), mask_policy);
+    auto mask_policy = cudf::mask_allocation_policy::NEVER;
+    auto result      = cudf::allocate_like(a_lon, a_lon.size(), mask_policy);
 
     auto input_tuple = thrust::make_tuple(thrust::make_constant_iterator(static_cast<T>(radius)),
                                           a_lon.begin<T>(),
@@ -125,7 +125,7 @@ std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
     a_lat.size() == a_lon.size() and b_lon.size() == a_lon.size() and b_lat.size() == a_lon.size(),
     "coordinates must have the same size.");
 
-  return cudf::experimental::type_dispatcher(
+  return cudf::type_dispatcher(
     a_lon.type(), haversine_functor{}, a_lon, a_lat, b_lon, b_lat, radius, stream, mr);
 }
 

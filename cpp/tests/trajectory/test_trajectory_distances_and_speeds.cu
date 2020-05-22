@@ -66,7 +66,7 @@ TYPED_TEST(TrajectoryDistanceSpeedTest, ComputeDistanceAndSpeedForThreeTrajector
   auto test_data = cuspatial::test::make_test_trajectories_table<T>(1000, this->mr());
 
   std::unique_ptr<cudf::column> offsets;
-  std::unique_ptr<cudf::experimental::table> sorted;
+  std::unique_ptr<cudf::table> sorted;
 
   std::tie(sorted, offsets) = cuspatial::experimental::derive_trajectories(test_data->get_column(0),
                                                                            test_data->get_column(1),

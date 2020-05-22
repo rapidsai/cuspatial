@@ -54,16 +54,16 @@ namespace cuspatial {
  *  length - INT32 column for the number of child nodes (if is_node), or number of points
  *  offset - INT32 column for the first child position (if is_node), or first point position
  */
-std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::experimental::table>>
-quadtree_on_points(cudf::column_view const& x,
-                   cudf::column_view const& y,
-                   double x_min,
-                   double x_max,
-                   double y_min,
-                   double y_max,
-                   double scale,
-                   cudf::size_type max_depth,
-                   cudf::size_type min_size,
-                   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_on_points(
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  double x_min,
+  double x_max,
+  double y_min,
+  double y_max,
+  double scale,
+  cudf::size_type max_depth,
+  cudf::size_type min_size,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial
