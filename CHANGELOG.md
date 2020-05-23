@@ -34,6 +34,7 @@
 - PR #204 Port shapefile_readers.hpp cython files
 - PR #205 Port hausdorff.hpp cython to libcudf++
 - PR #206 Remove legacy code.
+- PR #214 Install gdal>=3.0.2 in build.sh
 
 ## Bug Fixes
 
