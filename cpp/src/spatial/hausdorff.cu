@@ -41,18 +41,6 @@ constexpr auto magnitude_squared(T a, T b) {
     return a * a + b * b;
 }
 
-template<typename Iterator>
-void print_table(Iterator source, size_type rows, size_type columns)
-{
-    for (size_type row = 0; row < rows; row++) {
-        for (size_type col = 0; col < columns; col++) {
-            auto idx = (col * rows) + row;
-            std::cout << std::setprecision(4) << std::fixed << *(source + idx) << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
 template<typename T>
 auto make_column(
     size_type size,
@@ -86,8 +74,6 @@ struct distance_functor
         auto b_y = ys.element<T>(col);
 
         return hypot(b_x - a_x, b_y - a_y);
-
-        // return (row + 1) * 10 + (col + 1);
     }
 };
 
@@ -102,20 +88,6 @@ struct min_key_functor
         size_type row = idx % num_points;
         size_type col = idx / num_points;
         return thrust::make_tuple(*(space_lookup + row), col);
-    }
-};
-
-template<typename T, typename SpaceLookup>
-struct max_key_functor
-{
-    size_type num_spaces;
-    SpaceLookup space_lookup;
-
-    position __device__ operator() (size_type idx)
-    {
-        // auto row = idx % num_spaces;
-        // auto col = idx / num_spaces;
-        return thrust::make_tuple(0, *(space_lookup + idx));
     }
 };
 
@@ -163,8 +135,6 @@ struct hausdorff_functor
 
         // ===== Make Lookup ======================================================================
 
-        std::cout << "===== Lookup =================================================" << std::endl;
-
         auto temp_space_lookup = rmm::device_vector<size_type>(num_points);
 
         thrust::scatter(
@@ -184,16 +154,12 @@ struct hausdorff_functor
 
         rmm::device_vector<size_type> h_temp_space_lookup = temp_space_lookup;
 
-        print_table(h_temp_space_lookup.begin(), 1, num_points);
-
 
         auto count = thrust::make_counting_iterator<size_type>(0);
         auto lookup_count = thrust::make_transform_iterator(count, [num_points]__device__(size_type idx) { return idx % num_points; });
         auto lookup = thrust::make_permutation_iterator(temp_space_lookup.begin(), lookup_count);
 
         // ===== Make Cartesian ===================================================================
-
-        std::cout << "===== Cartesian ==============================================" << std::endl;
 
         auto num_cartesian = num_points * num_points;
         auto temp_cartesian = rmm::device_vector<T>(num_cartesian);
@@ -210,11 +176,7 @@ struct hausdorff_functor
 
         thrust::host_vector<T> h_temp_cartesian = temp_cartesian;
 
-        print_table(h_temp_cartesian.begin(), num_points, num_points);
-
         // ===== Make Min Reduction ===============================================================
-
-        std::cout << "===== Min Reduction ==========================================" << std::endl;
 
         auto num_minimums = num_spaces * num_points;
         auto temp_minimums = rmm::device_vector<T>(num_minimums);
@@ -226,8 +188,8 @@ struct hausdorff_functor
 
         thrust::reduce_by_key(
             rmm::exec_policy(stream)->on(stream),
-            min_key_iter,
-            min_key_iter + num_cartesian,
+            lookup,
+            lookup + num_cartesian,
             temp_cartesian.begin(),
             thrust::discard_iterator<position>(),
             temp_minimums.begin(),
@@ -246,11 +208,7 @@ struct hausdorff_functor
             temp_cartesian.begin()
         );
 
-        print_table(h_temp_minimums.begin(), num_spaces, num_points);
-
         // ===== Make Max Reduction ===============================================================
-
-        std::cout << "===== Max Reduction ==========================================" << std::endl;
 
         rmm::device_vector<T> temp_maximums(num_results);
 
@@ -261,11 +219,6 @@ struct hausdorff_functor
             (size_type idx) { return (idx * num_spaces) % (num_points * num_spaces) + (idx * num_spaces) / (num_points * num_spaces); });
 
         auto temp_minimums_trans = thrust::make_permutation_iterator(temp_minimums.begin(), perm);
-
-        // auto max_key_iter = thrust::make_transform_iterator(
-        //     count,
-        //     max_key_functor<T, decltype(lookup)>{num_spaces, lookup}
-        // );
 
         thrust::reduce_by_key(
             rmm::exec_policy(stream)->on(stream),
@@ -279,10 +232,6 @@ struct hausdorff_functor
         );
 
         thrust::host_vector<T> h_temp_maximums = temp_maximums;
-
-        print_table(h_temp_maximums.begin(), num_spaces, num_spaces);
-
-        std::cout << "===== Return =================================================" << std::endl;
 
         auto result = make_column<T>(num_results, stream, mr);
 
