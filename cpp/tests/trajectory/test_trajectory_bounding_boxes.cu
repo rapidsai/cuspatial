@@ -20,35 +20,37 @@
 #include "tests/trajectory/trajectory_utilities.cuh"
 
 template <typename T>
-struct TrajectoryBoundingBoxesTest : public cudf::test::BaseFixture {};
+struct TrajectoryBoundingBoxesTest : public cudf::test::BaseFixture {
+};
 
 TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, cudf::test::FloatingPointTypes);
 
 constexpr cudf::size_type size{1000};
 
-TYPED_TEST(TrajectoryBoundingBoxesTest,
-           ComputeBoundingBoxesForThreeTrajectories) {
+TYPED_TEST(TrajectoryBoundingBoxesTest, ComputeBoundingBoxesForThreeTrajectories)
+{
   using T = TypeParam;
 
-  auto test_data =
-      cuspatial::test::make_test_trajectories_table<T>(size, this->mr());
+  auto test_data = cuspatial::test::make_test_trajectories_table<T>(size, this->mr());
 
   std::unique_ptr<cudf::column> offsets;
-  std::unique_ptr<cudf::experimental::table> sorted;
+  std::unique_ptr<cudf::table> sorted;
 
-  std::tie(sorted, offsets) = cuspatial::experimental::derive_trajectories(
-      test_data->get_column(0), test_data->get_column(1),
-      test_data->get_column(2), test_data->get_column(3), this->mr());
+  std::tie(sorted, offsets) = cuspatial::experimental::derive_trajectories(test_data->get_column(0),
+                                                                           test_data->get_column(1),
+                                                                           test_data->get_column(2),
+                                                                           test_data->get_column(3),
+                                                                           this->mr());
 
   auto id = sorted->get_column(0);
   auto xs = sorted->get_column(1);
   auto ys = sorted->get_column(2);
 
-  auto bounding_boxes = cuspatial::experimental::trajectory_bounding_boxes(
-      offsets->size(), id, xs, ys, this->mr());
+  auto bounding_boxes =
+    cuspatial::experimental::trajectory_bounding_boxes(offsets->size(), id, xs, ys, this->mr());
 
-  auto h_xs = cudf::test::to_host<T>(xs).first;
-  auto h_ys = cudf::test::to_host<T>(ys).first;
+  auto h_xs      = cudf::test::to_host<T>(xs).first;
+  auto h_ys      = cudf::test::to_host<T>(ys).first;
   auto h_offsets = cudf::test::to_host<int32_t>(*offsets).first;
 
   std::vector<T> bbox_x1(h_offsets.size());
@@ -83,14 +85,10 @@ TYPED_TEST(TrajectoryBoundingBoxesTest,
   auto y1_actual = bounding_boxes->get_column(1);
   auto x2_actual = bounding_boxes->get_column(2);
   auto y2_actual = bounding_boxes->get_column(3);
-  cudf::test::fixed_width_column_wrapper<T> x1_expected(bbox_x1.begin(),
-                                                        bbox_x1.end());
-  cudf::test::fixed_width_column_wrapper<T> y1_expected(bbox_y1.begin(),
-                                                        bbox_y1.end());
-  cudf::test::fixed_width_column_wrapper<T> x2_expected(bbox_x2.begin(),
-                                                        bbox_x2.end());
-  cudf::test::fixed_width_column_wrapper<T> y2_expected(bbox_y2.begin(),
-                                                        bbox_y2.end());
+  cudf::test::fixed_width_column_wrapper<T> x1_expected(bbox_x1.begin(), bbox_x1.end());
+  cudf::test::fixed_width_column_wrapper<T> y1_expected(bbox_y1.begin(), bbox_y1.end());
+  cudf::test::fixed_width_column_wrapper<T> x2_expected(bbox_x2.begin(), bbox_x2.end());
+  cudf::test::fixed_width_column_wrapper<T> y2_expected(bbox_y2.begin(), bbox_y2.end());
 
   cudf::test::expect_columns_equivalent(x1_actual, x1_expected);
   cudf::test::expect_columns_equivalent(y1_actual, y1_expected);

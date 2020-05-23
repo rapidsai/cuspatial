@@ -60,7 +60,7 @@ auto make_column(
     rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource()
 )
 {
-    auto tid = cudf::experimental::type_to_id<T>();
+    auto tid = cudf::type_to_id<T>();
 
     return cudf::make_fixed_width_column(
         cudf::data_type{ tid },
@@ -320,8 +320,8 @@ directed_hausdorff_distance(cudf::column_view const& xs,
 
     cudaStream_t stream = 0;
 
-    return cudf::experimental::type_dispatcher(xs.type(), hausdorff_functor(),
-                                               xs, ys, points_per_space, mr, stream);
+    return cudf::type_dispatcher(xs.type(), hausdorff_functor(),
+                                 xs, ys, points_per_space, mr, stream);
 }
 
 } // namespace cuspatial

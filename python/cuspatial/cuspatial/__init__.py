@@ -5,6 +5,7 @@ from .core.gis import (
     lonlat_to_cartesian,
     point_in_polygon,
 )
+from .core.indexing import quadtree_on_points
 from .core.interpolate import CubicSpline
 from .core.spatial_window import points_in_spatial_window
 from .core.trajectory import (
