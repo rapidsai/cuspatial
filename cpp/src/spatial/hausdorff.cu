@@ -77,31 +77,6 @@ struct distance_functor
     }
 };
 
-template<typename T, typename SpaceLookup>
-struct min_key_functor
-{
-    size_type num_points;
-    SpaceLookup space_lookup;
-
-    position __device__ operator() (size_type idx)
-    {
-        size_type row = idx % num_points;
-        size_type col = idx / num_points;
-        return thrust::make_tuple(*(space_lookup + row), col);
-    }
-};
-
-template<typename T>
-struct repr_key
-{
-    T __device__ operator()(position idx){
-
-        auto row = thrust::get<0>(idx);
-        auto col = thrust::get<1>(idx);
-        return row * 10 + col + 11;
-    }
-};
-
 struct hausdorff_functor
 {
     template<typename T, typename... Args>
@@ -128,11 +103,6 @@ struct hausdorff_functor
             return make_column<T>(0, stream, mr);
         }
 
-        // ===== Make Device ======================================================================
-
-        auto d_xs = cudf::column_device_view::create(xs);
-        auto d_ys = cudf::column_device_view::create(ys);
-
         // ===== Make Lookup ======================================================================
 
         auto temp_space_lookup = rmm::device_vector<size_type>(num_points);
@@ -152,73 +122,54 @@ struct hausdorff_functor
             temp_space_lookup.begin()
         );
 
-        rmm::device_vector<size_type> h_temp_space_lookup = temp_space_lookup;
-
-
         auto count = thrust::make_counting_iterator<size_type>(0);
-        auto lookup_count = thrust::make_transform_iterator(count, [num_points]__device__(size_type idx) { return idx % num_points; });
+        auto lookup_count = thrust::make_transform_iterator(
+          count,
+          [num_points]
+          __device__
+          (size_type idx) { return idx % num_points; }
+        );
         auto lookup = thrust::make_permutation_iterator(temp_space_lookup.begin(), lookup_count);
 
-        // ===== Make Cartesian ===================================================================
+        // ===== Make Cartesian Distances =========================================================
+
+        auto d_xs = cudf::column_device_view::create(xs);
+        auto d_ys = cudf::column_device_view::create(ys);
 
         auto num_cartesian = num_points * num_points;
-        auto temp_cartesian = rmm::device_vector<T>(num_cartesian);
-
         auto selector = distance_functor<T>{ *d_xs, *d_ys };
-
-        thrust::transform(
-            rmm::exec_policy(stream)->on(stream),
-            thrust::make_counting_iterator(0),
-            thrust::make_counting_iterator(0) + num_cartesian,
-            temp_cartesian.begin(),
-            selector
-        );
-
-        thrust::host_vector<T> h_temp_cartesian = temp_cartesian;
+        auto cartesian_source = thrust::make_transform_iterator(count, selector);
 
         // ===== Make Min Reduction ===============================================================
 
         auto num_minimums = num_spaces * num_points;
         auto temp_minimums = rmm::device_vector<T>(num_minimums);
 
-        auto min_key_iter = thrust::make_transform_iterator(
-            count,
-            min_key_functor<T, decltype(lookup)>{num_points, lookup}
-        );
-
         thrust::reduce_by_key(
             rmm::exec_policy(stream)->on(stream),
             lookup,
             lookup + num_cartesian,
-            temp_cartesian.begin(),
+            cartesian_source,
             thrust::discard_iterator<position>(),
             temp_minimums.begin(),
             thrust::equal_to<position>(),
             thrust::minimum<T>()
         );
 
-        thrust::host_vector<T> h_temp_minimums = temp_minimums;
-
-        auto min_key_repr_iter = thrust::make_transform_iterator(min_key_iter, repr_key<size_type>{});
-
-        thrust::copy(
-            rmm::exec_policy(stream)->on(stream),
-            min_key_repr_iter,
-            min_key_repr_iter + num_cartesian,
-            temp_cartesian.begin()
-        );
-
         // ===== Make Max Reduction ===============================================================
-
-        rmm::device_vector<T> temp_maximums(num_results);
 
         auto perm = thrust::make_transform_iterator(
             count,
             [num_spaces, num_points]
             __device__
-            (size_type idx) { return (idx * num_spaces) % (num_points * num_spaces) + (idx * num_spaces) / (num_points * num_spaces); });
+            (size_type idx) {
+              return (idx * num_spaces) % (num_points * num_spaces) +
+                     (idx * num_spaces) / (num_points * num_spaces);
+            });
 
         auto temp_minimums_trans = thrust::make_permutation_iterator(temp_minimums.begin(), perm);
+
+        auto result = make_column<T>(num_results, stream, mr);
 
         thrust::reduce_by_key(
             rmm::exec_policy(stream)->on(stream),
@@ -226,20 +177,9 @@ struct hausdorff_functor
             lookup + num_minimums,
             temp_minimums_trans,
             thrust::discard_iterator<position>(),
-            temp_maximums.begin(),
+            result->mutable_view().template begin<T>(),
             thrust::equal_to<position>(),
             thrust::maximum<T>()
-        );
-
-        thrust::host_vector<T> h_temp_maximums = temp_maximums;
-
-        auto result = make_column<T>(num_results, stream, mr);
-
-        thrust::copy(
-            rmm::exec_policy(stream)->on(stream),
-            temp_maximums.begin(),
-            temp_maximums.end(),
-            result->mutable_view().template begin<T>()
         );
 
         return result;
