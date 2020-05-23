@@ -37,7 +37,7 @@ std::unique_ptr<cudf::column> make_column(std::vector<T> source,
                                           cudaStream_t stream,
                                           rmm::mr::device_memory_resource* mr)
 {
-  auto tid    = cudf::experimental::type_to_id<T>();
+  auto tid    = cudf::type_to_id<T>();
   auto type   = cudf::data_type{tid};
   auto buffer = rmm::device_buffer(source.data(), sizeof(T) * source.size(), stream, mr);
   return std::make_unique<cudf::column>(type, source.size(), buffer);

@@ -35,21 +35,20 @@ namespace cuspatial {
 namespace experimental {
 namespace detail {
 
-std::pair<std::unique_ptr<cudf::experimental::table>, std::unique_ptr<cudf::column>>
-derive_trajectories(cudf::column_view const& object_id,
-                    cudf::column_view const& x,
-                    cudf::column_view const& y,
-                    cudf::column_view const& timestamp,
-                    rmm::mr::device_memory_resource* mr,
-                    cudaStream_t stream)
+std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_trajectories(
+  cudf::column_view const& object_id,
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  cudf::column_view const& timestamp,
+  rmm::mr::device_memory_resource* mr,
+  cudaStream_t stream)
 {
-  auto sorted =
-    cudf::experimental::detail::sort_by_key(cudf::table_view{{object_id, x, y, timestamp}},
-                                            cudf::table_view{{object_id, timestamp}},
-                                            {},
-                                            {},
-                                            mr,
-                                            stream);
+  auto sorted = cudf::detail::sort_by_key(cudf::table_view{{object_id, x, y, timestamp}},
+                                          cudf::table_view{{object_id, timestamp}},
+                                          {},
+                                          {},
+                                          mr,
+                                          stream);
 
   auto policy    = rmm::exec_policy(stream);
   auto sorted_id = sorted->get_column(0).view();
@@ -74,12 +73,12 @@ derive_trajectories(cudf::column_view const& object_id,
 }
 }  // namespace detail
 
-std::pair<std::unique_ptr<cudf::experimental::table>, std::unique_ptr<cudf::column>>
-derive_trajectories(cudf::column_view const& object_id,
-                    cudf::column_view const& x,
-                    cudf::column_view const& y,
-                    cudf::column_view const& timestamp,
-                    rmm::mr::device_memory_resource* mr)
+std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_trajectories(
+  cudf::column_view const& object_id,
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  cudf::column_view const& timestamp,
+  rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(
     x.size() == y.size() && x.size() == object_id.size() && x.size() == timestamp.size(),
@@ -92,11 +91,11 @@ derive_trajectories(cudf::column_view const& object_id,
   if (object_id.is_empty() || x.is_empty() || y.is_empty() || timestamp.is_empty()) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(4);
-    cols.push_back(cudf::experimental::empty_like(object_id));
-    cols.push_back(cudf::experimental::empty_like(x));
-    cols.push_back(cudf::experimental::empty_like(y));
-    cols.push_back(cudf::experimental::empty_like(timestamp));
-    return std::make_pair(std::make_unique<cudf::experimental::table>(std::move(cols)),
+    cols.push_back(cudf::empty_like(object_id));
+    cols.push_back(cudf::empty_like(x));
+    cols.push_back(cudf::empty_like(y));
+    cols.push_back(cudf::empty_like(timestamp));
+    return std::make_pair(std::make_unique<cudf::table>(std::move(cols)),
                           cudf::make_empty_column(cudf::data_type{cudf::INT32}));
   }
   return detail::derive_trajectories(object_id, x, y, timestamp, mr, 0);

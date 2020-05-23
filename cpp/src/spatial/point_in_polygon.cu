@@ -114,7 +114,7 @@ struct point_in_polygon_functor {
                                            cudaStream_t stream)
   {
     auto size = test_points_x.size();
-    auto tid  = cudf::experimental::type_to_id<int32_t>();
+    auto tid  = cudf::type_to_id<int32_t>();
     auto type = cudf::data_type{tid};
     auto results =
       cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
@@ -123,7 +123,7 @@ struct point_in_polygon_functor {
 
     constexpr cudf::size_type block_size = 256;
 
-    cudf::experimental::detail::grid_1d grid{results->size(), block_size, 1};
+    cudf::detail::grid_1d grid{results->size(), block_size, 1};
 
     auto kernel = point_in_polygon_kernel<T>;
 
@@ -158,16 +158,16 @@ std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_poi
                                                rmm::mr::device_memory_resource* mr,
                                                cudaStream_t stream)
 {
-  return cudf::experimental::type_dispatcher(test_points_x.type(),
-                                             point_in_polygon_functor(),
-                                             test_points_x,
-                                             test_points_y,
-                                             poly_offsets,
-                                             poly_ring_offsets,
-                                             poly_points_x,
-                                             poly_points_y,
-                                             mr,
-                                             stream);
+  return cudf::type_dispatcher(test_points_x.type(),
+                               point_in_polygon_functor(),
+                               test_points_x,
+                               test_points_y,
+                               poly_offsets,
+                               poly_ring_offsets,
+                               poly_points_x,
+                               poly_points_y,
+                               mr,
+                               stream);
 }
 
 }  // namespace detail
