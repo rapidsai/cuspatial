@@ -86,8 +86,6 @@ inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_vector<uint32_t> 
     auto quad_point_pos = compute_flattened_first_point_positions(
       quad_keys, quad_levels, quad_point_count, *is_node, num_valid_nodes, max_depth, stream);
 
-    // rmm::device_vector<uint32_t> quad_child_pos(num_valid_nodes);
-
     auto quad_child_pos = make_fixed_width_column<int32_t>(num_valid_nodes, stream, mr);
     // line 9 of algorithm in Fig. 5 in ref.
     thrust::replace_if(rmm::exec_policy(stream)->on(stream),
