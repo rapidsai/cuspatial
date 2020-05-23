@@ -29,7 +29,6 @@
 #include <cuspatial/trajectory.hpp>
 
 namespace cuspatial {
-namespace experimental {
 
 namespace {
 
@@ -260,5 +259,4 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(cudf::size_type num
     num_trajectories, object_id, x, y, timestamp, mr, 0);
 }
 
-}  // namespace experimental
 }  // namespace cuspatial

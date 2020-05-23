@@ -53,13 +53,12 @@ struct point_to_square {
 };
 
 template <typename T>
-std::unique_ptr<cudf::experimental::table> compute_polyline_bounding_boxes(
-  cudf::column_view const &poly_offsets,
-  cudf::column_view const &x,
-  cudf::column_view const &y,
-  T R,
-  rmm::mr::device_memory_resource *mr,
-  cudaStream_t stream)
+std::unique_ptr<cudf::table> compute_polyline_bounding_boxes(cudf::column_view const &poly_offsets,
+                                                             cudf::column_view const &x,
+                                                             cudf::column_view const &y,
+                                                             T R,
+                                                             rmm::mr::device_memory_resource *mr,
+                                                             cudaStream_t stream)
 {
   auto num_polygons = poly_offsets.size();
   rmm::device_vector<int32_t> point_ids(x.size());
@@ -77,7 +76,7 @@ std::unique_ptr<cudf::experimental::table> compute_polyline_bounding_boxes(
                          point_ids.begin(),
                          thrust::maximum<int32_t>());
 
-  auto type = cudf::data_type{cudf::experimental::type_to_id<T>()};
+  auto type = cudf::data_type{cudf::type_to_id<T>()};
   std::vector<std::unique_ptr<cudf::column>> cols{};
   cols.reserve(4);
   cols.push_back(
@@ -117,21 +116,19 @@ std::unique_ptr<cudf::experimental::table> compute_polyline_bounding_boxes(
                                                     max(max_y_a, max_y_b));  // max_y
                         });
 
-  return std::make_unique<cudf::experimental::table>(std::move(cols));
+  return std::make_unique<cudf::table>(std::move(cols));
 }
 
 struct dispatch_compute_polyline_bounding_boxes {
   template <typename T, typename... Args>
-  inline std::enable_if_t<!std::is_floating_point<T>::value,
-                          std::unique_ptr<cudf::experimental::table>>
+  inline std::enable_if_t<!std::is_floating_point<T>::value, std::unique_ptr<cudf::table>>
   operator()(Args &&...)
   {
     CUSPATIAL_FAIL("Only floating-point types are supported");
   }
 
   template <typename T>
-  inline std::enable_if_t<std::is_floating_point<T>::value,
-                          std::unique_ptr<cudf::experimental::table>>
+  inline std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::table>>
   operator()(cudf::column_view const &poly_offsets,
              cudf::column_view const &x,
              cudf::column_view const &y,
@@ -147,32 +144,30 @@ struct dispatch_compute_polyline_bounding_boxes {
 
 namespace detail {
 
-std::unique_ptr<cudf::experimental::table> polyline_bounding_boxes(
-  cudf::column_view const &poly_offsets,
-  cudf::column_view const &x,
-  cudf::column_view const &y,
-  double R,
-  rmm::mr::device_memory_resource *mr,
-  cudaStream_t stream)
+std::unique_ptr<cudf::table> polyline_bounding_boxes(cudf::column_view const &poly_offsets,
+                                                     cudf::column_view const &x,
+                                                     cudf::column_view const &y,
+                                                     double R,
+                                                     rmm::mr::device_memory_resource *mr,
+                                                     cudaStream_t stream)
 {
-  return cudf::experimental::type_dispatcher(x.type(),
-                                             dispatch_compute_polyline_bounding_boxes{},
-                                             poly_offsets,
-                                             x,
-                                             y,
-                                             R,
-                                             mr,
-                                             cudaStream_t{0});
+  return cudf::type_dispatcher(x.type(),
+                               dispatch_compute_polyline_bounding_boxes{},
+                               poly_offsets,
+                               x,
+                               y,
+                               R,
+                               mr,
+                               cudaStream_t{0});
 }
 
 }  // namespace detail
 
-std::unique_ptr<cudf::experimental::table> polyline_bounding_boxes(
-  cudf::column_view const &poly_offsets,
-  cudf::column_view const &x,
-  cudf::column_view const &y,
-  double R,
-  rmm::mr::device_memory_resource *mr)
+std::unique_ptr<cudf::table> polyline_bounding_boxes(cudf::column_view const &poly_offsets,
+                                                     cudf::column_view const &x,
+                                                     cudf::column_view const &y,
+                                                     double R,
+                                                     rmm::mr::device_memory_resource *mr)
 {
   CUSPATIAL_EXPECTS(x.type() == y.type(), "Data type mismatch");
   CUSPATIAL_EXPECTS(x.size() == y.size(), "x and y must be the same size");
@@ -184,11 +179,11 @@ std::unique_ptr<cudf::experimental::table> polyline_bounding_boxes(
   if (poly_offsets.is_empty() || x.is_empty() || y.is_empty()) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(4);
-    cols.push_back(cudf::experimental::empty_like(x));
-    cols.push_back(cudf::experimental::empty_like(y));
-    cols.push_back(cudf::experimental::empty_like(x));
-    cols.push_back(cudf::experimental::empty_like(y));
-    return std::make_unique<cudf::experimental::table>(std::move(cols));
+    cols.push_back(cudf::empty_like(x));
+    cols.push_back(cudf::empty_like(y));
+    cols.push_back(cudf::empty_like(x));
+    cols.push_back(cudf::empty_like(y));
+    return std::make_unique<cudf::table>(std::move(cols));
   }
   return detail::polyline_bounding_boxes(poly_offsets, x, y, R, mr, cudaStream_t{0});
 }
