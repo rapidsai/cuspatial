@@ -21,53 +21,61 @@ def directed_hausdorff_distance(xs, ys, points_per_space):
     """Compute the directed Hausdorff distances between all pairs of
     spaces.
 
-    params
-    xs: x-coordinates
-    ys: y-coordinates
-    points_per_space: number of points in each space
-
     Parameters
     ----------
-    {params}
+    xs
+        column of x-coordinates
+    ys
+        column of y-coordinates
+    points_per_space
+        number of points in each space
 
-    Example
+    Returns
     -------
+    result : cudf.DataFrame
+        The pairwise directed distance matrix with one row and one
+        column per input space; the value at row i, column j represents the
+        hausdorff distance from space i to space j.
+
+    Examples
+    --------
     The directed Hausdorff distance from one space to another is the greatest
     of all the distances between any point in the first space to the closest
     point in the second.
 
-    [Wikipedia](https://en.wikipedia.org/wiki/Hausdorff_distance)
+    `Wikipedia <https://en.wikipedia.org/wiki/Hausdorff_distance>`_
 
-    Consider a pair of lines on a grid.
+    Consider a pair of lines on a grid::
 
-     |
-     o
-    -oxx-
-     |
-    o = [[0, 0], [0, 1]]
-    x = [[1, 0], [2, 0]]
+             :
+             x
+        -----xyy---
+             :
+             :
 
-    o[0] is the closest point in o to x. The distance from o[0] to the farthest
-    point in x = 2.
-    x[0] is the closest point in x to o. The distance from x[0] to the farthest
-    point in o = 1.414.
+    x\\ :sub:`0` = (0, 0), x\\ :sub:`1` = (0, 1)
 
-        result = cuspatial.directed_hausdorff_distance(
-            cudf.Series([0, 1, 0, 0]),
-            cudf.Series([0, 0, 1, 2]),
-            cudf.Series([2, 2,]),
+    y\\ :sub:`0` = (1, 0), y\\ :sub:`1` = (2, 0)
+
+    x\\ :sub:`0` is the closest point in ``x`` to ``y``. The distance from
+    x\\ :sub:`0` to the farthest point in ``y`` is 2.
+
+    y\\ :sub:`0` is the closest point in ``y`` to ``x``. The distance from
+    y\\ :sub:`0` to the farthest point in ``x`` is 1.414.
+
+    Compute the directed hausdorff distances between a set of spaces
+
+    >>> result = cuspatial.directed_hausdorff_distance(
+            [0, 1, 0, 0], # xs
+            [0, 0, 1, 2], # ys
+            [2,    2],    # points_per_space
         )
-        print(result)
+    >>> print(result)
              0         1
         0  0.0  1.414214
         1  2.0  0.000000
-
-    Returns
-    -------
-    DataFrame: The pairwise directed distance matrix with one row and one
-    column per input space; the value at row i, column j represents the
-    hausdorff distance from space i to space j.
     """
+
     num_spaces = len(points_per_space)
     if num_spaces == 0:
         return DataFrame()
@@ -84,19 +92,23 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
     """ Compute the haversine distances between an arbitrary list of lon/lat
     pairs
 
-    params
-    p1_lon: longitude of first set of coords
-    p1_lat: latitude of first set of coords
-    p2_lon: longitude of second set of coords
-    p2_lat: latitude of second set of coords
-
     Parameters
     ----------
-    {params}
+    p1_lon
+        longitude of first set of coords
+    p1_lat
+        latitude of first set of coords
+    p2_lon
+        longitude of second set of coords
+    p2_lat
+        latitude of second set of coords
 
-    returns
-    Series: distance between all pairs of lat/lon coords
+    Returns
+    -------
+    result : cudf.Series
+        The distance between all pairs of lat/lon coordinates
     """
+
     p1_lon, p1_lat, p2_lon, p2_lat = normalize_point_columns(
         as_column(p1_lon),
         as_column(p1_lat),
@@ -107,21 +119,28 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
 
 
 def lonlat_to_cartesian(origin_lon, origin_lat, input_lon, input_lat):
-    """ Convert lonlat coordinates to km x,y coordinates based on some camera
-    origin.
-
-    params
-    origin_lon: float64 - longitude camera
-    origin_lat: float64 - latitude camera
-    input_lon: Series of longitude coords to convert to x
-    input_lat: Series of latitude coords to convert to y
+    """
+    Convert lon/lat coordinates to kilometer x,y coordinates with respect to
+    an origin camera position.
 
     Parameters
     ----------
-    {params}
+    origin_lon : ``number``
+        camera longitude
+    origin_lat : ``number``
+        camera latitude
+    input_lon : ``Series`` or ``list``
+        longitude coordinates to convert to x
+    input_lat : ``Series`` or ``list``
+        latitude coordinates to convert to y
 
-    returns
-    DataFrame: 'x', 'y' columns for new km positions of coords
+    Returns
+    -------
+    result : cudf.DataFrame
+        x : cudf.Series
+            x-coordinate of the new positions in kilometers
+        y : cudf.Series
+            y-coordinate of the new positions in kilometers
     """
     result = cpp_lonlat_to_cartesian(
         origin_lon, origin_lat, input_lon._column, input_lat._column
@@ -142,51 +161,55 @@ def point_in_polygon(
     closed polygons: the first and last coordinate of each polygon must be
     the same.
 
-    params
-    test_points_x: x-coordinate of test points
-    test_points_y: y-coordinate of test points
-    poly_offsets: beginning index of the first ring in each polygon
-    poly_ring_offsets: beginning index of the first point in each ring
-    poly_points_x: x closed-coordinate of polygon points
-    poly_points_y: y closed-coordinate of polygon points
-
     Parameters
     ----------
-    {params}
+    test_points_x
+        x-coordinate of test points
+    test_points_y
+        y-coordinate of test points
+    poly_offsets
+        beginning index of the first ring in each polygon
+    poly_ring_offsets
+        beginning index of the first point in each ring
+    poly_points_x
+        x closed-coordinate of polygon points
+    poly_points_y
+        y closed-coordinate of polygon points
 
     Examples
     --------
-        result = cuspatial.point_in_polygon(
-            cudf.Series([0, -8, 6.0]]), # x coordinates of 3 query points
-            cudf.Series([0, -8, 6.0]), # y coordinates of 3 query points
-            cudf.Series([1, 2], index=['nyc', 'dc']), # ring positions of
-                    # two polygons each with one ring
-            cudf.Series([4, 8]), # positions of last vertex in each ring
-            # polygon coordinates, x and y. Note [-10, -10] and [0, 0] repeat
-            # the start/end coordinate of the two polygons.
-            cudf.Series([-10, 5, 5, -10, -10, 0, 10, 10, 0, 0]),
-            cudf.Series([-10, -10, 5, 5, -10, 0, 0, 10, 10, 0]),
-        )
-        # The result of point_in_polygon is a DataFrame of Boolean
-        # values indicating whether each point (rows) falls within
-        # each polygon (columns).
-        print(result)
-                    nyc            dc
-        0          True          True
-        1          True         False
-        2         False          True
 
-        # Point 0: (0, 0) falls in both polygons
-        # Point 1: (-8, -8) falls in the first polygon
-        # Point 2: (6.0, 6.0) falls in the second polygon
+    Test whether 3 points fall within either of two polygons
+
+    >>> result = cuspatial.point_in_polygon(
+        [0, -8, 6.0],                             # test_points_x
+        [0, -8, 6.0],                             # test_points_y
+        cudf.Series([0, 1], index=['nyc', 'dc']), # poly_offsets
+        [0, 3],                                   # ring_offsets
+        [-10, 5, 5, -10, 0, 10, 10, 0],           # poly_points_x
+        [-10, -10, 5, 5, 0, 0, 10, 10],           # poly_points_y
+    )
+    # The result of point_in_polygon is a DataFrame of Boolean
+    # values indicating whether each point (rows) falls within
+    # each polygon (columns).
+    >>> print(result)
+                nyc            dc
+    0          True          True
+    1          True         False
+    2         False          True
+    # Point 0: (0, 0) falls in both polygons
+    # Point 1: (-8, -8) falls in the first polygon
+    # Point 2: (6.0, 6.0) falls in the second polygon
 
     note
     input Series x and y will not be index aligned, but computed as
     sequential arrays.
 
-    returns
-    DataFrame: a DataFrame of Boolean values indicating whether each point
-    falls within each polygon.
+    Returns
+    -------
+    result : cudf.DataFrame
+        A DataFrame of boolean values indicating whether each point falls
+        within each polygon.
     """
 
     if len(poly_offsets) == 0:
