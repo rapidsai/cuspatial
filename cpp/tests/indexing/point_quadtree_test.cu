@@ -190,7 +190,7 @@ TEST_F(QuadtreeOnPointIndexingTest, test_all_top_level_quads)
 {
   using namespace cudf::test;
 
-  const uint32_t max_depth = 1;
+  const uint32_t max_depth = 2;
   uint32_t min_size        = 1;
 
   double scale = 1.0;

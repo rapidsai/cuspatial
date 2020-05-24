@@ -292,16 +292,16 @@ inline auto make_full_levels(cudf::column_view const &x,
   // This allows us to avoid building the "full" quads for each level only to turn around and
   // remove them for having no children. This scenario causes the `thrust::transform` call in
   // `construct_non_leaf_indicator()` to launch on zero elements.
-  if (num_top_quads >= static_cast<cudf::size_type>(quad_keys.size())) {
-    return std::make_tuple(std::move(point_indices),
-                           std::move(quad_keys),
-                           std::move(quad_point_count),
-                           std::move(rmm::device_vector<uint32_t>(0)),
-                           std::move(rmm::device_vector<int8_t>(0)),
-                           num_top_quads,
-                           0,
-                           0);
-  }
+  // if (num_top_quads >= static_cast<cudf::size_type>(quad_keys.size())) {
+  //   return std::make_tuple(std::move(point_indices),
+  //                          std::move(quad_keys),
+  //                          std::move(quad_point_count),
+  //                          std::move(rmm::device_vector<uint32_t>(0)),
+  //                          std::move(rmm::device_vector<int8_t>(0)),
+  //                          num_top_quads,
+  //                          0,
+  //                          0);
+  // }
 
   // Repurpose the `point_keys` vector now the points have been grouped into the
   // leaf quadrants
