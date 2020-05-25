@@ -33,6 +33,6 @@ cpdef quadtree_on_points(Column x, Column y,
         Column.from_unique_ptr(move(result.first)),
         Table.from_unique_ptr(
             move(result.second),
-            column_names=["key", "level", "is_node", "length", "offset"]
+            column_names=["key", "level", "is_quad", "length", "offset"]
         )
     )
