@@ -186,7 +186,7 @@ TEST_F(QuadtreeOnPointIndexingTest, test_small)
        fixed_width_column_wrapper<int32_t>({3, 6, 60, 0, 8, 10, 36, 12, 7, 16, 23, 28, 45, 53})}});
 }
 
-TEST_F(QuadtreeOnPointIndexingTest, test_all_top_level_quads)
+TEST_F(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
 {
   using namespace cudf::test;
 
