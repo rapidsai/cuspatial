@@ -307,6 +307,10 @@ inline auto make_full_levels(cudf::column_view const &x,
   // leaf quadrants
   auto &quad_child_count = point_keys;
 
+  quad_keys.resize(num_top_quads * (max_depth + 1));
+  quad_point_count.resize(num_top_quads * (max_depth + 1));
+  quad_child_count.resize(num_top_quads * (max_depth + 1));
+
   //
   // Compute "full" quads for the tree at each level. Starting from the quadrant
   // at the bottom (at the finest level of detail), aggregates the number of
