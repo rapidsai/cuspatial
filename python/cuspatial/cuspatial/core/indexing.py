@@ -1,5 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+import warnings
+
 from cudf.core import DataFrame, Series
 from cudf.core.column import as_column
 
@@ -48,17 +50,17 @@ def quadtree_on_points(
                 An int32 column of quadrant keys
             level       : cudf.Series(dtype=np.int8)
                 An int8 column of quadtree levels
-            is_node     : cudf.Series(dtype=np.bool_)
-                A boolean column indicating whether the node is a leaf or not
+            is_quad     : cudf.Series(dtype=np.bool_)
+                A boolean column indicating whether the node is a quad or leaf
             length      : cudf.Series(dtype=np.int32)
-                If this is a non-leaf quadrant (i.e. ``is_node`` is ``True``),
+                If this is a non-leaf quadrant (i.e. ``is_quad`` is ``True``),
                 this column's value is the number of children in the non-leaf
                 quadrant.
 
                 Otherwise this column's value is the number of points
                 contained in the leaf quadrant.
             offset      : cudf.Series(dtype=np.int32)
-                If this is a non-leaf quadrant (i.e. ``is_node`` is ``True``),
+                If this is a non-leaf quadrant (i.e. ``is_quad`` is ``True``),
                 this column's value is the position of the non-leaf quadrant's
                 first child.
 
@@ -87,37 +89,36 @@ def quadtree_on_points(
                                           points["y"].min(),
                                           points["x"].max(),
                                           points["y"].max())
-        >>> scale = max(abs(max_x - min_x),
-                        abs(max_y - min_y)) // (1 << max_depth)
+        >>> scale = max(max_x - min_x, max_y - min_y) // (1 << max_depth)
         >>> print(
                 "min_size:   " + str(min_size) + "\\n"
                 "num_points: " + str(len(points)) + "\\n"
-                "min_x:      " + str(min_x - scale) + "\\n"
-                "min_y:      " + str(min_y - scale) + "\\n"
-                "max_x:      " + str(max_x + scale) + "\\n"
-                "max_y:      " + str(max_y + scale) + "\\n"
+                "min_x:      " + str(min_x) + "\\n"
+                "max_x:      " + str(max_x) + "\\n"
+                "min_y:      " + str(min_y) + "\\n"
+                "max_y:      " + str(max_y) + "\\n"
                 "scale:      " + str(scale) + "\\n"
             )
         min_size:   50
         num_points: 120
         min_x:      -1577.4949079170394
-        min_y:      -1412.7015761122134
         max_x:      1435.877311993804
+        min_y:      -1412.7015761122134
         max_y:      1492.572387431971
         scale:      301.0
 
         >>> key_to_point, quadtree = cuspatial.quadtree_on_points(
-                points["x"],    # x
-                points["y"],    # y
-                min_x - scale,  # min_x
-                max_x + scale,  # max_x
-                min_y - scale,  # min_y
-                max_y + scale,  # max_y
+                points["x"],
+                points["y"],
+                min_x,
+                max_x,
+                min_y,
+                max_y,
                 scale, max_depth, min_size
             )
 
         >>> print(quadtree)
-            key  level  is_node  length  offset
+            key  level  is_quad  length  offset
         0     0      0    False      15       0
         1     1      0    False      27      15
         2     2      0    False      12      42
@@ -147,15 +148,28 @@ def quadtree_on_points(
     """
 
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
-
-    key_to_point, quadtree = cpp_quadtree_on_points(
-        xs,
-        ys,
+    x_min, x_max, y_min, y_max = (
         min(x_min, x_max),
         max(x_min, x_max),
         min(y_min, y_max),
         max(y_min, y_max),
-        scale,
+    )
+
+    min_scale = max(x_max - x_min, y_max - y_min) / ((1 << max_depth) + 2)
+    if scale < min_scale:
+        warnings.warn(
+            "scale {} is less than required minimum ".format(scale)
+            + "scale {}. Clamping to minimum scale".format(min_scale)
+        )
+
+    key_to_point, quadtree = cpp_quadtree_on_points(
+        xs,
+        ys,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        max(scale, min_scale),
         max_depth,
         min_size,
     )

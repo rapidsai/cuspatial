@@ -185,3 +185,39 @@ TEST_F(QuadtreeOnPointIndexingTest, test_small)
        fixed_width_column_wrapper<int32_t>({3, 2, 11, 7, 2, 2, 9, 2, 9, 7, 5, 8, 8, 7}),
        fixed_width_column_wrapper<int32_t>({3, 6, 60, 0, 8, 10, 36, 12, 7, 16, 23, 28, 45, 53})}});
 }
+
+TEST_F(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
+{
+  using namespace cudf::test;
+
+  const uint32_t max_depth = 2;
+  uint32_t min_size        = 1;
+
+  double x_min = -1000.0;
+  double x_max = 1000.0;
+  double y_min = -1000.0;
+  double y_max = 1000.0;
+  double scale = std::max(x_max - x_min, y_max - y_min) / static_cast<double>((1 << max_depth) + 2);
+
+  fixed_width_column_wrapper<double> x({-100.0, 100.0});
+  fixed_width_column_wrapper<double> y({-100.0, 100.0});
+
+  auto pair =
+    cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
+  auto &quadtree = std::get<1>(pair);
+
+  CUSPATIAL_EXPECTS(
+    quadtree->num_columns() == 5,
+    "a quadtree table must have 5 columns (keys, levels, is_node, lengths, offsets)");
+
+  CUSPATIAL_EXPECTS(quadtree->num_rows() == 3, "the resulting quadtree must have 3 quadrants");
+
+  // the top level quadtree node is expected to have a value of
+  // ([3, 12, 15], [0, 1, 1], [1, 0, 0], [2, 1, 1], [1, 0, 1])
+  expect_tables_equal(*quadtree,
+                      cudf::table_view{{fixed_width_column_wrapper<int32_t>({3, 12, 15}),
+                                        fixed_width_column_wrapper<int8_t>({0, 1, 1}),
+                                        fixed_width_column_wrapper<bool>({1, 0, 0}),
+                                        fixed_width_column_wrapper<int32_t>({2, 1, 1}),
+                                        fixed_width_column_wrapper<int32_t>({1, 0, 1})}});
+}

@@ -35,6 +35,7 @@
 - PR #205 Port hausdorff.hpp cython to libcudf++
 - PR #206 Remove legacy code.
 - PR #214 Install gdal>=3.0.2 in build.sh
+- PR #222 Fix potential thrust launch failure in quadtree building
 - PR #221 Add python methods to api.rst, fix formatting
 
 ## Bug Fixes
