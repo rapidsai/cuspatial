@@ -235,12 +235,6 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
   cudf::size_type level_1_size,
   cudaStream_t stream)
 {
-  std::cerr << "min_size: " << min_size << std::endl;
-  std::cerr << "level_1_size: " << level_1_size << std::endl;
-  std::cerr << "quadtree_size: " << quad_keys.size() << std::endl;
-  std::cerr << "num_child_nodes: " << num_child_nodes << std::endl;
-  std::cerr << "num_parent_nodes: " << num_parent_nodes << std::endl;
-
   // compute parent node start positions
   auto parent_positions =
     compute_parent_positions(quad_child_count, num_parent_nodes, num_child_nodes, stream);
@@ -256,8 +250,6 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
                      parent_point_counts + (num_parent_nodes - level_1_size),
                      // i.e. quad_point_count[parent_pos] <= min_size
                      [min_size] __device__(auto const n) { return n <= min_size; });
-
-  std::cerr << "num_invalid_parent_nodes: " << num_invalid_parent_nodes << std::endl;
 
   // line 4 of algorithm in Fig. 5 in ref.
   // revision to line 4: copy unnecessary if using permutation_iterator stencil
@@ -281,8 +273,6 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
 
   // add the number of level 1 nodes back in to num_valid_nodes
   auto num_valid_nodes = thrust::distance(tree, last_valid) + level_1_size;
-
-  std::cerr << "num_valid_nodes: " << num_valid_nodes << std::endl;
 
   quad_keys.resize(num_valid_nodes);
   quad_keys.shrink_to_fit();

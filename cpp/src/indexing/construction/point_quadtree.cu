@@ -312,8 +312,6 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   rmm::mr::device_memory_resource *mr,
   cudaStream_t stream)
 {
-  auto min_scale = std::max(std::abs(x_max - x_min), std::abs(y_max - y_min)) /
-                   static_cast<double>((1 << max_depth) + 2);
   return cudf::type_dispatcher(x.type(),
                                dispatch_construct_quadtree{},
                                x,
@@ -322,7 +320,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
                                x_max,
                                y_min,
                                y_max,
-                               std::max(min_scale, scale),
+                               scale,
                                max_depth,
                                min_size,
                                mr,
