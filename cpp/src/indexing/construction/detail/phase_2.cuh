@@ -73,14 +73,14 @@ inline rmm::device_vector<uint32_t> flatten_point_keys(
                     keys_and_levels + num_valid_nodes,
                     flattened_keys.begin(),
                     [last_level = max_depth - 1] __device__(auto const &val) {
-                      bool is_node{false};
+                      bool is_quad{false};
                       uint32_t key{}, level{};
-                      thrust::tie(key, level, is_node) = val;
+                      thrust::tie(key, level, is_quad) = val;
                       // if this is a parent node, return max_key. otherwise
                       // compute the key for one level up the tree. Leaf nodes
                       // whose keys are zero will be removed in a subsequent
                       // step
-                      return is_node ? 0xFFFFFFFF : (key << (2 * (last_level - level)));
+                      return is_quad ? 0xFFFFFFFF : (key << (2 * (last_level - level)));
                     });
   flattened_keys.shrink_to_fit();
   return flattened_keys;
@@ -287,7 +287,7 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
 }
 
 /**
- * @brief Construct the `is_node` BOOL8 column indicating whether a quadtree entry is a node or leaf
+ * @brief Construct the `is_quad` BOOL8 column indicating whether a quadtree entry is a node or leaf
  *
  * @param quad_point_count
  * @param num_parent_nodes
@@ -307,20 +307,20 @@ inline std::unique_ptr<cudf::column> construct_non_leaf_indicator(
 {
   //
   // Construct the indicator output column
-  auto is_node = make_fixed_width_column<bool>(num_valid_nodes, stream, mr);
+  auto is_quad = make_fixed_width_column<bool>(num_valid_nodes, stream, mr);
 
   // line 6 of algorithm in Fig. 5 in ref.
   thrust::transform(rmm::exec_policy(stream)->on(stream),
                     quad_point_count.begin(),
                     quad_point_count.begin() + num_parent_nodes,
-                    is_node->mutable_view().begin<bool>(),
+                    is_quad->mutable_view().begin<bool>(),
                     thrust::placeholders::_1 > min_size);
 
   // line 7 of algorithm in Fig. 5 in ref.
   thrust::replace_if(rmm::exec_policy(stream)->on(stream),
                      quad_point_count.begin(),
                      quad_point_count.begin() + num_parent_nodes,
-                     is_node->view().begin<bool>(),
+                     is_quad->view().begin<bool>(),
                      thrust::placeholders::_1,
                      0);
 
@@ -328,12 +328,12 @@ inline std::unique_ptr<cudf::column> construct_non_leaf_indicator(
     // zero-fill the rest of the indicator column because
     // device_memory_resources aren't required to initialize allocations
     thrust::fill(rmm::exec_policy(stream)->on(stream),
-                 is_node->mutable_view().begin<bool>() + num_parent_nodes,
-                 is_node->mutable_view().end<bool>(),
+                 is_quad->mutable_view().begin<bool>() + num_parent_nodes,
+                 is_quad->mutable_view().end<bool>(),
                  0);
   }
 
-  return is_node;
+  return is_quad;
 }
 
 }  // namespace detail

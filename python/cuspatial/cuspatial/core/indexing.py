@@ -20,7 +20,7 @@ def quadtree_on_points(
     Parameters
     ----------
     {params}
-    quadtree  : DataFrame of key, level, is_node, length, and offset columns
+    quadtree  : DataFrame of key, level, is_quad, length, and offset columns
     """
 
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
