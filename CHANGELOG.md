@@ -35,6 +35,8 @@
 - PR #204 Port shapefile_readers.hpp cython files
 - PR #205 Port hausdorff.hpp cython to libcudf++
 - PR #206 Remove legacy code.
+- PR #214 Install gdal>=3.0.2 in build.sh
+- PR #222 Fix potential thrust launch failure in quadtree building
 
 ## Bug Fixes
 
@@ -45,6 +47,7 @@
 - PR #199 Fix coordinate transform tests
 - PR #212 Rename calls to cudf::experimental namespace to cudf::
 - PR #215 Replace legacy RMM calls
+- PR #218 Fix benchmark build by removing test_benchmark.cpp
 
 
 # cuSpatial 0.13.0 (31 Mar 2020)

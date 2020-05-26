@@ -1,5 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+import warnings
+
 from cudf.core import DataFrame, Series
 from cudf.core.column import as_column
 
@@ -18,19 +20,32 @@ def quadtree_on_points(
     Parameters
     ----------
     {params}
-    quadtree  : DataFrame of key, level, is_node, length, and offset columns
+    quadtree  : DataFrame of key, level, is_quad, length, and offset columns
     """
 
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
-
-    points_order, quadtree = cpp_quadtree_on_points(
-        xs,
-        ys,
+    x_min, x_max, y_min, y_max = (
         min(x_min, x_max),
         max(x_min, x_max),
         min(y_min, y_max),
         max(y_min, y_max),
-        scale,
+    )
+
+    min_scale = max(x_max - x_min, y_max - y_min) / ((1 << max_depth) + 2)
+    if scale < min_scale:
+        warnings.warn(
+            "scale {} is less than required minimum ".format(scale)
+            + "scale {}. Clamping to minimum scale".format(min_scale)
+        )
+
+    points_order, quadtree = cpp_quadtree_on_points(
+        xs,
+        ys,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        max(scale, min_scale),
         max_depth,
         min_size,
     )
