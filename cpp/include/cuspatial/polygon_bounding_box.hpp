@@ -23,12 +23,12 @@
 namespace cuspatial {
 
 /**
- * @brief Compute bounding boxes for a set of polygons
+ * @brief Compute minimum bounding boxes for a set of polygons.
  *
- * @param poly_offsets Polygon to first ring offset
- * @param ring_offsets Ring to first point offset
- * @param x Polygon x-coordinates
- * @param y Polygon y-coordinates
+ * @param poly_offsets Begin indices of the first ring in each polygon (i.e. prefix-sum)
+ * @param ring_offsets Begin indices of the first point in each ring (i.e. prefix-sum)
+ * @param x Polygon point x-coordinates
+ * @param y Polygon point y-coordinates
  *
  * @return a cudf table of bounding boxes as four columns of the same type as `x` and `y`:
  * x1 - the lower-left x-coordinate of each bounding box

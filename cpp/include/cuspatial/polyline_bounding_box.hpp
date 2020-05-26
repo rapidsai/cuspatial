@@ -23,11 +23,11 @@
 namespace cuspatial {
 
 /**
- * @brief Compute bounding boxes of a set of polylines
+ * @brief Compute minimum bounding boxes of a set of polylines and an expansion radius.
  *
- * @param poly_offsets Polyline offset array to vertices
- * @param x Polygon x-coordinates
- * @param y Polygon y-coordinates
+ * @param poly_offsets Begin indices of the first ring in each polyline (i.e. prefix-sum)
+ * @param x Polyline point x-coordinates
+ * @param y Polyline point y-coordinates
  * @param R Expansion radius
  *
  * @return a cudf table of bounding boxes as four columns of the same type as `x` and `y`:
