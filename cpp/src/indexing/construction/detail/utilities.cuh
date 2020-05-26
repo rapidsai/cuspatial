@@ -39,8 +39,8 @@ inline auto make_zip_iterator(Ts... its)
 
 template <typename T>
 struct tuple_sum {
-  inline __device__ thrust::tuple<T, T> operator()(thrust::tuple<T, T> const &a,
-                                                   thrust::tuple<T, T> const &b)
+  inline __device__ thrust::tuple<T, T> operator()(thrust::tuple<T, T> const& a,
+                                                   thrust::tuple<T, T> const& b)
   {
     return thrust::make_tuple(thrust::get<0>(a) + thrust::get<0>(b),
                               thrust::get<1>(a) + thrust::get<1>(b));
@@ -54,13 +54,10 @@ template <typename T>
 inline std::unique_ptr<cudf::column> make_fixed_width_column(
   cudf::size_type size,
   cudaStream_t stream                 = 0,
-  rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource())
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
 {
-  return cudf::make_fixed_width_column(cudf::data_type{cudf::experimental::type_to_id<T>()},
-                                       size,
-                                       cudf::mask_state::UNALLOCATED,
-                                       stream,
-                                       mr);
+  return cudf::make_fixed_width_column(
+    cudf::data_type{cudf::type_to_id<T>()}, size, cudf::mask_state::UNALLOCATED, stream, mr);
 }
 
 }  // namespace detail

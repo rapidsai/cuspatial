@@ -69,11 +69,3 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}"
                  "${CUSPATIAL_LIBRARY}")
-
-###################################################################################################
-# - test benchmark --------------------------------------------------------------------------------
-
-set(TEST_BENCH_SRC
-  "${CMAKE_CURRENT_SOURCE_DIR}/test/test_benchmark.cpp")
-
-ConfigureBench(TEST_BENCH "${TEST_BENCH_SRC}")
