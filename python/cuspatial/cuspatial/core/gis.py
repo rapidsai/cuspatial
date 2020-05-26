@@ -120,8 +120,8 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
 
 def lonlat_to_cartesian(origin_lon, origin_lat, input_lon, input_lat):
     """
-    Convert lon/lat coordinates to kilometer x,y coordinates with respect to
-    an origin camera position.
+    Convert lon/lat to ``x,y`` coordinates with respect to an origin lon/lat
+    point. Results are scaled relative to the size of the Earth in kilometers.
 
     Parameters
     ----------
@@ -140,10 +140,10 @@ def lonlat_to_cartesian(origin_lon, origin_lat, input_lon, input_lat):
     -------
     result : cudf.DataFrame
         x : cudf.Series
-            x-coordinate of the input relative to the size of Earth in
+            x-coordinate of the input relative to the size of the Earth in
             kilometers.
         y : cudf.Series
-            y-coordinate of the input relative to the size of Earth in
+            y-coordinate of the input relative to the size of the Earth in
             kilometers.
     """
     result = cpp_lonlat_to_cartesian(
