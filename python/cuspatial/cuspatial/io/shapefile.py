@@ -9,7 +9,7 @@ from cuspatial._lib.shapefile_reader import (
 
 def read_polygon_shapefile(filename):
     """
-    Reads an ESRI shapefile into GPU memory.
+    Reads polygon geometry from an ESRI shapefile into GPU memory.
 
     Parameters
     ----------

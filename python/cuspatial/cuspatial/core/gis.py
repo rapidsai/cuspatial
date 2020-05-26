@@ -126,9 +126,9 @@ def lonlat_to_cartesian(origin_lon, origin_lat, input_lon, input_lat):
     Parameters
     ----------
     origin_lon : ``number``
-        camera longitude
+        longitude offset  (this is subtracted from each input before converting to x,y)
     origin_lat : ``number``
-        camera latitude
+        latitude offset (this is subtracted from each input before converting to x,y)
     input_lon : ``Series`` or ``list``
         longitude coordinates to convert to x
     input_lat : ``Series`` or ``list``
@@ -138,9 +138,9 @@ def lonlat_to_cartesian(origin_lon, origin_lat, input_lon, input_lat):
     -------
     result : cudf.DataFrame
         x : cudf.Series
-            x-coordinate of the new positions in kilometers
+            x-coordinates of the input relative to the size of Earth in kilometers.
         y : cudf.Series
-            y-coordinate of the new positions in kilometers
+            y-coordinate of the input relative to the size of Earth in kilometers
     """
     result = cpp_lonlat_to_cartesian(
         origin_lon, origin_lat, input_lon._column, input_lat._column
@@ -184,7 +184,7 @@ def point_in_polygon(
     >>> result = cuspatial.point_in_polygon(
         [0, -8, 6.0],                             # test_points_x
         [0, -8, 6.0],                             # test_points_y
-        cudf.Series([0, 1], index=['nyc', 'dc']), # poly_offsets
+        cudf.Series([0, 1], index=['nyc', 'hudson river']), # poly_offsets
         [0, 3],                                   # ring_offsets
         [-10, 5, 5, -10, 0, 10, 10, 0],           # poly_points_x
         [-10, -10, 5, 5, 0, 0, 10, 10],           # poly_points_y
@@ -193,7 +193,7 @@ def point_in_polygon(
     # values indicating whether each point (rows) falls within
     # each polygon (columns).
     >>> print(result)
-                nyc            dc
+                nyc            hudson river
     0          True          True
     1          True         False
     2         False          True
