@@ -126,9 +126,11 @@ def lonlat_to_cartesian(origin_lon, origin_lat, input_lon, input_lat):
     Parameters
     ----------
     origin_lon : ``number``
-        longitude offset  (this is subtracted from each input before converting to x,y)
+        longitude offset  (this is subtracted from each input before
+        converting to x,y)
     origin_lat : ``number``
-        latitude offset (this is subtracted from each input before converting to x,y)
+        latitude offset (this is subtracted from each input before
+        converting to x,y)
     input_lon : ``Series`` or ``list``
         longitude coordinates to convert to x
     input_lat : ``Series`` or ``list``
@@ -138,9 +140,11 @@ def lonlat_to_cartesian(origin_lon, origin_lat, input_lon, input_lat):
     -------
     result : cudf.DataFrame
         x : cudf.Series
-            x-coordinates of the input relative to the size of Earth in kilometers.
+            x-coordinate of the input relative to the size of Earth in
+            kilometers.
         y : cudf.Series
-            y-coordinate of the input relative to the size of Earth in kilometers
+            y-coordinate of the input relative to the size of Earth in
+            kilometers.
     """
     result = cpp_lonlat_to_cartesian(
         origin_lon, origin_lat, input_lon._column, input_lat._column
