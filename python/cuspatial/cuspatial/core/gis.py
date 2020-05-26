@@ -106,7 +106,7 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
     Returns
     -------
     result : cudf.Series
-        The distance between all pairs of lat/lon coordinates
+        The distance between all pairs of lon/lat coordinates
     """
 
     p1_lon, p1_lat, p2_lon, p2_lat = normalize_point_columns(
