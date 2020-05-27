@@ -31,7 +31,7 @@ TEST_F(DeriveTrajectoriesTest, DerivesThreeTrajectories)
   auto xs      = sorted->get_column(1);
   auto ys      = sorted->get_column(2);
   auto ts      = sorted->get_column(3);
-  auto results = cuspatial::experimental::derive_trajectories(id, xs, ys, ts, this->mr());
+  auto results = cuspatial::derive_trajectories(id, xs, ys, ts, this->mr());
   cudf::test::expect_tables_equal(*results.first, *sorted);
   cudf::test::expect_columns_equal(
     *results.second,

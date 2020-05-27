@@ -135,14 +135,14 @@ def test_one_point_in_two_rings():
     assert_eq(expected, result)
 
 
-def xxxtest_one_point_in_two_rings():
+def test_one_point_in_two_rings_no_repeat():
     result = cuspatial.point_in_polygon(
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([0]),
         cudf.Series([0, 3]),
-        cudf.Series([-1, 0, 1, -1, -1, 0, 1, -1]),
-        cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
+        cudf.Series([-1, 0, 1, -1, 0, 1]),
+        cudf.Series([-1, 1, -1, 3, 5, 3]),
     )
     expected = cudf.DataFrame({0: True})
     assert_eq(expected, result)
@@ -161,14 +161,14 @@ def test_one_point_out_two_rings():
     assert_eq(expected, result)
 
 
-def xxxtest_one_point_out_two_rings():
+def test_one_point_out_two_rings_no_repeat():
     result = cuspatial.point_in_polygon(
         cudf.Series([1]),
         cudf.Series([1]),
         cudf.Series([0]),
         cudf.Series([0, 3]),
-        cudf.Series([-1, 0, 1, -1, -1, 0, 1, -1]),
-        cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
+        cudf.Series([-1, 0, 1, -1, 0, 1]),
+        cudf.Series([-1, 1, -1, 3, 5, 3]),
     )
     expected = cudf.DataFrame({0: False})
     assert_eq(expected, result)

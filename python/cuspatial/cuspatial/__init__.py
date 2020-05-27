@@ -4,6 +4,8 @@ from .core.gis import (
     haversine_distance,
     lonlat_to_cartesian,
     point_in_polygon,
+    polygon_bounding_boxes,
+    polyline_bounding_boxes,
 )
 from .core.indexing import quadtree_on_points
 from .core.interpolate import CubicSpline

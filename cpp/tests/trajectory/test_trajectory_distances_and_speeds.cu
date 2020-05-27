@@ -68,19 +68,19 @@ TYPED_TEST(TrajectoryDistanceSpeedTest, ComputeDistanceAndSpeedForThreeTrajector
   std::unique_ptr<cudf::column> offsets;
   std::unique_ptr<cudf::table> sorted;
 
-  std::tie(sorted, offsets) = cuspatial::experimental::derive_trajectories(test_data->get_column(0),
-                                                                           test_data->get_column(1),
-                                                                           test_data->get_column(2),
-                                                                           test_data->get_column(3),
-                                                                           this->mr());
+  std::tie(sorted, offsets) = cuspatial::derive_trajectories(test_data->get_column(0),
+                                                             test_data->get_column(1),
+                                                             test_data->get_column(2),
+                                                             test_data->get_column(3),
+                                                             this->mr());
 
   auto id = sorted->get_column(0);
   auto xs = sorted->get_column(1);
   auto ys = sorted->get_column(2);
   auto ts = sorted->get_column(3);
 
-  auto distance_and_speed = cuspatial::experimental::trajectory_distances_and_speeds(
-    offsets->size(), id, xs, ys, ts, this->mr());
+  auto distance_and_speed =
+    cuspatial::trajectory_distances_and_speeds(offsets->size(), id, xs, ys, ts, this->mr());
 
   using Rep = typename cudf::timestamp_ms::rep;
 
@@ -120,7 +120,7 @@ TYPED_TEST(TrajectoryDistanceSpeedTest, ComputeDistanceAndSpeed3Simple)
     {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
 
   auto distance_and_speed =
-    cuspatial::experimental::trajectory_distances_and_speeds(3, id, xs, ys, ts, this->mr());
+    cuspatial::trajectory_distances_and_speeds(3, id, xs, ys, ts, this->mr());
 
   using Rep = typename cudf::timestamp_ms::rep;
 
