@@ -62,21 +62,22 @@ std::unique_ptr<cudf::column> make_column(
         mr);
 }
 
-template<typename T> using haus = thrust::tuple<int32_t, int32_t, int32_t, T, T, T>;
+template<typename T> using haus = thrust::tuple<int32_t, int32_t, int32_t, int32_t, T, T, T>;
 template<typename T> __device__ T haus_col(haus<T> value) { return thrust::get<0>(value); }
 template<typename T> __device__ T haus_row(haus<T> value) { return thrust::get<1>(value); }
-template<typename T> __device__ T cell_col(haus<T> value) { return thrust::get<2>(value); }
-template<typename T> __device__ T haus_max(haus<T> value) { return thrust::get<3>(value); }
-template<typename T> __device__ T haus_min(haus<T> value) { return thrust::get<4>(value); }
-template<typename T> __device__ T haus_res(haus<T> value) { return thrust::get<5>(value); }
+template<typename T> __device__ T cell_min(haus<T> value) { return thrust::get<2>(value); }
+template<typename T> __device__ T cell_max(haus<T> value) { return thrust::get<3>(value); }
+template<typename T> __device__ T haus_max(haus<T> value) { return thrust::get<4>(value); }
+template<typename T> __device__ T haus_min(haus<T> value) { return thrust::get<5>(value); }
+template<typename T> __device__ T haus_res(haus<T> value) { return thrust::get<6>(value); }
 
 template<typename T>
 struct haus_key_compare
 {
     bool __device__ operator()(haus<T> a, haus<T> b)
     {
-        return thrust::get<0>(a) == thrust::get<0>(b) 
-            && thrust::get<1>(a) == thrust::get<1>(b);
+        return haus_col(a) == haus_col(b)
+            && haus_row(a) == haus_row(b);
     }
 };
 
@@ -85,13 +86,14 @@ struct haus_reduce
 {
     haus<T> __device__ operator()(haus<T> lhs, haus<T> rhs)
     {
-        if (cell_col(lhs) == cell_col(rhs))
+        if (cell_max(lhs) == cell_min(rhs))
         {
             auto new_min = std::min(haus_min(lhs), haus_min(rhs));
             return haus<T>(
                 haus_col(lhs),
                 haus_row(lhs),
-                cell_col(rhs),
+                cell_min(lhs),
+                cell_max(rhs),
                 haus_max(lhs),
                 new_min,
                 std::max(haus_max(lhs), new_min)
@@ -99,14 +101,15 @@ struct haus_reduce
         }
         else
         {
-            auto new_max = std::max(haus_max(lhs), haus_res(lhs));
+            auto new_max = std::max(haus_res(lhs), haus_res(rhs));
             return haus<T>(
                 haus_col(lhs),
                 haus_row(lhs),
-                cell_col(rhs),
+                cell_min(lhs),
+                cell_max(rhs),
                 new_max,
                 haus_min(rhs),
-                std::max(new_max, haus_min(rhs)) // could haus_min just as well be haus_res ?
+                std::max(new_max, haus_min(rhs))
             );
         }
     }
@@ -124,7 +127,7 @@ struct size_from_offsets_functor
         auto next_offset = next_idx >= offsets.size()
             ? end
             : offsets.element<size_type>(next_idx);
-        
+
         return next_offset - curr_offset;
     }
 };
@@ -172,12 +175,10 @@ struct haus_travesal
             haus_col,
             haus_row,
             cell_col,
+            cell_col,
             0,
             distance,
             distance
-            // cell_col,
-            // cell_col,
-            // cell_col
         };
     }
 };
@@ -256,7 +257,7 @@ struct hausdorff_functor
         // ===== Make Lengths =====================================================================
 
         auto temp_space_size = rmm::device_vector<size_type>(num_spaces);
-        
+
         auto count = thrust::make_counting_iterator<size_type>(0);
 
         auto d_space_offsets = cudf::column_device_view::create(space_offsets);
@@ -301,6 +302,7 @@ struct hausdorff_functor
 
         auto out = thrust::make_zip_iterator(
             thrust::make_tuple(
+                discard_pointer_st,
                 discard_pointer_st,
                 discard_pointer_st,
                 discard_pointer_st,
