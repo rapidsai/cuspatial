@@ -28,20 +28,20 @@ namespace cuspatial {
  * @param poly_offsets Begin indices of the first ring in each polyline (i.e. prefix-sum)
  * @param x Polyline point x-coordinates
  * @param y Polyline point y-coordinates
- * @param R Expansion radius
+ * @param expansion_radius Radius of each polyline point
  *
  * @return a cudf table of bounding boxes as four columns of the same type as `x` and `y`:
- * x1 - the lower-left x-coordinate of each bounding box
- * y1 - the lower-left y-coordinate of each bounding box
- * x2 - the upper-right x-coordinate of each bounding box
- * y2 - the upper-right y-coordinate of each bounding box
+ * x1 - the minimum x-coordinate of each bounding box
+ * y1 - the minimum y-coordinate of each bounding box
+ * x2 - the maximum x-coordinate of each bounding box
+ * y2 - the maximum y-coordinate of each bounding box
  */
 
 std::unique_ptr<cudf::table> polyline_bounding_boxes(
   cudf::column_view const& poly_offsets,
   cudf::column_view const& x,
   cudf::column_view const& y,
-  double R,
+  double expansion_radius,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial

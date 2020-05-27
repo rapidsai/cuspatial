@@ -280,14 +280,14 @@ def polygon_bounding_boxes(poly_offsets, ring_offsets, xs, ys):
     )
 
 
-def polyline_bounding_boxes(poly_offsets, xs, ys, R):
+def polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius):
     """Compute the minimum bounding-boxes for a set of polylines.
 
     params
     poly_offsets: beginning index of the first ring in each polyline
     xs: x-coordinates
     ys: y-coordinates
-    R: Expansion radius
+    expansion_radius: radius of each polyline point
 
     Parameters
     ----------
@@ -299,5 +299,5 @@ def polyline_bounding_boxes(poly_offsets, xs, ys, R):
     poly_offsets = as_column(poly_offsets, dtype="int32")
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     return DataFrame._from_table(
-        cpp_polyline_bounding_boxes(poly_offsets, xs, ys, R)
+        cpp_polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius)
     )
