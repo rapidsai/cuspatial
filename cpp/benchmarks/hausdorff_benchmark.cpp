@@ -32,43 +32,33 @@
 #include <thrust/functional.h>
 #include <thrust/sequence.h>
 #include <thrust/transform.h>
+#include <thrust/iterator/constant_iterator.h>
 
 #include <memory>
-#include <random>
-
-template <typename T>
-T random_float(T min, T max)
-{
-  static unsigned seed = 73311337;
-  static std::mt19937 engine{seed};
-  static std::uniform_real_distribution<T> uniform{min, max};
-
-  return uniform(engine);
-}
 
 static void BM_hausdorff(benchmark::State& state)
 {
-  int32_t num_spaces = 10;
-  int32_t num_points_per_space = 4096; //state.range(0);
-  int32_t num_points = num_points_per_space * num_spaces;
+  int32_t num_spaces = state.range(0);
+  int32_t num_points = 46340;
+  int32_t num_points_per_space = num_points / num_spaces;
 
   auto counting_iter = thrust::counting_iterator<int32_t>();
-  auto random_double_iter = thrust::make_transform_iterator(
+  auto zero_iter = thrust::make_transform_iterator(
     counting_iter,
-    [](auto idx){ return random_float<double>(-100.0, 100.0); }
+    [](auto idx){ return 0; }
   );
 
   auto num_points_per_space_iter = thrust::make_transform_iterator(
     counting_iter,
-    [num_points_per_space](int32_t idx){ return num_points_per_space; });
+    [num_points_per_space](int32_t idx){ return idx * num_points_per_space; });
 
   auto xs = cudf::test::fixed_width_column_wrapper<double>(
-    random_double_iter,
-    random_double_iter + num_points);
+    zero_iter,
+    zero_iter + num_points);
 
   auto ys = cudf::test::fixed_width_column_wrapper<double>(
-    random_double_iter,
-    random_double_iter + num_points);
+    zero_iter,
+    zero_iter + num_points);
 
   auto points_per_space = cudf::test::fixed_width_column_wrapper<int32_t>(
     num_points_per_space_iter,
@@ -89,8 +79,8 @@ class HausdorffBenchmark : public cudf::benchmark {
     BM_hausdorff(state);                                                   \
   }                                                                        \
   BENCHMARK_REGISTER_F(HausdorffBenchmark, name)                           \
-    ->RangeMultiplier(8)                                                   \
-    ->Range(1 << 10, 1 << 30)                                              \
+    ->RangeMultiplier(2)                                                   \
+    ->Range(1 << 2, 1 << 12)                                               \
     ->UseManualTime()                                                      \
     ->Unit(benchmark::kMillisecond);
 
