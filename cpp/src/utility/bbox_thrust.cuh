@@ -73,6 +73,10 @@ struct bbox_transformation {
 
 template <typename T>
 struct bbox2tuple {
+  T _R = 0;
+
+  bbox2tuple(T R) : _R(R) {}
+
   __device__ thrust::tuple<T, T, T, T> operator()(const SBBox<T> &bbox)
   {
     T x1 = thrust::get<0>(bbox.first);
@@ -80,7 +84,7 @@ struct bbox2tuple {
     T y1 = thrust::get<1>(bbox.first);
     T y2 = thrust::get<1>(bbox.second);
     // printf("bbox2tuple: %10.5f %10.5f %10.5f %10.5f\n",x1,y1,x2,y2);
-    return thrust::make_tuple(x1, y1, x2, y2);
+    return thrust::make_tuple(x1 - _R, y1 - _R, x2 + _R, y2 + _R);
   }
 };
 
@@ -135,8 +139,8 @@ struct pairwise_test_intersection {
 
     uint8_t lev = d_p_lev[quad_idx];
     double s    = scale * pow(2.0, M - 1 - lev);
-    uint32_t zx = z_order_x(d_p_key[quad_idx]);
-    uint32_t zy = z_order_y(d_p_key[quad_idx]);
+    uint32_t zx = cuspatial::utility::z_order_x(d_p_key[quad_idx]);
+    uint32_t zy = cuspatial::utility::z_order_y(d_p_key[quad_idx]);
 
     double x0 = thrust::get<0>(aoi_bbox.first);
     ;
@@ -200,8 +204,8 @@ struct twolist_test_intersection {
 
     uint8_t lev = d_p_lev[quad_idx];
     double s    = scale * pow(2.0, M - 1 - lev);
-    uint32_t zx = z_order_x(d_p_key[quad_idx]);
-    uint32_t zy = z_order_y(d_p_key[quad_idx]);
+    uint32_t zx = cuspatial::utility::z_order_x(d_p_key[quad_idx]);
+    uint32_t zy = cuspatial::utility::z_order_y(d_p_key[quad_idx]);
 
     double x0 = thrust::get<0>(aoi_bbox.first);
     ;
