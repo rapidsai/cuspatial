@@ -95,6 +95,7 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(
  *
  * @note Assumes object_id, timestamp, x, y presorted by (object_id, timestamp).
  *
+ * @param num_trajectories number of trajectories (unique object ids)
  * @param object_id column of object (e.g., vehicle) ids
  * @param x coordinates (in kilometers)
  * @param y coordinates (in kilometers)

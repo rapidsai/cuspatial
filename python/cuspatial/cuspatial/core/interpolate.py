@@ -36,8 +36,8 @@ class CubicSpline:
     """
     Fits each column of the input Series `y` to a hermetic cubic spline.
 
-    cuspatial.CubicSpline supports two usage patterns: The first is
-    identical to scipy.interpolate.CubicSpline:
+    ``cuspatial.CubicSpline`` supports two usage patterns: The first is
+    identical to scipy.interpolate.CubicSpline::
 
         curve = cuspatial.CubicSpline(t, y)
         new_points = curve(np.linspace(t.min, t.max, 50))
@@ -46,16 +46,16 @@ class CubicSpline:
     host based interpolation performance is likely to exceed GPU performance
     for a single curve.
 
-    cuspatial massively outperforms scipy however when many
-    splines are fit simultaneously. Data must be arranged in a SoA format,
-    and the inclusive/exclusive prefix_sum of the separate curves must also
-    be passed to the function.
+    However, cuSpatial massively outperforms scipy when many splines are fit
+    simultaneously. Data must be arranged in a SoA format, and the exclusive
+    `prefix_sum` of the separate curves must also be passed to the function.::
 
         t = cudf.Series(np.repeat(cp.arange(100), 1000)).astype('float32')
         y = cudf.Series(np.random.random(100*1000)).astype('float32')
         prefix_sum = cudf.Series(cp.arange(1000)*100).astype('int32')
-        new_samples = cudf.Series(np.repeat(np.linspace(0, 100, 1000), 1000)
-            .astype('float32'))
+        new_samples = cudf.Series(
+            np.repeat(np.linspace(0, 100, 1000), 1000)
+        ).astype('float32')
 
         curve = cuspatial.CubicSpline(t, y, prefixes=prefix_sum)
         new_points = curve(new_samples, prefix_sum*10)
@@ -65,8 +65,8 @@ class CubicSpline:
     def __init__(self, t, y, ids=None, size=None, prefixes=None):
         """
         Computes various error preconditions on the input data, then
-        calls C++/Thrust code to compute cubic splines for each set of input
-        coordinates in parallel.
+        uses CUDA to compute cubic splines for each set of input
+        coordinates on the GPU in parallel.
 
         Parameters
         ----------
@@ -84,10 +84,10 @@ class CubicSpline:
 
         Returns
         -------
-        CubicSpline object `o`. `o.c` contains the coefficients that can be
-        used to compute new points along the spline fitting the original `t`
-        data. `o(n)` interpolates the spline coordinates along new input
-        values `n`.
+        CubicSpline : callable `o`
+            ``o.c`` contains the coefficients that can be used to compute new
+            points along the spline fitting the original ``t`` data. ``o(n)``
+            interpolates the spline coordinates along new input values ``n``.
         """
 
         # error protections:
