@@ -15,7 +15,7 @@ def test_polyline_bounding_boxes_empty(dtype):
         cudf.Series(),
         cudf.Series([], dtype=dtype),
         cudf.Series([], dtype=dtype),
-        0, # expansion_radius
+        0,  # expansion_radius
     )
     assert_eq(
         result,
@@ -36,7 +36,7 @@ def test_polyline_bounding_boxes_one(dtype):
         cudf.Series([0]),
         cudf.Series([2.488450, 1.333584, 3.460720], dtype=dtype),
         cudf.Series([5.856625, 5.008840, 4.586599], dtype=dtype),
-        0, # expansion_radius
+        0,  # expansion_radius
     )
     assert_eq(
         result,
