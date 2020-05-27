@@ -63,13 +63,14 @@ __global__ void point_in_polygon_kernel(cudf::size_type num_test_points,
       auto ring_idx_next = ring_idx + 1;
       auto ring_begin    = poly_ring_offsets[ring_idx];
       auto ring_end = (ring_idx_next < num_rings) ? poly_ring_offsets[ring_idx_next] : num_points;
+      auto ring_len = ring_end - ring_begin;
 
       // for each line segment
-      for (auto point_idx = ring_begin; point_idx < ring_end - 1; point_idx++) {
-        T ax = poly_points_x[point_idx];
-        T ay = poly_points_y[point_idx];
-        T bx = poly_points_x[point_idx + 1];
-        T by = poly_points_y[point_idx + 1];
+      for (auto point_idx = 0; point_idx < ring_len; point_idx++) {
+        T ax = poly_points_x[ring_begin + ((point_idx + 0) % ring_len)];
+        T ay = poly_points_y[ring_begin + ((point_idx + 0) % ring_len)];
+        T bx = poly_points_x[ring_begin + ((point_idx + 1) % ring_len)];
+        T by = poly_points_y[ring_begin + ((point_idx + 1) % ring_len)];
 
         bool y_between_ay_by = ay <= y && y < by;  // is y in range [ay, by) when ay < by?
         bool y_between_by_ay = by <= y && y < ay;  // is y in range [by, ay) when by < ay?

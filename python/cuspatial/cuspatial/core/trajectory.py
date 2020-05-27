@@ -17,26 +17,40 @@ from cuspatial.utils.column_utils import (
 
 
 def derive_trajectories(object_ids, xs, ys, timestamps):
-    """ Derive trajectories from object ids, points, and timestamps.
+    """
+    Derive trajectories from object ids, points, and timestamps.
 
     Parameters
     ----------
-    {params}
+    object_ids
+        column of object (e.g., vehicle) ids
+    xs
+        column of x-coordinates (in kilometers)
+    ys
+        column of y-coordinates (in kilometers)
+    timestamps
+        column of timestamps in any resolution
 
     Returns
     -------
-    result    : tuple (DataFrame, offsets of discovered trajectories)
-    DataFrame : object_id, x, y, and timestamps sorted by
-                (object_id, timestamp) for calling spatial_bounds and
-                distance_and_speed
+    result : tuple (objects, traj_offsets)
+        objects : cudf.DataFrame
+            object_ids, xs, ys, and timestamps sorted by
+            ``(object_id, timestamp)``, used by ``trajectory_bounding_boxes``
+            and ``trajectory_distances_and_speeds``
+        traj_offsets : cudf.Series
+            offsets of discovered trajectories
 
     Examples
     --------
+    Compute sorted objects and discovered trajectories
+
     >>> objects, traj_offsets = cuspatial.derive_trajectories(
-    >>>    cudf.Series([0, 0, 1, 1]),   # object_id
-    >>>    cudf.Series([0, 1, 2, 3]),   # x
-    >>>    cudf.Series([0, 0, 1, 1]),   # y
-    >>>    cudf.Series([0, 10, 0, 10])) # timestamp
+            [0, 1, 2, 3],  # object_id
+            [0, 0, 1, 1],  # x
+            [0, 0, 1, 1],  # y
+            [0, 10, 0, 10] # timestamp
+        )
     >>> print(traj_offsets)
         0  0
         1  2
@@ -47,6 +61,7 @@ def derive_trajectories(object_ids, xs, ys, timestamps):
         2          1       3       1          0
         3          1       2       1         10
     """
+
     object_ids = as_column(object_ids, dtype=np.int32)
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     timestamps = normalize_timestamp_column(as_column(timestamps))
@@ -61,27 +76,51 @@ def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
 
     Parameters
     ----------
-    {params}
-    result    : DataFrame of x1, y1, x2, y2 as minimum bounding boxes
-                (in kilometers) for each trajectory
+    num_trajectories
+        number of trajectories (unique object ids)
+    object_ids
+        column of object (e.g., vehicle) ids
+    xs
+        column of x-coordinates (in kilometers)
+    ys
+        column of y-coordinates (in kilometers)
+
+    Returns
+    -------
+    result : cudf.DataFrame
+        minimum bounding boxes (in kilometers) for each trajectory
+
+        x1 : cudf.Series
+            the lower-left x-coordinate of each bounding box
+        y1 : cudf.Series
+            the lower-left y-coordinate of each bounding box
+        x2 : cudf.Series
+            the upper-right x-coordinate of each bounding box
+        y2 : cudf.Series
+            the upper-right y-coordinate of each bounding box
 
     Examples
     --------
-    >>> objects, traj_offsets = trajectory.derive(
-    >>>    cudf.Series([0, 0, 1, 1]),   # object_id
-    >>>    cudf.Series([0, 1, 2, 3]),   # x
-    >>>    cudf.Series([0, 0, 1, 1]),   # y
-    >>>    cudf.Series([0, 10, 0, 10])) # timestamp
+    Compute the minimum bounding boxes of derived trajectories
+
+    >>> objects, traj_offsets = trajectory.derive_trajectories(
+            [0, 0, 1, 1],  # object_id
+            [0, 1, 2, 3],  # x
+            [0, 0, 1, 1],  # y
+            [0, 10, 0, 10] # timestamp
+        )
     >>> traj_bounding_boxes = cuspatial.trajectory_bounding_boxes(
-    >>>     len(traj_offsets),
-    >>>     objects['object_id'],
-    >>>     objects['x'],
-    >>>     objects['y'])
+            len(traj_offsets),
+            objects['object_id'],
+            objects['x'],
+            objects['y']
+        )
     >>> print(traj_bounding_boxes)
         x1   y1   x2   y2
     0  0.0  0.0  2.0  2.0
     1  1.0  1.0  3.0  3.0
     """
+
     object_ids = as_column(object_ids, dtype=np.int32)
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     return DataFrame._from_table(
@@ -92,35 +131,49 @@ def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
 def trajectory_distances_and_speeds(
     num_trajectories, object_ids, xs, ys, timestamps
 ):
-    """ Compute the distance traveled and speed of sets of trajectories
+    """
+    Compute the distance traveled and speed of sets of trajectories
 
     Parameters
     ----------
-    {params}
+    num_trajectories
+        number of trajectories (unique object ids)
+    object_ids
+        column of object (e.g., vehicle) ids
+    xs
+        column of x-coordinates (in kilometers)
+    ys
+        column of y-coordinates (in kilometers)
+    timestamps
+        column of timestamps in any resolution
 
     Returns
     -------
-    result : DataFrame
-        meters - travelled distance of trajectory
-        speed - speed in m/sec of trajectory
+    result : cudf.DataFrame
+        meters : cudf.Series
+            trajectory distance (in kilometers)
+        speed  : cudf.Series
+            trajectory speed (in meters/second)
 
     Examples
     --------
-    Compute the distance and speed of derived trajectories
+    Compute the distances and speeds of derived trajectories
+
     >>> objects, traj_offsets = cuspatial.derive_trajectories(...)
     >>> dists_and_speeds = cuspatial.trajectory_distances_and_speeds(
-    >>>     len(traj_offsets)
-    >>>     objects['object_id'],
-    >>>     objects['x'],
-    >>>     objects['y'],
-    >>>     objects['timestamp']
-    >>> )
+            len(traj_offsets)
+            objects['object_id'],
+            objects['x'],
+            objects['y'],
+            objects['timestamp']
+        )
     >>> print(dists_and_speeds)
                        distance          speed
         trajectory_id
         0                1000.0  100000.000000
         1                1000.0  111111.109375
     """
+
     object_ids = as_column(object_ids, dtype=np.int32)
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     timestamps = normalize_timestamp_column(as_column(timestamps))
