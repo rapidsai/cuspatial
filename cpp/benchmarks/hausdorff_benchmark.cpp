@@ -49,7 +49,7 @@ T random_float(T min, T max)
 static void BM_hausdorff(benchmark::State& state)
 {
   int32_t num_spaces = 10;
-  int32_t num_points_per_space = state.range(0);
+  int32_t num_points_per_space = 4096; //state.range(0);
   int32_t num_points = num_points_per_space * num_spaces;
 
   auto counting_iter = thrust::counting_iterator<int32_t>();
