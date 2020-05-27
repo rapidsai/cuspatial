@@ -14,6 +14,18 @@
  * limitations under the License.
  */
 
+#include <cuspatial/error.hpp>
+#include <cuspatial/polygon_bounding_box.hpp>
+
+#include <cudf/column/column_factories.hpp>
+#include <cudf/column/column_view.hpp>
+#include <cudf/copying.hpp>
+#include <cudf/table/table.hpp>
+#include <cudf/types.hpp>
+#include <cudf/utilities/type_dispatcher.hpp>
+
+#include <rmm/thrust_rmm_allocator.h>
+
 #include <thrust/functional.h>
 #include <thrust/gather.h>
 #include <thrust/iterator/constant_iterator.h>
@@ -23,20 +35,8 @@
 #include <thrust/reduce.h>
 #include <thrust/tuple.h>
 
-#include <cudf/column/column_factories.hpp>
-#include <cudf/column/column_view.hpp>
-#include <cudf/copying.hpp>
-#include <cudf/table/table.hpp>
-#include <cudf/types.hpp>
-#include <cudf/utilities/type_dispatcher.hpp>
-
-#include <cuspatial/error.hpp>
-#include <cuspatial/polygon_bounding_box.hpp>
-
 #include <memory>
 #include <vector>
-
-#include <rmm/thrust_rmm_allocator.h>
 
 namespace cuspatial {
 

@@ -31,10 +31,10 @@ namespace cuspatial {
  * @param y Polygon point y-coordinates
  *
  * @return a cudf table of bounding boxes as four columns of the same type as `x` and `y`:
- * x1 - the lower-left x-coordinate of each bounding box
- * y1 - the lower-left y-coordinate of each bounding box
- * x2 - the upper-right x-coordinate of each bounding box
- * y2 - the upper-right y-coordinate of each bounding box
+ * x1 - the minimum x-coordinate of each bounding box
+ * y1 - the minimum y-coordinate of each bounding box
+ * x2 - the maximum x-coordinate of each bounding box
+ * y2 - the maximum y-coordinate of each bounding box
  */
 
 std::unique_ptr<cudf::table> polygon_bounding_boxes(
