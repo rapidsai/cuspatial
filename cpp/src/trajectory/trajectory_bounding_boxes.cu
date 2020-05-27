@@ -29,7 +29,6 @@
 #include <cuspatial/trajectory.hpp>
 
 namespace cuspatial {
-namespace experimental {
 
 namespace {
 
@@ -155,5 +154,4 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(cudf::size_type num_traje
   return detail::trajectory_bounding_boxes(num_trajectories, object_id, x, y, mr, 0);
 }
 
-}  // namespace experimental
 }  // namespace cuspatial

@@ -9,6 +9,12 @@ from cuspatial._lib.hausdorff import (
 from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_point_in_polygon,
 )
+from cuspatial._lib.polygon_bounding_boxes import (
+    polygon_bounding_boxes as cpp_polygon_bounding_boxes,
+)
+from cuspatial._lib.polyline_bounding_boxes import (
+    polyline_bounding_boxes as cpp_polyline_bounding_boxes,
+)
 from cuspatial._lib.spatial import (
     haversine_distance as cpp_haversine_distance,
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
@@ -248,3 +254,50 @@ def point_in_polygon(
     result.columns = [x for x in list(reversed(poly_offsets.index))]
     result = result[list(reversed(result.columns))]
     return result
+
+
+def polygon_bounding_boxes(poly_offsets, ring_offsets, xs, ys):
+    """Compute the minimum bounding-boxes for a set of polygons.
+
+    params
+    poly_offsets: beginning index of the first ring in each polygon
+    ring_offsets: beginning index of the first point in each ring
+    xs: x-coordinates
+    ys: y-coordinates
+
+    Parameters
+    ----------
+    {params}
+
+    returns
+    DataFrame of x1, y1, x2, y2 as minimum bounding boxes for each polygon
+    """
+    poly_offsets = as_column(poly_offsets, dtype="int32")
+    ring_offsets = as_column(ring_offsets, dtype="int32")
+    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    return DataFrame._from_table(
+        cpp_polygon_bounding_boxes(poly_offsets, ring_offsets, xs, ys)
+    )
+
+
+def polyline_bounding_boxes(poly_offsets, xs, ys, R):
+    """Compute the minimum bounding-boxes for a set of polylines.
+
+    params
+    poly_offsets: beginning index of the first ring in each polyline
+    xs: x-coordinates
+    ys: y-coordinates
+    R: Expansion radius
+
+    Parameters
+    ----------
+    {params}
+
+    returns
+    DataFrame of x1, y1, x2, y2 as minimum bounding boxes for each polyline
+    """
+    poly_offsets = as_column(poly_offsets, dtype="int32")
+    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    return DataFrame._from_table(
+        cpp_polyline_bounding_boxes(poly_offsets, xs, ys, R)
+    )

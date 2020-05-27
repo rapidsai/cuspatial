@@ -3,6 +3,7 @@
 ## New Features
 - PR #143 Support constructing quadtrees on point data
 - PR #182 Local gpuCI build script
+- PR #145 Support computing polygon and polyline bounding boxes
 
 ## Improvements
 

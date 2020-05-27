@@ -32,7 +32,6 @@
 #include <vector>
 
 namespace cuspatial {
-namespace experimental {
 namespace detail {
 
 std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_trajectories(
@@ -100,5 +99,4 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
   }
   return detail::derive_trajectories(object_id, x, y, timestamp, mr, 0);
 }
-}  // namespace experimental
 }  // namespace cuspatial
