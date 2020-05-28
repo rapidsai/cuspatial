@@ -1,8 +1,19 @@
+# cuSpatial 0.15.0 (Date TBD)
+
+## New Features
+
+## Improvements
+
+## Bug Fixes
+
 # cuSpatial 0.14.0 (Date TBD)
 
 ## New Features
+
 - PR #143 Support constructing quadtrees on point data
 - PR #182 Local gpuCI build script
+- PR #145 Support computing polygon and polyline bounding boxes
+- PR #208 NYC Taxi Years Correlation Notebook (thanks @taureandyernv)
 
 ## Improvements
 
@@ -34,6 +45,10 @@
 - PR #204 Port shapefile_readers.hpp cython files
 - PR #205 Port hausdorff.hpp cython to libcudf++
 - PR #206 Remove legacy code.
+- PR #214 Install gdal>=3.0.2 in build.sh
+- PR #222 Fix potential thrust launch failure in quadtree building
+- PR #221 Add python methods to api.rst, fix formatting
+- PR #228 Fix polygon and polyline docstrings
 
 ## Bug Fixes
 

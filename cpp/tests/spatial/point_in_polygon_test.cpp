@@ -324,3 +324,35 @@ TEST_F(PointInPolygonErrorTest, MismatchPointTypes)
       test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
     cuspatial::logic_error);
 }
+
+TYPED_TEST(PointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
+{
+  using T                = TypeParam;
+  auto test_point_xs     = wrapper<T>({-2.0, 0.0, 2.0});
+  auto test_point_ys     = wrapper<T>({0.0, 0.0, 0.0});
+  auto poly_offsets      = wrapper<cudf::size_type>({0});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0});
+  // "left" edge missing
+  auto poly_point_xs = wrapper<T>({-1, 1, 1, -1});
+  auto poly_point_ys = wrapper<T>({1, 1, -1, -1});
+  auto expected      = wrapper<int32_t>({0b0, 0b1, 0b0});
+  auto actual        = cuspatial::point_in_polygon(
+    test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
+  expect_columns_equal(expected, actual->view(), true);
+}
+
+TYPED_TEST(PointInPolygonTest, SelfClosingLoopRightEdgeMissing)
+{
+  using T                = TypeParam;
+  auto test_point_xs     = wrapper<T>({-2.0, 0.0, 2.0});
+  auto test_point_ys     = wrapper<T>({0.0, 0.0, 0.0});
+  auto poly_offsets      = wrapper<cudf::size_type>({0});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0});
+  // "right" edge missing
+  auto poly_point_xs = wrapper<T>({1, -1, -1, 1});
+  auto poly_point_ys = wrapper<T>({-1, -1, 1, 1});
+  auto expected      = wrapper<int32_t>({0b0, 0b1, 0b0});
+  auto actual        = cuspatial::point_in_polygon(
+    test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
+  expect_columns_equal(expected, actual->view(), true);
+}

@@ -21,7 +21,6 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 
 namespace cuspatial {
-namespace experimental {
 
 /**
  * @brief Derive trajectories from object ids, points, and timestamps.
@@ -95,6 +94,7 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(
  *
  * @note Assumes object_id, timestamp, x, y presorted by (object_id, timestamp).
  *
+ * @param num_trajectories number of trajectories (unique object ids)
  * @param object_id column of object (e.g., vehicle) ids
  * @param x coordinates (in kilometers)
  * @param y coordinates (in kilometers)
@@ -107,10 +107,10 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(
  *
  * @return a cudf table of bounding boxes with length `num_trajectories` and
  * four columns:
- *   * x1 - the lower-left x-coordinate of each bounding box in kilometers
- *   * y1 - the lower-left y-coordinate of each bounding box in kilometers
- *   * x2 - the upper-right x-coordinate of each bounding box in kilometers
- *   * y2 - the upper-right y-coordinate of each bounding box in kilometers
+ * x_min - the minimum x-coordinate of each bounding box in kilometers
+ * y_min - the minimum y-coordinate of each bounding box in kilometers
+ * x_max - the maximum x-coordinate of each bounding box in kilometers
+ * y_max - the maximum y-coordinate of each bounding box in kilometers
  */
 std::unique_ptr<cudf::table> trajectory_bounding_boxes(
   cudf::size_type num_trajectories,
@@ -119,5 +119,4 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(
   cudf::column_view const& y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
-}  // namespace experimental
 }  // namespace cuspatial

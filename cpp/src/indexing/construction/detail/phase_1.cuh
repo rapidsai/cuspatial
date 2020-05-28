@@ -263,7 +263,7 @@ inline auto make_full_levels(cudf::column_view const &x,
                              rmm::mr::device_memory_resource *mr,
                              cudaStream_t stream)
 {
-  // Compute point keys and sort into top-level quadrants
+  // Compute point keys and sort into bottom-level quadrants
   // (i.e. quads at level `max_depth - 1`)
 
   // Compute Morton code (z-order) keys for each point
@@ -279,17 +279,21 @@ inline auto make_full_levels(cudf::column_view const &x,
   // Construct quadrants at the finest level of detail, i.e. the quadrants
   // furthest from the root. Reduces points with common z-order codes into
   // the same quadrant.
-  auto const num_top_quads = build_tree_level(point_keys.begin(),
-                                              point_keys.end(),
-                                              thrust::make_constant_iterator<uint32_t>(1),
-                                              quad_keys.begin(),
-                                              quad_point_count.begin(),
-                                              thrust::plus<uint32_t>(),
-                                              stream);
+  auto const num_bottom_quads = build_tree_level(point_keys.begin(),
+                                                 point_keys.end(),
+                                                 thrust::make_constant_iterator<uint32_t>(1),
+                                                 quad_keys.begin(),
+                                                 quad_point_count.begin(),
+                                                 thrust::plus<uint32_t>(),
+                                                 stream);
 
   // Repurpose the `point_keys` vector now the points have been grouped into the
   // leaf quadrants
   auto &quad_child_count = point_keys;
+
+  quad_keys.resize(num_bottom_quads * (max_depth + 1));
+  quad_point_count.resize(num_bottom_quads * (max_depth + 1));
+  quad_child_count.resize(num_bottom_quads * (max_depth + 1));
 
   //
   // Compute "full" quads for the tree at each level. Starting from the quadrant
@@ -323,7 +327,7 @@ inline auto make_full_levels(cudf::column_view const &x,
   //                                                           (root)  |
   //
   auto quads = build_tree_levels(max_depth,
-                                 num_top_quads,
+                                 num_bottom_quads,
                                  quad_keys.begin(),
                                  quad_point_count.begin(),
                                  quad_child_count.begin(),
@@ -349,7 +353,7 @@ inline auto make_full_levels(cudf::column_view const &x,
                            std::move(quad_point_count),
                            std::move(quad_child_count),
                            std::move(rmm::device_vector<int8_t>(quad_keys.size())),
-                           num_top_quads,
+                           num_bottom_quads,
                            num_parent_nodes,
                            0);
   }
@@ -371,7 +375,7 @@ inline auto make_full_levels(cudf::column_view const &x,
                          std::move(std::get<1>(reversed)),
                          std::move(std::get<2>(reversed)),
                          std::move(std::get<3>(reversed)),
-                         num_top_quads,
+                         num_bottom_quads,
                          num_parent_nodes,
                          end_pos[0] - begin_pos[0]);
 }
