@@ -40,12 +40,13 @@ TYPED_TEST(BoundingBoxTest, test_empty)
   using T = TypeParam;
   using namespace cudf::test;
 
-  double const R{0};
+  double const expansion_radius{0};
   fixed_width_column_wrapper<int32_t> poly_offsets({});
   fixed_width_column_wrapper<T> x({});
   fixed_width_column_wrapper<T> y({});
 
-  auto bboxes = cuspatial::polyline_bounding_boxes(poly_offsets, x, y, R, this->mr());
+  auto bboxes =
+    cuspatial::polyline_bounding_boxes(poly_offsets, x, y, expansion_radius, this->mr());
 
   CUSPATIAL_EXPECTS(bboxes->num_rows() == 0, "must return 0 bounding boxes on empty input");
 }
@@ -55,22 +56,24 @@ TYPED_TEST(BoundingBoxTest, test_one)
   using T = TypeParam;
   using namespace cudf::test;
 
-  double const R{0};
+  double const expansion_radius{0};
   fixed_width_column_wrapper<int32_t> poly_offsets({0});
   fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720});
   fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599});
 
-  auto bboxes = cuspatial::polyline_bounding_boxes(poly_offsets, x, y, R, this->mr());
+  auto bboxes =
+    cuspatial::polyline_bounding_boxes(poly_offsets, x, y, expansion_radius, this->mr());
 
   CUSPATIAL_EXPECTS(bboxes->view().num_columns() == 4, "bbox table must have 4 columns");
   CUSPATIAL_EXPECTS(bboxes->num_rows() == 1,
                     "resutling #of bounding boxes must be the same as # of polygons");
 
-  expect_tables_equivalent(*bboxes,
-                           cudf::table_view{{fixed_width_column_wrapper<T>({1.333584 - R}),
-                                             fixed_width_column_wrapper<T>({4.586599 - R}),
-                                             fixed_width_column_wrapper<T>({3.460720 + R}),
-                                             fixed_width_column_wrapper<T>({5.856625 + R})}});
+  expect_tables_equivalent(
+    *bboxes,
+    cudf::table_view{{fixed_width_column_wrapper<T>({1.333584 - expansion_radius}),
+                      fixed_width_column_wrapper<T>({4.586599 - expansion_radius}),
+                      fixed_width_column_wrapper<T>({3.460720 + expansion_radius}),
+                      fixed_width_column_wrapper<T>({5.856625 + expansion_radius})}});
 }
 
 TYPED_TEST(BoundingBoxTest, test_small)
@@ -78,7 +81,7 @@ TYPED_TEST(BoundingBoxTest, test_small)
   using T = TypeParam;
   using namespace cudf::test;
 
-  double const R{0.5};
+  double const expansion_radius{0.5};
   fixed_width_column_wrapper<int32_t> poly_offsets({0, 3, 8, 12});
   fixed_width_column_wrapper<T> x({// ring 1
                                    2.488450,
@@ -123,7 +126,8 @@ TYPED_TEST(BoundingBoxTest, test_small)
                                    3.745936,
                                    4.541529});
 
-  auto bboxes = cuspatial::polyline_bounding_boxes(poly_offsets, x, y, R, this->mr());
+  auto bboxes =
+    cuspatial::polyline_bounding_boxes(poly_offsets, x, y, expansion_radius, this->mr());
 
   CUSPATIAL_EXPECTS(bboxes->view().num_columns() == 4, "bbox table must have 4 columns");
   CUSPATIAL_EXPECTS(bboxes->num_rows() == 4,

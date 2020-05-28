@@ -90,14 +90,14 @@ def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
     result : cudf.DataFrame
         minimum bounding boxes (in kilometers) for each trajectory
 
-        x1 : cudf.Series
-            the lower-left x-coordinate of each bounding box
-        y1 : cudf.Series
-            the lower-left y-coordinate of each bounding box
-        x2 : cudf.Series
-            the upper-right x-coordinate of each bounding box
-        y2 : cudf.Series
-            the upper-right y-coordinate of each bounding box
+        x_min : cudf.Series
+            the minimum x-coordinate of each bounding box
+        y_min : cudf.Series
+            the minimum y-coordinate of each bounding box
+        x_max : cudf.Series
+            the maximum x-coordinate of each bounding box
+        y_max : cudf.Series
+            the maximum y-coordinate of each bounding box
 
     Examples
     --------
@@ -116,9 +116,9 @@ def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
             objects['y']
         )
     >>> print(traj_bounding_boxes)
-        x1   y1   x2   y2
-    0  0.0  0.0  2.0  2.0
-    1  1.0  1.0  3.0  3.0
+        x_min   y_min   x_max   y_max
+    0     0.0     0.0     2.0     2.0
+    1     1.0     1.0     3.0     3.0
     """
 
     object_ids = as_column(object_ids, dtype=np.int32)
