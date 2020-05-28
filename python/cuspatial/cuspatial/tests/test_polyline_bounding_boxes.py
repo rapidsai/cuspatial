@@ -21,10 +21,10 @@ def test_polyline_bounding_boxes_empty(dtype):
         result,
         cudf.DataFrame(
             {
-                "x1": cudf.Series([], dtype=dtype),
-                "y1": cudf.Series([], dtype=dtype),
-                "x2": cudf.Series([], dtype=dtype),
-                "y2": cudf.Series([], dtype=dtype),
+                "x_min": cudf.Series([], dtype=dtype),
+                "y_min": cudf.Series([], dtype=dtype),
+                "x_max": cudf.Series([], dtype=dtype),
+                "y_max": cudf.Series([], dtype=dtype),
             }
         ),
     )
@@ -42,10 +42,10 @@ def test_polyline_bounding_boxes_one(dtype):
         result,
         cudf.DataFrame(
             {
-                "x1": cudf.Series([1.333584], dtype=dtype),
-                "y1": cudf.Series([4.586599], dtype=dtype),
-                "x2": cudf.Series([3.460720], dtype=dtype),
-                "y2": cudf.Series([5.856625], dtype=dtype),
+                "x_min": cudf.Series([1.333584], dtype=dtype),
+                "y_min": cudf.Series([4.586599], dtype=dtype),
+                "x_max": cudf.Series([3.460720], dtype=dtype),
+                "y_max": cudf.Series([5.856625], dtype=dtype),
             }
         ),
     )
@@ -113,7 +113,7 @@ def test_polyline_bounding_boxes_small(dtype):
         result,
         cudf.DataFrame(
             {
-                "x1": cudf.Series(
+                "x_min": cudf.Series(
                     [
                         0.8335840000000001,
                         4.5398230000000002,
@@ -122,7 +122,7 @@ def test_polyline_bounding_boxes_small(dtype):
                     ],
                     dtype=dtype,
                 ),
-                "y1": cudf.Series(
+                "y_min": cudf.Series(
                     [
                         4.0865989999999996,
                         1.003906,
@@ -131,7 +131,7 @@ def test_polyline_bounding_boxes_small(dtype):
                     ],
                     dtype=dtype,
                 ),
-                "x2": cudf.Series(
+                "x_max": cudf.Series(
                     [
                         3.9607199999999998,
                         7.6906739999999996,
@@ -140,7 +140,7 @@ def test_polyline_bounding_boxes_small(dtype):
                     ],
                     dtype=dtype,
                 ),
-                "y2": cudf.Series(
+                "y_max": cudf.Series(
                     [
                         6.3566250000000002,
                         6.153384,

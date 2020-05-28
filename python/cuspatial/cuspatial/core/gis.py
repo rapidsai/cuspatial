@@ -275,13 +275,13 @@ def polygon_bounding_boxes(poly_offsets, ring_offsets, xs, ys):
     result : cudf.DataFrame
         minimum bounding boxes for each polygon
 
-        x1 : cudf.Series
+        x_min : cudf.Series
             the minimum x-coordinate of each bounding box
-        y1 : cudf.Series
+        y_min : cudf.Series
             the minimum y-coordinate of each bounding box
-        x2 : cudf.Series
+        x_max : cudf.Series
             the maximum x-coordinate of each bounding box
-        y2 : cudf.Series
+        y_max : cudf.Series
             the maximum y-coordinate of each bounding box
     """
     poly_offsets = as_column(poly_offsets, dtype="int32")
@@ -311,13 +311,13 @@ def polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius):
     result : cudf.DataFrame
         minimum bounding boxes for each polyline
 
-        x1 : cudf.Series
+        x_min : cudf.Series
             the minimum x-coordinate of each bounding box
-        y1 : cudf.Series
+        y_min : cudf.Series
             the minimum y-coordinate of each bounding box
-        x2 : cudf.Series
+        x_max : cudf.Series
             the maximum x-coordinate of each bounding box
-        y2 : cudf.Series
+        y_max : cudf.Series
             the maximum y-coordinate of each bounding box
     """
     poly_offsets = as_column(poly_offsets, dtype="int32")

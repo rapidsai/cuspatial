@@ -20,10 +20,10 @@ def test_trajectory_bounding_boxes_empty_float32():
         result,
         cudf.DataFrame(
             {
-                "x1": cudf.Series([], dtype=np.float32),
-                "y1": cudf.Series([], dtype=np.float32),
-                "x2": cudf.Series([], dtype=np.float32),
-                "y2": cudf.Series([], dtype=np.float32),
+                "x_min": cudf.Series([], dtype=np.float32),
+                "y_min": cudf.Series([], dtype=np.float32),
+                "x_max": cudf.Series([], dtype=np.float32),
+                "y_max": cudf.Series([], dtype=np.float32),
             }
         ),
     )
@@ -40,10 +40,10 @@ def test_trajectory_bounding_boxes_empty_float64():
         result,
         cudf.DataFrame(
             {
-                "x1": cudf.Series([], dtype=np.float64),
-                "y1": cudf.Series([], dtype=np.float64),
-                "x2": cudf.Series([], dtype=np.float64),
-                "y2": cudf.Series([], dtype=np.float64),
+                "x_min": cudf.Series([], dtype=np.float64),
+                "y_min": cudf.Series([], dtype=np.float64),
+                "x_max": cudf.Series([], dtype=np.float64),
+                "y_max": cudf.Series([], dtype=np.float64),
             }
         ),
     )
@@ -55,7 +55,9 @@ def test_trajectory_bounding_boxes_zeros():
     )
     assert_eq(
         result,
-        cudf.DataFrame({"x1": [0.0], "y1": [0.0], "x2": [0.0], "y2": [0.0]}),
+        cudf.DataFrame(
+            {"x_min": [0.0], "y_min": [0.0], "x_max": [0.0], "y_max": [0.0]}
+        ),
     )
 
 
@@ -65,7 +67,9 @@ def test_trajectory_bounding_boxes_ones():
     )
     assert_eq(
         result,
-        cudf.DataFrame({"x1": [1.0], "y1": [1.0], "x2": [1.0], "y2": [1.0]}),
+        cudf.DataFrame(
+            {"x_min": [1.0], "y_min": [1.0], "x_max": [1.0], "y_max": [1.0]}
+        ),
     )
 
 
@@ -75,7 +79,9 @@ def test_trajectory_bounding_boxes_zero_to_one():
     )
     assert_eq(
         result,
-        cudf.DataFrame({"x1": [0.0], "y1": [0.0], "x2": [0.0], "y2": [1.0]}),
+        cudf.DataFrame(
+            {"x_min": [0.0], "y_min": [0.0], "x_max": [0.0], "y_max": [1.0]}
+        ),
     )
 
 
@@ -85,7 +91,9 @@ def test_trajectory_bounding_boxes_zero_to_one_xy():
     )
     assert_eq(
         result,
-        cudf.DataFrame({"x1": [0.0], "y1": [0.0], "x2": [1.0], "y2": [1.0]}),
+        cudf.DataFrame(
+            {"x_min": [0.0], "y_min": [0.0], "x_max": [1.0], "y_max": [1.0]}
+        ),
     )
 
 
@@ -100,10 +108,10 @@ def test_trajectory_bounding_boxes_subsetted():
         result,
         cudf.DataFrame(
             {
-                "x1": [0.0, -1.0],
-                "y1": [0.0, -1.0],
-                "x2": [1.0, 2.0],
-                "y2": [1.0, 2.0],
+                "x_min": [0.0, -1.0],
+                "y_min": [0.0, -1.0],
+                "x_max": [1.0, 2.0],
+                "y_max": [1.0, 2.0],
             }
         ),
     )
@@ -120,10 +128,10 @@ def test_trajectory_bounding_boxes_intersected():
         result,
         cudf.DataFrame(
             {
-                "x1": [0.0, 1.0],
-                "y1": [0.0, 1.0],
-                "x2": [2.0, 3.0],
-                "y2": [2.0, 3.0],
+                "x_min": [0.0, 1.0],
+                "y_min": [0.0, 1.0],
+                "x_max": [2.0, 3.0],
+                "y_max": [2.0, 3.0],
             }
         ),
     )
@@ -140,10 +148,10 @@ def test_trajectory_bounding_boxes_two_and_three():
         result,
         cudf.DataFrame(
             {
-                "x1": [0.0, 1.0],
-                "y1": [0.0, 1.0],
-                "x2": [2.0, 3.0],
-                "y2": [2.0, 3.0],
+                "x_min": [0.0, 1.0],
+                "y_min": [0.0, 1.0],
+                "x_max": [2.0, 3.0],
+                "y_max": [2.0, 3.0],
             }
         ),
     )
