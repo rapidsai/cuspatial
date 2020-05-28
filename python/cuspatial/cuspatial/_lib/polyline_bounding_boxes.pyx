@@ -29,5 +29,5 @@ cpdef polyline_bounding_boxes(Column poly_offsets,
         ))
     return Table.from_unique_ptr(
         move(result),
-        column_names=["x1", "y1", "x2", "y2"]
+        column_names=["x_min", "y_min", "x_max", "y_max"]
     )

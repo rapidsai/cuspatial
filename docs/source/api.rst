@@ -11,6 +11,8 @@ GIS
 .. automethod:: cuspatial.core.gis.haversine_distance
 .. automethod:: cuspatial.core.gis.lonlat_to_cartesian
 .. automethod:: cuspatial.core.gis.point_in_polygon
+.. automethod:: cuspatial.core.gis.polygon_bounding_boxes
+.. automethod:: cuspatial.core.gis.polyline_bounding_boxes
 
 
 Indexing
