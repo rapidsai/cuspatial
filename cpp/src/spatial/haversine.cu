@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,104 +14,131 @@
  * limitations under the License.
  */
 
+#include <cuspatial/constants.hpp>
+#include <cuspatial/error.hpp>
 
-#include <math.h>
+#include <cudf/column/column.hpp>
+#include <cudf/column/column_factories.hpp>
+#include <cudf/column/column_view.hpp>
+#include <cudf/copying.hpp>
+#include <cudf/types.hpp>
+#include <cudf/utilities/type_dispatcher.hpp>
 
-#include <cudf/utilities/legacy/type_dispatcher.hpp>
-#include <cudf/legacy/column.hpp>
+#include <rmm/thrust_rmm_allocator.h>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <utilities/legacy/cuda_utils.hpp>
+#include <memory>
 #include <type_traits>
-#include <thrust/device_vector.h>
-#include <utility/utility.hpp>
-#include <cuspatial/haversine.hpp>
-
 
 namespace {
 
- template <typename T>
- __global__ void haversine_distance_kernel(int pnt_size, const T* const __restrict__ x1,const T* const __restrict__ y1,
-	const T* const __restrict__ x2,const T* const __restrict__ y2, T* const __restrict__ h_dist)
+template <typename T>
+__device__ T calculate_haversine_distance(T radius, T a_lon, T a_lat, T b_lon, T b_lat)
 {
-    //assuming 1D grid/block config
-    uint32_t idx =blockIdx.x*blockDim.x+threadIdx.x;
-    if(idx>=pnt_size) return;
-    T x_1 = M_PI/180 * x1[idx];
-    T y_1 = M_PI/180 * y1[idx];
-    T x_2 = M_PI/180 * x2[idx];
-    T y_2 = M_PI/180 * y2[idx];
-    T dlon = x_2 - x_1;
-    T dlat = y_2 - y_1;
-    T a = sin(dlat/2)*sin(dlat/2) + cos(y_1) * cos(y_2) * sin(dlon/2)*sin(dlon/2);
-    T c = 2 * asin(sqrt(a));
-    h_dist[idx]=c*6371;
-}
+  auto ax = a_lon * DEGREE_TO_RADIAN;
+  auto ay = a_lat * DEGREE_TO_RADIAN;
+  auto bx = b_lon * DEGREE_TO_RADIAN;
+  auto by = b_lat * DEGREE_TO_RADIAN;
 
-struct haversine_functor {
-    template <typename T>
-    static constexpr bool is_supported()
-    {
-        return std::is_floating_point<T>::value;
-    }
+  // haversine formula
+  auto x        = (bx - ax) / 2;
+  auto y        = (by - ay) / 2;
+  auto sinysqrd = sin(y) * sin(y);
+  auto sinxsqrd = sin(x) * sin(x);
+  auto scale    = cos(ay) * cos(by);
 
-    template <typename T, std::enable_if_t< is_supported<T>() >* = nullptr>
-     gdf_column operator()(const gdf_column& x1, const gdf_column& y1,
-                           const gdf_column& x2, const gdf_column& y2)
-    {
-        gdf_column h_dist;
-        T* data{nullptr};
-
-        cudaStream_t stream{0};
-        RMM_TRY( RMM_ALLOC(&data, x1.size * sizeof(T), stream) );
-        gdf_column_view(&h_dist, data, nullptr, x1.size, x1.dtype);
-
-        gdf_size_type min_grid_size = 0, block_size = 0;
-        CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, haversine_distance_kernel<T>) );
-        cudf::util::cuda::grid_config_1d grid{x1.size, block_size, 1};
-
-        haversine_distance_kernel<T> <<< grid.num_blocks, block_size >>> (x1.size,
-               	static_cast<T*>(x1.data), static_cast<T*>(y1.data),
-        	static_cast<T*>(x2.data), static_cast<T*>(y2.data),
-                static_cast<T*>(data) );
-        CUDA_TRY( cudaDeviceSynchronize() );
-
-        return h_dist;
-    }
-
-    template <typename T, std::enable_if_t< !is_supported<T>() >* = nullptr>
-    gdf_column operator()(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2)
-    {
-        CUDF_FAIL("Non-floating point operation is not supported");
-    }
+  return 2 * radius * asin(sqrt(sinysqrd + sinxsqrd * scale));
 };
 
-} // namespace anonymous
+struct haversine_functor {
+  template <typename T, typename... Args>
+  std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
+    Args&&...)
+  {
+    CUSPATIAL_FAIL("haversine_distance does not support non-floating-point types.");
+  }
 
-/**
- *@brief Compute Haversine distances among pairs of logitude/latitude locations
- *see haversine.hpp
-*/
+  template <typename T>
+  std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
+    cudf::column_view const& a_lon,
+    cudf::column_view const& a_lat,
+    cudf::column_view const& b_lon,
+    cudf::column_view const& b_lat,
+    double radius,
+    cudaStream_t stream,
+    rmm::mr::device_memory_resource* mr)
+  {
+    if (a_lon.is_empty()) { return cudf::empty_like(a_lon); }
 
-namespace cuspatial{
+    auto mask_policy = cudf::mask_allocation_policy::NEVER;
+    auto result      = cudf::allocate_like(a_lon, a_lon.size(), mask_policy);
 
-/**
- * @brief Compute Haversine distances among pairs of logitude/latitude locations
- * see haversine.hpp
-*/
+    auto input_tuple = thrust::make_tuple(thrust::make_constant_iterator(static_cast<T>(radius)),
+                                          a_lon.begin<T>(),
+                                          a_lat.begin<T>(),
+                                          b_lon.begin<T>(),
+                                          b_lat.begin<T>());
 
-gdf_column haversine_distance(const gdf_column& x1,const gdf_column& y1,const gdf_column& x2,const gdf_column& y2 )
+    auto input_iter = thrust::make_zip_iterator(input_tuple);
+
+    thrust::transform(rmm::exec_policy(stream)->on(stream),
+                      input_iter,
+                      input_iter + result->size(),
+                      result->mutable_view().begin<T>(),
+                      [] __device__(auto inputs) {
+                        return calculate_haversine_distance(thrust::get<0>(inputs),
+                                                            thrust::get<1>(inputs),
+                                                            thrust::get<2>(inputs),
+                                                            thrust::get<3>(inputs),
+                                                            thrust::get<4>(inputs));
+                      });
+
+    return result;
+  }
+};
+
+}  // anonymous namespace
+
+namespace cuspatial {
+
+namespace detail {
+
+std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
+                                                 cudf::column_view const& a_lat,
+                                                 cudf::column_view const& b_lon,
+                                                 cudf::column_view const& b_lat,
+                                                 double radius,
+                                                 cudaStream_t stream,
+                                                 rmm::mr::device_memory_resource* mr)
 {
-    CUDF_EXPECTS(x1.data != nullptr && y1.data != nullptr && x2.data != nullptr && y2.data != nullptr,"point lon/lat cannot be empty");
-    CUDF_EXPECTS(x1.dtype == x2.dtype && x2.dtype==y1.dtype && y1.dtype==y2.dtype, "x1/x2/y1/y2 type mismatch");
-    CUDF_EXPECTS(x1.size == x2.size && x2.size==y1.size && y1.size==y2.size, "x1/x2/y1/y2 size mismatch");
+  CUSPATIAL_EXPECTS(radius > 0, "radius must be positive.");
 
-    //future versions might allow pnt_(x/y) have null_count>0, which might be useful for taking query results as inputs
-    CUDF_EXPECTS(x1.null_count == 0 && y1.null_count == 0 && x2.null_count == 0 && y2.null_count == 0, "this version does not support x1/x2/y1/y2 contains nulls");
+  CUSPATIAL_EXPECTS(not a_lon.has_nulls() and not a_lat.has_nulls() and not b_lon.has_nulls() and
+                      not b_lat.has_nulls(),
+                    "coordinates must not contain nulls.");
 
-    gdf_column h_d = cudf::type_dispatcher( x1.dtype, haversine_functor(), x1,y1,x2,y2);
+  CUSPATIAL_EXPECTS(
+    a_lat.type() == a_lon.type() and b_lon.type() == a_lon.type() and b_lat.type() == a_lon.type(),
+    "coordinates must have the same type.");
 
-    return h_d;
+  CUSPATIAL_EXPECTS(
+    a_lat.size() == a_lon.size() and b_lon.size() == a_lon.size() and b_lat.size() == a_lon.size(),
+    "coordinates must have the same size.");
 
-  }//haversine_distance
+  return cudf::type_dispatcher(
+    a_lon.type(), haversine_functor{}, a_lon, a_lat, b_lon, b_lat, radius, stream, mr);
+}
 
-}// namespace cuspatial
+}  // namespace detail
+
+std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
+                                                 cudf::column_view const& a_lat,
+                                                 cudf::column_view const& b_lon,
+                                                 cudf::column_view const& b_lat,
+                                                 double radius,
+                                                 rmm::mr::device_memory_resource* mr)
+{
+  return cuspatial::detail::haversine_distance(a_lon, a_lat, b_lon, b_lat, radius, 0, mr);
+}
+
+}  // namespace cuspatial

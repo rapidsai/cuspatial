@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,33 @@
 
 #pragma once
 
-typedef struct gdf_column_ gdf_column; // forward declaration
+#include <cudf/column/column.hpp>
+#include <cudf/column/column_view.hpp>
+#include <cuspatial/constants.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 namespace cuspatial {
 
 /**
- * brief Compute Haversine distances among pairs of longitude/latitude locations
- * 
- * @param[in] x1: longitude coordinates of the starting points
- * @param[in] y1: latitude coordinates of the starting points
- * @param[in] x2: longitude coordinates of the ending points
- * @param[in] y2: latitude coordinates of the ending points
+ * brief Compute haversine distances between points in set A to the corresponding points in set B.
  *
- * @return array of distances in kilometers (km) for all (x1,y1) and (x2,y2)
- *         point pairs
+ * https://en.wikipedia.org/wiki/Haversine_formula
+ *
+ * @param[in]  a_lon: longitude of points in set A
+ * @param[in]  a_lat:  latitude of points in set A
+ * @param[in]  b_lon: longitude of points in set B
+ * @param[in]  b_lat:  latitude of points in set B
+ * @param[in] radius: radius of the sphere on which the points reside. default: 6371.0 (aprx. radius
+ * of earth in km)
+ *
+ * @return array of distances for all (a_lon[i], a_lat[i]) and (b_lon[i], b_lat[i]) point pairs
  */
-gdf_column haversine_distance(const gdf_column& x1, const gdf_column& y1,
-                              const gdf_column& x2, const gdf_column& y2);
+std::unique_ptr<cudf::column> haversine_distance(
+  cudf::column_view const& a_lon,
+  cudf::column_view const& a_lat,
+  cudf::column_view const& b_lon,
+  cudf::column_view const& b_lat,
+  double const radius                 = EARTH_RADIUS_KM,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial

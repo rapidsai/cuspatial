@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,32 @@
 
 #pragma once
 
+#include <cudf/types.hpp>
+
+#include <memory>
+
 namespace cuspatial {
 
 /**
- * @brief compute bounding boxes (bboxes) of a set of polygons
+ * @brief Compute minimum bounding boxes for a set of polygons.
  *
- * @param[in] fpos: feature/polygon offset array to rings
+ * @param poly_offsets Begin indices of the first ring in each polygon (i.e. prefix-sum)
+ * @param ring_offsets Begin indices of the first point in each ring (i.e. prefix-sum)
+ * @param x Polygon point x-coordinates
+ * @param y Polygon point y-coordinates
  *
- * @param[in] rpos: ring offset array to vertex
- *
- * @param[in] x: polygon x coordiante array.
- *
- * @param[in] y: polygon y coordiante array.
- *
- * @return experimental::table with four arrays of bounding boxes, x1,y1,x2,y2.
-*/
+ * @return a cudf table of bounding boxes as four columns of the same type as `x` and `y`:
+ * x_min - the minimum x-coordinate of each bounding box
+ * y_min - the minimum y-coordinate of each bounding box
+ * x_max - the maximum x-coordinate of each bounding box
+ * y_max - the maximum y-coordinate of each bounding box
+ */
 
-std::unique_ptr<cudf::experimental::table> polygon_bbox(
-    const cudf::column_view& fpos,const cudf::column_view& rpos,
-    const cudf::column_view& x,const cudf::column_view& y);
+std::unique_ptr<cudf::table> polygon_bounding_boxes(
+  cudf::column_view const& poly_offsets,
+  cudf::column_view const& ring_offsets,
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial
