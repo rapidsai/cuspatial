@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-#include <iomanip>
-#include <memory>
-#include <ostream>
-#include <type_traits>
+#include <cuspatial/detail/hausdorff.cuh>
+
 #include <cudf/types.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 #include <cudf/column/column.hpp>
@@ -33,9 +31,13 @@
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/gather.h>
+
 #include <limits>
 #include <iterator>
-
+#include <iomanip>
+#include <memory>
+#include <ostream>
+#include <type_traits>
 
 template <class OutputIterator>
 class haus_output_iterator_proxy;
@@ -48,6 +50,8 @@ class haus_output_iterator_proxy;
 // }
 // }
 
+namespace cuspatial {
+namespace detail{
 namespace {
 
 using size_type = int32_t;
@@ -73,60 +77,6 @@ std::unique_ptr<cudf::column> make_column(
         stream,
         mr);
 }
-
-template<typename T>
-using haus = thrust::tuple<int32_t, int32_t, int32_t, int32_t, T, T, T, int64_t>;
-
-template<typename T> __device__ int32_t haus_col(haus<T> value) { return thrust::get<0>(value); }
-template<typename T> __device__ int32_t haus_row(haus<T> value) { return thrust::get<1>(value); }
-template<typename T> __device__ int32_t cell_min(haus<T> value) { return thrust::get<2>(value); }
-template<typename T> __device__ int32_t cell_max(haus<T> value) { return thrust::get<3>(value); }
-template<typename T> __device__ T haus_max(haus<T> value) { return thrust::get<4>(value); }
-template<typename T> __device__ T haus_min(haus<T> value) { return thrust::get<5>(value); }
-template<typename T> __device__ T haus_res(haus<T> value) { return thrust::get<6>(value); }
-template<typename T> __device__ int64_t haus_dst(haus<T> value) { return thrust::get<7>(value); }
-
-template<typename T>
-struct haus_key_compare
-{
-    bool __device__ operator()(haus<T> a, haus<T> b)
-    {
-        return haus_col(a) == haus_col(b)
-            && haus_row(a) == haus_row(b);
-    }
-};
-
-template<typename T>
-struct haus_reduce
-{
-    haus<T> __device__ operator()(haus<T> lhs, haus<T> rhs)
-    {
-        T new_min{};
-        T new_max{};
-
-        if (cell_max(lhs) == cell_min(rhs))
-        {
-            new_min = min(haus_min(lhs), haus_min(rhs));
-            new_max = haus_max(lhs);
-        }
-        else
-        {
-            new_min = haus_min(rhs);
-            new_max = max(haus_res(lhs), haus_max(rhs));
-        }
-
-        return haus<T>{
-            haus_col(lhs),
-            haus_row(lhs),
-            cell_min(lhs),
-            cell_max(rhs),
-            new_max,
-            new_min,
-            max(new_max, new_min),
-            haus_dst(rhs)
-        };
-    }
-};
 
 struct size_from_offsets_functor
 {
@@ -162,6 +112,8 @@ class haus_output_iterator_proxy
         if (haus_dst(x) >= 0) {
             *(begin + haus_dst(x)) = x;
         }
+
+        // *out = x;
 
         return *this;
     }
@@ -261,21 +213,20 @@ struct haus_travesal
 
         T distance = static_cast<T>(distance_d);
 
-        // int64_t distance = abs(b_x - a_x);
-
-        // int64_t elm = ox_n + sx * oy + sx * sy - 1;
-        // int64_t dst = haus_col * num_spaces + haus_row;
         int64_t elm = ox_n + (sx - 1) * n + oy + sy - 1;
+
         // ===== All ==================
         return haus<T>{
-            haus_col,
-            haus_row,
+            thrust::make_tuple(haus_col, haus_row),
+            elm == cell_offset
+                ? haus_col * num_spaces + haus_row
+                : -1,
             cell_col,
             cell_col,
+            distance,
+            distance,
             0,
-            distance,
-            distance,
-            elm == cell_offset ? haus_col * num_spaces + haus_row : -1
+            distance
         };
     }
 };
@@ -300,6 +251,7 @@ struct hausdorff_functor
         size_type num_points = xs.size();
         size_type num_spaces = space_offsets.size();
         int64_t num_results = static_cast<int64_t>(num_spaces) * static_cast<int64_t>(num_spaces);
+        // int64_t num_results = static_cast<int64_t>(num_points) * static_cast<int64_t>(num_points);
 
         if (num_results == 0)
         {
@@ -367,17 +319,18 @@ struct hausdorff_functor
         auto discard_pointer_st = static_cast<int32_t*>(discard_buffer.data());
         auto discard_pointer_l = static_cast<int64_t*>(discard_buffer.data());
         auto discard_pointer_t = static_cast<T*>(discard_buffer.data());
+        auto discard_pointer_k = static_cast<thrust::tuple<int32_t, int32_t>*>(discard_buffer.data());
 
         auto out_zip = thrust::make_zip_iterator(
             thrust::make_tuple(
-                discard_pointer_st,
-                discard_pointer_st,
-                discard_pointer_st,
-                discard_pointer_st,
+                discard_pointer_k,
+                discard_pointer_l,
+                discard_pointer_l,
+                discard_pointer_l,
                 discard_pointer_t,
                 discard_pointer_t,
-                out_real,
-                discard_pointer_l
+                discard_pointer_t,
+                out_real
             )
         );
 
@@ -398,8 +351,7 @@ struct hausdorff_functor
 };
 
 } // namespace anonymous
-
-namespace cuspatial {
+} // namespace detail
 
 std::unique_ptr<cudf::column>
 directed_hausdorff_distance(cudf::column_view const& xs,
@@ -420,7 +372,7 @@ directed_hausdorff_distance(cudf::column_view const& xs,
 
     cudaStream_t stream = 0;
 
-    return cudf::type_dispatcher(xs.type(), hausdorff_functor(),
+    return cudf::type_dispatcher(xs.type(), detail::hausdorff_functor(),
                                  xs, ys, points_per_space, mr, stream);
 }
 
