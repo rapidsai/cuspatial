@@ -43,7 +43,7 @@ struct xytoz {
     else {
       uint16_t a = (uint16_t)((x - thrust::get<0>(bbox.first)) / scale);
       uint16_t b = (uint16_t)((y - thrust::get<1>(bbox.first)) / scale);
-      uint32_t c = z_order(a, b);
+      uint32_t c = cuspatial::utility::z_order(a, b);
       return c;
     }
   }
@@ -63,11 +63,11 @@ struct remove_discard {
   __device__ bool operator()(thrust::tuple<uint32_t, uint8_t, uint32_t, uint32_t, uint32_t> v)
   {
     // uint32_t tid = threadIdx.x + blockDim.x*blockIdx.x;
-    uint32_t key  = thrust::get<0>(v);
-    uint8_t lev   = thrust::get<1>(v);
-    uint32_t clen = thrust::get<2>(v);
-    uint32_t nlen = thrust::get<3>(v);
-    uint32_t ppos = thrust::get<4>(v);
+    // uint32_t key  = thrust::get<0>(v);
+    // uint8_t lev   = thrust::get<1>(v);
+    // uint32_t clen = thrust::get<2>(v);
+    // uint32_t nlen = thrust::get<3>(v);
+    // uint32_t ppos = thrust::get<4>(v);
     // uint32_t plen=p_len[ppos];
     // printf("remove_discard tid=%d key=%d lev=%d clen=%d nlen=%d ppos=%d
     // plen=%d\n",tid,key,lev,clen,nlen,ppos,plen);
@@ -99,8 +99,8 @@ struct gen_quad_bbox {
   __device__ SBBox<T> operator()(uint32_t p) const
   {
     double s    = scale * pow(2.0, M - 1 - d_p_lev[p]);
-    uint32_t zx = z_order_x(d_p_key[p]);
-    uint32_t zy = z_order_y(d_p_key[p]);
+    uint32_t zx = cuspatial::utility::z_order_x(d_p_key[p]);
+    uint32_t zy = cuspatial::utility::z_order_y(d_p_key[p]);
     double x0   = thrust::get<0>(aoi_bbox.first);
     ;
     double y0  = thrust::get<1>(aoi_bbox.first);
