@@ -9,8 +9,11 @@
 # cuSpatial 0.14.0 (Date TBD)
 
 ## New Features
+
 - PR #143 Support constructing quadtrees on point data
 - PR #182 Local gpuCI build script
+- PR #145 Support computing polygon and polyline bounding boxes
+- PR #208 NYC Taxi Years Correlation Notebook (thanks @taureandyernv)
 
 ## Improvements
 
@@ -46,6 +49,7 @@
 - PR #222 Fix potential thrust launch failure in quadtree building
 - PR #221 Add python methods to api.rst, fix formatting
 - PR #225 Add short git commit to conda package
+- PR #228 Fix polygon and polyline docstrings
 
 ## Bug Fixes
 
@@ -57,7 +61,7 @@
 - PR #212 Rename calls to cudf::experimental namespace to cudf::
 - PR #215 Replace legacy RMM calls
 - PR #218 Fix benchmark build by removing test_benchmark.cpp
-
+- PR #232 Fix conda dependencies
 
 # cuSpatial 0.13.0 (31 Mar 2020)
 

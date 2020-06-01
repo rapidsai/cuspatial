@@ -23,12 +23,11 @@ requirements:
     - cython >=0.29,<0.30
     - setuptools
     - cudf {{ minor_version }}.*
-    - libcuspatial {{ minor_version}}.*
+    - libcuspatial {{ version }}.*
 
   run:
     - python
     - cudf {{ minor_version }}.*
-    - libcuspatial {{ minor_version}}.*
     - gdal >=3.0.2
 
 test:

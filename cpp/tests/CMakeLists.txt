@@ -112,6 +112,14 @@ set(POINT_QUADTREE_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/indexing/point_quadtree_test.cu")
 ConfigureTest(POINT_QUADTREE_TEST "${POINT_QUADTREE_TEST_SRC}")
 
+set(POLYLINE_BBOX_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/polyline_bbox_test.cu")
+ConfigureTest(POLYLINE_BBOX_TEST "${POLYLINE_BBOX_TEST_SRC}")
+
+set(POLYGON_BBOX_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/polygon_bbox_test.cu")
+ConfigureTest(POLYGON_BBOX_TEST "${POLYGON_BBOX_TEST_SRC}")
+
 set(SHAPEFILE_READER_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/io/shp/polygon_shapefile_reader_test.cpp")
 ConfigureTest(SHAPEFILE_READER_TEST "${SHAPEFILE_READER_TEST_SRC}")

@@ -33,7 +33,6 @@ requirements:
     - gdal >=3.0.2
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
-    - libcudf {{ minor_version }}.*
 
 test:
   commands:
