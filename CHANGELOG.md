@@ -1,4 +1,4 @@
-# cuSpatial 0.14.0 (Date TBD)
+# cuSpatial 0.14.0 (03 Jun 2020)
 
 ## New Features
 
