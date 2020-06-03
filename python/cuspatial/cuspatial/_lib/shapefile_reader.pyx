@@ -1,39 +1,26 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
-# cython: profile=False
-# distutils: language = c++
-# cython: embedsignature = True
-# cython: language_level = 3
+from cudf._lib.column cimport Column, column
+
+from cuspatial._lib.cpp.shapefile_reader cimport (
+    read_polygon_shapefile as cpp_read_polygon_shapefile,
+)
+
+from cuspatial._lib.move cimport move
+
+from libcpp.memory cimport unique_ptr
+from libcpp.string cimport string
+from libcpp.vector cimport vector
 
 
-from cudf._lib.cudf cimport gdf_column, gdf_column_to_column
-from libc.stdlib cimport malloc, free
-
-cpdef cpp_read_polygon_shapefile(shapefile_file_name):
-    cdef bytes py_bytes = shapefile_file_name.encode()
-    cdef char* c_string = py_bytes
-    cdef gdf_column* c_ply_fpos = <gdf_column*>malloc(sizeof(gdf_column))
-    cdef gdf_column* c_ply_rpos = <gdf_column*>malloc(sizeof(gdf_column))
-    cdef gdf_column* c_ply_x = <gdf_column*>malloc(sizeof(gdf_column))
-    cdef gdf_column* c_ply_y = <gdf_column*>malloc(sizeof(gdf_column))
-
+cpdef read_polygon_shapefile(object filepath):
+    cdef string c_string = str(filepath).encode()
+    cdef vector[unique_ptr[column]] c_result
     with nogil:
-        read_polygon_shapefile(
-            c_string,
-            c_ply_fpos,
-            c_ply_rpos,
-            c_ply_x,
-            c_ply_y
-        )
-
-    f_pos = gdf_column_to_column(c_ply_fpos)
-    r_pos = gdf_column_to_column(c_ply_rpos)
-    x = gdf_column_to_column(c_ply_x)
-    y = gdf_column_to_column(c_ply_y)
-
-    free(c_ply_fpos)
-    free(c_ply_rpos)
-    free(c_ply_x)
-    free(c_ply_y)
-
-    return f_pos, r_pos, x, y
+        c_result = move(cpp_read_polygon_shapefile(c_string))
+    return (
+        Column.from_unique_ptr(move(c_result[0])),
+        Column.from_unique_ptr(move(c_result[1])),
+        Column.from_unique_ptr(move(c_result[2])),
+        Column.from_unique_ptr(move(c_result[3])),
+    )

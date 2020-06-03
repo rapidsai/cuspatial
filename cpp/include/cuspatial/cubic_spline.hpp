@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <memory>
 #include <cudf/column/column.hpp>
 #include <cudf/table/table.hpp>
+#include <memory>
 
 namespace cuspatial {
 
@@ -33,7 +33,7 @@ namespace cuspatial {
  *
  * Currently, all input splines must be the same length. The minimum supported
  * length is 5.
- * 
+ *
  * @note Ids should be prefixed with a 0, even when only a single spline
  * is fit, ids will be {0, 0}
  *
@@ -45,15 +45,14 @@ namespace cuspatial {
  * is {0, 5, 10, 15}.
  *
  * @return cudf::table_view of coefficients for spline interpolation. The size
- * of the table is ((M-n), 4) where M is `t.size()` and and n is 
+ * of the table is ((M-n), 4) where M is `t.size()` and and n is
  * `ids.size()-1`.
-**/
-std::unique_ptr<cudf::column> cubicspline_interpolate(
-                                         cudf::column_view const& query_points,
-                                         cudf::column_view const& spline_ids,
-                                         cudf::column_view const& offsets,
-                                         cudf::column_view const& source_points,
-                                         cudf::table_view const& coefficients);
+ **/
+std::unique_ptr<cudf::column> cubicspline_interpolate(cudf::column_view const& query_points,
+                                                      cudf::column_view const& spline_ids,
+                                                      cudf::column_view const& offsets,
+                                                      cudf::column_view const& source_points,
+                                                      cudf::table_view const& coefficients);
 
 /**
  * @brief Compute cubic interpolations of a set of points based on their
@@ -72,10 +71,9 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(
  * cubicspline_coefficients.
  *
  * @return cudf::column `y` coordinates interpolated from `x` and `coefs`.
-**/
-std::unique_ptr<cudf::experimental::table> cubicspline_coefficients(
-                                         cudf::column_view const& t,
-                                         cudf::column_view const& y,
-                                         cudf::column_view const& ids,
-                                         cudf::column_view const& offsets);
-}// namespace cuspatial
+ **/
+std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t,
+                                                      cudf::column_view const& y,
+                                                      cudf::column_view const& ids,
+                                                      cudf::column_view const& offsets);
+}  // namespace cuspatial

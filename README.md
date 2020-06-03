@@ -58,14 +58,14 @@ Note that a "build" dir is created automatically under $CUSPATIAL_HOME/cpp
 
 Some tests using inline data can be run directly, e.g.,
 ```
-$CUSPATIAL_HOME/cpp/build/gtests/HAUSDORFF_TEST
+$CUSPATIAL_HOME/cpp/build/gtests/LEGACY_HAUSDORFF_TEST
 $CUSPATIAL_HOME/cpp/build/gtests/POINT_IN_POLYGON_TEST
-python python/cuspatial/cuspatial/tests/test_hausdorff_distance.py
+python python/cuspatial/cuspatial/tests/legacy/test_hausdorff_distance.py
 python python/cuspatial/cuspatial/tests/test_pip.py
 ```
 
 Some other tests involve I/O from data files under $CUSPATIAL_HOME/test_fixtures.
-For example, $CUSPATIAL_HOME/cpp/build/gtests/SHAPEFILE_POLYGON_READER_TEST requires three
+For example, $CUSPATIAL_HOME/cpp/build/gtests/SHAPEFILE_READER_TEST requires three
 pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. They are available at 
 $CUSPATIAL_HOME/test_fixtures/shapefiles <br>
 
