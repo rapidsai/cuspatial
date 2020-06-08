@@ -29,8 +29,8 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
                    "${CMAKE_CURRENT_SOURCE_DIR}/synchronization/synchronization.cpp")
     set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_link_libraries(${CMAKE_BENCH_NAME} benchmark benchmark_main pthread cuspatial cudf
-                          cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES} NVCategory
-                          NVStrings nvrtc gdal)
+                          cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES}
+                          nvrtc gdal)
     set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
                             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gbenchmarks")
 endfunction(ConfigureBench)
