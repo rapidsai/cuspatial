@@ -73,7 +73,6 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${GTEST_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
                     "${CUDF_INCLUDE}"
-                    "${CUDF_SRC_INCLUDE}"
                     "${CUDF_TEST_INCLUDE}")
  
 ###################################################################################################

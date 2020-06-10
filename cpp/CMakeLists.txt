@@ -204,12 +204,10 @@ find_library(CUDF_LIBRARY "cudf"
              HINTS "$ENV{CUDF_ROOT}/lib")
 
 set(CUDF_TEST_INCLUDE "$ENV{CUDF_HOME}/cpp")
-set(CUDF_SRC_INCLUDE "$ENV{CUDF_HOME}/cpp/src")
 
 message(STATUS "CUDF: CUDF_HOME set to $ENV{CUDF_HOME}")
 message(STATUS "CUDF: CUDF_LIBRARY set to ${CUDF_LIBRARY}")
 message(STATUS "CUDF: CUDF_INCLUDE set to ${CUDF_INCLUDE}")
-message(STATUS "CUDF SRC: CUDF_SRC_INCLUDE set to ${CUDF_SRC_INCLUDE}")
 message(STATUS "CUDF: CUB_INCLUDE_DIR set to ${CUB_INCLUDE_DIR}")
 message(STATUS "CUDF: THRUST_INCLUDE_DIR set to ${THRUST_INCLUDE_DIR}")
 message(STATUS "CUDF: LIBCUDACXX_INCLUDE_DIR set to ${LIBCUDACXX_INCLUDE_DIR}")
@@ -293,7 +291,6 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
                     "${GDAL_INCLUDE}"
                     "${RMM_INCLUDE}"
-                    "${CUDF_SRC_INCLUDE}"
                     "${CUDF_INCLUDE}")
 
 if(CONDA_INCLUDE_DIRS)

@@ -52,7 +52,6 @@ include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${GBENCH_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
                     "${CUDF_INCLUDE}"
-                    "${CUDF_SRC_INCLUDE}"
                     "${CUDF_TEST_INCLUDE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}")
 
