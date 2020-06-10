@@ -280,6 +280,10 @@ endif(BUILD_BENCHMARKS)
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
 
+include_directories("${CUB_INCLUDE_DIR}"
+                    "${THRUST_INCLUDE_DIR}"
+                    "${LIBCUDACXX_INCLUDE_DIR}")
+
 if(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 	include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
 endif(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
@@ -290,10 +294,7 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${GDAL_INCLUDE}"
                     "${RMM_INCLUDE}"
                     "${CUDF_SRC_INCLUDE}"
-                    "${CUDF_INCLUDE}"
-                    "${CUB_INCLUDE_DIR}"
-                    "${THRUST_INCLUDE_DIR}"
-                    "${LIBCUDACXX_INCLUDE_DIR}")
+                    "${CUDF_INCLUDE}")
 
 if(CONDA_INCLUDE_DIRS)
     include_directories("${CONDA_INCLUDE_DIRS}")

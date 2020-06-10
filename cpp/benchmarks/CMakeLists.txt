@@ -38,6 +38,10 @@ endfunction(ConfigureBench)
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
 
+include_directories("${CUB_INCLUDE_DIR}"
+                    "${THRUST_INCLUDE_DIR}"
+                    "${LIBCUDACXX_INCLUDE_DIR}")
+
 include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
@@ -50,9 +54,6 @@ include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CUDF_INCLUDE}"
                     "${CUDF_SRC_INCLUDE}"
                     "${CUDF_TEST_INCLUDE}"
-                    "${CUB_INCLUDE_DIR}"
-                    "${THRUST_INCLUDE_DIR}"
-                    "${LIBCUDACXX_INCLUDE_DIR}"
                     "${CMAKE_CURRENT_SOURCE_DIR}")
 
 ###################################################################################################

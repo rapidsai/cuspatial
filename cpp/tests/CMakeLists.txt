@@ -57,6 +57,10 @@ endfunction(ConfigureTest)
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
 
+include_directories("${CUB_INCLUDE_DIR}"
+                    "${THRUST_INCLUDE_DIR}"
+                    "${LIBCUDACXX_INCLUDE_DIR}")
+
 if(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 	include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
 endif()
@@ -70,11 +74,7 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${RMM_INCLUDE}"
                     "${CUDF_INCLUDE}"
                     "${CUDF_SRC_INCLUDE}"
-                    "${CUDF_TEST_INCLUDE}"
-                    "${CUB_INCLUDE_DIR}"
-                    "${THRUST_INCLUDE_DIR}"
-                    "${LIBCUDACXX_INCLUDE_DIR}"
-                    )
+                    "${CUDF_TEST_INCLUDE}")
  
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
