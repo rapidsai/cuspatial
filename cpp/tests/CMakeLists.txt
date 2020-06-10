@@ -57,6 +57,10 @@ endfunction(ConfigureTest)
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
 
+include_directories("${CUB_INCLUDE_DIR}"
+                    "${THRUST_INCLUDE_DIR}"
+                    "${LIBCUDACXX_INCLUDE_DIR}")
+
 if(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 	include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
 endif()
@@ -65,29 +69,24 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}"
                     "${CMAKE_SOURCE_DIR}/src"
-                    "${CMAKE_SOURCE_DIR}/../thirdparty/cub"
-                    "${CMAKE_SOURCE_DIR}/../thirdparty/libcudacxx/include"
-                    "${CMAKE_SOURCE_DIR}/thirdparty/dlpack/include"
+                    "${GDAL_INCLUDE}"
                     "${GTEST_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
                     "${CUDF_INCLUDE}"
-                    "${CUDF_SRC_INCLUDE}"
-                    "${CUDF_TEST_INCLUDE}"
-                    "${CUB_INCLUDE}"
-                    )
+                    "${CUDF_TEST_INCLUDE}")
  
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
 
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
                  "${CMAKE_BINARY_DIR}/lib"
-                 "${GDAL_LIBRARIES}"
+                 "${GDAL_LIBRARY}"
                  "${CONDA_LINK_DIRS}"
                  "${GTEST_LIBRARY_DIR}"
                  "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}"
-                 "${CUSPATIAL_LIBRARY}"
-                 )
+                 "${CUSPATIAL_LIBRARY}")
+
 set(CUBIC_SPLINE_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/interpolate/cubic_spline_test.cpp")
  ConfigureTest(CUBIC_SPLINE_TEST "${CUBIC_SPLINE_TEST_SRC}")
