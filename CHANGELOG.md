@@ -4,6 +4,7 @@
 
 ## Improvements
 - PR #237 Remove nvstrings references from CMakeLists.txt
+- PR #239 Add docs build script
 
 ## Bug Fixes
 
