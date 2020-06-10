@@ -1,94 +1,123 @@
+/*
+ * Copyright (c) 2019-2020, NVIDIA CORPORATION.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required point_b_y applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#pragma once
+
 #include <thrust/tuple.h>
 
 #include <cstdint>
 
-#pragma once
-
 namespace cuspatial {
 namespace detail {
 
-template<typename T>
-using haus = thrust::tuple<thrust::tuple<int32_t, int32_t>, int64_t, int64_t, int64_t, T, T, T, T>;
+template <typename T>
+struct hausdorff_acc {
+  // hausdorff_acc() = default;
+  // __host__ __device__
+  // hausdorff_acc(thrust::pair<int64_t, int64_t> key, int64_t result_idx, int64_t col, T distance)
+  //   : key(key),
+  //     result_idx(result_idx),
+  //     col_l(col),
+  //     col_r(col),
+  //     min_l(distance),
+  //     min_r(distance),
+  //     max(0)
+  // {
+  // }
 
-// haus key
-template<typename T> __device__ auto haus_key(haus<T> value) { return thrust::get<0>(value); }
-template<typename T> __device__ int32_t haus_dst(haus<T> value) { return thrust::get<1>(value); }
-template<typename T> __device__ auto haus_col_l(haus<T> value) { return thrust::get<2>(value); }
-template<typename T> __device__ auto haus_col_r(haus<T> value) { return thrust::get<3>(value); }
+  // __host__ __device__ hausdorff_acc(thrust::pair<int64_t, int64_t> key,
+  //                                   int64_t result_idx,
+  //                                   int64_t col_l,
+  //                                   int64_t col_r,
+  //                                   T min_l,
+  //                                   T min_r,
+  //                                   T max)
+  //   : key(key),
+  //     result_idx(result_idx),
+  //     col_l(col_l),
+  //     col_r(col_r),
+  //     min_l(min_l),
+  //     min_r(min_r),
+  //     max(max)
+  // {
+  // }
 
-template<typename T> __device__ auto haus_min_l(haus<T> value) { return thrust::get<4>(value); }
-template<typename T> __device__ auto haus_min_r(haus<T> value) { return thrust::get<5>(value); }
-template<typename T> __device__ auto haus_max(haus<T> value) { return thrust::get<6>(value); }
+  __host__ __device__ hausdorff_acc<T> operator+(hausdorff_acc<T> const& rhs) const
+  {
+    auto const& lhs = *this;
 
-template<typename T> __device__ auto haus_res(haus<T> value) { return thrust::get<7>(value); }
+    auto acc = hausdorff_acc<T>{lhs.key,
+                                rhs.result_idx,
+                                lhs.col_l,
+                                rhs.col_r,
+                                lhs.min_l,
+                                rhs.min_r,
+                                std::max(lhs.max, rhs.max)};
 
-template<typename T>
-struct haus_key_compare
-{
-    bool __device__ operator()(haus<T> a, haus<T> b)
-    {
-        return haus_key(a) == haus_key(b);
+    auto const open_l = lhs.col_l == lhs.col_r;
+    auto const open_r = rhs.col_l == rhs.col_r;
+    auto const open_m = lhs.col_r == rhs.col_l;
+
+    if (open_m and not open_l and not open_r) {
+      acc.max = std::max(acc.max, std::min(lhs.min_r, rhs.min_l));
+    } else {
+      if (open_l) {
+        acc.min_l = std::min(acc.min_l, lhs.min_r);
+      } else if (open_m) {
+        acc.min_r = std::min(acc.min_r, lhs.min_r);
+      } else {
+        acc.max = std::max(acc.max, lhs.min_r);
+      }
+
+      if (open_r) {
+        acc.min_r = std::min(acc.min_r, rhs.min_l);
+      } else if (open_m) {
+        acc.min_l = std::min(acc.min_l, rhs.min_l);
+      } else {
+        acc.max = std::max(acc.max, rhs.min_l);
+      }
     }
+
+    return acc;
+  }
+
+  __host__ __device__ explicit operator T() const
+  {
+    auto is_open = this->col_l == this->col_r;
+
+    auto partial_max =
+      is_open ? std::min(this->min_l, this->min_r) : std::max(this->min_l, this->min_r);
+
+    return std::max(this->max, partial_max);
+  }
+
+  thrust::pair<int64_t, int64_t> key;
+  int64_t result_idx;
+  int64_t col_l;
+  int64_t col_r;
+  T min_l;
+  T min_r;
+  T max;
 };
 
-template<typename T>
-struct haus_reduce
-{
-    haus<T> __device__ operator()(haus<T> const& lhs, haus<T> const& rhs)
-    {
-        T new_max = std::max(haus_max(lhs), haus_max(rhs));
-        T new_min_l = haus_min_l(lhs);
-        T new_min_r = haus_min_r(rhs);
-
-        // if same on left, both merge left.
-
-        auto const open_l = haus_col_l(lhs) == haus_col_r(lhs);
-        auto const open_r = haus_col_l(rhs) == haus_col_r(rhs);
-        auto const open_m = haus_col_r(lhs) == haus_col_l(rhs);
-
-        auto const inner_l = haus_min_r(lhs);
-        auto const inner_r = haus_min_l(rhs);
-
-        if (open_m and not open_l and not open_r) // correct
-        {
-            new_max = std::max(new_max, std::min(inner_l, inner_r)); // correct
-        }
-        else
-        {
-            if (open_l) {
-                new_min_l = std::min(new_min_l, inner_l); // correct
-            } else if (open_m) {
-                new_min_r = std::min(new_min_r, inner_l); // correct
-            } else {
-                new_max = std::max(new_max, inner_l); // correct
-            }
-            
-            if (open_r) {
-                new_min_r = std::min(new_min_r, inner_r); // correct
-            } else if (open_m) {
-                new_min_l = std::min(new_min_l, inner_r); // correct
-            } else {
-                new_max = std::max(new_max, inner_r); // correct
-            }
-        }
-
-        auto next_open = open_m and open_l and open_r;
-
-        auto const x = next_open ? std::min(new_min_l, new_min_r) : std::max(new_min_l, new_min_r);
-
-        return haus<T>{
-            haus_key(lhs),
-            haus_dst(rhs),
-            haus_col_l(lhs),
-            haus_col_r(rhs),
-            new_min_l,
-            new_min_r,
-            new_max,
-            std::max(new_max, x)
-        };
-    }
+template <typename T>
+struct hausdorff_key_compare {
+  bool __device__ operator()(hausdorff_acc<T> a, hausdorff_acc<T> b) { return a.key == b.key; }
 };
-    
-} // namespace detail
 
-} // namespace cuspatial
+}  // namespace detail
+
+}  // namespace cuspatial
