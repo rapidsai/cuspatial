@@ -22,6 +22,7 @@
 #include <tests/utilities/cudf_gtest.hpp>
 #include <tests/utilities/type_lists.hpp>
 
+#include <cuspatial/detail/hausdorff.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/hausdorff.hpp>
 
@@ -31,6 +32,23 @@ using namespace cudf;
 using namespace test;
 
 template <typename T>
+using hausdorff_acc = cuspatial::detail::hausdorff_acc<T>;
+
+template <typename T>
+void expect_haus_eq(hausdorff_acc<T> const& a, hausdorff_acc<T> const& b)
+{
+  using namespace cuspatial::detail;
+
+  EXPECT_EQ(a.key, b.key);
+  EXPECT_EQ(a.result_idx, b.result_idx);
+  EXPECT_EQ(a.col_l, b.col_l);
+  EXPECT_EQ(a.col_r, b.col_r);
+  EXPECT_EQ(a.min_l, b.min_l);
+  EXPECT_EQ(a.min_r, b.min_r);
+  EXPECT_EQ(a.max, b.max);
+}
+
+template <typename T>
 struct HausdorffTest : public BaseFixture {
 };
 
@@ -38,142 +56,212 @@ using TestTypes = Types<double>;
 
 TYPED_TEST_CASE(HausdorffTest, TestTypes);
 
+TYPED_TEST(HausdorffTest, Binop1)
+{
+  using T = TypeParam;
+
+  auto key   = thrust::make_pair<int64_t, int64_t>(0, 0);
+  auto dst   = static_cast<int64_t>(0);
+  auto col_a = static_cast<int64_t>(0);
+  auto col_b = static_cast<int64_t>(1);
+
+  auto a = hausdorff_acc<T>(key, dst, col_a, static_cast<int64_t>(5));
+  auto b = hausdorff_acc<T>(key, dst, col_b, static_cast<int64_t>(7));
+
+  auto expected = hausdorff_acc<T>(key, dst, col_a, col_b, 5, 7, 0);
+
+  expect_haus_eq(a + b, expected);
+}
+
+TYPED_TEST(HausdorffTest, Binop2)
+{
+  using T = TypeParam;
+
+  auto key   = thrust::make_pair<int64_t, int64_t>(0, 0);
+  auto dst   = static_cast<int64_t>(0);
+  auto col_0 = static_cast<int64_t>(0);
+  auto col_1 = static_cast<int64_t>(1);
+
+  auto a = hausdorff_acc<T>(key, dst, col_0, 3.6);
+  auto b = hausdorff_acc<T>(key, dst, col_0, 8.2);
+  auto c = hausdorff_acc<T>(key, dst, col_0, 1.4);
+
+  auto d = hausdorff_acc<T>(key, dst, col_1, 8.4);
+  auto e = hausdorff_acc<T>(key, dst, col_1, 5.3);
+  auto f = hausdorff_acc<T>(key, dst, col_1, 5.0);
+
+  auto expected = hausdorff_acc<T>(key, dst, col_0, col_1, 1.4, 5, 0);
+
+  auto result = (a + b) + ((c + d) + (e + f));
+
+  expect_haus_eq(result, expected);
+}
+
 TYPED_TEST(HausdorffTest, Empty)
 {
   using T = TypeParam;
 
-  auto x      = cudf::test::fixed_width_column_wrapper<T>({});
-  auto y      = cudf::test::fixed_width_column_wrapper<T>({});
-  auto spaces = cudf::test::fixed_width_column_wrapper<cudf::size_type>({});
+  auto x             = cudf::test::fixed_width_column_wrapper<T>({});
+  auto y             = cudf::test::fixed_width_column_wrapper<T>({});
+  auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({});
 
   auto expected = cudf::test::fixed_width_column_wrapper<T>({});
 
-  auto actual = cuspatial::directed_hausdorff_distance(x, y, spaces);
+  auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets);
 
-  expect_columns_equal(expected, actual->view());
+  expect_columns_equivalent(expected, actual->view(), true);
 }
 
 TYPED_TEST(HausdorffTest, SingleTrajectorySinglePoint)
 {
   using T = TypeParam;
 
-  auto x      = cudf::test::fixed_width_column_wrapper<T>({152.2});
-  auto y      = cudf::test::fixed_width_column_wrapper<T>({2351.0});
-  auto spaces = cudf::test::fixed_width_column_wrapper<cudf::size_type>({1});
+  auto x             = cudf::test::fixed_width_column_wrapper<T>({152.2});
+  auto y             = cudf::test::fixed_width_column_wrapper<T>({2351.0});
+  auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0});
 
   auto expected = cudf::test::fixed_width_column_wrapper<T>({0});
 
-  auto actual = cuspatial::directed_hausdorff_distance(x, y, spaces);
+  auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets);
 
-  expect_columns_equal(expected, actual->view());
+  expect_columns_equivalent(expected, actual->view(), true);
 }
 
 TYPED_TEST(HausdorffTest, TwoShortSpaces)
 {
   using T = TypeParam;
 
-  auto x      = cudf::test::fixed_width_column_wrapper<T>({0, 5, 4});
-  auto y      = cudf::test::fixed_width_column_wrapper<T>({0, 12, 3});
-  auto spaces = cudf::test::fixed_width_column_wrapper<cudf::size_type>({1, 2});
+  auto x             = cudf::test::fixed_width_column_wrapper<T>({0, 5, 4});
+  auto y             = cudf::test::fixed_width_column_wrapper<T>({0, 12, 3});
+  auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0, 1});
 
   auto expected = cudf::test::fixed_width_column_wrapper<T>({0, 5, 13, 0});
 
-  auto actual = cuspatial::directed_hausdorff_distance(x, y, spaces);
+  auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets);
 
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equivalent(expected, actual->view(), true);
 }
 
-TYPED_TEST(HausdorffTest, 10kSpacesSinglePoint)
+TYPED_TEST(HausdorffTest, TwoShortSpaces2)
 {
   using T = TypeParam;
 
-  constexpr cudf::size_type num_spaces              = 10000;
-  constexpr cudf::size_type elements_per_trajectory = 1;
+  auto x             = cudf::test::fixed_width_column_wrapper<T>({1, 5, 4, 2, 3, 7});
+  auto y             = cudf::test::fixed_width_column_wrapper<T>({1, 12, 3, 8, 4, 7});
+  auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0, 3, 4});
 
-  auto zero_iter   = thrust::make_constant_iterator<T>(0);
-  auto stride_iter = thrust::make_constant_iterator<cudf::size_type>(elements_per_trajectory);
+  auto expected = cudf::test::fixed_width_column_wrapper<T>({0.0,
+                                                             7.0710678118654755,
+                                                             5.3851648071345037,
+                                                             5.0000000000000000,
+                                                             0.0,
+                                                             4.1231056256176606,
+                                                             5.0,
+                                                             5.0990195135927854,
+                                                             0.0});
 
-  auto x = cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + num_spaces);
-  auto y = cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + num_spaces);
-  auto spaces =
-    cudf::test::fixed_width_column_wrapper<cudf::size_type>(stride_iter, stride_iter + num_spaces);
+  auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets);
+
+  expect_columns_equivalent(expected, actual->view(), true);
+}
+
+TYPED_TEST(HausdorffTest, 10kSpaces10Points)
+{
+  using T = TypeParam;
+
+  constexpr cudf::size_type num_spaces         = 10000;
+  constexpr cudf::size_type elements_per_space = 10;
+  constexpr cudf::size_type num_elements       = elements_per_space * num_spaces;
+
+  auto zero_iter         = thrust::make_constant_iterator<T>(0);
+  auto counting_iter     = thrust::make_counting_iterator<cudf::size_type>(0);
+  auto space_offset_iter = thrust::make_transform_iterator(
+    counting_iter, [elements_per_space](auto idx) { return idx * elements_per_space; });
+
+  auto x = cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + num_elements);
+  auto y = cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + num_elements);
+  auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>(
+    space_offset_iter, space_offset_iter + num_spaces);
+
+  auto expected = cudf::test::fixed_width_column_wrapper<T>(
+    zero_iter, zero_iter + ((int64_t)num_spaces * (int64_t)num_spaces));
+
+  auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets);
+
+  expect_columns_equivalent(expected, actual->view());
+}
+
+TYPED_TEST(HausdorffTest, 10Spaces10kPoints)
+{
+  using T = TypeParam;
+
+  constexpr cudf::size_type num_spaces         = 10;
+  constexpr cudf::size_type elements_per_space = 80000;
+  constexpr cudf::size_type num_elements       = elements_per_space * num_spaces;
+
+  auto zero_iter         = thrust::make_constant_iterator<T>(0);
+  auto counting_iter     = thrust::make_counting_iterator<cudf::size_type>(0);
+  auto space_offset_iter = thrust::make_transform_iterator(
+    counting_iter, [elements_per_space](auto idx) { return idx * elements_per_space; });
+
+  auto x = cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + num_elements);
+  auto y = cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + num_elements);
+  auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>(
+    space_offset_iter, space_offset_iter + num_spaces);
 
   auto expected =
     cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + (num_spaces * num_spaces));
 
-  auto actual = cuspatial::directed_hausdorff_distance(x, y, spaces);
+  auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets);
 
-  expect_columns_equal(expected, actual->view(), true);
-}
-
-TYPED_TEST(HausdorffTest, 2Spaces500kPoints)
-{
-  using T = TypeParam;
-
-  constexpr cudf::size_type num_spaces              = 2;
-  constexpr cudf::size_type elements_per_trajectory = 500000;
-
-  auto zero_iter   = thrust::make_constant_iterator<T>(0);
-  auto stride_iter = thrust::make_constant_iterator<cudf::size_type>(elements_per_trajectory);
-
-  auto x = cudf::test::fixed_width_column_wrapper<T>(
-    zero_iter, zero_iter + (elements_per_trajectory * num_spaces));
-  auto y = cudf::test::fixed_width_column_wrapper<T>(
-    zero_iter, zero_iter + (elements_per_trajectory * num_spaces));
-  auto spaces =
-    cudf::test::fixed_width_column_wrapper<cudf::size_type>(stride_iter, stride_iter + num_spaces);
-
-  auto expected =
-    cudf::test::fixed_width_column_wrapper<T>(zero_iter, zero_iter + (num_spaces * num_spaces));
-
-  auto actual = cuspatial::directed_hausdorff_distance(x, y, spaces);
-
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equivalent(expected, actual->view());
 }
 
 TYPED_TEST(HausdorffTest, MoreSpacesThanPoints)
 {
   using T = TypeParam;
 
-  auto x      = cudf::test::fixed_width_column_wrapper<T>({0});
-  auto y      = cudf::test::fixed_width_column_wrapper<T>({0});
-  auto spaces = cudf::test::fixed_width_column_wrapper<cudf::size_type>({1, 1});
+  auto x             = cudf::test::fixed_width_column_wrapper<T>({0});
+  auto y             = cudf::test::fixed_width_column_wrapper<T>({0});
+  auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0, 1});
 
-  EXPECT_THROW(cuspatial::directed_hausdorff_distance(x, y, spaces), cuspatial::logic_error);
+  EXPECT_THROW(cuspatial::directed_hausdorff_distance(x, y, space_offsets), cuspatial::logic_error);
 }
 
 TYPED_TEST(HausdorffTest, TooFewPoints)
 {
   using T = TypeParam;
 
-  auto x      = cudf::test::fixed_width_column_wrapper<T>({0});
-  auto y      = cudf::test::fixed_width_column_wrapper<T>({0});
-  auto spaces = cudf::test::fixed_width_column_wrapper<cudf::size_type>({2});
+  auto x             = cudf::test::fixed_width_column_wrapper<T>({0});
+  auto y             = cudf::test::fixed_width_column_wrapper<T>({0});
+  auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0, 1});
 
-  // ideally this would throw, but we don't have a good way to catch the negative length.
-  EXPECT_NO_THROW(cuspatial::directed_hausdorff_distance(x, y, spaces));
+  EXPECT_THROW(cuspatial::directed_hausdorff_distance(x, y, space_offsets), cuspatial::logic_error);
 }
 
-TYPED_TEST(HausdorffTest, SpaceWithNegativePointCount)
+TYPED_TEST(HausdorffTest, ThreeSpacesLengths543)
 {
   using T = TypeParam;
 
-  auto x      = cudf::test::fixed_width_column_wrapper<T>({0, 0});
-  auto y      = cudf::test::fixed_width_column_wrapper<T>({0, 0});
-  auto spaces = cudf::test::fixed_width_column_wrapper<cudf::size_type>({1, -2});
+  auto x = cudf::test::fixed_width_column_wrapper<T>(
+    {0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0});
+  auto y = cudf::test::fixed_width_column_wrapper<T>(
+    {1.0, 2.0, 3.0, 5.0, 7.0, 0.0, 2.0, 3.0, 6.0, 1.0, 3.0, 6.0});
+  auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0, 5, 9});
 
-  // ideally this would throw, but we don't have a good way to catch the negative length.
-  EXPECT_NO_THROW(cuspatial::directed_hausdorff_distance(x, y, spaces));
-}
+  auto expected = cudf::test::fixed_width_column_wrapper<T>({
+    0.0000000000000000,
+    4.1231056256176606,
+    4.0000000000000000,
+    3.6055512754639896,
+    0.0000000000000000,
+    1.4142135623730951,
+    4.4721359549995796,
+    1.4142135623730951,
+    0.0000000000000000,
+  });
 
-TYPED_TEST(HausdorffTest, SpaceSizeZero)
-{
-  using T = TypeParam;
+  auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets);
 
-  auto x      = cudf::test::fixed_width_column_wrapper<T>({0});
-  auto y      = cudf::test::fixed_width_column_wrapper<T>({0});
-  auto spaces = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0});
-
-  // ideally this would throw, but we don't have a good way to catch the zero length.
-  EXPECT_NO_THROW(cuspatial::directed_hausdorff_distance(x, y, spaces));
+  expect_columns_equivalent(expected, actual->view(), true);
 }
