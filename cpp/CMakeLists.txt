@@ -221,26 +221,14 @@ endif (CUDF_INCLUDE AND CUDF_LIBRARY)
 ###################################################################################################
 # - gdal ------------------------------------------------------------------------------------------
 
-find_path(GDAL_INCLUDE "gdal"
-          HINTS "$ENV{GDAL_ROOT}/include")
+find_package(GDAL REQUIRED)
 
-find_library(GDAL_LIBRARY "gdal"
-             HINTS "$ENV{GDAL_ROOT}/lib")
+message(STATUS "GDAL: GDAL_LIBRARIES set to ${GDAL_LIBRARIES}")
+message(STATUS "GDAL: GDAL_INCLUDE_DIRS set to ${GDAL_INCLUDE_DIRS}")
 
-if (GDAL_INCLUDE AND GDAL_LIBRARY)
-    add_library(gdal SHARED IMPORTED "${GDAL_LIBRARY}")
-    set_target_properties(gdal PROPERTIES IMPORTED_LOCATION "${GDAL_LIBRARY}")
-else(GDAL_INCLUDE AND GDAL_LIBRARY)
-    find_package(GDAL REQUIRED)
-    if(NOT GDAL_FOUND)
-        message(FATAL_ERROR "GDAL not found, please check your settings.")
-    endif(NOT GDAL_FOUND)
-    set(GDAL_INCLUDE "${GDAL_INCLUDE_DIRS}")
-    set(GDAL_LIBRARY "${GDAL_LIBRARIES}")
-endif (GDAL_INCLUDE AND GDAL_LIBRARY)
-
-message(STATUS "GDAL: GDAL_INCLUDE set to ${GDAL_INCLUDE}")
-message(STATUS "GDAL: GDAL_LIBRARY set to ${GDAL_LIBRARY}")
+if(NOT GDAL_FOUND)
+    message(FATAL_ERROR "GDAL not found, please check your settings.")
+endif(NOT GDAL_FOUND)
 
 ###################################################################################################
 # - add gtest -------------------------------------------------------------------------------------
@@ -289,7 +277,7 @@ endif(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
-                    "${GDAL_INCLUDE}"
+                    "${GDAL_INCLUDE_DIRS}"
                     "${RMM_INCLUDE}"
                     "${CUDF_INCLUDE}")
 
@@ -303,7 +291,7 @@ endif(CONDA_INCLUDE_DIRS)
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
                  "${CMAKE_BINARY_DIR}/lib"
                  "${FLATBUFFERS_LIBRARY_DIR}"
-                 "${GDAL_LIBRARY}"
+                 "${GDAL_LIBRARIES}"
                  "${GTEST_LIBRARY_DIR}"
                  "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}")
@@ -349,7 +337,7 @@ endif(USE_NVTX)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(cuspatial cudf rmm cudart cuda cusparse nvrtc gdal)
+target_link_libraries(cuspatial cudf rmm cudart cuda cusparse nvrtc GDAL::GDAL)
 
 
 ###################################################################################################
