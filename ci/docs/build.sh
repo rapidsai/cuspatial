@@ -52,5 +52,5 @@ for PROJECT in ${PROJECTS[@]}; do
     rm -rf $DOCS_WORKSPACE/api/$PROJECT/$BRANCH_VERSION/*	
 done
 
-mv $PROJECT_WORKSPACE/docs/build/html/* $DOCS_WORKSPACE/api/cusignal/$BRANCH_VERSION
+mv $PROJECT_WORKSPACE/docs/build/html/* $DOCS_WORKSPACE/api/cuspatial/$BRANCH_VERSION
 
