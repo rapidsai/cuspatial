@@ -367,7 +367,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_node,
     delete db_expand_pos;
     db_expand_pos = nullptr;
 
-    // retrieve child quadrants, given fpos of paranet quadrants (d_p_qtfpos) and offsets child
+    // retrieve child quadrants, given fpos of parent quadrants (d_p_qtfpos) and offsets child
     // quarants
     auto update_quad_iter = thrust::make_zip_iterator(
       thrust::make_tuple(d_quad_idx_expanded, thrust::make_counting_iterator(0)));
@@ -506,8 +506,8 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_node,
       d_poly_idx_out  = d_poly_idx_increased;
 
       // update pair_output_iter
-      // pair_output_iter = thrust::make_zip_iterator(
-      //   thrust::make_tuple(d_pq_lev_out, d_pq_type_out, d_poly_idx_out, d_quad_idx_out));
+      pair_output_iter = thrust::make_zip_iterator(
+        thrust::make_tuple(d_pq_lev_out, d_pq_type_out, d_poly_idx_out, d_quad_idx_out));
     }
     /*
     std::cout << "level=" << i << " output_nodes_pos=" << output_nodes_pos << " curr_cap=" <<
@@ -661,43 +661,43 @@ struct quad_bbox_processor {
 
 }  // end anonymous namespace
 
-namespace cuspatial {
+// namespace cuspatial {
 
-std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
-                                            cudf::table_view const &poly_bbox,
-                                            double x_min,
-                                            double y_min,
-                                            double x_max,
-                                            double y_max,
-                                            double scale,
-                                            uint32_t max_depth,
-                                            uint32_t min_size,
-                                            rmm::mr::device_memory_resource *mr)
-{
-  CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "quadtree table must have 5 columns");
-  CUSPATIAL_EXPECTS(poly_bbox.num_columns() == 4, "polygon bbox table must have 4 columns");
-  CUSPATIAL_EXPECTS(x_min < x_max && y_min < y_max,
-                    "invalid bounding box (x_min,y_min,x_max,y_max)");
-  CUSPATIAL_EXPECTS(scale > 0, "scale must be positive");
-  CUSPATIAL_EXPECTS(max_depth > 0 && max_depth < 16, "maximum of levels might be in [0,16)");
-  CUSPATIAL_EXPECTS(min_size > 0,
-                    "minimum number of points for a non-leaf node must be larger than zero");
+// std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
+//                                             cudf::table_view const &poly_bbox,
+//                                             double x_min,
+//                                             double y_min,
+//                                             double x_max,
+//                                             double y_max,
+//                                             double scale,
+//                                             uint32_t max_depth,
+//                                             uint32_t min_size,
+//                                             rmm::mr::device_memory_resource *mr)
+// {
+//   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "quadtree table must have 5 columns");
+//   CUSPATIAL_EXPECTS(poly_bbox.num_columns() == 4, "polygon bbox table must have 4 columns");
+//   CUSPATIAL_EXPECTS(x_min < x_max && y_min < y_max,
+//                     "invalid bounding box (x_min,y_min,x_max,y_max)");
+//   CUSPATIAL_EXPECTS(scale > 0, "scale must be positive");
+//   CUSPATIAL_EXPECTS(max_depth > 0 && max_depth < 16, "maximum of levels might be in [0,16)");
+//   CUSPATIAL_EXPECTS(min_size > 0,
+//                     "minimum number of points for a non-leaf node must be larger than zero");
 
-  if (quadtree.num_rows() == 0 || poly_bbox.num_rows() == 0) {
-    std::vector<std::unique_ptr<cudf::column>> cols{};
-    cols.reserve(2);
-    cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::INT32}));
-    cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::INT32}));
-    return std::make_unique<cudf::table>(std::move(cols));
-  }
+//   if (quadtree.num_rows() == 0 || poly_bbox.num_rows() == 0) {
+//     std::vector<std::unique_ptr<cudf::column>> cols{};
+//     cols.reserve(2);
+//     cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::INT32}));
+//     cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::INT32}));
+//     return std::make_unique<cudf::table>(std::move(cols));
+//   }
 
-  quad_point_parameters qpi =
-    thrust::make_tuple(x_min, y_min, x_max, y_max, scale, max_depth, min_size);
+//   quad_point_parameters qpi =
+//     thrust::make_tuple(x_min, y_min, x_max, y_max, scale, max_depth, min_size);
 
-  cudf::data_type dtype = poly_bbox.column(0).type();
+//   cudf::data_type dtype = poly_bbox.column(0).type();
 
-  return cudf::type_dispatcher(
-    dtype, quad_bbox_processor{}, quadtree, poly_bbox, qpi, mr, cudaStream_t{0});
-}
+//   return cudf::type_dispatcher(
+//     dtype, quad_bbox_processor{}, quadtree, poly_bbox, qpi, mr, cudaStream_t{0});
+// }
 
-}  // namespace cuspatial
+// }  // namespace cuspatial
