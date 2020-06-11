@@ -4,6 +4,7 @@
 
 ## Improvements
 - PR #237 Remove nvstrings references from CMakeLists.txt
+- PR #238 Fix library and include paths in CMakeLists.txt and setup.py
 
 ## Bug Fixes
 
