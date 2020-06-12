@@ -177,11 +177,9 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_small)
   auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
     *quadtree, *polygon_bboxes, x_min, y_min, x_max, y_max, scale, max_depth, this->mr());
 
-  CUDF_EXPECTS(polygon_quadrant_pairs->num_columns() == 2,
-               "a polygon-quadrant pair table must have 2 columns (polygon-index, quadrant-index)");
-
-  print(polygon_quadrant_pairs->get_column(0), std::cout << "poly_idx: ", ", ");
-  print(polygon_quadrant_pairs->get_column(1), std::cout << "quad_idx: ", ", ");
+  CUSPATIAL_EXPECTS(
+    polygon_quadrant_pairs->num_columns() == 2,
+    "a polygon-quadrant pair table must have 2 columns (polygon-index, quadrant-index)");
 
   expect_tables_equal(
     cudf::table_view{{fixed_width_column_wrapper<int32_t>({0, 3, 1, 2, 1, 1, 3, 3}),

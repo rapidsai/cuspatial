@@ -143,7 +143,7 @@ TYPED_TEST(QuadtreePolylineBoundingBoxJoinTest, test_small)
   auto polyline_quadrant_pairs = cuspatial::quad_bbox_join(
     *quadtree, *polyline_bboxes, x_min, y_min, x_max, y_max, scale, max_depth, this->mr());
 
-  CUDF_EXPECTS(
+  CUSPATIAL_EXPECTS(
     polyline_quadrant_pairs->num_columns() == 2,
     "a polyline-quadrant pair table must have 2 columns (polyline_index, quadrant_index)");
 

@@ -51,8 +51,6 @@ descend_quadtree(LengthsIter lengths,
   auto num_children =
     thrust::reduce(rmm::exec_policy(stream)->on(stream), lengths, lengths + num_quads);
 
-  // std::cout << "level num_children: " << num_children << std::endl;
-
   // exclusive scan on the number of child nodes to compute the offsets
   rmm::device_uvector<uint32_t> parent_offsets(num_quads, stream);
   thrust::exclusive_scan(

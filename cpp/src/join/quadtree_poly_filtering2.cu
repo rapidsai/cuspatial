@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include "join/detail/intersection.cuh"
+#include "join/detail/traversal.cuh"
+
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/table/table.hpp>
@@ -26,9 +29,6 @@
 #include <rmm/device_uvector.hpp>
 
 #include <tuple>
-
-#include "join/detail/intersection.cuh"
-#include "join/detail/traversal.cuh"
 
 namespace cuspatial {
 
@@ -53,26 +53,6 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
   auto const node_offsets = quadtree.column(4);  // uint32_t
 
   auto num_polys = poly_bbox.num_rows();
-  // auto num_nodes = quadtree.num_rows();
-
-  // std::cout << "scale: " << scale << std::endl;
-  // std::cout << "max_depth: " << max_depth << std::endl;
-  // std::cout << "bbox (x_min, y_min, x_max, y_max): "                                   //
-  //           << "(" << x_min << ", " << y_min << ", " << x_max << ", " << y_max << ")"  //
-  //           << std::endl;
-
-  // std::cout << "num_polys: " << num_polys << std::endl;
-  // print<T>(poly_bbox.column(0), std::cout << "poly_x_min ", ", ", stream);
-  // print<T>(poly_bbox.column(1), std::cout << "poly_y_min ", ", ", stream);
-  // print<T>(poly_bbox.column(2), std::cout << "poly_x_max ", ", ", stream);
-  // print<T>(poly_bbox.column(3), std::cout << "poly_y_max ", ", ", stream);
-
-  // std::cout << "num_nodes: " << num_nodes << std::endl;
-  // print<uint32_t>(quadtree.column(0), std::cout << "keys ", ", ", stream);
-  // print<uint8_t>(quadtree.column(1), std::cout << "levels ", ", ", stream);
-  // print<uint8_t>(quadtree.column(2), std::cout << "is_quad ", ", ", stream);
-  // print<uint8_t>(quadtree.column(3), std::cout << "lengths ", ", ", stream);
-  // print<uint8_t>(quadtree.column(4), std::cout << "offsets ", ", ", stream);
 
   // count the number of top-level nodes to begin with
   // this number could be provided explicitly, but count_if should be fast enough
@@ -82,8 +62,6 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
                                                  thrust::placeholders::_1 == 0);
 
   auto num_pairs = num_top_level_children * num_polys;
-
-  // std::cout << "num_pairs: " << num_pairs << std::endl;
 
   rmm::device_uvector<uint8_t> quad_types(num_pairs, stream);   // d_type_temp
   rmm::device_uvector<uint8_t> quad_levels(num_pairs, stream);  // d_lev_temp
@@ -123,29 +101,24 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
   cudf::size_type num_results{0};
 
   for (cudf::size_type i{0}; i < max_depth; ++i) {
-    // std::cout << std::endl;
-
     // Resize output device vectors and update the corresponding pointers. The next level will
     // expand out to no more than `num_parents * 4` pairs, since a parent quadrant can have no more
     // than 4 children.
     size_t max_num_results = num_results + num_parents * 4;
 
     if ((i < max_depth - 1) && (max_num_results > leaf_types.capacity())) {
-      // std::cout << "curr_num_results: " << leaf_types.capacity() << std::endl;
-      // std::cout << "next_num_results: " << max_num_results << std::endl;
-      leaf_types.resize(max_num_results, stream);
-      leaf_levels.resize(max_num_results, stream);
-      leaf_nodes.resize(max_num_results, stream);
-      leaf_polys.resize(max_num_results, stream);
+      // grow preallocated output sizes in multiples of the current capacity
+      auto new_size = leaf_types.capacity() * ((max_num_results / leaf_types.capacity()) + 1);
+      leaf_types.resize(new_size, stream);
+      leaf_levels.resize(new_size, stream);
+      leaf_nodes.resize(new_size, stream);
+      leaf_polys.resize(new_size, stream);
       leaf_pairs = make_zip_iterator(
         leaf_types.begin(), leaf_levels.begin(), leaf_nodes.begin(), leaf_polys.begin());
     }
 
-    // std::cout << "level: " << i << std::endl;
-    // std::cout << "num_pairs: " << num_pairs << std::endl;
-
-    // pair up all top level quadrants and all polygons
     if (i == 0) {
+      // pair up all the top level quadrants and polygons first
       auto counter      = thrust::make_counting_iterator(0);
       auto node_indices = thrust::make_transform_iterator(
         counter,
@@ -183,15 +156,6 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
 
     num_results += num_leaves;
 
-    // std::cout << "num_leaves: " << num_leaves << std::endl;
-    // std::cout << "num_parents: " << num_parents << std::endl;
-    // std::cout << "num_results: " << num_results << std::endl;
-
-    // print(leaf_types, std::cout << "leaf_types ", ", ", stream);
-    // print(leaf_levels, std::cout << "leaf_levels ", ", ", stream);
-    // print(leaf_nodes, std::cout << "leaf_nodes ", ", ", stream);
-    // print(leaf_polys, std::cout << "leaf_polys ", ", ", stream);
-
     // stop descending if no parent quadrants left to expand
     if (num_parents == 0) break;
 
@@ -200,16 +164,8 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
     quad_nodes.shrink_to_fit(stream);
     quad_polys.shrink_to_fit(stream);
 
-    // print(quad_types, std::cout << "quad_types ", ", ", stream);
-    // print(quad_levels, std::cout << "quad_levels ", ", ", stream);
-    // print(quad_nodes, std::cout << "quad_nodes ", ", ", stream);
-    // print(quad_polys, std::cout << "quad_polys ", ", ", stream);
-
-    //
-    // d_quad_nchild
-    //
     auto child_counts = thrust::make_permutation_iterator(node_counts.begin<uint32_t>(),
-                                                          quad_nodes.begin());  //
+                                                          quad_nodes.begin());  // d_quad_nchild
 
     auto next_level = descend_quadtree(child_counts,
                                        node_offsets.begin<uint32_t>(),
@@ -221,7 +177,7 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
                                        stream);
 
     num_pairs = std::get<0>(next_level);
-    // update pair_output_temp_iter to get ready for next level iteration
+    // update node_pairs iterator to get ready for next level iteration
     quad_types  = std::move(std::get<1>(next_level));
     quad_levels = std::move(std::get<2>(next_level));
     quad_nodes  = std::move(std::get<3>(next_level));
