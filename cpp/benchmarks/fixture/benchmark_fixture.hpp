@@ -15,7 +15,6 @@
  */
 
 #include <benchmark/benchmark.h>
-#include <rmm/rmm_api.h>
 #include <rmm/thrust_rmm_allocator.h>
 
 namespace cudf {
