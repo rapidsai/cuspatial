@@ -14,684 +14,284 @@
  * limitations under the License.
  */
 
-#include <cuspatial/error.hpp>
-#include <cuspatial/polygon_bounding_box.hpp>
-#include <cuspatial/spatial_join.hpp>
+#include "join/detail/intersection.cuh"
+#include "join/detail/traversal.cuh"
 
 #include <cudf/column/column.hpp>
-#include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
-#include <cudf/column/column_view.hpp>
 #include <cudf/table/table.hpp>
-#include <cudf/table/table_view.hpp>
-#include <cudf/types.hpp>
+#include <cudf/utilities/type_dispatcher.hpp>
 
-#include "utility/bbox_thrust.cuh"
-#include "utility/quadtree_thrust.cuh"
+#include <cuspatial/error.hpp>
+#include <cuspatial/spatial_join.hpp>
 
-#include <thrust/gather.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/reduce.h>
+#include <rmm/thrust_rmm_allocator.h>
+#include <rmm/device_uvector.hpp>
 
-#include <vector>
+#include <tuple>
+
+namespace cuspatial {
+
+namespace detail {
 
 namespace {
 
-typedef thrust::tuple<double, double, double, double, double, uint32_t, uint32_t>
-  quad_point_parameters;
-
 template <typename T>
-std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_node,
-                                                  uint32_t const *d_p_qtkey,
-                                                  uint8_t const *d_p_qtlev,
-                                                  bool const *d_p_qtsign,
-                                                  uint32_t const *d_p_qtlength,
-                                                  uint32_t const *d_p_qtfpos,
-                                                  uint32_t const num_poly,
-                                                  T const *poly_x_min,
-                                                  T const *poly_y_min,
-                                                  T const *poly_x_max,
-                                                  T const *poly_y_max,
-                                                  SBBox<double> const &aoi_bbox,
-                                                  double scale,
-                                                  uint32_t max_depth,
-                                                  rmm::mr::device_memory_resource *mr,
-                                                  cudaStream_t stream)
-
+inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view const &quadtree,
+                                                             cudf::table_view const &poly_bbox,
+                                                             T x_min,
+                                                             T y_min,
+                                                             T x_max,
+                                                             T y_max,
+                                                             T scale,
+                                                             cudf::size_type max_depth,
+                                                             rmm::mr::device_memory_resource *mr,
+                                                             cudaStream_t stream)
 {
-  /*
-  double x_min = thrust::get<0>(aoi_bbox.first);
-  double y_min = thrust::get<1>(aoi_bbox.first);
-  double x_max = thrust::get<0>(aoi_bbox.second);
-  double y_max = thrust::get<1>(aoi_bbox.second);
-
-  std::cout << "num_node=" << num_node << std::endl;
-  std::cout << "num_poly=" << num_poly << std::endl;
-  std::cout << "bounding box(x_min,y_min,x_max,y_max)=(" << x_min << "," << y_min << "," << x_max
-            << "," << x_max << "," << y_max << ")" << std::endl;
-  std::cout << "scale=" << scale << std::endl;
-  std::cout << "max_depth=" << max_depth << std::endl;
-  */
-
-  auto exec_policy = rmm::exec_policy(stream);
-
-  rmm::device_buffer *db_poly_bbox =
-    new rmm::device_buffer(num_poly * sizeof(SBBox<T>), stream, mr);
-  CUSPATIAL_EXPECTS(db_poly_bbox != nullptr,
-                    "Error allocating memory for polygon bounding boxes on device");
-  SBBox<T> *d_poly_sbbox = static_cast<SBBox<T> *>(db_poly_bbox->data());
-
-  /*
-  if (1) {
-    std::cout << "x_min" << std::endl;
-    thrust::device_ptr<const T> d_x_min_ptr = thrust::device_pointer_cast(poly_x_min);
-    thrust::copy(d_x_min_ptr, d_x_min_ptr + num_poly, std::ostream_iterator<T>(std::cout, " "));
-    std::cout << std::endl;
-
-    std::cout << "y_min" << std::endl;
-    thrust::device_ptr<const T> d_y_min_ptr = thrust::device_pointer_cast(poly_y_min);
-    thrust::copy(d_y_min_ptr, d_y_min_ptr + num_poly, std::ostream_iterator<T>(std::cout, " "));
-    std::cout << std::endl;
-
-    std::cout << "x_max" << std::endl;
-    thrust::device_ptr<const T> d_x_max_ptr = thrust::device_pointer_cast(poly_x_max);
-    thrust::copy(d_x_max_ptr, d_x_max_ptr + num_poly, std::ostream_iterator<T>(std::cout, " "));
-    std::cout << std::endl;
-
-    std::cout << "y_max" << std::endl;
-    thrust::device_ptr<const T> d_y_max_ptr = thrust::device_pointer_cast(poly_y_max);
-    thrust::copy(d_y_max_ptr, d_y_max_ptr + num_poly, std::ostream_iterator<T>(std::cout, " "));
-    std::cout << std::endl;
-  }
-
-  if (1) {
-    std::cout << "qt lev" << std::endl;
-    thrust::device_ptr<const uint8_t> d_lev_ptr = thrust::device_pointer_cast(d_p_qtlev);
-    thrust::copy(d_lev_ptr, d_lev_ptr + num_node, std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-
-    std::cout << "qt sign" << std::endl;
-    thrust::device_ptr<const bool> d_sign_ptr = thrust::device_pointer_cast(d_p_qtsign);
-    thrust::copy(
-      d_sign_ptr, d_sign_ptr + num_node, std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-  }
-  */
-
-  // assemble arrays of columns to an array of bbox (x_min,y_min,x_max,y_max)
-  auto ploy_bbox_iter =
-    thrust::make_zip_iterator(thrust::make_tuple(poly_x_min, poly_y_min, poly_x_max, poly_y_max));
-  thrust::transform(exec_policy->on(stream),
-                    ploy_bbox_iter,
-                    ploy_bbox_iter + num_poly,
-                    d_poly_sbbox,
-                    tuple2bbox<T>());
-
-  // couting the number of top level nodes to begin with
-  // the number could be stored explicitly, but count_if should be fast enough
-  uint32_t num_top_lev_children = thrust::count_if(
-    exec_policy->on(stream), d_p_qtlev, d_p_qtlev + num_node, thrust::placeholders::_1 == 0);
-
-  // the matched quadrant-polygon pairs are dynamic and can not be pre-allocated in a fixed manner
-  // relevant arrays are resized accordingly for memory efficiency
-
-  //{_lev,_type,_poly_idx,_quad_idx}_out are for outputs for matched paris with an initial capcity
-  // of init_len
-  //{_lev,_type,_poly_idx,_quad_idx}_increased are for resized storage for outputs,
-  // condering the maximum number of possible matched pairs at the next level.
-  // The *_increased arrays are only resized as necessary
-
-  //{_lev,_type,_poly_idx,_quad_idx}_temp are for temporal stroage at a level
-  //{_lev,_type,_poly_idx,_quad_idx}_expanded are for expanded stroage at the next level
-  // their size is computed precisely by retriving the numbers of child nodes for all non-leaf
-  // quadrants
-
-  uint32_t init_len = 1000;
-  uint32_t curr_cap = init_len;
-
-  rmm::device_buffer *db_pq_lev_out =
-    new rmm::device_buffer(curr_cap * sizeof(uint8_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_pq_lev_out != nullptr,
-                    "Error allocating memory for permanent level array on device");
-  uint8_t *d_pq_lev_out = static_cast<uint8_t *>(db_pq_lev_out->data());
-
-  rmm::device_buffer *db_pq_type_out =
-    new rmm::device_buffer(curr_cap * sizeof(uint8_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_pq_type_out != nullptr,
-                    "Error allocating memory for permanent type array on device");
-  uint8_t *d_pq_type_out = static_cast<uint8_t *>(db_pq_type_out->data());
-
-  rmm::device_buffer *db_poly_idx_out =
-    new rmm::device_buffer(curr_cap * sizeof(uint32_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_poly_idx_out != nullptr,
-                    "Error allocating memory for permanent polygon index array on device");
-  uint32_t *d_poly_idx_out = static_cast<uint32_t *>(db_poly_idx_out->data());
-
-  rmm::device_buffer *db_quad_idx_out =
-    new rmm::device_buffer(curr_cap * sizeof(uint32_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_quad_idx_out != nullptr,
-                    "Error allocating memory for permanent quadrant index array on device");
-  uint32_t *d_quad_idx_out = static_cast<uint32_t *>(db_quad_idx_out->data());
-
-  auto pair_output_iter = thrust::make_zip_iterator(
-    thrust::make_tuple(d_pq_lev_out, d_pq_type_out, d_poly_idx_out, d_quad_idx_out));
-
-  uint32_t output_nodes_pos = 0;
-
-  uint32_t num_pair = num_top_lev_children * num_poly;
-
-  /*
-  std::cout << "num_top_lev_children=" << num_top_lev_children << std::endl;
-  std::cout << "num_poly=" << num_poly << std::endl;
-  std::cout << "num_pair=" << num_pair << std::endl;
-  */
-
-  rmm::device_buffer *db_pq_lev_temp =
-    new rmm::device_buffer(num_pair * sizeof(uint8_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_pq_lev_temp != nullptr,
-                    "Error allocating memory for temporal level array on device");
-  uint8_t *d_pq_lev_temp = static_cast<uint8_t *>(db_pq_lev_temp->data());
-
-  rmm::device_buffer *db_pq_type_temp =
-    new rmm::device_buffer(num_pair * sizeof(uint8_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_pq_type_temp != nullptr,
-                    "Error allocating memory for temporal type level array on device");
-  uint8_t *d_pq_type_temp = static_cast<uint8_t *>(db_pq_type_temp->data());
-
-  rmm::device_buffer *db_poly_idx_temp =
-    new rmm::device_buffer(num_pair * sizeof(uint32_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_poly_idx_temp != nullptr,
-                    "Error allocating memory for temporal polygon index array on device");
-  uint32_t *d_poly_idx_temp = static_cast<uint32_t *>(db_poly_idx_temp->data());
-
-  rmm::device_buffer *db_quad_idx_temp =
-    new rmm::device_buffer(num_pair * sizeof(uint32_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_quad_idx_temp != nullptr,
-                    "Error allocating memory for temporal quadrant index array on device");
-  uint32_t *d_quad_idx_temp = static_cast<uint32_t *>(db_quad_idx_temp->data());
-
-  auto pair_counting_iter    = thrust::make_counting_iterator(0);
-  auto pair_output_temp_iter = thrust::make_zip_iterator(
-    thrust::make_tuple(d_pq_lev_temp, d_pq_type_temp, d_poly_idx_temp, d_quad_idx_temp));
-
-  // paring up all top level quadrants and all polygons and store the result in
-  // pair_output_temp_iter
-  thrust::transform(exec_policy->on(stream),
-                    pair_counting_iter,
-                    pair_counting_iter + num_pair,
-                    pair_output_temp_iter,
-                    pairwise_test_intersection<T>(max_depth,
-                                                  num_top_lev_children,
-                                                  aoi_bbox,
-                                                  scale,
-                                                  d_p_qtkey,
-                                                  d_p_qtlev,
-                                                  d_p_qtsign,
-                                                  d_poly_sbbox));
-
-  // copy intersected (quadrant,polygon) pairs that involve leaf qudrants to outputs directly (type
-  // 0)
-  uint32_t num_leaf_pair = thrust::copy_if(exec_policy->on(stream),
-                                           pair_output_temp_iter,
-                                           pair_output_temp_iter + num_pair,
-                                           pair_output_iter + output_nodes_pos,
-                                           qt_is_type(0)) -
-                           (pair_output_iter + output_nodes_pos);
-
-  // remove all the (quadrant,polygon) pairs that quadrants do not intersect with polygon bboxes
-  uint32_t num_nonleaf_pair = thrust::remove_if(exec_policy->on(stream),
-                                                pair_output_temp_iter,
-                                                pair_output_temp_iter + num_pair,
-                                                pair_output_temp_iter,
-                                                qt_not_type(1)) -
-                              pair_output_temp_iter;
-
-  /*
-  std::cout << "num_leaf_pair=" << num_leaf_pair << ", num_nonleaf_pair=" << num_nonleaf_pair
-  << std::endl;
-  */
-
-  output_nodes_pos += num_leaf_pair;
-
-  // loopin through all the rest of levels
-  for (uint32_t i = 1; i < max_depth; i++) {
-    // allocate memory for numbers of child nodes for all non-leaf quadrants
-    rmm::device_buffer *db_quad_nchild =
-      new rmm::device_buffer(num_nonleaf_pair * sizeof(uint32_t), stream, mr);
-    CUSPATIAL_EXPECTS(db_quad_nchild != nullptr,
-                      "Error allocating memory for number of child nodes array on device");
-    uint32_t *d_quad_nchild = static_cast<uint32_t *>(db_quad_nchild->data());
-
-    // retrieve the numbers of child quadrants and store them in d_quad_nchild
-    thrust::copy(
-      exec_policy->on(stream),
-      thrust::make_permutation_iterator(d_p_qtlength, d_quad_idx_temp),
-      thrust::make_permutation_iterator(d_p_qtlength, d_quad_idx_temp) + num_nonleaf_pair,
-      d_quad_nchild);
-
-    // compute the total number of child nodes using a reduction
-    num_pair =
-      thrust::reduce(exec_policy->on(stream), d_quad_nchild, d_quad_nchild + num_nonleaf_pair);
-    /*
-    std::cout << "num_pair after gathering child nodes=" << num_pair << std::endl;
-    */
-
-    // allocate memory for the next level
-
-    rmm::device_buffer *db_expand_pos =
-      new rmm::device_buffer(num_pair * sizeof(uint32_t), stream, mr);
-    CUSPATIAL_EXPECTS(db_expand_pos != nullptr,
-                      "Error allocating memory for expanded offset array on device");
-    uint32_t *d_expand_pos = static_cast<uint32_t *>(db_expand_pos->data());
-    CUDA_TRY(cudaMemset(d_expand_pos, 0, num_pair * sizeof(uint32_t)));
-
-    rmm::device_buffer *db_pq_lev_expanded =
-      new rmm::device_buffer(num_pair * sizeof(uint8_t), stream, mr);
-    CUSPATIAL_EXPECTS(db_pq_lev_expanded != nullptr,
-                      "Error allocating memory for expanded lev array on device");
-    uint8_t *d_pq_lev_expanded = static_cast<uint8_t *>(db_pq_lev_expanded->data());
-
-    rmm::device_buffer *db_pq_type_expanded =
-      new rmm::device_buffer(num_pair * sizeof(uint8_t), stream, mr);
-    CUSPATIAL_EXPECTS(db_pq_type_expanded != nullptr,
-                      "Error allocating memory for expanded type level array on device");
-    uint8_t *d_pq_type_expanded = static_cast<uint8_t *>(db_pq_type_expanded->data());
-
-    rmm::device_buffer *db_poly_idx_expanded =
-      new rmm::device_buffer(num_pair * sizeof(uint32_t), stream, mr);
-    CUSPATIAL_EXPECTS(db_poly_idx_expanded != nullptr,
-                      "Error allocating memory for expanded polygon index array on device");
-    uint32_t *d_poly_idx_expanded = static_cast<uint32_t *>(db_poly_idx_expanded->data());
-
-    rmm::device_buffer *db_quad_idx_expanded =
-      new rmm::device_buffer(num_pair * sizeof(uint32_t), stream, mr);
-    CUSPATIAL_EXPECTS(db_quad_idx_expanded != nullptr,
-                      "Error allocating memory for expanded quadrant index array on device");
-    uint32_t *d_quad_idx_expanded = static_cast<uint32_t *>(db_quad_idx_expanded->data());
-
-    // exclusive scan on the numbers to compute the offsets
-    auto counting_iter = thrust::make_counting_iterator(0);
-    thrust::exclusive_scan(
-      exec_policy->on(stream), d_quad_nchild, d_quad_nchild + num_nonleaf_pair, d_quad_nchild);
-
-    // use the offset as the map to scatter sequential numbers 0..num_nonleaf_pair to d_expand_pos
-    thrust::scatter(exec_policy->on(stream),
-                    counting_iter,
-                    counting_iter + num_nonleaf_pair,
-                    d_quad_nchild,
-                    d_expand_pos);
-
-    // d_quad_nchild is no longer needed, so delete its asociated device_buffer and release memory
-    delete db_quad_nchild;
-    db_quad_nchild = nullptr;
-
-    // inclusive scan with maximum functor to fill the empty elements with their left-most non-empty
-    // elements d_expand_pos is now a full array with each element stores the sequene idx of a
-    // quadrant's parent
-    thrust::inclusive_scan(exec_policy->on(stream),
-                           d_expand_pos,
-                           d_expand_pos + num_pair,
-                           d_expand_pos,
-                           thrust::maximum<int>());
-
-    // assemble the {_lev,_type,_poly_id,_quad_id) arrays as a zipped iterator
-    auto pair_output_expanded_iter = thrust::make_zip_iterator(thrust::make_tuple(
-      d_pq_lev_expanded, d_pq_type_expanded, d_poly_idx_expanded, d_quad_idx_expanded));
-
-    // use d_expand_pos as the map to gather info on non-leaf quadrants for their respective child
-    // quadrants
-    thrust::gather(exec_policy->on(stream),
-                   d_expand_pos,
-                   d_expand_pos + num_pair,
-                   pair_output_temp_iter,
-                   pair_output_expanded_iter);
-
-    // generate sequential idx within each parent quadrants; used with fpos array to retrieve child
-    // quadrants
-    rmm::device_buffer *db_seq_pos =
-      new rmm::device_buffer(num_pair * sizeof(uint32_t), stream, mr);
-    CUSPATIAL_EXPECTS(db_seq_pos != nullptr,
-                      "Error allocating memory for sequence index  array on device");
-    uint32_t *d_seq_pos = static_cast<uint32_t *>(db_seq_pos->data());
-
-    thrust::exclusive_scan_by_key(exec_policy->on(stream),
-                                  d_expand_pos,
-                                  d_expand_pos + num_pair,
-                                  thrust::constant_iterator<int>(1),
-                                  d_seq_pos);
-
-    // d_expand_pos is no long needed; delete associated device_buffer and release memory
-    delete db_expand_pos;
-    db_expand_pos = nullptr;
-
-    // retrieve child quadrants, given fpos of parent quadrants (d_p_qtfpos) and offsets child
-    // quarants
-    auto update_quad_iter = thrust::make_zip_iterator(
-      thrust::make_tuple(d_quad_idx_expanded, thrust::make_counting_iterator(0)));
-    thrust::transform(exec_policy->on(stream),
-                      update_quad_iter,
-                      update_quad_iter + num_pair,
-                      d_quad_idx_expanded,
-                      update_quad(d_p_qtfpos, d_seq_pos));
-
-    // d_seq_pos is no long needed; delete related device_buffer
-    delete db_seq_pos;
-    db_seq_pos = nullptr;
-
-    // testing intersection of quadrnats and polygon bboxes, results stored in d_pq_type_expanded
-    // three possible types: intersection and leaf nodes==>0, intersection and non-leaf nodes==>1,
-    // non-intersection==>2 pair_output_expanded_iter has four components; polygon/quadrant idx
-    // repeated to work with copy_if/remove_if next
-    auto pq_pair_iterator =
-      thrust::make_zip_iterator(thrust::make_tuple(d_poly_idx_expanded, d_quad_idx_expanded));
-    thrust::transform(
-      exec_policy->on(stream),
-      pq_pair_iterator,
-      pq_pair_iterator + num_pair,
-      pair_output_expanded_iter,
-      twolist_test_intersection<T>(
-        max_depth, aoi_bbox, scale, d_p_qtkey, d_p_qtlev, d_p_qtsign, d_poly_sbbox));
-
-    // copy type 0 (intersection and leaf nodes) to output directly
-    num_leaf_pair = thrust::copy_if(exec_policy->on(stream),
-                                    pair_output_expanded_iter,
-                                    pair_output_expanded_iter + num_pair,
-                                    pair_output_iter + output_nodes_pos,
-                                    qt_is_type(0)) -
-                    (pair_output_iter + output_nodes_pos);
-
-    // keep type 1(intersection and non-leaf nodes) only
-    num_nonleaf_pair = thrust::remove_if(exec_policy->on(stream),
-                                         pair_output_expanded_iter,
-                                         pair_output_expanded_iter + num_pair,
-                                         pair_output_expanded_iter,
-                                         qt_not_type(1)) -
-                       pair_output_expanded_iter;
-
-    /*
-    std::cout << "level=" << i << std::endl;
-    std::cout << "num_leaf_pair=" << num_leaf_pair << std::endl;
-    std::cout << "num_nonleaf_pair=" << num_nonleaf_pair << std::endl;
-    */
-
-    // update numbers of pairs in the output
-    output_nodes_pos += num_leaf_pair;
-
-    // release device buffers for parent quadrants
-    // and update pointers to device buffers and arrays to point to child quadrants
-    delete db_pq_lev_temp;
-    db_pq_lev_temp = db_pq_lev_expanded;
-    d_pq_lev_temp  = d_pq_lev_expanded;
-    delete db_pq_type_temp;
-    db_pq_type_temp = db_pq_type_expanded;
-    d_pq_type_temp  = d_pq_type_expanded;
-    delete db_poly_idx_temp;
-    db_poly_idx_temp = db_poly_idx_expanded;
-    d_poly_idx_temp  = d_poly_idx_expanded;
-    delete db_quad_idx_temp;
-    db_quad_idx_temp = db_quad_idx_expanded;
-    d_quad_idx_temp  = d_quad_idx_expanded;
-
-    // stop level-wise iteration if no more non-leaf quadrants to expand
-    if (num_nonleaf_pair == 0) break;
-
-    // update pair_output_temp_iter to get ready for next level iteration
-    pair_output_temp_iter = thrust::make_zip_iterator(
-      thrust::make_tuple(d_pq_lev_temp, d_pq_type_temp, d_poly_idx_temp, d_quad_idx_temp));
-
-    // resize device buffers for storing output and update the corresponding pointers
-    // the next level will add no more than num_nonleaf_pair*4 pairs
-    // as a parent quadrant has no more than 4 child quadrants
-    uint32_t max_num = output_nodes_pos + num_nonleaf_pair * 4;
-
-    if ((i < max_depth - 1) && (max_num > curr_cap)) {
-      curr_cap *= ((max_num / curr_cap) + 1);
-      /*
-      std::cout << "increasing output capacity: level=" << i << " to " << curr_cap << std::endl;
-      */
-
-      rmm::device_buffer *db_pq_lev_increased =
-        new rmm::device_buffer(curr_cap * sizeof(uint8_t), stream, mr);
-      CUSPATIAL_EXPECTS(db_pq_lev_increased != nullptr,
-                        "Error allocating memory for increased lev array on device");
-      uint8_t *d_pq_lev_increased = static_cast<uint8_t *>(db_pq_lev_increased->data());
-      CUDA_TRY(cudaMemcpy((void *)d_pq_lev_increased,
-                          (void *)d_pq_lev_out,
-                          output_nodes_pos * sizeof(uint8_t),
-                          cudaMemcpyDeviceToDevice));
-      delete db_pq_lev_out;
-      db_pq_lev_out = db_pq_lev_increased;
-      d_pq_lev_out  = d_pq_lev_increased;
-
-      rmm::device_buffer *db_pq_type_increased =
-        new rmm::device_buffer(curr_cap * sizeof(uint8_t), stream, mr);
-      CUSPATIAL_EXPECTS(db_pq_type_increased != nullptr,
-                        "Error allocating memory for increased type array on device");
-      uint8_t *d_pq_type_increased = static_cast<uint8_t *>(db_pq_type_increased->data());
-      CUDA_TRY(cudaMemcpy((void *)d_pq_type_increased,
-                          (void *)d_pq_type_out,
-                          output_nodes_pos * sizeof(uint8_t),
-                          cudaMemcpyDeviceToDevice));
-      delete db_pq_type_out;
-      db_pq_type_out = db_pq_type_increased;
-      d_pq_type_out  = d_pq_type_increased;
-
-      rmm::device_buffer *db_quad_idx_increased =
-        new rmm::device_buffer(curr_cap * sizeof(uint32_t), stream, mr);
-      CUSPATIAL_EXPECTS(db_quad_idx_increased != nullptr,
-                        "Error allocating memory for increased quad index array on device");
-      uint32_t *d_quad_idx_increased = static_cast<uint32_t *>(db_quad_idx_increased->data());
-      CUDA_TRY(cudaMemcpy((void *)d_quad_idx_increased,
-                          (void *)d_quad_idx_out,
-                          output_nodes_pos * sizeof(uint32_t),
-                          cudaMemcpyDeviceToDevice));
-      delete db_quad_idx_out;
-      db_quad_idx_out = db_quad_idx_increased;
-      d_quad_idx_out  = d_quad_idx_increased;
-
-      rmm::device_buffer *db_poly_idx_increased =
-        new rmm::device_buffer(curr_cap * sizeof(uint32_t), stream, mr);
-      CUSPATIAL_EXPECTS(db_poly_idx_increased != nullptr,
-                        "Error allocating memory for increased polygon index array on device");
-      uint32_t *d_poly_idx_increased = static_cast<uint32_t *>(db_poly_idx_increased->data());
-      CUDA_TRY(cudaMemcpy((void *)d_poly_idx_increased,
-                          (void *)d_poly_idx_out,
-                          output_nodes_pos * sizeof(uint32_t),
-                          cudaMemcpyDeviceToDevice));
-      delete db_poly_idx_out;
-      db_poly_idx_out = db_poly_idx_increased;
-      d_poly_idx_out  = d_poly_idx_increased;
-
-      // update pair_output_iter
-      pair_output_iter = thrust::make_zip_iterator(
-        thrust::make_tuple(d_pq_lev_out, d_pq_type_out, d_poly_idx_out, d_quad_idx_out));
+  auto const node_levels  = quadtree.column(1);  // uint8_t
+  auto const node_counts  = quadtree.column(3);  // uint32_t
+  auto const node_offsets = quadtree.column(4);  // uint32_t
+
+  auto num_polys = poly_bbox.num_rows();
+
+  // count the number of top-level nodes to begin with
+  // this number could be provided explicitly, but count_if should be fast enough
+  auto num_top_level_children = thrust::count_if(rmm::exec_policy(stream)->on(stream),
+                                                 node_levels.begin<uint8_t>(),
+                                                 node_levels.end<uint8_t>(),
+                                                 thrust::placeholders::_1 == 0);
+
+  auto num_pairs = num_top_level_children * num_polys;
+
+  rmm::device_uvector<uint8_t> quad_types(num_pairs, stream);   // d_type_temp
+  rmm::device_uvector<uint8_t> quad_levels(num_pairs, stream);  // d_lev_temp
+  rmm::device_uvector<uint32_t> quad_nodes(num_pairs, stream);  // d_quad_idx_temp
+  rmm::device_uvector<uint32_t> quad_polys(num_pairs, stream);  // d_poly_idx_temp
+
+  rmm::device_uvector<uint8_t> leaf_types(num_pairs, stream);   // d_type_out
+  rmm::device_uvector<uint8_t> leaf_levels(num_pairs, stream);  // d_lev_out
+  rmm::device_uvector<uint32_t> leaf_nodes(num_pairs, stream);  // d_node_idx_out
+  rmm::device_uvector<uint32_t> leaf_polys(num_pairs, stream);  // d_poly_idx_out
+
+  // The matched quadrant-polygon pairs are dynamic and can not be pre-allocated in a fixed manner.
+  // Relevant arrays are resized accordingly for memory efficiency.
+  //
+  // `d_lev_out`, `d_type_out`, `d_poly_idx_out`, `d_node_idx_out` are for outputs for matched pairs
+  // with an initial capcity of `init_len`.
+  //
+  // `d_lev_increased`, `d_type_increased`, `d_poly_idx_increased`, `d_node_idx_increased` are for
+  // resized storage for outputs, condering the maximum number of possible matched pairs at the next
+  // level. The *_increased arrays are only resized as necessary.
+  //
+  // `d_lev_temp`, `d_type_temp`, `d_poly_idx_temp`, `d_quad_idx_temp` are for temporal stroage at a
+  // level.
+  //
+  // `d_lev_expanded`, `d_type_expanded`, `d_poly_idx_expanded`, `d_node_idx_expanded` are for
+  // expanded stroage at the next level. Their size is computed precisely by retriving the numbers
+  // of child nodes for all non-leaf quadrants.
+
+  auto node_pairs = make_zip_iterator(
+    quad_types.begin(), quad_levels.begin(), quad_nodes.begin(), quad_polys.begin());
+
+  auto leaf_pairs = make_zip_iterator(
+    leaf_types.begin(), leaf_levels.begin(), leaf_nodes.begin(), leaf_polys.begin());
+
+  cudf::size_type num_leaves{0};
+  cudf::size_type num_parents{0};
+  cudf::size_type num_results{0};
+
+  for (cudf::size_type i{0}; i < max_depth; ++i) {
+    // Resize output device vectors and update the corresponding pointers. The next level will
+    // expand out to no more than `num_parents * 4` pairs, since a parent quadrant can have no more
+    // than 4 children.
+    size_t max_num_results = num_results + num_parents * 4;
+
+    if ((i < max_depth - 1) && (max_num_results > leaf_types.capacity())) {
+      // grow preallocated output sizes in multiples of the current capacity
+      auto new_size = leaf_types.capacity() * ((max_num_results / leaf_types.capacity()) + 1);
+      leaf_types.resize(new_size, stream);
+      leaf_levels.resize(new_size, stream);
+      leaf_nodes.resize(new_size, stream);
+      leaf_polys.resize(new_size, stream);
+      leaf_pairs = make_zip_iterator(
+        leaf_types.begin(), leaf_levels.begin(), leaf_nodes.begin(), leaf_polys.begin());
     }
-    /*
-    std::cout << "level=" << i << " output_nodes_pos=" << output_nodes_pos
-    << " curr_cap=" << curr_cap << std::endl;
-    */
+
+    if (i == 0) {
+      // pair up all the top level quadrants and polygons first
+      auto counter      = thrust::make_counting_iterator(0);
+      auto node_indices = thrust::make_transform_iterator(
+        counter,
+        [num_top_level_children] __device__(auto const i) { return i % num_top_level_children; });
+      auto poly_indices = thrust::make_transform_iterator(
+        counter,
+        [num_top_level_children] __device__(auto const i) { return i / num_top_level_children; });
+
+      std::tie(num_parents, num_leaves) = find_intersections(quadtree,
+                                                             poly_bbox,
+                                                             node_indices,
+                                                             poly_indices,
+                                                             node_pairs,
+                                                             leaf_pairs + num_results,
+                                                             num_pairs,
+                                                             x_min,
+                                                             y_min,
+                                                             scale,
+                                                             max_depth,
+                                                             stream);
+    } else {
+      std::tie(num_parents, num_leaves) = find_intersections(quadtree,
+                                                             poly_bbox,
+                                                             quad_nodes.begin(),
+                                                             quad_polys.begin(),
+                                                             node_pairs,
+                                                             leaf_pairs + num_results,
+                                                             num_pairs,
+                                                             x_min,
+                                                             y_min,
+                                                             scale,
+                                                             max_depth,
+                                                             stream);
+    }
+
+    num_results += num_leaves;
+
+    // stop descending if no parent quadrants left to expand
+    if (num_parents == 0) break;
+
+    quad_types.shrink_to_fit(stream);
+    quad_levels.shrink_to_fit(stream);
+    quad_nodes.shrink_to_fit(stream);
+    quad_polys.shrink_to_fit(stream);
+
+    auto child_counts = thrust::make_permutation_iterator(node_counts.begin<uint32_t>(),
+                                                          quad_nodes.begin());  // d_quad_nchild
+
+    auto next_level = descend_quadtree(child_counts,
+                                       node_offsets.begin<uint32_t>(),
+                                       num_parents,
+                                       quad_types,
+                                       quad_levels,
+                                       quad_nodes,
+                                       quad_polys,
+                                       stream);
+
+    num_pairs = std::get<0>(next_level);
+    // update node_pairs iterator to get ready for next level iteration
+    quad_types  = std::move(std::get<1>(next_level));
+    quad_levels = std::move(std::get<2>(next_level));
+    quad_nodes  = std::move(std::get<3>(next_level));
+    quad_polys  = std::move(std::get<4>(next_level));
+    node_pairs  = make_zip_iterator(
+      quad_types.begin(), quad_levels.begin(), quad_nodes.begin(), quad_polys.begin());
   }
 
-  /*
-  std::cout << "final: output_nodes_pos=" << output_nodes_pos << std::endl;
-  */
+  std::vector<std::unique_ptr<cudf::column>> cols{};
+  cols.reserve(2);
+  cols.push_back(make_fixed_width_column<int32_t>(num_results, stream, mr));
+  cols.push_back(make_fixed_width_column<int32_t>(num_results, stream, mr));
 
-  CUSPATIAL_EXPECTS(output_nodes_pos <= curr_cap, "output arrays: out of boundary");
+  thrust::copy(rmm::exec_policy(stream)->on(stream),
+               leaf_polys.begin(),
+               leaf_polys.begin() + num_results,
+               cols.at(0)->mutable_view().begin<uint32_t>());
 
-  // d_poly_bbox is no longer needed, delete the associated device buffer and relase memory
-  delete db_poly_bbox;
-  db_poly_bbox = nullptr;
+  thrust::copy(rmm::exec_policy(stream)->on(stream),
+               leaf_nodes.begin(),
+               leaf_nodes.begin() + num_results,
+               cols.at(1)->mutable_view().begin<uint32_t>());
 
-  // allocate columns for pairs of polygon offsets and quadrant offsets as the final output
-  // lev and type are not needed in the output
-  // note only the first output_nodes_pos elements are copied to output columns
-  std::unique_ptr<cudf::column> poly_idx_col =
-    cudf::make_numeric_column(cudf::data_type(cudf::type_id::INT32),
-                              output_nodes_pos,
-                              cudf::mask_state::UNALLOCATED,
-                              stream,
-                              mr);
-  uint32_t *d_pq_poly_idx =
-    cudf::mutable_column_device_view::create(poly_idx_col->mutable_view(), stream)
-      ->data<uint32_t>();
-  CUSPATIAL_EXPECTS(d_pq_poly_idx != nullptr,
-                    "Error in accessing data array of polygon index column");
-  thrust::copy(
-    exec_policy->on(stream), d_poly_idx_out, d_poly_idx_out + output_nodes_pos, d_pq_poly_idx);
-
-  std::unique_ptr<cudf::column> quad_idx_col =
-    cudf::make_numeric_column(cudf::data_type(cudf::type_id::INT32),
-                              output_nodes_pos,
-                              cudf::mask_state::UNALLOCATED,
-                              stream,
-                              mr);
-  uint32_t *d_pq_quad_idx =
-    cudf::mutable_column_device_view::create(quad_idx_col->mutable_view(), stream)
-      ->data<uint32_t>();
-  CUSPATIAL_EXPECTS(d_pq_quad_idx != nullptr,
-                    "Error in accessing data array of quadrant index column");
-  thrust::copy(
-    exec_policy->on(stream), d_quad_idx_out, d_quad_idx_out + output_nodes_pos, d_pq_quad_idx);
-
-  // the output arrays are no longer needed; delete device buffers and release memory
-  delete db_pq_lev_out;
-  db_pq_lev_out = nullptr;
-  delete db_pq_type_out;
-  db_pq_lev_out = nullptr;
-  delete db_poly_idx_out;
-  db_poly_idx_out = nullptr;
-  delete db_quad_idx_out;
-  db_quad_idx_out = nullptr;
-
-  /*
-  if (1) {
-    std::cout << "total pairs=" << output_nodes_pos << std::endl;
-
-    thrust::device_ptr<uint32_t> d_poly_idx_ptr = thrust::device_pointer_cast(d_pq_poly_idx);
-    std::cout << "poly id of poly-quad pairs" << std::endl;
-    thrust::copy(d_poly_idx_ptr,
-                 d_poly_idx_ptr + output_nodes_pos,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-
-    thrust::device_ptr<uint32_t> d_quad_idx_ptr = thrust::device_pointer_cast(d_pq_quad_idx);
-    std::cout << "quadrant id of poly-quad pairs" << std::endl;
-    thrust::copy(d_quad_idx_ptr,
-                 d_quad_idx_ptr + output_nodes_pos,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-  }
-  */
-
-  std::vector<std::unique_ptr<cudf::column>> pair_cols;
-  pair_cols.push_back(std::move(poly_idx_col));
-  pair_cols.push_back(std::move(quad_idx_col));
-  return pair_cols;
+  return std::make_unique<cudf::table>(std::move(cols));
 }
 
-struct quad_bbox_processor {
+struct dispatch_quadtree_bounding_box_join {
   template <typename T, std::enable_if_t<std::is_floating_point<T>::value> * = nullptr>
-  std::unique_ptr<cudf::table> operator()(const cudf::table_view &quadtree,
-                                          const cudf::table_view &poly_bbox,
-                                          quad_point_parameters qpi,
-                                          rmm::mr::device_memory_resource *mr,
-                                          cudaStream_t stream)
+  inline std::unique_ptr<cudf::table> operator()(cudf::table_view const &quadtree,
+                                                 cudf::table_view const &poly_bbox,
+                                                 double x_min,
+                                                 double y_min,
+                                                 double x_max,
+                                                 double y_max,
+                                                 double scale,
+                                                 cudf::size_type max_depth,
+                                                 rmm::mr::device_memory_resource *mr,
+                                                 cudaStream_t stream)
   {
-    double x_min = thrust::get<0>(qpi);
-    double y_min = thrust::get<1>(qpi);
-    double x_max = thrust::get<2>(qpi);
-    double y_max = thrust::get<3>(qpi);
-    SBBox<double> aoi_bbox(thrust::make_tuple(x_min, y_min), thrust::make_tuple(x_max, y_max));
-    /*
-    std::cout << "quadtree_poly.aoi: " << x_min << " " << y_min << " " << x_max << " " << y_max
-    << std::endl;
-    */
-    double scale       = thrust::get<4>(qpi);
-    uint32_t max_depth = thrust::get<5>(qpi);
-
-    const uint32_t *d_p_qtkey    = quadtree.column(0).data<uint32_t>();
-    const uint8_t *d_p_qtlev     = quadtree.column(1).data<uint8_t>();
-    const bool *d_p_qtsign       = quadtree.column(2).data<bool>();
-    const uint32_t *d_p_qtlength = quadtree.column(3).data<uint32_t>();
-    const uint32_t *d_p_qtfpos   = quadtree.column(4).data<uint32_t>();
-
-    const T *poly_x_min = poly_bbox.column(0).data<T>();
-    const T *poly_y_min = poly_bbox.column(1).data<T>();
-    const T *poly_x_max = poly_bbox.column(2).data<T>();
-    const T *poly_y_max = poly_bbox.column(3).data<T>();
-
-    uint32_t num_node = quadtree.num_rows();
-    uint32_t num_poly = poly_bbox.num_rows();
-
-    std::vector<std::unique_ptr<cudf::column>> pair_cols = dowork(num_node,
-                                                                  d_p_qtkey,
-                                                                  d_p_qtlev,
-                                                                  d_p_qtsign,
-                                                                  d_p_qtlength,
-                                                                  d_p_qtfpos,
-                                                                  num_poly,
-                                                                  poly_x_min,
-                                                                  poly_y_min,
-                                                                  poly_x_max,
-                                                                  poly_y_max,
-                                                                  aoi_bbox,
-                                                                  scale,
-                                                                  max_depth,
-                                                                  mr,
-                                                                  stream);
-
-    return std::make_unique<cudf::table>(std::move(pair_cols));
+    return join_quadtree_and_bboxes<T>(quadtree,
+                                       poly_bbox,
+                                       static_cast<T>(x_min),
+                                       static_cast<T>(y_min),
+                                       static_cast<T>(x_max),
+                                       static_cast<T>(y_max),
+                                       static_cast<T>(scale),
+                                       max_depth,
+                                       mr,
+                                       stream);
   }
-
-  template <typename T, std::enable_if_t<!std::is_floating_point<T>::value> * = nullptr>
-  std::unique_ptr<cudf::table> operator()(const cudf::table_view &quadtree,
-                                          const cudf::table_view &bbox,
-                                          quad_point_parameters qpi,
-                                          rmm::mr::device_memory_resource *mr,
-                                          cudaStream_t stream)
+  template <typename T,
+            std::enable_if_t<!std::is_floating_point<T>::value> * = nullptr,
+            typename... Args>
+  inline std::unique_ptr<cudf::table> operator()(Args &&...)
   {
-    CUDF_FAIL("Non-floating point operation is not supported");
+    CUSPATIAL_FAIL("Only floating-point types are supported");
   }
 };
+}  // namespace
 
-}  // end anonymous namespace
+std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
+                                            cudf::table_view const &poly_bbox,
+                                            double x_min,
+                                            double y_min,
+                                            double x_max,
+                                            double y_max,
+                                            double scale,
+                                            cudf::size_type max_depth,
+                                            rmm::mr::device_memory_resource *mr,
+                                            cudaStream_t stream)
+{
+  return cudf::type_dispatcher(poly_bbox.column(0).type(),
+                               dispatch_quadtree_bounding_box_join{},
+                               quadtree,
+                               poly_bbox,
+                               x_min,
+                               y_min,
+                               x_max,
+                               y_max,
+                               scale,
+                               max_depth,
+                               mr,
+                               stream);
+}
 
-// namespace cuspatial {
+}  // namespace detail
 
-// std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
-//                                             cudf::table_view const &poly_bbox,
-//                                             double x_min,
-//                                             double y_min,
-//                                             double x_max,
-//                                             double y_max,
-//                                             double scale,
-//                                             cudf::size_type max_depth,
-//                                             rmm::mr::device_memory_resource *mr)
-// {
-//   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "quadtree table must have 5 columns");
-//   CUSPATIAL_EXPECTS(poly_bbox.num_columns() == 4, "polygon bbox table must have 4 columns");
-//   CUSPATIAL_EXPECTS(x_min < x_max && y_min < y_max,
-//                     "invalid bounding box (x_min,y_min,x_max,y_max)");
-//   CUSPATIAL_EXPECTS(scale > 0, "scale must be positive");
-//   CUSPATIAL_EXPECTS(max_depth > 0 && max_depth < 16, "maximum of levels might be in [0,16)");
+std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
+                                            cudf::table_view const &poly_bbox,
+                                            double x_min,
+                                            double y_min,
+                                            double x_max,
+                                            double y_max,
+                                            double scale,
+                                            cudf::size_type max_depth,
+                                            rmm::mr::device_memory_resource *mr)
+{
+  CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "quadtree table must have 5 columns");
+  CUSPATIAL_EXPECTS(poly_bbox.num_columns() == 4, "polygon bbox table must have 4 columns");
+  CUSPATIAL_EXPECTS(x_min < x_max && y_min < y_max,
+                    "invalid bounding box (x_min,y_min,x_max,y_max)");
+  CUSPATIAL_EXPECTS(scale > 0, "scale must be positive");
+  CUSPATIAL_EXPECTS(max_depth > 0 && max_depth < 16, "maximum of levels might be in [0,16)");
 
-//   if (quadtree.num_rows() == 0 || poly_bbox.num_rows() == 0) {
-//     std::vector<std::unique_ptr<cudf::column>> cols{};
-//     cols.reserve(2);
-//     cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::INT32}));
-//     cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::INT32}));
-//     return std::make_unique<cudf::table>(std::move(cols));
-//   }
+  if (quadtree.num_rows() == 0 || poly_bbox.num_rows() == 0) {
+    std::vector<std::unique_ptr<cudf::column>> cols{};
+    cols.reserve(2);
+    cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::INT32}));
+    cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::INT32}));
+    return std::make_unique<cudf::table>(std::move(cols));
+  }
 
-//   quad_point_parameters qpi = thrust::make_tuple(x_min, y_min, x_max, y_max, scale, max_depth,
-//   0);
+  return detail::quad_bbox_join(
+    quadtree, poly_bbox, x_min, y_min, x_max, y_max, scale, max_depth, mr, cudaStream_t{0});
+}
 
-//   cudf::data_type dtype = poly_bbox.column(0).type();
-
-//   return cudf::type_dispatcher(
-//     dtype, quad_bbox_processor{}, quadtree, poly_bbox, qpi, mr, cudaStream_t{0});
-// }
-
-// }  // namespace cuspatial
+}  // namespace cuspatial
