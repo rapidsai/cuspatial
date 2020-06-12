@@ -16,47 +16,59 @@
 
 #pragma once
 
-#include <cudf/table/table_view.hpp>
+#include <cudf/types.hpp>
 
 #include <memory>
+
+// debug printer includes
+// #include <cudf/column/column_view.hpp>
+// #include <cudf/utilities/error.hpp>
+
+// #include <rmm/thrust_rmm_allocator.h>
+// #include <rmm/device_buffer.hpp>
+// #include <rmm/device_uvector.hpp>
+
+// #include <thrust/copy.h>
+// #include <thrust/device_ptr.h>
+// #include <thrust/execution_policy.h>
+// #include <thrust/fill.h>
+
+// #include <iostream>
+// #include <string>
+//
 
 namespace cuspatial {
 
 /**
  * @brief pair quadtree quadrants and polygons by intersection tests of quadrants and polygon bboxes
  *
- * @param quadtree: table of five arrays derived from quadtree indexing on points (key, lev, sign,
- *length, fpos)
- *
- * @param poly_bbox: table of four arrays representing polygon bboxes (x1,y1,x2,y2)
- * @param x1/y1/x2/y2: bounding box of area of interests.
+ * @param quadtree: cudf table representing a quadtree points index (key, level, is_quad, length,
+ * offset)
+ * @param poly_bbox: cudf table of bounding boxes as four columns (x_min, y_min, x_max, y_max)
+ * @param x_min The lower-left x-coordinate of the area of interest bounding box.
+ * @param x_max The upper-right x-coordinate of the area of interest bounding box.
+ * @param y_min The lower-left y-coordinate of the area of interest bounding box.
+ * @param y_max The upper-right y-coordinate of the area of interest bounding box.
  * @param scale: grid cell size along both x and y dimensions.
  * scale works with x1 and x2 to convert x/y coodiantes into a Morton code in 2D space
- * @param num_level: largest depth of quadtree nodes
- * the value should be less than 16 as uint32_t is used for Morton code representation
- * the actual number of levels may be less than num_level
- * when #of points are small and/or min_size (next) is large
- * @param min_size: the minimum number of points for a non-leaf quadtree node
- * - all non-last-level quadrants should have less than min_size points
- * - last-level quadrants are permited to have more than min_size points
- * - min_size is typically set to the number of threads in a block used in the two CUDA kernels
- *   needed in the spatial refinment step
+ * @param max_depth: largest quadtree depth. the value should be less than 16 as uint32_t is used
+ * for Morton code representation the actual number of levels may be less than max_depth when #of
+ * points are small and/or min_size (next) is large
  *
  * @return array of (polygon_index, quadrant_index) pairs that quadrant intersects with polygon bbox
  * quadrant_index and polygon_index are offsets of quadrant and polygon arrays, respectively
  */
 
 std::unique_ptr<cudf::table> quad_bbox_join(
-  cudf::table_view const& quadtree,
-  cudf::table_view const& poly_bbox,
+  cudf::table_view const &quadtree,
+  cudf::table_view const &poly_bbox,
   double x_min,
   double y_min,
   double x_max,
   double y_max,
   double scale,
-  uint32_t num_level,
-  uint32_t min_size,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  cudf::size_type max_depth,
+  rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource());
 
 /**
  * @brief pair points and polygons using ray-cast based point-in-polygon test algorithm in two
@@ -85,5 +97,84 @@ std::unique_ptr<cudf::table> quad_bbox_join(
 //   cudf::column_view const& poly_x,
 //   cudf::column_view const& poly_y,
 //   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+
+// namespace detail {
+
+// template <typename T>
+// void print(std::vector<T> const &vec,
+//            std::ostream &os             = std::cout,
+//            std::string const &delimiter = ",")
+// {
+//   std::vector<double> f64s(vec.size());
+//   std::copy(vec.begin(), vec.end(), f64s.begin());
+//   os << "size: " << vec.size() << " [" << std::endl << "  ";
+//   std::copy(f64s.begin(), f64s.end(), std::ostream_iterator<double>(os, delimiter.data()));
+//   os << std::endl << "]" << std::endl;
+// }
+
+// template <typename T>
+// void print(rmm::device_vector<T> const &vec,
+//            std::ostream &os             = std::cout,
+//            std::string const &delimiter = ",",
+//            cudaStream_t stream          = 0)
+// {
+//   CUDA_TRY(cudaStreamSynchronize(stream));
+//   std::vector<T> hvec(vec.size());
+//   std::fill(hvec.begin(), hvec.end(), T{0});
+//   thrust::copy(vec.begin(), vec.end(), hvec.begin());
+//   print<T>(hvec, os, delimiter);
+// }
+
+// template <typename T>
+// void print(rmm::device_uvector<T> const &uvec,
+//            std::ostream &os             = std::cout,
+//            std::string const &delimiter = ",",
+//            cudaStream_t stream          = 0)
+// {
+//   rmm::device_vector<T> dvec(uvec.size());
+//   std::fill(dvec.begin(), dvec.end(), T{0});
+//   thrust::copy(rmm::exec_policy(stream)->on(stream), uvec.begin(), uvec.end(), dvec.begin());
+//   print<T>(dvec, os, delimiter);
+// }
+
+// template <typename T>
+// void print(rmm::device_buffer const &buf,
+//            std::ostream &os             = std::cout,
+//            std::string const &delimiter = ",",
+//            cudaStream_t stream          = 0)
+// {
+//   thrust::device_ptr<T> ptr(static_cast<T *>(const_cast<void *>(buf.data())));
+//   rmm::device_vector<T> dvec(buf.size() / sizeof(T));
+//   thrust::fill(dvec.begin(), dvec.end(), T{0});
+//   thrust::copy(rmm::exec_policy(stream)->on(stream), ptr, ptr + dvec.size(), dvec.begin());
+//   print<T>(dvec, os, delimiter);
+// }
+
+// template <typename T>
+// void print(cudf::column_view const &col,
+//            std::ostream &os             = std::cout,
+//            std::string const &delimiter = ",",
+//            cudaStream_t stream          = 0)
+// {
+//   rmm::device_vector<T> dvec(col.size());
+//   std::fill(dvec.begin(), dvec.end(), T{0});
+//   thrust::copy(rmm::exec_policy(stream)->on(stream), col.begin<T>(), col.end<T>(), dvec.begin());
+//   print<T>(dvec, os, delimiter);
+// }
+
+// template <typename T>
+// void print(T *data,
+//            cudf::size_type size,
+//            std::ostream &os             = std::cout,
+//            std::string const &delimiter = ",",
+//            cudaStream_t stream          = 0)
+// {
+//   rmm::device_vector<T> dvec(size);
+//   thrust::fill(dvec.begin(), dvec.end(), T{0});
+//   thrust::copy(rmm::exec_policy(stream)->on(stream), data, data + size, dvec.begin());
+//   print<T>(dvec, os, delimiter);
+// }
+
+// }  // namespace detail
 
 }  // namespace cuspatial

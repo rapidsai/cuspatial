@@ -29,12 +29,12 @@
 #include <tests/utilities/type_lists.hpp>
 
 template <typename T>
-struct QuadtreePolygonBoundingBoxJoinTest : public cudf::test::BaseFixture {
+struct QuadtreePolygonFilteringTest : public cudf::test::BaseFixture {
 };
 
-TYPED_TEST_CASE(QuadtreePolygonBoundingBoxJoinTest, cudf::test::FloatingPointTypes);
+TYPED_TEST_CASE(QuadtreePolygonFilteringTest, cudf::test::FloatingPointTypes);
 
-TYPED_TEST(QuadtreePolygonBoundingBoxJoinTest, test_empty)
+TYPED_TEST(QuadtreePolygonFilteringTest, test_empty)
 {
   using T = TypeParam;
   using namespace cudf::test;
@@ -45,7 +45,6 @@ TYPED_TEST(QuadtreePolygonBoundingBoxJoinTest, test_empty)
   double const y_max{1.0};
   double const scale{1.0};
   uint32_t const max_depth{1};
-  uint32_t const min_size{1};
 
   // empty quadtree
   cudf::table_view quadtree{{
@@ -62,14 +61,14 @@ TYPED_TEST(QuadtreePolygonBoundingBoxJoinTest, test_empty)
                            fixed_width_column_wrapper<T>({})}};
 
   auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
-    quadtree, bboxes, x_min, y_min, x_max, y_max, scale, max_depth, min_size, this->mr());
+    quadtree, bboxes, x_min, y_min, x_max, y_max, scale, max_depth, this->mr());
 
   expect_tables_equal(cudf::table_view{{fixed_width_column_wrapper<int32_t>({}),
                                         fixed_width_column_wrapper<int32_t>({})}},
                       *polygon_quadrant_pairs);
 }
 
-TYPED_TEST(QuadtreePolygonBoundingBoxJoinTest, test_small)
+TYPED_TEST(QuadtreePolygonFilteringTest, test_small)
 {
   using T = TypeParam;
   using namespace cudf::test;
@@ -176,7 +175,7 @@ TYPED_TEST(QuadtreePolygonBoundingBoxJoinTest, test_small)
     cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, poly_x, poly_y, this->mr());
 
   auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
-    *quadtree, *polygon_bboxes, x_min, y_min, x_max, y_max, scale, max_depth, min_size, this->mr());
+    *quadtree, *polygon_bboxes, x_min, y_min, x_max, y_max, scale, max_depth, this->mr());
 
   CUDF_EXPECTS(polygon_quadrant_pairs->num_columns() == 2,
                "a polygon-quadrant pair table must have 2 columns (polygon-index, quadrant-index)");

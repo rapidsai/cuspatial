@@ -28,6 +28,7 @@
 #include <tuple>
 
 #include "join/detail/intersection.cuh"
+#include "join/detail/traversal.cuh"
 
 namespace cuspatial {
 
@@ -39,36 +40,60 @@ template <typename T>
 inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view const &quadtree,
                                                              cudf::table_view const &poly_bbox,
                                                              T x_min,
-                                                             T x_max,
                                                              T y_min,
+                                                             T x_max,
                                                              T y_max,
                                                              T scale,
                                                              cudf::size_type max_depth,
-                                                             cudf::size_type min_size,
                                                              rmm::mr::device_memory_resource *mr,
                                                              cudaStream_t stream)
 {
-  auto const keys       = quadtree.column(0);   // uint32_t
-  auto const levels     = quadtree.column(1);   // uint8_t
-  auto const is_quad    = quadtree.column(2);   // bool
-  auto const lengths    = quadtree.column(3);   // uint32_t
-  auto const offsets    = quadtree.column(4);   // uint32_t
-  auto const poly_x_min = poly_bbox.column(0);  // T
-  auto const poly_y_min = poly_bbox.column(1);  // T
-  auto const poly_x_max = poly_bbox.column(2);  // T
-  auto const poly_y_max = poly_bbox.column(3);  // T
+  auto const node_levels  = quadtree.column(1);  // uint8_t
+  auto const node_counts  = quadtree.column(3);  // uint32_t
+  auto const node_offsets = quadtree.column(4);  // uint32_t
 
-  auto num_nodes = quadtree.num_rows();
   auto num_polys = poly_bbox.num_rows();
+  // auto num_nodes = quadtree.num_rows();
+
+  // std::cout << "scale: " << scale << std::endl;
+  // std::cout << "max_depth: " << max_depth << std::endl;
+  // std::cout << "bbox (x_min, y_min, x_max, y_max): "                                   //
+  //           << "(" << x_min << ", " << y_min << ", " << x_max << ", " << y_max << ")"  //
+  //           << std::endl;
+
+  // std::cout << "num_polys: " << num_polys << std::endl;
+  // print<T>(poly_bbox.column(0), std::cout << "poly_x_min ", ", ", stream);
+  // print<T>(poly_bbox.column(1), std::cout << "poly_y_min ", ", ", stream);
+  // print<T>(poly_bbox.column(2), std::cout << "poly_x_max ", ", ", stream);
+  // print<T>(poly_bbox.column(3), std::cout << "poly_y_max ", ", ", stream);
+
+  // std::cout << "num_nodes: " << num_nodes << std::endl;
+  // print<uint32_t>(quadtree.column(0), std::cout << "keys ", ", ", stream);
+  // print<uint8_t>(quadtree.column(1), std::cout << "levels ", ", ", stream);
+  // print<uint8_t>(quadtree.column(2), std::cout << "is_quad ", ", ", stream);
+  // print<uint8_t>(quadtree.column(3), std::cout << "lengths ", ", ", stream);
+  // print<uint8_t>(quadtree.column(4), std::cout << "offsets ", ", ", stream);
 
   // count the number of top-level nodes to begin with
   // this number could be provided explicitly, but count_if should be fast enough
   auto num_top_level_children = thrust::count_if(rmm::exec_policy(stream)->on(stream),
-                                                 levels.begin<uint8_t>(),
-                                                 levels.end<uint8_t>(),
+                                                 node_levels.begin<uint8_t>(),
+                                                 node_levels.end<uint8_t>(),
                                                  thrust::placeholders::_1 == 0);
 
   auto num_pairs = num_top_level_children * num_polys;
+
+  // std::cout << "num_pairs: " << num_pairs << std::endl;
+
+  rmm::device_uvector<uint8_t> quad_types(num_pairs, stream);   // d_type_temp
+  rmm::device_uvector<uint8_t> quad_levels(num_pairs, stream);  // d_lev_temp
+  rmm::device_uvector<uint32_t> quad_nodes(num_pairs, stream);  // d_quad_idx_temp
+  rmm::device_uvector<uint32_t> quad_polys(num_pairs, stream);  // d_poly_idx_temp
+
+  rmm::device_uvector<uint8_t> leaf_types(num_pairs, stream);   // d_type_out
+  rmm::device_uvector<uint8_t> leaf_levels(num_pairs, stream);  // d_lev_out
+  rmm::device_uvector<uint32_t> leaf_nodes(num_pairs, stream);  // d_node_idx_out
+  rmm::device_uvector<uint32_t> leaf_polys(num_pairs, stream);  // d_poly_idx_out
 
   // The matched quadrant-polygon pairs are dynamic and can not be pre-allocated in a fixed manner.
   // Relevant arrays are resized accordingly for memory efficiency.
@@ -87,83 +112,140 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
   // expanded stroage at the next level. Their size is computed precisely by retriving the numbers
   // of child nodes for all non-leaf quadrants.
 
-  // pair up all top level quadrants and all polygons
-  auto top_level_intersections = find_top_level_intersections(
-    // nodes_iter
-    make_zip_iterator(keys.begin<uint32_t>(), levels.begin<uint8_t>(), is_quad.begin<bool>()),
-    // polys_iter
-    make_zip_iterator(
-      poly_x_min.begin<T>(), poly_y_min.begin<T>(), poly_x_max.begin<T>(), poly_y_max.begin<T>()),
-    num_pairs,
-    num_nodes,
-    x_min,
-    y_min,
-    scale,
-    max_depth,
-    stream);
+  auto node_pairs = make_zip_iterator(
+    quad_types.begin(), quad_levels.begin(), quad_nodes.begin(), quad_polys.begin());
 
-  auto num_leaf_pairs    = std::get<0>(top_level_intersections);
-  auto &out_types        = std::get<1>(top_level_intersections);  // d_type_out
-  auto &out_levels       = std::get<2>(top_level_intersections);  // d_lev_out
-  auto &out_poly_indices = std::get<3>(top_level_intersections);  // d_poly_idx_out
-  auto &out_node_indices = std::get<4>(top_level_intersections);  // d_node_idx_out
-  auto num_quad_pairs    = std::get<5>(top_level_intersections);
-  auto &tmp_types        = std::get<6>(top_level_intersections);  // d_type_temp
-  auto &tmp_levels       = std::get<7>(top_level_intersections);  // d_lev_temp
-  auto &tmp_poly_indices = std::get<8>(top_level_intersections);  // d_poly_idx_temp
-  auto &tmp_node_indices = std::get<9>(top_level_intersections);  // d_quad_idx_temp
+  auto leaf_pairs = make_zip_iterator(
+    leaf_types.begin(), leaf_levels.begin(), leaf_nodes.begin(), leaf_polys.begin());
 
-  // cudf::size_type out_node_pos{num_leaf_pairs};
-  cudf::size_type output_nodes_pos{num_leaf_pairs};
-  auto counting_iter = thrust::make_counting_iterator(0);
+  cudf::size_type num_leaves{0};
+  cudf::size_type num_parents{0};
+  cudf::size_type num_results{0};
 
-  auto out_pairs_iter = make_zip_iterator(
-    out_types.begin(), out_levels.begin(), out_poly_indices.begin(), out_node_indices.begin());
+  for (cudf::size_type i{0}; i < max_depth; ++i) {
+    // std::cout << std::endl;
 
-  rmm::device_uvector<uint32_t> child_offsets(num_quad_pairs, stream);
-  rmm::device_uvector<uint32_t> parent_indices(num_quad_pairs, stream);
+    // Resize output device vectors and update the corresponding pointers. The next level will
+    // expand out to no more than `num_parents * 4` pairs, since a parent quadrant can have no more
+    // than 4 children.
+    size_t max_num_results = num_results + num_parents * 4;
 
-  for (cudf::size_type i{1}; i < max_depth; ++i) {
+    if ((i < max_depth - 1) && (max_num_results > leaf_types.capacity())) {
+      // std::cout << "curr_num_results: " << leaf_types.capacity() << std::endl;
+      // std::cout << "next_num_results: " << max_num_results << std::endl;
+      leaf_types.resize(max_num_results, stream);
+      leaf_levels.resize(max_num_results, stream);
+      leaf_nodes.resize(max_num_results, stream);
+      leaf_polys.resize(max_num_results, stream);
+      leaf_pairs = make_zip_iterator(
+        leaf_types.begin(), leaf_levels.begin(), leaf_nodes.begin(), leaf_polys.begin());
+    }
+
+    // std::cout << "level: " << i << std::endl;
+    // std::cout << "num_pairs: " << num_pairs << std::endl;
+
+    // pair up all top level quadrants and all polygons
+    if (i == 0) {
+      auto counter      = thrust::make_counting_iterator(0);
+      auto node_indices = thrust::make_transform_iterator(
+        counter,
+        [num_top_level_children] __device__(auto const i) { return i % num_top_level_children; });
+      auto poly_indices = thrust::make_transform_iterator(
+        counter,
+        [num_top_level_children] __device__(auto const i) { return i / num_top_level_children; });
+
+      std::tie(num_parents, num_leaves) = find_intersections(quadtree,
+                                                             poly_bbox,
+                                                             node_indices,
+                                                             poly_indices,
+                                                             node_pairs,
+                                                             leaf_pairs + num_results,
+                                                             num_pairs,
+                                                             x_min,
+                                                             y_min,
+                                                             scale,
+                                                             max_depth,
+                                                             stream);
+    } else {
+      std::tie(num_parents, num_leaves) = find_intersections(quadtree,
+                                                             poly_bbox,
+                                                             quad_nodes.begin(),
+                                                             quad_polys.begin(),
+                                                             node_pairs,
+                                                             leaf_pairs + num_results,
+                                                             num_pairs,
+                                                             x_min,
+                                                             y_min,
+                                                             scale,
+                                                             max_depth,
+                                                             stream);
+    }
+
+    num_results += num_leaves;
+
+    // std::cout << "num_leaves: " << num_leaves << std::endl;
+    // std::cout << "num_parents: " << num_parents << std::endl;
+    // std::cout << "num_results: " << num_results << std::endl;
+
+    // print(leaf_types, std::cout << "leaf_types ", ", ", stream);
+    // print(leaf_levels, std::cout << "leaf_levels ", ", ", stream);
+    // print(leaf_nodes, std::cout << "leaf_nodes ", ", ", stream);
+    // print(leaf_polys, std::cout << "leaf_polys ", ", ", stream);
+
+    // stop descending if no parent quadrants left to expand
+    if (num_parents == 0) break;
+
+    quad_types.shrink_to_fit(stream);
+    quad_levels.shrink_to_fit(stream);
+    quad_nodes.shrink_to_fit(stream);
+    quad_polys.shrink_to_fit(stream);
+
+    // print(quad_types, std::cout << "quad_types ", ", ", stream);
+    // print(quad_levels, std::cout << "quad_levels ", ", ", stream);
+    // print(quad_nodes, std::cout << "quad_nodes ", ", ", stream);
+    // print(quad_polys, std::cout << "quad_polys ", ", ", stream);
+
     //
-    auto lengths_iter =
-      thrust::make_permutation_iterator(lengths.begin<uint32_t>(), tmp_node_indices.begin());
-
-    // compute the total number of child nodes
-    num_pairs = thrust::reduce(
-      rmm::exec_policy(stream)->on(stream), lengths_iter, lengths_iter + num_quad_pairs);
-
-    tmp_types.resize(num_pairs, stream);
-    tmp_levels.resize(num_pairs, stream);
-    tmp_poly_indices.resize(num_pairs, stream);
-    tmp_node_indices.resize(num_pairs, stream);
-
-    // exclusive scan on the number of child nodes to compute the offsets
-    thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
-                           lengths_iter,
-                           lengths_iter + num_quad_pairs,
-                           child_offsets.begin());
-
-    // use the offset as the map to scatter sequential numbers 0..num_nonleaf_pair to d_expand_pos
-    thrust::scatter(rmm::exec_policy(stream)->on(stream),
-                    counting_iter,
-                    counting_iter + num_quad_pairs,
-                    child_offsets.begin(),
-                    parent_indices.begin());
-
-    // inclusive scan with maximum functor to fill the empty elements with their left-most non-empty
-    // elements. `parent_offsets` is now a full array of the the sequence index of each quadrant's
-    // parent
-    thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
-                           parent_indices.begin(),
-                           parent_indices.begin() + num_pairs,
-                           parent_indices.begin(),
-                           thrust::maximum<uint32_t>());
-
+    // d_quad_nchild
     //
-    // child_lengths.resize(num_quad_pairs, stream);
+    auto child_counts = thrust::make_permutation_iterator(node_counts.begin<uint32_t>(),
+                                                          quad_nodes.begin());  //
+
+    auto next_level = descend_quadtree(child_counts,
+                                       node_offsets.begin<uint32_t>(),
+                                       num_parents,
+                                       quad_types,
+                                       quad_levels,
+                                       quad_nodes,
+                                       quad_polys,
+                                       stream);
+
+    num_pairs = std::get<0>(next_level);
+    // update pair_output_temp_iter to get ready for next level iteration
+    quad_types  = std::move(std::get<1>(next_level));
+    quad_levels = std::move(std::get<2>(next_level));
+    quad_nodes  = std::move(std::get<3>(next_level));
+    quad_polys  = std::move(std::get<4>(next_level));
+    node_pairs  = make_zip_iterator(
+      quad_types.begin(), quad_levels.begin(), quad_nodes.begin(), quad_polys.begin());
   }
 
-  CUSPATIAL_FAIL("Unimplemented");
+  std::vector<std::unique_ptr<cudf::column>> cols{};
+  cols.reserve(2);
+  cols.push_back(make_fixed_width_column<int32_t>(num_results, stream, mr));
+  cols.push_back(make_fixed_width_column<int32_t>(num_results, stream, mr));
+
+  thrust::copy(rmm::exec_policy(stream)->on(stream),
+               leaf_polys.begin(),
+               leaf_polys.begin() + num_results,
+               cols.at(0)->mutable_view().begin<uint32_t>());
+
+  thrust::copy(rmm::exec_policy(stream)->on(stream),
+               leaf_nodes.begin(),
+               leaf_nodes.begin() + num_results,
+               cols.at(1)->mutable_view().begin<uint32_t>());
+
+  return std::make_unique<cudf::table>(std::move(cols));
 }
 
 struct dispatch_quadtree_bounding_box_join {
@@ -171,24 +253,22 @@ struct dispatch_quadtree_bounding_box_join {
   inline std::unique_ptr<cudf::table> operator()(cudf::table_view const &quadtree,
                                                  cudf::table_view const &poly_bbox,
                                                  double x_min,
-                                                 double x_max,
                                                  double y_min,
+                                                 double x_max,
                                                  double y_max,
                                                  double scale,
-                                                 uint32_t max_depth,
-                                                 uint32_t min_size,
+                                                 cudf::size_type max_depth,
                                                  rmm::mr::device_memory_resource *mr,
                                                  cudaStream_t stream)
   {
     return join_quadtree_and_bboxes<T>(quadtree,
                                        poly_bbox,
                                        static_cast<T>(x_min),
-                                       static_cast<T>(x_max),
                                        static_cast<T>(y_min),
+                                       static_cast<T>(x_max),
                                        static_cast<T>(y_max),
                                        static_cast<T>(scale),
                                        max_depth,
-                                       min_size,
                                        mr,
                                        stream);
   }
@@ -205,12 +285,11 @@ struct dispatch_quadtree_bounding_box_join {
 std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
                                             cudf::table_view const &poly_bbox,
                                             double x_min,
-                                            double x_max,
                                             double y_min,
+                                            double x_max,
                                             double y_max,
                                             double scale,
                                             cudf::size_type max_depth,
-                                            cudf::size_type min_size,
                                             rmm::mr::device_memory_resource *mr,
                                             cudaStream_t stream)
 {
@@ -219,12 +298,11 @@ std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
                                quadtree,
                                poly_bbox,
                                x_min,
-                               x_max,
                                y_min,
+                               x_max,
                                y_max,
                                scale,
                                max_depth,
-                               min_size,
                                mr,
                                stream);
 }
@@ -234,12 +312,11 @@ std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
 std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
                                             cudf::table_view const &poly_bbox,
                                             double x_min,
-                                            double x_max,
                                             double y_min,
+                                            double x_max,
                                             double y_max,
                                             double scale,
                                             cudf::size_type max_depth,
-                                            cudf::size_type min_size,
                                             rmm::mr::device_memory_resource *mr)
 {
   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "quadtree table must have 5 columns");
@@ -248,8 +325,6 @@ std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
                     "invalid bounding box (x_min,y_min,x_max,y_max)");
   CUSPATIAL_EXPECTS(scale > 0, "scale must be positive");
   CUSPATIAL_EXPECTS(max_depth > 0 && max_depth < 16, "maximum of levels might be in [0,16)");
-  CUSPATIAL_EXPECTS(min_size > 0,
-                    "minimum number of points for a non-leaf node must be larger than zero");
 
   if (quadtree.num_rows() == 0 || poly_bbox.num_rows() == 0) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
@@ -259,17 +334,8 @@ std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
     return std::make_unique<cudf::table>(std::move(cols));
   }
 
-  return detail::quad_bbox_join(quadtree,
-                                poly_bbox,
-                                x_min,
-                                x_max,
-                                y_min,
-                                y_max,
-                                scale,
-                                max_depth,
-                                min_size,
-                                mr,
-                                cudaStream_t{0});
+  return detail::quad_bbox_join(
+    quadtree, poly_bbox, x_min, y_min, x_max, y_max, scale, max_depth, mr, cudaStream_t{0});
 }
 
 }  // namespace cuspatial

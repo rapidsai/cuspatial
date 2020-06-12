@@ -57,7 +57,6 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_node,
                                                   SBBox<double> const &aoi_bbox,
                                                   double scale,
                                                   uint32_t max_depth,
-                                                  uint32_t min_size,
                                                   rmm::mr::device_memory_resource *mr,
                                                   cudaStream_t stream)
 
@@ -70,10 +69,10 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_node,
 
   std::cout << "num_node=" << num_node << std::endl;
   std::cout << "num_poly=" << num_poly << std::endl;
-  std::cout << "bounding box(x_min,y_min,x_max,y_max)=(" << x_min << "," << y_min << "," << x_max <<
-  "," << x_max << "," << y_max << ")" << std::endl; std::cout << "scale=" << scale << std::endl;
+  std::cout << "bounding box(x_min,y_min,x_max,y_max)=(" << x_min << "," << y_min << "," << x_max
+            << "," << x_max << "," << y_max << ")" << std::endl;
+  std::cout << "scale=" << scale << std::endl;
   std::cout << "max_depth=" << max_depth << std::endl;
-  std::cout << "match: min_size=" << min_size << std::endl;
   */
 
   auto exec_policy = rmm::exec_policy(stream);
@@ -85,7 +84,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_node,
   SBBox<T> *d_poly_sbbox = static_cast<SBBox<T> *>(db_poly_bbox->data());
 
   /*
-  if (0) {
+  if (1) {
     std::cout << "x_min" << std::endl;
     thrust::device_ptr<const T> d_x_min_ptr = thrust::device_pointer_cast(poly_x_min);
     thrust::copy(d_x_min_ptr, d_x_min_ptr + num_poly, std::ostream_iterator<T>(std::cout, " "));
@@ -107,7 +106,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_node,
     std::cout << std::endl;
   }
 
-  if (0) {
+  if (1) {
     std::cout << "qt lev" << std::endl;
     thrust::device_ptr<const uint8_t> d_lev_ptr = thrust::device_pointer_cast(d_p_qtlev);
     thrust::copy(d_lev_ptr, d_lev_ptr + num_node, std::ostream_iterator<uint32_t>(std::cout, " "));
@@ -250,8 +249,8 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_node,
                               pair_output_temp_iter;
 
   /*
-  std::cout << "num_leaf_pair=" << num_leaf_pair << ", num_nonleaf_pair=" << num_nonleaf_pair <<
-  std::endl;
+  std::cout << "num_leaf_pair=" << num_leaf_pair << ", num_nonleaf_pair=" << num_nonleaf_pair
+  << std::endl;
   */
 
   output_nodes_pos += num_leaf_pair;
@@ -510,8 +509,8 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_node,
         thrust::make_tuple(d_pq_lev_out, d_pq_type_out, d_poly_idx_out, d_quad_idx_out));
     }
     /*
-    std::cout << "level=" << i << " output_nodes_pos=" << output_nodes_pos << " curr_cap=" <<
-    curr_cap << std::endl;
+    std::cout << "level=" << i << " output_nodes_pos=" << output_nodes_pos
+    << " curr_cap=" << curr_cap << std::endl;
     */
   }
 
@@ -525,7 +524,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_node,
   delete db_poly_bbox;
   db_poly_bbox = nullptr;
 
-  // allocate columns for paris of polygon offsets and quadrant offsets as the final output
+  // allocate columns for pairs of polygon offsets and quadrant offsets as the final output
   // lev and type are not needed in the output
   // note only the first output_nodes_pos elements are copied to output columns
   std::unique_ptr<cudf::column> poly_idx_col =
@@ -567,7 +566,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_node,
   db_quad_idx_out = nullptr;
 
   /*
-  if (0) {
+  if (1) {
     std::cout << "total pairs=" << output_nodes_pos << std::endl;
 
     thrust::device_ptr<uint32_t> d_poly_idx_ptr = thrust::device_pointer_cast(d_pq_poly_idx);
@@ -606,12 +605,11 @@ struct quad_bbox_processor {
     double y_max = thrust::get<3>(qpi);
     SBBox<double> aoi_bbox(thrust::make_tuple(x_min, y_min), thrust::make_tuple(x_max, y_max));
     /*
-    std::cout << "quadtree_poly.aoi: " << x_min << " " << y_min << " " << x_max << " " << y_max <<
-    std::endl;
+    std::cout << "quadtree_poly.aoi: " << x_min << " " << y_min << " " << x_max << " " << y_max
+    << std::endl;
     */
     double scale       = thrust::get<4>(qpi);
     uint32_t max_depth = thrust::get<5>(qpi);
-    uint32_t min_size  = thrust::get<6>(qpi);
 
     const uint32_t *d_p_qtkey    = quadtree.column(0).data<uint32_t>();
     const uint8_t *d_p_qtlev     = quadtree.column(1).data<uint8_t>();
@@ -641,7 +639,6 @@ struct quad_bbox_processor {
                                                                   aoi_bbox,
                                                                   scale,
                                                                   max_depth,
-                                                                  min_size,
                                                                   mr,
                                                                   stream);
 
@@ -670,8 +667,7 @@ struct quad_bbox_processor {
 //                                             double x_max,
 //                                             double y_max,
 //                                             double scale,
-//                                             uint32_t max_depth,
-//                                             uint32_t min_size,
+//                                             cudf::size_type max_depth,
 //                                             rmm::mr::device_memory_resource *mr)
 // {
 //   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "quadtree table must have 5 columns");
@@ -680,8 +676,6 @@ struct quad_bbox_processor {
 //                     "invalid bounding box (x_min,y_min,x_max,y_max)");
 //   CUSPATIAL_EXPECTS(scale > 0, "scale must be positive");
 //   CUSPATIAL_EXPECTS(max_depth > 0 && max_depth < 16, "maximum of levels might be in [0,16)");
-//   CUSPATIAL_EXPECTS(min_size > 0,
-//                     "minimum number of points for a non-leaf node must be larger than zero");
 
 //   if (quadtree.num_rows() == 0 || poly_bbox.num_rows() == 0) {
 //     std::vector<std::unique_ptr<cudf::column>> cols{};
@@ -691,8 +685,8 @@ struct quad_bbox_processor {
 //     return std::make_unique<cudf::table>(std::move(cols));
 //   }
 
-//   quad_point_parameters qpi =
-//     thrust::make_tuple(x_min, y_min, x_max, y_max, scale, max_depth, min_size);
+//   quad_point_parameters qpi = thrust::make_tuple(x_min, y_min, x_max, y_max, scale, max_depth,
+//   0);
 
 //   cudf::data_type dtype = poly_bbox.column(0).type();
 

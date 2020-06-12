@@ -140,16 +140,8 @@ TYPED_TEST(QuadtreePolylineBoundingBoxJoinTest, test_small)
   auto polyline_bboxes =
     cuspatial::polyline_bounding_boxes(poly_offsets, poly_x, poly_y, expansion_radius, this->mr());
 
-  auto polyline_quadrant_pairs = cuspatial::quad_bbox_join(*quadtree,
-                                                           *polyline_bboxes,
-                                                           x_min,
-                                                           y_min,
-                                                           x_max,
-                                                           y_max,
-                                                           scale,
-                                                           max_depth,
-                                                           min_size,
-                                                           this->mr());
+  auto polyline_quadrant_pairs = cuspatial::quad_bbox_join(
+    *quadtree, *polyline_bboxes, x_min, y_min, x_max, y_max, scale, max_depth, this->mr());
 
   CUDF_EXPECTS(
     polyline_quadrant_pairs->num_columns() == 2,
