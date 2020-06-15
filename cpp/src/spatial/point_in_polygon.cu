@@ -18,13 +18,14 @@
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cudf/detail/utilities/cuda.cuh>
-#include <memory>
+#include <cudf/utilities/type_dispatcher.hpp>
 
 #include <cuspatial/error.hpp>
-#include <type_traits>
 
-#include "cudf/utilities/type_dispatcher.hpp"
-#include "rmm/mr/device/device_memory_resource.hpp"
+#include <rmm/mr/device/device_memory_resource.hpp>
+
+#include <memory>
+#include <type_traits>
 
 namespace {
 
