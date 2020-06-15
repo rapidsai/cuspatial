@@ -10,6 +10,7 @@
 - PR #243 Install dependencies via meta package
 
 ## Bug Fixes
+- PR #244 Restrict gdal version
 
 # cuSpatial 0.14.0 (Date TBD)
 
