@@ -7,6 +7,7 @@
 - PR #239 Add docs build script
 - PR #238 Fix library and include paths in CMakeLists.txt and setup.py
 - PR #240 Remove deprecated RMM header references.
+- PR #243 Install dependencies via meta package
 
 ## Bug Fixes
 
