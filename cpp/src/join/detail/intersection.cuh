@@ -38,11 +38,11 @@ static __device__ uint8_t const leaf_indicator = 0;
 static __device__ uint8_t const quad_indicator = 1;
 static __device__ uint8_t const none_indicator = 2;
 
-template <uint8_t NodeType, typename InputIterator, typename OutputIterator>
-inline cudf::size_type copy_intersections(InputIterator input_begin,
-                                          InputIterator input_end,
-                                          OutputIterator output_begin,
-                                          cudaStream_t stream)
+template <typename InputIterator, typename OutputIterator>
+inline cudf::size_type copy_leaf_intersections(InputIterator input_begin,
+                                               InputIterator input_end,
+                                               OutputIterator output_begin,
+                                               cudaStream_t stream)
 {
   return thrust::distance(
     output_begin,
@@ -50,22 +50,23 @@ inline cudf::size_type copy_intersections(InputIterator input_begin,
                     input_begin,
                     input_end,
                     output_begin,
-                    [] __device__(auto const &t) { return thrust::get<0>(t) == NodeType; }));
+                    [] __device__(auto const &t) { return thrust::get<0>(t) == leaf_indicator; }));
 }
 
-template <uint8_t NodeType, typename InputIterator, typename OutputIterator>
-inline cudf::size_type remove_complements(InputIterator input_begin,
-                                          InputIterator input_end,
-                                          OutputIterator output_begin,
-                                          cudaStream_t stream)
+template <typename InputIterator, typename OutputIterator>
+inline cudf::size_type remove_non_quad_intersections(InputIterator input_begin,
+                                                     InputIterator input_end,
+                                                     OutputIterator output_begin,
+                                                     cudaStream_t stream)
 {
-  return thrust::distance(
-    output_begin,
-    thrust::remove_if(rmm::exec_policy(stream)->on(stream),
-                      input_begin,
-                      input_end,
-                      output_begin,
-                      [] __device__(auto const &t) { return thrust::get<0>(t) != NodeType; }));
+  return thrust::distance(output_begin,
+                          thrust::remove_if(rmm::exec_policy(stream)->on(stream),
+                                            input_begin,
+                                            input_end,
+                                            output_begin,
+                                            [] __device__(auto const &t) {
+                                              return thrust::get<0>(t) != quad_indicator;
+                                            }));
 }
 
 template <typename T,
@@ -131,11 +132,10 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
                         static_cast<uint8_t>(is_quad), level, node_index, poly_index);
                     });
 
-  auto num_leaves =
-    copy_intersections<leaf_indicator>(node_pairs, node_pairs + num_pairs, leaf_pairs, stream);
+  auto num_leaves = copy_leaf_intersections(node_pairs, node_pairs + num_pairs, leaf_pairs, stream);
 
   auto num_parents =
-    remove_complements<quad_indicator>(node_pairs, node_pairs + num_pairs, node_pairs, stream);
+    remove_non_quad_intersections(node_pairs, node_pairs + num_pairs, node_pairs, stream);
 
   return std::make_pair(num_parents, num_leaves);
 }
