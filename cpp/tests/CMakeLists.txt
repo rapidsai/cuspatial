@@ -45,7 +45,7 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial cudf
                         cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES}
-                        nvrtc gdal)
+                        nvrtc GDAL::GDAL)
     if(USE_NVTX)
         target_link_libraries(${CMAKE_TEST_NAME} ${NVTX_LIBRARY})
     endif(USE_NVTX)
@@ -57,6 +57,10 @@ endfunction(ConfigureTest)
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
 
+include_directories("${CUB_INCLUDE_DIR}"
+                    "${THRUST_INCLUDE_DIR}"
+                    "${LIBCUDACXX_INCLUDE_DIR}")
+
 if(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 	include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
 endif()
@@ -65,16 +69,11 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}"
                     "${CMAKE_SOURCE_DIR}/src"
-                    "${CMAKE_SOURCE_DIR}/../thirdparty/cub"
-                    "${CMAKE_SOURCE_DIR}/../thirdparty/libcudacxx/include"
-                    "${CMAKE_SOURCE_DIR}/thirdparty/dlpack/include"
+                    "${GDAL_INCLUDE_DIRS}"
                     "${GTEST_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
                     "${CUDF_INCLUDE}"
-                    "${CUDF_SRC_INCLUDE}"
-                    "${CUDF_TEST_INCLUDE}"
-                    "${CUB_INCLUDE}"
-                    )
+                    "${CUDF_TEST_INCLUDE}")
  
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
@@ -86,8 +85,8 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${GTEST_LIBRARY_DIR}"
                  "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}"
-                 "${CUSPATIAL_LIBRARY}"
-                 )
+                 "${CUSPATIAL_LIBRARY}")
+
 set(CUBIC_SPLINE_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/interpolate/cubic_spline_test.cpp")
  ConfigureTest(CUBIC_SPLINE_TEST "${CUBIC_SPLINE_TEST_SRC}")

@@ -18,10 +18,12 @@
 #include <cudf/column/column_factories.hpp>
 #include <cudf/filling.hpp>
 #include <cudf/scalar/scalar.hpp>
+
 #include <cuspatial/cubic_spline.hpp>
 #include <cuspatial/cusparse_error.hpp>
 #include <cuspatial/error.hpp>
-#include "cusparse.h"
+
+#include <cusparse.h>
 
 namespace {  // anonymous
 

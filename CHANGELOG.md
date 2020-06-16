@@ -4,8 +4,16 @@
 
 ## Improvements
 - PR #237 Remove nvstrings references from CMakeLists.txt
+- PR #239 Add docs build script
+- PR #238 Fix library and include paths in CMakeLists.txt and setup.py
+- PR #240 Remove deprecated RMM header references.
+- PR #243 Install dependencies via meta package
 
 ## Bug Fixes
+- PR #244 Restrict gdal version
+
+- PR #242 Fix benchmark_fixture to use memory resources.
+
 
 # cuSpatial 0.14.0 (Date TBD)
 
@@ -49,6 +57,7 @@
 - PR #214 Install gdal>=3.0.2 in build.sh
 - PR #222 Fix potential thrust launch failure in quadtree building
 - PR #221 Add python methods to api.rst, fix formatting
+- PR #225 Add short git commit to conda package
 - PR #228 Fix polygon and polyline docstrings
 
 ## Bug Fixes
