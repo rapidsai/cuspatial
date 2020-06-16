@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#include "join/detail/intersection.cuh"
-#include "join/detail/traversal.cuh"
-
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/table/table.hpp>
@@ -29,6 +26,9 @@
 #include <rmm/device_uvector.hpp>
 
 #include <tuple>
+
+#include "join/detail/intersection.cuh"
+#include "join/detail/traversal.cuh"
 
 namespace cuspatial {
 

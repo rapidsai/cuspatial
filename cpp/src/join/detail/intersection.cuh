@@ -16,9 +16,6 @@
 
 #pragma once
 
-#include "indexing/construction/detail/utilities.cuh"
-#include "utility/z_order.cuh"
-
 #include <cudf/table/table_view.hpp>
 
 #include <rmm/thrust_rmm_allocator.h>
@@ -30,6 +27,9 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/remove.h>
 #include <thrust/tuple.h>
+
+#include "indexing/construction/detail/utilities.cuh"
+#include "utility/z_order.cuh"
 
 namespace cuspatial {
 namespace detail {
