@@ -12,6 +12,9 @@
 ## Bug Fixes
 - PR #244 Restrict gdal version
 
+- PR #242 Fix benchmark_fixture to use memory resources.
+
+
 # cuSpatial 0.14.0 (Date TBD)
 
 ## New Features
