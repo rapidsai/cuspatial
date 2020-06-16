@@ -106,7 +106,7 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
     // than 4 children.
     size_t max_num_results = num_results + num_parents * 4;
 
-    if ((i < max_depth - 1) && (max_num_results > leaf_types.capacity())) {
+    if (max_num_results > leaf_types.capacity()) {
       // grow preallocated output sizes in multiples of the current capacity
       auto new_size = leaf_types.capacity() * ((max_num_results / leaf_types.capacity()) + 1);
       leaf_types.resize(new_size, stream);
