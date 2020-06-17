@@ -11,6 +11,7 @@
 
 ## Bug Fixes
 - PR #244 Restrict gdal version
+- PR #245 Pin gdal to be compatible with cuxfilter
 
 - PR #242 Fix benchmark_fixture to use memory resources.
 

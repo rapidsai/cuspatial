@@ -25,36 +25,6 @@ namespace detail {
 
 template <typename T>
 struct hausdorff_acc {
-  // hausdorff_acc() = default;
-  // __host__ __device__
-  // hausdorff_acc(thrust::pair<int64_t, int64_t> key, int64_t result_idx, int64_t col, T distance)
-  //   : key(key),
-  //     result_idx(result_idx),
-  //     col_l(col),
-  //     col_r(col),
-  //     min_l(distance),
-  //     min_r(distance),
-  //     max(0)
-  // {
-  // }
-
-  // __host__ __device__ hausdorff_acc(thrust::pair<int64_t, int64_t> key,
-  //                                   int64_t result_idx,
-  //                                   int64_t col_l,
-  //                                   int64_t col_r,
-  //                                   T min_l,
-  //                                   T min_r,
-  //                                   T max)
-  //   : key(key),
-  //     result_idx(result_idx),
-  //     col_l(col_l),
-  //     col_r(col_r),
-  //     min_l(min_l),
-  //     min_r(min_r),
-  //     max(max)
-  // {
-  // }
-
   __host__ __device__ hausdorff_acc<T> operator+(hausdorff_acc<T> const& rhs) const
   {
     auto const& lhs = *this;
@@ -104,10 +74,10 @@ struct hausdorff_acc {
     return std::max(this->max, partial_max);
   }
 
-  thrust::pair<int64_t, int64_t> key;
-  int64_t result_idx;
-  int64_t col_l;
-  int64_t col_r;
+  thrust::pair<int32_t, int32_t> key;
+  int32_t result_idx;
+  int32_t col_l;
+  int32_t col_r;
   T min_l;
   T min_r;
   T max;

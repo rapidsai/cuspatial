@@ -30,47 +30,40 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/sequence.h>
 #include <thrust/transform.h>
-#include <thrust/iterator/constant_iterator.h>
 
+#include <cmath>
 #include <memory>
 
 static void BM_hausdorff(benchmark::State& state)
 {
-  int32_t num_spaces = state.range(0);
-  int32_t num_points = 46340;
+  printf("bench enter\n");
+  int32_t num_points           = state.range(0);
+  int32_t num_spaces           = std::min(num_points, 8);
   int32_t num_points_per_space = num_points / num_spaces;
 
   auto counting_iter = thrust::counting_iterator<int32_t>();
-  auto zero_iter = thrust::make_transform_iterator(
-    counting_iter,
-    [](auto idx){ return 0; }
-  );
+  auto zero_iter     = thrust::make_transform_iterator(counting_iter, [](auto idx) { return 0; });
 
-  auto num_points_per_space_iter = thrust::make_transform_iterator(
-    counting_iter,
-    [num_points_per_space](int32_t idx){ return idx * num_points_per_space; });
+  auto space_offset_iter = thrust::make_transform_iterator(
+    counting_iter, [num_points_per_space](int32_t idx) { return idx * num_points_per_space; });
 
-  auto xs = cudf::test::fixed_width_column_wrapper<double>(
-    zero_iter,
-    zero_iter + num_points);
+  auto xs = cudf::test::fixed_width_column_wrapper<double>(zero_iter, zero_iter + num_points);
 
-  auto ys = cudf::test::fixed_width_column_wrapper<double>(
-    zero_iter,
-    zero_iter + num_points);
+  auto ys = cudf::test::fixed_width_column_wrapper<double>(zero_iter, zero_iter + num_points);
 
-  auto points_per_space = cudf::test::fixed_width_column_wrapper<int32_t>(
-    num_points_per_space_iter,
-    num_points_per_space_iter + num_spaces);
+  auto space_offsets = cudf::test::fixed_width_column_wrapper<int32_t>(
+    space_offset_iter, space_offset_iter + num_spaces);
 
   for (auto _ : state) {
     cuda_event_timer raii(state, true);
-    auto x = cuspatial::directed_hausdorff_distance(xs, ys, points_per_space);
+    auto x = cuspatial::directed_hausdorff_distance(xs, ys, space_offsets);
   }
 }
 
-class HausdorffBenchmark : public cudf::benchmark {
+class HausdorffBenchmark : public cuspatial::benchmark {
 };
 
 #define DUMMY_BM_BENCHMARK_DEFINE(name)                                    \
@@ -79,8 +72,7 @@ class HausdorffBenchmark : public cudf::benchmark {
     BM_hausdorff(state);                                                   \
   }                                                                        \
   BENCHMARK_REGISTER_F(HausdorffBenchmark, name)                           \
-    ->RangeMultiplier(2)                                                   \
-    ->Range(1 << 2, 1 << 12)                                               \
+    ->Range(1 << 15, 1 << 15)                                              \
     ->UseManualTime()                                                      \
     ->Unit(benchmark::kMillisecond);
 
