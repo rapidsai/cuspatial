@@ -1,13 +1,13 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
 from cudf import DataFrame
-from cudf.core.column import as_column
 
 from cuspatial._lib import spatial_join
-from cuspatial.utils.column_utils import normalize_point_columns
 
 
-def quad_bbox_join(quadtree, poly_bounding_boxes, x_min, x_max, y_min, y_max, scale, max_depth):
+def quad_bbox_join(
+    quadtree, poly_bounding_boxes, x_min, x_max, y_min, y_max, scale, max_depth
+):
     """ Search a quadtree for polygon or polyline bounding box intersections.
 
     Parameters
@@ -44,7 +44,15 @@ def quad_bbox_join(quadtree, poly_bounding_boxes, x_min, x_max, y_min, y_max, sc
     * Swaps ``min_x`` and ``max_x`` if ``min_x > max_x``
     * Swaps ``min_y`` and ``max_y`` if ``min_y > max_y``
     """
-    return DataFrame._from_table(spatial_join.quad_bbox_join(
-        quadtree, poly_bounding_boxes,
-        x_min, x_max, y_min, y_max, scale, max_depth
-    ))
+    return DataFrame._from_table(
+        spatial_join.quad_bbox_join(
+            quadtree,
+            poly_bounding_boxes,
+            x_min,
+            x_max,
+            y_min,
+            y_max,
+            scale,
+            max_depth,
+        )
+    )
