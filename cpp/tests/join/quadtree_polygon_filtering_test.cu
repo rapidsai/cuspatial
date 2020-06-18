@@ -61,7 +61,7 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_empty)
                            fixed_width_column_wrapper<T>({})}};
 
   auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
-    quadtree, bboxes, x_min, y_min, x_max, y_max, scale, max_depth, this->mr());
+    quadtree, bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
   expect_tables_equal(cudf::table_view{{fixed_width_column_wrapper<int32_t>({}),
                                         fixed_width_column_wrapper<int32_t>({})}},
@@ -175,7 +175,7 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_small)
     cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, poly_x, poly_y, this->mr());
 
   auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
-    *quadtree, *polygon_bboxes, x_min, y_min, x_max, y_max, scale, max_depth, this->mr());
+    *quadtree, *polygon_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
   CUSPATIAL_EXPECTS(
     polygon_quadrant_pairs->num_columns() == 2,
