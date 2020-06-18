@@ -67,16 +67,16 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
   // Relevant arrays are resized accordingly for memory efficiency.
 
   // Vectors for intermediate poly and node indices at each level
-  rmm::device_uvector<uint8_t> tmp_types(num_pairs, stream);       // d_type_temp
-  rmm::device_uvector<uint8_t> tmp_levels(num_pairs, stream);      // d_lev_temp
-  rmm::device_uvector<uint32_t> tmp_node_idxs(num_pairs, stream);  // d_quad_idx_temp
-  rmm::device_uvector<uint32_t> tmp_poly_idxs(num_pairs, stream);  // d_poly_idx_temp
+  rmm::device_uvector<uint8_t> tmp_types(num_pairs, stream);
+  rmm::device_uvector<uint8_t> tmp_levels(num_pairs, stream);
+  rmm::device_uvector<uint32_t> tmp_node_idxs(num_pairs, stream);
+  rmm::device_uvector<uint32_t> tmp_poly_idxs(num_pairs, stream);
 
   // Vectors for found pairs of poly and leaf node indices
-  rmm::device_uvector<uint8_t> out_types(num_pairs, stream);       // d_type_out
-  rmm::device_uvector<uint8_t> out_levels(num_pairs, stream);      // d_lev_out
-  rmm::device_uvector<uint32_t> out_node_idxs(num_pairs, stream);  // d_node_idx_out
-  rmm::device_uvector<uint32_t> out_poly_idxs(num_pairs, stream);  // d_poly_idx_out
+  rmm::device_uvector<uint8_t> out_types(num_pairs, stream);
+  rmm::device_uvector<uint8_t> out_levels(num_pairs, stream);
+  rmm::device_uvector<uint32_t> out_node_idxs(num_pairs, stream);
+  rmm::device_uvector<uint32_t> out_poly_idxs(num_pairs, stream);
 
   // A zip iterator for the intermediate intersections or parent quadrants found during traversal
   auto tmp_pairs = make_zip_iterator(
