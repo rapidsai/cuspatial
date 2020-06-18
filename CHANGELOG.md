@@ -1,4 +1,23 @@
-# cuSpatial 0.14.0 (03 Jun 2020)
+# cuSpatial 0.15.0 (Date TBD)
+
+## New Features
+
+## Improvements
+- PR #237 Remove nvstrings references from CMakeLists.txt
+- PR #239 Add docs build script
+- PR #238 Fix library and include paths in CMakeLists.txt and setup.py
+- PR #240 Remove deprecated RMM header references.
+- PR #243 Install dependencies via meta package
+- PR #246 Hausdorff performance improvement
+
+## Bug Fixes
+- PR #244 Restrict gdal version
+- PR #245 Pin gdal to be compatible with cuxfilter
+
+- PR #242 Fix benchmark_fixture to use memory resources.
+
+
+# cuSpatial 0.14.0 (Date TBD)
 
 ## New Features
 
