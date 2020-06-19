@@ -19,6 +19,8 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/point_quadtree.hpp>
 
+#include <rmm/device_uvector.hpp>
+
 #include "indexing/construction/detail/phase_1.cuh"
 #include "indexing/construction/detail/phase_2.cuh"
 #include "indexing/construction/detail/utilities.cuh"
@@ -39,10 +41,10 @@ namespace {
 /**
  * @brief Constructs a complete quad tree
  */
-inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_vector<uint32_t> &quad_keys,
-                                                   rmm::device_vector<uint32_t> &quad_point_count,
-                                                   rmm::device_vector<uint32_t> &quad_child_count,
-                                                   rmm::device_vector<int8_t> &quad_levels,
+inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_uvector<uint32_t> &quad_keys,
+                                                   rmm::device_uvector<uint32_t> &quad_point_count,
+                                                   rmm::device_uvector<uint32_t> &quad_child_count,
+                                                   rmm::device_uvector<int8_t> &quad_levels,
                                                    cudf::size_type num_parent_nodes,
                                                    cudf::size_type max_depth,
                                                    cudf::size_type min_size,
@@ -169,8 +171,8 @@ inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_vector<uint32_t> 
  * @brief Constructs a leaf-only quadtree
  */
 inline std::unique_ptr<cudf::table> make_leaf_tree(
-  rmm::device_vector<uint32_t> const &quad_keys,
-  rmm::device_vector<uint32_t> const &quad_point_count,
+  rmm::device_uvector<uint32_t> const &quad_keys,
+  rmm::device_uvector<uint32_t> const &quad_point_count,
   cudf::size_type num_top_quads,
   rmm::mr::device_memory_resource *mr,
   cudaStream_t stream)
