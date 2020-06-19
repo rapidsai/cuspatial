@@ -60,7 +60,7 @@ inline rmm::device_uvector<uint32_t> compute_leaf_positions(cudf::column_view co
 
 inline rmm::device_uvector<uint32_t> flatten_point_keys(
   rmm::device_uvector<uint32_t> const &quad_keys,
-  rmm::device_uvector<int8_t> const &quad_level,
+  rmm::device_uvector<uint8_t> const &quad_level,
   cudf::column_view const &indicator,
   cudf::size_type num_valid_nodes,
   cudf::size_type max_depth,
@@ -93,7 +93,7 @@ inline rmm::device_uvector<uint32_t> flatten_point_keys(
  */
 inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
   rmm::device_uvector<uint32_t> const &quad_keys,
-  rmm::device_uvector<int8_t> const &quad_level,
+  rmm::device_uvector<uint8_t> const &quad_level,
   rmm::device_uvector<uint32_t> &quad_point_count,
   cudf::column_view const &indicator,
   cudf::size_type num_valid_nodes,
@@ -229,7 +229,7 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
   rmm::device_uvector<uint32_t> &quad_keys,
   rmm::device_uvector<uint32_t> &quad_point_count,
   rmm::device_uvector<uint32_t> &quad_child_count,
-  rmm::device_uvector<int8_t> &quad_levels,
+  rmm::device_uvector<uint8_t> &quad_levels,
   cudf::size_type num_parent_nodes,
   cudf::size_type num_child_nodes,
   cudf::size_type min_size,

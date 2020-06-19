@@ -75,7 +75,7 @@ compute_point_keys_and_sorted_indices(cudf::column_view const &x,
                       return cuspatial::utility::z_order((x - x_min) / scale, (y - y_min) / scale);
                     });
 
-  auto indices = make_fixed_width_column<int32_t>(keys.size(), stream, mr);
+  auto indices = make_fixed_width_column<uint32_t>(keys.size(), stream, mr);
 
   thrust::sequence(rmm::exec_policy(stream)->on(stream),
                    indices->mutable_view().begin<uint32_t>(),
@@ -186,7 +186,7 @@ build_tree_levels(cudf::size_type max_depth,
 inline std::tuple<rmm::device_uvector<uint32_t>,
                   rmm::device_uvector<uint32_t>,
                   rmm::device_uvector<uint32_t>,
-                  rmm::device_uvector<int8_t>>
+                  rmm::device_uvector<uint8_t>>
 reverse_tree_levels(rmm::device_uvector<uint32_t> const &quad_keys_in,
                     rmm::device_uvector<uint32_t> const &quad_point_count_in,
                     rmm::device_uvector<uint32_t> const &quad_child_count_in,
@@ -196,7 +196,7 @@ reverse_tree_levels(rmm::device_uvector<uint32_t> const &quad_keys_in,
                     cudaStream_t stream)
 {
   rmm::device_uvector<uint32_t> quad_keys(quad_keys_in.size(), stream);
-  rmm::device_uvector<int8_t> quad_levels(quad_keys_in.size(), stream);
+  rmm::device_uvector<uint8_t> quad_levels(quad_keys_in.size(), stream);
   rmm::device_uvector<uint32_t> quad_point_count(quad_point_count_in.size(), stream);
   rmm::device_uvector<uint32_t> quad_child_count(quad_child_count_in.size(), stream);
   cudf::size_type offset{0};
@@ -357,7 +357,7 @@ inline auto make_full_levels(cudf::column_view const &x,
                            std::move(quad_keys),
                            std::move(quad_point_count),
                            std::move(quad_child_count),
-                           std::move(rmm::device_uvector<int8_t>(quad_keys.size(), stream)),
+                           std::move(rmm::device_uvector<uint8_t>(quad_keys.size(), stream)),
                            num_bottom_quads,
                            num_parent_nodes,
                            0);
