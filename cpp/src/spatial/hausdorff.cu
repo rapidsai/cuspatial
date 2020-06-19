@@ -14,34 +14,16 @@
  * limitations under the License.
  */
 
-#include <cstdio>
 #include <cuspatial/detail/hausdorff.cuh>
-#include "thrust/pair.h"
+#include <cuspatial/error.hpp>
 #include "utility/scatter_output_iterator.cuh"
 #include "utility/size_from_offsets.cuh"
 
-#include <rmm/thrust_rmm_allocator.h>
-#include <cudf/column/column.hpp>
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
-#include <cudf/column/column_view.hpp>
 #include <cudf/types.hpp>
-#include <cudf/utilities/error.hpp>
-#include <cudf/utilities/type_dispatcher.hpp>
-#include <cuspatial/error.hpp>
-#include <rmm/device_buffer.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <thrust/gather.h>
-#include <thrust/iterator/discard_iterator.h>
-#include <thrust/iterator/transform_output_iterator.h>
-
-#include <iomanip>
-#include <iterator>
-#include <limits>
 #include <memory>
-#include <ostream>
-#include <type_traits>
 
 namespace cuspatial {
 namespace detail {
