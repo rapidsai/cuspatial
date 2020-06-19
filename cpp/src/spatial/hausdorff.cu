@@ -14,18 +14,34 @@
  * limitations under the License.
  */
 
+#include <cstdio>
 #include <cuspatial/detail/hausdorff.cuh>
-#include <cuspatial/error.hpp>
-#include <utility/scatter_output_iterator.cuh>
-#include <utility/size_from_offsets.cuh>
+#include "thrust/pair.h"
+#include "utility/scatter_output_iterator.cuh"
+#include "utility/size_from_offsets.cuh"
 
+#include <rmm/thrust_rmm_allocator.h>
+#include <cudf/column/column.hpp>
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
+#include <cudf/column/column_view.hpp>
+#include <cudf/types.hpp>
+#include <cudf/utilities/error.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
+#include <cuspatial/error.hpp>
+#include <rmm/device_buffer.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <thrust/gather.h>
+#include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 
+#include <iomanip>
+#include <iterator>
+#include <limits>
 #include <memory>
+#include <ostream>
+#include <type_traits>
 
 namespace cuspatial {
 namespace detail {
@@ -44,61 +60,84 @@ std::unique_ptr<cudf::column> make_column(size_type size,
     cudf::data_type{tid}, size, cudf::mask_state::UNALLOCATED, stream, mr);
 }
 
-template <typename T, typename SpaceSizeIterator>
-struct haus_travesal {
-  int64_t num_spaces;
-  int64_t n;
-  size_type const* o;
-  size_type const* l;
-  SpaceSizeIterator const s;
-  cudf::column_device_view xs;
-  cudf::column_device_view ys;
+struct hausdorff_index {
+  int32_t space_row;
+  int32_t space_col;
+  int32_t point_row;
+  int32_t point_col;
+  int32_t result_idx;
+};
 
-  hausdorff_acc<T> __device__ operator()(int64_t idx)
+/** @brief Traverses a cartesian product of indices.
+ *
+ * Traverses a cartesian product of indices such that pairs of points within a pair of spaces appear
+ * consecutively. This is used in a transform iterator to calculate multiple hausdorff distances
+ * simultaneously by producing distances in the correct order for consumption by `reduce_by_key`.
+ * The reduce key is the pair of spaces. The pair of points within a pair of spaces appears
+ * consecutively.
+ *
+ */
+template <typename SpaceSizeIterator>
+struct haus_traversal_functor {
+  int32_t num_spaces;
+  int32_t num_points;
+  size_type const* space_offsets;
+  size_type const* space_lookup;
+  SpaceSizeIterator const space_sizes;
+
+  hausdorff_index __device__ operator()(int32_t idx)
   {
-    // ===== Reduction Key ===========
-    int64_t haus_col = l[idx / n];
-    int64_t ox       = o[haus_col];
-    int64_t sx       = s[haus_col];
-    int64_t ox_n     = ox * n;
+    int32_t space_a_idx      = space_lookup[idx / num_points];
+    int32_t space_a_offset   = space_offsets[space_a_idx];
+    int64_t space_a_offset_n = space_a_offset * static_cast<int64_t>(num_points);
+    int32_t space_a_size     = space_sizes[space_a_idx];
 
-    int64_t haus_row = l[(idx - ox_n) / sx];
-    int64_t oy       = o[haus_row];
-    int64_t sy       = s[haus_row];
+    int32_t space_b_idx    = space_lookup[(idx - space_a_offset_n) / space_a_size];
+    int32_t space_b_offset = space_offsets[space_b_idx];
+    int32_t space_b_size   = space_sizes[space_b_idx];
 
-    // ===== Min/Max Key ==========
-    int64_t haus_offset = ox_n + sx * oy;
-    int64_t cell_idx    = idx - haus_offset;
-    int64_t cell_col    = cell_idx / sy;
+    int32_t space_begin = space_a_offset_n + space_a_size * space_b_offset;
+    int32_t cell_idx    = idx - space_begin;
+    int32_t cell_col    = cell_idx / space_b_size;
 
-    // ===== Distance =============
-    int64_t source_idx = ox_n + oy + (n - sy) * cell_col + cell_idx;
-    int64_t source_col = source_idx / n;
-    int64_t source_row = source_idx % n;
-    T a_x              = xs.element<T>(source_row);
-    T a_y              = ys.element<T>(source_row);
-    T b_x              = xs.element<T>(source_col);
-    T b_y              = ys.element<T>(source_col);
+    int64_t source_idx =
+      space_a_offset_n + space_b_offset + (num_points - space_b_size) * cell_col + cell_idx;
+    int32_t source_col = source_idx / num_points;
+    int32_t source_row = source_idx % num_points;
 
-    double distance_d = hypot(static_cast<double>(b_x - a_x), static_cast<double>(b_y - a_y));
+    int32_t destination_idx =
+      space_a_offset_n + (space_a_size - 1) * num_points + space_b_offset + (space_b_size - 1);
 
-    T distance = static_cast<T>(distance_d);
+    auto result_idx = destination_idx == source_idx ? space_a_idx * num_spaces + space_b_idx : -1;
 
-    int64_t elm = ox_n + (sx - 1) * n + oy + sy - 1;
-
-    auto key        = thrust::make_pair(haus_col, haus_row);
-    auto result_idx = elm == source_idx ? haus_col * num_spaces + haus_row : -1;
-
-    // ===== All ==================
-    return hausdorff_acc<T>{key, result_idx, cell_col, cell_col, distance, distance, 0};
+    return {
+      space_a_idx,
+      space_b_idx,
+      source_row,
+      source_col,
+      result_idx,
+    };
   }
 };
 
 template <typename T>
-struct haus_to_haus {
-  __device__ hausdorff_acc<T> operator()(hausdorff_acc<T> value)
+struct hausdorff_index_to_acc_functor {
+  cudf::column_device_view xs;
+  cudf::column_device_view ys;
+
+  hausdorff_acc<T> __device__ operator()(hausdorff_index index)
   {
-    return static_cast<hausdorff_acc<T>>(value);
+    auto a_x = xs.element<T>(index.point_row);
+    auto a_y = ys.element<T>(index.point_row);
+    auto b_x = xs.element<T>(index.point_col);
+    auto b_y = ys.element<T>(index.point_col);
+
+    auto distance = hypot(b_x - a_x, b_y - a_y);
+
+    auto key = thrust::make_pair(index.space_row, index.space_col);
+
+    return hausdorff_acc<T>{
+      key, index.result_idx, index.point_col, index.point_col, distance, distance, 0};
   }
 };
 
@@ -118,13 +157,14 @@ struct hausdorff_functor {
     rmm::mr::device_memory_resource* mr,
     cudaStream_t stream)
   {
-    size_type num_points = xs.size();
-    size_type num_spaces = space_offsets.size();
-    int64_t num_results  = static_cast<int64_t>(num_spaces) * static_cast<int64_t>(num_spaces);
+    size_type num_points  = xs.size();
+    size_type num_spaces  = space_offsets.size();
+    size_type num_results = num_spaces * num_spaces;
 
     if (num_results == 0) { return make_column<T>(0, stream, mr); }
 
-    // ===== Make Space Lookup =====================================================================
+    // ===== Make Lookup for Space by Point ========================================================
+    // these space lookups could be replaced with a `lower_bound` to reduce temporary memory
 
     auto temp_space_lookup = rmm::device_vector<size_type>(num_points);
 
@@ -141,31 +181,31 @@ struct hausdorff_functor {
 
     // ===== Make Space Size Iterator ==============================================================
 
-    auto count = thrust::make_counting_iterator<int64_t>(0);
-
     auto d_space_offsets = cudf::column_device_view::create(space_offsets);
 
-    auto space_offset_iterator = thrust::make_transform_iterator(
-      count, size_from_offsets_functor{*d_space_offsets, xs.size()});
+    auto space_offset_iterator =
+      thrust::make_transform_iterator(thrust::make_counting_iterator<int32_t>(0),
+                                      size_from_offsets_functor{*d_space_offsets, xs.size()});
 
-    // ===== Make Hausdorff Accumulator  ===========================================================
+    // ===== Make Hausdorff Accumulator ============================================================
+
+    auto num_distances = static_cast<int32_t>(num_points) * static_cast<int32_t>(num_points);
+
+    auto hausdorff_index_iter = thrust::make_transform_iterator(
+      thrust::make_counting_iterator<int32_t>(0),
+      haus_traversal_functor<decltype(space_offset_iterator)>{num_spaces,
+                                                              num_points,
+                                                              space_offsets.data<size_type>(),
+                                                              temp_space_lookup.data().get(),
+                                                              space_offset_iterator});
 
     auto d_xs = cudf::column_device_view::create(xs);
     auto d_ys = cudf::column_device_view::create(ys);
 
-    auto num_cartesian = static_cast<int64_t>(num_points) * static_cast<int64_t>(num_points);
+    auto hausdorff_acc_iter = thrust::make_transform_iterator(
+      hausdorff_index_iter, hausdorff_index_to_acc_functor<T>{*d_xs, *d_ys});
 
-    auto hausdorff_iter = thrust::make_transform_iterator(
-      count,
-      haus_travesal<T, decltype(space_offset_iterator)>{num_spaces,
-                                                        num_points,
-                                                        space_offsets.data<size_type>(),
-                                                        temp_space_lookup.data().get(),
-                                                        space_offset_iterator,
-                                                        *d_xs,
-                                                        *d_ys});
-
-    // ===== Calculate =============================================================================
+    // ===== Materialize ===========================================================================
 
     std::unique_ptr<cudf::column> result = make_column<T>(num_results, stream, mr);
 
@@ -173,16 +213,18 @@ struct hausdorff_functor {
     auto result_temp_iter = static_cast<hausdorff_acc<T>*>(result_temp.data());
 
     auto scatter_map = thrust::make_transform_iterator(
-      hausdorff_iter, [] __device__(hausdorff_acc<T> acc) { return acc.result_idx; });
+      hausdorff_index_iter, [] __device__(hausdorff_index acc) { return acc.result_idx; });
+
+    // the following output iterator and `inclusive_scan_by_key` could be replaced by a
+    // reduce_by_key, if it supported noncommutative operators.
 
     auto scatter_out = make_scatter_output_iterator(result_temp_iter, scatter_map);
-    auto out         = thrust::make_transform_output_iterator(scatter_out, haus_to_haus<T>{});
 
     thrust::inclusive_scan_by_key(rmm::exec_policy(stream)->on(stream),
-                                  hausdorff_iter,
-                                  hausdorff_iter + num_cartesian,
-                                  hausdorff_iter,
-                                  out,
+                                  hausdorff_acc_iter,
+                                  hausdorff_acc_iter + num_distances,
+                                  hausdorff_acc_iter,
+                                  scatter_out,
                                   hausdorff_key_compare<T>{});
 
     thrust::transform(rmm::exec_policy(stream)->on(stream),

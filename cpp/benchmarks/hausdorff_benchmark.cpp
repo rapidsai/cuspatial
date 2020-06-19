@@ -30,7 +30,7 @@ static void BM_hausdorff(benchmark::State& state)
   int32_t num_points_per_space = num_points / num_spaces;
 
   auto counting_iter = thrust::counting_iterator<int32_t>();
-  auto zero_iter     = thrust::make_constant_iterator(0);
+  auto zero_iter     = thrust::make_transform_iterator(counting_iter, [](auto idx) { return 0; });
 
   auto space_offset_iter = thrust::make_transform_iterator(
     counting_iter, [num_points_per_space](int32_t idx) { return idx * num_points_per_space; });

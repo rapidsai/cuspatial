@@ -23,88 +23,54 @@
 namespace cuspatial {
 namespace detail {
 
-template <typename T>
-
 /**
- * @brief Hausdorff reduction data structure
- *
- * Data structure for computing directed hausdorff distance as a noncommutative reduction.
+* @brief Hausdorff reduction data structure
+*
+* Data structure for computing directed hausdorff distance as a noncommutative reduction.
 
- * Given one `hausdorff_acc<T>` for each distance between all points in two spaces (O(N^2)) and a
- * binary reduce algorithm which supports noncommutative operations, this data structure and
- * accompoanying reduce operator (`+`) can be used to calculate the directed hausdorff distance
- * between those two spaces. One of two asymetric directed distances can be deduced. The asymetric
- * distance which is computed is determined by the order of inputs, and the columns in which those
- * inputs reside.
- *
- * ```
- * // the distances from a 3-point space to a 2-point space.
- * auto d1 = hausdorff_acc<float>(..., 1, distance_11);
- * auto d2 = hausdorff_acc<float>(..., 1, distance_12);
- * auto d3 = hausdorff_acc<float>(..., 1, distance_13);
- * auto d4 = hausdorff_acc<float>(..., 2, distance_21);
- * auto d5 = hausdorff_acc<float>(..., 2, distance_22);
- * auto d6 = hausdorff_acc<float>(..., 2, distance_23);
- *
- * auto distance_3_to_2 = static_cast<float>(d1 + d2 + d3 + d4 + d5 + d6);
- * ```
- * ```
- * // the distances from a 2-point space to a 3-point space.
- * auto d1 = hausdorff_acc<float>(..., 1, distance_11);
- * auto d2 = hausdorff_acc<float>(..., 1, distance_12);
- * auto d3 = hausdorff_acc<float>(..., 2, distance_13);
- * auto d4 = hausdorff_acc<float>(..., 2, distance_21);
- * auto d5 = hausdorff_acc<float>(..., 3, distance_22);
- * auto d6 = hausdorff_acc<float>(..., 3, distance_23);
- *
- * auto distance_2_to_3 = static_cast<float>(d1 + d2 + d3 + d4 + d5 + d6);
- * ```
- */
+* Given one `hausdorff_acc<T>` for each distance between all points in two spaces (O(N^2)) and a
+* binary reduce algorithm which supports noncommutative operations, this data structure and
+* accompoanying reduce operator (`+`) can be used to calculate the directed hausdorff distance
+* between those two spaces. One of two asymetric directed distances can be deduced. The asymetric
+* distance which is computed is determined by the order of inputs, and the columns in which those
+* inputs reside.
+*
+* ```
+* // the distances from a 3-point space to a 2-point space.
+* auto d1 = hausdorff_acc<float>(..., 1, distance_11);
+* auto d2 = hausdorff_acc<float>(..., 1, distance_12);
+* auto d3 = hausdorff_acc<float>(..., 1, distance_13);
+* auto d4 = hausdorff_acc<float>(..., 2, distance_21);
+* auto d5 = hausdorff_acc<float>(..., 2, distance_22);
+* auto d6 = hausdorff_acc<float>(..., 2, distance_23);
+*
+* auto distance_3_to_2 = static_cast<float>(d1 + d2 + d3 + d4 + d5 + d6);
+* ```
+* ```
+* // the distances from a 2-point space to a 3-point space.
+* auto d1 = hausdorff_acc<float>(..., 1, distance_11);
+* auto d2 = hausdorff_acc<float>(..., 1, distance_12);
+* auto d3 = hausdorff_acc<float>(..., 2, distance_13);
+* auto d4 = hausdorff_acc<float>(..., 2, distance_21);
+* auto d5 = hausdorff_acc<float>(..., 3, distance_22);
+* auto d6 = hausdorff_acc<float>(..., 3, distance_23);
+*
+* auto distance_2_to_3 = static_cast<float>(d1 + d2 + d3 + d4 + d5 + d6);
+* ```
+*/
+template <typename T>
 struct hausdorff_acc {
-  hausdorff_acc() = default;
-  __host__ __device__
-  hausdorff_acc(thrust::pair<int64_t, int64_t> key, int64_t result_idx, int64_t col, T distance)
-    : key(key),
-      result_idx(result_idx),
-      col_l(col),
-      col_r(col),
-      min_l(distance),
-      min_r(distance),
-      max(0)
-  {
-  }
-
-  __host__ __device__ hausdorff_acc(thrust::pair<int64_t, int64_t> key,
-                                    int64_t result_idx,
-                                    int64_t col_l,
-                                    int64_t col_r,
-                                    T min_l,
-                                    T min_r,
-                                    T max)
-    : key(key),
-      result_idx(result_idx),
-      col_l(col_l),
-      col_r(col_r),
-      min_l(min_l),
-      min_r(min_r),
-      max(max)
-  {
-  }
-
-  /**
-   * @brief Hausdorff noncommutative reduce algorithm
-   */
   __host__ __device__ hausdorff_acc<T> operator+(hausdorff_acc<T> const& rhs) const
   {
     auto const& lhs = *this;
 
-    auto out = hausdorff_acc<T>(lhs.key,
+    auto out = hausdorff_acc<T>{lhs.key,
                                 rhs.result_idx,
                                 lhs.col_l,
                                 rhs.col_r,
                                 lhs.min_l,
                                 rhs.min_r,
-                                std::max(lhs.max, rhs.max));
+                                std::max(lhs.max, rhs.max)};
 
     auto const matching_l = lhs.col_l == lhs.col_r;
     auto const matching_r = rhs.col_l == rhs.col_r;
@@ -152,14 +118,14 @@ struct hausdorff_acc {
   }
 
   // the pair of spaces to which this accumulate belongs
-  thrust::pair<int64_t, int64_t> key;
+  thrust::pair<int32_t, int32_t> key;
 
   // result destination, needed only to massage `inclusive_scan` output to the correct offset
-  int64_t result_idx;
+  int32_t result_idx;
 
   // running column ids, used to determine when the rolling minimums can be rolled into the maximum
-  int64_t col_l;
-  int64_t col_r;
+  int32_t col_l;
+  int32_t col_r;
 
   // rolling minimums for the columns at the current stage of reduction
   T min_l;
