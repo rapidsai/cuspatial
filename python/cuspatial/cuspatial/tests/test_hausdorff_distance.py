@@ -1,5 +1,6 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
+import numpy as np
 import pytest
 
 import cudf
@@ -9,10 +10,12 @@ import cuspatial
 
 
 def _test_hausdorff_from_list_of_spaces(spaces):
+    lengths = [len(space) for space in spaces]
+    offsets = np.cumsum([0, *lengths])[:-1]
     return cuspatial.directed_hausdorff_distance(
         [x for space in spaces for (x, y) in space],
         [y for space in spaces for (x, y) in space],
-        [len(space) for space in spaces],
+        offsets,
     )
 
 
