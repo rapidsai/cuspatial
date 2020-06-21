@@ -224,12 +224,6 @@ reverse_tree_levels(rmm::device_uvector<uint32_t> const &quad_keys_in,
     offset += num_quads;
   }
 
-  // Shrink vectors' underlying device allocations to reduce peak memory usage
-  quad_keys.shrink_to_fit(stream);
-  quad_point_count.shrink_to_fit(stream);
-  quad_child_count.shrink_to_fit(stream);
-  quad_levels.shrink_to_fit(stream);
-
   return std::make_tuple(std::move(quad_keys),
                          std::move(quad_point_count),
                          std::move(quad_child_count),
