@@ -10,11 +10,11 @@
 - PR #238 Fix library and include paths in CMakeLists.txt and setup.py
 - PR #240 Remove deprecated RMM header references.
 - PR #243 Install dependencies via meta package
+- PR #247 Use rmm::device_uvector and cudf::UINT types for quadtree construction
 
 ## Bug Fixes
 - PR #244 Restrict gdal version
 - PR #245 Pin gdal to be compatible with cuxfilter
-
 - PR #242 Fix benchmark_fixture to use memory resources.
 
 

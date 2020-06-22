@@ -79,11 +79,11 @@ TEST_F(QuadtreeOnPointIndexingTest, test_single)
 
   // the top level quadtree node is expected to have a value of (0,0,0,1,0)
   expect_tables_equal(*quadtree,
-                      cudf::table_view{{fixed_width_column_wrapper<int32_t>({0}),
-                                        fixed_width_column_wrapper<int8_t>({0}),
+                      cudf::table_view{{fixed_width_column_wrapper<uint32_t>({0}),
+                                        fixed_width_column_wrapper<uint8_t>({0}),
                                         fixed_width_column_wrapper<bool>({0}),
-                                        fixed_width_column_wrapper<int32_t>({1}),
-                                        fixed_width_column_wrapper<int32_t>({0})}});
+                                        fixed_width_column_wrapper<uint32_t>({1}),
+                                        fixed_width_column_wrapper<uint32_t>({0})}});
 }
 
 TEST_F(QuadtreeOnPointIndexingTest, test_two)
@@ -112,11 +112,11 @@ TEST_F(QuadtreeOnPointIndexingTest, test_two)
   // the top level quadtree node is expected to have a value of
   // ([0, 3], [0, 0], [0, 0], [1, 1], [0, 1])
   expect_tables_equal(*quadtree,
-                      cudf::table_view{{fixed_width_column_wrapper<int32_t>({0, 3}),
-                                        fixed_width_column_wrapper<int8_t>({0, 0}),
+                      cudf::table_view{{fixed_width_column_wrapper<uint32_t>({0, 3}),
+                                        fixed_width_column_wrapper<uint8_t>({0, 0}),
                                         fixed_width_column_wrapper<bool>({0, 0}),
-                                        fixed_width_column_wrapper<int32_t>({1, 1}),
-                                        fixed_width_column_wrapper<int32_t>({0, 1})}});
+                                        fixed_width_column_wrapper<uint32_t>({1, 1}),
+                                        fixed_width_column_wrapper<uint32_t>({0, 1})}});
 }
 
 TEST_F(QuadtreeOnPointIndexingTest, test_small)
@@ -179,11 +179,11 @@ TEST_F(QuadtreeOnPointIndexingTest, test_small)
   expect_tables_equal(
     *quadtree,
     cudf::table_view{
-      {fixed_width_column_wrapper<int32_t>({0, 1, 2, 0, 1, 3, 4, 7, 5, 6, 13, 14, 28, 31}),
-       fixed_width_column_wrapper<int8_t>({0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2}),
+      {fixed_width_column_wrapper<uint32_t>({0, 1, 2, 0, 1, 3, 4, 7, 5, 6, 13, 14, 28, 31}),
+       fixed_width_column_wrapper<uint8_t>({0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2}),
        fixed_width_column_wrapper<bool>({1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0}),
-       fixed_width_column_wrapper<int32_t>({3, 2, 11, 7, 2, 2, 9, 2, 9, 7, 5, 8, 8, 7}),
-       fixed_width_column_wrapper<int32_t>({3, 6, 60, 0, 8, 10, 36, 12, 7, 16, 23, 28, 45, 53})}});
+       fixed_width_column_wrapper<uint32_t>({3, 2, 11, 7, 2, 2, 9, 2, 9, 7, 5, 8, 8, 7}),
+       fixed_width_column_wrapper<uint32_t>({3, 6, 60, 0, 8, 10, 36, 12, 7, 16, 23, 28, 45, 53})}});
 }
 
 TEST_F(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
@@ -215,9 +215,9 @@ TEST_F(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
   // the top level quadtree node is expected to have a value of
   // ([3, 12, 15], [0, 1, 1], [1, 0, 0], [2, 1, 1], [1, 0, 1])
   expect_tables_equal(*quadtree,
-                      cudf::table_view{{fixed_width_column_wrapper<int32_t>({3, 12, 15}),
-                                        fixed_width_column_wrapper<int8_t>({0, 1, 1}),
+                      cudf::table_view{{fixed_width_column_wrapper<uint32_t>({3, 12, 15}),
+                                        fixed_width_column_wrapper<uint8_t>({0, 1, 1}),
                                         fixed_width_column_wrapper<bool>({1, 0, 0}),
-                                        fixed_width_column_wrapper<int32_t>({2, 1, 1}),
-                                        fixed_width_column_wrapper<int32_t>({1, 0, 1})}});
+                                        fixed_width_column_wrapper<uint32_t>({2, 1, 1}),
+                                        fixed_width_column_wrapper<uint32_t>({1, 0, 1})}});
 }
