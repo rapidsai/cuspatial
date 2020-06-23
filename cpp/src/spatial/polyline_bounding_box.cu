@@ -173,7 +173,7 @@ std::unique_ptr<cudf::table> polyline_bounding_boxes(cudf::column_view const &po
 {
   CUSPATIAL_EXPECTS(x.type() == y.type(), "Data type mismatch");
   CUSPATIAL_EXPECTS(x.size() == y.size(), "x and y must be the same size");
-  CUSPATIAL_EXPECTS(poly_offsets.type().id() == cudf::INT32, "Invalid poly_offsets type");
+  CUSPATIAL_EXPECTS(poly_offsets.type().id() == cudf::type_id::INT32, "Invalid poly_offsets type");
   CUSPATIAL_EXPECTS(expansion_radius >= 0, "expansion radius must be greater or equal than 0");
   CUSPATIAL_EXPECTS(x.size() >= 2 * poly_offsets.size(),
                     "all polylines must have at least 2 vertices");
