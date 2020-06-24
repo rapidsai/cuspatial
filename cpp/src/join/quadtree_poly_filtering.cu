@@ -183,8 +183,8 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
 
   std::vector<std::unique_ptr<cudf::column>> cols{};
   cols.reserve(2);
-  cols.push_back(make_fixed_width_column<int32_t>(num_results, stream, mr));
-  cols.push_back(make_fixed_width_column<int32_t>(num_results, stream, mr));
+  cols.push_back(make_fixed_width_column<uint32_t>(num_results, stream, mr));
+  cols.push_back(make_fixed_width_column<uint32_t>(num_results, stream, mr));
 
   thrust::copy(rmm::exec_policy(stream)->on(stream),
                out_poly_idxs.begin(),
