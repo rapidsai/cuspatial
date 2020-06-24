@@ -158,7 +158,7 @@ struct hausdorff_functor {
 
     // ===== Make Hausdorff Accumulator ============================================================
 
-    auto num_distances = static_cast<int32_t>(num_points) * static_cast<int32_t>(num_points);
+    auto num_distances = num_points * num_points;
 
     auto hausdorff_index_iter = thrust::make_transform_iterator(
       thrust::make_counting_iterator<int32_t>(0),
