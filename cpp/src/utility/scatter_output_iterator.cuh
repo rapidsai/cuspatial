@@ -22,9 +22,14 @@
 namespace cuspatial {
 namespace detail {
 
-/** @brief scatters outputs to a given index, according to the input scatter map.
+/** @brief scatters outputs to a given index, according to `scatter_map`.
  *
- * @note: if the scatter map produces a negative index, the corrosponding output is ignored.
+ * The destination index is obtained by dereferencing the scatter map at an offset equal to the
+ * distance between `begin` and `out` (the logical offset of the output iterator).
+ *
+ * If the scatter index is negative, the assignment is a no-op.
+ * If the scatter index is non-negative, the assignment is "redirected" to `begin + scatter_idx`
+ *
  **/
 template <typename OutputIterator, typename ScatterIterator>
 class scatter_output_iterator_proxy {
@@ -41,7 +46,10 @@ class scatter_output_iterator_proxy {
   {
     auto scatter_idx = *(scatter_map + thrust::distance(begin, out));
 
-    if (scatter_idx >= 0) { *(begin + scatter_idx) = element; }
+    if (scatter_idx >= 0) {
+      // forward assignments if and only if the scatter map indicates to do so.
+      *(begin + scatter_idx) = element;
+    }
 
     return *this;
   }
@@ -66,6 +74,26 @@ struct scatter_output_iterator_base {
     type;
 };
 
+/**
+ * @brief An output iterator capable of filtering and/or rearranging outputs.
+ *
+ * Example:
+ * ```
+ * auto count_iter = thrust::make_counting_iterator<int32_t>(0);
+ * auto scatter_map = thrust::make_transform_iterator(
+ *     count_iter, [] (int32_t idx) { return idx % 2 == 0 ? -1 : idx / 2; });
+ *
+ * auto out = std::ostream_iterator<char>(std::cout);
+ * auto out_filtered = make_scatter_output_iterator(
+ *     std::ostream_iterator<char>(std::cout),
+ *     scatter_map
+ * );
+ *
+ * assign_a_through_z(out); // abcdefghijklmnopqrstuvwxyz
+ * assign_a_through_z(out_filtered); // bdfhjlnprtvxz
+ * ```
+ *
+ */
 template <typename OutputIterator, typename ScatterIterator>
 class scatter_output_iterator
   : public scatter_output_iterator_base<OutputIterator, ScatterIterator>::type {
