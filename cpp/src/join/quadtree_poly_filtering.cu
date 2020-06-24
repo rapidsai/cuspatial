@@ -280,8 +280,8 @@ std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
   if (quadtree.num_rows() == 0 || poly_bbox.num_rows() == 0) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(2);
-    cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::INT32}));
-    cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::INT32}));
+    cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::type_id::UINT32}));
+    cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::type_id::UINT32}));
     return std::make_unique<cudf::table>(std::move(cols));
   }
 
