@@ -229,8 +229,8 @@ def test_empty(dtype):
         intersections,
         cudf.DataFrame(
             {
-                "poly_offset": cudf.Series([], dtype=np.int32),
-                "quad_offset": cudf.Series([], dtype=np.int32),
+                "poly_offset": cudf.Series([], dtype=np.uint32),
+                "quad_offset": cudf.Series([], dtype=np.uint32),
             }
         ),
     )
@@ -270,10 +270,10 @@ def test_polygon_join_small(dtype):
         cudf.DataFrame(
             {
                 "poly_offset": cudf.Series(
-                    [0, 3, 1, 2, 1, 1, 3, 3], dtype=np.int32
+                    [0, 3, 1, 2, 1, 1, 3, 3], dtype=np.uint32
                 ),
                 "quad_offset": cudf.Series(
-                    [2, 2, 6, 6, 12, 13, 10, 11], dtype=np.int32
+                    [2, 2, 6, 6, 12, 13, 10, 11], dtype=np.uint32
                 ),
             }
         ),
@@ -314,10 +314,10 @@ def test_polyline_join_small(dtype):
         cudf.DataFrame(
             {
                 "poly_offset": cudf.Series(
-                    [0, 3, 1, 2, 1, 1, 3, 3], dtype=np.int32
+                    [0, 3, 1, 2, 1, 1, 3, 3], dtype=np.uint32
                 ),
                 "quad_offset": cudf.Series(
-                    [2, 2, 6, 6, 12, 13, 10, 11], dtype=np.int32
+                    [2, 2, 6, 6, 12, 13, 10, 11], dtype=np.uint32
                 ),
             }
         ),
