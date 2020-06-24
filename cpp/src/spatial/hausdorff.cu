@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-#include <cuspatial/detail/hausdorff.cuh>
-#include <cuspatial/error.hpp>
 #include "utility/scatter_output_iterator.cuh"
 #include "utility/size_from_offsets.cuh"
+
+#include <cuspatial/detail/hausdorff.cuh>
+#include <cuspatial/error.hpp>
 
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/types.hpp>
+
+#include <rmm/device_uvector.hpp>
 
 #include <memory>
 
@@ -67,30 +70,31 @@ struct haus_traversal_functor {
   size_type const* space_lookup;
   SpaceSizeIterator const space_sizes;
 
-  hausdorff_index __device__ operator()(int32_t idx)
+  hausdorff_index __device__ operator()(int32_t const idx)
   {
-    int32_t space_a_idx      = space_lookup[idx / num_points];
-    int32_t space_a_offset   = space_offsets[space_a_idx];
-    int64_t space_a_offset_n = space_a_offset * static_cast<int64_t>(num_points);
-    int32_t space_a_size     = space_sizes[space_a_idx];
+    int32_t const space_a_idx      = space_lookup[idx / num_points];
+    int32_t const space_a_offset   = space_offsets[space_a_idx];
+    int64_t const space_a_offset_n = space_a_offset * static_cast<int64_t>(num_points);
+    int32_t const space_a_size     = space_sizes[space_a_idx];
 
-    int32_t space_b_idx    = space_lookup[(idx - space_a_offset_n) / space_a_size];
-    int32_t space_b_offset = space_offsets[space_b_idx];
-    int32_t space_b_size   = space_sizes[space_b_idx];
+    int32_t const space_b_idx    = space_lookup[(idx - space_a_offset_n) / space_a_size];
+    int32_t const space_b_offset = space_offsets[space_b_idx];
+    int32_t const space_b_size   = space_sizes[space_b_idx];
 
-    int32_t space_begin = space_a_offset_n + space_a_size * space_b_offset;
-    int32_t cell_idx    = idx - space_begin;
-    int32_t cell_col    = cell_idx / space_b_size;
+    int32_t const space_begin = space_a_offset_n + space_a_size * space_b_offset;
+    int32_t const cell_idx    = idx - space_begin;
+    int32_t const cell_col    = cell_idx / space_b_size;
 
-    int64_t source_idx =
+    int64_t const source_idx =
       space_a_offset_n + space_b_offset + (num_points - space_b_size) * cell_col + cell_idx;
-    int32_t source_col = source_idx / num_points;
-    int32_t source_row = source_idx % num_points;
+    int32_t const source_col = source_idx / num_points;
+    int32_t const source_row = source_idx % num_points;
 
-    int32_t destination_idx =
+    int32_t const destination_idx =
       space_a_offset_n + (space_a_size - 1) * num_points + space_b_offset + (space_b_size - 1);
 
-    auto result_idx = destination_idx == source_idx ? space_a_idx * num_spaces + space_b_idx : -1;
+    int32_t const result_idx =
+      destination_idx == source_idx ? space_a_idx * num_spaces + space_b_idx : -1;
 
     return {
       space_a_idx,
@@ -148,7 +152,7 @@ struct hausdorff_functor {
     // ===== Make Lookup for Space by Point ========================================================
     // these space lookups could be replaced with a `lower_bound` to reduce temporary memory
 
-    auto temp_space_lookup = rmm::device_vector<size_type>(num_points);
+    auto temp_space_lookup = rmm::device_uvector<size_type>(num_points, stream);
 
     thrust::scatter(rmm::exec_policy(stream)->on(stream),
                     thrust::make_constant_iterator(1),
