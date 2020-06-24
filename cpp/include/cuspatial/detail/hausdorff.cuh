@@ -26,14 +26,14 @@ namespace detail {
 /**
 * @brief Hausdorff reduction data structure
 *
-* Data structure for computing directed hausdorff distance as a noncommutative reduction.
+* Data structure for computing directed hausdorff distance as a non-commutative reduction.
 
 * Given one `hausdorff_acc<T>` for each distance between all points in two spaces (O(N^2)) and a
-* binary reduce algorithm which supports noncommutative operations, this data structure and
-* accompoanying reduce operator (`+`) can be used to calculate the directed hausdorff distance
-* between those two spaces. One of two asymetric directed distances can be deduced. The asymetric
-* distance which is computed is determined by the order of inputs, and the columns in which those
-* inputs reside.
+* binary reduce algorithm which supports non-commutative operations, this data structure and
+* accompanying custom reduce operator (`+`) can be used to calculate the directed hausdorff distance
+* between those two spaces. One of two directed distances can be deduced. The computed distance is
+* deterministic with respect to the order of inputs, and the columns in which those inputs resides.
+* Consecutive inputs with the same column id may be reordered without altering the result.
 *
 * ```
 * // the distances from a 3-point space to a 2-point space.
