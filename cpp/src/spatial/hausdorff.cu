@@ -26,6 +26,8 @@
 
 #include <rmm/device_uvector.hpp>
 
+#include <thrust/binary_search.h>
+
 #include <memory>
 
 namespace cuspatial {
@@ -67,17 +69,22 @@ struct haus_traversal_functor {
   int32_t num_spaces;
   int32_t num_points;
   size_type const* space_offsets;
-  size_type const* space_lookup;
   SpaceSizeIterator const space_sizes;
+
+  int32_t __device__ space_lookup(int32_t point_idx)
+  {
+    return thrust::upper_bound(thrust::seq, space_offsets, space_offsets + num_spaces, point_idx) -
+           space_offsets - 1;
+  }
 
   hausdorff_index __device__ operator()(int32_t const idx)
   {
-    int32_t const space_a_idx      = space_lookup[idx / num_points];
+    int32_t const space_a_idx      = space_lookup(idx / num_points);
     int32_t const space_a_offset   = space_offsets[space_a_idx];
     int64_t const space_a_offset_n = space_a_offset * static_cast<int64_t>(num_points);
     int32_t const space_a_size     = space_sizes[space_a_idx];
 
-    int32_t const space_b_idx    = space_lookup[(idx - space_a_offset_n) / space_a_size];
+    int32_t const space_b_idx    = space_lookup((idx - space_a_offset_n) / space_a_size);
     int32_t const space_b_offset = space_offsets[space_b_idx];
     int32_t const space_b_size   = space_sizes[space_b_idx];
 
@@ -149,22 +156,6 @@ struct hausdorff_functor {
 
     if (num_results == 0) { return make_column<T>(0, stream, mr); }
 
-    // ===== Make Lookup for Space by Point ========================================================
-    // these space lookups could be replaced with a `lower_bound` to reduce temporary memory
-
-    auto temp_space_lookup = rmm::device_uvector<size_type>(num_points, stream);
-
-    thrust::scatter(rmm::exec_policy(stream)->on(stream),
-                    thrust::make_constant_iterator(1),
-                    thrust::make_constant_iterator(1) + num_spaces - 1,
-                    space_offsets.begin<size_type>() + 1,
-                    temp_space_lookup.begin());
-
-    thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
-                           temp_space_lookup.cbegin(),
-                           temp_space_lookup.cend(),
-                           temp_space_lookup.begin());
-
     // ===== Make Space Size Iterator ==============================================================
 
     auto d_space_offsets = cudf::column_device_view::create(space_offsets);
@@ -179,11 +170,8 @@ struct hausdorff_functor {
 
     auto hausdorff_index_iter = thrust::make_transform_iterator(
       thrust::make_counting_iterator<int32_t>(0),
-      haus_traversal_functor<decltype(space_offset_iterator)>{num_spaces,
-                                                              num_points,
-                                                              space_offsets.data<size_type>(),
-                                                              temp_space_lookup.data().get(),
-                                                              space_offset_iterator});
+      haus_traversal_functor<decltype(space_offset_iterator)>{
+        num_spaces, num_points, space_offsets.data<size_type>(), space_offset_iterator});
 
     auto d_xs = cudf::column_device_view::create(xs);
     auto d_ys = cudf::column_device_view::create(ys);
