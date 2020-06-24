@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "cudf/utilities/type_dispatcher.hpp"
 #include "utility/scatter_output_iterator.cuh"
 #include "utility/size_from_offsets.cuh"
 
@@ -35,17 +36,6 @@ namespace detail {
 namespace {
 
 using size_type = cudf::size_type;
-
-template <typename T>
-std::unique_ptr<cudf::column> make_column(size_type size,
-                                          cudaStream_t stream,
-                                          rmm::mr::device_memory_resource* mr)
-{
-  auto tid = cudf::type_to_id<T>();
-
-  return cudf::make_fixed_width_column(
-    cudf::data_type{tid}, size, cudf::mask_state::UNALLOCATED, stream, mr);
-}
 
 struct hausdorff_index {
   int32_t space_row;
@@ -154,7 +144,9 @@ struct hausdorff_functor {
     size_type num_spaces  = space_offsets.size();
     size_type num_results = num_spaces * num_spaces;
 
-    if (num_results == 0) { return make_column<T>(0, stream, mr); }
+    if (num_results == 0) {
+      return cudf::make_empty_column(cudf::data_type{cudf::type_to_id<T>()});
+    }
 
     // ===== Make Space Size Iterator ==============================================================
 
@@ -181,7 +173,11 @@ struct hausdorff_functor {
 
     // ===== Materialize ===========================================================================
 
-    std::unique_ptr<cudf::column> result = make_column<T>(num_results, stream, mr);
+    auto result = cudf::make_fixed_width_column(cudf::data_type{cudf::type_to_id<T>()},
+                                                num_results,
+                                                cudf::mask_state::UNALLOCATED,
+                                                stream,
+                                                mr);
 
     auto result_temp      = rmm::device_buffer(sizeof(hausdorff_acc<T>) * num_results);
     auto result_temp_iter = static_cast<hausdorff_acc<T>*>(result_temp.data());
@@ -190,7 +186,7 @@ struct hausdorff_functor {
       hausdorff_index_iter, [] __device__(hausdorff_index acc) { return acc.result_idx; });
 
     // the following output iterator and `inclusive_scan_by_key` could be replaced by a
-    // reduce_by_key, if it supported noncommutative operators.
+    // reduce_by_key, if it supported non-commutative operators.
 
     auto scatter_out = make_scatter_output_iterator(result_temp_iter, scatter_map);
 
