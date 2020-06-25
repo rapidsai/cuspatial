@@ -8,13 +8,14 @@
 - PR #238 Fix library and include paths in CMakeLists.txt and setup.py
 - PR #240 Remove deprecated RMM header references.
 - PR #243 Install dependencies via meta package
+- PR #247 Use rmm::device_uvector and cudf::UINT types for quadtree construction
 - PR #246 Hausdorff performance improvement
 
 ## Bug Fixes
 - PR #244 Restrict gdal version
 - PR #245 Pin gdal to be compatible with cuxfilter
-
 - PR #242 Fix benchmark_fixture to use memory resources.
+- PR #248 Fix build by updating type_id usages after upstream breaking changes.
 
 
 # cuSpatial 0.14.0 (Date TBD)
@@ -59,6 +60,7 @@
 - PR #214 Install gdal>=3.0.2 in build.sh
 - PR #222 Fix potential thrust launch failure in quadtree building
 - PR #221 Add python methods to api.rst, fix formatting
+- PR #225 Add short git commit to conda package
 - PR #228 Fix polygon and polyline docstrings
 
 ## Bug Fixes
