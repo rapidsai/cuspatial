@@ -60,17 +60,12 @@ namespace detail {
 */
 template <typename T>
 struct hausdorff_acc {
-  __host__ __device__ hausdorff_acc<T> operator+(hausdorff_acc<T> const& rhs) const
+  __device__ hausdorff_acc<T> operator+(hausdorff_acc<T> const& rhs) const
   {
     auto const& lhs = *this;
 
-    auto out = hausdorff_acc<T>{lhs.key,
-                                rhs.result_idx,
-                                lhs.col_l,
-                                rhs.col_r,
-                                lhs.min_l,
-                                rhs.min_r,
-                                std::max(lhs.max, rhs.max)};
+    auto out = hausdorff_acc<T>{
+      lhs.key, rhs.result_idx, lhs.col_l, rhs.col_r, lhs.min_l, rhs.min_r, fmax(lhs.max, rhs.max)};
 
     auto const matching_l = lhs.col_l == lhs.col_r;
     auto const matching_r = rhs.col_l == rhs.col_r;
@@ -78,24 +73,24 @@ struct hausdorff_acc {
 
     if (matching_m and not matching_l and not matching_r) {
       // both inner minimum are final and in the same column.
-      out.max = std::max(out.max, std::min(lhs.min_r, rhs.min_l));
+      out.max = fmax(out.max, fmin(lhs.min_r, rhs.min_l));
     } else {
       // roll the LHS inner minimum into output (output lhs, rhs, or max)
       if (matching_l) {
-        out.min_l = std::min(out.min_l, lhs.min_r);
+        out.min_l = fmin(out.min_l, lhs.min_r);
       } else if (matching_m) {
-        out.min_r = std::min(out.min_r, lhs.min_r);
+        out.min_r = fmin(out.min_r, lhs.min_r);
       } else {
-        out.max = std::max(out.max, lhs.min_r);
+        out.max = fmax(out.max, lhs.min_r);
       }
 
       // roll the RHS inner minimum into output (output lhs, rhs, or max)
       if (matching_r) {
-        out.min_r = std::min(out.min_r, rhs.min_l);
+        out.min_r = fmin(out.min_r, rhs.min_l);
       } else if (matching_m) {
-        out.min_l = std::min(out.min_l, rhs.min_l);
+        out.min_l = fmin(out.min_l, rhs.min_l);
       } else {
-        out.max = std::max(out.max, rhs.min_l);
+        out.max = fmax(out.max, rhs.min_l);
       }
     }
 
@@ -107,14 +102,13 @@ struct hausdorff_acc {
    *
    * @returns Directed hausdorff distance
    */
-  __host__ __device__ explicit operator T() const
+  __device__ explicit operator T() const
   {
     auto is_open = this->col_l == this->col_r;
 
-    auto partial_max =
-      is_open ? std::min(this->min_l, this->min_r) : std::max(this->min_l, this->min_r);
+    auto partial_max = is_open ? fmin(this->min_l, this->min_r) : fmax(this->min_l, this->min_r);
 
-    return std::max(this->max, partial_max);
+    return fmax(this->max, partial_max);
   }
 
   // the pair of spaces to which this accumulate belongs

@@ -22,7 +22,6 @@
 #include <tests/utilities/cudf_gtest.hpp>
 #include <tests/utilities/type_lists.hpp>
 
-#include <cuspatial/detail/hausdorff.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/hausdorff.hpp>
 
@@ -32,91 +31,12 @@ using namespace cudf;
 using namespace test;
 
 template <typename T>
-using hausdorff_acc = cuspatial::detail::hausdorff_acc<T>;
-
-template <typename T>
-hausdorff_acc<T> make_hausdorff_acc(thrust::pair<int32_t, int32_t> key,
-                                    int32_t result_idx,
-                                    int32_t col,
-                                    T distance)
-{
-  return hausdorff_acc<T>{key, result_idx, col, col, distance, distance, 0};
-}
-
-template <typename T>
-hausdorff_acc<T> make_hausdorff_acc(thrust::pair<int32_t, int32_t> key,
-                                    int32_t result_idx,
-                                    int32_t col_l,
-                                    int32_t col_r,
-                                    T min_l,
-                                    T min_r,
-                                    T max)
-{
-  return hausdorff_acc<T>{key, result_idx, col_l, col_r, min_l, min_r, max};
-}
-
-template <typename T>
-void expect_haus_eq(hausdorff_acc<T> const& a, hausdorff_acc<T> const& b)
-{
-  using namespace cuspatial::detail;
-
-  EXPECT_EQ(a.key, b.key);
-  EXPECT_EQ(a.result_idx, b.result_idx);
-  EXPECT_EQ(a.col_l, b.col_l);
-  EXPECT_EQ(a.col_r, b.col_r);
-  EXPECT_EQ(a.min_l, b.min_l);
-  EXPECT_EQ(a.min_r, b.min_r);
-  EXPECT_EQ(a.max, b.max);
-}
-
-template <typename T>
 struct HausdorffTest : public BaseFixture {
 };
 
 using TestTypes = Types<double>;
 
 TYPED_TEST_CASE(HausdorffTest, TestTypes);
-
-TYPED_TEST(HausdorffTest, Binop1)
-{
-  using T = TypeParam;
-
-  auto key   = thrust::make_pair<int64_t, int64_t>(0, 0);
-  auto dst   = static_cast<int64_t>(0);
-  auto col_a = static_cast<int64_t>(0);
-  auto col_b = static_cast<int64_t>(1);
-
-  auto a = make_hausdorff_acc<T>(key, dst, col_a, static_cast<int64_t>(5));
-  auto b = make_hausdorff_acc<T>(key, dst, col_b, static_cast<int64_t>(7));
-
-  auto expected = make_hausdorff_acc<T>(key, dst, col_a, col_b, 5, 7, 0);
-
-  expect_haus_eq(a + b, expected);
-}
-
-TYPED_TEST(HausdorffTest, Binop2)
-{
-  using T = TypeParam;
-
-  auto key   = thrust::make_pair<int64_t, int64_t>(0, 0);
-  auto dst   = static_cast<int64_t>(0);
-  auto col_0 = static_cast<int64_t>(0);
-  auto col_1 = static_cast<int64_t>(1);
-
-  auto a = make_hausdorff_acc<T>(key, dst, col_0, 3.6);
-  auto b = make_hausdorff_acc<T>(key, dst, col_0, 8.2);
-  auto c = make_hausdorff_acc<T>(key, dst, col_0, 1.4);
-
-  auto d = make_hausdorff_acc<T>(key, dst, col_1, 8.4);
-  auto e = make_hausdorff_acc<T>(key, dst, col_1, 5.3);
-  auto f = make_hausdorff_acc<T>(key, dst, col_1, 5.0);
-
-  auto expected = make_hausdorff_acc<T>(key, dst, col_0, col_1, 1.4, 5, 0);
-
-  auto result = (a + b) + ((c + d) + (e + f));
-
-  expect_haus_eq(result, expected);
-}
 
 TYPED_TEST(HausdorffTest, Empty)
 {
