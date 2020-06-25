@@ -64,8 +64,13 @@ struct hausdorff_acc {
   {
     auto const& lhs = *this;
 
-    auto out = hausdorff_acc<T>{
-      lhs.key, rhs.result_idx, lhs.col_l, rhs.col_r, lhs.min_l, rhs.min_r, fmax(lhs.max, rhs.max)};
+    auto out = hausdorff_acc<T>{lhs.key,
+                                rhs.result_idx,
+                                lhs.col_l,
+                                rhs.col_r,
+                                lhs.min_l,
+                                rhs.min_r,
+                                max(lhs.rolling_max, rhs.rolling_max)};
 
     auto const matching_l = lhs.col_l == lhs.col_r;
     auto const matching_r = rhs.col_l == rhs.col_r;
@@ -73,24 +78,24 @@ struct hausdorff_acc {
 
     if (matching_m and not matching_l and not matching_r) {
       // both inner minimum are final and in the same column.
-      out.max = fmax(out.max, fmin(lhs.min_r, rhs.min_l));
+      out.rolling_max = max(out.rolling_max, min(lhs.min_r, rhs.min_l));
     } else {
       // roll the LHS inner minimum into output (output lhs, rhs, or max)
       if (matching_l) {
-        out.min_l = fmin(out.min_l, lhs.min_r);
+        out.min_l = min(out.min_l, lhs.min_r);
       } else if (matching_m) {
-        out.min_r = fmin(out.min_r, lhs.min_r);
+        out.min_r = min(out.min_r, lhs.min_r);
       } else {
-        out.max = fmax(out.max, lhs.min_r);
+        out.rolling_max = max(out.rolling_max, lhs.min_r);
       }
 
       // roll the RHS inner minimum into output (output lhs, rhs, or max)
       if (matching_r) {
-        out.min_r = fmin(out.min_r, rhs.min_l);
+        out.min_r = min(out.min_r, rhs.min_l);
       } else if (matching_m) {
-        out.min_l = fmin(out.min_l, rhs.min_l);
+        out.min_l = min(out.min_l, rhs.min_l);
       } else {
-        out.max = fmax(out.max, rhs.min_l);
+        out.rolling_max = max(out.rolling_max, rhs.min_l);
       }
     }
 
@@ -106,9 +111,9 @@ struct hausdorff_acc {
   {
     auto is_open = this->col_l == this->col_r;
 
-    auto partial_max = is_open ? fmin(this->min_l, this->min_r) : fmax(this->min_l, this->min_r);
+    auto partial_max = is_open ? min(this->min_l, this->min_r) : max(this->min_l, this->min_r);
 
-    return fmax(this->max, partial_max);
+    return max(this->rolling_max, partial_max);
   }
 
   // the pair of spaces to which this accumulate belongs
@@ -126,7 +131,7 @@ struct hausdorff_acc {
   T min_r;
 
   // rolling maximum. this is the maximum of the minimum distances found so far
-  T max;
+  T rolling_max;
 };
 
 template <typename T>
