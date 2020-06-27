@@ -68,3 +68,11 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}"
                  "${CUSPATIAL_LIBRARY}")
+
+###################################################################################################
+# - hausdorff benchmark ---------------------------------------------------------------------------
+
+set(HAUSDORFF_BENCH_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/hausdorff_benchmark.cpp")
+
+ConfigureBench(HAUSDORFF_BENCH "${HAUSDORFF_BENCH_SRC}")
