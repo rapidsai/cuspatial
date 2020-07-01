@@ -87,6 +87,10 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${CUDF_LIBRARY}"
                  "${CUSPATIAL_LIBRARY}")
 
+set(CARTESIAN_PRODUCT_ITERATOR_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/cartesian_product_iterator_test.cpp")
+ConfigureTest(CARTESIAN_PRODUCT_ITERATOR_TEST "${CARTESIAN_PRODUCT_ITERATOR_TEST_SRC}")
+
 set(CUBIC_SPLINE_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/interpolate/cubic_spline_test.cpp")
  ConfigureTest(CUBIC_SPLINE_TEST "${CUBIC_SPLINE_TEST_SRC}")

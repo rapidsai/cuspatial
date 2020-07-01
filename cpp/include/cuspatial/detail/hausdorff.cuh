@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <thrust/tuple.h>
-
 #include <cstdint>
 
 namespace cuspatial {
@@ -37,25 +35,25 @@ namespace detail {
 *
 * ```
 * // the distances from a 3-point space to a 2-point space.
-* auto d1 = hausdorff_acc<float>(..., 1, distance_11);
-* auto d2 = hausdorff_acc<float>(..., 1, distance_12);
-* auto d3 = hausdorff_acc<float>(..., 1, distance_13);
-* auto d4 = hausdorff_acc<float>(..., 2, distance_21);
-* auto d5 = hausdorff_acc<float>(..., 2, distance_22);
-* auto d6 = hausdorff_acc<float>(..., 2, distance_23);
+* auto h1 = hausdorff_acc<float>{1, 1, distance_a, distance_a};
+* auto h2 = hausdorff_acc<float>{1, 1, distance_b, distance_b};
+* auto h3 = hausdorff_acc<float>{1, 1, distance_c, distance_c};
+* auto h4 = hausdorff_acc<float>{2, 2, distance_a, distance_a};
+* auto h5 = hausdorff_acc<float>{2, 2, distance_b, distance_b};
+* auto h6 = hausdorff_acc<float>{2, 2, distance_c, distance_c};
 *
-* auto distance_3_to_2 = static_cast<float>(d1 + d2 + d3 + d4 + d5 + d6);
+* auto distance_3_to_2 = static_cast<float>(h1 + h2 + h3 + h4 + h5 + h6);
 * ```
 * ```
 * // the distances from a 2-point space to a 3-point space.
-* auto d1 = hausdorff_acc<float>(..., 1, distance_11);
-* auto d2 = hausdorff_acc<float>(..., 1, distance_12);
-* auto d3 = hausdorff_acc<float>(..., 2, distance_13);
-* auto d4 = hausdorff_acc<float>(..., 2, distance_21);
-* auto d5 = hausdorff_acc<float>(..., 3, distance_22);
-* auto d6 = hausdorff_acc<float>(..., 3, distance_23);
+* auto h1 = hausdorff_acc<float>{1, 1, distance_a, distance_a};
+* auto h2 = hausdorff_acc<float>{1, 1, distance_b, distance_b};
+* auto h3 = hausdorff_acc<float>{2, 2, distance_c, distance_c};
+* auto h4 = hausdorff_acc<float>{2, 2, distance_a, distance_a};
+* auto h5 = hausdorff_acc<float>{3, 3, distance_b, distance_b};
+* auto h6 = hausdorff_acc<float>{3, 3, distance_c, distance_c};
 *
-* auto distance_2_to_3 = static_cast<float>(d1 + d2 + d3 + d4 + d5 + d6);
+* auto distance_2_to_3 = static_cast<float>(h1 + h2 + h3 + h4 + h5 + h6);
 * ```
 */
 template <typename T>
@@ -64,13 +62,8 @@ struct hausdorff_acc {
   {
     auto const& lhs = *this;
 
-    auto out = hausdorff_acc<T>{lhs.key,
-                                rhs.result_idx,
-                                lhs.col_l,
-                                rhs.col_r,
-                                lhs.min_l,
-                                rhs.min_r,
-                                max(lhs.rolling_max, rhs.rolling_max)};
+    auto out = hausdorff_acc<T>{
+      lhs.col_l, rhs.col_r, lhs.min_l, rhs.min_r, max(lhs.rolling_max, rhs.rolling_max)};
 
     auto const matching_l = lhs.col_l == lhs.col_r;
     auto const matching_r = rhs.col_l == rhs.col_r;
@@ -116,12 +109,6 @@ struct hausdorff_acc {
     return max(this->rolling_max, partial_max);
   }
 
-  // the pair of spaces to which this accumulate belongs
-  thrust::pair<int32_t, int32_t> key;
-
-  // result destination, needed only to massage `inclusive_scan` output to the correct offset
-  int32_t result_idx;
-
   // running column ids, used to determine when the rolling minimums can be rolled into the maximum
   int32_t col_l;
   int32_t col_r;
@@ -132,11 +119,6 @@ struct hausdorff_acc {
 
   // rolling maximum. this is the maximum of the minimum distances found so far
   T rolling_max;
-};
-
-template <typename T>
-struct hausdorff_key_compare {
-  bool __device__ operator()(hausdorff_acc<T> a, hausdorff_acc<T> b) { return a.key == b.key; }
 };
 
 }  // namespace detail

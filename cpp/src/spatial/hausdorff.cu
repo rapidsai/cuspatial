@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
-#include "cudf/utilities/type_dispatcher.hpp"
-#include "utility/scatter_output_iterator.cuh"
-#include "utility/size_from_offsets.cuh"
-
+#include <cuspatial/detail/cartesian_product_iterator.cuh>
 #include <cuspatial/detail/hausdorff.cuh>
 #include <cuspatial/error.hpp>
+#include "utility/scatter_output_iterator.cuh"
+#include "utility/size_from_offsets.cuh"
 
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/types.hpp>
-
-#include <rmm/device_uvector.hpp>
+#include <cudf/utilities/type_dispatcher.hpp>
 
 #include <thrust/binary_search.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/transform_iterator.h>
+
+#include <rmm/device_uvector.hpp>
 
 #include <memory>
 
@@ -37,90 +39,20 @@ namespace {
 
 using size_type = cudf::size_type;
 
-struct hausdorff_index {
-  int32_t space_row;
-  int32_t space_col;
-  int32_t point_row;
-  int32_t point_col;
-  int32_t result_idx;
-};
-
-/** @brief Traverses a cartesian product of indices.
- *
- * Traverses a cartesian product of indices such that pairs of points within a pair of spaces appear
- * consecutively. This is used in a transform iterator to calculate multiple hausdorff distances
- * simultaneously by producing distances in the correct order for consumption by `reduce_by_key`.
- * The reduce key is the pair of spaces. The pair of points within a pair of spaces appears
- * consecutively.
- *
- */
-template <typename SpaceSizeIterator>
-struct haus_traversal_functor {
-  int32_t num_spaces;
-  int32_t num_points;
-  size_type const* space_offsets;
-  SpaceSizeIterator const space_sizes;
-
-  int32_t __device__ space_lookup(int32_t point_idx)
-  {
-    return thrust::upper_bound(thrust::seq, space_offsets, space_offsets + num_spaces, point_idx) -
-           space_offsets - 1;
-  }
-
-  hausdorff_index __device__ operator()(int32_t const idx)
-  {
-    int32_t const space_a_idx      = space_lookup(idx / num_points);
-    int32_t const space_a_offset   = space_offsets[space_a_idx];
-    int64_t const space_a_offset_n = space_a_offset * static_cast<int64_t>(num_points);
-    int32_t const space_a_size     = space_sizes[space_a_idx];
-
-    int32_t const space_b_idx    = space_lookup((idx - space_a_offset_n) / space_a_size);
-    int32_t const space_b_offset = space_offsets[space_b_idx];
-    int32_t const space_b_size   = space_sizes[space_b_idx];
-
-    int32_t const space_begin = space_a_offset_n + space_a_size * space_b_offset;
-    int32_t const cell_idx    = idx - space_begin;
-    int32_t const cell_col    = cell_idx / space_b_size;
-
-    int64_t const source_idx =
-      space_a_offset_n + space_b_offset + (num_points - space_b_size) * cell_col + cell_idx;
-    int32_t const source_col = source_idx / num_points;
-    int32_t const source_row = source_idx % num_points;
-
-    int32_t const destination_idx =
-      space_a_offset_n + (space_a_size - 1) * num_points + space_b_offset + (space_b_size - 1);
-
-    int32_t const result_idx =
-      destination_idx == source_idx ? space_a_idx * num_spaces + space_b_idx : -1;
-
-    return {
-      space_a_idx,
-      space_b_idx,
-      source_row,
-      source_col,
-      result_idx,
-    };
-  }
-};
-
 template <typename T>
-struct hausdorff_index_to_acc_functor {
+struct gcp_to_hausdorff_acc {
   cudf::column_device_view xs;
   cudf::column_device_view ys;
 
-  hausdorff_acc<T> __device__ operator()(hausdorff_index index)
+  hausdorff_acc<T> __device__ operator()(cartesian_product_group_index idx)
   {
-    auto a_x = xs.element<T>(index.point_row);
-    auto a_y = ys.element<T>(index.point_row);
-    auto b_x = xs.element<T>(index.point_col);
-    auto b_y = ys.element<T>(index.point_col);
+    auto a_idx = idx.group_a.offset + idx.element_a_idx;
+    auto b_idx = idx.group_b.offset + idx.element_b_idx;
 
-    auto distance = hypot(b_x - a_x, b_y - a_y);
+    auto distance = hypot(xs.element<T>(b_idx) - xs.element<T>(a_idx),
+                          ys.element<T>(b_idx) - ys.element<T>(a_idx));
 
-    auto key = thrust::make_pair(index.space_row, index.space_col);
-
-    return hausdorff_acc<T>{
-      key, index.result_idx, index.point_col, index.point_col, distance, distance, 0};
+    return hausdorff_acc<T>{b_idx, b_idx, distance, distance, 0};
   }
 };
 
@@ -148,28 +80,16 @@ struct hausdorff_functor {
       return cudf::make_empty_column(cudf::data_type{cudf::type_to_id<T>()});
     }
 
-    // ===== Make Space Size Iterator ==============================================================
-
-    auto d_space_offsets = cudf::column_device_view::create(space_offsets);
-
-    auto space_offset_iterator =
-      thrust::make_transform_iterator(thrust::make_counting_iterator<int32_t>(0),
-                                      size_from_offsets_functor{*d_space_offsets, xs.size()});
-
     // ===== Make Hausdorff Accumulator ============================================================
 
-    auto num_distances = num_points * num_points;
-
-    auto hausdorff_index_iter = thrust::make_transform_iterator(
-      thrust::make_counting_iterator<int32_t>(0),
-      haus_traversal_functor<decltype(space_offset_iterator)>{
-        num_spaces, num_points, space_offsets.data<size_type>(), space_offset_iterator});
+    auto gcp_iter = make_grouped_cartesian_product_iterator(
+      num_points, num_spaces, space_offsets.begin<cudf::size_type>());
 
     auto d_xs = cudf::column_device_view::create(xs);
     auto d_ys = cudf::column_device_view::create(ys);
 
-    auto hausdorff_acc_iter = thrust::make_transform_iterator(
-      hausdorff_index_iter, hausdorff_index_to_acc_functor<T>{*d_xs, *d_ys});
+    auto hausdorff_acc_iter =
+      thrust::make_transform_iterator(gcp_iter, gcp_to_hausdorff_acc<T>{*d_xs, *d_ys});
 
     // ===== Materialize ===========================================================================
 
@@ -183,19 +103,35 @@ struct hausdorff_functor {
     auto result_temp_iter = static_cast<hausdorff_acc<T>*>(result_temp.data());
 
     auto scatter_map = thrust::make_transform_iterator(
-      hausdorff_index_iter, [] __device__(hausdorff_index acc) { return acc.result_idx; });
+      gcp_iter, [num_spaces] __device__(cartesian_product_group_index idx) {
+        // the given output is only a "result" if it is the last output for a given pair-of-spaces
+        bool const is_result = idx.element_a_idx + 1 == idx.group_a.size &&  //
+                               idx.element_b_idx + 1 == idx.group_b.size;
+
+        if (not is_result) { return -1; }
+
+        // the destination for the result is determined per- pair-of-spaces
+        return idx.group_b.idx * num_spaces + idx.group_a.idx;
+      });
+
+    auto scatter_out = make_scatter_output_iterator(result_temp_iter, scatter_map);
+
+    auto gpc_key_iter =
+      thrust::make_transform_iterator(gcp_iter, [] __device__(cartesian_product_group_index idx) {
+        return thrust::make_pair(idx.group_a.idx, idx.group_b.idx);
+      });
 
     // the following output iterator and `inclusive_scan_by_key` could be replaced by a
     // reduce_by_key, if it supported non-commutative operators.
 
-    auto scatter_out = make_scatter_output_iterator(result_temp_iter, scatter_map);
+    auto num_cartesian = num_points * num_points;
 
     thrust::inclusive_scan_by_key(rmm::exec_policy(stream)->on(stream),
-                                  hausdorff_acc_iter,
-                                  hausdorff_acc_iter + num_distances,
+                                  gpc_key_iter,
+                                  gpc_key_iter + num_cartesian,
                                   hausdorff_acc_iter,
                                   scatter_out,
-                                  hausdorff_key_compare<T>{});
+                                  thrust::equal_to<thrust::pair<int32_t, int32_t>>());
 
     thrust::transform(rmm::exec_policy(stream)->on(stream),
                       result_temp_iter,
