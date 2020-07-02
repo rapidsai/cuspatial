@@ -21,11 +21,6 @@ export HOME=$WORKSPACE
 # Switch to project root; also root of repo checkout
 cd $WORKSPACE
 
-# Get latest tag and number of commits since tag
-export GIT_DESCRIBE_TAG=`git describe --abbrev=0 --tags`
-export GIT_DESCRIBE_NUMBER=`git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count`
-export MINOR_VERSION=`echo $GIT_DESCRIBE_TAG | grep -o -E '([0-9]+\.[0-9]+)'`
-
 # If nightly build, append current YYMMDD to version
 if [[ "$BUILD_MODE" = "branch" && "$SOURCE_BRANCH" = branch-* ]] ; then
   export VERSION_SUFFIX=`date +%y%m%d`
@@ -53,11 +48,6 @@ conda config --set ssl_verify False
 ##########################################################################################
 # BUILD - Conda package builds (conda deps: libcupatial <- cuspatial)
 ##########################################################################################
-
-logger "Clone cudf"
-git clone https://github.com/rapidsai/cudf.git -b branch-$MINOR_VERSION $CUDF_HOME
-cd $CUDF_HOME
-git submodule update --init --remote --recursive
 
 logger "Build conda pkg for libcuspatial..."
 cd $WORKSPACE

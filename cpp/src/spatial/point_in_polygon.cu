@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,138 +14,206 @@
  * limitations under the License.
  */
 
-#include <cudf/utilities/legacy/type_dispatcher.hpp>
-#include <utilities/legacy/cuda_utils.hpp>
-#include <type_traits>
-#include <utility/utility.hpp>
-#include <cuspatial/point_in_polygon.hpp>
+#include <cudf/column/column.hpp>
+#include <cudf/column/column_factories.hpp>
+#include <cudf/column/column_view.hpp>
+#include <cudf/detail/utilities/cuda.cuh>
+#include <cudf/utilities/type_dispatcher.hpp>
 
-#include <cudf/legacy/column.hpp>
+#include <cuspatial/error.hpp>
+
+#include <rmm/mr/device/device_memory_resource.hpp>
+
+#include <memory>
+#include <type_traits>
 
 namespace {
 
 template <typename T>
-__global__ void pip_kernel(gdf_size_type pnt_size,const T* const __restrict__ pnt_x,const T* const __restrict__ pnt_y,
-        gdf_size_type ply_size,const uint32_t* const __restrict__ ply_fpos,const uint32_t* const __restrict__ ply_rpos,
-        const T* const __restrict__ ply_x,const T* const __restrict__ ply_y,
-        uint32_t* const __restrict__ res_bm)
+__global__ void point_in_polygon_kernel(cudf::size_type num_test_points,
+                                        const T* const __restrict__ test_points_x,
+                                        const T* const __restrict__ test_points_y,
+                                        cudf::size_type num_polys,
+                                        const cudf::size_type* const __restrict__ poly_offsets,
+                                        cudf::size_type num_rings,
+                                        const cudf::size_type* const __restrict__ poly_ring_offsets,
+                                        cudf::size_type num_points,
+                                        const T* const __restrict__ poly_points_x,
+                                        const T* const __restrict__ poly_points_y,
+                                        int32_t* const __restrict__ result)
 {
-    uint32_t mask=0;
-    //assuming 1D grid/block config
-    uint32_t idx =blockIdx.x*blockDim.x+threadIdx.x;
-    if(idx>=pnt_size) return;
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    T x = pnt_x[idx];
-    T y = pnt_y[idx];
-    for (uint32_t j = 0; j < ply_size; j++) //for each polygon
-    {
-       uint32_t r_f = (0 == j) ? 0 : ply_fpos[j-1];
-       uint32_t r_t=ply_fpos[j];
-       bool in_polygon = false;
-       for (uint32_t k = r_f; k < r_t; k++) //for each ring
-       {
-           uint32_t m = (k==0)?0:ply_rpos[k-1];
-           for (;m < ply_rpos[k]-1; m++) //for each line segment
-           {
-              T x0, x1, y0, y1;
-              x0 = ply_x[m];
-              y0 = ply_y[m];
-              x1 = ply_x[m+1];
-              y1 = ply_y[m+1];
+  if (idx > num_test_points) { return; }
 
-              if ((((y0 <= y) && (y < y1)) ||
-                   ((y1 <= y) && (y < y0))) &&
-                       (x < (x1 - x0) * (y - y0) / (y1 - y0) + x0))
-                 in_polygon = !in_polygon;
-            }
+  int32_t hit_mask = 0;
+
+  T x = test_points_x[idx];
+  T y = test_points_y[idx];
+
+  // for each polygon
+  for (auto poly_idx = 0; poly_idx < num_polys; poly_idx++) {
+    auto poly_idx_next = poly_idx + 1;
+    auto poly_begin    = poly_offsets[poly_idx];
+    auto poly_end      = (poly_idx_next < num_polys) ? poly_offsets[poly_idx_next] : num_rings;
+
+    bool point_is_within = false;
+
+    // for each ring
+    for (auto ring_idx = poly_begin; ring_idx < poly_end; ring_idx++) {
+      auto ring_idx_next = ring_idx + 1;
+      auto ring_begin    = poly_ring_offsets[ring_idx];
+      auto ring_end = (ring_idx_next < num_rings) ? poly_ring_offsets[ring_idx_next] : num_points;
+      auto ring_len = ring_end - ring_begin;
+
+      // for each line segment
+      for (auto point_idx = 0; point_idx < ring_len; point_idx++) {
+        T ax = poly_points_x[ring_begin + ((point_idx + 0) % ring_len)];
+        T ay = poly_points_y[ring_begin + ((point_idx + 0) % ring_len)];
+        T bx = poly_points_x[ring_begin + ((point_idx + 1) % ring_len)];
+        T by = poly_points_y[ring_begin + ((point_idx + 1) % ring_len)];
+
+        bool y_between_ay_by = ay <= y && y < by;  // is y in range [ay, by) when ay < by?
+        bool y_between_by_ay = by <= y && y < ay;  // is y in range [by, ay) when by < ay?
+        bool y_in_bounds     = y_between_ay_by || y_between_by_ay;  // is y in range [by, ay]?
+        T run                = bx - ax;
+        T rise               = by - ay;
+        T rise_to_point      = y - ay;
+
+        if (y_in_bounds && x < (run / rise) * rise_to_point + ax) {
+          point_is_within = not point_is_within;
+        }
       }
-      if(in_polygon)
-      	mask|=(0x01<<j);
-   }
-   res_bm[idx]=mask;
+    }
+
+    hit_mask |= point_is_within << poly_idx;
+  }
+
+  result[idx] = hit_mask;
 }
 
-struct pip_functor {
-    template <typename T>
-    static constexpr bool is_supported()
-    {
-        return std::is_floating_point<T>::value;
-    }
+struct point_in_polygon_functor {
+  template <typename T>
+  static constexpr bool is_supported()
+  {
+    return std::is_floating_point<T>::value;
+  }
 
-    template <typename T, std::enable_if_t< is_supported<T>() >* = nullptr>
-    gdf_column operator()(gdf_column const & pnt_x,gdf_column const & pnt_y,
- 			  gdf_column const & ply_fpos,gdf_column const & ply_rpos,
-			  gdf_column const & ply_x,gdf_column const & ply_y)
-    {
-        gdf_column res_bm;
-        uint32_t* temp_bitmap{nullptr};
+  template <typename T, std::enable_if_t<!is_supported<T>()>* = nullptr, typename... Args>
+  std::unique_ptr<cudf::column> operator()(Args&&...)
+  {
+    CUSPATIAL_FAIL("Non-floating point operation is not supported");
+  }
 
-        cudaStream_t stream{0};
-        RMM_TRY( RMM_ALLOC(&temp_bitmap, pnt_y.size * sizeof(uint32_t), stream) );
+  template <typename T, std::enable_if_t<is_supported<T>()>* = nullptr>
+  std::unique_ptr<cudf::column> operator()(cudf::column_view const& test_points_x,
+                                           cudf::column_view const& test_points_y,
+                                           cudf::column_view const& poly_offsets,
+                                           cudf::column_view const& poly_ring_offsets,
+                                           cudf::column_view const& poly_points_x,
+                                           cudf::column_view const& poly_points_y,
+                                           rmm::mr::device_memory_resource* mr,
+                                           cudaStream_t stream)
+  {
+    auto size = test_points_x.size();
+    auto tid  = cudf::type_to_id<int32_t>();
+    auto type = cudf::data_type{tid};
+    auto results =
+      cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
 
-        gdf_size_type min_grid_size = 0, block_size = 0;
-        CUDA_TRY( cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, pip_kernel<T>) );
-        cudf::util::cuda::grid_config_1d grid{pnt_y.size, block_size, 1};
+    if (results->size() == 0) { return results; }
 
-        pip_kernel<T> <<< grid.num_blocks, block_size >>> (pnt_x.size,
-               	static_cast<T*>(pnt_x.data), static_cast<T*>(pnt_y.data),
-        	ply_fpos.size,static_cast<uint32_t*>(ply_fpos.data),static_cast<uint32_t*>(ply_rpos.data),
-        	static_cast<T*>(ply_x.data), static_cast<T*>(ply_y.data),
-                temp_bitmap);
-        CUDA_TRY( cudaDeviceSynchronize() );
+    constexpr cudf::size_type block_size = 256;
 
-        gdf_column_view(&res_bm, temp_bitmap, nullptr, pnt_x.size, GDF_INT32);
+    cudf::detail::grid_1d grid{results->size(), block_size, 1};
 
-        return res_bm;
-    }
+    auto kernel = point_in_polygon_kernel<T>;
 
-    template <typename T, std::enable_if_t< !is_supported<T>() >* = nullptr>
-    gdf_column operator()(gdf_column const & pnt_x,gdf_column const & pnt_y,
- 			  gdf_column const & ply_fpos,gdf_column const & ply_rpos,
-			  gdf_column const & ply_x,gdf_column const & ply_y)
+    kernel<<<grid.num_blocks, block_size, 0, stream>>>(test_points_x.size(),
+                                                       test_points_x.begin<T>(),
+                                                       test_points_y.begin<T>(),
+                                                       poly_offsets.size(),
+                                                       poly_offsets.begin<cudf::size_type>(),
+                                                       poly_ring_offsets.size(),
+                                                       poly_ring_offsets.begin<cudf::size_type>(),
+                                                       poly_points_x.size(),
+                                                       poly_points_x.begin<T>(),
+                                                       poly_points_y.begin<T>(),
+                                                       results->mutable_view().begin<int32_t>());
 
-    {
-        CUDF_FAIL("Non-floating point operation is not supported");
-    }
+    return results;
+  }
 };
 
-} // namespace anonymous
+}  // anonymous namespace
 
 namespace cuspatial {
 
-/*
- * Point-in-Polygon (PIP) tests among a column of points and a column of
- * polygons. See point_in_polygon.hpp
- */
-gdf_column point_in_polygon_bitmap(const gdf_column& points_x,
-                                   const gdf_column& points_y,
-                                   const gdf_column& poly_fpos,
-                                   const gdf_column& poly_rpos,
-                                   const gdf_column& poly_x,
-                                   const gdf_column& poly_y)
+namespace detail {
+
+std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_points_x,
+                                               cudf::column_view const& test_points_y,
+                                               cudf::column_view const& poly_offsets,
+                                               cudf::column_view const& poly_ring_offsets,
+                                               cudf::column_view const& poly_points_x,
+                                               cudf::column_view const& poly_points_y,
+                                               rmm::mr::device_memory_resource* mr,
+                                               cudaStream_t stream)
 {
+  return cudf::type_dispatcher(test_points_x.type(),
+                               point_in_polygon_functor(),
+                               test_points_x,
+                               test_points_y,
+                               poly_offsets,
+                               poly_ring_offsets,
+                               poly_points_x,
+                               poly_points_y,
+                               mr,
+                               stream);
+}
 
-    CUDF_EXPECTS(points_y.data != nullptr && points_x.data != nullptr, "query point data cannot be empty");
-    CUDF_EXPECTS(points_y.dtype == points_x.dtype, "polygon vertex and point temp_bitmap type mismatch for x array ");
+}  // namespace detail
 
-    //future versions might allow pnt_(x/y) have null_count>0, which might be useful for taking query results as inputs
-    CUDF_EXPECTS(points_x.null_count == 0 && points_y.null_count == 0, "this version does not support points_x/points_y contains nulls");
+std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_points_x,
+                                               cudf::column_view const& test_points_y,
+                                               cudf::column_view const& poly_offsets,
+                                               cudf::column_view const& poly_ring_offsets,
+                                               cudf::column_view const& poly_points_x,
+                                               cudf::column_view const& poly_points_y,
+                                               rmm::mr::device_memory_resource* mr)
+{
+  CUSPATIAL_EXPECTS(
+    test_points_x.size() == test_points_y.size() and poly_points_x.size() == poly_points_y.size(),
+    "All points must have both x and y values");
 
-    CUDF_EXPECTS(poly_fpos.data != nullptr &&poly_rpos.data!=nullptr, "polygon index cannot be empty");
-    CUDF_EXPECTS(poly_fpos.size >0 && (size_t)poly_fpos.size<=sizeof(uint32_t)*8, "#polygon of polygons can not exceed bitmap capacity (32 for unsigned int)");
-    CUDF_EXPECTS(poly_y.data != nullptr && poly_x.data != nullptr, "polygon temp_bitmap cannot be empty");
-    CUDF_EXPECTS(poly_fpos.size <=poly_rpos.size,"#of polygons must be equal or less than # of rings (one polygon has at least one ring");
-    CUDF_EXPECTS(poly_y.size == poly_x.size, "polygon vertice sizes mismatch between x/y arrays");
-    CUDF_EXPECTS(points_y.size == points_x.size, "query points size mismatch from between x/y arrays");
-    CUDF_EXPECTS(poly_y.dtype == poly_x.dtype, "polygon vertex temp_bitmap type mismatch between x/y arrays");
-    CUDF_EXPECTS(poly_y.dtype == points_y.dtype, "polygon vertex and point temp_bitmap type mismatch for y array");
-    CUDF_EXPECTS(poly_x.null_count == 0 && poly_y.null_count == 0, "polygon should not contain nulls");
+  CUSPATIAL_EXPECTS(test_points_x.type() == test_points_y.type() and
+                      test_points_x.type() == poly_points_x.type() and
+                      test_points_x.type() == poly_points_y.type(),
+                    "All points much have the same type for both x and y");
 
-    gdf_column res_bm = cudf::type_dispatcher(points_x.dtype, pip_functor(),
-                                              points_x, points_y, poly_fpos,
-                                              poly_rpos,poly_x,poly_y);
+  CUSPATIAL_EXPECTS(not test_points_x.has_nulls() && not test_points_y.has_nulls(),
+                    "Test points must not contain nulls");
 
-    return res_bm;
-  }//point_in_polygon_bitmap
+  CUSPATIAL_EXPECTS(not poly_points_x.has_nulls() && not poly_points_y.has_nulls(),
+                    "Polygon points must not contain nulls");
 
-}// namespace cuspatial
+  CUSPATIAL_EXPECTS(poly_offsets.size() <= std::numeric_limits<int32_t>::digits,
+                    "Number of polygons cannot exceed 31");
+
+  CUSPATIAL_EXPECTS(poly_ring_offsets.size() >= poly_offsets.size(),
+                    "Each polygon must have at least one ring");
+
+  CUSPATIAL_EXPECTS(poly_points_x.size() >= poly_offsets.size() * 4,
+                    "Each ring must have at least four vertices");
+
+  return cuspatial::detail::point_in_polygon(test_points_x,
+                                             test_points_y,
+                                             poly_offsets,
+                                             poly_ring_offsets,
+                                             poly_points_x,
+                                             poly_points_y,
+                                             mr,
+                                             0);
+}
+
+}  // namespace cuspatial

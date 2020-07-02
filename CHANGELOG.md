@@ -1,18 +1,83 @@
+# cuSpatial 0.15.0 (Date TBD)
+
+## New Features
+- PR #146 quadtree-polygon pairing for spatial filtering
+- PR #149 spatial refinement to pair up points and polygons based on point-in-polygon test 
+
+## Improvements
+- PR #237 Remove nvstrings references from CMakeLists.txt
+- PR #239 Add docs build script
+- PR #238 Fix library and include paths in CMakeLists.txt and setup.py
+- PR #240 Remove deprecated RMM header references.
+- PR #243 Install dependencies via meta package
+- PR #247 Use rmm::device_uvector and cudf::UINT types for quadtree construction
+- PR #246 Hausdorff performance improvement
+
+## Bug Fixes
+- PR #244 Restrict gdal version
+- PR #245 Pin gdal to be compatible with cuxfilter
+- PR #242 Fix benchmark_fixture to use memory resources.
+- PR #248 Fix build by updating type_id usages after upstream breaking changes.
+
+
 # cuSpatial 0.14.0 (Date TBD)
 
 ## New Features
-- PR 149 spatial refinement to pair up points and polygons based on point-in-polygon test 
-- PR 146 quadtree-polygon pairing for spatial filtering
-- PR 145 compute polygon bounding boxes using parallel primitives
-- PR 143 construct quadtree on large-scale point data
+
+- PR #143 Support constructing quadtrees on point data
+- PR #182 Local gpuCI build script
+- PR #145 Support computing polygon and polyline bounding boxes
+- PR #208 NYC Taxi Years Correlation Notebook (thanks @taureandyernv)
 
 ## Improvements
+
 - PR #147 Update Conda/CMake configs to match other RAPIDS projects
+- PR #163 Fix cudf legacy Cython imports/cimports
+- PR #166 Move trajectory.hpp files to legacy
+- PR #167 Align utility.hpp with libcudf style
+- PR #171 Update trajectory.hpp to libcudf++
+- PR #173 Move hausdorff.hpp files to legacy
+- PR #172 Move coordinate_transform.hpp files to legacy
+- PR #170 Update coordinate_transform.hpp to libcudf++
+- PR #174 Update hausdorff.hpp to libcudf++
+- PR #183 Add libcuspatial benchmark scaffolding
+- PR #186 Move haversine.hpp files to legacy
+- PR #194 Add .clang-format & format all files
+- PR #190 Port coordinate_transform.hpp cython files
+- PR #191 Move point_in_polygon.hpp files to legacy
+- PR #193 Move shapefile_readers.hpp files to legacy
+- PR #196 Move utilities/utilities.hpp to legacy
+- PR #195 Fix PIP docs
+- PR #197 Move query.hpp files to legacy
+- PR #198 Port spatial_window queries to libcudf++
+- PR #192 Update point_in_polygon.hpp to libcudf++
+- PR #201 Update trajectory cython to libcudf++
+- PR #189 Update haversine.hpp files to libcudf++
+- PR #200 Update shapefile_readers.hpp to libcudf++
+- PR #203 Port point_in_polygon.hpp cython files
+- PR #202 Update haversine cython to libcudf++
+- PR #204 Port shapefile_readers.hpp cython files
+- PR #205 Port hausdorff.hpp cython to libcudf++
+- PR #206 Remove legacy code.
+- PR #214 Install gdal>=3.0.2 in build.sh
+- PR #222 Fix potential thrust launch failure in quadtree building
+- PR #221 Add python methods to api.rst, fix formatting
+- PR #225 Add short git commit to conda package
+- PR #228 Fix polygon and polyline docstrings
 
 ## Bug Fixes
-- PR #141 fix dangling exec_policy pointer and invalid num_ring argument.
 
-# cuSpatial 0.13.0 (TBD)
+- PR #141 Fix dangling exec_policy pointer and invalid num_ring argument.
+- PR #169 Fix shapefile reader compilation with GCC 7.x / CUDA 10.2
+- PR #178 Fix broken haversine tests introduced by upstream CUDF PRs.
+- PR #175 Address RMM API changes by eliminating the use of the RMM_API
+- PR #199 Fix coordinate transform tests
+- PR #212 Rename calls to cudf::experimental namespace to cudf::
+- PR #215 Replace legacy RMM calls
+- PR #218 Fix benchmark build by removing test_benchmark.cpp
+- PR #232 Fix conda dependencies
+
+# cuSpatial 0.13.0 (31 Mar 2020)
 
 ## New Features
 

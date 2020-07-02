@@ -22,6 +22,7 @@ export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=4
 export CUDA_REL=${CUDA_VERSION%.*}
 export CUDF_HOME="${WORKSPACE}/cudf"
+export CUSPATIAL_HOME="${WORKSPACE}"
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
@@ -43,7 +44,12 @@ nvidia-smi
 
 logger "Activate conda env..."
 source activate gdf
-conda install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" "gdal=2.4.*"
+conda install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" \
+    "rapids-build-env=$MINOR_VERSION.*"
+
+# https://docs.rapids.ai/maintainers/depmgmt/ 
+# conda remove -f rapids-build-env
+# conda install "your-pkg=1.0.0"
 
 logger "Check versions..."
 python --version
@@ -66,7 +72,7 @@ git submodule update --init --remote --recursive
 
 logger "Build cuSpatial"
 cd $WORKSPACE
-./build.sh clean libcuspatial cuspatial
+./build.sh clean libcuspatial cuspatial tests
 
 ###############################################################################
 # TEST - Run libcuspatial and cuSpatial Unit Tests
@@ -75,6 +81,18 @@ cd $WORKSPACE
 if hasArg --skip-tests; then
     logger "Skipping tests..."
 else
+    logger "Check GPU usage..."
+    nvidia-smi
+
+    logger "GoogleTests..."
+    cd $WORKSPACE/cpp/build
+
+    for gt in ${WORKSPACE}/cpp/build/gtests/* ; do
+        test_name=$(basename ${gt})
+        echo "Running GoogleTest $test_name"
+        ${gt} --gtest_output=xml:${WORKSPACE}/test-results/
+    done
+
     logger "Download/Generate Test Data"
     #TODO
 

@@ -1,8 +1,0 @@
-[submodule "thirdparty/cub"]
-  path = thirdparty/cub
-  url = https://github.com/rapidsai/thirdparty-cub.git
-  branch = cudf-cub
-[submodule "thirdparty/libcudacxx"]
-  path = thirdparty/libcudacxx
-  url = https://github.com/rapidsai/thirdparty-freestanding.git
-  branch = cudf

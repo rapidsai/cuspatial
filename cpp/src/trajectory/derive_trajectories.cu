@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,127 +14,89 @@
  * limitations under the License.
  */
 
-#include <type_traits>
-
-#include <cudf/utilities/legacy/type_dispatcher.hpp>
-#include <utilities/legacy/cuda_utils.hpp>
 #include <rmm/thrust_rmm_allocator.h>
 
-#include <utility/utility.hpp>
-#include <utility/trajectory_thrust.cuh>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
+
+#include <cudf/column/column_factories.hpp>
+#include <cudf/copying.hpp>
+#include <cudf/detail/sorting.hpp>
+#include <cudf/table/table.hpp>
+#include <cudf/table/table_view.hpp>
+
+#include <cuspatial/error.hpp>
 #include <cuspatial/trajectory.hpp>
 
-#include <cudf/legacy/column.hpp>
-
-namespace {
-
-struct derive_trajectories_functor {
-    template <typename T>
-    static constexpr bool is_supported()
-    {
-        return std::is_floating_point<T>::value;
-    }
-
-    template <typename T, std::enable_if_t< is_supported<T>() >* = nullptr>
-    gdf_size_type operator()(const gdf_column& x, const gdf_column& y,
-                             const gdf_column& object_id,
-                             const gdf_column& timestamp,
-                             gdf_column& trajectory_id,
-                             gdf_column& length,
-                             gdf_column& offset)
-    {
-        cudaStream_t stream{0};
-        auto exec_policy = rmm::exec_policy(stream);    
-
-        T* x_ptr = static_cast<T*>(x.data);
-        T* y_ptr = static_cast<T*>(y.data);
-        int32_t* id_ptr = static_cast<int32_t*>(object_id.data);
-        cudf::timestamp * time_ptr =
-            static_cast<cudf::timestamp*>(timestamp.data);
-
-        gdf_size_type num_rec = object_id.size;
-        thrust::stable_sort_by_key(exec_policy->on(stream), time_ptr, time_ptr + num_rec,
-            thrust::make_zip_iterator(thrust::make_tuple(id_ptr, x_ptr, y_ptr)));
-        thrust::stable_sort_by_key(exec_policy->on(stream), id_ptr, id_ptr+num_rec,
-            thrust::make_zip_iterator(thrust::make_tuple(time_ptr, x_ptr, y_ptr)));
-
-        //allocate sufficient memory to hold id, cnt and pos before reduce_by_key
-        rmm::device_vector<gdf_size_type> obj_count(num_rec);
-        rmm::device_vector<gdf_size_type> obj_id(num_rec);
-
-        auto end = thrust::reduce_by_key(exec_policy->on(stream), id_ptr, id_ptr + num_rec,
-                                         thrust::constant_iterator<int>(1),
-                                         obj_id.begin(),
-                                         obj_count.begin());
-        gdf_size_type num_traj = end.second - obj_count.begin();
-
-        gdf_size_type* traj_id{nullptr};
-        gdf_size_type* traj_count{nullptr};
-        gdf_size_type* traj_pos{nullptr};
-        RMM_TRY( RMM_ALLOC(&traj_id,  num_traj * sizeof(gdf_size_type), 0) );
-        RMM_TRY( RMM_ALLOC(&traj_count, num_traj * sizeof(gdf_size_type), 0) );
-        RMM_TRY( RMM_ALLOC(&traj_pos, num_traj * sizeof(gdf_size_type), 0) );
-
-        thrust::copy_n(exec_policy->on(stream), obj_id.begin(), num_traj, traj_id);
-        thrust::copy_n(exec_policy->on(stream), obj_count.begin(), num_traj, traj_count);
-        thrust::inclusive_scan(exec_policy->on(stream), traj_count, traj_count +num_traj,
-                               traj_pos);
-
-        gdf_column_view(&trajectory_id, traj_id, nullptr, num_traj, GDF_INT32);
-        gdf_column_view(&length, traj_count, nullptr, num_traj, GDF_INT32);
-        gdf_column_view(&offset, traj_pos, nullptr, num_traj, GDF_INT32);
-
-        return num_traj;
-    }
-
-    template <typename T, std::enable_if_t< !is_supported<T>() >* = nullptr>
-    gdf_size_type operator()(const gdf_column& x, const gdf_column& y,
-                             const gdf_column& object_id,
-                             const gdf_column& timestamp,
-                             gdf_column& trajectory_id,
-                             gdf_column& length, gdf_column& offset)
-    {
-        CUDF_FAIL("Non-floating point operation is not supported");
-    }
-};
-
-} // namespace anonymous
-
+#include <memory>
+#include <vector>
 
 namespace cuspatial {
+namespace detail {
 
-/*
- * Derive trajectories from points (x/y relative to an origin), timestamps and
- * object IDs by first sorting based on id and timestamp and then group by id.
- * see trajectory.hpp
-*/
-gdf_size_type derive_trajectories(const gdf_column& x, const gdf_column& y,
-                                  const gdf_column& object_id,
-                                  const gdf_column& timestamp,
-                                  gdf_column& trajectory_id,
-                                  gdf_column& length,
-                                  gdf_column& offset)
+std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_trajectories(
+  cudf::column_view const& object_id,
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  cudf::column_view const& timestamp,
+  rmm::mr::device_memory_resource* mr,
+  cudaStream_t stream)
 {
-    CUDF_EXPECTS(x.data != nullptr && y.data != nullptr &&
-                 object_id.data != nullptr && timestamp.data != nullptr,
-                 "Null input data");
-    CUDF_EXPECTS(x.size == y.size && x.size == object_id.size &&
-                 x.size == timestamp.size ,
-                 "Data size mismatch");
-    CUDF_EXPECTS(object_id.dtype == GDF_INT32,
-                 "Invalid trajectory ID datatype");
-    CUDF_EXPECTS(timestamp.dtype == GDF_TIMESTAMP,
-                 "Invalid timestamp datatype");
-    CUDF_EXPECTS(x.null_count == 0 && y.null_count == 0 &&
-                 object_id.null_count==0 && timestamp.null_count==0,
-                 "NULL support unimplemented");
+  auto sorted = cudf::detail::sort_by_key(cudf::table_view{{object_id, x, y, timestamp}},
+                                          cudf::table_view{{object_id, timestamp}},
+                                          {},
+                                          {},
+                                          mr,
+                                          stream);
 
-    gdf_size_type num_trajectories =
-        cudf::type_dispatcher(x.dtype, derive_trajectories_functor(),
-                              x, y, object_id, timestamp,
-                              trajectory_id, length, offset);
+  auto policy    = rmm::exec_policy(stream);
+  auto sorted_id = sorted->get_column(0).view();
+  rmm::device_vector<int32_t> lengths(object_id.size());
+  auto grouped = thrust::reduce_by_key(policy->on(stream),
+                                       sorted_id.begin<int32_t>(),
+                                       sorted_id.end<int32_t>(),
+                                       thrust::make_constant_iterator(1),
+                                       thrust::make_discard_iterator(),
+                                       lengths.begin());
 
-    return num_trajectories;
+  auto offsets = cudf::make_numeric_column(cudf::data_type{cudf::type_id::INT32},
+                                           thrust::distance(lengths.begin(), grouped.second),
+                                           cudf::mask_state::UNALLOCATED,
+                                           stream,
+                                           mr);
+
+  thrust::exclusive_scan(
+    policy->on(stream), lengths.begin(), lengths.end(), offsets->mutable_view().begin<int32_t>());
+
+  return std::make_pair(std::move(sorted), std::move(offsets));
 }
+}  // namespace detail
 
-}// namespace cuspatial
+std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_trajectories(
+  cudf::column_view const& object_id,
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  cudf::column_view const& timestamp,
+  rmm::mr::device_memory_resource* mr)
+{
+  CUSPATIAL_EXPECTS(
+    x.size() == y.size() && x.size() == object_id.size() && x.size() == timestamp.size(),
+    "Data size mismatch");
+  CUSPATIAL_EXPECTS(object_id.type().id() == cudf::type_id::INT32, "Invalid object_id datatype");
+  CUSPATIAL_EXPECTS(cudf::is_timestamp(timestamp.type()), "Invalid timestamp datatype");
+  CUSPATIAL_EXPECTS(
+    !(x.has_nulls() || y.has_nulls() || object_id.has_nulls() || timestamp.has_nulls()),
+    "NULL support unimplemented");
+  if (object_id.is_empty() || x.is_empty() || y.is_empty() || timestamp.is_empty()) {
+    std::vector<std::unique_ptr<cudf::column>> cols{};
+    cols.reserve(4);
+    cols.push_back(cudf::empty_like(object_id));
+    cols.push_back(cudf::empty_like(x));
+    cols.push_back(cudf::empty_like(y));
+    cols.push_back(cudf::empty_like(timestamp));
+    return std::make_pair(std::make_unique<cudf::table>(std::move(cols)),
+                          cudf::make_empty_column(cudf::data_type{cudf::type_id::INT32}));
+  }
+  return detail::derive_trajectories(object_id, x, y, timestamp, mr, 0);
+}
+}  // namespace cuspatial

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,39 +15,55 @@
  */
 
 #pragma once
-#include <utility/quadtree_thrust.cuh>
+
+#include <cudf/types.hpp>
+
+#include <memory>
+
 namespace cuspatial {
 
 /**
- * @brief construct a quadtree structure from points.
+ * @brief Construct a quadtree structure from points.
  *
- * @param[in/out] x: column of x coordiantes before[in]/after[out] sorting.
+ * @see http://www.adms-conf.org/2019-camera-ready/zhang_adms19.pdf for details.
  *
- * @param[in/out] y: column of y coordiantes before[in]/after[out] sorting.
+ * @note `scale` is applied to (x - x_min) and (y - y_min) to convert coordinates into a Morton code
+ * in 2D space.
+ * @note `max_depth` should be less than 16, since Morton codes are represented as `uint32_t`. The
+ * eventual number of levels may be less than `max_depth` if the number of points is small or
+ * `min_size` is large.
+ * @note All quadtree nodes should have fewer than `min_size` number of points except leaf
+ * quadrants, which are permitted to have more than `min_size` points.
+ *
+ * @param x Column of x-coordinates for each point.
+ * @param y Column of y-coordinates for each point.
+ * @param x_min The lower-left x-coordinate of the area of interest bounding box.
+ * @param x_max The upper-right x-coordinate of the area of interest bounding box.
+ * @param y_min The lower-left y-coordinate of the area of interest bounding box.
+ * @param y_max The upper-right y-coordinate of the area of interest bounding box.
+ * @param scale Scale to apply to each x and y distance from x_min and y_min.
+ * @param max_depth Maximum quadtree depth.
+ * @param min_size Minimum number of points for a non-leaf quadtree node.
+ * @param mr The optional resource to use for output device memory allocations.
+ *
+ * @return Pair of INT32 column of sorted keys to point indices, and cudf table with five
+ * columns for a complete quadtree:
+ *     key - UINT32 column of quad node keys
+ *   level - UINT8 column of quadtree levels
+ * is_quad - BOOL8 column indicating whether the node is a leaf or not
+ *  length - UINT32 column for the number of child nodes (if is_quad), or number of points
+ *  offset - UINT32 column for the first child position (if is_quad), or first point position
+ */
+std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_on_points(
+  cudf::column_view const& x,
+  cudf::column_view const& y,
+  double x_min,
+  double x_max,
+  double y_min,
+  double y_max,
+  double scale,
+  cudf::size_type max_depth,
+  cudf::size_type min_size,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
- * @param[in] x1/y1/x2/y2: bounding box of area of interests.
-
- * @param[in] scale: grid cell size along both x and y dimensions.
- * scale works with x1 and x2 to convert x/y coodiantes into a Morton code in 2D space
-
- *@ param[in] num_level: largest depth of quadtree nodes
- * the value should be less than 16 as uint32_t is used for Morton code representation
- * the actual number of levels may be less than num_level
- * when #of points are small and/or min_size (next) is large
-
- *@ param[in] min_size: the minimum number of points for a non-leaf quadtree node
- *  all non-last-level quadrants should have less than min_size points
- *  last-level quadrants are permited to have more than min_size points
- *  min_size is typically set to the number of threads in a block used in
- *  the two CUDA kernels needed in the spatial refinment step.
-
- * @return experimental::table with five columns for a complete quadtree: key,lev,sign,length, fpos
- * see http://www.adms-conf.org/2019-camera-ready/zhang_adms19.pdf and other docs for details.
-
-**/
-std::unique_ptr<cudf::experimental::table> quadtree_on_points(
-    cudf::mutable_column_view& x,cudf::mutable_column_view& y,
-    double x1,double y1,double x2,double y2,
-    double scale, int num_level, int min_size);
-
-}// namespace cuspatial
+}  // namespace cuspatial

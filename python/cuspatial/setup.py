@@ -27,11 +27,11 @@ if not CUDA_HOME:
     CUDA_HOME = os.path.dirname(os.path.dirname(path_to_cuda_gdb))
 
 if not os.path.isdir(CUDA_HOME):
-    raise OSError(
-        f"Invalid CUDA_HOME: " "directory does not exist: {CUDA_HOME}"
-    )
+    raise OSError(f"Invalid CUDA_HOME: directory does not exist: {CUDA_HOME}")
 
 cuda_include_dir = os.path.join(CUDA_HOME, "include")
+
+CUSPATIAL_ROOT = os.environ.get("CUSPATIAL_ROOT", "../../cpp/build/")
 
 try:
     nthreads = int(os.environ.get("PARALLEL_LEVEL", "0") or "0")
@@ -43,9 +43,13 @@ extensions = [
         "*",
         sources=cython_files,
         include_dirs=[
-            "../../cpp/include/cuspatial",
-            "../../thirdparty/cub",
-            "../../thirdparty/libcudacxx/include",
+            "../../cpp/include",
+            os.path.join(CUSPATIAL_ROOT, "include"),
+            os.path.join(CUSPATIAL_ROOT, "_deps/libcudacxx-src/include"),
+            os.path.join(
+                os.path.dirname(sysconfig.get_path("include")),
+                "libcuspatial/libcudacxx",
+            ),
             os.path.dirname(sysconfig.get_path("include")),
             np.get_include(),
             cuda_include_dir,
