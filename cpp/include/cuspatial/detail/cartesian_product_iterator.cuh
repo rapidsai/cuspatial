@@ -98,10 +98,10 @@ struct group_lookup_functor {
  * @brief Makes an iterator of the cartesian product of two iterators. Produces pairs consecutively.
  *
  * Pairs of elements grouped by offsets `A` and `B` are produces consecutively.
- * 1) Each group `A_i` in `A` appears consecutively.
- * 2) Under each group `A_i`, each group `B_i` in `B` appear consecutively.
- * 3) Under each group `B_i`, each element within `a` appears consecutively.
- * 4) Under each element within `A_i`, each element within `B_i` appears consecutively.
+ * - Each group `A_i` in `A` appears consecutively.
+ * - Under each group `A_i`, each group `B_i` in `B` appear consecutively.
+ * - Under each group `B_i`, each element within `a` appears consecutively.
+ * - Under each element within `A_i`, each element within `B_i` appears consecutively.
  *
  * Example:
  * ```
@@ -153,6 +153,10 @@ struct group_lookup_functor {
  * @param group_offsets_a offsets for each group in A, plus an "end" offset
  * @param group_offsets_b offsets for each group in B, plus an "end" offset
  * @return auto           Thrust iterator of `cartesian_product_group_index`s. device-only.
+ *
+ * @note Can be used in conjunction with `make_transform_iterator` to create a fused kernel which
+ * simultaneously computes distance metrics for multiple spaces in O(n^2) time using a single call
+ * to `reduce_by_key`.
  */
 template <typename OffsetIteratorA, typename OffsetIteratorB>
 auto make_grouped_cartesian_product_iterator(int32_t const num_elements_a,
