@@ -95,9 +95,9 @@ struct group_lookup_functor {
 };
 
 /**
- * @brief Makes an iterator of the cartesian product of two iterators. Produces pairs consecutively.
+ * @brief Makes an iterator which consecutively produces a cartesian product of two iterators.
  *
- * Pairs of elements grouped by offsets `A` and `B` are produces consecutively.
+ * Pairs of elements grouped by offsets `A` and `B` are produced consecutively.
  * - Each group `A_i` in `A` appears consecutively.
  * - Under each group `A_i`, each group `B_i` in `B` appear consecutively.
  * - Under each group `B_i`, each element within `a` appears consecutively.
