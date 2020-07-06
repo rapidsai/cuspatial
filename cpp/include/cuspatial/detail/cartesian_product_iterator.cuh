@@ -154,7 +154,7 @@ struct group_lookup_functor {
  * @param group_offsets_b offsets for each group in B, plus an "end" offset
  * @return auto           Thrust iterator of `cartesian_product_group_index`s. device-only.
  *
- * @note Can be used in conjunction with `make_transform_iterator` to create a fused kernel which
+ * @note Can be used in conjunction with `make_transform_iterator` to create a single kernel which
  * simultaneously computes distance metrics for multiple spaces in O(n^2) time using a single call
  * to `reduce_by_key`.
  */
