@@ -88,9 +88,11 @@ struct group_lookup_functor {
   int32_t group_count;
   __device__ int32_t operator()(int32_t element_idx) const
   {
-    return thrust::upper_bound(
-             thrust::seq, group_offsets, group_offsets + group_count, element_idx) -
-           group_offsets - 1;
+    return thrust::distance(
+             group_offsets,
+             thrust::upper_bound(
+               thrust::seq, group_offsets, group_offsets + group_count, element_idx)) -
+           1;
   }
 };
 
