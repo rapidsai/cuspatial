@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-#include <sys/time.h>
-#include <time.h>
+#include "utility/join_thrust.cuh"
 
-#include <thrust/gather.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/reduce.h>
+#include <cuspatial/error.hpp>
+#include <cuspatial/spatial_join.hpp>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_device_view.cuh>
@@ -29,12 +25,14 @@
 #include <cudf/column/column_view.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
-#include <vector>
 
-#include <cuspatial/spatial_join.hpp>
-#include <utility/helper_thrust.cuh>
-#include <utility/join_thrust.cuh>
-#include <utility/utility.hpp>
+#include <thrust/gather.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/reduce.h>
+
+#include <vector>
 
 namespace {
 
@@ -257,13 +255,13 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_org_pair,
   // allocate memory for both numbers and their prefix-sums
   rmm::device_buffer *db_num_units =
     new rmm::device_buffer(num_org_pair * sizeof(uint32_t), stream, mr);
-  CUDF_EXPECTS(db_num_units != nullptr,
-               "Error allocating memory for array of numbers of sub-pairs (units)");
+  CUSPATIAL_EXPECTS(db_num_units != nullptr,
+                    "Error allocating memory for array of numbers of sub-pairs (units)");
   uint32_t *d_num_units = static_cast<uint32_t *>(db_num_units->data());
 
   rmm::device_buffer *db_num_sums =
     new rmm::device_buffer(num_org_pair * sizeof(uint32_t), stream, mr);
-  CUDF_EXPECTS(db_num_sums != nullptr, "Error allocating memory for array of offsets ");
+  CUSPATIAL_EXPECTS(db_num_sums != nullptr, "Error allocating memory for array of offsets ");
   uint32_t *d_num_sums = static_cast<uint32_t *>(db_num_sums->data());
 
   // computes numbers of sub-pairs for each quadrant-polygon pairs
@@ -313,24 +311,26 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_org_pair,
 
   rmm::device_buffer *db_pq_poly_idx =
     new rmm::device_buffer(num_pq_pair * sizeof(uint32_t), stream, mr);
-  CUDF_EXPECTS(db_pq_poly_idx != nullptr, "Error allocating memory for array of polygon idx)");
+  CUSPATIAL_EXPECTS(db_pq_poly_idx != nullptr, "Error allocating memory for array of polygon idx)");
   uint32_t *d_pq_poly_idx = static_cast<uint32_t *>(db_pq_poly_idx->data());
 
   rmm::device_buffer *db_pq_quad_idx =
     new rmm::device_buffer(num_pq_pair * sizeof(uint32_t), stream, mr);
-  CUDF_EXPECTS(db_pq_quad_idx != nullptr, "Error allocating memory for array of quadrant idx)");
+  CUSPATIAL_EXPECTS(db_pq_quad_idx != nullptr,
+                    "Error allocating memory for array of quadrant idx)");
   uint32_t *d_pq_quad_idx = static_cast<uint32_t *>(db_pq_quad_idx->data());
 
   rmm::device_buffer *db_quad_offset =
     new rmm::device_buffer(num_pq_pair * sizeof(uint32_t), stream, mr);
-  CUDF_EXPECTS(db_quad_offset != nullptr,
-               "Error allocating memory for array of sub-pair offsets )");
+  CUSPATIAL_EXPECTS(db_quad_offset != nullptr,
+                    "Error allocating memory for array of sub-pair offsets )");
   uint32_t *d_quad_offset = static_cast<uint32_t *>(db_quad_offset->data());
-  HANDLE_CUDA_ERROR(cudaMemset(d_quad_offset, 0, num_pq_pair * sizeof(uint32_t)));
+  CUDA_TRY(cudaMemset(d_quad_offset, 0, num_pq_pair * sizeof(uint32_t)));
 
   rmm::device_buffer *db_quad_len =
     new rmm::device_buffer(num_pq_pair * sizeof(uint32_t), stream, mr);
-  CUDF_EXPECTS(db_quad_len != nullptr, "Error allocating memory for array of sub-pair length )");
+  CUSPATIAL_EXPECTS(db_quad_len != nullptr,
+                    "Error allocating memory for array of sub-pair length )");
   uint32_t *d_quad_len = static_cast<uint32_t *>(db_quad_len->data());
 
   // scatter 0..num_org_pair to d_quad_offset using d_num_sums as map
@@ -401,11 +401,11 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_org_pair,
   // 0
   rmm::device_buffer *db_num_hits =
     new rmm::device_buffer(num_pq_pair * sizeof(uint32_t), stream, mr);
-  CUDF_EXPECTS(
+  CUSPATIAL_EXPECTS(
     db_num_hits != nullptr,
     "Error allocating memory for array of numbers of points in polygons in all sub-pairs)");
   uint32_t *d_num_hits = static_cast<uint32_t *>(db_num_hits->data());
-  HANDLE_CUDA_ERROR(cudaMemset(d_num_hits, 0, num_pq_pair * sizeof(uint32_t)));
+  CUDA_TRY(cudaMemset(d_num_hits, 0, num_pq_pair * sizeof(uint32_t)));
 
   // generate offsets of sub-paris within the orginal pairs
   thrust::exclusive_scan_by_key(exec_policy->on(stream),
@@ -455,8 +455,8 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_org_pair,
     std::cout << std::endl;
   }
 
-  timeval t0, t1, t2, t3;
-  gettimeofday(&t0, nullptr);
+  // timeval t0, t1, t2, t3;
+  // gettimeofday(&t0, nullptr);
   std::cout << "running quad_pip_phase1_kernel" << std::endl;
   quad_pip_phase1_kernel<T>
     <<<num_pq_pair, threads_per_block>>>(const_cast<uint32_t *>(d_pq_poly_idx),
@@ -471,9 +471,9 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_org_pair,
                                          d_poly_x,
                                          d_poly_y,
                                          d_num_hits);
-  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-  gettimeofday(&t1, nullptr);
-  float refine_phase1_time = cuspatial::calc_time("refine_phase1_time (ms) = ", t0, t1);
+  CUDA_TRY(cudaDeviceSynchronize());
+  // gettimeofday(&t1, nullptr);
+  // float refine_phase1_time = cuspatial::calc_time("refine_phase1_time (ms) = ", t0, t1);
 
   if (0) {
     std::cout << "phase1 results: d_num_hits (before reduce)" << std::endl;
@@ -513,8 +513,8 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_org_pair,
   thrust::exclusive_scan(
     exec_policy->on(stream), d_num_hits, d_num_hits + num_valid_pair, d_num_hits);
 
-  gettimeofday(&t2, nullptr);
-  float refine_rebalance_time = cuspatial::calc_time("refine_rebalance_time(ms) = ", t1, t2);
+  // gettimeofday(&t2, nullptr);
+  // float refine_rebalance_time = cuspatial::calc_time("refine_rebalance_time(ms) = ", t1, t2);
 
   if (0) {
     std::cout << "phase1 results:d_num_hits(after reduce)" << std::endl;
@@ -532,13 +532,13 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_org_pair,
   uint32_t *d_res_poly_idx =
     cudf::mutable_column_device_view::create(poly_idx_col->mutable_view(), stream)
       ->data<uint32_t>();
-  CUDF_EXPECTS(d_res_poly_idx != nullptr, "poly_idx can not be nullptr");
+  CUSPATIAL_EXPECTS(d_res_poly_idx != nullptr, "poly_idx can not be nullptr");
 
   std::unique_ptr<cudf::column> pnt_idx_col = cudf::make_numeric_column(
     cudf::data_type(cudf::type_id::INT32), total_hits, cudf::mask_state::UNALLOCATED, stream, mr);
   uint32_t *d_res_pnt_idx =
     cudf::mutable_column_device_view::create(pnt_idx_col->mutable_view(), stream)->data<uint32_t>();
-  CUDF_EXPECTS(d_res_pnt_idx != nullptr, "point_id can not be nullptr");
+  CUSPATIAL_EXPECTS(d_res_pnt_idx != nullptr, "point_id can not be nullptr");
 
   std::cout << "running quad_pip_phase2_kernel" << std::endl;
   quad_pip_phase2_kernel<T><<<num_valid_pair, threads_per_block>>>(d_pq_poly_idx,
@@ -555,9 +555,9 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_org_pair,
                                                                    d_num_hits,
                                                                    d_res_poly_idx,
                                                                    d_res_pnt_idx);
-  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-  gettimeofday(&t3, nullptr);
-  float refine_phase2_time = cuspatial::calc_time("refine_phase2_time(ms) = ", t2, t3);
+  CUDA_TRY(cudaDeviceSynchronize());
+  // gettimeofday(&t3, nullptr);
+  // float refine_phase2_time = cuspatial::calc_time("refine_phase2_time(ms) = ", t2, t3);
 
   if (0) {
     std::cout << "phase2 results:d_res_poly_id" << std::endl;
@@ -666,22 +666,20 @@ std::unique_ptr<cudf::table> pip_refine(cudf::table_view const &pq_pair,
                                         cudf::column_view const &poly_y,
                                         rmm::mr::device_memory_resource *mr)
 {
-  CUDF_EXPECTS(pq_pair.num_columns() == 2, "a quadrant-polygon table must have 2 columns");
-  CUDF_EXPECTS(quadtree.num_columns() == 5, "a quadtree table must have 5 columns");
-  CUDF_EXPECTS(pnt.num_columns() == 2, "a point table must have 5 columns");
-  CUDF_EXPECTS(poly_fpos.size() > 0, "number of polygons must be greater than 0");
-  CUDF_EXPECTS(poly_rpos.size() >= poly_fpos.size(),
-               "number of rings must be no less than number of polygons");
-  CUDF_EXPECTS(poly_x.size() == poly_y.size(),
-               "numbers of vertices must be the same for both x and y columns");
-  CUDF_EXPECTS(poly_x.size() >= 4 * poly_rpos.size(), "all rings must have at least 4 vertices");
+  CUSPATIAL_EXPECTS(pq_pair.num_columns() == 2, "a quadrant-polygon table must have 2 columns");
+  CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "a quadtree table must have 5 columns");
+  CUSPATIAL_EXPECTS(pnt.num_columns() == 2, "a point table must have 5 columns");
+  CUSPATIAL_EXPECTS(poly_fpos.size() > 0, "number of polygons must be greater than 0");
+  CUSPATIAL_EXPECTS(poly_rpos.size() >= poly_fpos.size(),
+                    "number of rings must be no less than number of polygons");
+  CUSPATIAL_EXPECTS(poly_x.size() == poly_y.size(),
+                    "numbers of vertices must be the same for both x and y columns");
+  CUSPATIAL_EXPECTS(poly_x.size() >= 4 * poly_rpos.size(),
+                    "all rings must have at least 4 vertices");
 
   cudf::data_type pnt_dtype  = pnt.column(0).type();
   cudf::data_type poly_dtype = poly_x.type();
-  CUDF_EXPECTS(pnt_dtype == poly_dtype, "point and polygon must have the same data type");
-
-  cudaStream_t stream                 = 0;
-  rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource();
+  CUSPATIAL_EXPECTS(pnt_dtype == poly_dtype, "point and polygon must have the same data type");
 
   return cudf::type_dispatcher(pnt_dtype,
                                pip_refine_processor{},
@@ -693,7 +691,7 @@ std::unique_ptr<cudf::table> pip_refine(cudf::table_view const &pq_pair,
                                poly_x,
                                poly_y,
                                mr,
-                               stream);
+                               cudaStream_t{0});
 }
 
 }  // namespace cuspatial

@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-#include <sys/time.h>
-#include <time.h>
+#include "utility/join_thrust.cuh"
 
-#include <thrust/gather.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/reduce.h>
+#include <cuspatial/error.hpp>
+#include <cuspatial/spatial_join.hpp>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_device_view.cuh>
@@ -29,12 +25,14 @@
 #include <cudf/column/column_view.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
-#include <vector>
 
-#include <cuspatial/spatial_join.hpp>
-#include <utility/helper_thrust.cuh>
-#include <utility/join_thrust.cuh>
-#include <utility/utility.hpp>
+#include <thrust/gather.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/reduce.h>
+
+#include <vector>
 
 namespace {
 
@@ -144,13 +142,13 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_pair,
   // sort (d_poly_idx,d_quad_idx) using d_quad_idx as key ==>(quad_idxs, poly_idxs)
   rmm::device_buffer *db_temp_poly_idx =
     new rmm::device_buffer(num_pair * sizeof(uint32_t), stream, mr);
-  CUDF_EXPECTS(db_temp_poly_idx != nullptr, "Error allocating memory for temporal poly_idx");
+  CUSPATIAL_EXPECTS(db_temp_poly_idx != nullptr, "Error allocating memory for temporal poly_idx");
   uint32_t *d_temp_poly_idx = static_cast<uint32_t *>(db_temp_poly_idx->data());
   thrust::copy(exec_policy->on(stream), d_poly_idx, d_poly_idx + num_pair, d_temp_poly_idx);
 
   rmm::device_buffer *db_temp_quad_idx =
     new rmm::device_buffer(num_pair * sizeof(uint32_t), stream, mr);
-  CUDF_EXPECTS(db_temp_quad_idx != nullptr, "Error allocating memory for temporal quad_idx");
+  CUSPATIAL_EXPECTS(db_temp_quad_idx != nullptr, "Error allocating memory for temporal quad_idx");
   uint32_t *d_temp_quad_idx = static_cast<uint32_t *>(db_temp_quad_idx->data());
   thrust::copy(exec_policy->on(stream), d_quad_idx, d_quad_idx + num_pair, d_temp_quad_idx);
 
@@ -177,7 +175,7 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_pair,
 
   rmm::device_buffer *db_temp_pidx_fpos =
     new rmm::device_buffer(num_pair * sizeof(uint32_t), stream, mr);
-  CUDF_EXPECTS(db_temp_pidx_fpos != nullptr, "Error allocating memory for pid_fpos");
+  CUSPATIAL_EXPECTS(db_temp_pidx_fpos != nullptr, "Error allocating memory for pid_fpos");
   uint32_t *d_temp_pidx_fpos = static_cast<uint32_t *>(db_temp_pidx_fpos->data());
 
   uint32_t num_quads = thrust::reduce_by_key(exec_policy->on(stream),
@@ -219,23 +217,23 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_pair,
     cudf::data_type(cudf::type_id::INT32), num_pnt, cudf::mask_state::UNALLOCATED, stream, mr);
   uint32_t *d_res_pnt_idx =
     cudf::mutable_column_device_view::create(pnt_idx_col->mutable_view(), stream)->data<uint32_t>();
-  CUDF_EXPECTS(d_res_pnt_idx != nullptr, "point_id can not be nullptr");
+  CUSPATIAL_EXPECTS(d_res_pnt_idx != nullptr, "point_id can not be nullptr");
 
   std::unique_ptr<cudf::column> poly_idx_col = cudf::make_numeric_column(
     cudf::data_type(cudf::type_id::INT32), num_pnt, cudf::mask_state::UNALLOCATED, stream, mr);
   uint32_t *d_res_poly_idx =
     cudf::mutable_column_device_view::create(poly_idx_col->mutable_view(), stream)
       ->data<uint32_t>();
-  CUDF_EXPECTS(d_res_poly_idx != nullptr, "poly_idx can not be nullptr");
+  CUSPATIAL_EXPECTS(d_res_poly_idx != nullptr, "poly_idx can not be nullptr");
 
   std::unique_ptr<cudf::column> poly_dist_col = cudf::make_numeric_column(
     cudf::data_type(cudf::type_id::FLOAT64), num_pnt, cudf::mask_state::UNALLOCATED, stream, mr);
   T *d_res_poly_dist =
     cudf::mutable_column_device_view::create(poly_dist_col->mutable_view(), stream)->data<T>();
-  CUDF_EXPECTS(d_res_poly_dist != nullptr, "poly_dist can not be nullptr");
+  CUSPATIAL_EXPECTS(d_res_poly_dist != nullptr, "poly_dist can not be nullptr");
 
-  timeval t0, t1;
-  gettimeofday(&t0, nullptr);
+  // timeval t0, t1;
+  // gettimeofday(&t0, nullptr);
   std::cout << "running quad_pip_phase1_kernel" << std::endl;
   kernel_nearest_polyline<T>
     <<<num_quads, threads_per_block>>>(const_cast<uint32_t *>(d_temp_quad_idx),
@@ -254,9 +252,9 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_pair,
                                        d_res_pnt_idx,
                                        d_res_poly_idx,
                                        d_res_poly_dist);
-  HANDLE_CUDA_ERROR(cudaDeviceSynchronize());
-  gettimeofday(&t1, nullptr);
-  float refine_phase1_time = cuspatial::calc_time("refine_phase1_time (ms) = ", t0, t1);
+  CUDA_TRY(cudaDeviceSynchronize());
+  // gettimeofday(&t1, nullptr);
+  // float refine_phase1_time = cuspatial::calc_time("refine_phase1_time (ms) = ", t0, t1);
 
   delete db_temp_poly_idx;
   delete db_temp_quad_idx;
@@ -354,21 +352,18 @@ std::unique_ptr<cudf::table> p2p_nn_refine(cudf::table_view const &pq_pair,
                                            cudf::column_view const &poly_y,
                                            rmm::mr::device_memory_resource *mr)
 {
-  CUDF_EXPECTS(pq_pair.num_columns() == 2, "a quadrant-polygon table must have 2 columns");
-  CUDF_EXPECTS(quadtree.num_columns() == 5, "a quadtree table must have 5 columns");
-  CUDF_EXPECTS(pnt.num_columns() == 2, "a point table must have 2 columns");
-  CUDF_EXPECTS(poly_spos.size() > 0, "number of polylines must be greater than 0");
-  CUDF_EXPECTS(poly_x.size() == poly_y.size(),
-               "numbers of vertices must be the same for both x and y columns");
-  CUDF_EXPECTS(poly_x.size() >= 2 * poly_spos.size(),
-               "all polylines must have at least two vertices");
+  CUSPATIAL_EXPECTS(pq_pair.num_columns() == 2, "a quadrant-polygon table must have 2 columns");
+  CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "a quadtree table must have 5 columns");
+  CUSPATIAL_EXPECTS(pnt.num_columns() == 2, "a point table must have 2 columns");
+  CUSPATIAL_EXPECTS(poly_spos.size() > 0, "number of polylines must be greater than 0");
+  CUSPATIAL_EXPECTS(poly_x.size() == poly_y.size(),
+                    "numbers of vertices must be the same for both x and y columns");
+  CUSPATIAL_EXPECTS(poly_x.size() >= 2 * poly_spos.size(),
+                    "all polylines must have at least two vertices");
 
   cudf::data_type pnt_dtype  = pnt.column(0).type();
   cudf::data_type poly_dtype = poly_x.type();
-  CUDF_EXPECTS(pnt_dtype == poly_dtype, "point and polygon must have the same data type");
-
-  cudaStream_t stream                 = 0;
-  rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource();
+  CUSPATIAL_EXPECTS(pnt_dtype == poly_dtype, "point and polygon must have the same data type");
 
   return cudf::type_dispatcher(pnt_dtype,
                                nn_distance_processor{},
@@ -379,7 +374,7 @@ std::unique_ptr<cudf::table> p2p_nn_refine(cudf::table_view const &pq_pair,
                                poly_x,
                                poly_y,
                                mr,
-                               stream);
+                               cudaStream_t{0});
 }
 
 }  // namespace cuspatial
