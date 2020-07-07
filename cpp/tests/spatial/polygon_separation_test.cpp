@@ -25,6 +25,7 @@
 #include <tests/utilities/column_wrapper.hpp>
 #include <tests/utilities/cudf_gtest.hpp>
 #include <tests/utilities/type_lists.hpp>
+#include "gtest/gtest.h"
 
 #include <thrust/iterator/constant_iterator.h>
 
@@ -62,7 +63,7 @@ TYPED_TEST(MinimumEuclideanDistanceTest, TwoShapesEdgeToPoint)
   auto y             = cudf::test::fixed_width_column_wrapper<T>({+1, 0, -1, 1, 0, -1});
   auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0, 3});
 
-  auto expected = cudf::test::fixed_width_column_wrapper<T>({0, 1, 1, 0});
+  auto expected = cudf::test::fixed_width_column_wrapper<T>({0.0, 1.4142135623730951, 1.0, 0.0});
 
   auto actual = cuspatial::minimum_euclidean_distance(x, y, space_offsets);
 
@@ -73,58 +74,34 @@ TYPED_TEST(MinimumEuclideanDistanceTest, TwoShapesPointToPoint)
 {
   using T = TypeParam;
 
-  // auto x             = cudf::test::fixed_width_column_wrapper<T>({-2, 0, -2, 1, 3, +1});
-  // auto y             = cudf::test::fixed_width_column_wrapper<T>({+1, 0, -1, 1, 0, -1});
-  // auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0, 3});
+  auto x             = cudf::test::fixed_width_column_wrapper<T>({-1, -2, -3, 1, 2, 3});
+  auto y             = cudf::test::fixed_width_column_wrapper<T>({-1, -3, -2, 1, 3, 2});
+  auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0, 3});
 
-  // auto expected = cudf::test::fixed_width_column_wrapper<T>({0, 1, 1, 0});
+  auto expected =
+    cudf::test::fixed_width_column_wrapper<T>({0.0, 2.8284271247461903, 2.8284271247461903, 0.0});
 
-  // auto actual = cuspatial::minimum_euclidean_distance(x, y, space_offsets);
+  auto actual = cuspatial::minimum_euclidean_distance(x, y, space_offsets);
 
-  // expect_columns_equivalent(expected, actual->view(), true);
+  expect_columns_equivalent(expected, actual->view(), true);
 }
 
 TYPED_TEST(MinimumEuclideanDistanceTest, InvalidTypeTest)
 {
-  using T = TypeParam;
-
-  // auto x             = cudf::test::fixed_width_column_wrapper<T>({-2, 0, -2, 1, 3, +1});
-  // auto y             = cudf::test::fixed_width_column_wrapper<T>({+1, 0, -1, 1, 0, -1});
-  // auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0, 3});
-
-  // auto expected = cudf::test::fixed_width_column_wrapper<T>({0, 1, 1, 0});
-
-  // auto actual = cuspatial::minimum_euclidean_distance(x, y, space_offsets);
-
-  // expect_columns_equivalent(expected, actual->view(), true);
+  EXPECT_TRUE(false);  // todo
 }
 
 TYPED_TEST(MinimumEuclideanDistanceTest, MismatchedTypeTest)
 {
-  using T = TypeParam;
-
-  // auto x             = cudf::test::fixed_width_column_wrapper<T>({-2, 0, -2, 1, 3, +1});
-  // auto y             = cudf::test::fixed_width_column_wrapper<T>({+1, 0, -1, 1, 0, -1});
-  // auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0, 3});
-
-  // auto expected = cudf::test::fixed_width_column_wrapper<T>({0, 1, 1, 0});
-
-  // auto actual = cuspatial::minimum_euclidean_distance(x, y, space_offsets);
-
-  // expect_columns_equivalent(expected, actual->view(), true);
+  EXPECT_TRUE(false);  // todo
 }
 
-TYPED_TEST(MinimumEuclideanDistanceTest, EdgeOnly)
+TYPED_TEST(MinimumEuclideanDistanceTest, EdgesOnly)
 {
-  using T = TypeParam;
+  EXPECT_TRUE(false);  // todo
+}
 
-  // auto x             = cudf::test::fixed_width_column_wrapper<T>({-2, 0, -2, 1, 3, +1});
-  // auto y             = cudf::test::fixed_width_column_wrapper<T>({+1, 0, -1, 1, 0, -1});
-  // auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0, 3});
-
-  // auto expected = cudf::test::fixed_width_column_wrapper<T>({0, 1, 1, 0});
-
-  // auto actual = cuspatial::minimum_euclidean_distance(x, y, space_offsets);
-
-  // expect_columns_equivalent(expected, actual->view(), true);
+TYPED_TEST(MinimumEuclideanDistanceTest, PointsOnly)
+{
+  EXPECT_TRUE(false);  // todo
 }

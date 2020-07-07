@@ -23,62 +23,16 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <limits>
-//  #include <thrust/functional.h>
-//  #include <thrust/iterator/transform_iterator.h>
-
-//  #include <rmm/device_uvector.hpp>
 
 #include <memory>
 #include "thrust/functional.h"
 #include "thrust/iterator/discard_iterator.h"
 
+using size_type = cudf::size_type;
+
 namespace cuspatial {
 namespace detail {
 namespace {
-
-using size_type = cudf::size_type;
-
-template <typename T>
-__device__ inline T distance_line_segment_to_point(
-  T const m, T const nx, T const ny, T const tx, T const ty, T const px, T const py)
-{
-  auto edge_travel = px * tx + py * ty;
-
-  if (edge_travel < 0) { return hypot(px, py); }
-  if (edge_travel <= m) { return abs(px * nx + py * ny); }
-
-  return std::numeric_limits<double>::infinity();
-}
-
-template <typename T>
-__device__ inline T distance_line_segment_to_points(
-  T const edge_x, T const edge_y, T const p0_x, T const p0_y, T const p1_x, T const p1_y)
-{
-  auto const m  = hypot(edge_x, edge_y);
-  auto const tx = edge_x / m;
-  auto const ty = edge_y / m;
-  auto const nx = -ty;
-  auto const ny = +tx;
-
-  return min(distance_line_segment_to_point(m, nx, ny, tx, ty, p0_x, p0_y),
-             distance_line_segment_to_point(m, nx, ny, tx, ty, p1_x, p1_y));
-}
-
-template <typename T>
-__device__ inline T distance_line_segments_to_points(T const a0_x,
-                                                     T const a0_y,
-                                                     T const a1_x,
-                                                     T const a1_y,
-                                                     T const b0_x,
-                                                     T const b0_y,
-                                                     T const b1_x,
-                                                     T const b1_y)
-{
-  return min(distance_line_segment_to_points(
-               a1_x - a0_x, a1_y - a0_y, b0_x - a0_x, b0_y - a0_y, b1_x - a0_x, b1_y - a0_y),
-             distance_line_segment_to_points(
-               b1_x - b0_x, b1_y - b0_y, a0_x - b0_x, a0_y - b0_y, a1_x - b0_x, a1_y - b0_y));
-}
 
 template <typename T>
 struct gcp_to_polygon_separation_functor {
@@ -87,19 +41,30 @@ struct gcp_to_polygon_separation_functor {
 
   T __device__ operator()(cartesian_product_group_index idx)
   {
-    auto a_idx_0 = idx.group_a.offset + (idx.element_a_idx);
-    auto a_idx_1 = idx.group_a.offset + (idx.element_a_idx + 1) % idx.group_a.size;
-    auto b_idx_0 = idx.group_b.offset + (idx.element_b_idx);
-    auto b_idx_1 = idx.group_b.offset + (idx.element_b_idx + 1) % idx.group_b.size;
+    auto const a_idx_0 = idx.group_a.offset + (idx.element_a_idx);
+    auto const a_idx_1 = idx.group_a.offset + (idx.element_a_idx + 1) % idx.group_a.size;
+    auto const b_idx_0 = idx.group_b.offset + (idx.element_b_idx);
 
-    return distance_line_segments_to_points(xs.element<T>(a_idx_0),
-                                            ys.element<T>(a_idx_0),
-                                            xs.element<T>(a_idx_1),
-                                            ys.element<T>(a_idx_1),
-                                            xs.element<T>(b_idx_0),
-                                            ys.element<T>(b_idx_0),
-                                            xs.element<T>(b_idx_1),
-                                            ys.element<T>(b_idx_1));
+    auto const origin_x = xs.element<T>(a_idx_0);
+    auto const origin_y = ys.element<T>(a_idx_0);
+    auto const edge_x   = xs.element<T>(a_idx_1) - origin_x;
+    auto const edge_y   = ys.element<T>(a_idx_1) - origin_y;
+    auto const point_x  = xs.element<T>(b_idx_0) - origin_x;
+    auto const point_y  = ys.element<T>(b_idx_0) - origin_y;
+
+    auto const edge_length = hypot(edge_x, edge_y);
+
+    auto const tangent_x = edge_x / edge_length;
+    auto const tangent_y = edge_y / edge_length;
+    auto const normal_x  = -tangent_y;
+    auto const normal_y  = +tangent_x;
+
+    auto const point_dot_tangent = point_x * tangent_x + point_y * tangent_y;
+
+    if (point_dot_tangent < 0) { return hypot(point_x, point_y); }
+    if (point_dot_tangent <= edge_length) { return abs(point_x * normal_x + point_y * normal_y); }
+
+    return std::numeric_limits<double>::infinity();  // will be calculated on next iteration
   }
 };
 
