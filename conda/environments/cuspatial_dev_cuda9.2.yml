@@ -6,7 +6,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - black=3.7.7
+  - black=19.10
   - clang=8.0.1
   - clang-tools=8.0.1
   - cudf=0.14.*
