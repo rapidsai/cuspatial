@@ -18,7 +18,7 @@
 - PR #245 Pin gdal to be compatible with cuxfilter
 - PR #242 Fix benchmark_fixture to use memory resources.
 - PR #248 Fix build by updating type_id usages after upstream breaking changes.
-
+- PR #252 Fix CI style check failures
 
 # cuSpatial 0.14.0 (Date TBD)
 
