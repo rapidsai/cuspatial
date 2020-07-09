@@ -116,7 +116,7 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
 
                       T key_x       = cuspatial::utility::z_order_x(key);
                       T key_y       = cuspatial::utility::z_order_y(key);
-                      T level_scale = scale * pow(T{2.0}, max_depth - 1 - level);
+                      T level_scale = scale * (1 << (max_depth - 1 - level));
                       T node_x_min  = x_min + (key_x + 0) * level_scale;
                       T node_y_min  = y_min + (key_y + 0) * level_scale;
                       T node_x_max  = x_min + (key_x + 1) * level_scale;
