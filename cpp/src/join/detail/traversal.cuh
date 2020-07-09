@@ -47,14 +47,15 @@ descend_quadtree(LengthsIter lengths,
                  rmm::device_uvector<uint32_t> &quad_poly_indices,
                  cudaStream_t stream)
 {
-  // compute the total number of child nodes
-  auto num_children =
-    thrust::reduce(rmm::exec_policy(stream)->on(stream), lengths, lengths + num_quads);
+  // scan on the number of child nodes to compute the offsets
+  // note: size is num_quads + 1 so the last element is `num_children`
+  rmm::device_uvector<uint32_t> parent_offsets(num_quads + 1, stream);
+  thrust::inclusive_scan(
+    rmm::exec_policy(stream)->on(stream), lengths, lengths + num_quads, parent_offsets.begin() + 1);
 
-  // exclusive scan on the number of child nodes to compute the offsets
-  rmm::device_uvector<uint32_t> parent_offsets(num_quads, stream);
-  thrust::exclusive_scan(
-    rmm::exec_policy(stream)->on(stream), lengths, lengths + num_quads, parent_offsets.begin());
+  parent_offsets.set_element_async(0, 0, stream);
+
+  auto num_children = parent_offsets.back_element(stream);  // synchronizes stream
 
   rmm::device_uvector<uint32_t> child_indices(num_children, stream);
   thrust::fill(rmm::exec_policy(stream)->on(stream), child_indices.begin(), child_indices.end(), 0);
