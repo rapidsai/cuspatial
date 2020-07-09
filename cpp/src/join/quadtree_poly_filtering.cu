@@ -44,7 +44,7 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
                                                              T y_min,
                                                              T y_max,
                                                              T scale,
-                                                             cudf::size_type max_depth,
+                                                             int8_t max_depth,
                                                              rmm::mr::device_memory_resource *mr,
                                                              cudaStream_t stream)
 {
@@ -208,7 +208,7 @@ struct dispatch_quadtree_bounding_box_join {
                                                  double y_min,
                                                  double y_max,
                                                  double scale,
-                                                 cudf::size_type max_depth,
+                                                 int8_t max_depth,
                                                  rmm::mr::device_memory_resource *mr,
                                                  cudaStream_t stream)
   {
@@ -240,7 +240,7 @@ std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
                                             double y_min,
                                             double y_max,
                                             double scale,
-                                            cudf::size_type max_depth,
+                                            int8_t max_depth,
                                             rmm::mr::device_memory_resource *mr,
                                             cudaStream_t stream)
 {
@@ -267,7 +267,7 @@ std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
                                             double y_min,
                                             double y_max,
                                             double scale,
-                                            cudf::size_type max_depth,
+                                            int8_t max_depth,
                                             rmm::mr::device_memory_resource *mr)
 {
   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "quadtree table must have 5 columns");

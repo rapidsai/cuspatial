@@ -53,7 +53,7 @@ std::unique_ptr<cudf::table> quad_bbox_join(
   double y_min,
   double y_max,
   double scale,
-  cudf::size_type max_depth,
+  int8_t max_depth,
   rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource());
 
 /**

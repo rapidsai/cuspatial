@@ -34,9 +34,9 @@ struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
 TEST_F(QuadtreeOnPointIndexingTest, test_empty)
 {
   using namespace cudf::test;
-  const uint32_t max_depth = 1;
-  uint32_t min_size        = 1;
-  double scale             = 1.0;
+  const int8_t max_depth = 1;
+  uint32_t min_size      = 1;
+  double scale           = 1.0;
   double x_min = 0, x_max = 1, y_min = 0, y_max = 1;
 
   fixed_width_column_wrapper<double> x({});
@@ -57,8 +57,8 @@ TEST_F(QuadtreeOnPointIndexingTest, test_empty)
 TEST_F(QuadtreeOnPointIndexingTest, test_single)
 {
   using namespace cudf::test;
-  const uint32_t max_depth = 1;
-  uint32_t min_size        = 1;
+  const int8_t max_depth = 1;
+  uint32_t min_size      = 1;
 
   double scale = 1.0;
   double x_min = 0, x_max = 1, y_min = 0, y_max = 1;
@@ -90,8 +90,8 @@ TEST_F(QuadtreeOnPointIndexingTest, test_two)
 {
   using namespace cudf::test;
 
-  const uint32_t max_depth = 1;
-  uint32_t min_size        = 1;
+  const int8_t max_depth = 1;
+  uint32_t min_size      = 1;
 
   double scale = 1.0;
   double x_min = 0, x_max = 2, y_min = 0, y_max = 2;
@@ -123,9 +123,9 @@ TEST_F(QuadtreeOnPointIndexingTest, test_small)
 {
   using namespace cudf::test;
 
-  const uint32_t max_depth = 3;
-  uint32_t min_size        = 12;
-  double scale             = 1.0;
+  const int8_t max_depth = 3;
+  uint32_t min_size      = 12;
+  double scale           = 1.0;
   double x_min = 0, x_max = 8, y_min = 0, y_max = 8;
 
   fixed_width_column_wrapper<double> x(
@@ -190,8 +190,8 @@ TEST_F(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
 {
   using namespace cudf::test;
 
-  const uint32_t max_depth = 2;
-  uint32_t min_size        = 1;
+  const int8_t max_depth = 2;
+  uint32_t min_size      = 1;
 
   double x_min = -1000.0;
   double x_max = 1000.0;

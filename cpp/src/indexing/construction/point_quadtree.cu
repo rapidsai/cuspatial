@@ -46,7 +46,7 @@ inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_uvector<uint32_t>
                                                    rmm::device_uvector<uint32_t> &quad_child_count,
                                                    rmm::device_uvector<uint8_t> &quad_levels,
                                                    cudf::size_type num_parent_nodes,
-                                                   cudf::size_type max_depth,
+                                                   int8_t max_depth,
                                                    cudf::size_type min_size,
                                                    cudf::size_type level_1_size,
                                                    rmm::mr::device_memory_resource *mr,
@@ -250,7 +250,7 @@ struct dispatch_construct_quadtree {
     double y_min,
     double y_max,
     double scale,
-    cudf::size_type max_depth,
+    int8_t max_depth,
     cudf::size_type min_size,
     rmm::mr::device_memory_resource *mr,
     cudaStream_t stream)
@@ -309,7 +309,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   double y_min,
   double y_max,
   double scale,
-  cudf::size_type max_depth,
+  int8_t max_depth,
   cudf::size_type min_size,
   rmm::mr::device_memory_resource *mr,
   cudaStream_t stream)
@@ -339,7 +339,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   double y_min,
   double y_max,
   double scale,
-  cudf::size_type max_depth,
+  int8_t max_depth,
   cudf::size_type min_size,
   rmm::mr::device_memory_resource *mr)
 {

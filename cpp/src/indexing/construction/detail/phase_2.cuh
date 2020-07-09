@@ -63,7 +63,7 @@ inline rmm::device_uvector<uint32_t> flatten_point_keys(
   rmm::device_uvector<uint8_t> const &quad_level,
   cudf::column_view const &indicator,
   cudf::size_type num_valid_nodes,
-  cudf::size_type max_depth,
+  int8_t max_depth,
   cudaStream_t stream)
 {
   rmm::device_uvector<uint32_t> flattened_keys(num_valid_nodes, stream);
@@ -97,7 +97,7 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
   rmm::device_uvector<uint32_t> &quad_point_count,
   cudf::column_view const &indicator,
   cudf::size_type num_valid_nodes,
-  cudf::size_type max_depth,
+  int8_t max_depth,
   cudaStream_t stream)
 {
   // Sort initial indices and temporary point counts by the flattened keys

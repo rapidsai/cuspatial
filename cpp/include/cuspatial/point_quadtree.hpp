@@ -62,7 +62,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   double y_min,
   double y_max,
   double scale,
-  cudf::size_type max_depth,
+  int8_t max_depth,
   cudf::size_type min_size,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 

@@ -85,7 +85,7 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
   T x_min,
   T y_min,
   T scale,
-  cudf::size_type max_depth,
+  int8_t max_depth,
   cudaStream_t stream)
 {
   auto nodes_and_polys = make_zip_iterator(

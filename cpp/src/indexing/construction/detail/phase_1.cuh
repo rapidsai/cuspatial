@@ -56,7 +56,7 @@ compute_point_keys_and_sorted_indices(cudf::column_view const &x,
                                       T y_min,
                                       T y_max,
                                       T scale,
-                                      cudf::size_type max_depth,
+                                      int8_t max_depth,
                                       rmm::mr::device_memory_resource *mr,
                                       cudaStream_t stream)
 {
@@ -128,7 +128,7 @@ inline std::tuple<cudf::size_type,
                   cudf::size_type,
                   std::vector<cudf::size_type>,
                   std::vector<cudf::size_type>>
-build_tree_levels(cudf::size_type max_depth,
+build_tree_levels(int8_t max_depth,
                   cudf::size_type num_top_quads,
                   KeysIterator keys_begin,
                   ValsIterator quad_point_count_begin,
@@ -192,7 +192,7 @@ reverse_tree_levels(rmm::device_uvector<uint32_t> const &quad_keys_in,
                     rmm::device_uvector<uint32_t> const &quad_child_count_in,
                     std::vector<cudf::size_type> const &begin_pos,
                     std::vector<cudf::size_type> const &end_pos,
-                    cudf::size_type max_depth,
+                    int8_t max_depth,
                     cudaStream_t stream)
 {
   rmm::device_uvector<uint32_t> quad_keys(quad_keys_in.size(), stream);
@@ -253,7 +253,7 @@ inline auto make_full_levels(cudf::column_view const &x,
                              T y_min,
                              T y_max,
                              T scale,
-                             cudf::size_type max_depth,
+                             int8_t max_depth,
                              cudf::size_type min_size,
                              rmm::mr::device_memory_resource *mr,
                              cudaStream_t stream)
