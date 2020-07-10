@@ -50,7 +50,7 @@ namespace cuspatial {
  * columns for a complete quadtree:
  *     key - UINT32 column of quad node keys
  *   level - UINT8 column of quadtree levels
- * is_quad - BOOL8 column indicating whether the node is a leaf or not
+ * is_quad - BOOL8 column indicating whether the node is a quad (true) or leaf (false)
  *  length - UINT32 column for the number of child nodes (if is_quad), or number of points
  *  offset - UINT32 column for the first child position (if is_quad), or first point position
  */
