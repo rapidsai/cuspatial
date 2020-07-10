@@ -27,12 +27,56 @@
 #include <tests/utilities/column_wrapper.hpp>
 #include <tests/utilities/table_utilities.hpp>
 #include <tests/utilities/type_lists.hpp>
+#include "gtest/gtest.h"
 
 template <typename T>
 struct QuadtreePolygonFilteringTest : public cudf::test::BaseFixture {
 };
 
 TYPED_TEST_CASE(QuadtreePolygonFilteringTest, cudf::test::FloatingPointTypes);
+
+TYPED_TEST(QuadtreePolygonFilteringTest, test_errors)
+{
+  using T = TypeParam;
+  using namespace cudf::test;
+  // bad table
+  cudf::table_view bad_quadtree{};
+  // bad bboxes
+  cudf::table_view bad_bboxes{};
+  // empty quadtree
+  cudf::table_view empty_quadtree{{
+    fixed_width_column_wrapper<int32_t>({}),
+    fixed_width_column_wrapper<int8_t>({}),
+    fixed_width_column_wrapper<bool>({}),
+    fixed_width_column_wrapper<int32_t>({}),
+    fixed_width_column_wrapper<int32_t>({}),
+  }};
+  // empty bboxes
+  cudf::table_view empty_bboxes{{fixed_width_column_wrapper<T>({}),
+                                 fixed_width_column_wrapper<T>({}),
+                                 fixed_width_column_wrapper<T>({}),
+                                 fixed_width_column_wrapper<T>({})}};
+
+  // Test throws on bad quadtree
+  EXPECT_THROW(cuspatial::quad_bbox_join(bad_quadtree, empty_bboxes, 0, 1, 0, 1, 1, 1, this->mr()),
+               cuspatial::logic_error);
+
+  // Test throws on bad bboxes
+  EXPECT_THROW(cuspatial::quad_bbox_join(empty_quadtree, bad_bboxes, 0, 1, 0, 1, 1, 1, this->mr()),
+               cuspatial::logic_error);
+
+  // Test throws on bad area of interest
+  EXPECT_THROW(cuspatial::quad_bbox_join(empty_quadtree, bad_bboxes, 1, 0, 1, 0, 1, 1, this->mr()),
+               cuspatial::logic_error);
+
+  // Test throws on bad scale
+  EXPECT_THROW(cuspatial::quad_bbox_join(empty_quadtree, bad_bboxes, 0, 1, 0, 1, 0, 1, this->mr()),
+               cuspatial::logic_error);
+
+  // Test throws on bad max_depth
+  EXPECT_THROW(cuspatial::quad_bbox_join(empty_quadtree, bad_bboxes, 0, 1, 0, 1, 1, 0, this->mr()),
+               cuspatial::logic_error);
+}
 
 TYPED_TEST(QuadtreePolygonFilteringTest, test_empty)
 {
