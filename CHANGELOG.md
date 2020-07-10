@@ -10,6 +10,7 @@
 - PR #243 Install dependencies via meta package
 - PR #247 Use rmm::device_uvector and cudf::UINT types for quadtree construction
 - PR #246 Hausdorff performance improvement
+- PR #253 Update conda upload versions for new supported CUDA/Python
 - PR #250 cartesian product iterator + more Hausdorff performance improvements.
 
 ## Bug Fixes
@@ -17,7 +18,7 @@
 - PR #245 Pin gdal to be compatible with cuxfilter
 - PR #242 Fix benchmark_fixture to use memory resources.
 - PR #248 Fix build by updating type_id usages after upstream breaking changes.
-
+- PR #252 Fix CI style check failures
 
 # cuSpatial 0.14.0 (Date TBD)
 
