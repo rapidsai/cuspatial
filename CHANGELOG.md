@@ -10,6 +10,7 @@
 - PR #243 Install dependencies via meta package
 - PR #247 Use rmm::device_uvector and cudf::UINT types for quadtree construction
 - PR #246 Hausdorff performance improvement
+- PR #253 Update conda upload versions for new supported CUDA/Python
 
 ## Bug Fixes
 - PR #244 Restrict gdal version
