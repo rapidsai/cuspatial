@@ -66,16 +66,19 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_errors)
                cuspatial::logic_error);
 
   // Test throws on bad area of interest
-  EXPECT_THROW(cuspatial::quad_bbox_join(empty_quadtree, bad_bboxes, 1, 0, 1, 0, 1, 1, this->mr()),
-               cuspatial::logic_error);
+  EXPECT_THROW(
+    cuspatial::quad_bbox_join(empty_quadtree, empty_bboxes, 1, 0, 1, 0, 1, 1, this->mr()),
+    cuspatial::logic_error);
 
   // Test throws on bad scale
-  EXPECT_THROW(cuspatial::quad_bbox_join(empty_quadtree, bad_bboxes, 0, 1, 0, 1, 0, 1, this->mr()),
-               cuspatial::logic_error);
+  EXPECT_THROW(
+    cuspatial::quad_bbox_join(empty_quadtree, empty_bboxes, 0, 1, 0, 1, 0, 1, this->mr()),
+    cuspatial::logic_error);
 
   // Test throws on bad max_depth
-  EXPECT_THROW(cuspatial::quad_bbox_join(empty_quadtree, bad_bboxes, 0, 1, 0, 1, 1, 0, this->mr()),
-               cuspatial::logic_error);
+  EXPECT_THROW(
+    cuspatial::quad_bbox_join(empty_quadtree, empty_bboxes, 0, 1, 0, 1, 1, 0, this->mr()),
+    cuspatial::logic_error);
 }
 
 TYPED_TEST(QuadtreePolygonFilteringTest, test_empty)
