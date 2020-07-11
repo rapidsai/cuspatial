@@ -46,6 +46,13 @@ namespace cuspatial {
  * @param min_size Minimum number of points for a non-leaf quadtree node.
  * @param mr The optional resource to use for output device memory allocations.
  *
+ * @throw cuspatial::logic_error If the x and y column sizes are different
+ * @throw cuspatial::logic_error If scale is less than or equal to 0
+ * @throw cuspatial::logic_error If min_size is less than or equal to 0
+ * @throw cuspatial::logic_error If x_min is greater than x_max
+ * @throw cuspatial::logic_error If y_min is greater than y_max
+ * @throw cuspatial::logic_error If max_depth is less than 0 or greater than 15
+ *
  * @return Pair of INT32 column of sorted keys to point indices, and cudf table with five
  * columns for a complete quadtree:
  *     key - UINT32 column of quad node keys

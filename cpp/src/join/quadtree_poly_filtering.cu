@@ -264,7 +264,10 @@ std::unique_ptr<cudf::table> quad_bbox_join(cudf::table_view const &quadtree,
   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "quadtree table must have 5 columns");
   CUSPATIAL_EXPECTS(poly_bbox.num_columns() == 4, "polygon bbox table must have 4 columns");
   CUSPATIAL_EXPECTS(scale > 0, "scale must be positive");
-  CUSPATIAL_EXPECTS(max_depth > 0 && max_depth < 16, "maximum of levels might be in [0,16)");
+  CUSPATIAL_EXPECTS(x_min < x_max && y_min < y_max,
+                    "invalid bounding box (x_min, x_max, y_min, y_max)");
+  CUSPATIAL_EXPECTS(max_depth > 0 && max_depth < 16,
+                    "maximum depth must be positive and less than 16");
 
   if (quadtree.num_rows() == 0 || poly_bbox.num_rows() == 0) {
     std::vector<std::unique_ptr<cudf::column>> cols{};

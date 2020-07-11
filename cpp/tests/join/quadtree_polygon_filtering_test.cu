@@ -80,9 +80,10 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_errors)
     cuspatial::quad_bbox_join(empty_quadtree, empty_bboxes, 0, 1, 0, 1, 1, 16, this->mr()),
     cuspatial::logic_error);
 
-  // Test doesn't throw on reversed area of interest bbox coordinates
-  EXPECT_NO_THROW(
-    cuspatial::quad_bbox_join(empty_quadtree, empty_bboxes, 1, 0, 1, 0, 1, 1, this->mr()));
+  // Test throws on reversed area of interest bbox coordinates
+  EXPECT_THROW(
+    cuspatial::quad_bbox_join(empty_quadtree, empty_bboxes, 1, 0, 1, 0, 1, 1, this->mr()),
+    cuspatial::logic_error);
 }
 
 TYPED_TEST(QuadtreePolygonFilteringTest, test_empty)
