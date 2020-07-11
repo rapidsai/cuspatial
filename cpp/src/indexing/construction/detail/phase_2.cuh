@@ -16,13 +16,11 @@
 
 #pragma once
 
+#include "indexing/construction/detail/utilities.cuh"
+
 #include <cudf/column/column_factories.hpp>
 #include <cudf/types.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
-
-#include <memory>
-#include <tuple>
-#include <utility>
 
 #include <rmm/thrust_rmm_allocator.h>
 #include <rmm/device_uvector.hpp>
@@ -31,7 +29,9 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 
-#include "indexing/construction/detail/utilities.cuh"
+#include <memory>
+#include <tuple>
+#include <utility>
 
 /**
  * @brief implementation details for the phase 2 of quadtree construction described in:

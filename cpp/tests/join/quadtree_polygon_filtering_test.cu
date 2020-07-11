@@ -27,7 +27,6 @@
 #include <tests/utilities/column_wrapper.hpp>
 #include <tests/utilities/table_utilities.hpp>
 #include <tests/utilities/type_lists.hpp>
-#include "gtest/gtest.h"
 
 template <typename T>
 struct QuadtreePolygonFilteringTest : public cudf::test::BaseFixture {

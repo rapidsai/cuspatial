@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include "indexing/construction/detail/utilities.cuh"
+#include "utility/z_order.cuh"
+
 #include <rmm/thrust_rmm_allocator.h>
 #include <rmm/device_uvector.hpp>
 
@@ -25,9 +28,6 @@
 #include <thrust/tuple.h>
 
 #include <tuple>
-
-#include "indexing/construction/detail/utilities.cuh"
-#include "utility/z_order.cuh"
 
 namespace cuspatial {
 namespace detail {

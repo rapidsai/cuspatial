@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#include <cudf/table/table.hpp>
+#include "indexing/construction/detail/phase_1.cuh"
+#include "indexing/construction/detail/phase_2.cuh"
+#include "indexing/construction/detail/utilities.cuh"
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/point_quadtree.hpp>
 
-#include <rmm/device_uvector.hpp>
+#include <cudf/table/table.hpp>
 
-#include "indexing/construction/detail/phase_1.cuh"
-#include "indexing/construction/detail/phase_2.cuh"
-#include "indexing/construction/detail/utilities.cuh"
+#include <rmm/device_uvector.hpp>
 
 /*
  * quadtree indexing on points using the bottom-up algorithm described at ref.
