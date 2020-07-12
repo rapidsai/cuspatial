@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #146 quadtree-polygon pairing for spatial filtering
+
 ## Improvements
 - PR #237 Remove nvstrings references from CMakeLists.txt
 - PR #239 Add docs build script
