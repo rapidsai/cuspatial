@@ -18,7 +18,7 @@
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/hausdorff.hpp>
-#include <cuspatial/polygon_seperation.hpp>
+#include <cuspatial/polygon_separation.hpp>
 
 #include <tests/utilities/base_fixture.hpp>
 #include <tests/utilities/column_utilities.hpp>
@@ -50,7 +50,7 @@ TYPED_TEST(MinimumEuclideanDistanceTest, ZeroShapes)
 
   auto expected = cudf::test::fixed_width_column_wrapper<T>({});
 
-  auto actual = cuspatial::minimum_euclidean_distance(x, y, space_offsets);
+  auto actual = cuspatial::directed_polygon_separation(x, y, space_offsets);
 
   expect_columns_equivalent(expected, actual->view(), true);
 }
@@ -65,7 +65,7 @@ TYPED_TEST(MinimumEuclideanDistanceTest, TwoShapesEdgeToPoint)
 
   auto expected = cudf::test::fixed_width_column_wrapper<T>({0.0, 1.4142135623730951, 1.0, 0.0});
 
-  auto actual = cuspatial::minimum_euclidean_distance(x, y, space_offsets);
+  auto actual = cuspatial::directed_polygon_separation(x, y, space_offsets);
 
   expect_columns_equivalent(expected, actual->view(), true);
 }
@@ -81,7 +81,7 @@ TYPED_TEST(MinimumEuclideanDistanceTest, TwoShapesPointToPoint)
   auto expected =
     cudf::test::fixed_width_column_wrapper<T>({0.0, 2.8284271247461903, 2.8284271247461903, 0.0});
 
-  auto actual = cuspatial::minimum_euclidean_distance(x, y, space_offsets);
+  auto actual = cuspatial::directed_polygon_separation(x, y, space_offsets);
 
   expect_columns_equivalent(expected, actual->view(), true);
 }

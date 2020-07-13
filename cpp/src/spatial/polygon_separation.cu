@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <cuspatial/detail/cartesian_product_iterator.cuh>
+#include <cuspatial/detail/cartesian_product_group_index_iterator.cuh>
 #include <cuspatial/error.hpp>
 
 #include <cudf/column/column_device_view.cuh>
@@ -35,7 +35,7 @@ namespace detail {
 namespace {
 
 template <typename T>
-struct gcp_to_polygon_separation_functor {
+struct directed_polygon_separation_calculator {
   cudf::column_device_view xs;
   cudf::column_device_view ys;
 
@@ -68,7 +68,7 @@ struct gcp_to_polygon_separation_functor {
   }
 };
 
-struct polygon_separation_functor {
+struct directed_polygon_separation_functor {
   template <typename T, typename... Args>
   std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
     Args&&...)
@@ -94,7 +94,7 @@ struct polygon_separation_functor {
 
     // ===== Make Separation and Key Iterators =====================================================
 
-    auto gcp_iter = make_grouped_cartesian_product_iterator(
+    auto gcp_iter = make_cartesian_product_group_index_iterator(
       num_points, num_spaces, space_offsets.begin<cudf::size_type>());
 
     auto gpc_key_iter =
@@ -105,8 +105,8 @@ struct polygon_separation_functor {
     auto d_xs = cudf::column_device_view::create(xs);
     auto d_ys = cudf::column_device_view::create(ys);
 
-    auto separation_iter =
-      thrust::make_transform_iterator(gcp_iter, gcp_to_polygon_separation_functor<T>{*d_xs, *d_ys});
+    auto separation_iter = thrust::make_transform_iterator(
+      gcp_iter, directed_polygon_separation_calculator<T>{*d_xs, *d_ys});
 
     // ===== Materialize ===========================================================================
 
@@ -134,10 +134,10 @@ struct polygon_separation_functor {
 }  // namespace
 }  // namespace detail
 
-std::unique_ptr<cudf::column> minimum_euclidean_distance(cudf::column_view const& xs,
-                                                         cudf::column_view const& ys,
-                                                         cudf::column_view const& points_per_space,
-                                                         rmm::mr::device_memory_resource* mr)
+std::unique_ptr<cudf::column> directed_polygon_separation(cudf::column_view const& xs,
+                                                          cudf::column_view const& ys,
+                                                          cudf::column_view const& points_per_space,
+                                                          rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(xs.type() == ys.type(), "Inputs `xs` and `ys` must have same type.");
   CUSPATIAL_EXPECTS(xs.size() == ys.size(), "Inputs `xs` and `ys` must have same length.");
@@ -151,7 +151,7 @@ std::unique_ptr<cudf::column> minimum_euclidean_distance(cudf::column_view const
   cudaStream_t stream = 0;
 
   return cudf::type_dispatcher(
-    xs.type(), detail::polygon_separation_functor(), xs, ys, points_per_space, mr, stream);
+    xs.type(), detail::directed_polygon_separation_functor(), xs, ys, points_per_space, mr, stream);
 }
 
 }  // namespace cuspatial

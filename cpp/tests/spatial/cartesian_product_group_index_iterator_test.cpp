@@ -16,7 +16,7 @@
 
 #include <vector>
 
-#include <cuspatial/detail/cartesian_product_iterator.cuh>
+#include <cuspatial/detail/cartesian_product_group_index_iterator.cuh>
 #include <cuspatial/error.hpp>
 
 #include <thrust/binary_search.h>
@@ -131,12 +131,12 @@ TYPED_TEST(CartesianProductTest, Traversal)
   };
 
   auto gcp_iter =
-    cuspatial::detail::make_grouped_cartesian_product_iterator(group_a_offsets_end,
-                                                               group_b_offsets_end,
-                                                               group_a_offsets.size(),
-                                                               group_b_offsets.size(),
-                                                               group_a_offsets.cbegin(),
-                                                               group_b_offsets.cbegin());
+    cuspatial::detail::make_cartesian_product_group_index_iterator(group_a_offsets_end,
+                                                                   group_b_offsets_end,
+                                                                   group_a_offsets.size(),
+                                                                   group_b_offsets.size(),
+                                                                   group_a_offsets.cbegin(),
+                                                                   group_b_offsets.cbegin());
 
   auto num_cartesian = group_a_offsets_end * group_b_offsets_end;
 

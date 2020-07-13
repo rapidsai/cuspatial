@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <cuspatial/detail/cartesian_product_iterator.cuh>
+#include <cuspatial/detail/cartesian_product_group_index_iterator.cuh>
 #include <cuspatial/detail/hausdorff.cuh>
 #include <cuspatial/error.hpp>
 #include "utility/scatter_output_iterator.cuh"
@@ -40,7 +40,7 @@ namespace {
 using size_type = cudf::size_type;
 
 template <typename T>
-struct gcp_to_hausdorff_acc {
+struct hausdorff_accumulator_factory {
   cudf::column_device_view xs;
   cudf::column_device_view ys;
 
@@ -82,14 +82,14 @@ struct hausdorff_functor {
 
     // ===== Make Hausdorff Accumulator ============================================================
 
-    auto gcp_iter = make_grouped_cartesian_product_iterator(
+    auto gcp_iter = make_cartesian_product_group_index_iterator(
       num_points, num_spaces, space_offsets.begin<cudf::size_type>());
 
     auto d_xs = cudf::column_device_view::create(xs);
     auto d_ys = cudf::column_device_view::create(ys);
 
     auto hausdorff_acc_iter =
-      thrust::make_transform_iterator(gcp_iter, gcp_to_hausdorff_acc<T>{*d_xs, *d_ys});
+      thrust::make_transform_iterator(gcp_iter, hausdorff_accumulator_factory<T>{*d_xs, *d_ys});
 
     // ===== Materialize ===========================================================================
 

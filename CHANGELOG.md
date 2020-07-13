@@ -14,6 +14,7 @@
 - PR #246 Hausdorff performance improvement
 - PR #253 Update conda upload versions for new supported CUDA/Python
 - PR #250 cartesian product iterator + more Hausdorff performance improvements.
+- PR #251 directed polygon separation
 
 ## Bug Fixes
 - PR #244 Restrict gdal version

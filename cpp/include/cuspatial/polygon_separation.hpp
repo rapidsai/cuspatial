@@ -21,7 +21,7 @@
 
 namespace cuspatial {
 
-std::unique_ptr<cudf::column> minimum_euclidean_distance(
+std::unique_ptr<cudf::column> directed_polygon_separation(
   cudf::column_view const& xs,
   cudf::column_view const& ys,
   cudf::column_view const& points_per_space,
