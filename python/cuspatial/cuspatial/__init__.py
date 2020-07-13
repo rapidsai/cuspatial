@@ -9,6 +9,7 @@ from .core.gis import (
 )
 from .core.indexing import quadtree_on_points
 from .core.interpolate import CubicSpline
+from .core.spatial_join import quad_bbox_join
 from .core.spatial_window import points_in_spatial_window
 from .core.trajectory import (
     derive_trajectories,

@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #146 quadtree-polygon pairing for spatial filtering
+
 ## Improvements
 - PR #237 Remove nvstrings references from CMakeLists.txt
 - PR #239 Add docs build script
@@ -10,6 +12,7 @@
 - PR #243 Install dependencies via meta package
 - PR #247 Use rmm::device_uvector and cudf::UINT types for quadtree construction
 - PR #246 Hausdorff performance improvement
+- PR #253 Update conda upload versions for new supported CUDA/Python
 - PR #250 cartesian product iterator + more Hausdorff performance improvements.
 
 ## Bug Fixes

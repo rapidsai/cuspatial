@@ -308,6 +308,7 @@ add_library(cuspatial SHARED
             src/interpolate/cubic_spline.cu
             src/io/shp/polygon_shapefile_reader.cpp
             src/io/shp/polygon_shapefile_reader.cu
+            src/join/quadtree_poly_filtering.cu
             src/spatial/polygon_bounding_box.cu
             src/spatial/polyline_bounding_box.cu
             src/spatial/polygon_separation.cu
