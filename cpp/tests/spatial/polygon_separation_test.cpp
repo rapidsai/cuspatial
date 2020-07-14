@@ -33,14 +33,14 @@ using namespace cudf;
 using namespace test;
 
 template <typename T>
-struct MinimumEuclideanDistanceTest : public BaseFixture {
+struct DirectedPolygonDistanceTest : public BaseFixture {
 };
 
 using TestTypes = Types<double>;
 
-TYPED_TEST_CASE(MinimumEuclideanDistanceTest, TestTypes);
+TYPED_TEST_CASE(DirectedPolygonDistanceTest, TestTypes);
 
-TYPED_TEST(MinimumEuclideanDistanceTest, ZeroShapes)
+TYPED_TEST(DirectedPolygonDistanceTest, ZeroShapes)
 {
   using T = TypeParam;
 
@@ -55,7 +55,7 @@ TYPED_TEST(MinimumEuclideanDistanceTest, ZeroShapes)
   expect_columns_equivalent(expected, actual->view(), true);
 }
 
-TYPED_TEST(MinimumEuclideanDistanceTest, TwoShapesEdgeToPoint)
+TYPED_TEST(DirectedPolygonDistanceTest, TwoShapesEdgeToPoint)
 {
   using T = TypeParam;
 
@@ -70,7 +70,7 @@ TYPED_TEST(MinimumEuclideanDistanceTest, TwoShapesEdgeToPoint)
   expect_columns_equivalent(expected, actual->view(), true);
 }
 
-TYPED_TEST(MinimumEuclideanDistanceTest, TwoShapesPointToPoint)
+TYPED_TEST(DirectedPolygonDistanceTest, TwoShapesPointToPoint)
 {
   using T = TypeParam;
 
@@ -86,22 +86,22 @@ TYPED_TEST(MinimumEuclideanDistanceTest, TwoShapesPointToPoint)
   expect_columns_equivalent(expected, actual->view(), true);
 }
 
-TYPED_TEST(MinimumEuclideanDistanceTest, InvalidTypeTest)
+TYPED_TEST(DirectedPolygonDistanceTest, EdgesOnly)
 {
   EXPECT_TRUE(false);  // todo
 }
 
-TYPED_TEST(MinimumEuclideanDistanceTest, MismatchedTypeTest)
+TYPED_TEST(DirectedPolygonDistanceTest, PointsOnly)
 {
   EXPECT_TRUE(false);  // todo
 }
 
-TYPED_TEST(MinimumEuclideanDistanceTest, EdgesOnly)
+TYPED_TEST(DirectedPolygonDistanceTest, InvalidTypeTest)
 {
   EXPECT_TRUE(false);  // todo
 }
 
-TYPED_TEST(MinimumEuclideanDistanceTest, PointsOnly)
+TYPED_TEST(DirectedPolygonDistanceTest, MismatchedTypeTest)
 {
   EXPECT_TRUE(false);  // todo
 }
