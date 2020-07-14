@@ -21,7 +21,7 @@
 - PR #248 Fix build by updating type_id usages after upstream breaking changes.
 - PR #252 Fix CI style check failures
 
-# cuSpatial 0.14.0 (Date TBD)
+# cuSpatial 0.14.0 (03 Jun 2020)
 
 ## New Features
 
