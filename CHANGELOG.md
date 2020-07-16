@@ -1,6 +1,7 @@
 # cuSpatial 0.15.0 (Date TBD)
 
 ## New Features
+
 - PR #146 quadtree-polygon pairing for spatial filtering
 - PR #149 spatial refinement to pair up points and polygons based on point-in-polygon test 
 
@@ -12,15 +13,17 @@
 - PR #243 Install dependencies via meta package
 - PR #247 Use rmm::device_uvector and cudf::UINT types for quadtree construction
 - PR #246 Hausdorff performance improvement
+- PR #253 Update conda upload versions for new supported CUDA/Python
 
 ## Bug Fixes
 - PR #244 Restrict gdal version
 - PR #245 Pin gdal to be compatible with cuxfilter
 - PR #242 Fix benchmark_fixture to use memory resources.
 - PR #248 Fix build by updating type_id usages after upstream breaking changes.
+- PR #252 Fix CI style check failures
+- PR #254 Fix issue with incorrect docker image being used in local build script
 
-
-# cuSpatial 0.14.0 (Date TBD)
+# cuSpatial 0.14.0 (03 Jun 2020)
 
 ## New Features
 

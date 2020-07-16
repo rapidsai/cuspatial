@@ -30,6 +30,7 @@ namespace cuspatial {
  * @note `scale` is applied to (x - x_min) and (y - y_min) to convert coordinates into a Morton code
  * in 2D space.
  * @note `max_depth` should be less than 16, since Morton codes are represented as `uint32_t`.
+ *
  * @param quadtree: cudf table representing a quadtree (key, level, is_quad, length, offset).
  * @param poly_bbox: cudf table of bounding boxes as four columns (x_min, y_min, x_max, y_max).
  * @param x_min The lower-left x-coordinate of the area of interest bounding box.
@@ -37,7 +38,14 @@ namespace cuspatial {
  * @param y_min The lower-left y-coordinate of the area of interest bounding box.
  * @param y_max The upper-right y-coordinate of the area of interest bounding box.
  * @param scale Scale to apply to each x and y distance from x_min and y_min.
- * @param max_depth Maximum quadtree depth.
+ * @param max_depth Maximum quadtree depth at which to stop testing for intersections.
+ *
+ * @throw cuspatial::logic_error If the quadtree table is malformed
+ * @throw cuspatial::logic_error If the polygon bounding box table is malformed
+ * @throw cuspatial::logic_error If scale is less than or equal to 0
+ * @throw cuspatial::logic_error If x_min is greater than x_max
+ * @throw cuspatial::logic_error If y_min is greater than y_max
+ * @throw cuspatial::logic_error If max_depth is less than 1 or greater than 15
  *
  * @return A cudf table with two columns:
  * poly_offset - INT32 column of indices for each poly bbox that intersects with the quadtree.
@@ -52,7 +60,7 @@ std::unique_ptr<cudf::table> quad_bbox_join(
   double y_min,
   double y_max,
   double scale,
-  cudf::size_type max_depth,
+  int8_t max_depth,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**

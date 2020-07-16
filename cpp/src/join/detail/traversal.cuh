@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include "indexing/construction/detail/utilities.cuh"
+#include "utility/z_order.cuh"
+
 #include <rmm/thrust_rmm_allocator.h>
 #include <rmm/device_uvector.hpp>
 
@@ -26,51 +29,70 @@
 
 #include <tuple>
 
-#include "indexing/construction/detail/utilities.cuh"
-#include "utility/z_order.cuh"
-
 namespace cuspatial {
 namespace detail {
 
+/**
+ * @brief Walk one level down the quadtree. Gather the matched quadrant and polygon pairs.
+ *
+ * @param counts The number of child quadrants or points of each node
+ * @param offsets The first child position or point position of each node
+ * @param num_quads The number of quadrants in the current level
+ * @param parent_types bools indicating whether the node is a leaf (0) or quad (1)
+ * @param parent_levels uint8_t levels for each node
+ * @param parent_node_indices indices of the intersecting quadrants at the current level
+ * @param parent_poly_indices indices of the intersecting polygons at the current level
+ * @param stream CUDA stream on which to schedule work
+ * @return An std::tuple containing the `cudf::size_type` number of elements in the next level, and
+ * `rmm::device_uvectors` for each of the `types`, `levels`, `quad_indices`, and `poly_indices` of
+ * the next-level quadrants and polygons
+ */
 template <typename LengthsIter, typename OffsetsIter>
 inline std::tuple<cudf::size_type,
                   rmm::device_uvector<uint8_t>,
                   rmm::device_uvector<uint8_t>,
                   rmm::device_uvector<uint32_t>,
                   rmm::device_uvector<uint32_t>>
-descend_quadtree(LengthsIter lengths,
+descend_quadtree(LengthsIter counts,
                  OffsetsIter offsets,
                  cudf::size_type num_quads,
-                 rmm::device_uvector<uint8_t> &quad_types,
-                 rmm::device_uvector<uint8_t> &quad_levels,
-                 rmm::device_uvector<uint32_t> &quad_node_indices,
-                 rmm::device_uvector<uint32_t> &quad_poly_indices,
+                 rmm::device_uvector<uint8_t> &parent_types,
+                 rmm::device_uvector<uint8_t> &parent_levels,
+                 rmm::device_uvector<uint32_t> &parent_node_indices,
+                 rmm::device_uvector<uint32_t> &parent_poly_indices,
                  cudaStream_t stream)
 {
-  // compute the total number of child nodes
-  auto num_children =
-    thrust::reduce(rmm::exec_policy(stream)->on(stream), lengths, lengths + num_quads);
+  // Use the current parent node indices as the lookup into the global child counts
+  auto parent_counts = thrust::make_permutation_iterator(counts, parent_node_indices.begin());
+  // scan on the number of child nodes to compute the offsets
+  // note: size is `num_quads + 1` so the last element is `num_children`
+  rmm::device_uvector<uint32_t> parent_offsets(num_quads + 1, stream);
+  thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
+                         parent_counts,
+                         parent_counts + num_quads,
+                         parent_offsets.begin() + 1);
 
-  // exclusive scan on the number of child nodes to compute the offsets
-  rmm::device_uvector<uint32_t> parent_offsets(num_quads, stream);
-  thrust::exclusive_scan(
-    rmm::exec_policy(stream)->on(stream), lengths, lengths + num_quads, parent_offsets.begin());
+  parent_offsets.set_element_async(0, 0, stream);
 
-  rmm::device_uvector<uint32_t> child_indices(num_children, stream);
-  thrust::fill(rmm::exec_policy(stream)->on(stream), child_indices.begin(), child_indices.end(), 0);
-  // use the parent_offsets as the map to scatter sequential child_indices
+  auto num_children = parent_offsets.back_element(stream);  // synchronizes stream
+
+  rmm::device_uvector<uint32_t> parent_indices(num_children, stream);
+  // fill with zeroes
+  thrust::fill(
+    rmm::exec_policy(stream)->on(stream), parent_indices.begin(), parent_indices.end(), 0);
+  // use the parent_offsets as the map to scatter sequential parent_indices
   thrust::scatter(rmm::exec_policy(stream)->on(stream),
                   thrust::make_counting_iterator(0),
                   thrust::make_counting_iterator(0) + num_quads,
                   parent_offsets.begin(),
-                  child_indices.begin());
+                  parent_indices.begin());
 
   // inclusive scan with maximum functor to fill the empty elements with their left-most non-empty
-  // elements. `parent_offsets` is now a full array of the sequence index of each quadrant's parent
+  // elements. `parent_indices` is now a full array of the sequence index of each quadrant's parent
   thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
-                         child_indices.begin(),
-                         child_indices.begin() + num_children,
-                         child_indices.begin(),
+                         parent_indices.begin(),
+                         parent_indices.begin() + num_children,
+                         parent_indices.begin(),
                          thrust::maximum<uint32_t>());
 
   // allocate new vectors for the next level
@@ -79,15 +101,15 @@ descend_quadtree(LengthsIter lengths,
   rmm::device_uvector<uint32_t> child_quad_indices(num_children, stream);
   rmm::device_uvector<uint32_t> child_poly_indices(num_children, stream);
 
-  // `child_indices` is a gather map to retrieve non-leaf quads' respective child nodes
+  // `parent_indices` is a gather map to retrieve non-leaf quads' respective child nodes
   thrust::gather(rmm::exec_policy(stream)->on(stream),
-                 child_indices.begin(),
-                 child_indices.begin() + num_children,
+                 parent_indices.begin(),
+                 parent_indices.begin() + num_children,
                  // curr level iterator
-                 make_zip_iterator(quad_types.begin(),
-                                   quad_levels.begin(),
-                                   quad_node_indices.begin(),
-                                   quad_poly_indices.begin()),
+                 make_zip_iterator(parent_types.begin(),
+                                   parent_levels.begin(),
+                                   parent_node_indices.begin(),
+                                   parent_poly_indices.begin()),
                  // next level iterator
                  make_zip_iterator(child_types.begin(),
                                    child_levels.begin(),
@@ -96,8 +118,8 @@ descend_quadtree(LengthsIter lengths,
 
   rmm::device_uvector<uint32_t> relative_child_offsets(num_children, stream);
   thrust::exclusive_scan_by_key(rmm::exec_policy(stream)->on(stream),
-                                child_indices.begin(),
-                                child_indices.begin() + num_children,
+                                parent_indices.begin(),
+                                parent_indices.begin() + num_children,
                                 thrust::constant_iterator<uint32_t>(1),
                                 relative_child_offsets.begin());
 

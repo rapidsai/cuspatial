@@ -14,37 +14,40 @@
  * limitations under the License.
  */
 
-#include <sys/time.h>
-#include <time.h>
+#include <cuspatial/error.hpp>
+#include <cuspatial/point_quadtree.hpp>
 
 #include <cudf/column/column_view.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
-#include <cuspatial/error.hpp>
-#include <cuspatial/point_quadtree.hpp>
-#include <string>
+
 #include <tests/utilities/base_fixture.hpp>
 #include <tests/utilities/column_utilities.hpp>
 #include <tests/utilities/column_wrapper.hpp>
 #include <tests/utilities/table_utilities.hpp>
+#include <tests/utilities/type_lists.hpp>
 
+template <typename T>
 struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
 };
 
-TEST_F(QuadtreeOnPointIndexingTest, test_empty)
+TYPED_TEST_CASE(QuadtreeOnPointIndexingTest, cudf::test::FloatingPointTypes);
+
+TYPED_TEST(QuadtreeOnPointIndexingTest, test_empty)
 {
+  using T = TypeParam;
   using namespace cudf::test;
-  const uint32_t max_depth = 1;
-  uint32_t min_size        = 1;
-  double scale             = 1.0;
+  const int8_t max_depth = 1;
+  uint32_t min_size      = 1;
+  double scale           = 1.0;
   double x_min = 0, x_max = 1, y_min = 0, y_max = 1;
 
-  fixed_width_column_wrapper<double> x({});
-  fixed_width_column_wrapper<double> y({});
+  fixed_width_column_wrapper<T> x({});
+  fixed_width_column_wrapper<T> y({});
 
-  auto pair =
+  auto quadtree_pair =
     cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
-  auto &quadtree = std::get<1>(pair);
+  auto &quadtree = std::get<1>(quadtree_pair);
 
   CUSPATIAL_EXPECTS(
     quadtree->num_columns() == 5,
@@ -54,21 +57,22 @@ TEST_F(QuadtreeOnPointIndexingTest, test_empty)
                     "the resulting quadtree must have a single quadrant");
 }
 
-TEST_F(QuadtreeOnPointIndexingTest, test_single)
+TYPED_TEST(QuadtreeOnPointIndexingTest, test_single)
 {
+  using T = TypeParam;
   using namespace cudf::test;
-  const uint32_t max_depth = 1;
-  uint32_t min_size        = 1;
+  const int8_t max_depth = 1;
+  uint32_t min_size      = 1;
 
   double scale = 1.0;
   double x_min = 0, x_max = 1, y_min = 0, y_max = 1;
 
-  fixed_width_column_wrapper<double> x({0.45});
-  fixed_width_column_wrapper<double> y({0.45});
+  fixed_width_column_wrapper<T> x({0.45});
+  fixed_width_column_wrapper<T> y({0.45});
 
-  auto pair =
+  auto quadtree_pair =
     cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
-  auto &quadtree = std::get<1>(pair);
+  auto &quadtree = std::get<1>(quadtree_pair);
 
   CUSPATIAL_EXPECTS(
     quadtree->num_columns() == 5,
@@ -86,22 +90,23 @@ TEST_F(QuadtreeOnPointIndexingTest, test_single)
                                         fixed_width_column_wrapper<uint32_t>({0})}});
 }
 
-TEST_F(QuadtreeOnPointIndexingTest, test_two)
+TYPED_TEST(QuadtreeOnPointIndexingTest, test_two)
 {
+  using T = TypeParam;
   using namespace cudf::test;
 
-  const uint32_t max_depth = 1;
-  uint32_t min_size        = 1;
+  const int8_t max_depth = 1;
+  uint32_t min_size      = 1;
 
   double scale = 1.0;
   double x_min = 0, x_max = 2, y_min = 0, y_max = 2;
 
-  fixed_width_column_wrapper<double> x({0.45, 1.45});
-  fixed_width_column_wrapper<double> y({0.45, 1.45});
+  fixed_width_column_wrapper<T> x({0.45, 1.45});
+  fixed_width_column_wrapper<T> y({0.45, 1.45});
 
-  auto pair =
+  auto quadtree_pair =
     cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
-  auto &quadtree = std::get<1>(pair);
+  auto &quadtree = std::get<1>(quadtree_pair);
 
   CUSPATIAL_EXPECTS(
     quadtree->num_columns() == 5,
@@ -119,16 +124,17 @@ TEST_F(QuadtreeOnPointIndexingTest, test_two)
                                         fixed_width_column_wrapper<uint32_t>({0, 1})}});
 }
 
-TEST_F(QuadtreeOnPointIndexingTest, test_small)
+TYPED_TEST(QuadtreeOnPointIndexingTest, test_small)
 {
+  using T = TypeParam;
   using namespace cudf::test;
 
-  const uint32_t max_depth = 3;
-  uint32_t min_size        = 12;
-  double scale             = 1.0;
+  const int8_t max_depth = 3;
+  uint32_t min_size      = 12;
+  double scale           = 1.0;
   double x_min = 0, x_max = 8, y_min = 0, y_max = 8;
 
-  fixed_width_column_wrapper<double> x(
+  fixed_width_column_wrapper<T> x(
     {1.9804558865545805,  0.1895259128530169, 1.2591725716781235, 0.8178039499335275,
      0.48171647380517046, 1.3890664414691907, 0.2536015260915061, 3.1907684812039956,
      3.028362149164369,   3.918090468102582,  3.710910700915217,  3.0706987088385853,
@@ -148,7 +154,7 @@ TEST_F(QuadtreeOnPointIndexingTest, test_small)
      3.86008672302403,    1.9143371250907073, 3.7176098065039747, 0.059011873032214,
      3.1162712022943757,  2.4264509160270813, 3.154282922203257});
 
-  fixed_width_column_wrapper<double> y(
+  fixed_width_column_wrapper<T> y(
     {1.3472225743317712,   0.5431061133894604,   0.1448705855995005, 0.8138440641113271,
      1.9022922214961997,   1.5177694304735412,   1.8762161698642947, 0.2621847215928189,
      0.027638405909631958, 0.3338651960183463,   0.9937713340192049, 0.9376313558467103,
@@ -168,9 +174,9 @@ TEST_F(QuadtreeOnPointIndexingTest, test_small)
      7.513564222799629,    6.885401350515916,    6.194330707468438,  5.823535317960799,
      6.789029097334483,    5.188939408363776,    5.788316610960881});
 
-  auto pair =
+  auto quadtree_pair =
     cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
-  auto &quadtree = std::get<1>(pair);
+  auto &quadtree = std::get<1>(quadtree_pair);
 
   CUSPATIAL_EXPECTS(
     quadtree->num_columns() == 5,
@@ -186,12 +192,13 @@ TEST_F(QuadtreeOnPointIndexingTest, test_small)
        fixed_width_column_wrapper<uint32_t>({3, 6, 60, 0, 8, 10, 36, 12, 7, 16, 23, 28, 45, 53})}});
 }
 
-TEST_F(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
+TYPED_TEST(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
 {
+  using T = TypeParam;
   using namespace cudf::test;
 
-  const uint32_t max_depth = 2;
-  uint32_t min_size        = 1;
+  const int8_t max_depth = 2;
+  uint32_t min_size      = 1;
 
   double x_min = -1000.0;
   double x_max = 1000.0;
@@ -199,12 +206,12 @@ TEST_F(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
   double y_max = 1000.0;
   double scale = std::max(x_max - x_min, y_max - y_min) / static_cast<double>((1 << max_depth) + 2);
 
-  fixed_width_column_wrapper<double> x({-100.0, 100.0});
-  fixed_width_column_wrapper<double> y({-100.0, 100.0});
+  fixed_width_column_wrapper<T> x({-100.0, 100.0});
+  fixed_width_column_wrapper<T> y({-100.0, 100.0});
 
-  auto pair =
+  auto quadtree_pair =
     cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
-  auto &quadtree = std::get<1>(pair);
+  auto &quadtree = std::get<1>(quadtree_pair);
 
   CUSPATIAL_EXPECTS(
     quadtree->num_columns() == 5,

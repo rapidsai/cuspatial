@@ -1,5 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+import warnings
+
 from cudf import DataFrame
 
 from cuspatial._lib import spatial_join
@@ -27,7 +29,7 @@ def quad_bbox_join(
     scale
         Scale to apply to each point's distance from ``(x_min, y_min)``
     max_depth
-        Maximum quadtree depth
+        Maximum quadtree depth at which to stop testing for intersections
 
     Returns
     -------
@@ -44,6 +46,20 @@ def quad_bbox_join(
     * Swaps ``min_x`` and ``max_x`` if ``min_x > max_x``
     * Swaps ``min_y`` and ``max_y`` if ``min_y > max_y``
     """
+    x_min, x_max, y_min, y_max = (
+        min(x_min, x_max),
+        max(x_min, x_max),
+        min(y_min, y_max),
+        max(y_min, y_max),
+    )
+
+    min_scale = max(x_max - x_min, y_max - y_min) / ((1 << max_depth) + 2)
+    if scale < min_scale:
+        warnings.warn(
+            "scale {} is less than required minimum ".format(scale)
+            + "scale {}. Clamping to minimum scale".format(min_scale)
+        )
+
     return DataFrame._from_table(
         spatial_join.quad_bbox_join(
             quadtree,
@@ -52,7 +68,7 @@ def quad_bbox_join(
             x_max,
             y_min,
             y_max,
-            scale,
+            max(scale, min_scale),
             max_depth,
         )
     )

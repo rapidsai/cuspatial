@@ -11,6 +11,7 @@ from cuspatial._lib.move cimport move
 
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
+from libc.stdint cimport int8_t
 
 cpdef quad_bbox_join(Table quadtree,
                      Table poly_bounding_boxes,
@@ -19,7 +20,7 @@ cpdef quad_bbox_join(Table quadtree,
                      double y_min,
                      double y_max,
                      double scale,
-                     size_type max_depth):
+                     int8_t max_depth):
     cdef table_view c_quadtree = quadtree.data_view()
     cdef table_view c_poly_bounding_boxes = poly_bounding_boxes.data_view()
     cdef unique_ptr[table] result
