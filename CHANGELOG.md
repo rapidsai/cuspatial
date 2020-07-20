@@ -22,8 +22,9 @@
 - PR #242 Fix benchmark_fixture to use memory resources.
 - PR #248 Fix build by updating type_id usages after upstream breaking changes.
 - PR #252 Fix CI style check failures
+- PR #254 Fix issue with incorrect docker image being used in local build script
 
-# cuSpatial 0.14.0 (Date TBD)
+# cuSpatial 0.14.0 (03 Jun 2020)
 
 ## New Features
 
