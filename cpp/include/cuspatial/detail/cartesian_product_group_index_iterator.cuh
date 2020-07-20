@@ -119,8 +119,8 @@ struct group_lookup_functor {
  * @param num_elements_b  Number of elements from all groups in B
  * @param num_groups_a    Number of groups in A
  * @param num_groups_b    Number of groups in B
- * @param group_offsets_a Iterator for the offset of the start of each group in A
- * @param group_offsets_b Iterator for the offset of the start of each group in B
+ * @param group_offsets_a Iterator for the starting offset of each group in A
+ * @param group_offsets_b Iterator for the starting offset of each group in B
  * @return auto           Thrust iterator of `cartesian_product_group_index`s. device-only.
  *
  * @note Can be used in conjunction with `make_transform_iterator` to create a single kernel which
