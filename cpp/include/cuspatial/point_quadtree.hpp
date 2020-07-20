@@ -46,13 +46,20 @@ namespace cuspatial {
  * @param min_size Minimum number of points for a non-leaf quadtree node.
  * @param mr The optional resource to use for output device memory allocations.
  *
+ * @throw cuspatial::logic_error If the x and y column sizes are different
+ * @throw cuspatial::logic_error If scale is less than or equal to 0
+ * @throw cuspatial::logic_error If min_size is less than or equal to 0
+ * @throw cuspatial::logic_error If x_min is greater than x_max
+ * @throw cuspatial::logic_error If y_min is greater than y_max
+ * @throw cuspatial::logic_error If max_depth is less than 0 or greater than 15
+ *
  * @return Pair of INT32 column of sorted keys to point indices, and cudf table with five
  * columns for a complete quadtree:
  *     key - UINT32 column of quad node keys
  *   level - UINT8 column of quadtree levels
- * is_node - BOOL8 column indicating whether the node is a leaf or not
- *  length - UINT32 column for the number of child nodes (if is_node), or number of points
- *  offset - UINT32 column for the first child position (if is_node), or first point position
+ * is_quad - BOOL8 column indicating whether the node is a quad (true) or leaf (false)
+ *  length - UINT32 column for the number of child nodes (if is_quad), or number of points
+ *  offset - UINT32 column for the first child position (if is_quad), or first point position
  */
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_on_points(
   cudf::column_view const& x,
@@ -62,7 +69,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   double y_min,
   double y_max,
   double scale,
-  cudf::size_type max_depth,
+  int8_t max_depth,
   cudf::size_type min_size,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 

@@ -15,12 +15,13 @@ from cuspatial._lib.move cimport move
 
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
+from libc.stdint cimport int8_t
 
 cpdef quadtree_on_points(Column x, Column y,
                          double x_min, double x_max,
                          double y_min, double y_max,
                          double scale,
-                         size_type max_depth,
+                         int8_t max_depth,
                          size_type min_size):
     cdef column_view c_x = x.view()
     cdef column_view c_y = y.view()
