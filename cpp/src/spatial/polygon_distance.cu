@@ -22,6 +22,7 @@
 #include <cudf/types.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
+#include <__clang_cuda_device_functions.h>
 #include <thrust/iterator/discard_iterator.h>
 
 #include <limits>
@@ -38,7 +39,9 @@ namespace {
  *
  * Given a `cartesian_product_group_index` and two columns representing `x` and `y` coordinates,
  * calculates the segment-point distance of a line segment in group `a` and a point in group `b`.
- * When group `a` contains only a single point, point-to-point distance is calculated.
+ *
+ * If group `a` contains two or more points, calculate segment-point distance.
+ * If group `a` contains only a single point, calculate point-point distance.
  */
 template <typename T>
 struct segment_point_distance_calculator {
@@ -59,15 +62,20 @@ struct segment_point_distance_calculator {
     auto const point_y  = ys.element<T>(b_idx_0) - origin_y;
 
     auto const edge_length = hypot(edge_x, edge_y);
+    // auto const edge_length_reciprocal = rhypot(edge_x, edge_y);
 
-    auto const tangent_x = edge_x / edge_length;
-    auto const tangent_y = edge_y / edge_length;
+    auto const tangent_x = edge_x / edge_length;  // edge_length_reciprocal
+    auto const tangent_y = edge_y / edge_length;  // edge_length_reciprocal
     auto const normal_x  = -tangent_y;
     auto const normal_y  = +tangent_x;
 
+    // orthogonally project point on to line.
     auto const travel = point_x * tangent_x + point_y * tangent_y;
 
-    if (0 < travel && travel < edge_length) {
+    // if point is projected within line segment bounds, use segment-point distance.
+    // if point is projected outside line segment bounds, use point-point distance.
+    auto const within_bounds = travel * (edge_length - travel) > 0;  // 0 < travel < edge_length
+    if (within_bounds) {
       return abs(point_x * normal_x + point_y * normal_y);
     } else {
       return hypot(point_x, point_y);
@@ -101,19 +109,19 @@ struct directed_polygon_distance_functor {
 
     // ===== Make Separation and Key Iterators =====================================================
 
-    auto gcp_iter = make_cartesian_product_group_index_iterator(
+    auto cartesian_iter = make_cartesian_product_group_index_iterator(
       num_points, num_spaces, space_offsets.begin<cudf::size_type>());
 
-    auto gpc_key_iter =
-      thrust::make_transform_iterator(gcp_iter, [] __device__(cartesian_product_group_index idx) {
+    auto cartesian_key_iter = thrust::make_transform_iterator(
+      cartesian_iter, [] __device__(cartesian_product_group_index idx) {
         return thrust::make_pair(idx.group_a.idx, idx.group_b.idx);
       });
 
     auto d_xs = cudf::column_device_view::create(xs);
     auto d_ys = cudf::column_device_view::create(ys);
 
-    auto separation_iter =
-      thrust::make_transform_iterator(gcp_iter, segment_point_distance_calculator<T>{*d_xs, *d_ys});
+    auto separation_iter = thrust::make_transform_iterator(
+      cartesian_iter, segment_point_distance_calculator<T>{*d_xs, *d_ys});
 
     // ===== Materialize ===========================================================================
 
@@ -126,8 +134,8 @@ struct directed_polygon_distance_functor {
     auto num_cartesian = num_points * num_points;
 
     thrust::reduce_by_key(rmm::exec_policy(stream)->on(stream),
-                          gpc_key_iter,
-                          gpc_key_iter + num_cartesian,
+                          cartesian_key_iter,
+                          cartesian_key_iter + num_cartesian,
                           separation_iter,
                           thrust::make_discard_iterator(),
                           result->mutable_view().begin<T>(),

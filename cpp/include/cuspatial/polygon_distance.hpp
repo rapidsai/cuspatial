@@ -22,10 +22,19 @@
 
 namespace cuspatial {
 
+/**
+ * @brief
+ *
+ * @param xs
+ * @param ys
+ * @param shape_offsets
+ * @param mr
+ * @return std::unique_ptr<cudf::column>
+ */
 std::unique_ptr<cudf::column> directed_polygon_distance(
   cudf::column_view const& xs,
   cudf::column_view const& ys,
-  cudf::column_view const& space_offsets,
+  cudf::column_view const& shape_offsets,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
-}
+}  // namespace cuspatial
