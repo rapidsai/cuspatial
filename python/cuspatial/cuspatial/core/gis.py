@@ -98,7 +98,30 @@ def directed_hausdorff_distance(xs, ys, offsets):
     return DataFrame.from_gpu_matrix(result)
 
 
-def directed_polygon_separation(xs, ys, offsets):
+def directed_polygon_point_distance(xs, ys, offsets):
+    """Compute the directed polygon-point distances between all pairs of
+    polygons.
+
+    Parameters
+    ----------
+    xs
+        column of x-coordinates
+    ys
+        column of y-coordinates
+    offsets
+        number of points in each space
+
+    Returns
+    -------
+    result : cudf.DataFrame
+        The pairwise directed distance matrix with one row and one column per input
+        polygon; the value at row `i`, column `j` represents the polygon-point distance
+        from polygon i to any vertex in polygon j.
+
+    Examples
+    --------
+    ... TODO ...
+    """
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     offsets = as_column(offsets, dtype="int32")
     result = cpp_directed_polygon_separation(xs, ys, offsets)
