@@ -22,11 +22,10 @@
 #include <cudf/types.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
-#include <limits>
+#include <thrust/iterator/discard_iterator.h>
 
+#include <limits>
 #include <memory>
-#include "thrust/functional.h"
-#include "thrust/iterator/discard_iterator.h"
 
 using size_type = cudf::size_type;
 
@@ -34,8 +33,15 @@ namespace cuspatial {
 namespace detail {
 namespace {
 
+/**
+ * @brief Calculates segment-point distance
+ *
+ * Given a `cartesian_product_group_index` and two columns representing `x` and `y` coordinates,
+ * calculates the segment-point distance of a line segment in group `a` and a point in group `b`.
+ * When group `a` contains only a single point, point-to-point distance is calculated.
+ */
 template <typename T>
-struct directed_polygon_separation_calculator {
+struct segment_point_distance_calculator {
   cudf::column_device_view xs;
   cudf::column_device_view ys;
 
@@ -59,12 +65,13 @@ struct directed_polygon_separation_calculator {
     auto const normal_x  = -tangent_y;
     auto const normal_y  = +tangent_x;
 
-    auto const point_dot_tangent = point_x * tangent_x + point_y * tangent_y;
+    auto const travel = point_x * tangent_x + point_y * tangent_y;
 
-    if (point_dot_tangent < 0) { return hypot(point_x, point_y); }
-    if (point_dot_tangent <= edge_length) { return abs(point_x * normal_x + point_y * normal_y); }
-
-    return std::numeric_limits<double>::infinity();  // will be calculated on next iteration
+    if (0 < travel && travel < edge_length) {
+      return abs(point_x * normal_x + point_y * normal_y);
+    } else {
+      return hypot(point_x, point_y);
+    }
   }
 };
 
@@ -105,8 +112,8 @@ struct directed_polygon_separation_functor {
     auto d_xs = cudf::column_device_view::create(xs);
     auto d_ys = cudf::column_device_view::create(ys);
 
-    auto separation_iter = thrust::make_transform_iterator(
-      gcp_iter, directed_polygon_separation_calculator<T>{*d_xs, *d_ys});
+    auto separation_iter =
+      thrust::make_transform_iterator(gcp_iter, segment_point_distance_calculator<T>{*d_xs, *d_ys});
 
     // ===== Materialize ===========================================================================
 

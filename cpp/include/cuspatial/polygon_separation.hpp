@@ -24,7 +24,7 @@ namespace cuspatial {
 std::unique_ptr<cudf::column> directed_polygon_separation(
   cudf::column_view const& xs,
   cudf::column_view const& ys,
-  cudf::column_view const& points_per_space,
+  cudf::column_view const& space_offsets,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }
