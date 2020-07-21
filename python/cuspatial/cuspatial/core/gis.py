@@ -120,18 +120,48 @@ def directed_polygon_distance(xs, ys, offsets):
 
     Examples
     --------
-    ... TODO ...
+    >>> # all pairs directed polygon distance between:
+    >>> #  A: solo point
+    >>> #  B: line segment
+    >>> #  C: triangle
+    >>> #  D: four-point polygon
+    >>> distances = cuspatial.directed_polygon_distance(
+    ...     [4, 2, 5, 1, 2, 4, 0, 1, 5, 6], # x coordinates
+    ...     [3, 1, 2, 2, 4, 5, 1, 5, 6, 0], # y coordinates
+    ...     [0, 1, 3, 6]                    # shape/polygon offsets
+    ... )
+    >>> print(distances)
+            0         1         2         3
+    0  0.000000  1.264911  1.414214  1.479591
+    1  1.414214  0.000000  1.414214  0.328798
+    2  2.000000  1.414214  0.000000  0.727607
+    3  3.162278  2.000000  1.414214  0.000000
+    >>> # minimum distance from A to any point in D
+    >>> distances[0][3]
+    3.1622776601683795
+    >>> # minimum distance from B to any point in D
+    >>> distances[1][3]
+    2.0
+    >>> # minimum distance from any edge in D to any point in C
+    >>> distances[3][2]
+    0.7276068751089989
+    >>> # minimum distance from any edge in C to any point in D
+    >>> distances[2][3]
+    1.4142135623730951
+    >>> # Euclidean distance from C to D, disregarding intersection and containment
+    >>> min(distances[2][3], distances[3][2])
+    0.7276068751089989
     """
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     offsets = as_column(offsets, dtype="int32")
-    result = cpp_directed_polygon_distance(xs, ys, offsets)
-    if result.size == 0:
+    results = cpp_directed_polygon_distance(xs, ys, offsets)
+    if results.size == 0:
         return DataFrame()
 
     dimensions = len(offsets)
     splits = [dimensions * i for i in range(dimensions)][1:]
-    result = column_split(result, splits)
-    return DataFrame(result, dtype=xs.dtype)
+    results = column_split(results, splits)
+    return DataFrame(dict(enumerate(results)), dtype=xs.dtype)
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):

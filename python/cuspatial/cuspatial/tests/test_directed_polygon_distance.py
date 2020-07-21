@@ -84,16 +84,20 @@ def test_two_triangles_point_to_point():
     assert_eq(expected, actual)
 
 
-def test_concave():
-    actual = _test_polygon_distance_from_list_of_spaces(
-        [
-            [(-1, 3), (1, 3), (0, 0)],
-            [(-2, 1), (0, -2), (2, 1), (1, -3), (-1, -3)],
-        ]
+def test_simultaneously_point_edge_triangle_quad():
+    actual = cuspatial.directed_polygon_distance(
+        [4, 2, 5, 1, 2, 4, 0, 1, 5, 6],
+        [3, 1, 2, 2, 4, 5, 1, 5, 6, 0],
+        [0, 1, 3, 6],
     )
 
     expected = cudf.DataFrame(
-        {0: [0.000000, 1.109400392450458], 1: [1.5811388300841895, 0.0]}
+        {
+            0: [0.000000, 1.414214, 2.000000, 3.162278],
+            1: [1.264911, 0.000000, 1.414214, 2.000000],
+            2: [1.414214, 1.414214, 0.000000, 1.414214],
+            3: [1.479591, 0.328798, 0.727607, 0.000000],
+        }
     )
 
     assert_eq(expected, actual)
