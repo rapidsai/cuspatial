@@ -2,6 +2,7 @@
 
 from cudf import DataFrame
 from cudf.core.column import as_column
+from cudf._lib.copying import column_split
 
 from cuspatial._lib.hausdorff import (
     directed_hausdorff_distance as cpp_directed_hausdorff_distance,
@@ -19,11 +20,14 @@ from cuspatial._lib.spatial import (
     haversine_distance as cpp_haversine_distance,
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
 )
+from cuspatial._lib.polygon_separation import (
+    directed_polygon_separation as cpp_directed_polygon_separation,
+)
 from cuspatial.utils import gis_utils
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
-def directed_hausdorff_distance(xs, ys, points_per_space):
+def directed_hausdorff_distance(xs, ys, offsets):
     """Compute the directed Hausdorff distances between all pairs of
     spaces.
 
@@ -33,7 +37,7 @@ def directed_hausdorff_distance(xs, ys, points_per_space):
         column of x-coordinates
     ys
         column of y-coordinates
-    points_per_space
+    offsets
         number of points in each space
 
     Returns
@@ -74,7 +78,7 @@ def directed_hausdorff_distance(xs, ys, points_per_space):
     >>> result = cuspatial.directed_hausdorff_distance(
             [0, 1, 0, 0], # xs
             [0, 0, 1, 2], # ys
-            [2,    2],    # points_per_space
+            [0,    2],    # offsets
         )
     >>> print(result)
              0         1
@@ -82,16 +86,29 @@ def directed_hausdorff_distance(xs, ys, points_per_space):
         1  2.0  0.000000
     """
 
-    num_spaces = len(points_per_space)
+    num_spaces = len(offsets)
     if num_spaces == 0:
         return DataFrame()
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     result = cpp_directed_hausdorff_distance(
-        xs, ys, as_column(points_per_space, dtype="int32"),
+        xs, ys, as_column(offsets, dtype="int32"),
     )
     result = result.data_array_view
     result = result.reshape(num_spaces, num_spaces)
     return DataFrame.from_gpu_matrix(result)
+
+
+def directed_polygon_separation(xs, ys, offsets):
+    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    offsets = as_column(offsets, dtype="int32")
+    result = cpp_directed_polygon_separation(xs, ys, offsets)
+    if result.size == 0:
+        return DataFrame()
+
+    dimensions = len(offsets)
+    splits = [dimensions * i for i in range(dimensions)][1:]
+    result = column_split(result, splits)
+    return DataFrame(result, dtype=xs.dtype)
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):

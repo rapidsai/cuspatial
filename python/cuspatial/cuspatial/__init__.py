@@ -1,6 +1,7 @@
 from .core import interpolate
 from .core.gis import (
     directed_hausdorff_distance,
+    directed_polygon_separation,
     haversine_distance,
     lonlat_to_cartesian,
     point_in_polygon,
