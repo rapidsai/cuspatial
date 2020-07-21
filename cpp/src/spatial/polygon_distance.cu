@@ -60,22 +60,13 @@ struct segment_point_distance_calculator {
     auto const point_x  = xs.element<T>(b_idx_0) - origin_x;
     auto const point_y  = ys.element<T>(b_idx_0) - origin_y;
 
-    auto const edge_length            = hypot(edge_x, edge_y);
-    auto const edge_length_reciprocal = rhypot(edge_x, edge_y);
-
-    auto const tangent_x = edge_x * edge_length_reciprocal;
-    auto const tangent_y = edge_y * edge_length_reciprocal;
-    auto const normal_x  = -tangent_y;
-    auto const normal_y  = +tangent_x;
-
-    // orthogonally project point on to line.
-    auto const travel = point_x * tangent_x + point_y * tangent_y;
+    auto const magnitude = edge_x * edge_x + edge_y * edge_y;
+    auto const travel    = point_x * edge_x + point_y * edge_y;
 
     // if point is projected within line segment bounds, use segment-point distance.
     // if point is projected outside line segment bounds, use point-point distance.
-    auto const within_bounds = travel * (edge_length - travel) > 0;  // 0 < travel < edge_length
-    if (within_bounds) {
-      return abs(point_x * normal_x + point_y * normal_y);
+    if (0 < travel && travel < magnitude) {  // 0 < travel < edge_length
+      return abs(point_y * edge_x - point_x * edge_y) * rhypot(edge_x, edge_y);
     } else {
       return hypot(point_x, point_y);
     }
