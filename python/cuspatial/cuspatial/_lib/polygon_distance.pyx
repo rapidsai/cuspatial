@@ -3,11 +3,11 @@
 from cudf._lib.column cimport column, column_view, Column
 from cudf._lib.move cimport move, unique_ptr
 
-from cuspatial._lib.cpp.polygon_separation \
-    cimport directed_polygon_separation as cpp_directed_polygon_separation
+from cuspatial._lib.cpp.polygon_distance \
+    cimport directed_polygon_distance as cpp_directed_polygon_distance
 
 
-def directed_polygon_separation(
+def directed_polygon_distance(
     Column xs,
     Column ys,
     Column space_offsets
@@ -20,7 +20,7 @@ def directed_polygon_separation(
 
     with nogil:
         result = move(
-            cpp_directed_polygon_separation(
+            cpp_directed_polygon_distance(
                 c_xs,
                 c_ys,
                 c_space_offsets

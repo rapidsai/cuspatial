@@ -21,7 +21,7 @@
 
 namespace cuspatial {
 
-std::unique_ptr<cudf::column> directed_polygon_separation(
+std::unique_ptr<cudf::column> directed_polygon_distance(
   cudf::column_view const& xs,
   cudf::column_view const& ys,
   cudf::column_view const& space_offsets,

@@ -311,7 +311,7 @@ add_library(cuspatial SHARED
             src/join/quadtree_poly_filtering.cu
             src/spatial/polygon_bounding_box.cu
             src/spatial/polyline_bounding_box.cu
-            src/spatial/polygon_separation.cu
+            src/spatial/polygon_distance.cu
             src/spatial/point_in_polygon.cu
             src/spatial_window/spatial_window.cu
             src/spatial/haversine.cu

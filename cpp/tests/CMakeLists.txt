@@ -108,7 +108,7 @@ set(HAUSDORFF_TEST_SRC
 ConfigureTest(HAUSDORFF_TEST "${HAUSDORFF_TEST_SRC}")
 
 set(POLYGON_SEPARATION_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/polygon_separation_test.cpp")
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/polygon_distance_test.cpp")
 ConfigureTest(POLYGON_SEPARATION_TEST "${POLYGON_SEPARATION_TEST_SRC}")
 
 set(POINT_IN_POLYGON_TEST_SRC

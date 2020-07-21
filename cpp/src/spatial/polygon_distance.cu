@@ -75,7 +75,7 @@ struct segment_point_distance_calculator {
   }
 };
 
-struct directed_polygon_separation_functor {
+struct directed_polygon_distance_functor {
   template <typename T, typename... Args>
   std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
     Args&&...)
@@ -141,10 +141,10 @@ struct directed_polygon_separation_functor {
 }  // namespace
 }  // namespace detail
 
-std::unique_ptr<cudf::column> directed_polygon_separation(cudf::column_view const& xs,
-                                                          cudf::column_view const& ys,
-                                                          cudf::column_view const& points_per_space,
-                                                          rmm::mr::device_memory_resource* mr)
+std::unique_ptr<cudf::column> directed_polygon_distance(cudf::column_view const& xs,
+                                                        cudf::column_view const& ys,
+                                                        cudf::column_view const& points_per_space,
+                                                        rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(xs.type() == ys.type(), "Inputs `xs` and `ys` must have same type.");
   CUSPATIAL_EXPECTS(xs.size() == ys.size(), "Inputs `xs` and `ys` must have same length.");
@@ -158,7 +158,7 @@ std::unique_ptr<cudf::column> directed_polygon_separation(cudf::column_view cons
   cudaStream_t stream = 0;
 
   return cudf::type_dispatcher(
-    xs.type(), detail::directed_polygon_separation_functor(), xs, ys, points_per_space, mr, stream);
+    xs.type(), detail::directed_polygon_distance_functor(), xs, ys, points_per_space, mr, stream);
 }
 
 }  // namespace cuspatial

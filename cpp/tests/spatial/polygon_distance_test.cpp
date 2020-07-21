@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-#include <vector>
-
 #include <cuspatial/error.hpp>
 #include <cuspatial/hausdorff.hpp>
-#include <cuspatial/polygon_separation.hpp>
+#include <cuspatial/polygon_distance.hpp>
 
 #include <tests/utilities/base_fixture.hpp>
 #include <tests/utilities/column_utilities.hpp>
 #include <tests/utilities/column_wrapper.hpp>
 #include <tests/utilities/cudf_gtest.hpp>
 #include <tests/utilities/type_lists.hpp>
-#include "build/cuda-10.2/regex-parallel/release/googletest/install/include/gtest/gtest.h"
-#include "gtest/gtest.h"
 
 #include <thrust/iterator/constant_iterator.h>
+
+#include <gtest/gtest.h>
+
+#include <vector>
 
 using namespace cudf;
 using namespace test;
@@ -52,7 +52,7 @@ TYPED_TEST(DirectedPolygonSeparationTest, ZeroShapes)
 
   auto expected = cudf::test::fixed_width_column_wrapper<T>({});
 
-  auto actual = cuspatial::directed_polygon_separation(x, y, space_offsets);
+  auto actual = cuspatial::directed_polygon_distance(x, y, space_offsets);
 
   expect_columns_equivalent(expected, actual->view(), true);
 }
@@ -67,7 +67,7 @@ TYPED_TEST(DirectedPolygonSeparationTest, TwoShapesEdgeToPoint)
 
   auto expected = cudf::test::fixed_width_column_wrapper<T>({0.0, 1.4142135623730951, 1.0, 0.0});
 
-  auto actual = cuspatial::directed_polygon_separation(x, y, space_offsets);
+  auto actual = cuspatial::directed_polygon_distance(x, y, space_offsets);
 
   expect_columns_equivalent(expected, actual->view(), true);
 }
@@ -82,7 +82,7 @@ TYPED_TEST(DirectedPolygonSeparationTest, OneShapeSinglePoint)
 
   auto expected = cudf::test::fixed_width_column_wrapper<T>({0.0});
 
-  auto actual = cuspatial::directed_polygon_separation(x, y, space_offsets);
+  auto actual = cuspatial::directed_polygon_distance(x, y, space_offsets);
 
   expect_columns_equivalent(expected, actual->view(), true);
 }
@@ -98,7 +98,7 @@ TYPED_TEST(DirectedPolygonSeparationTest, TwoShapesPointToPoint)
   auto expected =
     cudf::test::fixed_width_column_wrapper<T>({0.0, 2.8284271247461903, 2.8284271247461903, 0.0});
 
-  auto actual = cuspatial::directed_polygon_separation(x, y, space_offsets);
+  auto actual = cuspatial::directed_polygon_distance(x, y, space_offsets);
 
   expect_columns_equivalent(expected, actual->view(), true);
 }
@@ -113,7 +113,7 @@ TYPED_TEST(DirectedPolygonSeparationTest, EdgesOnly)
 
   auto expected = cudf::test::fixed_width_column_wrapper<T>({0.0, 0.0, 0.0, 0.0});
 
-  auto actual = cuspatial::directed_polygon_separation(x, y, space_offsets);
+  auto actual = cuspatial::directed_polygon_distance(x, y, space_offsets);
 
   expect_columns_equivalent(expected, actual->view(), true);
 }
@@ -128,7 +128,7 @@ TYPED_TEST(DirectedPolygonSeparationTest, ZeroLengthEdge)
 
   auto expected = cudf::test::fixed_width_column_wrapper<T>({0});
 
-  auto actual = cuspatial::directed_polygon_separation(x, y, space_offsets);
+  auto actual = cuspatial::directed_polygon_distance(x, y, space_offsets);
 
   expect_columns_equal(expected, actual->view(), true);
 }
@@ -139,7 +139,7 @@ TYPED_TEST(DirectedPolygonSeparationTest, MismatchedTypeTest)
   auto y             = cudf::test::fixed_width_column_wrapper<float>({0, 0});
   auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0});
 
-  EXPECT_THROW(cuspatial::directed_polygon_separation(x, y, space_offsets), cuspatial::logic_error);
+  EXPECT_THROW(cuspatial::directed_polygon_distance(x, y, space_offsets), cuspatial::logic_error);
 }
 
 template <typename T>
@@ -156,5 +156,5 @@ TYPED_TEST(DirectedPolygonSeparationUnsupportedTypesTest, InvalidTypeTest)
   auto y             = cudf::test::fixed_width_column_wrapper<T>({0, 0});
   auto space_offsets = cudf::test::fixed_width_column_wrapper<cudf::size_type>({0});
 
-  EXPECT_THROW(cuspatial::directed_polygon_separation(x, y, space_offsets), cuspatial::logic_error);
+  EXPECT_THROW(cuspatial::directed_polygon_distance(x, y, space_offsets), cuspatial::logic_error);
 }
