@@ -22,7 +22,6 @@
 #include <cudf/types.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
-#include <__clang_cuda_device_functions.h>
 #include <thrust/iterator/discard_iterator.h>
 
 #include <limits>
@@ -61,11 +60,11 @@ struct segment_point_distance_calculator {
     auto const point_x  = xs.element<T>(b_idx_0) - origin_x;
     auto const point_y  = ys.element<T>(b_idx_0) - origin_y;
 
-    auto const edge_length = hypot(edge_x, edge_y);
-    // auto const edge_length_reciprocal = rhypot(edge_x, edge_y);
+    auto const edge_length            = hypot(edge_x, edge_y);
+    auto const edge_length_reciprocal = rhypot(edge_x, edge_y);
 
-    auto const tangent_x = edge_x / edge_length;  // edge_length_reciprocal
-    auto const tangent_y = edge_y / edge_length;  // edge_length_reciprocal
+    auto const tangent_x = edge_x * edge_length_reciprocal;
+    auto const tangent_y = edge_y * edge_length_reciprocal;
     auto const normal_x  = -tangent_y;
     auto const normal_y  = +tangent_x;
 
