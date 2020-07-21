@@ -148,7 +148,7 @@ def directed_polygon_distance(xs, ys, offsets):
     >>> # minimum distance from any edge in C to any point in D
     >>> distances[2][3]
     1.4142135623730951
-    >>> # Euclidean distance from C to D, disregarding intersection and containment
+    >>> # Euclidean distance from C to D, disregarding intersections
     >>> min(distances[2][3], distances[3][2])
     0.7276068751089989
     """
