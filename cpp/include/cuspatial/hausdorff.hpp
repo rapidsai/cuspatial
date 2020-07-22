@@ -71,18 +71,19 @@ namespace cuspatial {
  *
  * @param[in] xs: x component of points
  * @param[in] ys: y component of points
- * @param[in] points_per_space: number of points in each space
+ * @param[in] offsets: number of points in each space
+ * @param[in] mr: Device memory resource used to allocate the returned memory
  *
  * @returns Hausdorff distances for each pair of spaces
  *
- * @throw cudf::cuda_error if `points_per_space` contains negative values
+ * @throw cudf::cuda_error if `offsets` contains negative values
  *
  * @note Hausdorff distances are asymmetrical
  */
 std::unique_ptr<cudf::column> directed_hausdorff_distance(
   cudf::column_view const& xs,
   cudf::column_view const& ys,
-  cudf::column_view const& points_per_space,
+  cudf::column_view const& offsets,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial

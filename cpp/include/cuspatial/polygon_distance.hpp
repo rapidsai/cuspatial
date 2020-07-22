@@ -23,18 +23,23 @@
 namespace cuspatial {
 
 /**
- * @brief
+ * @brief calculates minimum segment-point distance between all shapes
  *
- * @param xs
- * @param ys
- * @param shape_offsets
- * @param mr
+ * Element `i + j*n` is the minimum distance from any segment in shape i to any point in shape j.
+ * The minimum of value of elements `[i + j*n]` and `j + i*n` is equal to the euclidian distance
+ * between points i and j.
+ *
+ *
+ * @param[in] xs: x component of points
+ * @param[in] ys: y component of points
+ * @param[in] offsets: number of points in each space
+ * @param[in] mr: Device memory resource used to allocate the returned memory
  * @return std::unique_ptr<cudf::column>
  */
 std::unique_ptr<cudf::column> directed_polygon_distance(
   cudf::column_view const& xs,
   cudf::column_view const& ys,
-  cudf::column_view const& shape_offsets,
+  cudf::column_view const& offsets,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 }  // namespace cuspatial

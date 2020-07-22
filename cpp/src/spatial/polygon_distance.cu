@@ -141,22 +141,21 @@ struct directed_polygon_distance_functor {
 
 std::unique_ptr<cudf::column> directed_polygon_distance(cudf::column_view const& xs,
                                                         cudf::column_view const& ys,
-                                                        cudf::column_view const& points_per_space,
+                                                        cudf::column_view const& offsets,
                                                         rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(xs.type() == ys.type(), "Inputs `xs` and `ys` must have same type.");
   CUSPATIAL_EXPECTS(xs.size() == ys.size(), "Inputs `xs` and `ys` must have same length.");
 
-  CUSPATIAL_EXPECTS(not xs.has_nulls() and not ys.has_nulls() and not points_per_space.has_nulls(),
+  CUSPATIAL_EXPECTS(not xs.has_nulls() and not ys.has_nulls() and not offsets.has_nulls(),
                     "Inputs must not have nulls.");
 
-  CUSPATIAL_EXPECTS(xs.size() >= points_per_space.size(),
-                    "At least one point is required for each space");
+  CUSPATIAL_EXPECTS(xs.size() >= offsets.size(), "At least one point is required for each space");
 
   cudaStream_t stream = 0;
 
   return cudf::type_dispatcher(
-    xs.type(), detail::directed_polygon_distance_functor(), xs, ys, points_per_space, mr, stream);
+    xs.type(), detail::directed_polygon_distance_functor(), xs, ys, offsets, mr, stream);
 }
 
 }  // namespace cuspatial
