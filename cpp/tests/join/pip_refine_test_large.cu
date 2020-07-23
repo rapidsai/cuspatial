@@ -26,6 +26,7 @@
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
 
+#include <rmm/thrust_rmm_allocator.h>
 #include <rmm/device_uvector.hpp>
 
 #include <tests/utilities/base_fixture.hpp>
@@ -33,7 +34,6 @@
 #include <tests/utilities/column_wrapper.hpp>
 #include <tests/utilities/table_utilities.hpp>
 #include <tests/utilities/type_lists.hpp>
-#include "rmm/thrust_rmm_allocator.h"
 
 #include <thrust/iterator/constant_iterator.h>
 
@@ -97,8 +97,8 @@ inline auto make_polygons_geometry(thrust::host_vector<uint32_t> const &poly_off
 
 template <typename T>
 auto geometry_to_poly_and_point_indices(std::vector<OGRGeometry *> const &polygons,
-                                        std::vector<T> const &x,
-                                        std::vector<T> const &y)
+                                        thrust::host_vector<T> const &x,
+                                        thrust::host_vector<T> const &y)
 {
   std::vector<uint32_t> poly_indices{};
   std::vector<uint32_t> point_lengths{};
@@ -232,7 +232,10 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
                                        cudf::test::to_host<T>(poly_x).first,
                                        cudf::test::to_host<T>(poly_y).first);
 
-  auto host_poly_and_point_indices = geometry_to_poly_and_point_indices(h_poly, h_x, h_y);
+  auto host_poly_and_point_indices =
+    geometry_to_poly_and_point_indices(h_poly,
+                                       cudf::test::to_host<T>(points->get_column(0)).first,
+                                       cudf::test::to_host<T>(points->get_column(1)).first);
 
   auto &expected_poly_indices  = std::get<0>(host_poly_and_point_indices);
   auto &expected_point_indices = std::get<1>(host_poly_and_point_indices);
@@ -268,6 +271,8 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
 
   actual_point_indices.resize(num_search_points, 0);
   actual_point_lengths.resize(num_search_points, 0);
+  actual_point_indices.shrink_to_fit(0);
+  actual_point_lengths.shrink_to_fit(0);
 
   cudf::test::expect_columns_equal(fixed_width_column_wrapper<uint32_t>(
                                      expected_poly_indices.begin(), expected_poly_indices.end()),
