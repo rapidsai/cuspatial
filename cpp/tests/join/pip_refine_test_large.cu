@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <cuspatial/error.hpp>
 #include <cuspatial/point_quadtree.hpp>
 #include <cuspatial/polygon_bounding_box.hpp>
@@ -54,7 +55,7 @@ struct PIPRefineTestLarge : public cudf::test::BaseFixture {
 TYPED_TEST_CASE(PIPRefineTestLarge, cudf::test::FloatingPointTypes);
 
 template <typename T>
-auto generate_points(std::vector<std::vector<T>> const &quads, uint32_t points_per_quad)
+inline auto generate_points(std::vector<std::vector<T>> const &quads, uint32_t points_per_quad)
 {
   std::vector<T> point_x(quads.size() * points_per_quad);
   std::vector<T> point_y(quads.size() * points_per_quad);
@@ -68,26 +69,26 @@ auto generate_points(std::vector<std::vector<T>> const &quads, uint32_t points_p
       return dist_y.generate();
     });
   }
-  return std::make_pair(point_x, point_y);
+  return std::make_pair(std::move(point_x), std::move(point_y));
 }
 
 template <typename T>
-auto make_polygons_geometry(thrust::host_vector<int32_t> const &poly_offsets,
-                            thrust::host_vector<int32_t> const &ring_offsets,
-                            thrust::host_vector<T> const &poly_x,
-                            thrust::host_vector<T> const &poly_y)
+inline auto make_polygons_geometry(thrust::host_vector<uint32_t> const &poly_offsets,
+                                   thrust::host_vector<uint32_t> const &ring_offsets,
+                                   thrust::host_vector<T> const &poly_x,
+                                   thrust::host_vector<T> const &poly_y)
 {
-  std::vector<OGRGeometry *> polygons(poly_offsets.size());
+  std::vector<OGRGeometry *> polygons{};
   for (uint32_t poly_idx = 0, poly_end = poly_offsets.size(); poly_idx < poly_end; ++poly_idx) {
-    auto ring_idx = static_cast<size_t>(poly_offsets[poly_idx]);
-    auto ring_end = poly_idx < poly_end - 1 ? poly_offsets[poly_idx + 1] : ring_offsets.size();
+    auto ring_idx = static_cast<size_t>(poly_idx == 0 ? 0 : poly_offsets[poly_idx - 1]);
+    auto ring_end = static_cast<size_t>(poly_offsets[poly_idx]);
     auto polygon  = static_cast<OGRPolygon *>(OGRGeometryFactory::createGeometry(wkbPolygon));
     for (; ring_idx < ring_end; ++ring_idx) {
-      auto seg_idx = static_cast<size_t>(ring_offsets[ring_idx]);
-      auto seg_end = ring_idx < ring_end - 1 ? ring_offsets[ring_idx + 1] : poly_x.size();
-      auto seg = static_cast<OGRLineString *>(OGRGeometryFactory::createGeometry(wkbLinearRing));
-      for (; seg_idx < seg_end; ++seg_idx) { seg->addPoint(poly_x[seg_idx], poly_y[seg_idx]); }
-      polygon->addRing(seg);
+      auto seg_idx = static_cast<size_t>(ring_idx == 0 ? 0 : ring_offsets[ring_idx - 1]);
+      auto seg_end = static_cast<size_t>(ring_offsets[ring_idx]);
+      auto ring = static_cast<OGRLineString *>(OGRGeometryFactory::createGeometry(wkbLinearRing));
+      for (; seg_idx < seg_end; ++seg_idx) { ring->addPoint(poly_x[seg_idx], poly_y[seg_idx]); }
+      polygon->addRing(ring);
     }
     polygons.push_back(polygon);
   }
@@ -95,9 +96,7 @@ auto make_polygons_geometry(thrust::host_vector<int32_t> const &poly_offsets,
 }
 
 template <typename T>
-auto geometry_to_poly_and_point_indices(std::vector<std::vector<T>> const &quads,
-                                        uint32_t points_per_quad,
-                                        std::vector<OGRGeometry *> const &polygons,
+auto geometry_to_poly_and_point_indices(std::vector<OGRGeometry *> const &polygons,
                                         std::vector<T> const &x,
                                         std::vector<T> const &y)
 {
@@ -105,7 +104,7 @@ auto geometry_to_poly_and_point_indices(std::vector<std::vector<T>> const &quads
   std::vector<uint32_t> point_lengths{};
   std::vector<uint32_t> point_indices{};
 
-  for (uint32_t i = 0, n = quads.size() * points_per_quad; i < n; i++) {
+  for (uint32_t i = 0, n = x.size(); i < n; i++) {
     OGRPoint point(x[i], y[i]);
     std::vector<uint32_t> found_poly_idxs{};
     for (uint32_t j = 0; j < polygons.size(); j++) {
@@ -118,7 +117,7 @@ auto geometry_to_poly_and_point_indices(std::vector<std::vector<T>> const &quads
     }
   }
   return std::make_tuple(
-    std::move(poly_indices), std::move(point_lengths), std::move(point_indices));
+    std::move(poly_indices), std::move(point_indices), std::move(point_lengths));
 }
 
 TYPED_TEST(PIPRefineTestLarge, TestLarge)
@@ -153,21 +152,23 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   auto quadtree_pair = cuspatial::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, this->mr());
 
-  auto quadtree =
-    cudf::gather(*std::get<1>(quadtree_pair), *std::get<0>(quadtree_pair), this->mr());
+  auto &quadtree = std::get<1>(quadtree_pair);
+  auto points    = cudf::gather(cudf::table_view{{x, y}}, *std::get<0>(quadtree_pair), this->mr());
 
   fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0, 3, 8, 12});
+  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14});
   fixed_width_column_wrapper<T> poly_x({// ring 1
                                         2.488450,
                                         1.333584,
                                         3.460720,
+                                        2.488450,
                                         // ring 2
                                         5.039823,
                                         5.561707,
                                         7.103516,
                                         7.190674,
                                         5.998939,
+                                        5.039823,
                                         // ring 3
                                         5.998939,
                                         5.573720,
@@ -183,12 +184,14 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
                                         5.856625,
                                         5.008840,
                                         4.586599,
+                                        5.856625,
                                         // ring 2
                                         4.229242,
                                         1.825073,
                                         1.503906,
                                         4.025879,
                                         5.653384,
+                                        4.229242,
                                         // ring 3
                                         1.235638,
                                         0.197808,
@@ -207,51 +210,52 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
     *quadtree, *polygon_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
-  cudf::table_view points_table{{x, y}};
+  fixed_width_column_wrapper<int32_t> pip_refine_poly_offsets({1, 2, 3, 4});
+  fixed_width_column_wrapper<int32_t> pip_refine_ring_offsets({4, 10, 14, 19});
+
   auto point_in_polygon_pairs = cuspatial::pip_refine(*polygon_quadrant_pairs,
                                                       *quadtree,
-                                                      points_table,
-                                                      poly_offsets,
-                                                      ring_offsets,
+                                                      *points,
+                                                      pip_refine_poly_offsets,
+                                                      pip_refine_ring_offsets,
                                                       poly_x,
                                                       poly_y,
                                                       this->mr());
 
-  auto poly_idx  = point_in_polygon_pairs->get_column(0);
-  auto point_idx = point_in_polygon_pairs->get_column(1);
+  auto poly_idx  = point_in_polygon_pairs->get_column(0).view();
+  auto point_idx = point_in_polygon_pairs->get_column(1).view();
 
   // verify
 
-  auto host_polygons = make_polygons_geometry(cudf::test::to_host<int32_t>(poly_offsets).first,
-                                              cudf::test::to_host<int32_t>(ring_offsets).first,
-                                              cudf::test::to_host<T>(poly_x).first,
-                                              cudf::test::to_host<T>(poly_y).first);
+  auto h_poly = make_polygons_geometry(cudf::test::to_host<uint32_t>(pip_refine_poly_offsets).first,
+                                       cudf::test::to_host<uint32_t>(pip_refine_ring_offsets).first,
+                                       cudf::test::to_host<T>(poly_x).first,
+                                       cudf::test::to_host<T>(poly_y).first);
 
-  auto host_poly_and_point_indices = geometry_to_poly_and_point_indices(
-    quads, min_size, host_polygons, std::get<0>(host_points), std::get<1>(host_points));
+  auto host_poly_and_point_indices = geometry_to_poly_and_point_indices(h_poly, h_x, h_y);
 
   auto &expected_poly_indices  = std::get<0>(host_poly_and_point_indices);
   auto &expected_point_indices = std::get<1>(host_poly_and_point_indices);
   auto &expected_point_lengths = std::get<2>(host_poly_and_point_indices);
 
-  rmm::device_uvector<uint32_t> actual_point_lengths(point_in_polygon_pairs->num_rows(), 0);
   rmm::device_uvector<uint32_t> actual_poly_indices(poly_idx.size(), 0);
   rmm::device_uvector<uint32_t> actual_point_indices(point_idx.size(), 0);
+  rmm::device_uvector<uint32_t> actual_point_lengths(point_in_polygon_pairs->num_rows(), 0);
 
   thrust::copy(rmm::exec_policy(0)->on(0),
-               poly_idx.view().template begin<uint32_t>(),
-               poly_idx.view().template end<uint32_t>(),
+               poly_idx.template begin<uint32_t>(),
+               poly_idx.template end<uint32_t>(),
                actual_poly_indices.begin());
 
   thrust::copy(rmm::exec_policy(0)->on(0),
-               point_idx.view().template begin<uint32_t>(),
-               point_idx.view().template end<uint32_t>(),
+               point_idx.template begin<uint32_t>(),
+               point_idx.template end<uint32_t>(),
                actual_point_indices.begin());
 
-  thrust::sort_by_key(rmm::exec_policy(0)->on(0),
-                      actual_point_indices.begin(),
-                      actual_point_indices.end(),
-                      actual_poly_indices.begin());
+  thrust::stable_sort_by_key(rmm::exec_policy(0)->on(0),
+                             actual_point_indices.begin(),
+                             actual_point_indices.end(),
+                             actual_poly_indices.begin());
 
   auto num_search_points = thrust::distance(actual_point_indices.begin(),
                                             thrust::reduce_by_key(rmm::exec_policy(0)->on(0),
@@ -265,20 +269,24 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   actual_point_indices.resize(num_search_points, 0);
   actual_point_lengths.resize(num_search_points, 0);
 
-  auto uint32_type = cudf::data_type{cudf::type_id::UINT32};
+  cudf::test::expect_columns_equal(fixed_width_column_wrapper<uint32_t>(
+                                     expected_poly_indices.begin(), expected_poly_indices.end()),
+                                   cudf::column_view(cudf::data_type{cudf::type_id::UINT32},
+                                                     actual_poly_indices.size(),
+                                                     actual_poly_indices.data()),
+                                   true);
 
-  cudf::test::expect_columns_equal(
-    fixed_width_column_wrapper<uint32_t>(expected_poly_indices.begin(),
-                                         expected_poly_indices.end()),
-    cudf::column_view(uint32_type, num_search_points, actual_poly_indices.data()));
+  cudf::test::expect_columns_equal(fixed_width_column_wrapper<uint32_t>(
+                                     expected_point_indices.begin(), expected_point_indices.end()),
+                                   cudf::column_view(cudf::data_type{cudf::type_id::UINT32},
+                                                     actual_point_indices.size(),
+                                                     actual_point_indices.data()),
+                                   true);
 
-  cudf::test::expect_columns_equal(
-    fixed_width_column_wrapper<uint32_t>(expected_point_indices.begin(),
-                                         expected_point_indices.end()),
-    cudf::column_view(uint32_type, num_search_points, actual_point_indices.data()));
-
-  cudf::test::expect_columns_equal(
-    fixed_width_column_wrapper<uint32_t>(expected_point_lengths.begin(),
-                                         expected_point_lengths.end()),
-    cudf::column_view(uint32_type, num_search_points, actual_point_lengths.data()));
+  cudf::test::expect_columns_equal(fixed_width_column_wrapper<uint32_t>(
+                                     expected_point_lengths.begin(), expected_point_lengths.end()),
+                                   cudf::column_view(cudf::data_type{cudf::type_id::UINT32},
+                                                     actual_point_lengths.size(),
+                                                     actual_point_lengths.data()),
+                                   true);
 }

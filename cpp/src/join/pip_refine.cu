@@ -528,14 +528,14 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_org_pair,
   // use arrays in poly_idx and pnt_idx columns as kernel arguments to directly write output to
   // columns
   std::unique_ptr<cudf::column> poly_idx_col = cudf::make_numeric_column(
-    cudf::data_type(cudf::type_id::INT32), total_hits, cudf::mask_state::UNALLOCATED, stream, mr);
+    cudf::data_type(cudf::type_id::UINT32), total_hits, cudf::mask_state::UNALLOCATED, stream, mr);
   uint32_t *d_res_poly_idx =
     cudf::mutable_column_device_view::create(poly_idx_col->mutable_view(), stream)
       ->data<uint32_t>();
   CUSPATIAL_EXPECTS(d_res_poly_idx != nullptr, "poly_idx can not be nullptr");
 
   std::unique_ptr<cudf::column> pnt_idx_col = cudf::make_numeric_column(
-    cudf::data_type(cudf::type_id::INT32), total_hits, cudf::mask_state::UNALLOCATED, stream, mr);
+    cudf::data_type(cudf::type_id::UINT32), total_hits, cudf::mask_state::UNALLOCATED, stream, mr);
   uint32_t *d_res_pnt_idx =
     cudf::mutable_column_device_view::create(pnt_idx_col->mutable_view(), stream)->data<uint32_t>();
   CUSPATIAL_EXPECTS(d_res_pnt_idx != nullptr, "point_id can not be nullptr");

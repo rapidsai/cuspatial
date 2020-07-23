@@ -97,21 +97,23 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto quadtree_pair = cuspatial::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, this->mr());
 
-  auto quadtree =
-    cudf::gather(*std::get<1>(quadtree_pair), *std::get<0>(quadtree_pair), this->mr());
+  auto &quadtree = std::get<1>(quadtree_pair);
+  auto points    = cudf::gather(cudf::table_view{{x, y}}, *std::get<0>(quadtree_pair), this->mr());
 
   fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0, 3, 8, 12});
+  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14});
   fixed_width_column_wrapper<T> poly_x({// ring 1
                                         2.488450,
                                         1.333584,
                                         3.460720,
+                                        2.488450,
                                         // ring 2
                                         5.039823,
                                         5.561707,
                                         7.103516,
                                         7.190674,
                                         5.998939,
+                                        5.039823,
                                         // ring 3
                                         5.998939,
                                         5.573720,
@@ -127,12 +129,14 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
                                         5.856625,
                                         5.008840,
                                         4.586599,
+                                        5.856625,
                                         // ring 2
                                         4.229242,
                                         1.825073,
                                         1.503906,
                                         4.025879,
                                         5.653384,
+                                        4.229242,
                                         // ring 3
                                         1.235638,
                                         0.197808,
@@ -151,12 +155,14 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
     *quadtree, *polygon_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
-  cudf::table_view points_table{{x, y}};
+  fixed_width_column_wrapper<int32_t> pip_refine_poly_offsets({1, 2, 3, 4});
+  fixed_width_column_wrapper<int32_t> pip_refine_ring_offsets({4, 10, 14, 19});
+
   auto point_in_polygon_pairs = cuspatial::pip_refine(*polygon_quadrant_pairs,
                                                       *quadtree,
-                                                      points_table,
-                                                      poly_offsets,
-                                                      ring_offsets,
+                                                      *points,
+                                                      pip_refine_poly_offsets,
+                                                      pip_refine_ring_offsets,
                                                       poly_x,
                                                       poly_y,
                                                       this->mr());

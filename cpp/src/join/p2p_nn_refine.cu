@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "cudf/utilities/type_dispatcher.hpp"
 #include "utility/join_thrust.cuh"
 
 #include <cuspatial/error.hpp>
@@ -214,20 +215,20 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_pair,
   }
 
   std::unique_ptr<cudf::column> pnt_idx_col = cudf::make_numeric_column(
-    cudf::data_type(cudf::type_id::INT32), num_pnt, cudf::mask_state::UNALLOCATED, stream, mr);
+    cudf::data_type(cudf::type_id::UINT32), num_pnt, cudf::mask_state::UNALLOCATED, stream, mr);
   uint32_t *d_res_pnt_idx =
     cudf::mutable_column_device_view::create(pnt_idx_col->mutable_view(), stream)->data<uint32_t>();
   CUSPATIAL_EXPECTS(d_res_pnt_idx != nullptr, "point_id can not be nullptr");
 
   std::unique_ptr<cudf::column> poly_idx_col = cudf::make_numeric_column(
-    cudf::data_type(cudf::type_id::INT32), num_pnt, cudf::mask_state::UNALLOCATED, stream, mr);
+    cudf::data_type(cudf::type_id::UINT32), num_pnt, cudf::mask_state::UNALLOCATED, stream, mr);
   uint32_t *d_res_poly_idx =
     cudf::mutable_column_device_view::create(poly_idx_col->mutable_view(), stream)
       ->data<uint32_t>();
   CUSPATIAL_EXPECTS(d_res_poly_idx != nullptr, "poly_idx can not be nullptr");
 
   std::unique_ptr<cudf::column> poly_dist_col = cudf::make_numeric_column(
-    cudf::data_type(cudf::type_id::FLOAT64), num_pnt, cudf::mask_state::UNALLOCATED, stream, mr);
+    cudf::data_type(cudf::type_to_id<T>()), num_pnt, cudf::mask_state::UNALLOCATED, stream, mr);
   T *d_res_poly_dist =
     cudf::mutable_column_device_view::create(poly_dist_col->mutable_view(), stream)->data<T>();
   CUSPATIAL_EXPECTS(d_res_poly_dist != nullptr, "poly_dist can not be nullptr");

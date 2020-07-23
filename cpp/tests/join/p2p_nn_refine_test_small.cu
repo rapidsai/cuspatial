@@ -28,6 +28,7 @@
 #include <tests/utilities/column_wrapper.hpp>
 #include <tests/utilities/table_utilities.hpp>
 #include <tests/utilities/type_lists.hpp>
+#include <type_traits>
 
 /*
  * A small test that it is suitable for manually visualizing point-polygon pairing results in a GIS
@@ -97,21 +98,23 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto quadtree_pair = cuspatial::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, this->mr());
 
-  auto quadtree =
-    cudf::gather(*std::get<1>(quadtree_pair), *std::get<0>(quadtree_pair), this->mr());
+  auto &quadtree = std::get<1>(quadtree_pair);
+  auto points    = cudf::gather(cudf::table_view{{x, y}}, *std::get<0>(quadtree_pair), this->mr());
 
   double const expansion_radius{2.0};
-  fixed_width_column_wrapper<int32_t> poly_offsets({0, 3, 8, 12});
+  fixed_width_column_wrapper<int32_t> poly_offsets({0, 4, 10, 14});
   fixed_width_column_wrapper<T> poly_x({// ring 1
                                         2.488450,
                                         1.333584,
                                         3.460720,
+                                        2.488450,
                                         // ring 2
                                         5.039823,
                                         5.561707,
                                         7.103516,
                                         7.190674,
                                         5.998939,
+                                        5.039823,
                                         // ring 3
                                         5.998939,
                                         5.573720,
@@ -127,12 +130,14 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
                                         5.856625,
                                         5.008840,
                                         4.586599,
+                                        5.856625,
                                         // ring 2
                                         4.229242,
                                         1.825073,
                                         1.503906,
                                         4.025879,
                                         5.653384,
+                                        4.229242,
                                         // ring 3
                                         1.235638,
                                         0.197808,
@@ -151,11 +156,17 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
     *quadtree, *polyline_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
-  cudf::table_view points_table{{x, y}};
-  auto point_in_polygon_pairs = cuspatial::p2p_nn_refine(
-    *polygon_quadrant_pairs, *quadtree, points_table, poly_offsets, poly_x, poly_y, this->mr());
+  fixed_width_column_wrapper<int32_t> p2p_nn_refine_poly_offsets({4, 10, 14, 19});
 
-  CUSPATIAL_EXPECTS(point_in_polygon_pairs->num_rows() == points_table.num_rows(),
+  auto point_in_polygon_pairs = cuspatial::p2p_nn_refine(*polygon_quadrant_pairs,
+                                                         *quadtree,
+                                                         *points,
+                                                         p2p_nn_refine_poly_offsets,
+                                                         poly_x,
+                                                         poly_y,
+                                                         this->mr());
+
+  CUSPATIAL_EXPECTS(point_in_polygon_pairs->num_rows() == points->num_rows(),
                     "resulting point-to-polyline pairs should be the same as number of points");
 
   CUSPATIAL_EXPECTS(point_in_polygon_pairs->num_columns() == 3,
@@ -164,4 +175,54 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   cudf::test::print(point_in_polygon_pairs->get_column(0), std::cout << "point_indices: ", ", ");
   cudf::test::print(point_in_polygon_pairs->get_column(1), std::cout << "poly_indices:  ", ", ");
   cudf::test::print(point_in_polygon_pairs->get_column(2), std::cout << "nn_distances:  ", ", ");
+
+  auto expected_distances_column = []() {
+    if (std::is_same<T, float>()) {
+      return fixed_width_column_wrapper<T>(
+        {3.06755614,   2.55945015,  2.98496079,   1.71036518,  1.82931805,   1.60950696,
+         1.68141198,   2.38382101,  2.55103993,   1.66121042,  2.02551198,   2.06608653,
+         2.0054605,    1.86834478,  1.94656599,   2.2151804,   1.75039434,   1.48201656,
+         1.67690217,   1.6472789,   1.00051796,   1.75223088,  1.84907377,   1.00189602,
+         0.760027468,  0.65931344,  1.24821293,   1.32290053,  0.285818338,  0.204661682,
+         0.41061908,   0.566183448, 0.0462928265, 0.166630879, 0.449532628,  0.566757083,
+         0.842694938,  1.2851826,   0.761564255,  0.978420198, 0.917963803,  1.43116522,
+         0.964613855,  0.668479264, 0.983481765,  0.661732495, 0.862337589,  0.50195688,
+         0.675588429,  0.825302303, 0.460371435,  0.726516426, 0.5221892,    0.728920817,
+         0.0779205412, 0.262150198, 0.331539392,  0.711767852, 0.0811185315, 0.605163753,
+         0.0885085538, 1.51270044,  0.389437228,  0.487170786, 1.17812812,   1.8030436,
+         1.07697463,   1.1812768,   1.12407148,   1.63790822,  2.15100765});
+    }
+    return fixed_width_column_wrapper<T>(
+      {3.0675562686570932,   2.5594501016565698,  2.9849608928964071,   1.7103652150920774,
+       1.8293181280383963,   1.6095070428899729,  1.681412227243898,    2.3838209461314879,
+       2.5510398428020409,   1.6612106150272572,  2.0255119347250288,   2.0660867596957564,
+       2.005460353737949,    1.8683447535522375,  1.9465658908648766,   2.215180472008103,
+       1.7503944159063249,   1.4820166799617225,  1.6769023397521503,   1.6472789467219351,
+       1.0005181046076022,   1.7522309916961678,  1.8490738879835735,   1.0018961233717569,
+       0.76002760100291122,  0.65931355999132091, 1.2482129257770731,   1.3229005055827028,
+       0.28581819228716798,  0.20466187296772381, 0.41061901127492945,  0.56618357460517321,
+       0.046292709584059649, 0.16663093663041184, 0.44953247369220328,  0.56675685520587671,
+       0.8426949387264755,   1.2851826443010033,  0.7615641155638555,   0.97842040913621176,
+       0.91796378078050767,  1.4311654461101424,  0.96461369875795022,  0.66847988653443391,
+       0.98348202146010666,  0.66173276971965656, 0.86233789031448083,  0.50195678903916696,
+       0.67558862915673756,  0.82530249944765122, 0.46037120394920628,  0.72651648874084795,
+       0.52218906793095576,  0.7289209300033892,  0.077921089704125243, 0.26215098141130377,
+       0.33153993710577789,  0.71176747526132444, 0.08111966614432306,  0.60516346789266862,
+       0.088508309264124091, 1.5127004224070386,  0.389437413270663,    0.48717099143018822,
+       1.1781283344854494,   1.8030436222567465,  1.0769747770485747,   1.1812768327104812,
+       1.1240715558969043,   1.6379084234284416,  2.1510078772519496});
+  };
+
+  expect_tables_equivalent(
+    cudf::table_view{{fixed_width_column_wrapper<uint32_t>(
+                        {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17,
+                         18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
+                         36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53,
+                         54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70}),
+                      fixed_width_column_wrapper<uint32_t>(
+                        {3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 3, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+                         3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1,
+                         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}),
+                      expected_distances_column()}},
+    *point_in_polygon_pairs);
 }
