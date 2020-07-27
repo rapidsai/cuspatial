@@ -65,7 +65,7 @@ struct segment_point_distance_calculator {
 
     // if point is projected within line segment bounds, use segment-to-point distance.
     // if point is projected outside line segment bounds, use point-point distance.
-    if (0 < travel && travel < magnitude) {  // 0 < travel < edge_length
+    if (0 < travel && travel < magnitude) {
       return abs(point_y * edge_x - point_x * edge_y) * rhypot(edge_x, edge_y);
     } else {
       return hypot(point_x, point_y);
@@ -137,11 +137,11 @@ struct directed_polygon_distance_functor {
 };
 
 }  // namespace
-}  // namespace detail
 
 std::unique_ptr<cudf::column> directed_polygon_distance(cudf::column_view const& xs,
                                                         cudf::column_view const& ys,
                                                         cudf::column_view const& offsets,
+                                                        cudaStream_t stream,
                                                         rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(xs.type() == ys.type(), "Inputs `xs` and `ys` must have same type.");
@@ -156,6 +156,16 @@ std::unique_ptr<cudf::column> directed_polygon_distance(cudf::column_view const&
 
   return cudf::type_dispatcher(
     xs.type(), detail::directed_polygon_distance_functor(), xs, ys, offsets, mr, stream);
+}
+
+}  // namespace detail
+
+std::unique_ptr<cudf::column> directed_polygon_distance(cudf::column_view const& xs,
+                                                        cudf::column_view const& ys,
+                                                        cudf::column_view const& offsets,
+                                                        rmm::mr::device_memory_resource* mr)
+{
+  return detail::directed_polygon_distance(xs, ys, offsets, 0, mr);
 }
 
 }  // namespace cuspatial
