@@ -23,7 +23,7 @@
 namespace cuspatial {
 
 /**
- * @brief calculates minimum segment-point distance between all shapes
+ * @brief calculates minimum segment-to-point distance between all shapes
  *
  * Element `i + j*n` is the minimum distance from any segment in shape i to any point in shape j.
  * The minimum of value of elements `[i + j*n]` and `j + i*n` is equal to the euclidian distance

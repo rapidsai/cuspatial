@@ -34,12 +34,12 @@ namespace detail {
 namespace {
 
 /**
- * @brief Calculates segment-point distance
+ * @brief Calculates segment-to-point distance
  *
  * Given a `cartesian_product_group_index` and two columns representing `x` and `y` coordinates,
- * calculates the segment-point distance of a line segment in group `a` and a point in group `b`.
+ * calculates the segment-to-point distance of a line segment in group `a` and a point in group `b`.
  *
- * If group `a` contains two or more points, calculate segment-point distance.
+ * If group `a` contains two or more points, calculate segment-to-point distance.
  * If group `a` contains only a single point, calculate point-point distance.
  */
 template <typename T>
@@ -63,7 +63,7 @@ struct segment_point_distance_calculator {
     auto const magnitude = edge_x * edge_x + edge_y * edge_y;
     auto const travel    = point_x * edge_x + point_y * edge_y;
 
-    // if point is projected within line segment bounds, use segment-point distance.
+    // if point is projected within line segment bounds, use segment-to-point distance.
     // if point is projected outside line segment bounds, use point-point distance.
     if (0 < travel && travel < magnitude) {  // 0 < travel < edge_length
       return abs(point_y * edge_x - point_x * edge_y) * rhypot(edge_x, edge_y);
