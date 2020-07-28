@@ -29,11 +29,12 @@
 #include <gtest/gtest.h>
 
 #include <vector>
+
 using namespace cudf;
 using namespace test;
 
 using TestTypes            = Types<float, double>;
-using UnsupportedTestTypes = RemoveIf<ContainedIn<TestTypes>, AllTypes>;
+using UnsupportedTestTypes = RemoveIf<ContainedIn<TestTypes>, NumericTypes>;
 
 template <typename T>
 struct DirectedPolygonDistanceTest : public BaseFixture {

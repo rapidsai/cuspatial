@@ -152,8 +152,6 @@ std::unique_ptr<cudf::column> directed_polygon_distance(cudf::column_view const&
 
   CUSPATIAL_EXPECTS(xs.size() >= offsets.size(), "At least one point is required for each space");
 
-  cudaStream_t stream = 0;
-
   return cudf::type_dispatcher(
     xs.type(), detail::directed_polygon_distance_functor(), xs, ys, offsets, mr, stream);
 }

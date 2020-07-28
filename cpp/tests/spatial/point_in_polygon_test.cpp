@@ -219,7 +219,7 @@ template <typename T>
 struct PointInPolygonUnsupportedTypesTest : public BaseFixture {
 };
 
-using UnsupportedTestTypes = RemoveIf<ContainedIn<TestTypes>, AllTypes>;
+using UnsupportedTestTypes = RemoveIf<ContainedIn<TestTypes>, NumericTypes>;
 TYPED_TEST_CASE(PointInPolygonUnsupportedTypesTest, UnsupportedTestTypes);
 
 TYPED_TEST(PointInPolygonUnsupportedTypesTest, UnsupportedPointType)
@@ -232,6 +232,29 @@ TYPED_TEST(PointInPolygonUnsupportedTypesTest, UnsupportedPointType)
   auto poly_ring_offsets = wrapper<cudf::size_type>({0});
   auto poly_point_xs     = wrapper<T>({0.0, 1.0, 0.0, -1.0});
   auto poly_point_ys     = wrapper<T>({1.0, 0.0, -1.0, 0.0});
+
+  EXPECT_THROW(
+    cuspatial::point_in_polygon(
+      test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
+    cuspatial::logic_error);
+}
+
+template <typename T>
+struct PointInPolygonUnsupportedChronoTypesTest : public BaseFixture {
+};
+
+TYPED_TEST_CASE(PointInPolygonUnsupportedChronoTypesTest, ChronoTypes);
+
+TYPED_TEST(PointInPolygonUnsupportedChronoTypesTest, UnsupportedPointChronoType)
+{
+  using T = TypeParam;
+
+  auto test_point_xs     = wrapper<T>({T{0}, T{0}});
+  auto test_point_ys     = wrapper<T>({T{0}});
+  auto poly_offsets      = wrapper<cudf::size_type>({0});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0});
+  auto poly_point_xs     = wrapper<T>({T{0}, T{1}, T{0}, T{-1}});
+  auto poly_point_ys     = wrapper<T>({T{1}, T{0}, T{-1}, T{0}});
 
   EXPECT_THROW(
     cuspatial::point_in_polygon(
