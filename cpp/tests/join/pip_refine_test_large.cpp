@@ -36,6 +36,7 @@
 #include <tests/utilities/type_lists.hpp>
 
 #include <thrust/iterator/constant_iterator.h>
+#include <thrust/sort.h>
 
 #include <ogrsf_frmts.h>
 
@@ -241,57 +242,41 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   auto &expected_point_indices = std::get<1>(host_poly_and_point_indices);
   auto &expected_point_lengths = std::get<2>(host_poly_and_point_indices);
 
-  rmm::device_uvector<uint32_t> actual_poly_indices(poly_idx.size(), 0);
-  rmm::device_uvector<uint32_t> actual_point_indices(point_idx.size(), 0);
-  rmm::device_uvector<uint32_t> actual_point_lengths(point_in_polygon_pairs->num_rows(), 0);
+  auto actual_poly_indices  = cudf::test::to_host<uint32_t>(poly_idx).first;
+  auto actual_point_indices = cudf::test::to_host<uint32_t>(point_idx).first;
+  auto actual_point_lengths = thrust::host_vector<uint32_t>(point_in_polygon_pairs->num_rows());
 
-  thrust::copy(rmm::exec_policy(0)->on(0),
-               poly_idx.template begin<uint32_t>(),
-               poly_idx.template end<uint32_t>(),
-               actual_poly_indices.begin());
-
-  thrust::copy(rmm::exec_policy(0)->on(0),
-               point_idx.template begin<uint32_t>(),
-               point_idx.template end<uint32_t>(),
-               actual_point_indices.begin());
-
-  thrust::stable_sort_by_key(rmm::exec_policy(0)->on(0),
-                             actual_point_indices.begin(),
-                             actual_point_indices.end(),
-                             actual_poly_indices.begin());
+  thrust::stable_sort_by_key(
+    actual_point_indices.begin(), actual_point_indices.end(), actual_poly_indices.begin());
 
   auto num_search_points = thrust::distance(actual_point_indices.begin(),
-                                            thrust::reduce_by_key(rmm::exec_policy(0)->on(0),
-                                                                  actual_point_indices.begin(),
+                                            thrust::reduce_by_key(actual_point_indices.begin(),
                                                                   actual_point_indices.end(),
                                                                   thrust::make_constant_iterator(1),
                                                                   actual_point_indices.begin(),
                                                                   actual_point_lengths.begin())
                                               .first);
 
-  actual_point_indices.resize(num_search_points, 0);
-  actual_point_lengths.resize(num_search_points, 0);
-  actual_point_indices.shrink_to_fit(0);
-  actual_point_lengths.shrink_to_fit(0);
+  actual_point_indices.resize(num_search_points);
+  actual_point_lengths.resize(num_search_points);
+  actual_point_indices.shrink_to_fit();
+  actual_point_lengths.shrink_to_fit();
 
-  cudf::test::expect_columns_equal(fixed_width_column_wrapper<uint32_t>(
-                                     expected_poly_indices.begin(), expected_poly_indices.end()),
-                                   cudf::column_view(cudf::data_type{cudf::type_id::UINT32},
-                                                     actual_poly_indices.size(),
-                                                     actual_poly_indices.data()),
-                                   true);
+  cudf::test::expect_columns_equal(
+    fixed_width_column_wrapper<uint32_t>(expected_poly_indices.begin(),
+                                         expected_poly_indices.end()),
+    fixed_width_column_wrapper<uint32_t>(actual_poly_indices.begin(), actual_poly_indices.end()),
+    true);
 
-  cudf::test::expect_columns_equal(fixed_width_column_wrapper<uint32_t>(
-                                     expected_point_indices.begin(), expected_point_indices.end()),
-                                   cudf::column_view(cudf::data_type{cudf::type_id::UINT32},
-                                                     actual_point_indices.size(),
-                                                     actual_point_indices.data()),
-                                   true);
+  cudf::test::expect_columns_equal(
+    fixed_width_column_wrapper<uint32_t>(expected_point_indices.begin(),
+                                         expected_point_indices.end()),
+    fixed_width_column_wrapper<uint32_t>(actual_point_indices.begin(), actual_point_indices.end()),
+    true);
 
-  cudf::test::expect_columns_equal(fixed_width_column_wrapper<uint32_t>(
-                                     expected_point_lengths.begin(), expected_point_lengths.end()),
-                                   cudf::column_view(cudf::data_type{cudf::type_id::UINT32},
-                                                     actual_point_lengths.size(),
-                                                     actual_point_lengths.data()),
-                                   true);
+  cudf::test::expect_columns_equal(
+    fixed_width_column_wrapper<uint32_t>(expected_point_lengths.begin(),
+                                         expected_point_lengths.end()),
+    fixed_width_column_wrapper<uint32_t>(actual_point_lengths.begin(), actual_point_lengths.end()),
+    true);
 }
