@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "indexing/construction/detail/utilities.cuh"
 #include "utility/join_thrust.cuh"
 
 #include <cuspatial/error.hpp>
@@ -32,8 +33,13 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
 
+#include <rmm/device_buffer.hpp>
+#include <rmm/device_uvector.hpp>
+
 #include <vector>
 
+namespace cuspatial {
+namespace detail {
 namespace {
 
 template <typename T>
@@ -42,8 +48,8 @@ __global__ void quad_pip_phase1_kernel(const uint32_t *pq_poly_id,
                                        const uint32_t *block_offset,
                                        const uint32_t *block_length,
                                        const uint32_t *qt_fpos,
-                                       const T *pnt_x,
-                                       const T *pnt_y,
+                                       const T *point_x,
+                                       const T *point_y,
                                        const uint32_t *poly_fpos,
                                        const uint32_t *poly_rpos,
                                        const T *poly_x,
@@ -74,8 +80,8 @@ __global__ void quad_pip_phase1_kernel(const uint32_t *pq_poly_id,
   uint32_t tid    = first_pos + threadIdx.x;
   bool in_polygon = false;
   if (threadIdx.x < num_point) {
-    T x = pnt_x[tid];
-    T y = pnt_y[tid];
+    T x = point_x[tid];
+    T y = point_y[tid];
 
     uint32_t r_f = (0 == pid) ? 0 : poly_fpos[pid - 1];
     uint32_t r_t = poly_fpos[pid];
@@ -125,15 +131,15 @@ __global__ void quad_pip_phase2_kernel(const uint32_t *pq_poly_id,
                                        uint32_t *block_offset,
                                        uint32_t *block_length,
                                        const uint32_t *qt_fpos,
-                                       const T *pnt_x,
-                                       const T *pnt_y,
+                                       const T *point_x,
+                                       const T *point_y,
                                        const uint32_t *poly_fpos,
                                        const uint32_t *poly_rpos,
                                        const T *poly_x,
                                        const T *poly_y,
                                        uint32_t *d_num_hits,
                                        uint32_t *d_res_poly_id,
-                                       uint32_t *d_res_pnt_id)
+                                       uint32_t *d_res_point_id)
 {
   __shared__ uint32_t qid, pid, num_point, first_pos, mem_offset, qpos, num_adjusted;
 
@@ -161,8 +167,8 @@ __global__ void quad_pip_phase2_kernel(const uint32_t *pq_poly_id,
   uint32_t tid    = first_pos + threadIdx.x;
   bool in_polygon = false;
   if (threadIdx.x < num_point) {
-    T x = pnt_x[tid];
-    T y = pnt_y[tid];
+    T x = point_x[tid];
+    T y = point_y[tid];
 
     uint32_t r_f = (0 == pid) ? 0 : poly_fpos[pid - 1];
     uint32_t r_t = poly_fpos[pid];
@@ -213,377 +219,269 @@ __global__ void quad_pip_phase2_kernel(const uint32_t *pq_poly_id,
     // pos=%d\n",
     //    blockIdx.x,threadIdx.x,qid,pid,tid,mem_offset,num,warp_offset,pos);
 
-    d_res_poly_id[pos] = pid;
-    d_res_pnt_id[pos]  = tid;
+    d_res_poly_id[pos]  = pid;
+    d_res_point_id[pos] = tid;
   }
   __syncthreads();
 }
 
 template <typename T>
-std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_org_pair,
-                                                  const uint32_t *d_org_poly_idx,
-                                                  const uint32_t *d_org_quad_idx,
-                                                  uint32_t num_node,
-                                                  const uint32_t *d_qt_key,
-                                                  const uint8_t *d_qt_lev,
-                                                  const bool *d_qt_sign,
-                                                  const uint32_t *d_qt_length,
-                                                  const uint32_t *d_qt_fpos,
-                                                  const uint32_t num_pnt,
-                                                  const T *d_pnt_x,
-                                                  const T *d_pnt_y,
-                                                  const uint32_t num_poly,
-                                                  const uint32_t *d_poly_fpos,
-                                                  const uint32_t *d_poly_rpos,
-                                                  const T *d_poly_x,
-                                                  const T *d_poly_y,
-                                                  rmm::mr::device_memory_resource *mr,
-                                                  cudaStream_t stream)
+std::unique_ptr<cudf::table> dowork(uint32_t num_org_pair,
+                                    cudf::column_view const &poly_idx,
+                                    cudf::column_view const &quad_idx,
+                                    uint32_t num_node,
+                                    cudf::column_view const &qt_length,
+                                    cudf::column_view const &qt_fpos,
+                                    const uint32_t num_point,
+                                    cudf::column_view const &point_x,
+                                    cudf::column_view const &point_y,
+                                    const uint32_t num_poly,
+                                    cudf::column_view const &poly_fpos,
+                                    cudf::column_view const &poly_rpos,
+                                    cudf::column_view const &poly_x,
+                                    cudf::column_view const &poly_y,
+                                    rmm::mr::device_memory_resource *mr,
+                                    cudaStream_t stream)
 
 {
-  auto exec_policy = rmm::exec_policy(stream);
-
   // compute the total number of sub-pairs (units) using transform_reduce
-  uint32_t num_pq_pair = thrust::transform_reduce(exec_policy->on(stream),
-                                                  d_org_quad_idx,
-                                                  d_org_quad_idx + num_org_pair,
-                                                  get_num_units(d_qt_length, threads_per_block),
-                                                  0,
-                                                  thrust::plus<uint32_t>());
-  std::cout << "num_pq_pair=" << num_pq_pair << std::endl;
+  uint32_t num_pq_pair =
+    thrust::transform_reduce(rmm::exec_policy(stream)->on(stream),
+                             quad_idx.begin<uint32_t>(),
+                             quad_idx.end<uint32_t>(),
+                             get_num_units(qt_length.data<uint32_t>(), threads_per_block),
+                             0,
+                             thrust::plus<uint32_t>());
 
-  // allocate memory for both numbers and their prefix-sums
-  rmm::device_buffer *db_num_units =
-    new rmm::device_buffer(num_org_pair * sizeof(uint32_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_num_units != nullptr,
-                    "Error allocating memory for array of numbers of sub-pairs (units)");
-  uint32_t *d_num_units = static_cast<uint32_t *>(db_num_units->data());
+  // std::cout << "num_pq_pair=" << num_pq_pair << std::endl;
 
-  rmm::device_buffer *db_num_sums =
-    new rmm::device_buffer(num_org_pair * sizeof(uint32_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_num_sums != nullptr, "Error allocating memory for array of offsets ");
-  uint32_t *d_num_sums = static_cast<uint32_t *>(db_num_sums->data());
+  auto poly_quad_offsets_lengths = [&]() {
+    // allocate memory for both numbers and their prefix-sums
+    rmm::device_uvector<uint32_t> d_num_sums(num_org_pair, stream);
+    rmm::device_uvector<uint32_t> d_num_units(num_org_pair, stream);
 
-  // computes numbers of sub-pairs for each quadrant-polygon pairs
-  thrust::transform(exec_policy->on(stream),
-                    d_org_quad_idx,
-                    d_org_quad_idx + num_org_pair,
-                    d_num_units,
-                    get_num_units(d_qt_length, threads_per_block));
+    // computes numbers of sub-pairs for each quadrant-polygon pairs
+    thrust::transform(rmm::exec_policy(stream)->on(stream),
+                      quad_idx.begin<uint32_t>(),
+                      quad_idx.end<uint32_t>(),
+                      d_num_units.begin(),
+                      get_num_units(qt_length.data<uint32_t>(), threads_per_block));
 
-  if (0) {
-    std::cout << "preprocess: d_org_poly_id" << std::endl;
+    // if (1) {
+    //   print<uint32_t>(poly_idx, std::cout << "pre: d_org_poly_idx ", ", ", stream);
+    //   print<uint32_t>(quad_idx, std::cout << "pre: d_org_quad_idx ", ", ", stream);
+    //   print(d_num_units, std::cout << "pre: d_num_units ", ", ", stream);
+    // }
 
-    thrust::device_ptr<const uint32_t> d_org_poly_idx_ptr =
-      thrust::device_pointer_cast(d_org_poly_idx);
-    thrust::copy(d_org_poly_idx_ptr,
-                 d_org_poly_idx_ptr + num_org_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
+    thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
+                           d_num_units.begin(),
+                           d_num_units.end(),
+                           d_num_sums.begin());
 
-    thrust::device_ptr<const uint32_t> d_org_quad_idx_ptr =
-      thrust::device_pointer_cast(d_org_quad_idx);
-    thrust::copy(d_org_quad_idx_ptr,
-                 d_org_quad_idx_ptr + num_org_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
+    // if (1) {
+    //   print(d_num_sums, std::cout << "pre: d_num_sums ", ", ", stream);
+    // }
 
-    std::cout << "preprocess: d_num_units" << std::endl;
-    thrust::device_ptr<uint32_t> d_num_units_ptr = thrust::device_pointer_cast(d_num_units);
-    thrust::copy(d_num_units_ptr,
-                 d_num_units_ptr + num_org_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-  }
+    // allocate memory for sub-pairs with four components:
+    // (polygon_idx, quadrant_idx, offset, length)
 
-  thrust::exclusive_scan(
-    exec_policy->on(stream), d_num_units, d_num_units + num_org_pair, d_num_sums);
+    rmm::device_uvector<uint32_t> d_pq_poly_idx(num_pq_pair, stream);
+    rmm::device_uvector<uint32_t> d_pq_quad_idx(num_pq_pair, stream);
+    rmm::device_uvector<uint32_t> d_quad_offset(num_pq_pair, stream);
+    rmm::device_uvector<uint32_t> d_quad_length(num_pq_pair, stream);
 
-  if (0) {
-    std::cout << "preprocess: d_num_sums" << std::endl;
-    thrust::device_ptr<uint32_t> d_num_sum_ptr = thrust::device_pointer_cast(d_num_sums);
-    thrust::copy(
-      d_num_sum_ptr, d_num_sum_ptr + num_org_pair, std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-  }
+    thrust::fill(
+      rmm::exec_policy(stream)->on(stream), d_quad_offset.begin(), d_quad_offset.end(), 0);
 
-  // allocate memory for sub-pairs with four components: (polygon_idx, quadrant_idx, offset, length)
+    // scatter 0..num_org_pair to d_quad_offset using d_num_sums as map
+    thrust::scatter(rmm::exec_policy(stream)->on(stream),
+                    thrust::make_counting_iterator(0),
+                    thrust::make_counting_iterator(0) + num_org_pair,
+                    d_num_sums.begin(),
+                    d_quad_offset.begin());
 
-  rmm::device_buffer *db_pq_poly_idx =
-    new rmm::device_buffer(num_pq_pair * sizeof(uint32_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_pq_poly_idx != nullptr, "Error allocating memory for array of polygon idx)");
-  uint32_t *d_pq_poly_idx = static_cast<uint32_t *>(db_pq_poly_idx->data());
+    // if (1) {
+    //   print(d_quad_offset, std::cout << "pre: d_quad_offset (after scatter) ", ", ",
+    //   stream);
+    // }
 
-  rmm::device_buffer *db_pq_quad_idx =
-    new rmm::device_buffer(num_pq_pair * sizeof(uint32_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_pq_quad_idx != nullptr,
-                    "Error allocating memory for array of quadrant idx)");
-  uint32_t *d_pq_quad_idx = static_cast<uint32_t *>(db_pq_quad_idx->data());
+    // copy idx of orginal pairs to all sub-pairs
+    thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
+                           d_quad_offset.begin(),
+                           d_quad_offset.end(),
+                           d_quad_offset.begin(),
+                           thrust::maximum<int>());
 
-  rmm::device_buffer *db_quad_offset =
-    new rmm::device_buffer(num_pq_pair * sizeof(uint32_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_quad_offset != nullptr,
-                    "Error allocating memory for array of sub-pair offsets )");
-  uint32_t *d_quad_offset = static_cast<uint32_t *>(db_quad_offset->data());
-  CUDA_TRY(cudaMemset(d_quad_offset, 0, num_pq_pair * sizeof(uint32_t)));
+    // d_num_sums and d_num_units are no longer needed, so don't return them
 
-  rmm::device_buffer *db_quad_len =
-    new rmm::device_buffer(num_pq_pair * sizeof(uint32_t), stream, mr);
-  CUSPATIAL_EXPECTS(db_quad_len != nullptr,
-                    "Error allocating memory for array of sub-pair length )");
-  uint32_t *d_quad_len = static_cast<uint32_t *>(db_quad_len->data());
+    return std::make_tuple(std::move(d_pq_poly_idx),
+                           std::move(d_pq_quad_idx),
+                           std::move(d_quad_offset),
+                           std::move(d_quad_length));
+  }();
 
-  // scatter 0..num_org_pair to d_quad_offset using d_num_sums as map
-  thrust::scatter(exec_policy->on(stream),
-                  thrust::make_counting_iterator(0),
-                  thrust::make_counting_iterator(0) + num_org_pair,
-                  d_num_sums,
-                  d_quad_offset);
+  auto &d_pq_poly_idx = std::get<0>(poly_quad_offsets_lengths);
+  auto &d_pq_quad_idx = std::get<1>(poly_quad_offsets_lengths);
+  auto &d_quad_offset = std::get<2>(poly_quad_offsets_lengths);
+  auto &d_quad_length = std::get<3>(poly_quad_offsets_lengths);
 
-  if (0) {
-    std::cout << "preprocess:d_quad_offset (after scatter)" << std::endl;
-    thrust::device_ptr<uint32_t> d_quad_offset_ptr = thrust::device_pointer_cast(d_quad_offset);
-    thrust::copy(d_quad_offset_ptr,
-                 d_quad_offset_ptr + num_pq_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-  }
-  // copy idx of orginal pairs to all sub-pairs
-  thrust::inclusive_scan(exec_policy->on(stream),
-                         d_quad_offset,
-                         d_quad_offset + num_pq_pair,
-                         d_quad_offset,
-                         thrust::maximum<int>());
-
-  // d_num_sums is no longer needed, delete db_num_sums and release its associated memory
-  delete db_num_sums;
-  db_num_sums = nullptr;
-
-  if (0) {
-    std::cout << "preprocess: d_quad_offset (after scan )" << std::endl;
-    thrust::device_ptr<uint32_t> d_quad_offset_ptr = thrust::device_pointer_cast(d_quad_offset);
-    thrust::copy(d_quad_offset_ptr,
-                 d_quad_offset_ptr + num_pq_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-  }
+  // if (1) {
+  //   print(d_quad_offset, std::cout << "pre: d_quad_offset (after scan) ", ", ", stream);
+  // }
 
   // gather polygon idx and quadrant idx from original pairs into sub-pairs
-  thrust::gather(exec_policy->on(stream),
-                 d_quad_offset,
-                 d_quad_offset + num_pq_pair,
-                 d_org_poly_idx,
-                 d_pq_poly_idx);
-  thrust::gather(exec_policy->on(stream),
-                 d_quad_offset,
-                 d_quad_offset + num_pq_pair,
-                 d_org_quad_idx,
-                 d_pq_quad_idx);
+  thrust::gather(rmm::exec_policy(stream)->on(stream),
+                 d_quad_offset.begin(),
+                 d_quad_offset.end(),
+                 poly_idx.begin<uint32_t>(),
+                 d_pq_poly_idx.begin());
 
-  if (0) {
-    std::cout << "preprocess: d_pq_poly_idx (after gather )" << std::endl;
+  thrust::gather(rmm::exec_policy(stream)->on(stream),
+                 d_quad_offset.begin(),
+                 d_quad_offset.end(),
+                 quad_idx.begin<uint32_t>(),
+                 d_pq_quad_idx.begin());
 
-    thrust::device_ptr<uint32_t> d_poly_idx_ptr = thrust::device_pointer_cast(d_pq_poly_idx);
-    thrust::copy(d_poly_idx_ptr,
-                 d_poly_idx_ptr + num_pq_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
+  // if (1) {
+  //   print(d_pq_poly_idx, std::cout << "pre: d_pq_poly_idx (after gather) ", ", ", stream);
+  //   print(d_pq_quad_idx, std::cout << "pre: d_pq_quad_idx (after gather) ", ", ", stream);
+  // }
 
-    std::cout << "preprocess: d_pq_poly_idx (after gather )" << std::endl;
-    thrust::device_ptr<uint32_t> d_quad_idx_ptr = thrust::device_pointer_cast(d_pq_quad_idx);
-    thrust::copy(d_quad_idx_ptr,
-                 d_quad_idx_ptr + num_pq_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-  }
-
-  // allocate memory to store numbers of points in polygons in all sub-pairs and initialize them to
-  // 0
-  rmm::device_buffer *db_num_hits =
-    new rmm::device_buffer(num_pq_pair * sizeof(uint32_t), stream, mr);
-  CUSPATIAL_EXPECTS(
-    db_num_hits != nullptr,
-    "Error allocating memory for array of numbers of points in polygons in all sub-pairs)");
-  uint32_t *d_num_hits = static_cast<uint32_t *>(db_num_hits->data());
-  CUDA_TRY(cudaMemset(d_num_hits, 0, num_pq_pair * sizeof(uint32_t)));
+  // allocate memory to store numbers of points in polygons in all sub-pairs initialized to 0
+  rmm::device_uvector<uint32_t> d_num_hits(num_pq_pair, stream);
+  thrust::fill(rmm::exec_policy(stream)->on(stream), d_num_hits.begin(), d_num_hits.end(), 0);
 
   // generate offsets of sub-paris within the orginal pairs
-  thrust::exclusive_scan_by_key(exec_policy->on(stream),
-                                d_quad_offset,
-                                d_quad_offset + num_pq_pair,
+  thrust::exclusive_scan_by_key(rmm::exec_policy(stream)->on(stream),
+                                d_quad_offset.begin(),
+                                d_quad_offset.end(),
                                 thrust::constant_iterator<int>(1),
-                                d_quad_offset);
+                                d_quad_offset.begin());
 
   // assemble components in input/output iterators; note d_quad_offset used in both input and output
-  auto qid_bid_iter = thrust::make_zip_iterator(thrust::make_tuple(d_pq_quad_idx, d_quad_offset));
-  auto offset_length_iter =
-    thrust::make_zip_iterator(thrust::make_tuple(d_quad_offset, d_quad_len));
-  thrust::transform(exec_policy->on(stream),
+  auto qid_bid_iter       = make_zip_iterator(d_pq_quad_idx.begin(), d_quad_offset.begin());
+  auto offset_length_iter = make_zip_iterator(d_quad_offset.begin(), d_quad_length.begin());
+  thrust::transform(rmm::exec_policy(stream)->on(stream),
                     qid_bid_iter,
                     qid_bid_iter + num_pq_pair,
                     offset_length_iter,
-                    gen_offset_length(threads_per_block, d_qt_length));
+                    gen_offset_length(threads_per_block, qt_length.data<uint32_t>()));
 
-  if (0) {
-    std::cout << "preprocess: complete result" << std::endl;
-    std::cout << "d_pq_poly_idx" << std::endl;
-    thrust::device_ptr<uint32_t> d_poly_idx_ptr = thrust::device_pointer_cast(d_pq_poly_idx);
-    thrust::copy(d_poly_idx_ptr,
-                 d_poly_idx_ptr + num_pq_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
+  // if (1) {
+  //   print(d_pq_poly_idx, std::cout << "pre: d_pq_poly_idx (complete result) ", ", ", stream);
+  //   print(d_pq_quad_idx, std::cout << "pre: d_pq_quad_idx (complete result) ", ", ", stream);
+  //   print(d_quad_offset, std::cout << "pre: d_quad_offset (complete result) ", ", ", stream);
+  //   print(d_quad_length, std::cout << "pre: d_quad_length (complete result) ", ", ", stream);
+  // }
 
-    std::cout << "d_pq_quad_idx" << std::endl;
-    thrust::device_ptr<uint32_t> d_quad_idx_ptr = thrust::device_pointer_cast(d_pq_quad_idx);
-    thrust::copy(d_quad_idx_ptr,
-                 d_quad_idx_ptr + num_pq_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
+  // std::cout << "running quad_pip_phase1_kernel" << std::endl;
 
-    std::cout << "d_quad_offset" << std::endl;
-    thrust::device_ptr<uint32_t> d_quad_offset_ptr = thrust::device_pointer_cast(d_quad_offset);
-    thrust::copy(d_quad_offset_ptr,
-                 d_quad_offset_ptr + num_pq_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-
-    std::cout << "d_quad_length" << std::endl;
-    thrust::device_ptr<uint32_t> d_quad_len_ptr = thrust::device_pointer_cast(d_quad_len);
-    thrust::copy(d_quad_len_ptr,
-                 d_quad_len_ptr + num_pq_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-  }
-
-  // timeval t0, t1, t2, t3;
-  // gettimeofday(&t0, nullptr);
-  std::cout << "running quad_pip_phase1_kernel" << std::endl;
   quad_pip_phase1_kernel<T>
-    <<<num_pq_pair, threads_per_block>>>(const_cast<uint32_t *>(d_pq_poly_idx),
-                                         const_cast<uint32_t *>(d_pq_quad_idx),
-                                         const_cast<uint32_t *>(d_quad_offset),
-                                         const_cast<uint32_t *>(d_quad_len),
-                                         d_qt_fpos,
-                                         d_pnt_x,
-                                         d_pnt_y,
-                                         d_poly_fpos,
-                                         d_poly_rpos,
-                                         d_poly_x,
-                                         d_poly_y,
-                                         d_num_hits);
-  CUDA_TRY(cudaDeviceSynchronize());
-  // gettimeofday(&t1, nullptr);
-  // float refine_phase1_time = cuspatial::calc_time("refine_phase1_time (ms) = ", t0, t1);
+    <<<num_pq_pair, threads_per_block, 0, stream>>>(d_pq_poly_idx.data(),
+                                                    d_pq_quad_idx.data(),
+                                                    d_quad_offset.data(),
+                                                    d_quad_length.data(),
+                                                    qt_fpos.data<uint32_t>(),
+                                                    point_x.data<T>(),
+                                                    point_y.data<T>(),
+                                                    poly_fpos.data<uint32_t>(),
+                                                    poly_rpos.data<uint32_t>(),
+                                                    poly_x.data<T>(),
+                                                    poly_y.data<T>(),
+                                                    d_num_hits.data());
 
-  if (0) {
-    std::cout << "phase1 results: d_num_hits (before reduce)" << std::endl;
-    thrust::device_ptr<uint32_t> d_num_hits_ptr = thrust::device_pointer_cast(d_num_hits);
-    thrust::copy(d_num_hits_ptr,
-                 d_num_hits_ptr + num_pq_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-  }
+  CUDA_TRY(cudaStreamSynchronize(stream));
+
+  // if (1) {
+  //   print(d_num_hits, std::cout << "phase1: d_num_hits (before reduce) ", ", ", stream);
+  // }
 
   // remove poly-quad pair with zero hits
-  auto valid_pq_pair_iter = thrust::make_zip_iterator(
-    thrust::make_tuple(d_pq_poly_idx, d_pq_quad_idx, d_quad_offset, d_quad_len, d_num_hits));
-  uint32_t num_valid_pair = thrust::remove_if(exec_policy->on(stream),
-                                              valid_pq_pair_iter,
-                                              valid_pq_pair_iter + num_pq_pair,
-                                              valid_pq_pair_iter,
-                                              pq_remove_zero()) -
-                            valid_pq_pair_iter;
-  std::cout << "num_valid_pair=" << num_valid_pair << std::endl;
+  auto valid_pq_pair_iter = make_zip_iterator(d_pq_poly_idx.begin(),
+                                              d_pq_quad_idx.begin(),
+                                              d_quad_offset.begin(),
+                                              d_quad_length.begin(),
+                                              d_num_hits.begin());
+  uint32_t num_valid_pair = thrust::distance(valid_pq_pair_iter,
+                                             thrust::remove_if(rmm::exec_policy(stream)->on(stream),
+                                                               valid_pq_pair_iter,
+                                                               valid_pq_pair_iter + num_pq_pair,
+                                                               valid_pq_pair_iter,
+                                                               pq_remove_zero()));
 
-  if (0) {
-    std::cout << "phase d_num_hits (after removal)" << std::endl;
-    thrust::device_ptr<uint32_t> d_num_hits_ptr = thrust::device_pointer_cast(d_num_hits);
-    printf("d_num_hits: before reduce\n");
-    thrust::copy(d_num_hits_ptr,
-                 d_num_hits_ptr + num_valid_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-  }
+  // std::cout << "num_valid_pair=" << num_valid_pair << std::endl;
+
+  d_pq_poly_idx.resize(num_valid_pair, stream);
+  d_pq_quad_idx.resize(num_valid_pair, stream);
+  d_quad_offset.resize(num_valid_pair, stream);
+  d_quad_length.resize(num_valid_pair, stream);
+  d_num_hits.resize(num_valid_pair, stream);
+
+  d_pq_poly_idx.shrink_to_fit(stream);
+  d_pq_quad_idx.shrink_to_fit(stream);
+  d_quad_offset.shrink_to_fit(stream);
+  d_quad_length.shrink_to_fit(stream);
+  d_num_hits.shrink_to_fit(stream);
+
+  // if (1) {
+  //   print(d_num_hits, std::cout << "phase1: d_num_hits (after removal) ", ", ", stream);
+  // }
 
   uint32_t total_hits =
-    thrust::reduce(exec_policy->on(stream), d_num_hits, d_num_hits + num_valid_pair);
-  std::cout << "total_hits=" << total_hits << std::endl;
+    thrust::reduce(rmm::exec_policy(stream)->on(stream), d_num_hits.begin(), d_num_hits.end());
+
+  // std::cout << "total_hits=" << total_hits << std::endl;
 
   // prefix sum on numbers to generate offsets
   thrust::exclusive_scan(
-    exec_policy->on(stream), d_num_hits, d_num_hits + num_valid_pair, d_num_hits);
+    rmm::exec_policy(stream)->on(stream), d_num_hits.begin(), d_num_hits.end(), d_num_hits.begin());
 
-  // gettimeofday(&t2, nullptr);
-  // float refine_rebalance_time = cuspatial::calc_time("refine_rebalance_time(ms) = ", t1, t2);
+  // if (1) {
+  //   print(d_num_hits, std::cout << "phase1: d_num_hits (after reduce) ", ", ", stream);
+  // }
 
-  if (0) {
-    std::cout << "phase1 results:d_num_hits(after reduce)" << std::endl;
-    thrust::device_ptr<uint32_t> d_num_hits_ptr = thrust::device_pointer_cast(d_num_hits);
-    thrust::copy(d_num_hits_ptr,
-                 d_num_hits_ptr + num_valid_pair,
-                 std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-  }
-
-  // use arrays in poly_idx and pnt_idx columns as kernel arguments to directly write output to
+  // use arrays in poly_idx and point_idx columns as kernel arguments to directly write output to
   // columns
-  std::unique_ptr<cudf::column> poly_idx_col = cudf::make_numeric_column(
-    cudf::data_type(cudf::type_id::UINT32), total_hits, cudf::mask_state::UNALLOCATED, stream, mr);
-  uint32_t *d_res_poly_idx =
-    cudf::mutable_column_device_view::create(poly_idx_col->mutable_view(), stream)
-      ->data<uint32_t>();
-  CUSPATIAL_EXPECTS(d_res_poly_idx != nullptr, "poly_idx can not be nullptr");
+  auto poly_idx_col  = make_fixed_width_column<uint32_t>(total_hits, stream, mr);
+  auto point_idx_col = make_fixed_width_column<uint32_t>(total_hits, stream, mr);
 
-  std::unique_ptr<cudf::column> pnt_idx_col = cudf::make_numeric_column(
-    cudf::data_type(cudf::type_id::UINT32), total_hits, cudf::mask_state::UNALLOCATED, stream, mr);
-  uint32_t *d_res_pnt_idx =
-    cudf::mutable_column_device_view::create(pnt_idx_col->mutable_view(), stream)->data<uint32_t>();
-  CUSPATIAL_EXPECTS(d_res_pnt_idx != nullptr, "point_id can not be nullptr");
+  // std::cout << "running quad_pip_phase2_kernel" << std::endl;
 
-  std::cout << "running quad_pip_phase2_kernel" << std::endl;
-  quad_pip_phase2_kernel<T><<<num_valid_pair, threads_per_block>>>(d_pq_poly_idx,
-                                                                   d_pq_quad_idx,
-                                                                   d_quad_offset,
-                                                                   d_quad_len,
-                                                                   d_qt_fpos,
-                                                                   d_pnt_x,
-                                                                   d_pnt_y,
-                                                                   d_poly_fpos,
-                                                                   d_poly_rpos,
-                                                                   d_poly_x,
-                                                                   d_poly_y,
-                                                                   d_num_hits,
-                                                                   d_res_poly_idx,
-                                                                   d_res_pnt_idx);
-  CUDA_TRY(cudaDeviceSynchronize());
-  // gettimeofday(&t3, nullptr);
-  // float refine_phase2_time = cuspatial::calc_time("refine_phase2_time(ms) = ", t2, t3);
+  quad_pip_phase2_kernel<T><<<num_valid_pair, threads_per_block, 0, stream>>>(
+    d_pq_poly_idx.data(),
+    d_pq_quad_idx.data(),
+    d_quad_offset.data(),
+    d_quad_length.data(),
+    qt_fpos.data<uint32_t>(),
+    point_x.data<T>(),
+    point_y.data<T>(),
+    poly_fpos.data<uint32_t>(),
+    poly_rpos.data<uint32_t>(),
+    poly_x.data<T>(),
+    poly_y.data<T>(),
+    d_num_hits.data(),
+    poly_idx_col->mutable_view().data<uint32_t>(),
+    point_idx_col->mutable_view().data<uint32_t>());
 
-  if (0) {
-    std::cout << "phase2 results:d_res_poly_id" << std::endl;
-    thrust::device_ptr<uint32_t> d_res_poly_ptr = thrust::device_pointer_cast(d_res_poly_idx);
-    thrust::copy(
-      d_res_poly_ptr, d_res_poly_ptr + total_hits, std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
+  CUDA_TRY(cudaStreamSynchronize(stream));
 
-    std::cout << "phase2 results:d_res_pnt_idx" << std::endl;
-    thrust::device_ptr<uint32_t> d_res_pnt_ptr = thrust::device_pointer_cast(d_res_pnt_idx);
-    thrust::copy(
-      d_res_pnt_ptr, d_res_pnt_ptr + total_hits, std::ostream_iterator<uint32_t>(std::cout, " "));
-    std::cout << std::endl;
-  }
+  // if (1) {
+  //   print<uint32_t>(*poly_idx_col, std::cout << "phase2: d_res_poly_id ", ", ", stream);
+  //   print<uint32_t>(*point_idx_col, std::cout << "phase2: d_res_point_idx ", ", ", stream);
+  // }
 
-  std::vector<std::unique_ptr<cudf::column>> pair_cols;
-  pair_cols.push_back(std::move(poly_idx_col));
-  pair_cols.push_back(std::move(pnt_idx_col));
-  return pair_cols;
+  std::vector<std::unique_ptr<cudf::column>> cols{};
+  cols.reserve(5);
+  cols.push_back(std::move(poly_idx_col));
+  cols.push_back(std::move(point_idx_col));
+  return std::make_unique<cudf::table>(std::move(cols));
 }
 
 struct pip_refine_processor {
   template <typename T, std::enable_if_t<std::is_floating_point<T>::value> * = nullptr>
   std::unique_ptr<cudf::table> operator()(cudf::table_view const &pq_pair,
                                           cudf::table_view const &quadtree,
-                                          cudf::table_view const &pnt,
+                                          cudf::table_view const &point,
                                           cudf::column_view const &poly_fpos,
                                           cudf::column_view const &poly_rpos,
                                           cudf::column_view const &poly_x,
@@ -591,58 +489,33 @@ struct pip_refine_processor {
                                           rmm::mr::device_memory_resource *mr,
                                           cudaStream_t stream)
   {
-    const uint32_t *d_poly_fpos = poly_fpos.data<uint32_t>();
-    const uint32_t *d_poly_rpos = poly_rpos.data<uint32_t>();
-    const T *d_poly_x           = poly_x.data<T>();
-    const T *d_poly_y           = poly_y.data<T>();
+    uint32_t num_pair  = pq_pair.num_rows();
+    uint32_t num_node  = quadtree.num_rows();
+    uint32_t num_poly  = poly_fpos.size();
+    uint32_t num_point = point.num_rows();
 
-    const T *d_pnt_x = pnt.column(0).data<T>();
-    const T *d_pnt_y = pnt.column(1).data<T>();
-
-    const uint32_t *d_qt_key    = quadtree.column(0).data<uint32_t>();
-    const uint8_t *d_qt_lev     = quadtree.column(1).data<uint8_t>();
-    const bool *d_qt_sign       = quadtree.column(2).data<bool>();
-    const uint32_t *d_qt_length = quadtree.column(3).data<uint32_t>();
-    const uint32_t *d_qt_fpos   = quadtree.column(4).data<uint32_t>();
-
-    const uint32_t *d_pq_poly_id = pq_pair.column(0).data<uint32_t>();
-    const uint32_t *d_pq_quad_id = pq_pair.column(1).data<uint32_t>();
-
-    uint32_t num_pair = pq_pair.num_rows();
-    uint32_t num_node = quadtree.num_rows();
-    uint32_t num_poly = poly_fpos.size();
-    uint32_t num_pnt  = pnt.num_rows();
-
-    std::vector<std::unique_ptr<cudf::column>> pair_cols = dowork(num_pair,
-                                                                  d_pq_poly_id,
-                                                                  d_pq_quad_id,
-                                                                  num_node,
-                                                                  d_qt_key,
-                                                                  d_qt_lev,
-                                                                  d_qt_sign,
-                                                                  d_qt_length,
-                                                                  d_qt_fpos,
-                                                                  num_pnt,
-                                                                  d_pnt_x,
-                                                                  d_pnt_y,
-                                                                  num_poly,
-                                                                  d_poly_fpos,
-                                                                  d_poly_rpos,
-                                                                  d_poly_x,
-                                                                  d_poly_y,
-                                                                  mr,
-                                                                  stream);
-
-    std::unique_ptr<cudf::table> destination_table =
-      std::make_unique<cudf::table>(std::move(pair_cols));
-
-    return destination_table;
+    return dowork<T>(num_pair,
+                     pq_pair.column(0),
+                     pq_pair.column(1),
+                     num_node,
+                     quadtree.column(3),
+                     quadtree.column(4),
+                     num_point,
+                     point.column(0),
+                     point.column(1),
+                     num_poly,
+                     poly_fpos,
+                     poly_rpos,
+                     poly_x,
+                     poly_y,
+                     mr,
+                     stream);
   }
 
   template <typename T, std::enable_if_t<!std::is_floating_point<T>::value> * = nullptr>
   std::unique_ptr<cudf::table> operator()(cudf::table_view const &pq_pair,
                                           cudf::table_view const &quadtree,
-                                          cudf::table_view const &pnt,
+                                          cudf::table_view const &point,
                                           cudf::column_view const &poly_fpos,
                                           cudf::column_view const &poly_rpos,
                                           cudf::column_view const &poly_x,
@@ -654,12 +527,12 @@ struct pip_refine_processor {
   }
 };
 
-}  // end anonymous namespace
+}  // namespace
+}  // namespace detail
 
-namespace cuspatial {
 std::unique_ptr<cudf::table> pip_refine(cudf::table_view const &pq_pair,
                                         cudf::table_view const &quadtree,
-                                        cudf::table_view const &pnt,
+                                        cudf::table_view const &point,
                                         cudf::column_view const &poly_fpos,
                                         cudf::column_view const &poly_rpos,
                                         cudf::column_view const &poly_x,
@@ -668,7 +541,7 @@ std::unique_ptr<cudf::table> pip_refine(cudf::table_view const &pq_pair,
 {
   CUSPATIAL_EXPECTS(pq_pair.num_columns() == 2, "a quadrant-polygon table must have 2 columns");
   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "a quadtree table must have 5 columns");
-  CUSPATIAL_EXPECTS(pnt.num_columns() == 2, "a point table must have 5 columns");
+  CUSPATIAL_EXPECTS(point.num_columns() == 2, "a point table must have 5 columns");
   CUSPATIAL_EXPECTS(poly_fpos.size() > 0, "number of polygons must be greater than 0");
   CUSPATIAL_EXPECTS(poly_rpos.size() >= poly_fpos.size(),
                     "number of rings must be no less than number of polygons");
@@ -677,15 +550,15 @@ std::unique_ptr<cudf::table> pip_refine(cudf::table_view const &pq_pair,
   CUSPATIAL_EXPECTS(poly_x.size() >= 4 * poly_rpos.size(),
                     "all rings must have at least 4 vertices");
 
-  cudf::data_type pnt_dtype  = pnt.column(0).type();
-  cudf::data_type poly_dtype = poly_x.type();
-  CUSPATIAL_EXPECTS(pnt_dtype == poly_dtype, "point and polygon must have the same data type");
+  cudf::data_type point_dtype = point.column(0).type();
+  cudf::data_type poly_dtype  = poly_x.type();
+  CUSPATIAL_EXPECTS(point_dtype == poly_dtype, "point and polygon must have the same data type");
 
-  return cudf::type_dispatcher(pnt_dtype,
-                               pip_refine_processor{},
+  return cudf::type_dispatcher(point_dtype,
+                               detail::pip_refine_processor{},
                                pq_pair,
                                quadtree,
-                               pnt,
+                               point,
                                poly_fpos,
                                poly_rpos,
                                poly_x,

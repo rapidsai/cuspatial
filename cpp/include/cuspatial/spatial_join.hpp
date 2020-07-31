@@ -39,6 +39,7 @@ namespace cuspatial {
  * @param y_max The upper-right y-coordinate of the area of interest bounding box.
  * @param scale Scale to apply to each x and y distance from x_min and y_min.
  * @param max_depth Maximum quadtree depth at which to stop testing for intersections.
+ * @param mr The optional resource to use for output device memory allocations.
  *
  * @throw cuspatial::logic_error If the quadtree table is malformed
  * @throw cuspatial::logic_error If the polygon bounding box table is malformed
@@ -51,7 +52,6 @@ namespace cuspatial {
  * poly_offset - INT32 column of indices for each poly bbox that intersects with the quadtree.
  * quad_offset - INT32 column of indices for each leaf quadrant intersecting with a poly bbox.
  */
-
 std::unique_ptr<cudf::table> quad_bbox_join(
   cudf::table_view const& quadtree,
   cudf::table_view const& poly_bbox,
@@ -77,6 +77,7 @@ std::unique_ptr<cudf::table> quad_bbox_join(
  * @param rpos ring offset array to vertex
  * @param poly_x polygon x coordiante array.
  * @param poly_y polygon y coordiante array.
+ * @param mr The optional resource to use for output device memory allocations.
  *
  * @return array of (polygon-idx ,point-idx) pairs that point is within polyon;
  * point-idx and polygon-idx are offsets of point and polygon arrays, respectively
@@ -103,6 +104,7 @@ std::unique_ptr<cudf::table> pip_refine(
  * @param spos polyline offset array to vertex
  * @param poly_x polygon x coordiante array.
  * @param poly_y polygon y coordiante array.
+ * @param mr The optional resource to use for output device memory allocations.
  *
  * @return a table of three columns: (point-idx, polyline-idx, point-to-polyline-distance)
  **/
