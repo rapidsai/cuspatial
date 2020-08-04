@@ -84,8 +84,13 @@ std::unique_ptr<cudf::table> quad_bbox_join(
  * @throw cuspatial::logic_error If each ring has fewer than three vertices.
  * @throw cuspatial::logic_error If the types of point and polygon vertices are different.
  *
- * @returns A cudf table of (polygon_index, point_index) pairs for each point/polyon intersection
- * pair; point_index and polygon_index are offsets into the point and polygon arrays, respectively.
+ * @returns A cudf table with two columns of point/polygon pairs for each intersection:
+ *    point_index - UINT32 column of point indices
+ * polyline_index - UINT32 column of polygon indices
+ *
+ * @note The returned point and polygon indices are offsets into the input point and polygon
+ * columns, respectively.
+ *
  **/
 std::unique_ptr<cudf::table> quadtree_point_in_polygon(
   cudf::table_view const& poly_quad_pairs,
@@ -113,7 +118,21 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(
  * @param poly_points_y Polyline point y-coordinates
  * @param mr The optional resource to use for output device memory allocations.
  *
- * @return a table of three columns: (point_index, polyline_index, point_to_polyline_distance)
+ * @throw cuspatial::logic_error If the poly_quad_pairs table is malformed.
+ * @throw cuspatial::logic_error If the quadtree table is malformed.
+ * @throw cuspatial::logic_error If the number of point indices doesn't match the number of points.
+ * @throw cuspatial::logic_error If each polyline has fewer than two vertices.
+ * @throw cuspatial::logic_error If the types of point and polygon vertices are different.
+ *
+ * @returns A cudf table with three columns of point/polyline pairs and the distances between each:
+ *    point_index - UINT32 column of point indices
+ * polyline_index - UINT32 column of polyline indices
+ *       distance - FLOAT or DOUBLE column (based on input point data type) of distances between
+ *                  each point and polyline
+ *
+ * @note The returned point and polyline indices are offsets into the input point and polygon
+ * columns, respectively.
+ *
  **/
 std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
   cudf::table_view const& poly_quad_pairs,

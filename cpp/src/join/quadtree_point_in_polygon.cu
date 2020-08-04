@@ -536,7 +536,6 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const &p
   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "a quadtree table must have 5 columns");
   CUSPATIAL_EXPECTS(point_indices.size() == point_x.size() && point_x.size() == point_y.size(),
                     "number of points must be the same for both x and y columns");
-  CUSPATIAL_EXPECTS(poly_offsets.size() > 0, "number of polygons must be greater than 0");
   CUSPATIAL_EXPECTS(ring_offsets.size() >= poly_offsets.size(),
                     "number of rings must be no less than number of polygons");
   CUSPATIAL_EXPECTS(poly_points_x.size() == poly_points_y.size(),

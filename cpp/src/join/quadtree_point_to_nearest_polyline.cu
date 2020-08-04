@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -297,7 +297,6 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "a quadtree table must have 5 columns");
   CUSPATIAL_EXPECTS(point_indices.size() == point_x.size() && point_x.size() == point_y.size(),
                     "number of points must be the same for both x and y columns");
-  CUSPATIAL_EXPECTS(poly_offsets.size() > 0, "number of polylines must be greater than 0");
   CUSPATIAL_EXPECTS(poly_points_x.size() == poly_points_y.size(),
                     "numbers of vertices must be the same for both x and y columns");
   CUSPATIAL_EXPECTS(poly_points_x.size() >= 2 * poly_offsets.size(),
