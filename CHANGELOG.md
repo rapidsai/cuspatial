@@ -3,7 +3,8 @@
 ## New Features
 
 - PR #146 quadtree-polygon pairing for spatial filtering
-- PR #149 spatial refinement to pair up points and polygons based on point-in-polygon test 
+- PR #149 Add point-in-polygon spatial refinement using quadtree indexing
+- PR #149 Add point-to-nearest-polyline spatial refinement using quadtree indexing
 
 ## Improvements
 - PR #237 Remove nvstrings references from CMakeLists.txt
