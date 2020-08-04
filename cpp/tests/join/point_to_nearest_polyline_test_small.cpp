@@ -98,8 +98,10 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto quadtree_pair = cuspatial::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, this->mr());
 
-  auto &quadtree = std::get<1>(quadtree_pair);
-  auto points    = cudf::gather(cudf::table_view{{x, y}}, *std::get<0>(quadtree_pair), this->mr());
+  auto &quadtree      = std::get<1>(quadtree_pair);
+  auto &point_indices = std::get<0>(quadtree_pair);
+  // auto points    = cudf::gather(cudf::table_view{{x, y}}, *std::get<0>(quadtree_pair),
+  // this->mr());
 
   double const expansion_radius{2.0};
   fixed_width_column_wrapper<int32_t> poly_offsets({0, 4, 10, 14});
@@ -158,23 +160,31 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
 
   fixed_width_column_wrapper<int32_t> p2p_nn_refine_poly_offsets({4, 10, 14, 19});
 
-  auto point_in_polygon_pairs = cuspatial::p2p_nn_refine(*polygon_quadrant_pairs,
-                                                         *quadtree,
-                                                         *points,
-                                                         p2p_nn_refine_poly_offsets,
-                                                         poly_x,
-                                                         poly_y,
-                                                         this->mr());
+  auto point_to_polyline_distances =
+    cuspatial::quadtree_point_to_nearest_polyline(*polygon_quadrant_pairs,
+                                                  *quadtree,
+                                                  *point_indices,
+                                                  x,
+                                                  y,
+                                                  poly_offsets,
+                                                  // p2p_nn_refine_poly_offsets,
+                                                  poly_x,
+                                                  poly_y,
+                                                  this->mr());
 
-  CUSPATIAL_EXPECTS(point_in_polygon_pairs->num_rows() == points->num_rows(),
-                    "resulting point-to-polyline pairs should be the same as number of points");
+  CUSPATIAL_EXPECTS(point_to_polyline_distances->num_columns() == 3,
+                    "a point-to-polyline distance table must have 3 columns");
 
-  CUSPATIAL_EXPECTS(point_in_polygon_pairs->num_columns() == 3,
-                    "a p2p_nn result table must have 3 columns");
+  CUSPATIAL_EXPECTS(
+    point_to_polyline_distances->num_rows() == point_indices->size(),
+    "number of point-to-polyline distance pairs should be the same as number of points");
 
-  cudf::test::print(point_in_polygon_pairs->get_column(0), std::cout << "point_indices: ", ", ");
-  cudf::test::print(point_in_polygon_pairs->get_column(1), std::cout << "poly_indices:  ", ", ");
-  cudf::test::print(point_in_polygon_pairs->get_column(2), std::cout << "nn_distances:  ", ", ");
+  // cudf::test::print(
+  //   point_to_polyline_distances->get_column(0), std::cout << "point_indices: ", ", ");
+  // cudf::test::print(
+  //   point_to_polyline_distances->get_column(1), std::cout << "poly_indices:  ", ", ");
+  // cudf::test::print(
+  //   point_to_polyline_distances->get_column(2), std::cout << "nn_distances:  ", ", ");
 
   auto expected_distances_column = []() {
     if (std::is_same<T, float>()) {
@@ -224,5 +234,5 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
                          3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1,
                          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}),
                       expected_distances_column()}},
-    *point_in_polygon_pairs);
+    *point_to_polyline_distances);
 }

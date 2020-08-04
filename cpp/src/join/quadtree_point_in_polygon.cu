@@ -419,13 +419,12 @@ std::unique_ptr<cudf::table> compute_quadtree_point_in_polygon(
   thrust::exclusive_scan(
     rmm::exec_policy(stream)->on(stream), d_num_hits.begin(), d_num_hits.end(), d_num_hits.begin());
 
-  // use arrays in poly_idx and point_idx columns as kernel arguments to directly write output to
-  // columns
-  auto poly_idx_col  = make_fixed_width_column<uint32_t>(total_hits, stream, mr);
-  auto point_idx_col = make_fixed_width_column<uint32_t>(total_hits, stream, mr);
+  auto poly_index_col  = make_fixed_width_column<uint32_t>(total_hits, stream, mr);
+  auto point_index_col = make_fixed_width_column<uint32_t>(total_hits, stream, mr);
 
-  auto d_poly_idx_col  = cudf::mutable_column_device_view::create(*poly_idx_col, stream);
-  auto d_point_idx_col = cudf::mutable_column_device_view::create(*point_idx_col, stream);
+  // write output directly to poly_index_col and point_index_col columns
+  auto d_poly_index_col  = cudf::mutable_column_device_view::create(*poly_index_col, stream);
+  auto d_point_index_col = cudf::mutable_column_device_view::create(*point_index_col, stream);
 
   quad_pip_phase2_kernel<T><<<num_valid_pair, threads_per_block, 0, stream>>>(d_pq_poly_idx.data(),
                                                                               d_pq_quad_idx.data(),
@@ -440,15 +439,15 @@ std::unique_ptr<cudf::table> compute_quadtree_point_in_polygon(
                                                                               *d_poly_points_x,
                                                                               *d_poly_points_y,
                                                                               d_num_hits.data(),
-                                                                              *d_poly_idx_col,
-                                                                              *d_point_idx_col);
+                                                                              *d_poly_index_col,
+                                                                              *d_point_index_col);
 
   CUDA_TRY(cudaStreamSynchronize(stream));
 
   std::vector<std::unique_ptr<cudf::column>> cols{};
   cols.reserve(2);
-  cols.push_back(std::move(poly_idx_col));
-  cols.push_back(std::move(point_idx_col));
+  cols.push_back(std::move(poly_index_col));
+  cols.push_back(std::move(point_index_col));
   return std::make_unique<cudf::table>(std::move(cols));
 }
 
