@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <algorithm>
 #include <cuspatial/error.hpp>
 #include <cuspatial/point_quadtree.hpp>
 #include <cuspatial/polygon_bounding_box.hpp>
@@ -39,6 +38,8 @@
 #include <thrust/sort.h>
 
 #include <ogrsf_frmts.h>
+
+// #include <algorithm>
 
 /*
  * The test uses the same quadtree structure as in pip_refine_test_small.
@@ -81,12 +82,14 @@ inline auto make_polygons_geometry(thrust::host_vector<uint32_t> const &poly_off
 {
   std::vector<OGRGeometry *> polygons{};
   for (uint32_t poly_idx = 0, poly_end = poly_offsets.size(); poly_idx < poly_end; ++poly_idx) {
-    auto ring_idx = static_cast<size_t>(poly_idx == 0 ? 0 : poly_offsets[poly_idx - 1]);
-    auto ring_end = static_cast<size_t>(poly_offsets[poly_idx]);
-    auto polygon  = static_cast<OGRPolygon *>(OGRGeometryFactory::createGeometry(wkbPolygon));
+    auto ring_idx = static_cast<size_t>(poly_offsets[poly_idx]);
+    auto ring_end = static_cast<size_t>(
+      poly_idx < poly_offsets.size() - 1 ? poly_offsets[poly_idx + 1] : ring_offsets.size());
+    auto polygon = static_cast<OGRPolygon *>(OGRGeometryFactory::createGeometry(wkbPolygon));
     for (; ring_idx < ring_end; ++ring_idx) {
-      auto seg_idx = static_cast<size_t>(ring_idx == 0 ? 0 : ring_offsets[ring_idx - 1]);
-      auto seg_end = static_cast<size_t>(ring_offsets[ring_idx]);
+      auto seg_idx = static_cast<size_t>(ring_offsets[ring_idx]);
+      auto seg_end = static_cast<size_t>(
+        ring_idx < ring_offsets.size() - 1 ? ring_offsets[ring_idx + 1] : poly_x.size());
       auto ring = static_cast<OGRLineString *>(OGRGeometryFactory::createGeometry(wkbLinearRing));
       for (; seg_idx < seg_end; ++seg_idx) { ring->addPoint(poly_x[seg_idx], poly_y[seg_idx]); }
       polygon->addRing(ring);
@@ -153,8 +156,9 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   auto quadtree_pair = cuspatial::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, this->mr());
 
-  auto &quadtree = std::get<1>(quadtree_pair);
-  auto points    = cudf::gather(cudf::table_view{{x, y}}, *std::get<0>(quadtree_pair), this->mr());
+  auto &quadtree      = std::get<1>(quadtree_pair);
+  auto &point_indices = std::get<0>(quadtree_pair);
+  auto points         = cudf::gather(cudf::table_view{{x, y}}, *point_indices, this->mr());
 
   fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
   fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14});
@@ -211,25 +215,24 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
     *quadtree, *polygon_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
-  fixed_width_column_wrapper<int32_t> pip_refine_poly_offsets({1, 2, 3, 4});
-  fixed_width_column_wrapper<int32_t> pip_refine_ring_offsets({4, 10, 14, 19});
-
-  auto point_in_polygon_pairs = cuspatial::pip_refine(*polygon_quadrant_pairs,
-                                                      *quadtree,
-                                                      *points,
-                                                      pip_refine_poly_offsets,
-                                                      pip_refine_ring_offsets,
-                                                      poly_x,
-                                                      poly_y,
-                                                      this->mr());
+  auto point_in_polygon_pairs = cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+                                                                     *quadtree,
+                                                                     *point_indices,
+                                                                     x,
+                                                                     y,
+                                                                     poly_offsets,
+                                                                     ring_offsets,
+                                                                     poly_x,
+                                                                     poly_y,
+                                                                     this->mr());
 
   auto poly_idx  = point_in_polygon_pairs->get_column(0).view();
   auto point_idx = point_in_polygon_pairs->get_column(1).view();
 
   // verify
 
-  auto h_poly = make_polygons_geometry(cudf::test::to_host<uint32_t>(pip_refine_poly_offsets).first,
-                                       cudf::test::to_host<uint32_t>(pip_refine_ring_offsets).first,
+  auto h_poly = make_polygons_geometry(cudf::test::to_host<uint32_t>(poly_offsets).first,
+                                       cudf::test::to_host<uint32_t>(ring_offsets).first,
                                        cudf::test::to_host<T>(poly_x).first,
                                        cudf::test::to_host<T>(poly_y).first);
 

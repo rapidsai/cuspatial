@@ -64,40 +64,47 @@ std::unique_ptr<cudf::table> quad_bbox_join(
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
- * @brief pair points and polygons using ray-cast based point-in-polygon test algorithm in two
- *phases: phase 1 counts the total number of output pairs for precise memory allocation phase 2
- *actually writes (point,polygon) pairs
+ * @brief Finds points in a set of (polygon, quadrant) pairs derived from spatial filtering.
  *
- * @param pq_pair cudf table of (quadrant, polygon) index pairs derived from spatial filtering.
- * @param quadtree cudf table representing a quadtree (key, level, is_quad, length, offset).
- * @param pnt cudf table of (x,y) points
- * note that points are in-place sorted in quadtree construction and have different orders than the
- * orginal input points.
- * @param fpos feature/polygon offset array to rings
- * @param rpos ring offset array to vertex
- * @param poly_x polygon x coordiante array.
- * @param poly_y polygon y coordiante array.
+ * @param poly_quad_pairs Table of (quadrant, polygon) index pairs derived from spatial filtering.
+ * @param quadtree Table representing a quadtree (key, level, is_quad, length, offset).
+ * @param point_indices Sorted indices of quadtree points
+ * @param point_x x-coordinates of points to test
+ * @param point_y y-coordinates of points to test
+ * @param poly_offsets Begin indices of the first ring in each polygon (i.e. prefix-sum).
+ * @param ring_offsets Begin indices of the first point in each ring (i.e. prefix-sum).
+ * @param poly_point_x Polygon point x-coodinates.
+ * @param poly_point_y Polygon point y-coodinates.
  * @param mr The optional resource to use for output device memory allocations.
  *
- * @return array of (polygon-idx ,point-idx) pairs that point is within polyon;
- * point-idx and polygon-idx are offsets of point and polygon arrays, respectively
+ * @throw cuspatial::logic_error If the poly_quad_pairs table is malformed.
+ * @throw cuspatial::logic_error If the quadtree table is malformed.
+ * @throw cuspatial::logic_error If the number of point indices doesn't match the number of points.
+ * @throw cuspatial::logic_error If the number of rings is less than the number of polygons.
+ * @throw cuspatial::logic_error If each ring has fewer than three vertices.
+ * @throw cuspatial::logic_error If the types of point and polygon vertices are different.
+ *
+ * @returns A cudf table of (polygon_index, point_index) pairs for each point/polyon intersection
+ * pair; point_index and polygon_index are offsets into the point and polygon arrays, respectively.
  **/
-std::unique_ptr<cudf::table> pip_refine(
-  cudf::table_view const& pq_pair,
+std::unique_ptr<cudf::table> quadtree_point_in_polygon(
+  cudf::table_view const& poly_quad_pairs,
   cudf::table_view const& quadtree,
-  cudf::table_view const& pnt,
+  cudf::column_view const& point_indices,
+  cudf::column_view const& point_x,
+  cudf::column_view const& point_y,
   cudf::column_view const& poly_fpos,
   cudf::column_view const& poly_rpos,
-  cudf::column_view const& poly_x,
-  cudf::column_view const& poly_y,
+  cudf::column_view const& poly_point_x,
+  cudf::column_view const& poly_point_y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
  * @brief given a vector of paired of quadrants and polylines, for each points in a quadrant,
  * find its nearest polylines and the corresponding distance between the point and the polygon
  *
- * @param pq_pair table of two arrays for (quadrant,polyline) pairs derived from spatial filtering
- * @param quadtree cudf table representing a quadtree (key, level, is_quad, length, offset).
+ * @param poly_quad_pairs Table of (quadrant, polygon) index pairs derived from spatial filtering.
+ * @param quadtree Table representing a quadtree (key, level, is_quad, length, offset).
  * @param pnt cudf table of (x,y) points
  * note that points are in-place sorted in quadtree construction and have different orders than the
  * orginal input points.
@@ -109,7 +116,7 @@ std::unique_ptr<cudf::table> pip_refine(
  * @return a table of three columns: (point-idx, polyline-idx, point-to-polyline-distance)
  **/
 std::unique_ptr<cudf::table> p2p_nn_refine(
-  cudf::table_view const& pq_pair,
+  cudf::table_view const& poly_quad_pairs,
   cudf::table_view const& quadtree,
   cudf::table_view const& pnt,
   cudf::column_view const& poly_spos,

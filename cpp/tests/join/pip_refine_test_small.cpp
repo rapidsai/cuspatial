@@ -97,8 +97,8 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto quadtree_pair = cuspatial::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, this->mr());
 
-  auto &quadtree = std::get<1>(quadtree_pair);
-  auto points    = cudf::gather(cudf::table_view{{x, y}}, *std::get<0>(quadtree_pair), this->mr());
+  auto &quadtree      = std::get<1>(quadtree_pair);
+  auto &point_indices = std::get<0>(quadtree_pair);
 
   fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
   fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14});
@@ -155,17 +155,16 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
     *quadtree, *polygon_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
-  fixed_width_column_wrapper<int32_t> pip_refine_poly_offsets({1, 2, 3, 4});
-  fixed_width_column_wrapper<int32_t> pip_refine_ring_offsets({4, 10, 14, 19});
-
-  auto point_in_polygon_pairs = cuspatial::pip_refine(*polygon_quadrant_pairs,
-                                                      *quadtree,
-                                                      *points,
-                                                      pip_refine_poly_offsets,
-                                                      pip_refine_ring_offsets,
-                                                      poly_x,
-                                                      poly_y,
-                                                      this->mr());
+  auto point_in_polygon_pairs = cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+                                                                     *quadtree,
+                                                                     *point_indices,
+                                                                     x,
+                                                                     y,
+                                                                     poly_offsets,
+                                                                     ring_offsets,
+                                                                     poly_x,
+                                                                     poly_y,
+                                                                     this->mr());
 
   CUSPATIAL_EXPECTS(point_in_polygon_pairs->num_columns() == 2,
                     "a polygon-quadrant pair table must have 2 columns");

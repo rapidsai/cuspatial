@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#include "cudf/utilities/type_dispatcher.hpp"
-#include "utility/join_thrust.cuh"
-
 #include <cuspatial/error.hpp>
 #include <cuspatial/spatial_join.hpp>
 
@@ -36,6 +33,8 @@
 #include <vector>
 
 namespace {
+
+static uint32_t const threads_per_block = 256;
 
 template <typename T>
 __global__ void kernel_nearest_polyline(
@@ -237,23 +236,25 @@ std::vector<std::unique_ptr<cudf::column>> dowork(uint32_t num_pair,
   // gettimeofday(&t0, nullptr);
   std::cout << "running quad_pip_phase1_kernel" << std::endl;
   kernel_nearest_polyline<T>
-    <<<num_quads, threads_per_block>>>(const_cast<uint32_t *>(d_temp_quad_idx),
-                                       const_cast<uint32_t *>(d_temp_pidx_fpos),
-                                       const_cast<uint32_t *>(d_temp_poly_idx),
+    <<<num_quads, threads_per_block, 0, stream>>>(const_cast<uint32_t *>(d_temp_quad_idx),
+                                                  const_cast<uint32_t *>(d_temp_pidx_fpos),
+                                                  const_cast<uint32_t *>(d_temp_poly_idx),
 
-                                       const_cast<uint32_t *>(d_qt_length),
-                                       const_cast<uint32_t *>(d_qt_fpos),
-                                       const_cast<T *>(d_pnt_x),
-                                       const_cast<T *>(d_pnt_y),
+                                                  const_cast<uint32_t *>(d_qt_length),
+                                                  const_cast<uint32_t *>(d_qt_fpos),
+                                                  const_cast<T *>(d_pnt_x),
+                                                  const_cast<T *>(d_pnt_y),
 
-                                       const_cast<uint32_t *>(d_poly_spos),
-                                       const_cast<T *>(d_poly_x),
-                                       const_cast<T *>(d_poly_y),
+                                                  const_cast<uint32_t *>(d_poly_spos),
+                                                  const_cast<T *>(d_poly_x),
+                                                  const_cast<T *>(d_poly_y),
 
-                                       d_res_pnt_idx,
-                                       d_res_poly_idx,
-                                       d_res_poly_dist);
-  CUDA_TRY(cudaDeviceSynchronize());
+                                                  d_res_pnt_idx,
+                                                  d_res_poly_idx,
+                                                  d_res_poly_dist);
+
+  CUDA_TRY(cudaStreamSynchronize(stream));
+  // CUDA_TRY(cudaDeviceSynchronize());
   // gettimeofday(&t1, nullptr);
   // float refine_phase1_time = cuspatial::calc_time("refine_phase1_time (ms) = ", t0, t1);
 

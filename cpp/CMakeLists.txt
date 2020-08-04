@@ -309,7 +309,7 @@ add_library(cuspatial SHARED
             src/io/shp/polygon_shapefile_reader.cpp
             src/io/shp/polygon_shapefile_reader.cu
             src/join/p2p_nn_refine.cu
-            src/join/pip_refine.cu
+            src/join/quadtree_point_in_polygon.cu
             src/join/quadtree_poly_filtering.cu
             src/spatial/polygon_bounding_box.cu
             src/spatial/polyline_bounding_box.cu
