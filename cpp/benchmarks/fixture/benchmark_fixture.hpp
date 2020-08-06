@@ -20,7 +20,18 @@
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
-namespace cudf {
+namespace cuspatial {
+
+namespace {
+// memory resource factory helpers
+inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+
+inline auto make_pool()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+}
+}  // namespace
+
 /**
  * @brief Google Benchmark fixture for libcudf benchmarks
  *
@@ -52,14 +63,6 @@ namespace cudf {
  *
  * BENCHMARK_REGISTER_F(my_benchmark, my_test_name)->Range(128, 512);
  */
-
-inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
-
-inline auto make_pool()
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
-}
-
 class benchmark : public ::benchmark::Fixture {
  public:
   virtual void SetUp(const ::benchmark::State& state)
@@ -83,4 +86,4 @@ class benchmark : public ::benchmark::Fixture {
   std::shared_ptr<rmm::mr::device_memory_resource> mr;
 };
 
-};  // namespace cudf
+};  // namespace cuspatial
