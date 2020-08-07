@@ -33,9 +33,9 @@ inline auto make_pool()
 }  // namespace
 
 /**
- * @brief Google Benchmark fixture for libcudf benchmarks
+ * @brief Google Benchmark fixture for libcuspatial benchmarks
  *
- * libcudf benchmarks should use a fixture derived from this fixture class to
+ * libcuspatial benchmarks should use a fixture derived from this fixture class to
  * ensure that the RAPIDS Memory Manager pool mode is used in benchmarks, which
  * eliminates memory allocation / deallocation performance overhead from the
  * benchmark.
@@ -47,7 +47,7 @@ inline auto make_pool()
  * Example:
  *
  * template <class T>
- * class my_benchmark : public cudf::benchmark {
+ * class my_benchmark : public cuspatial::benchmark {
  * public:
  *   using TypeParam = T;
  * };
