@@ -78,8 +78,8 @@ __global__ void find_nearest_polyline_kernel(
     // each thread loads its point
     auto point_pos       = quad_offsets.element<uint32_t>(quad_idx) + tid;
     auto point_id        = point_indices.element<uint32_t>(point_pos);
-    auto x               = point_x.element<T>(point_id);
-    auto y               = point_y.element<T>(point_id);
+    auto px              = point_x.element<T>(point_id);
+    auto py              = point_y.element<T>(point_id);
     T distance           = 1e20;
     auto nearest_poly_id = static_cast<uint32_t>(-1);
 
@@ -98,18 +98,18 @@ __global__ void find_nearest_polyline_kernel(
         T y0  = poly_points_y.element<T>(ring_begin + ((point_idx + 0) % ring_len));
         T x1  = poly_points_x.element<T>(ring_begin + ((point_idx + 1) % ring_len));
         T y1  = poly_points_y.element<T>(ring_begin + ((point_idx + 1) % ring_len));
-        T dx  = x1 - x0;
-        T dy  = y1 - y0;
-        T dx2 = x - x0;
-        T dy2 = y - y0;
-        T r   = (dx * dx2 + dy * dy2) / sqrt(dx * dx + dy * dy);
-        T d   = 1e20;
-        if (r <= 0 || r >= sqrt(dx * dx + dy * dy)) {
-          T d1 = hypot(x - x0, y - y0);
-          T d2 = hypot(x - x1, y - y1);
-          d    = min(min(d, d1), d2);
+        T d1x = x1 - x0, d1y = y1 - y0;
+        T d2x = px - x0, d2y = py - y0;
+        T d1 = sqrt(d1x * d1x + d1y * d1y);
+        T r  = (d1x * d2x + d1y * d2y) / d1;
+        T d  = 1e20;
+        if (r <= 0 || r >= d1) {
+          T d3x = px - x1, d3y = py - y1;
+          T d2 = sqrt(d2x * d2x + d2y * d2y);
+          T d3 = sqrt(d3x * d3x + d3y * d3y);
+          d    = min(min(d, d2), d3);
         } else {
-          d = sqrt((dx2 * dx2 + dy2 * dy2) - (r * r));
+          d = sqrt((d2x * d2x + d2y * d2y) - (r * r));
         }
         if (d < distance) {
           distance        = d;
