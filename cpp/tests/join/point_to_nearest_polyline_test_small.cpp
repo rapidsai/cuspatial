@@ -156,8 +156,6 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
     *quadtree, *polyline_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
-  fixed_width_column_wrapper<int32_t> p2p_nn_refine_poly_offsets({4, 10, 14, 19});
-
   auto point_to_polyline_distances =
     cuspatial::quadtree_point_to_nearest_polyline(*polygon_quadrant_pairs,
                                                   *quadtree,
@@ -165,7 +163,6 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
                                                   x,
                                                   y,
                                                   poly_offsets,
-                                                  // p2p_nn_refine_poly_offsets,
                                                   poly_x,
                                                   poly_y,
                                                   this->mr());
