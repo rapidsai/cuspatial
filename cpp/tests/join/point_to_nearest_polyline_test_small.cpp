@@ -174,13 +174,6 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
     point_to_polyline_distances->num_rows() == point_indices->size(),
     "number of point-to-polyline distance pairs should be the same as number of points");
 
-  // cudf::test::print(
-  //   point_to_polyline_distances->get_column(0), std::cout << "point_indices: ", ", ");
-  // cudf::test::print(
-  //   point_to_polyline_distances->get_column(1), std::cout << "poly_indices:  ", ", ");
-  // cudf::test::print(
-  //   point_to_polyline_distances->get_column(2), std::cout << "nn_distances:  ", ", ");
-
   auto expected_distances_column = []() {
     if (std::is_same<T, float>()) {
       return fixed_width_column_wrapper<T>(
