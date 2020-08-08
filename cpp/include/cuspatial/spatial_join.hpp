@@ -64,11 +64,19 @@ std::unique_ptr<cudf::table> quad_bbox_join(
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
- * @brief Finds points in a set of (polygon, quadrant) pairs derived from spatial filtering.
+ * @brief Test whether the specified points are inside any of the specified polygons.
  *
- * @param poly_quad_pairs Table of (quadrant, polygon) index pairs derived from spatial filtering.
- * @param quadtree Table representing a quadtree (key, level, is_quad, length, offset).
- * @param point_indices Sorted indices of quadtree points
+ * Uses the table of (polygon, quadrant) pairs returned by `cuspatial::quad_bbox_join` to
+ * ensure only the points in the same quadrant as each polygon are tested for intersection.
+ *
+ * This pre-filtering can dramatically reduce number of points tested per polygon, enabling
+ * faster intersection-testing at the expense of extra memory allocated to store the quadtree and
+ * sorted point_indices.
+ *
+ * @param poly_quad_pairs cudf table of (polygon, quadrant) index pairs returned by
+ * `cuspatial::quad_bbox_join`
+ * @param quadtree cudf table representing a quadtree (key, level, is_quad, length, offset).
+ * @param point_indices Sorted point indices returned by `cuspatial::quadtree_on_points`
  * @param point_x x-coordinates of points to test
  * @param point_y y-coordinates of points to test
  * @param poly_offsets Begin indices of the first ring in each polygon (i.e. prefix-sum).
@@ -81,15 +89,15 @@ std::unique_ptr<cudf::table> quad_bbox_join(
  * @throw cuspatial::logic_error If the quadtree table is malformed.
  * @throw cuspatial::logic_error If the number of point indices doesn't match the number of points.
  * @throw cuspatial::logic_error If the number of rings is less than the number of polygons.
- * @throw cuspatial::logic_error If each ring has fewer than three vertices.
+ * @throw cuspatial::logic_error If any ring has fewer than three vertices.
  * @throw cuspatial::logic_error If the types of point and polygon vertices are different.
  *
- * @returns A cudf table with two columns of point/polygon pairs for each intersection:
- *    point_index - UINT32 column of point indices
- * polyline_index - UINT32 column of polygon indices
+ * @return A cudf table with two columns, where each row represents a point/polygon intersection:
+ *   point_offset - UINT32 column of point indices
+ * polygon_offset - UINT32 column of polygon indices
  *
- * @note The returned point and polygon indices are offsets into the input point and polygon
- * columns, respectively.
+ * @note The returned point and polygon indices are offsets into the (point_x, point_y) and
+ * poly_quad_pairs inputs, respectively.
  *
  **/
 std::unique_ptr<cudf::table> quadtree_point_in_polygon(
@@ -105,15 +113,19 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
 /**
- * @brief given a vector of paired of quadrants and polylines, for each points in a quadrant,
- * find its nearest polylines and the corresponding distance between the point and the polygon
+ * @brief Finds the nearest polyline to each point in a quadrant, and computes the distances between
+ * each point and polyline.
  *
- * @param poly_quad_pairs Table of (quadrant, polygon) index pairs derived from spatial filtering.
- * @param quadtree Table representing a quadtree (key, level, is_quad, length, offset).
- * @param point_indices Sorted indices of quadtree points
+ * Uses the table of (polyline, quadrant) pairs returned by `cuspatial::quad_bbox_join` to
+ * ensure distances are computed only for the points in the same quadrant as each polyline.
+ *
+ * @param poly_quad_pairs cudf table of (polyline, quadrant) index pairs returned by
+ * `cuspatial::quad_bbox_join`
+ * @param quadtree cudf table representing a quadtree (key, level, is_quad, length, offset).
+ * @param point_indices Sorted point indices returned by `cuspatial::quadtree_on_points`
  * @param point_x x-coordinates of points to test
  * @param point_y y-coordinates of points to test
- * @param poly_offsets Begin indices of the first ring in each polyline (i.e. prefix-sum)
+ * @param poly_offsets Begin indices of the first point in each polyline (i.e. prefix-sum)
  * @param poly_points_x Polyline point x-coordinates
  * @param poly_points_y Polyline point y-coordinates
  * @param mr The optional resource to use for output device memory allocations.
@@ -121,17 +133,19 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(
  * @throw cuspatial::logic_error If the poly_quad_pairs table is malformed.
  * @throw cuspatial::logic_error If the quadtree table is malformed.
  * @throw cuspatial::logic_error If the number of point indices doesn't match the number of points.
- * @throw cuspatial::logic_error If each polyline has fewer than two vertices.
- * @throw cuspatial::logic_error If the types of point and polygon vertices are different.
+ * @throw cuspatial::logic_error If any polyline has fewer than two vertices.
+ * @throw cuspatial::logic_error If the types of point and polyline vertices are different.
  *
- * @returns A cudf table with three columns of point/polyline pairs and the distances between each:
- *    point_index - UINT32 column of point indices
- * polyline_index - UINT32 column of polyline indices
- *       distance - FLOAT or DOUBLE column (based on input point data type) of distances between
- *                  each point and polyline
+ * @return A cudf table with three columns, where each row represents a point/polyline pair and the
+ * distance between the two:
  *
- * @note The returned point and polyline indices are offsets into the input point and polygon
- * columns, respectively.
+ *    point_offset - UINT32 column of point indices
+ * polyline_offset - UINT32 column of polyline indices
+ *        distance - FLOAT or DOUBLE column (based on input point data type) of distances between
+ *                   each point and polyline
+ *
+ * @note The returned point and polyline indices are offsets into the (point_x, point_y) and
+ * poly_quad_pairs inputs, respectively.
  *
  **/
 std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
