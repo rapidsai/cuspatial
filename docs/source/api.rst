@@ -38,6 +38,14 @@ Spatial Querying
 .. automethod:: cuspatial.core.spatial_window.points_in_spatial_window
 
 
+Spatial Joining
+----------------
+.. currentmodule:: cuspatial.core.spatial_join
+
+.. automethod:: cuspatial.core.spatial_join.quad_bbox_join
+.. automethod:: cuspatial.core.spatial_join.quadtree_point_in_polygon
+.. automethod:: cuspatial.core.spatial_join.quadtree_point_to_nearest_polyline
+
 Trajectory
 ----------
 .. currentmodule:: cuspatial.core.trajectory
