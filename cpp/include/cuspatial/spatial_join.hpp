@@ -25,8 +25,6 @@ namespace cuspatial {
 /**
  * @brief Search a quadtree for polygon or polyline bounding box intersections.
  *
- * @note Swaps `x_min` and `x_max` if `x_min > x_max`.
- * @note Swaps `y_min` and `y_max` if `y_min > y_max`.
  * @note `scale` is applied to (x - x_min) and (y - y_min) to convert coordinates into a Morton code
  * in 2D space.
  * @note `max_depth` should be less than 16, since Morton codes are represented as `uint32_t`.
