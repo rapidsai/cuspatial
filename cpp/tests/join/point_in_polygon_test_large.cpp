@@ -47,7 +47,7 @@
  * to be more than the number of threads per-block (currently fixed to 256, but can be set between
  * 32 2048 (CUDA Compute Capacity 7.0, multiples of warp size, which is 32) The test is designed to
  * fully test the two kernels in the refinment code, including both warp level reduce and scan, vote
- * and popc. Thrust primitives to dvide quadrants into sub-blocks are also tested.
+ * and popc. Thrust primitives to divide quadrants into sub-blocks are also tested.
  */
 
 template <typename T>

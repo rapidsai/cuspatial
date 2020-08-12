@@ -40,7 +40,7 @@ namespace cuspatial {
 namespace detail {
 namespace {
 
-static uint32_t const threads_per_block = 256;
+constexpr uint32_t threads_per_block = 256;
 
 template <typename T>
 __global__ void find_nearest_polyline_kernel(
@@ -98,16 +98,19 @@ __global__ void find_nearest_polyline_kernel(
         T y0  = poly_points_y.element<T>(ring_begin + ((point_idx + 0) % ring_len));
         T x1  = poly_points_x.element<T>(ring_begin + ((point_idx + 1) % ring_len));
         T y1  = poly_points_y.element<T>(ring_begin + ((point_idx + 1) % ring_len));
-        T d1x = x1 - x0, d1y = y1 - y0;
-        T d2x = px - x0, d2y = py - y0;
-        T d1 = sqrt(d1x * d1x + d1y * d1y);
-        T r  = (d1x * d2x + d1y * d2y) / d1;
-        T d  = 1e20;
+        T d1x = x1 - x0;
+        T d1y = y1 - y0;
+        T d2x = px - x0;
+        T d2y = py - y0;
+        T d1  = sqrt(d1x * d1x + d1y * d1y);
+        T r   = (d1x * d2x + d1y * d2y) / d1;
+        T d   = 1e20;
         if (r <= 0 || r >= d1) {
-          T d3x = px - x1, d3y = py - y1;
-          T d2 = sqrt(d2x * d2x + d2y * d2y);
-          T d3 = sqrt(d3x * d3x + d3y * d3y);
-          d    = min(min(d, d2), d3);
+          T d3x = px - x1;
+          T d3y = py - y1;
+          T d2  = d2x * d2x + d2y * d2y;
+          T d3  = d3x * d3x + d3y * d3y;
+          d     = min(d, sqrt(min(d2, d3)));
         } else {
           d = sqrt((d2x * d2x + d2y * d2y) - (r * r));
         }
