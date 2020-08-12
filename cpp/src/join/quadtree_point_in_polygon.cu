@@ -124,8 +124,6 @@ __global__ void quad_pip_phase2_kernel(uint32_t const *pq_poly_id,
     block_sums[0] = 0;
   }
 
-  __syncthreads();
-
   if (threadIdx.x < warps_per_block) { warp_sums[threadIdx.x] = 0; }
 
   __syncthreads();
