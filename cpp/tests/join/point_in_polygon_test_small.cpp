@@ -174,6 +174,6 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
       {fixed_width_column_wrapper<uint32_t>(
          {0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3}),
        fixed_width_column_wrapper<uint32_t>(
-         {62, 60, 52, 51, 50, 49, 48, 47, 46, 45, 54, 35, 34, 33, 32, 31, 30, 29, 28})}},
+         {62, 60, 45, 46, 47, 48, 49, 50, 51, 52, 54, 28, 29, 30, 31, 32, 33, 34, 35})}},
     *point_in_polygon_pairs);
 }

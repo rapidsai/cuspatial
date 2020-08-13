@@ -20,157 +20,73 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/spatial_join.hpp>
 
-#include <cudf/column/column.hpp>
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
-#include <cudf/detail/utilities/cuda.cuh>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
 
 #include <rmm/device_uvector.hpp>
 
-#include <thrust/gather.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/reduce.h>
-#include <thrust/transform_scan.h>
-
-#include <vector>
+#include <thrust/binary_search.h>
+#include <thrust/copy.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/permutation_iterator.h>
+#include <thrust/remove.h>
+#include <thrust/transform.h>
 
 namespace cuspatial {
 namespace detail {
 namespace {
 
-constexpr uint32_t threads_per_block = 256;
-constexpr uint8_t warps_per_block    = threads_per_block / 32;
-
-template <typename T, uint32_t block_size>
-__global__ void quad_pip_phase1_kernel(uint32_t const *pq_poly_id,
-                                       uint32_t const *pq_quad_id,
-                                       uint32_t const *subpair_offsets,
-                                       uint32_t const *subpair_lengths,
-                                       cudf::column_device_view const quad_offsets,
-                                       cudf::column_device_view const point_indices,
-                                       cudf::column_device_view const point_x,
-                                       cudf::column_device_view const point_y,
-                                       cudf::column_device_view const poly_offsets,
-                                       cudf::column_device_view const ring_offsets,
-                                       cudf::column_device_view const poly_points_x,
-                                       cudf::column_device_view const poly_points_y,
-                                       uint32_t *num_hits)
-{
-  // assumes # of points per quad no more than threads_per_block
-  __shared__ uint32_t poly_idx, num_points, point_offset, num_adjusted;
-
-  // assuming 1d
-  if (threadIdx.x == 0) {
-    poly_idx     = pq_poly_id[blockIdx.x];
-    num_points   = subpair_lengths[blockIdx.x];
-    num_adjusted = ((num_points - 1) / warpSize + 1) * warpSize;
-    point_offset =
-      quad_offsets.element<uint32_t>(pq_quad_id[blockIdx.x]) + subpair_offsets[blockIdx.x];
+template <typename T, typename QuadOffsetsIter>
+struct compute_poly_and_point_indices {
+  QuadOffsetsIter quad_point_offsets;
+  uint32_t const *local_point_offsets;
+  size_t const num_local_point_offsets;
+  cudf::column_device_view const poly_indices;
+  thrust::tuple<uint32_t, uint32_t> __device__ operator()(cudf::size_type const i)
+  {
+    // Calculate the position in the "local_point_offsets" list where this `i` falls between.
+    // The resulting position is the index of the poly/quad pair for this point index `i`.
+    //
+    // Dereferencing `local_point_offset` yields the zero-based point position for this quadrant.
+    // Adding the zero-based position to the quadrant's first point position yields the "global"
+    // position in the `point_indices` map returned from quadtree construction.
+    auto po_begin                 = local_point_offsets;
+    auto po_end                   = local_point_offsets + num_local_point_offsets;
+    auto const local_point_offset = thrust::upper_bound(thrust::seq, po_begin, po_end, i) - 1;
+    uint32_t const pairs_idx      = thrust::distance(local_point_offsets, local_point_offset);
+    uint32_t const point_idx      = quad_point_offsets[pairs_idx] + (i - *local_point_offset);
+    uint32_t const poly_idx       = poly_indices.element<uint32_t>(pairs_idx);
+    return thrust::make_tuple(poly_idx, point_idx);
   }
+};
 
-  __syncthreads();
+template <typename T, typename PointIter>
+struct test_poly_point_intersection {
+  PointIter points;
+  cudf::column_device_view const poly_offsets;
+  cudf::column_device_view const ring_offsets;
+  cudf::column_device_view const poly_points_x;
+  cudf::column_device_view const poly_points_y;
 
-  bool in_polygon = false;
-  if (threadIdx.x < num_points) {
-    uint32_t point_id = point_indices.element<uint32_t>(point_offset + threadIdx.x);
-    T x               = point_x.element<T>(point_id);
-    T y               = point_y.element<T>(point_id);
-    in_polygon =
-      is_point_in_polygon(x, y, poly_idx, poly_offsets, ring_offsets, poly_points_x, poly_points_y);
+  bool __device__ operator()(thrust::tuple<uint32_t, uint32_t> const &poly_point_idxs)
+  {
+    auto &poly_idx  = thrust::get<0>(poly_point_idxs);
+    auto &point_idx = thrust::get<1>(poly_point_idxs);
+    auto point      = points[point_idx];
+    return not is_point_in_polygon(thrust::get<0>(point),
+                                   thrust::get<1>(point),
+                                   poly_idx,
+                                   poly_offsets,
+                                   ring_offsets,
+                                   poly_points_x,
+                                   poly_points_y);
   }
+};
 
-  uint32_t mask           = __ballot_sync(0xFFFF'FFFF, threadIdx.x < num_adjusted);
-  uint32_t vote           = __ballot_sync(mask, in_polygon);
-  uint32_t block_num_hits = cudf::detail::single_lane_block_sum_reduce<block_size>(__popc(vote));
-
-  if (threadIdx.x == 0) { num_hits[blockIdx.x] = block_num_hits; }
-}
-
-template <typename T, uint32_t block_size>
-__global__ void quad_pip_phase2_kernel(uint32_t const *pq_poly_id,
-                                       uint32_t const *pq_quad_id,
-                                       uint32_t const *subpair_offsets,
-                                       uint32_t const *subpair_lengths,
-                                       cudf::column_device_view const quad_offsets,
-                                       cudf::column_device_view const point_indices,
-                                       cudf::column_device_view const point_x,
-                                       cudf::column_device_view const point_y,
-                                       cudf::column_device_view const poly_offsets,
-                                       cudf::column_device_view const ring_offsets,
-                                       cudf::column_device_view const poly_points_x,
-                                       cudf::column_device_view const poly_points_y,
-                                       uint32_t const *num_hits,
-                                       cudf::mutable_column_device_view out_poly_idx,
-                                       cudf::mutable_column_device_view out_point_idx)
-{
-  __shared__ uint32_t poly_idx, num_points, point_offset, mem_offset, num_adjusted;
-
-  // assumes # of points per quad no more than threads_per_block
-  __shared__ uint16_t warp_sums[warps_per_block], block_sums[warps_per_block + 1];
-
-  // assuming 1d
-  if (threadIdx.x == 0) {
-    poly_idx     = pq_poly_id[blockIdx.x];
-    num_points   = subpair_lengths[blockIdx.x];
-    mem_offset   = num_hits[blockIdx.x];
-    num_adjusted = ((num_points - 1) / warpSize + 1) * warpSize;
-    point_offset =
-      quad_offsets.element<uint32_t>(pq_quad_id[blockIdx.x]) + subpair_offsets[blockIdx.x];
-    block_sums[0] = 0;
-  }
-
-  if (threadIdx.x < warps_per_block) { warp_sums[threadIdx.x] = 0; }
-
-  __syncthreads();
-
-  bool in_polygon = false;
-  uint32_t tid    = point_offset + threadIdx.x;
-
-  if (threadIdx.x < num_points) {
-    uint32_t point_id = point_indices.element<uint32_t>(tid);
-    T x               = point_x.element<T>(point_id);
-    T y               = point_y.element<T>(point_id);
-    in_polygon =
-      is_point_in_polygon(x, y, poly_idx, poly_offsets, ring_offsets, poly_points_x, poly_points_y);
-  }
-
-  __syncthreads();
-
-  unsigned mask = __ballot_sync(0xFFFFFFFF, threadIdx.x < num_adjusted);
-  uint32_t vote = __ballot_sync(mask, in_polygon);
-
-  if (threadIdx.x % warpSize == 0) { warp_sums[threadIdx.x / warpSize] = __popc(vote); }
-
-  __syncthreads();
-
-  // warp-level scan; only one warp is used
-  if (threadIdx.x < warpSize) {
-    uint32_t num = warp_sums[threadIdx.x];
-    for (uint8_t i = 1; i <= warpSize; i *= 2) {
-      int n = __shfl_up_sync(0xFFFFFFF, num, i, warpSize);
-      if (threadIdx.x >= i) num += n;
-    }
-    block_sums[threadIdx.x + 1] = num;
-  }
-
-  __syncthreads();
-
-  if ((threadIdx.x < num_points) && in_polygon) {
-    uint16_t num         = block_sums[threadIdx.x / warpSize];
-    uint16_t warp_offset = __popc(vote >> (threadIdx.x % warpSize)) - 1;
-    uint32_t pos         = mem_offset + num + warp_offset;
-
-    out_poly_idx.element<uint32_t>(pos)  = poly_idx;
-    out_point_idx.element<uint32_t>(pos) = tid;
-  }
-}
-
-struct dispatch_quadtree_point_in_polygon {
+struct compute_quadtree_point_in_polygon {
   template <typename T, typename... Args>
   std::enable_if_t<!std::is_floating_point<T>::value, std::unique_ptr<cudf::table>> operator()(
     Args &&...)
@@ -192,191 +108,102 @@ struct dispatch_quadtree_point_in_polygon {
     rmm::mr::device_memory_resource *mr,
     cudaStream_t stream)
   {
-    auto poly_indices       = poly_quad_pairs.column(0);
-    auto quad_indices       = poly_quad_pairs.column(1);
-    auto quad_lengths       = quadtree.column(3);
-    auto quad_offsets       = quadtree.column(4);
-    auto num_original_pairs = poly_indices.size();
-    auto d_quad_lengths     = cudf::column_device_view::create(quad_lengths, stream);
-    auto get_num_units      = [quad_lengths = *d_quad_lengths] __device__(uint32_t quad_index) {
-      return ((quad_lengths.element<uint32_t>(quad_index) - 1) / threads_per_block) + 1;
-    };
+    auto quad_lengths        = quadtree.column(3);
+    auto quad_offsets        = quadtree.column(4);
+    auto poly_indices        = poly_quad_pairs.column(0);
+    auto quad_indices        = poly_quad_pairs.column(1);
+    auto num_poly_quad_pairs = poly_quad_pairs.num_rows();
 
-    // compute the total number of sub-pairs (units) using transform_reduce
-    uint32_t num_unit_pairs = thrust::transform_reduce(rmm::exec_policy(stream)->on(stream),
-                                                       quad_indices.begin<uint32_t>(),
-                                                       quad_indices.end<uint32_t>(),
-                                                       get_num_units,
-                                                       0,
-                                                       thrust::plus<uint32_t>());
+    auto counting_iter     = thrust::make_counting_iterator(0);
+    auto quad_lengths_iter = thrust::make_permutation_iterator(quad_lengths.begin<uint32_t>(),
+                                                               quad_indices.begin<uint32_t>());
 
-    auto d_quad_offset = [&]() {
-      // allocate memory for the prefix-sums
-      rmm::device_uvector<uint32_t> d_unit_offsets(num_original_pairs, stream);
+    auto quad_offsets_iter = thrust::make_permutation_iterator(quad_offsets.begin<uint32_t>(),
+                                                               quad_indices.begin<uint32_t>());
 
-      // compute sub-pair counts for each quadrant-polygon pair, then reduce into offsets
-      thrust::transform_exclusive_scan(rmm::exec_policy(stream)->on(stream),
-                                       quad_indices.begin<uint32_t>(),
-                                       quad_indices.end<uint32_t>(),
-                                       d_unit_offsets.begin(),
-                                       get_num_units,
-                                       0,
-                                       thrust::plus<uint32_t>());
+    // Compute a "local" set of zero-based point offsets from number of points in each quadrant
+    // Use `num_poly_quad_pairs + 1` as the length so that the last element produced by
+    // `inclusive_scan` is the total number of points to be tested against each polygon.
+    rmm::device_uvector<uint32_t> local_point_offsets(num_poly_quad_pairs + 1, stream);
 
-      // allocate memory for sub-pairs' quad_offset component
-      rmm::device_uvector<uint32_t> d_quad_offset(num_unit_pairs, stream);
+    thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
+                           quad_lengths_iter,
+                           quad_lengths_iter + num_poly_quad_pairs,
+                           local_point_offsets.begin() + 1);
 
-      cudaMemsetAsync(d_quad_offset.data(), 0, d_quad_offset.size() * sizeof(uint32_t), stream);
+    // Ensure the first offset is 0
+    local_point_offsets.set_element_async(0, 0, stream);
 
-      // scatter 0..num_original_pairs to d_quad_offset using d_unit_offsets as the scatter map
-      thrust::scatter(rmm::exec_policy(stream)->on(stream),
-                      thrust::make_counting_iterator(0),
-                      thrust::make_counting_iterator(0) + num_original_pairs,
-                      d_unit_offsets.begin(),
-                      d_quad_offset.begin());
+    // Retrieve the last element to know the total number of points to test
+    auto num_total_points = local_point_offsets.back_element(stream);
 
-      // copy idx of orginal pairs to all sub-pairs
-      thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
-                             d_quad_offset.begin(),
-                             d_quad_offset.end(),
-                             d_quad_offset.begin(),
-                             thrust::maximum<int>());
+    // Allocate memory for the polygon and point index pairs
+    rmm::device_uvector<uint32_t> poly_idxs(num_total_points, stream);
+    rmm::device_uvector<uint32_t> point_idxs(num_total_points, stream);
 
-      // d_unit_offsets is no longer needed
+    auto poly_and_point_indices = make_zip_iterator(poly_idxs.begin(), point_idxs.begin());
 
-      return d_quad_offset;
-    }();
-
-    // allocate memory for the sub-pairs' other three components (poly_idx, quad_idx, quad_length)
-    rmm::device_uvector<uint32_t> d_pq_poly_idx(num_unit_pairs, stream);
-    rmm::device_uvector<uint32_t> d_pq_quad_idx(num_unit_pairs, stream);
-    rmm::device_uvector<uint32_t> d_quad_length(num_unit_pairs, stream);
-
-    // gather polygon idx and quadrant idx from original pairs into sub-pairs
-    thrust::gather(rmm::exec_policy(stream)->on(stream),
-                   d_quad_offset.begin(),
-                   d_quad_offset.end(),
-                   poly_indices.begin<uint32_t>(),
-                   d_pq_poly_idx.begin());
-
-    thrust::gather(rmm::exec_policy(stream)->on(stream),
-                   d_quad_offset.begin(),
-                   d_quad_offset.end(),
-                   quad_indices.begin<uint32_t>(),
-                   d_pq_quad_idx.begin());
-
-    // generate offsets of sub-pairs within the orginal pairs
-    thrust::exclusive_scan_by_key(rmm::exec_policy(stream)->on(stream),
-                                  d_quad_offset.begin(),
-                                  d_quad_offset.end(),
-                                  thrust::constant_iterator<int>(1),
-                                  d_quad_offset.begin());
-
-    // assemble components in input/output iterators; note d_quad_offset used in both input and
-    // output
-    auto quad_block_id_iter = make_zip_iterator(d_pq_quad_idx.begin(), d_quad_offset.begin());
-    auto offset_length_iter = make_zip_iterator(d_quad_offset.begin(), d_quad_length.begin());
+    // Compute the combination of polygon and point index pairs. For each polygon/quadrant pair,
+    // enumerate pairs of (poly_index, point_index) for each point in each quadrant.
+    //
+    // In Python pseudocode:
+    // ```
+    // pp_pairs = []
+    // for polygon, quadrant in pq_pairs:
+    //   for point in quadrant:
+    //     pp_pairs.append((polygon, point))
+    // ```
+    //
     thrust::transform(rmm::exec_policy(stream)->on(stream),
-                      quad_block_id_iter,
-                      quad_block_id_iter + num_unit_pairs,
-                      offset_length_iter,
-                      [quad_lengths = *d_quad_lengths] __device__(auto const &v) {
-                        uint32_t quad_id    = thrust::get<0>(v);
-                        uint32_t block_id   = thrust::get<1>(v);
-                        uint32_t num_points = quad_lengths.element<uint32_t>(quad_id);
-                        uint32_t offset     = block_id * threads_per_block;
-                        uint32_t length     = num_points < (block_id + 1) * threads_per_block
-                                            ? num_points - block_id * threads_per_block
-                                            : threads_per_block;
-                        return thrust::make_tuple(offset, length);
-                      });
+                      counting_iter,
+                      counting_iter + num_total_points,
+                      poly_and_point_indices,
+                      compute_poly_and_point_indices<T, decltype(quad_offsets_iter)>{
+                        quad_offsets_iter,
+                        local_point_offsets.begin(),
+                        local_point_offsets.size() - 1,
+                        *cudf::column_device_view::create(poly_indices, stream)});
 
-    // allocate memory to store numbers of points in polygons in all sub-pairs
-    rmm::device_uvector<uint32_t> d_num_hits(num_unit_pairs + 1, stream);
+    // Enumerate the point X/Ys using the sorted `point_indices` from quadtree construction
+    auto point_xys_iter = thrust::make_permutation_iterator(
+      make_zip_iterator(point_x.begin<T>(), point_y.begin<T>()), point_indices.begin<uint32_t>());
 
-    auto d_quad_offsets  = cudf::column_device_view::create(quad_offsets, stream);
-    auto d_point_indices = cudf::column_device_view::create(point_indices, stream);
-    auto d_point_x       = cudf::column_device_view::create(point_x, stream);
-    auto d_point_y       = cudf::column_device_view::create(point_y, stream);
-    auto d_poly_offsets  = cudf::column_device_view::create(poly_offsets, stream);
-    auto d_ring_offsets  = cudf::column_device_view::create(ring_offsets, stream);
-    auto d_poly_points_x = cudf::column_device_view::create(poly_points_x, stream);
-    auto d_poly_points_y = cudf::column_device_view::create(poly_points_y, stream);
-
-    quad_pip_phase1_kernel<T, threads_per_block>
-      <<<num_unit_pairs, threads_per_block, 0, stream>>>(d_pq_poly_idx.data(),
-                                                         d_pq_quad_idx.data(),
-                                                         d_quad_offset.data(),
-                                                         d_quad_length.data(),
-                                                         *d_quad_offsets,
-                                                         *d_point_indices,
-                                                         *d_point_x,
-                                                         *d_point_y,
-                                                         *d_poly_offsets,
-                                                         *d_ring_offsets,
-                                                         *d_poly_points_x,
-                                                         *d_poly_points_y,
-                                                         d_num_hits.data());
-
-    // remove poly-quad pair with zero hits
-    auto valid_pq_pair_iter = make_zip_iterator(d_pq_poly_idx.begin(),
-                                                d_pq_quad_idx.begin(),
-                                                d_quad_offset.begin(),
-                                                d_quad_length.begin(),
-                                                d_num_hits.begin());
-
-    uint32_t num_valid_pair = thrust::distance(
-      valid_pq_pair_iter,
+    // Compute the number of intersections by removing (poly, point) pairs that don't intersect
+    auto num_intersections = thrust::distance(
+      poly_and_point_indices,
       thrust::remove_if(rmm::exec_policy(stream)->on(stream),
-                        valid_pq_pair_iter,
-                        valid_pq_pair_iter + num_unit_pairs,
-                        valid_pq_pair_iter,
-                        [] __device__(auto const &v) { return thrust::get<4>(v) == 0; }));
+                        poly_and_point_indices,
+                        poly_and_point_indices + num_total_points,
+                        test_poly_point_intersection<T, decltype(point_xys_iter)>{
+                          point_xys_iter,
+                          *cudf::column_device_view::create(poly_offsets, stream),
+                          *cudf::column_device_view::create(ring_offsets, stream),
+                          *cudf::column_device_view::create(poly_points_x, stream),
+                          *cudf::column_device_view::create(poly_points_y, stream)}));
 
-    d_pq_poly_idx.resize(num_valid_pair, stream);
-    d_pq_quad_idx.resize(num_valid_pair, stream);
-    d_quad_offset.resize(num_valid_pair, stream);
-    d_quad_length.resize(num_valid_pair, stream);
-    d_num_hits.resize(num_valid_pair + 1, stream);
+    // Allocate output columns for the number of pairs that intersected
+    auto poly_idx_col  = make_fixed_width_column<uint32_t>(num_intersections, stream, mr);
+    auto point_idx_col = make_fixed_width_column<uint32_t>(num_intersections, stream, mr);
 
-    d_num_hits.set_element_async(num_valid_pair, 0, stream);
+    // Note: no need to resize `poly_idxs` or `point_idxs` if we set the end iterator to
+    // `idxs.begin() + num_intersections`.
 
-    // prefix sum on numbers to generate offsets
-    thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
-                           d_num_hits.begin(),
-                           d_num_hits.end(),
-                           d_num_hits.begin());
+    // populate the polygon indices column
+    thrust::copy(rmm::exec_policy(stream)->on(stream),
+                 poly_idxs.begin(),
+                 poly_idxs.begin() + num_intersections,
+                 poly_idx_col->mutable_view().template begin<uint32_t>());
 
-    uint32_t total_hits = d_num_hits.back_element(stream);
-
-    auto poly_index_col  = make_fixed_width_column<uint32_t>(total_hits, stream, mr);
-    auto point_index_col = make_fixed_width_column<uint32_t>(total_hits, stream, mr);
-
-    // write output directly to poly_index_col and point_index_col columns
-    auto d_poly_index_col  = cudf::mutable_column_device_view::create(*poly_index_col, stream);
-    auto d_point_index_col = cudf::mutable_column_device_view::create(*point_index_col, stream);
-
-    quad_pip_phase2_kernel<T, threads_per_block>
-      <<<num_valid_pair, threads_per_block, 0, stream>>>(d_pq_poly_idx.data(),
-                                                         d_pq_quad_idx.data(),
-                                                         d_quad_offset.data(),
-                                                         d_quad_length.data(),
-                                                         *d_quad_offsets,
-                                                         *d_point_indices,
-                                                         *d_point_x,
-                                                         *d_point_y,
-                                                         *d_poly_offsets,
-                                                         *d_ring_offsets,
-                                                         *d_poly_points_x,
-                                                         *d_poly_points_y,
-                                                         d_num_hits.data(),
-                                                         *d_poly_index_col,
-                                                         *d_point_index_col);
+    // populate the point indices column
+    thrust::copy(rmm::exec_policy(stream)->on(stream),
+                 point_idxs.begin(),
+                 point_idxs.begin() + num_intersections,
+                 point_idx_col->mutable_view().template begin<uint32_t>());
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(2);
-    cols.push_back(std::move(poly_index_col));
-    cols.push_back(std::move(point_index_col));
+    cols.push_back(std::move(poly_idx_col));
+    cols.push_back(std::move(point_idx_col));
     return std::make_unique<cudf::table>(std::move(cols));
   }
 };
@@ -396,7 +223,7 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const &p
                                                        cudaStream_t stream)
 {
   return cudf::type_dispatcher(point_x.type(),
-                               dispatch_quadtree_point_in_polygon{},
+                               compute_quadtree_point_in_polygon{},
                                poly_quad_pairs,
                                quadtree,
                                point_indices,
@@ -449,21 +276,17 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const &p
     return std::make_unique<cudf::table>(std::move(cols));
   }
 
-  auto result = detail::quadtree_point_in_polygon(poly_quad_pairs,
-                                                  quadtree,
-                                                  point_indices,
-                                                  point_x,
-                                                  point_y,
-                                                  poly_offsets,
-                                                  ring_offsets,
-                                                  poly_points_x,
-                                                  poly_points_y,
-                                                  mr,
-                                                  cudaStream_t{0});
-
-  CUDA_TRY(cudaStreamSynchronize(0));
-
-  return result;
+  return detail::quadtree_point_in_polygon(poly_quad_pairs,
+                                           quadtree,
+                                           point_indices,
+                                           point_x,
+                                           point_y,
+                                           poly_offsets,
+                                           ring_offsets,
+                                           poly_points_x,
+                                           poly_points_y,
+                                           mr,
+                                           cudaStream_t{0});
 }
 
 }  // namespace cuspatial
