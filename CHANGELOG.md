@@ -13,24 +13,25 @@
 - PR #146 quadtree-polygon pairing for spatial filtering
 
 ## Improvements
-- PR #237 Remove nvstrings references from CMakeLists.txt
-- PR #239 Add docs build script
-- PR #238 Fix library and include paths in CMakeLists.txt and setup.py
+- PR #237 Remove nvstrings references from CMakeLists.txt.
+- PR #239 Add docs build script.
+- PR #238 Fix library and include paths in CMakeLists.txt and setup.py.
 - PR #240 Remove deprecated RMM header references.
-- PR #243 Install dependencies via meta package
-- PR #247 Use rmm::device_uvector and cudf::UINT types for quadtree construction
-- PR #246 Hausdorff performance improvement
-- PR #253 Update conda upload versions for new supported CUDA/Python
-- PR #250 cartesian product iterator + more Hausdorff performance improvements.
+- PR #243 Install dependencies via meta package.
+- PR #247 Use rmm::device_uvector and cudf::UINT types for quadtree construction.
+- PR #246 Hausdorff performance improvement.
+- PR #253 Update conda upload versions for new supported CUDA/Python.
+- PR #250 Cartesian product iterator + more Hausdorff performance improvements.
+- PR #260 Replace RMM `cnmem_memory_resource` with `pool_memory_resource` in benchmark fixture.
 
 ## Bug Fixes
-- PR #244 Restrict gdal version
-- PR #245 Pin gdal to be compatible with cuxfilter
+- PR #244 Restrict gdal version.
+- PR #245 Pin gdal to be compatible with cuxfilter.
 - PR #242 Fix benchmark_fixture to use memory resources.
 - PR #248 Fix build by updating type_id usages after upstream breaking changes.
-- PR #252 Fix CI style check failures
-- PR #254 Fix issue with incorrect docker image being used in local build script
-- PR #258 Fix compiler errors from cudf's new duration types
+- PR #252 Fix CI style check failures.
+- PR #254 Fix issue with incorrect docker image being used in local build script.
+- PR #258 Fix compiler errors from cudf's new duration types.
 
 # cuSpatial 0.14.0 (03 Jun 2020)
 
