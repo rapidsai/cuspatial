@@ -80,7 +80,7 @@ __global__ void find_nearest_polyline_kernel(
     auto point_id        = point_indices.element<uint32_t>(point_pos);
     auto px              = point_x.element<T>(point_id);
     auto py              = point_y.element<T>(point_id);
-    T distance           = 1e20;
+    T distance           = std::numeric_limits<T>::max();
     auto nearest_poly_id = static_cast<uint32_t>(-1);
 
     for (uint32_t poly_id = poly_begin; poly_id < poly_end; poly_id++)  // for each polyline
@@ -104,7 +104,7 @@ __global__ void find_nearest_polyline_kernel(
         T d2y = py - y0;
         T d1  = sqrt(d1x * d1x + d1y * d1y);
         T r   = (d1x * d2x + d1y * d2y) / d1;
-        T d   = 1e20;
+        T d   = std::numeric_limits<T>::max();
         if (r <= 0 || r >= d1) {
           T d3x = px - x1;
           T d3y = py - y1;
@@ -128,129 +128,104 @@ __global__ void find_nearest_polyline_kernel(
   }
 }
 
-template <typename T>
-std::unique_ptr<cudf::table> compute_quadtree_point_to_nearest_polyline(
-  cudf::column_view const &poly_idx,
-  cudf::column_view const &quad_idx,
-  cudf::column_view const &quad_lengths,
-  cudf::column_view const &quad_offsets,
-  cudf::column_view const &point_indices,
-  cudf::column_view const &point_x,
-  cudf::column_view const &point_y,
-  cudf::column_view const &poly_offsets,
-  cudf::column_view const &poly_points_x,
-  cudf::column_view const &poly_points_y,
-  rmm::mr::device_memory_resource *mr,
-  cudaStream_t stream)
-{
-  const uint32_t num_pairs = poly_idx.size();
-
-  rmm::device_uvector<uint32_t> d_poly_idx(num_pairs, stream);
-
-  thrust::copy(rmm::exec_policy(stream)->on(stream),
-               poly_idx.begin<uint32_t>(),
-               poly_idx.end<uint32_t>(),
-               d_poly_idx.begin());
-
-  rmm::device_uvector<uint32_t> d_quad_idx(num_pairs, stream);
-
-  thrust::copy(rmm::exec_policy(stream)->on(stream),
-               quad_idx.begin<uint32_t>(),
-               quad_idx.end<uint32_t>(),
-               d_quad_idx.begin());
-
-  // sort (d_poly_idx, d_quad_idx) using d_quad_idx as key => (quad_idxs, poly_idxs)
-  thrust::sort_by_key(
-    rmm::exec_policy(stream)->on(stream), d_quad_idx.begin(), d_quad_idx.end(), d_poly_idx.begin());
-
-  // reduce_by_key using d_quad_idx as the key
-  // exclusive_scan on numbers of polygons associated with a quadrant to create d_poly_idx_offsets
-
-  rmm::device_uvector<uint32_t> d_poly_idx_offsets(num_pairs, stream);
-
-  uint32_t num_quads =
-    thrust::distance(d_poly_idx_offsets.begin(),
-                     thrust::reduce_by_key(rmm::exec_policy(stream)->on(stream),
-                                           d_quad_idx.begin(),
-                                           d_quad_idx.end(),
-                                           thrust::constant_iterator<uint32_t>(1),
-                                           d_quad_idx.begin(),
-                                           d_poly_idx_offsets.begin())
-                       .second);
-
-  d_quad_idx.resize(num_quads, stream);
-  d_poly_idx_offsets.resize(num_quads, stream);
-
-  thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
-                         d_poly_idx_offsets.begin(),
-                         d_poly_idx_offsets.end(),
-                         d_poly_idx_offsets.begin());
-
-  auto point_index_col   = make_fixed_width_column<uint32_t>(point_x.size(), stream, mr);
-  auto poly_index_col    = make_fixed_width_column<uint32_t>(point_x.size(), stream, mr);
-  auto poly_distance_col = make_fixed_width_column<T>(point_x.size(), stream, mr);
-
-  find_nearest_polyline_kernel<T><<<num_quads, threads_per_block, 0, stream>>>(
-    d_quad_idx.begin(),
-    d_poly_idx_offsets.size(),
-    d_poly_idx_offsets.begin(),
-    d_poly_idx.size(),
-    d_poly_idx.begin(),
-    *cudf::column_device_view::create(quad_lengths, stream),
-    *cudf::column_device_view::create(quad_offsets, stream),
-    *cudf::column_device_view::create(point_indices, stream),
-    *cudf::column_device_view::create(point_x, stream),
-    *cudf::column_device_view::create(point_y, stream),
-    *cudf::column_device_view::create(poly_offsets, stream),
-    *cudf::column_device_view::create(poly_points_x, stream),
-    *cudf::column_device_view::create(poly_points_y, stream),
-    *cudf::mutable_column_device_view::create(*point_index_col, stream),
-    *cudf::mutable_column_device_view::create(*poly_index_col, stream),
-    *cudf::mutable_column_device_view::create(*poly_distance_col, stream));
-
-  CUDA_TRY(cudaStreamSynchronize(stream));
-
-  std::vector<std::unique_ptr<cudf::column>> cols{};
-  cols.reserve(3);
-  cols.push_back(std::move(point_index_col));
-  cols.push_back(std::move(poly_index_col));
-  cols.push_back(std::move(poly_distance_col));
-  return std::make_unique<cudf::table>(std::move(cols));
-}
-
-struct dispatch_quadtree_point_to_nearest_polyline {
-  template <typename T, std::enable_if_t<std::is_floating_point<T>::value> * = nullptr>
-  std::unique_ptr<cudf::table> operator()(cudf::table_view const &poly_quad_pairs,
-                                          cudf::table_view const &quadtree,
-                                          cudf::column_view const &point_indices,
-                                          cudf::column_view const &point_x,
-                                          cudf::column_view const &point_y,
-                                          cudf::column_view const &poly_offsets,
-                                          cudf::column_view const &poly_points_x,
-                                          cudf::column_view const &poly_points_y,
-                                          rmm::mr::device_memory_resource *mr,
-                                          cudaStream_t stream)
-  {
-    return compute_quadtree_point_to_nearest_polyline<T>(poly_quad_pairs.column(0),
-                                                         poly_quad_pairs.column(1),
-                                                         quadtree.column(3),
-                                                         quadtree.column(4),
-                                                         point_indices,
-                                                         point_x,
-                                                         point_y,
-                                                         poly_offsets,
-                                                         poly_points_x,
-                                                         poly_points_y,
-                                                         mr,
-                                                         stream);
-  }
-
-  template <typename T,
-            std::enable_if_t<!std::is_floating_point<T>::value> * = nullptr,
-            typename... Args>
-  std::unique_ptr<cudf::table> operator()(Args &&...)
+struct compute_quadtree_point_to_nearest_polyline {
+  template <typename T, typename... Args>
+  std::enable_if_t<!std::is_floating_point<T>::value, std::unique_ptr<cudf::table>> operator()(
+    Args &&...)
   {
     CUDF_FAIL("Non-floating point operation is not supported");
+  }
+
+  template <typename T>
+  std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::table>> operator()(
+    cudf::table_view const &poly_quad_pairs,
+    cudf::table_view const &quadtree,
+    cudf::column_view const &point_indices,
+    cudf::column_view const &point_x,
+    cudf::column_view const &point_y,
+    cudf::column_view const &poly_offsets,
+    cudf::column_view const &poly_points_x,
+    cudf::column_view const &poly_points_y,
+    rmm::mr::device_memory_resource *mr,
+    cudaStream_t stream)
+  {
+    auto poly_idx            = poly_quad_pairs.column(0);
+    auto quad_idx            = poly_quad_pairs.column(1);
+    auto quad_lengths        = quadtree.column(3);
+    auto quad_offsets        = quadtree.column(4);
+    const uint32_t num_pairs = poly_idx.size();
+
+    rmm::device_uvector<uint32_t> d_poly_idx(num_pairs, stream);
+
+    thrust::copy(rmm::exec_policy(stream)->on(stream),
+                 poly_idx.begin<uint32_t>(),
+                 poly_idx.end<uint32_t>(),
+                 d_poly_idx.begin());
+
+    rmm::device_uvector<uint32_t> d_quad_idx(num_pairs, stream);
+
+    thrust::copy(rmm::exec_policy(stream)->on(stream),
+                 quad_idx.begin<uint32_t>(),
+                 quad_idx.end<uint32_t>(),
+                 d_quad_idx.begin());
+
+    // sort (d_poly_idx, d_quad_idx) using d_quad_idx as key => (quad_idxs, poly_idxs)
+    thrust::sort_by_key(rmm::exec_policy(stream)->on(stream),
+                        d_quad_idx.begin(),
+                        d_quad_idx.end(),
+                        d_poly_idx.begin());
+
+    // reduce_by_key using d_quad_idx as the key
+    // exclusive_scan on numbers of polygons associated with a quadrant to create d_poly_idx_offsets
+
+    rmm::device_uvector<uint32_t> d_poly_idx_offsets(num_pairs, stream);
+
+    uint32_t num_quads =
+      thrust::distance(d_poly_idx_offsets.begin(),
+                       thrust::reduce_by_key(rmm::exec_policy(stream)->on(stream),
+                                             d_quad_idx.begin(),
+                                             d_quad_idx.end(),
+                                             thrust::constant_iterator<uint32_t>(1),
+                                             d_quad_idx.begin(),
+                                             d_poly_idx_offsets.begin())
+                         .second);
+
+    d_quad_idx.resize(num_quads, stream);
+    d_poly_idx_offsets.resize(num_quads, stream);
+
+    thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
+                           d_poly_idx_offsets.begin(),
+                           d_poly_idx_offsets.end(),
+                           d_poly_idx_offsets.begin());
+
+    auto point_index_col   = make_fixed_width_column<uint32_t>(point_x.size(), stream, mr);
+    auto poly_index_col    = make_fixed_width_column<uint32_t>(point_x.size(), stream, mr);
+    auto poly_distance_col = make_fixed_width_column<T>(point_x.size(), stream, mr);
+
+    find_nearest_polyline_kernel<T><<<num_quads, threads_per_block, 0, stream>>>(
+      d_quad_idx.begin(),
+      d_poly_idx_offsets.size(),
+      d_poly_idx_offsets.begin(),
+      d_poly_idx.size(),
+      d_poly_idx.begin(),
+      *cudf::column_device_view::create(quad_lengths, stream),
+      *cudf::column_device_view::create(quad_offsets, stream),
+      *cudf::column_device_view::create(point_indices, stream),
+      *cudf::column_device_view::create(point_x, stream),
+      *cudf::column_device_view::create(point_y, stream),
+      *cudf::column_device_view::create(poly_offsets, stream),
+      *cudf::column_device_view::create(poly_points_x, stream),
+      *cudf::column_device_view::create(poly_points_y, stream),
+      *cudf::mutable_column_device_view::create(*point_index_col, stream),
+      *cudf::mutable_column_device_view::create(*poly_index_col, stream),
+      *cudf::mutable_column_device_view::create(*poly_distance_col, stream));
+
+    std::vector<std::unique_ptr<cudf::column>> cols{};
+    cols.reserve(3);
+    cols.push_back(std::move(point_index_col));
+    cols.push_back(std::move(poly_index_col));
+    cols.push_back(std::move(poly_distance_col));
+    return std::make_unique<cudf::table>(std::move(cols));
   }
 };
 
@@ -269,7 +244,7 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
   cudaStream_t stream)
 {
   return cudf::type_dispatcher(point_x.type(),
-                               dispatch_quadtree_point_to_nearest_polyline{},
+                               compute_quadtree_point_to_nearest_polyline{},
                                poly_quad_pairs,
                                quadtree,
                                point_indices,
