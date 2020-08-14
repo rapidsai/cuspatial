@@ -50,81 +50,75 @@ __global__ void find_nearest_polyline_kernel(
   uint32_t const num_poly_idxs,         // number of polyline indices
   uint32_t const *poly_idxs,
 
-  cudf::column_device_view quad_lengths,  // numbers of points in each quadrant
-  cudf::column_device_view quad_offsets,  // offset of first point in each quadrant
-  cudf::column_device_view point_indices,
-  cudf::column_device_view point_x,
-  cudf::column_device_view point_y,
+  cudf::column_device_view const quad_lengths,  // numbers of points in each quadrant
+  cudf::column_device_view const quad_offsets,  // offset of first point in each quadrant
+  cudf::column_device_view const point_indices,
+  cudf::column_device_view const point_x,
+  cudf::column_device_view const point_y,
 
-  cudf::column_device_view poly_offsets,  // positions of the first vertex in a polyline
-  cudf::column_device_view poly_points_x,
-  cudf::column_device_view poly_points_y,
+  cudf::column_device_view const poly_offsets,  // positions of the first vertex in a polyline
+  cudf::column_device_view const poly_points_x,
+  cudf::column_device_view const poly_points_y,
 
   cudf::mutable_column_device_view out_point_index,
   cudf::mutable_column_device_view out_poly_index,
   cudf::mutable_column_device_view out_distance)
 {
   // each block processes a quadrant
-  auto quad_pos = blockIdx.x + gridDim.x * blockIdx.y;
-  auto quad_idx = quad_idxs[quad_pos];
+  auto const quad_pos = blockIdx.x + gridDim.x * blockIdx.y;
+  auto const quad_idx = quad_idxs[quad_pos];
 
-  auto poly_begin = poly_idx_offsets[quad_pos];
-  auto poly_end =
+  auto const poly_begin = poly_idx_offsets[quad_pos];
+  auto const poly_end =
     quad_pos < num_poly_idx_offsets - 1 ? poly_idx_offsets[quad_pos + 1] : num_poly_idxs;
 
-  auto num_points = quad_lengths.element<uint32_t>(quad_idx);
+  auto const num_points = quad_lengths.element<uint32_t>(quad_idx);
 
   for (auto tid = threadIdx.x; tid < num_points; tid += blockDim.x) {
     // each thread loads its point
-    auto point_pos       = quad_offsets.element<uint32_t>(quad_idx) + tid;
-    auto point_id        = point_indices.element<uint32_t>(point_pos);
-    auto px              = point_x.element<T>(point_id);
-    auto py              = point_y.element<T>(point_id);
-    T distance           = std::numeric_limits<T>::max();
+    auto const point_pos = quad_offsets.element<uint32_t>(quad_idx) + tid;
+    auto const point_id  = point_indices.element<uint32_t>(point_pos);
+    auto const px        = point_x.element<T>(point_id);
+    auto const py        = point_y.element<T>(point_id);
     auto nearest_poly_id = static_cast<uint32_t>(-1);
+    T distance_squared   = std::numeric_limits<T>::max();
 
     for (uint32_t poly_id = poly_begin; poly_id < poly_end; poly_id++)  // for each polyline
     {
-      auto poly_idx   = poly_idxs[poly_id];
-      auto ring_begin = poly_offsets.element<uint32_t>(poly_idx);
-      auto ring_end   = poly_idx < poly_offsets.size() - 1
-                        ? poly_offsets.element<uint32_t>(poly_idx + 1)
-                        : poly_points_x.size();
-      auto ring_len = ring_end - ring_begin;
+      auto const poly_idx   = poly_idxs[poly_id];
+      auto const ring_begin = poly_offsets.element<uint32_t>(poly_idx);
+      auto const ring_end   = poly_idx < poly_offsets.size() - 1
+                              ? poly_offsets.element<uint32_t>(poly_idx + 1)
+                              : poly_points_x.size();
+      auto const ring_len = ring_end - ring_begin;
 
       for (auto point_idx = 0; point_idx < ring_len; point_idx++)  // for each line
       {
-        T x0  = poly_points_x.element<T>(ring_begin + ((point_idx + 0) % ring_len));
-        T y0  = poly_points_y.element<T>(ring_begin + ((point_idx + 0) % ring_len));
-        T x1  = poly_points_x.element<T>(ring_begin + ((point_idx + 1) % ring_len));
-        T y1  = poly_points_y.element<T>(ring_begin + ((point_idx + 1) % ring_len));
-        T d1x = x1 - x0;
-        T d1y = y1 - y0;
-        T d2x = px - x0;
-        T d2y = py - y0;
-        T d1  = sqrt(d1x * d1x + d1y * d1y);
-        T r   = (d1x * d2x + d1y * d2y) / d1;
-        T d   = std::numeric_limits<T>::max();
-        if (r <= 0 || r >= d1) {
-          T d3x = px - x1;
-          T d3y = py - y1;
-          T d2  = d2x * d2x + d2y * d2y;
-          T d3  = d3x * d3x + d3y * d3y;
-          d     = min(d, sqrt(min(d2, d3)));
-        } else {
-          d = sqrt((d2x * d2x + d2y * d2y) - (r * r));
-        }
-        if (d < distance) {
-          distance        = d;
-          nearest_poly_id = poly_idx;
+        auto const i0  = ring_begin + ((point_idx + 0) % ring_len);
+        auto const i1  = ring_begin + ((point_idx + 1) % ring_len);
+        auto const x0  = poly_points_x.element<T>(i0);
+        auto const y0  = poly_points_y.element<T>(i0);
+        auto const x1  = poly_points_x.element<T>(i1);
+        auto const y1  = poly_points_y.element<T>(i1);
+        auto const dx0 = px - x0, dy0 = py - y0;
+        auto const dx1 = px - x1, dy1 = py - y1;
+        auto const dx2 = x1 - x0, dy2 = y1 - y0;
+        auto const d0 = dx0 * dx0 + dy0 * dy0;
+        auto const d1 = dx1 * dx1 + dy1 * dy1;
+        auto const d2 = dx2 * dx2 + dy2 * dy2;
+        auto const d3 = dx2 * dx0 + dy2 * dy0;
+        auto const r  = d3 * d3 / d2;
+        auto const d  = d3 <= 0 || r >= d2 ? min(d0, d1) : d0 - r;
+        if (d < distance_squared) {
+          distance_squared = d;
+          nearest_poly_id  = poly_idx;
         }
       }
     }
 
-    // TODO: use input point id
     out_point_index.element<uint32_t>(point_pos) = point_pos;
     out_poly_index.element<uint32_t>(point_pos)  = nearest_poly_id;
-    out_distance.element<T>(point_pos)           = distance;
+    out_distance.element<T>(point_pos)           = sqrt(distance_squared);
   }
 }
 
@@ -198,9 +192,9 @@ struct compute_quadtree_point_to_nearest_polyline {
                            d_poly_idx_offsets.end(),
                            d_poly_idx_offsets.begin());
 
-    auto point_index_col   = make_fixed_width_column<uint32_t>(point_x.size(), stream, mr);
-    auto poly_index_col    = make_fixed_width_column<uint32_t>(point_x.size(), stream, mr);
-    auto poly_distance_col = make_fixed_width_column<T>(point_x.size(), stream, mr);
+    auto point_index_col = make_fixed_width_column<uint32_t>(point_x.size(), stream, mr);
+    auto poly_index_col  = make_fixed_width_column<uint32_t>(point_x.size(), stream, mr);
+    auto distance_col    = make_fixed_width_column<T>(point_x.size(), stream, mr);
 
     find_nearest_polyline_kernel<T><<<num_quads, threads_per_block, 0, stream>>>(
       d_quad_idx.begin(),
@@ -218,13 +212,13 @@ struct compute_quadtree_point_to_nearest_polyline {
       *cudf::column_device_view::create(poly_points_y, stream),
       *cudf::mutable_column_device_view::create(*point_index_col, stream),
       *cudf::mutable_column_device_view::create(*poly_index_col, stream),
-      *cudf::mutable_column_device_view::create(*poly_distance_col, stream));
+      *cudf::mutable_column_device_view::create(*distance_col, stream));
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(3);
     cols.push_back(std::move(point_index_col));
     cols.push_back(std::move(poly_index_col));
-    cols.push_back(std::move(poly_distance_col));
+    cols.push_back(std::move(distance_col));
     return std::make_unique<cudf::table>(std::move(cols));
   }
 };
