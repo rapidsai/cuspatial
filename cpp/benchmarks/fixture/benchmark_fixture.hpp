@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,27 @@
  */
 
 #include <benchmark/benchmark.h>
-#include "rmm/mr/device/cnmem_memory_resource.hpp"
-#include "rmm/mr/device/default_memory_resource.hpp"
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/owning_wrapper.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
 
 namespace cuspatial {
+
+namespace {
+// memory resource factory helpers
+inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+
+inline auto make_pool()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+}
+}  // namespace
+
 /**
- * @brief Google Benchmark fixture for libcudf benchmarks
+ * @brief Google Benchmark fixture for libcuspatial benchmarks
  *
- * libcudf benchmarks should use a fixture derived from this fixture class to
+ * libcuspatial benchmarks should use a fixture derived from this fixture class to
  * ensure that the RAPIDS Memory Manager pool mode is used in benchmarks, which
  * eliminates memory allocation / deallocation performance overhead from the
  * benchmark.
@@ -34,7 +47,7 @@ namespace cuspatial {
  * Example:
  *
  * template <class T>
- * class my_benchmark : public cudf::benchmark {
+ * class my_benchmark : public cuspatial::benchmark {
  * public:
  *   using TypeParam = T;
  * };
@@ -54,14 +67,14 @@ class benchmark : public ::benchmark::Fixture {
  public:
   virtual void SetUp(const ::benchmark::State& state)
   {
-    auto mr = new rmm::mr::cnmem_memory_resource;
-    rmm::mr::set_default_resource(mr);  // set default resource to cnmem
+    auto mr = make_pool();
+    rmm::mr::set_current_device_resource(mr.get());  // set default resource to pool
   }
 
   virtual void TearDown(const ::benchmark::State& state)
   {
-    delete rmm::mr::get_default_resource();
-    rmm::mr::set_default_resource(nullptr);  // reset default resource to the initial resource
+    // reset default resource to the initial resource
+    rmm::mr::set_current_device_resource(nullptr);
   }
 
   // eliminate partial override warnings (see benchmark/benchmark.h)
@@ -70,6 +83,8 @@ class benchmark : public ::benchmark::Fixture {
   {
     TearDown(const_cast<const ::benchmark::State&>(st));
   }
+
+  std::shared_ptr<rmm::mr::device_memory_resource> mr;
 };
 
 };  // namespace cuspatial
