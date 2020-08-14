@@ -47,12 +47,12 @@ struct compute_poly_and_point_indices {
   cudf::column_device_view const poly_indices;
   thrust::tuple<uint32_t, uint32_t> __device__ operator()(cudf::size_type const i)
   {
-    // Calculate the position in the "local_point_offsets" list where this `i` falls between.
-    // The resulting position is the index of the poly/quad pair for this point index `i`.
+    // Calculate the position in "local_point_offsets" that `i` falls between.
+    // This position is the index of the poly/quad pair for this `i`.
     //
-    // Dereferencing `local_point_offset` yields the zero-based point position for this quadrant.
-    // Adding the zero-based position to the quadrant's first point position yields the "global"
-    // position in the `point_indices` map returned from quadtree construction.
+    // Dereferencing `local_point_offset` yields the zero-based first point position of this
+    // quadrant. Adding this zero-based position to the quadrant's first point position in the
+    // quadtree yields the "global" position in the `point_indices` map.
     auto po_begin                 = local_point_offsets;
     auto po_end                   = local_point_offsets + num_local_point_offsets;
     auto const local_point_offset = thrust::upper_bound(thrust::seq, po_begin, po_end, i) - 1;
@@ -123,7 +123,7 @@ struct compute_quadtree_point_in_polygon {
 
     // Compute a "local" set of zero-based point offsets from number of points in each quadrant
     // Use `num_poly_quad_pairs + 1` as the length so that the last element produced by
-    // `inclusive_scan` is the total number of points to be tested against each polygon.
+    // `inclusive_scan` is the total number of points to be tested against any polygon.
     rmm::device_uvector<uint32_t> local_point_offsets(num_poly_quad_pairs + 1, stream);
 
     thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
@@ -131,10 +131,10 @@ struct compute_quadtree_point_in_polygon {
                            quad_lengths_iter + num_poly_quad_pairs,
                            local_point_offsets.begin() + 1);
 
-    // Ensure the first offset is 0
+    // Ensure local point offsets starts at 0
     local_point_offsets.set_element_async(0, 0, stream);
 
-    // Retrieve the last element to know the total number of points to test
+    // The last element is the total number of points to test against any polygon.
     auto num_total_points = local_point_offsets.back_element(stream);
 
     // Allocate memory for the polygon and point index pairs
@@ -164,7 +164,7 @@ struct compute_quadtree_point_in_polygon {
                         local_point_offsets.size() - 1,
                         *cudf::column_device_view::create(poly_indices, stream)});
 
-    // Enumerate the point X/Ys using the sorted `point_indices` from quadtree construction
+    // Enumerate the point X/Ys using the sorted `point_indices` (from quadtree construction)
     auto point_xys_iter = thrust::make_permutation_iterator(
       make_zip_iterator(point_x.begin<T>(), point_y.begin<T>()), point_indices.begin<uint32_t>());
 
