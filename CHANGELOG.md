@@ -11,6 +11,7 @@
 ## New Features
 
 - PR #146 quadtree-polygon pairing for spatial filtering
+- PR #149 Add quadtree-based point-in-polygon and point-to-nearest-polyline
 
 ## Improvements
 - PR #237 Remove nvstrings references from CMakeLists.txt.
