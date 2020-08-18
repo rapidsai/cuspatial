@@ -226,7 +226,7 @@ def test_empty(dtype):
         cudf.Series([], dtype=dtype),
     )
     # empty should not throw
-    intersections = cuspatial.quad_bbox_join(
+    intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree, poly_bboxes, *bbox_1, 1, 1,  # bbox  # scale  # max_depth
     )
     assert_eq(
@@ -267,7 +267,7 @@ def test_polygon_join_small(dtype):
     poly_bboxes = cuspatial.polygon_bounding_boxes(
         small_poly_offsets, small_ring_offsets, poly_points_x, poly_points_y,
     )
-    intersections = cuspatial.quad_bbox_join(
+    intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
     )
     assert_eq(
@@ -313,7 +313,7 @@ def test_polyline_join_small(dtype):
     poly_bboxes = cuspatial.polyline_bounding_boxes(
         small_ring_offsets, poly_points_x, poly_points_y, expansion_radius,
     )
-    intersections = cuspatial.quad_bbox_join(
+    intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
     )
     assert_eq(
@@ -404,7 +404,7 @@ def test_quadtree_point_in_polygon_small(dtype):
     poly_bboxes = cuspatial.polygon_bounding_boxes(
         small_poly_offsets, small_ring_offsets, poly_points_x, poly_points_y,
     )
-    intersections = cuspatial.quad_bbox_join(
+    intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
     )
     points_and_polygons = cuspatial.quadtree_point_in_polygon(
@@ -484,7 +484,7 @@ def run_test_quadtree_point_to_nearest_polyline_small(
     poly_bboxes = cuspatial.polyline_bounding_boxes(
         small_ring_offsets, poly_points_x, poly_points_y, expansion_radius,
     )
-    intersections = cuspatial.quad_bbox_join(
+    intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
     )
     p2np_result = cuspatial.quadtree_point_to_nearest_polyline(

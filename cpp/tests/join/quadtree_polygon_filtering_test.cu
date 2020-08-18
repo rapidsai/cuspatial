@@ -57,32 +57,34 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_errors)
                                  fixed_width_column_wrapper<T>({})}};
 
   // Test throws on bad quadtree
-  EXPECT_THROW(cuspatial::quad_bbox_join(bad_quadtree, empty_bboxes, 0, 1, 0, 1, 1, 1, this->mr()),
+  EXPECT_THROW(cuspatial::join_quadtree_and_bounding_boxes(
+                 bad_quadtree, empty_bboxes, 0, 1, 0, 1, 1, 1, this->mr()),
                cuspatial::logic_error);
 
   // Test throws on bad bboxes
-  EXPECT_THROW(cuspatial::quad_bbox_join(empty_quadtree, bad_bboxes, 0, 1, 0, 1, 1, 1, this->mr()),
+  EXPECT_THROW(cuspatial::join_quadtree_and_bounding_boxes(
+                 empty_quadtree, bad_bboxes, 0, 1, 0, 1, 1, 1, this->mr()),
                cuspatial::logic_error);
 
   // Test throws on bad scale
-  EXPECT_THROW(
-    cuspatial::quad_bbox_join(empty_quadtree, empty_bboxes, 0, 1, 0, 1, 0, 1, this->mr()),
-    cuspatial::logic_error);
+  EXPECT_THROW(cuspatial::join_quadtree_and_bounding_boxes(
+                 empty_quadtree, empty_bboxes, 0, 1, 0, 1, 0, 1, this->mr()),
+               cuspatial::logic_error);
 
   // Test throws on bad max_depth <= 0
-  EXPECT_THROW(
-    cuspatial::quad_bbox_join(empty_quadtree, empty_bboxes, 0, 1, 0, 1, 1, 0, this->mr()),
-    cuspatial::logic_error);
+  EXPECT_THROW(cuspatial::join_quadtree_and_bounding_boxes(
+                 empty_quadtree, empty_bboxes, 0, 1, 0, 1, 1, 0, this->mr()),
+               cuspatial::logic_error);
 
   // Test throws on bad max_depth >= 16
-  EXPECT_THROW(
-    cuspatial::quad_bbox_join(empty_quadtree, empty_bboxes, 0, 1, 0, 1, 1, 16, this->mr()),
-    cuspatial::logic_error);
+  EXPECT_THROW(cuspatial::join_quadtree_and_bounding_boxes(
+                 empty_quadtree, empty_bboxes, 0, 1, 0, 1, 1, 16, this->mr()),
+               cuspatial::logic_error);
 
   // Test throws on reversed area of interest bbox coordinates
-  EXPECT_THROW(
-    cuspatial::quad_bbox_join(empty_quadtree, empty_bboxes, 1, 0, 1, 0, 1, 1, this->mr()),
-    cuspatial::logic_error);
+  EXPECT_THROW(cuspatial::join_quadtree_and_bounding_boxes(
+                 empty_quadtree, empty_bboxes, 1, 0, 1, 0, 1, 1, this->mr()),
+               cuspatial::logic_error);
 }
 
 TYPED_TEST(QuadtreePolygonFilteringTest, test_empty)
@@ -111,7 +113,7 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_empty)
                            fixed_width_column_wrapper<T>({}),
                            fixed_width_column_wrapper<T>({})}};
 
-  auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
+  auto polygon_quadrant_pairs = cuspatial::join_quadtree_and_bounding_boxes(
     quadtree, bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
   expect_tables_equal(cudf::table_view{{fixed_width_column_wrapper<uint32_t>({}),
@@ -225,7 +227,7 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_small)
   auto polygon_bboxes =
     cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, poly_x, poly_y, this->mr());
 
-  auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
+  auto polygon_quadrant_pairs = cuspatial::join_quadtree_and_bounding_boxes(
     *quadtree, *polygon_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
   CUSPATIAL_EXPECTS(

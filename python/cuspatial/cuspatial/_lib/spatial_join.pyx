@@ -5,7 +5,7 @@ from cudf._lib.table cimport table, table_view, Table
 from cudf._lib.column cimport column, column_view, Column
 
 from cuspatial._lib.cpp.spatial_join cimport (
-    quad_bbox_join as cpp_quad_bbox_join,
+    join_quadtree_and_bounding_boxes as cpp_join_quadtree_and_bounding_boxes,
     quadtree_point_in_polygon as cpp_quadtree_pip,
     quadtree_point_to_nearest_polyline as cpp_quadtree_p2p,
 )
@@ -16,19 +16,19 @@ from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 from libc.stdint cimport int8_t
 
-cpdef quad_bbox_join(Table quadtree,
-                     Table poly_bounding_boxes,
-                     double x_min,
-                     double x_max,
-                     double y_min,
-                     double y_max,
-                     double scale,
-                     int8_t max_depth):
+cpdef join_quadtree_and_bounding_boxes(Table quadtree,
+                                       Table poly_bounding_boxes,
+                                       double x_min,
+                                       double x_max,
+                                       double y_min,
+                                       double y_max,
+                                       double scale,
+                                       int8_t max_depth):
     cdef table_view c_quadtree = quadtree.data_view()
     cdef table_view c_poly_bounding_boxes = poly_bounding_boxes.data_view()
     cdef unique_ptr[table] result
     with nogil:
-        result = move(cpp_quad_bbox_join(
+        result = move(cpp_join_quadtree_and_bounding_boxes(
             c_quadtree,
             c_poly_bounding_boxes,
             x_min, x_max, y_min, y_max, scale, max_depth

@@ -50,7 +50,7 @@ namespace cuspatial {
  * poly_offset - INT32 column of indices for each poly bbox that intersects with the quadtree.
  * quad_offset - INT32 column of indices for each leaf quadrant intersecting with a poly bbox.
  */
-std::unique_ptr<cudf::table> quad_bbox_join(
+std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(
   cudf::table_view const& quadtree,
   cudf::table_view const& poly_bbox,
   double x_min,
@@ -64,15 +64,16 @@ std::unique_ptr<cudf::table> quad_bbox_join(
 /**
  * @brief Test whether the specified points are inside any of the specified polygons.
  *
- * Uses the table of (polygon, quadrant) pairs returned by `cuspatial::quad_bbox_join` to
- * ensure only the points in the same quadrant as each polygon are tested for intersection.
+ * Uses the table of (polygon, quadrant) pairs returned by
+ *`cuspatial::join_quadtree_and_bounding_boxes` to ensure only the points in the same quadrant as
+ *each polygon are tested for intersection.
  *
  * This pre-filtering can dramatically reduce number of points tested per polygon, enabling
  * faster intersection-testing at the expense of extra memory allocated to store the quadtree and
  * sorted point_indices.
  *
  * @param poly_quad_pairs cudf table of (polygon, quadrant) index pairs returned by
- * `cuspatial::quad_bbox_join`
+ * `cuspatial::join_quadtree_and_bounding_boxes`
  * @param quadtree cudf table representing a quadtree (key, level, is_quad, length, offset).
  * @param point_indices Sorted point indices returned by `cuspatial::quadtree_on_points`
  * @param point_x x-coordinates of points to test
@@ -114,11 +115,12 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(
  * @brief Finds the nearest polyline to each point in a quadrant, and computes the distances between
  * each point and polyline.
  *
- * Uses the table of (polyline, quadrant) pairs returned by `cuspatial::quad_bbox_join` to
- * ensure distances are computed only for the points in the same quadrant as each polyline.
+ * Uses the table of (polyline, quadrant) pairs returned by
+ *`cuspatial::join_quadtree_and_bounding_boxes` to ensure distances are computed only for the points
+ *in the same quadrant as each polyline.
  *
  * @param poly_quad_pairs cudf table of (polyline, quadrant) index pairs returned by
- * `cuspatial::quad_bbox_join`
+ * `cuspatial::join_quadtree_and_bounding_boxes`
  * @param quadtree cudf table representing a quadtree (key, level, is_quad, length, offset).
  * @param point_indices Sorted point indices returned by `cuspatial::quadtree_on_points`
  * @param point_x x-coordinates of points to test
