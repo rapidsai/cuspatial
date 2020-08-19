@@ -10,7 +10,7 @@ from .core.gis import (
 from .core.indexing import quadtree_on_points
 from .core.interpolate import CubicSpline
 from .core.spatial_join import (
-    quad_bbox_join,
+    join_quadtree_and_bounding_boxes,
     quadtree_point_in_polygon,
     quadtree_point_to_nearest_polyline,
 )
