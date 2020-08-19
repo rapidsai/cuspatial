@@ -65,8 +65,8 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(
  * @brief Test whether the specified points are inside any of the specified polygons.
  *
  * Uses the table of (polygon, quadrant) pairs returned by
- *`cuspatial::join_quadtree_and_bounding_boxes` to ensure only the points in the same quadrant as
- *each polygon are tested for intersection.
+ * `cuspatial::join_quadtree_and_bounding_boxes` to ensure only the points in the same quadrant as
+ * each polygon are tested for intersection.
  *
  * This pre-filtering can dramatically reduce number of points tested per polygon, enabling
  * faster intersection-testing at the expense of extra memory allocated to store the quadtree and
