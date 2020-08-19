@@ -3,6 +3,7 @@
 ## New Features
 
 ## Improvements
+- PR #265 Fix branch-0.16 conda dev environment dependencies
 
 ## Bug Fixes
 
