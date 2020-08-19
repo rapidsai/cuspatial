@@ -152,7 +152,7 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto polygon_bboxes =
     cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, poly_x, poly_y, this->mr());
 
-  auto polygon_quadrant_pairs = cuspatial::quad_bbox_join(
+  auto polygon_quadrant_pairs = cuspatial::join_quadtree_and_bounding_boxes(
     *quadtree, *polygon_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
   auto point_in_polygon_pairs = cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,

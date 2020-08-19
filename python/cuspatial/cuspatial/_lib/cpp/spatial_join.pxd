@@ -7,8 +7,8 @@ from cudf._lib.move cimport move, unique_ptr
 
 cdef extern from "cuspatial/spatial_join.hpp" namespace "cuspatial" nogil:
 
-    cdef unique_ptr[table] quad_bbox_join \
-        "cuspatial::quad_bbox_join" (
+    cdef unique_ptr[table] join_quadtree_and_bounding_boxes \
+        "cuspatial::join_quadtree_and_bounding_boxes" (
         const table_view & quadtree,
         const table_view & poly_bbox,
         double x_min,

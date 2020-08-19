@@ -10,7 +10,7 @@ from cuspatial._lib import spatial_join
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
-def quad_bbox_join(
+def join_quadtree_and_bounding_boxes(
     quadtree, poly_bounding_boxes, x_min, x_max, y_min, y_max, scale, max_depth
 ):
     """ Search a quadtree for polygon or polyline bounding box intersections.
@@ -64,7 +64,7 @@ def quad_bbox_join(
         )
 
     return DataFrame._from_table(
-        spatial_join.quad_bbox_join(
+        spatial_join.join_quadtree_and_bounding_boxes(
             quadtree,
             poly_bounding_boxes,
             x_min,
@@ -92,8 +92,8 @@ def quadtree_point_in_polygon(
     polygons.
 
     Uses the table of (polygon, quadrant) pairs returned by
-    ``cuspatial.quad_bbox_join`` to ensure only the points in the same
-    quadrant as each polygon are tested for intersection.
+    ``cuspatial.join_quadtree_and_bounding_boxes`` to ensure only the points
+    in the same quadrant as each polygon are tested for intersection.
 
     This pre-filtering can dramatically reduce number of points tested per
     polygon, enabling faster intersection-testing at the expense of extra
@@ -103,7 +103,7 @@ def quadtree_point_in_polygon(
     ----------
     poly_quad_pairs: cudf.DataFrame
         Table of (polygon, quadrant) index pairs returned by
-        ``cuspatial.quad_bbox_join``.
+        ``cuspatial.join_quadtree_and_bounding_boxes``.
     quadtree : cudf.DataFrame
         A complete quadtree for a given area-of-interest bounding box.
     point_indices : cudf.Series
@@ -172,14 +172,14 @@ def quadtree_point_to_nearest_polyline(
     the distances between each point and polyline.
 
     Uses the table of (polyline, quadrant) pairs returned by
-    ``cuspatial.quad_bbox_join`` to ensure distances are computed only for
-    the points in the same quadrant as each polyline.
+    ``cuspatial.join_quadtree_and_bounding_boxes`` to ensure distances are
+    computed only for the points in the same quadrant as each polyline.
 
     Parameters
     ----------
     poly_quad_pairs: cudf.DataFrame
         Table of (polyline, quadrant) index pairs returned by
-        ``cuspatial.quad_bbox_join``.
+        ``cuspatial.join_quadtree_and_bounding_boxes``.
     quadtree : cudf.DataFrame
         A complete quadtree for a given area-of-interest bounding box.
     point_indices : cudf.Series
