@@ -25,8 +25,8 @@
 
 using namespace cudf::test;
 
-template <typename T>
-using wrapper = fixed_width_column_wrapper<T>;
+template <typename T, typename R = T>
+using wrapper = fixed_width_column_wrapper<T, R>;
 
 template <typename T>
 struct PointInPolygonTest : public BaseFixture {
@@ -248,13 +248,14 @@ TYPED_TEST_CASE(PointInPolygonUnsupportedChronoTypesTest, ChronoTypes);
 TYPED_TEST(PointInPolygonUnsupportedChronoTypesTest, UnsupportedPointChronoType)
 {
   using T = TypeParam;
+  using R = typename T::rep;
 
-  auto test_point_xs     = wrapper<T>({T{0}, T{0}});
-  auto test_point_ys     = wrapper<T>({T{0}});
+  auto test_point_xs     = wrapper<T, R>({R{0}, R{0}});
+  auto test_point_ys     = wrapper<T, R>({R{0}});
   auto poly_offsets      = wrapper<cudf::size_type>({0});
   auto poly_ring_offsets = wrapper<cudf::size_type>({0});
-  auto poly_point_xs     = wrapper<T>({T{0}, T{1}, T{0}, T{-1}});
-  auto poly_point_ys     = wrapper<T>({T{1}, T{0}, T{-1}, T{0}});
+  auto poly_point_xs     = wrapper<T, R>({R{0}, R{1}, R{0}, R{-1}});
+  auto poly_point_ys     = wrapper<T, R>({R{1}, R{0}, R{-1}, R{0}});
 
   EXPECT_THROW(
     cuspatial::point_in_polygon(
