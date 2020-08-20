@@ -129,11 +129,12 @@ TYPED_TEST_CASE(HaversineUnsupportedChronoTypesTest, ChronoTypes);
 TYPED_TEST(HaversineUnsupportedChronoTypesTest, MismatchSize)
 {
   using T = TypeParam;
+  using R = typename T::rep;
 
-  auto a_lon = fixed_width_column_wrapper<T>({T{0}});
-  auto a_lat = fixed_width_column_wrapper<T>({T{0}});
-  auto b_lon = fixed_width_column_wrapper<T>({T{0}});
-  auto b_lat = fixed_width_column_wrapper<T>({T{0}});
+  auto a_lon = fixed_width_column_wrapper<T, R>({R{0}});
+  auto a_lat = fixed_width_column_wrapper<T, R>({R{0}});
+  auto b_lon = fixed_width_column_wrapper<T, R>({R{0}});
+  auto b_lat = fixed_width_column_wrapper<T, R>({R{0}});
 
   EXPECT_THROW(cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat), cuspatial::logic_error);
 }
