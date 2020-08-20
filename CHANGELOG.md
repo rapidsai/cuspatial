@@ -17,6 +17,7 @@
 - PR #250 Cartesian product iterator + more Hausdorff performance improvements.
 - PR #260 Replace RMM `cnmem_memory_resource` with `pool_memory_resource` in benchmark fixture.
 - PR #264 Rename `quad_bbox_join` to `join_quadtree_and_bounding_boxes`.
+- PR #268 Fix cudf timestamp construction.
 - PR #267 Fix branch-0.15 conda dev environment dependencies
 
 ## Bug Fixes
