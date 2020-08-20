@@ -213,10 +213,11 @@ TYPED_TEST_CASE(LatLonToCartesianUnsupportedChronoTypesTest, ChronoTypes);
 TYPED_TEST(LatLonToCartesianUnsupportedChronoTypesTest, MismatchSize)
 {
   using T         = TypeParam;
+  using R         = typename T::rep;
   auto camera_lon = 0;
   auto camera_lat = 0;
-  auto point_lon  = fixed_width_column_wrapper<T>({T{0}});
-  auto point_lat  = fixed_width_column_wrapper<T>({T{0}});
+  auto point_lon  = fixed_width_column_wrapper<T, R>({R{0}});
+  auto point_lat  = fixed_width_column_wrapper<T, R>({R{0}});
 
   EXPECT_THROW(cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat),
                cuspatial::logic_error);
