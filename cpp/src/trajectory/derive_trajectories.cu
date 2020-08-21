@@ -32,7 +32,6 @@
 #include <vector>
 
 namespace cuspatial {
-namespace experimental {
 namespace detail {
 
 std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_trajectories(
@@ -60,7 +59,7 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
                                        thrust::make_discard_iterator(),
                                        lengths.begin());
 
-  auto offsets = cudf::make_numeric_column(cudf::data_type{cudf::INT32},
+  auto offsets = cudf::make_numeric_column(cudf::data_type{cudf::type_id::INT32},
                                            thrust::distance(lengths.begin(), grouped.second),
                                            cudf::mask_state::UNALLOCATED,
                                            stream,
@@ -83,7 +82,7 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
   CUSPATIAL_EXPECTS(
     x.size() == y.size() && x.size() == object_id.size() && x.size() == timestamp.size(),
     "Data size mismatch");
-  CUSPATIAL_EXPECTS(object_id.type().id() == cudf::INT32, "Invalid object_id datatype");
+  CUSPATIAL_EXPECTS(object_id.type().id() == cudf::type_id::INT32, "Invalid object_id datatype");
   CUSPATIAL_EXPECTS(cudf::is_timestamp(timestamp.type()), "Invalid timestamp datatype");
   CUSPATIAL_EXPECTS(
     !(x.has_nulls() || y.has_nulls() || object_id.has_nulls() || timestamp.has_nulls()),
@@ -96,9 +95,8 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
     cols.push_back(cudf::empty_like(y));
     cols.push_back(cudf::empty_like(timestamp));
     return std::make_pair(std::make_unique<cudf::table>(std::move(cols)),
-                          cudf::make_empty_column(cudf::data_type{cudf::INT32}));
+                          cudf::make_empty_column(cudf::data_type{cudf::type_id::INT32}));
   }
   return detail::derive_trajectories(object_id, x, y, timestamp, mr, 0);
 }
-}  // namespace experimental
 }  // namespace cuspatial

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <cudf/utilities/traits.hpp>
+
 #include <tests/utilities/column_utilities.hpp>
 #include <tests/utilities/type_lists.hpp>
 
@@ -36,18 +38,18 @@ TYPED_TEST(TrajectoryBoundingBoxesTest, ComputeBoundingBoxesForThreeTrajectories
   std::unique_ptr<cudf::column> offsets;
   std::unique_ptr<cudf::table> sorted;
 
-  std::tie(sorted, offsets) = cuspatial::experimental::derive_trajectories(test_data->get_column(0),
-                                                                           test_data->get_column(1),
-                                                                           test_data->get_column(2),
-                                                                           test_data->get_column(3),
-                                                                           this->mr());
+  std::tie(sorted, offsets) = cuspatial::derive_trajectories(test_data->get_column(0),
+                                                             test_data->get_column(1),
+                                                             test_data->get_column(2),
+                                                             test_data->get_column(3),
+                                                             this->mr());
 
   auto id = sorted->get_column(0);
   auto xs = sorted->get_column(1);
   auto ys = sorted->get_column(2);
 
   auto bounding_boxes =
-    cuspatial::experimental::trajectory_bounding_boxes(offsets->size(), id, xs, ys, this->mr());
+    cuspatial::trajectory_bounding_boxes(offsets->size(), id, xs, ys, this->mr());
 
   auto h_xs      = cudf::test::to_host<T>(xs).first;
   auto h_ys      = cudf::test::to_host<T>(ys).first;

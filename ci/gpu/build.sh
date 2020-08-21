@@ -44,7 +44,12 @@ nvidia-smi
 
 logger "Activate conda env..."
 source activate gdf
-conda install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" "gdal>=3.0.2"
+conda install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" \
+    "rapids-build-env=$MINOR_VERSION.*"
+
+# https://docs.rapids.ai/maintainers/depmgmt/ 
+# conda remove -f rapids-build-env
+# conda install "your-pkg=1.0.0"
 
 logger "Check versions..."
 python --version

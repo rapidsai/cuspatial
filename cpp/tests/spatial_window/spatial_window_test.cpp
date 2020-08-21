@@ -99,7 +99,7 @@ struct IsFloat {
   using Call = std::is_floating_point<T>;
 };
 
-using NonFloatTypes = cudf::test::RemoveIf<IsFloat, cudf::test::AllTypes>;
+using NonFloatTypes = cudf::test::RemoveIf<IsFloat, cudf::test::NumericTypes>;
 
 template <typename T>
 struct SpatialWindowUnsupportedTypesTest : public cudf::test::BaseFixture {
@@ -111,6 +111,24 @@ TYPED_TEST(SpatialWindowUnsupportedTypesTest, ShouldThrow)
 {
   auto points_x = cudf::test::fixed_width_column_wrapper<TypeParam>({1.0, 2.0, 3.0});
   auto points_y = cudf::test::fixed_width_column_wrapper<TypeParam>({0.0, 1.0, 2.0});
+
+  EXPECT_THROW(
+    auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y),
+    cuspatial::logic_error);
+}
+
+template <typename T>
+struct SpatialWindowUnsupportedChronoTypesTest : public cudf::test::BaseFixture {
+};
+
+TYPED_TEST_CASE(SpatialWindowUnsupportedChronoTypesTest, cudf::test::ChronoTypes);
+
+TYPED_TEST(SpatialWindowUnsupportedChronoTypesTest, ShouldThrow)
+{
+  using T       = TypeParam;
+  using R       = typename T::rep;
+  auto points_x = cudf::test::fixed_width_column_wrapper<T, R>({R{1}, R{2}, R{3}});
+  auto points_y = cudf::test::fixed_width_column_wrapper<T, R>({R{0}, R{1}, R{2}});
 
   EXPECT_THROW(
     auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y),

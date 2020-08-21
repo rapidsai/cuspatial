@@ -15,7 +15,7 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(CUDA_SPATIAL VERSION 0.14.0 LANGUAGES C CXX CUDA)
+project(CUDA_SPATIAL VERSION 0.16.0 LANGUAGES C CXX CUDA)
 
 if(NOT CMAKE_CUDA_COMPILER)
   message(SEND_ERROR "CMake cannot locate a CUDA compiler")
@@ -148,6 +148,21 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 
 ###################################################################################################
+# - third party dependencies-----------------------------------------------------------------------
+# add third party dependencies using CMake FetchContent
+
+add_subdirectory(cmake/thirdparty)
+
+###################################################################################################
+# - copy libcu++ ------------------------------------------------------------------------------------
+
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include/libcudacxx")
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include/libcxx/include")
+
+file(INSTALL ${LIBCUDACXX_INCLUDE_DIR} DESTINATION ${CMAKE_BINARY_DIR}/include/libcudacxx/)
+file(INSTALL ${LIBCXX_INCLUDE_DIR}     DESTINATION ${CMAKE_BINARY_DIR}/include/libcxx/include/)
+
+###################################################################################################
 # - conda environment -----------------------------------------------------------------------------
 
 if("$ENV{CONDA_BUILD}" STREQUAL "1")
@@ -183,22 +198,19 @@ endif (RMM_INCLUDE AND RMM_LIBRARY)
 # - CUDF -------------------------------------------------------------------------------------------
 
 find_path(CUDF_INCLUDE "cudf"
-          HINTS "$ENV{CUDF_ROOT}/cpp/include")
+          HINTS "$ENV{CUDF_ROOT}/include")
 
 find_library(CUDF_LIBRARY "cudf"
              HINTS "$ENV{CUDF_ROOT}/lib")
 
-SET(CUDF_SRC_INCLUDE "$ENV{CUDF_HOME}/cpp/src")
-SET(CUB_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/cub")
-SET(CUDACXX_INCLUDE "$ENV{CUDF_HOME}/cpp/thirdparty/libcudacxx/include")
-SET(CUDF_TEST_INCLUDE "$ENV{CUDF_HOME}/cpp/")
+set(CUDF_TEST_INCLUDE "$ENV{CUDF_HOME}/cpp")
 
 message(STATUS "CUDF: CUDF_HOME set to $ENV{CUDF_HOME}")
 message(STATUS "CUDF: CUDF_LIBRARY set to ${CUDF_LIBRARY}")
 message(STATUS "CUDF: CUDF_INCLUDE set to ${CUDF_INCLUDE}")
-message(STATUS "CUDF SRC: CUDF_SRC_INCLUDE set to ${CUDF_SRC_INCLUDE}")
-message(STATUS "CUDF: CUB_INCLUDE set to ${CUB_INCLUDE}")
-message(STATUS "CUDF: CUDACXX_INCLUDE set to ${CUDACXX_INCLUDE}")
+message(STATUS "CUDF: CUB_INCLUDE_DIR set to ${CUB_INCLUDE_DIR}")
+message(STATUS "CUDF: THRUST_INCLUDE_DIR set to ${THRUST_INCLUDE_DIR}")
+message(STATUS "CUDF: LIBCUDACXX_INCLUDE_DIR set to ${LIBCUDACXX_INCLUDE_DIR}")
 message(STATUS "CUDF: CUDF_TEST_INCLUDE set to ${CUDF_TEST_INCLUDE}")
 
 add_library(cudf SHARED IMPORTED ${CUDF_LIBRARY})
@@ -207,42 +219,7 @@ if (CUDF_INCLUDE AND CUDF_LIBRARY)
 endif (CUDF_INCLUDE AND CUDF_LIBRARY)
 
 ###################################################################################################
-# - NVStrings -------------------------------------------------------------------------------------
-
-find_path(NVSTRINGS_INCLUDE "nvstrings"
-          HINTS "$ENV{NVSTRINGS_ROOT}/include")
-
-find_library(NVSTRINGS_LIBRARY "NVStrings"
-             HINTS "$ENV{NVSTRINGS_ROOT}/lib")
-
-find_library(NVCATEGORY_LIBRARY "NVCategory"
-             HINTS "$ENV{NVSTRINGS_ROOT}/lib")
-
-find_library(NVTEXT_LIBRARY "NVText"
-             HINTS "$ENV{NVSTRINGS_ROOT}/lib")
-
-message(STATUS "NVSTRINGS: NVSTRINGS_INCLUDE set to ${NVSTRINGS_INCLUDE}")
-message(STATUS "NVSTRINGS: NVSTRINGS_LIBRARY set to ${NVSTRINGS_LIBRARY}")
-message(STATUS "NVSTRINGS: NVCATEGORY_LIBRARY set to ${NVCATEGORY_LIBRARY}")
-message(STATUS "NVSTRINGS: NVTEXT_LIBRARY set to ${NVTEXT_LIBRARY}")
-
-add_library(NVStrings SHARED IMPORTED ${NVSTRINGS_LIBRARY})
-if (NVSTRINGS_INCLUDE AND NVSTRINGS_LIBRARY)
-    set_target_properties(NVStrings PROPERTIES IMPORTED_LOCATION ${NVSTRINGS_LIBRARY})
-endif (NVSTRINGS_INCLUDE AND NVSTRINGS_LIBRARY)
-
-add_library(NVCategory SHARED IMPORTED ${NVCATEGORY_LIBRARY})
-if (NVSTRINGS_INCLUDE AND NVCATEGORY_LIBRARY)
-    set_target_properties(NVCategory PROPERTIES IMPORTED_LOCATION ${NVCATEGORY_LIBRARY})
-endif (NVSTRINGS_INCLUDE AND NVCATEGORY_LIBRARY)
-
-add_library(NVText SHARED IMPORTED ${NVTEXT_LIBRARY})
-if (NVSTRINGS_INCLUDE AND NVTEXT_LIBRARY)
-    set_target_properties(NVText PROPERTIES IMPORTED_LOCATION ${NVTEXT_LIBRARY})
-endif (NVSTRINGS_INCLUDE AND NVTEXT_LIBRARY)
-
-
-# - find gdal -------------------------------------------------------------------------------------
+# - gdal ------------------------------------------------------------------------------------------
 
 find_package(GDAL REQUIRED)
 
@@ -289,6 +266,10 @@ endif(BUILD_BENCHMARKS)
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
 
+include_directories("${CUB_INCLUDE_DIR}"
+                    "${THRUST_INCLUDE_DIR}"
+                    "${LIBCUDACXX_INCLUDE_DIR}")
+
 if(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 	include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
 endif(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
@@ -296,14 +277,9 @@ endif(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
-                    "${CMAKE_SOURCE_DIR}/../thirdparty/cub"
-                    "${CMAKE_SOURCE_DIR}/../thirdparty/libcudacxx/include"
                     "${GDAL_INCLUDE_DIRS}"
                     "${RMM_INCLUDE}"
-                    "${CUDF_SRC_INCLUDE}"
-                    "${CUDF_INCLUDE}"
-                    "${CUB_INCLUDE}"
-                    "${CUDACXX_INCLUDE}")
+                    "${CUDF_INCLUDE}")
 
 if(CONDA_INCLUDE_DIRS)
     include_directories("${CONDA_INCLUDE_DIRS}")
@@ -332,6 +308,11 @@ add_library(cuspatial SHARED
             src/interpolate/cubic_spline.cu
             src/io/shp/polygon_shapefile_reader.cpp
             src/io/shp/polygon_shapefile_reader.cu
+            src/join/quadtree_point_in_polygon.cu
+            src/join/quadtree_point_to_nearest_polyline.cu
+            src/join/quadtree_poly_filtering.cu
+            src/spatial/polygon_bounding_box.cu
+            src/spatial/polyline_bounding_box.cu
             src/spatial/point_in_polygon.cu
             src/spatial_window/spatial_window.cu
             src/spatial/haversine.cu
@@ -359,14 +340,24 @@ endif(USE_NVTX)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(cuspatial cudf rmm cudart cuda cusparse nvrtc gdal)
+target_link_libraries(cuspatial cudf rmm cudart cuda cusparse nvrtc GDAL::GDAL)
 
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
 
 install(TARGETS cuspatial
-        DESTINATION lib)
+        DESTINATION lib
+        COMPONENT cuspatial)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/cuspatial
-        DESTINATION include)
+        DESTINATION include
+        COMPONENT cuspatial)
+
+install(DIRECTORY ${CMAKE_BINARY_DIR}/include/libcxx
+        DESTINATION include/libcuspatial
+        COMPONENT cuspatial)
+
+install(DIRECTORY ${CMAKE_BINARY_DIR}/include/libcudacxx
+        DESTINATION include/libcuspatial
+        COMPONENT cuspatial)

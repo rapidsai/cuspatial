@@ -51,7 +51,7 @@ cpdef trajectory_bounding_boxes(size_type num_trajectories,
         ))
     return Table.from_unique_ptr(
         move(result),
-        column_names=["x1", "y1", "x2", "y2"]
+        column_names=["x_min", "y_min", "x_max", "y_max"]
     )
 
 

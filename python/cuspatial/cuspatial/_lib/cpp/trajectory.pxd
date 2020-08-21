@@ -8,8 +8,7 @@ from cudf._lib.cpp.table.table cimport table
 from cudf._lib.cpp.types cimport size_type
 
 
-cdef extern from "cuspatial/trajectory.hpp" \
-        namespace "cuspatial::experimental" nogil:
+cdef extern from "cuspatial/trajectory.hpp" namespace "cuspatial" nogil:
 
     cdef pair[unique_ptr[table], unique_ptr[column]] derive_trajectories(
         const column_view& object_id,

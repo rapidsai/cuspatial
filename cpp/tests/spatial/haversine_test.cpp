@@ -105,7 +105,7 @@ template <typename T>
 struct HaversineUnsupportedTypesTest : public BaseFixture {
 };
 
-using UnsupportedTypes = RemoveIf<ContainedIn<Types<float, double>>, AllTypes>;
+using UnsupportedTypes = RemoveIf<ContainedIn<Types<float, double>>, NumericTypes>;
 TYPED_TEST_CASE(HaversineUnsupportedTypesTest, UnsupportedTypes);
 
 TYPED_TEST(HaversineUnsupportedTypesTest, MismatchSize)
@@ -116,6 +116,25 @@ TYPED_TEST(HaversineUnsupportedTypesTest, MismatchSize)
   auto a_lat = fixed_width_column_wrapper<T>({0});
   auto b_lon = fixed_width_column_wrapper<T>({0});
   auto b_lat = fixed_width_column_wrapper<T>({0});
+
+  EXPECT_THROW(cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat), cuspatial::logic_error);
+}
+
+template <typename T>
+struct HaversineUnsupportedChronoTypesTest : public BaseFixture {
+};
+
+TYPED_TEST_CASE(HaversineUnsupportedChronoTypesTest, ChronoTypes);
+
+TYPED_TEST(HaversineUnsupportedChronoTypesTest, MismatchSize)
+{
+  using T = TypeParam;
+  using R = typename T::rep;
+
+  auto a_lon = fixed_width_column_wrapper<T, R>({R{0}});
+  auto a_lat = fixed_width_column_wrapper<T, R>({R{0}});
+  auto b_lon = fixed_width_column_wrapper<T, R>({R{0}});
+  auto b_lat = fixed_width_column_wrapper<T, R>({R{0}});
 
   EXPECT_THROW(cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat), cuspatial::logic_error);
 }

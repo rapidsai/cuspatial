@@ -21,7 +21,6 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 
 namespace cuspatial {
-namespace experimental {
 
 /**
  * @brief Derive trajectories from object ids, points, and timestamps.
@@ -37,7 +36,7 @@ namespace experimental {
  * @param timestamp column of timestamps in any resolution
  * @param mr The optional resource to use for output device memory allocations
  *
- * @throw cuspatial::logic_error If object_id isn't cudf::INT32
+ * @throw cuspatial::logic_error If object_id isn't cudf::type_id::INT32
  * @throw cuspatial::logic_error If x and y are different types
  * @throw cuspatial::logic_error If timestamp isn't a cudf::TIMESTAMP type
  * @throw cuspatial::logic_error If object_id, x, y, or timestamp contain nulls
@@ -70,7 +69,7 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
  * @param timestamp column of timestamps in any resolution
  * @param mr The optional resource to use for output device memory allocations
  *
- * @throw cuspatial::logic_error If object_id isn't cudf::INT32
+ * @throw cuspatial::logic_error If object_id isn't cudf::type_id::INT32
  * @throw cuspatial::logic_error If x and y are different types
  * @throw cuspatial::logic_error If timestamp isn't a cudf::TIMESTAMP type
  * @throw cuspatial::logic_error If object_id, x, y, or timestamp contain nulls
@@ -95,22 +94,23 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(
  *
  * @note Assumes object_id, timestamp, x, y presorted by (object_id, timestamp).
  *
+ * @param num_trajectories number of trajectories (unique object ids)
  * @param object_id column of object (e.g., vehicle) ids
  * @param x coordinates (in kilometers)
  * @param y coordinates (in kilometers)
  * @param mr The optional resource to use for output device memory allocations
  *
- * @throw cuspatial::logic_error If object_id isn't cudf::INT32
+ * @throw cuspatial::logic_error If object_id isn't cudf::type_id::INT32
  * @throw cuspatial::logic_error If x and y are different types
  * @throw cuspatial::logic_error If object_id, x, or y contain nulls
  * @throw cuspatial::logic_error If object_id, x, and y are different sizes
  *
  * @return a cudf table of bounding boxes with length `num_trajectories` and
  * four columns:
- *   * x1 - the lower-left x-coordinate of each bounding box in kilometers
- *   * y1 - the lower-left y-coordinate of each bounding box in kilometers
- *   * x2 - the upper-right x-coordinate of each bounding box in kilometers
- *   * y2 - the upper-right y-coordinate of each bounding box in kilometers
+ * x_min - the minimum x-coordinate of each bounding box in kilometers
+ * y_min - the minimum y-coordinate of each bounding box in kilometers
+ * x_max - the maximum x-coordinate of each bounding box in kilometers
+ * y_max - the maximum y-coordinate of each bounding box in kilometers
  */
 std::unique_ptr<cudf::table> trajectory_bounding_boxes(
   cudf::size_type num_trajectories,
@@ -119,5 +119,4 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(
   cudf::column_view const& y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
 
-}  // namespace experimental
 }  // namespace cuspatial
