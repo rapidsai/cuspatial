@@ -10,5 +10,5 @@ dependencies:
   - clang-tools=8.0.1
   - cudf=0.15.*
   - cudatoolkit=10.1
-  - gdal>=3.0.2
+  - gdal>=3.0.2,<3.1.0a0
   - geopandas=0.7.0
