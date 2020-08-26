@@ -44,8 +44,8 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
                 ${CMAKE_TEST_SRC})
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial cudf
-                        cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES} NVCategory
-                        NVStrings nvrtc gdal)
+                        cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES}
+                        nvrtc GDAL::GDAL)
     if(USE_NVTX)
         target_link_libraries(${CMAKE_TEST_NAME} ${NVTX_LIBRARY})
     endif(USE_NVTX)
@@ -57,6 +57,10 @@ endfunction(ConfigureTest)
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
 
+include_directories("${CUB_INCLUDE_DIR}"
+                    "${THRUST_INCLUDE_DIR}"
+                    "${LIBCUDACXX_INCLUDE_DIR}")
+
 if(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 	include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
 endif()
@@ -65,16 +69,11 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}"
                     "${CMAKE_SOURCE_DIR}/src"
-                    "${CMAKE_SOURCE_DIR}/../thirdparty/cub"
-                    "${CMAKE_SOURCE_DIR}/../thirdparty/libcudacxx/include"
-                    "${CMAKE_SOURCE_DIR}/thirdparty/dlpack/include"
+                    "${GDAL_INCLUDE_DIRS}"
                     "${GTEST_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
                     "${CUDF_INCLUDE}"
-                    "${CUDF_SRC_INCLUDE}"
-                    "${CUDF_TEST_INCLUDE}"
-                    "${CUB_INCLUDE}"
-                    )
+                    "${CUDF_TEST_INCLUDE}")
  
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
@@ -86,8 +85,12 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${GTEST_LIBRARY_DIR}"
                  "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}"
-                 "${CUSPATIAL_LIBRARY}"
-                 )
+                 "${CUSPATIAL_LIBRARY}")
+
+set(CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST_SRC
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/cartesian_product_group_index_iterator_test.cpp")
+ConfigureTest(CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST "${CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST_SRC}")
+
 set(CUBIC_SPLINE_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/interpolate/cubic_spline_test.cpp")
  ConfigureTest(CUBIC_SPLINE_TEST "${CUBIC_SPLINE_TEST_SRC}")
@@ -103,6 +106,18 @@ ConfigureTest(HAVERSINE_TEST "${HAVERSINE_TEST_SRC}")
 set(HAUSDORFF_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cpp")
 ConfigureTest(HAUSDORFF_TEST "${HAUSDORFF_TEST_SRC}")
+
+set(JOIN_POINT_IN_POLYGON_SMALL_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/join/point_in_polygon_test_small.cpp")
+ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST "${JOIN_POINT_IN_POLYGON_SMALL_TEST_SRC}")
+
+set(JOIN_POINT_IN_POLYGON_LARGE_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/join/point_in_polygon_test_large.cpp")
+ConfigureTest(JOIN_POINT_IN_POLYGON_LARGE_TEST "${JOIN_POINT_IN_POLYGON_LARGE_TEST_SRC}")
+
+set(JOIN_POINT_TO_POLYLINE_SMALL_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/join/point_to_nearest_polyline_test_small.cpp")
+ConfigureTest(JOIN_POINT_TO_POLYLINE_SMALL_TEST "${JOIN_POINT_TO_POLYLINE_SMALL_TEST_SRC}")
 
 set(POINT_IN_POLYGON_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/spatial/point_in_polygon_test.cpp")
@@ -123,6 +138,14 @@ ConfigureTest(POLYGON_BBOX_TEST "${POLYGON_BBOX_TEST_SRC}")
 set(SHAPEFILE_READER_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/io/shp/polygon_shapefile_reader_test.cpp")
 ConfigureTest(SHAPEFILE_READER_TEST "${SHAPEFILE_READER_TEST_SRC}")
+
+set(QUADTREE_POLYGON_FILTERING_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/join/quadtree_polygon_filtering_test.cu")
+ConfigureTest(QUADTREE_POLYGON_FILTERING_TEST "${QUADTREE_POLYGON_FILTERING_SRC}")
+
+set(QUADTREE_POLYLINE_FILTERING_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/join/quadtree_polyline_filtering_test.cu")
+ConfigureTest(QUADTREE_POLYLINE_FILTERING_TEST "${QUADTREE_POLYLINE_FILTERING_SRC}")
 
 set(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_SRC
 "${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_trajectory_distances_and_speeds.cu")

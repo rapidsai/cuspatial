@@ -108,7 +108,8 @@ TYPED_TEST(TrajectoryDistanceSpeedTest, ComputeDistanceAndSpeedForThreeTrajector
 
 TYPED_TEST(TrajectoryDistanceSpeedTest, ComputeDistanceAndSpeed3Simple)
 {
-  using T = TypeParam;
+  using T   = TypeParam;
+  using Rep = typename cudf::timestamp_ms::rep;
 
   auto offsets = cudf::test::fixed_width_column_wrapper<int32_t>({0, 5, 9});
   auto id = cudf::test::fixed_width_column_wrapper<int32_t>({0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2});
@@ -116,13 +117,11 @@ TYPED_TEST(TrajectoryDistanceSpeedTest, ComputeDistanceAndSpeed3Simple)
     {1.0, 2.0, 3.0, 5.0, 7.0, 1.0, 2.0, 3.0, 6.0, 0.0, 3.0, 6.0});
   auto ys = cudf::test::fixed_width_column_wrapper<T>(
     {0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0});
-  auto ts = cudf::test::fixed_width_column_wrapper<cudf::timestamp_ms>(
+  auto ts = cudf::test::fixed_width_column_wrapper<cudf::timestamp_ms, Rep>(
     {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
 
   auto distance_and_speed =
     cuspatial::trajectory_distances_and_speeds(3, id, xs, ys, ts, this->mr());
-
-  using Rep = typename cudf::timestamp_ms::rep;
 
   auto h_xs      = cudf::test::to_host<T>(xs).first;
   auto h_ys      = cudf::test::to_host<T>(ys).first;

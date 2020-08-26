@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-#include <cudf/table/table.hpp>
+#include "indexing/construction/detail/phase_1.cuh"
+#include "indexing/construction/detail/phase_2.cuh"
+#include "indexing/construction/detail/utilities.cuh"
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/point_quadtree.hpp>
 
-#include "indexing/construction/detail/phase_1.cuh"
-#include "indexing/construction/detail/phase_2.cuh"
-#include "indexing/construction/detail/utilities.cuh"
+#include <cudf/table/table.hpp>
+
+#include <rmm/device_uvector.hpp>
 
 /*
  * quadtree indexing on points using the bottom-up algorithm described at ref.
@@ -39,12 +41,12 @@ namespace {
 /**
  * @brief Constructs a complete quad tree
  */
-inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_vector<uint32_t> &quad_keys,
-                                                   rmm::device_vector<uint32_t> &quad_point_count,
-                                                   rmm::device_vector<uint32_t> &quad_child_count,
-                                                   rmm::device_vector<int8_t> &quad_levels,
+inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_uvector<uint32_t> &quad_keys,
+                                                   rmm::device_uvector<uint32_t> &quad_point_count,
+                                                   rmm::device_uvector<uint32_t> &quad_child_count,
+                                                   rmm::device_uvector<uint8_t> &quad_levels,
                                                    cudf::size_type num_parent_nodes,
-                                                   cudf::size_type max_depth,
+                                                   int8_t max_depth,
                                                    cudf::size_type min_size,
                                                    cudf::size_type level_1_size,
                                                    rmm::mr::device_memory_resource *mr,
@@ -86,12 +88,12 @@ inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_vector<uint32_t> 
     auto quad_point_pos = compute_flattened_first_point_positions(
       quad_keys, quad_levels, quad_point_count, *is_quad, num_valid_nodes, max_depth, stream);
 
-    auto quad_child_pos = make_fixed_width_column<int32_t>(num_valid_nodes, stream, mr);
+    auto quad_child_pos = make_fixed_width_column<uint32_t>(num_valid_nodes, stream, mr);
     // line 9 of algorithm in Fig. 5 in ref.
     thrust::replace_if(rmm::exec_policy(stream)->on(stream),
                        quad_child_count.begin(),
                        quad_child_count.begin() + num_valid_nodes,
-                       is_quad->view().begin<int8_t>(),
+                       is_quad->view().begin<uint8_t>(),
                        !thrust::placeholders::_1,
                        0);
 
@@ -122,7 +124,7 @@ inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_vector<uint32_t> 
   }();
 
   // Construct the lengths output column
-  auto lengths = make_fixed_width_column<int32_t>(num_valid_nodes, stream, mr);
+  auto lengths = make_fixed_width_column<uint32_t>(num_valid_nodes, stream, mr);
   // for each value in `is_quad` copy from `quad_child_count` if true, else
   // `quad_point_count`
   auto lengths_iter = make_zip_iterator(is_quad->view().begin<bool>(),  //
@@ -138,7 +140,7 @@ inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_vector<uint32_t> 
                     });
 
   // Construct the keys output column
-  auto keys = make_fixed_width_column<int32_t>(num_valid_nodes, stream, mr);
+  auto keys = make_fixed_width_column<uint32_t>(num_valid_nodes, stream, mr);
 
   // Copy quad keys to keys output column
   thrust::copy(rmm::exec_policy(stream)->on(stream),
@@ -147,13 +149,13 @@ inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_vector<uint32_t> 
                keys->mutable_view().begin<uint32_t>());
 
   // Construct the levels output column
-  auto levels = make_fixed_width_column<int8_t>(num_valid_nodes, stream, mr);
+  auto levels = make_fixed_width_column<uint8_t>(num_valid_nodes, stream, mr);
 
   // Copy quad levels to levels output column
   thrust::copy(rmm::exec_policy(stream)->on(stream),
                quad_levels.begin(),
                quad_levels.end(),
-               levels->mutable_view().begin<int8_t>());
+               levels->mutable_view().begin<uint8_t>());
 
   std::vector<std::unique_ptr<cudf::column>> cols{};
   cols.reserve(5);
@@ -169,17 +171,17 @@ inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_vector<uint32_t> 
  * @brief Constructs a leaf-only quadtree
  */
 inline std::unique_ptr<cudf::table> make_leaf_tree(
-  rmm::device_vector<uint32_t> const &quad_keys,
-  rmm::device_vector<uint32_t> const &quad_point_count,
+  rmm::device_uvector<uint32_t> const &quad_keys,
+  rmm::device_uvector<uint32_t> const &quad_point_count,
   cudf::size_type num_top_quads,
   rmm::mr::device_memory_resource *mr,
   cudaStream_t stream)
 {
-  auto keys    = make_fixed_width_column<int32_t>(num_top_quads, stream, mr);
-  auto levels  = make_fixed_width_column<int8_t>(num_top_quads, stream, mr);
+  auto keys    = make_fixed_width_column<uint32_t>(num_top_quads, stream, mr);
+  auto levels  = make_fixed_width_column<uint8_t>(num_top_quads, stream, mr);
   auto is_quad = make_fixed_width_column<bool>(num_top_quads, stream, mr);
-  auto lengths = make_fixed_width_column<int32_t>(num_top_quads, stream, mr);
-  auto offsets = make_fixed_width_column<int32_t>(num_top_quads, stream, mr);
+  auto lengths = make_fixed_width_column<uint32_t>(num_top_quads, stream, mr);
+  auto offsets = make_fixed_width_column<uint32_t>(num_top_quads, stream, mr);
 
   // copy quad keys from the front of the quad_keys list
   thrust::copy(rmm::exec_policy(stream)->on(stream),
@@ -195,8 +197,8 @@ inline std::unique_ptr<cudf::table> make_leaf_tree(
 
   // All leaves are children of the root node (level 0)
   thrust::fill(rmm::exec_policy(stream)->on(stream),
-               levels->mutable_view().begin<int8_t>(),
-               levels->mutable_view().end<int8_t>(),
+               levels->mutable_view().begin<uint8_t>(),
+               levels->mutable_view().end<uint8_t>(),
                0);
 
   // Quad node indicators are false for leaf nodes
@@ -248,7 +250,7 @@ struct dispatch_construct_quadtree {
     double y_min,
     double y_max,
     double scale,
-    cudf::size_type max_depth,
+    int8_t max_depth,
     cudf::size_type min_size,
     rmm::mr::device_memory_resource *mr,
     cudaStream_t stream)
@@ -307,7 +309,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   double y_min,
   double y_max,
   double scale,
-  cudf::size_type max_depth,
+  int8_t max_depth,
   cudf::size_type min_size,
   rmm::mr::device_memory_resource *mr,
   cudaStream_t stream)
@@ -337,7 +339,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   double y_min,
   double y_max,
   double scale,
-  cudf::size_type max_depth,
+  int8_t max_depth,
   cudf::size_type min_size,
   rmm::mr::device_memory_resource *mr)
 {
@@ -351,12 +353,12 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   if (x.is_empty() || y.is_empty()) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(5);
-    cols.push_back(detail::make_fixed_width_column<int32_t>(0, 0, mr));
-    cols.push_back(detail::make_fixed_width_column<int8_t>(0, 0, mr));
+    cols.push_back(detail::make_fixed_width_column<uint32_t>(0, 0, mr));
+    cols.push_back(detail::make_fixed_width_column<uint8_t>(0, 0, mr));
     cols.push_back(detail::make_fixed_width_column<bool>(0, 0, mr));
-    cols.push_back(detail::make_fixed_width_column<int32_t>(0, 0, mr));
-    cols.push_back(detail::make_fixed_width_column<int32_t>(0, 0, mr));
-    return std::make_pair(detail::make_fixed_width_column<int32_t>(0, 0, mr),
+    cols.push_back(detail::make_fixed_width_column<uint32_t>(0, 0, mr));
+    cols.push_back(detail::make_fixed_width_column<uint32_t>(0, 0, mr));
+    return std::make_pair(detail::make_fixed_width_column<uint32_t>(0, 0, mr),
                           std::make_unique<cudf::table>(std::move(cols)));
   }
   return detail::quadtree_on_points(

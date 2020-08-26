@@ -26,11 +26,11 @@ def test_empty():
         quadtree,
         cudf.DataFrame(
             {
-                "key": cudf.Series([], dtype=np.int32),
-                "level": cudf.Series([], dtype=np.int8),
+                "key": cudf.Series([], dtype=np.uint32),
+                "level": cudf.Series([], dtype=np.uint8),
                 "is_quad": cudf.Series([], dtype=np.bool_),
-                "length": cudf.Series([], dtype=np.int32),
-                "offset": cudf.Series([], dtype=np.int32),
+                "length": cudf.Series([], dtype=np.uint32),
+                "offset": cudf.Series([], dtype=np.uint32),
             }
         ),
     )
@@ -50,11 +50,11 @@ def test_one_point(dtype):
         quadtree,
         cudf.DataFrame(
             {
-                "key": cudf.Series([0], dtype=np.int32),
-                "level": cudf.Series([0], dtype=np.int8),
+                "key": cudf.Series([0], dtype=np.uint32),
+                "level": cudf.Series([0], dtype=np.uint8),
                 "is_quad": cudf.Series([0], dtype=np.bool_),
-                "length": cudf.Series([1], dtype=np.int32),
-                "offset": cudf.Series([0], dtype=np.int32),
+                "length": cudf.Series([1], dtype=np.uint32),
+                "offset": cudf.Series([0], dtype=np.uint32),
             }
         ),
     )
@@ -74,11 +74,11 @@ def test_two_points(dtype):
         quadtree,
         cudf.DataFrame(
             {
-                "key": cudf.Series([0, 3], dtype=np.int32),
-                "level": cudf.Series([0, 0], dtype=np.int8),
+                "key": cudf.Series([0, 3], dtype=np.uint32),
+                "level": cudf.Series([0, 0], dtype=np.uint8),
                 "is_quad": cudf.Series([0, 0], dtype=np.bool_),
-                "length": cudf.Series([1, 1], dtype=np.int32),
-                "offset": cudf.Series([0, 1], dtype=np.int32),
+                "length": cudf.Series([1, 1], dtype=np.uint32),
+                "offset": cudf.Series([0, 1], dtype=np.uint32),
             }
         ),
     )
@@ -255,20 +255,21 @@ def test_small_number_of_points(dtype):
             {
                 "key": cudf.Series(
                     [0, 1, 2, 0, 1, 3, 4, 7, 5, 6, 13, 14, 28, 31],
-                    dtype=np.int32,
+                    dtype=np.uint32,
                 ),
                 "level": cudf.Series(
-                    [0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2], dtype=np.int8
+                    [0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2], dtype=np.uint8
                 ),
                 "is_quad": cudf.Series(
                     [1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.bool_
                 ),
                 "length": cudf.Series(
-                    [3, 2, 11, 7, 2, 2, 9, 2, 9, 7, 5, 8, 8, 7], dtype=np.int32
+                    [3, 2, 11, 7, 2, 2, 9, 2, 9, 7, 5, 8, 8, 7],
+                    dtype=np.uint32,
                 ),
                 "offset": cudf.Series(
                     [3, 6, 60, 0, 8, 10, 36, 12, 7, 16, 23, 28, 45, 53],
-                    dtype=np.int32,
+                    dtype=np.uint32,
                 ),
             }
         ),

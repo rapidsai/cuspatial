@@ -137,7 +137,7 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(cudf::size_type num_traje
 {
   CUSPATIAL_EXPECTS(object_id.size() == x.size() && x.size() == y.size(), "Data size mismatch");
   CUSPATIAL_EXPECTS(x.type().id() == y.type().id(), "Data type mismatch");
-  CUSPATIAL_EXPECTS(object_id.type().id() == cudf::INT32, "Invalid object_id type");
+  CUSPATIAL_EXPECTS(object_id.type().id() == cudf::type_id::INT32, "Invalid object_id type");
   CUSPATIAL_EXPECTS(!(x.has_nulls() || y.has_nulls() || object_id.has_nulls()),
                     "NULL support unimplemented");
 

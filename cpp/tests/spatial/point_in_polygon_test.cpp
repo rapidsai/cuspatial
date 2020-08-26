@@ -25,8 +25,8 @@
 
 using namespace cudf::test;
 
-template <typename T>
-using wrapper = fixed_width_column_wrapper<T>;
+template <typename T, typename R = T>
+using wrapper = fixed_width_column_wrapper<T, R>;
 
 template <typename T>
 struct PointInPolygonTest : public BaseFixture {
@@ -219,7 +219,7 @@ template <typename T>
 struct PointInPolygonUnsupportedTypesTest : public BaseFixture {
 };
 
-using UnsupportedTestTypes = RemoveIf<ContainedIn<TestTypes>, AllTypes>;
+using UnsupportedTestTypes = RemoveIf<ContainedIn<TestTypes>, NumericTypes>;
 TYPED_TEST_CASE(PointInPolygonUnsupportedTypesTest, UnsupportedTestTypes);
 
 TYPED_TEST(PointInPolygonUnsupportedTypesTest, UnsupportedPointType)
@@ -232,6 +232,30 @@ TYPED_TEST(PointInPolygonUnsupportedTypesTest, UnsupportedPointType)
   auto poly_ring_offsets = wrapper<cudf::size_type>({0});
   auto poly_point_xs     = wrapper<T>({0.0, 1.0, 0.0, -1.0});
   auto poly_point_ys     = wrapper<T>({1.0, 0.0, -1.0, 0.0});
+
+  EXPECT_THROW(
+    cuspatial::point_in_polygon(
+      test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
+    cuspatial::logic_error);
+}
+
+template <typename T>
+struct PointInPolygonUnsupportedChronoTypesTest : public BaseFixture {
+};
+
+TYPED_TEST_CASE(PointInPolygonUnsupportedChronoTypesTest, ChronoTypes);
+
+TYPED_TEST(PointInPolygonUnsupportedChronoTypesTest, UnsupportedPointChronoType)
+{
+  using T = TypeParam;
+  using R = typename T::rep;
+
+  auto test_point_xs     = wrapper<T, R>({R{0}, R{0}});
+  auto test_point_ys     = wrapper<T, R>({R{0}});
+  auto poly_offsets      = wrapper<cudf::size_type>({0});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0});
+  auto poly_point_xs     = wrapper<T, R>({R{0}, R{1}, R{0}, R{-1}});
+  auto poly_point_ys     = wrapper<T, R>({R{1}, R{0}, R{-1}, R{0}});
 
   EXPECT_THROW(
     cuspatial::point_in_polygon(

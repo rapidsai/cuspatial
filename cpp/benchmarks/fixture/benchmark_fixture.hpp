@@ -15,14 +15,27 @@
  */
 
 #include <benchmark/benchmark.h>
-#include <rmm/rmm_api.h>
-#include <rmm/thrust_rmm_allocator.h>
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/owning_wrapper.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
 
-namespace cudf {
+namespace cuspatial {
+
+namespace {
+// memory resource factory helpers
+inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+
+inline auto make_pool()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+}
+}  // namespace
+
 /**
- * @brief Google Benchmark fixture for libcudf benchmarks
+ * @brief Google Benchmark fixture for libcuspatial benchmarks
  *
- * libcudf benchmarks should use a fixture derived from this fixture class to
+ * libcuspatial benchmarks should use a fixture derived from this fixture class to
  * ensure that the RAPIDS Memory Manager pool mode is used in benchmarks, which
  * eliminates memory allocation / deallocation performance overhead from the
  * benchmark.
@@ -34,7 +47,7 @@ namespace cudf {
  * Example:
  *
  * template <class T>
- * class my_benchmark : public cudf::benchmark {
+ * class my_benchmark : public cuspatial::benchmark {
  * public:
  *   using TypeParam = T;
  * };
@@ -54,11 +67,15 @@ class benchmark : public ::benchmark::Fixture {
  public:
   virtual void SetUp(const ::benchmark::State& state)
   {
-    rmmOptions_t options{PoolAllocation, 0, false};
-    rmmInitialize(&options);
+    auto mr = make_pool();
+    rmm::mr::set_current_device_resource(mr.get());  // set default resource to pool
   }
 
-  virtual void TearDown(const ::benchmark::State& state) { rmmFinalize(); }
+  virtual void TearDown(const ::benchmark::State& state)
+  {
+    // reset default resource to the initial resource
+    rmm::mr::set_current_device_resource(nullptr);
+  }
 
   // eliminate partial override warnings (see benchmark/benchmark.h)
   virtual void SetUp(::benchmark::State& st) { SetUp(const_cast<const ::benchmark::State&>(st)); }
@@ -66,6 +83,8 @@ class benchmark : public ::benchmark::Fixture {
   {
     TearDown(const_cast<const ::benchmark::State&>(st));
   }
+
+  std::shared_ptr<rmm::mr::device_memory_resource> mr;
 };
 
-};  // namespace cudf
+};  // namespace cuspatial

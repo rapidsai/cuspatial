@@ -67,11 +67,17 @@ struct dispatch_timestamp {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(2);
     // allocate distance output column
-    cols.push_back(cudf::make_numeric_column(
-      cudf::data_type{cudf::FLOAT64}, num_trajectories, cudf::mask_state::UNALLOCATED, stream, mr));
+    cols.push_back(cudf::make_numeric_column(cudf::data_type{cudf::type_id::FLOAT64},
+                                             num_trajectories,
+                                             cudf::mask_state::UNALLOCATED,
+                                             stream,
+                                             mr));
     // allocate speed output column
-    cols.push_back(cudf::make_numeric_column(
-      cudf::data_type{cudf::FLOAT64}, num_trajectories, cudf::mask_state::UNALLOCATED, stream, mr));
+    cols.push_back(cudf::make_numeric_column(cudf::data_type{cudf::type_id::FLOAT64},
+                                             num_trajectories,
+                                             cudf::mask_state::UNALLOCATED,
+                                             stream,
+                                             mr));
 
     using Rep     = typename Timestamp::rep;
     using Dur     = typename Timestamp::duration;
@@ -104,8 +110,8 @@ struct dispatch_timestamp {
                                   int32_t id0 = thrust::get<4>(curr);
                                   int32_t id1 = thrust::get<4>(next);
                                   if (id0 == id1) {
-                                    Timestamp t0 = thrust::get<0>(curr);
-                                    Timestamp t1 = thrust::get<0>(next);
+                                    Timestamp t0 = Timestamp{Dur{thrust::get<0>(curr)}};
+                                    Timestamp t1 = Timestamp{Dur{thrust::get<0>(next)}};
                                     auto x0      = static_cast<double>(thrust::get<2>(curr));
                                     auto x1      = static_cast<double>(thrust::get<2>(next));
                                     auto y0      = static_cast<double>(thrust::get<3>(curr));
@@ -241,7 +247,7 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(cudf::size_type num
     x.size() == y.size() && x.size() == object_id.size() && x.size() == timestamp.size(),
     "Data size mismatch");
   CUSPATIAL_EXPECTS(x.type().id() == y.type().id(), "Data type mismatch");
-  CUSPATIAL_EXPECTS(object_id.type().id() == cudf::INT32, "Invalid object_id type");
+  CUSPATIAL_EXPECTS(object_id.type().id() == cudf::type_id::INT32, "Invalid object_id type");
   CUSPATIAL_EXPECTS(cudf::is_timestamp(timestamp.type()), "Invalid timestamp datatype");
   CUSPATIAL_EXPECTS(
     !(x.has_nulls() || y.has_nulls() || timestamp.has_nulls() || object_id.has_nulls()),
@@ -250,8 +256,8 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(cudf::size_type num
       timestamp.is_empty()) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(2);
-    cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::FLOAT64}));
-    cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::FLOAT64}));
+    cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::type_id::FLOAT64}));
+    cols.push_back(cudf::make_empty_column(cudf::data_type{cudf::type_id::FLOAT64}));
     return std::make_unique<cudf::table>(std::move(cols));
   }
 

@@ -36,7 +36,7 @@ namespace cuspatial {
  * @param timestamp column of timestamps in any resolution
  * @param mr The optional resource to use for output device memory allocations
  *
- * @throw cuspatial::logic_error If object_id isn't cudf::INT32
+ * @throw cuspatial::logic_error If object_id isn't cudf::type_id::INT32
  * @throw cuspatial::logic_error If x and y are different types
  * @throw cuspatial::logic_error If timestamp isn't a cudf::TIMESTAMP type
  * @throw cuspatial::logic_error If object_id, x, y, or timestamp contain nulls
@@ -69,7 +69,7 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
  * @param timestamp column of timestamps in any resolution
  * @param mr The optional resource to use for output device memory allocations
  *
- * @throw cuspatial::logic_error If object_id isn't cudf::INT32
+ * @throw cuspatial::logic_error If object_id isn't cudf::type_id::INT32
  * @throw cuspatial::logic_error If x and y are different types
  * @throw cuspatial::logic_error If timestamp isn't a cudf::TIMESTAMP type
  * @throw cuspatial::logic_error If object_id, x, y, or timestamp contain nulls
@@ -100,7 +100,7 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(
  * @param y coordinates (in kilometers)
  * @param mr The optional resource to use for output device memory allocations
  *
- * @throw cuspatial::logic_error If object_id isn't cudf::INT32
+ * @throw cuspatial::logic_error If object_id isn't cudf::type_id::INT32
  * @throw cuspatial::logic_error If x and y are different types
  * @throw cuspatial::logic_error If object_id, x, or y contain nulls
  * @throw cuspatial::logic_error If object_id, x, and y are different sizes

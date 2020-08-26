@@ -14,82 +14,47 @@
  * limitations under the License.
  */
 
-#include <cudf/column/column.hpp>
+#include <cuspatial/detail/cartesian_product_group_index_iterator.cuh>
+#include <cuspatial/detail/hausdorff.cuh>
+#include <cuspatial/error.hpp>
+#include "utility/scatter_output_iterator.cuh"
+#include "utility/size_from_offsets.cuh"
+
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
-#include <cudf/column/column_view.hpp>
 #include <cudf/types.hpp>
-#include <cudf/utilities/error.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
-#include <cuspatial/error.hpp>
-#include <memory>
-#include <type_traits>
 
+#include <thrust/binary_search.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/transform_iterator.h>
+
+#include <rmm/device_uvector.hpp>
+
+#include <memory>
+
+namespace cuspatial {
+namespace detail {
 namespace {
 
 using size_type = cudf::size_type;
 
-constexpr cudf::size_type MAX_NUM_SPACES = 46340;  // floor(sqrt(numeric_limits<size_type>::max()))
-constexpr cudf::size_type MAX_NUM_BLOCKS_X          = 65535;
-constexpr cudf::size_type MAX_NUM_THREADS_PER_BLOCK = 1024;
-
 template <typename T>
-constexpr auto magnitude_squared(T a, T b)
-{
-  return a * a + b * b;
-}
+struct hausdorff_accumulator_factory {
+  cudf::column_device_view xs;
+  cudf::column_device_view ys;
 
-template <typename T>
-__global__ void kernel_hausdorff(
-  size_type num_spaces, T const* xs, T const* ys, size_type* space_offsets, T* results)
-{
-  auto block_idx   = blockIdx.y * gridDim.x + blockIdx.x;
-  auto num_results = num_spaces * num_spaces;
+  hausdorff_acc<T> __device__ operator()(cartesian_product_group_index idx)
+  {
+    auto a_idx = idx.group_a.offset + idx.element_a_idx;
+    auto b_idx = idx.group_b.offset + idx.element_b_idx;
 
-  // each block processes a single result / pair of spaces
-  if (block_idx < num_results) {
-    size_type space_a_idx   = block_idx % num_spaces;
-    size_type space_a_begin = space_a_idx == 0 ? 0 : space_offsets[space_a_idx - 1];
-    size_type space_a_end   = space_offsets[space_a_idx];
+    auto distance = hypot(xs.element<T>(b_idx) - xs.element<T>(a_idx),
+                          ys.element<T>(b_idx) - ys.element<T>(a_idx));
 
-    size_type space_b_idx   = block_idx / num_spaces;
-    size_type space_b_begin = space_b_idx == 0 ? 0 : space_offsets[space_b_idx - 1];
-    size_type space_b_end   = space_offsets[space_b_idx];
-
-    T min_dist_sqrd = 1e20;
-
-    size_type num_points_in_b = space_b_end - space_b_begin;
-
-    if (threadIdx.x < num_points_in_b) {
-      T point_b_x = xs[space_b_begin + threadIdx.x];
-      T point_b_y = ys[space_b_begin + threadIdx.x];
-
-      for (size_type i = space_a_begin; i < space_a_end; i++) {
-        T point_a_x = xs[i];
-        T point_a_y = ys[i];
-        T dist_sqrd = magnitude_squared(point_b_x - point_a_x, point_b_y - point_a_y);
-
-        min_dist_sqrd = min(min_dist_sqrd, dist_sqrd);
-      }
-    }
-
-    if (min_dist_sqrd > 1e10) { min_dist_sqrd = -1; }
-
-    __shared__ T dist_sqrd[MAX_NUM_THREADS_PER_BLOCK];
-
-    dist_sqrd[threadIdx.x] = threadIdx.x < num_points_in_b ? min_dist_sqrd : -1;
-
-    for (size_type offset = blockDim.x / 2; offset > 0; offset >>= 1) {
-      __syncthreads();
-
-      if (threadIdx.x < offset) {
-        dist_sqrd[threadIdx.x] = max(dist_sqrd[threadIdx.x], dist_sqrd[threadIdx.x + offset]);
-      }
-    }
-
-    if (threadIdx.x == 0) { results[block_idx] = (dist_sqrd[0] < 0) ? 1e10 : sqrt(dist_sqrd[0]); }
+    return hausdorff_acc<T>{b_idx, b_idx, distance, distance, 0};
   }
-}
+};
 
 struct hausdorff_functor {
   template <typename T, typename... Args>
@@ -103,49 +68,83 @@ struct hausdorff_functor {
   std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
     cudf::column_view const& xs,
     cudf::column_view const& ys,
-    cudf::column_view const& points_per_space,
+    cudf::column_view const& space_offsets,
     rmm::mr::device_memory_resource* mr,
     cudaStream_t stream)
   {
-    auto tid    = cudf::type_to_id<T>();
-    auto result = cudf::make_fixed_width_column(cudf::data_type{tid},
-                                                points_per_space.size() * points_per_space.size(),
+    size_type num_points  = xs.size();
+    size_type num_spaces  = space_offsets.size();
+    size_type num_results = num_spaces * num_spaces;
+
+    if (num_results == 0) {
+      return cudf::make_empty_column(cudf::data_type{cudf::type_to_id<T>()});
+    }
+
+    // ===== Make Hausdorff Accumulator ============================================================
+
+    auto gcp_iter = make_cartesian_product_group_index_iterator(
+      num_points, num_spaces, space_offsets.begin<cudf::size_type>());
+
+    auto d_xs = cudf::column_device_view::create(xs);
+    auto d_ys = cudf::column_device_view::create(ys);
+
+    auto hausdorff_acc_iter =
+      thrust::make_transform_iterator(gcp_iter, hausdorff_accumulator_factory<T>{*d_xs, *d_ys});
+
+    // ===== Materialize ===========================================================================
+
+    auto result = cudf::make_fixed_width_column(cudf::data_type{cudf::type_to_id<T>()},
+                                                num_results,
                                                 cudf::mask_state::UNALLOCATED,
                                                 stream,
                                                 mr);
 
-    if (result->size() == 0) { return result; }
+    auto result_temp      = rmm::device_buffer(sizeof(hausdorff_acc<T>) * num_results);
+    auto result_temp_iter = static_cast<hausdorff_acc<T>*>(result_temp.data());
 
-    auto space_offsets = rmm::device_vector<cudf::size_type>(points_per_space.size());
+    auto scatter_map = thrust::make_transform_iterator(
+      gcp_iter, [num_spaces] __device__(cartesian_product_group_index idx) {
+        // the given output is only a "result" if it is the last output for a given pair-of-spaces
+        bool const is_result = idx.element_a_idx + 1 == idx.group_a.size &&  //
+                               idx.element_b_idx + 1 == idx.group_b.size;
 
-    thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
-                           points_per_space.begin<cudf::size_type>(),
-                           points_per_space.end<cudf::size_type>(),
-                           space_offsets.begin());
+        if (not is_result) { return -1; }
 
-    // utilize one block per result (pair of spaces).
-    size_type num_blocks_x = min(result->size(), MAX_NUM_BLOCKS_X);
-    size_type num_blocks_y = ceil(result->size() / (float)MAX_NUM_BLOCKS_X);
+        // the destination for the result is determined per- pair-of-spaces
+        return idx.group_b.idx * num_spaces + idx.group_a.idx;
+      });
 
-    dim3 grid(num_blocks_x, num_blocks_y);
+    auto scatter_out = make_scatter_output_iterator(result_temp_iter, scatter_map);
 
-    auto kernel = kernel_hausdorff<T>;
+    auto gpc_key_iter =
+      thrust::make_transform_iterator(gcp_iter, [] __device__(cartesian_product_group_index idx) {
+        return thrust::make_pair(idx.group_a.idx, idx.group_b.idx);
+      });
 
-    kernel<<<grid, MAX_NUM_THREADS_PER_BLOCK, 0, stream>>>(points_per_space.size(),
-                                                           xs.data<T>(),
-                                                           ys.data<T>(),
-                                                           space_offsets.data().get(),
-                                                           result->mutable_view().data<T>());
+    // the following output iterator and `inclusive_scan_by_key` could be replaced by a
+    // reduce_by_key, if it supported non-commutative operators.
 
-    CUDA_TRY(cudaGetLastError());
+    auto num_cartesian = num_points * num_points;
+
+    thrust::inclusive_scan_by_key(rmm::exec_policy(stream)->on(stream),
+                                  gpc_key_iter,
+                                  gpc_key_iter + num_cartesian,
+                                  hausdorff_acc_iter,
+                                  scatter_out,
+                                  thrust::equal_to<thrust::pair<int32_t, int32_t>>());
+
+    thrust::transform(rmm::exec_policy(stream)->on(stream),
+                      result_temp_iter,
+                      result_temp_iter + num_results,
+                      result->mutable_view().begin<T>(),
+                      [] __device__(hausdorff_acc<T> const& a) { return static_cast<T>(a); });
 
     return result;
   }
 };
 
 }  // namespace
-
-namespace cuspatial {
+}  // namespace detail
 
 std::unique_ptr<cudf::column> directed_hausdorff_distance(cudf::column_view const& xs,
                                                           cudf::column_view const& ys,
@@ -161,13 +160,10 @@ std::unique_ptr<cudf::column> directed_hausdorff_distance(cudf::column_view cons
   CUSPATIAL_EXPECTS(xs.size() >= points_per_space.size(),
                     "At least one point is required for each space");
 
-  CUSPATIAL_EXPECTS(points_per_space.size() <= MAX_NUM_SPACES,
-                    "Total number of spaces must not exceed " CUSPATIAL_STRINGIFY(MAX_NUM_SPACES));
-
   cudaStream_t stream = 0;
 
   return cudf::type_dispatcher(
-    xs.type(), hausdorff_functor(), xs, ys, points_per_space, mr, stream);
+    xs.type(), detail::hausdorff_functor(), xs, ys, points_per_space, mr, stream);
 }
 
 }  // namespace cuspatial
