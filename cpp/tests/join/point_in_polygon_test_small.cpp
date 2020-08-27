@@ -16,9 +16,10 @@
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/point_quadtree.hpp>
-#include <cuspatial/polyline_bounding_box.hpp>
+#include <cuspatial/polygon_bounding_box.hpp>
 #include <cuspatial/spatial_join.hpp>
 
+#include <cudf/copying.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
 
@@ -28,13 +29,19 @@
 #include <tests/utilities/table_utilities.hpp>
 #include <tests/utilities/type_lists.hpp>
 
+/*
+ * A small test that it is suitable for manually visualizing point-polygon pairing results in a GIS
+ * environment GPU results are compared with expected values embeded in code However, the number of
+ * points in each quadrant is less than 32, the two kernels for point-in-polygon test are not fully
+ * tested. This is left for pip_refine_test_large.
+ */
 template <typename T>
-struct QuadtreePolylineBoundingBoxJoinTest : public cudf::test::BaseFixture {
+struct PIPRefineTestSmall : public cudf::test::BaseFixture {
 };
 
-TYPED_TEST_CASE(QuadtreePolylineBoundingBoxJoinTest, cudf::test::FloatingPointTypes);
+TYPED_TEST_CASE(PIPRefineTestSmall, cudf::test::FloatingPointTypes);
 
-TYPED_TEST(QuadtreePolylineBoundingBoxJoinTest, test_small)
+TYPED_TEST(PIPRefineTestSmall, TestSmall)
 {
   using T = TypeParam;
   using namespace cudf::test;
@@ -87,23 +94,26 @@ TYPED_TEST(QuadtreePolylineBoundingBoxJoinTest, test_small)
      7.513564222799629,    6.885401350515916,    6.194330707468438,  5.823535317960799,
      6.789029097334483,    5.188939408363776,    5.788316610960881});
 
-  auto pair = cuspatial::quadtree_on_points(
+  auto quadtree_pair = cuspatial::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, this->mr());
 
-  auto &quadtree = std::get<1>(pair);
+  auto &quadtree      = std::get<1>(quadtree_pair);
+  auto &point_indices = std::get<0>(quadtree_pair);
 
-  double const expansion_radius{2.0};
-  fixed_width_column_wrapper<int32_t> poly_offsets({0, 3, 8, 12});
+  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
+  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14});
   fixed_width_column_wrapper<T> poly_x({// ring 1
                                         2.488450,
                                         1.333584,
                                         3.460720,
+                                        2.488450,
                                         // ring 2
                                         5.039823,
                                         5.561707,
                                         7.103516,
                                         7.190674,
                                         5.998939,
+                                        5.039823,
                                         // ring 3
                                         5.998939,
                                         5.573720,
@@ -119,12 +129,14 @@ TYPED_TEST(QuadtreePolylineBoundingBoxJoinTest, test_small)
                                         5.856625,
                                         5.008840,
                                         4.586599,
+                                        5.856625,
                                         // ring 2
                                         4.229242,
                                         1.825073,
                                         1.503906,
                                         4.025879,
                                         5.653384,
+                                        4.229242,
                                         // ring 3
                                         1.235638,
                                         0.197808,
@@ -137,21 +149,31 @@ TYPED_TEST(QuadtreePolylineBoundingBoxJoinTest, test_small)
                                         3.745936,
                                         4.541529});
 
-  auto polyline_bboxes =
-    cuspatial::polyline_bounding_boxes(poly_offsets, poly_x, poly_y, expansion_radius, this->mr());
+  auto polygon_bboxes =
+    cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, poly_x, poly_y, this->mr());
 
-  auto polyline_quadrant_pairs = cuspatial::join_quadtree_and_bounding_boxes(
-    *quadtree, *polyline_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
+  auto polygon_quadrant_pairs = cuspatial::join_quadtree_and_bounding_boxes(
+    *quadtree, *polygon_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
-  CUSPATIAL_EXPECTS(
-    polyline_quadrant_pairs->num_columns() == 2,
-    "a polyline-quadrant pair table must have 2 columns (polyline_index, quadrant_index)");
+  auto point_in_polygon_pairs = cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+                                                                     *quadtree,
+                                                                     *point_indices,
+                                                                     x,
+                                                                     y,
+                                                                     poly_offsets,
+                                                                     ring_offsets,
+                                                                     poly_x,
+                                                                     poly_y,
+                                                                     this->mr());
 
-  expect_tables_equal(
+  CUSPATIAL_EXPECTS(point_in_polygon_pairs->num_columns() == 2,
+                    "a polygon-quadrant pair table must have 2 columns");
+
+  expect_tables_equivalent(
     cudf::table_view{
       {fixed_width_column_wrapper<uint32_t>(
-         {0, 1, 3, 1, 2, 3, 3, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3}),
+         {0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3}),
        fixed_width_column_wrapper<uint32_t>(
-         {2, 2, 2, 6, 6, 3, 6, 10, 11, 8, 10, 12, 13, 8, 10, 12, 13, 8, 9, 10, 11})}},
-    *polyline_quadrant_pairs);
+         {62, 60, 45, 46, 47, 48, 49, 50, 51, 52, 54, 28, 29, 30, 31, 32, 33, 34, 35})}},
+    *point_in_polygon_pairs);
 }

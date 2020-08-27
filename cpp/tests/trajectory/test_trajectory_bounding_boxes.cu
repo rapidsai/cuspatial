@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <cudf/utilities/traits.hpp>
+
 #include <tests/utilities/column_utilities.hpp>
 #include <tests/utilities/type_lists.hpp>
 

@@ -6,12 +6,9 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - black=19.10
   - clang=8.0.1
   - clang-tools=8.0.1
-  - cudf=0.14.*
+  - cudf=0.15.*
   - cudatoolkit=9.2
-  - flake8=3.7.7
   - gdal>=3.0.2
   - geopandas=0.7.0
-  - isort=5.0.4

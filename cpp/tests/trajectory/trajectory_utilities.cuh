@@ -49,13 +49,15 @@ std::unique_ptr<cudf::table> make_test_trajectories_table(
     return static_cast<T>(40000 * rand_float.generate() * (rand_float.generate() > 0.5 ? 1 : -1));
   });
 
+  using duration_ms = typename cudf::timestamp_ms::duration;
+
   auto id = cudf::test::fixed_width_column_wrapper<int32_t>(ids_iter, ids_iter + size);
   auto x  = cudf::test::fixed_width_column_wrapper<T>(floats_iter, floats_iter + size);
   auto y  = cudf::test::fixed_width_column_wrapper<T>(floats_iter, floats_iter + size);
   auto ts = cudf::test::generate_timestamps<cudf::timestamp_ms>(
     size,
-    cudf::timestamp_ms{-2500000000000},  // Sat, 11 Oct 1890 19:33:20 GMT
-    cudf::timestamp_ms{2500000000000}    // Mon, 22 Mar 2049 04:26:40 GMT
+    cudf::timestamp_ms{duration_ms{-2500000000000}},  // Sat, 11 Oct 1890 19:33:20 GMT
+    cudf::timestamp_ms{duration_ms{2500000000000}}    // Mon, 22 Mar 2049 04:26:40 GMT
   );
 
   auto sorted = cudf::detail::sort_by_key(

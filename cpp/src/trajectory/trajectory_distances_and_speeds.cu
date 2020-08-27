@@ -110,8 +110,8 @@ struct dispatch_timestamp {
                                   int32_t id0 = thrust::get<4>(curr);
                                   int32_t id1 = thrust::get<4>(next);
                                   if (id0 == id1) {
-                                    Timestamp t0 = thrust::get<0>(curr);
-                                    Timestamp t1 = thrust::get<0>(next);
+                                    Timestamp t0 = Timestamp{Dur{thrust::get<0>(curr)}};
+                                    Timestamp t1 = Timestamp{Dur{thrust::get<0>(next)}};
                                     auto x0      = static_cast<double>(thrust::get<2>(curr));
                                     auto x1      = static_cast<double>(thrust::get<2>(next));
                                     auto y0      = static_cast<double>(thrust::get<3>(curr));

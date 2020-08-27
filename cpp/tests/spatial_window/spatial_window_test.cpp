@@ -126,8 +126,9 @@ TYPED_TEST_CASE(SpatialWindowUnsupportedChronoTypesTest, cudf::test::ChronoTypes
 TYPED_TEST(SpatialWindowUnsupportedChronoTypesTest, ShouldThrow)
 {
   using T       = TypeParam;
-  auto points_x = cudf::test::fixed_width_column_wrapper<T>({T{1}, T{2}, T{3}});
-  auto points_y = cudf::test::fixed_width_column_wrapper<T>({T{0}, T{1}, T{2}});
+  using R       = typename T::rep;
+  auto points_x = cudf::test::fixed_width_column_wrapper<T, R>({R{1}, R{2}, R{3}});
+  auto points_y = cudf::test::fixed_width_column_wrapper<T, R>({R{0}, R{1}, R{2}});
 
   EXPECT_THROW(
     auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y),

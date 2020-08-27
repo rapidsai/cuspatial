@@ -11,7 +11,10 @@ import cuspatial
 bbox_1 = (0, 1, 0, 1)
 bbox_2 = (0, 2, 0, 2)
 
-small_poly_offsets = cudf.Series(
+small_poly_offsets = cudf.Series([0, 1, 2, 3], dtype=np.uint32)
+small_ring_offsets = cudf.Series([0, 3, 8, 12], dtype=np.uint32)
+
+small_poly_xs = cudf.Series(
     [
         2.488450,
         1.333584,
@@ -32,7 +35,8 @@ small_poly_offsets = cudf.Series(
         2.088115,
     ]
 )  # noqa: E501
-small_ring_offsets = cudf.Series(
+
+small_poly_ys = cudf.Series(
     [
         5.856625,
         5.008840,
@@ -222,7 +226,7 @@ def test_empty(dtype):
         cudf.Series([], dtype=dtype),
     )
     # empty should not throw
-    intersections = cuspatial.quad_bbox_join(
+    intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree, poly_bboxes, *bbox_1, 1, 1,  # bbox  # scale  # max_depth
     )
     assert_eq(
@@ -238,32 +242,33 @@ def test_empty(dtype):
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_polygon_join_small(dtype):
-    order, quadtree = cuspatial.quadtree_on_points(
-        small_points_x.astype(dtype),  # x
-        small_points_y.astype(dtype),  # y
-        0,  # x_min
-        8,  # x_max
-        0,  # y_min
-        8,  # y_max
-        1,  # scale
-        3,  # max_depth
-        12,  # min_size
+    x_min = 0
+    x_max = 8
+    y_min = 0
+    y_max = 8
+    scale = 1
+    max_depth = 3
+    min_size = 12
+    points_x = small_points_x.astype(dtype)
+    points_y = small_points_y.astype(dtype)
+    poly_points_x = small_poly_xs.astype(dtype)
+    poly_points_y = small_poly_ys.astype(dtype)
+    point_indices, quadtree = cuspatial.quadtree_on_points(
+        points_x,
+        points_y,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        scale,
+        max_depth,
+        min_size,
     )
     poly_bboxes = cuspatial.polygon_bounding_boxes(
-        cudf.Series([0, 1, 2, 3]),
-        cudf.Series([0, 3, 8, 12]),
-        small_poly_offsets.astype(dtype),
-        small_ring_offsets.astype(dtype),
+        small_poly_offsets, small_ring_offsets, poly_points_x, poly_points_y,
     )
-    intersections = cuspatial.quad_bbox_join(
-        quadtree,
-        poly_bboxes,
-        0,  # x_min
-        8,  # x_max
-        0,  # y_min
-        8,  # y_max
-        1,  # scale
-        3,  # max_depth
+    intersections = cuspatial.join_quadtree_and_bounding_boxes(
+        quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
     )
     assert_eq(
         intersections,
@@ -282,43 +287,531 @@ def test_polygon_join_small(dtype):
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_polyline_join_small(dtype):
-    order, quadtree = cuspatial.quadtree_on_points(
-        small_points_x.astype(dtype),  # x
-        small_points_y.astype(dtype),  # y
-        0,  # x_min
-        8,  # x_max
-        0,  # y_min
-        8,  # y_max
-        1,  # scale
-        3,  # max_depth
-        12,  # min_size
+    x_min = 0
+    x_max = 8
+    y_min = 0
+    y_max = 8
+    scale = 1
+    max_depth = 3
+    min_size = 12
+    expansion_radius = 2.0
+    points_x = small_points_x.astype(dtype)
+    points_y = small_points_y.astype(dtype)
+    poly_points_x = small_poly_xs.astype(dtype)
+    poly_points_y = small_poly_ys.astype(dtype)
+    point_indices, quadtree = cuspatial.quadtree_on_points(
+        points_x,
+        points_y,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        scale,
+        max_depth,
+        min_size,
     )
     poly_bboxes = cuspatial.polyline_bounding_boxes(
-        cudf.Series([0, 3, 8, 12]),
-        small_poly_offsets.astype(dtype),
-        small_ring_offsets.astype(dtype),
-        0.5,  # expansion_radius
+        small_ring_offsets, poly_points_x, poly_points_y, expansion_radius,
     )
-    intersections = cuspatial.quad_bbox_join(
-        quadtree,
-        poly_bboxes,
-        0,  # x_min
-        8,  # x_max
-        0,  # y_min
-        8,  # y_max
-        1,  # scale
-        3,  # max_depth
+    intersections = cuspatial.join_quadtree_and_bounding_boxes(
+        quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
     )
     assert_eq(
         intersections,
         cudf.DataFrame(
             {
                 "poly_offset": cudf.Series(
-                    [0, 3, 1, 2, 1, 1, 3, 3], dtype=np.uint32
+                    [
+                        0,
+                        1,
+                        3,
+                        1,
+                        2,
+                        3,
+                        3,
+                        0,
+                        0,
+                        1,
+                        1,
+                        1,
+                        1,
+                        2,
+                        2,
+                        2,
+                        2,
+                        3,
+                        3,
+                        3,
+                        3,
+                    ],
+                    dtype=np.uint32,
                 ),
                 "quad_offset": cudf.Series(
-                    [2, 2, 6, 6, 12, 13, 10, 11], dtype=np.uint32
+                    [
+                        2,
+                        2,
+                        2,
+                        6,
+                        6,
+                        3,
+                        6,
+                        10,
+                        11,
+                        8,
+                        10,
+                        12,
+                        13,
+                        8,
+                        10,
+                        12,
+                        13,
+                        8,
+                        9,
+                        10,
+                        11,
+                    ],
+                    dtype=np.uint32,
                 ),
             }
         ),
     )
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_quadtree_point_in_polygon_small(dtype):
+    x_min = 0
+    x_max = 8
+    y_min = 0
+    y_max = 8
+    scale = 1
+    max_depth = 3
+    min_size = 12
+    points_x = small_points_x.astype(dtype)
+    points_y = small_points_y.astype(dtype)
+    poly_points_x = small_poly_xs.astype(dtype)
+    poly_points_y = small_poly_ys.astype(dtype)
+    point_indices, quadtree = cuspatial.quadtree_on_points(
+        points_x,
+        points_y,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        scale,
+        max_depth,
+        min_size,
+    )
+    poly_bboxes = cuspatial.polygon_bounding_boxes(
+        small_poly_offsets, small_ring_offsets, poly_points_x, poly_points_y,
+    )
+    intersections = cuspatial.join_quadtree_and_bounding_boxes(
+        quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
+    )
+    points_and_polygons = cuspatial.quadtree_point_in_polygon(
+        intersections,
+        quadtree,
+        point_indices,
+        points_x,
+        points_y,
+        small_poly_offsets,
+        small_ring_offsets,
+        poly_points_x,
+        poly_points_y,
+    )
+    assert_eq(
+        points_and_polygons,
+        cudf.DataFrame(
+            {
+                "point_index": cudf.Series(
+                    [0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3],
+                    dtype=np.uint32,
+                ),
+                "polygon_index": cudf.Series(
+                    [
+                        62,
+                        60,
+                        45,
+                        46,
+                        47,
+                        48,
+                        49,
+                        50,
+                        51,
+                        52,
+                        54,
+                        28,
+                        29,
+                        30,
+                        31,
+                        32,
+                        33,
+                        34,
+                        35,
+                    ],
+                    dtype=np.uint32,
+                ),
+            }
+        ),
+    )
+
+
+def run_test_quadtree_point_to_nearest_polyline_small(
+    dtype, expected_distances
+):
+    x_min = 0
+    x_max = 8
+    y_min = 0
+    y_max = 8
+    scale = 1
+    max_depth = 3
+    min_size = 12
+    expansion_radius = 2.0
+    points_x = small_points_x.astype(dtype)
+    points_y = small_points_y.astype(dtype)
+    poly_points_x = small_poly_xs.astype(dtype)
+    poly_points_y = small_poly_ys.astype(dtype)
+    point_indices, quadtree = cuspatial.quadtree_on_points(
+        points_x,
+        points_y,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        scale,
+        max_depth,
+        min_size,
+    )
+    poly_bboxes = cuspatial.polyline_bounding_boxes(
+        small_ring_offsets, poly_points_x, poly_points_y, expansion_radius,
+    )
+    intersections = cuspatial.join_quadtree_and_bounding_boxes(
+        quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
+    )
+    p2np_result = cuspatial.quadtree_point_to_nearest_polyline(
+        intersections,
+        quadtree,
+        point_indices,
+        points_x,
+        points_y,
+        small_ring_offsets,
+        poly_points_x,
+        poly_points_y,
+    )
+    assert_eq(
+        p2np_result,
+        cudf.DataFrame(
+            {
+                "point_index": cudf.Series(
+                    [
+                        0,
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7,
+                        8,
+                        9,
+                        10,
+                        11,
+                        12,
+                        13,
+                        14,
+                        15,
+                        16,
+                        17,
+                        18,
+                        19,
+                        20,
+                        21,
+                        22,
+                        23,
+                        24,
+                        25,
+                        26,
+                        27,
+                        28,
+                        29,
+                        30,
+                        31,
+                        32,
+                        33,
+                        34,
+                        35,
+                        36,
+                        37,
+                        38,
+                        39,
+                        40,
+                        41,
+                        42,
+                        43,
+                        44,
+                        45,
+                        46,
+                        47,
+                        48,
+                        49,
+                        50,
+                        51,
+                        52,
+                        53,
+                        54,
+                        55,
+                        56,
+                        57,
+                        58,
+                        59,
+                        60,
+                        61,
+                        62,
+                        63,
+                        64,
+                        65,
+                        66,
+                        67,
+                        68,
+                        69,
+                        70,
+                    ],
+                    dtype=np.uint32,
+                ),
+                "polyline_index": cudf.Series(
+                    [
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        2,
+                        2,
+                        2,
+                        2,
+                        3,
+                        2,
+                        2,
+                        2,
+                        2,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        3,
+                        2,
+                        2,
+                        2,
+                        2,
+                        2,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        3,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ],
+                    dtype=np.uint32,
+                ),
+                "distance": cudf.Series(expected_distances, dtype=dtype),
+            }
+        ),
+    )
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_quadtree_point_to_nearest_polyline_small(dtype):
+    if dtype == np.float32:
+        run_test_quadtree_point_to_nearest_polyline_small(
+            dtype,
+            [
+                3.06755614,
+                2.55945015,
+                2.98496079,
+                1.71036518,
+                1.82931805,
+                1.60950696,
+                1.68141198,
+                2.38382101,
+                2.55103993,
+                1.66121042,
+                2.02551198,
+                2.06608653,
+                2.0054605,
+                1.86834478,
+                1.94656599,
+                2.2151804,
+                1.75039434,
+                1.48201656,
+                1.67690217,
+                1.6472789,
+                1.00051796,
+                1.75223088,
+                1.84907377,
+                1.00189602,
+                0.760027468,
+                0.65931344,
+                1.24821293,
+                1.32290053,
+                0.285818338,
+                0.204662085,
+                0.41061914,
+                0.566183507,
+                0.0462928228,
+                0.166630849,
+                0.449532568,
+                0.566757083,
+                0.842694938,
+                1.2851826,
+                0.761564255,
+                0.978420198,
+                0.917963803,
+                1.43116546,
+                0.964613676,
+                0.668479323,
+                0.983481824,
+                0.661732435,
+                0.862337708,
+                0.50195682,
+                0.675588429,
+                0.825302362,
+                0.460371286,
+                0.726516545,
+                0.5221892,
+                0.728920817,
+                0.0779202655,
+                0.262149751,
+                0.331539005,
+                0.711767673,
+                0.0811179057,
+                0.605163872,
+                0.0885084718,
+                1.51270044,
+                0.389437437,
+                0.487170845,
+                1.17812812,
+                1.8030436,
+                1.07697463,
+                1.1812768,
+                1.12407148,
+                1.63790822,
+                2.15100765,
+            ],
+        )
+    else:
+        run_test_quadtree_point_to_nearest_polyline_small(
+            dtype,
+            [
+                3.0675562686570932,
+                2.5594501016565698,
+                2.9849608928964071,
+                1.7103652150920774,
+                1.8293181280383963,
+                1.6095070428899729,
+                1.681412227243898,
+                2.3838209461314879,
+                2.5510398428020409,
+                1.6612106150272572,
+                2.0255119347250292,
+                2.0660867596957564,
+                2.005460353737949,
+                1.8683447535522375,
+                1.9465658908648766,
+                2.215180472008103,
+                1.7503944159063249,
+                1.4820166799617225,
+                1.6769023397521503,
+                1.6472789467219351,
+                1.0005181046076022,
+                1.7522309916961678,
+                1.8490738879835735,
+                1.0018961233717569,
+                0.76002760100291122,
+                0.65931355999132091,
+                1.2482129257770731,
+                1.3229005055827028,
+                0.28581819228716798,
+                0.20466187296772376,
+                0.41061901127492934,
+                0.56618357460517321,
+                0.046292709584059538,
+                0.16663093663041179,
+                0.44953247369220306,
+                0.56675685520587671,
+                0.8426949387264755,
+                1.2851826443010033,
+                0.7615641155638555,
+                0.97842040913621187,
+                0.91796378078050755,
+                1.4311654461101424,
+                0.96461369875795078,
+                0.66847988653443491,
+                0.98348202146010699,
+                0.66173276971965733,
+                0.86233789031448094,
+                0.50195678903916696,
+                0.6755886291567379,
+                0.82530249944765133,
+                0.46037120394920633,
+                0.72651648874084795,
+                0.52218906793095576,
+                0.72892093000338909,
+                0.077921089704128393,
+                0.26215098141130333,
+                0.33153993710577778,
+                0.71176747526132511,
+                0.081119666144327182,
+                0.60516346789266895,
+                0.088508309264124049,
+                1.5127004224070386,
+                0.38943741327066272,
+                0.48717099143018805,
+                1.1781283344854494,
+                1.8030436222567465,
+                1.0769747770485747,
+                1.181276832710481,
+                1.1240715558969043,
+                1.6379084234284416,
+                2.1510078772519496,
+            ],
+        )

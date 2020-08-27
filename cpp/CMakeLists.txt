@@ -15,7 +15,7 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(CUDA_SPATIAL VERSION 0.15.0 LANGUAGES C CXX CUDA)
+project(CUDA_SPATIAL VERSION 0.16.0 LANGUAGES C CXX CUDA)
 
 if(NOT CMAKE_CUDA_COMPILER)
   message(SEND_ERROR "CMake cannot locate a CUDA compiler")
@@ -308,6 +308,8 @@ add_library(cuspatial SHARED
             src/interpolate/cubic_spline.cu
             src/io/shp/polygon_shapefile_reader.cpp
             src/io/shp/polygon_shapefile_reader.cu
+            src/join/quadtree_point_in_polygon.cu
+            src/join/quadtree_point_to_nearest_polyline.cu
             src/join/quadtree_poly_filtering.cu
             src/spatial/polygon_bounding_box.cu
             src/spatial/polyline_bounding_box.cu
