@@ -28,6 +28,8 @@
 - PR #252 Fix CI style check failures.
 - PR #254 Fix issue with incorrect docker image being used in local build script.
 - PR #258 Fix compiler errors from cudf's new duration types.
+- PR #281 Patch Thrust to workaround `CUDA_CUB_RET_IF_FAIL` macro clearing CUDA errors
+
 
 # cuSpatial 0.14.0 (03 Jun 2020)
 
