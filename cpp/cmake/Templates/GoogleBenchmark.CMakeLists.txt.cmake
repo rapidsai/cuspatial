@@ -4,7 +4,7 @@ include(ExternalProject)
 
 ExternalProject_Add(GoogleBenchmark
                     GIT_REPOSITORY    https://github.com/google/benchmark.git
-                    GIT_TAG           master 
+                    GIT_TAG           v1.5.1
                     SOURCE_DIR        "${GBENCH_ROOT}/googlebenchmark"
                     BINARY_DIR        "${GBENCH_ROOT}/build"
                     INSTALL_DIR		    "${GBENCH_ROOT}/install"
