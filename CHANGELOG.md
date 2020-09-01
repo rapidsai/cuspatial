@@ -3,6 +3,7 @@
 ## New Features
 
 ## Improvements
+- PR #278 Update googlebenchmark version to match rmm & cudf.
 
 ## Bug Fixes
 
