@@ -4,6 +4,7 @@
 
 ## Improvements
 - PR #278 Update googlebenchmark version to match rmm & cudf.
+- PR #286 Upgrade CUB/Thrust to latest commits
 
 ## Bug Fixes
 
