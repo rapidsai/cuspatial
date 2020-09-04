@@ -4,6 +4,7 @@
 
 ## Improvements
 - PR #278 Update googlebenchmark version to match rmm & cudf.
+- PR #287 Replace RMM get_default_resource with get_current_device_resource.
 
 ## Bug Fixes
 
