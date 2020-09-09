@@ -1,6 +1,7 @@
 # cuSpatial 0.16.0 (Date TBD)
 
 ## New Features
+- PR #288 Add Java binding hence Java package.
 
 ## Improvements
 - PR #278 Update googlebenchmark version to match rmm & cudf.
