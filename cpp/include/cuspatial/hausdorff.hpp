@@ -83,6 +83,6 @@ std::unique_ptr<cudf::column> directed_hausdorff_distance(
   cudf::column_view const& xs,
   cudf::column_view const& ys,
   cudf::column_view const& points_per_space,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial

@@ -43,6 +43,6 @@ std::unique_ptr<cudf::column> haversine_distance(
   cudf::column_view const& b_lon,
   cudf::column_view const& b_lat,
   double const radius                 = EARTH_RADIUS_KM,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial
