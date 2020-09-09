@@ -4,6 +4,7 @@
 
 ## Improvements
 - PR #278 Update googlebenchmark version to match rmm & cudf.
+- PR #289 Fix cmake warnings for GoogleTest amd GoogleBenchmark external projects
 
 ## Bug Fixes
 
