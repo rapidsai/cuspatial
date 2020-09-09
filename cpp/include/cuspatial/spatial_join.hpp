@@ -59,7 +59,7 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(
   double y_max,
   double scale,
   int8_t max_depth,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
  * @brief Test whether the specified points are inside any of the specified polygons.
@@ -109,7 +109,7 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(
   cudf::column_view const& ring_offsets,
   cudf::column_view const& poly_points_x,
   cudf::column_view const& poly_points_y,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
  * @brief Finds the nearest polyline to each point in a quadrant, and computes the distances between
@@ -157,6 +157,6 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
   cudf::column_view const& poly_offsets,
   cudf::column_view const& poly_points_x,
   cudf::column_view const& poly_points_y,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial

@@ -25,7 +25,6 @@ requirements:
     - cudf {{ minor_version }}.*
     - rmm {{ minor_version }}.*
     - libcuspatial {{ version }}.*
-
   run:
     - python
     - cudf {{ minor_version }}.*

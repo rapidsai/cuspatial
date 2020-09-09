@@ -504,7 +504,7 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(cudf::column_view const& q
                                                     prefixes,
                                                     source_points,
                                                     coefficients,
-                                                    rmm::mr::get_default_resource(),
+                                                    rmm::mr::get_current_device_resource(),
                                                     0);
 }
 
@@ -515,7 +515,7 @@ std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t
                                                       cudf::column_view const& prefixes)
 {
   return cuspatial::detail::cubicspline_coefficients(
-    t, y, ids, prefixes, rmm::mr::get_default_resource(), 0);
+    t, y, ids, prefixes, rmm::mr::get_current_device_resource(), 0);
 }
 
 }  // namespace cuspatial
