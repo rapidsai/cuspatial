@@ -38,6 +38,6 @@ namespace cuspatial {
  **/
 std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
   std::string const& filename,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial

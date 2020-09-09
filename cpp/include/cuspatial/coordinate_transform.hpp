@@ -37,6 +37,6 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> lonlat_t
   double origin_lat,
   cudf::column_view const& input_lon,
   cudf::column_view const& input_lat,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial

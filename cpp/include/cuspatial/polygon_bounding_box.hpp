@@ -42,6 +42,6 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(
   cudf::column_view const& ring_offsets,
   cudf::column_view const& x,
   cudf::column_view const& y,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial

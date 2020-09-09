@@ -28,7 +28,8 @@ namespace test {
 
 template <typename T>
 std::unique_ptr<cudf::table> make_test_trajectories_table(
-  cudf::size_type size, rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
+  cudf::size_type size,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
 {
   std::vector<int32_t> ids(size);
   std::vector<int32_t> map(size);
