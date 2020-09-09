@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
+project(cuspatial-GoogleTest)
 
 include(ExternalProject)
 
@@ -9,11 +10,3 @@ ExternalProject_Add(GoogleTest
                     BINARY_DIR        "${GTEST_ROOT}/build"
                     INSTALL_DIR		  "${GTEST_ROOT}/install"
                     CMAKE_ARGS        ${GTEST_CMAKE_ARGS} -DCMAKE_INSTALL_PREFIX=${GTEST_ROOT}/install)
-
-
-
-
-
-
-
-
