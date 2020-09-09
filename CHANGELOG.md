@@ -1,3 +1,12 @@
+# cuSpatial 0.16.0 (Date TBD)
+
+## New Features
+
+## Improvements
+- PR #278 Update googlebenchmark version to match rmm & cudf.
+
+## Bug Fixes
+
 # cuSpatial 0.15.0 (26 Aug 2020)
 
 ## New Features
