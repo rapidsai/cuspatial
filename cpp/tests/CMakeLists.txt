@@ -28,13 +28,12 @@ find_library(CUDFTESTUTIL_LIBRARY "libcudftestutil.a"
              HINTS "$ENV{CUDF_ROOT}/lib")
 
 message(STATUS "CUDFTESTUTIL: CUDFTESTUTIL_LIBRARY set to ${CUDFTESTUTIL_LIBRARY}")
-message(STATUS "CUDFTESTUTIL: CUDF_TEST_INCLUDE set to ${CUDF_TEST_INCLUDE}")
 
 add_library(cudftestutil STATIC IMPORTED ${CUDFTESTUTIL_LIBRARY})
 
-if (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
+if (CUDFTESTUTIL_LIBRARY)
     set_target_properties(cudftestutil PROPERTIES IMPORTED_LOCATION ${CUDFTESTUTIL_LIBRARY})
-endif (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
+endif (CUDFTESTUTIL_LIBRARY)
 
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
@@ -71,8 +70,7 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${GDAL_INCLUDE_DIRS}"
                     "${GTEST_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
-                    "${CUDF_INCLUDE}"
-                    "${CUDF_TEST_INCLUDE}")
+                    "${CUDF_INCLUDE}")
  
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
