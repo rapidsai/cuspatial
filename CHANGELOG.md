@@ -7,6 +7,7 @@
 - PR #286 Upgrade Thrust to latest commit.
 - PR #287 Replace RMM get_default_resource with get_current_device_resource.
 - PR #289 Fix cmake warnings for GoogleTest amd GoogleBenchmark external projects.
+- PR #292 Update include paths to libcudf test utilities.
 
 ## Bug Fixes
 - PR #291 Fix mislabeled columns in Python spatial join result table.
