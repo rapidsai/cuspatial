@@ -15,8 +15,8 @@
  */
 
 #include <cmath>
-#include <tests/utilities/column_utilities.hpp>
-#include <tests/utilities/type_lists.hpp>
+#include <cudf/utilities/test/column_utilities.hpp>
+#include <cudf/utilities/test/type_lists.hpp>
 
 #include "tests/trajectory/trajectory_utilities.cuh"
 

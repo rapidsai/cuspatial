@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+#include <cudf/utilities/test/base_fixture.hpp>
+#include <cudf/utilities/test/column_utilities.hpp>
+#include <cudf/utilities/test/column_wrapper.hpp>
+#include <cudf/utilities/test/cudf_gtest.hpp>
+#include <cudf/utilities/test/type_lists.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/point_in_polygon.hpp>
-#include <tests/utilities/base_fixture.hpp>
-#include <tests/utilities/column_utilities.hpp>
-#include <tests/utilities/column_wrapper.hpp>
-#include <tests/utilities/cudf_gtest.hpp>
-#include <tests/utilities/type_lists.hpp>
 #include <type_traits>
 
 using namespace cudf::test;
