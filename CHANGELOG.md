@@ -4,11 +4,12 @@
 
 ## Improvements
 - PR #278 Update googlebenchmark version to match rmm & cudf.
-- PR #286 Upgrade Thrust to latest commit
+- PR #286 Upgrade Thrust to latest commit.
 - PR #287 Replace RMM get_default_resource with get_current_device_resource.
-- PR #289 Fix cmake warnings for GoogleTest amd GoogleBenchmark external projects
+- PR #289 Fix cmake warnings for GoogleTest amd GoogleBenchmark external projects.
 
 ## Bug Fixes
+- PR #291 Fix mislabeled columns in Python spatial join result table.
 
 # cuSpatial 0.15.0 (26 Aug 2020)
 

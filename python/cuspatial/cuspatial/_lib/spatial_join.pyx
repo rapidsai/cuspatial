@@ -72,7 +72,7 @@ cpdef quadtree_point_in_polygon(Table poly_quad_pairs,
         ))
     return Table.from_unique_ptr(
         move(result),
-        column_names=["point_index", "polygon_index"]
+        column_names=["polygon_index", "point_index"]
     )
 
 

@@ -126,10 +126,10 @@ def quadtree_point_in_polygon(
     result : cudf.DataFrame
         Indices for each intersecting point and polygon pair.
 
-        point_offset : cudf.Series
-            Indices of each point that intersects with a polygon.
-        polygon_offset : cudf.Series
+        polygon_index : cudf.Series
             Indices of each polygon with which a point intersected.
+        point_index : cudf.Series
+            Indices of each point that intersects with a polygon.
     """
 
     (
@@ -201,9 +201,9 @@ def quadtree_point_to_nearest_polyline(
         Indices for each point and its nearest polyline, and the distance
         between the two.
 
-        point_offset : cudf.Series
+        point_index : cudf.Series
             Indices of each point that intersects with a polyline.
-        polyline_offset : cudf.Series
+        polyline_index : cudf.Series
             Indices of each polyline with which a point intersected.
         distance : cudf.Series
             Distances between each point and its nearest polyline.
