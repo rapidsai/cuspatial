@@ -48,13 +48,10 @@ def _cpu_pack_linestring(linestring, offset, output):
         offset = offset + 2
 
 
-def _cpu_pack_multimultilinestring(multilinestring, offset, output):
-    multilinestring_array = np.array(
-        list(map(lambda x: np.array(x), multilinestring.coords))
-    )
-    for point in multilinestring_array:
-        _cpu_pack_point(point, offset, output)
-        offset = offset + 2
+def _cpu_pack_multilinestring(multilinestring, offset, output):
+    for linestring in multilinestring:
+        _cpu_pack_linestring(linestring, offset, output)
+        offset = offset + len(linestring.coords) * 2
 
 
 def from_geoseries(geoseries):
@@ -73,8 +70,10 @@ def from_geoseries(geoseries):
         elif isinstance(geometry, LineString):
             offsets.append((1 + np.arange(len(geometry.xy))) * 2)
         elif isinstance(geometry, MultiLineString):
-            breakpoint()
-            offsets.append(len(geometry.coords))
+            mls_lengths = np.array(
+                list(map(lambda x: len(x.coords) * 2, geometry))
+            )
+            offsets.append(cudf.Series(mls_lengths).cumsum().to_array())
     offsets = np.array(offsets)
     print(offsets)
 
@@ -91,6 +90,10 @@ def from_geoseries(geoseries):
             _cpu_pack_multipoint(geometry, current_offset, cpu_buffer)
         elif isinstance(geometry, LineString):
             _cpu_pack_linestring(geometry, current_offset, cpu_buffer)
+        elif isinstance(geometry, MultiLineString):
+            _cpu_pack_multilinestring(geometry, current_offset, cpu_buffer)
+        else:
+            raise NotImplementedError
 
     return (cudf.Series(cpu_buffer), cudf.Series(offsets.flatten()))
     
