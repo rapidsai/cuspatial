@@ -1,14 +1,13 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
 import geopandas as gpd
-import numpy as np
 import pytest
 from shapely.geometry import (
     Point,
     MultiPoint,
     LineString,
     MultiLineString,
-    Polygon, 
+    Polygon,
     MultiPolygon
 )
 
@@ -20,20 +19,31 @@ import cuspatial
 
 # data fixtures to generate complicated geopandas structs
 def make_gpd():
+    # make random digits and pack them into a dataframe
+    # pack same digits into a series
     return gpd
 
+
 def test_from_geopandas_point():
-    single_point_dataframe = gpd.GeoSeries(Point(0.0, 0.0))
+    gs = gpd.GeoSeries(Point(1.0, 2.0))
+    cugs = cuspatial.from_geopandas(gs)
+    assert_eq(cugs[0], cudf.Series([1.0, 2.0]))
 
 
 def test_from_geopandas_multipoint():
-    single_point_dataframe = gpd.GeoSeries(Point((0.0, 0.0), (0.0, 0.0)))
+    gs = gpd.GeoSeries(MultiPoint([(1.0, 2.0), (3.0, 4.0)]))
+    cugs = cuspatial.from_geopandas(gs)
+    assert_eq(cugs[0], cudf.Series([1.0, 2.0]))
+    assert_eq(cugs[1], cudf.Series([2, 4]))
 
 
 def test_from_geopandas_linestring():
-    single_point_dataframe = gpd.GeoSeries(LineString(
+    gs = gpd.GeoSeries(LineString(
         ((0.0, 0.0), (0.0, 0.0))
     ))
+    cugs = cuspatial.from_geopandas(gs)
+    assert_eq(cugs[0], cudf.Series([1.0, 2.0]))
+    assert_eq(cugs[1], cudf.Series([2]))
 
 
 def test_from_geopandas_multilinestring():

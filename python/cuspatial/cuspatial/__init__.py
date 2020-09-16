@@ -21,3 +21,4 @@ from .core.trajectory import (
     trajectory_distances_and_speeds,
 )
 from .io.shapefile import read_polygon_shapefile
+from .io.geopandas import from_geopandas
