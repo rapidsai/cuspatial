@@ -27,9 +27,34 @@ def cpu_pack_geometries(i, arrays, offsets, output):
             value = arr[j-start]
             output[j] = value
 
-def _cpu_pack_point(i, point, offset, output):
+def _cpu_pack_point(point, offset, output):
     output[0+offset] = point[0]
     output[1+offset] = point[1]
+
+
+def _cpu_pack_multipoint(multipoint, offset, output):
+    multipoint_array = np.array(list(map(lambda x: np.array(x), multipoint)))
+    for point in multipoint_array:
+        _cpu_pack_point(point, offset, output)
+        offset = offset + 2
+
+
+def _cpu_pack_linestring(linestring, offset, output):
+    linestring_array = np.array(
+        list(map(lambda x: np.array(x), linestring.coords))
+    )
+    for point in linestring_array:
+        _cpu_pack_point(point, offset, output)
+        offset = offset + 2
+
+
+def _cpu_pack_multimultilinestring(multilinestring, offset, output):
+    multilinestring_array = np.array(
+        list(map(lambda x: np.array(x), multilinestring.coords))
+    )
+    for point in multilinestring_array:
+        _cpu_pack_point(point, offset, output)
+        offset = offset + 2
 
 
 def from_geoseries(geoseries):
@@ -44,33 +69,30 @@ def from_geoseries(geoseries):
         if isinstance(geometry, Point):
             offsets.append(len(geometry.xy))
         elif isinstance(geometry, MultiPoint):
-            offsets.append(len(geometry))
+            offsets.append((1 + np.arange(len(geometry))) * 2)
         elif isinstance(geometry, LineString):
-            offsets.append(len(geometry.xy))
+            offsets.append((1 + np.arange(len(geometry.xy))) * 2)
         elif isinstance(geometry, MultiLineString):
-            offsets.append(len(geometry.xy))
+            breakpoint()
+            offsets.append(len(geometry.coords))
+    offsets = np.array(offsets)
     print(offsets)
 
     current_offset = 0
+    cpu_buffer = np.zeros(offsets.max())
 
     for geometry in geoseries:
         if isinstance(geometry, Point):
             arr = np.array(geometry)
             offset = len(arr)
-            cpu_buffer = np.zeros(2)
-            _cpu_pack_point(0, arr, current_offset, cpu_buffer)
+            _cpu_pack_point(arr, current_offset, cpu_buffer)
             current_offset = current_offset + offset
-        elif isinstance(geometry, Iterable):
-            cp_arrays = np.array(list(map(lambda x: np.array(x), geometry)))
-            lengths = cudf.Series(map(lambda x: len(x), cp_arrays))
-            offsets = lengths.cumsum()
-            size = lengths.sum()
-            cpu_buffer = np.zeros(size)
-            if len(cp_arrays) > 1:
-                for i in range(len(cp_arrays)):
-                    cpu_pack_geometries(i, cp_arrays, offsets, cpu_buffer)
+        elif isinstance(geometry, MultiPoint):
+            _cpu_pack_multipoint(geometry, current_offset, cpu_buffer)
+        elif isinstance(geometry, LineString):
+            _cpu_pack_linestring(geometry, current_offset, cpu_buffer)
 
-    return (cudf.Series(cpu_buffer), offsets)
+    return (cudf.Series(cpu_buffer), cudf.Series(offsets.flatten()))
     
 
 def from_geopandas(gpdf):

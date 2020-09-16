@@ -33,28 +33,31 @@ def test_from_geopandas_point():
 def test_from_geopandas_multipoint():
     gs = gpd.GeoSeries(MultiPoint([(1.0, 2.0), (3.0, 4.0)]))
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs[0], cudf.Series([1.0, 2.0]))
+    assert_eq(cugs[0], cudf.Series([1.0, 2.0, 3.0, 4.0]))
     assert_eq(cugs[1], cudf.Series([2, 4]))
 
 
 def test_from_geopandas_linestring():
     gs = gpd.GeoSeries(LineString(
-        ((0.0, 0.0), (0.0, 0.0))
+        ((4.0, 3.0), (2.0, 1.0))
     ))
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs[0], cudf.Series([1.0, 2.0]))
-    assert_eq(cugs[1], cudf.Series([2]))
+    assert_eq(cugs[0], cudf.Series([4.0, 3.0, 2.0, 1.0]))
+    assert_eq(cugs[1], cudf.Series([2, 4]))
 
 
 def test_from_geopandas_multilinestring():
-    single_point_dataframe = gpd.GeoSeries(
+    gs = gpd.GeoSeries(
         MultiLineString(
             (
-                ((0.0, 0.0), (0.0, 0.0)),
-                ((0.0, 0.0), (0.0, 0.0)),
+                ((1.0, 2.0), (3.0, 4.0)),
+                ((5.0, 6.0), (7.0, 8.0)),
             )
         )
     )
+    cugs = cuspatial.from_geopandas(gs)
+    assert_eq(cugs[0], cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]))
+    assert_eq(cugs[1], cudf.Series([4, 8]))
 
 
 def test_from_geopandas_polygon():

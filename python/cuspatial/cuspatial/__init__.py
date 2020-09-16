@@ -20,5 +20,6 @@ from .core.trajectory import (
     trajectory_bounding_boxes,
     trajectory_distances_and_speeds,
 )
+from .geometry.geoseries import GeoSeries
 from .io.shapefile import read_polygon_shapefile
 from .io.geopandas import from_geopandas
