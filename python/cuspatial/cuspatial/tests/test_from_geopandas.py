@@ -61,20 +61,26 @@ def test_from_geopandas_multilinestring():
 
 
 def test_from_geopandas_polygon():
-    single_point_dataframe = gpd.GeoSeries(Polygon(
-        ((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))
+    gs = gpd.GeoSeries(Polygon(
+        ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)),
     ))
+    cugs = cuspatial.from_geopandas(gs)
+    assert_eq(cugs[0], cudf.Series([0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0]))
+    assert_eq(cugs[1], cudf.Series([8])) 
 
 
 def test_from_geopandas_multipolygon():
-    single_point_dataframe = gpd.GeoSeries(
+    gs = gpd.GeoSeries(
         MultiPolygon(
             [ (
-                ((0.0, 0.0), (0.0, 0.0), (0.0, 0.0)),
-                [((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))],
+                ((0.0, 0.0), (0.0, 1.0), (1.0, 0.0)),
+                [((1.0, 1.0), (1.0, 0.0), (0.0, 0.0))],
             ) ]
         )
     )
+    cugs = cuspatial.from_geopandas(gs)
+    assert_eq(cugs[0], cudf.Series([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0]))
+    assert_eq(cugs[1], cudf.Series([8]))
 
 
 def test_trajectory_distances_and_speeds_single_trajectory():

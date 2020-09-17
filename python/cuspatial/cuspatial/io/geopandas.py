@@ -8,6 +8,8 @@ from shapely.geometry import (
     MultiPoint,
     LineString,
     MultiLineString,
+    Polygon,
+    MultiPolygon,
 )
 
 import cupy as cp
@@ -54,6 +56,17 @@ def _cpu_pack_multilinestring(multilinestring, offset, output):
         offset = offset + len(linestring.coords) * 2
 
 
+def _cpu_pack_polygon(polygon, offset, output):
+    for point in polygon.exterior.coords:
+        _cpu_pack_point(point, offset, output)
+        offset = offset + 2
+
+def _cpu_pack_multipolygon(multipolygon, offset, output):
+    for polygon in multipolygon:
+        _cpu_pack_polygon(polygon, offset, output)
+        offset = offset + len(polygon.exterior.coords) * 2
+
+
 def from_geoseries(geoseries):
     # do in parallel: compute offsets of the geoseries
     # do in parallel: accumulate the size of the geoseries
@@ -74,6 +87,13 @@ def from_geoseries(geoseries):
                 list(map(lambda x: len(x.coords) * 2, geometry))
             )
             offsets.append(cudf.Series(mls_lengths).cumsum().to_array())
+        elif isinstance(geometry, Polygon):
+            offsets.append(len(geometry.exterior.coords) * 2)
+        elif isinstance(geometry, MultiPolygon):
+            mpolys = np.array(
+                list(map(lambda x: len(x.exterior.coords) * 2, geometry))
+            )
+            offsets.append(cudf.Series(mpolys).cumsum().to_array())
     offsets = np.array(offsets)
     print(offsets)
 
@@ -92,6 +112,10 @@ def from_geoseries(geoseries):
             _cpu_pack_linestring(geometry, current_offset, cpu_buffer)
         elif isinstance(geometry, MultiLineString):
             _cpu_pack_multilinestring(geometry, current_offset, cpu_buffer)
+        elif isinstance(geometry, Polygon):
+            _cpu_pack_polygon(geometry, current_offset, cpu_buffer)
+        elif isinstance(geometry, MultiPolygon):
+            _cpu_pack_multipolygon(geometry, current_offset, cpu_buffer)
         else:
             raise NotImplementedError
 
