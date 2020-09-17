@@ -10,6 +10,8 @@
 
 ## Bug Fixes
 - PR #291 Fix mislabeled columns in Python spatial join result table.
+- PR #294 Fix include of deprecated RMM header file
+
 
 # cuSpatial 0.15.0 (26 Aug 2020)
 
