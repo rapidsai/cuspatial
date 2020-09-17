@@ -18,7 +18,7 @@
 
 #include <cudf/types.hpp>
 #include <memory>
-#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 
 namespace cuspatial {
 
