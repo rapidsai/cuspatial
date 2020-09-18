@@ -5,8 +5,8 @@ from cudf._lib.table cimport table, table_view
 
 from libc.stdint cimport int8_t
 
-from libcpp.utility cimport move
 from libcpp.memory cimport unique_ptr
+
 
 cdef extern from "cuspatial/spatial_join.hpp" namespace "cuspatial" nogil:
 

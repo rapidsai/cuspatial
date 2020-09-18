@@ -10,9 +10,10 @@ from cuspatial._lib.cpp.spatial_join cimport (
     quadtree_point_to_nearest_polyline as cpp_quadtree_p2p,
 )
 
+from libc.stdint cimport int8_t
+
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
-from libc.stdint cimport int8_t
 from libcpp.utility cimport move
 
 cpdef join_quadtree_and_bounding_boxes(Table quadtree,

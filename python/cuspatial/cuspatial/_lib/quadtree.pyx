@@ -11,9 +11,10 @@ from cuspatial._lib.cpp.quadtree cimport (
     quadtree_on_points as cpp_quadtree_on_points,
 )
 
+from libc.stdint cimport int8_t
+
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
-from libc.stdint cimport int8_t
 from libcpp.utility cimport move
 
 cpdef quadtree_on_points(Column x, Column y,

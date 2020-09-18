@@ -12,7 +12,6 @@ from cuspatial._lib.cpp.spatial cimport (
     haversine_distance as cpp_haversine_distance
 )
 
-from libc.stdlib cimport malloc, free
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 from libcpp.utility cimport move

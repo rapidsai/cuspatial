@@ -8,6 +8,11 @@
 from cudf._lib.table cimport table, Table
 from cudf._lib.column cimport column, Column
 
+from cuspatial._lib.cpp.interpolate cimport (
+    cubicspline_interpolate as cpp_cubicspline_interpolate,
+    cubicspline_coefficients as cpp_cubicspline_coefficients,
+)
+
 from libcpp.utility cimport move
 from libcpp.memory cimport unique_ptr
 

@@ -2,8 +2,9 @@
 
 from cudf._lib.column cimport column, column_view, Column
 
-from cuspatial._lib.cpp.point_in_polygon \
-    cimport point_in_polygon as cpp_point_in_polygon
+from cuspatial._lib.cpp.point_in_polygon cimport (
+    point_in_polygon as cpp_point_in_polygon,
+)
 
 from libcpp.utility cimport move
 from libcpp.memory cimport unique_ptr
