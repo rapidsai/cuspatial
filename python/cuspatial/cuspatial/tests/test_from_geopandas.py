@@ -27,14 +27,14 @@ def make_gpd():
 def test_from_geopandas_point():
     gs = gpd.GeoSeries(Point(1.0, 2.0))
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs[0], cudf.Series([1.0, 2.0]))
+    assert_eq(cugs.points.coords, cudf.Series([1.0, 2.0]))
 
 
 def test_from_geopandas_multipoint():
     gs = gpd.GeoSeries(MultiPoint([(1.0, 2.0), (3.0, 4.0)]))
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs[0], cudf.Series([1.0, 2.0, 3.0, 4.0]))
-    assert_eq(cugs[1], cudf.Series([2, 4]))
+    assert_eq(cugs.points.coords, cudf.Series([1.0, 2.0, 3.0, 4.0]))
+    assert_eq(cugs.points.offset, cudf.Series([2, 4]))
 
 
 def test_from_geopandas_linestring():
@@ -42,8 +42,8 @@ def test_from_geopandas_linestring():
         ((4.0, 3.0), (2.0, 1.0))
     ))
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs[0], cudf.Series([4.0, 3.0, 2.0, 1.0]))
-    assert_eq(cugs[1], cudf.Series([2, 4]))
+    assert_eq(cugs.lines.coords, cudf.Series([4.0, 3.0, 2.0, 1.0]))
+    assert_eq(cugs.lines.offset, cudf.Series([2, 4]))
 
 
 def test_from_geopandas_multilinestring():
@@ -56,8 +56,8 @@ def test_from_geopandas_multilinestring():
         )
     )
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs[0], cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]))
-    assert_eq(cugs[1], cudf.Series([4, 8]))
+    assert_eq(cugs.lines.coords, cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]))
+    assert_eq(cugs.lines.offset, cudf.Series([4, 8]))
 
 
 def test_from_geopandas_polygon():
@@ -65,9 +65,21 @@ def test_from_geopandas_polygon():
         ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)),
     ))
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs[0], cudf.Series([0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0]))
-    assert_eq(cugs[1], cudf.Series([8])) 
+    assert_eq(cugs.polygons.coords.exterior, cudf.Series([0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0]))
+    assert_eq(cugs.polygons.offset.exterior, cudf.Series([8])) 
 
+
+def test_from_geopandas_polygon_hole():
+    gs = gpd.GeoSeries(
+        Polygon(
+            ((0.0, 0.0), (0.0, 1.0), (1.0, 0.0)),
+            [((1.0, 1.0), (1.0, 0.0), (0.0, 0.0))],
+        )
+    )
+    cugs = cuspatial.from_geopandas(gs)
+    assert_eq(cugs.polygons.coords.exterior, cudf.Series([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0]))
+    assert_eq(cugs.polygons.offset.exterior, cudf.Series([8]))
+    assert_eq(cugs.polygons.interior, cudf.Series([8]))
 
 def test_from_geopandas_multipolygon():
     gs = gpd.GeoSeries(
@@ -93,17 +105,17 @@ def test_trajectory_distances_and_speeds_single_trajectory():
     result = cuspatial.trajectory_distances_and_speeds(
         len(traj_offsets),
         objects["object_id"],
-        objects["x"],
-        objects["y"],
-        objects["timestamp"],
+        objects.x,
+        objects.y,
+        objects.timestamp,
     )
     assert_eq(
-        result["distance"],
+        result.distance,
         cudf.Series([7892.922363, 6812.55908203125, 8485.28125]),
         check_names=False,
     )
     assert_eq(
-        result["speed"],
+        result.speed,
         cudf.Series([1973230.625, 2270853.0, 4242640.5]),
         check_names=False,
     )  # fast!
@@ -134,9 +146,9 @@ def test_trajectory_distances_and_speeds_timestamp_types(timestamp_type):
     result = cuspatial.trajectory_distances_and_speeds(
         len(traj_offsets),
         objects["object_id"],
-        objects["x"],
-        objects["y"],
-        objects["timestamp"],
+        objects.x,
+        objects.y,
+        objects.timestamp,
     )
     assert_eq(
         result,
