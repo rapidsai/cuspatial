@@ -8,7 +8,9 @@
 
 from cudf._lib.column cimport column, column_view
 from cudf._lib.table cimport table, table_view
-from cudf._lib.move cimport move, unique_ptr
+
+from libcpp.utility cimport move
+from libcpp.memory cimport unique_ptr
 
 cdef extern from "cuspatial/cubic_spline.hpp" namespace "cuspatial" nogil:
     cdef unique_ptr[table] cpp_cubicspline_coefficients \

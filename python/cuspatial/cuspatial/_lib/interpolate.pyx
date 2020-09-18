@@ -6,8 +6,10 @@
 # cython: language_level = 3
 
 from cudf._lib.table cimport table, Table
-from cudf._lib.move cimport move, unique_ptr
 from cudf._lib.column cimport column, Column
+
+from libcpp.utility cimport move
+from libcpp.memory cimport unique_ptr
 
 cpdef cubicspline_coefficients(
     Column t,

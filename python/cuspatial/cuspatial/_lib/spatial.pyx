@@ -1,9 +1,5 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-
-from libc.stdlib cimport malloc, free
-from libcpp.memory cimport unique_ptr
-from libcpp.pair cimport pair
 from cudf import Series
 from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column cimport column
@@ -16,7 +12,10 @@ from cuspatial._lib.cpp.spatial cimport (
     haversine_distance as cpp_haversine_distance
 )
 
-from cuspatial._lib.move cimport move
+from libc.stdlib cimport malloc, free
+from libcpp.memory cimport unique_ptr
+from libcpp.pair cimport pair
+from libcpp.utility cimport move
 
 cpdef haversine_distance(Column x1, Column y1, Column x2, Column y2):
     cdef column_view c_x1 = x1.view()

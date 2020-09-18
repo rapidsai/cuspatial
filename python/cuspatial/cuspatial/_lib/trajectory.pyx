@@ -18,10 +18,9 @@ from cuspatial._lib.cpp.trajectory cimport (
     trajectory_distances_and_speeds as cpp_trajectory_distances_and_speeds,
 )
 
-from cuspatial._lib.move cimport move
-
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
+from libcpp.utility cimport move
 
 cpdef derive_trajectories(Column object_id, Column x,
                           Column y, Column timestamp):
