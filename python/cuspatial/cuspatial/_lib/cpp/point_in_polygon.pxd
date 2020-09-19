@@ -1,7 +1,9 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
 from cudf._lib.column cimport column, column_view
-from cudf._lib.move cimport unique_ptr
+
+from libcpp.memory cimport unique_ptr
+
 
 cdef extern from "cuspatial/point_in_polygon.hpp" namespace "cuspatial" nogil:
     cdef unique_ptr[column] point_in_polygon(

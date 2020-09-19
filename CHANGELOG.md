@@ -8,9 +8,12 @@
 - PR #287 Replace RMM get_default_resource with get_current_device_resource.
 - PR #289 Fix cmake warnings for GoogleTest amd GoogleBenchmark external projects.
 - PR #292 Update include paths to libcudf test utilities.
+- PR #295 Use move from libcpp.utility.
 
 ## Bug Fixes
 - PR #291 Fix mislabeled columns in Python spatial join result table.
+- PR #294 Fix include of deprecated RMM header file
+
 
 # cuSpatial 0.15.0 (26 Aug 2020)
 
