@@ -12,6 +12,7 @@
 ## Bug Fixes
 - PR #291 Fix mislabeled columns in Python spatial join result table.
 - PR #294 Fix include of deprecated RMM header file
+- PR #296 Updates for RMM being header only
 
 
 # cuSpatial 0.15.0 (26 Aug 2020)
@@ -108,7 +109,7 @@
 
 ## New Features
 
-- PR #126 Create and build cuSpatial Docs 
+- PR #126 Create and build cuSpatial Docs
 - PR #130 Add cubic spline fit and interpolation
 
 ## Improvements
