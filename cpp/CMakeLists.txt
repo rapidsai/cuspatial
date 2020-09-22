@@ -273,7 +273,6 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${FLATBUFFERS_LIBRARY_DIR}"
                  "${GDAL_LIBRARIES}"
                  "${GTEST_LIBRARY_DIR}"
-                 "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}")
 
 if(CONDA_LINK_DIRS)
