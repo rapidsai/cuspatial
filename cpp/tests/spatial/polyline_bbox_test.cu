@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
+#include <cuspatial/error.hpp>
+#include <cuspatial/polyline_bounding_box.hpp>
+
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
 
-#include <cuspatial/error.hpp>
-#include <cuspatial/polyline_bounding_box.hpp>
-
-#include <cudf/utilities/test/base_fixture.hpp>
-#include <cudf/utilities/test/column_utilities.hpp>
-#include <cudf/utilities/test/column_wrapper.hpp>
-#include <cudf/utilities/test/table_utilities.hpp>
-#include <cudf/utilities/test/type_lists.hpp>
+#include <cudf_test/base_fixture.hpp>
+#include <cudf_test/column_utilities.hpp>
+#include <cudf_test/column_wrapper.hpp>
+#include <cudf_test/table_utilities.hpp>
+#include <cudf_test/type_lists.hpp>
 
 template <typename T>
 struct BoundingBoxTest : public cudf::test::BaseFixture {

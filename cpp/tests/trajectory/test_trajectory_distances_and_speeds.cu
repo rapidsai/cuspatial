@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-#include <cmath>
-#include <cudf/utilities/test/column_utilities.hpp>
-#include <cudf/utilities/test/type_lists.hpp>
-
 #include "tests/trajectory/trajectory_utilities.cuh"
+
+#include <cudf_test/column_utilities.hpp>
+#include <cudf_test/type_lists.hpp>
+
+#include <cmath>
 
 template <typename T>
 struct TrajectoryDistanceSpeedTest : public cudf::test::BaseFixture {

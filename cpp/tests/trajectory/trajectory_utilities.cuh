@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
+#include <cuspatial/trajectory.hpp>
+
 #include <cudf/detail/sorting.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
 #include <cudf/types.hpp>
-#include <cudf/utilities/test/base_fixture.hpp>
-#include <cudf/utilities/test/column_utilities.hpp>
-#include <cudf/utilities/test/timestamp_utilities.cuh>
-#include <cuspatial/trajectory.hpp>
+
+#include <cudf_test/base_fixture.hpp>
+#include <cudf_test/column_utilities.hpp>
+#include <cudf_test/timestamp_utilities.cuh>
 
 namespace cuspatial {
 namespace test {
