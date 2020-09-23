@@ -53,15 +53,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     # Suppress parentheses warning which causes gmock to fail
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wno-parentheses")
 
-    option(CMAKE_CXX11_ABI "Enable the GLIBCXX11 ABI" ON)
-    if(CMAKE_CXX11_ABI)
-        message(STATUS "CUSPATIAL: Enabling the GLIBCXX11 ABI")
-    else()
-        message(STATUS "CUSPATIAL: Disabling the GLIBCXX11 ABI")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -D_GLIBCXX_USE_CXX11_ABI=0")
-    endif(CMAKE_CXX11_ABI)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 if(CMAKE_CUDA_COMPILER_VERSION)
@@ -183,17 +174,8 @@ endif("$ENV{CONDA_BUILD}" STREQUAL "1")
 find_path(RMM_INCLUDE "rmm"
           HINTS "$ENV{RMM_ROOT}/include")
 
-find_library(RMM_LIBRARY "rmm"
-             HINTS "$ENV{RMM_ROOT}/lib")
-
 message(STATUS "RMM: RMM_ROOT set to $ENV{RMM_ROOT}")
-message(STATUS "RMM: RMM_LIBRARY set to ${RMM_LIBRARY}")
 message(STATUS "RMM: RMM_INCLUDE set to ${RMM_INCLUDE}")
-
-add_library(rmm SHARED IMPORTED ${RMM_LIBRARY})
-if (RMM_INCLUDE AND RMM_LIBRARY)
-    set_target_properties(rmm PROPERTIES IMPORTED_LOCATION ${RMM_LIBRARY})
-endif (RMM_INCLUDE AND RMM_LIBRARY)
 
 # - CUDF -------------------------------------------------------------------------------------------
 
@@ -288,7 +270,6 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${FLATBUFFERS_LIBRARY_DIR}"
                  "${GDAL_LIBRARIES}"
                  "${GTEST_LIBRARY_DIR}"
-                 "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}")
 
 if(CONDA_LINK_DIRS)
@@ -335,7 +316,7 @@ endif(USE_NVTX)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(cuspatial cudf rmm cudart cuda cusparse nvrtc GDAL::GDAL)
+target_link_libraries(cuspatial cudf cudart cuda cusparse nvrtc GDAL::GDAL)
 
 
 ###################################################################################################
