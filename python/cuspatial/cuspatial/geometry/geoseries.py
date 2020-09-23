@@ -23,7 +23,7 @@ class GeoSeriesReader:
             "points": [0],
             "multipoints": [0],
             "lines": [0],
-            "polygons": {"exterior": [0], "interior": [0]},
+            "polygons": {"polygons": [0], "rings": [0]},
         }
         for geometry in geoseries:
             if isinstance(geometry, Point):
@@ -62,33 +62,60 @@ class GeoSeriesReader:
             elif isinstance(geometry, Polygon):
                 # A Polygon geometry is stored like a LineString and also
                 # contains a buffer of sizes for each inner ring.
-                current = offsets["polygons"]["exterior"][-1]
-                offsets["polygons"]["exterior"].append(
-                    len(geometry.exterior.coords) * 2 + current
+                num_rings = 1
+                rings_current = offsets["polygons"]["rings"][-1]
+                offsets["polygons"]["rings"].append(
+                    len(geometry.exterior.coords) * 2 + rings_current
                 )
                 for interior in geometry.interiors:
-                    current = offsets["polygons"]["interior"][-1]
-                    offsets["polygons"]["interior"].append(
-                        len(interior.coords) * 2 + current
+                    rings_current = offsets["polygons"]["rings"][-1]
+                    offsets["polygons"]["rings"].append(
+                        len(interior.coords) * 2 + rings_current
                     )
+                    num_rings = num_rings + 1
+                current = offsets["polygons"]["polygons"][-1]
+                offsets["polygons"]["polygons"].append(num_rings + current)
             elif isinstance(geometry, MultiPolygon):
-                current = offsets["polygons"]["exterior"][-1]
+                for poly in geometry:
+                    current = offsets["polygons"]["polygons"][-1]
+                    num_rings = 1
+                    rings_current = offsets["polygons"]["rings"][-1]
+                    offsets["polygons"]["rings"].append(
+                        len(poly.exterior.coords) * 2 + rings_current
+                    )
+                    for interior in poly.interiors:
+                        rings_current = offsets["polygons"]["rings"][-1]
+                        print(rings_current)
+                        print(offsets["polygons"]["rings"])
+                        offsets["polygons"]["rings"].append(
+                            len(interior.coords) *  2 + rings_current
+                        )
+                        num_rings = num_rings + 1
+                    offsets["polygons"]["polygons"].append(num_rings + current)
+                """
                 mpolys = np.array(
                     list(map(lambda x: len(x.exterior.coords) * 2, geometry))
                 )
                 new_offsets = cudf.Series(mpolys).cumsum() + current
-                offsets["polygons"]["exterior"] = offsets["polygons"]["exterior"] + list(new_offsets.to_array())
+                offsets["polygons"]["polygons"] = offsets["polygons"]["polygons"] + list(new_offsets.to_array())
+                for polygon in geometry:
+                    for interior in polygon.interiors:
+                        current = offsets["polygons"]["polygons"][-1]
+                        offsets["polygons"]["rings"].append(
+                            len(interior.coords)  * 2 + current
+                        )
+                """
         print(offsets)
         """
         offsets["points"] = cudf.Series(np.array(offsets["points"]).flatten())
         offsets["multipoints"] = cudf.Series(
                 np.array(offsets["multipoints"]).flatten())
         offsets["lines"] = cudf.Series(np.array(offsets["lines"]).flatten())
-        offsets["polygons"]["exterior"] = cudf.Series(np.array(
-            offsets["polygons"]["exterior"]
+        offsets["polygons"]["polygons"] = cudf.Series(np.array(
+            offsets["polygons"]["polygons"]
         ).flatten())
-        offsets["polygons"]["interior"] = cudf.Series(np.array(
-            offsets["polygons"]["interior"]
+        offsets["polygons"]["rings"] = cudf.Series(np.array(
+            offsets["polygons"]["rings"]
         ).flatten())
         """
         return offsets
@@ -99,11 +126,11 @@ class GeoSeriesReader:
             "multipoints": cudf.Series(np.zeros(offsets["multipoints"][-1])),
             "lines": cudf.Series(np.zeros(offsets["lines"][-1])),
             "polygons": {
-                "exterior": cudf.Series(
-                    np.zeros(offsets["polygons"]["exterior"][-1])
+                "polygons": cudf.Series(
+                    np.zeros(offsets["polygons"]["polygons"][-1])
                 ),
-                "interior": cudf.Series(
-                    np.zeros(offsets["polygons"]["interior"][-1])
+                "rings": cudf.Series(
+                    np.zeros(offsets["polygons"]["rings"][-1])
                 ),
             },
         }
@@ -111,7 +138,7 @@ class GeoSeriesReader:
             "points": 0,
             "multipoints": 0,
             "lines": 0,
-            "polygons": {"exterior": 0, "interior": 0},
+            "polygons": {"polygons": 0, "rings": 0},
         }
         for geometry in geoseries:
             if isinstance(geometry, Point):
@@ -147,20 +174,20 @@ class GeoSeriesReader:
             elif isinstance(geometry, Polygon):
                 self._cpu_pack_polygon(
                     geometry,
-                    read_count["polygons"]["exterior"],
-                    buffers["polygons"]["exterior"],
+                    read_count["polygons"]["polygons"],
+                    buffers["polygons"]["polygons"],
                 )
-                read_count["polygons"]["exterior"] = (
-                    read_count["polygons"]["exterior"] + 1
+                read_count["polygons"]["polygons"] = (
+                    read_count["polygons"]["polygons"] + 1
                 )
             elif isinstance(geometry, MultiPolygon):
                 self._cpu_pack_multipolygon(
                     geometry,
-                    read_count["polygons"]["exterior"],
-                    buffers["polygons"]["exterior"],
+                    read_count["polygons"]["polygons"],
+                    buffers["polygons"]["polygons"],
                 )
-                read_count["polygons"]["exterior"] = (
-                    read_count["polygons"]["exterior"] + 1
+                read_count["polygons"]["polygons"] = (
+                    read_count["polygons"]["polygons"] + 1
                 )
             else:
                 raise NotImplementedError
