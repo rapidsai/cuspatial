@@ -35,7 +35,6 @@ def test_complex_geoseries():
     g7 = LineString(((31, 32), (33, 34)))
     g8 = Polygon(
         ((35, 36), (37, 38), (39, 40), (41, 42)),
-        [((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0))],
     )
     g9 = MultiPolygon(
         [ (
@@ -61,11 +60,17 @@ def test_complex_geoseries():
         ) ]
     )
     g11 = Polygon(
-        ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)),
+        ((97, 98), (99, 101), (102, 103), (104, 105)),
+        [((106, 107), (108, 109), (110, 111), (112, 113))],
     )
     gs = gpd.GeoSeries([g0, g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11])
     cugs = cuspatial.from_geopandas(gs)
-    assert(False)
+    assert(cugs.points.xy.sum() == 22)
+    assert(cugs.lines.xy.sum() == 540)
+    assert(cugs.multipoints.xy.sum() == 44)
+    assert(cugs.polygons.xy.sum() == 7440)
+    assert(cugs.polygons.polys.sum() == 38)
+    assert(cugs.polygons.rings.sum() == 38)
 
 
 def test_from_geopandas_point():
@@ -101,7 +106,7 @@ def test_from_geopandas_multilinestring():
     )
     cugs = cuspatial.from_geopandas(gs)
     assert_eq(cugs.lines.xy, cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]))
-    assert_eq(cugs.lines.offsets, cudf.Series([4, 8]))
+    assert_eq(cugs.lines.offsets, cudf.Series([0, 4, 8]))
 
 
 def test_from_geopandas_polygon():
@@ -109,8 +114,9 @@ def test_from_geopandas_polygon():
         ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)),
     ))
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs.polygons.xy.exterior, cudf.Series([0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0]))
-    assert_eq(cugs.polygons.offsets.exterior, cudf.Series([8])) 
+    assert_eq(cugs.polygons.xy, cudf.Series([0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0]))
+    assert_eq(cugs.polygons.polys, cudf.Series([0, 1])) 
+    assert_eq(cugs.polygons.rings, cudf.Series([0, 1])) 
 
 
 def test_from_geopandas_polygon_hole():
@@ -121,9 +127,9 @@ def test_from_geopandas_polygon_hole():
         )
     )
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs.polygons.xy.exterior, cudf.Series([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0]))
-    assert_eq(cugs.polygons.offsets.exterior, cudf.Series([8]))
-    assert_eq(cugs.polygons.interior, cudf.Series([8]))
+    assert_eq(cugs.polygons.xy, cudf.Series([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0]))
+    assert_eq(cugs.polygons.polys, cudf.Series([0, 2]))
+    assert_eq(cugs.polygons.rings, cudf.Series([0, 2]))
 
 def test_from_geopandas_multipolygon():
     gs = gpd.GeoSeries(
@@ -135,67 +141,9 @@ def test_from_geopandas_multipolygon():
         )
     )
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs[0], cudf.Series([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0]))
-    assert_eq(cugs[1], cudf.Series([8]))
+    assert_eq(cugs.polygons.xy, cudf.Series([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0]))
+    assert_eq(cugs.polygons.polys, cudf.Series([0, 2]))
+    assert_eq(cugs.polygons.rings, cudf.Series([0, 2]))
+    breakpoint()
 
 
-def test_trajectory_distances_and_speeds_single_trajectory():
-    objects, traj_offsetss = cuspatial.derive_trajectories(
-        [0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2],  # object_id
-        [1.0, 2.0, 3.0, 5.0, 7.0, 1.0, 2.0, 3.0, 6.0, 0.0, 3.0, 6.0],  # xs
-        [0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0],  # ys
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],  # timestamp
-    )
-    result = cuspatial.trajectory_distances_and_speeds(
-        len(traj_offsetss),
-        objects["object_id"],
-        objects.x,
-        objects.y,
-        objects.timestamp,
-    )
-    assert_eq(
-        result.distance,
-        cudf.Series([7892.922363, 6812.55908203125, 8485.28125]),
-        check_names=False,
-    )
-    assert_eq(
-        result.speed,
-        cudf.Series([1973230.625, 2270853.0, 4242640.5]),
-        check_names=False,
-    )  # fast!
-
-
-@pytest.mark.parametrize(
-    "timestamp_type",
-    [
-        ("datetime64[ns]", 1000000000),
-        ("datetime64[us]", 1000000),
-        ("datetime64[ms]", 1000),
-        ("datetime64[s]", 1),
-    ],
-)
-def test_trajectory_distances_and_speeds_timestamp_types(timestamp_type):
-    objects, traj_offsets = cuspatial.derive_trajectories(
-        # object_id
-        cudf.Series([0, 0, 1, 1]),
-        # xs
-        cudf.Series([0.0, 0.001, 0.0, 0.0]),  # 1 meter in x
-        # ys
-        cudf.Series([0.0, 0.0, 0.0, 0.001]),  # 1 meter in y
-        # timestamp
-        cudf.Series([0, timestamp_type[1], 0, timestamp_type[1]]).astype(
-            timestamp_type[0]
-        ),
-    )
-    result = cuspatial.trajectory_distances_and_speeds(
-        len(traj_offsets),
-        objects["object_id"],
-        objects.x,
-        objects.y,
-        objects.timestamp,
-    )
-    assert_eq(
-        result,
-        cudf.DataFrame({"distance": [1.0, 1.0], "speed": [1.0, 1.0]}),
-        check_names=False,
-    )

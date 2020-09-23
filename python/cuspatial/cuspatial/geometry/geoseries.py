@@ -9,6 +9,7 @@ from shapely.geometry import (
 )
 
 import numpy as np
+import pandas as pd
 
 import cudf
 
@@ -38,8 +39,8 @@ class GeoSeriesReader:
                 # the size of the number of points, the position they are stored
                 # in GpuPoints, and the index of the MultiPoint in the
                 # GeoSeries.
-                #for coord in np.arange(len(geometry)):
-                #offsets["multipoints"].append((1 + coord) * 2)
+                # for coord in np.arange(len(geometry)):
+                # offsets["multipoints"].append((1 + coord) * 2)
                 current = offsets["multipoints"][-1]
                 offsets["multipoints"].append(len(geometry) * 2 + current)
             elif isinstance(geometry, LineString):
@@ -48,7 +49,7 @@ class GeoSeriesReader:
                 # structure. The index of the LineString back into the
                 # GeoSeries is also stored.
                 current = offsets["lines"][-1]
-                offsets["lines"].append(2 * (len(geometry.xy) + current))
+                offsets["lines"].append(2 * len(geometry.xy) + current)
             elif isinstance(geometry, MultiLineString):
                 # A MultiLineString geometry is stored identically to
                 # LineString in the GpuLines structure. The index of the
@@ -58,7 +59,9 @@ class GeoSeriesReader:
                     list(map(lambda x: len(x.coords) * 2, geometry))
                 )
                 new_offsets = cudf.Series(mls_lengths).cumsum() + current
-                offsets["lines"] = offsets["lines"] + list(new_offsets.to_array())
+                offsets["lines"] = offsets["lines"] + list(
+                    new_offsets.to_array()
+                )
             elif isinstance(geometry, Polygon):
                 # A Polygon geometry is stored like a LineString and also
                 # contains a buffer of sizes for each inner ring.
@@ -85,39 +88,11 @@ class GeoSeriesReader:
                     )
                     for interior in poly.interiors:
                         rings_current = offsets["polygons"]["rings"][-1]
-                        print(rings_current)
-                        print(offsets["polygons"]["rings"])
                         offsets["polygons"]["rings"].append(
-                            len(interior.coords) *  2 + rings_current
+                            len(interior.coords) * 2 + rings_current
                         )
                         num_rings = num_rings + 1
                     offsets["polygons"]["polygons"].append(num_rings + current)
-                """
-                mpolys = np.array(
-                    list(map(lambda x: len(x.exterior.coords) * 2, geometry))
-                )
-                new_offsets = cudf.Series(mpolys).cumsum() + current
-                offsets["polygons"]["polygons"] = offsets["polygons"]["polygons"] + list(new_offsets.to_array())
-                for polygon in geometry:
-                    for interior in polygon.interiors:
-                        current = offsets["polygons"]["polygons"][-1]
-                        offsets["polygons"]["rings"].append(
-                            len(interior.coords)  * 2 + current
-                        )
-                """
-        print(offsets)
-        """
-        offsets["points"] = cudf.Series(np.array(offsets["points"]).flatten())
-        offsets["multipoints"] = cudf.Series(
-                np.array(offsets["multipoints"]).flatten())
-        offsets["lines"] = cudf.Series(np.array(offsets["lines"]).flatten())
-        offsets["polygons"]["polygons"] = cudf.Series(np.array(
-            offsets["polygons"]["polygons"]
-        ).flatten())
-        offsets["polygons"]["rings"] = cudf.Series(np.array(
-            offsets["polygons"]["rings"]
-        ).flatten())
-        """
         return offsets
 
     def _read_geometries(self, geoseries, offsets):
@@ -127,9 +102,12 @@ class GeoSeriesReader:
             "lines": cudf.Series(np.zeros(offsets["lines"][-1])),
             "polygons": {
                 "polygons": cudf.Series(
-                    np.zeros(offsets["polygons"]["polygons"][-1])
+                    np.zeros(len(offsets["polygons"]["polygons"]))
                 ),
                 "rings": cudf.Series(
+                    np.zeros(len(offsets["polygons"]["rings"]))
+                ),
+                "coords": cudf.Series(
                     np.zeros(offsets["polygons"]["rings"][-1])
                 ),
             },
@@ -138,92 +116,87 @@ class GeoSeriesReader:
             "points": 0,
             "multipoints": 0,
             "lines": 0,
-            "polygons": {"polygons": 0, "rings": 0},
+            "polygons": 0,
         }
         for geometry in geoseries:
             if isinstance(geometry, Point):
-                self._cpu_pack_point(
-                    geometry.xy,
-                    offsets["points"][read_count["points"]],
-                    buffers["points"],
-                )
+                # write a point to the points buffer
+                # increase read_count of points pass
+                p = np.array(geometry)
+                i = read_count["points"] * 2
+                buffers["points"][i] = p[0]
+                buffers["points"][i + 1] = p[1]
                 read_count["points"] = read_count["points"] + 1
             elif isinstance(geometry, MultiPoint):
-                multipoint_array = np.array(
-                    list(map(lambda x: np.array(x), geometry))
-                )
-                current_mpoint = 0
-                for point in multipoint_array:
-                    offset = offsets["multipoints"][current_mpoint]
-                    output = buffers["multipoints"]
-                    self._cpu_pack_point(np.array(point), offset * 2, output)
-                    current_mpoint = current_mpoint + 1
-                read_count["multipoints"] = read_count["multipoints"] + 1
+                for point in geometry:
+                    p = np.array(point)
+                    i = read_count["multipoints"] * 2
+                    buffers["multipoints"][i] = p[0]
+                    buffers["multipoints"][i + 1] = p[1]
+                    read_count["multipoints"] = read_count["multipoints"] + 1
             elif isinstance(geometry, LineString):
-                self._cpu_pack_linestring(
-                    geometry,
-                    offsets["lines"][read_count["lines"]],
-                    buffers["lines"]
-                )
-                read_count["lines"] = read_count["lines"] + 1
+                line = np.array(geometry.xy).T
+                for point in line:
+                    p = np.array(point)
+                    i = read_count["lines"] * 2
+                    buffers["lines"][i] = p[0]
+                    buffers["lines"][i + 1] = p[1]
+                    read_count["lines"] = read_count["lines"] + 1
             elif isinstance(geometry, MultiLineString):
-                self._cpu_pack_multilinestring(
-                    geometry, offsets["lines"][read_count["lines"]], buffers["lines"]
-                )
-                read_count["lines"] = read_count["lines"] + 1
+                for linestring in geometry:
+                    line = np.array(linestring.xy).T
+                    for point in line:
+                        p = np.array(point)
+                        i = read_count["lines"] * 2
+                        buffers["lines"][i] = p[0]
+                        buffers["lines"][i + 1] = p[1]
+                        read_count["lines"] = read_count["lines"] + 1
             elif isinstance(geometry, Polygon):
-                self._cpu_pack_polygon(
-                    geometry,
-                    read_count["polygons"]["polygons"],
-                    buffers["polygons"]["polygons"],
-                )
-                read_count["polygons"]["polygons"] = (
-                    read_count["polygons"]["polygons"] + 1
-                )
+                # copy exterior
+                exterior = geometry.exterior.coords
+                interiors = geometry.interiors
+                for point in exterior:
+                    p = np.array(point)
+                    i = read_count["polygons"] * 2
+                    buffers["polygons"]["coords"][i] = p[0]
+                    buffers["polygons"]["coords"][i + 1] = p[1]
+                    read_count["polygons"] = read_count["polygons"] + 1
+                for interior in interiors:
+                    for ipoint in interior.coords:
+                        ip = np.array(ipoint)
+                        i = read_count["polygons"] * 2
+                        buffers["polygons"]["coords"][i] = ip[0]
+                        buffers["polygons"]["coords"][i + 1] = ip[1]
+                        read_count["polygons"] = read_count["polygons"] + 1
             elif isinstance(geometry, MultiPolygon):
-                self._cpu_pack_multipolygon(
-                    geometry,
-                    read_count["polygons"]["polygons"],
-                    buffers["polygons"]["polygons"],
-                )
-                read_count["polygons"]["polygons"] = (
-                    read_count["polygons"]["polygons"] + 1
-                )
+                for polygon in geometry:
+                    exterior = polygon.exterior.coords
+                    interiors = polygon.interiors
+                    for point in exterior:
+                        p = np.array(point)
+                        i = read_count["polygons"] * 2
+                        buffers["polygons"]["coords"][i] = p[0]
+                        buffers["polygons"]["coords"][i + 1] = p[1]
+                        read_count["polygons"] = read_count["polygons"] + 1
+                    for interior in interiors:
+                        for ipoint in interior.coords:
+                            ip = np.array(ipoint)
+                            i = read_count["polygons"] * 2
+                            buffers["polygons"]["coords"][i] = ip[0]
+                            buffers["polygons"]["coords"][i + 1] = ip[1]
+                            read_count["polygons"] = read_count["polygons"] + 1
             else:
                 raise NotImplementedError
+        offsets["polygons"]["rings"] = cudf.Series(
+            offsets["polygons"]["rings"]
+        )
+        offsets["polygons"]["polygons"] = cudf.Series(
+            offsets["polygons"]["polygons"]
+        )
+        offsets["lines"] = cudf.Series(offsets["lines"])
+        offsets["points"] = cudf.Series(offsets["points"])
+        offsets["multipoints"] = cudf.Series(offsets["multipoints"])
         return (buffers, offsets)
-
-    def _cpu_pack_point(self, point, offset, output):
-        output[0 + offset] = point[0]
-        output[1 + offset] = point[1]
-
-    def _cpu_pack_multipoint(self, multipoint, offset, output):
-        multipoint_array = np.array(
-            list(map(lambda x: np.array(x), multipoint))
-        )
-        for point in multipoint_array:
-            self._cpu_pack_point(np.array(point), offset, output)
-
-    def _cpu_pack_linestring(self, linestring, offset, output):
-        linestring_array = np.array(
-            list(map(lambda x: np.array(x), linestring.coords))
-        )
-        for point in linestring_array:
-            self._cpu_pack_point(point, offset * 2, output)
-            offset = offset + 1
-
-    def _cpu_pack_multilinestring(self, multilinestring, offset, output):
-        for linestring in multilinestring:
-            self._cpu_pack_linestring(linestring, offset, output)
-            offset = offset + 1
-
-    def _cpu_pack_polygon(self, polygon, offset, output):
-        for point in polygon.exterior.coords:
-            self._cpu_pack_point(point, offset, output)
-
-    def _cpu_pack_multipolygon(self, multipolygon, offset, output):
-        for polygon in multipolygon:
-            self._cpu_pack_polygon(polygon, offset, output)
 
 
 class GpuPoints:
@@ -239,6 +212,19 @@ class GpuLines(GpuPoints):
     pass
 
 
+class GpuPolygons(GpuPoints):
+    def __init__(self):
+        self.polys = None
+        self.rings = None
+
+    def __repr__(self):
+        result = ""
+        result += "xy:\n" + self.xy.__repr__() + "\n"
+        result += "polys:\n" + self.polys.__repr__() + "\n"
+        result += "rings:\n" + self.rings.__repr__() + "\n"
+        return result
+
+
 class GeoSeries:
     def __init__(self, geoseries):
         self._reader = GeoSeriesReader(geoseries)
@@ -248,9 +234,16 @@ class GeoSeries:
         self._multipoints.xy = self._reader.buffers[0]["multipoints"]
         self._multipoints.offsets = self._reader.buffers[1]["multipoints"]
         self._lines = GpuLines()
-        self._lines.xy =  self._reader.buffers[0]["lines"]
-        self._lines.offsets =  self._reader.buffers[1]["lines"]
-        self._polygons = None
+        self._lines.xy = self._reader.buffers[0]["lines"]
+        self._lines.offsets = self._reader.buffers[1]["lines"]
+        self._polygons = GpuPolygons()
+        self._polygons.xy = self._reader.buffers[0]["polygons"]["coords"]
+        self._polygons.polys = cudf.Series(
+            self._reader.offsets["polygons"]["polygons"]
+        )
+        self._polygons.rings = cudf.Series(
+            self._reader.offsets["polygons"]["polygons"]
+        )
 
     @property
     def points(self):
