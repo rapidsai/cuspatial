@@ -7,6 +7,7 @@
 - PR #286 Upgrade Thrust to latest commit.
 - PR #287 Replace RMM get_default_resource with get_current_device_resource.
 - PR #289 Fix cmake warnings for GoogleTest amd GoogleBenchmark external projects.
+- PR #292 Update include paths to libcudf test utilities.
 - PR #295 Use move from libcpp.utility.
 
 ## Bug Fixes
