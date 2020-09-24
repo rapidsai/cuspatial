@@ -2,7 +2,9 @@
 
 from cudf._lib.cpp.column.column_view cimport column_view
 from cudf._lib.cpp.table.table cimport table
+
 from libcpp.memory cimport unique_ptr
+
 
 cdef extern from "cuspatial/polygon_bounding_box.hpp" \
         namespace "cuspatial" nogil:

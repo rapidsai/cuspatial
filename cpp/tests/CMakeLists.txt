@@ -28,13 +28,12 @@ find_library(CUDFTESTUTIL_LIBRARY "libcudftestutil.a"
              HINTS "$ENV{CUDF_ROOT}/lib")
 
 message(STATUS "CUDFTESTUTIL: CUDFTESTUTIL_LIBRARY set to ${CUDFTESTUTIL_LIBRARY}")
-message(STATUS "CUDFTESTUTIL: CUDF_TEST_INCLUDE set to ${CUDF_TEST_INCLUDE}")
 
 add_library(cudftestutil STATIC IMPORTED ${CUDFTESTUTIL_LIBRARY})
 
-if (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
+if (CUDFTESTUTIL_LIBRARY)
     set_target_properties(cudftestutil PROPERTIES IMPORTED_LOCATION ${CUDFTESTUTIL_LIBRARY})
-endif (CUDF_TEST_INCLUDE AND CUDFTESTUTIL_LIBRARY)
+endif (CUDFTESTUTIL_LIBRARY)
 
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
@@ -44,7 +43,7 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
                 ${CMAKE_TEST_SRC})
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial cudf
-                        cudftestutil rmm cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES}
+                        cudftestutil cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES}
                         nvrtc GDAL::GDAL)
     if(USE_NVTX)
         target_link_libraries(${CMAKE_TEST_NAME} ${NVTX_LIBRARY})
@@ -71,9 +70,8 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${GDAL_INCLUDE_DIRS}"
                     "${GTEST_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
-                    "${CUDF_INCLUDE}"
-                    "${CUDF_TEST_INCLUDE}")
- 
+                    "${CUDF_INCLUDE}")
+
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
 
@@ -82,7 +80,6 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${GDAL_LIBRARIES}"
                  "${CONDA_LINK_DIRS}"
                  "${GTEST_LIBRARY_DIR}"
-                 "${RMM_LIBRARY}"
                  "${CUDF_LIBRARY}"
                  "${CUSPATIAL_LIBRARY}")
 

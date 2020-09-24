@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+#include "tests/trajectory/trajectory_utilities.cuh"
+
 #include <cudf/utilities/traits.hpp>
 
-#include <tests/utilities/column_utilities.hpp>
-#include <tests/utilities/type_lists.hpp>
-
-#include "tests/trajectory/trajectory_utilities.cuh"
+#include <cudf_test/column_utilities.hpp>
+#include <cudf_test/type_lists.hpp>
 
 template <typename T>
 struct TrajectoryBoundingBoxesTest : public cudf::test::BaseFixture {

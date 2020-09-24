@@ -11,10 +11,9 @@ from cuspatial._lib.cpp.polygon_bounding_box cimport (
     polygon_bounding_boxes as cpp_polygon_bounding_boxes,
 )
 
-from cuspatial._lib.move cimport move
-
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
+from libcpp.utility cimport move
 
 cpdef polygon_bounding_boxes(Column poly_offsets,
                              Column ring_offsets,

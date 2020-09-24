@@ -4,11 +4,17 @@
 
 ## Improvements
 - PR #278 Update googlebenchmark version to match rmm & cudf.
-- PR #286 Upgrade Thrust to latest commit
+- PR #286 Upgrade Thrust to latest commit.
 - PR #287 Replace RMM get_default_resource with get_current_device_resource.
-- PR #289 Fix cmake warnings for GoogleTest amd GoogleBenchmark external projects
+- PR #289 Fix cmake warnings for GoogleTest amd GoogleBenchmark external projects.
+- PR #292 Update include paths to libcudf test utilities.
+- PR #295 Use move from libcpp.utility.
 
 ## Bug Fixes
+- PR #291 Fix mislabeled columns in Python spatial join result table.
+- PR #294 Fix include of deprecated RMM header file
+- PR #296 Updates for RMM being header only
+
 
 # cuSpatial 0.15.0 (26 Aug 2020)
 
@@ -104,7 +110,7 @@
 
 ## New Features
 
-- PR #126 Create and build cuSpatial Docs 
+- PR #126 Create and build cuSpatial Docs
 - PR #130 Add cubic spline fit and interpolation
 
 ## Improvements
