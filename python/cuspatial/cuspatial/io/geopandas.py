@@ -15,14 +15,13 @@ from cuspatial import GeoSeries
 def cpu_pack_geometries(i, arrays, offsets, output):
     print(i, arrays, offsets, output)
     if i < offsets.size:
-        start = offsets[i-1] if i != 0 else 0
+        start = offsets[i - 1] if i != 0 else 0
         end = offsets[i]
         arr = arrays[i]
         for j in range(start, end):
             print(j)
-            value = arr[j-start]
+            value = arr[j - start]
             output[j] = value
-
 
 
 def from_geoseries(geoseries):
@@ -33,7 +32,8 @@ def from_geoseries(geoseries):
     # return cuSeries
     # offsets?
     cugs = GeoSeries(geoseries)
-    return cugs 
+    return cugs
+
 
 def from_geopandas(gpdf):
     """
@@ -52,7 +52,4 @@ def from_geopandas(gpdf):
     """
     if isinstance(gpdf, gpGeoSeries):
         return from_geoseries(gpdf)
-    if isinstance(gpdf, Point):
-        print('It is a point')
     print(gpdf)
-

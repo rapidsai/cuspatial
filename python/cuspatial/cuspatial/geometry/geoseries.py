@@ -245,6 +245,18 @@ class GeoSeries:
             self._reader.offsets["polygons"]["polygons"]
         )
 
+    def to_geopandas(self):
+        shapely_objs = np.zeros(len(self))
+        current = 0
+        for point in self._points:
+            shapely_objs[current] = Point(self._points[current])
+            current = current + 1
+        for multipoint in self._multipoints:
+            shapely_objs[current] = MultiPoint(self._multipoint[current])
+            current = current + 1
+
+
+
     @property
     def points(self):
         return self._points
