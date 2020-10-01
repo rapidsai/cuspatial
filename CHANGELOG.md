@@ -9,6 +9,7 @@
 - PR #289 Fix cmake warnings for GoogleTest amd GoogleBenchmark external projects.
 - PR #292 Update include paths to libcudf test utilities.
 - PR #295 Use move from libcpp.utility.
+- PR #299 Update ci/local/README.md
 
 ## Bug Fixes
 - PR #291 Fix mislabeled columns in Python spatial join result table.
