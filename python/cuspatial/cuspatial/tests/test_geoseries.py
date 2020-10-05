@@ -12,7 +12,6 @@ from shapely.geometry import (
     MultiPolygon,
 )
 
-import cudf
 from cudf.tests.utils import assert_eq
 
 import cuspatial

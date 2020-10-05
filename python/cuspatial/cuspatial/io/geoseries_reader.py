@@ -13,12 +13,22 @@ import numpy as np
 
 import cudf
 
+
 class GeoSeriesReader:
-    def __init__(self, geoseries):
-        """ 
+    def __init__(self, geoseries, interleaved=True):
+        """
         GeoSeriesReader copies a GeoPandas GeoSeries object iteratively into
         a set of GeoSeries buffers: points, multipoints, lines, and polygons.
-        """ 
+
+        Parameters
+        ----------
+        geoseries : A GeoPandas GeoSeries
+        interleaved: Boolean
+            Return buffers from _read_geometries that have interleaved x,y
+            coordinates in a single GPU buffer, or use separate buffers for
+            x and y.
+        """
+        self.interleaved = interleaved
         self.offsets = self._load_geometry_offsets(geoseries)
         self.buffers = self._read_geometries(geoseries, self.offsets)
 
@@ -253,4 +263,3 @@ class GeoSeriesReader:
         offsets["points"] = cudf.Series(offsets["points"])
         offsets["multipoints"] = cudf.Series(offsets["multipoints"])
         return (buffers, offsets, input_types, input_lengths, inputs)
-

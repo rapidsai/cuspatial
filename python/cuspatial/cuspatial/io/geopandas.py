@@ -2,19 +2,6 @@
 
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 
-import numpy as np
-
-from shapely.geometry import (
-    Point,
-    MultiPoint,
-    LineString,
-    MultiLineString,
-    Polygon,
-    MultiPolygon,
-)
-
-import cudf
-
 from cuspatial.geometry.geoseries import GeoSeries
 
 

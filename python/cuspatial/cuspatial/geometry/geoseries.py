@@ -23,36 +23,41 @@ class GeoSeries:
         data : A GeoPandas GeoSeries object, or a file path
 
         interleaved : Boolean
-            Store x,y coordinates in an interleaved [x,y] pattern according to GeoArrow form or 
-            store x and y coordinates in separate parallel buffers. Defaults to True.
-
+            Store x,y coordinates in an interleaved [x,y] pattern according
+            to GeoArrow form or store x and y coordinates in separate
+            parallel buffers. Defaults to True.
         Discussion
         ----------
-        The GeoArrow format specifies a tabular data format for geometry information. Supported
-        types include Point, MultiPoint, LineString, MultiLineString, Polygon, and MultiPolygon.
-        In order to store these coordinate types in a strictly tabular fashion, columns are
-        created for Points, MultiPoints, LineStrings, and Polygons. MultiLines and
-        MultiPolygons are stored in the same data structure as LineStrings and Polygons.
+        The GeoArrow format specifies a tabular data format for geometry
+        information. Supported types include Point, MultiPoint, LineString,
+        MultiLineString, Polygon, and MultiPolygon.  In order to store
+        these coordinate types in a strictly tabular fashion, columns are
+        created for Points, MultiPoints, LineStrings, and Polygons.
+        MultiLines and MultiPolygons are stored in the same data structure
+        as LineStrings and Polygons.
 
-        The Points column is a simple numeric column. x and y coordinates can be stored either
-        interleaved or in separate columns. If a z coordinate is present, it will be stored in
-        a separate column.
+        The Points column is a simple numeric column. x and y coordinates
+        can be stored either interleaved or in separate columns. If a z
+        coordinate is present, it will be stored in a separate column.
 
-        The MultiPoints column is similar to the Points column with the addition of an offsets
-        column. The offsets column stores the comparable sizes and coordinates of each
-        MultiPoint in the cuGeoSeries.
+        The MultiPoints column is similar to the Points column with the
+        addition of an offsets column. The offsets column stores the comparable
+        sizes and coordinates of each MultiPoint in the cuGeoSeries.
 
-        LineStrings contain the coordinates column, an offsets column, and a multioffsets
-        column. The multioffsets column stores the indices of the offsets that indicate the
-        beginning and end of each MultiLineString segment.
+        LineStrings contain the coordinates column, an offsets column, and a
+        multioffsets column. The multioffsets column stores the indices of the
+        offsets that indicate the beginning and end of each MultiLineString
+        segment.
 
-        Polygons contain the coordinates column, a rings column specifying the beginning and
-        end of every polygon, a polygons column specifying the beginning, or exterior, ring of
-        each polygon and the end ring. All rings after the first ring are interior rings.
-        Finally a multipolys column stores the offsets of the polygons that should be grouped
-        into MultiPolygons.
+        Polygons contain the coordinates column, a rings column specifying
+        the beginning and end of every polygon, a polygons column specifying
+        the beginning, or exterior, ring of each polygon and the end ring.
+        All rings after the first ring are interior rings.  Finally a
+        multipolys column stores the offsets of the polygons that should be
+        grouped into MultiPolygons.
 
-        As a result, a GpuGeoSeries object contains these arrow-supported columns:
+        As a result, a GpuGeoSeries object contains these arrow-supported
+        columns:
         points_xy
         mpoints_xy
         mpoints_offsets
@@ -66,12 +71,13 @@ class GeoSeries:
 
         Notes
         -----
-        Legacy cuspatial algorithms depend on separated x and y columns. Creating a cuGeoSeries
-        from a GeoPandas source with `interleaved=True` will create a legacy cuspatial Series,
-        which violates the GeoArrow format but will work with existing cuspatial algorithms.
+        Legacy cuspatial algorithms depend on separated x and y columns.
+        Creating a cuGeoSeries from a GeoPandas source with `interleaved=True`
+        will create a legacy cuspatial Series, which violates the GeoArrow
+        format but will work with existing cuspatial algorithms.
         """
         self._data = data
-        self._reader = GeoSeriesReader(data)
+        self._reader = GeoSeriesReader(data, interleaved)
         self._points = GpuPoints()
         self._points.xy = self._reader.buffers[0]["points"]
         self._multipoints = GpuMultiPoints()
@@ -120,8 +126,6 @@ class GeoSeries:
                 "poly": self._sr._polygons,
                 "mpoly": self._sr._polygons,
             }[item_type]
-            # Points are the only structure that stores point and multipoint in separate
-            # arrays. I'm not suire why we decided to do this anymore.
             if item_type == "p" or item_type == "mp":
                 result = item_source[index]
             else:
@@ -162,8 +166,8 @@ class GeoSeries:
 
     def to_geopandas(self):
         """
-        Returns a new GeoPandas GeoSeries object from the coordinates in the cuspatial
-        GeoSeries.
+        Returns a new GeoPandas GeoSeries object from the coordinates in
+        the cuspatial GeoSeries.
         """
         shapely_objs = []
         for geometry in self:
@@ -174,6 +178,9 @@ class GeoSeries:
         return gpGeoSeries(shapely_objs)
 
     def __len__(self):
+        """
+        Returns the number of unique geometries stored in this cuGeoSeries.
+        """
         length = (
             len(self._points.xy) / 2
             + len(self._multipoints.offsets)
@@ -207,7 +214,6 @@ class GpuPoints:
         self.xy = cudf.Series([])
         self.z = None
         self.has_z = False
-        self._original_series_index = None
 
     def __iter__(self):
         self._index = 0
@@ -233,7 +239,7 @@ class GpuOffset(GpuPoints):
 
     def __iter__(self):
         if self.offsets is None:
-            raise IterableError
+            raise TypeError
         self._index = 1
         return self
 
