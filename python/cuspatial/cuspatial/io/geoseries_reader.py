@@ -150,8 +150,7 @@ class GeoSeriesReader:
         inputs = []
         input_types = []
         input_lengths = []
-        for i, geometry in enumerate(geoseries):
-            print(i)
+        for geometry in geoseries:
             if isinstance(geometry, Point):
                 # write a point to the points buffer
                 # increase read_count of points pass
