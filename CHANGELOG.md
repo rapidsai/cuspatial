@@ -9,11 +9,13 @@
 - PR #289 Fix cmake warnings for GoogleTest amd GoogleBenchmark external projects.
 - PR #292 Update include paths to libcudf test utilities.
 - PR #295 Use move from libcpp.utility.
+- PR #299 Update ci/local/README.md
 
 ## Bug Fixes
 - PR #291 Fix mislabeled columns in Python spatial join result table.
-- PR #294 Fix include of deprecated RMM header file
-- PR #296 Updates for RMM being header only
+- PR #294 Fix include of deprecated RMM header file.
+- PR #296 Updates for RMM being header only.
+- PR #298 Fix Python docs to render first argument of each public function.
 
 
 # cuSpatial 0.15.0 (26 Aug 2020)

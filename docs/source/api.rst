@@ -5,26 +5,26 @@ cuSpatial API Reference
 
 GIS
 ---
-.. currentmodule:: cuspatial.core.gis
+.. currentmodule:: cuspatial
 
-.. automethod:: cuspatial.core.gis.directed_hausdorff_distance
-.. automethod:: cuspatial.core.gis.haversine_distance
-.. automethod:: cuspatial.core.gis.lonlat_to_cartesian
-.. automethod:: cuspatial.core.gis.point_in_polygon
-.. automethod:: cuspatial.core.gis.polygon_bounding_boxes
-.. automethod:: cuspatial.core.gis.polyline_bounding_boxes
+.. autofunction:: cuspatial.directed_hausdorff_distance
+.. autofunction:: cuspatial.haversine_distance
+.. autofunction:: cuspatial.lonlat_to_cartesian
+.. autofunction:: cuspatial.point_in_polygon
+.. autofunction:: cuspatial.polygon_bounding_boxes
+.. autofunction:: cuspatial.polyline_bounding_boxes
 
 
 Indexing
 --------
-.. currentmodule:: cuspatial.core.indexing
+.. currentmodule:: cuspatial
 
-.. automethod:: cuspatial.core.indexing.quadtree_on_points
+.. autofunction:: cuspatial.quadtree_on_points
 
 
 Interpolation
 -------------
-.. currentmodule:: cuspatial.core.interpolate
+.. currentmodule:: cuspatial
 
 .. autoclass:: CubicSpline
 .. automethod:: CubicSpline.__init__
@@ -33,30 +33,30 @@ Interpolation
 
 Spatial Querying
 ----------------
-.. currentmodule:: cuspatial.core.spatial_window
+.. currentmodule:: cuspatial
 
-.. automethod:: cuspatial.core.spatial_window.points_in_spatial_window
+.. autofunction:: cuspatial.points_in_spatial_window
 
 
 Spatial Joining
 ----------------
-.. currentmodule:: cuspatial.core.spatial_join
+.. currentmodule:: cuspatial
 
-.. automethod:: cuspatial.core.spatial_join.join_quadtree_and_bounding_boxes
-.. automethod:: cuspatial.core.spatial_join.quadtree_point_in_polygon
-.. automethod:: cuspatial.core.spatial_join.quadtree_point_to_nearest_polyline
+.. autofunction:: cuspatial.join_quadtree_and_bounding_boxes
+.. autofunction:: cuspatial.quadtree_point_in_polygon
+.. autofunction:: cuspatial.quadtree_point_to_nearest_polyline
 
 Trajectory
 ----------
-.. currentmodule:: cuspatial.core.trajectory
+.. currentmodule:: cuspatial
 
-.. automethod:: cuspatial.core.trajectory.derive_trajectories
-.. automethod:: cuspatial.core.trajectory.trajectory_bounding_boxes
-.. automethod:: cuspatial.core.trajectory.trajectory_distances_and_speeds
+.. autofunction:: cuspatial.derive_trajectories
+.. autofunction:: cuspatial.trajectory_bounding_boxes
+.. autofunction:: cuspatial.trajectory_distances_and_speeds
 
 
 IO
 --
-.. currentmodule:: cuspatial.io.shapefile
+.. currentmodule:: cuspatial
 
-.. automethod:: cuspatial.io.shapefile.read_polygon_shapefile
+.. autofunction:: cuspatial.read_polygon_shapefile
