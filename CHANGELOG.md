@@ -1,6 +1,7 @@
 # cuSpatial 0.16.0 (Date TBD)
 
 ## New Features
+- PR #300 Add `from_geopandas` to move geopandas data onto the GPU
 
 ## Improvements
 - PR #278 Update googlebenchmark version to match rmm & cudf.
