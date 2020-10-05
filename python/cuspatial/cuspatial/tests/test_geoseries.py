@@ -18,9 +18,7 @@ from cudf.tests.utils import assert_eq
 import cuspatial
 from cuspatial.geometry.geoseries import (
     cuPoint,
-    cuMultiPoint,
     cuLineString,
-    cuMultiLineString,
 )
 
 
@@ -73,37 +71,40 @@ def gs():
 @pytest.fixture
 def gs_sorted(gs):
     result = pd.concat(
-        [gs[gs.type == "Point"],
-         gs[gs.type == "MultiPoint"],
-         gs[gs.type == "LineString"],
-         gs[gs.type == "MultiLineString"],
-         gs[gs.type == "Polygon"],
-         gs[gs.type == "MultiPolygon"]
-    ])
+        [
+            gs[gs.type == "Point"],
+            gs[gs.type == "MultiPoint"],
+            gs[gs.type == "LineString"],
+            gs[gs.type == "MultiLineString"],
+            gs[gs.type == "Polygon"],
+            gs[gs.type == "MultiPolygon"],
+        ]
+    )
     return result.reset_index(drop=True)
 
 
 def to_shapely(obj):
-    if isinstance(obj, (cuPoint, cuMultiPoint, cuLineString, cuMultiLineString)):
+    if isinstance(obj, (cuPoint, cuLineString)):
         return obj.to_shapely()
     return obj
+
 
 def assert_eq_point(p1, p2):
     p1 = to_shapely(p1)
     p2 = to_shapely(p2)
-    assert(type(p1) == type(p2))
-    assert(p1.x == p2.x)
-    assert(p1.y == p2.y)
-    assert(p1.has_z == p2.has_z)
+    assert type(p1) == type(p2)
+    assert p1.x == p2.x
+    assert p1.y == p2.y
+    assert p1.has_z == p2.has_z
     if p1.has_z:
-        assert(p1.z == p2.z)
+        assert p1.z == p2.z
 
 
 def assert_eq_multipoint(p1, p2):
     p1 = to_shapely(p1)
     p2 = to_shapely(p2)
-    assert(type(p1) == type(p2))
-    assert(len(p1) == len(p2))
+    assert type(p1) == type(p2)
+    assert len(p1) == len(p2)
     for i in range(len(p1)):
         assert_eq_point(p1[i], p2[i])
 
@@ -111,8 +112,8 @@ def assert_eq_multipoint(p1, p2):
 def assert_eq_linestring(p1, p2):
     p1 = to_shapely(p1)
     p2 = to_shapely(p2)
-    assert(type(p1) == type(p2))
-    assert(len(p1.coords) == len(p2.coords))
+    assert type(p1) == type(p2)
+    assert len(p1.coords) == len(p2.coords)
     for i in range(len(p1.coords)):
         assert_eq(p1.coords[i], p2.coords[i])
 
@@ -135,17 +136,6 @@ def test_getitem_points():
     assert_eq_point(cus[2], p2)
 
 
-def test_getitem_multipoints():
-    p0 = MultiPoint([[1, 2], [3, 4]])
-    p1 = MultiPoint([[1, 2], [3, 4], [5, 6], [7, 8]])
-    p2 = MultiPoint([[1, 2], [3, 4], [5, 6]])
-    gps = gpd.GeoSeries([p0, p1, p2])
-    cus = cuspatial.from_geopandas(gps)
-    assert_eq_multipoint(cus[0], p0)
-    assert_eq_multipoint(cus[1], p1)
-    assert_eq_multipoint(cus[2], p2)
-
-
 def test_getitem_lines():
     p0 = LineString([[1, 2], [3, 4]])
     p1 = LineString([[1, 2], [3, 4], [5, 6], [7, 8]])
@@ -155,14 +145,3 @@ def test_getitem_lines():
     assert_eq_linestring(cus[0], p0)
     assert_eq_linestring(cus[1], p1)
     assert_eq_linestring(cus[2], p2)
-
-
-def test_getitem_multilines():
-    p0 = MultiLineString([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
-    p1 = MultiLineString([[[1, 2], [3, 4], [5, 6]], [[7, 8], [9, 10]]])
-    p2 = MultiLineString([[[1, 2], [3, 4]], [[5, 6], [7, 8], [9, 10]]])
-    gps = gpd.GeoSeries([p0, p1, p2])
-    cus = cuspatial.from_geopandas(gps)
-    assert_eq_multilinestring(cus[1], p0)
-    assert_eq_multilinestring(cus[1], p1)
-    assert_eq_multilinestring(cus[2], p2)

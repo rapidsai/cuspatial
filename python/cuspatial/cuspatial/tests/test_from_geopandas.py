@@ -67,13 +67,15 @@ def gs():
 @pytest.fixture
 def gs_sorted(gs):
     result = pd.concat(
-        [gs[gs.type == "Point"],
-         gs[gs.type == "MultiPoint"],
-         gs[gs.type == "LineString"],
-         gs[gs.type == "MultiLineString"],
-         gs[gs.type == "Polygon"],
-         gs[gs.type == "MultiPolygon"]
-    ])
+        [
+            gs[gs.type == "Point"],
+            gs[gs.type == "MultiPoint"],
+            gs[gs.type == "LineString"],
+            gs[gs.type == "MultiLineString"],
+            gs[gs.type == "Polygon"],
+            gs[gs.type == "MultiPolygon"],
+        ]
+    )
     return result.reset_index(drop=True)
 
 
@@ -202,5 +204,3 @@ def test_from_geopandas_multipolygon():
     )
     assert_eq(cugs.polygons.polys, cudf.Series([0, 2]))
     assert_eq(cugs.polygons.rings, cudf.Series([0, 2]))
-
-

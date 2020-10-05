@@ -1,21 +1,12 @@
 # 2020 NVIDIA
 
-from collections.abc import Iterable
-
 from geopandas.geoseries import GeoSeries as gpGeoSeries
-import numpy as np
 import pandas as pd
 
 from shapely.geometry import (
     Point,
-    MultiPoint,
     LineString,
-    MultiLineString,
-    Polygon,
-    MultiPolygon,
 )
-
-from numbers.Number import Integer
 
 import cudf
 
@@ -26,7 +17,7 @@ class GpuPoints:
         self.z = None
         self.has_z = False
         self._original_series_index = None
-    
+
     def __iter__(self):
         self._index = 0
         return self
@@ -40,9 +31,9 @@ class GpuPoints:
 
     def __getitem__(self, index):
         if isinstance(index, slice):
-            new_index = slice(index.start*2, index.stop*2 + 1, index.step)
+            new_index = slice(index.start * 2, index.stop * 2 + 1, index.step)
             return self.xy.iloc[new_index]
-        return self.xy.iloc[(index*2):(index*2)+2]
+        return self.xy.iloc[(index * 2) : (index * 2) + 2]
 
 
 class GpuOffset(GpuPoints):
@@ -69,10 +60,10 @@ class GpuOffset(GpuPoints):
             rindex = slice(index, index + 2, 1)
         new_slice = slice(self.offsets[rindex.start], None)
         if rindex.stop < len(self.offsets):
-            new_slice = slice(new_slice.start, self.offsets[rindex.stop-1])
+            new_slice = slice(new_slice.start, self.offsets[rindex.stop - 1])
         result = self.xy[new_slice]
         return result
-        
+
 
 class GpuLines(GpuOffset):
     def __getitem__(self, index):
@@ -97,7 +88,7 @@ class GpuPolygons(GpuOffset):
         return result
 
 
-class GeoSeries():
+class GeoSeries:
     def __init__(self, reader):
         self._reader = reader
         self._points = GpuPoints()
@@ -119,16 +110,16 @@ class GeoSeries():
         self.types = self._reader.buffers[2]
         self.lengths = self._reader.buffers[3]
 
-    class GeoSeriesLocIndexer():
+    class GeoSeriesLocIndexer:
         def __init__(self):
             raise NotImplementedError
-    
-    class GeoSeriesILocIndexer():
+
+    class GeoSeriesILocIndexer:
         def __init__(self, sr):
             self._sr = sr
-        
+
         def __getitem__(self, index):
-            if isinstance(index, Integer):
+            if not isinstance(index, slice):
                 return self._getitem_int(index)
             else:
                 return self._getitem_slice(index)
@@ -136,30 +127,40 @@ class GeoSeries():
         def _getitem_int(self, index):
             item_type = self._sr.types[index]
             item_length = self._sr.lengths[index]
-            item_start = (pd.Series(self._sr.types[0:index]) == item_type).sum()
+            item_start = (
+                pd.Series(self._sr.types[0:index]) == item_type
+            ).sum()
             item_end = item_length + item_start + 1
             item_source = {
-                'p': self._sr._points,
-                'mp': self._sr._multipoints,
-                'l': self._sr._lines,
-                'ml': self._sr._lines,
-                'poly': self._sr._polygons,
-                'mpoly': self._sr._polygons
+                "p": self._sr._points,
+                "mp": self._sr._multipoints,
+                "l": self._sr._lines,
+                "ml": self._sr._lines,
+                "poly": self._sr._polygons,
+                "mpoly": self._sr._polygons,
             }[item_type]
             # Points are the only structure that stores point and multipoint in separate
             # arrays. I'm not suire why we decided to do this anymore.
-            if item_type == 'p' or item_type == 'mp':
+            if item_type == "p" or item_type == "mp":
                 result = item_source[index]
             else:
                 result = item_source[item_start:item_end]
-            if item_type == 'p':
-                return cuPoint(result, index)
-            elif item_type == 'mp':
-                return cuMultiPoint(result, index)
-            elif item_type == 'l':
-                return cuLineString(result, [item_start, item_end])
-            elif item_type == 'ml':
-                return cuMultiLineString(result, [item_start, item_end])
+            if item_type == "p":
+                return cuPoint(result)
+            elif item_type == "mp":
+                raise NotImplementedError
+            elif item_type == "l":
+                return cuLineString(
+                    result.to_array().reshape(2 * (item_start - item_end), 2)
+                )
+            elif item_type == "ml":
+                raise NotImplementedError
+            elif item_type == "p":
+                raise NotImplementedError
+            elif item_type == "mp":
+                raise NotImplementedError
+            else:
+                raise TypeError
 
     @property
     def loc(self):
@@ -184,7 +185,15 @@ class GeoSeries():
         return gpGeoSeries(shapely_objs)
 
     def __len__(self):
-        length = len(self._points.xy) / 2 + len(self._multipoints.offsets) - 1 + len(self._lines.offsets) - 1 + len(self._polygons.polys) - 1
+        length = (
+            len(self._points.xy) / 2
+            + len(self._multipoints.offsets)
+            - 1
+            + len(self._lines.offsets)
+            - 1
+            + len(self._polygons.polys)
+            - 1
+        )
         return int(length)
 
     @property
@@ -204,10 +213,9 @@ class GeoSeries():
         return self._polygons
 
 
-class cuGeometry():
-    def __init__(self, series, source):
+class cuGeometry:
+    def __init__(self, series):
         self.xy = series
-        self._source = source
 
 
 class cuPoint(cuGeometry):
@@ -215,16 +223,6 @@ class cuPoint(cuGeometry):
         return Point(self.xy.reset_index(drop=True))
 
 
-class cuMultiPoint(cuGeometry):
-    def to_shapely(self):
-        return MultiPoint(self.xy)
-
-
 class cuLineString(cuGeometry):
     def to_shapely(self):
         return LineString(self.xy)
-
-
-class cuMultiLineString(cuGeometry):
-    def to_shapely(self):
-        return MultiLineString(self.xy)

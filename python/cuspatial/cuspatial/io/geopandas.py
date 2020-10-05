@@ -1,10 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
-from collections.abc import Iterable
 from geopandas.geoseries import GeoSeries as gpGeoSeries
-from numba import cuda
 
-import cupy as cp
 import numpy as np
 
 from shapely.geometry import (
@@ -18,10 +15,8 @@ from shapely.geometry import (
 
 import cudf
 
-import cuspatial
-print(dir(cuspatial))
-print(dir(cuspatial.geometry))
 from cuspatial.geometry.geoseries import GeoSeries
+
 
 class GeoSeriesReader:
     def __init__(self, geoseries):
@@ -45,8 +40,8 @@ class GeoSeriesReader:
             elif isinstance(geometry, MultiPoint):
                 # A MultiPoint geometry also is copied into the GpuPoints
                 # structure. A MultiPoint object must be created, containing
-                # the size of the number of points, the position they are stored
-                # in GpuPoints, and the index of the MultiPoint in the
+                # the size of the number of points, the position they are
+                # stored in GpuPoints, and the index of the MultiPoint in the
                 # GeoSeries.
                 # for coord in np.arange(len(geometry)):
                 # offsets["multipoints"].append((1 + coord) * 2)
@@ -139,9 +134,9 @@ class GeoSeriesReader:
                 buffers["points"][i] = p[0]
                 buffers["points"][i + 1] = p[1]
                 read_count["points"] = read_count["points"] + 1
-                input_types.append('p')
+                input_types.append("p")
                 input_lengths.append(1)
-                inputs.append({'type':'p', 'length': 1})
+                inputs.append({"type": "p", "length": 1})
             elif isinstance(geometry, MultiPoint):
                 for point in geometry:
                     p = np.array(point)
@@ -149,9 +144,9 @@ class GeoSeriesReader:
                     buffers["multipoints"][i] = p[0]
                     buffers["multipoints"][i + 1] = p[1]
                     read_count["multipoints"] = read_count["multipoints"] + 1
-                input_types.append('mp')
+                input_types.append("mp")
                 input_lengths.append(len(geometry))
-                inputs.append({'type':'mp', 'length': len(geometry)})
+                inputs.append({"type": "mp", "length": len(geometry)})
             elif isinstance(geometry, LineString):
                 line = np.array(geometry.xy).T
                 for point in line:
@@ -160,9 +155,9 @@ class GeoSeriesReader:
                     buffers["lines"][i] = p[0]
                     buffers["lines"][i + 1] = p[1]
                     read_count["lines"] = read_count["lines"] + 1
-                input_types.append('l')
+                input_types.append("l")
                 input_lengths.append(1)
-                inputs.append({'type': 'l', 'length': 1})
+                inputs.append({"type": "l", "length": 1})
             elif isinstance(geometry, MultiLineString):
                 substrings = []
                 for linestring in geometry:
@@ -173,11 +168,16 @@ class GeoSeriesReader:
                         buffers["lines"][i] = p[0]
                         buffers["lines"][i + 1] = p[1]
                         read_count["lines"] = read_count["lines"] + 1
-                    substrings.append({'type': 'l', 'length': len(line)})
-                input_types.append('ml')
+                    substrings.append({"type": "l", "length": len(line)})
+                input_types.append("ml")
                 input_lengths.append(len(geometry))
-                inputs.append({'type':'ml', 'length': len(geometry), 'children':
-                    substrings})
+                inputs.append(
+                    {
+                        "type": "ml",
+                        "length": len(geometry),
+                        "children": substrings,
+                    }
+                )
             elif isinstance(geometry, Polygon):
                 # copy exterior
                 exterior = geometry.exterior.coords
@@ -195,9 +195,9 @@ class GeoSeriesReader:
                         buffers["polygons"]["coords"][i] = ip[0]
                         buffers["polygons"]["coords"][i + 1] = ip[1]
                         read_count["polygons"] = read_count["polygons"] + 1
-                input_types.append('poly')
+                input_types.append("poly")
                 input_lengths.append(1)
-                inputs.append({'type':'poly', 'length': 1})
+                inputs.append({"type": "poly", "length": 1})
             elif isinstance(geometry, MultiPolygon):
                 subpolys = []
                 for polygon in geometry:
@@ -216,10 +216,16 @@ class GeoSeriesReader:
                             buffers["polygons"]["coords"][i] = ip[0]
                             buffers["polygons"]["coords"][i + 1] = ip[1]
                             read_count["polygons"] = read_count["polygons"] + 1
-                    subpolys.append({'type': 'poly', 'length': 1})
-                input_types.append('mpoly')
+                    subpolys.append({"type": "poly", "length": 1})
+                input_types.append("mpoly")
                 input_lengths.append(len(geometry))
-                inputs.append({'type': 'ml', 'length': len(geometry), 'children': subpolys})
+                inputs.append(
+                    {
+                        "type": "ml",
+                        "length": len(geometry),
+                        "children": subpolys,
+                    }
+                )
             else:
                 raise NotImplementedError
         offsets["polygons"]["rings"] = cudf.Series(
