@@ -1,6 +1,7 @@
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2020, NVIDIA CORPORATION.
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pytest
 from shapely.geometry import (
@@ -77,6 +78,15 @@ def gs_sorted(gs):
         ]
     )
     return result.reset_index(drop=True)
+
+
+"""
+def test_from_geopandas_large_polygons():
+    ext = np.random.random(300).reshape((150, 2))
+    interior = np.random.random(300).reshape((150, 2))
+    gs = gpd.GeoSeries(Polygon((ext, [interior])))
+    cugs = cuspatial.from_geopandas(gs)
+"""
 
 
 def test_from_geoseries_complex(gs):

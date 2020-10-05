@@ -150,7 +150,8 @@ class GeoSeriesReader:
         inputs = []
         input_types = []
         input_lengths = []
-        for geometry in geoseries:
+        for i, geometry in enumerate(geoseries):
+            print(i)
             if isinstance(geometry, Point):
                 # write a point to the points buffer
                 # increase read_count of points pass
@@ -163,37 +164,33 @@ class GeoSeriesReader:
                 input_lengths.append(1)
                 inputs.append({"type": "p", "length": 1})
             elif isinstance(geometry, MultiPoint):
-                for point in geometry:
-                    p = np.array(point)
-                    i = read_count["multipoints"] * 2
-                    buffers["multipoints"][i] = p[0]
-                    buffers["multipoints"][i + 1] = p[1]
-                    read_count["multipoints"] = read_count["multipoints"] + 1
+                points = np.array(geometry).T
+                size = len(points) * 2
+                i = read_count["multipoints"]
+                buffers["multipoints"][slice(i, i + size, 2)] = points[0]
+                buffers["multipoints"][slice(i + 1, i + size, 2)] = points[1]
+                read_count["multipoints"] = read_count["multipoints"] + size
                 input_types.append("mp")
                 input_lengths.append(len(geometry))
                 inputs.append({"type": "mp", "length": len(geometry)})
             elif isinstance(geometry, LineString):
-                line = np.array(geometry.xy).T
-                for point in line:
-                    p = np.array(point)
-                    i = read_count["lines"] * 2
-                    buffers["lines"][i] = p[0]
-                    buffers["lines"][i + 1] = p[1]
-                    read_count["lines"] = read_count["lines"] + 1
+                size = len(geometry.xy[0]) * 2
+                i = read_count["lines"]
+                buffers["lines"][slice(i, i + size, 2)] = geometry.xy[0]
+                buffers["lines"][slice(i + 1, i + size, 2)] = geometry.xy[1]
+                read_count["lines"] = read_count["lines"] + size
                 input_types.append("l")
                 input_lengths.append(1)
                 inputs.append({"type": "l", "length": 1})
             elif isinstance(geometry, MultiLineString):
                 substrings = []
                 for linestring in geometry:
-                    line = np.array(linestring.xy).T
-                    for point in line:
-                        p = np.array(point)
-                        i = read_count["lines"] * 2
-                        buffers["lines"][i] = p[0]
-                        buffers["lines"][i + 1] = p[1]
-                        read_count["lines"] = read_count["lines"] + 1
-                    substrings.append({"type": "l", "length": len(line)})
+                    size = len(linestring.xy[0]) * 2
+                    i = read_count["lines"]
+                    buffers["lines"][slice(i, i + size, 2)] = linestring.xy[0] 
+                    buffers["lines"][slice(i + 1, i + size, 2)] = linestring.xy[1]
+                    read_count["lines"] = read_count["lines"] + size
+                    substrings.append({"type": "l", "length": size})
                 input_types.append("ml")
                 input_lengths.append(len(geometry))
                 inputs.append(
@@ -205,42 +202,40 @@ class GeoSeriesReader:
                 )
             elif isinstance(geometry, Polygon):
                 # copy exterior
-                exterior = geometry.exterior.coords
+                exterior = geometry.exterior.coords.xy
+                size = len(exterior[0]) * 2
+                i = read_count["polygons"]
+                buffers["polygons"]["coords"][slice(i, i + size, 2)] = exterior[0]
+                buffers["polygons"]["coords"][slice(i + 1, i + size, 2)] = exterior[1]
+                read_count["polygons"] = read_count["polygons"] + size
                 interiors = geometry.interiors
-                for point in exterior:
-                    p = np.array(point)
-                    i = read_count["polygons"] * 2
-                    buffers["polygons"]["coords"][i] = p[0]
-                    buffers["polygons"]["coords"][i + 1] = p[1]
-                    read_count["polygons"] = read_count["polygons"] + 1
                 for interior in interiors:
-                    for ipoint in interior.coords:
-                        ip = np.array(ipoint)
-                        i = read_count["polygons"] * 2
-                        buffers["polygons"]["coords"][i] = ip[0]
-                        buffers["polygons"]["coords"][i + 1] = ip[1]
-                        read_count["polygons"] = read_count["polygons"] + 1
+                    interior_coords = interior.coords.xy
+                    size = len(interior_coords[0]) * 2
+                    i = read_count["polygons"]
+                    buffers["polygons"]["coords"][slice(i, i + size, 2)] = interior_coords[0]
+                    buffers["polygons"]["coords"][slice(i + 1, i + size, 2)] = interior_coords[1]
+                    read_count["polygons"] = read_count["polygons"] + size
                 input_types.append("poly")
                 input_lengths.append(1)
                 inputs.append({"type": "poly", "length": 1})
             elif isinstance(geometry, MultiPolygon):
                 subpolys = []
                 for polygon in geometry:
-                    exterior = polygon.exterior.coords
+                    exterior = polygon.exterior.coords.xy
+                    size = len(exterior[0]) * 2
+                    i = read_count["polygons"]
+                    buffers["polygons"]["coords"][slice(i, i + size, 2)] = exterior[0]
+                    buffers["polygons"]["coords"][slice(i + 1, i + size, 2)] = exterior[1]
+                    read_count["polygons"] = read_count["polygons"] + size
                     interiors = polygon.interiors
-                    for point in exterior:
-                        p = np.array(point)
-                        i = read_count["polygons"] * 2
-                        buffers["polygons"]["coords"][i] = p[0]
-                        buffers["polygons"]["coords"][i + 1] = p[1]
-                        read_count["polygons"] = read_count["polygons"] + 1
                     for interior in interiors:
-                        for ipoint in interior.coords:
-                            ip = np.array(ipoint)
-                            i = read_count["polygons"] * 2
-                            buffers["polygons"]["coords"][i] = ip[0]
-                            buffers["polygons"]["coords"][i + 1] = ip[1]
-                            read_count["polygons"] = read_count["polygons"] + 1
+                        interior_coords = interior.coords.xy
+                        size = len(interior_coords[0]) * 2
+                        i = read_count["polygons"]
+                        buffers["polygons"]["coords"][slice(i, i + size, 2)] = interior_coords[0]
+                        buffers["polygons"]["coords"][slice(i + 1, i + size, 2)] = interior_coords[1]
+                        read_count["polygons"] = read_count["polygons"] + size
                     subpolys.append({"type": "poly", "length": 1})
                 input_types.append("mpoly")
                 input_lengths.append(len(geometry))
