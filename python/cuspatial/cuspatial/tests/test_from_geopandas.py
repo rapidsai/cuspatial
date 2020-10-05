@@ -95,7 +95,7 @@ def test_from_geoseries_complex(gs):
     assert cugs.multipoints.xy.sum() == 44
     assert cugs.polygons.xy.sum() == 7440
     assert cugs.polygons.polys.sum() == 38
-    assert cugs.polygons.rings.sum() == 38
+    assert cugs.polygons.rings.sum() == 654
 
 
 def test_from_geopandas_point():
@@ -138,7 +138,7 @@ def test_from_geopandas_polygon():
         cugs.polygons.xy, cudf.Series([0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0])
     )
     assert_eq(cugs.polygons.polys, cudf.Series([0, 1]))
-    assert_eq(cugs.polygons.rings, cudf.Series([0, 1]))
+    assert_eq(cugs.polygons.rings, cudf.Series([0, 8]))
 
 
 def test_from_geopandas_polygon_hole():
@@ -173,7 +173,7 @@ def test_from_geopandas_polygon_hole():
         ),
     )
     assert_eq(cugs.polygons.polys, cudf.Series([0, 2]))
-    assert_eq(cugs.polygons.rings, cudf.Series([0, 2]))
+    assert_eq(cugs.polygons.rings, cudf.Series([0, 8, 16]))
 
 
 def test_from_geopandas_multipolygon():
@@ -212,4 +212,4 @@ def test_from_geopandas_multipolygon():
         ),
     )
     assert_eq(cugs.polygons.polys, cudf.Series([0, 2]))
-    assert_eq(cugs.polygons.rings, cudf.Series([0, 2]))
+    assert_eq(cugs.polygons.rings, cudf.Series([0, 8, 16]))

@@ -92,7 +92,7 @@ class GeoSeries:
             self._reader.offsets["polygons"]["polygons"]
         )
         self._polygons.rings = cudf.Series(
-            self._reader.offsets["polygons"]["polygons"]
+            self._reader.offsets["polygons"]["rings"]
         )
         self.types = self._reader.buffers[2]
         self.lengths = self._reader.buffers[3]
