@@ -1,7 +1,6 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 import pytest
 from shapely.geometry import (

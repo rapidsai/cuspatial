@@ -186,8 +186,10 @@ class GeoSeriesReader:
                 for linestring in geometry:
                     size = len(linestring.xy[0]) * 2
                     i = read_count["lines"]
-                    buffers["lines"][slice(i, i + size, 2)] = linestring.xy[0] 
-                    buffers["lines"][slice(i + 1, i + size, 2)] = linestring.xy[1]
+                    buffers["lines"][slice(i, i + size, 2)] = linestring.xy[0]
+                    buffers["lines"][
+                        slice(i + 1, i + size, 2)
+                    ] = linestring.xy[1]
                     read_count["lines"] = read_count["lines"] + size
                     substrings.append({"type": "l", "length": size})
                 input_types.append("ml")
@@ -204,16 +206,24 @@ class GeoSeriesReader:
                 exterior = geometry.exterior.coords.xy
                 size = len(exterior[0]) * 2
                 i = read_count["polygons"]
-                buffers["polygons"]["coords"][slice(i, i + size, 2)] = exterior[0]
-                buffers["polygons"]["coords"][slice(i + 1, i + size, 2)] = exterior[1]
+                buffers["polygons"]["coords"][
+                    slice(i, i + size, 2)
+                ] = exterior[0]
+                buffers["polygons"]["coords"][
+                    slice(i + 1, i + size, 2)
+                ] = exterior[1]
                 read_count["polygons"] = read_count["polygons"] + size
                 interiors = geometry.interiors
                 for interior in interiors:
                     interior_coords = interior.coords.xy
                     size = len(interior_coords[0]) * 2
                     i = read_count["polygons"]
-                    buffers["polygons"]["coords"][slice(i, i + size, 2)] = interior_coords[0]
-                    buffers["polygons"]["coords"][slice(i + 1, i + size, 2)] = interior_coords[1]
+                    buffers["polygons"]["coords"][
+                        slice(i, i + size, 2)
+                    ] = interior_coords[0]
+                    buffers["polygons"]["coords"][
+                        slice(i + 1, i + size, 2)
+                    ] = interior_coords[1]
                     read_count["polygons"] = read_count["polygons"] + size
                 input_types.append("poly")
                 input_lengths.append(1)
@@ -224,16 +234,24 @@ class GeoSeriesReader:
                     exterior = polygon.exterior.coords.xy
                     size = len(exterior[0]) * 2
                     i = read_count["polygons"]
-                    buffers["polygons"]["coords"][slice(i, i + size, 2)] = exterior[0]
-                    buffers["polygons"]["coords"][slice(i + 1, i + size, 2)] = exterior[1]
+                    buffers["polygons"]["coords"][
+                        slice(i, i + size, 2)
+                    ] = exterior[0]
+                    buffers["polygons"]["coords"][
+                        slice(i + 1, i + size, 2)
+                    ] = exterior[1]
                     read_count["polygons"] = read_count["polygons"] + size
                     interiors = polygon.interiors
                     for interior in interiors:
                         interior_coords = interior.coords.xy
                         size = len(interior_coords[0]) * 2
                         i = read_count["polygons"]
-                        buffers["polygons"]["coords"][slice(i, i + size, 2)] = interior_coords[0]
-                        buffers["polygons"]["coords"][slice(i + 1, i + size, 2)] = interior_coords[1]
+                        buffers["polygons"]["coords"][
+                            slice(i, i + size, 2)
+                        ] = interior_coords[0]
+                        buffers["polygons"]["coords"][
+                            slice(i + 1, i + size, 2)
+                        ] = interior_coords[1]
                         read_count["polygons"] = read_count["polygons"] + size
                     subpolys.append({"type": "poly", "length": 1})
                 input_types.append("mpoly")
