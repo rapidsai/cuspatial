@@ -1,6 +1,7 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
 import geopandas as gpd
+import pandas as pd
 import pytest
 from shapely.geometry import (
     Point,
@@ -61,6 +62,19 @@ def gs():
     )
     gs = gpd.GeoSeries([g0, g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11])
     return gs
+
+
+@pytest.fixture
+def gs_sorted(gs):
+    result = pd.concat(
+        [gs[gs.type == "Point"],
+         gs[gs.type == "MultiPoint"],
+         gs[gs.type == "LineString"],
+         gs[gs.type == "MultiLineString"],
+         gs[gs.type == "Polygon"],
+         gs[gs.type == "MultiPolygon"]
+    ])
+    return result.reset_index(drop=True)
 
 
 def test_from_geoseries_complex(gs):
@@ -190,7 +204,3 @@ def test_from_geopandas_multipolygon():
     assert_eq(cugs.polygons.rings, cudf.Series([0, 2]))
 
 
-def test_to_geoseries_complex(gs):
-    cugs = cuspatial.from_geopandas(gs)
-    gpdgs = cugs.to_geopandas()
-    assert gpdgs == gs
