@@ -5,15 +5,20 @@ import pandas as pd
 
 from shapely.geometry import (
     Point,
+    MultiPoint,
     LineString,
+    MultiLineString,
+    Polygon,
+    MultiPolygon,
 )
 
 import cudf
+from cudf.core.column import ColumnBase
 
 from cuspatial.io.geoseries_reader import GeoSeriesReader
 
 
-class GeoSeries:
+class GeoSeries(ColumnBase):
     def __init__(self, data, interleaved=True):
         """
         A GPU GeoSeries object.
@@ -86,6 +91,7 @@ class GeoSeries:
         self._lines = GpuLines()
         self._lines.xy = self._reader.buffers[0]["lines"]
         self._lines.offsets = self._reader.buffers[1]["lines"]
+        self._lines.mlines = self._reader.buffers[1]["mlines"]
         self._polygons = GpuPolygons()
         self._polygons.xy = self._reader.buffers[0]["polygons"]["coords"]
         self._polygons.polys = cudf.Series(
@@ -93,6 +99,9 @@ class GeoSeries:
         )
         self._polygons.rings = cudf.Series(
             self._reader.offsets["polygons"]["rings"]
+        )
+        self._polygons.mpolys = cudf.Series(
+            self._reader.offsets["polygons"]["mpolys"]
         )
         self.types = self._reader.buffers[2]
         self.lengths = self._reader.buffers[3]
@@ -113,37 +122,18 @@ class GeoSeries:
 
         def _getitem_int(self, index):
             item_type = self._sr.types[index]
-            item_length = self._sr.lengths[index]
-            item_start = (
-                pd.Series(self._sr.types[0:index]) == item_type
-            ).sum()
-            item_end = item_length + item_start + 1
-            item_source = {
-                "p": self._sr._points,
-                "mp": self._sr._multipoints,
-                "l": self._sr._lines,
-                "ml": self._sr._lines,
-                "poly": self._sr._polygons,
-                "mpoly": self._sr._polygons,
-            }[item_type]
-            if item_type == "p" or item_type == "mp":
-                result = item_source[index]
-            else:
-                result = item_source[item_start:item_end]
             if item_type == "p":
-                return cuPoint(result)
+                return cuPoint(self._sr,  index)
             elif item_type == "mp":
-                raise NotImplementedError
+                return cuMultiPoint(self._sr, index)
             elif item_type == "l":
-                return cuLineString(
-                    result.to_array().reshape(2 * (item_start - item_end), 2)
-                )
+                return cuLineString(self._sr, index)
             elif item_type == "ml":
-                raise NotImplementedError
-            elif item_type == "p":
-                raise NotImplementedError
-            elif item_type == "mp":
-                raise NotImplementedError
+                return cuMultiLineString(self._sr, index)
+            elif item_type == "poly":
+                return cuPolygon(self._sr, index)
+            elif item_type == "mpoly":
+                return cuMultiPolygon(self._sr, index)
             else:
                 raise TypeError
 
@@ -164,31 +154,17 @@ class GeoSeries:
         """
         return self.iloc[index]
 
-    def to_geopandas(self):
-        """
-        Returns a new GeoPandas GeoSeries object from the coordinates in
-        the cuspatial GeoSeries.
-        """
-        shapely_objs = []
-        for geometry in self:
-            for point in self._points:
-                shapely_objs.append(Point(point.to_array()))
-            for line in self._lines:
-                shapely_objs.append(LineString(line))
-        return gpGeoSeries(shapely_objs)
-
     def __len__(self):
         """
         Returns the number of unique geometries stored in this cuGeoSeries.
         """
         length = (
             len(self._points.xy) / 2
-            + len(self._multipoints.offsets)
-            - 1
-            + len(self._lines.offsets)
-            - 1
-            + len(self._polygons.polys)
-            - 1
+            + len(self._multipoints.offsets) - 1
+            + len(self._lines.offsets) - 1
+            - len(self._lines.mlines) / 2
+            + len(self._polygons.polys) - 1
+            - len(self._polygons.mpolys) / 2
         )
         return int(length)
 
@@ -207,6 +183,20 @@ class GeoSeries:
     @property
     def polygons(self):
         return self._polygons
+
+    def to_pandas(self):
+        raise NotImplementedError
+
+    def to_geopandas(self):
+        """
+        Returns a new GeoPandas GeoSeries object from the coordinates in
+        the cuspatial GeoSeries.
+        """
+        output = []
+        for i in range(len(self)):
+            output.append(self[i].to_shapely())
+        return gpGeoSeries(output)
+
 
 
 class GpuPoints:
@@ -263,6 +253,9 @@ class GpuOffset(GpuPoints):
 
 
 class GpuLines(GpuOffset):
+    def __init__(self):
+        self.mlines = None
+
     def __getitem__(self, index):
         result = super().__getitem__(index)
         return result
@@ -276,25 +269,85 @@ class GpuPolygons(GpuOffset):
     def __init__(self):
         self.polys = None
         self.rings = None
+        self.mpolys = None
+
 
     def __repr__(self):
         result = ""
         result += "xy:\n" + self.xy.__repr__() + "\n"
         result += "polys:\n" + self.polys.__repr__() + "\n"
         result += "rings:\n" + self.rings.__repr__() + "\n"
+        result += "mpolys:\n" + self.mpolys.__repr__() + "\n"
         return result
 
 
 class cuGeometry:
-    def __init__(self, series):
-        self.xy = series
+    def __init__(self, source, index):
+        self.source = source
+        self.index = index
 
 
 class cuPoint(cuGeometry):
     def to_shapely(self):
-        return Point(self.xy.reset_index(drop=True))
+        return Point(self.source._points[self.index].reset_index(drop=True))
+
+
+class cuMultiPoint(cuGeometry):
+    def to_shapely(self):
+        item_type = self.source.types[self.index]
+        item_length = self.source.lengths[self.index]
+        item_start = (
+            pd.Series(self.source.types[0:self.index]) == item_type
+        ).sum()
+        item_end = item_length + item_start + 1
+        item_source = self.source._points
+        result = item_source[item_start:item_end]
+        return MultiPoint(
+            result.to_array().reshape(2 * (item_start - item_end), 2)
+        )
 
 
 class cuLineString(cuGeometry):
     def to_shapely(self):
-        return LineString(self.xy)
+        item_type = self.source.types[self.index]
+        item_length = self.source.lengths[self.index]
+        item_start = (
+            pd.Series(self.source.types[0:self.index]) == item_type
+        ).sum()
+        item_end = item_length + item_start + 1
+        item_source = self.source._lines
+        result = item_source[item_start:item_end]
+        return LineString(result.to_array().reshape(2 * (item_start - item_end), 2))
+
+
+class cuMultiLineString(cuGeometry):
+    def to_shapely(self):
+        line_indices = slice(self.source._lines.mlines[self.index]-1,
+                      self.source._lines.mlines[self.index+1]-1)
+        lines = []
+        for i in range(line_indices.start, line_indices.stop, 1):
+            line = self.source._lines[i].to_array()
+            lines.append(LineString(line.reshape(int(len(line) / 2), 2)))
+        return MultiLineString(lines)
+
+
+class cuPolygon(cuGeometry):
+    def to_shapely(self):
+        ring_start = self.source._polygons.polys[self.index]
+        ring_end = self.source._polygons.polys[self.index + 1]
+        rings = self.source._polygons.rings
+        ring_slice = slice(rings[ring_start], rings[ring_end], 1)
+        result = self.source._polygons.xy[ring_slice]
+        return Polygon(result.to_array().reshape(2 * (ring_start - ring_end), 2))
+
+class cuMultiPolygon(cuGeometry):
+    def to_shapely(self):
+        poly_indices = slice(self.source.polygons.mpolys[self.index]-1,
+                      self.source.polygons.mpolys[self.index+1]-1)
+        polys = []
+        for i in range(max(0, poly_indices.start), poly_indices.stop, 1):
+            poly = cuPolygon(self.source, i)
+            polys.append(Polygon(poly.to_shapely()))
+        return MultiPolygon(polys)
+
+

@@ -1,6 +1,7 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pytest
 from shapely.geometry import (
@@ -124,6 +125,23 @@ def assert_eq_multilinestring(p1, p2):
         assert_eq_linestring(p1[i], p2[i])
 
 
+def assert_eq_geo(geo1, geo2):
+    geo1 = to_shapely(geo1)
+    geo2 = to_shapely(geo2)
+    if type(geo1) != type(geo2):
+        assert TypeError
+    if len(geo1) != len(geo2):
+        assert ValueError
+    if isinstance(geo1, Point):
+        assert_eq_point(geo1, geo2)
+    if isinstance(geo1, MultiPoint):
+        assert_eq_multipoint(geo1, geo2)
+    if isinstance(geo1, LineString):
+        assert_eq_linestring(geo1, geo2)
+    if isinstance(geo1, MultiLineString):
+        assert_eq_multilinestring(geo1, geo2)
+
+
 def test_getitem_points():
     p0 = Point([1, 2])
     p1 = Point([3, 4])
@@ -144,3 +162,31 @@ def test_getitem_lines():
     assert_eq_linestring(cus[0], p0)
     assert_eq_linestring(cus[1], p1)
     assert_eq_linestring(cus[2], p2)
+
+
+@pytest.mark.parametrize("series_slice", list(np.arange(10)) +
+        [slice(0, 10, 1)] +
+        [slice(0, 3, 1)] +
+        [slice(3, 6, 1)] + 
+        [slice(6, 9, 1)]
+)
+def test_size(gs, series_slice):
+    geometries = gs[series_slice]
+    gi = gpd.GeoSeries(geometries)
+    cugs = cuspatial.from_geopandas(gi)
+    assert(len(gi) == len(cugs))
+    
+
+@pytest.mark.parametrize("series_slice", list(np.arange(10)) +
+        [slice(0, 10, 1)] +
+        [slice(0, 3, 1)] +
+        [slice(3, 6, 1)] + 
+        [slice(6, 9, 1)]
+)
+def test_to_shapely(gs, series_slice):
+    geometries = gs[series_slice]
+    gi = gpd.GeoSeries(geometries)
+    cugs = cuspatial.from_geopandas(gi)
+    print(gi)
+    print(cugs.to_geopandas())
+    assert_eq_geo(gi, cugs.to_geopandas())

@@ -1,6 +1,9 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+import cudf
+
 from geopandas.geoseries import GeoSeries as gpGeoSeries
+from geopandas import GeoDataFrame as gpGeoDataFrame
 
 from cuspatial.geometry.geoseries import GeoSeries
 
@@ -20,4 +23,11 @@ def from_geopandas(gpdf):
     """
     if isinstance(gpdf, gpGeoSeries):
         return from_geoseries(gpdf)
-    print(gpdf)
+    if isinstance(gpdf, gpGeoDataFrame):
+        geo_columns = gpdf.columns[gpdf.dtypes == "geometry"]
+        non_geo_columns = gpdf[gpdf.columns[gpdf.dtypes != "geometry"]]
+        gdf = cudf.from_pandas(non_geo_columns)
+        for col in geo_columns:
+            cu_series = from_geoseries(gpdf[col])
+            gdf[col] = from_geoseries(gpdf[col])
+        return gdf

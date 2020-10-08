@@ -44,7 +44,8 @@ class GeoSeriesReader:
             "points": [0],
             "multipoints": [0],
             "lines": [0],
-            "polygons": {"polygons": [0], "rings": [0]},
+            "mlines": [],
+            "polygons": {"polygons": [0], "rings": [0], "mpolys": []},
         }
         for geometry in geoseries:
             if isinstance(geometry, Point):
@@ -74,6 +75,7 @@ class GeoSeriesReader:
                 # A MultiLineString geometry is stored identically to
                 # LineString in the GpuLines structure. The index of the
                 # GeoSeries object is also stored.
+                offsets["mlines"].append(len(offsets["lines"]))
                 current = offsets["lines"][-1]
                 mls_lengths = np.array(
                     list(map(lambda x: len(x.coords) * 2, geometry))
@@ -82,6 +84,7 @@ class GeoSeriesReader:
                 offsets["lines"] = offsets["lines"] + list(
                     new_offsets.to_array()
                 )
+                offsets["mlines"].append(len(offsets["lines"]))
             elif isinstance(geometry, Polygon):
                 # A Polygon geometry is stored like a LineString and also
                 # contains a buffer of sizes for each inner ring.
@@ -99,6 +102,8 @@ class GeoSeriesReader:
                 current = offsets["polygons"]["polygons"][-1]
                 offsets["polygons"]["polygons"].append(num_rings + current)
             elif isinstance(geometry, MultiPolygon):
+                current = offsets["polygons"]["polygons"][-1]
+                offsets["polygons"]["mpolys"].append(len(offsets["polygons"]["polygons"]))
                 for poly in geometry:
                     current = offsets["polygons"]["polygons"][-1]
                     num_rings = 1
@@ -113,6 +118,7 @@ class GeoSeriesReader:
                         )
                         num_rings = num_rings + 1
                     offsets["polygons"]["polygons"].append(num_rings + current)
+                offsets["polygons"]["mpolys"].append(len(offsets["polygons"]["polygons"]))
         return offsets
 
     def _read_geometries(self, geoseries, offsets):
