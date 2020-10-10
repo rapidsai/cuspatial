@@ -50,6 +50,8 @@ convert_table_for_return(JNIEnv *env, std::unique_ptr<cudf::table> &table_result
   return outcol_handles.get_jArray();
 }
 
+namespace {
+
 jlongArray convert_table_for_return(JNIEnv *env, std::unique_ptr<cudf::table> &table_result) {
   std::vector<std::unique_ptr<cudf::column>> extra;
   return convert_table_for_return(env, table_result, extra);
@@ -63,6 +65,8 @@ jlongArray convert_columns_for_return(JNIEnv *env, std::vector<std::unique_ptr<c
   }
   return outcol_handles.get_jArray();
 }
+
+} // anonymous namespace
 
 extern "C" {
 

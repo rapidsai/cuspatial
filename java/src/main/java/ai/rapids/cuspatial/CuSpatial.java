@@ -85,13 +85,13 @@ public final class CuSpatial {
    * @param x coordinates (in kilometers)
    * @param y coordinates (in kilometers)
    * @param timestamp column of timestamps in any resolution
-   * NOTE: Default `device_memory_resource` is used for allocating the output table
+   * NOTE: Default `device_memory_resource` is used for allocating the output
    *
-   * @throw cuspatial::logic_error If object_id isn't cudf::type_id::INT32
-   * @throw cuspatial::logic_error If x and y are different types
-   * @throw cuspatial::logic_error If timestamp isn't a cudf::TIMESTAMP type
-   * @throw cuspatial::logic_error If object_id, x, y, or timestamp contain nulls
-   * @throw cuspatial::logic_error If object_id, x, y, and timestamp are different
+   * @throws CuSpatialException containing cuspatial::logic_error If objectId isn't cudf::type_id::INT32
+   * @throws CuSpatialException containing cuspatial::logic_error If x and y are different types
+   * @throws CuSpatialException containing cuspatial::logic_error If timestamp isn't a cudf::TIMESTAMP type
+   * @throws CuSpatialException containing cuspatial::logic_error If objectId, x, y, or timestamp contain nulls
+   * @throws CuSpatialException containing cuspatial::logic_error If objectId, x, y, and timestamp are different
    * sizes
    *
    * @return a Pair<ai.rapids.cudf.Table, ai.rapids.cudf.ColumnVector>.
@@ -105,16 +105,103 @@ public final class CuSpatial {
     return new Pair<>(new Table(tableColumns), new ColumnVector(indexColumn));
   }
 
+  /**
+   * Compute the distance and speed of objects in a trajectory. Groups the
+   * timestamp, x, and y, columns by object id to determine unique trajectories,
+   * then computes the average distance and speed for all routes in each
+   * trajectory.
+   * NOTE: Assumes objectId, timestamp, x, y presorted by (objectId, timestamp).
+   *
+   * @param numTrajectories number of trajectories (unique object ids)
+   * @param objectId column of object (e.g., vehicle) ids
+   * @param x coordinates (in kilometers)
+   * @param y coordinates (in kilometers)
+   * @param timestamp column of timestamps in any resolution
+   * NOTE: Default `device_memory_resource` is used for allocating the output table
+   *
+   * @throws CuSpatialException containing cuspatial::logic_error If objectId isn't cudf::type_id::INT32
+   * @throws CuSpatialException containing cuspatial::logic_error If x and y are different types
+   * @throws CuSpatialException containing cuspatial::logic_error If timestamp isn't a cudf::TIMESTAMP type
+   * @throws CuSpatialException containing cuspatial::logic_error If objectId, x, y, or timestamp contain nulls
+   * @throws CuSpatialException containing cuspatial::logic_error If objectId, x, y, and timestamp are different
+   * sizes
+   *
+   * @return a table of distances (meters) and speeds (meters/second) whose
+   * length is `numTrajectories`, sorted by objectId.
+   */
   public static Table trajectoryDistancesAndSpeeds(int numTrajectories, ColumnVector objectId, ColumnVector x, ColumnVector y, ColumnVector timestamp) {
     long[] columnAddressArray = trajectoryDistancesAndSpeedsImpl(numTrajectories, objectId.getNativeView(), x.getNativeView(), y.getNativeView(), timestamp.getNativeView());
     return new Table(columnAddressArray);
   }
 
+  /**
+   * Compute the spatial bounding boxes of trajectories. Groups the x, y,
+   * and timestamp columns by object id to determine unique trajectories, then
+   * computes the minimum bounding box to contain all routes in each trajectory.
+   *
+   * NOTE: Assumes objectId, timestamp, x, y presorted by (objectId, timestamp).
+   *
+   * @param numTrajectories number of trajectories (unique object ids)
+   * @param objectId column of object (e.g., vehicle) ids
+   * @param x coordinates (in kilometers)
+   * @param y coordinates (in kilometers)
+   * NOTE: Default `device_memory_resource` is used for allocating the output table
+   *
+   * @throws CuSpatialException containing cuspatial::logic_error If objectId isn't cudf::type_id::INT32
+   * @throws CuSpatialException containing cuspatial::logic_error If x and y are different types
+   * @throws CuSpatialException containing cuspatial::logic_error If objectId, x, or y contain nulls
+   * @throws CuSpatialException containing cuspatial::logic_error If objectId, x, and y are different sizes
+   *
+   * @return a table of bounding boxes with length `numTrajectories` and
+   * four columns:
+   * xMin - the minimum x-coordinate of each bounding box in kilometers
+   * yMin - the minimum y-coordinate of each bounding box in kilometers
+   * xMax - the maximum x-coordinate of each bounding box in kilometers
+   * yMax - the maximum y-coordinate of each bounding box in kilometers
+   */
   public static Table trajectoryBoundingBoxes(int numTrajectories, ColumnVector objectId, ColumnVector x, ColumnVector y) {
     long[] columnAddressArray = trajectoryBoundingBoxesImpl(numTrajectories, objectId.getNativeView(), x.getNativeView(), y.getNativeView());
     return new Table(columnAddressArray);
   }
 
+  /**
+   * Tests whether the specified points are inside any of the specified polygons.
+   *
+   * Tests whether points are inside at most 31 polygons. Polygons are a collection of one or more
+   * rings. Rings are a collection of three or more vertices.
+   *
+   * @param testPointsX:     x-coordinates of points to test
+   * @param testPointsY:     y-coordinates of points to test
+   * @param polyOffsets:      beginning index of the first ring in each polygon
+   * @param polyRingOffsets: beginning index of the first point in each ring
+   * @param polyPointsX:     x-coordinates of polygon points
+   * @param polyPointsY:     y-coordinates of polygon points
+   *
+   * @return A column of INT32 containing one element per input point. Each bit (except the sign bit)
+   * represents a hit or miss for each of the input polygons in least-significant-bit order. i.e.
+   * `output[3] & 0b0010` indicates a hit or miss for the 3rd point against the 2nd polygon.
+   *
+   * NOTE: Limit 31 polygons per call. Polygons may contain multiple rings.
+   *
+   * NOTE: Direction of rings does not matter.
+   *
+   * NOTE: This algorithm supports the ESRI shapefile format, but assumes all polygons are "clean" (as
+   * defined by the format), and does _not_ verify whether the input adheres to the shapefile format.
+   *
+   * NOTE: Overlapping rings negate each other. This behavior is not limited to a single negation,
+   * allowing for "islands" within the same polygon.
+   *
+   *   poly w/two rings         poly w/four rings
+   * +-----------+          +------------------------+
+   * :███████████:          :████████████████████████:
+   * :███████████:          :██+------------------+██:
+   * :██████+----:------+   :██:  +----+  +----+  :██:
+   * :██████:    :██████:   :██:  :████:  :████:  :██:
+   * +------;----+██████:   :██:  :----:  :----:  :██:
+   *        :███████████:   :██+------------------+██:
+   *        :███████████:   :████████████████████████:
+   *        +-----------+   +------------------------+
+   */
   public static ColumnVector pointInPolygon(ColumnVector testPointsX, ColumnVector testPointsY,
                                             ColumnVector polyOffsets, ColumnVector polyRingOffsets,
                                             ColumnVector polyPointsX, ColumnVector polyPointsY) {
@@ -123,6 +210,16 @@ public final class CuSpatial {
                                                polyPointsX.getNativeView(), polyPointsY.getNativeView()));
   }
 
+  /**
+   * Translates lon/lat relative to origin and converts to cartesian (x/y) coordinates.
+   *
+   * @param originLon: longitude of origin
+   * @param originLat: latitude of origin
+   * @param inputLon: longitudes to transform
+   * @param inputLat: latitudes to transform
+   *
+   * @return a pair of columns containing cartesian coordinates in kilometers
+   */
   public static Pair<ColumnVector, ColumnVector> lonlatToCartesian(double originLon, double originLat, ColumnVector inputLon, ColumnVector inputLat) {
     long[] columnAddressArray = lonlatToCartesianImpl(originLon, originLat, inputLon.getNativeView(), inputLat.getNativeView());
     long left = columnAddressArray[0];

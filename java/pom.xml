@@ -21,7 +21,7 @@
 
     <groupId>ai.rapids</groupId>
     <artifactId>cuspatial</artifactId>
-    <version>0.15-SNAPSHOT</version>
+    <version>0.16-SNAPSHOT</version>
 
     <name>cuspatialjni</name>
     <description>
@@ -348,21 +348,6 @@
                             def proc = 'ldd ${native.build.path}/libcuspatialjni.so'.execute()
                             proc.consumeProcessOutput(sout, serr)
                             proc.waitForOrKill(10000)
-                            //def librp = ~/librmm\\.so\\s+=>\\s+(.*)librmm.*\\.so\\s+.*/
-                            //def m = librp.matcher(sout)
-                            //if (m.find()) {
-                            //    pom.properties['native.deps.path'] = m.group(1)
-                            //} else {
-                            //    fail("Could not find rmm as a dependency of libcuspatialjni out> $sout err> $serr")
-                            //}
-
-                            //def libcudf = ~/libcudf\\.so\\s+=>\\s+(.*)libcudf.*\\.so\\s+.*/
-                            //def cudfm = libcudf.matcher(sout)
-                            //if (cudfm.find()) {
-                            //    pom.properties['native.cudf.path'] = cudfm.group(1)
-                            //} else {
-                            //    fail("Could not find cudf as a dependency of cuspatial out> $sout err> $serr")
-                            //}
 
                             def libcuspatial = ~/libcuspatial\\.so\\s+=>\\s+(.*)libcuspatial.*\\.so\\s+.*/
                             def cuspatialm = libcuspatial.matcher(sout)
