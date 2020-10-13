@@ -32,7 +32,7 @@ NOTE:
 
 ### 2. librmm
 
-Export `RMM_HOME=${pwd}/rmm` and git clone source into `$RMM_HOME`. 
+`export RMM_HOME=${pwd}/rmm` and `git clone` source into `$RMM_HOME`. 
 Follow instructions on this page:
 `https://github.com/rapidsai/rmm`, section `Script to build RMM from source`
 
