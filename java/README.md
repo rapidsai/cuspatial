@@ -45,7 +45,7 @@ NOTE:
 2. The destination is conda env `cudf_dev`.
 
 ### 3. libcuspatial
-Follow instructions on this page for libcuspatial: https://github.com/rapidsai/cuspatial
+Follow the instructions on this page for libcuspatial: https://github.com/rapidsai/cuspatial
 ```xml
 $ cd ${CUSPATIAL_HOME}/
 $ ./build.sh libcuspatial tests
