@@ -19,7 +19,7 @@ $ cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_CXX11_ABI=ON -DARROW_STA
 ```
 Make sure to `make install` after `make`. DO NOT use the `build.sh` script to build `libcudf.so`
 
-1.2) Follow instructions in `${CUDF_HOME}/java/README.md` to build and install cudf product JAR and test JAR
+1.2) Follow the instructions in `${CUDF_HOME}/java/README.md` to build and install cuDF product JAR and test JAR
 ```xml 
 $ cd ${CUDF_HOME}/java 
 $ mvn clean install
