@@ -2,7 +2,7 @@
 
 This project is a Java layer bridging Java user and libcuspatial.so 
 
-Need local build and install of librmm, libcudf and cudf-java, and libcuspatial
+Follow these instructions to create local builds and installation of librmm, libcudf and cudf-java, and libcuspatial
 
 ## Build and Install Dependencies:
 ### 1. libcudf and cudf-java
