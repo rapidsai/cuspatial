@@ -28,7 +28,7 @@ NOTE:
 1. Following above steps you will have conda env `cudf_dev` which is required for subsequent builds. 
 2. libcudf.so will be installed under conda env `cudf_dev`.
 3. libcudfJni.so will be built by maven pom.
-4. cudf JARs will be installed to maven local.
+4. cuDF JARs will be installed to maven local.
 
 ### 2. librmm
 
