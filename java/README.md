@@ -1,4 +1,4 @@
-# Java Binding for Cuspatial
+# Java Bindings for Cuspatial
 
 This project is a Java layer bridging Java user and libcuspatial.so 
 
@@ -61,4 +61,3 @@ $ mvn clean install
 NOTE: 
 1. cuspatialJni.so will be built by maven pom.
 2. Unit tests of Cuspatial-java will run during the JAR build.
-
