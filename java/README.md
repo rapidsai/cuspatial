@@ -8,7 +8,7 @@ Need local build and install of librmm, libcudf and cudf-java, and libcuspatial
 ### 1. libcudf and cudf-java
 1.1) Follow instructions on this page for libcudf:
 `https://github.com/rapidsai/cudf/blob/branch-0.11/CONTRIBUTING.md#script-to-build-cudf-from-source`,
-BUT append two more cmake config flags `-DARROW_STATIC_LIB=ON -DBoost_USE_STATIC_LIBS=ON`,
+but append two more cmake config flags `-DARROW_STATIC_LIB=ON -DBoost_USE_STATIC_LIBS=ON`,
 changing
 ```xml 
 $ cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_CXX11_ABI=ON
