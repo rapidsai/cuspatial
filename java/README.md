@@ -17,7 +17,7 @@ to
 ```xml
 $ cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_CXX11_ABI=ON -DARROW_STATIC_LIB=ON -DBoost_USE_STATIC_LIBS=ON
 ```
-Make sure to install after make. DO NOT use the build.sh script to build libcudf.so
+Make sure to `make install` after `make`. DO NOT use the `build.sh` script to build `libcudf.so`
 
 1.2) Follow instructions in `${CUDF_HOME}/java/README.md` to build and install cudf product JAR and test JAR
 ```xml 
