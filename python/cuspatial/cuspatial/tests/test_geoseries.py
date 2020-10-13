@@ -84,6 +84,8 @@ def gs_sorted(gs):
 
 
 def to_shapely(obj):
+    if isinstance(obj, gpd.GeoSeries) and len(obj) == 1:
+        return obj[0]
     if isinstance(obj, (cuPoint, cuLineString)):
         return obj.to_shapely()
     return obj
@@ -98,6 +100,7 @@ def assert_eq_point(p1, p2):
     assert p1.has_z == p2.has_z
     if p1.has_z:
         assert p1.z == p2.z
+    assert True
 
 
 def assert_eq_multipoint(p1, p2):
@@ -125,21 +128,39 @@ def assert_eq_multilinestring(p1, p2):
         assert_eq_linestring(p1[i], p2[i])
 
 
+def assert_eq_polygon(p1, p2):
+    p1 = to_shapely(p1)
+    p2 = to_shapely(p2)
+    if not p1.equals(p2):
+        raise ValueError
+
+
+def assert_eq_multipolygon(p1, p2):
+    p1 = to_shapely(p1)
+    p2 = to_shapely(p2)
+    if not p1.equals(p2):
+        raise ValueError
+
+
 def assert_eq_geo(geo1, geo2):
     geo1 = to_shapely(geo1)
     geo2 = to_shapely(geo2)
     if type(geo1) != type(geo2):
         assert TypeError
-    if len(geo1) != len(geo2):
-        assert ValueError
     if isinstance(geo1, Point):
         assert_eq_point(geo1, geo2)
-    if isinstance(geo1, MultiPoint):
+    elif isinstance(geo1, MultiPoint):
         assert_eq_multipoint(geo1, geo2)
-    if isinstance(geo1, LineString):
+    elif isinstance(geo1, LineString):
         assert_eq_linestring(geo1, geo2)
-    if isinstance(geo1, MultiLineString):
+    elif isinstance(geo1, MultiLineString):
         assert_eq_multilinestring(geo1, geo2)
+    elif isinstance(geo1, Polygon):
+        assert_eq_polygon(geo1, geo2)
+    elif isinstance(geo1, MultiPolygon):
+        assert_eq_multipolygon(geo1, geo2)
+    else:
+        raise TypeError
 
 
 def test_getitem_points():
@@ -187,6 +208,4 @@ def test_to_shapely(gs, series_slice):
     geometries = gs[series_slice]
     gi = gpd.GeoSeries(geometries)
     cugs = cuspatial.from_geopandas(gi)
-    print(gi)
-    print(cugs.to_geopandas())
     assert_eq_geo(gi, cugs.to_geopandas())

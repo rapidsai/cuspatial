@@ -123,7 +123,7 @@ class GeoSeries(ColumnBase):
         def _getitem_int(self, index):
             item_type = self._sr.types[index]
             if item_type == "p":
-                return cuPoint(self._sr,  index)
+                return cuPoint(self._sr, index)
             elif item_type == "mp":
                 return cuMultiPoint(self._sr, index)
             elif item_type == "l":
@@ -160,10 +160,13 @@ class GeoSeries(ColumnBase):
         """
         length = (
             len(self._points.xy) / 2
-            + len(self._multipoints.offsets) - 1
-            + len(self._lines.offsets) - 1
+            + len(self._multipoints.offsets)
+            - 1
+            + len(self._lines.offsets)
+            - 1
             - len(self._lines.mlines) / 2
-            + len(self._polygons.polys) - 1
+            + len(self._polygons.polys)
+            - 1
             - len(self._polygons.mpolys) / 2
         )
         return int(length)
@@ -197,6 +200,13 @@ class GeoSeries(ColumnBase):
             output.append(self[i].to_shapely())
         return gpGeoSeries(output)
 
+    def __repr__(self):
+        return (
+            self.points.__repr__()
+            + self.multipoints.__repr__()
+            + self.lines.__repr__()
+            + self.polygons.__repr__()
+        )
 
 
 class GpuPoints:
@@ -221,6 +231,9 @@ class GpuPoints:
             new_index = slice(index.start * 2, index.stop * 2 + 1, index.step)
             return self.xy.iloc[new_index]
         return self.xy.iloc[(index * 2) : (index * 2) + 2]
+
+    def __repr__(self):
+        return "xy: " + self.xy.__repr__()
 
 
 class GpuOffset(GpuPoints):
@@ -251,6 +264,11 @@ class GpuOffset(GpuPoints):
         result = self.xy[new_slice]
         return result
 
+    def __repr__(self):
+        return (
+            super().__repr__() + "offsets: " + self.offsets.__repr__() + "\n"
+        )
+
 
 class GpuLines(GpuOffset):
     def __init__(self):
@@ -262,7 +280,8 @@ class GpuLines(GpuOffset):
 
 
 class GpuMultiPoints(GpuOffset):
-    pass
+    def __init__(self):
+        pass
 
 
 class GpuPolygons(GpuOffset):
@@ -270,7 +289,6 @@ class GpuPolygons(GpuOffset):
         self.polys = None
         self.rings = None
         self.mpolys = None
-
 
     def __repr__(self):
         result = ""
@@ -289,7 +307,11 @@ class cuGeometry:
 
 class cuPoint(cuGeometry):
     def to_shapely(self):
-        return Point(self.source._points[self.index].reset_index(drop=True))
+        item_type = self.source.types[self.index]
+        index = (
+            pd.Series(self.source.types[0 : self.index]) == item_type
+        ).sum()
+        return Point(self.source._points[index].reset_index(drop=True))
 
 
 class cuMultiPoint(cuGeometry):
@@ -297,10 +319,10 @@ class cuMultiPoint(cuGeometry):
         item_type = self.source.types[self.index]
         item_length = self.source.lengths[self.index]
         item_start = (
-            pd.Series(self.source.types[0:self.index]) == item_type
+            pd.Series(self.source.types[0 : self.index]) == item_type
         ).sum()
         item_end = item_length + item_start + 1
-        item_source = self.source._points
+        item_source = self.source._multipoints
         result = item_source[item_start:item_end]
         return MultiPoint(
             result.to_array().reshape(2 * (item_start - item_end), 2)
@@ -312,18 +334,22 @@ class cuLineString(cuGeometry):
         item_type = self.source.types[self.index]
         item_length = self.source.lengths[self.index]
         item_start = (
-            pd.Series(self.source.types[0:self.index]) == item_type
+            pd.Series(self.source.types[0 : self.index]) == item_type
         ).sum()
         item_end = item_length + item_start + 1
         item_source = self.source._lines
         result = item_source[item_start:item_end]
-        return LineString(result.to_array().reshape(2 * (item_start - item_end), 2))
+        return LineString(
+            result.to_array().reshape(2 * (item_start - item_end), 2)
+        )
 
 
 class cuMultiLineString(cuGeometry):
     def to_shapely(self):
-        line_indices = slice(self.source._lines.mlines[self.index]-1,
-                      self.source._lines.mlines[self.index+1]-1)
+        line_indices = slice(
+            self.source._lines.mlines[self.index] - 1,
+            self.source._lines.mlines[self.index + 1] - 1,
+        )
         lines = []
         for i in range(line_indices.start, line_indices.stop, 1):
             line = self.source._lines[i].to_array()
@@ -338,16 +364,19 @@ class cuPolygon(cuGeometry):
         rings = self.source._polygons.rings
         ring_slice = slice(rings[ring_start], rings[ring_end], 1)
         result = self.source._polygons.xy[ring_slice]
-        return Polygon(result.to_array().reshape(2 * (ring_start - ring_end), 2))
+        return Polygon(
+            result.to_array().reshape(2 * (ring_start - ring_end), 2)
+        )
+
 
 class cuMultiPolygon(cuGeometry):
     def to_shapely(self):
-        poly_indices = slice(self.source.polygons.mpolys[self.index]-1,
-                      self.source.polygons.mpolys[self.index+1]-1)
+        poly_indices = slice(
+            self.source.polygons.mpolys[self.index] - 1,
+            self.source.polygons.mpolys[self.index + 1] - 1,
+        )
         polys = []
         for i in range(max(0, poly_indices.start), poly_indices.stop, 1):
             poly = cuPolygon(self.source, i)
             polys.append(Polygon(poly.to_shapely()))
         return MultiPolygon(polys)
-
-
