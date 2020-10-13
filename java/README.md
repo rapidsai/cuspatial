@@ -30,7 +30,7 @@ NOTE:
 3. libcudfJni.so will be built by maven pom.
 4. cuDF JARs will be installed to maven local.
 
-### 2. librmm
+### 2. librmm (header-only)
 
 `export RMM_HOME=${pwd}/rmm` and `git clone` source into `$RMM_HOME`. 
 Follow instructions on this page:
