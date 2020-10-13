@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2020, NVIDIA CORPORATION.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ai.rapids</groupId>
+    <artifactId>cuspatial</artifactId>
+    <version>0.16-SNAPSHOT</version>
+
+    <name>cuspatialjni</name>
+    <description>
+        This project provides java bindings for cuspatial, to be able to process large amounts of data on a GPU.
+    </description>
+    <url>http://ai.rapids</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
+    <scm>
+        <connection>scm:git:https://github.com/rapidsai/cuspatial.git</connection>
+        <developerConnection>scm:git:git@github.com:rapidsai/cuspatial.git</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/rapidsai/cuspatial</url>
+    </scm>
+    <developers>
+        <developer>
+            <id>byin</id>
+            <name>Beixing Yin</name>
+            <email>byin@nvidia.com</email>
+            <roles>
+                <role>Committer</role>
+            </roles>
+            <timezone>-8</timezone>
+        </developer>
+    </developers>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <junit.version>5.4.2</junit.version>
+        <ai.rapids.refcount.debug>false</ai.rapids.refcount.debug>
+        <native.build.path>${basedir}/target/cmake-build</native.build.path>
+        <skipNativeCopy>false</skipNativeCopy>
+        <cxx11.abi.value>ON</cxx11.abi.value>
+        <cxx.flags/>
+        <CUDA_STATIC_RUNTIME>OFF</CUDA_STATIC_RUNTIME>
+        <PER_THREAD_DEFAULT_STREAM>OFF</PER_THREAD_DEFAULT_STREAM>
+        <cudf.classifier.cuda>cuda10-2</cudf.classifier.cuda>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>ai.rapids</groupId>
+            <artifactId>cudf</artifactId>
+            <classifier>${cudf.classifier.cuda}</classifier>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ai.rapids</groupId>
+            <artifactId>cudf</artifactId>
+            <classifier>tests</classifier>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.9</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.9</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>2.25.0</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>abiOff</id>
+            <properties>
+                <cxx11.abi.value>OFF</cxx11.abi.value>
+            </properties>
+        </profile>
+        <profile>
+            <id>no-cxx-deprecation-warnings</id>
+            <properties>
+                <cxx.flags>-Wno-deprecated-declarations</cxx.flags>
+            </properties>
+        </profile>
+        <profile>
+            <id>release</id>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>ossrh</id>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                </snapshotRepository>
+            </distributionManagement>
+            <properties>
+                <gpg.passphrase>${GPG_PASSPHRASE}</gpg.passphrase>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.2.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.9.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <additionalparam>-Xdoclint:none</additionalparam>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.5</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.7</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                        </configuration>
+                        </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <resources>
+            <resource>
+              <!-- Include the properties file to provide the build information. -->
+              <directory>${project.build.directory}/extra-resources</directory>
+              <filtering>true</filtering>
+            </resource>
+            <resource>
+              <directory>${basedir}/..</directory>
+              <targetPath>META-INF</targetPath>
+              <includes>
+                <include>LICENSE</include>
+              </includes>
+            </resource>
+            <resource>
+              <directory>${basedir}</directory>
+              <targetPath>META-INF</targetPath>
+              <includes>
+                <include>LICENSE-bundled</include>
+              </includes>
+            </resource>
+            <resource>
+                <directory>${basedir}/target/native-deps/</directory>
+            </resource>
+        </resources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.gmaven</groupId>
+                    <artifactId>gmaven-plugin</artifactId>
+                    <version>1.5</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-exec-plugin</artifactId>
+                    <version>1.6.0</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>3.1.0</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <!-- downgrade version so symlinks are followed -->
+                    <version>2.6</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.0</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.22.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.junit.platform</groupId>
+                            <artifactId>junit-platform-surefire-provider</artifactId>
+                            <version>1.2.0</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.junit.jupiter</groupId>
+                            <artifactId>junit-jupiter-engine</artifactId>
+                            <version>5.2.0</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>2.22.0</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.0.2</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>2.5.2</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>2.8.2</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>3.7.1</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-project-info-reports-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>cmake</id>
+                        <phase>validate</phase>
+                        <configuration>
+                            <tasks>
+                                <mkdir dir="${native.build.path}"/>
+                                <exec dir="${native.build.path}"
+                                      failonerror="true"
+                                      executable="cmake">
+                                    <arg value="${basedir}/src/main/native"/>
+                                    <arg value="-DCUDA_STATIC_RUNTIME=${CUDA_STATIC_RUNTIME}" />
+                                    <arg value="-DPER_THREAD_DEFAULT_STREAM=${PER_THREAD_DEFAULT_STREAM}" />
+                                    <arg value="-DCMAKE_CXX11_ABI=${cxx11.abi.value}"/>
+                                    <arg value="-DCMAKE_CXX_FLAGS=${cxx.flags}"/>
+                                </exec>
+                                <exec dir="${native.build.path}"
+                                      failonerror="true"
+                                      executable="make">
+                                    <arg value="-j16"/>
+                                </exec>
+                                <mkdir dir="${project.build.directory}/extra-resources"/>
+                                <exec executable="bash" output="${project.build.directory}/extra-resources/cuspatial-java-version-info.properties">
+                                  <arg value="${project.basedir}/buildscripts/build-info"/>
+                                  <arg value="${project.version}"/>
+                                </exec>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.gmaven</groupId>
+                <artifactId>gmaven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>setproperty</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>execute</goal>
+                        </goals>
+                        <configuration>
+                            <source>
+                            def sout = new StringBuffer(), serr = new StringBuffer()
+                            //This only works on linux
+                            def proc = 'ldd ${native.build.path}/libcuspatialjni.so'.execute()
+                            proc.consumeProcessOutput(sout, serr)
+                            proc.waitForOrKill(10000)
+
+                            def libcuspatial = ~/libcuspatial\\.so\\s+=>\\s+(.*)libcuspatial.*\\.so\\s+.*/
+                            def cuspatialm = libcuspatial.matcher(sout)
+                            if (cuspatialm.find()) {
+                                pom.properties['native.cuspatial.path'] = cuspatialm.group(1)
+                            } else {
+                                fail("Could not find cuspatial as a dependency of libcuspatialjni out> $sout err> $serr")
+                            }
+
+                            def libcudart = ~/libcudart\\.so\\.(.*)\\s+=>.*/
+                            def cm = libcudart.matcher(sout)
+                            if (cm.find()) {
+                                if (pom.properties['CUDA_STATIC_RUNTIME'] == 'ON') {
+                                    fail("found libcudart when we expect to be statically linked to it")
+                                }
+                                def classifier = 'cuda' + cm.group(1)
+                                  .replaceFirst(/\\./, '-') // First . becomes a -
+                                  .replaceAll(/\\..*$/, '') // Drop all of the subversions from cuda
+                                  .replaceAll(/-0$/, '') // If it is a X.0 version, like 10.0 drop the .0
+                                pom.properties['cuda.classifier'] = classifier
+                                println 'WARNING FOUND libcudart this means your jar will only work against a single version of the cuda runtime ' + classifier
+                            } else if (pom.properties['CUDA_STATIC_RUNTIME'] == 'OFF') {
+                                fail('could not find libcudart when we expect to be dynamically linked to it')
+                            } else {
+                                pom.properties['cuda.classifier'] = ''
+                            }
+
+                            if (pom.properties['CUDA_STATIC_RUNTIME'] == 'ON') {
+                                println 'WARNING RUNNING WITH STATIC LINKING DOES NOT FULLY WORK. USE WITH CAUTION.'
+                            }
+                            </source>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <!--Set by groovy script-->
+                    <classifier>${cuda.classifier}</classifier>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                  <!-- you can turn this off, by passing -DtrimStackTrace=true when running tests -->
+                  <trimStackTrace>false</trimStackTrace>
+                  <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                  <systemPropertyVariables>
+                    <ai.rapids.refcount.debug>${ai.rapids.refcount.debug}</ai.rapids.refcount.debug>
+                  </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-native-libs</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <overwrite>true</overwrite>
+                            <skip>${skipNativeCopy}</skip>
+                            <outputDirectory>${basedir}/target/native-deps/${os.arch}/${os.name}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${native.build.path}</directory>
+                                    <includes>
+                                        <include>libcuspatialjni.so</include>
+                                    </includes>
+                                </resource>
+                                <resource>
+                                    <!--Set by groovy script-->
+                                    <directory>${native.cuspatial.path}</directory>
+                                    <includes>
+                                        <include>libcuspatial.so</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
