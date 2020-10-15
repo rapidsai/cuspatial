@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #=============================================================================
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+
+cmake_minimum_required(VERSION 3.12...3.17 FATAL_ERROR)
 
 project(CUDA_SPATIAL VERSION 0.17.0 LANGUAGES C CXX CUDA)
 
