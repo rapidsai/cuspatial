@@ -2,6 +2,7 @@
 
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 import pandas as pd
+import numpy as np
 
 from shapely.geometry import (
     Point,
@@ -105,6 +106,7 @@ class GeoSeries(ColumnBase):
         )
         self.types = self._reader.buffers[2]
         self.lengths = self._reader.buffers[3]
+        self.index = cudf.Series(np.arange(len(self)))
 
     class GeoSeriesLocIndexer:
         def __init__(self):
@@ -198,14 +200,19 @@ class GeoSeries(ColumnBase):
         output = []
         for i in range(len(self)):
             output.append(self[i].to_shapely())
-        return gpGeoSeries(output)
+        return gpGeoSeries(output, index=self.index.to_array())
 
     def __repr__(self):
         return (
-            self.points.__repr__()
+            "POINTS" + "\n"
+            + self.points.__repr__()
+            + "MULTIPOINTS" + "\n"
             + self.multipoints.__repr__()
+            + "LINES" + "\n"
             + self.lines.__repr__()
+            + "POLYGONS" + "\n"
             + self.polygons.__repr__()
+            + "\n"
         )
 
 
@@ -266,7 +273,7 @@ class GpuOffset(GpuPoints):
 
     def __repr__(self):
         return (
-            super().__repr__() + "offsets: " + self.offsets.__repr__() + "\n"
+            super().__repr__() + "\noffsets: " + self.offsets.__repr__() + "\n"
         )
 
 
@@ -277,6 +284,11 @@ class GpuLines(GpuOffset):
     def __getitem__(self, index):
         result = super().__getitem__(index)
         return result
+
+    def __repr__(self):
+        return (
+            super().__repr__() + "\nmlines: " + self.mlines.__repr__() + "\n"
+        )
 
 
 class GpuMultiPoints(GpuOffset):
@@ -321,7 +333,7 @@ class cuMultiPoint(cuGeometry):
         item_start = (
             pd.Series(self.source.types[0 : self.index]) == item_type
         ).sum()
-        item_end = item_length + item_start + 1
+        item_end = item_length + item_start
         item_source = self.source._multipoints
         result = item_source[item_start:item_end]
         return MultiPoint(
@@ -331,11 +343,11 @@ class cuMultiPoint(cuGeometry):
 
 class cuLineString(cuGeometry):
     def to_shapely(self):
-        item_type = self.source.types[self.index]
+        preceding_types = pd.Series(self.source.types[0 : self.index])
+        preceding_multis = (preceding_types == 'ml').sum()
+        multi_end = self.source._lines.mlines[preceding_multis * 2 - 1] - 1 if preceding_multis > 0 else 0
+        item_start = multi_end + (pd.Series(self.source.types[multi_end : self.index]) == 'l').sum()
         item_length = self.source.lengths[self.index]
-        item_start = (
-            pd.Series(self.source.types[0 : self.index]) == item_type
-        ).sum()
         item_end = item_length + item_start + 1
         item_source = self.source._lines
         result = item_source[item_start:item_end]
@@ -346,9 +358,14 @@ class cuLineString(cuGeometry):
 
 class cuMultiLineString(cuGeometry):
     def to_shapely(self):
+        item_type = self.source.types[self.index]
+        item_length = self.source.lengths[self.index]
+        index = (
+            pd.Series(self.source.types[0 : self.index]) == item_type
+        ).sum()
         line_indices = slice(
-            self.source._lines.mlines[self.index] - 1,
-            self.source._lines.mlines[self.index + 1] - 1,
+            self.source._lines.mlines[index * 2] - 1,
+            self.source._lines.mlines[index * 2 + 1] - 1,
         )
         lines = []
         for i in range(line_indices.start, line_indices.stop, 1):
@@ -359,24 +376,51 @@ class cuMultiLineString(cuGeometry):
 
 class cuPolygon(cuGeometry):
     def to_shapely(self):
-        ring_start = self.source._polygons.polys[self.index]
-        ring_end = self.source._polygons.polys[self.index + 1]
+        preceding_types = pd.Series(self.source.types[0 : self.index])
+        preceding_multis = (preceding_types == 'mpoly').sum()
+        multi_end = self.source._lines.mlines[preceding_multis * 2 - 1] - 1 if preceding_multis > 0 else 0
+        index = multi_end + (pd.Series(self.source.types[self.source._polygons.polys[multi_end] : self.index]) == 'poly').sum()
+        index = 0 if index < 0 else index
+        ring_start = self.source._polygons.polys[index]
+        ring_end = self.source._polygons.polys[index + 1]
         rings = self.source._polygons.rings
-        ring_slice = slice(rings[ring_start], rings[ring_end], 1)
-        result = self.source._polygons.xy[ring_slice]
+        exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
+        exterior = self.source._polygons.xy[exterior_slice]
+        interiors = []
+        for interior in range(ring_end - (ring_start+1)) + (ring_start + 1):
+            interior_slice = slice(rings[interior], rings[interior + 1])
+            interiors.append(self.source._polygons.xy[interior_slice].
+                    to_array().reshape(int((rings[interior + 1] - rings[interior]) / 2), 2))
         return Polygon(
-            result.to_array().reshape(2 * (ring_start - ring_end), 2)
+            exterior.to_array().reshape(2 * (ring_start - ring_end), 2),
+            interiors
         )
 
 
 class cuMultiPolygon(cuGeometry):
     def to_shapely(self):
+        item_type = self.source.types[self.index]
+        index = (
+            pd.Series(self.source.types[0 : self.index]) == item_type
+        ).sum()
         poly_indices = slice(
-            self.source.polygons.mpolys[self.index] - 1,
-            self.source.polygons.mpolys[self.index + 1] - 1,
+            self.source.polygons.mpolys[index * 2],
+            self.source.polygons.mpolys[index * 2 + 1],
         )
         polys = []
-        for i in range(max(0, poly_indices.start), poly_indices.stop, 1):
-            poly = cuPolygon(self.source, i)
-            polys.append(Polygon(poly.to_shapely()))
+        for i in range(poly_indices.start, poly_indices.stop):
+            ring_start = self.source._polygons.polys[i]
+            ring_end = self.source._polygons.polys[i + 1]
+            rings = self.source._polygons.rings
+            exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
+            exterior = self.source._polygons.xy[exterior_slice]
+            interiors = []
+            for interior in range(ring_end - ring_start) + ring_start:
+                interior_slice = slice(rings[interior], rings[interior + 1])
+                interiors.append(self.source._polygons.xy[interior_slice].
+                        to_array().reshape(int((rings[interior + 1] - rings[interior]) / 2), 2))
+            polys.append(Polygon(
+                exterior.to_array().reshape(2 * (ring_start - ring_end), 2),
+                interiors
+            ))
         return MultiPolygon(polys)

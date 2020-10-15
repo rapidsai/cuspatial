@@ -104,7 +104,7 @@ class GeoSeriesReader:
             elif isinstance(geometry, MultiPolygon):
                 current = offsets["polygons"]["polygons"][-1]
                 offsets["polygons"]["mpolys"].append(
-                    len(offsets["polygons"]["polygons"])
+                    len(offsets["polygons"]["polygons"]) - 1
                 )
                 for poly in geometry:
                     current = offsets["polygons"]["polygons"][-1]
@@ -121,7 +121,7 @@ class GeoSeriesReader:
                         num_rings = num_rings + 1
                     offsets["polygons"]["polygons"].append(num_rings + current)
                 offsets["polygons"]["mpolys"].append(
-                    len(offsets["polygons"]["polygons"])
+                    len(offsets["polygons"]["polygons"]) - 1
                 )
         return offsets
 

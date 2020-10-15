@@ -159,8 +159,26 @@ def assert_eq_geo(geo1, geo2):
         assert_eq_polygon(geo1, geo2)
     elif isinstance(geo1, MultiPolygon):
         assert_eq_multipolygon(geo1, geo2)
+    elif isinstance(geo1, gpd.GeoSeries):
+        assert geo1.equals(geo2).all()
     else:
         raise TypeError
+    
+
+@pytest.mark.parametrize("series_slice",
+        #list(np.arange(10)) +
+        [slice(0, 12)] + 
+        [slice(0, 10, 1)] +
+        [slice(0, 3, 1)] +
+        [slice(3, 6, 1)] + 
+        [slice(6, 9, 1)]
+)
+def test_to_shapely(gs, series_slice):
+    geometries = gs[series_slice]
+    gi = gpd.GeoSeries(geometries)
+    cugs = cuspatial.from_geopandas(gi)
+    cugs_back = cugs.to_geopandas()
+    assert_eq_geo(gi, cugs_back)
 
 
 def test_getitem_points():
@@ -196,16 +214,3 @@ def test_size(gs, series_slice):
     gi = gpd.GeoSeries(geometries)
     cugs = cuspatial.from_geopandas(gi)
     assert(len(gi) == len(cugs))
-    
-
-@pytest.mark.parametrize("series_slice", list(np.arange(10)) +
-        [slice(0, 10, 1)] +
-        [slice(0, 3, 1)] +
-        [slice(3, 6, 1)] + 
-        [slice(6, 9, 1)]
-)
-def test_to_shapely(gs, series_slice):
-    geometries = gs[series_slice]
-    gi = gpd.GeoSeries(geometries)
-    cugs = cuspatial.from_geopandas(gi)
-    assert_eq_geo(gi, cugs.to_geopandas())

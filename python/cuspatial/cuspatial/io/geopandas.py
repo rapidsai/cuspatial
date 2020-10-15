@@ -10,6 +10,7 @@ from cuspatial.geometry.geoseries import GeoSeries
 
 def from_geoseries(geoseries):
     cugs = GeoSeries(geoseries)
+    cugs.index = cudf.from_pandas(geoseries.index)
     return cugs
 
 
@@ -30,4 +31,5 @@ def from_geopandas(gpdf):
         for col in geo_columns:
             cu_series = from_geoseries(gpdf[col])
             gdf[col] = from_geoseries(gpdf[col])
+        gdf.index = gpdf.index
         return gdf
