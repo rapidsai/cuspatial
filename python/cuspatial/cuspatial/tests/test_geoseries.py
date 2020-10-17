@@ -12,6 +12,7 @@ from shapely.geometry import (
     Polygon,
     MultiPolygon,
 )
+from shapely.affinity import rotate
 
 from cudf.tests.utils import assert_eq
 
@@ -21,50 +22,90 @@ from cuspatial.geometry.geoseries import (
     cuLineString,
 )
 
+np.random.seed(0)
+
 
 @pytest.fixture
 def gs():
-    g0 = Point(1, 2)
-    g1 = MultiPoint(((3, 4), (5, 6)))
-    g2 = MultiPoint(((5, 6), (7, 8)))
-    g3 = Point(9, 10)
-    g4 = LineString(((11, 12), (13, 14)))
-    g5 = MultiLineString((((15, 16), (17, 18)), ((19, 20), (21, 22))))
-    g6 = MultiLineString((((23, 24), (25, 26)), ((27, 28), (29, 30))))
-    g7 = LineString(((31, 32), (33, 34)))
-    g8 = Polygon(((35, 36), (37, 38), (39, 40), (41, 42)),)
-    g9 = MultiPolygon(
-        [
-            (
-                ((43, 44), (45, 46), (47, 48)),
-                [((49, 50), (51, 52), (53, 54))],
-            ),
-            (
-                ((55, 56), (57, 58), (59, 60)),
-                [((61, 62), (63, 64), (65, 66))],
-            ),
-        ]
-    )
-    g10 = MultiPolygon(
-        [
-            (
-                ((67, 68), (69, 70), (71, 72)),
-                [((73, 74), (75, 76), (77, 78))],
-            ),
-            (
-                ((79, 80), (81, 82), (83, 84)),
-                [
-                    ((85, 86), (87, 88), (89, 90)),
-                    ((91, 92), (93, 94), (95, 96)),
-                ],
-            ),
-        ]
-    )
-    g11 = Polygon(
-        ((97, 98), (99, 101), (102, 103), (104, 105)),
-        [((106, 107), (108, 109), (110, 111), (112, 113))],
-    )
-    gs = gpd.GeoSeries([g0, g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11])
+    geos = [
+        Point(1, 2),
+        MultiPoint(((3, 4), (5, 6))),
+        MultiPoint(((5, 6), (7, 8))),
+        Point(9, 10),
+        Polygon(((35, 36), (37, 38), (39, 40), (41, 42)),),
+        MultiPolygon(
+            [
+                (
+                    ((43, 44), (45, 46), (47, 48)),
+                    [((49, 50), (51, 52), (53, 54))],
+                ),
+                (
+                    ((55, 56), (57, 58), (59, 60)),
+                    [((61, 62), (63, 64), (65, 66))],
+                ),
+            ]
+        ),
+        MultiPolygon(
+            [
+                (
+                    ((67, 68), (69, 70), (71, 72)),
+                    [((73, 74), (75, 76), (77, 78))],
+                ),
+                (
+                    ((79, 80), (81, 82), (83, 84)),
+                    [
+                        ((85, 86), (87, 88), (89, 90)),
+                        ((91, 92), (93, 94), (95, 96)),
+                    ],
+                ),
+            ]
+        ),
+        Polygon(
+            ((97, 98), (99, 101), (102, 103), (104, 105)),
+            [((106, 107), (108, 109), (110, 111), (112, 113))],
+        ),
+        Polygon(((35, 36), (37, 38), (39, 40), (41, 42)),),
+        MultiPolygon(
+            [
+                (
+                    ((43, 44), (45, 46), (47, 48)),
+                    [((49, 50), (51, 52), (53, 54))],
+                ),
+                (
+                    ((55, 56), (57, 58), (59, 60)),
+                    [((61, 62), (63, 64), (65, 66))],
+                ),
+            ]
+        ),
+        MultiPolygon(
+            [
+                (
+                    ((67, 68), (69, 70), (71, 72)),
+                    [((73, 74), (75, 76), (77, 78))],
+                ),
+                (
+                    ((79, 80), (81, 82), (83, 84)),
+                    [
+                        ((85, 86), (87, 88), (89, 90)),
+                        ((91, 92), (93, 94), (95, 96)),
+                    ],
+                ),
+            ]
+        ),
+        Polygon(
+            ((97, 98), (99, 101), (102, 103), (104, 105)),
+            [((106, 107), (108, 109), (110, 111), (112, 113))],
+        ),
+        LineString(((11, 12), (13, 14))),
+        MultiLineString((((15, 16), (17, 18)), ((19, 20), (21, 22)))),
+        MultiLineString((((23, 24), (25, 26)), ((27, 28), (29, 30)))),
+        LineString(((31, 32), (33, 34))),
+        LineString(((11, 12), (13, 14))),
+        MultiLineString((((15, 16), (17, 18)), ((19, 20), (21, 22)))),
+        MultiLineString((((23, 24), (25, 26)), ((27, 28), (29, 30)))),
+        LineString(((31, 32), (33, 34))),
+    ]
+    gs = gpd.GeoSeries(geos)
     return gs
 
 
@@ -81,6 +122,48 @@ def gs_sorted(gs):
         ]
     )
     return result.reset_index(drop=True)
+
+
+def random_polygon(distance_from_origin):
+    outer = Point(distance_from_origin * 2, 0).buffer(1)
+    inners = []
+    for i in range(np.random.randint(1, 4)):
+        inner = Point(distance_from_origin + i * 0.1, 0).buffer(0.01)
+        inners.append(inner)
+    together = Polygon(outer, inners)
+    result = rotate(together, np.random.random() * 2 * np.pi, use_radians=True)
+    return result
+
+
+def random_multipolygon(size):
+    polygons = []
+    for i in range(size):
+        polygons.append(random_polygon(i))
+    result = MultiPolygon(polygons)
+    return result
+
+
+def generator(size, has_z=False):
+    obj_type = np.random.randint(1, 7)
+    if obj_type == 1:
+        return Point(np.random.random(2))
+    else:
+        if obj_type == 2:
+            points = np.random.random(size * 2).reshape(size, 2)
+            return MultiPoint(points)
+        elif obj_type == 3:
+            points = np.random.random(size * 2).reshape(size, 2)
+            return LineString(points)
+        elif obj_type == 4:
+            num_lines = np.random.randint(3, np.ceil(np.sqrt(size)) + 3)
+            points = np.random.random(num_lines * size * 2).reshape(
+                num_lines, size, 2
+            )
+            return MultiLineString(tuple(points))
+        elif obj_type == 5:
+            return random_polygon(size)
+        elif obj_type == 6:
+            return random_multipolygon(size)
 
 
 def to_shapely(obj):
@@ -163,15 +246,27 @@ def assert_eq_geo(geo1, geo2):
         assert geo1.equals(geo2).all()
     else:
         raise TypeError
-    
 
-@pytest.mark.parametrize("series_slice",
-        #list(np.arange(10)) +
-        [slice(0, 12)] + 
-        [slice(0, 10, 1)] +
-        [slice(0, 3, 1)] +
-        [slice(3, 6, 1)] + 
-        [slice(6, 9, 1)]
+
+def test_to_shapely_random():
+    geos_list = []
+    for i in range(250):
+        geo = generator(3)
+        geos_list.append(geo)
+    gi = gpd.GeoSeries(geos_list)
+    cugs = cuspatial.from_geopandas(gi)
+    cugs_back = cugs.to_geopandas()
+    assert_eq_geo(gi, cugs_back)
+
+
+@pytest.mark.parametrize(
+    "series_slice",
+    list(np.arange(10))
+    + [slice(0, 12)]
+    + [slice(0, 10, 1)]
+    + [slice(0, 3, 1)]
+    + [slice(3, 6, 1)]
+    + [slice(6, 9, 1)],
 )
 def test_to_shapely(gs, series_slice):
     geometries = gs[series_slice]
@@ -203,14 +298,16 @@ def test_getitem_lines():
     assert_eq_linestring(cus[2], p2)
 
 
-@pytest.mark.parametrize("series_slice", list(np.arange(10)) +
-        [slice(0, 10, 1)] +
-        [slice(0, 3, 1)] +
-        [slice(3, 6, 1)] + 
-        [slice(6, 9, 1)]
+@pytest.mark.parametrize(
+    "series_slice",
+    list(np.arange(10))
+    + [slice(0, 10, 1)]
+    + [slice(0, 3, 1)]
+    + [slice(3, 6, 1)]
+    + [slice(6, 9, 1)],
 )
 def test_size(gs, series_slice):
     geometries = gs[series_slice]
     gi = gpd.GeoSeries(geometries)
     cugs = cuspatial.from_geopandas(gi)
-    assert(len(gi) == len(cugs))
+    assert len(gi) == len(cugs)

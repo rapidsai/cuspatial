@@ -160,17 +160,7 @@ class GeoSeries(ColumnBase):
         """
         Returns the number of unique geometries stored in this cuGeoSeries.
         """
-        length = (
-            len(self._points.xy) / 2
-            + len(self._multipoints.offsets)
-            - 1
-            + len(self._lines.offsets)
-            - 1
-            - len(self._lines.mlines) / 2
-            + len(self._polygons.polys)
-            - 1
-            - len(self._polygons.mpolys) / 2
-        )
+        length = len(self.types)
         return int(length)
 
     @property
@@ -204,13 +194,17 @@ class GeoSeries(ColumnBase):
 
     def __repr__(self):
         return (
-            "POINTS" + "\n"
+            "POINTS"
+            + "\n"
             + self.points.__repr__()
-            + "MULTIPOINTS" + "\n"
+            + "MULTIPOINTS"
+            + "\n"
             + self.multipoints.__repr__()
-            + "LINES" + "\n"
+            + "LINES"
+            + "\n"
             + self.lines.__repr__()
-            + "POLYGONS" + "\n"
+            + "POLYGONS"
+            + "\n"
             + self.polygons.__repr__()
             + "\n"
         )
@@ -264,10 +258,10 @@ class GpuOffset(GpuPoints):
         if isinstance(index, slice):
             rindex = index
         else:
-            rindex = slice(index, index + 2, 1)
+            rindex = slice(index, index + 1, 1)
         new_slice = slice(self.offsets[rindex.start], None)
         if rindex.stop < len(self.offsets):
-            new_slice = slice(new_slice.start, self.offsets[rindex.stop - 1])
+            new_slice = slice(new_slice.start, self.offsets[rindex.stop])
         result = self.xy[new_slice]
         return result
 
@@ -333,22 +327,32 @@ class cuMultiPoint(cuGeometry):
         item_start = (
             pd.Series(self.source.types[0 : self.index]) == item_type
         ).sum()
-        item_end = item_length + item_start
         item_source = self.source._multipoints
-        result = item_source[item_start:item_end]
-        return MultiPoint(
-            result.to_array().reshape(2 * (item_start - item_end), 2)
-        )
+        result = item_source[item_start]
+        return MultiPoint(result.to_array().reshape(item_length, 2))
 
 
 class cuLineString(cuGeometry):
     def to_shapely(self):
-        preceding_types = pd.Series(self.source.types[0 : self.index])
-        preceding_multis = (preceding_types == 'ml').sum()
-        multi_end = self.source._lines.mlines[preceding_multis * 2 - 1] - 1 if preceding_multis > 0 else 0
-        item_start = multi_end + (pd.Series(self.source.types[multi_end : self.index]) == 'l').sum()
+        ml_index = self.index - 1
+        preceding_line_count = 0
+        preceding_ml_count = 0
+        while ml_index >= 0:
+            if self.source.types[ml_index] == "ml":
+                preceding_ml_count = preceding_ml_count + 1
+            elif (
+                self.source.types[ml_index] == "l" and preceding_ml_count == 0
+            ):
+                preceding_line_count = preceding_line_count + 1
+            ml_index = ml_index - 1
+        preceding_multis = preceding_ml_count
+        if preceding_multis > 0:
+            multi_end = self.source._lines.mlines[preceding_multis * 2 - 1]
+            item_start = multi_end + preceding_line_count
+        else:
+            item_start = preceding_line_count
         item_length = self.source.lengths[self.index]
-        item_end = item_length + item_start + 1
+        item_end = item_length + item_start
         item_source = self.source._lines
         result = item_source[item_start:item_end]
         return LineString(
@@ -359,13 +363,12 @@ class cuLineString(cuGeometry):
 class cuMultiLineString(cuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
-        item_length = self.source.lengths[self.index]
         index = (
             pd.Series(self.source.types[0 : self.index]) == item_type
         ).sum()
         line_indices = slice(
-            self.source._lines.mlines[index * 2] - 1,
-            self.source._lines.mlines[index * 2 + 1] - 1,
+            self.source._lines.mlines[index * 2],
+            self.source._lines.mlines[index * 2 + 1],
         )
         lines = []
         for i in range(line_indices.start, line_indices.stop, 1):
@@ -376,24 +379,43 @@ class cuMultiLineString(cuGeometry):
 
 class cuPolygon(cuGeometry):
     def to_shapely(self):
-        preceding_types = pd.Series(self.source.types[0 : self.index])
-        preceding_multis = (preceding_types == 'mpoly').sum()
-        multi_end = self.source._lines.mlines[preceding_multis * 2 - 1] - 1 if preceding_multis > 0 else 0
-        index = multi_end + (pd.Series(self.source.types[self.source._polygons.polys[multi_end] : self.index]) == 'poly').sum()
-        index = 0 if index < 0 else index
-        ring_start = self.source._polygons.polys[index]
-        ring_end = self.source._polygons.polys[index + 1]
+        mp_index = self.index - 1
+        preceding_poly_count = 0
+        preceding_mp_count = 0
+        while mp_index >= 0:
+            if self.source.types[mp_index] == "mpoly":
+                preceding_mp_count = preceding_mp_count + 1
+            elif (
+                self.source.types[mp_index] == "poly"
+                and preceding_mp_count == 0
+            ):
+                preceding_poly_count = preceding_poly_count + 1
+            mp_index = mp_index - 1
+        preceding_multis = preceding_mp_count
+        multi_index = (
+            self.source._polygons.mpolys[preceding_multis * 2 - 1]
+            if preceding_multis > 0
+            else 0
+        )
+        preceding_polys = preceding_poly_count
+        ring_start = self.source._polygons.polys[multi_index + preceding_polys]
+        ring_end = self.source._polygons.polys[
+            multi_index + preceding_polys + 1
+        ]
         rings = self.source._polygons.rings
         exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
         exterior = self.source._polygons.xy[exterior_slice]
         interiors = []
-        for interior in range(ring_end - (ring_start+1)) + (ring_start + 1):
+        for interior in range(ring_end - (ring_start + 1)) + (ring_start + 1):
             interior_slice = slice(rings[interior], rings[interior + 1])
-            interiors.append(self.source._polygons.xy[interior_slice].
-                    to_array().reshape(int((rings[interior + 1] - rings[interior]) / 2), 2))
+            interiors.append(
+                self.source._polygons.xy[interior_slice]
+                .to_array()
+                .reshape(int((rings[interior + 1] - rings[interior]) / 2), 2)
+            )
         return Polygon(
             exterior.to_array().reshape(2 * (ring_start - ring_end), 2),
-            interiors
+            interiors,
         )
 
 
@@ -415,12 +437,21 @@ class cuMultiPolygon(cuGeometry):
             exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
             exterior = self.source._polygons.xy[exterior_slice]
             interiors = []
-            for interior in range(ring_end - ring_start) + ring_start:
+            for interior in range(ring_start + 1, ring_end):
                 interior_slice = slice(rings[interior], rings[interior + 1])
-                interiors.append(self.source._polygons.xy[interior_slice].
-                        to_array().reshape(int((rings[interior + 1] - rings[interior]) / 2), 2))
-            polys.append(Polygon(
-                exterior.to_array().reshape(2 * (ring_start - ring_end), 2),
-                interiors
-            ))
+                interiors.append(
+                    self.source._polygons.xy[interior_slice]
+                    .to_array()
+                    .reshape(
+                        int((rings[interior + 1] - rings[interior]) / 2), 2
+                    )
+                )
+            polys.append(
+                Polygon(
+                    exterior.to_array().reshape(
+                        2 * (ring_start - ring_end), 2
+                    ),
+                    interiors,
+                )
+            )
         return MultiPolygon(polys)

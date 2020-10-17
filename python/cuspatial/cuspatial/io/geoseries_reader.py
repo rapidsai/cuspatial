@@ -75,16 +75,13 @@ class GeoSeriesReader:
                 # A MultiLineString geometry is stored identically to
                 # LineString in the GpuLines structure. The index of the
                 # GeoSeries object is also stored.
-                offsets["mlines"].append(len(offsets["lines"]))
-                current = offsets["lines"][-1]
-                mls_lengths = np.array(
-                    list(map(lambda x: len(x.coords) * 2, geometry))
-                )
-                new_offsets = cudf.Series(mls_lengths).cumsum() + current
-                offsets["lines"] = offsets["lines"] + list(
-                    new_offsets.to_array()
-                )
-                offsets["mlines"].append(len(offsets["lines"]))
+                offsets["mlines"].append(len(offsets["lines"]) - 1)
+                for linestring in geometry:
+                    current = offsets["lines"][-1]
+                    offsets["lines"].append(
+                        2 * len(linestring.coords) + current
+                    )
+                offsets["mlines"].append(len(offsets["lines"]) - 1)
             elif isinstance(geometry, Polygon):
                 # A Polygon geometry is stored like a LineString and also
                 # contains a buffer of sizes for each inner ring.
@@ -174,7 +171,7 @@ class GeoSeriesReader:
                 inputs.append({"type": "p", "length": 1})
             elif isinstance(geometry, MultiPoint):
                 points = np.array(geometry).T
-                size = len(points) * 2
+                size = len(points.T) * 2
                 i = read_count["multipoints"]
                 buffers["multipoints"][slice(i, i + size, 2)] = points[0]
                 buffers["multipoints"][slice(i + 1, i + size, 2)] = points[1]

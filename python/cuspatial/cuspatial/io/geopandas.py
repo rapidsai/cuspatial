@@ -29,7 +29,6 @@ def from_geopandas(gpdf):
         non_geo_columns = gpdf[gpdf.columns[gpdf.dtypes != "geometry"]]
         gdf = cudf.from_pandas(non_geo_columns)
         for col in geo_columns:
-            cu_series = from_geoseries(gpdf[col])
             gdf[col] = from_geoseries(gpdf[col])
         gdf.index = gpdf.index
         return gdf
