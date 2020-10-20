@@ -1,10 +1,11 @@
 import cuspatial
 import shapefile
+import time
 
 from shapely.geometry import Point, Polygon
 
 
-def points_in_polygon(taxi_data, polygon_shape_file, pickup=True):
+def points_in_polygon(taxi_data, taxi_zones, pickup=True):
     """
     tzones = gpd.GeoDataFrame.from_file(polygon_shape_file)
     tzones = tzones[0:27]
@@ -12,11 +13,6 @@ def points_in_polygon(taxi_data, polygon_shape_file, pickup=True):
     tzones.to_file('cu_taxi_zones.shp')
     """
     # polygon_shape_file = data_dir  + 'its_4326_roi.shp'
-    print(" polygon_shape_file in GPU : ", polygon_shape_file)
-    taxi_zones = cuspatial.read_polygon_shapefile(polygon_shape_file)
-    print(" taxi_zones : ", len(taxi_zones))
-    print(" type of taxi_zones[0] : ", type(taxi_zones[0]))
-    print("len(taxi_zones[0]) : ", len(taxi_zones[0]))
 
     if pickup:
         pickups = cuspatial.point_in_polygon(taxi_data['pickup_longitude'],
@@ -24,6 +20,7 @@ def points_in_polygon(taxi_data, polygon_shape_file, pickup=True):
                                              taxi_zones[0], taxi_zones[1],
                                              taxi_zones[2]['x'],
                                              taxi_zones[2]['y'])
+   
         return pickups
 
     else:
@@ -38,7 +35,6 @@ def points_in_polygon(taxi_data, polygon_shape_file, pickup=True):
 
 
 def cpu_points_in_polygon(taxi_data, polygon_shape_file, pickup=True):
-    print(" polygon_shape_file in GPU : ", polygon_shape_file)
     if pickup:
         pnt_lon = taxi_data['pickup_longitude']
         pnt_lat = taxi_data['pickup_latitude']
@@ -55,9 +51,11 @@ def cpu_points_in_polygon(taxi_data, polygon_shape_file, pickup=True):
     plys = []
     for shape in polygon:
         plys.append(Polygon(shape.points))
-
+    print(" plys shape : ", len(plys))
     check_vals = []
-
+    check_per_poly = []
+    print("pnt_lon.size : ", pnt_lon.size)
+    start = time.time()
     for i in range(pnt_lon.size):
         pt = Point(pntx[i], pnty[i])
         res = 0
@@ -66,7 +64,8 @@ def cpu_points_in_polygon(taxi_data, polygon_shape_file, pickup=True):
             if pip:
                 res |= 0x01 << (len(plys) - 1 - j)
                 print(res)
-
-        check_vals.append(res)
-
+            check_per_poly.append(res)
+        check_vals.append(check_per_poly)
+    end = time.time()
+    print("end-start for cpu : ", end-start)
     return check_vals

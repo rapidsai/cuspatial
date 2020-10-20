@@ -28,7 +28,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--run_cpu',
-        default=False,
+        default=True,
         help='Run the cpu equivalent algorithm from shapely.'
     )
     parser.add_argument(
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--data_dir',
-        default='~/cuspatial/python/benchmarks/data',
+        default='python/cuspatial/benchmarks/data',
         help='Path to dataset',
     )
     parser.add_argument(

@@ -1,11 +1,14 @@
 import os
 import cudf
+import cuspatial
 
 import numpy as np
 
 from get_time import BenchmarkTimer
 from point_in_polygon import cpu_points_in_polygon, \
     points_in_polygon
+from haversine_distance import cuspatial_haversine_distance, \
+    cupy_haversine_distance
 from urllib.request import urlretrieve
 
 
@@ -38,18 +41,18 @@ def download_dataset(url, file_name, data_dir):
 
 
 def load_dataset(data_dir):
-    tzone_name = 'its_4326_roi.shp'
+    tzone_name = 'tzones_lonlat.json'
     # TODO : We need to have the benchmark dataset in a place from where
     # anyone can download it
-    # zone_url = "https://data.cityofnewyork.us/api/geospatial\
-    #             /d3c5-ddgc?method=export&format=GeoJSON"
+    zone_url = "https://data.cityofnewyork.us/api/geospatial\
+                 /d3c5-ddgc?method=export&format=GeoJSON"
 
     dataset_name = 'taxi2015.csv'
     dataset_url = ("https://s3.amazonaws.com/nyc-tlc/"
                    "trip+data/yellow_tripdata_2015-01.csv")
 
     # check and download the json file containing the zone information
-    # download_dataset(zone_url, tzone_name, data_dir)
+    download_dataset(zone_url, tzone_name, data_dir)
     # check and download the taxi dataset
     download_dataset(dataset_url, dataset_name, data_dir)
 
@@ -57,8 +60,8 @@ def load_dataset(data_dir):
     taxi_dataset = cudf.read_csv(taxi_data_path)
 
     tzones_info_file = os.path.join(data_dir, tzone_name)
-
-    return taxi_dataset[0:1300000], tzones_info_file
+    print(" tzones_info_file : ", tzones_info_file)
+    return taxi_dataset, tzones_info_file
 
 
 class SpeedComparison:
@@ -78,14 +81,18 @@ class SpeedComparison:
         results = []
 
         if "point_in_polygon" in run_algos:
+            taxi_zones = cuspatial.read_polygon_shapefile(tzones_info_file)[0:27]
+            print(" shape of zones : ", len(taxi_zones))
+            print(" shape of zones : ", len(taxi_zones[0]))
+            print(" zones : ", taxi_zones[0])
             polygon_timer = BenchmarkTimer(self.n_reps)
             for rep in polygon_timer.benchmark_runs():
                 cuspatial_vals = points_in_polygon(taxi_dataset,
-                                                   tzones_info_file)
+                                                   taxi_zones).astype(np.int32)
             cu_polygon_time = np.min(polygon_timer.timings)
 
             if run_cpu:
-                cpu_polygon_timer = BenchmarkTimer(self.n_reps)
+                cpu_polygon_timer = BenchmarkTimer(1)
                 for rep in cpu_polygon_timer.benchmark_runs():
                     cpu_vals = cpu_points_in_polygon(taxi_dataset,
                                                      tzones_info_file)
@@ -94,25 +101,15 @@ class SpeedComparison:
                                 "cuspatial_time": cu_polygon_time,
                                 "cpu_time": cpu_polygon_time})
 
-                if compare_vals:
-                    print(np.array_equal(cuspatial_vals.data.to_array(),
-                                         cpu_vals))
-            else:
-                results.append({"algo": "point_in_polygon",
-                                "cuspatial_time": cu_polygon_time})
-
-        return results
-        """
         if "haversine_distance" in run_algos:
 
-            haversine_timer = BenchmarkTimer(n_reps)
-            for rep in polygon_timer.benchmark_runs():
-                points_in_polygon(taxi_dataset, tzones_info_file)
-            cuspatial_haversine = np.min(polygon_timer.timings)
+            haversine_timer = BenchmarkTimer(self.n_reps)
+            for rep in haversine_timer.benchmark_runs():
+                cuspatial_vals = cuspatial_haversine_distance(taxi_dataset)
+            cuspatial_haversine_time = np.min(haversine_timer.timings)
 
             if run_cpu:
-                cpu_haversine_timer = BenchmarkTimer(n_reps)
-                for rep in cpu_polygon_timer.benchmark_runs():
-                    cpu_haversine_distance(taxi_dataset)
-                cpu_haversine = np.min(cpu_haversine_timer.timings)
-        """
+                cpu_haversine_timer = BenchmarkTimer(1)
+                for rep in cpu_haversine_timer.benchmark_runs():
+                    cpu_vals = cupy_haversine_distance(taxi_dataset)
+                cpu_haversine_time = np.min(cpu_haversine_timer.timings)
