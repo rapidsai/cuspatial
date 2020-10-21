@@ -1,4 +1,4 @@
-# cuSpatial 0.16.0 (Date TBD)
+# cuSpatial 0.16.0 (21 Oct 2020)
 
 ## New Features
 - PR #290 Add Java bindings and a cuSpatial JAR package for Java users.
