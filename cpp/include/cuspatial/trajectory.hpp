@@ -18,7 +18,7 @@
 
 #include <cudf/types.hpp>
 #include <memory>
-#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 
 namespace cuspatial {
 
@@ -52,7 +52,7 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
   cudf::column_view const& x,
   cudf::column_view const& y,
   cudf::column_view const& timestamp,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
  * @brief Compute the distance and speed of objects in a trajectory. Groups the
@@ -85,7 +85,7 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(
   cudf::column_view const& x,
   cudf::column_view const& y,
   cudf::column_view const& timestamp,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
  * @brief Compute the spatial bounding boxes of trajectories. Groups the x, y,
@@ -117,6 +117,6 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(
   cudf::column_view const& object_id,
   cudf::column_view const& x,
   cudf::column_view const& y,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial

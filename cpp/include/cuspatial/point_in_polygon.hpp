@@ -65,6 +65,6 @@ std::unique_ptr<cudf::column> point_in_polygon(
   cudf::column_view const& poly_ring_offsets,
   cudf::column_view const& poly_points_x,
   cudf::column_view const& poly_points_y,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource());
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial

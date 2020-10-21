@@ -6,10 +6,9 @@ from cuspatial._lib.cpp.shapefile_reader cimport (
     read_polygon_shapefile as cpp_read_polygon_shapefile,
 )
 
-from cuspatial._lib.move cimport move
-
 from libcpp.memory cimport unique_ptr
 from libcpp.string cimport string
+from libcpp.utility cimport move
 from libcpp.vector cimport vector
 
 

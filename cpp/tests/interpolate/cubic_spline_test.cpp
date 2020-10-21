@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-#include <sys/time.h>
-#include <time.h>
-
 #include <cudf/column/column_view.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
+
+#include <cudf_test/base_fixture.hpp>
+#include <cudf_test/column_utilities.hpp>
+#include <cudf_test/column_wrapper.hpp>
+#include <cudf_test/table_utilities.hpp>
+
 #include <cuspatial/cubic_spline.hpp>
 #include <cuspatial/error.hpp>
-#include <string>
-#include <tests/utilities/base_fixture.hpp>
-#include <tests/utilities/column_utilities.hpp>
-#include <tests/utilities/column_wrapper.hpp>
 
-#include "tests/utilities/table_utilities.hpp"
+#include <sys/time.h>
+#include <time.h>
+#include <string>
 
 struct CubicSplineTest : public cudf::test::BaseFixture {
 };

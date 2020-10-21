@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
+#include <cuspatial/trajectory.hpp>
+
 #include <cudf/detail/sorting.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
 #include <cudf/types.hpp>
-#include <cuspatial/trajectory.hpp>
-#include <tests/utilities/base_fixture.hpp>
-#include <tests/utilities/column_utilities.hpp>
-#include <tests/utilities/timestamp_utilities.cuh>
+
+#include <cudf_test/base_fixture.hpp>
+#include <cudf_test/column_utilities.hpp>
+#include <cudf_test/timestamp_utilities.cuh>
 
 namespace cuspatial {
 namespace test {
 
 template <typename T>
 std::unique_ptr<cudf::table> make_test_trajectories_table(
-  cudf::size_type size, rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
+  cudf::size_type size,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
 {
   std::vector<int32_t> ids(size);
   std::vector<int32_t> map(size);

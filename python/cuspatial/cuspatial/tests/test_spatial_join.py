@@ -407,7 +407,7 @@ def test_quadtree_point_in_polygon_small(dtype):
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
     )
-    points_and_polygons = cuspatial.quadtree_point_in_polygon(
+    polygons_and_points = cuspatial.quadtree_point_in_polygon(
         intersections,
         quadtree,
         point_indices,
@@ -419,14 +419,14 @@ def test_quadtree_point_in_polygon_small(dtype):
         poly_points_y,
     )
     assert_eq(
-        points_and_polygons,
+        polygons_and_points,
         cudf.DataFrame(
             {
-                "point_index": cudf.Series(
+                "polygon_index": cudf.Series(
                     [0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3],
                     dtype=np.uint32,
                 ),
-                "polygon_index": cudf.Series(
+                "point_index": cudf.Series(
                     [
                         62,
                         60,
