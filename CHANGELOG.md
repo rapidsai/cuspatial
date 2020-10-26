@@ -3,6 +3,7 @@
 ## New Features
 
 ## Improvements
+- PR #314 Project Flash and gpuCI Scripts Update
 
 ## Bug Fixes
 
