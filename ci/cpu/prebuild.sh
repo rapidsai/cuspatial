@@ -14,3 +14,8 @@ else
     export UPLOAD_LIBCUSPATIAL=0
 fi
 
+if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
+    #If project flash is not activate, always build both
+    export BUILD_LIBCUSPATIAL=1
+    export BUILD_CUSPATIAL=1
+fi

@@ -5,14 +5,9 @@
 ######################################
 set -e
 
-# Logger function for build status output
-function logger() {
-  echo -e "\n>>>> $@\n"
-}
-
 # Set path and build parallel level
-export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
-export PARALLEL_LEVEL=4
+export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
+export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
 export CUDF_HOME="${WORKSPACE}/cudf"
 
 # Set home to the job's workspace
@@ -26,21 +21,30 @@ if [[ "$BUILD_MODE" = "branch" && "$SOURCE_BRANCH" = branch-* ]] ; then
   export VERSION_SUFFIX=`date +%y%m%d`
 fi
 
+# Setup 'gpuci_conda_retry' for build retries (results in 2 total attempts)
+export GPUCI_CONDA_RETRY_MAX=1
+export GPUCI_CONDA_RETRY_SLEEP=30
+
 ################################################################################
 # SETUP - Check environment
 ################################################################################
 
-logger "Get env..."
+gpuci_logger "Get env"
 env
 
-logger "Activate conda env..."
-source activate gdf
+gpuci_logger "Activate conda env"
+. /opt/conda/etc/profile.d/conda.sh
+conda activate rapids
 
-logger "Check versions..."
+gpuci_logger "Check versions"
 python --version
-gcc --version
-g++ --version
-conda list
+$CC --version
+$CXX --version
+
+gpuci_logger "Check conda environment"
+conda info
+conda config --show-sources
+conda list --show-channel-urls
 
 # FIX Added to deal with Anancoda SSL verification issues during conda builds
 conda config --set ssl_verify False
@@ -49,17 +53,28 @@ conda config --set ssl_verify False
 # BUILD - Conda package builds (conda deps: libcupatial <- cuspatial)
 ##########################################################################################
 
-logger "Build conda pkg for libcuspatial..."
-cd $WORKSPACE
-source ci/cpu/libcuspatial/build_libcuspatial.sh
+gpuci_logger "Build conda pkg for libcuspatial"
+if [ "$BUILD_LIBCUSPATIAL" == '1' ]; then
+  if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
+    conda build conda/recipes/libcuspatial
+  else
+    conda build --dirty --no-remove-work-dir conda/recipes/libcuspatial
+  fi
+fi
 
-logger "Build conda pkg for cuspatial..."
-source ci/cpu/cuspatial/build_cuspatial.sh
+gpuci_logger "Build conda pkg for cuspatial"
+if [ "$BUILD_CUSPATIAL" == '1' ]; then
+  if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
+    conda build conda/recipes/cuspatial
+  else
+    conda build --dirty --no-remove-work-dir conda/recipes/libcuspatial
+  fi
+fi
 
 ################################################################################
 # UPLOAD - Conda packages
 ################################################################################
 
-logger "Upload conda pkgs..."
-source ci/cpu/upload_anaconda.sh
+gpuci_logger "Upload packages"
+source ci/cpu/upload.sh
 

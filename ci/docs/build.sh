@@ -18,27 +18,31 @@ export LIBCUDF_KERNEL_CACHE_PATH="$HOME/.jitify-cache"
 export NIGHTLY_VERSION=$(echo $BRANCH_VERSION | awk -F. '{print $2}')
 export PROJECTS=(cuspatial)
 
-logger "Check environment..."
+gpuci_logger "Check environment"
 env
 
-logger "Check GPU usage..."
+gpuci_logger "Check GPU usage"
 nvidia-smi
 
-logger "Activate conda env..."
-source activate rapids
-# TODO: Move installs to docs-build-env meta package
-conda install -c anaconda markdown beautifulsoup4 jq
+gpuci_logger "Activate conda env"
+. /opt/conda/etc/profile.d/conda.sh
+conda activate rapids
+
 pip install sphinx-markdown-tables
 
 
-logger "Check versions..."
+gpuci_logger "Check versions"
 python --version
 $CC --version
 $CXX --version
-conda list
+
+gpuci_logger "Show conda info"
+conda info
+conda config --show-sources
+conda list --show-channel-urls
 
 # Build Python docs
-logger "Build Sphinx docs..."
+gpuci_logger "Build Sphinx docs"
 cd $PROJECT_WORKSPACE/docs
 make html
 
