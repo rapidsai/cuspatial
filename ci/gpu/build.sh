@@ -31,10 +31,10 @@ export MINOR_VERSION=`echo $GIT_DESCRIBE_TAG | grep -o -E '([0-9]+\.[0-9]+)'`
 # SETUP - Check environment
 ################################################################################
 
-gpuci_gpuci_logger "Check environment"
+gpuci_logger "Check environment"
 env
 
-gpuci_gpuci_logger "Check GPU usage"
+gpuci_logger "Check GPU usage"
 nvidia-smi
 
 gpuci_logger "Activate conda env"
@@ -48,7 +48,7 @@ gpuci_conda_retry install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" \
 # gpuci_conda_retry remove -f rapids-build-env
 # gpuci_conda_retry install "your-pkg=1.0.0"
 
-gpuci_gpuci_logger "Check versions"
+gpuci_logger "Check versions"
 python --version
 $CC --version
 $CXX --version
@@ -72,7 +72,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     # BUILD - Build libcuspatial and cuSpatial from source
     ################################################################################
 
-    gpuci_gpuci_logger "Build cuSpatial"
+    gpuci_logger "Build cuSpatial"
     cd $WORKSPACE
     ./build.sh clean libcuspatial cuspatial tests
 
@@ -81,12 +81,12 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     ###############################################################################
 
     if hasArg --skip-tests; then
-        gpuci_gpuci_logger "Skipping tests"
+        gpuci_logger "Skipping tests"
     else
-        gpuci_gpuci_logger "Check GPU usage"
+        gpuci_logger "Check GPU usage"
         nvidia-smi
 
-        gpuci_gpuci_logger "GoogleTests"
+        gpuci_logger "GoogleTests"
         cd $WORKSPACE/cpp/build
 
         for gt in ${WORKSPACE}/cpp/build/gtests/* ; do
@@ -95,10 +95,10 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
             ${gt} --gtest_output=xml:${WORKSPACE}/test-results/
         done
 
-        gpuci_gpuci_logger "Download/Generate Test Data"
+        gpuci_logger "Download/Generate Test Data"
         #TODO
 
-        gpuci_gpuci_logger "Test cuSpatial"
+        gpuci_logger "Test cuSpatial"
         #TODO
 
         #Python Unit tests for cuSpatial
