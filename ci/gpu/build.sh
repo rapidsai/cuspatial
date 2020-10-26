@@ -112,10 +112,10 @@ else
     mkdir -p ${TESTRESULTS_DIR}
     SUITEERROR=0
 
-    logger "Check GPU usage..."
+    gpuco_logger "Check GPU usage..."
     nvidia-smi
 
-    logger "Running googletests..."
+    gpuci_logger "Running googletests..."
     # run gtests
     cd $WORKSPACE/ci/artifacts/cuspatial/conda_work
     for gt in ${WORKSPACE}/cpp/build/gtests/* ; do
@@ -131,14 +131,14 @@ else
 
     cd $WORKSPACE/python
     
-    logger "Installing libcuspatial..."
+    gpuci_logger "Installing libcuspatial..."
     conda install -c $WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/ libcuspatial
     export LIBRMM_BUILD_DIR="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/build"
     
-    logger "Building cuspatial"
+    gpuci_logger "Building cuspatial"
     "$WORKSPACE/build.sh" -v cuspatial
     
-    logger "Run pytests"
+    gpuci_logger "Run pytests"
     py.test --cache-clear --junitxml=${WORKSPACE}/junit-cuspatial.xml -v
 
     EXITCODE=$?
