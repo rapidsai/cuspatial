@@ -1,5 +1,5 @@
 set -e
 
 echo "Building libcuspatial"
-conda build conda/recipes/libcuspatial
+gpuci_conda_retry build conda/recipes/libcuspatial
 

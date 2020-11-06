@@ -2,8 +2,8 @@
 
 set -e
 
-export LIBCUSPATIAL_FILE=`conda build conda/recipes/libcuspatial  --output`
-export CUSPATIAL_FILE=`conda build conda/recipes/cuspatial --python=$PYTHON --output`
+export LIBCUSPATIAL_FILE=`gpuci_conda_retry build conda/recipes/libcuspatial  --output`
+export CUSPATIAL_FILE=`gpuci_conda_retry build conda/recipes/cuspatial --python=$PYTHON --output`
 
 CUDA_REL=${CUDA_VERSION%.*}
 

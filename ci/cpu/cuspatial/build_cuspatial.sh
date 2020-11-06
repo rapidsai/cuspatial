@@ -1,5 +1,5 @@
 set -e
 
 echo "Building cuspatial"
-conda build conda/recipes/cuspatial --python=$PYTHON
+gpuci_conda_retry build conda/recipes/cuspatial --python=$PYTHON
 
