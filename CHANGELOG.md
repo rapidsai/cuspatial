@@ -5,6 +5,7 @@
 ## Improvements
 
 ## Bug Fixes
+- PR #320 Fix a quadtree construction bug - needs zero out device_uvector before scatter
 
 # cuSpatial 0.16.0 (Date TBD)
 
@@ -22,7 +23,6 @@
 - PR #303 Update yml files to include CUDA 11.0 and remove old supported versions
 
 ## Bug Fixes
-- PR #320 Fix a quadtree construction bug - needs zero out device_uvector before scatter
 - PR #291 Fix mislabeled columns in Python spatial join result table.
 - PR #294 Fix include of deprecated RMM header file.
 - PR #296 Updates for RMM being header only.
