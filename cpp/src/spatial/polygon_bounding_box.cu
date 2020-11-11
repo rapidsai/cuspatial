@@ -87,7 +87,7 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
                            point_ids.begin(),
                            thrust::maximum<int32_t>());
 
-    return std::move(point_ids);
+    return point_ids;
   }();
 
   auto type = cudf::data_type{cudf::type_to_id<T>()};

@@ -26,6 +26,7 @@
 - PR #294 Fix include of deprecated RMM header file.
 - PR #296 Updates for RMM being header only.
 - PR #298 Fix Python docs to render first argument of each public function.
+- PR #322 Fix build issues related to libcudf split build changes
 
 
 # cuSpatial 0.15.0 (26 Aug 2020)
