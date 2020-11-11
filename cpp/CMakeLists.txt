@@ -201,9 +201,6 @@ endif (CUDF_INCLUDE AND CUDF_LIBRARY)
 
 find_package(GDAL REQUIRED)
 
-message(STATUS "GDAL: GDAL_LIBRARIES set to ${GDAL_LIBRARIES}")
-message(STATUS "GDAL: GDAL_INCLUDE_DIRS set to ${GDAL_INCLUDE_DIRS}")
-
 if(NOT GDAL_FOUND)
     message(FATAL_ERROR "GDAL not found, please check your settings.")
 endif(NOT GDAL_FOUND)
@@ -254,7 +251,6 @@ endif(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
 include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
-                    "${GDAL_INCLUDE_DIRS}"
                     "${RMM_INCLUDE}"
                     "${CUDF_INCLUDE}")
 
@@ -268,9 +264,7 @@ endif(CONDA_INCLUDE_DIRS)
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
                  "${CMAKE_BINARY_DIR}/lib"
                  "${FLATBUFFERS_LIBRARY_DIR}"
-                 "${GDAL_LIBRARIES}"
-                 "${GTEST_LIBRARY_DIR}"
-                 "${CUDF_LIBRARY}")
+                 "${GTEST_LIBRARY_DIR}")
 
 if(CONDA_LINK_DIRS)
     link_directories("${CONDA_LINK_DIRS}")
@@ -316,8 +310,10 @@ endif(USE_NVTX)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(cuspatial cudf cudart cuda cusparse nvrtc GDAL::GDAL)
-
+target_link_libraries(cuspatial cudart cusparse GDAL::GDAL)
+# Because libcudf.so doesn't contain any symbols, the linker will determine that it's okay to prune
+# it before copying `DT_NEEDED` entries from it
+target_link_libraries(cuspatial "-Wl,--no-as-needed" cudf "-Wl,--as-needed")
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
