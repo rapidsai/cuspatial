@@ -28,9 +28,6 @@ gpuci_logger "Activate conda env"
 . /opt/conda/etc/profile.d/conda.sh
 conda activate rapids
 
-pip install sphinx-markdown-tables
-
-
 gpuci_logger "Check versions"
 python --version
 $CC --version
