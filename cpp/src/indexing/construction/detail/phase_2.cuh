@@ -193,8 +193,8 @@ inline rmm::device_uvector<uint32_t> compute_parent_positions(
                            position_map.begin());
     // line 2 of algorithm in Fig. 5 in ref.
     rmm::device_uvector<uint32_t> parent_pos(num_child_nodes, stream);
-    thrust::uninitialized_fill(rmm::exec_policy(stream)->on(stream),
-        parent_pos.begin(),parent_pos.end(),0);
+    thrust::uninitialized_fill(
+      rmm::exec_policy(stream)->on(stream), parent_pos.begin(), parent_pos.end(), 0);
     thrust::scatter(rmm::exec_policy(stream)->on(stream),
                     thrust::make_counting_iterator(0),
                     thrust::make_counting_iterator(0) + num_parent_nodes,
