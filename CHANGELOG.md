@@ -27,6 +27,7 @@
 - PR #296 Updates for RMM being header only.
 - PR #298 Fix Python docs to render first argument of each public function.
 - PR #322 Fix build issues related to libcudf split build changes
+- PR #323 Add cuda to target_link_libraries
 
 
 # cuSpatial 0.15.0 (26 Aug 2020)
