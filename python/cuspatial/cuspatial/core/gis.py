@@ -91,7 +91,7 @@ def directed_hausdorff_distance(xs, ys, points_per_space):
     )
     result = result.data_array_view
     result = result.reshape(num_spaces, num_spaces)
-    return DataFrame.from_gpu_matrix(result)
+    return DataFrame(result)
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
@@ -249,7 +249,7 @@ def point_in_polygon(
     result = gis_utils.pip_bitmap_column_to_binary_array(
         polygon_bitmap_column=result, width=len(poly_offsets)
     )
-    result = DataFrame.from_gpu_matrix(result)
+    result = DataFrame(result)
     result = result._apply_support_method("astype", dtype="bool")
     result.columns = [x for x in list(reversed(poly_offsets.index))]
     result = result[list(reversed(result.columns))]

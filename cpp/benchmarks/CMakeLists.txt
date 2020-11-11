@@ -27,9 +27,12 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
                    ${CMAKE_BENCH_SRC}
                    "${CMAKE_CURRENT_SOURCE_DIR}/synchronization/synchronization.cpp")
     set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${CMAKE_BENCH_NAME} benchmark benchmark_main pthread cuspatial cudf
-                          cudftestutil cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES}
-                          nvrtc GDAL::GDAL)
+    # By default the linker doesn't transitively add `DT_NEEDED` entries in executables like it does
+    # for shared libraries, so to work around current libcudf build behavior we're adding the linker
+    # flag
+    target_link_libraries(${CMAKE_BENCH_NAME} "-Wl,--copy-dt-needed-entries")
+    target_link_libraries(${CMAKE_BENCH_NAME} benchmark benchmark_main pthread cuspatial
+                          cudftestutil)
     set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
                             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gbenchmarks")
 endfunction(ConfigureBench)
