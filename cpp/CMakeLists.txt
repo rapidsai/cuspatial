@@ -310,7 +310,7 @@ endif(USE_NVTX)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(cuspatial cudart cusparse GDAL::GDAL)
+target_link_libraries(cuspatial cuda cudart cusparse GDAL::GDAL)
 # Because libcudf.so doesn't contain any symbols, the linker will determine that it's okay to prune
 # it before copying `DT_NEEDED` entries from it
 target_link_libraries(cuspatial "-Wl,--no-as-needed" cudf "-Wl,--as-needed")
