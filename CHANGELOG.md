@@ -6,6 +6,7 @@
 - PR #310 Pin cmake policies to cmake 3.17 version
 
 ## Bug Fixes
+- PR #320 Fix a quadtree construction bug - needs zero out device_uvector before scatter
 
 # cuSpatial 0.16.0 (Date TBD)
 
