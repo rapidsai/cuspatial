@@ -14,22 +14,24 @@
  * limitations under the License.
  */
 
+#include "utility/scatter_output_iterator.cuh"
+#include "utility/size_from_offsets.cuh"
+
 #include <cuspatial/detail/cartesian_product_group_index_iterator.cuh>
 #include <cuspatial/detail/hausdorff.cuh>
 #include <cuspatial/error.hpp>
-#include "utility/scatter_output_iterator.cuh"
-#include "utility/size_from_offsets.cuh"
 
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/types.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
+#include <rmm/device_uvector.hpp>
+
 #include <thrust/binary_search.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/transform_iterator.h>
-
-#include <rmm/device_uvector.hpp>
 
 #include <memory>
 
@@ -69,8 +71,8 @@ struct hausdorff_functor {
     cudf::column_view const& xs,
     cudf::column_view const& ys,
     cudf::column_view const& space_offsets,
-    rmm::mr::device_memory_resource* mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     size_type num_points  = xs.size();
     size_type num_spaces  = space_offsets.size();
@@ -126,14 +128,14 @@ struct hausdorff_functor {
 
     auto num_cartesian = num_points * num_points;
 
-    thrust::inclusive_scan_by_key(rmm::exec_policy(stream)->on(stream),
+    thrust::inclusive_scan_by_key(rmm::exec_policy(stream)->on(stream.value()),
                                   gpc_key_iter,
                                   gpc_key_iter + num_cartesian,
                                   hausdorff_acc_iter,
                                   scatter_out,
                                   thrust::equal_to<thrust::pair<int32_t, int32_t>>());
 
-    thrust::transform(rmm::exec_policy(stream)->on(stream),
+    thrust::transform(rmm::exec_policy(stream)->on(stream.value()),
                       result_temp_iter,
                       result_temp_iter + num_results,
                       result->mutable_view().begin<T>(),
@@ -160,10 +162,8 @@ std::unique_ptr<cudf::column> directed_hausdorff_distance(cudf::column_view cons
   CUSPATIAL_EXPECTS(xs.size() >= points_per_space.size(),
                     "At least one point is required for each space");
 
-  cudaStream_t stream = 0;
-
   return cudf::type_dispatcher(
-    xs.type(), detail::hausdorff_functor(), xs, ys, points_per_space, mr, stream);
+    xs.type(), detail::hausdorff_functor(), xs, ys, points_per_space, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial

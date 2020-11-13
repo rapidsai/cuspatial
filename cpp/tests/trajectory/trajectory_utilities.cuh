@@ -63,8 +63,8 @@ std::unique_ptr<cudf::table> make_test_trajectories_table(
     cudf::timestamp_ms{duration_ms{2500000000000}}    // Mon, 22 Mar 2049 04:26:40 GMT
   );
 
-  auto sorted = cudf::detail::sort_by_key(
-    cudf::table_view{{id, x, y, ts}}, cudf::table_view{{id, ts}}, {}, {}, mr, 0);
+  auto sorted = cudf::detail::sort_by_key(  
+    cudf::table_view{{id, x, y, ts}}, cudf::table_view{{id, ts}}, {}, {}, 0, mr);
 
   return sorted;
 }

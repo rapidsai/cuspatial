@@ -26,6 +26,7 @@
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 
 #include <thrust/gather.h>
@@ -140,8 +141,8 @@ struct compute_quadtree_point_to_nearest_polyline {
     cudf::column_view const &poly_offsets,
     cudf::column_view const &poly_points_x,
     cudf::column_view const &poly_points_y,
-    rmm::mr::device_memory_resource *mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource *mr)
   {
     auto poly_idx            = poly_quad_pairs.column(0);
     auto quad_idx            = poly_quad_pairs.column(1);
@@ -151,20 +152,20 @@ struct compute_quadtree_point_to_nearest_polyline {
 
     rmm::device_uvector<uint32_t> d_poly_idx(num_pairs, stream);
 
-    thrust::copy(rmm::exec_policy(stream)->on(stream),
+    thrust::copy(rmm::exec_policy(stream)->on(stream.value()),
                  poly_idx.begin<uint32_t>(),
                  poly_idx.end<uint32_t>(),
                  d_poly_idx.begin());
 
     rmm::device_uvector<uint32_t> d_quad_idx(num_pairs, stream);
 
-    thrust::copy(rmm::exec_policy(stream)->on(stream),
+    thrust::copy(rmm::exec_policy(stream)->on(stream.value()),
                  quad_idx.begin<uint32_t>(),
                  quad_idx.end<uint32_t>(),
                  d_quad_idx.begin());
 
     // sort (d_poly_idx, d_quad_idx) using d_quad_idx as key => (quad_idxs, poly_idxs)
-    thrust::sort_by_key(rmm::exec_policy(stream)->on(stream),
+    thrust::sort_by_key(rmm::exec_policy(stream)->on(stream.value()),
                         d_quad_idx.begin(),
                         d_quad_idx.end(),
                         d_poly_idx.begin());
@@ -176,7 +177,7 @@ struct compute_quadtree_point_to_nearest_polyline {
 
     uint32_t num_quads =
       thrust::distance(d_poly_idx_offsets.begin(),
-                       thrust::reduce_by_key(rmm::exec_policy(stream)->on(stream),
+                       thrust::reduce_by_key(rmm::exec_policy(stream)->on(stream.value()),
                                              d_quad_idx.begin(),
                                              d_quad_idx.end(),
                                              thrust::constant_iterator<uint32_t>(1),
@@ -187,7 +188,7 @@ struct compute_quadtree_point_to_nearest_polyline {
     d_quad_idx.resize(num_quads, stream);
     d_poly_idx_offsets.resize(num_quads, stream);
 
-    thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
+    thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
                            d_poly_idx_offsets.begin(),
                            d_poly_idx_offsets.end(),
                            d_poly_idx_offsets.begin());
@@ -196,7 +197,7 @@ struct compute_quadtree_point_to_nearest_polyline {
     auto poly_index_col  = make_fixed_width_column<uint32_t>(point_x.size(), stream, mr);
     auto distance_col    = make_fixed_width_column<T>(point_x.size(), stream, mr);
 
-    find_nearest_polyline_kernel<T><<<num_quads, threads_per_block, 0, stream>>>(
+    find_nearest_polyline_kernel<T><<<num_quads, threads_per_block, 0, stream.value()>>>(
       d_quad_idx.begin(),
       d_poly_idx_offsets.size(),
       d_poly_idx_offsets.begin(),
@@ -234,8 +235,8 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
   cudf::column_view const &poly_offsets,
   cudf::column_view const &poly_points_x,
   cudf::column_view const &poly_points_y,
-  rmm::mr::device_memory_resource *mr,
-  cudaStream_t stream)
+  rmm::cuda_stream_view stream,
+  rmm::mr::device_memory_resource *mr)
 {
   return cudf::type_dispatcher(point_x.type(),
                                compute_quadtree_point_to_nearest_polyline{},
@@ -247,8 +248,8 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
                                poly_offsets,
                                poly_points_x,
                                poly_points_y,
-                               mr,
-                               stream);
+                               stream,
+                               mr);
 }
 
 }  // namespace detail
@@ -297,8 +298,8 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
                                                     poly_offsets,
                                                     poly_points_x,
                                                     poly_points_y,
-                                                    mr,
-                                                    cudaStream_t{0});
+                                                    rmm::cuda_stream_default,
+                                                    mr);
 }
 
 }  // namespace cuspatial

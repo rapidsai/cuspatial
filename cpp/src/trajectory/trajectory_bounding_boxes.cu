@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#include <thrust/iterator/discard_iterator.h>
+#include <cuspatial/error.hpp>
+#include <cuspatial/trajectory.hpp>
 
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
@@ -25,8 +26,9 @@
 #include <cudf/utilities/traits.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
-#include <cuspatial/error.hpp>
-#include <cuspatial/trajectory.hpp>
+#include <rmm/cuda_stream_view.hpp>
+
+#include <thrust/iterator/discard_iterator.h>
 
 namespace cuspatial {
 
@@ -39,8 +41,8 @@ struct dispatch_element {
     cudf::column_view const& object_id,
     cudf::column_view const& x,
     cudf::column_view const& y,
-    rmm::mr::device_memory_resource* mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     auto policy = rmm::exec_policy(stream);
 
@@ -71,7 +73,7 @@ struct dispatch_element {
                          cols.at(3)->mutable_view().begin<Element>())  // bbox_y2
     );
 
-    thrust::fill(policy->on(stream),
+    thrust::fill(policy->on(stream.value()),
                  bboxes,
                  bboxes + num_trajectories,
                  thrust::make_tuple(std::numeric_limits<Element>::max(),
@@ -80,7 +82,7 @@ struct dispatch_element {
                                     std::numeric_limits<Element>::min()));
 
     thrust::reduce_by_key(
-      policy->on(stream),               // execution policy
+      policy->on(stream.value()),       // execution policy
       object_id.begin<int32_t>(),       // keys_first
       object_id.end<int32_t>(),         // keys_last
       points,                           // values_first
@@ -107,8 +109,8 @@ struct dispatch_element {
              cudf::column_view const& object_id,
              cudf::column_view const& x,
              cudf::column_view const& y,
-             rmm::mr::device_memory_resource* mr,
-             cudaStream_t stream)
+             rmm::cuda_stream_view stream,
+             rmm::mr::device_memory_resource* mr)
   {
     CUSPATIAL_FAIL("X and Y must be floating point types");
   }
@@ -121,11 +123,11 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(cudf::size_type num_traje
                                                        cudf::column_view const& object_id,
                                                        cudf::column_view const& x,
                                                        cudf::column_view const& y,
-                                                       rmm::mr::device_memory_resource* mr,
-                                                       cudaStream_t stream)
+                                                       rmm::cuda_stream_view stream,
+                                                       rmm::mr::device_memory_resource* mr)
 {
   return cudf::type_dispatcher(
-    x.type(), dispatch_element{}, num_trajectories, object_id, x, y, mr, stream);
+    x.type(), dispatch_element{}, num_trajectories, object_id, x, y, stream, mr);
 }
 }  // namespace detail
 
@@ -151,7 +153,8 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(cudf::size_type num_traje
     return std::make_unique<cudf::table>(std::move(cols));
   }
 
-  return detail::trajectory_bounding_boxes(num_trajectories, object_id, x, y, mr, 0);
+  return detail::trajectory_bounding_boxes(
+    num_trajectories, object_id, x, y, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial
