@@ -65,5 +65,5 @@ gpuci_conda_retry build conda/recipes/cuspatial --python=$PYTHON
 # UPLOAD - Conda packages
 ################################################################################
 
-logger "Upload conda pkgs..."
+gpuci_logger "Upload conda pkgs..."
 source ci/cpu/upload.sh
