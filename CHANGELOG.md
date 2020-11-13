@@ -4,9 +4,10 @@
 
 ## Improvements
 - PR #310 Pin cmake policies to cmake 3.17 version
+- PR #325 Convert `cudaStream_t` to `rmm::cuda_stream_view`
 
 ## Bug Fixes
-- PR #320 Fix a quadtree construction bug - needs zero out device_uvector before scatter
+- PR #320 Fix quadtree construction bug: zero out `device_uvector` before `scatter`
 
 # cuSpatial 0.16.0 (Date TBD)
 
