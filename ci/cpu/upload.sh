@@ -42,7 +42,7 @@ if [ "$UPLOAD_LIBCUSPATIAL" == "1" ]; then
   test -e ${LIBCUSPATIAL_FILE}
   echo "Upload libcuspatial"
   echo ${LIBCUSPATIAL_FILE}
-  anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing ${LIBCUSPATIAL_FILE}
+  gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing ${LIBCUSPATIAL_FILE}
 fi
 
 if [ "$UPLOAD_CUSPATIAL" == "1" ]; then
@@ -52,5 +52,5 @@ if [ "$UPLOAD_CUSPATIAL" == "1" ]; then
   test -e ${CUSPATIAL_FILE}
   echo "Upload cuspatial"
   echo ${CUSPATIAL_FILE}
-  anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing ${CUSPATIAL_FILE}
+  gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing ${CUSPATIAL_FILE}
 fi
