@@ -106,7 +106,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
         py.test --cache-clear --junitxml=${WORKSPACE}/junit-cuspatial.xml -v
     fi
 else
-    export LD_LIBRARY_PATH="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/build:$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/cpp/build:$LD_LIBRARY_PATH"
 
     TESTRESULTS_DIR=${WORKSPACE}/test-results
     mkdir -p ${TESTRESULTS_DIR}
@@ -117,8 +117,8 @@ else
 
     gpuci_logger "Running googletests"
     # run gtests
-    cd $WORKSPACE/ci/artifacts/cuspatial/conda_work
-    for gt in ${WORKSPACE}/cpp/build/gtests/* ; do
+    cd $WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/
+    for gt in cpp/build/gtests/* ; do
         test_name=$(basename ${gt})
         echo "Running GoogleTest $test_name"
         ${gt} --gtest_output=xml:${TESTRESULTS_DIR}
