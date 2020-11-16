@@ -112,7 +112,7 @@ else
     mkdir -p ${TESTRESULTS_DIR}
     SUITEERROR=0
 
-    gpuco_logger "Check GPU usage"
+    gpuci_logger "Check GPU usage"
     nvidia-smi
 
     gpuci_logger "Running googletests"
