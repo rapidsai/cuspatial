@@ -21,6 +21,7 @@ build:
     - PARALLEL_LEVEL
     - CUDF_HOME
     - VERSION_SUFFIX
+    - PROJECT_FLASH
   run_exports:
     - {{ pin_subpackage("libcuspatial", max_pin="x.x") }}
 
