@@ -10,8 +10,8 @@ export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
 export CUDF_HOME="${WORKSPACE}/cudf"
 
-export GIT_DESCRIBE_TAG=`git describe --tags`
-export MINOR_VERSION=`echo $GIT_DESCRIBE_TAG | grep -o -E '([0-9]+\.[0-9]+)'`
+export GIT_DESCRIBE=`git describe --tags`
+export MINOR_VERSION=`echo $GIT_DESCRIBE | grep -o -E '([0-9]+\.[0-9]+)'`
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
@@ -61,7 +61,7 @@ if [ "$BUILD_LIBCUSPATIAL" == '1' ]; then
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     conda build conda/recipes/libcuspatial
   else
-
+    [[ -e ${CUDF_HOME} ]] && rm -rf ${CUDF_HOME}
     git clone https://github.com/rapidsai/cudf.git -b branch-$MINOR_VERSION ${CUDF_HOME}
     cd $CUDF_HOME
     git submodule update --init --remote --recursive
