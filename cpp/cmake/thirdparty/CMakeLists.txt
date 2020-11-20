@@ -26,8 +26,8 @@ message("Fetching libcudacxx")
 
 FetchContent_Declare(
     libcudacxx
-    GIT_REPOSITORY https://github.com/trxcllnt/libcudacxx.git
-    GIT_TAG        cudf-backports
+    GIT_REPOSITORY https://github.com/NVIDIA/libcudacxx.git
+    GIT_TAG        main
     GIT_SHALLOW    true
 )
 
