@@ -18,8 +18,9 @@
 
 #include <cudf/column/column.hpp>
 #include <cudf/table/table.hpp>
+#include <cudf/types.hpp>
+
 #include <memory>
-#include "cudf/types.hpp"
 
 namespace cuspatial {
 
