@@ -21,6 +21,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/thrust_rmm_allocator.h>
+#include <rmm/cuda_stream_view.hpp>
 
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
@@ -53,7 +54,7 @@ struct tuple_sum {
 template <typename T>
 inline std::unique_ptr<cudf::column> make_fixed_width_column(
   cudf::size_type size,
-  cudaStream_t stream                 = 0,
+  rmm::cuda_stream_view stream        = rmm::cuda_stream_default,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
 {
   return cudf::make_fixed_width_column(

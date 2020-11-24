@@ -25,6 +25,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/thrust_rmm_allocator.h>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <memory>
@@ -65,7 +66,7 @@ struct haversine_functor {
     cudf::column_view const& b_lon,
     cudf::column_view const& b_lat,
     double radius,
-    cudaStream_t stream,
+    rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
     if (a_lon.is_empty()) { return cudf::empty_like(a_lon); }
@@ -81,7 +82,7 @@ struct haversine_functor {
 
     auto input_iter = thrust::make_zip_iterator(input_tuple);
 
-    thrust::transform(rmm::exec_policy(stream)->on(stream),
+    thrust::transform(rmm::exec_policy(stream)->on(stream.value()),
                       input_iter,
                       input_iter + result->size(),
                       result->mutable_view().begin<T>(),
@@ -108,7 +109,7 @@ std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
                                                  cudf::column_view const& b_lon,
                                                  cudf::column_view const& b_lat,
                                                  double radius,
-                                                 cudaStream_t stream,
+                                                 rmm::cuda_stream_view stream,
                                                  rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(radius > 0, "radius must be positive.");
@@ -138,7 +139,8 @@ std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
                                                  double radius,
                                                  rmm::mr::device_memory_resource* mr)
 {
-  return cuspatial::detail::haversine_distance(a_lon, a_lat, b_lon, b_lat, radius, 0, mr);
+  return cuspatial::detail::haversine_distance(
+    a_lon, a_lat, b_lon, b_lat, radius, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial

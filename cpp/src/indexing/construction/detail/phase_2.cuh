@@ -23,6 +23,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/thrust_rmm_allocator.h>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 
 #include <thrust/functional.h>
@@ -43,10 +44,10 @@ namespace detail {
 
 inline rmm::device_uvector<uint32_t> compute_leaf_positions(cudf::column_view const &indicator,
                                                             cudf::size_type num_valid_nodes,
-                                                            cudaStream_t stream)
+                                                            rmm::cuda_stream_view stream)
 {
   rmm::device_uvector<uint32_t> leaf_pos(num_valid_nodes, stream);
-  auto result = thrust::copy_if(rmm::exec_policy(stream)->on(stream),
+  auto result = thrust::copy_if(rmm::exec_policy(stream)->on(stream.value()),
                                 thrust::make_counting_iterator(0),
                                 thrust::make_counting_iterator(0) + num_valid_nodes,
                                 indicator.begin<bool>(),
@@ -64,12 +65,12 @@ inline rmm::device_uvector<uint32_t> flatten_point_keys(
   cudf::column_view const &indicator,
   cudf::size_type num_valid_nodes,
   int8_t max_depth,
-  cudaStream_t stream)
+  rmm::cuda_stream_view stream)
 {
   rmm::device_uvector<uint32_t> flattened_keys(num_valid_nodes, stream);
   auto keys_and_levels =
     make_zip_iterator(quad_keys.begin(), quad_level.begin(), indicator.begin<bool>());
-  thrust::transform(rmm::exec_policy(stream)->on(stream),
+  thrust::transform(rmm::exec_policy(stream)->on(stream.value()),
                     keys_and_levels,
                     keys_and_levels + num_valid_nodes,
                     flattened_keys.begin(),
@@ -98,7 +99,7 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
   cudf::column_view const &indicator,
   cudf::size_type num_valid_nodes,
   int8_t max_depth,
-  cudaStream_t stream)
+  rmm::cuda_stream_view stream)
 {
   // Sort initial indices and temporary point counts by the flattened keys
   auto sorted_order_and_point_counts = [&]() {
@@ -106,24 +107,24 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
       flatten_point_keys(quad_keys, quad_level, indicator, num_valid_nodes, max_depth, stream);
 
     rmm::device_uvector<uint32_t> initial_sort_indices(num_valid_nodes, stream);
-    thrust::sequence(rmm::exec_policy(stream)->on(stream),
+    thrust::sequence(rmm::exec_policy(stream)->on(stream.value()),
                      initial_sort_indices.begin(),
                      initial_sort_indices.end());
 
     rmm::device_uvector<uint32_t> quad_point_count_tmp(num_valid_nodes, stream);
-    thrust::copy(rmm::exec_policy(stream)->on(stream),
+    thrust::copy(rmm::exec_policy(stream)->on(stream.value()),
                  quad_point_count.begin(),
                  quad_point_count.end(),
                  quad_point_count_tmp.begin());
 
     // sort indices and temporary point counts
     thrust::stable_sort_by_key(
-      rmm::exec_policy(stream)->on(stream),
+      rmm::exec_policy(stream)->on(stream.value()),
       flattened_keys.begin(),
       flattened_keys.end(),
       make_zip_iterator(initial_sort_indices.begin(), quad_point_count_tmp.begin()));
 
-    thrust::remove_if(rmm::exec_policy(stream)->on(stream),
+    thrust::remove_if(rmm::exec_policy(stream)->on(stream.value()),
                       quad_point_count_tmp.begin(),
                       quad_point_count_tmp.begin() + num_valid_nodes,
                       quad_point_count_tmp.begin(),
@@ -150,7 +151,7 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
 
   rmm::device_uvector<uint32_t> quad_point_offsets_tmp(leaf_offsets.size(), stream);
 
-  thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
+  thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
                          quad_point_count_tmp.begin(),
                          quad_point_count_tmp.end(),
                          quad_point_offsets_tmp.begin());
@@ -158,14 +159,14 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
   auto counts_and_offsets =
     make_zip_iterator(quad_point_count_tmp.begin(), quad_point_offsets_tmp.begin());
 
-  thrust::stable_sort_by_key(rmm::exec_policy(stream)->on(stream),
+  thrust::stable_sort_by_key(rmm::exec_policy(stream)->on(stream.value()),
                              initial_sort_indices.begin(),
                              initial_sort_indices.end(),
                              counts_and_offsets);
 
   rmm::device_uvector<uint32_t> quad_point_offsets(num_valid_nodes, stream);
 
-  thrust::scatter(rmm::exec_policy(stream)->on(stream),
+  thrust::scatter(rmm::exec_policy(stream)->on(stream.value()),
                   counts_and_offsets,
                   counts_and_offsets + leaf_offsets.size(),
                   leaf_offsets.begin(),
@@ -180,22 +181,22 @@ inline rmm::device_uvector<uint32_t> compute_parent_positions(
   rmm::device_uvector<uint32_t> const &quad_child_count,
   cudf::size_type num_parent_nodes,
   cudf::size_type num_child_nodes,
-  cudaStream_t stream)
+  rmm::cuda_stream_view stream)
 {
   // Compute parent node start positions
   // Wraped in an IIFE so `position_map` is freed on return
   auto parent_pos = [&]() {
     rmm::device_uvector<uint32_t> position_map(num_parent_nodes, stream);
     // line 1 of algorithm in Fig. 5 in ref.
-    thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
+    thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
                            quad_child_count.begin(),
                            quad_child_count.begin() + num_parent_nodes,
                            position_map.begin());
     // line 2 of algorithm in Fig. 5 in ref.
     rmm::device_uvector<uint32_t> parent_pos(num_child_nodes, stream);
     thrust::uninitialized_fill(
-      rmm::exec_policy(stream)->on(stream), parent_pos.begin(), parent_pos.end(), 0);
-    thrust::scatter(rmm::exec_policy(stream)->on(stream),
+      rmm::exec_policy(stream)->on(stream.value()), parent_pos.begin(), parent_pos.end(), 0);
+    thrust::scatter(rmm::exec_policy(stream)->on(stream.value()),
                     thrust::make_counting_iterator(0),
                     thrust::make_counting_iterator(0) + num_parent_nodes,
                     position_map.begin(),
@@ -204,7 +205,7 @@ inline rmm::device_uvector<uint32_t> compute_parent_positions(
   }();
 
   // line 3 of algorithm in Fig. 5 in ref.
-  thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
+  thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
                          parent_pos.begin(),
                          parent_pos.begin() + num_child_nodes,
                          parent_pos.begin(),
@@ -236,7 +237,7 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
   cudf::size_type num_child_nodes,
   cudf::size_type min_size,
   cudf::size_type level_1_size,
-  cudaStream_t stream)
+  rmm::cuda_stream_view stream)
 {
   // compute parent node start positions
   auto parent_positions =
@@ -248,7 +249,7 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
   // Start counting nodes at level 2, since children of the root node should not
   // be discarded.
   auto num_invalid_parent_nodes =
-    thrust::count_if(rmm::exec_policy(stream)->on(stream),
+    thrust::count_if(rmm::exec_policy(stream)->on(stream.value()),
                      parent_point_counts,
                      parent_point_counts + (num_parent_nodes - level_1_size),
                      // i.e. quad_point_count[parent_pos] <= min_size
@@ -267,7 +268,7 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
                                 quad_levels.begin() + level_1_size);
 
   auto last_valid =
-    thrust::remove_if(rmm::exec_policy(stream)->on(stream),
+    thrust::remove_if(rmm::exec_policy(stream)->on(stream.value()),
                       tree,
                       tree + num_child_nodes,
                       parent_point_counts,
@@ -306,21 +307,21 @@ inline std::unique_ptr<cudf::column> construct_non_leaf_indicator(
   cudf::size_type num_valid_nodes,
   cudf::size_type min_size,
   rmm::mr::device_memory_resource *mr,
-  cudaStream_t stream)
+  rmm::cuda_stream_view stream)
 {
   //
   // Construct the indicator output column
   auto is_quad = make_fixed_width_column<bool>(num_valid_nodes, stream, mr);
 
   // line 6 of algorithm in Fig. 5 in ref.
-  thrust::transform(rmm::exec_policy(stream)->on(stream),
+  thrust::transform(rmm::exec_policy(stream)->on(stream.value()),
                     quad_point_count.begin(),
                     quad_point_count.begin() + num_parent_nodes,
                     is_quad->mutable_view().begin<bool>(),
                     thrust::placeholders::_1 > min_size);
 
   // line 7 of algorithm in Fig. 5 in ref.
-  thrust::replace_if(rmm::exec_policy(stream)->on(stream),
+  thrust::replace_if(rmm::exec_policy(stream)->on(stream.value()),
                      quad_point_count.begin(),
                      quad_point_count.begin() + num_parent_nodes,
                      is_quad->view().begin<bool>(),
@@ -330,7 +331,7 @@ inline std::unique_ptr<cudf::column> construct_non_leaf_indicator(
   if (num_valid_nodes > num_parent_nodes) {
     // zero-fill the rest of the indicator column because
     // device_memory_resources aren't required to initialize allocations
-    thrust::fill(rmm::exec_policy(stream)->on(stream),
+    thrust::fill(rmm::exec_policy(stream)->on(stream.value()),
                  is_quad->mutable_view().begin<bool>() + num_parent_nodes,
                  is_quad->mutable_view().end<bool>(),
                  0);

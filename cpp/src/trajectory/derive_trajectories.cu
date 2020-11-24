@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-#include <rmm/thrust_rmm_allocator.h>
-
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
+#include <cuspatial/error.hpp>
+#include <cuspatial/trajectory.hpp>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/copying.hpp>
@@ -25,8 +23,11 @@
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
 
-#include <cuspatial/error.hpp>
-#include <cuspatial/trajectory.hpp>
+#include <rmm/thrust_rmm_allocator.h>
+#include <rmm/cuda_stream_view.hpp>
+
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
 
 #include <memory>
 #include <vector>
@@ -39,20 +40,20 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
   cudf::column_view const& x,
   cudf::column_view const& y,
   cudf::column_view const& timestamp,
-  rmm::mr::device_memory_resource* mr,
-  cudaStream_t stream)
+  rmm::cuda_stream_view stream,
+  rmm::mr::device_memory_resource* mr)
 {
   auto sorted = cudf::detail::sort_by_key(cudf::table_view{{object_id, x, y, timestamp}},
                                           cudf::table_view{{object_id, timestamp}},
                                           {},
                                           {},
-                                          mr,
-                                          stream);
+                                          stream,
+                                          mr);
 
   auto policy    = rmm::exec_policy(stream);
   auto sorted_id = sorted->get_column(0).view();
   rmm::device_vector<int32_t> lengths(object_id.size());
-  auto grouped = thrust::reduce_by_key(policy->on(stream),
+  auto grouped = thrust::reduce_by_key(policy->on(stream.value()),
                                        sorted_id.begin<int32_t>(),
                                        sorted_id.end<int32_t>(),
                                        thrust::make_constant_iterator(1),
@@ -65,8 +66,10 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
                                            stream,
                                            mr);
 
-  thrust::exclusive_scan(
-    policy->on(stream), lengths.begin(), lengths.end(), offsets->mutable_view().begin<int32_t>());
+  thrust::exclusive_scan(policy->on(stream.value()),
+                         lengths.begin(),
+                         lengths.end(),
+                         offsets->mutable_view().begin<int32_t>());
 
   return std::make_pair(std::move(sorted), std::move(offsets));
 }
@@ -97,6 +100,6 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
     return std::make_pair(std::make_unique<cudf::table>(std::move(cols)),
                           cudf::make_empty_column(cudf::data_type{cudf::type_id::INT32}));
   }
-  return detail::derive_trajectories(object_id, x, y, timestamp, mr, 0);
+  return detail::derive_trajectories(object_id, x, y, timestamp, rmm::cuda_stream_default, mr);
 }
 }  // namespace cuspatial
