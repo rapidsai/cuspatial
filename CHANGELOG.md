@@ -3,7 +3,7 @@
 ## New Features
 
 ## Improvements
-
+- PR #1119 Improvments to gpuCI scripts
 ## Bug Fixes
 
 # cuSpatial 0.16.0 (Date TBD)
