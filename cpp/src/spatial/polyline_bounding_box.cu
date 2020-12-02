@@ -14,6 +14,17 @@
  * limitations under the License.
  */
 
+#include <cuspatial/error.hpp>
+
+#include <cudf/column/column_factories.hpp>
+#include <cudf/column/column_view.hpp>
+#include <cudf/copying.hpp>
+#include <cudf/table/table.hpp>
+#include <cudf/types.hpp>
+
+#include <rmm/thrust_rmm_allocator.h>
+#include <rmm/cuda_stream_view.hpp>
+
 #include <thrust/functional.h>
 #include <thrust/gather.h>
 #include <thrust/iterator/constant_iterator.h>
@@ -23,18 +34,8 @@
 #include <thrust/reduce.h>
 #include <thrust/tuple.h>
 
-#include <cudf/column/column_factories.hpp>
-#include <cudf/column/column_view.hpp>
-#include <cudf/copying.hpp>
-#include <cudf/table/table.hpp>
-#include <cudf/types.hpp>
-
-#include <cuspatial/error.hpp>
-
 #include <memory>
 #include <utility>
-
-#include <rmm/thrust_rmm_allocator.h>
 
 namespace cuspatial {
 
@@ -57,20 +58,20 @@ std::unique_ptr<cudf::table> compute_polyline_bounding_boxes(cudf::column_view c
                                                              cudf::column_view const &x,
                                                              cudf::column_view const &y,
                                                              T expansion_radius,
-                                                             rmm::mr::device_memory_resource *mr,
-                                                             cudaStream_t stream)
+                                                             rmm::cuda_stream_view stream,
+                                                             rmm::mr::device_memory_resource *mr)
 {
   auto num_polygons = poly_offsets.size();
   rmm::device_vector<int32_t> point_ids(x.size());
 
   // Scatter the polyline offsets into a list of point_ids for reduction
-  thrust::scatter(rmm::exec_policy(stream)->on(stream),
+  thrust::scatter(rmm::exec_policy(stream)->on(stream.value()),
                   thrust::make_counting_iterator(0),
                   thrust::make_counting_iterator(0) + num_polygons,
                   poly_offsets.begin<int32_t>(),
                   point_ids.begin());
 
-  thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
+  thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
                          point_ids.begin(),
                          point_ids.end(),
                          point_ids.begin(),
@@ -99,7 +100,7 @@ std::unique_ptr<cudf::table> compute_polyline_bounding_boxes(cudf::column_view c
   auto points_squared_iter =
     thrust::make_transform_iterator(points_iter, point_to_square<T>{expansion_radius});
 
-  thrust::reduce_by_key(rmm::exec_policy(stream)->on(stream),
+  thrust::reduce_by_key(rmm::exec_policy(stream)->on(stream.value()),
                         point_ids.begin(),
                         point_ids.end(),
                         points_squared_iter,
@@ -134,11 +135,11 @@ struct dispatch_compute_polyline_bounding_boxes {
              cudf::column_view const &x,
              cudf::column_view const &y,
              double expansion_radius,
-             rmm::mr::device_memory_resource *mr,
-             cudaStream_t stream)
+             rmm::cuda_stream_view stream,
+             rmm::mr::device_memory_resource *mr)
   {
     return compute_polyline_bounding_boxes<T>(
-      poly_offsets, x, y, static_cast<T>(expansion_radius), mr, stream);
+      poly_offsets, x, y, static_cast<T>(expansion_radius), stream, mr);
   }
 };
 
@@ -150,8 +151,8 @@ std::unique_ptr<cudf::table> polyline_bounding_boxes(cudf::column_view const &po
                                                      cudf::column_view const &x,
                                                      cudf::column_view const &y,
                                                      double expansion_radius,
-                                                     rmm::mr::device_memory_resource *mr,
-                                                     cudaStream_t stream)
+                                                     rmm::cuda_stream_view stream,
+                                                     rmm::mr::device_memory_resource *mr)
 {
   return cudf::type_dispatcher(x.type(),
                                dispatch_compute_polyline_bounding_boxes{},
@@ -159,8 +160,8 @@ std::unique_ptr<cudf::table> polyline_bounding_boxes(cudf::column_view const &po
                                x,
                                y,
                                expansion_radius,
-                               mr,
-                               cudaStream_t{0});
+                               rmm::cuda_stream_default,
+                               mr);
 }
 
 }  // namespace detail
@@ -187,7 +188,8 @@ std::unique_ptr<cudf::table> polyline_bounding_boxes(cudf::column_view const &po
     cols.push_back(cudf::empty_like(y));
     return std::make_unique<cudf::table>(std::move(cols));
   }
-  return detail::polyline_bounding_boxes(poly_offsets, x, y, expansion_radius, mr, cudaStream_t{0});
+  return detail::polyline_bounding_boxes(
+    poly_offsets, x, y, expansion_radius, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial

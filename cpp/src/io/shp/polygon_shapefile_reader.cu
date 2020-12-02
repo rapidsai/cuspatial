@@ -21,6 +21,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/thrust_rmm_allocator.h>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -34,7 +35,7 @@ namespace detail {
 
 template <typename T>
 std::unique_ptr<cudf::column> make_column(std::vector<T> source,
-                                          cudaStream_t stream,
+                                          rmm::cuda_stream_view stream,
                                           rmm::mr::device_memory_resource* mr)
 {
   auto tid    = cudf::type_to_id<T>();
@@ -50,7 +51,7 @@ std::tuple<std::vector<cudf::size_type>,
 read_polygon_shapefile(std::string const& filename);
 
 std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
-  std::string const& filename, rmm::mr::device_memory_resource* mr, cudaStream_t stream)
+  std::string const& filename, rmm::cuda_stream_view stream, rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(not filename.empty(), "Filename cannot be empty.");
 
@@ -62,13 +63,13 @@ std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
   auto ys              = make_column<double>(std::get<3>(poly_vectors), stream, mr);
 
   // transform polygon lengths to polygon offsets
-  thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
+  thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
                          polygon_offsets->view().begin<cudf::size_type>(),
                          polygon_offsets->view().end<cudf::size_type>(),
                          polygon_offsets->mutable_view().begin<cudf::size_type>());
 
   // transform ring lengths to ring offsets
-  thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream),
+  thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
                          ring_offsets->view().begin<cudf::size_type>(),
                          ring_offsets->view().end<cudf::size_type>(),
                          ring_offsets->mutable_view().begin<cudf::size_type>());
@@ -87,7 +88,7 @@ std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
 std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
   std::string const& filename, rmm::mr::device_memory_resource* mr)
 {
-  return detail::read_polygon_shapefile(filename, mr, 0);
+  return detail::read_polygon_shapefile(filename, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial

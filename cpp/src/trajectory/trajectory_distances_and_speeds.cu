@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#include <thrust/iterator/discard_iterator.h>
+#include <cuspatial/error.hpp>
+#include <cuspatial/trajectory.hpp>
 
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
@@ -25,8 +26,9 @@
 #include <cudf/utilities/traits.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
-#include <cuspatial/error.hpp>
-#include <cuspatial/trajectory.hpp>
+#include <rmm/cuda_stream_view.hpp>
+
+#include <thrust/iterator/discard_iterator.h>
 
 namespace cuspatial {
 
@@ -42,7 +44,7 @@ struct duplicate_first_element_func {
 };
 
 template <typename T>
-auto duplicate_first_element_iterator(cudf::column_view const& col, cudaStream_t stream)
+auto duplicate_first_element_iterator(cudf::column_view const& col, rmm::cuda_stream_view stream)
 {
   auto d_col = cudf::column_device_view::create(col, stream);
   return thrust::make_transform_iterator(thrust::make_counting_iterator<cudf::size_type>(-1),
@@ -58,8 +60,8 @@ struct dispatch_timestamp {
     cudf::column_view const& x,
     cudf::column_view const& y,
     cudf::column_view const& timestamp,
-    rmm::mr::device_memory_resource* mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     auto policy = rmm::exec_policy(stream);
 
@@ -102,7 +104,7 @@ struct dispatch_timestamp {
 
     // Compute duration and distance difference between adjacent elements that
     // share the same object id
-    thrust::adjacent_difference(policy->on(stream),                         // execution policy
+    thrust::adjacent_difference(policy->on(stream.value()),
                                 timestamp_point_and_id,                     // first
                                 timestamp_point_and_id + durations.size(),  // last
                                 duration_and_distance_1,                    // result
@@ -146,7 +148,7 @@ struct dispatch_timestamp {
 
     // Reduce the intermediate durations and kilometer distances into meter
     // distances and speeds in meters/second
-    thrust::reduce_by_key(policy->on(stream),               // execution policy
+    thrust::reduce_by_key(policy->on(stream.value()),
                           object_id.begin<int32_t>(),       // keys_first
                           object_id.end<int32_t>(),         // keys_last
                           duration_and_distance_2 + 1,      // values_first
@@ -165,7 +167,7 @@ struct dispatch_timestamp {
                           });
 
     // check for errors
-    CHECK_CUDA(stream);
+    CHECK_CUDA(stream.value());
 
     return std::make_unique<cudf::table>(std::move(cols));
   }
@@ -177,8 +179,8 @@ struct dispatch_timestamp {
     cudf::column_view const& timestamp,
     cudf::column_view const& x,
     cudf::column_view const& y,
-    rmm::mr::device_memory_resource* mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     CUSPATIAL_FAIL("Timestamp must be a timestamp type");
   }
@@ -192,8 +194,8 @@ struct dispatch_element {
     cudf::column_view const& x,
     cudf::column_view const& y,
     cudf::column_view const& timestamp,
-    rmm::mr::device_memory_resource* mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     return cudf::type_dispatcher(timestamp.type(),
                                  dispatch_timestamp<Element>{},
@@ -202,8 +204,8 @@ struct dispatch_element {
                                  x,
                                  y,
                                  timestamp,
-                                 mr,
-                                 stream);
+                                 stream,
+                                 mr);
   }
 
   template <typename Element>
@@ -213,8 +215,8 @@ struct dispatch_element {
              cudf::column_view const& x,
              cudf::column_view const& y,
              cudf::column_view const& timestamp,
-             rmm::mr::device_memory_resource* mr,
-             cudaStream_t stream)
+             rmm::cuda_stream_view stream,
+             rmm::mr::device_memory_resource* mr)
   {
     CUSPATIAL_FAIL("X and Y must be floating point types");
   }
@@ -228,11 +230,11 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(cudf::size_type num
                                                              cudf::column_view const& x,
                                                              cudf::column_view const& y,
                                                              cudf::column_view const& timestamp,
-                                                             rmm::mr::device_memory_resource* mr,
-                                                             cudaStream_t stream)
+                                                             rmm::cuda_stream_view stream,
+                                                             rmm::mr::device_memory_resource* mr)
 {
   return cudf::type_dispatcher(
-    x.type(), dispatch_element{}, num_trajectories, object_id, x, y, timestamp, mr, stream);
+    x.type(), dispatch_element{}, num_trajectories, object_id, x, y, timestamp, stream, mr);
 }
 }  // namespace detail
 
@@ -262,7 +264,7 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(cudf::size_type num
   }
 
   return detail::trajectory_distances_and_speeds(
-    num_trajectories, object_id, x, y, timestamp, mr, 0);
+    num_trajectories, object_id, x, y, timestamp, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial
