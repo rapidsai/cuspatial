@@ -150,20 +150,20 @@ struct hausdorff_functor {
 
 std::unique_ptr<cudf::column> directed_hausdorff_distance(cudf::column_view const& xs,
                                                           cudf::column_view const& ys,
-                                                          cudf::column_view const& points_per_space,
+                                                          cudf::column_view const& space_offsets,
                                                           rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(xs.type() == ys.type(), "Inputs `xs` and `ys` must have same type.");
   CUSPATIAL_EXPECTS(xs.size() == ys.size(), "Inputs `xs` and `ys` must have same length.");
 
-  CUSPATIAL_EXPECTS(not xs.has_nulls() and not ys.has_nulls() and not points_per_space.has_nulls(),
+  CUSPATIAL_EXPECTS(not xs.has_nulls() and not ys.has_nulls() and not space_offsets.has_nulls(),
                     "Inputs must not have nulls.");
 
-  CUSPATIAL_EXPECTS(xs.size() >= points_per_space.size(),
+  CUSPATIAL_EXPECTS(xs.size() >= space_offsets.size(),
                     "At least one point is required for each space");
 
   return cudf::type_dispatcher(
-    xs.type(), detail::hausdorff_functor(), xs, ys, points_per_space, rmm::cuda_stream_default, mr);
+    xs.type(), detail::hausdorff_functor(), xs, ys, space_offsets, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial

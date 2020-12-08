@@ -23,7 +23,7 @@ from cuspatial.utils import gis_utils
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
-def directed_hausdorff_distance(xs, ys, points_per_space):
+def directed_hausdorff_distance(xs, ys, space_offsets):
     """Compute the directed Hausdorff distances between all pairs of
     spaces.
 
@@ -33,8 +33,8 @@ def directed_hausdorff_distance(xs, ys, points_per_space):
         column of x-coordinates
     ys
         column of y-coordinates
-    points_per_space
-        number of points in each space
+    space_offsets
+        beginning index of each space, plus a final ending offset
 
     Returns
     -------
@@ -74,7 +74,7 @@ def directed_hausdorff_distance(xs, ys, points_per_space):
     >>> result = cuspatial.directed_hausdorff_distance(
             [0, 1, 0, 0], # xs
             [0, 0, 1, 2], # ys
-            [2,    2],    # points_per_space
+            [0, 2, 4],    # space_offsets
         )
     >>> print(result)
              0         1
@@ -82,12 +82,12 @@ def directed_hausdorff_distance(xs, ys, points_per_space):
         1  2.0  0.000000
     """
 
-    num_spaces = len(points_per_space)
+    num_spaces = len(space_offsets)
     if num_spaces == 0:
         return DataFrame()
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     result = cpp_directed_hausdorff_distance(
-        xs, ys, as_column(points_per_space, dtype="int32"),
+        xs, ys, as_column(space_offsets, dtype="int32"),
     )
     result = result.data_array_view
     result = result.reshape(num_spaces, num_spaces)

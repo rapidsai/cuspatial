@@ -12,11 +12,11 @@ from libcpp.memory cimport unique_ptr
 def directed_hausdorff_distance(
     Column xs,
     Column ys,
-    Column points_per_space,
+    Column space_offsets,
 ):
     cdef column_view c_xs = xs.view()
     cdef column_view c_ys = ys.view()
-    cdef column_view c_points_per_space = points_per_space.view()
+    cdef column_view c_shape_offsets = space_offsets.view()
 
     cdef unique_ptr[column] result
 
@@ -25,7 +25,7 @@ def directed_hausdorff_distance(
             directed_cpp_hausdorff_distance(
                 c_xs,
                 c_ys,
-                c_points_per_space,
+                c_shape_offsets,
             )
         )
 
