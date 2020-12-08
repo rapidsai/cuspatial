@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "join/detail/intersection.cuh"
-#include "join/detail/traversal.cuh"
+#include "detail/intersection.cuh"
+#include "detail/traversal.cuh"
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/spatial_join.hpp>

@@ -16,12 +16,13 @@
 
 #pragma once
 
+#include <utility/size_from_offsets.cuh>
+
 #include <thrust/binary_search.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/pair.h>
 #include <utility>
-#include "utility/size_from_offsets.cuh"
 
 namespace cuspatial {
 namespace detail {

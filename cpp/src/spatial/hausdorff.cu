@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-#include "utility/scatter_output_iterator.cuh"
-#include "utility/size_from_offsets.cuh"
+#include "detail/cartesian_product_group_index_iterator.cuh"
+#include "detail/hausdorff.cuh"
 
-#include <cuspatial/detail/cartesian_product_group_index_iterator.cuh>
-#include <cuspatial/detail/hausdorff.cuh>
+#include <utility/scatter_output_iterator.cuh>
+#include <utility/size_from_offsets.cuh>
+
 #include <cuspatial/error.hpp>
 
 #include <cudf/column/column_device_view.cuh>

@@ -16,8 +16,9 @@
 
 #include <vector>
 
-#include <cuspatial/detail/cartesian_product_group_index_iterator.cuh>
 #include <cuspatial/error.hpp>
+
+#include <spatial/detail/cartesian_product_group_index_iterator.cuh>
 
 #include <thrust/binary_search.h>
 #include <thrust/iterator/constant_iterator.h>
