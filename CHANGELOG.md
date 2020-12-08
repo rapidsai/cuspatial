@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #332 fix directed_hausdorff_distance's space_offsets name + documentation
+
 ## Bug Fixes
 
 # cuSpatial 0.17.0 (Date TBD)
