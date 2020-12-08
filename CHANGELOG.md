@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #331 Use simplified `rmm::exec_policy`
+
 ## Bug Fixes
 
 # cuSpatial 0.17.0 (Date TBD)
