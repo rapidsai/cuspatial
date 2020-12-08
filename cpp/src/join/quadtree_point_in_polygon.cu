@@ -28,6 +28,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/copy.h>
@@ -127,7 +128,7 @@ struct compute_quadtree_point_in_polygon {
     // `inclusive_scan` is the total number of points to be tested against any polygon.
     rmm::device_uvector<uint32_t> local_point_offsets(num_poly_quad_pairs + 1, stream);
 
-    thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::inclusive_scan(rmm::exec_policy(stream),
                            quad_lengths_iter,
                            quad_lengths_iter + num_poly_quad_pairs,
                            local_point_offsets.begin() + 1);
@@ -155,7 +156,7 @@ struct compute_quadtree_point_in_polygon {
     //     pp_pairs.append((polygon, point))
     // ```
     //
-    thrust::transform(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::transform(rmm::exec_policy(stream),
                       counting_iter,
                       counting_iter + num_total_points,
                       poly_and_point_indices,
@@ -172,7 +173,7 @@ struct compute_quadtree_point_in_polygon {
     // Compute the number of intersections by removing (poly, point) pairs that don't intersect
     auto num_intersections = thrust::distance(
       poly_and_point_indices,
-      thrust::remove_if(rmm::exec_policy(stream)->on(stream.value()),
+      thrust::remove_if(rmm::exec_policy(stream),
                         poly_and_point_indices,
                         poly_and_point_indices + num_total_points,
                         test_poly_point_intersection<T, decltype(point_xys_iter)>{
@@ -190,13 +191,13 @@ struct compute_quadtree_point_in_polygon {
     // `idxs.begin() + num_intersections`.
 
     // populate the polygon indices column
-    thrust::copy(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::copy(rmm::exec_policy(stream),
                  poly_idxs.begin(),
                  poly_idxs.begin() + num_intersections,
                  poly_idx_col->mutable_view().template begin<uint32_t>());
 
     // populate the point indices column
-    thrust::copy(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::copy(rmm::exec_policy(stream),
                  point_idxs.begin(),
                  point_idxs.begin() + num_intersections,
                  point_idx_col->mutable_view().template begin<uint32_t>());

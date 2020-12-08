@@ -28,6 +28,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/gather.h>
 #include <thrust/iterator/constant_iterator.h>
@@ -152,23 +153,21 @@ struct compute_quadtree_point_to_nearest_polyline {
 
     rmm::device_uvector<uint32_t> d_poly_idx(num_pairs, stream);
 
-    thrust::copy(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::copy(rmm::exec_policy(stream),
                  poly_idx.begin<uint32_t>(),
                  poly_idx.end<uint32_t>(),
                  d_poly_idx.begin());
 
     rmm::device_uvector<uint32_t> d_quad_idx(num_pairs, stream);
 
-    thrust::copy(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::copy(rmm::exec_policy(stream),
                  quad_idx.begin<uint32_t>(),
                  quad_idx.end<uint32_t>(),
                  d_quad_idx.begin());
 
     // sort (d_poly_idx, d_quad_idx) using d_quad_idx as key => (quad_idxs, poly_idxs)
-    thrust::sort_by_key(rmm::exec_policy(stream)->on(stream.value()),
-                        d_quad_idx.begin(),
-                        d_quad_idx.end(),
-                        d_poly_idx.begin());
+    thrust::sort_by_key(
+      rmm::exec_policy(stream), d_quad_idx.begin(), d_quad_idx.end(), d_poly_idx.begin());
 
     // reduce_by_key using d_quad_idx as the key
     // exclusive_scan on numbers of polygons associated with a quadrant to create d_poly_idx_offsets
@@ -177,7 +176,7 @@ struct compute_quadtree_point_to_nearest_polyline {
 
     uint32_t num_quads =
       thrust::distance(d_poly_idx_offsets.begin(),
-                       thrust::reduce_by_key(rmm::exec_policy(stream)->on(stream.value()),
+                       thrust::reduce_by_key(rmm::exec_policy(stream),
                                              d_quad_idx.begin(),
                                              d_quad_idx.end(),
                                              thrust::constant_iterator<uint32_t>(1),
@@ -188,7 +187,7 @@ struct compute_quadtree_point_to_nearest_polyline {
     d_quad_idx.resize(num_quads, stream);
     d_poly_idx_offsets.resize(num_quads, stream);
 
-    thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::exclusive_scan(rmm::exec_policy(stream),
                            d_poly_idx_offsets.begin(),
                            d_poly_idx_offsets.end(),
                            d_poly_idx_offsets.begin());

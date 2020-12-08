@@ -28,6 +28,7 @@
 #include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <tuple>
 
@@ -61,7 +62,7 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
 
   // Count the number of top-level nodes to start.
   // This could be provided explicitly, but count_if should be fast enough.
-  auto num_top_level_leaves = thrust::count_if(rmm::exec_policy(stream)->on(stream.value()),
+  auto num_top_level_leaves = thrust::count_if(rmm::exec_policy(stream),
                                                node_levels.begin<uint8_t>(),
                                                node_levels.end<uint8_t>(),
                                                thrust::placeholders::_1 == 0);
@@ -178,12 +179,12 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
   cols.push_back(make_fixed_width_column<uint32_t>(num_results, stream, mr));
   cols.push_back(make_fixed_width_column<uint32_t>(num_results, stream, mr));
 
-  thrust::copy(rmm::exec_policy(stream)->on(stream.value()),
+  thrust::copy(rmm::exec_policy(stream),
                out_poly_idxs.begin(),
                out_poly_idxs.begin() + num_results,
                cols.at(0)->mutable_view().begin<uint32_t>());
 
-  thrust::copy(rmm::exec_policy(stream)->on(stream.value()),
+  thrust::copy(rmm::exec_policy(stream),
                out_node_idxs.begin(),
                out_node_idxs.begin() + num_results,
                cols.at(1)->mutable_view().begin<uint32_t>());

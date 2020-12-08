@@ -24,6 +24,7 @@
 
 #include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/functional.h>
 #include <thrust/gather.h>
@@ -65,13 +66,13 @@ std::unique_ptr<cudf::table> compute_polyline_bounding_boxes(cudf::column_view c
   rmm::device_vector<int32_t> point_ids(x.size());
 
   // Scatter the polyline offsets into a list of point_ids for reduction
-  thrust::scatter(rmm::exec_policy(stream)->on(stream.value()),
+  thrust::scatter(rmm::exec_policy(stream),
                   thrust::make_counting_iterator(0),
                   thrust::make_counting_iterator(0) + num_polygons,
                   poly_offsets.begin<int32_t>(),
                   point_ids.begin());
 
-  thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
+  thrust::inclusive_scan(rmm::exec_policy(stream),
                          point_ids.begin(),
                          point_ids.end(),
                          point_ids.begin(),
@@ -100,7 +101,7 @@ std::unique_ptr<cudf::table> compute_polyline_bounding_boxes(cudf::column_view c
   auto points_squared_iter =
     thrust::make_transform_iterator(points_iter, point_to_square<T>{expansion_radius});
 
-  thrust::reduce_by_key(rmm::exec_policy(stream)->on(stream.value()),
+  thrust::reduce_by_key(rmm::exec_policy(stream),
                         point_ids.begin(),
                         point_ids.end(),
                         points_squared_iter,

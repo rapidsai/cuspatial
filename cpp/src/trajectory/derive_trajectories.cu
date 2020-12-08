@@ -25,6 +25,7 @@
 
 #include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
@@ -50,10 +51,9 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
                                           stream,
                                           mr);
 
-  auto policy    = rmm::exec_policy(stream);
   auto sorted_id = sorted->get_column(0).view();
   rmm::device_vector<int32_t> lengths(object_id.size());
-  auto grouped = thrust::reduce_by_key(policy->on(stream.value()),
+  auto grouped = thrust::reduce_by_key(rmm::exec_policy(stream),
                                        sorted_id.begin<int32_t>(),
                                        sorted_id.end<int32_t>(),
                                        thrust::make_constant_iterator(1),
@@ -66,7 +66,7 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
                                            stream,
                                            mr);
 
-  thrust::exclusive_scan(policy->on(stream.value()),
+  thrust::exclusive_scan(rmm::exec_policy(stream),
                          lengths.begin(),
                          lengths.end(),
                          offsets->mutable_view().begin<int32_t>());

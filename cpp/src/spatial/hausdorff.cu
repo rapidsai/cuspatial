@@ -28,6 +28,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/functional.h>
@@ -128,14 +129,14 @@ struct hausdorff_functor {
 
     auto num_cartesian = num_points * num_points;
 
-    thrust::inclusive_scan_by_key(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::inclusive_scan_by_key(rmm::exec_policy(stream),
                                   gpc_key_iter,
                                   gpc_key_iter + num_cartesian,
                                   hausdorff_acc_iter,
                                   scatter_out,
                                   thrust::equal_to<thrust::pair<int32_t, int32_t>>());
 
-    thrust::transform(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::transform(rmm::exec_policy(stream),
                       result_temp_iter,
                       result_temp_iter + num_results,
                       result->mutable_view().begin<T>(),
