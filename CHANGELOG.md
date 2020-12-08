@@ -33,7 +33,6 @@
 - PR #295 Use move from libcpp.utility.
 - PR #299 Update ci/local/README.md
 - PR #303 Update yml files to include CUDA 11.0 and remove old supported versions
-- PR #297 Upgrade to libcu++ on GitHub.
 
 ## Bug Fixes
 - PR #291 Fix mislabeled columns in Python spatial join result table.
