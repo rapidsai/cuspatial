@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "indexing/construction/detail/utilities.cuh"
+#include <indexing/construction/detail/utilities.cuh>
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/spatial_join.hpp>

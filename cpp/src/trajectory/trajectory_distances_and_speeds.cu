@@ -83,7 +83,7 @@ struct dispatch_timestamp {
 
     using Rep     = typename Timestamp::rep;
     using Dur     = typename Timestamp::duration;
-    using Seconds = typename simt::std::chrono::seconds;
+    using Seconds = typename cuda::std::chrono::seconds;
 
     rmm::device_vector<Rep> durations(x.size() + 1);
     rmm::device_vector<double> distances(x.size() + 1);
@@ -144,7 +144,7 @@ struct dispatch_timestamp {
     );
 
     using Period =
-      typename simt::std::ratio_divide<typename Timestamp::period, typename Seconds::period>::type;
+      typename cuda::std::ratio_divide<typename Timestamp::period, typename Seconds::period>::type;
 
     // Reduce the intermediate durations and kilometer distances into meter
     // distances and speeds in meters/second
