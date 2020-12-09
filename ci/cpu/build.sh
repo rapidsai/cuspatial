@@ -5,18 +5,20 @@
 ######################################
 set -e
 
-# Logger function for build status output
-function logger() {
-  echo -e "\n>>>> $@\n"
-}
-
 # Set path and build parallel level
-export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
-export PARALLEL_LEVEL=4
+export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
+export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
 export CUDF_HOME="${WORKSPACE}/cudf"
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
+
+# Determine CUDA release version
+export CUDA_REL=${CUDA_VERSION%.*}
+
+# Setup 'gpuci_conda_retry' for build retries (results in 2 total attempts)
+export GPUCI_CONDA_RETRY_MAX=1
+export GPUCI_CONDA_RETRY_SLEEP=30
 
 # Switch to project root; also root of repo checkout
 cd $WORKSPACE
@@ -30,17 +32,22 @@ fi
 # SETUP - Check environment
 ################################################################################
 
-logger "Get env..."
+gpuci_logger "Check environment variables"
 env
 
-logger "Activate conda env..."
-source activate gdf
+gpuci_logger "Activate conda env"
+. /opt/conda/etc/profile.d/conda.sh
+conda activate rapids
 
-logger "Check versions..."
+gpuci_logger "Check compiler versions"
 python --version
-gcc --version
-g++ --version
-conda list
+$CC --version
+$CXX --version
+
+gpuci_logger "Check conda environment"
+conda info
+conda config --show-sources
+conda list --show-channel-urls
 
 # FIX Added to deal with Anancoda SSL verification issues during conda builds
 conda config --set ssl_verify False
@@ -49,17 +56,15 @@ conda config --set ssl_verify False
 # BUILD - Conda package builds (conda deps: libcupatial <- cuspatial)
 ##########################################################################################
 
-logger "Build conda pkg for libcuspatial..."
-cd $WORKSPACE
-source ci/cpu/libcuspatial/build_libcuspatial.sh
+gpuci_logger "Building conda pkd for libcuspatial"
+gpuci_conda_retry build conda/recipes/libcuspatial
 
-logger "Build conda pkg for cuspatial..."
-source ci/cpu/cuspatial/build_cuspatial.sh
+gpuci_logger "Building conda pkg for cuspatial"
+gpuci_conda_retry build conda/recipes/cuspatial --python=$PYTHON
 
 ################################################################################
 # UPLOAD - Conda packages
 ################################################################################
 
-logger "Upload conda pkgs..."
-source ci/cpu/upload_anaconda.sh
-
+gpuci_logger "Upload conda pkgs..."
+source ci/cpu/upload.sh

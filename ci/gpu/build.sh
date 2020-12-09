@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2018, NVIDIA CORPORATION.
+# COPYRIGHT (c) 2020, NVIDIA CORPORATION.
 #########################################
 # cuSpatial GPU build and test script for CI #
 #########################################
@@ -7,19 +7,14 @@ set -e
 NUMARGS=$#
 ARGS=$*
 
-# Logger function for build status output
-function logger() {
-  echo -e "\n>>>> $@\n"
-}
-
 # Arg parsing function
 function hasArg {
     (( ${NUMARGS} != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")
 }
 
 # Set path and build parallel level
-export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
-export PARALLEL_LEVEL=4
+export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
+export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
 export CUDA_REL=${CUDA_VERSION%.*}
 export CUDF_HOME="${WORKSPACE}/cudf"
 export CUSPATIAL_HOME="${WORKSPACE}"
@@ -36,32 +31,35 @@ export MINOR_VERSION=`echo $GIT_DESCRIBE_TAG | grep -o -E '([0-9]+\.[0-9]+)'`
 # SETUP - Check environment
 ################################################################################
 
-logger "Check environment..."
+gpuci_logger "Check environment"
 env
 
-logger "Check GPU usage..."
+gpuci_logger "Check GPU usage"
 nvidia-smi
 
-logger "Activate conda env..."
-source activate gdf
-conda install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" \
+gpuci_logger "Activate conda env"
+. /opt/conda/etc/profile.d/conda.sh
+conda activate rapids
+gpuci_conda_retry install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" \
     "rapids-build-env=$MINOR_VERSION.*"
 
 # https://docs.rapids.ai/maintainers/depmgmt/ 
 # conda remove -f rapids-build-env
-# conda install "your-pkg=1.0.0"
+# gpuci_conda_retry install "your-pkg=1.0.0"
 
-logger "Check versions..."
+gpuci_logger "Check versions"
 python --version
 $CC --version
 $CXX --version
-conda list
+conda info
+conda config --show-sources
+conda list --show-channel-urls
 
 ################################################################################
 # cuSpatial currently requires a the cudf repo for private headers
 ################################################################################
 
-logger "Clone cudf"
+gpuci_logger "Clone cudf"
 git clone https://github.com/rapidsai/cudf.git -b branch-$MINOR_VERSION ${CUDF_HOME}
 cd $CUDF_HOME
 git submodule update --init --remote --recursive
@@ -70,7 +68,7 @@ git submodule update --init --remote --recursive
 # BUILD - Build libcuspatial and cuSpatial from source
 ################################################################################
 
-logger "Build cuSpatial"
+gpuci_logger "Build cuSpatial"
 cd $WORKSPACE
 ./build.sh clean libcuspatial cuspatial tests
 
@@ -79,12 +77,12 @@ cd $WORKSPACE
 ###############################################################################
 
 if hasArg --skip-tests; then
-    logger "Skipping tests..."
+    gpuci_logger "Skipping tests"
 else
-    logger "Check GPU usage..."
+    gpuci_logger "Check GPU usage"
     nvidia-smi
 
-    logger "GoogleTests..."
+    gpuci_logger "GoogleTests"
     cd $WORKSPACE/cpp/build
 
     for gt in ${WORKSPACE}/cpp/build/gtests/* ; do
@@ -93,10 +91,10 @@ else
         ${gt} --gtest_output=xml:${WORKSPACE}/test-results/
     done
 
-    logger "Download/Generate Test Data"
+    gpuci_logger "Download/Generate Test Data"
     #TODO
 
-    logger "Test cuSpatial"
+    gpuci_logger "Test cuSpatial"
     #TODO
 
     #Python Unit tests for cuSpatial

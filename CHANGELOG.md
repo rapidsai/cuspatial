@@ -4,7 +4,9 @@
 
 ## Improvements
 - PR #310 Pin cmake policies to cmake 3.17 version
+- PR #321 Improvements to gpuCI scripts
 - PR #325 Convert `cudaStream_t` to `rmm::cuda_stream_view`
+
 
 ## Bug Fixes
 - PR #320 Fix quadtree construction bug: zero out `device_uvector` before `scatter`
