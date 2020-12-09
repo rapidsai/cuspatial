@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "indexing/construction/detail/phase_1.cuh"
-#include "indexing/construction/detail/phase_2.cuh"
-#include "indexing/construction/detail/utilities.cuh"
+#include "detail/phase_1.cuh"
+#include "detail/phase_2.cuh"
+#include "detail/utilities.cuh"
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/point_quadtree.hpp>

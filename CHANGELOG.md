@@ -3,6 +3,7 @@
 ## New Features
 
 ## Improvements
+- PR #297 Upgrade to libcu++ on GitHub.
 
 ## Bug Fixes
 

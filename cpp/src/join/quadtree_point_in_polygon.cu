@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "indexing/construction/detail/utilities.cuh"
-#include "utility/point_in_polygon.cuh"
+#include <indexing/construction/detail/utilities.cuh>
+#include <utility/point_in_polygon.cuh>
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/spatial_join.hpp>

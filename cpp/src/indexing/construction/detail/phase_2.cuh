@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "indexing/construction/detail/utilities.cuh"
+#include "utilities.cuh"
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/types.hpp>

@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include "indexing/construction/detail/utilities.cuh"
-#include "utility/z_order.cuh"
+#include "utilities.cuh"
+
+#include <utility/z_order.cuh>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/types.hpp>
