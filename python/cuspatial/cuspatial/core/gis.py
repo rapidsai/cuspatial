@@ -34,7 +34,7 @@ def directed_hausdorff_distance(xs, ys, space_offsets):
     ys
         column of y-coordinates
     space_offsets
-        beginning index of each space, plus a final ending offset
+        beginning index of each space, plus the last space's end offset.
 
     Returns
     -------
