@@ -71,7 +71,7 @@ namespace cuspatial {
  *
  * @param[in] xs: x component of points
  * @param[in] ys: y component of points
- * @param[in] space_offsets: beginning index of each space, plus a final ending offset.
+ * @param[in] space_offsets: beginning index of each space, plus the last space's end offset.
  *
  * @returns Hausdorff distances for each pair of spaces
  *
