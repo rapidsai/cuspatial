@@ -18,6 +18,8 @@
 
 #include <cudf/column/column.hpp>
 #include <cudf/table/table.hpp>
+#include <cudf/types.hpp>
+
 #include <memory>
 
 namespace cuspatial {
@@ -43,16 +45,19 @@ namespace cuspatial {
  * @param[in] offsets the exclusive scan of the spline sizes, prefixed by
  * 0. For example, for 3 splines of 5 vertices each, the offsets input array
  * is {0, 5, 10, 15}.
+ * @param[in] mr The memory resource to use for allocating output
  *
  * @return cudf::table_view of coefficients for spline interpolation. The size
  * of the table is ((M-n), 4) where M is `t.size()` and and n is
  * `ids.size()-1`.
  **/
-std::unique_ptr<cudf::column> cubicspline_interpolate(cudf::column_view const& query_points,
-                                                      cudf::column_view const& spline_ids,
-                                                      cudf::column_view const& offsets,
-                                                      cudf::column_view const& source_points,
-                                                      cudf::table_view const& coefficients);
+std::unique_ptr<cudf::column> cubicspline_interpolate(
+  cudf::column_view const& query_points,
+  cudf::column_view const& spline_ids,
+  cudf::column_view const& offsets,
+  cudf::column_view const& source_points,
+  cudf::table_view const& coefficients,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
  * @brief Compute cubic interpolations of a set of points based on their
@@ -69,11 +74,14 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(cudf::column_view const& q
  * identify which specific spline a given query_point is interpolated with.
  * @param[in] coefficients table of spline coefficients produced by
  * cubicspline_coefficients.
+ * @param[in] mr The memory resource to use for allocating output
  *
  * @return cudf::column `y` coordinates interpolated from `x` and `coefs`.
  **/
-std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t,
-                                                      cudf::column_view const& y,
-                                                      cudf::column_view const& ids,
-                                                      cudf::column_view const& offsets);
+std::unique_ptr<cudf::table> cubicspline_coefficients(
+  cudf::column_view const& t,
+  cudf::column_view const& y,
+  cudf::column_view const& ids,
+  cudf::column_view const& offsets,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 }  // namespace cuspatial

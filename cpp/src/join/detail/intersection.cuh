@@ -23,6 +23,7 @@
 #include <cudf/table/table_view.hpp>
 
 #include <rmm/thrust_rmm_allocator.h>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 
 #include <thrust/copy.h>
@@ -43,11 +44,11 @@ template <typename InputIterator, typename OutputIterator>
 inline cudf::size_type copy_leaf_intersections(InputIterator input_begin,
                                                InputIterator input_end,
                                                OutputIterator output_begin,
-                                               cudaStream_t stream)
+                                               rmm::cuda_stream_view stream)
 {
   return thrust::distance(
     output_begin,
-    thrust::copy_if(rmm::exec_policy(stream)->on(stream),
+    thrust::copy_if(rmm::exec_policy(stream)->on(stream.value()),
                     input_begin,
                     input_end,
                     output_begin,
@@ -58,10 +59,10 @@ template <typename InputIterator, typename OutputIterator>
 inline cudf::size_type remove_non_quad_intersections(InputIterator input_begin,
                                                      InputIterator input_end,
                                                      OutputIterator output_begin,
-                                                     cudaStream_t stream)
+                                                     rmm::cuda_stream_view stream)
 {
   return thrust::distance(output_begin,
-                          thrust::remove_if(rmm::exec_policy(stream)->on(stream),
+                          thrust::remove_if(rmm::exec_policy(stream)->on(stream.value()),
                                             input_begin,
                                             input_end,
                                             output_begin,
@@ -87,7 +88,7 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
   T y_min,
   T scale,
   int8_t max_depth,
-  cudaStream_t stream)
+  rmm::cuda_stream_view stream)
 {
   auto d_keys       = cudf::column_device_view::create(quadtree.column(0), stream);
   auto d_levels     = cudf::column_device_view::create(quadtree.column(1), stream);
@@ -97,7 +98,7 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
   auto d_poly_x_max = cudf::column_device_view::create(poly_bbox.column(2), stream);
   auto d_poly_y_max = cudf::column_device_view::create(poly_bbox.column(3), stream);
 
-  thrust::transform(rmm::exec_policy(stream)->on(stream),
+  thrust::transform(rmm::exec_policy(stream)->on(stream.value()),
                     make_zip_iterator(node_indices, poly_indices),
                     make_zip_iterator(node_indices, poly_indices) + num_pairs,
                     node_pairs,

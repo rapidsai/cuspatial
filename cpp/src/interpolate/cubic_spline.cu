@@ -23,6 +23,8 @@
 #include <cuspatial/cusparse_error.hpp>
 #include <cuspatial/error.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
+
 #include <cusparse.h>
 
 namespace {  // anonymous
@@ -35,8 +37,8 @@ struct parallel_search {
     cudf::column_view const& curve_ids,
     cudf::column_view const& prefixes,
     cudf::column_view const& query_coords,
-    rmm::mr::device_memory_resource* mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     const T* p_t               = t.data<T>();
     const int32_t* p_curve_ids = curve_ids.data<int32_t>();
@@ -46,7 +48,7 @@ struct parallel_search {
       curve_ids.type(), t.size(), cudf::mask_state::UNALLOCATED, stream, mr);
     int32_t* p_result = result->mutable_view().data<int32_t>();
     thrust::for_each(
-      rmm::exec_policy(stream)->on(stream),
+      rmm::exec_policy(stream)->on(stream.value()),
       thrust::make_counting_iterator<int>(0),
       thrust::make_counting_iterator<int>(query_coords.size()),
       [p_t, p_curve_ids, p_prefixes, p_query_coords, p_result] __device__(int index) {
@@ -87,8 +89,8 @@ struct interpolate {
     cudf::column_view const& ids,
     cudf::column_view const& coef_indices,
     cudf::table_view const& coefficients,
-    rmm::mr::device_memory_resource* mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     const T* p_t                  = t.data<T>();
     const int32_t* p_ids          = ids.data<int32_t>();
@@ -101,7 +103,7 @@ struct interpolate {
       cudf::make_numeric_column(t.type(), t.size(), cudf::mask_state::UNALLOCATED, stream, mr);
     T* p_result = result->mutable_view().data<T>();
     thrust::for_each(
-      rmm::exec_policy(stream)->on(stream),
+      rmm::exec_policy(stream)->on(stream.value()),
       thrust::make_counting_iterator<int>(0),
       thrust::make_counting_iterator<int>(t.size()),
       [p_t, p_ids, p_coef_indices, p_d3, p_d2, p_d1, p_d0, p_result] __device__(int index) {
@@ -134,8 +136,8 @@ struct coefficients_compute {
     cudf::mutable_column_view const& d2,
     cudf::mutable_column_view const& d1,
     cudf::mutable_column_view const& d0,
-    rmm::mr::device_memory_resource* mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     const T* p_t              = t.data<T>();
     const T* p_y              = y.data<T>();
@@ -148,7 +150,7 @@ struct coefficients_compute {
     T* p_d1                   = d1.data<T>();
     T* p_d0                   = d0.data<T>();
     thrust::for_each(
-      rmm::exec_policy(stream)->on(stream),
+      rmm::exec_policy(stream)->on(stream.value()),
       thrust::make_counting_iterator<int>(1),
       thrust::make_counting_iterator<int>(prefixes.size()),
       [p_t, p_y, p_prefixes, p_h, p_i, p_z, p_d3, p_d2, p_d1, p_d0] __device__(int index) {
@@ -181,8 +183,8 @@ struct coefficients_compute {
     cudf::mutable_column_view const& d2,
     cudf::mutable_column_view const& d1,
     cudf::mutable_column_view const& d0,
-    rmm::mr::device_memory_resource* mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
@@ -201,8 +203,8 @@ struct compute_spline_tridiagonals {
     cudf::mutable_column_view const& u,
     cudf::mutable_column_view const& h,
     cudf::mutable_column_view const& i,
-    rmm::mr::device_memory_resource* mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     const T* p_t              = t.data<T>();
     const T* p_y              = y.data<T>();
@@ -212,7 +214,7 @@ struct compute_spline_tridiagonals {
     T* p_u                    = u.data<T>();
     T* p_h                    = h.data<T>();
     T* p_i                    = i.data<T>();
-    thrust::for_each(rmm::exec_policy(stream)->on(stream),
+    thrust::for_each(rmm::exec_policy(stream)->on(stream.value()),
                      thrust::make_counting_iterator<int>(1),
                      thrust::make_counting_iterator<int>(prefixes.size()),
                      [p_t, p_y, p_prefixes, p_d, p_dlu, p_u, p_h, p_i] __device__(int index) {
@@ -240,8 +242,8 @@ struct compute_spline_tridiagonals {
     cudf::mutable_column_view const& u,
     cudf::mutable_column_view const& h,
     cudf::mutable_column_view const& i,
-    rmm::mr::device_memory_resource* mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
@@ -278,8 +280,8 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(cudf::column_view const& q
                                                       cudf::column_view const& prefixes,
                                                       cudf::column_view const& source_points,
                                                       cudf::table_view const& coefficients,
-                                                      rmm::mr::device_memory_resource* mr,
-                                                      cudaStream_t stream)
+                                                      rmm::cuda_stream_view stream,
+                                                      rmm::mr::device_memory_resource* mr)
 {
   auto coefficient_indices = cudf::type_dispatcher(query_points.type(),
                                                    parallel_search{},
@@ -287,8 +289,8 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(cudf::column_view const& q
                                                    curve_ids,
                                                    prefixes,
                                                    source_points,
-                                                   mr,
-                                                   stream);
+                                                   stream,
+                                                   mr);
   // TPRINT(coefficient_indices->mutable_view(), "parallel_search_");
   // TPRINT(query_points, "query_points_");
   // TPRINT(curve_ids, "curve_ids_");
@@ -300,8 +302,8 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(cudf::column_view const& q
                                       curve_ids,
                                       coefficient_indices->view(),
                                       coefficients,
-                                      mr,
-                                      stream);
+                                      stream,
+                                      mr);
   // TPRINT(query_points, "query_points_");
   // TPRINT(curve_ids, "curve_ids_");
   // TPRINT(prefixes, "prefixes_");
@@ -341,15 +343,9 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(cudf::column_view const& q
 std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t,
                                                       cudf::column_view const& y,
                                                       cudf::column_view const& ids,
-                                                      cudf::column_view const& offsets,
-                                                      rmm::mr::device_memory_resource* mr,
-                                                      cudaStream_t stream);
-std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t,
-                                                      cudf::column_view const& y,
-                                                      cudf::column_view const& ids,
                                                       cudf::column_view const& prefixes,
-                                                      rmm::mr::device_memory_resource* mr,
-                                                      cudaStream_t stream)
+                                                      rmm::cuda_stream_view stream,
+                                                      rmm::mr::device_memory_resource* mr)
 {
   // rmm::device_vector<float>::iterator t_rd = rmm::device_vector<float>(t.data<float>());
   // TPRINT(t, "t_");
@@ -392,8 +388,8 @@ std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t
                         u_buffer,
                         h_buffer,
                         i_buffer,
-                        mr,
-                        stream);
+                        stream,
+                        mr);
 
   // TPRINT(h_buffer, "h_i");
   // TPRINT(i_buffer, "i_i");
@@ -468,8 +464,8 @@ std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t
                         d2,
                         d1,
                         d0,
-                        mr,
-                        stream);
+                        stream,
+                        mr);
 
   // TPRINT(h_buffer, "h_buffer_");
   // TPRINT(i_buffer, "i_buffer_");
@@ -497,25 +493,22 @@ std::unique_ptr<cudf::column> cubicspline_interpolate(cudf::column_view const& q
                                                       cudf::column_view const& curve_ids,
                                                       cudf::column_view const& prefixes,
                                                       cudf::column_view const& source_points,
-                                                      cudf::table_view const& coefficients)
+                                                      cudf::table_view const& coefficients,
+                                                      rmm::mr::device_memory_resource* mr)
 {
-  return cuspatial::detail::cubicspline_interpolate(query_points,
-                                                    curve_ids,
-                                                    prefixes,
-                                                    source_points,
-                                                    coefficients,
-                                                    rmm::mr::get_current_device_resource(),
-                                                    0);
+  return cuspatial::detail::cubicspline_interpolate(
+    query_points, curve_ids, prefixes, source_points, coefficients, rmm::cuda_stream_default, mr);
 }
 
 // Calls the coeffiecients  function using default memory resources.
 std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t,
                                                       cudf::column_view const& y,
                                                       cudf::column_view const& ids,
-                                                      cudf::column_view const& prefixes)
+                                                      cudf::column_view const& prefixes,
+                                                      rmm::mr::device_memory_resource* mr)
 {
   return cuspatial::detail::cubicspline_coefficients(
-    t, y, ids, prefixes, rmm::mr::get_current_device_resource(), 0);
+    t, y, ids, prefixes, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial
