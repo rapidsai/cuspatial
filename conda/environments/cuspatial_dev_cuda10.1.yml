@@ -8,7 +8,7 @@ channels:
 dependencies:
   - clang=8.0.1
   - clang-tools=8.0.1
-  - cudf=0.16.*
+  - cudf=0.17.*
   - cudatoolkit=10.1
   - gdal>=3.0.2
   - geopandas=0.7.0
