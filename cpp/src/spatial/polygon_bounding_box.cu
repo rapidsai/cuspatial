@@ -26,6 +26,7 @@
 
 #include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/functional.h>
 #include <thrust/gather.h>
@@ -69,20 +70,20 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
     rmm::device_vector<int32_t> first_ring_offsets(num_polygons);
 
     // Gather the first ring offset for each polygon
-    thrust::gather(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::gather(rmm::exec_policy(stream),
                    poly_offsets.begin<int32_t>(),
                    poly_offsets.end<int32_t>(),
                    ring_offsets.begin<int32_t>(),
                    first_ring_offsets.begin());
 
     // Scatter the first ring offset into a list of point_ids for reduction
-    thrust::scatter(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::scatter(rmm::exec_policy(stream),
                     thrust::make_counting_iterator(0),
                     thrust::make_counting_iterator(0) + num_polygons,
                     first_ring_offsets.begin(),
                     point_ids.begin());
 
-    thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::inclusive_scan(rmm::exec_policy(stream),
                            point_ids.begin(),
                            point_ids.end(),
                            point_ids.begin(),
@@ -113,7 +114,7 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
   auto points_iter = thrust::make_zip_iterator(thrust::make_tuple(x.begin<T>(), y.begin<T>()));
   auto points_squared_iter = thrust::make_transform_iterator(points_iter, point_to_square<T>{});
 
-  thrust::reduce_by_key(rmm::exec_policy(stream)->on(stream.value()),
+  thrust::reduce_by_key(rmm::exec_policy(stream),
                         point_ids.begin(),
                         point_ids.end(),
                         points_squared_iter,

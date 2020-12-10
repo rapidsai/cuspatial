@@ -22,6 +22,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -85,11 +86,8 @@ struct lonlat_to_cartesian_functor {
                                lat_to_y(origin_lat - lat));
     };
 
-    thrust::transform(rmm::exec_policy(stream)->on(stream.value()),
-                      input_zip,
-                      input_zip + input_lon.size(),
-                      output_zip,
-                      to_cartesian);
+    thrust::transform(
+      rmm::exec_policy(stream), input_zip, input_zip + input_lon.size(), output_zip, to_cartesian);
 
     return std::make_pair(std::move(output_x), std::move(output_y));
   }

@@ -27,6 +27,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/iterator/discard_iterator.h>
 
@@ -44,8 +45,6 @@ struct dispatch_element {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
-    auto policy = rmm::exec_policy(stream);
-
     // Construct output columns
     auto type = cudf::data_type{cudf::type_to_id<Element>()};
     std::vector<std::unique_ptr<cudf::column>> cols{};
@@ -73,7 +72,7 @@ struct dispatch_element {
                          cols.at(3)->mutable_view().begin<Element>())  // bbox_y2
     );
 
-    thrust::fill(policy->on(stream.value()),
+    thrust::fill(rmm::exec_policy(stream),
                  bboxes,
                  bboxes + num_trajectories,
                  thrust::make_tuple(std::numeric_limits<Element>::max(),
@@ -82,7 +81,7 @@ struct dispatch_element {
                                     std::numeric_limits<Element>::min()));
 
     thrust::reduce_by_key(
-      policy->on(stream.value()),       // execution policy
+      rmm::exec_policy(stream),         // execution policy
       object_id.begin<int32_t>(),       // keys_first
       object_id.end<int32_t>(),         // keys_last
       points,                           // values_first

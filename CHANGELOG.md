@@ -7,6 +7,8 @@
 
 - PR #332 fix directed_hausdorff_distance's space_offsets name + documentation
 
+- PR #331 Use simplified `rmm::exec_policy`
+
 ## Bug Fixes
 
 # cuSpatial 0.17.0 (Date TBD)

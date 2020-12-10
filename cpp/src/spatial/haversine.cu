@@ -26,6 +26,7 @@
 
 #include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <memory>
@@ -82,7 +83,7 @@ struct haversine_functor {
 
     auto input_iter = thrust::make_zip_iterator(input_tuple);
 
-    thrust::transform(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::transform(rmm::exec_policy(stream),
                       input_iter,
                       input_iter + result->size(),
                       result->mutable_view().begin<T>(),

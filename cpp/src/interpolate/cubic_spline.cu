@@ -24,6 +24,7 @@
 #include <cuspatial/error.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <cusparse.h>
 
@@ -48,7 +49,7 @@ struct parallel_search {
       curve_ids.type(), t.size(), cudf::mask_state::UNALLOCATED, stream, mr);
     int32_t* p_result = result->mutable_view().data<int32_t>();
     thrust::for_each(
-      rmm::exec_policy(stream)->on(stream.value()),
+      rmm::exec_policy(stream),
       thrust::make_counting_iterator<int>(0),
       thrust::make_counting_iterator<int>(query_coords.size()),
       [p_t, p_curve_ids, p_prefixes, p_query_coords, p_result] __device__(int index) {
@@ -103,7 +104,7 @@ struct interpolate {
       cudf::make_numeric_column(t.type(), t.size(), cudf::mask_state::UNALLOCATED, stream, mr);
     T* p_result = result->mutable_view().data<T>();
     thrust::for_each(
-      rmm::exec_policy(stream)->on(stream.value()),
+      rmm::exec_policy(stream),
       thrust::make_counting_iterator<int>(0),
       thrust::make_counting_iterator<int>(t.size()),
       [p_t, p_ids, p_coef_indices, p_d3, p_d2, p_d1, p_d0, p_result] __device__(int index) {
@@ -150,7 +151,7 @@ struct coefficients_compute {
     T* p_d1                   = d1.data<T>();
     T* p_d0                   = d0.data<T>();
     thrust::for_each(
-      rmm::exec_policy(stream)->on(stream.value()),
+      rmm::exec_policy(stream),
       thrust::make_counting_iterator<int>(1),
       thrust::make_counting_iterator<int>(prefixes.size()),
       [p_t, p_y, p_prefixes, p_h, p_i, p_z, p_d3, p_d2, p_d1, p_d0] __device__(int index) {
@@ -214,7 +215,7 @@ struct compute_spline_tridiagonals {
     T* p_u                    = u.data<T>();
     T* p_h                    = h.data<T>();
     T* p_i                    = i.data<T>();
-    thrust::for_each(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::for_each(rmm::exec_policy(stream),
                      thrust::make_counting_iterator<int>(1),
                      thrust::make_counting_iterator<int>(prefixes.size()),
                      [p_t, p_y, p_prefixes, p_d, p_dlu, p_u, p_h, p_i] __device__(int index) {
