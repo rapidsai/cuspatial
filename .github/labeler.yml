@@ -6,7 +6,7 @@ Python:
   - python/**
   - notebooks/**
   
-libcusignal:
+libcuspatial:
   - cpp/**
 
 CMake:
