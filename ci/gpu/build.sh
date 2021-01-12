@@ -107,7 +107,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
 else
     export LD_LIBRARY_PATH="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/cpp/build:$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
 
-    TESTRESULTS_DIR=${WORKSPACE}/test-results
+    TESTRESULTS_DIR=${WORKSPACE}/test-results/
     mkdir -p ${TESTRESULTS_DIR}
     SUITEERROR=0
 
