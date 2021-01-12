@@ -131,9 +131,14 @@ else
 
     cd $WORKSPACE/python
     
-    gpuci_logger "Installing libcuspatial"
-    conda install -c $WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/ libcuspatial
-    export LIBRMM_BUILD_DIR="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/build"
+    
+    CONDA_FILE=`find $WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/ -name "libcuspatial*.tar.bz2"`
+    CONDA_FILE=`basename "$CONDA_FILE" .tar.bz2` #get filename without extension
+    CONDA_FILE=${CONDA_FILE//-/=} #convert to conda install
+    gpuci_logger "Installing $CONDA_FILE"
+    conda install -c $WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/ "$CONDA_FILE"
+
+    export LIBCUGRAPH_BUILD_DIR="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/build"
     
     gpuci_logger "Building cuspatial"
     "$WORKSPACE/build.sh" -v cuspatial

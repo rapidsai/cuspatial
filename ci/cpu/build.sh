@@ -62,10 +62,11 @@ if [ "$BUILD_LIBCUSPATIAL" == '1' ]; then
     conda build conda/recipes/libcuspatial
   else
     [[ -e ${CUDF_HOME} ]] && rm -rf ${CUDF_HOME}
+    gpuci_logger "Clone cudf branch-$MINOR_VERSION"
     git clone https://github.com/rapidsai/cudf.git -b branch-$MINOR_VERSION ${CUDF_HOME}
     cd $CUDF_HOME
     git submodule update --init --remote --recursive
-    cd ..
+    cd $WORKSPACE
 
     conda build --dirty --no-remove-work-dir conda/recipes/libcuspatial
   fi
