@@ -4,9 +4,7 @@
 
 ## Improvements
 - PR #297 Upgrade to libcu++ on GitHub.
-
 - PR #332 fix directed_hausdorff_distance's space_offsets name + documentation
-
 - PR #331 Use simplified `rmm::exec_policy`
 
 ## Bug Fixes
@@ -16,14 +14,9 @@
 ## New Features
 
 ## Improvements
-<<<<<<< HEAD
-- PR #314 Project Flash and gpuCI Scripts Update
-=======
 - PR #310 Pin cmake policies to cmake 3.17 version
 - PR #321 Improvements to gpuCI scripts
 - PR #325 Convert `cudaStream_t` to `rmm::cuda_stream_view`
-
->>>>>>> origin/branch-0.18
 
 ## Bug Fixes
 - PR #320 Fix quadtree construction bug: zero out `device_uvector` before `scatter`
