@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "tests/trajectory/trajectory_utilities.cuh"
+#include "trajectory_utilities.cuh"
 
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/type_lists.hpp>

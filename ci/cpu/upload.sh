@@ -1,6 +1,4 @@
 #!/bin/bash
-#
-# Adopted from https://github.com/tmcdonell/travis-scripts/blob/dfaac280ac2082cd6bcaba3217428347899f2975/update-accelerate-buildbot.sh
 
 set -e
 
@@ -28,8 +26,7 @@ fi
 ################################################################################
 
 gpuci_logger "Get conda file output locations"
-
-export LIBCUSPATIAL_FILE=`conda build conda/recipes/libcuspatial --output`
+export LIBCUSPATIAL_FILE=`conda build conda/recipes/libcuspatial  --output`
 export CUSPATIAL_FILE=`conda build conda/recipes/cuspatial --python=$PYTHON --output`
 
 ################################################################################
@@ -39,6 +36,8 @@ export CUSPATIAL_FILE=`conda build conda/recipes/cuspatial --python=$PYTHON --ou
 gpuci_logger "Starting conda uploads"
 
 if [[ "$BUILD_LIBCUSPATIAL" == "1" && "$UPLOAD_LIBCUSPATIAL" == "1" ]]; then
+  LABEL_OPTION="--label main"
+  echo "LABEL_OPTION=${LABEL_OPTION}"
   test -e ${LIBCUSPATIAL_FILE}
   echo "Upload libcuspatial"
   echo ${LIBCUSPATIAL_FILE}
@@ -46,9 +45,10 @@ if [[ "$BUILD_LIBCUSPATIAL" == "1" && "$UPLOAD_LIBCUSPATIAL" == "1" ]]; then
 fi
 
 if [[ "$BUILD_CUSPATIAL" == "1" && "$UPLOAD_CUSPATIAL" == "1" ]]; then
+  LABEL_OPTION="--label main"
+  echo "LABEL_OPTION=${LABEL_OPTION}"
   test -e ${CUSPATIAL_FILE}
   echo "Upload cuspatial"
   echo ${CUSPATIAL_FILE}
   gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing ${CUSPATIAL_FILE}
 fi
-

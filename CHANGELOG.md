@@ -1,11 +1,33 @@
+# cuSpatial 0.18.0 (Date TBD)
+
+## New Features
+
+## Improvements
+- PR #297 Upgrade to libcu++ on GitHub.
+
+- PR #332 fix directed_hausdorff_distance's space_offsets name + documentation
+
+- PR #331 Use simplified `rmm::exec_policy`
+
+## Bug Fixes
+
 # cuSpatial 0.17.0 (Date TBD)
 
 ## New Features
 
 ## Improvements
+<<<<<<< HEAD
 - PR #314 Project Flash and gpuCI Scripts Update
+=======
+- PR #310 Pin cmake policies to cmake 3.17 version
+- PR #321 Improvements to gpuCI scripts
+- PR #325 Convert `cudaStream_t` to `rmm::cuda_stream_view`
+
+>>>>>>> origin/branch-0.18
 
 ## Bug Fixes
+- PR #320 Fix quadtree construction bug: zero out `device_uvector` before `scatter`
+- PR #328 Fix point in polygon test for cudf::gather breaking change
 
 # cuSpatial 0.16.0 (Date TBD)
 
@@ -27,6 +49,8 @@
 - PR #294 Fix include of deprecated RMM header file.
 - PR #296 Updates for RMM being header only.
 - PR #298 Fix Python docs to render first argument of each public function.
+- PR #322 Fix build issues related to libcudf split build changes
+- PR #323 Add cuda to target_link_libraries
 
 
 # cuSpatial 0.15.0 (26 Aug 2020)

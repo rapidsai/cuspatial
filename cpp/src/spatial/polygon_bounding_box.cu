@@ -25,6 +25,8 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/thrust_rmm_allocator.h>
+#include <rmm/cuda_stream_view.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/functional.h>
 #include <thrust/gather.h>
@@ -58,8 +60,8 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
                                                             cudf::column_view const &ring_offsets,
                                                             cudf::column_view const &x,
                                                             cudf::column_view const &y,
-                                                            rmm::mr::device_memory_resource *mr,
-                                                            cudaStream_t stream)
+                                                            rmm::cuda_stream_view stream,
+                                                            rmm::mr::device_memory_resource *mr)
 {
   auto num_polygons = poly_offsets.size();
   // Wrapped in an IEFE so `first_ring_offsets` is freed on return
@@ -68,26 +70,26 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
     rmm::device_vector<int32_t> first_ring_offsets(num_polygons);
 
     // Gather the first ring offset for each polygon
-    thrust::gather(rmm::exec_policy(stream)->on(stream),
+    thrust::gather(rmm::exec_policy(stream),
                    poly_offsets.begin<int32_t>(),
                    poly_offsets.end<int32_t>(),
                    ring_offsets.begin<int32_t>(),
                    first_ring_offsets.begin());
 
     // Scatter the first ring offset into a list of point_ids for reduction
-    thrust::scatter(rmm::exec_policy(stream)->on(stream),
+    thrust::scatter(rmm::exec_policy(stream),
                     thrust::make_counting_iterator(0),
                     thrust::make_counting_iterator(0) + num_polygons,
                     first_ring_offsets.begin(),
                     point_ids.begin());
 
-    thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
+    thrust::inclusive_scan(rmm::exec_policy(stream),
                            point_ids.begin(),
                            point_ids.end(),
                            point_ids.begin(),
                            thrust::maximum<int32_t>());
 
-    return std::move(point_ids);
+    return point_ids;
   }();
 
   auto type = cudf::data_type{cudf::type_to_id<T>()};
@@ -112,7 +114,7 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
   auto points_iter = thrust::make_zip_iterator(thrust::make_tuple(x.begin<T>(), y.begin<T>()));
   auto points_squared_iter = thrust::make_transform_iterator(points_iter, point_to_square<T>{});
 
-  thrust::reduce_by_key(rmm::exec_policy(stream)->on(stream),
+  thrust::reduce_by_key(rmm::exec_policy(stream),
                         point_ids.begin(),
                         point_ids.end(),
                         points_squared_iter,
@@ -147,10 +149,10 @@ struct dispatch_compute_polygon_bounding_boxes {
              cudf::column_view const &ring_offsets,
              cudf::column_view const &x,
              cudf::column_view const &y,
-             rmm::mr::device_memory_resource *mr,
-             cudaStream_t stream)
+             rmm::cuda_stream_view stream,
+             rmm::mr::device_memory_resource *mr)
   {
-    return compute_polygon_bounding_boxes<T>(poly_offsets, ring_offsets, x, y, mr, stream);
+    return compute_polygon_bounding_boxes<T>(poly_offsets, ring_offsets, x, y, stream, mr);
   }
 };
 
@@ -162,8 +164,8 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const &pol
                                                     cudf::column_view const &ring_offsets,
                                                     cudf::column_view const &x,
                                                     cudf::column_view const &y,
-                                                    rmm::mr::device_memory_resource *mr,
-                                                    cudaStream_t stream)
+                                                    rmm::cuda_stream_view stream,
+                                                    rmm::mr::device_memory_resource *mr)
 {
   return cudf::type_dispatcher(x.type(),
                                dispatch_compute_polygon_bounding_boxes{},
@@ -171,8 +173,8 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const &pol
                                ring_offsets,
                                x,
                                y,
-                               mr,
-                               stream);
+                               stream,
+                               mr);
 }
 
 }  // namespace detail
@@ -201,7 +203,8 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const &pol
     return std::make_unique<cudf::table>(std::move(cols));
   }
 
-  return detail::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, mr, cudaStream_t{0});
+  return detail::polygon_bounding_boxes(
+    poly_offsets, ring_offsets, x, y, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial

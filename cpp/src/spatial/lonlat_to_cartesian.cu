@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
+#include <cuspatial/error.hpp>
+
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
-#include <cuspatial/error.hpp>
+
+#include <rmm/cuda_stream_view.hpp>
+#include <rmm/exec_policy.hpp>
+
 #include <type_traits>
 #include <utility>
 
@@ -55,8 +60,8 @@ struct lonlat_to_cartesian_functor {
     double origin_lat,
     cudf::column_view const& input_lon,
     cudf::column_view const& input_lat,
-    rmm::mr::device_memory_resource* mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     auto size = input_lon.size();
     auto tid  = cudf::type_to_id<T>();
@@ -81,11 +86,8 @@ struct lonlat_to_cartesian_functor {
                                lat_to_y(origin_lat - lat));
     };
 
-    thrust::transform(rmm::exec_policy(stream)->on(stream),
-                      input_zip,
-                      input_zip + input_lon.size(),
-                      output_zip,
-                      to_cartesian);
+    thrust::transform(
+      rmm::exec_policy(stream), input_zip, input_zip + input_lon.size(), output_zip, to_cartesian);
 
     return std::make_pair(std::move(output_x), std::move(output_y));
   }
@@ -100,8 +102,8 @@ pair_of_columns lonlat_to_cartesian(double origin_lon,
                                     double origin_lat,
                                     cudf::column_view const& input_lon,
                                     cudf::column_view const& input_lat,
-                                    rmm::mr::device_memory_resource* mr,
-                                    cudaStream_t stream)
+                                    rmm::cuda_stream_view stream,
+                                    rmm::mr::device_memory_resource* mr)
 {
   return cudf::type_dispatcher(input_lon.type(),
                                lonlat_to_cartesian_functor(),
@@ -109,8 +111,8 @@ pair_of_columns lonlat_to_cartesian(double origin_lon,
                                origin_lat,
                                input_lon,
                                input_lat,
-                               mr,
-                               stream);
+                               stream,
+                               mr);
 }
 
 }  // namespace detail
@@ -132,7 +134,8 @@ pair_of_columns lonlat_to_cartesian(double origin_lon,
   CUSPATIAL_EXPECTS(not input_lon.has_nulls() && not input_lat.has_nulls(),
                     "input cannot contain nulls");
 
-  return detail::lonlat_to_cartesian(origin_lon, origin_lat, input_lon, input_lat, mr, 0);
+  return detail::lonlat_to_cartesian(
+    origin_lon, origin_lat, input_lon, input_lat, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial

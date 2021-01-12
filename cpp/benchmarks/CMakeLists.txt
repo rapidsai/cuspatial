@@ -1,6 +1,18 @@
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
-
-project(CUSPATIAL_BENCHMARKS LANGUAGES C CXX CUDA)
+#=============================================================================
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#=============================================================================
 
 if(NOT CMAKE_CUDA_COMPILER)
   message(SEND_ERROR "CMake cannot locate a CUDA compiler")
@@ -27,9 +39,12 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
                    ${CMAKE_BENCH_SRC}
                    "${CMAKE_CURRENT_SOURCE_DIR}/synchronization/synchronization.cpp")
     set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${CMAKE_BENCH_NAME} benchmark benchmark_main pthread cuspatial cudf
-                          cudftestutil cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES}
-                          nvrtc GDAL::GDAL)
+    # By default the linker doesn't transitively add `DT_NEEDED` entries in executables like it does
+    # for shared libraries, so to work around current libcudf build behavior we're adding the linker
+    # flag
+    target_link_libraries(${CMAKE_BENCH_NAME} "-Wl,--copy-dt-needed-entries")
+    target_link_libraries(${CMAKE_BENCH_NAME} benchmark benchmark_main pthread cuspatial
+                          cudftestutil)
     set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
                             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gbenchmarks")
 endfunction(ConfigureBench)

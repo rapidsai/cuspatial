@@ -158,7 +158,8 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
 
   auto &quadtree      = std::get<1>(quadtree_pair);
   auto &point_indices = std::get<0>(quadtree_pair);
-  auto points         = cudf::gather(cudf::table_view{{x, y}}, *point_indices, this->mr());
+  auto points         = cudf::gather(
+    cudf::table_view{{x, y}}, *point_indices, cudf::out_of_bounds_policy::DONT_CHECK, this->mr());
 
   fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
   fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14});

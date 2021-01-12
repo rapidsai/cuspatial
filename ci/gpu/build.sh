@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2018, NVIDIA CORPORATION.
+# COPYRIGHT (c) 2020, NVIDIA CORPORATION.
 #########################################
 # cuSpatial GPU build and test script for CI #
 #########################################
@@ -40,12 +40,11 @@ nvidia-smi
 gpuci_logger "Activate conda env"
 . /opt/conda/etc/profile.d/conda.sh
 conda activate rapids
-
 gpuci_conda_retry install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" \
     "rapids-build-env=$MINOR_VERSION.*"
 
 # https://docs.rapids.ai/maintainers/depmgmt/ 
-# gpuci_conda_retry remove -f rapids-build-env
+# gpuci_conda_retry remove --force rapids-build-env
 # gpuci_conda_retry install "your-pkg=1.0.0"
 
 gpuci_logger "Check versions"
@@ -131,7 +130,6 @@ else
 
     cd $WORKSPACE/python
     
-    
     CONDA_FILE=`find $WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/ -name "libcuspatial*.tar.bz2"`
     CONDA_FILE=`basename "$CONDA_FILE" .tar.bz2` #get filename without extension
     CONDA_FILE=${CONDA_FILE//-/=} #convert to conda install
@@ -151,6 +149,11 @@ else
         SUITEERROR=${EXITCODE}
         echo "FAILED: 1 or more tests in /cuspatial/python"
     fi
+    gpuci_logger "Download/Generate Test Data"
+    #TODO
+
+    gpuci_logger "Test cuSpatial"
+    #TODO
 
     exit ${SUITEERROR}
 fi

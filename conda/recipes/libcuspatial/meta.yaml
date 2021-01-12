@@ -19,7 +19,6 @@ build:
     - CXX
     - CUDAHOSTCXX
     - PARALLEL_LEVEL
-    - CUDF_HOME
     - VERSION_SUFFIX
     - PROJECT_FLASH
   run_exports:
