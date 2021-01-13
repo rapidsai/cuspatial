@@ -181,10 +181,10 @@ message(STATUS "RMM: RMM_INCLUDE set to ${RMM_INCLUDE}")
 # - CUDF -------------------------------------------------------------------------------------------
 
 find_path(CUDF_INCLUDE "cudf"
-          HINTS "$ENV{CUDF_HOME}/cpp/include")
+          HINTS "$ENV{CUDF_ROOT}/include")
 
 find_library(CUDF_LIBRARY "cudf"
-             HINTS "$ENV{CUDF_HOME}/lib")
+             HINTS "$ENV{CUDF_ROOT}/lib")
 
 message(STATUS "CUDF: CUDF_HOME set to $ENV{CUDF_HOME}")
 message(STATUS "CUDF: CUDF_LIBRARY set to ${CUDF_LIBRARY}")
