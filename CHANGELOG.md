@@ -8,6 +8,7 @@
 - PR #332 fix directed_hausdorff_distance's space_offsets name + documentation
 
 - PR #331 Use simplified `rmm::exec_policy`
+- PR #339 Pin gdal to 3.1.x
 
 ## Bug Fixes
 
