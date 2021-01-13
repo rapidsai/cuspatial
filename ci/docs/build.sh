@@ -36,6 +36,8 @@ gpuci_logger "Check versions"
 python --version
 $CC --version
 $CXX --version
+
+gpuci_logger "Show conda info"
 conda info
 conda config --show-sources
 conda list --show-channel-urls
