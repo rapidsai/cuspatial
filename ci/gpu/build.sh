@@ -121,8 +121,8 @@ else
         test_name=$(basename ${gt})
         echo "Running GoogleTest $test_name"
         ${gt} --gtest_output=xml:${TESTRESULTS_DIR}
-	EXITCODE=$?
-	if (( ${EXITCODE} != 0 )); then
+        EXITCODE=$?
+        if (( ${EXITCODE} != 0 )); then
             SUITEERROR=${EXITCODE}
             echo "FAILED: GTest ${gt}"
         fi
