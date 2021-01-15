@@ -16,11 +16,13 @@
 
 #pragma once
 
-#include "indexing/construction/detail/utilities.cuh"
-#include "utility/z_order.cuh"
+#include <indexing/construction/detail/utilities.cuh>
+#include <utility/z_order.cuh>
 
 #include <rmm/thrust_rmm_allocator.h>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/gather.h>
 #include <thrust/scan.h>
@@ -60,17 +62,15 @@ descend_quadtree(LengthsIter counts,
                  rmm::device_uvector<uint8_t> &parent_levels,
                  rmm::device_uvector<uint32_t> &parent_node_indices,
                  rmm::device_uvector<uint32_t> &parent_poly_indices,
-                 cudaStream_t stream)
+                 rmm::cuda_stream_view stream)
 {
   // Use the current parent node indices as the lookup into the global child counts
   auto parent_counts = thrust::make_permutation_iterator(counts, parent_node_indices.begin());
   // scan on the number of child nodes to compute the offsets
   // note: size is `num_quads + 1` so the last element is `num_children`
   rmm::device_uvector<uint32_t> parent_offsets(num_quads + 1, stream);
-  thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
-                         parent_counts,
-                         parent_counts + num_quads,
-                         parent_offsets.begin() + 1);
+  thrust::inclusive_scan(
+    rmm::exec_policy(stream), parent_counts, parent_counts + num_quads, parent_offsets.begin() + 1);
 
   parent_offsets.set_element_async(0, 0, stream);
 
@@ -78,10 +78,9 @@ descend_quadtree(LengthsIter counts,
 
   rmm::device_uvector<uint32_t> parent_indices(num_children, stream);
   // fill with zeroes
-  thrust::fill(
-    rmm::exec_policy(stream)->on(stream), parent_indices.begin(), parent_indices.end(), 0);
+  thrust::fill(rmm::exec_policy(stream), parent_indices.begin(), parent_indices.end(), 0);
   // use the parent_offsets as the map to scatter sequential parent_indices
-  thrust::scatter(rmm::exec_policy(stream)->on(stream),
+  thrust::scatter(rmm::exec_policy(stream),
                   thrust::make_counting_iterator(0),
                   thrust::make_counting_iterator(0) + num_quads,
                   parent_offsets.begin(),
@@ -89,7 +88,7 @@ descend_quadtree(LengthsIter counts,
 
   // inclusive scan with maximum functor to fill the empty elements with their left-most non-empty
   // elements. `parent_indices` is now a full array of the sequence index of each quadrant's parent
-  thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
+  thrust::inclusive_scan(rmm::exec_policy(stream),
                          parent_indices.begin(),
                          parent_indices.begin() + num_children,
                          parent_indices.begin(),
@@ -102,7 +101,7 @@ descend_quadtree(LengthsIter counts,
   rmm::device_uvector<uint32_t> child_poly_indices(num_children, stream);
 
   // `parent_indices` is a gather map to retrieve non-leaf quads' respective child nodes
-  thrust::gather(rmm::exec_policy(stream)->on(stream),
+  thrust::gather(rmm::exec_policy(stream),
                  parent_indices.begin(),
                  parent_indices.begin() + num_children,
                  // curr level iterator
@@ -117,7 +116,7 @@ descend_quadtree(LengthsIter counts,
                                    child_poly_indices.begin()));
 
   rmm::device_uvector<uint32_t> relative_child_offsets(num_children, stream);
-  thrust::exclusive_scan_by_key(rmm::exec_policy(stream)->on(stream),
+  thrust::exclusive_scan_by_key(rmm::exec_policy(stream),
                                 parent_indices.begin(),
                                 parent_indices.begin() + num_children,
                                 thrust::constant_iterator<uint32_t>(1),
@@ -125,7 +124,7 @@ descend_quadtree(LengthsIter counts,
 
   // compute child quad indices using parent and relative child offsets
   auto child_offsets_iter = thrust::make_permutation_iterator(offsets, child_quad_indices.begin());
-  thrust::transform(rmm::exec_policy(stream)->on(stream),
+  thrust::transform(rmm::exec_policy(stream),
                     child_offsets_iter,
                     child_offsets_iter + num_children,
                     relative_child_offsets.begin(),

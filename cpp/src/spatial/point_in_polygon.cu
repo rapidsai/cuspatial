@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
+#include <cuspatial/error.hpp>
+
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cudf/detail/utilities/cuda.cuh>
 #include <cudf/utilities/type_dispatcher.hpp>
 
-#include <cuspatial/error.hpp>
-
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <memory>
@@ -112,8 +113,8 @@ struct point_in_polygon_functor {
                                            cudf::column_view const& poly_ring_offsets,
                                            cudf::column_view const& poly_points_x,
                                            cudf::column_view const& poly_points_y,
-                                           rmm::mr::device_memory_resource* mr,
-                                           cudaStream_t stream)
+                                           rmm::cuda_stream_view stream,
+                                           rmm::mr::device_memory_resource* mr)
   {
     auto size = test_points_x.size();
     auto tid  = cudf::type_to_id<int32_t>();
@@ -129,17 +130,18 @@ struct point_in_polygon_functor {
 
     auto kernel = point_in_polygon_kernel<T>;
 
-    kernel<<<grid.num_blocks, block_size, 0, stream>>>(test_points_x.size(),
-                                                       test_points_x.begin<T>(),
-                                                       test_points_y.begin<T>(),
-                                                       poly_offsets.size(),
-                                                       poly_offsets.begin<cudf::size_type>(),
-                                                       poly_ring_offsets.size(),
-                                                       poly_ring_offsets.begin<cudf::size_type>(),
-                                                       poly_points_x.size(),
-                                                       poly_points_x.begin<T>(),
-                                                       poly_points_y.begin<T>(),
-                                                       results->mutable_view().begin<int32_t>());
+    kernel<<<grid.num_blocks, block_size, 0, stream.value()>>>(
+      test_points_x.size(),
+      test_points_x.begin<T>(),
+      test_points_y.begin<T>(),
+      poly_offsets.size(),
+      poly_offsets.begin<cudf::size_type>(),
+      poly_ring_offsets.size(),
+      poly_ring_offsets.begin<cudf::size_type>(),
+      poly_points_x.size(),
+      poly_points_x.begin<T>(),
+      poly_points_y.begin<T>(),
+      results->mutable_view().begin<int32_t>());
 
     return results;
   }
@@ -157,8 +159,8 @@ std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_poi
                                                cudf::column_view const& poly_ring_offsets,
                                                cudf::column_view const& poly_points_x,
                                                cudf::column_view const& poly_points_y,
-                                               rmm::mr::device_memory_resource* mr,
-                                               cudaStream_t stream)
+                                               rmm::cuda_stream_view stream,
+                                               rmm::mr::device_memory_resource* mr)
 {
   return cudf::type_dispatcher(test_points_x.type(),
                                point_in_polygon_functor(),
@@ -168,8 +170,8 @@ std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_poi
                                poly_ring_offsets,
                                poly_points_x,
                                poly_points_y,
-                               mr,
-                               stream);
+                               stream,
+                               mr);
 }
 
 }  // namespace detail
@@ -212,8 +214,8 @@ std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_poi
                                              poly_ring_offsets,
                                              poly_points_x,
                                              poly_points_y,
-                                             mr,
-                                             0);
+                                             rmm::cuda_stream_default,
+                                             mr);
 }
 
 }  // namespace cuspatial

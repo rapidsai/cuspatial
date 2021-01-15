@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2018, NVIDIA CORPORATION.
+# COPYRIGHT (c) 2020, NVIDIA CORPORATION.
 #########################
 # cuSpatial CHANGELOG Tester #
 #########################

@@ -11,5 +11,5 @@ cdef extern from "cuspatial/hausdorff.hpp" namespace "cuspatial" nogil:
     cdef unique_ptr[column] directed_hausdorff_distance(
         const column_view& xs,
         const column_view& ys,
-        const column_view& points_per_space
+        const column_view& space_offsets
     ) except +
