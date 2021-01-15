@@ -212,7 +212,7 @@ class GeoSeries(ColumnBase):
 
 class GpuPoints:
     def __init__(self):
-        self.xy = cudf.Series([])
+        self.xy = None
         self.z = None
         self.has_z = False
 
@@ -315,7 +315,7 @@ class cuPoint(cuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
         index = (
-            pd.Series(self.source.types[0 : self.index]) == item_type
+            pd.Series(self.source.types[0 : self.index], dtype='object') == item_type
         ).sum()
         return Point(self.source._points[index].reset_index(drop=True))
 
@@ -325,7 +325,7 @@ class cuMultiPoint(cuGeometry):
         item_type = self.source.types[self.index]
         item_length = self.source.lengths[self.index]
         item_start = (
-            pd.Series(self.source.types[0 : self.index]) == item_type
+            pd.Series(self.source.types[0 : self.index], dtype='object') == item_type
         ).sum()
         item_source = self.source._multipoints
         result = item_source[item_start]
@@ -364,7 +364,7 @@ class cuMultiLineString(cuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
         index = (
-            pd.Series(self.source.types[0 : self.index]) == item_type
+            pd.Series(self.source.types[0 : self.index], dtype='object') == item_type
         ).sum()
         line_indices = slice(
             self.source._lines.mlines[index * 2],
@@ -423,7 +423,7 @@ class cuMultiPolygon(cuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
         index = (
-            pd.Series(self.source.types[0 : self.index]) == item_type
+            pd.Series(self.source.types[0 : self.index], dtype='object') == item_type
         ).sum()
         poly_indices = slice(
             self.source.polygons.mpolys[index * 2],
