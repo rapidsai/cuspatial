@@ -160,8 +160,7 @@ class GeoSeries(ColumnBase):
         """
         Returns the number of unique geometries stored in this cuGeoSeries.
         """
-        length = len(self.types)
-        return int(length)
+        return int(len(self.types))
 
     @property
     def points(self):
