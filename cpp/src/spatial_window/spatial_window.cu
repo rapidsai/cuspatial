@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+#include <cuspatial/error.hpp>
+
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_view.hpp>
 #include <cudf/copying.hpp>
 #include <cudf/detail/copy_if.cuh>
 
-#include <cuspatial/error.hpp>
+#include <rmm/cuda_stream_view.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -71,7 +73,7 @@ struct spatial_window_dispatch {
                                           double window_max_y,
                                           cudf::column_view const& x,
                                           cudf::column_view const& y,
-                                          cudaStream_t stream,
+                                          rmm::cuda_stream_view stream,
                                           rmm::mr::device_memory_resource* mr)
   {
     auto device_x = cudf::column_device_view::create(x, stream);
@@ -83,8 +85,8 @@ struct spatial_window_dispatch {
                                                           static_cast<T>(window_max_y),
                                                           *device_x,
                                                           *device_y},
-                                 mr,
-                                 stream);
+                                 stream,
+                                 mr);
   }
 
   template <typename T,
@@ -114,7 +116,7 @@ std::unique_ptr<cudf::table> points_in_spatial_window(double window_min_x,
                                                       double window_max_y,
                                                       cudf::column_view const& x,
                                                       cudf::column_view const& y,
-                                                      cudaStream_t stream,
+                                                      rmm::cuda_stream_view stream,
                                                       rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(x.type() == y.type(), "Type mismatch between x and y arrays");
@@ -149,7 +151,7 @@ std::unique_ptr<cudf::table> points_in_spatial_window(double window_min_x,
                                                       rmm::mr::device_memory_resource* mr)
 {
   return detail::points_in_spatial_window(
-    window_min_x, window_max_x, window_min_y, window_max_y, x, y, 0, mr);
+    window_min_x, window_max_x, window_min_y, window_max_y, x, y, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial

@@ -9,7 +9,7 @@ package:
   version: {{ version }}
 
 source:
-  git_url: ../../..
+  path: ../../..
 
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
@@ -19,8 +19,8 @@ build:
     - CXX
     - CUDAHOSTCXX
     - PARALLEL_LEVEL
-    - CUDF_HOME
     - VERSION_SUFFIX
+    - PROJECT_FLASH
   run_exports:
     - {{ pin_subpackage("libcuspatial", max_pin="x.x") }}
 
@@ -31,7 +31,7 @@ requirements:
     - libcudf {{ minor_version }}.*
     - librmm {{ minor_version }}.*
     - cudatoolkit {{ cuda_version }}.*
-    - gdal >=3.0.2,<3.1.0a0
+    - gdal >=3.1.0,<3.2.0a0
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
 

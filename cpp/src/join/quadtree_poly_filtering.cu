@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "join/detail/intersection.cuh"
-#include "join/detail/traversal.cuh"
+#include "detail/intersection.cuh"
+#include "detail/traversal.cuh"
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/spatial_join.hpp>
@@ -26,7 +26,9 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/thrust_rmm_allocator.h>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <tuple>
 
@@ -51,8 +53,8 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
                                                              T y_max,
                                                              T scale,
                                                              int8_t max_depth,
-                                                             rmm::mr::device_memory_resource *mr,
-                                                             cudaStream_t stream)
+                                                             rmm::cuda_stream_view stream,
+                                                             rmm::mr::device_memory_resource *mr)
 {
   auto const node_levels  = quadtree.column(1);  // uint8_t
   auto const node_counts  = quadtree.column(3);  // uint32_t
@@ -60,7 +62,7 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
 
   // Count the number of top-level nodes to start.
   // This could be provided explicitly, but count_if should be fast enough.
-  auto num_top_level_leaves = thrust::count_if(rmm::exec_policy(stream)->on(stream),
+  auto num_top_level_leaves = thrust::count_if(rmm::exec_policy(stream),
                                                node_levels.begin<uint8_t>(),
                                                node_levels.end<uint8_t>(),
                                                thrust::placeholders::_1 == 0);
@@ -177,12 +179,12 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
   cols.push_back(make_fixed_width_column<uint32_t>(num_results, stream, mr));
   cols.push_back(make_fixed_width_column<uint32_t>(num_results, stream, mr));
 
-  thrust::copy(rmm::exec_policy(stream)->on(stream),
+  thrust::copy(rmm::exec_policy(stream),
                out_poly_idxs.begin(),
                out_poly_idxs.begin() + num_results,
                cols.at(0)->mutable_view().begin<uint32_t>());
 
-  thrust::copy(rmm::exec_policy(stream)->on(stream),
+  thrust::copy(rmm::exec_policy(stream),
                out_node_idxs.begin(),
                out_node_idxs.begin() + num_results,
                cols.at(1)->mutable_view().begin<uint32_t>());
@@ -200,8 +202,8 @@ struct dispatch_quadtree_bounding_box_join {
                                                  double y_max,
                                                  double scale,
                                                  int8_t max_depth,
-                                                 rmm::mr::device_memory_resource *mr,
-                                                 cudaStream_t stream)
+                                                 rmm::cuda_stream_view stream,
+                                                 rmm::mr::device_memory_resource *mr)
   {
     return join_quadtree_and_bboxes<T>(quadtree,
                                        poly_bbox,
@@ -211,8 +213,8 @@ struct dispatch_quadtree_bounding_box_join {
                                        static_cast<T>(y_max),
                                        static_cast<T>(scale),
                                        max_depth,
-                                       mr,
-                                       stream);
+                                       stream,
+                                       mr);
   }
   template <typename T,
             std::enable_if_t<!std::is_floating_point<T>::value> * = nullptr,
@@ -232,8 +234,8 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view c
                                                               double y_max,
                                                               double scale,
                                                               int8_t max_depth,
-                                                              rmm::mr::device_memory_resource *mr,
-                                                              cudaStream_t stream)
+                                                              rmm::cuda_stream_view stream,
+                                                              rmm::mr::device_memory_resource *mr)
 {
   return cudf::type_dispatcher(poly_bbox.column(0).type(),
                                dispatch_quadtree_bounding_box_join{},
@@ -245,8 +247,8 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view c
                                y_max,
                                scale,
                                max_depth,
-                               mr,
-                               stream);
+                               stream,
+                               mr);
 }
 
 }  // namespace detail
@@ -277,8 +279,16 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view c
     return std::make_unique<cudf::table>(std::move(cols));
   }
 
-  return detail::join_quadtree_and_bounding_boxes(
-    quadtree, poly_bbox, x_min, x_max, y_min, y_max, scale, max_depth, mr, cudaStream_t{0});
+  return detail::join_quadtree_and_bounding_boxes(quadtree,
+                                                  poly_bbox,
+                                                  x_min,
+                                                  x_max,
+                                                  y_min,
+                                                  y_max,
+                                                  scale,
+                                                  max_depth,
+                                                  rmm::cuda_stream_default,
+                                                  mr);
 }
 
 }  // namespace cuspatial
