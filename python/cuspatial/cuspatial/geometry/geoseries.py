@@ -1,4 +1,4 @@
-# 2020 NVIDIA
+# Copyright (c) 2020-2021, NVIDIA CORPORATION
 
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 import pandas as pd
@@ -116,7 +116,9 @@ class GeoSeries(ColumnBase):
             if not isinstance(index, slice):
                 return self._getitem_int(index)
             else:
-                return self._getitem_slice(index)
+                raise NotImplementedError
+                # This slice functionality is not ready yet
+                # return self._getitem_slice(index)
 
         def _getitem_int(self, index):
             item_type = self._sr.types[index]

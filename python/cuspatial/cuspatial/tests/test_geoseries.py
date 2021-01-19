@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2021, NVIDIA CORPORATION.
 
 import geopandas as gpd
 import numpy as np
@@ -230,22 +230,11 @@ def assert_eq_geo(geo1, geo2):
     geo2 = to_shapely(geo2)
     if type(geo1) != type(geo2):
         assert TypeError
-    if isinstance(geo1, Point):
-        assert_eq_point(geo1, geo2)
-    elif isinstance(geo1, MultiPoint):
-        assert_eq_multipoint(geo1, geo2)
-    elif isinstance(geo1, LineString):
-        assert_eq_linestring(geo1, geo2)
-    elif isinstance(geo1, MultiLineString):
-        assert_eq_multilinestring(geo1, geo2)
-    elif isinstance(geo1, Polygon):
-        assert_eq_polygon(geo1, geo2)
-    elif isinstance(geo1, MultiPolygon):
-        assert_eq_multipolygon(geo1, geo2)
-    elif isinstance(geo1, gpd.GeoSeries):
-        assert geo1.equals(geo2).all()
+    result = geo1.equals(geo2)
+    if isinstance(result, bool):
+        assert result
     else:
-        raise TypeError
+        assert result.all()
 
 
 def test_to_shapely_random():
