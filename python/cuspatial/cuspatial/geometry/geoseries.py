@@ -204,6 +204,9 @@ class GeoSeries(ColumnBase):
             + "\n"
         )
 
+    def de_interleave(self):
+        return NotImplementedError
+
 
 class GpuPoints:
     def __init__(self):
