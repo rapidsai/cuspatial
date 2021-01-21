@@ -13,11 +13,17 @@ def points_in_polygon(taxi_data, taxi_zones, pickup=True):
     tzones.to_file('cu_taxi_zones.shp')
     """
     # polygon_shape_file = data_dir  + 'its_4326_roi.shp'
-
+    print(" taxi_zones type : ", type(taxi_zones[1]))
+    print(" taxi_data type : ", type(taxi_data))
+    print(" taxi_zones[2] shape : ", taxi_zones[2][0:30].shape)
+    print(" taxi_zones[1] shape : ", taxi_zones[1].shape)
+    print(" taxi_zones[0] shape : ", taxi_zones[0].shape)
+    print(" taxi_data.columns : ", taxi_data.columns)
     if pickup:
         pickups = cuspatial.point_in_polygon(taxi_data['pickup_longitude'],
                                              taxi_data['pickup_latitude'],
-                                             taxi_zones[0], taxi_zones[1],
+                                             taxi_zones[0],
+                                             taxi_zones[1],
                                              taxi_zones[2]['x'],
                                              taxi_zones[2]['y'])
    

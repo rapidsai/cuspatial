@@ -43,17 +43,17 @@ if __name__ == '__main__':
         help='Path to dataset',
     )
     parser.add_argument(
+        '--n_reps',
+        type=int,
+        default=1,
+        help='Number of times to run the benchmarks',
+    )
+    parser.add_argument(
         '--run_algos',
         default=["point_in_polygon",
                  "haversine_distance"],
         help='List of string containg the different algorithms to'
              ' be benchmarked',
-    )
-    parser.add_argument(
-        '--n_reps',
-        type=int,
-        default=1,
-        help='Number of times to run the benchmarks',
     )
 
     args = parser.parse_args()
