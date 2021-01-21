@@ -28,12 +28,12 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--run_cpu',
-        default=True,
+        action='store_true',
         help='Run the cpu equivalent algorithm from shapely.'
     )
     parser.add_argument(
         '--compare_values',
-        default=False,
+        action='store_true',
         help='Run the cpu equivalent algorithm from shapely'
              ' and compare the results with the cuspatial run.',
     )
@@ -58,8 +58,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     runner = SpeedComparison(n_reps=args.n_reps,
-                             data_dir=args.data_dir)
 
+                             data_dir=args.data_dir)
+    print("args.run_cpu : ", args.run_cpu)
     results = runner.run_algos(run_algos=args.run_algos,
                                run_cpu=args.run_cpu,
                                compare_vals=args.compare_values)

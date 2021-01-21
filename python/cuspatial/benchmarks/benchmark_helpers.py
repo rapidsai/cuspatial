@@ -89,7 +89,7 @@ class SpeedComparison:
                 cuspatial_vals = points_in_polygon(taxi_dataset,
                                                    taxi_zones).astype(np.int32)
             cu_polygon_time = np.mean(polygon_timer.timings)
-            if run_cpu==True:
+            if run_cpu:
                 print(" run cpu for points_in_polygon ")
                 cpu_polygon_timer = BenchmarkTimer(self.n_reps)
                 for rep in cpu_polygon_timer.benchmark_runs():
@@ -113,7 +113,7 @@ class SpeedComparison:
                 cuspatial_vals = cuspatial_haversine_distance(taxi_dataset)
             cuspatial_haversine_time = np.mean(haversine_timer.timings)
 
-            if run_cpu==True:
+            if run_cpu:
                 cpu_haversine_timer = BenchmarkTimer(self.n_reps)
                 for rep in cpu_haversine_timer.benchmark_runs():
                     cpu_vals = cupy_haversine_distance(taxi_dataset)
