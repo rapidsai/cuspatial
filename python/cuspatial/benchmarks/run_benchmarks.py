@@ -45,7 +45,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--n_reps',
         type=int,
-        default=1,
+        default=5,
         help='Number of times to run the benchmarks',
     )
     parser.add_argument(

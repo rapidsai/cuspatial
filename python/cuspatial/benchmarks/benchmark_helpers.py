@@ -88,30 +88,44 @@ class SpeedComparison:
             for rep in polygon_timer.benchmark_runs():
                 cuspatial_vals = points_in_polygon(taxi_dataset,
                                                    taxi_zones).astype(np.int32)
-                print(" points_in_polygon ")
-            cu_polygon_time = np.min(polygon_timer.timings)
-            if run_cpu:
+            cu_polygon_time = np.mean(polygon_timer.timings)
+            if run_cpu==True:
                 print(" run cpu for points_in_polygon ")
                 cpu_polygon_timer = BenchmarkTimer(self.n_reps)
                 for rep in cpu_polygon_timer.benchmark_runs():
                     cpu_vals = cpu_points_in_polygon(taxi_dataset,
                                                      tzones_info_file)
-                cpu_polygon_time = np.min(cpu_polygon_timer.timings)
+                cpu_polygon_time = np.mean(cpu_polygon_timer.timings)
+
                 results.append({"algo": "point_in_polygon",
                                 "cuspatial_time": cu_polygon_time,
                                 "cpu_time": cpu_polygon_time})
+                
+            else:
+                results.append({"algo": "point_in_polygon",
+                                "cuspatial_time": cu_polygon_time})
+
 
         if "haversine_distance" in run_algos:
 
             haversine_timer = BenchmarkTimer(self.n_reps)
             for rep in haversine_timer.benchmark_runs():
                 cuspatial_vals = cuspatial_haversine_distance(taxi_dataset)
-            cuspatial_haversine_time = np.min(haversine_timer.timings)
-            print("cuspatial_haversine_time : ", cuspatial_haversine_time)
-            if run_cpu:
-                print(" run cpu for haversine ")
+            cuspatial_haversine_time = np.mean(haversine_timer.timings)
+
+            if run_cpu==True:
                 cpu_haversine_timer = BenchmarkTimer(self.n_reps)
                 for rep in cpu_haversine_timer.benchmark_runs():
                     cpu_vals = cupy_haversine_distance(taxi_dataset)
-                cpu_haversine_time = np.min(cpu_haversine_timer.timings)
-                print("cpu_haversine_time : ", cpu_haversine_time)
+                cpu_haversine_time = np.mean(cpu_haversine_timer.timings)
+
+                results.append({"algo": "haversine_distance",
+                                "cuspatial_time": cuspatial_haversine_time,
+                                "cpu_time": cpu_haversine_time})
+            else:
+                results.append({"algo": "haversine_distance",
+                                "cuspatial_time": cuspatial_haversine_time})
+
+            print(" results : ", results)
+
+                
