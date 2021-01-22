@@ -3,6 +3,7 @@
 import cudf
 
 from geopandas.geoseries import GeoSeries as gpGeoSeries
+from geopandas.geoseries import is_geometry_type
 from geopandas import GeoDataFrame as gpGeoDataFrame
 
 from cuspatial.geometry.geoseries import GeoSeries
@@ -21,14 +22,16 @@ def from_geopandas(gpdf):
 
     Possible inputs:
     GeoSeries
+    GeoDataFrame
     """
     if isinstance(gpdf, gpGeoSeries):
         return from_geoseries(gpdf)
     if isinstance(gpdf, gpGeoDataFrame):
-        geo_columns = gpdf.columns[gpdf.dtypes == "geometry"]
-        non_geo_columns = gpdf[gpdf.columns[gpdf.dtypes != "geometry"]]
-        gdf = cudf.from_pandas(non_geo_columns)
-        for col in geo_columns:
-            gdf[col] = from_geoseries(gpdf[col])
+        gdf = cudf.DataFrame()
+        for col in gpdf.columns:
+            if is_geometry_type(gpdf[col]):
+                gdf[col] = from_geoseries(gpdf[col])
+            else:
+                gdf[col] = cudf.from_pandas(gpdf[col])
         gdf.index = gpdf.index
         return gdf

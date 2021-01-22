@@ -176,20 +176,32 @@ class GeoSeries(ColumnBase):
     def polygons(self):
         return self._polygons
 
-    def to_pandas(self):
-        raise NotImplementedError
+    def to_pandas(self, index=None, nullable=False):
+        return self.to_geopandas(index=index, nullable=nullable)
 
-    def to_geopandas(self):
+    def to_geopandas(self, index=None, nullable=False):
         """
         Returns a new GeoPandas GeoSeries object from the coordinates in
         the cuspatial GeoSeries.
         """
         output = []
+        if nullable is True:
+            raise ValueError("cuGeoSeries doesn't support N/A yet")
+        if index is None:
+            index = self.index.to_array()
         for i in range(len(self)):
             output.append(self[i].to_shapely())
-        return gpGeoSeries(output, index=self.index.to_array())
+        return gpGeoSeries(output, index=index)
 
     def __repr__(self):
+        return (
+            self.to_pandas().__repr__()
+            + "\n"
+            + "(GPU)"
+            + "\n"
+        )
+
+    def _dump(self):
         return (
             "POINTS"
             + "\n"
