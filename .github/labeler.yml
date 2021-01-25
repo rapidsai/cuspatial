@@ -6,20 +6,19 @@ Python:
   - 'python/**'
   - 'notebooks/**'
   
-libcuspatial:
+cpp:
   - 'cpp/**'
 
 CMake:
   - '**/CMakeLists.txt'
   - '**/cmake/**'
+
+ci:
+  - 'ci/**'
+
+conda:
+    - 'conda/**'
   
 Java:
   - 'java/**'
   
-Ops:
-  - '.github/**'
-  - 'ci/**'
-  - 'conda/**'
-  - '**/Dockerfile'
-  - '**/.dockerignore'
-  - 'docker/**'
