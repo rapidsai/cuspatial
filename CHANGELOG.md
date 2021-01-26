@@ -26,7 +26,6 @@
 
 ## New Features
 - PR #290 Add Java bindings and a cuSpatial JAR package for Java users.
-- PR #300 Add `from_geopandas` to move geopandas data onto the GPU
 
 ## Improvements
 - PR #278 Update googlebenchmark version to match rmm & cudf.
