@@ -28,8 +28,8 @@ np.random.seed(0)
 @pytest.fixture
 def gs():
     geos = [
-        Point(1, 2),
-        MultiPoint(((3, 4), (5, 6))),
+        Point(-1, 0),
+        MultiPoint(((1, 2), (3, 4))),
         MultiPoint(((5, 6), (7, 8))),
         Point(9, 10),
         Polygon(((35, 36), (37, 38), (39, 40), (41, 42)),),

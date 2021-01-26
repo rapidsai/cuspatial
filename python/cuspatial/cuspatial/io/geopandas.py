@@ -7,6 +7,7 @@ from geopandas.geoseries import is_geometry_type
 from geopandas import GeoDataFrame as gpGeoDataFrame
 
 from cuspatial.geometry.geoseries import GeoSeries
+from cuspatial.geometry.geodataframe import GeoDataFrame
 
 
 def from_geoseries(geoseries):
@@ -27,7 +28,7 @@ def from_geopandas(gpdf):
     if isinstance(gpdf, gpGeoSeries):
         return from_geoseries(gpdf)
     if isinstance(gpdf, gpGeoDataFrame):
-        gdf = cudf.DataFrame()
+        gdf = GeoDataFrame()
         for col in gpdf.columns:
             if is_geometry_type(gpdf[col]):
                 gdf[col] = from_geoseries(gpdf[col])

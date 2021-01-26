@@ -15,11 +15,12 @@ from shapely.geometry import (
 
 import cudf
 from cudf.core.column import ColumnBase
+from cudf import Series
 
 from cuspatial.io.geoseries_reader import GeoSeriesReader
 
 
-class GeoSeries(ColumnBase):
+class GeoSeries(Series):
     def __init__(self, data):
         """
         A GPU GeoSeries object.
@@ -103,6 +104,7 @@ class GeoSeries(ColumnBase):
         self.types = self._reader.buffers[2]
         self.lengths = self._reader.buffers[3]
         self.index = cudf.Series(np.arange(len(self)))
+        self._dtype = 'geometry'
 
     class GeoSeriesLocIndexer:
         def __init__(self):
@@ -221,6 +223,19 @@ class GeoSeries(ColumnBase):
     def de_interleave(self):
         return NotImplementedError
 
+    def copy(self, deep=True):
+        result = GeoSeries([])
+        result._data = self._data
+        result._reader = self._reader
+        result._points = self.points.copy(deep)
+        result._multipoints = self.multipoints.copy(deep)
+        result._lines = self.lines.copy(deep)
+        result._polygons = self.polygons.copy(deep)
+        result.types = self.types
+        result.lengths = self.lengths
+        result.index = self.index
+        return result
+
 
 class GpuPoints:
     def __init__(self):
@@ -248,10 +263,20 @@ class GpuPoints:
     def __repr__(self):
         return "xy: " + self.xy.__repr__()
 
+    def copy(self, deep=True):
+        result = GpuPoints()
+        if self.xy is not None:
+            result.xy = self.xy.copy(deep)
+        if self.z is not None:
+            result.z = self.z.copy(deep)
+        result.has_z = self.has_z
+        return result
+
 
 class GpuOffset(GpuPoints):
     def __init__(self):
-        self.offsets = None
+        super().__init__()
+        self.offsets = []
 
     def __iter__(self):
         if self.offsets is None:
@@ -282,10 +307,15 @@ class GpuOffset(GpuPoints):
             super().__repr__() + "\noffsets: " + self.offsets.__repr__() + "\n"
         )
 
+    def copy(self, deep=True):
+        result = super().copy(deep)
+        result.offsets = self.offsets.copy(deep)
+        return result
+
 
 class GpuLines(GpuOffset):
     def __init__(self):
-        self.mlines = None
+        super().__init__()
 
     def __getitem__(self, index):
         result = super().__getitem__(index)
@@ -296,17 +326,44 @@ class GpuLines(GpuOffset):
             super().__repr__() + "\nmlines: " + self.mlines.__repr__() + "\n"
         )
 
+    def copy(self, deep=True):
+        result = GpuLines()
+        base = super().copy(deep)
+        result.xy = base.xy
+        result.z = base.z
+        result.offsets = base.offsets
+        if hasattr(self, 'mlines'):
+            result.mlines = self.mlines.copy()
+        return result
+
 
 class GpuMultiPoints(GpuOffset):
     def __init__(self):
-        pass
+        super().__init__()
+
+    def copy(self, deep=True):
+        result = GpuMultiPoints()
+        base = super().copy(deep)
+        result.xy = base.xy
+        result.z = base.z
+        result.offsets = base.offsets
+        return result
 
 
 class GpuPolygons(GpuOffset):
     def __init__(self):
+        super().__init__()
         self.polys = None
-        self.rings = None
+        # GpuPolygons uses the offsets buffer for rings!
         self.mpolys = None
+
+    @property
+    def rings(self):
+        return self.offsets
+
+    @rings.setter
+    def rings(self, rings):
+        self.offsets = rings
 
     def __repr__(self):
         result = ""
@@ -316,11 +373,21 @@ class GpuPolygons(GpuOffset):
         result += "mpolys:\n" + self.mpolys.__repr__() + "\n"
         return result
 
+    def copy(self, deep=True):
+        result = super().copy(deep)
+        result.polys = self.polys.copy(deep)
+        result.rings = self.rings.copy(deep)
+        result.mpolys = self.mpolys.copy(deep)
+        return result
+
 
 class cuGeometry:
     def __init__(self, source, index):
         self.source = source
         self.index = index
+
+    def __repr__(self):
+        return self.source.__repr__()
 
 
 class cuPoint(cuGeometry):

@@ -20,8 +20,8 @@ import cuspatial
 
 @pytest.fixture
 def gs():
-    g0 = Point(1, 2)
-    g1 = MultiPoint(((3, 4), (5, 6)))
+    g0 = Point(-1, 0)
+    g1 = MultiPoint(((1, 2), (3, 4)))
     g2 = MultiPoint(((5, 6), (7, 8)))
     g3 = Point(9, 10)
     g4 = LineString(((11, 12), (13, 14)))
@@ -70,6 +70,13 @@ def test_mixed_dataframe(gs):
     assert_eq(gpdf['a'], cgdf['a'])
     assert(gpdf['b'].equals(cgdf['b'].to_pandas()).all())
     assert_eq(gpdf, cgdf)
+
+
+def test_dataframe_column_access(gs):
+    gpdf = gpd.GeoDataFrame({'a': list(range(0, len(gs))), 'b': gs})
+    cgdf = cuspatial.from_geopandas(gpdf)
+    print(cgdf['b'])
+    assert(gpdf['b'].equals(cgdf['b']))
 
 
 def test_from_geoseries_complex(gs):
