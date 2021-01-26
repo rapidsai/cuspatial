@@ -15,12 +15,11 @@ from shapely.geometry import (
 
 import cudf
 from cudf.core.column import ColumnBase
-from cudf import Series
 
 from cuspatial.io.geoseries_reader import GeoSeriesReader
 
 
-class GeoSeries(Series):
+class GeoSeries(ColumnBase):
     def __init__(self, data):
         """
         A GPU GeoSeries object.

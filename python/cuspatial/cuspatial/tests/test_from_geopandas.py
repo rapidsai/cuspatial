@@ -1,7 +1,6 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
 import geopandas as gpd
-import numpy as np
 import pytest
 from shapely.geometry import (
     Point,
@@ -81,9 +80,9 @@ def test_dataframe_column_access(gs):
 
 def test_from_geoseries_complex(gs):
     cugs = cuspatial.from_geopandas(gs)
-    assert cugs.points.xy.sum() == 22
+    assert cugs.points.xy.sum() == 18
     assert cugs.lines.xy.sum() == 540
-    assert cugs.multipoints.xy.sum() == 44
+    assert cugs.multipoints.xy.sum() == 36
     assert cugs.polygons.xy.sum() == 7440
     assert cugs.polygons.polys.sum() == 38
     assert cugs.polygons.rings.sum() == 654
