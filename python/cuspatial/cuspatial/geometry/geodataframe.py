@@ -1,11 +1,19 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION
 
 from geopandas import GeoDataFrame as gpGeoDataFrame
-from geopandas.geoseries import is_geometry_type
+from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
 
 from cuspatial.geometry.geoseries import GeoSeries
+
+
+def is_geometry_type(obj):
+    if gp_is_geometry_type(obj):
+        return True
+    if isinstance(obj, GeoSeries):
+        return True
+    return False
 
 
 class GeoDataFrame(cudf.DataFrame):
@@ -24,6 +32,13 @@ class GeoDataFrame(cudf.DataFrame):
         else:
             raise ValueError("Invalid type passed to GeoDataFrame()")
 
+    def _constructor_sliced(self, new_data, name=None, index=False):
+        new_column = new_data.columns[0]
+        if is_geometry_type(new_column):
+            return GeoSeries(new_column, name=name, index=index)
+        else:
+            return cudf.Series(new_column, name=name, index=index)
+
     def to_pandas(self, index=None, nullable=False):
         return self.to_geopandas(index=index, nullable=nullable)
 
@@ -38,13 +53,7 @@ class GeoDataFrame(cudf.DataFrame):
             index = self.index.to_array()
         result = gpGeoDataFrame()
         for col in self.columns:
-            if is_geometry_type(self[col]):
-                geoSeries = []
-                for i in self[col]:
-                    geoSeries.append(self[col].to_shapely())
-                result[col] = geoSeries
-            else:
-                result[col] = self[col].to_pandas()
+            result[col] = self[col].to_pandas()
         result.index = index
         return result
 

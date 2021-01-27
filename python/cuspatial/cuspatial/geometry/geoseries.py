@@ -1,5 +1,6 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION
 
+import numbers
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 import pandas as pd
 import numpy as np
@@ -20,7 +21,7 @@ from cuspatial.io.geoseries_reader import GeoSeriesReader
 
 
 class GeoSeries(ColumnBase):
-    def __init__(self, data):
+    def __init__(self, data, name=None, index=None):
         """
         A GPU GeoSeries object.
 
@@ -78,32 +79,51 @@ class GeoSeries(ColumnBase):
         will create a legacy cuspatial Series, which violates the GeoArrow
         format but will work with existing cuspatial algorithms.
         """
-        self._data = data
-        self._reader = GeoSeriesReader(data)
-        self._points = GpuPoints()
-        self._points.xy = self._reader.buffers[0]["points"]
-        self._multipoints = GpuMultiPoints()
-        self._multipoints.xy = self._reader.buffers[0]["multipoints"]
-        self._multipoints.offsets = self._reader.buffers[1]["multipoints"]
-        self._lines = GpuLines()
-        self._lines.xy = self._reader.buffers[0]["lines"]
-        self._lines.offsets = self._reader.buffers[1]["lines"]
-        self._lines.mlines = self._reader.buffers[1]["mlines"]
-        self._polygons = GpuPolygons()
-        self._polygons.xy = self._reader.buffers[0]["polygons"]["coords"]
-        self._polygons.polys = cudf.Series(
-            self._reader.offsets["polygons"]["polygons"]
-        )
-        self._polygons.rings = cudf.Series(
-            self._reader.offsets["polygons"]["rings"]
-        )
-        self._polygons.mpolys = cudf.Series(
-            self._reader.offsets["polygons"]["mpolys"]
-        )
-        self.types = self._reader.buffers[2]
-        self.lengths = self._reader.buffers[3]
-        self.index = cudf.Series(np.arange(len(self)))
-        self._dtype = 'geometry'
+        if isinstance(data, GeoSeries):
+            self._data = data.data
+            self._points = data.points
+            self._multipoints = data.multipoints
+            self._lines = data.lines
+            self._polygons = data.polygons
+            self.types = data.types
+            self.lengths = data.lengths
+            if index is not None:
+                self.index = index
+            else:
+                self.index = data.index
+            self.name = data.name if not name else name
+            self._dtype = data.dtype
+        else:
+            self._data = data
+            self._reader = GeoSeriesReader(data)
+            self._points = GpuPointArray()
+            self._points.xy = self._reader.buffers[0]["points"]
+            self._multipoints = GpuMultiPointArray()
+            self._multipoints.xy = self._reader.buffers[0]["multipoints"]
+            self._multipoints.offsets = self._reader.buffers[1]["multipoints"]
+            self._lines = GpuLineArray()
+            self._lines.xy = self._reader.buffers[0]["lines"]
+            self._lines.offsets = self._reader.buffers[1]["lines"]
+            self._lines.mlines = self._reader.buffers[1]["mlines"]
+            self._polygons = GpuPolygonArray()
+            self._polygons.xy = self._reader.buffers[0]["polygons"]["coords"]
+            self._polygons.polys = cudf.Series(
+                self._reader.offsets["polygons"]["polygons"]
+            )
+            self._polygons.rings = cudf.Series(
+                self._reader.offsets["polygons"]["rings"]
+            )
+            self._polygons.mpolys = cudf.Series(
+                self._reader.offsets["polygons"]["mpolys"]
+            )
+            self.types = self._reader.buffers[2]
+            self.lengths = self._reader.buffers[3]
+            if index is not None:
+                self.index = index
+            else:
+                self.index = cudf.Series(np.arange(len(self)))
+            self.name = name
+            self._dtype = 'geometry'
 
     class GeoSeriesLocIndexer:
         def __init__(self):
@@ -124,19 +144,27 @@ class GeoSeries(ColumnBase):
         def _getitem_int(self, index):
             item_type = self._sr.types[index]
             if item_type == "p":
-                return cuPoint(self._sr, index)
+                return gpuPoint(self._sr, index)
             elif item_type == "mp":
-                return cuMultiPoint(self._sr, index)
+                return gpuMultiPoint(self._sr, index)
             elif item_type == "l":
-                return cuLineString(self._sr, index)
+                return gpuLineString(self._sr, index)
             elif item_type == "ml":
-                return cuMultiLineString(self._sr, index)
+                return gpuMultiLineString(self._sr, index)
             elif item_type == "poly":
-                return cuPolygon(self._sr, index)
+                return gpuPolygon(self._sr, index)
             elif item_type == "mpoly":
-                return cuMultiPolygon(self._sr, index)
+                return gpuMultiPolygon(self._sr, index)
             else:
                 raise TypeError
+
+    def __getitem__(self, item):
+        """
+        Returns gpuGeometry objects for each of the rows specified by index.
+        """
+        if not isinstance(item, numbers.Integral):
+            raise NotImplementedError
+        return self.iloc[item]
 
     @property
     def loc(self):
@@ -148,12 +176,6 @@ class GeoSeries(ColumnBase):
     @property
     def iloc(self):
         return self.GeoSeriesILocIndexer(self)
-
-    def __getitem__(self, index):
-        """
-        Returns cuGeometry objects for each of the rows specified by index.
-        """
-        return self.iloc[index]
 
     def __len__(self):
         """
@@ -235,8 +257,19 @@ class GeoSeries(ColumnBase):
         result.index = self.index
         return result
 
+    def __iter__(self):
+        self._iter_index = 0
+        return self
 
-class GpuPoints:
+    def __next__(self):
+        if self._iter_index >= len(self):
+            raise StopIteration
+        result = self[self._iter_index]
+        self._iter_index = self._iter_index + 2
+        return result
+
+
+class GpuPointArray:
     def __init__(self):
         self.xy = None
         self.z = None
@@ -263,7 +296,7 @@ class GpuPoints:
         return "xy: " + self.xy.__repr__()
 
     def copy(self, deep=True):
-        result = GpuPoints()
+        result = GpuPointArray()
         if self.xy is not None:
             result.xy = self.xy.copy(deep)
         if self.z is not None:
@@ -272,7 +305,7 @@ class GpuPoints:
         return result
 
 
-class GpuOffset(GpuPoints):
+class GpuOffsetArray(GpuPointArray):
     def __init__(self):
         super().__init__()
         self.offsets = []
@@ -312,7 +345,7 @@ class GpuOffset(GpuPoints):
         return result
 
 
-class GpuLines(GpuOffset):
+class GpuLineArray(GpuOffsetArray):
     def __init__(self):
         super().__init__()
 
@@ -326,7 +359,7 @@ class GpuLines(GpuOffset):
         )
 
     def copy(self, deep=True):
-        result = GpuLines()
+        result = GpuLineArray()
         base = super().copy(deep)
         result.xy = base.xy
         result.z = base.z
@@ -336,12 +369,12 @@ class GpuLines(GpuOffset):
         return result
 
 
-class GpuMultiPoints(GpuOffset):
+class GpuMultiPointArray(GpuOffsetArray):
     def __init__(self):
         super().__init__()
 
     def copy(self, deep=True):
-        result = GpuMultiPoints()
+        result = GpuMultiPointArray()
         base = super().copy(deep)
         result.xy = base.xy
         result.z = base.z
@@ -349,11 +382,11 @@ class GpuMultiPoints(GpuOffset):
         return result
 
 
-class GpuPolygons(GpuOffset):
+class GpuPolygonArray(GpuOffsetArray):
     def __init__(self):
         super().__init__()
         self.polys = None
-        # GpuPolygons uses the offsets buffer for rings!
+        # GpuPolygonArray uses the offsets buffer for rings!
         self.mpolys = None
 
     @property
@@ -380,7 +413,7 @@ class GpuPolygons(GpuOffset):
         return result
 
 
-class cuGeometry:
+class gpuGeometry:
     def __init__(self, source, index):
         self.source = source
         self.index = index
@@ -389,7 +422,7 @@ class cuGeometry:
         return self.source.__repr__()
 
 
-class cuPoint(cuGeometry):
+class gpuPoint(gpuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
         index = (
@@ -399,8 +432,20 @@ class cuPoint(cuGeometry):
         ).sum()
         return Point(self.source._points[index].reset_index(drop=True))
 
+    def __iter__(self):
+        self._index = 0
+        self._shapely = self.to_shapely()
+        return self
 
-class cuMultiPoint(cuGeometry):
+    def __next__(self):
+        if self._index >= 1:
+            raise StopIteration
+        result = self._shapely
+        self._index = self._index + 1
+        return result
+
+
+class gpuMultiPoint(gpuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
         item_length = self.source.lengths[self.index]
@@ -414,7 +459,7 @@ class cuMultiPoint(cuGeometry):
         return MultiPoint(result.to_array().reshape(item_length, 2))
 
 
-class cuLineString(cuGeometry):
+class gpuLineString(gpuGeometry):
     def to_shapely(self):
         ml_index = self.index - 1
         preceding_line_count = 0
@@ -442,7 +487,7 @@ class cuLineString(cuGeometry):
         )
 
 
-class cuMultiLineString(cuGeometry):
+class gpuMultiLineString(gpuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
         index = (
@@ -461,7 +506,7 @@ class cuMultiLineString(cuGeometry):
         return MultiLineString(lines)
 
 
-class cuPolygon(cuGeometry):
+class gpuPolygon(gpuGeometry):
     def to_shapely(self):
         mp_index = self.index - 1
         preceding_poly_count = 0
@@ -503,7 +548,7 @@ class cuPolygon(cuGeometry):
         )
 
 
-class cuMultiPolygon(cuGeometry):
+class gpuMultiPolygon(gpuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
         index = (
