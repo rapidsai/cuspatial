@@ -212,8 +212,10 @@ class GeoSeries(ColumnBase):
             raise ValueError("cuGeoSeries doesn't support N/A yet")
         if index is None:
             index = self.index.to_array()
-        for i in range(len(self)):
-            output.append(self[i].to_shapely())
+        #for i in range(len(self)):
+        #    output.append(self[i].to_shapely())
+        #output = [self[i].to_shapely() for i in range(len(self))]
+        output = [geom.to_shapely() for geom in self]
         return gpGeoSeries(output, index=index)
 
     def __repr__(self):
@@ -265,7 +267,7 @@ class GeoSeries(ColumnBase):
         if self._iter_index >= len(self):
             raise StopIteration
         result = self[self._iter_index]
-        self._iter_index = self._iter_index + 2
+        self._iter_index = self._iter_index + 1
         return result
 
 
