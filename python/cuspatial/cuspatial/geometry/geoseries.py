@@ -120,6 +120,8 @@ class GeoSeries(ColumnBase):
             self.lengths = self._reader.buffers[3]
             if index is not None:
                 self.index = index
+            elif data.index is not None:
+                self.index = data.index
             else:
                 self.index = cudf.Series(np.arange(len(self)))
             self.name = name
@@ -211,10 +213,9 @@ class GeoSeries(ColumnBase):
         if nullable is True:
             raise ValueError("cuGeoSeries doesn't support N/A yet")
         if index is None:
-            index = self.index.to_array()
-        #for i in range(len(self)):
-        #    output.append(self[i].to_shapely())
-        #output = [self[i].to_shapely() for i in range(len(self))]
+            index = self.index
+            if isinstance(index, cudf.core.index.RangeIndex):
+                index = index.to_pandas()
         output = [geom.to_shapely() for geom in self]
         return gpGeoSeries(output, index=index)
 
