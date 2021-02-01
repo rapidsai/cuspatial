@@ -390,6 +390,7 @@ def test_quadtree_point_in_polygon_small(dtype):
     points_y = small_points_y.astype(dtype)
     poly_points_x = small_poly_xs.astype(dtype)
     poly_points_y = small_poly_ys.astype(dtype)
+    breakpoint()
     point_indices, quadtree = cuspatial.quadtree_on_points(
         points_x,
         points_y,
