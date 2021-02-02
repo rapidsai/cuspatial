@@ -30,6 +30,7 @@ requirements:
     - cudf {{ minor_version }}.*
     - rmm {{ minor_version }}.*
     - gdal >=3.1.0,<3.2.0a0
+    - geopandas 0.7.0
 
 test:
   commands:
