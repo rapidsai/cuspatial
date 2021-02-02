@@ -1,7 +1,5 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
-import cudf
-
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 from geopandas import GeoDataFrame as gpGeoDataFrame
 
@@ -22,4 +20,3 @@ def from_geopandas(gpdf):
         return GeoSeries(gpdf)
     if isinstance(gpdf, gpGeoDataFrame):
         return GeoDataFrame(gpdf)
-
