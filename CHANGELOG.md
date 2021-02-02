@@ -22,7 +22,7 @@
 - PR #320 Fix quadtree construction bug: zero out `device_uvector` before `scatter`
 - PR #328 Fix point in polygon test for cudf::gather breaking change
 
-# cuSpatial 0.16.0 (Date TBD)
+# cuSpatial 0.16.0 (21 Oct 2020)
 
 ## New Features
 - PR #290 Add Java bindings and a cuSpatial JAR package for Java users.
