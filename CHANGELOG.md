@@ -9,7 +9,7 @@
 
 ## Bug Fixes
 
-# cuSpatial 0.17.0 (Date TBD)
+# cuSpatial 0.17.0 (10 Dec 2020)
 
 ## New Features
 
