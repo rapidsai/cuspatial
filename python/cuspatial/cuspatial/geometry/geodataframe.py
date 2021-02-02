@@ -58,12 +58,7 @@ class GeoDataFrame(cudf.DataFrame):
         return result
 
     def __repr__(self):
-        return (
-            self.to_pandas().__repr__()
-            + "\n"
-            + "(GPU)"
-            + "\n"
-        )
+        return self.to_pandas().__repr__() + "\n" + "(GPU)" + "\n"
 
     def de_interleave(self):
         pass

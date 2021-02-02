@@ -125,7 +125,7 @@ class GeoSeries(ColumnBase):
             else:
                 self.index = cudf.Series(np.arange(len(self)))
             self.name = name
-            self._dtype = 'geometry'
+            self._dtype = "geometry"
 
     class GeoSeriesLocIndexer:
         def __init__(self):
@@ -220,12 +220,7 @@ class GeoSeries(ColumnBase):
         return gpGeoSeries(output, index=index)
 
     def __repr__(self):
-        return (
-            self.to_pandas().__repr__()
-            + "\n"
-            + "(GPU)"
-            + "\n"
-        )
+        return self.to_pandas().__repr__() + "\n" + "(GPU)" + "\n"
 
     def _dump(self):
         return (
@@ -367,7 +362,7 @@ class GpuLineArray(GpuOffsetArray):
         result.xy = base.xy
         result.z = base.z
         result.offsets = base.offsets
-        if hasattr(self, 'mlines'):
+        if hasattr(self, "mlines"):
             result.mlines = self.mlines.copy()
         return result
 
@@ -429,9 +424,8 @@ class gpuPoint(gpuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
         index = (
-            pd.Series(
-                self.source.types[0 : self.index], dtype='object'
-            ) == item_type
+            pd.Series(self.source.types[0 : self.index], dtype="object")
+            == item_type
         ).sum()
         return Point(self.source._points[index].reset_index(drop=True))
 
@@ -453,9 +447,8 @@ class gpuMultiPoint(gpuGeometry):
         item_type = self.source.types[self.index]
         item_length = self.source.lengths[self.index]
         item_start = (
-            pd.Series(
-                self.source.types[0 : self.index], dtype='object'
-            ) == item_type
+            pd.Series(self.source.types[0 : self.index], dtype="object")
+            == item_type
         ).sum()
         item_source = self.source._multipoints
         result = item_source[item_start]
@@ -494,9 +487,8 @@ class gpuMultiLineString(gpuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
         index = (
-            pd.Series(
-                self.source.types[0 : self.index], dtype='object'
-            ) == item_type
+            pd.Series(self.source.types[0 : self.index], dtype="object")
+            == item_type
         ).sum()
         line_indices = slice(
             self.source._lines.mlines[index * 2],
@@ -555,9 +547,8 @@ class gpuMultiPolygon(gpuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
         index = (
-            pd.Series(
-                self.source.types[0 : self.index], dtype='object'
-            ) == item_type
+            pd.Series(self.source.types[0 : self.index], dtype="object")
+            == item_type
         ).sum()
         poly_indices = slice(
             self.source.polygons.mpolys[index * 2],

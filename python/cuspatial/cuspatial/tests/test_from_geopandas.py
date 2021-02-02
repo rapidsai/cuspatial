@@ -64,17 +64,17 @@ def gs():
 
 
 def test_mixed_dataframe(gs):
-    gpdf = gpd.GeoDataFrame({'a': list(range(100, 100 + len(gs))), 'b': gs})
+    gpdf = gpd.GeoDataFrame({"a": list(range(100, 100 + len(gs))), "b": gs})
     cgdf = cuspatial.from_geopandas(gpdf)
-    assert_eq(gpdf['a'], cgdf['a'].to_pandas())
-    assert(gpdf['b'].equals(cgdf['b'].to_pandas()).all())
+    assert_eq(gpdf["a"], cgdf["a"].to_pandas())
+    assert gpdf["b"].equals(cgdf["b"].to_pandas()).all()
     assert_eq(gpdf, cgdf)
 
 
 def test_dataframe_column_access(gs):
-    gpdf = gpd.GeoDataFrame({'a': list(range(0, len(gs))), 'b': gs})
+    gpdf = gpd.GeoDataFrame({"a": list(range(0, len(gs))), "b": gs})
     cgdf = cuspatial.from_geopandas(gpdf)
-    assert(gpdf['b'].equals(cgdf['b'].to_pandas()).all())
+    assert gpdf["b"].equals(cgdf["b"].to_pandas()).all()
 
 
 def test_from_geoseries_complex(gs):
