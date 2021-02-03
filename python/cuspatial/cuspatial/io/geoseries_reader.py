@@ -9,7 +9,7 @@ from shapely.geometry import (
     MultiPolygon,
 )
 
-import numpy as np
+import cupy as cp
 
 import cudf
 
@@ -60,7 +60,7 @@ class GeoSeriesReader:
                 # the size of the number of points, the position they are
                 # stored in GpuPoints, and the index of the MultiPoint in the
                 # GeoSeries.
-                # for coord in np.arange(len(geometry)):
+                # for coord in cp.arange(len(geometry)):
                 # offsets["multipoints"].append((1 + coord) * 2)
                 current = offsets["multipoints"][-1]
                 offsets["multipoints"].append(len(geometry) * 2 + current)
@@ -133,18 +133,18 @@ class GeoSeriesReader:
         offsets : The set of offsets that correspond to the geoseries argument.
         """
         buffers = {
-            "points": cudf.Series(np.zeros(offsets["points"][-1])),
-            "multipoints": cudf.Series(np.zeros(offsets["multipoints"][-1])),
-            "lines": cudf.Series(np.zeros(offsets["lines"][-1])),
+            "points": cudf.Series(cp.zeros(offsets["points"][-1])),
+            "multipoints": cudf.Series(cp.zeros(offsets["multipoints"][-1])),
+            "lines": cudf.Series(cp.zeros(offsets["lines"][-1])),
             "polygons": {
                 "polygons": cudf.Series(
-                    np.zeros(len(offsets["polygons"]["polygons"]))
+                    cp.zeros(len(offsets["polygons"]["polygons"]))
                 ),
                 "rings": cudf.Series(
-                    np.zeros(len(offsets["polygons"]["rings"]))
+                    cp.zeros(len(offsets["polygons"]["rings"]))
                 ),
                 "coords": cudf.Series(
-                    np.zeros(offsets["polygons"]["rings"][-1])
+                    cp.zeros(offsets["polygons"]["rings"][-1])
                 ),
             },
         }
@@ -161,7 +161,7 @@ class GeoSeriesReader:
             if isinstance(geometry, Point):
                 # write a point to the points buffer
                 # increase read_count of points pass
-                p = np.array(geometry)
+                p = cp.array(geometry)
                 i = read_count["points"] * 2
                 buffers["points"][i] = p[0]
                 buffers["points"][i + 1] = p[1]
@@ -170,7 +170,7 @@ class GeoSeriesReader:
                 input_lengths.append(1)
                 inputs.append({"type": "p", "length": 1})
             elif isinstance(geometry, MultiPoint):
-                points = np.array(geometry).T
+                points = cp.array(geometry).T
                 size = len(points.T) * 2
                 i = read_count["multipoints"]
                 buffers["multipoints"][slice(i, i + size, 2)] = points[0]
