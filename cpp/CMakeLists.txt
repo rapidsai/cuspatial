@@ -182,11 +182,6 @@ if(CONDA_INCLUDE_DIRS)
     target_include_directories(cuspatial PUBLIC "$<BUILD_INTERFACE:${CONDA_INCLUDE_DIRS}>")
 endif()
 
-# Instruct jitify to use the kernel JIT cache
-if(JITIFY_USE_CACHE)
-    target_compile_definitions(cuspatial PUBLIC JITIFY_USE_CACHE "CUDF_VERSION=${CMAKE_PROJECT_VERSION}")
-endif()
-
 # Per-thread default stream
 if(PER_THREAD_DEFAULT_STREAM)
     target_compile_definitions(cuspatial PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
