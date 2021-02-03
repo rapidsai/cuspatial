@@ -14,70 +14,74 @@
 # limitations under the License.
 #=============================================================================
 
-if(NOT CMAKE_CUDA_COMPILER)
-  message(SEND_ERROR "CMake cannot locate a CUDA compiler")
+# Find or install CTest
+include(CTest)
+
+# Find or install GoogleTest
+CPMFindPackage(NAME GTest
+    VERSION         1.10.0
+    GIT_REPOSITORY  https://github.com/google/googletest.git
+    GIT_TAG         release-1.10.0
+    GIT_SHALLOW     TRUE
+    OPTIONS         "INSTALL_GTEST OFF"
+    # googletest >= 1.10.0 provides a cmake config file -- use it if it exists
+    FIND_PACKAGE_ARGUMENTS "CONFIG")
+
+if(GTest_ADDED)
+    add_library(GTest::gtest ALIAS gtest)
+    add_library(GTest::gmock ALIAS gmock)
+    add_library(GTest::gtest_main ALIAS gtest_main)
+    add_library(GTest::gmock_main ALIAS gmock_main)
 endif()
 
-###################################################################################################
-# - common test utils -----------------------------------------------------------------------------
+# # find cudftestutil library
+# find_library(CUDFTESTUTIL_LIBRARY "libcudftestutil.a"
+#              HINTS "$ENV{CUDF_ROOT}/lib")
 
-find_library(CUDFTESTUTIL_LIBRARY "libcudftestutil.a"
-             HINTS "$ENV{CUDF_ROOT}/lib")
+# message(STATUS "CUSPATIAL: CUDFTESTUTIL_LIBRARY set to ${CUDFTESTUTIL_LIBRARY}")
 
-message(STATUS "CUDFTESTUTIL: CUDFTESTUTIL_LIBRARY set to ${CUDFTESTUTIL_LIBRARY}")
+# add_library(cudftestutil STATIC IMPORTED ${CUDFTESTUTIL_LIBRARY})
 
-add_library(cudftestutil STATIC IMPORTED ${CUDFTESTUTIL_LIBRARY})
+# set_target_properties(cudftestutil
+#     PROPERTIES CXX_STANDARD              14
+#                CXX_STANDARD_REQUIRED     ON
+#                CUDA_STANDARD             14
+#                CUDA_STANDARD_REQUIRED    ON
+#                IMPORTED_LOCATION         ${CUDFTESTUTIL_LIBRARY}
+# )
 
-if (CUDFTESTUTIL_LIBRARY)
-    set_target_properties(cudftestutil PROPERTIES IMPORTED_LOCATION ${CUDFTESTUTIL_LIBRARY})
-endif (CUDFTESTUTIL_LIBRARY)
+# target_link_libraries(cudftestutil
+#                PUBLIC GTest::gmock
+#                       GTest::gtest
+#                       GTest::gmock_main
+#                       GTest::gtest_main
+#                       pthread)
 
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
 
 function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
-    add_executable(${CMAKE_TEST_NAME}
-                ${CMAKE_TEST_SRC})
-    set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    # By default the linker doesn't transitively add `DT_NEEDED` entries in executables like it does
-    # for shared libraries, so to work around current libcudf build behavior we're adding the linker
-    # flag
-    target_link_libraries(${CMAKE_TEST_NAME} "-Wl,--copy-dt-needed-entries")
-    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial
-                          cudftestutil)
-    if(USE_NVTX)
-        target_link_libraries(${CMAKE_TEST_NAME} ${NVTX_LIBRARY})
-    endif(USE_NVTX)
-    set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
-                            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
+    add_executable(${CMAKE_TEST_NAME} ${CMAKE_TEST_SRC})
+    target_compile_options(${CMAKE_TEST_NAME}
+                PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CUSPATIAL_CXX_FLAGS}>"
+                        "$<$<COMPILE_LANGUAGE:CUDA>:${CUSPATIAL_CUDA_FLAGS}>")
+    target_include_directories(${CMAKE_TEST_NAME}
+                PRIVATE "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}>"
+                        "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}/src>")
+    set_target_properties(${CMAKE_TEST_NAME}
+        PROPERTIES CXX_STANDARD              14
+                   CXX_STANDARD_REQUIRED     ON
+                   CUDA_STANDARD             14
+                   CUDA_STANDARD_REQUIRED    ON
+                   POSITION_INDEPENDENT_CODE ON
+                   RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gtests>")
+    target_link_libraries(${CMAKE_TEST_NAME} cudftestutil cuspatial)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
 endfunction(ConfigureTest)
 
 ###################################################################################################
-# - include paths ---------------------------------------------------------------------------------
-
-include_directories("${THRUST_INCLUDE_DIR}"
-                    "${LIBCUDACXX_INCLUDE_DIR}")
-
-if(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
-	include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
-endif()
-
-include_directories("${CMAKE_BINARY_DIR}/include"
-                    "${CMAKE_SOURCE_DIR}/include"
-                    "${CMAKE_SOURCE_DIR}"
-                    "${CMAKE_SOURCE_DIR}/src"
-                    "${GTEST_INCLUDE_DIR}"
-                    "${RMM_INCLUDE}"
-                    "${CUDF_INCLUDE}")
-
+### test sources ##################################################################################
 ###################################################################################################
-# - library paths ---------------------------------------------------------------------------------
-
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
-                 "${CMAKE_BINARY_DIR}"
-                 "${CONDA_LINK_DIRS}"
-                 "${GTEST_LIBRARY_DIR}")
 
 set(CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/cartesian_product_group_index_iterator_test.cpp")

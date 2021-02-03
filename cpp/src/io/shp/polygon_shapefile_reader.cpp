@@ -140,7 +140,7 @@ read_polygon_shapefile(std::string const& filename)
   std::vector<double> xs;
   std::vector<double> ys;
 
-  int num_features = read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys);
+  read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys);
 
   feature_lengths.shrink_to_fit();
   ring_lengths.shrink_to_fit();

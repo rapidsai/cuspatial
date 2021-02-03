@@ -14,22 +14,54 @@
 # limitations under the License.
 #=============================================================================
 
-if(NOT CMAKE_CUDA_COMPILER)
-  message(SEND_ERROR "CMake cannot locate a CUDA compiler")
+# Find or install GoogleTest
+CPMFindPackage(NAME GTest
+    VERSION         1.10.0
+    GIT_REPOSITORY  https://github.com/google/googletest.git
+    GIT_TAG         release-1.10.0
+    GIT_SHALLOW     TRUE
+    OPTIONS         "INSTALL_GTEST OFF"
+    # googletest >= 1.10.0 provides a cmake config file -- use it if it exists
+    FIND_PACKAGE_ARGUMENTS "CONFIG")
+
+if(GTest_ADDED)
+    add_library(GTest::gtest ALIAS gtest)
+    add_library(GTest::gmock ALIAS gmock)
+    add_library(GTest::gtest_main ALIAS gtest_main)
+    add_library(GTest::gmock_main ALIAS gmock_main)
 endif()
 
-###################################################################################################
-# - common test utils -----------------------------------------------------------------------------
+# Find or install GoogleBench
+CPMFindPackage(NAME benchmark
+    VERSION         1.5.2
+    GIT_REPOSITORY  https://github.com/google/benchmark.git
+    GIT_TAG         v1.5.2
+    GIT_SHALLOW     TRUE
+    OPTIONS         "BENCHMARK_ENABLE_TESTING OFF"
+                    "BENCHMARK_ENABLE_INSTALL OFF")
 
-find_library(CUDFTESTUTIL_LIBRARY "libcudftestutil.a"
-             HINTS "$ENV{CUDF_ROOT}/lib")
+# # find cudftestutil library
+# find_library(CUDFTESTUTIL_LIBRARY "libcudftestutil.a"
+#              HINTS "$ENV{CUDF_ROOT}/lib")
 
-message(STATUS "CUDFTESTUTIL: CUDFTESTUTIL_LIBRARY set to ${CUDFTESTUTIL_LIBRARY}")
+# message(STATUS "CUSPATIAL: CUDFTESTUTIL_LIBRARY set to ${CUDFTESTUTIL_LIBRARY}")
 
-add_library(cudftestutil STATIC IMPORTED ${CUDFTESTUTIL_LIBRARY})
-if (CUDFTESTUTIL_LIBRARY)
-    set_target_properties(cudftestutil PROPERTIES IMPORTED_LOCATION ${CUDFTESTUTIL_LIBRARY})
-endif (CUDFTESTUTIL_LIBRARY)
+# add_library(cudftestutil STATIC IMPORTED ${CUDFTESTUTIL_LIBRARY})
+
+# set_target_properties(cudftestutil
+#     PROPERTIES CXX_STANDARD              14
+#                CXX_STANDARD_REQUIRED     ON
+#                CUDA_STANDARD             14
+#                CUDA_STANDARD_REQUIRED    ON
+#                IMPORTED_LOCATION         ${CUDFTESTUTIL_LIBRARY}
+# )
+
+# target_link_libraries(cudftestutil
+#                PUBLIC GTest::gmock
+#                       GTest::gtest
+#                       GTest::gmock_main
+#                       GTest::gtest_main
+#                       pthread)
 
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
@@ -38,47 +70,25 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
     add_executable(${CMAKE_BENCH_NAME}
                    ${CMAKE_BENCH_SRC}
                    "${CMAKE_CURRENT_SOURCE_DIR}/synchronization/synchronization.cpp")
-    set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    # By default the linker doesn't transitively add `DT_NEEDED` entries in executables like it does
-    # for shared libraries, so to work around current libcudf build behavior we're adding the linker
-    # flag
-    target_link_libraries(${CMAKE_BENCH_NAME} "-Wl,--copy-dt-needed-entries")
-    target_link_libraries(${CMAKE_BENCH_NAME} benchmark benchmark_main pthread cuspatial
-                          cudftestutil)
-    set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
-                            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gbenchmarks")
+    target_compile_options(${CMAKE_BENCH_NAME}
+                PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CUSPATIAL_CXX_FLAGS}>"
+                        "$<$<COMPILE_LANGUAGE:CUDA>:${CUSPATIAL_CUDA_FLAGS}>")
+    target_include_directories(${CMAKE_BENCH_NAME}
+                PRIVATE "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}>"
+                        "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}/src>")
+    set_target_properties(${CMAKE_BENCH_NAME}
+        PROPERTIES CXX_STANDARD              14
+                   CXX_STANDARD_REQUIRED     ON
+                   CUDA_STANDARD             14
+                   CUDA_STANDARD_REQUIRED    ON
+                   POSITION_INDEPENDENT_CODE ON
+                   RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gbenchmarks>")
+    target_link_libraries(${CMAKE_BENCH_NAME} cudftestutil cuspatial)
 endfunction(ConfigureBench)
 
 ###################################################################################################
-# - include paths ---------------------------------------------------------------------------------
-
-include_directories("${THRUST_INCLUDE_DIR}"
-                    "${LIBCUDACXX_INCLUDE_DIR}")
-
-include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
-                    "${CMAKE_BINARY_DIR}/include"
-                    "${CMAKE_SOURCE_DIR}/include"
-                    "${CMAKE_SOURCE_DIR}"
-                    "${CMAKE_SOURCE_DIR}/src"
-                    "${GDAL_INCLUDE_DIRS}"
-                    "${GTEST_INCLUDE_DIR}"
-                    "${GBENCH_INCLUDE_DIR}"
-                    "${RMM_INCLUDE}"
-                    "${CUDF_INCLUDE}"
-                    "${CMAKE_CURRENT_SOURCE_DIR}")
-
+### benchmark sources #############################################################################
 ###################################################################################################
-# - library paths ---------------------------------------------------------------------------------
-
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
-                 "${CMAKE_BINARY_DIR}/lib"
-                 "${CMAKE_BINARY_DIR}"
-                 "${GDAL_LIBRARIES}"
-                 "${CONDA_LINK_DIRS}"
-                 "${GTEST_LIBRARY_DIR}"
-                 "${GBENCH_LIBRARY_DIR}"
-                 "${CUDF_LIBRARY}"
-                 "${CUSPATIAL_LIBRARY}")
 
 ###################################################################################################
 # - hausdorff benchmark ---------------------------------------------------------------------------
