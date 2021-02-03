@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "indexing/construction/detail/utilities.cuh"
-#include "utility/point_in_polygon.cuh"
+#include <indexing/construction/detail/utilities.cuh>
+#include <utility/point_in_polygon.cuh>
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/spatial_join.hpp>
@@ -26,7 +26,9 @@
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/copy.h>
@@ -105,8 +107,8 @@ struct compute_quadtree_point_in_polygon {
     cudf::column_view const &ring_offsets,
     cudf::column_view const &poly_points_x,
     cudf::column_view const &poly_points_y,
-    rmm::mr::device_memory_resource *mr,
-    cudaStream_t stream)
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource *mr)
   {
     auto quad_lengths        = quadtree.column(3);
     auto quad_offsets        = quadtree.column(4);
@@ -126,7 +128,7 @@ struct compute_quadtree_point_in_polygon {
     // `inclusive_scan` is the total number of points to be tested against any polygon.
     rmm::device_uvector<uint32_t> local_point_offsets(num_poly_quad_pairs + 1, stream);
 
-    thrust::inclusive_scan(rmm::exec_policy(stream)->on(stream),
+    thrust::inclusive_scan(rmm::exec_policy(stream),
                            quad_lengths_iter,
                            quad_lengths_iter + num_poly_quad_pairs,
                            local_point_offsets.begin() + 1);
@@ -154,7 +156,7 @@ struct compute_quadtree_point_in_polygon {
     //     pp_pairs.append((polygon, point))
     // ```
     //
-    thrust::transform(rmm::exec_policy(stream)->on(stream),
+    thrust::transform(rmm::exec_policy(stream),
                       counting_iter,
                       counting_iter + num_total_points,
                       poly_and_point_indices,
@@ -171,7 +173,7 @@ struct compute_quadtree_point_in_polygon {
     // Compute the number of intersections by removing (poly, point) pairs that don't intersect
     auto num_intersections = thrust::distance(
       poly_and_point_indices,
-      thrust::remove_if(rmm::exec_policy(stream)->on(stream),
+      thrust::remove_if(rmm::exec_policy(stream),
                         poly_and_point_indices,
                         poly_and_point_indices + num_total_points,
                         test_poly_point_intersection<T, decltype(point_xys_iter)>{
@@ -189,13 +191,13 @@ struct compute_quadtree_point_in_polygon {
     // `idxs.begin() + num_intersections`.
 
     // populate the polygon indices column
-    thrust::copy(rmm::exec_policy(stream)->on(stream),
+    thrust::copy(rmm::exec_policy(stream),
                  poly_idxs.begin(),
                  poly_idxs.begin() + num_intersections,
                  poly_idx_col->mutable_view().template begin<uint32_t>());
 
     // populate the point indices column
-    thrust::copy(rmm::exec_policy(stream)->on(stream),
+    thrust::copy(rmm::exec_policy(stream),
                  point_idxs.begin(),
                  point_idxs.begin() + num_intersections,
                  point_idx_col->mutable_view().template begin<uint32_t>());
@@ -219,8 +221,8 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const &p
                                                        cudf::column_view const &ring_offsets,
                                                        cudf::column_view const &poly_points_x,
                                                        cudf::column_view const &poly_points_y,
-                                                       rmm::mr::device_memory_resource *mr,
-                                                       cudaStream_t stream)
+                                                       rmm::cuda_stream_view stream,
+                                                       rmm::mr::device_memory_resource *mr)
 {
   return cudf::type_dispatcher(point_x.type(),
                                compute_quadtree_point_in_polygon{},
@@ -233,8 +235,8 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const &p
                                ring_offsets,
                                poly_points_x,
                                poly_points_y,
-                               mr,
-                               stream);
+                               stream,
+                               mr);
 }
 
 }  // namespace detail
@@ -285,8 +287,8 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const &p
                                            ring_offsets,
                                            poly_points_x,
                                            poly_points_y,
-                                           mr,
-                                           cudaStream_t{0});
+                                           rmm::cuda_stream_default,
+                                           mr);
 }
 
 }  // namespace cuspatial

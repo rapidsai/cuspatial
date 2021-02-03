@@ -64,7 +64,7 @@ std::unique_ptr<cudf::table> make_test_trajectories_table(
   );
 
   auto sorted = cudf::detail::sort_by_key(
-    cudf::table_view{{id, x, y, ts}}, cudf::table_view{{id, ts}}, {}, {}, mr, 0);
+    cudf::table_view{{id, x, y, ts}}, cudf::table_view{{id, ts}}, {}, {}, 0, mr);
 
   return sorted;
 }

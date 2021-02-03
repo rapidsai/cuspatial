@@ -16,15 +16,18 @@
 
 #pragma once
 
-#include "indexing/construction/detail/utilities.cuh"
-#include "utility/z_order.cuh"
+#include "utilities.cuh"
+
+#include <utility/z_order.cuh>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/types.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/thrust_rmm_allocator.h>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/functional.h>
 #include <thrust/iterator/constant_iterator.h>
@@ -57,11 +60,11 @@ compute_point_keys_and_sorted_indices(cudf::column_view const &x,
                                       T y_max,
                                       T scale,
                                       int8_t max_depth,
-                                      rmm::mr::device_memory_resource *mr,
-                                      cudaStream_t stream)
+                                      rmm::cuda_stream_view stream,
+                                      rmm::mr::device_memory_resource *mr)
 {
   rmm::device_uvector<uint32_t> keys(x.size(), stream);
-  thrust::transform(rmm::exec_policy(stream)->on(stream),
+  thrust::transform(rmm::exec_policy(stream),
                     make_zip_iterator(x.begin<T>(), y.begin<T>()),
                     make_zip_iterator(x.begin<T>(), y.begin<T>()) + x.size(),
                     keys.begin(),
@@ -77,15 +80,13 @@ compute_point_keys_and_sorted_indices(cudf::column_view const &x,
 
   auto indices = make_fixed_width_column<uint32_t>(keys.size(), stream, mr);
 
-  thrust::sequence(rmm::exec_policy(stream)->on(stream),
+  thrust::sequence(rmm::exec_policy(stream),
                    indices->mutable_view().begin<uint32_t>(),
                    indices->mutable_view().end<uint32_t>());
 
   // Sort the codes and point indices
-  thrust::stable_sort_by_key(rmm::exec_policy(stream)->on(stream),
-                             keys.begin(),
-                             keys.end(),
-                             indices->mutable_view().begin<int32_t>());
+  thrust::stable_sort_by_key(
+    rmm::exec_policy(stream), keys.begin(), keys.end(), indices->mutable_view().begin<int32_t>());
 
   return std::make_pair(std::move(keys), std::move(indices));
 }
@@ -106,9 +107,9 @@ inline cudf::size_type build_tree_level(InputIterator1 keys_begin,
                                         OutputIterator1 keys_out,
                                         OutputIterator2 vals_out,
                                         BinaryOp binary_op,
-                                        cudaStream_t stream)
+                                        rmm::cuda_stream_view stream)
 {
-  auto result = thrust::reduce_by_key(rmm::exec_policy(stream)->on(stream),
+  auto result = thrust::reduce_by_key(rmm::exec_policy(stream),
                                       keys_begin,
                                       keys_end,
                                       vals_in,
@@ -133,7 +134,7 @@ build_tree_levels(int8_t max_depth,
                   KeysIterator keys_begin,
                   ValsIterator quad_point_count_begin,
                   ValsIterator quad_child_count_begin,
-                  cudaStream_t stream)
+                  rmm::cuda_stream_view stream)
 {
   // begin/end offsets
   cudf::size_type begin{0};
@@ -193,7 +194,7 @@ reverse_tree_levels(rmm::device_uvector<uint32_t> const &quad_keys_in,
                     std::vector<cudf::size_type> const &begin_pos,
                     std::vector<cudf::size_type> const &end_pos,
                     int8_t max_depth,
-                    cudaStream_t stream)
+                    rmm::cuda_stream_view stream)
 {
   rmm::device_uvector<uint32_t> quad_keys(quad_keys_in.size(), stream);
   rmm::device_uvector<uint8_t> quad_levels(quad_keys_in.size(), stream);
@@ -205,19 +206,19 @@ reverse_tree_levels(rmm::device_uvector<uint32_t> const &quad_keys_in,
     cudf::size_type level_end   = end_pos[level];
     cudf::size_type level_begin = begin_pos[level];
     cudf::size_type num_quads   = level_end - level_begin;
-    thrust::fill(rmm::exec_policy(stream)->on(stream),
+    thrust::fill(rmm::exec_policy(stream),
                  quad_levels.begin() + offset,
                  quad_levels.begin() + offset + num_quads,
                  level);
-    thrust::copy(rmm::exec_policy(stream)->on(stream),
+    thrust::copy(rmm::exec_policy(stream),
                  quad_keys_in.begin() + level_begin,
                  quad_keys_in.begin() + level_end,
                  quad_keys.begin() + offset);
-    thrust::copy(rmm::exec_policy(stream)->on(stream),
+    thrust::copy(rmm::exec_policy(stream),
                  quad_point_count_in.begin() + level_begin,
                  quad_point_count_in.begin() + level_end,
                  quad_point_count.begin() + offset);
-    thrust::copy(rmm::exec_policy(stream)->on(stream),
+    thrust::copy(rmm::exec_policy(stream),
                  quad_child_count_in.begin() + level_begin,
                  quad_child_count_in.begin() + level_end,
                  quad_child_count.begin() + offset);
@@ -255,15 +256,15 @@ inline auto make_full_levels(cudf::column_view const &x,
                              T scale,
                              int8_t max_depth,
                              cudf::size_type min_size,
-                             rmm::mr::device_memory_resource *mr,
-                             cudaStream_t stream)
+                             rmm::cuda_stream_view stream,
+                             rmm::mr::device_memory_resource *mr)
 {
   // Compute point keys and sort into bottom-level quadrants
   // (i.e. quads at level `max_depth - 1`)
 
   // Compute Morton code (z-order) keys for each point
   auto keys_and_indices = compute_point_keys_and_sorted_indices<T>(
-    x, y, x_min, x_max, y_min, y_max, scale, max_depth, mr, stream);
+    x, y, x_min, x_max, y_min, y_max, scale, max_depth, stream, mr);
 
   auto &point_keys    = keys_and_indices.first;
   auto &point_indices = keys_and_indices.second;
@@ -291,8 +292,7 @@ inline auto make_full_levels(cudf::column_view const &x,
   quad_child_count.resize(num_bottom_quads * (max_depth + 1), stream);
 
   // Zero out the quad_child_count vector because we're reusing the point_keys vector
-  thrust::fill(
-    rmm::exec_policy(stream)->on(stream), quad_child_count.begin(), quad_child_count.end(), 0);
+  thrust::fill(rmm::exec_policy(stream), quad_child_count.begin(), quad_child_count.end(), 0);
 
   //
   // Compute "full" quads for the tree at each level. Starting from the quadrant

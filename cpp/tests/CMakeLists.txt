@@ -13,9 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #=============================================================================
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
-
-project(CUSPATIAL_TESTS LANGUAGES C CXX CUDA)
 
 if(NOT CMAKE_CUDA_COMPILER)
   message(SEND_ERROR "CMake cannot locate a CUDA compiler")
@@ -42,9 +39,12 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     add_executable(${CMAKE_TEST_NAME}
                 ${CMAKE_TEST_SRC})
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial cudf
-                        cudftestutil cudart cuda "${ARROW_LIB}" ${ZLIB_LIBRARIES}
-                        nvrtc GDAL::GDAL)
+    # By default the linker doesn't transitively add `DT_NEEDED` entries in executables like it does
+    # for shared libraries, so to work around current libcudf build behavior we're adding the linker
+    # flag
+    target_link_libraries(${CMAKE_TEST_NAME} "-Wl,--copy-dt-needed-entries")
+    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial
+                          cudftestutil)
     if(USE_NVTX)
         target_link_libraries(${CMAKE_TEST_NAME} ${NVTX_LIBRARY})
     endif(USE_NVTX)
@@ -67,7 +67,6 @@ include_directories("${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}"
                     "${CMAKE_SOURCE_DIR}/src"
-                    "${GDAL_INCLUDE_DIRS}"
                     "${GTEST_INCLUDE_DIR}"
                     "${RMM_INCLUDE}"
                     "${CUDF_INCLUDE}")
@@ -76,12 +75,9 @@ include_directories("${CMAKE_BINARY_DIR}/include"
 # - library paths ---------------------------------------------------------------------------------
 
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
-                 "${CMAKE_BINARY_DIR}/lib"
-                 "${GDAL_LIBRARIES}"
+                 "${CMAKE_BINARY_DIR}"
                  "${CONDA_LINK_DIRS}"
-                 "${GTEST_LIBRARY_DIR}"
-                 "${CUDF_LIBRARY}"
-                 "${CUSPATIAL_LIBRARY}")
+                 "${GTEST_LIBRARY_DIR}")
 
 set(CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST_SRC
    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/cartesian_product_group_index_iterator_test.cpp")

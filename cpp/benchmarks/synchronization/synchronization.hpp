@@ -17,7 +17,7 @@
 /**
  * @file synchronization.hpp
  * @brief This is the header file for `cuda_event_timer`.
- */
+ **/
 
 /**
  * @brief  This class serves as a wrapper for using `cudaEvent_t` as the user
@@ -33,7 +33,7 @@
 
       for (auto _ : state){
 
-        cudaStream_t stream = 0;
+        rmm::cuda_stream_view stream{}; // default stream, could be another stream
 
         // Create (Construct) an object of this class. You HAVE to pass in the
         // benchmark::State object you are using. It measures the time from its
@@ -44,23 +44,29 @@
         cuda_event_timer raii(state, true, stream); // flush_l2_cache = true
 
         // Now perform the operations that is to be benchmarked
-        sample_kernel<<<1, 256, 0, stream>>>(); // Possibly launching a CUDA kernel
+        sample_kernel<<<1, 256, 0, stream.value()>>>(); // Possibly launching a CUDA kernel
 
       }
     }
 
     // Register the function as a benchmark. You will need to set the `UseManualTime()`
-    // flag in order to use the timer embeded in this class.
+    // flag in order to use the timer embedded in this class.
     BENCHMARK(sample_cuda_benchmark)->UseManualTime();
 
 
- */
+ **/
 
-#pragma once
+#ifndef CUDF_BENCH_SYNCHRONIZATION_H
+#define CUDF_BENCH_SYNCHRONIZATION_H
 
 // Google Benchmark library
 #include <benchmark/benchmark.h>
-#include <cuda_runtime_api.h>
+
+#include <cudf/types.hpp>
+
+#include <rmm/cuda_stream_view.hpp>
+
+#include <driver_types.h>
 
 class cuda_event_timer {
  public:
@@ -73,14 +79,16 @@ class cuda_event_timer {
    * @param[in] flush_l2_cache_ whether or not to flush the L2 cache before
    *                            every iteration.
    * @param[in] stream_ The CUDA stream we are measuring time on.
-   */
-  cuda_event_timer(benchmark::State& state, bool flush_l2_cache, cudaStream_t stream_ = 0);
+   **/
+  cuda_event_timer(benchmark::State& state,
+                   bool flush_l2_cache,
+                   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
-  // The user will HAVE to provide a benchmark::State object to set
+  // The user must provide a benchmark::State object to set
   // the timer so we disable the default c'tor.
   cuda_event_timer() = delete;
 
-  // The d'tor stops the timer and performs a synchroniazation.
+  // The d'tor stops the timer and performs a synchronization.
   // Time of the benchmark::State object provided to the c'tor
   // will be set to the value given by `cudaEventElapsedTime`.
   ~cuda_event_timer();
@@ -88,6 +96,8 @@ class cuda_event_timer {
  private:
   cudaEvent_t start;
   cudaEvent_t stop;
-  cudaStream_t stream;
+  rmm::cuda_stream_view stream;
   benchmark::State* p_state;
 };
+
+#endif
