@@ -51,10 +51,10 @@ class GeoDataFrame(cudf.DataFrame):
             raise ValueError("cuGeoDataFrame doesn't support N/A yet")
         if index is None:
             index = self.index.to_array()
-        result = gpGeoDataFrame()
-        for col in self.columns:
-            result[col] = self[col].to_pandas()
-        result.index = index
+        result = gpGeoDataFrame(
+            [self[col].to_pandas() for col in self.columns],
+            index=index
+        )
         return result
 
     def __repr__(self):
