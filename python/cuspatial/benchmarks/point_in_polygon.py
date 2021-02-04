@@ -68,8 +68,8 @@ def points_in_polygon(taxi_data, taxi_zones, pickup=True):
         return polygons_and_points
 
     else:
-        p_x = taxi_data['pickup_longitude']
-        p_y = taxi_data['pickup_latitude']
+        p_x = taxi_data['dropoff_longitude']
+        p_y = taxi_data['dropoff_latitude']
         poly_x = taxi_zones[2]['x']
         poly_y = taxi_zones[2]['y']
         x_min = p_x.min()
