@@ -52,8 +52,7 @@ class GeoDataFrame(cudf.DataFrame):
         if index is None:
             index = self.index.to_array()
         result = gpGeoDataFrame(
-            [self[col].to_pandas() for col in self.columns],
-            index=index
+            [self[col].to_pandas() for col in self.columns], index=index
         )
         return result
 

@@ -494,11 +494,16 @@ class gpuMultiLineString(gpuGeometry):
             self.source._lines.mlines[index * 2],
             self.source._lines.mlines[index * 2 + 1],
         )
-        lines = []
-        for i in range(line_indices.start, line_indices.stop, 1):
-            line = self.source._lines[i].to_array()
-            lines.append(LineString(line.reshape(int(len(line) / 2), 2)))
-        return MultiLineString(lines)
+        return MultiLineString(
+            [
+                LineString(
+                    self.source._lines[i]
+                    .to_array()
+                    .reshape(int(len(self.source._lines[i]) / 2), 2)
+                )
+                for i in range(line_indices.start, line_indices.stop, 1)
+            ]
+        )
 
 
 class gpuPolygon(gpuGeometry):
@@ -529,17 +534,21 @@ class gpuPolygon(gpuGeometry):
         rings = self.source._polygons.rings
         exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
         exterior = self.source._polygons.xy[exterior_slice]
-        interiors = []
-        for interior in range(ring_end - (ring_start + 1)) + (ring_start + 1):
-            interior_slice = slice(rings[interior], rings[interior + 1])
-            interiors.append(
-                self.source._polygons.xy[interior_slice]
-                .to_array()
-                .reshape(int((rings[interior + 1] - rings[interior]) / 2), 2)
-            )
         return Polygon(
             exterior.to_array().reshape(2 * (ring_start - ring_end), 2),
-            interiors,
+            [
+                self.source._polygons.xy[interior_slice]
+                .to_array()
+                .reshape(
+                    int((interior_slice.stop - interior_slice.start + 1) / 2),
+                    2,
+                )
+                for interior_slice in [
+                    slice(rings[interior], rings[interior + 1])
+                    for interior in range(ring_end - (ring_start + 1))
+                    + (ring_start + 1)
+                ]
+            ],
         )
 
 
@@ -561,22 +570,30 @@ class gpuMultiPolygon(gpuGeometry):
             rings = self.source._polygons.rings
             exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
             exterior = self.source._polygons.xy[exterior_slice]
-            interiors = []
-            for interior in range(ring_start + 1, ring_end):
-                interior_slice = slice(rings[interior], rings[interior + 1])
-                interiors.append(
-                    self.source._polygons.xy[interior_slice]
-                    .to_array()
-                    .reshape(
-                        int((rings[interior + 1] - rings[interior]) / 2), 2
-                    )
-                )
             polys.append(
                 Polygon(
                     exterior.to_array().reshape(
                         2 * (ring_start - ring_end), 2
                     ),
-                    interiors,
+                    [
+                        self.source._polygons.xy[interior_slice]
+                        .to_array()
+                        .reshape(
+                            int(
+                                (
+                                    interior_slice.stop
+                                    - interior_slice.start
+                                    + 1
+                                )
+                                / 2
+                            ),
+                            2,
+                        )
+                        for interior_slice in [
+                            slice(rings[interior], rings[interior + 1])
+                            for interior in range(ring_start + 1, ring_end)
+                        ]
+                    ],
                 )
             )
         return MultiPolygon(polys)
