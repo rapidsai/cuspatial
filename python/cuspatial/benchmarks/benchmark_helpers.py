@@ -9,6 +9,8 @@ from point_in_polygon import cpu_points_in_polygon, \
     points_in_polygon
 from haversine_distance import cuspatial_haversine_distance, \
     cupy_haversine_distance
+from hausdorff_distance import cuspatial_hausdorff_distance, \
+    scipy_hausdorff_distance
 from urllib.request import urlretrieve
 
 
@@ -59,11 +61,7 @@ def load_dataset(data_dir, run_algos):
     taxi_dataset = cudf.read_csv(taxi_data_path)
 
     tzones_info_file = os.path.join(data_dir, tzone_name)
-    """
-    if "hausdorff_distance" in run_algos:
-        locust_data = os.path.join(data_dir,'schema_HWY_20_AND_LOCUST-filtered.json')
-        return 
-    """
+
     return taxi_dataset, tzones_info_file
 
 def read_locust_data(data_dir):
@@ -105,9 +103,10 @@ class SpeedComparison:
                              "hausdorff_distance"],
                   run_cpu=False,
                   compare_vals=False):
-        taxi_dataset, tzones_info_file = load_dataset(self.data_dir, run_algos)
+
         results = []
         if "point_in_polygon" in run_algos:
+            taxi_dataset, tzones_info_file = load_dataset(self.data_dir, run_algos)
             taxi_zones = cuspatial.read_polygon_shapefile(tzones_info_file)[0:27]
             polygon_timer = BenchmarkTimer(self.n_reps)
             for rep in polygon_timer.benchmark_runs():
@@ -131,7 +130,7 @@ class SpeedComparison:
 
 
         if "haversine_distance" in run_algos:
-
+            taxi_dataset, tzones_info_file = load_dataset(self.data_dir, run_algos)
             haversine_timer = BenchmarkTimer(self.n_reps)
             for rep in haversine_timer.benchmark_runs():
                 cuspatial_vals = cuspatial_haversine_distance(taxi_dataset)
@@ -154,25 +153,25 @@ class SpeedComparison:
 
         if "hausdorff_distance" in run_algos:
 
-            locust_data = read_locust_data(data_dir)
+            locust_data = read_locust_data(self.data_dir)
             hausdorff_timer = BenchmarkTimer(self.n_reps)
             for rep in hausdorff_timer.benchmark_runs():
                 cuspatial_vals = cuspatial_hausdorff_distance(locust_data)
             cuspatial_hausdorff_time = np.mean(hausdorff_timer.timings)
 
-            """
+            
             if run_cpu:
                 cpu_hausdorff_timer = BenchmarkTimer(self.n_reps)
                 for rep in cpu_hausdorff_timer.benchmark_runs():
-                    cpu_vals = cupy_hausdorff_distance(load_data)
+                    cpu_vals = scipy_hausdorff_distance(locust_data)
                 cpu_hausdorff_time = np.mean(cpu_hausdorff_timer.timings)
 
                 results.append({"algo": "hausdorff_distance",
                                 "cuspatial_time": cuspatial_hausdorff_time,
                                 "cpu_time": cpu_hausdorff_time})
             else:
-            """
-            results.append({"algo": "hausdorff_distance",
-                            "cuspatial_time": cuspatial_hausdorff_time})
+            
+                results.append({"algo": "hausdorff_distance",
+                                "cuspatial_time": cuspatial_hausdorff_time})
 
         return results

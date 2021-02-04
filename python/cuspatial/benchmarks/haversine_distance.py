@@ -1,10 +1,5 @@
 import cuspatial
-import shapefile
-import time
-
 import cupy as cp
-
-from shapely.geometry import Point, Polygon
 
 
 def cuspatial_haversine_distance(taxi_data):
