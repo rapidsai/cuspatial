@@ -15,9 +15,9 @@ def cuspatial_hausdorff_distance(locust_data):
                                                        ys=y_coor,
                                                        timestamps=time_info)
 
-    cuspatial_dist = cuspatial.directed_hausdorff_distance(xs=x_coor,
-                                                           ys=y_coor,
-                                                           points_per_space=offset_info)
+    cuspatial_dist = cuspatial.directed_hausdorff_distance(xs=sorted_locust_data.x,
+                                                           ys=sorted_locust_data.y,
+                                                           space_offsets=offset_info)
 
     return cuspatial_dist
 
