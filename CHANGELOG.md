@@ -6,18 +6,11 @@
 
 ## Bug Fixes
 
-# cuSpatial 0.18.0 (Date TBD)
+# 0.18.0
 
-## New Features
+Please see https://github.com/rapidsai/cuspatial/releases/tag/branch-0.18-latest for the latest changes to this development branch.
 
-## Improvements
-- PR #297 Upgrade to libcu++ on GitHub.
-- PR #332 fix directed_hausdorff_distance's space_offsets name + documentation
-- PR #331 Use simplified `rmm::exec_policy`
-
-## Bug Fixes
-
-# cuSpatial 0.17.0 (Date TBD)
+# cuSpatial 0.17.0 (10 Dec 2020)
 
 ## New Features
 
