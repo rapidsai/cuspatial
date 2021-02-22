@@ -57,8 +57,8 @@ def gs():
             ]
         ),
         Polygon(
-            ((97, 98), (99, 101), (102, 103), (104, 105)),
-            [((106, 107), (108, 109), (110, 111), (112, 113))],
+            ((97, 98), (99, 101), (102, 103), (94, 104)),
+            [((106, 107), (108, 109), (110, 111), (109, 108))],
         ),
         Polygon(((35, 36), (37, 38), (39, 40), (41, 42)),),
         MultiPolygon(
@@ -89,8 +89,8 @@ def gs():
             ]
         ),
         Polygon(
-            ((97, 98), (99, 101), (102, 103), (104, 105)),
-            [((106, 107), (108, 109), (110, 111), (112, 113))],
+            ((97, 98), (99, 101), (102, 103), (94, 104)),
+            [((106, 107), (108, 109), (110, 111), (109, 108))],
         ),
         LineString(((11, 12), (13, 14))),
         MultiLineString((((15, 16), (17, 18)), ((19, 20), (21, 22)))),
@@ -209,6 +209,19 @@ def assert_eq_geo(geo1, geo2):
         assert result
     else:
         assert result.all()
+
+
+def test_interleaved_point(gs):
+    cugs = cuspatial.from_geopandas(gs)
+    print(cugs.points.x)
+    print(cugs.points.y)
+    print(cugs.multipoints.x)
+    print(cugs.multipoints.y)
+    print(cugs.lines.x)
+    print(cugs.lines.y)
+    print(cugs.polygons.x)
+    print(cugs.polygons.y)
+    assert False
 
 
 def test_to_shapely_random():

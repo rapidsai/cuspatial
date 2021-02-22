@@ -74,10 +74,8 @@ class GeoSeries(ColumnBase):
 
         Notes
         -----
-        Legacy cuspatial algorithms depend on separated x and y columns.
-        De-interleave x and y columns with `column.de_interleave`, which
-        will create a legacy cuspatial Series, which violates the GeoArrow
-        format but will work with existing cuspatial algorithms.
+        Legacy cuspatial algorithms depend on separated x and y columns. Access them
+        with the .x and .y properties.
         """
         if isinstance(data, GeoSeries):
             self._data = data.data
@@ -214,8 +212,8 @@ class GeoSeries(ColumnBase):
             raise ValueError("cuGeoSeries doesn't support N/A yet")
         if index is None:
             index = self.index
-            if isinstance(index, cudf.core.index.RangeIndex):
-                index = index.to_pandas()
+        if isinstance(index, cudf.Index):
+            index = index.to_pandas()
         output = [geom.to_shapely() for geom in self]
         return gpGeoSeries(output, index=index)
 
@@ -238,9 +236,6 @@ class GeoSeries(ColumnBase):
             + self.polygons.__repr__()
             + "\n"
         )
-
-    def de_interleave(self):
-        return NotImplementedError
 
     def copy(self, deep=True):
         result = GeoSeries([])
@@ -291,16 +286,28 @@ class GpuPointArray:
         return self.xy.iloc[(index * 2) : (index * 2) + 2]
 
     def __repr__(self):
-        return "xy: " + self.xy.__repr__()
+        if hasattr(self, 'xy'):
+            return "xy: " + self.xy.__repr__()
+        else:
+            return "x: " + self.x.__repr__() + \
+                   "y: " + self.y.__repr__()
 
     def copy(self, deep=True):
         result = GpuPointArray()
-        if self.xy is not None:
+        if hasattr(self, 'xy'):
             result.xy = self.xy.copy(deep)
-        if self.z is not None:
+        if hasattr(self, 'z'):
             result.z = self.z.copy(deep)
         result.has_z = self.has_z
         return result
+
+    @property
+    def x(self):
+        return self.xy[slice(0, None, 2)].reset_index(drop=True)
+     
+    @property
+    def y(self):
+        return self.xy[slice(1, None, 2)].reset_index(drop=True)
 
 
 class GpuOffsetArray(GpuPointArray):
@@ -396,8 +403,7 @@ class GpuPolygonArray(GpuOffsetArray):
         self.offsets = rings
 
     def __repr__(self):
-        result = ""
-        result += "xy:\n" + self.xy.__repr__() + "\n"
+        result =  super().__repr__() 
         result += "polys:\n" + self.polys.__repr__() + "\n"
         result += "rings:\n" + self.rings.__repr__() + "\n"
         result += "mpolys:\n" + self.mpolys.__repr__() + "\n"
@@ -415,9 +421,6 @@ class gpuGeometry:
     def __init__(self, source, index):
         self.source = source
         self.index = index
-
-    def __repr__(self):
-        return self.source.__repr__()
 
 
 class gpuPoint(gpuGeometry):

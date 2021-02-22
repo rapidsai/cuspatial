@@ -56,8 +56,8 @@ def gs():
         ]
     )
     g11 = Polygon(
-        ((97, 98), (99, 101), (102, 103), (104, 105)),
-        [((106, 107), (108, 109), (110, 111), (112, 113))],
+        ((97, 98), (99, 101), (102, 103), (101, 108)),
+        [((106, 107), (108, 109), (110, 111), (113, 108))],
     )
     gs = gpd.GeoSeries([g0, g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11])
     return gs
@@ -67,14 +67,14 @@ def test_mixed_dataframe(gs):
     gpdf = gpd.GeoDataFrame({"a": list(range(100, 100 + len(gs))), "b": gs})
     cgdf = cuspatial.from_geopandas(gpdf)
     assert_eq(gpdf["a"], cgdf["a"].to_pandas())
-    assert gpdf["b"].equals(cgdf["b"].to_pandas())
+    assert gpdf["b"].equals(cgdf["b"].to_pandas()).all()
     assert_eq(gpdf, cgdf)
 
 
 def test_dataframe_column_access(gs):
     gpdf = gpd.GeoDataFrame({"a": list(range(0, len(gs))), "b": gs})
     cgdf = cuspatial.from_geopandas(gpdf)
-    assert gpdf["b"].equals(cgdf["b"].to_pandas())
+    assert gpdf["b"].equals(cgdf["b"].to_pandas()).all()
 
 
 def test_from_geoseries_complex(gs):
@@ -82,7 +82,7 @@ def test_from_geoseries_complex(gs):
     assert cugs.points.xy.sum() == 18
     assert cugs.lines.xy.sum() == 540
     assert cugs.multipoints.xy.sum() == 36
-    assert cugs.polygons.xy.sum() == 7440
+    assert cugs.polygons.xy.sum() == 7436
     assert cugs.polygons.polys.sum() == 38
     assert cugs.polygons.rings.sum() == 654
 
