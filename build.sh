@@ -38,7 +38,7 @@ CUSPATIAL_BUILD_DIR=${REPODIR}/python/cuspatial/build
 BUILD_DIRS="${LIBCUSPATIAL_BUILD_DIR} ${CUSPATIAL_BUILD_DIR}"
 
 # Set defaults for vars modified by flags to this script
-VERBOSE=""
+VERBOSE_FLAG=""
 BUILD_TESTS=OFF
 BUILD_TYPE=Release
 INSTALL_TARGET=install
@@ -71,7 +71,7 @@ fi
 
 # Process flags
 if hasArg -v; then
-    VERBOSE=1
+    VERBOSE_FLAG="-v"
 fi
 if hasArg -g; then
     BUILD_TYPE=Debug
@@ -112,7 +112,8 @@ if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
           -DBUILD_TESTS=${BUILD_TESTS} \
           -DDISABLE_DEPRECATION_WARNING=${BUILD_DISABLE_DEPRECATION_WARNING} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
-    make -j ${PARALLEL_LEVEL} install VERBOSE=${VERBOSE}
+
+    cmake --build . -j ${PARALLEL_LEVEL} --target install ${VERBOSE_FLAG}
 fi
 
 # Build and install the cuspatial Python package
