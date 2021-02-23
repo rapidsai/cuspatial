@@ -104,6 +104,34 @@ def gs():
     gs = gpd.GeoSeries(geos)
     return gs
 
+@pytest.fixture
+def polys():
+    return np.array((
+    (35, 36), (37, 38), (39, 40), (41, 42), (35, 36),
+    (43, 44), (45, 46), (47, 48), (43, 44),
+    (49, 50), (51, 52), (53, 54), (49, 50),
+    (55, 56), (57, 58), (59, 60), (55, 56),
+    (61, 62), (63, 64), (65, 66), (61, 62),
+    (67, 68), (69, 70), (71, 72), (67, 68),
+    (73, 74), (75, 76), (77, 78), (73, 74),
+    (79, 80), (81, 82), (83, 84), (79, 80),
+    (85, 86), (87, 88), (89, 90), (85, 86),
+    (91, 92), (93, 94), (95, 96), (91, 92),
+    (97, 98), (99, 101), (102, 103), (94, 104), (97, 98),
+    (106, 107), (108, 109), (110, 111), (109, 108), (106, 107),
+    (35, 36), (37, 38), (39, 40), (41, 42), (35, 36),
+    (43, 44), (45, 46), (47, 48), (43, 44),
+    (49, 50), (51, 52), (53, 54), (49, 50),
+    (55, 56), (57, 58), (59, 60), (55, 56),
+    (61, 62), (63, 64), (65, 66), (61, 62),
+    (67, 68), (69, 70), (71, 72), (67, 68),
+    (73, 74), (75, 76), (77, 78), (73, 74),
+    (79, 80), (81, 82), (83, 84), (79, 80),
+    (85, 86), (87, 88), (89, 90), (85, 86),
+    (91, 92), (93, 94), (95, 96), (91, 92),
+    (97, 98), (99, 101), (102, 103), (94, 104), (97, 98),
+    (106, 107), (108, 109), (110, 111), (109, 108), (106, 107),
+    ))
 
 @pytest.fixture
 def gs_sorted(gs):
@@ -211,17 +239,34 @@ def assert_eq_geo(geo1, geo2):
         assert result.all()
 
 
-def test_interleaved_point(gs):
+def test_interleaved_point(gs, polys):
     cugs = cuspatial.from_geopandas(gs)
-    print(cugs.points.x)
-    print(cugs.points.y)
-    print(cugs.multipoints.x)
-    print(cugs.multipoints.y)
-    print(cugs.lines.x)
-    print(cugs.lines.y)
-    print(cugs.polygons.x)
-    print(cugs.polygons.y)
-    assert False
+    assert_eq(cugs.points.x,
+        gs[gs.type == "Point"].x.reset_index(drop=True)
+    )
+    assert_eq(cugs.points.y,
+        gs[gs.type == "Point"].y.reset_index(drop=True)
+    )
+    assert_eq(cugs.multipoints.x, pd.Series(
+        np.array(
+            [np.array(p)[:,0] for p in gs[gs.type == "MultiPoint"]]
+        ).flatten()
+    ))
+    assert_eq(cugs.multipoints.y, pd.Series(
+        np.array(
+            [np.array(p)[:,1] for p in gs[gs.type == "MultiPoint"]]
+        ).flatten()
+    ))
+    assert_eq(cugs.lines.x, pd.Series(
+        np.array([range(11, 34, 2), range(11, 34, 2)]).flatten(),
+        dtype="float64"
+    ))
+    assert_eq(cugs.lines.y, pd.Series(
+        np.array([range(12, 35, 2), range(12, 35, 2)]).flatten(),
+        dtype="float64"
+    ))
+    assert_eq(cugs.polygons.x, pd.Series(polys[:,0], dtype="float64"))
+    assert_eq(cugs.polygons.y, pd.Series(polys[:,1], dtype="float64"))
 
 
 def test_to_shapely_random():

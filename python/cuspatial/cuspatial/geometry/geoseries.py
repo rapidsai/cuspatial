@@ -432,19 +432,6 @@ class gpuPoint(gpuGeometry):
         ).sum()
         return Point(self.source._points[index].reset_index(drop=True))
 
-    def __iter__(self):
-        self._index = 0
-        self._shapely = self.to_shapely()
-        return self
-
-    def __next__(self):
-        if self._index >= 1:
-            raise StopIteration
-        result = self._shapely
-        self._index = self._index + 1
-        return result
-
-
 class gpuMultiPoint(gpuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
