@@ -47,8 +47,8 @@ std::unique_ptr<cudf::table> make_test_trajectories_table(
 
   auto rand_float = cudf::test::UniformRandomGenerator<T>{};
   auto ids_iter =
-    cudf::test::make_counting_transform_iterator(0, [&](auto i) { return ids[map[i]]; });
-  auto floats_iter = cudf::test::make_counting_transform_iterator(0, [&](auto i) {
+    cudf::detail::make_counting_transform_iterator(0, [&](auto i) { return ids[map[i]]; });
+  auto floats_iter = cudf::detail::make_counting_transform_iterator(0, [&](auto i) {
     return static_cast<T>(40000 * rand_float.generate() * (rand_float.generate() > 0.5 ? 1 : -1));
   });
 
