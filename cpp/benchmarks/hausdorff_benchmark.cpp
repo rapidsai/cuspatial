@@ -19,9 +19,8 @@
 #include <benchmarks/fixture/benchmark_fixture.hpp>
 #include <benchmarks/synchronization/synchronization.hpp>
 
+#include <cudf/detail/iterator.cuh>
 #include <cudf_test/column_wrapper.hpp>
-
-#include <thrust/iterator/constant_iterator.h>
 
 static void BM_hausdorff(benchmark::State& state)
 {
@@ -30,11 +29,10 @@ static void BM_hausdorff(benchmark::State& state)
   int32_t num_spaces           = std::min(num_points, num_spaces_asked);
   int32_t num_points_per_space = num_points / num_spaces;
 
-  auto counting_iter = thrust::counting_iterator<int32_t>();
-  auto zero_iter     = thrust::make_transform_iterator(counting_iter, [](auto idx) { return 0; });
+  auto zero_iter = cudf::detail::make_counting_transform_iterator(0, [](auto idx) { return 0; });
 
-  auto space_offset_iter = thrust::make_transform_iterator(
-    counting_iter, [num_points_per_space](int32_t idx) { return idx * num_points_per_space; });
+  auto space_offset_iter = cudf::detail::make_counting_transform_iterator(
+    0, [num_points_per_space](int32_t idx) { return idx * num_points_per_space; });
 
   auto xs = cudf::test::fixed_width_column_wrapper<double>(zero_iter, zero_iter + num_points);
   auto ys = cudf::test::fixed_width_column_wrapper<double>(zero_iter, zero_iter + num_points);
@@ -51,6 +49,11 @@ static void BM_hausdorff(benchmark::State& state)
 }
 
 class HausdorffBenchmark : public cuspatial::benchmark {
+  virtual void SetUp(const ::benchmark::State& state) override
+  {
+    mr = std::make_shared<rmm::mr::cuda_memory_resource>();
+    rmm::mr::set_current_device_resource(mr.get());  // set default resource to cuda
+  }
 };
 
 #define DUMMY_BM_BENCHMARK_DEFINE(name)                                    \
