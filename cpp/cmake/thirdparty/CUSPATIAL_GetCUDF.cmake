@@ -18,9 +18,9 @@ function(find_and_configure_cudf VERSION)
     CPMFindPackage(NAME cudf
         VERSION         ${VERSION}
         # GIT_REPOSITORY https://github.com/rapidsai/cudf.git
-        # GIT_REPOSITORY  https://github.com/trxcllnt/cudf.git
+        GIT_REPOSITORY  https://github.com/trxcllnt/cudf.git
         # Can also use a local path to your repo clone for testing
-        GIT_REPOSITORY  /home/ptaylor/dev/rapids/cudf
+        # GIT_REPOSITORY  /home/ptaylor/dev/rapids/cudf
         # GIT_TAG        branch-${VERSION}
         GIT_TAG         fix/cmake-exports
         GIT_SHALLOW     TRUE
@@ -32,8 +32,12 @@ function(find_and_configure_cudf VERSION)
                         "JITIFY_USE_CACHE ${JITIFY_USE_CACHE}"
                         "CUDA_STATIC_RUNTIME ${CUDA_STATIC_RUNTIME}"
                         "PER_THREAD_DEFAULT_STREAM ${PER_THREAD_DEFAULT_STREAM}"
-                        "DISABLE_DEPRECATION_WARNING ${DISABLE_DEPRECATION_WARNING}"
-                        "AUTO_DETECT_CUDA_ARCHITECTURES ${AUTO_DETECT_CUDA_ARCHITECTURES}")
+                        "DISABLE_DEPRECATION_WARNING ${DISABLE_DEPRECATION_WARNING}")
+
+    if(NOT cudf_BINARY_DIR IN_LIST CMAKE_PREFIX_PATH)
+        list(APPEND CMAKE_PREFIX_PATH "${cudf_BINARY_DIR}")
+        set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
+    endif()
 endfunction()
 
 set(CUSPATIAL_MIN_VERSION_cudf 0.19.0)
