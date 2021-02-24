@@ -1,3 +1,22 @@
+# cuSpatial 0.18.0 (24 Feb 2021)
+
+## Documentation 📖
+
+- Fix directed_hausdorff_distance space_offsets name + documentation (#332) @cwharris
+
+## New Features 🚀
+
+- New build process script changes &amp; gpuCI enhancements (#338) @raydouglass
+
+## Improvements 🛠️
+
+- Update stale GHA with exemptions &amp; new labels (#357) @mike-wendt
+- Add GHA to mark issues/prs as stale/rotten (#355) @Ethyling
+- Prepare Changelog for Automation (#345) @ajschmidt8
+- Pin gdal to 3.1.x (#339) @weiji14
+- Use simplified `rmm::exec_policy` (#331) @harrism
+- Upgrade to libcu++ on GitHub (#297) @trxcllnt
+
 # cuSpatial 0.17.0 (10 Dec 2020)
 
 ## New Features
@@ -6,7 +25,6 @@
 - PR #310 Pin cmake policies to cmake 3.17 version
 - PR #321 Improvements to gpuCI scripts
 - PR #325 Convert `cudaStream_t` to `rmm::cuda_stream_view`
-
 
 ## Bug Fixes
 - PR #320 Fix quadtree construction bug: zero out `device_uvector` before `scatter`

@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "indexing/construction/detail/utilities.cuh"
-#include "utility/z_order.cuh"
+#include <indexing/construction/detail/utilities.cuh>
+#include <utility/z_order.cuh>
 
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/table/table_view.hpp>
@@ -25,6 +25,7 @@
 #include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/copy.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -48,11 +49,10 @@ inline cudf::size_type copy_leaf_intersections(InputIterator input_begin,
 {
   return thrust::distance(
     output_begin,
-    thrust::copy_if(rmm::exec_policy(stream)->on(stream.value()),
-                    input_begin,
-                    input_end,
-                    output_begin,
-                    [] __device__(auto const &t) { return thrust::get<0>(t) == leaf_indicator; }));
+    thrust::copy_if(
+      rmm::exec_policy(stream), input_begin, input_end, output_begin, [] __device__(auto const &t) {
+        return thrust::get<0>(t) == leaf_indicator;
+      }));
 }
 
 template <typename InputIterator, typename OutputIterator>
@@ -61,14 +61,12 @@ inline cudf::size_type remove_non_quad_intersections(InputIterator input_begin,
                                                      OutputIterator output_begin,
                                                      rmm::cuda_stream_view stream)
 {
-  return thrust::distance(output_begin,
-                          thrust::remove_if(rmm::exec_policy(stream)->on(stream.value()),
-                                            input_begin,
-                                            input_end,
-                                            output_begin,
-                                            [] __device__(auto const &t) {
-                                              return thrust::get<0>(t) != quad_indicator;
-                                            }));
+  return thrust::distance(
+    output_begin,
+    thrust::remove_if(
+      rmm::exec_policy(stream), input_begin, input_end, output_begin, [] __device__(auto const &t) {
+        return thrust::get<0>(t) != quad_indicator;
+      }));
 }
 
 template <typename T,
@@ -98,7 +96,7 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
   auto d_poly_x_max = cudf::column_device_view::create(poly_bbox.column(2), stream);
   auto d_poly_y_max = cudf::column_device_view::create(poly_bbox.column(3), stream);
 
-  thrust::transform(rmm::exec_policy(stream)->on(stream.value()),
+  thrust::transform(rmm::exec_policy(stream),
                     make_zip_iterator(node_indices, poly_indices),
                     make_zip_iterator(node_indices, poly_indices) + num_pairs,
                     node_pairs,

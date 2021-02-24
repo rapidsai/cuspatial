@@ -27,6 +27,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/iterator/discard_iterator.h>
 
@@ -63,8 +64,6 @@ struct dispatch_timestamp {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
-    auto policy = rmm::exec_policy(stream);
-
     // Construct output columns
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(2);
@@ -83,7 +82,7 @@ struct dispatch_timestamp {
 
     using Rep     = typename Timestamp::rep;
     using Dur     = typename Timestamp::duration;
-    using Seconds = typename simt::std::chrono::seconds;
+    using Seconds = typename cuda::std::chrono::seconds;
 
     rmm::device_vector<Rep> durations(x.size() + 1);
     rmm::device_vector<double> distances(x.size() + 1);
@@ -104,7 +103,7 @@ struct dispatch_timestamp {
 
     // Compute duration and distance difference between adjacent elements that
     // share the same object id
-    thrust::adjacent_difference(policy->on(stream.value()),
+    thrust::adjacent_difference(rmm::exec_policy(stream),
                                 timestamp_point_and_id,                     // first
                                 timestamp_point_and_id + durations.size(),  // last
                                 duration_and_distance_1,                    // result
@@ -144,11 +143,11 @@ struct dispatch_timestamp {
     );
 
     using Period =
-      typename simt::std::ratio_divide<typename Timestamp::period, typename Seconds::period>::type;
+      typename cuda::std::ratio_divide<typename Timestamp::period, typename Seconds::period>::type;
 
     // Reduce the intermediate durations and kilometer distances into meter
     // distances and speeds in meters/second
-    thrust::reduce_by_key(policy->on(stream.value()),
+    thrust::reduce_by_key(rmm::exec_policy(stream),
                           object_id.begin<int32_t>(),       // keys_first
                           object_id.end<int32_t>(),         // keys_last
                           duration_and_distance_2 + 1,      // values_first

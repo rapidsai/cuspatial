@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-#include "utility/scatter_output_iterator.cuh"
-#include "utility/size_from_offsets.cuh"
+#include "detail/cartesian_product_group_index_iterator.cuh"
+#include "detail/hausdorff.cuh"
 
-#include <cuspatial/detail/cartesian_product_group_index_iterator.cuh>
-#include <cuspatial/detail/hausdorff.cuh>
+#include <utility/scatter_output_iterator.cuh>
+#include <utility/size_from_offsets.cuh>
+
 #include <cuspatial/error.hpp>
 
 #include <cudf/column/column_device_view.cuh>
@@ -28,6 +29,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/functional.h>
@@ -128,14 +130,14 @@ struct hausdorff_functor {
 
     auto num_cartesian = num_points * num_points;
 
-    thrust::inclusive_scan_by_key(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::inclusive_scan_by_key(rmm::exec_policy(stream),
                                   gpc_key_iter,
                                   gpc_key_iter + num_cartesian,
                                   hausdorff_acc_iter,
                                   scatter_out,
                                   thrust::equal_to<thrust::pair<int32_t, int32_t>>());
 
-    thrust::transform(rmm::exec_policy(stream)->on(stream.value()),
+    thrust::transform(rmm::exec_policy(stream),
                       result_temp_iter,
                       result_temp_iter + num_results,
                       result->mutable_view().begin<T>(),
@@ -150,20 +152,20 @@ struct hausdorff_functor {
 
 std::unique_ptr<cudf::column> directed_hausdorff_distance(cudf::column_view const& xs,
                                                           cudf::column_view const& ys,
-                                                          cudf::column_view const& points_per_space,
+                                                          cudf::column_view const& space_offsets,
                                                           rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(xs.type() == ys.type(), "Inputs `xs` and `ys` must have same type.");
   CUSPATIAL_EXPECTS(xs.size() == ys.size(), "Inputs `xs` and `ys` must have same length.");
 
-  CUSPATIAL_EXPECTS(not xs.has_nulls() and not ys.has_nulls() and not points_per_space.has_nulls(),
+  CUSPATIAL_EXPECTS(not xs.has_nulls() and not ys.has_nulls() and not space_offsets.has_nulls(),
                     "Inputs must not have nulls.");
 
-  CUSPATIAL_EXPECTS(xs.size() >= points_per_space.size(),
+  CUSPATIAL_EXPECTS(xs.size() >= space_offsets.size(),
                     "At least one point is required for each space");
 
   return cudf::type_dispatcher(
-    xs.type(), detail::hausdorff_functor(), xs, ys, points_per_space, rmm::cuda_stream_default, mr);
+    xs.type(), detail::hausdorff_functor(), xs, ys, space_offsets, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial

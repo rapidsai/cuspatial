@@ -20,9 +20,9 @@
 #include <cudf/types.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
-#include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
+#include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <thrust/scan.h>
@@ -63,13 +63,13 @@ std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
   auto ys              = make_column<double>(std::get<3>(poly_vectors), stream, mr);
 
   // transform polygon lengths to polygon offsets
-  thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
+  thrust::exclusive_scan(rmm::exec_policy(stream),
                          polygon_offsets->view().begin<cudf::size_type>(),
                          polygon_offsets->view().end<cudf::size_type>(),
                          polygon_offsets->mutable_view().begin<cudf::size_type>());
 
   // transform ring lengths to ring offsets
-  thrust::exclusive_scan(rmm::exec_policy(stream)->on(stream.value()),
+  thrust::exclusive_scan(rmm::exec_policy(stream),
                          ring_offsets->view().begin<cudf::size_type>(),
                          ring_offsets->view().end<cudf::size_type>(),
                          ring_offsets->mutable_view().begin<cudf::size_type>());

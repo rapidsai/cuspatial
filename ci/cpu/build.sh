@@ -10,6 +10,9 @@ export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
 export CUDF_HOME="${WORKSPACE}/cudf"
 
+export GIT_DESCRIBE=`git describe --tags`
+export MINOR_VERSION=`echo $GIT_DESCRIBE | grep -o -E '([0-9]+\.[0-9]+)'`
+
 # Set home to the job's workspace
 export HOME=$WORKSPACE
 
@@ -27,6 +30,10 @@ cd $WORKSPACE
 if [[ "$BUILD_MODE" = "branch" && "$SOURCE_BRANCH" = branch-* ]] ; then
   export VERSION_SUFFIX=`date +%y%m%d`
 fi
+
+# Setup 'gpuci_conda_retry' for build retries (results in 2 total attempts)
+export GPUCI_CONDA_RETRY_MAX=1
+export GPUCI_CONDA_RETRY_SLEEP=30
 
 ################################################################################
 # SETUP - Check environment
@@ -56,11 +63,24 @@ conda config --set ssl_verify False
 # BUILD - Conda package builds (conda deps: libcupatial <- cuspatial)
 ##########################################################################################
 
-gpuci_logger "Building conda pkd for libcuspatial"
-gpuci_conda_retry build conda/recipes/libcuspatial
+if [ "$BUILD_LIBCUSPATIAL" == '1' ]; then
+  gpuci_logger "Build conda pkg for libcuspatial"
+  if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
+    gpuci_conda_retry build conda/recipes/libcuspatial
+  else
+    gpuci_conda_retry build --dirty --no-remove-work-dir conda/recipes/libcuspatial
+  fi
+fi
 
-gpuci_logger "Building conda pkg for cuspatial"
-gpuci_conda_retry build conda/recipes/cuspatial --python=$PYTHON
+if [ "$BUILD_CUSPATIAL" == '1' ]; then
+  gpuci_logger "Build conda pkg for cuspatial"
+  if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
+    gpuci_conda_retry build conda/recipes/cuspatial
+  else
+    gpuci_conda_retry build --dirty --no-remove-work-dir \
+        -c $WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/ conda/recipes/cuspatial
+  fi
+fi
 
 ################################################################################
 # UPLOAD - Conda packages
