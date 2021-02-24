@@ -17,21 +17,25 @@
 # Find the CUDAToolkit
 find_package(CUDAToolkit REQUIRED)
 
-message(STATUS "CUSPATIAL: CUDAToolkit_VERSION: ${CUDAToolkit_VERSION}")
-message(STATUS "CUSPATIAL: CUDAToolkit_VERSION_MAJOR: ${CUDAToolkit_VERSION_MAJOR}")
-message(STATUS "CUSPATIAL: CUDAToolkit_VERSION_MINOR: ${CUDAToolkit_VERSION_MINOR}")
+# Must come after find_package(CUDAToolkit) because we symlink
+# ccache as a compiler front-end for nvcc in gpuCI CPU builds.
+enable_language(CUDA)
+
+if(CMAKE_CUDA_COMPILER_VERSION)
+  # Compute the version. from  CMAKE_CUDA_COMPILER_VERSION
+  string(REGEX REPLACE "([0-9]+)\\.([0-9]+).*" "\\1" CUDA_VERSION_MAJOR ${CMAKE_CUDA_COMPILER_VERSION})
+  string(REGEX REPLACE "([0-9]+)\\.([0-9]+).*" "\\2" CUDA_VERSION_MINOR ${CMAKE_CUDA_COMPILER_VERSION})
+  set(CUDA_VERSION "${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR}")
+endif()
+
+message(VERBOSE "CUSPATIAL: CUDA_VERSION_MAJOR: ${CUDA_VERSION_MAJOR}")
+message(VERBOSE "CUSPATIAL: CUDA_VERSION_MINOR: ${CUDA_VERSION_MINOR}")
+message(STATUS "CUSPATIAL: CUDA_VERSION: ${CUDA_VERSION}")
 
 # Auto-detect available GPU compute architectures
 
 include(${CUSPATIAL_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
 message(STATUS "CUSPATIAL: Building CUSPATIAL for GPU architectures: ${CMAKE_CUDA_ARCHITECTURES}")
-
-# Only enable the CUDA language after including SetGPUArchs.cmake
-enable_language(CUDA)
-
-if(NOT CMAKE_CUDA_COMPILER)
-    message(SEND_ERROR "CUSPATIAL: CMake cannot locate a CUDA compiler")
-endif(NOT CMAKE_CUDA_COMPILER)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     list(APPEND CUSPATIAL_CXX_FLAGS -Wall -Werror -Wno-unknown-pragmas -Wno-error=deprecated-declarations)

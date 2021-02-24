@@ -1,0 +1,44 @@
+@PACKAGE_INIT@
+
+cmake_minimum_required(VERSION 3.18)
+
+set(CUSPATIAL_VERSION @CUSPATIAL_VERSION@)
+set(CUSPATIAL_VERSION_MAJOR @CUSPATIAL_VERSION_MAJOR@)
+set(CUSPATIAL_VERSION_MINOR @CUSPATIAL_VERSION_MINOR@)
+set(CUSPATIAL_SOURCE_DIR "@CUSPATIAL_SOURCE_DIR@")
+
+include(CMakeFindDependencyMacro)
+
+# make the src tree find modules available
+list(PREPEND CMAKE_MODULE_PATH "@CUSPATIAL_SOURCE_DIR@/cmake/install/")
+set(rmm_DIR "@rmm_DIR@")
+
+# * find CUDAToolkit package
+# * determine GPU architectures
+# * enable the CMake CUDA language
+# * set other CUDA compilation flags
+include(@CUSPATIAL_SOURCE_DIR@/cmake/Modules/ConfigureCUDA.cmake)
+
+###################################################################################################
+# - dependencies ----------------------------------------------------------------------------------
+
+find_dependency(GDAL)
+
+# add third party dependencies using CPM
+include(@CUSPATIAL_SOURCE_DIR@/cmake/thirdparty/CUSPATIAL_GetCPM.cmake)
+
+# find cudf
+set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
+include(@CUSPATIAL_SOURCE_DIR@/cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
+
+list(POP_FRONT CMAKE_MODULE_PATH)
+
+include("${CMAKE_CURRENT_LIST_DIR}/cuspatial-targets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/cuspatial-config-version.cmake")
+
+check_required_components(cuspatial)
+
+set(${CMAKE_FIND_PACKAGE_NAME}_CONFIG "${CMAKE_CURRENT_LIST_FILE}")
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(${CMAKE_FIND_PACKAGE_NAME} CONFIG_MODE)

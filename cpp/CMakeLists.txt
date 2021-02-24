@@ -16,6 +16,19 @@
 
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
+# If `CMAKE_CUDA_ARCHITECTURES` is not defined, build for all supported architectures. If
+# `CMAKE_CUDA_ARCHITECTURES` is set to an empty string (""), build for only the current
+# architecture. If `CMAKE_CUDA_ARCHITECTURES` is specified by the user, use user setting.
+
+# This needs to be run before enabling the CUDA language due to the default initialization behavior
+# of `CMAKE_CUDA_ARCHITECTURES`, https://gitlab.kitware.com/cmake/cmake/-/issues/21302
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  set(CUSPATIAL_BUILD_FOR_ALL_ARCHS TRUE)
+elseif(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
+  unset(CMAKE_CUDA_ARCHITECTURES CACHE)
+  set(CUSPATIAL_BUILD_FOR_DETECTED_ARCHS TRUE)
+endif()
+
 project(CUSPATIAL VERSION 0.19.0 LANGUAGES C CXX)
 
 ###################################################################################################
@@ -27,7 +40,6 @@ option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 option(JITIFY_USE_CACHE "Use a file cache for JIT compiled kernels" ON)
 option(ARROW_STATIC_LIB "Build and statically link Arrow libraries" OFF)
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
-option(AUTO_DETECT_CUDA_ARCHITECTURES "Auto-detect CUDA architectures to build from the GPUs on the current system" OFF)
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 # Option to enable line info in CUDA device compilation to allow introspection when profiling / memchecking
 option(CUDA_ENABLE_LINEINFO "Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler" OFF)
@@ -40,7 +52,6 @@ message(STATUS "CUSPATIAL: Configure CMake to build (google) benchmarks: ${BUILD
 message(STATUS "CUSPATIAL: Use a file cache for JIT compiled kernels: ${JITIFY_USE_CACHE}")
 message(STATUS "CUSPATIAL: Build and statically link Arrow libraries: ${ARROW_STATIC_LIB}")
 message(STATUS "CUSPATIAL: Build with per-thread default stream: ${PER_THREAD_DEFAULT_STREAM}")
-message(STATUS "CUSPATIAL: Auto-detect CUDA architectures to build from the GPUs on the current system: ${AUTO_DETECT_CUDA_ARCHITECTURES}")
 message(STATUS "CUSPATIAL: Disable warnings generated from deprecated declarations: ${DISABLE_DEPRECATION_WARNING}")
 message(STATUS "CUSPATIAL: Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler: ${CUDA_ENABLE_LINEINFO}")
 message(STATUS "CUSPATIAL: Statically link the CUDA runtime: ${CUDA_STATIC_RUNTIME}")
@@ -104,42 +115,26 @@ include(cmake/thirdparty/CUSPATIAL_GetCPM.cmake)
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
 
 ###################################################################################################
-# - add tests -------------------------------------------------------------------------------------
-
-if(CUSPATIAL_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif()
-
-###################################################################################################
-# - add benchmarks --------------------------------------------------------------------------------
-
-if(CUSPATIAL_BUILD_BENCHMARKS)
-    add_subdirectory(benchmarks)
-endif()
-
-
-###################################################################################################
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial SHARED
-    "${CUSPATIAL_SOURCE_DIR}/src/indexing/construction/point_quadtree.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/interpolate/cubic_spline.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/io/shp/polygon_shapefile_reader.cpp"
-    "${CUSPATIAL_SOURCE_DIR}/src/io/shp/polygon_shapefile_reader.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/join/quadtree_point_in_polygon.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/join/quadtree_point_to_nearest_polyline.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/join/quadtree_poly_filtering.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/spatial/polygon_bounding_box.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/spatial/polyline_bounding_box.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/spatial/point_in_polygon.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/spatial_window/spatial_window.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/spatial/haversine.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/spatial/hausdorff.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/spatial/lonlat_to_cartesian.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/trajectory/derive_trajectories.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/trajectory/trajectory_bounding_boxes.cu"
-    "${CUSPATIAL_SOURCE_DIR}/src/trajectory/trajectory_distances_and_speeds.cu"
+    src/indexing/construction/point_quadtree.cu
+    src/interpolate/cubic_spline.cu
+    src/io/shp/polygon_shapefile_reader.cpp
+    src/io/shp/polygon_shapefile_reader.cu
+    src/join/quadtree_point_in_polygon.cu
+    src/join/quadtree_point_to_nearest_polyline.cu
+    src/join/quadtree_poly_filtering.cu
+    src/spatial/polygon_bounding_box.cu
+    src/spatial/polyline_bounding_box.cu
+    src/spatial/point_in_polygon.cu
+    src/spatial_window/spatial_window.cu
+    src/spatial/haversine.cu
+    src/spatial/hausdorff.cu
+    src/spatial/lonlat_to_cartesian.cu
+    src/trajectory/derive_trajectories.cu
+    src/trajectory/trajectory_bounding_boxes.cu
+    src/trajectory/trajectory_distances_and_speeds.cu
 )
 
 set_target_properties(cuspatial
@@ -199,12 +194,75 @@ target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${
 target_link_libraries(cuspatial PUBLIC GDAL::GDAL rmm::rmm cudf::cudf)
 
 if(CUDA_STATIC_RUNTIME)
-    target_link_libraries(cuspatial PUBLIC CUDA::nvrtc CUDA::cudart_static CUDA::cuda_driver)
+    target_link_libraries(cuspatial PUBLIC CUDA::cusparse CUDA::nvrtc CUDA::cudart_static CUDA::cuda_driver)
 else()
-    target_link_libraries(cuspatial PUBLIC CUDA::nvrtc CUDA::cudart CUDA::cuda_driver)
+    target_link_libraries(cuspatial PUBLIC CUDA::cusparse CUDA::nvrtc CUDA::cudart CUDA::cuda_driver)
 endif()
 
 add_library(cuspatial::cuspatial ALIAS cuspatial)
+
+###################################################################################################
+# - tests and benchmarks --------------------------------------------------------------------------
+###################################################################################################
+
+if (CUSPATIAL_BUILD_TESTS OR CUSPATIAL_BUILD_BENCHMARKS)
+    # Find or install GoogleTest
+    CPMFindPackage(NAME GTest
+        VERSION         1.10.0
+        GIT_REPOSITORY  https://github.com/google/googletest.git
+        GIT_TAG         release-1.10.0
+        GIT_SHALLOW     TRUE
+        OPTIONS         "INSTALL_GTEST OFF"
+        # googletest >= 1.10.0 provides a cmake config file -- use it if it exists
+        FIND_PACKAGE_ARGUMENTS "CONFIG")
+    # Add GTest aliases if they don't already exist.
+    # Assumes if GTest::gtest doesn't exist, the others don't either.
+    # TODO: Is this always a valid assumption?
+    if(NOT TARGET GTest::gtest)
+        add_library(GTest::gtest ALIAS gtest)
+        add_library(GTest::gmock ALIAS gmock)
+        add_library(GTest::gtest_main ALIAS gtest_main)
+        add_library(GTest::gmock_main ALIAS gmock_main)
+    endif()
+    if(GTest_ADDED)
+        install(TARGETS gmock
+                        gtest
+                        gmock_main
+                        gtest_main
+            DESTINATION lib
+            EXPORT cuspatial-targets)
+    endif()
+endif()
+
+###################################################################################################
+# - add tests -------------------------------------------------------------------------------------
+
+if(CUSPATIAL_BUILD_TESTS)
+    # include CTest module -- automatically calls enable_testing()
+    include(CTest)
+    add_subdirectory(tests)
+endif()
+
+###################################################################################################
+# - add benchmarks --------------------------------------------------------------------------------
+
+if(CUSPATIAL_BUILD_BENCHMARKS)
+    # Find or install GoogleBench
+    CPMFindPackage(NAME benchmark
+        VERSION         1.5.2
+        GIT_REPOSITORY  https://github.com/google/benchmark.git
+        GIT_TAG         v1.5.2
+        GIT_SHALLOW     TRUE
+        OPTIONS         "BENCHMARK_ENABLE_TESTING OFF"
+                        "BENCHMARK_ENABLE_INSTALL OFF")
+    if(benchmark_ADDED)
+        install(TARGETS benchmark
+                        benchmark_main
+            DESTINATION lib
+            EXPORT cuspatial-targets)
+    endif()
+    add_subdirectory(benchmarks)
+endif()
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
@@ -223,17 +281,30 @@ install(DIRECTORY ${CUSPATIAL_SOURCE_DIR}/include/cuspatial
 
 include(CMakePackageConfigHelpers)
 
-configure_package_config_file(cmake/cuspatial-config.cmake.in "${CUSPATIAL_BINARY_DIR}/cuspatial-config.cmake"
+configure_package_config_file(cmake/cuspatial-config.cmake.in "${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config.cmake"
                               INSTALL_DESTINATION "${INSTALL_CONFIGDIR}")
 
-write_basic_package_version_file("${CUSPATIAL_BINARY_DIR}/cuspatial-config-version.cmake"
+write_basic_package_version_file("${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config-version.cmake"
                                  COMPATIBILITY SameMinorVersion)
 
-install(FILES   "${CUSPATIAL_BINARY_DIR}/cuspatial-config.cmake"
-                "${CUSPATIAL_BINARY_DIR}/cuspatial-config-version.cmake"
+install(FILES   "${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config.cmake"
+                "${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config-version.cmake"
     DESTINATION "${INSTALL_CONFIGDIR}")
 
 install(EXPORT  cuspatial-targets
     FILE        cuspatial-targets.cmake
     NAMESPACE   cuspatial::
     DESTINATION "${INSTALL_CONFIGDIR}")
+
+################################################################################################
+# - build export -------------------------------------------------------------------------------
+
+configure_package_config_file(cmake/cuspatial-build-config.cmake.in ${CUSPATIAL_BINARY_DIR}/cuspatial-config.cmake
+                              INSTALL_DESTINATION ${CUSPATIAL_BINARY_DIR})
+
+write_basic_package_version_file(${CUSPATIAL_BINARY_DIR}/cuspatial-config-version.cmake
+                                 COMPATIBILITY SameMinorVersion)
+
+export(EXPORT cuspatial-targets
+    FILE ${CUSPATIAL_BINARY_DIR}/cuspatial-targets.cmake
+    NAMESPACE   cuspatial::)
