@@ -268,9 +268,24 @@ class GpuCoordinateArray:
         points within a single data source, typically a cuspatial.GeoSeries,
         in the format specified by GeoArrow.
         """
-        self.xy = xy
-        self.z = z
-        self.has_z = z is not None
+        self._xy = xy
+        self._z = z
+
+    @property
+    def xy(self):
+        return self._xy
+
+    @xy.setter
+    def xy(self, xy):
+        self._xy = xy
+
+    @property
+    def z(self):
+        return self._z
+
+    @z.setter
+    def z(self, z):
+        self._z = z
 
     def __getitem__(self, index):
         if isinstance(index, slice):
@@ -285,7 +300,7 @@ class GpuCoordinateArray:
         """
         Create a copy of all points.
         """
-        if hasattr(self, "z"):
+        if hasattr(self, "_z"):
             z = self.z.copy(deep)
         else:
             z = None
@@ -316,7 +331,15 @@ class GpuOffsetArray(GpuCoordinateArray):
         based on GpuOffsetArray.
         """
         super().__init__(xy, z)
-        self.offsets = offsets
+        self._offsets = offsets
+
+    @property
+    def offsets(self):
+        return self._offsets
+
+    @offsets.setter
+    def offsets(self, offsets):
+        self._offsets = offsets
 
     def __getitem__(self, index):
         if isinstance(index, slice):
