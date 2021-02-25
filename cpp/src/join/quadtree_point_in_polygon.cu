@@ -110,61 +110,71 @@ struct compute_quadtree_point_in_polygon {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource *mr)
   {
-    auto quad_lengths        = quadtree.column(3);
-    auto quad_offsets        = quadtree.column(4);
-    auto poly_indices        = poly_quad_pairs.column(0);
-    auto quad_indices        = poly_quad_pairs.column(1);
-    auto num_poly_quad_pairs = poly_quad_pairs.num_rows();
+    // Wrapped in an IIFE so `local_point_offsets` is freed on return
+    auto poly_and_point_idxs = [&]() {
+      auto quad_lengths        = quadtree.column(3);
+      auto quad_offsets        = quadtree.column(4);
+      auto poly_indices        = poly_quad_pairs.column(0);
+      auto quad_indices        = poly_quad_pairs.column(1);
+      auto num_poly_quad_pairs = poly_quad_pairs.num_rows();
 
-    auto counting_iter     = thrust::make_counting_iterator(0);
-    auto quad_lengths_iter = thrust::make_permutation_iterator(quad_lengths.begin<uint32_t>(),
-                                                               quad_indices.begin<uint32_t>());
+      auto counting_iter     = thrust::make_counting_iterator(0);
+      auto quad_lengths_iter = thrust::make_permutation_iterator(quad_lengths.begin<uint32_t>(),
+                                                                 quad_indices.begin<uint32_t>());
 
-    auto quad_offsets_iter = thrust::make_permutation_iterator(quad_offsets.begin<uint32_t>(),
-                                                               quad_indices.begin<uint32_t>());
+      auto quad_offsets_iter = thrust::make_permutation_iterator(quad_offsets.begin<uint32_t>(),
+                                                                 quad_indices.begin<uint32_t>());
 
-    // Compute a "local" set of zero-based point offsets from number of points in each quadrant
-    // Use `num_poly_quad_pairs + 1` as the length so that the last element produced by
-    // `inclusive_scan` is the total number of points to be tested against any polygon.
-    rmm::device_uvector<uint32_t> local_point_offsets(num_poly_quad_pairs + 1, stream);
+      // Compute a "local" set of zero-based point offsets from number of points in each quadrant
+      // Use `num_poly_quad_pairs + 1` as the length so that the last element produced by
+      // `inclusive_scan` is the total number of points to be tested against any polygon.
+      rmm::device_uvector<uint32_t> local_point_offsets(num_poly_quad_pairs + 1, stream);
 
-    thrust::inclusive_scan(rmm::exec_policy(stream),
-                           quad_lengths_iter,
-                           quad_lengths_iter + num_poly_quad_pairs,
-                           local_point_offsets.begin() + 1);
+      thrust::inclusive_scan(rmm::exec_policy(stream),
+                             quad_lengths_iter,
+                             quad_lengths_iter + num_poly_quad_pairs,
+                             local_point_offsets.begin() + 1);
 
-    // Ensure local point offsets starts at 0
-    local_point_offsets.set_element_async(0, 0, stream);
+      // Ensure local point offsets starts at 0
+      local_point_offsets.set_element_async(0, 0, stream);
 
-    // The last element is the total number of points to test against any polygon.
-    auto num_total_points = local_point_offsets.back_element(stream);
+      // The last element is the total number of points to test against any polygon.
+      auto num_total_points = local_point_offsets.back_element(stream);
 
-    // Allocate memory for the polygon and point index pairs
-    rmm::device_uvector<uint32_t> poly_idxs(num_total_points, stream);
-    rmm::device_uvector<uint32_t> point_idxs(num_total_points, stream);
+      // Allocate memory for the polygon and point index pairs
+      rmm::device_uvector<uint32_t> poly_idxs(num_total_points, stream);
+      rmm::device_uvector<uint32_t> point_idxs(num_total_points, stream);
 
+      auto poly_and_point_indices = make_zip_iterator(poly_idxs.begin(), point_idxs.begin());
+
+      // Compute the combination of polygon and point index pairs. For each polygon/quadrant pair,
+      // enumerate pairs of (poly_index, point_index) for each point in each quadrant.
+      //
+      // In Python pseudocode:
+      // ```
+      // pp_pairs = []
+      // for polygon, quadrant in pq_pairs:
+      //   for point in quadrant:
+      //     pp_pairs.append((polygon, point))
+      // ```
+      //
+      thrust::transform(rmm::exec_policy(stream),
+                        counting_iter,
+                        counting_iter + num_total_points,
+                        poly_and_point_indices,
+                        compute_poly_and_point_indices<T, decltype(quad_offsets_iter)>{
+                          quad_offsets_iter,
+                          local_point_offsets.begin(),
+                          local_point_offsets.size() - 1,
+                          *cudf::column_device_view::create(poly_indices, stream)});
+
+      return std::make_tuple(std::move(poly_idxs), std::move(point_idxs), num_total_points);
+    }();
+
+    auto &poly_idxs             = std::get<0>(poly_and_point_idxs);
+    auto &point_idxs            = std::get<1>(poly_and_point_idxs);
+    auto &num_total_points      = std::get<2>(poly_and_point_idxs);
     auto poly_and_point_indices = make_zip_iterator(poly_idxs.begin(), point_idxs.begin());
-
-    // Compute the combination of polygon and point index pairs. For each polygon/quadrant pair,
-    // enumerate pairs of (poly_index, point_index) for each point in each quadrant.
-    //
-    // In Python pseudocode:
-    // ```
-    // pp_pairs = []
-    // for polygon, quadrant in pq_pairs:
-    //   for point in quadrant:
-    //     pp_pairs.append((polygon, point))
-    // ```
-    //
-    thrust::transform(rmm::exec_policy(stream),
-                      counting_iter,
-                      counting_iter + num_total_points,
-                      poly_and_point_indices,
-                      compute_poly_and_point_indices<T, decltype(quad_offsets_iter)>{
-                        quad_offsets_iter,
-                        local_point_offsets.begin(),
-                        local_point_offsets.size() - 1,
-                        *cudf::column_device_view::create(poly_indices, stream)});
 
     // Enumerate the point X/Ys using the sorted `point_indices` (from quadtree construction)
     auto point_xys_iter = thrust::make_permutation_iterator(
