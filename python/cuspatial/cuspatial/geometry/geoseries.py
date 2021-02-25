@@ -1,5 +1,6 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION
 
+import functools
 import numbers
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 import pandas as pd
@@ -94,25 +95,21 @@ class GeoSeries(ColumnBase):
         else:
             self._data = data
             self._reader = GeoSeriesReader(data)
-            self._points = GpuPointArray()
-            self._points.xy = self._reader.buffers[0]["points"]
-            self._multipoints = GpuMultiPointArray()
-            self._multipoints.xy = self._reader.buffers[0]["multipoints"]
-            self._multipoints.offsets = self._reader.buffers[1]["multipoints"]
-            self._lines = GpuLineArray()
-            self._lines.xy = self._reader.buffers[0]["lines"]
-            self._lines.offsets = self._reader.buffers[1]["lines"]
-            self._lines.mlines = self._reader.buffers[1]["mlines"]
-            self._polygons = GpuPolygonArray()
-            self._polygons.xy = self._reader.buffers[0]["polygons"]["coords"]
-            self._polygons.polys = cudf.Series(
-                self._reader.offsets["polygons"]["polygons"]
+            self._points = GpuPointArray(self._reader.buffers[0]["points"])
+            self._multipoints = GpuMultiPointArray(
+                self._reader.buffers[0]["multipoints"],
+                self._reader.buffers[1]["multipoints"],
             )
-            self._polygons.rings = cudf.Series(
-                self._reader.offsets["polygons"]["rings"]
+            self._lines = GpuLineArray(
+                self._reader.buffers[0]["lines"],
+                self._reader.buffers[1]["lines"],
+                self._reader.buffers[1]["mlines"],
             )
-            self._polygons.mpolys = cudf.Series(
-                self._reader.offsets["polygons"]["mpolys"]
+            self._polygons = GpuPolygonArray(
+                self._reader.buffers[0]["polygons"]["coords"],
+                self._reader.offsets["polygons"]["polygons"],
+                self._reader.offsets["polygons"]["rings"],
+                self._reader.offsets["polygons"]["mpolys"],
             )
             self.types = self._reader.buffers[2]
             self.lengths = self._reader.buffers[3]
@@ -142,21 +139,15 @@ class GeoSeries(ColumnBase):
                 # return self._getitem_slice(index)
 
         def _getitem_int(self, index):
-            item_type = self._sr.types[index]
-            if item_type == "p":
-                return gpuPoint(self._sr, index)
-            elif item_type == "mp":
-                return gpuMultiPoint(self._sr, index)
-            elif item_type == "l":
-                return gpuLineString(self._sr, index)
-            elif item_type == "ml":
-                return gpuMultiLineString(self._sr, index)
-            elif item_type == "poly":
-                return gpuPolygon(self._sr, index)
-            elif item_type == "mpoly":
-                return gpuMultiPolygon(self._sr, index)
-            else:
-                raise TypeError
+            type_map = {
+                "p": gpuPoint,
+                "mp": gpuMultiPoint,
+                "l": gpuLineString,
+                "ml": gpuMultiLineString,
+                "poly": gpuPolygon,
+                "mpoly": gpuMultiPolygon
+            }
+            return type_map[self._sr.types[index]](self._sr, index)
 
     def __getitem__(self, item):
         """
@@ -263,21 +254,15 @@ class GeoSeries(ColumnBase):
 
 
 class GpuPointArray:
-    def __init__(self):
-        self.xy = None
-        self.z = None
-        self.has_z = False
-
-    def __iter__(self):
-        self._index = 0
-        return self
-
-    def __next__(self):
-        if self._index >= len(self.xy):
-            raise StopIteration
-        result = self[self._index]
-        self._index = self._index + 2
-        return result
+    def __init__(self, xy, z = None):
+        """
+        A GeoArrow column of points. The GpuPointArray stores all of the points within
+        a single data source, typically a cuspatial.GeoSeries, in the format specified
+        by GeoArrow.
+        """
+        self.xy = xy
+        self.z = z
+        self.has_z = z is not None
 
     def __getitem__(self, index):
         if isinstance(index, slice):
@@ -293,12 +278,14 @@ class GpuPointArray:
                    "y: " + self.y.__repr__()
 
     def copy(self, deep=True):
-        result = GpuPointArray()
-        if hasattr(self, 'xy'):
-            result.xy = self.xy.copy(deep)
         if hasattr(self, 'z'):
-            result.z = self.z.copy(deep)
-        result.has_z = self.has_z
+            z = self.z.copy(deep)
+        else:
+            z = None
+        result = GpuPointArray(
+            self.xy.copy(deep),
+            z
+        )
         return result
 
     @property
@@ -311,22 +298,14 @@ class GpuPointArray:
 
 
 class GpuOffsetArray(GpuPointArray):
-    def __init__(self):
-        super().__init__()
-        self.offsets = []
-
-    def __iter__(self):
-        if self.offsets is None:
-            raise TypeError
-        self._index = 1
-        return self
-
-    def __next__(self):
-        if self._index >= len(self.offsets):
-            raise StopIteration
-        result = self[self._index]
-        self._index = self._index + 1
-        return result
+    def __init__(self, xy, offsets, z = None):
+        """
+        A GeoArrow column of offset geometries. This is the base class of all complex
+        GeoArrow geometries. MultiLineStrings and MultiPolygons store extra metadata
+        to identify individual geometry boundaries, but are also based on GpuOffsetArray.
+        """
+        super().__init__(xy, z)
+        self.offsets = offsets
 
     def __getitem__(self, index):
         if isinstance(index, slice):
@@ -345,14 +324,24 @@ class GpuOffsetArray(GpuPointArray):
         )
 
     def copy(self, deep=True):
-        result = super().copy(deep)
-        result.offsets = self.offsets.copy(deep)
+        result = GpuOffsetArray(
+            self.xy.copy(deep),
+            self.offsets.copy(deep),
+            self.z.copy(deep)
+        )
         return result
 
 
 class GpuLineArray(GpuOffsetArray):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, xy, lines, mlines, z = None):
+        """
+        A GeoArrow column of LineStrings. This format stores LineStrings and
+        MultiLineStrings from a single data source (Such as a GeoSeries). Offset
+        coordinates stored between pairs of mlines offsets specify MultiLineStrings.
+        Offset values that do not fall within a pair of mlines are simple LineStrings.
+        """
+        super().__init__(xy, lines, z)
+        self.mlines = mlines
 
     def __getitem__(self, index):
         result = super().__getitem__(index)
@@ -375,24 +364,35 @@ class GpuLineArray(GpuOffsetArray):
 
 
 class GpuMultiPointArray(GpuOffsetArray):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, xy, offsets, z = None):
+        """
+        A GeoArrow column of MultiPoints. These are all of the MultiPoints that appear
+        in a GeoSeries or other data source. Single points are stored in the
+        GpuPointArray.
+        """
+        super().__init__(xy, z)
+        self.offsets = offsets
 
     def copy(self, deep=True):
-        result = GpuMultiPointArray()
         base = super().copy(deep)
-        result.xy = base.xy
-        result.z = base.z
-        result.offsets = base.offsets
+        result = GpuMultiPointArray(base.xy, base.offsets, base.z)
         return result
 
 
 class GpuPolygonArray(GpuOffsetArray):
-    def __init__(self):
-        super().__init__()
-        self.polys = None
+    def __init__(self, xy, polys, rings, mpolys, z = None):
+        """
+        The GeoArrow column format for GpuPolygons uses the same scheme as the format
+        for LineStrings - MultiPolygons and Polygons from the same GeoSeries (or another
+        data source) are stored in the same contiguous buffer. Rings are stored in the
+        offsets array, exterior/interior polygons are stored in the `polys` array in
+        shapefile format, and the `mpolys` array of pairs determines which polys are
+        members of MultiPolygons.
+        """
         # GpuPolygonArray uses the offsets buffer for rings!
-        self.mpolys = None
+        super().__init__(xy, rings, z)
+        self.polys = polys
+        self.mpolys = mpolys
 
     @property
     def rings(self):
@@ -419,6 +419,13 @@ class GpuPolygonArray(GpuOffsetArray):
 
 class gpuGeometry:
     def __init__(self, source, index):
+        """
+        The base class of individual GPU geometries. This and its inheriting classes
+        do not manage any GPU data directly - each gpuGeometry simply stores a reference
+        to the GeoSeries it is stored within and the index of the geometry within the
+        GeoSeries. Child gpuGeometry classes contain the logic necessary to serialize
+        and convert GPU data back to Shapely.
+        """
         self.source = source
         self.index = index
 
@@ -426,20 +433,22 @@ class gpuGeometry:
 class gpuPoint(gpuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
-        index = (
-            pd.Series(self.source.types[0 : self.index], dtype="object")
-            == item_type
-        ).sum()
+        types = self.source.types[0 : self.index]
+        index = 0
+        for i in range(self.index):
+            if types[i] == item_type:
+                index = index + 1
         return Point(self.source._points[index].reset_index(drop=True))
 
 class gpuMultiPoint(gpuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
+        types = self.source.types[0 : self.index]
+        item_start = 0
+        for i in range(self.index):
+            if types[i] == item_type:
+                item_start = item_start + 1
         item_length = self.source.lengths[self.index]
-        item_start = (
-            pd.Series(self.source.types[0 : self.index], dtype="object")
-            == item_type
-        ).sum()
         item_source = self.source._multipoints
         result = item_source[item_start]
         return MultiPoint(result.to_array().reshape(item_length, 2))
@@ -476,10 +485,10 @@ class gpuLineString(gpuGeometry):
 class gpuMultiLineString(gpuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
-        index = (
-            pd.Series(self.source.types[0 : self.index], dtype="object")
-            == item_type
-        ).sum()
+        index = 0
+        for i in range(self.index):
+            if self.source.types[i] == item_type:
+                index = index + 1
         line_indices = slice(
             self.source._lines.mlines[index * 2],
             self.source._lines.mlines[index * 2 + 1],
@@ -545,10 +554,10 @@ class gpuPolygon(gpuGeometry):
 class gpuMultiPolygon(gpuGeometry):
     def to_shapely(self):
         item_type = self.source.types[self.index]
-        index = (
-            pd.Series(self.source.types[0 : self.index], dtype="object")
-            == item_type
-        ).sum()
+        index = 0
+        for i in range(self.index):
+            if self.source.types[i] == item_type:
+                index = index + 1
         poly_indices = slice(
             self.source.polygons.mpolys[index * 2],
             self.source.polygons.mpolys[index * 2 + 1],
