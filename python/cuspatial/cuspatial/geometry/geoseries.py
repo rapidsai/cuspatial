@@ -29,6 +29,8 @@ class GeoSeries(ColumnBase):
         Parameters
         ----------
         data : A GeoPandas GeoSeries object, or a file path
+        name : String (optional)
+        index : cudf.Series (optional)
 
         Discussion
         ----------
@@ -95,7 +97,7 @@ class GeoSeries(ColumnBase):
         else:
             self._data = data
             self._reader = GeoSeriesReader(data)
-            self._points = GpuPointArray(self._reader.buffers[0]["points"])
+            self._points = GpuCoordinateArray(self._reader.buffers[0]["points"])
             self._multipoints = GpuMultiPointArray(
                 self._reader.buffers[0]["multipoints"],
                 self._reader.buffers[1]["multipoints"],
@@ -166,6 +168,9 @@ class GeoSeries(ColumnBase):
 
     @property
     def iloc(self):
+        """
+        Return the i-th row of the GeoSeries.
+        """
         return self.GeoSeriesILocIndexer(self)
 
     def __len__(self):
@@ -191,6 +196,10 @@ class GeoSeries(ColumnBase):
         return self._polygons
 
     def to_pandas(self, index=None, nullable=False):
+        """
+        Treats to_pandas and to_geopandas as the same call, which improves compatibility
+        with pandas.
+        """
         return self.to_geopandas(index=index, nullable=nullable)
 
     def to_geopandas(self, index=None, nullable=False):
@@ -209,26 +218,27 @@ class GeoSeries(ColumnBase):
         return gpGeoSeries(output, index=index)
 
     def __repr__(self):
-        return self.to_pandas().__repr__() + "\n" + "(GPU)" + "\n"
+        return (
+            f"{self.to_pandas().__repr__()}\n"
+            f"(GPU)\n"
+    )
 
     def _dump(self):
         return (
-            "POINTS"
-            + "\n"
-            + self.points.__repr__()
-            + "MULTIPOINTS"
-            + "\n"
-            + self.multipoints.__repr__()
-            + "LINES"
-            + "\n"
-            + self.lines.__repr__()
-            + "POLYGONS"
-            + "\n"
-            + self.polygons.__repr__()
-            + "\n"
+            f"POINTS\n"
+            f"{self.points.__repr__()}\n"
+            f"MULTIPOINTS\n"
+            f"{self.multipoints.__repr__()}\n"
+            f"LINES\n"
+            f"{self.lines.__repr__()}\n"
+            f"POLYGONS\n"
+            f"{self.polygons.__repr__()}\n"
         )
 
     def copy(self, deep=True):
+        """
+        Create a copy of all of the GPU-backed data structures in this GeoSeries.
+        """
         result = GeoSeries([])
         result._data = self._data
         result._reader = self._reader
@@ -253,12 +263,12 @@ class GeoSeries(ColumnBase):
         return result
 
 
-class GpuPointArray:
+class GpuCoordinateArray:
     def __init__(self, xy, z = None):
         """
-        A GeoArrow column of points. The GpuPointArray stores all of the points within
-        a single data source, typically a cuspatial.GeoSeries, in the format specified
-        by GeoArrow.
+        A GeoArrow column of points. The GpuCoordinateArray stores all of the points
+        within a single data source, typically a cuspatial.GeoSeries, in the format
+        specified by GeoArrow.
         """
         self.xy = xy
         self.z = z
@@ -271,18 +281,20 @@ class GpuPointArray:
         return self.xy.iloc[(index * 2) : (index * 2) + 2]
 
     def __repr__(self):
-        if hasattr(self, 'xy'):
-            return "xy: " + self.xy.__repr__()
-        else:
-            return "x: " + self.x.__repr__() + \
-                   "y: " + self.y.__repr__()
+        return (
+            f"xy:\n"
+            f"{self.xy.__repr__()}\n"
+        )
 
     def copy(self, deep=True):
+        """
+        Create a copy of all points.
+        """
         if hasattr(self, 'z'):
             z = self.z.copy(deep)
         else:
             z = None
-        result = GpuPointArray(
+        result = GpuCoordinateArray(
             self.xy.copy(deep),
             z
         )
@@ -290,14 +302,20 @@ class GpuPointArray:
 
     @property
     def x(self):
+        """
+        Return packed x-coordinates of this GpuGeometryArray object.
+        """
         return self.xy[slice(0, None, 2)].reset_index(drop=True)
      
     @property
     def y(self):
+        """
+        Return packed y-coordinates of this GpuGeometryArray object.
+        """
         return self.xy[slice(1, None, 2)].reset_index(drop=True)
 
 
-class GpuOffsetArray(GpuPointArray):
+class GpuOffsetArray(GpuCoordinateArray):
     def __init__(self, xy, offsets, z = None):
         """
         A GeoArrow column of offset geometries. This is the base class of all complex
@@ -320,7 +338,9 @@ class GpuOffsetArray(GpuPointArray):
 
     def __repr__(self):
         return (
-            super().__repr__() + "\noffsets: " + self.offsets.__repr__() + "\n"
+            f"{super().__repr__()}"
+            f"offsets:\n"
+            f"{self.offsets.__repr__()}\n"
         )
 
     def copy(self, deep=True):
@@ -339,6 +359,13 @@ class GpuLineArray(GpuOffsetArray):
         MultiLineStrings from a single data source (Such as a GeoSeries). Offset
         coordinates stored between pairs of mlines offsets specify MultiLineStrings.
         Offset values that do not fall within a pair of mlines are simple LineStrings.
+
+        Parameters
+        ---
+        xy : cudf.Series
+        lines : cudf.Series
+        mlines : cudf.Series
+        z : cudf.Series (optional)
         """
         super().__init__(xy, lines, z)
         self.mlines = mlines
@@ -349,17 +376,19 @@ class GpuLineArray(GpuOffsetArray):
 
     def __repr__(self):
         return (
-            super().__repr__() + "\nmlines: " + self.mlines.__repr__() + "\n"
+            f"{super().__repr__()}"
+            f"mlines:\n"
+            f"{self.mlines.__repr__()}\n"
         )
 
     def copy(self, deep=True):
-        result = GpuLineArray()
         base = super().copy(deep)
-        result.xy = base.xy
-        result.z = base.z
-        result.offsets = base.offsets
-        if hasattr(self, "mlines"):
-            result.mlines = self.mlines.copy()
+        result = GpuLineArray(
+            base.xy,
+            base.offsets,
+            self.mlines.copy(deep),
+            base.z,
+        )
         return result
 
 
@@ -368,7 +397,7 @@ class GpuMultiPointArray(GpuOffsetArray):
         """
         A GeoArrow column of MultiPoints. These are all of the MultiPoints that appear
         in a GeoSeries or other data source. Single points are stored in the
-        GpuPointArray.
+        GpuCoordinateArray.
         """
         super().__init__(xy, z)
         self.offsets = offsets
@@ -403,10 +432,15 @@ class GpuPolygonArray(GpuOffsetArray):
         self.offsets = rings
 
     def __repr__(self):
-        result =  super().__repr__() 
-        result += "polys:\n" + self.polys.__repr__() + "\n"
-        result += "rings:\n" + self.rings.__repr__() + "\n"
-        result += "mpolys:\n" + self.mpolys.__repr__() + "\n"
+        result = (
+            f"{super().__repr__()}"
+            f"polys:\n"
+            f"{self.polys}\n"
+            f"rings:\n"
+            f"{self.rings}\n"
+            f"mpolys:\n"
+            f"{self.mpolys}\n"
+        )
         return result
 
     def copy(self, deep=True):
