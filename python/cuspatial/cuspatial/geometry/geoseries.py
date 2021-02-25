@@ -1,9 +1,7 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION
 
-import functools
 import numbers
 from geopandas.geoseries import GeoSeries as gpGeoSeries
-import pandas as pd
 import numpy as np
 
 from shapely.geometry import (
@@ -77,8 +75,8 @@ class GeoSeries(ColumnBase):
 
         Notes
         -----
-        Legacy cuspatial algorithms depend on separated x and y columns. Access them
-        with the .x and .y properties.
+        Legacy cuspatial algorithms depend on separated x and y columns. Access
+        them with the .x and .y properties.
         """
         if isinstance(data, GeoSeries):
             self._data = data.data
@@ -97,7 +95,9 @@ class GeoSeries(ColumnBase):
         else:
             self._data = data
             self._reader = GeoSeriesReader(data)
-            self._points = GpuCoordinateArray(self._reader.buffers[0]["points"])
+            self._points = GpuCoordinateArray(
+                self._reader.buffers[0]["points"]
+            )
             self._multipoints = GpuMultiPointArray(
                 self._reader.buffers[0]["multipoints"],
                 self._reader.buffers[1]["multipoints"],
@@ -147,7 +147,7 @@ class GeoSeries(ColumnBase):
                 "l": gpuLineString,
                 "ml": gpuMultiLineString,
                 "poly": gpuPolygon,
-                "mpoly": gpuMultiPolygon
+                "mpoly": gpuMultiPolygon,
             }
             return type_map[self._sr.types[index]](self._sr, index)
 
@@ -197,8 +197,8 @@ class GeoSeries(ColumnBase):
 
     def to_pandas(self, index=None, nullable=False):
         """
-        Treats to_pandas and to_geopandas as the same call, which improves compatibility
-        with pandas.
+        Treats to_pandas and to_geopandas as the same call, which improves
+        compatibility with pandas.
         """
         return self.to_geopandas(index=index, nullable=nullable)
 
@@ -218,10 +218,7 @@ class GeoSeries(ColumnBase):
         return gpGeoSeries(output, index=index)
 
     def __repr__(self):
-        return (
-            f"{self.to_pandas().__repr__()}\n"
-            f"(GPU)\n"
-    )
+        return f"{self.to_pandas().__repr__()}\n" f"(GPU)\n"
 
     def _dump(self):
         return (
@@ -237,7 +234,8 @@ class GeoSeries(ColumnBase):
 
     def copy(self, deep=True):
         """
-        Create a copy of all of the GPU-backed data structures in this GeoSeries.
+        Create a copy of all of the GPU-backed data structures in this
+        GeoSeries.
         """
         result = GeoSeries([])
         result._data = self._data
@@ -264,11 +262,11 @@ class GeoSeries(ColumnBase):
 
 
 class GpuCoordinateArray:
-    def __init__(self, xy, z = None):
+    def __init__(self, xy, z=None):
         """
-        A GeoArrow column of points. The GpuCoordinateArray stores all of the points
-        within a single data source, typically a cuspatial.GeoSeries, in the format
-        specified by GeoArrow.
+        A GeoArrow column of points. The GpuCoordinateArray stores all of the
+        points within a single data source, typically a cuspatial.GeoSeries,
+        in the format specified by GeoArrow.
         """
         self.xy = xy
         self.z = z
@@ -281,23 +279,17 @@ class GpuCoordinateArray:
         return self.xy.iloc[(index * 2) : (index * 2) + 2]
 
     def __repr__(self):
-        return (
-            f"xy:\n"
-            f"{self.xy.__repr__()}\n"
-        )
+        return f"xy:\n" f"{self.xy.__repr__()}\n"
 
     def copy(self, deep=True):
         """
         Create a copy of all points.
         """
-        if hasattr(self, 'z'):
+        if hasattr(self, "z"):
             z = self.z.copy(deep)
         else:
             z = None
-        result = GpuCoordinateArray(
-            self.xy.copy(deep),
-            z
-        )
+        result = GpuCoordinateArray(self.xy.copy(deep), z)
         return result
 
     @property
@@ -306,7 +298,7 @@ class GpuCoordinateArray:
         Return packed x-coordinates of this GpuGeometryArray object.
         """
         return self.xy[slice(0, None, 2)].reset_index(drop=True)
-     
+
     @property
     def y(self):
         """
@@ -316,11 +308,12 @@ class GpuCoordinateArray:
 
 
 class GpuOffsetArray(GpuCoordinateArray):
-    def __init__(self, xy, offsets, z = None):
+    def __init__(self, xy, offsets, z=None):
         """
-        A GeoArrow column of offset geometries. This is the base class of all complex
-        GeoArrow geometries. MultiLineStrings and MultiPolygons store extra metadata
-        to identify individual geometry boundaries, but are also based on GpuOffsetArray.
+        A GeoArrow column of offset geometries. This is the base class of all
+        complex GeoArrow geometries. MultiLineStrings and MultiPolygons store
+        extra metadata to identify individual geometry boundaries, but are also
+        based on GpuOffsetArray.
         """
         super().__init__(xy, z)
         self.offsets = offsets
@@ -345,20 +338,19 @@ class GpuOffsetArray(GpuCoordinateArray):
 
     def copy(self, deep=True):
         result = GpuOffsetArray(
-            self.xy.copy(deep),
-            self.offsets.copy(deep),
-            self.z.copy(deep)
+            self.xy.copy(deep), self.offsets.copy(deep), self.z.copy(deep)
         )
         return result
 
 
 class GpuLineArray(GpuOffsetArray):
-    def __init__(self, xy, lines, mlines, z = None):
+    def __init__(self, xy, lines, mlines, z=None):
         """
         A GeoArrow column of LineStrings. This format stores LineStrings and
-        MultiLineStrings from a single data source (Such as a GeoSeries). Offset
-        coordinates stored between pairs of mlines offsets specify MultiLineStrings.
-        Offset values that do not fall within a pair of mlines are simple LineStrings.
+        MultiLineStrings from a single data source (Such as a GeoSeries).
+        Offset coordinates stored between pairs of mlines offsets specify
+        MultiLineStrings. Offset values that do not fall within a pair of
+        mlines are simple LineStrings.
 
         Parameters
         ---
@@ -376,28 +368,23 @@ class GpuLineArray(GpuOffsetArray):
 
     def __repr__(self):
         return (
-            f"{super().__repr__()}"
-            f"mlines:\n"
-            f"{self.mlines.__repr__()}\n"
+            f"{super().__repr__()}" f"mlines:\n" f"{self.mlines.__repr__()}\n"
         )
 
     def copy(self, deep=True):
         base = super().copy(deep)
         result = GpuLineArray(
-            base.xy,
-            base.offsets,
-            self.mlines.copy(deep),
-            base.z,
+            base.xy, base.offsets, self.mlines.copy(deep), base.z,
         )
         return result
 
 
 class GpuMultiPointArray(GpuOffsetArray):
-    def __init__(self, xy, offsets, z = None):
+    def __init__(self, xy, offsets, z=None):
         """
-        A GeoArrow column of MultiPoints. These are all of the MultiPoints that appear
-        in a GeoSeries or other data source. Single points are stored in the
-        GpuCoordinateArray.
+        A GeoArrow column of MultiPoints. These are all of the MultiPoints that
+        appear in a GeoSeries or other data source. Single points are stored in
+        the GpuCoordinateArray.
         """
         super().__init__(xy, z)
         self.offsets = offsets
@@ -409,14 +396,15 @@ class GpuMultiPointArray(GpuOffsetArray):
 
 
 class GpuPolygonArray(GpuOffsetArray):
-    def __init__(self, xy, polys, rings, mpolys, z = None):
+    def __init__(self, xy, polys, rings, mpolys, z=None):
         """
-        The GeoArrow column format for GpuPolygons uses the same scheme as the format
-        for LineStrings - MultiPolygons and Polygons from the same GeoSeries (or another
-        data source) are stored in the same contiguous buffer. Rings are stored in the
-        offsets array, exterior/interior polygons are stored in the `polys` array in
-        shapefile format, and the `mpolys` array of pairs determines which polys are
-        members of MultiPolygons.
+        The GeoArrow column format for GpuPolygons uses the same scheme as the
+        format for LineStrings - MultiPolygons and Polygons from the same
+        GeoSeries (or another data source) are stored in the same contiguous
+        buffer. Rings are stored in the offsets array, exterior/interior
+        polygons are stored in the `polys` array in shapefile format, and the
+        `mpolys` array of pairs determines which polys are members of
+        MultiPolygons.
         """
         # GpuPolygonArray uses the offsets buffer for rings!
         super().__init__(xy, rings, z)
@@ -454,12 +442,12 @@ class GpuPolygonArray(GpuOffsetArray):
 class gpuGeometry:
     def __init__(self, source, index):
         """
-        The base class of individual GPU geometries. This and its inheriting classes
-        do not manage any GPU data directly - each gpuGeometry simply stores a reference
-        to the GeoSeries it is stored within and the index of the geometry within the
-        GeoSeries. Child gpuGeometry classes contain the logic necessary to serialize
-        and convert GPU data back to Shapely.
-        """
+        The base class of individual GPU geometries. This and its inheriting
+        classes do not manage any GPU data directly - each gpuGeometry simply
+        stores a reference to the GeoSeries it is stored within and the index
+        of the geometry within the GeoSeries. Child gpuGeometry classes
+        contain the logic necessary to serialize and convert GPU data back to
+        Shapely. """
         self.source = source
         self.index = index
 
@@ -473,6 +461,7 @@ class gpuPoint(gpuGeometry):
             if types[i] == item_type:
                 index = index + 1
         return Point(self.source._points[index].reset_index(drop=True))
+
 
 class gpuMultiPoint(gpuGeometry):
     def to_shapely(self):

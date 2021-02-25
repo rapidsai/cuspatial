@@ -134,25 +134,31 @@ class GeoSeriesReader:
         offsets : The set of offsets that correspond to the geoseries argument.
         """
         buffers = {
-            "points": cudf.Series(column_empty(
-                offsets["points"][-1], dtype="float64"
-            )),
-            "multipoints": cudf.Series(column_empty(
-                offsets["multipoints"][-1], dtype="float64"
-            )),
-            "lines": cudf.Series(column_empty(
-                offsets["lines"][-1], dtype="float64"
-            )),
+            "points": cudf.Series(
+                column_empty(offsets["points"][-1], dtype="float64")
+            ),
+            "multipoints": cudf.Series(
+                column_empty(offsets["multipoints"][-1], dtype="float64")
+            ),
+            "lines": cudf.Series(
+                column_empty(offsets["lines"][-1], dtype="float64")
+            ),
             "polygons": {
-                "polygons": cudf.Series(column_empty(
-                    len(offsets["polygons"]["polygons"]), dtype="float64"
-                )),
-                "rings": cudf.Series(column_empty(
-                    len(offsets["polygons"]["rings"]), dtype="float64"
-                )),
-                "coords": cudf.Series(column_empty(
-                    offsets["polygons"]["rings"][-1], dtype="float64"
-                )),
+                "polygons": cudf.Series(
+                    column_empty(
+                        len(offsets["polygons"]["polygons"]), dtype="float64"
+                    )
+                ),
+                "rings": cudf.Series(
+                    column_empty(
+                        len(offsets["polygons"]["rings"]), dtype="float64"
+                    )
+                ),
+                "coords": cudf.Series(
+                    column_empty(
+                        offsets["polygons"]["rings"][-1], dtype="float64"
+                    )
+                ),
             },
         }
         read_count = {
@@ -180,9 +186,9 @@ class GeoSeriesReader:
                 size = points.shape[0] * 2
                 i = read_count["multipoints"]
                 buffers["multipoints"][slice(i, i + size, 2)] = points[:, 0]
-                buffers["multipoints"][
-                    slice(i + 1, i + size, 2)
-                ] = points[:, 1]
+                buffers["multipoints"][slice(i + 1, i + size, 2)] = points[
+                    :, 1
+                ]
                 read_count["multipoints"] = read_count["multipoints"] + size
                 input_types.append("mp")
                 input_lengths.append(len(geometry))
