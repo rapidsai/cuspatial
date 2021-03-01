@@ -42,6 +42,7 @@ class GeoSeries(ColumnBase):
     Legacy cuspatial algorithms depend on separated x and y columns. Access
     them with the `.x` and `.y` properties.
     """
+
     def __init__(self, data, name=None, index=None):
         if isinstance(data, GeoSeries):
             self._data = data.data
@@ -261,6 +262,7 @@ class GeoSeries(ColumnBase):
         """
         Not yet supported.
         """
+
         def __init__(self):
             # Todo: Easy to implement with a join.
             raise NotImplementedError
@@ -270,6 +272,7 @@ class GeoSeries(ColumnBase):
         Each row of a GeoSeries is one of the six types: Point, MultiPoint,
         LineString, MultiLineString, Polygon, or MultiPolygon.
         """
+
         def __init__(self, sr):
             self._sr = sr
 
@@ -373,6 +376,7 @@ class GpuPointsArray(GpuCoordinateArray):
     A GeoArrow column of points. Every pair is the `[x,y]` coordinate of the
     position/2th point in this data source. `z` can be included optionally.
     """
+
     def __init__(self, xy, z=None):
         super().__init__(xy, z)
 
@@ -597,6 +601,7 @@ class gpuPoint(gpuGeometry):
     """
     See gpuGeometry.
     """
+
     def to_shapely(self):
         item_type = self._source.types[self._index]
         types = self._source.types[0 : self._index]
@@ -611,6 +616,7 @@ class gpuMultiPoint(gpuGeometry):
     """
     See gpuGeometry.
     """
+
     def to_shapely(self):
         item_type = self._source.types[self._index]
         types = self._source.types[0 : self._index]
@@ -628,6 +634,7 @@ class gpuLineString(gpuGeometry):
     """
     See gpuGeometry.
     """
+
     def to_shapely(self):
         ml_index = self._index - 1
         preceding_line_count = 0
@@ -659,6 +666,7 @@ class gpuMultiLineString(gpuGeometry):
     """
     See gpuGeometry.
     """
+
     def to_shapely(self):
         item_type = self._source.types[self._index]
         index = 0
@@ -685,6 +693,7 @@ class gpuPolygon(gpuGeometry):
     """
     See gpuGeometry.
     """
+
     def to_shapely(self):
         mp_index = self._index - 1
         preceding_poly_count = 0
@@ -736,6 +745,7 @@ class gpuMultiPolygon(gpuGeometry):
     """
     See gpuGeometry.
     """
+
     def to_shapely(self):
         item_type = self._source.types[self._index]
         index = 0

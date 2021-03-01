@@ -23,6 +23,7 @@ class GeoDataFrame(cudf.DataFrame):
     """
     A GPU GeoDataFrame object.
     """
+
     def __init__(self, data):
         """
         Constructs a GPU GeoDataFrame from a GeoPandas dataframe.
