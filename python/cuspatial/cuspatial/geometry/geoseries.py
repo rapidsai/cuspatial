@@ -20,64 +20,29 @@ from cuspatial.io.geoseries_reader import GeoSeriesReader
 
 
 class GeoSeries(ColumnBase):
+    """
+    A GPU GeoSeries object.
+
+    The GeoArrow format specifies a tabular data format for geometry
+    information. Supported types include `Point`, `MultiPoint`, `LineString`,
+    `MultiLineString`, `Polygon`, and `MultiPolygon`.  In order to store
+    these coordinate types in a strictly tabular fashion, columns are
+    created for Points, MultiPoints, LineStrings, and Polygons.
+    MultiLines and MultiPolygons are stored in the same data structure
+    as LineStrings and Polygons.
+
+    Parameters
+    ----------
+    data : A GeoPandas GeoSeries object, or a file path.
+    name : String (optional), the name of the cudf.Series object.
+    index : cudf.Index (optional), row labels for the cudf.Series object.
+
+    Notes
+    -----
+    Legacy cuspatial algorithms depend on separated x and y columns. Access
+    them with the `.x` and `.y` properties.
+    """
     def __init__(self, data, name=None, index=None):
-        """
-        A GPU GeoSeries object.
-
-        Parameters
-        ----------
-        data : A GeoPandas GeoSeries object, or a file path
-        name : String (optional)
-        index : cudf.Series (optional)
-
-        Discussion
-        ----------
-        The GeoArrow format specifies a tabular data format for geometry
-        information. Supported types include Point, MultiPoint, LineString,
-        MultiLineString, Polygon, and MultiPolygon.  In order to store
-        these coordinate types in a strictly tabular fashion, columns are
-        created for Points, MultiPoints, LineStrings, and Polygons.
-        MultiLines and MultiPolygons are stored in the same data structure
-        as LineStrings and Polygons.
-
-        The Points column is a simple numeric column. x and y coordinates
-        can be stored either interleaved or in separate columns. If a z
-        coordinate is present, it will be stored in a separate column.
-
-        The MultiPoints column is similar to the Points column with the
-        addition of an offsets column. The offsets column stores the comparable
-        sizes and coordinates of each MultiPoint in the cuGeoSeries.
-
-        LineStrings contain the coordinates column, an offsets column, and a
-        multioffsets column. The multioffsets column stores the indices of the
-        offsets that indicate the beginning and end of each MultiLineString
-        segment.
-
-        Polygons contain the coordinates column, a rings column specifying
-        the beginning and end of every polygon, a polygons column specifying
-        the beginning, or exterior, ring of each polygon and the end ring.
-        All rings after the first ring are interior rings.  Finally a
-        multipolys column stores the offsets of the polygons that should be
-        grouped into MultiPolygons.
-
-        As a result, a GpuGeoSeries object contains these arrow-supported
-        columns:
-        points_xy
-        mpoints_xy
-        mpoints_offsets
-        lines_xy
-        lines_offsets
-        lines_ml_offsets
-        polygons_xy
-        polygons_rings
-        polygons_polys
-        polygons_mpolys
-
-        Notes
-        -----
-        Legacy cuspatial algorithms depend on separated x and y columns. Access
-        them with the .x and .y properties.
-        """
         if isinstance(data, GeoSeries):
             self._data = data.data
             self._points = data.points
@@ -113,8 +78,8 @@ class GeoSeries(ColumnBase):
                 self._reader.offsets["polygons"]["rings"],
                 self._reader.offsets["polygons"]["mpolys"],
             )
-            self.types = self._reader.buffers[2]
-            self.lengths = self._reader.buffers[3]
+            self._types = self._reader.buffers[2]
+            self._lengths = self._reader.buffers[3]
             if index is not None:
                 self.index = index
             elif data.index is not None:
@@ -124,32 +89,40 @@ class GeoSeries(ColumnBase):
             self.name = name
             self._dtype = "geometry"
 
-    class GeoSeriesLocIndexer:
-        def __init__(self):
-            raise NotImplementedError
+    @property
+    def types(self):
+        """
+        A list of string types from the set "p", "mp", "l", "ml", "poly", and
+        "mpoly". These are the types of each row of the GeoSeries.
+        """
+        return self._types
 
-    class GeoSeriesILocIndexer:
-        def __init__(self, sr):
-            self._sr = sr
+    @types.setter
+    def types(self, types):
+        self._types = types
 
-        def __getitem__(self, index):
-            if not isinstance(index, slice):
-                return self._getitem_int(index)
-            else:
-                raise NotImplementedError
-                # This slice functionality is not ready yet
-                # return self._getitem_slice(index)
+    @property
+    def lengths(self):
+        """
+        A list of integers of the length of each Multi geometry. Each non-multi
+        geometry is length 1.
+        """
+        return self._lengths
 
-        def _getitem_int(self, index):
-            type_map = {
-                "p": gpuPoint,
-                "mp": gpuMultiPoint,
-                "l": gpuLineString,
-                "ml": gpuMultiLineString,
-                "poly": gpuPolygon,
-                "mpoly": gpuMultiPolygon,
-            }
-            return type_map[self._sr.types[index]](self._sr, index)
+    @lengths.setter
+    def lengths(self, lengths):
+        self._lengths = lengths
+
+    @property
+    def index(self):
+        """
+        A cudf.Index object. A mapping of row-labels.
+        """
+        return self._index
+
+    @index.setter
+    def index(self, index):
+        self._index = index
 
     def __getitem__(self, item):
         """
@@ -181,18 +154,42 @@ class GeoSeries(ColumnBase):
 
     @property
     def points(self):
+        """
+        The Points column is a simple numeric column. x and y coordinates
+        can be stored either interleaved or in separate columns. If a z
+        coordinate is present, it will be stored in a separate column.
+        """
         return self._points
 
     @property
     def multipoints(self):
+        """
+        The MultiPoints column is similar to the Points column with the
+        addition of an offsets column. The offsets column stores the comparable
+        sizes and coordinates of each MultiPoint in the cuGeoSeries.
+        """
         return self._multipoints
 
     @property
     def lines(self):
+        """
+        LineStrings contain the coordinates column, an offsets column, and a
+        multioffsets column. The multioffsets column stores the indices of the
+        offsets that indicate the beginning and end of each MultiLineString
+        segment.
+        """
         return self._lines
 
     @property
     def polygons(self):
+        """
+        Polygons contain the coordinates column, a rings column specifying
+        the beginning and end of every polygon, a polygons column specifying
+        the beginning, or exterior, ring of each polygon and the end ring.
+        All rings after the first ring are interior rings.  Finally a
+        multipolys column stores the offsets of the polygons that should be
+        grouped into MultiPolygons.
+        """
         return self._polygons
 
     def to_pandas(self, index=None, nullable=False):
@@ -260,6 +257,41 @@ class GeoSeries(ColumnBase):
         self._iter_index = self._iter_index + 1
         return result
 
+    class GeoSeriesLocIndexer:
+        """
+        Not yet supported.
+        """
+        def __init__(self):
+            # Todo: Easy to implement with a join.
+            raise NotImplementedError
+
+    class GeoSeriesILocIndexer:
+        """
+        Each row of a GeoSeries is one of the six types: Point, MultiPoint,
+        LineString, MultiLineString, Polygon, or MultiPolygon.
+        """
+        def __init__(self, sr):
+            self._sr = sr
+
+        def __getitem__(self, index):
+            if not isinstance(index, slice):
+                return self._getitem_int(index)
+            else:
+                raise NotImplementedError
+                # This slice functionality is not ready yet
+                # return self._getitem_slice(index)
+
+        def _getitem_int(self, index):
+            type_map = {
+                "p": gpuPoint,
+                "mp": gpuMultiPoint,
+                "l": gpuLineString,
+                "ml": gpuMultiLineString,
+                "poly": gpuPolygon,
+                "mpoly": gpuMultiPolygon,
+            }
+            return type_map[self._sr.types[index]](self._sr, index)
+
 
 class GpuCoordinateArray:
     def __init__(self, xy, z=None):
@@ -273,6 +305,10 @@ class GpuCoordinateArray:
 
     @property
     def xy(self):
+        """
+        The coordinates of this Geometry Column in interleaved format
+        [x,y,...,x,y].
+        """
         return self._xy
 
     @xy.setter
@@ -281,6 +317,9 @@ class GpuCoordinateArray:
 
     @property
     def z(self):
+        """
+        An optional third dimension for this Geometry.
+        """
         return self._z
 
     @z.setter
@@ -299,6 +338,13 @@ class GpuCoordinateArray:
     def copy(self, deep=True):
         """
         Create a copy of all points.
+
+        Parameters
+        ----------
+        deep : Boolean.
+            If set to False, a new object referencing the same
+            set of GPU memory will be created. If True, GPU memory will be
+            copied.
         """
         if hasattr(self, "_z"):
             z = self.z.copy(deep)
@@ -322,6 +368,15 @@ class GpuCoordinateArray:
         return self.xy[slice(1, None, 2)].reset_index(drop=True)
 
 
+class GpuPointsArray(GpuCoordinateArray):
+    """
+    A GeoArrow column of points. Every pair is the `[x,y]` coordinate of the
+    position/2th point in this data source. `z` can be included optionally.
+    """
+    def __init__(self, xy, z=None):
+        super().__init__(xy, z)
+
+
 class GpuOffsetArray(GpuCoordinateArray):
     def __init__(self, xy, offsets, z=None):
         """
@@ -335,6 +390,13 @@ class GpuOffsetArray(GpuCoordinateArray):
 
     @property
     def offsets(self):
+        """
+        The offsets column of a geometry object contains the positions of
+        each sub-geometry. Each pair of values in the offsets column specifies
+        the beginning index of a sub-geometry in the `.xy` column and beginning
+        of the subsequent sub-geometry. Contains `n+1` values where `n` is the
+        number of sub-geometries. GpuPoints
+        """
         return self._offsets
 
     @offsets.setter
@@ -360,6 +422,9 @@ class GpuOffsetArray(GpuCoordinateArray):
         )
 
     def copy(self, deep=True):
+        """
+        See GpuCoordinateArray.
+        """
         result = GpuOffsetArray(
             self.xy.copy(deep), self.offsets.copy(deep), self.z.copy(deep)
         )
@@ -383,7 +448,22 @@ class GpuLineArray(GpuOffsetArray):
         z : cudf.Series (optional)
         """
         super().__init__(xy, lines, z)
-        self.mlines = mlines
+        self._mlines = mlines
+
+    @property
+    def mlines(self):
+        """
+        The mlines column of a MultiLine object contains the positions of
+        each sub-geometry. Each pair of values in the mlines column specifies
+        the beginning index of a sub-geometry in the `.xy` column and beginning
+        of the subsequent sub-geometry. Contains `n+1` values where `n` is the
+        number of sub-geometries.
+        """
+        return self._mlines
+
+    @mlines.setter
+    def mlines(self, mlines):
+        self._mlines = mlines
 
     def __getitem__(self, index):
         result = super().__getitem__(index)
@@ -395,6 +475,9 @@ class GpuLineArray(GpuOffsetArray):
         )
 
     def copy(self, deep=True):
+        """
+        See GpuCoordinateArray.
+        """
         base = super().copy(deep)
         result = GpuLineArray(
             base.xy, base.offsets, self.mlines.copy(deep), base.z,
@@ -431,16 +514,48 @@ class GpuPolygonArray(GpuOffsetArray):
         """
         # GpuPolygonArray uses the offsets buffer for rings!
         super().__init__(xy, rings, z)
-        self.polys = polys
-        self.mpolys = mpolys
+        self._polys = polys
+        self._mpolys = mpolys
 
     @property
     def rings(self):
+        """
+        Each polygon in the GeoSeries is specified in the rings buffer, which
+        follows the same format as `offsets` in GpuOffsetArray.
+        """
         return self.offsets
 
     @rings.setter
     def rings(self, rings):
         self.offsets = rings
+
+    @property
+    def polys(self):
+        """
+        Polygons are specified according to the shapefile format. The first
+        ring in any polygon is its exterior ring, all subsequent rings are
+        interior rings. The `polys` column specifies which rings comprise each
+        polygon in the GeoSeries.
+        """
+        return self._polys
+
+    @polys.setter
+    def polys(self, polys):
+        self._polys = polys
+
+    @property
+    def mpolys(self):
+        """
+        Polygons that fall within bounds constrained by each pair of values in
+        this column are members of a MultiPolygon. Each pair of values
+        specifies a single MultiPolygon. All MultiPolygons in the GeoSeries
+        are contained here.
+        """
+        return self._mpolys
+
+    @mpolys.setter
+    def mpolys(self, mpolys):
+        self._mpolys = mpolys
 
     def __repr__(self):
         result = (
@@ -455,6 +570,9 @@ class GpuPolygonArray(GpuOffsetArray):
         return result
 
     def copy(self, deep=True):
+        """
+        See GpuCoordinateArray
+        """
         result = super().copy(deep)
         result.polys = self.polys.copy(deep)
         result.rings = self.rings.copy(deep)
@@ -471,57 +589,66 @@ class gpuGeometry:
         of the geometry within the GeoSeries. Child gpuGeometry classes
         contain the logic necessary to serialize and convert GPU data back to
         Shapely. """
-        self.source = source
-        self.index = index
+        self._source = source
+        self._index = index
 
 
 class gpuPoint(gpuGeometry):
+    """
+    See gpuGeometry.
+    """
     def to_shapely(self):
-        item_type = self.source.types[self.index]
-        types = self.source.types[0 : self.index]
+        item_type = self._source.types[self._index]
+        types = self._source.types[0 : self._index]
         index = 0
-        for i in range(self.index):
+        for i in range(self._index):
             if types[i] == item_type:
                 index = index + 1
-        return Point(self.source._points[index].reset_index(drop=True))
+        return Point(self._source._points[index].reset_index(drop=True))
 
 
 class gpuMultiPoint(gpuGeometry):
+    """
+    See gpuGeometry.
+    """
     def to_shapely(self):
-        item_type = self.source.types[self.index]
-        types = self.source.types[0 : self.index]
+        item_type = self._source.types[self._index]
+        types = self._source.types[0 : self._index]
         item_start = 0
-        for i in range(self.index):
+        for i in range(self._index):
             if types[i] == item_type:
                 item_start = item_start + 1
-        item_length = self.source.lengths[self.index]
-        item_source = self.source._multipoints
+        item_length = self._source.lengths[self._index]
+        item_source = self._source._multipoints
         result = item_source[item_start]
         return MultiPoint(result.to_array().reshape(item_length, 2))
 
 
 class gpuLineString(gpuGeometry):
+    """
+    See gpuGeometry.
+    """
     def to_shapely(self):
-        ml_index = self.index - 1
+        ml_index = self._index - 1
         preceding_line_count = 0
         preceding_ml_count = 0
         while ml_index >= 0:
-            if self.source.types[ml_index] == "ml":
+            if self._source.types[ml_index] == "ml":
                 preceding_ml_count = preceding_ml_count + 1
             elif (
-                self.source.types[ml_index] == "l" and preceding_ml_count == 0
+                self._source.types[ml_index] == "l" and preceding_ml_count == 0
             ):
                 preceding_line_count = preceding_line_count + 1
             ml_index = ml_index - 1
         preceding_multis = preceding_ml_count
         if preceding_multis > 0:
-            multi_end = self.source._lines.mlines[preceding_multis * 2 - 1]
+            multi_end = self._source._lines.mlines[preceding_multis * 2 - 1]
             item_start = multi_end + preceding_line_count
         else:
             item_start = preceding_line_count
-        item_length = self.source.lengths[self.index]
+        item_length = self._source.lengths[self._index]
         item_end = item_length + item_start
-        item_source = self.source._lines
+        item_source = self._source._lines
         result = item_source[item_start:item_end]
         return LineString(
             result.to_array().reshape(2 * (item_start - item_end), 2)
@@ -529,22 +656,25 @@ class gpuLineString(gpuGeometry):
 
 
 class gpuMultiLineString(gpuGeometry):
+    """
+    See gpuGeometry.
+    """
     def to_shapely(self):
-        item_type = self.source.types[self.index]
+        item_type = self._source.types[self._index]
         index = 0
-        for i in range(self.index):
-            if self.source.types[i] == item_type:
+        for i in range(self._index):
+            if self._source.types[i] == item_type:
                 index = index + 1
         line_indices = slice(
-            self.source._lines.mlines[index * 2],
-            self.source._lines.mlines[index * 2 + 1],
+            self._source._lines.mlines[index * 2],
+            self._source._lines.mlines[index * 2 + 1],
         )
         return MultiLineString(
             [
                 LineString(
-                    self.source._lines[i]
+                    self._source._lines[i]
                     .to_array()
-                    .reshape(int(len(self.source._lines[i]) / 2), 2)
+                    .reshape(int(len(self._source._lines[i]) / 2), 2)
                 )
                 for i in range(line_indices.start, line_indices.stop, 1)
             ]
@@ -552,37 +682,42 @@ class gpuMultiLineString(gpuGeometry):
 
 
 class gpuPolygon(gpuGeometry):
+    """
+    See gpuGeometry.
+    """
     def to_shapely(self):
-        mp_index = self.index - 1
+        mp_index = self._index - 1
         preceding_poly_count = 0
         preceding_mp_count = 0
         while mp_index >= 0:
-            if self.source.types[mp_index] == "mpoly":
+            if self._source.types[mp_index] == "mpoly":
                 preceding_mp_count = preceding_mp_count + 1
             elif (
-                self.source.types[mp_index] == "poly"
+                self._source.types[mp_index] == "poly"
                 and preceding_mp_count == 0
             ):
                 preceding_poly_count = preceding_poly_count + 1
             mp_index = mp_index - 1
         preceding_multis = preceding_mp_count
         multi_index = (
-            self.source._polygons.mpolys[preceding_multis * 2 - 1]
+            self._source._polygons.mpolys[preceding_multis * 2 - 1]
             if preceding_multis > 0
             else 0
         )
         preceding_polys = preceding_poly_count
-        ring_start = self.source._polygons.polys[multi_index + preceding_polys]
-        ring_end = self.source._polygons.polys[
+        ring_start = self._source._polygons.polys[
+            multi_index + preceding_polys
+        ]
+        ring_end = self._source._polygons.polys[
             multi_index + preceding_polys + 1
         ]
-        rings = self.source._polygons.rings
+        rings = self._source._polygons.rings
         exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
-        exterior = self.source._polygons.xy[exterior_slice]
+        exterior = self._source._polygons.xy[exterior_slice]
         return Polygon(
             exterior.to_array().reshape(2 * (ring_start - ring_end), 2),
             [
-                self.source._polygons.xy[interior_slice]
+                self._source._polygons.xy[interior_slice]
                 .to_array()
                 .reshape(
                     int((interior_slice.stop - interior_slice.start + 1) / 2),
@@ -598,30 +733,33 @@ class gpuPolygon(gpuGeometry):
 
 
 class gpuMultiPolygon(gpuGeometry):
+    """
+    See gpuGeometry.
+    """
     def to_shapely(self):
-        item_type = self.source.types[self.index]
+        item_type = self._source.types[self._index]
         index = 0
-        for i in range(self.index):
-            if self.source.types[i] == item_type:
+        for i in range(self._index):
+            if self._source.types[i] == item_type:
                 index = index + 1
         poly_indices = slice(
-            self.source.polygons.mpolys[index * 2],
-            self.source.polygons.mpolys[index * 2 + 1],
+            self._source.polygons.mpolys[index * 2],
+            self._source.polygons.mpolys[index * 2 + 1],
         )
         polys = []
         for i in range(poly_indices.start, poly_indices.stop):
-            ring_start = self.source._polygons.polys[i]
-            ring_end = self.source._polygons.polys[i + 1]
-            rings = self.source._polygons.rings
+            ring_start = self._source._polygons.polys[i]
+            ring_end = self._source._polygons.polys[i + 1]
+            rings = self._source._polygons.rings
             exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
-            exterior = self.source._polygons.xy[exterior_slice]
+            exterior = self._source._polygons.xy[exterior_slice]
             polys.append(
                 Polygon(
                     exterior.to_array().reshape(
                         2 * (ring_start - ring_end), 2
                     ),
                     [
-                        self.source._polygons.xy[interior_slice]
+                        self._source._polygons.xy[interior_slice]
                         .to_array()
                         .reshape(
                             int(

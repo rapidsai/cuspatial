@@ -13,8 +13,8 @@ def from_geopandas(gpdf):
     dataframe.
 
     Possible inputs:
-    GeoSeries
-    GeoDataFrame
+    geopandas.geoseries.GeoSeries
+    geopandas.geodataframe.GeoDataFrame
     """
     if isinstance(gpdf, gpGeoSeries):
         return GeoSeries(gpdf)

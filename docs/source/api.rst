@@ -60,3 +60,17 @@ IO
 .. currentmodule:: cuspatial
 
 .. autofunction:: cuspatial.read_polygon_shapefile
+
+GeoDataframe
+------------
+.. currentmodule:: cuspatial
+
+.. autoclass:: cuspatial.geometry.geodataframe.GeoDataFrame
+
+GeoSeries
+---------
+
+.. autoclass:: cuspatial.geometry.geoseries.GeoSeries
+  :members:
+  :undoc-members:
+.. autofunction:: cuspatial.io.geopandas.GeoPandas.from_geopandas
