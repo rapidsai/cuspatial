@@ -323,7 +323,6 @@ def assert_eq_geo(geo1, geo2):
 
 def test_interleaved_point(gs, polys):
     cugs = cuspatial.from_geopandas(gs)
-    breakpoint()
     assert_eq(cugs.points.x, gs[gs.type == "Point"].x.reset_index(drop=True))
     assert_eq(cugs.points.y, gs[gs.type == "Point"].y.reset_index(drop=True))
     assert_eq(
