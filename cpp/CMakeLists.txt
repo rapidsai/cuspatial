@@ -111,7 +111,9 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 find_package(GDAL REQUIRED)
 # add third party dependencies using CPM
 include(cmake/thirdparty/CUSPATIAL_GetCPM.cmake)
-# find cuDF
+# find or add RMM
+include(cmake/thirdparty/CUSPATIAL_GetRMM.cmake)
+# find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
 
 ###################################################################################################
