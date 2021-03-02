@@ -36,6 +36,6 @@ function(find_and_configure_cudf VERSION)
     endif()
 endfunction()
 
-set(CUSPATIAL_MIN_VERSION_cudf 0.19.0)
+set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
 
 find_and_configure_cudf(${CUSPATIAL_MIN_VERSION_cudf})
