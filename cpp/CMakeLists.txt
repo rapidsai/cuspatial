@@ -31,6 +31,11 @@ endif()
 
 project(CUSPATIAL VERSION 0.19.0 LANGUAGES C CXX)
 
+# Needed because GoogleBenchmark changes the state of FindThreads.cmake,
+# causing subsequent runs to have different values for the `Threads::Threads` target.
+# Setting this flag ensures `Threads::Threads` is the same value in first run and subsequent runs.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+
 ###################################################################################################
 # - build options ---------------------------------------------------------------------------------
 
