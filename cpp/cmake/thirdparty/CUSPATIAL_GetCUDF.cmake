@@ -21,8 +21,8 @@ function(find_and_configure_cudf VERSION)
         GIT_TAG         branch-${VERSION}
         GIT_SHALLOW     TRUE
         SOURCE_SUBDIR   cpp
-        OPTIONS         "BUILD_TESTS OFF"
-                        "BUILD_BENCHMARKS OFF"
+        OPTIONS         "BUILD_TESTS ${BUILD_TESTS}"
+                        "BUILD_BENCHMARKS NO"
                         "USE_NVTX ${USE_NVTX}"
                         "ARROW_STATIC_LIB ${ARROW_STATIC_LIB}"
                         "JITIFY_USE_CACHE ${JITIFY_USE_CACHE}"
