@@ -23,7 +23,6 @@ add_library(cuspatial_benchmark_common OBJECT
 
 target_link_libraries(cuspatial_benchmark_common
     PUBLIC benchmark::benchmark
-           benchmark::benchmark_main
            cudf::cudftestutil
            cuspatial)
 
@@ -40,7 +39,7 @@ function(ConfigureBench CMAKE_BENCH_NAME)
     add_executable(${CMAKE_BENCH_NAME} ${ARGN})
     set_target_properties(${CMAKE_BENCH_NAME}
         PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gbenchmarks>")
-    target_link_libraries(${CMAKE_BENCH_NAME} PRIVATE cuspatial_benchmark_common)
+    target_link_libraries(${CMAKE_BENCH_NAME} PRIVATE cuspatial_benchmark_common benchmark::benchmark_main)
 endfunction(ConfigureBench)
 
 ###################################################################################################
