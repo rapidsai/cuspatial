@@ -38,7 +38,7 @@ requirements:
     - libcudf {{ minor_version }}.*
     - librmm {{ minor_version }}.*
     - cudatoolkit {{ cuda_version }}.*
-    - gdal >=3.1.0,<3.2.0a0
+    - gdal >=3.2.0,<3.3.0a0
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
 
