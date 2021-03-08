@@ -5,7 +5,10 @@ from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
 
-from cuspatial.geometry.geoseries import GeoSeries
+from cuspatial.geometry.geoseries import (
+    GeoSeries,
+    GeoColumn
+)
 
 
 def is_geometry_type(obj):
@@ -34,14 +37,14 @@ class GeoDataFrame(cudf.DataFrame):
         """
         super().__init__()
         if isinstance(data, gpGeoDataFrame):
+            self.index = data.index
             for col in data.columns:
                 if is_geometry_type(data[col]):
-                    self[col] = GeoSeries(data[col])
+                    self._data[col] = GeoColumn(data[col])
                 else:
                     self[col] = data[col]
-            self.index = data.index
         else:
-            raise ValueError("Invalid type passed to GeoDataFrame()")
+            raise ValueError("Invalid type passed to GeoDataFrame ctor")
 
     def _constructor_sliced(self, new_data, name=None, index=False):
         new_column = new_data.columns[0]

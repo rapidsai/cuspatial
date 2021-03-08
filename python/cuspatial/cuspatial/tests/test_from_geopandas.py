@@ -67,6 +67,7 @@ def test_mixed_dataframe(gs):
     gpdf = gpd.GeoDataFrame({"a": list(range(100, 100 + len(gs))), "b": gs})
     cgdf = cuspatial.from_geopandas(gpdf)
     assert_eq(gpdf["a"], cgdf["a"].to_pandas())
+    breakpoint()
     assert gpdf["b"].equals(cgdf["b"].to_pandas()).all()
     assert_eq(gpdf, cgdf)
 
@@ -113,7 +114,8 @@ def test_from_geopandas_multilinestring():
     )
     cugs = cuspatial.from_geopandas(gs)
     assert_eq(
-        cugs.lines.xy, cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+        cugs.lines.xy,
+        cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]),
     )
     assert_eq(cugs.lines.offsets, cudf.Series([0, 4, 8]))
 
@@ -124,7 +126,8 @@ def test_from_geopandas_polygon():
     )
     cugs = cuspatial.from_geopandas(gs)
     assert_eq(
-        cugs.polygons.xy, cudf.Series([0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0])
+        cugs.polygons.xy,
+        cudf.Series([0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
     )
     assert_eq(cugs.polygons.polys, cudf.Series([0, 1]))
     assert_eq(cugs.polygons.rings, cudf.Series([0, 8]))
