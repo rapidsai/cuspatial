@@ -17,7 +17,7 @@ def is_geometry_type(obj):
     """
     if gp_is_geometry_type(obj):
         return True
-    if isinstance(obj, GeoSeries):
+    if isinstance(obj, (GeoSeries, GeoColumn)):
         return True
     return False
 
@@ -52,6 +52,12 @@ class GeoDataFrame(cudf.DataFrame):
             return GeoSeries(new_column, name=name, index=index)
         else:
             return cudf.Series(new_column, name=name, index=index)
+
+    def __setitem__(self, arg, value):
+        if isinstance(value, GeoSeries):
+            self._data[arg] = value
+        else:
+            super().__setitem__(arg, value)
 
     def to_pandas(self, index=None, nullable=False):
         """

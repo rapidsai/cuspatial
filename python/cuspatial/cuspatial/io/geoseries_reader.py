@@ -1,5 +1,6 @@
-# Copyright (c) 2020 NVIDIA CORPORATION.
+# Copyright (c) 2020-2021 NVIDIA CORPORATION.
 
+import numpy as np
 from shapely.geometry import (
     Point,
     MultiPoint,
@@ -8,11 +9,6 @@ from shapely.geometry import (
     Polygon,
     MultiPolygon,
 )
-
-import cupy as cp
-
-import cudf
-from cudf.core.column import column_empty
 
 
 class GeoSeriesReader:
@@ -56,8 +52,6 @@ class GeoSeriesReader:
                 # the size of the number of points, the position they are
                 # stored in GpuPoints, and the index of the MultiPoint in the
                 # GeoSeries.
-                # for coord in cp.arange(len(geometry)):
-                # offsets["multipoints"].append((1 + coord) * 2)
                 current = offsets["multipoints"][-1]
                 offsets["multipoints"].append(len(geometry) * 2 + current)
             elif isinstance(geometry, LineString):
@@ -129,31 +123,13 @@ class GeoSeriesReader:
         offsets : The set of offsets that correspond to the geoseries argument.
         """
         buffers = {
-            "points": cudf.Series(
-                column_empty(offsets["points"][-1], dtype="float64")
-            ),
-            "multipoints": cudf.Series(
-                column_empty(offsets["multipoints"][-1], dtype="float64")
-            ),
-            "lines": cudf.Series(
-                column_empty(offsets["lines"][-1], dtype="float64")
-            ),
+            "points": np.zeros(offsets["points"][-1]),
+            "multipoints": np.zeros(offsets["multipoints"][-1]),
+            "lines": np.zeros(offsets["lines"][-1]),
             "polygons": {
-                "polygons": cudf.Series(
-                    column_empty(
-                        len(offsets["polygons"]["polygons"]), dtype="float64"
-                    )
-                ),
-                "rings": cudf.Series(
-                    column_empty(
-                        len(offsets["polygons"]["rings"]), dtype="float64"
-                    )
-                ),
-                "coords": cudf.Series(
-                    column_empty(
-                        offsets["polygons"]["rings"][-1], dtype="float64"
-                    )
-                ),
+                "polygons": np.zeros(len(offsets["polygons"]["polygons"])),
+                "rings": np.zeros(len(offsets["polygons"]["rings"])),
+                "coords": np.zeros(offsets["polygons"]["rings"][-1])
             },
         }
         read_count = {
@@ -177,7 +153,7 @@ class GeoSeriesReader:
                 input_lengths.append(1)
                 inputs.append({"type": "p", "length": 1})
             elif isinstance(geometry, MultiPoint):
-                points = cp.array(geometry)
+                points = np.array(geometry)
                 size = points.shape[0] * 2
                 i = read_count["multipoints"]
                 buffers["multipoints"][slice(i, i + size, 2)] = points[:, 0]
@@ -281,13 +257,4 @@ class GeoSeriesReader:
                 )
             else:
                 raise NotImplementedError
-        offsets["polygons"]["rings"] = cudf.Series(
-            offsets["polygons"]["rings"]
-        )
-        offsets["polygons"]["polygons"] = cudf.Series(
-            offsets["polygons"]["polygons"]
-        )
-        offsets["lines"] = cudf.Series(offsets["lines"])
-        offsets["points"] = cudf.Series(offsets["points"])
-        offsets["multipoints"] = cudf.Series(offsets["multipoints"])
         return (buffers, offsets, input_types, input_lengths, inputs)

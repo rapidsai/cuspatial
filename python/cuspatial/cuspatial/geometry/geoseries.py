@@ -1,7 +1,6 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION
 
 import numbers
-import numpy as np
 import pandas as pd
 
 from geopandas.geoseries import GeoSeries as gpGeoSeries
@@ -13,13 +12,9 @@ from shapely.geometry import (
     Polygon,
     MultiPolygon,
 )
-from uuid import uuid4
 
 import cudf
-from cudf.core.column import (
-    ColumnBase,
-    column
-)
+from cudf.core.column import ColumnBase
 
 from cuspatial.io.geoseries_reader import GeoSeriesReader
 
@@ -33,15 +28,22 @@ class GeoSeries(cudf.Series):
     def __init__(
         self, data=None, index=None, dtype=None, name=None, nan_as_null=True
     ):
-        if isinstance(data, (gpGeoSeries, GeoSeries, dict)):
+        if isinstance(data, pd.Series):
+            data = gpGeoSeries(data)
+        if isinstance(data, (GeoColumn, gpGeoSeries, GeoSeries, dict)):
             super().__init__(
-                range(len(data)),
+                cudf.RangeIndex(0, len(data)),
                 index,
                 dtype,
                 name,
                 nan_as_null
             )
-            self.geocolumn = GeoColumn(data)
+            if isinstance(data, GeoColumn):
+                self.geocolumn = data
+            else:
+                self.geocolumn = GeoColumn(data)
+        else:
+            raise TypeError("Incompatible object passed to GeoSeries ctor")
 
     @property
     def geocolumn(self):
@@ -49,49 +51,11 @@ class GeoSeries(cudf.Series):
 
     @geocolumn.setter
     def geocolumn(self, value):
+        if not isinstance(value, GeoColumn):
+            raise TypeError
         self._geocolumn = value
-
-    def _align_to_index(
-        self, index, how="outer", sort=True, allow_non_unique=False
-    ):
-        if isinstance(index, cudf.core.index.RangeIndex) and index.start == 3:
-            breakpoint()
-            """
-            Align to the given Index. See _align_indices below.
-            """
-
-            index = cudf.core.index.as_index(index)
-            if self.index.equals(index):
-                return self
-            if not allow_non_unique:
-                if len(self) != len(self.index.unique()) or len(index) != len(
-                    index.unique()
-                ):
-                    raise ValueError(
-                        "Cannot align indices with non-unique values"
-                    )
-            lhs = self.to_frame(0)
-            rhs = cudf.DataFrame(index=cudf.core.index.as_index(index))
-            if how == "left":
-                tmp_col_id = str(uuid4())
-                lhs[tmp_col_id] = column.arange(len(lhs))
-            elif how == "right":
-                tmp_col_id = str(uuid4())
-                rhs[tmp_col_id] = column.arange(len(rhs))
-            result = lhs.join(rhs, how=how, sort=sort)
-            if how == "left" or how == "right":
-                result = result.sort_values(tmp_col_id)[0]
-            else:
-                result = result[0]
-
-            result.name = self.name
-            result.index.names = index.names
-            return result
-        else:
-            return self
-
-    def __repr__(self):
-        return self._column.__repr__()
+        self.index = value.index
+        self.column = cudf.RangeIndex(0, len(value))
 
     @property
     def points(self):
@@ -135,37 +99,22 @@ class GeoSeries(cudf.Series):
 
     def to_geopandas(self):
         return self.geocolumn.to_geopandas()
-
-    def __getitem__(self, key):
-        return self.geocolumn[self._column[key]]
-
-
-class GeoColumn(ColumnBase):
-
-    def __repr__(self):
-        return f"{self.to_pandas().__repr__()}\n" f"(GPU)\n"
-
-    def to_geopandas(self, index=None, nullable=False):
-        """
-        Returns a new GeoPandas GeoSeries object from the coordinates in
-        the cuspatial GeoSeries.
-        """
-        if nullable is True:
-            raise ValueError("cuGeoSeries doesn't support N/A yet")
-        if index is None:
-            index = self.index
-        if isinstance(index, cudf.Index):
-            index = index.to_pandas()
-        output = [geom.to_shapely() for geom in self]
-        return gpGeoSeries(output, index=index)
-
-    def to_pandas(self, index=None, nullable=False):
+    
+    def to_pandas(self):
         """
         Treats to_pandas and to_geopandas as the same call, which improves
         compatibility with pandas.
         """
-        return self.to_geopandas(index=index, nullable=nullable)
+        return self.to_geopandas()
 
+    def __getitem__(self, key):
+        return self.geocolumn[self._column[key]]
+
+    def __repr__(self):
+        return self.geocolumn.__repr__()
+
+
+class GeoColumn(ColumnBase):
     """
     A GPU GeoColumn object.
 
@@ -237,11 +186,10 @@ class GeoColumn(ColumnBase):
             elif data.index is not None:
                 self.index = data.index
             else:
-                self.index = cudf.Series(np.arange(len(self)))
+                self.index = cudf.RangeIndex(0, len(self))
             self.name = name
             self._dtype = "geometry"
         else:
-            breakpoint()
             raise TypeError(
                 f"Invalid type passed to GeoSeries ctor {type(data)}"
             )
@@ -294,14 +242,14 @@ class GeoColumn(ColumnBase):
         """
         Not currently supported.
         """
-        return self.GeoSeriesLocIndexer(self)
+        return self.GeoColumnLocIndexer(self)
 
     @property
     def iloc(self):
         """
         Return the i-th row of the GeoSeries.
         """
-        return self.GeoSeriesILocIndexer(self)
+        return self.GeoColumnILocIndexer(self)
 
     def __len__(self):
         """
@@ -393,7 +341,7 @@ class GeoColumn(ColumnBase):
         self._iter_index = self._iter_index + 1
         return result
 
-    class GeoSeriesLocIndexer:
+    class GeoColumnLocIndexer:
         """
         Not yet supported.
         """
@@ -402,7 +350,7 @@ class GeoColumn(ColumnBase):
             # Todo: Easy to implement with a join.
             raise NotImplementedError
 
-    class GeoSeriesILocIndexer:
+    class GeoColumnILocIndexer:
         """
         Each row of a GeoSeries is one of the six types: Point, MultiPoint,
         LineString, MultiLineString, Polygon, or MultiPolygon.
@@ -430,6 +378,30 @@ class GeoColumn(ColumnBase):
             }
             return type_map[self._sr.types[index]](self._sr, index)
 
+    def __repr__(self):
+        return f"{self.to_pandas().__repr__()}\n" f"(GPU)\n"
+
+    def to_geopandas(self, index=None, nullable=False):
+        """
+        Returns a new GeoPandas GeoSeries object from the coordinates in
+        the cuspatial GeoSeries.
+        """
+        if nullable is True:
+            raise ValueError("cuGeoSeries doesn't support N/A yet")
+        if index is None:
+            index = self.index
+        if isinstance(index, cudf.Index):
+            index = index.to_pandas()
+        output = [geom.to_shapely() for geom in self]
+        return gpGeoSeries(output, index=index)
+
+    def to_pandas(self, index=None, nullable=False):
+        """
+        Treats to_pandas and to_geopandas as the same call, which improves
+        compatibility with pandas.
+        """
+        return self.to_geopandas(index=index, nullable=nullable)
+
 
 class GpuCoordinateArray:
     def __init__(self, xy, z=None):
@@ -438,9 +410,9 @@ class GpuCoordinateArray:
         points within a single data source, typically a cuspatial.GeoSeries,
         in the format specified by GeoArrow.
         """
-        self._xy = xy
+        self.xy = xy
         if z is not None:
-            self._z = z
+            self.z = z
 
     @property
     def xy(self):
@@ -452,7 +424,7 @@ class GpuCoordinateArray:
 
     @xy.setter
     def xy(self, xy):
-        self._xy = xy
+        self._xy = cudf.Series(xy)
 
     @property
     def z(self):
@@ -466,7 +438,7 @@ class GpuCoordinateArray:
 
     @z.setter
     def z(self, z):
-        self._z = z
+        self._z = cudf.Series(z)
 
     def __getitem__(self, index):
         if isinstance(index, slice):
@@ -529,7 +501,7 @@ class GpuOffsetArray(GpuCoordinateArray):
         based on GpuOffsetArray.
         """
         super().__init__(xy, z)
-        self._offsets = offsets
+        self.offsets = offsets
 
     @property
     def offsets(self):
@@ -544,7 +516,7 @@ class GpuOffsetArray(GpuCoordinateArray):
 
     @offsets.setter
     def offsets(self, offsets):
-        self._offsets = offsets
+        self._offsets = cudf.Series(offsets)
 
     def __getitem__(self, index):
         if isinstance(index, slice):
@@ -593,7 +565,7 @@ class GpuLineArray(GpuOffsetArray):
         z : cudf.Series (optional)
         """
         super().__init__(xy, lines, z)
-        self._mlines = mlines
+        self.mlines = mlines
 
     @property
     def mlines(self):
@@ -608,7 +580,7 @@ class GpuLineArray(GpuOffsetArray):
 
     @mlines.setter
     def mlines(self, mlines):
-        self._mlines = mlines
+        self._mlines = cudf.Series(mlines)
 
     def __getitem__(self, index):
         result = super().__getitem__(index)
@@ -659,8 +631,8 @@ class GpuPolygonArray(GpuOffsetArray):
         """
         # GpuPolygonArray uses the offsets buffer for rings!
         super().__init__(xy, rings, z)
-        self._polys = polys
-        self._mpolys = mpolys
+        self.polys = polys
+        self.mpolys = mpolys
 
     @property
     def rings(self):
@@ -672,7 +644,7 @@ class GpuPolygonArray(GpuOffsetArray):
 
     @rings.setter
     def rings(self, rings):
-        self.offsets = rings
+        self.offsets = cudf.Series(rings)
 
     @property
     def polys(self):
@@ -686,7 +658,7 @@ class GpuPolygonArray(GpuOffsetArray):
 
     @polys.setter
     def polys(self, polys):
-        self._polys = polys
+        self._polys = cudf.Series(polys)
 
     @property
     def mpolys(self):
@@ -700,7 +672,7 @@ class GpuPolygonArray(GpuOffsetArray):
 
     @mpolys.setter
     def mpolys(self, mpolys):
-        self._mpolys = mpolys
+        self._mpolys = cudf.Series(mpolys)
 
     def __repr__(self):
         result = (
