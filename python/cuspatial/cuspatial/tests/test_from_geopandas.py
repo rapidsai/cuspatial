@@ -113,8 +113,7 @@ def test_from_geopandas_multilinestring():
     )
     cugs = cuspatial.from_geopandas(gs)
     assert_eq(
-        cugs.lines.xy,
-        cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]),
+        cugs.lines.xy, cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]),
     )
     assert_eq(cugs.lines.offsets, cudf.Series([0, 4, 8]))
 

@@ -32,11 +32,7 @@ class GeoSeries(cudf.Series):
             data = gpGeoSeries(data)
         if isinstance(data, (GeoColumn, gpGeoSeries, GeoSeries, dict)):
             super().__init__(
-                cudf.RangeIndex(0, len(data)),
-                index,
-                dtype,
-                name,
-                nan_as_null
+                cudf.RangeIndex(0, len(data)), index, dtype, name, nan_as_null
             )
             if isinstance(data, GeoColumn):
                 self.geocolumn = data
@@ -99,7 +95,7 @@ class GeoSeries(cudf.Series):
 
     def to_geopandas(self):
         return self.geocolumn.to_geopandas()
-    
+
     def to_pandas(self):
         """
         Treats to_pandas and to_geopandas as the same call, which improves

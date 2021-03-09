@@ -129,7 +129,7 @@ class GeoSeriesReader:
             "polygons": {
                 "polygons": np.zeros(len(offsets["polygons"]["polygons"])),
                 "rings": np.zeros(len(offsets["polygons"]["rings"])),
-                "coords": np.zeros(offsets["polygons"]["rings"][-1])
+                "coords": np.zeros(offsets["polygons"]["rings"][-1]),
             },
         }
         read_count = {

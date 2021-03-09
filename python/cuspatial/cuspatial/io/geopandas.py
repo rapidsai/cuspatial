@@ -8,8 +8,6 @@ from geopandas import GeoDataFrame as gpGeoDataFrame
 from cuspatial.geometry.geoseries import GeoSeries
 from cuspatial.geometry.geodataframe import GeoDataFrame
 
-import cudf
-
 
 def from_geopandas(gpdf):
     """

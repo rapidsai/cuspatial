@@ -5,10 +5,7 @@ from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
 
-from cuspatial.geometry.geoseries import (
-    GeoSeries,
-    GeoColumn
-)
+from cuspatial.geometry.geoseries import GeoSeries, GeoColumn
 
 
 def is_geometry_type(obj):
