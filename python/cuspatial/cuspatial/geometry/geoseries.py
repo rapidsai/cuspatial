@@ -39,7 +39,7 @@ class GeoSeries(cudf.Series):
             else:
                 self.geocolumn = GeoColumn(data)
         else:
-            raise TypeError("Incompatible object passed to GeoSeries ctor")
+            raise TypeError(f"Incompatible object passed to GeoSeries ctor {type(data)}")
 
     @property
     def geocolumn(self):
@@ -50,8 +50,7 @@ class GeoSeries(cudf.Series):
         if not isinstance(value, GeoColumn):
             raise TypeError
         self._geocolumn = value
-        self.index = value.index
-        self.column = cudf.RangeIndex(0, len(value))
+        self._column = cudf.RangeIndex(0, len(value))
 
     @property
     def points(self):
@@ -92,6 +91,17 @@ class GeoSeries(cudf.Series):
         grouped into MultiPolygons.
         """
         return self.geocolumn.polygons
+    
+    @property
+    def index(self):
+        """
+        A cudf.Index object. A mapping of row-labels.
+        """
+        return self._index
+
+    @index.setter
+    def index(self, index):
+        self._index = index
 
     def to_geopandas(self):
         return self.geocolumn.to_geopandas()
@@ -107,7 +117,29 @@ class GeoSeries(cudf.Series):
         return self.geocolumn[self._column[key]]
 
     def __repr__(self):
-        return self.geocolumn.__repr__()
+        # TODO: Limit the the number of rows like cudf does
+        return self.to_pandas().__repr__()
+    
+    def to_geopandas(self, index=None, nullable=False):
+        """
+        Returns a new GeoPandas GeoSeries object from the coordinates in
+        the cuspatial GeoSeries.
+        """
+        if nullable is True:
+            raise ValueError("cuGeoSeries doesn't support N/A yet")
+        if index is None:
+            index = self.index
+        if isinstance(index, cudf.Index):
+            index = index.to_pandas()
+        output = [geom.to_shapely() for geom in self.geocolumn]
+        return gpGeoSeries(output, index=index)
+
+    def to_pandas(self, index=None, nullable=False):
+        """
+        Treats to_pandas and to_geopandas as the same call, which improves
+        compatibility with pandas.
+        """
+        return self.to_geopandas(index=index, nullable=nullable)
 
 
 class GeoColumn(ColumnBase):
@@ -134,26 +166,22 @@ class GeoColumn(ColumnBase):
     them with the `.x` and `.y` properties.
     """
 
-    def __init__(self, data, name=None, index=None):
+    def __init__(self, *args, **kwargs):
+        data = args[0]
         if isinstance(data, pd.Series):
             data = gpGeoSeries(data)
         elif isinstance(data, cudf.core.column_accessor.ColumnAccessor):
             data = data[data.name]
-        if isinstance(data, GeoSeries):
-            data = data.__column
-            self._data = data.data
-            self._points = data.points
-            self._multipoints = data.multipoints
-            self._lines = data.lines
-            self._polygons = data.polygons
-            self.types = data.types
-            self.lengths = data.lengths
-            if index is not None:
-                self.index = index
-            else:
-                self.index = data.index
-            self.name = data.name if not name else name
-            self._dtype = data.dtype
+        elif isinstance(data, GeoSeries):
+            data = data.geocolumn
+        if isinstance(data, GeoColumn):
+            self._data = data._data.copy()
+            self._points = data.points.copy()
+            self._multipoints = data.multipoints.copy()
+            self._lines = data.lines.copy()
+            self._polygons = data.polygons.copy()
+            self.types = data.types.copy()
+            self.lengths = data.lengths.copy()
         elif isinstance(data, gpGeoSeries):
             self._data = data
             self._reader = GeoSeriesReader(data)
@@ -177,17 +205,9 @@ class GeoColumn(ColumnBase):
             )
             self._types = self._reader.buffers[2]
             self._lengths = self._reader.buffers[3]
-            if index is not None:
-                self.index = index
-            elif data.index is not None:
-                self.index = data.index
-            else:
-                self.index = cudf.RangeIndex(0, len(self))
-            self.name = name
-            self._dtype = "geometry"
         else:
             raise TypeError(
-                f"Invalid type passed to GeoSeries ctor {type(data)}"
+                f"Invalid type passed to GeoColumn ctor {type(data)}"
             )
 
     @property
@@ -213,17 +233,6 @@ class GeoColumn(ColumnBase):
     @lengths.setter
     def lengths(self, lengths):
         self._lengths = lengths
-
-    @property
-    def index(self):
-        """
-        A cudf.Index object. A mapping of row-labels.
-        """
-        return self._index
-
-    @index.setter
-    def index(self, index):
-        self._index = index
 
     def __getitem__(self, item):
         """
@@ -308,22 +317,17 @@ class GeoColumn(ColumnBase):
     def copy(self, deep=True):
         """
         Create a copy of all of the GPU-backed data structures in this
-        GeoSeries.
+        GeoColumn.
         """
-        result = GeoSeries([])
-        result._data = self._data
-        result._reader = self._reader
-        if hasattr(self, "_points"):
-            result._points = self.points.copy(deep)
-        if hasattr(self, "_multipoints"):
-            result._multipoints = self.multipoints.copy(deep)
-        if hasattr(self, "_lines"):
-            result._lines = self.lines.copy(deep)
-        if hasattr(self, "_polygons"):
-            result._polygons = self.polygons.copy(deep)
-        result.types = self.types
-        result.lengths = self.lengths
-        result.index = self.index
+        result = GeoColumn(
+            self._data,
+            self.points.copy(deep),
+            self.multipoints.copy(deep),
+            self.lines.copy(deep),
+            self.polygons.copy(deep),
+            self.types,
+            self.lengths,
+        )
         return result
 
     def __iter__(self):
@@ -373,30 +377,6 @@ class GeoColumn(ColumnBase):
                 "mpoly": gpuMultiPolygon,
             }
             return type_map[self._sr.types[index]](self._sr, index)
-
-    def __repr__(self):
-        return f"{self.to_pandas().__repr__()}\n" f"(GPU)\n"
-
-    def to_geopandas(self, index=None, nullable=False):
-        """
-        Returns a new GeoPandas GeoSeries object from the coordinates in
-        the cuspatial GeoSeries.
-        """
-        if nullable is True:
-            raise ValueError("cuGeoSeries doesn't support N/A yet")
-        if index is None:
-            index = self.index
-        if isinstance(index, cudf.Index):
-            index = index.to_pandas()
-        output = [geom.to_shapely() for geom in self]
-        return gpGeoSeries(output, index=index)
-
-    def to_pandas(self, index=None, nullable=False):
-        """
-        Treats to_pandas and to_geopandas as the same call, which improves
-        compatibility with pandas.
-        """
-        return self.to_geopandas(index=index, nullable=nullable)
 
 
 class GpuCoordinateArray:

@@ -24,7 +24,7 @@ class GeoDataFrame(cudf.DataFrame):
     A GPU GeoDataFrame object.
     """
 
-    def __init__(self, data):
+    def __init__(self, data=None, index=None, columns=None, dtype=None):
         """
         Constructs a GPU GeoDataFrame from a GeoPandas dataframe.
 
@@ -43,6 +43,10 @@ class GeoDataFrame(cudf.DataFrame):
         else:
             raise ValueError("Invalid type passed to GeoDataFrame ctor")
 
+    @property
+    def _constructor(self):
+        return GeoDataFrame
+
     def _constructor_sliced(self, new_data, name=None, index=False):
         new_column = new_data.columns[0]
         if is_geometry_type(new_column):
@@ -50,11 +54,13 @@ class GeoDataFrame(cudf.DataFrame):
         else:
             return cudf.Series(new_column, name=name, index=index)
 
+    '''
     def __setitem__(self, arg, value):
         if isinstance(value, GeoSeries):
             self._data[arg] = value
         else:
             super().__setitem__(arg, value)
+    '''
 
     def to_pandas(self, index=None, nullable=False):
         """
