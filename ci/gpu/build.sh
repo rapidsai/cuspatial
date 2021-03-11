@@ -157,4 +157,3 @@ else
 
     exit ${SUITEERROR}
 fi
-
