@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2021, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +14,26 @@
 # limitations under the License.
 #=============================================================================
 
-function(find_and_configure_rmm VERSION)
+function(cuspatial_save_if_enabled var)
+    if(CUSPATIAL_${var})
+        unset(${var} PARENT_SCOPE)
+        unset(${var} CACHE)
+    endif()
+endfunction()
 
+function(cuspatial_restore_if_enabled var)
+    if(CUSPATIAL_${var})
+        set(${var} ON CACHE INTERNAL "" FORCE)
+    endif()
+endfunction()
+
+function(find_and_configure_rmm VERSION)
     # Consumers have two options for local source builds:
     # 1. Pass `-D CPM_rmm_SOURCE=/path/to/rmm` to build a local RMM source tree
     # 2. Pass `-D CMAKE_PREFIX_PATH=/path/to/rmm/build` to use an existing local
     #    RMM build directory as the install location for find_package(rmm)
+    cuspatial_save_if_enabled(BUILD_TESTS)
+    cuspatial_save_if_enabled(BUILD_BENCHMARKS)
 
     CPMFindPackage(NAME rmm
         VERSION         ${VERSION}
@@ -32,7 +46,16 @@ function(find_and_configure_rmm VERSION)
                         "CMAKE_CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}"
                         "DISABLE_DEPRECATION_WARNING ${DISABLE_DEPRECATION_WARNING}"
     )
+    cuspatial_restore_if_enabled(BUILD_TESTS)
+    cuspatial_restore_if_enabled(BUILD_BENCHMARKS)
 
+    #Make sure consumers of cuspatial can also see rmm::rmm
+    if(TARGET rmm::rmm)
+        get_target_property(rmm_is_imported rmm::rmm IMPORTED)
+        if(rmm_is_imported)
+            set_target_properties(rmm::rmm PROPERTIES IMPORTED_GLOBAL TRUE)
+        endif()
+    endif()
     if(NOT rmm_BINARY_DIR IN_LIST CMAKE_PREFIX_PATH)
         list(APPEND CMAKE_PREFIX_PATH "${rmm_BINARY_DIR}")
         set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
