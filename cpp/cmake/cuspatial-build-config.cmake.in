@@ -11,7 +11,7 @@ include(CMakeFindDependencyMacro)
 
 # make the src tree find modules available
 list(PREPEND CMAKE_MODULE_PATH "@CUSPATIAL_SOURCE_DIR@/cmake/install/")
-set(rmm_DIR "@rmm_DIR@")
+set(cudf_DIR "@cudf_DIR@")
 
 # * find CUDAToolkit package
 # * determine GPU architectures
