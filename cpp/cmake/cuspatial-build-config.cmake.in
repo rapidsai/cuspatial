@@ -27,9 +27,6 @@ find_dependency(GDAL)
 # add third party dependencies using CPM
 include(@CUSPATIAL_SOURCE_DIR@/cmake/thirdparty/CUSPATIAL_GetCPM.cmake)
 
-# find rmm
-set(CUSPATIAL_MIN_VERSION_rmm "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
-include(@CUSPATIAL_SOURCE_DIR@/cmake/thirdparty/CUSPATIAL_GetRMM.cmake)
 # find cudf
 set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
 include(@CUSPATIAL_SOURCE_DIR@/cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)

@@ -60,6 +60,7 @@ function(find_and_configure_cudf VERSION)
             set_target_properties(cudf::cudftestutil PROPERTIES IMPORTED_GLOBAL TRUE)
         endif()
     endif()
+
     if(NOT cudf_BINARY_DIR IN_LIST CMAKE_PREFIX_PATH)
         list(APPEND CMAKE_PREFIX_PATH "${cudf_BINARY_DIR}")
         set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)

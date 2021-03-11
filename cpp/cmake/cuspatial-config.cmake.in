@@ -10,7 +10,6 @@ include(CMakeFindDependencyMacro)
 
 find_dependency(CUDAToolkit)
 find_dependency(GDAL)
-find_dependency(rmm @CUSPATIAL_MIN_VERSION_rmm@)
 find_dependency(cudf @CUSPATIAL_MIN_VERSION_cudf@)
 
 set(CMAKE_MODULE_PATH ${_save_CMAKE_MODULE_PATH})
