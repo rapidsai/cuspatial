@@ -43,7 +43,6 @@ function(find_and_configure_cudf VERSION)
                         "JITIFY_USE_CACHE ${JITIFY_USE_CACHE}"
                         "CUDA_STATIC_RUNTIME ${CUDA_STATIC_RUNTIME}"
                         "CUDF_USE_ARROW_STATIC ${CUDF_USE_ARROW_STATIC}"
-                        "CMAKE_CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}"
                         "PER_THREAD_DEFAULT_STREAM ${PER_THREAD_DEFAULT_STREAM}"
                         "DISABLE_DEPRECATION_WARNING ${DISABLE_DEPRECATION_WARNING}")
     cuspatial_restore_if_enabled(BUILD_TESTS)
