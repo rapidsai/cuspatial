@@ -32,9 +32,8 @@ function(find_and_configure_cudf VERSION)
     cuspatial_save_if_enabled(BUILD_BENCHMARKS)
     CPMFindPackage(NAME cudf
         VERSION         ${VERSION}
-        GIT_REPOSITORY  https://github.com/trxcllnt/cudf.git
-        # GIT_TAG         branch-${VERSION}
-        GIT_TAG         fix/cmake-always-export-cudftestutil
+        GIT_REPOSITORY  https://github.com/rapidsai/cudf.git
+        GIT_TAG         branch-${VERSION}
         GIT_SHALLOW     TRUE
         SOURCE_SUBDIR   cpp
         OPTIONS         "BUILD_TESTS OFF"
@@ -48,17 +47,10 @@ function(find_and_configure_cudf VERSION)
     cuspatial_restore_if_enabled(BUILD_TESTS)
     cuspatial_restore_if_enabled(BUILD_BENCHMARKS)
 
-    # Make sure consumers of cuspatial can also see cudf::cudf
-    if(TARGET cudf::cudf)
-        get_target_property(cudf_is_imported cudf::cudf IMPORTED)
-        if(cudf_is_imported)
-            set_target_properties(cudf::cudf PROPERTIES IMPORTED_GLOBAL TRUE)
-        endif()
-        get_target_property(cudftestutil_is_imported cudf::cudftestutil IMPORTED)
-        if(cudftestutil_is_imported)
-            set_target_properties(cudf::cudftestutil PROPERTIES IMPORTED_GLOBAL TRUE)
-        endif()
-    endif()
+    # Make sure consumers of cuspatial can see cudf::cudf
+    fix_cmake_global_defaults(cudf::cudf)
+    # Make sure consumers of cuspatial can see cudf::cudftestutil
+    fix_cmake_global_defaults(cudf::cudftestutil)
 
     if(NOT cudf_BINARY_DIR IN_LIST CMAKE_PREFIX_PATH)
         list(APPEND CMAKE_PREFIX_PATH "${cudf_BINARY_DIR}")
