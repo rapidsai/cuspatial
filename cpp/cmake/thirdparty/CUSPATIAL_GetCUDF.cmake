@@ -37,8 +37,8 @@ function(find_and_configure_cudf VERSION)
         GIT_TAG         fix/cmake-always-export-cudftestutil
         GIT_SHALLOW     TRUE
         SOURCE_SUBDIR   cpp
-        OPTIONS         "BUILD_TESTS NO"
-                        "BUILD_BENCHMARKS NO"
+        OPTIONS         "BUILD_TESTS OFF"
+                        "BUILD_BENCHMARKS OFF"
                         "USE_NVTX ${USE_NVTX}"
                         "JITIFY_USE_CACHE ${JITIFY_USE_CACHE}"
                         "CUDA_STATIC_RUNTIME ${CUDA_STATIC_RUNTIME}"
