@@ -89,16 +89,16 @@ message(STATUS "CUSPATIAL: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'.")
 # - conda environment -----------------------------------------------------------------------------
 
 if("$ENV{CONDA_BUILD}" STREQUAL "1")
-    set(CMAKE_PREFIX_PATH "$ENV{BUILD_PREFIX};$ENV{PREFIX};${CMAKE_PREFIX_PATH}")
+    list(PREPEND CMAKE_PREFIX_PATH $ENV{PREFIX} $ENV{BUILD_PREFIX})
     set(CONDA_INCLUDE_DIRS "$ENV{BUILD_PREFIX}/include" "$ENV{PREFIX}/include")
     set(CONDA_LINK_DIRS "$ENV{BUILD_PREFIX}/lib" "$ENV{PREFIX}/lib")
     message(STATUS "CUSPATIAL: Conda build detected, CMAKE_PREFIX_PATH set to: ${CMAKE_PREFIX_PATH}")
 elseif(DEFINED ENV{CONDA_PREFIX})
-    set(CMAKE_PREFIX_PATH "$ENV{CONDA_PREFIX};${CMAKE_PREFIX_PATH}")
+    list(PREPEND CMAKE_PREFIX_PATH $ENV{CONDA_PREFIX})
     set(CONDA_INCLUDE_DIRS "$ENV{CONDA_PREFIX}/include")
     set(CONDA_LINK_DIRS "$ENV{CONDA_PREFIX}/lib")
     message(STATUS "CUSPATIAL: Conda environment detected, CMAKE_PREFIX_PATH set to: ${CMAKE_PREFIX_PATH}")
-endif("$ENV{CONDA_BUILD}" STREQUAL "1")
+endif()
 
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
