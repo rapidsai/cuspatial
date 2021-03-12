@@ -196,13 +196,7 @@ endif()
 target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
 # Specify the target module library dependencies
-target_link_libraries(cuspatial PUBLIC GDAL::GDAL cudf::cudf)
-
-if(CUDA_STATIC_RUNTIME)
-    target_link_libraries(cuspatial PUBLIC CUDA::cusparse CUDA::nvrtc CUDA::cudart_static CUDA::cuda_driver)
-else()
-    target_link_libraries(cuspatial PUBLIC CUDA::cusparse CUDA::nvrtc CUDA::cudart CUDA::cuda_driver)
-endif()
+target_link_libraries(cuspatial PUBLIC GDAL::GDAL cudf::cudf CUDA::cusparse)
 
 add_library(cuspatial::cuspatial ALIAS cuspatial)
 
