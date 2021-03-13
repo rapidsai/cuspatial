@@ -111,7 +111,8 @@ if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
           -DCMAKE_CXX11_ABI=ON \
           -DBUILD_TESTS=${BUILD_TESTS} \
           -DDISABLE_DEPRECATION_WARNING=${BUILD_DISABLE_DEPRECATION_WARNING} \
-          -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
+          -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+          --log-level=TRACE ..
 
     cmake --build . -j ${PARALLEL_LEVEL} --target install ${VERBOSE_FLAG}
 fi
@@ -127,4 +128,3 @@ if (( ${NUMARGS} == 0 )) || hasArg cuspatial; then
         PARALLEL_LEVEL=${PARALLEL_LEVEL} python setup.py build_ext --inplace --library-dir=${LIBCUSPATIAL_BUILD_DIR}
     fi
 fi
-
