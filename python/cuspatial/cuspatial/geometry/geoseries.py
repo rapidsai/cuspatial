@@ -86,17 +86,6 @@ class GeoSeries(cudf.Series):
         """
         return self.geocolumn.polygons
 
-    @property
-    def index(self):
-        """
-        A cudf.Index object. A mapping of row-labels.
-        """
-        return self._index
-
-    @index.setter
-    def index(self, index):
-        self._index = index
-
     def __getitem__(self, key):
         result = self.geocolumn[self._column[key]]
         return result
@@ -105,19 +94,15 @@ class GeoSeries(cudf.Series):
         # TODO: Limit the the number of rows like cudf does
         return self.to_pandas().__repr__()
 
-    def to_geopandas(self, index=None, nullable=False):
+    def to_geopandas(self, nullable=False):
         """
         Returns a new GeoPandas GeoSeries object from the coordinates in
         the cuspatial GeoSeries.
         """
         if nullable is True:
-            raise ValueError("cuGeoSeries doesn't support N/A yet")
-        if index is None:
-            index = self.index
-        if isinstance(index, cudf.Index):
-            index = index.to_pandas()
+            raise ValueError("cuGeoSeries doesn't support <NA> yet")
         output = [geom.to_shapely() for geom in self.geocolumn]
-        return gpGeoSeries(output, index=index)
+        return gpGeoSeries(output, index=self.index.to_pandas())
 
     def to_pandas(self):
         """

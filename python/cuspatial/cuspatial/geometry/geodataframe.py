@@ -61,7 +61,7 @@ class GeoDataFrame(cudf.DataFrame):
             super().__setitem__(arg, value)
     """
 
-    def to_pandas(self, index=None, nullable=False):
+    def to_pandas(self, nullable=False):
         """
         Calls `self.to_geopandas`, converting GeoSeries columns into GeoPandas
         columns and cudf.Series columns into pandas.Series columns, and
@@ -69,28 +69,25 @@ class GeoDataFrame(cudf.DataFrame):
 
         Parameters
         ----------
-        index : a `cudf.Index` or `pandas.Index`.
+        nullable: matches the cudf `to_pandas` signature, not yet supported.
         """
-        return self.to_geopandas(index=index, nullable=nullable)
+        return self.to_geopandas(nullable=nullable)
 
-    def to_geopandas(self, index=None, nullable=False):
+    def to_geopandas(self, nullable=False):
         """
         Returns a new GeoPandas GeoDataFrame object from the coordinates in
         the cuspatial GeoDataFrame.
 
         Parameters
         ----------
-        index : a `cudf.Index` or `pandas.Index`.
+        nullable: matches the cudf `to_pandas` signature, not yet supported.
         """
         if nullable is True:
             raise ValueError("cuGeoDataFrame doesn't support N/A yet")
-        if index is None:
-            index = self.index.to_pandas()
         result = gpGeoDataFrame(
-            dict([(col, self[col].to_pandas()) for col in self.columns])
+            dict([(col, self[col].to_pandas()) for col in self.columns]),
+            index=self.index.to_pandas()
         )
-        result = result.set_index(index)
-        result.columns = self.columns
         return result
 
     def __repr__(self):

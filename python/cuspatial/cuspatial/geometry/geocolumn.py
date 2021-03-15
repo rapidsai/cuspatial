@@ -133,34 +133,34 @@ class GeoColumn(NumericalColumn):
         return self.GeoColumnILocIndexer(self)
 
     @property
-    def types(self):
+    def _types(self):
         """
         A list of string types from the set "p", "mp", "l", "ml", "poly", and
         "mpoly". These are the types of each row of the GeoSeries.
         """
         return self._geo._types
 
-    @types.setter
-    def types(self, types):
+    @_types.setter
+    def _types(self, types):
         self._geo._types = types
 
     @property
-    def lengths(self):
+    def _lengths(self):
         """
         A list of integers of the length of each Multi geometry. Each non-multi
         geometry is length 1.
         """
         return self._geo._lengths
 
-    @lengths.setter
-    def lengths(self, lengths):
+    @_lengths.setter
+    def _lengths(self, lengths):
         self._geo.lengths = lengths
 
     def __len__(self):
         """
         Returns the number of unique geometries stored in this cuGeoSeries.
         """
-        return int(len(self.types))
+        return int(len(self._types))
 
     @property
     def points(self):
@@ -225,8 +225,8 @@ class GeoColumn(NumericalColumn):
             self.multipoints.copy(deep),
             self.lines.copy(deep),
             self.polygons.copy(deep),
-            self.types,
-            self.lengths,
+            self._types,
+            self._lengths,
         )
         return result
 
@@ -248,8 +248,8 @@ class GeoArrowBuffers(ColumnBase):
             self._multipoints = data.multipoints.copy()
             self._lines = data.lines.copy()
             self._polygons = data.polygons.copy()
-            self._types = data.types.copy()
-            self._lengths = data.lengths.copy()
+            self._types = data._types.copy()
+            self._lengths = data._lengths.copy()
         elif isinstance(data, gpGeoSeries):
             self._data = data
             self._reader = GeoSeriesReader(data)
@@ -581,16 +581,13 @@ class gpuGeometry:
         stores a reference to the GeoSeries it is stored within and the index
         of the geometry within the GeoSeries. Child gpuGeometry classes
         contain the logic necessary to serialize and convert GPU data back to
-        Shapely. """
+        Shapely.
+        """
         self._source = source
         self._index = index
 
 
 class gpuPoint(gpuGeometry):
-    """
-    See gpuGeometry.
-    """
-
     def to_shapely(self):
         item_type = self._source._types[self._index]
         types = self._source._types[0 : self._index]
@@ -602,10 +599,6 @@ class gpuPoint(gpuGeometry):
 
 
 class gpuMultiPoint(gpuGeometry):
-    """
-    See gpuGeometry.
-    """
-
     def to_shapely(self):
         item_type = self._source._types[self._index]
         types = self._source._types[0 : self._index]
@@ -620,10 +613,6 @@ class gpuMultiPoint(gpuGeometry):
 
 
 class gpuLineString(gpuGeometry):
-    """
-    See gpuGeometry.
-    """
-
     def to_shapely(self):
         ml_index = self._index - 1
         preceding_line_count = 0
@@ -653,10 +642,6 @@ class gpuLineString(gpuGeometry):
 
 
 class gpuMultiLineString(gpuGeometry):
-    """
-    See gpuGeometry.
-    """
-
     def to_shapely(self):
         item_type = self._source._types[self._index]
         index = 0
@@ -680,10 +665,6 @@ class gpuMultiLineString(gpuGeometry):
 
 
 class gpuPolygon(gpuGeometry):
-    """
-    See gpuGeometry.
-    """
-
     def to_shapely(self):
         mp_index = self._index - 1
         preceding_poly_count = 0
@@ -732,10 +713,6 @@ class gpuPolygon(gpuGeometry):
 
 
 class gpuMultiPolygon(gpuGeometry):
-    """
-    See gpuGeometry.
-    """
-
     def to_shapely(self):
         item_type = self._source._types[self._index]
         index = 0
