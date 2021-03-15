@@ -40,6 +40,8 @@ class GeoDataFrame(cudf.DataFrame):
                     self._data[col] = GeoColumn(data[col])
                 else:
                     self[col] = data[col]
+        elif data is None:
+            pass
         else:
             raise ValueError("Invalid type passed to GeoDataFrame ctor")
 
@@ -47,20 +49,17 @@ class GeoDataFrame(cudf.DataFrame):
     def _constructor(self):
         return GeoDataFrame
 
-    def _constructor_sliced(self, new_data, name=None, index=False):
-        new_column = new_data.columns[0]
-        if is_geometry_type(new_column):
-            return GeoSeries(new_column, name=name, index=index)
-        else:
-            return cudf.Series(new_column, name=name, index=index)
+    @property
+    def _constructor_sliced(self):
+        return _GeoSeriesUtility
 
-    '''
+    """
     def __setitem__(self, arg, value):
         if isinstance(value, GeoSeries):
             self._data[arg] = value
         else:
             super().__setitem__(arg, value)
-    '''
+    """
 
     def to_pandas(self, index=None, nullable=False):
         """
@@ -96,3 +95,19 @@ class GeoDataFrame(cudf.DataFrame):
 
     def __repr__(self):
         return self.to_pandas().__repr__() + "\n" + "(GPU)" + "\n"
+
+    def groupby(self, *args, **kwargs):
+        result = super().groupby(*args, **kwargs)
+        for col in self.columns:
+            if is_geometry_type(self[col]):
+                result.obj = result.obj.drop(col, axis=1)
+        return result
+
+
+class _GeoSeriesUtility:
+    def _from_data(self, new_data, name=None, index=False):
+        new_column = new_data.columns[0]
+        if is_geometry_type(new_column):
+            return GeoSeries(new_column, name=name, index=index)
+        else:
+            return cudf.Series(new_column, name=name, index=index)
