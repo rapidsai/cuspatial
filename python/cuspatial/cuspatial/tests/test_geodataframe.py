@@ -114,14 +114,16 @@ def gpdf(gs):
     str_col = [str(x) for x in int_col]
     key_col = np.repeat(np.arange(4), len(int_col) // 4)
     np.random.shuffle(key_col)
-    result = gpd.GeoDataFrame({
-        "geometry": gs,
-        "integer": int_col,
-        "string": str_col,
-        "random": random_col,
-        "key": key_col,
-    })
-    result['float'] = result['integer'].astype('float64')
+    result = gpd.GeoDataFrame(
+        {
+            "geometry": gs,
+            "integer": int_col,
+            "string": str_col,
+            "random": random_col,
+            "key": key_col,
+        }
+    )
+    result["float"] = result["integer"].astype("float64")
     return result
 
 
@@ -329,21 +331,21 @@ def assert_eq_geo_df(geo1, geo2):
 
 def test_select_multiple_columns(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
-    assert_eq(cugpdf[['geometry', 'key']], gpdf[['geometry', 'key']])
+    assert_eq(cugpdf[["geometry", "key"]], gpdf[["geometry", "key"]])
 
 
 def test_sort_values(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
-    sort_gpdf = gpdf.sort_values('random')
-    sort_cugpdf = cugpdf.sort_values('random')
+    sort_gpdf = gpdf.sort_values("random")
+    sort_cugpdf = cugpdf.sort_values("random")
     assert_eq(sort_gpdf, sort_cugpdf)
 
 
 def test_groupby(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     assert_eq(
-        gpdf.groupby('key').min().sort_index(),
-        cugpdf.groupby('key').min().sort_index(),
+        gpdf.groupby("key").min().sort_index(),
+        cugpdf.groupby("key").min().sort_index(),
     )
 
 
