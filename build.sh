@@ -104,7 +104,7 @@ fi
 ################################################################################
 # Configure, build, and install libcuspatial
 if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
-
+    echo "CUDAToolkit_ROOT: $CUDAToolkit_ROOT"
     mkdir -p ${LIBCUSPATIAL_BUILD_DIR}
     cd ${LIBCUSPATIAL_BUILD_DIR}
     cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
@@ -112,6 +112,7 @@ if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
           -DBUILD_TESTS=${BUILD_TESTS} \
           -DDISABLE_DEPRECATION_WARNING=${BUILD_DISABLE_DEPRECATION_WARNING} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+          -DCUDAToolkit_ROOT=${CUDAToolkit_ROOT} \
           -DCUDAToolkit_INCLUDE_DIR=${CUDAToolkit_ROOT}/include \
           --log-level=TRACE ..
 
