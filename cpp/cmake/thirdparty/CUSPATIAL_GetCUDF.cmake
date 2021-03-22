@@ -28,24 +28,25 @@ function(cuspatial_restore_if_enabled var)
 endfunction()
 
 function(find_and_configure_cudf VERSION)
-    cuspatial_save_if_enabled(BUILD_TESTS)
-    cuspatial_save_if_enabled(BUILD_BENCHMARKS)
-    CPMFindPackage(NAME cudf
-        VERSION         ${VERSION}
-        GIT_REPOSITORY  https://github.com/rapidsai/cudf.git
-        GIT_TAG         branch-${VERSION}
-        GIT_SHALLOW     TRUE
-        SOURCE_SUBDIR   cpp
-        OPTIONS         "BUILD_TESTS OFF"
-                        "BUILD_BENCHMARKS OFF"
-                        "USE_NVTX ${USE_NVTX}"
-                        "JITIFY_USE_CACHE ${JITIFY_USE_CACHE}"
-                        "CUDA_STATIC_RUNTIME ${CUDA_STATIC_RUNTIME}"
-                        "CUDF_USE_ARROW_STATIC ${CUDF_USE_ARROW_STATIC}"
-                        "PER_THREAD_DEFAULT_STREAM ${PER_THREAD_DEFAULT_STREAM}"
-                        "DISABLE_DEPRECATION_WARNING ${DISABLE_DEPRECATION_WARNING}")
-    cuspatial_restore_if_enabled(BUILD_TESTS)
-    cuspatial_restore_if_enabled(BUILD_BENCHMARKS)
+    find_package(cudf ${VERSION})
+    # cuspatial_save_if_enabled(BUILD_TESTS)
+    # cuspatial_save_if_enabled(BUILD_BENCHMARKS)
+    # CPMFindPackage(NAME cudf
+    #     VERSION         ${VERSION}
+    #     GIT_REPOSITORY  https://github.com/rapidsai/cudf.git
+    #     GIT_TAG         branch-${VERSION}
+    #     GIT_SHALLOW     TRUE
+    #     SOURCE_SUBDIR   cpp
+    #     OPTIONS         "BUILD_TESTS OFF"
+    #                     "BUILD_BENCHMARKS OFF"
+    #                     "USE_NVTX ${USE_NVTX}"
+    #                     "JITIFY_USE_CACHE ${JITIFY_USE_CACHE}"
+    #                     "CUDA_STATIC_RUNTIME ${CUDA_STATIC_RUNTIME}"
+    #                     "CUDF_USE_ARROW_STATIC ${CUDF_USE_ARROW_STATIC}"
+    #                     "PER_THREAD_DEFAULT_STREAM ${PER_THREAD_DEFAULT_STREAM}"
+    #                     "DISABLE_DEPRECATION_WARNING ${DISABLE_DEPRECATION_WARNING}")
+    # cuspatial_restore_if_enabled(BUILD_TESTS)
+    # cuspatial_restore_if_enabled(BUILD_BENCHMARKS)
 
     # Make sure consumers of cuspatial can see cudf::cudf
     fix_cmake_global_defaults(cudf::cudf)
