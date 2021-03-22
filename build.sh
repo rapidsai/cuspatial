@@ -79,7 +79,7 @@ fi
 if hasArg -n; then
     INSTALL_TARGET=""
 fi
-if hasArg --show-_depr_warn; then
+if hasArg --show_depr_warn; then
     BUILD_DISABLE_DEPRECATION_WARNING=OFF
 fi
 
@@ -104,7 +104,6 @@ fi
 ################################################################################
 # Configure, build, and install libcuspatial
 if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
-    echo "CUDAToolkit_ROOT: $CUDAToolkit_ROOT"
     mkdir -p ${LIBCUSPATIAL_BUILD_DIR}
     cd ${LIBCUSPATIAL_BUILD_DIR}
     cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
@@ -112,11 +111,13 @@ if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
           -DBUILD_TESTS=${BUILD_TESTS} \
           -DDISABLE_DEPRECATION_WARNING=${BUILD_DISABLE_DEPRECATION_WARNING} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-          -DCUDAToolkit_ROOT=${CUDAToolkit_ROOT:-/usr/local/cuda} \
-          -DCUDAToolkit_INCLUDE_DIR=${CUDAToolkit_ROOT:-/usr/local/cuda}/include \
-          --log-level=TRACE ..
+          ..
 
-    cmake --build . -j ${PARALLEL_LEVEL} --target install ${VERBOSE_FLAG}
+    cmake --build . -j ${PARALLEL_LEVEL} ${VERBOSE_FLAG}
+
+    if [[ ${INSTALL_TARGET} != "" ]]; then
+        cmake --build . -j ${PARALLEL_LEVEL} --target install ${VERBOSE_FLAG}
+    fi
 fi
 
 # Build and install the cuspatial Python package
