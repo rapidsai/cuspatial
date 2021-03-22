@@ -18,6 +18,7 @@ build:
     - CC
     - CXX
     - CUDAHOSTCXX
+    - CUDAToolkit_ROOT
     - PARALLEL_LEVEL
     - VERSION_SUFFIX
     - PROJECT_FLASH
@@ -52,4 +53,3 @@ about:
   license_family: Apache
   license_file: LICENSE
   summary: libcuspatial library
-

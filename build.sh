@@ -112,8 +112,8 @@ if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
           -DBUILD_TESTS=${BUILD_TESTS} \
           -DDISABLE_DEPRECATION_WARNING=${BUILD_DISABLE_DEPRECATION_WARNING} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-          -DCUDAToolkit_ROOT=${CUDAToolkit_ROOT} \
-          -DCUDAToolkit_INCLUDE_DIR=${CUDAToolkit_ROOT}/include \
+          -DCUDAToolkit_ROOT=${CUDAToolkit_ROOT:-/usr/local/cuda} \
+          -DCUDAToolkit_INCLUDE_DIR=${CUDAToolkit_ROOT:-/usr/local/cuda}/include \
           --log-level=TRACE ..
 
     cmake --build . -j ${PARALLEL_LEVEL} --target install ${VERBOSE_FLAG}
