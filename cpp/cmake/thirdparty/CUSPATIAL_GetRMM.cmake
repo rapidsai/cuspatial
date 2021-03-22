@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2021, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,37 +27,36 @@ function(cuspatial_restore_if_enabled var)
     endif()
 endfunction()
 
-function(find_and_configure_cudf VERSION)
+function(find_and_configure_rmm VERSION)
+    # Consumers have two options for local source builds:
+    # 1. Pass `-D CPM_rmm_SOURCE=/path/to/rmm` to build a local RMM source tree
+    # 2. Pass `-D CMAKE_PREFIX_PATH=/path/to/rmm/build` to use an existing local
+    #    RMM build directory as the install location for find_package(rmm)
     cuspatial_save_if_enabled(BUILD_TESTS)
     cuspatial_save_if_enabled(BUILD_BENCHMARKS)
-    CPMFindPackage(NAME cudf
+
+    CPMFindPackage(NAME rmm
         VERSION         ${VERSION}
-        GIT_REPOSITORY  https://github.com/rapidsai/cudf.git
+        GIT_REPOSITORY  https://github.com/rapidsai/rmm.git
         GIT_TAG         branch-${VERSION}
         GIT_SHALLOW     TRUE
-        SOURCE_SUBDIR   cpp
         OPTIONS         "BUILD_TESTS OFF"
                         "BUILD_BENCHMARKS OFF"
-                        "USE_NVTX ${USE_NVTX}"
-                        "JITIFY_USE_CACHE ${JITIFY_USE_CACHE}"
                         "CUDA_STATIC_RUNTIME ${CUDA_STATIC_RUNTIME}"
-                        "CUDF_USE_ARROW_STATIC ${CUDF_USE_ARROW_STATIC}"
-                        "PER_THREAD_DEFAULT_STREAM ${PER_THREAD_DEFAULT_STREAM}"
-                        "DISABLE_DEPRECATION_WARNING ${DISABLE_DEPRECATION_WARNING}")
+                        "DISABLE_DEPRECATION_WARNING ${DISABLE_DEPRECATION_WARNING}"
+    )
     cuspatial_restore_if_enabled(BUILD_TESTS)
     cuspatial_restore_if_enabled(BUILD_BENCHMARKS)
 
-    # Make sure consumers of cuspatial can see cudf::cudf
-    fix_cmake_global_defaults(cudf::cudf)
-    # Make sure consumers of cuspatial can see cudf::cudftestutil
-    fix_cmake_global_defaults(cudf::cudftestutil)
+    # Make sure consumers of cuspatial can also see rmm::rmm
+    fix_cmake_global_defaults(rmm::rmm)
 
-    if(NOT cudf_BINARY_DIR IN_LIST CMAKE_PREFIX_PATH)
-        list(APPEND CMAKE_PREFIX_PATH "${cudf_BINARY_DIR}")
+    if(NOT rmm_BINARY_DIR IN_LIST CMAKE_PREFIX_PATH)
+        list(APPEND CMAKE_PREFIX_PATH "${rmm_BINARY_DIR}")
         set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
     endif()
 endfunction()
 
-set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
+set(CUSPATIAL_MIN_VERSION_rmm "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
 
-find_and_configure_cudf(${CUSPATIAL_MIN_VERSION_cudf})
+find_and_configure_rmm(${CUSPATIAL_MIN_VERSION_rmm})
