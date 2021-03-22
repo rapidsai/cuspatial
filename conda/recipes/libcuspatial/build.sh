@@ -2,7 +2,7 @@
 
 # build cuspatial with verbose output
 if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
-    ./build.sh -v libcuspatial
+    ./build.sh -v libcuspatial --allgpuarch
 else
-    ./build.sh -v libcuspatial tests
+    ./build.sh -v libcuspatial tests --allgpuarch
 fi
