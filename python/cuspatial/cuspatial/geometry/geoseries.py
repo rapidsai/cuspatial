@@ -4,9 +4,20 @@ import pandas as pd
 
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 
-import cudf
+from typing import (
+    TypeVar,
+    Union,
+)
 
-from cuspatial.geometry.geocolumn import GeoColumn
+import cudf
+import geopandas as gpd
+
+from cuspatial.io.geoseries_reader import GeoPandasAdapter
+from cuspatial.geometry.geocolumn import GeoColumn, GeoPandasMeta
+from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
+
+
+T = TypeVar("T", bound="GeoSeries")
 
 
 class GeoSeries(cudf.Series):
@@ -16,35 +27,46 @@ class GeoSeries(cudf.Series):
     """
 
     def __init__(
-        self, data=None, index=None, dtype=None, name=None, nan_as_null=True
+        self,
+        data: Union[
+            GeoArrowBuffers, cudf.Series, gpd.GeoSeries, pd.Series, dict
+        ],
+        index: Union[cudf.Index, pd.Index] = None,
+        dtype=None,
+        name=None,
+        nan_as_null=True,
     ):
         if isinstance(data, (gpGeoSeries, GeoSeries)):
             if index is None:
                 index = data.index
         if isinstance(data, pd.Series):
             data = gpGeoSeries(data)
-        if isinstance(data, (GeoColumn, gpGeoSeries, GeoSeries, dict)):
-            column = GeoColumn(data)
-            super().__init__(column, index, dtype, name, nan_as_null)
-            if isinstance(data, GeoColumn):
-                self.geocolumn = data
-            else:
-                self.geocolumn = GeoColumn(data)
+        if index is None:
+            index = cudf.RangeIndex(0, len(data))
+        if isinstance(data, GeoColumn):
+            column = data
+        elif isinstance(data, GeoSeries):
+            column = data._column
+        elif isinstance(data, gpGeoSeries):
+            adapter = GeoPandasAdapter(data)
+            buffers = GeoArrowBuffers(adapter.get_buffers())
+            pandas_meta = GeoPandasMeta(adapter.get_geopandas_meta())
+            column = GeoColumn(buffers, pandas_meta)
         else:
             raise TypeError(
                 f"Incompatible object passed to GeoSeries ctor {type(data)}"
             )
+        super().__init__(column, index, dtype, name, nan_as_null)
 
     @property
     def geocolumn(self):
-        return self._geocolumn
+        return self._column
 
     @geocolumn.setter
     def geocolumn(self, value):
         if not isinstance(value, GeoColumn):
             raise TypeError
-        self._geocolumn = value
-        self._column = cudf.RangeIndex(0, len(value))
+        self._column = value
 
     @property
     def points(self):
@@ -87,7 +109,7 @@ class GeoSeries(cudf.Series):
         return self.geocolumn.polygons
 
     def __getitem__(self, key):
-        result = self.geocolumn[self._column[key]]
+        result = self._column[key]
         return result
 
     def __repr__(self):

@@ -21,215 +21,6 @@ import cuspatial
 np.random.seed(0)
 
 
-@pytest.fixture
-def gs():
-    geos = [
-        Point(-1, 0),
-        MultiPoint(((1, 2), (3, 4))),
-        MultiPoint(((5, 6), (7, 8))),
-        Point(9, 10),
-        Polygon(((35, 36), (37, 38), (39, 40), (41, 42)),),
-        MultiPolygon(
-            [
-                (
-                    ((43, 44), (45, 46), (47, 48)),
-                    [((49, 50), (51, 52), (53, 54))],
-                ),
-                (
-                    ((55, 56), (57, 58), (59, 60)),
-                    [((61, 62), (63, 64), (65, 66))],
-                ),
-            ]
-        ),
-        MultiPolygon(
-            [
-                (
-                    ((67, 68), (69, 70), (71, 72)),
-                    [((73, 74), (75, 76), (77, 78))],
-                ),
-                (
-                    ((79, 80), (81, 82), (83, 84)),
-                    [
-                        ((85, 86), (87, 88), (89, 90)),
-                        ((91, 92), (93, 94), (95, 96)),
-                    ],
-                ),
-            ]
-        ),
-        Polygon(
-            ((97, 98), (99, 101), (102, 103), (94, 104)),
-            [((106, 107), (108, 109), (110, 111), (109, 108))],
-        ),
-        Polygon(((35, 36), (37, 38), (39, 40), (41, 42)),),
-        MultiPolygon(
-            [
-                (
-                    ((43, 44), (45, 46), (47, 48)),
-                    [((49, 50), (51, 52), (53, 54))],
-                ),
-                (
-                    ((55, 56), (57, 58), (59, 60)),
-                    [((61, 62), (63, 64), (65, 66))],
-                ),
-            ]
-        ),
-        MultiPolygon(
-            [
-                (
-                    ((67, 68), (69, 70), (71, 72)),
-                    [((73, 74), (75, 76), (77, 78))],
-                ),
-                (
-                    ((79, 80), (81, 82), (83, 84)),
-                    [
-                        ((85, 86), (87, 88), (89, 90)),
-                        ((91, 92), (93, 94), (95, 96)),
-                    ],
-                ),
-            ]
-        ),
-        Polygon(
-            ((97, 98), (99, 101), (102, 103), (94, 104)),
-            [((106, 107), (108, 109), (110, 111), (109, 108))],
-        ),
-        LineString(((11, 12), (13, 14))),
-        MultiLineString((((15, 16), (17, 18)), ((19, 20), (21, 22)))),
-        MultiLineString((((23, 24), (25, 26)), ((27, 28), (29, 30)))),
-        LineString(((31, 32), (33, 34))),
-        LineString(((11, 12), (13, 14))),
-        MultiLineString((((15, 16), (17, 18)), ((19, 20), (21, 22)))),
-        MultiLineString((((23, 24), (25, 26)), ((27, 28), (29, 30)))),
-        LineString(((31, 32), (33, 34))),
-    ]
-    gs = gpd.GeoSeries(geos)
-    return gs
-
-
-@pytest.fixture
-def polys():
-    return np.array(
-        (
-            (35, 36),
-            (37, 38),
-            (39, 40),
-            (41, 42),
-            (35, 36),
-            (43, 44),
-            (45, 46),
-            (47, 48),
-            (43, 44),
-            (49, 50),
-            (51, 52),
-            (53, 54),
-            (49, 50),
-            (55, 56),
-            (57, 58),
-            (59, 60),
-            (55, 56),
-            (61, 62),
-            (63, 64),
-            (65, 66),
-            (61, 62),
-            (67, 68),
-            (69, 70),
-            (71, 72),
-            (67, 68),
-            (73, 74),
-            (75, 76),
-            (77, 78),
-            (73, 74),
-            (79, 80),
-            (81, 82),
-            (83, 84),
-            (79, 80),
-            (85, 86),
-            (87, 88),
-            (89, 90),
-            (85, 86),
-            (91, 92),
-            (93, 94),
-            (95, 96),
-            (91, 92),
-            (97, 98),
-            (99, 101),
-            (102, 103),
-            (94, 104),
-            (97, 98),
-            (106, 107),
-            (108, 109),
-            (110, 111),
-            (109, 108),
-            (106, 107),
-            (35, 36),
-            (37, 38),
-            (39, 40),
-            (41, 42),
-            (35, 36),
-            (43, 44),
-            (45, 46),
-            (47, 48),
-            (43, 44),
-            (49, 50),
-            (51, 52),
-            (53, 54),
-            (49, 50),
-            (55, 56),
-            (57, 58),
-            (59, 60),
-            (55, 56),
-            (61, 62),
-            (63, 64),
-            (65, 66),
-            (61, 62),
-            (67, 68),
-            (69, 70),
-            (71, 72),
-            (67, 68),
-            (73, 74),
-            (75, 76),
-            (77, 78),
-            (73, 74),
-            (79, 80),
-            (81, 82),
-            (83, 84),
-            (79, 80),
-            (85, 86),
-            (87, 88),
-            (89, 90),
-            (85, 86),
-            (91, 92),
-            (93, 94),
-            (95, 96),
-            (91, 92),
-            (97, 98),
-            (99, 101),
-            (102, 103),
-            (94, 104),
-            (97, 98),
-            (106, 107),
-            (108, 109),
-            (110, 111),
-            (109, 108),
-            (106, 107),
-        )
-    )
-
-
-@pytest.fixture
-def gs_sorted(gs):
-    result = pd.concat(
-        [
-            gs[gs.type == "Point"],
-            gs[gs.type == "MultiPoint"],
-            gs[gs.type == "LineString"],
-            gs[gs.type == "MultiLineString"],
-            gs[gs.type == "Polygon"],
-            gs[gs.type == "MultiPolygon"],
-        ]
-    )
-    return result.reset_index(drop=True)
-
-
 def random_polygon(distance_from_origin):
     outer = Point(distance_from_origin * 2, 0).buffer(1)
     inners = []
@@ -321,6 +112,32 @@ def assert_eq_geo(geo1, geo2):
         assert result.all()
 
 
+"""
+def test_geo_arrow_buffers_multipoints():
+    ints = np.arange(1000)
+    offsets = cudf.Series(np.random.randint(2, 10, 1000)).cumsum() * 2
+    offsets = offsets[offsets < 1000]
+    points = cudf.Series(ints).astype('float64')
+    mpoints = [MultiPoint(points[offsets[i] : offsets[i + 1]].to_array().reshape(offsets[i] - offsets[i + 1], 2)) for i in range(len(offsets) - 1)]
+    geopoints = gpd.GeoSeries(mpoints)
+    cupoints = cuspatial.from_geopandas(geopoints)
+    arrow = GeoArrowBuffers(mpoints_xy=points, mpoints_offsets=offsets)
+    cuarrow = cuspatial.geometry.geoseries.GeoSeries(arrow)
+    assert_eq(cupoints, cuarrow)
+
+
+def test_geo_arrow_buffers_points():
+    ints = np.arange(1000)
+    series = cudf.Series(ints).astype('float64')
+    points = gpd.GeoSeries(
+        [Point(ints[2 * i], ints[2 * i + 1]) for i in range(500)])
+    cupoints = cuspatial.from_geopandas(points)
+    arrow = GeoArrowBuffers(points=series)
+    cuarrow = cuspatial.geometry.geoseries.GeoSeries(arrow)
+    assert_eq(cupoints, cuarrow)
+"""
+
+
 def test_interleaved_point(gs, polys):
     cugs = cuspatial.from_geopandas(gs)
     assert_eq(cugs.points.x, gs[gs.type == "Point"].x.reset_index(drop=True))
@@ -344,14 +161,14 @@ def test_interleaved_point(gs, polys):
     assert_eq(
         cugs.lines.x,
         pd.Series(
-            np.array([range(11, 34, 2), range(11, 34, 2)]).flatten(),
+            np.array([range(11, 34, 2)]).flatten(),
             dtype="float64",
         ),
     )
     assert_eq(
         cugs.lines.y,
         pd.Series(
-            np.array([range(12, 35, 2), range(12, 35, 2)]).flatten(),
+            np.array([range(12, 35, 2)]).flatten(),
             dtype="float64",
         ),
     )

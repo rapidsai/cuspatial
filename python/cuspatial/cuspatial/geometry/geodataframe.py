@@ -1,22 +1,14 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION
 
 from geopandas import GeoDataFrame as gpGeoDataFrame
-from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
 
-from cuspatial.geometry.geoseries import GeoSeries, GeoColumn
-
-
-def is_geometry_type(obj):
-    """
-    Returns `True` if the column is a `GeoPandas` or `cuspatial.GeoSeries`
-    """
-    if gp_is_geometry_type(obj):
-        return True
-    if isinstance(obj, (GeoSeries, GeoColumn)):
-        return True
-    return False
+from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
+from cuspatial.geometry.geocolumn import GeoColumn, GeoPandasMeta
+from cuspatial.geometry.geoseries import GeoSeries
+from cuspatial.geometry.geoutil import is_geometry_type
+from cuspatial.io.geoseries_reader import GeoPandasAdapter
 
 
 class GeoDataFrame(cudf.DataFrame):
@@ -24,7 +16,7 @@ class GeoDataFrame(cudf.DataFrame):
     A GPU GeoDataFrame object.
     """
 
-    def __init__(self, data=None, index=None, columns=None, dtype=None):
+    def __init__(self, data: gpGeoDataFrame = None):
         """
         Constructs a GPU GeoDataFrame from a GeoPandas dataframe.
 
@@ -37,7 +29,11 @@ class GeoDataFrame(cudf.DataFrame):
             self.index = data.index
             for col in data.columns:
                 if is_geometry_type(data[col]):
-                    self._data[col] = GeoColumn(data[col])
+                    adapter = GeoPandasAdapter(data[col])
+                    buffers = GeoArrowBuffers(adapter.get_buffers())
+                    pandas_meta = GeoPandasMeta(adapter.get_geopandas_meta())
+                    column = GeoColumn(buffers, pandas_meta)
+                    self._data[col] = column
                 else:
                     self[col] = data[col]
         elif data is None:
@@ -86,7 +82,7 @@ class GeoDataFrame(cudf.DataFrame):
             raise ValueError("cuGeoDataFrame doesn't support N/A yet")
         result = gpGeoDataFrame(
             dict([(col, self[col].to_pandas()) for col in self.columns]),
-            index=self.index.to_pandas()
+            index=self.index.to_pandas(),
         )
         return result
 

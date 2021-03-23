@@ -15,7 +15,7 @@ def from_geopandas(gpdf):
     dataframe.
 
     Possible inputs:
-    pandas.Series
+
     geopandas.geoseries.GeoSeries
     geopandas.geodataframe.GeoDataFrame
     """

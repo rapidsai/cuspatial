@@ -1,6 +1,8 @@
 # Copyright (c) 2020-2021 NVIDIA CORPORATION.
 
 import numpy as np
+
+from geopandas import GeoSeries as gpGeoSeries
 from shapely.geometry import (
     Point,
     MultiPoint,
@@ -11,11 +13,11 @@ from shapely.geometry import (
 )
 
 
-class GeoSeriesReader:
-    def __init__(self, geoseries):
+class GeoPandasAdapter:
+    def __init__(self, geoseries: gpGeoSeries):
         """
-        GeoSeriesReader copies a GeoPandas GeoSeries object iteratively into
-        a set of GeoSeries buffers: points, multipoints, lines, and polygons.
+        GeoPandasAdapter copies a GeoPandas GeoSeries object iteratively into
+        a set of arrays: points, multipoints, lines, and polygons.
 
         Parameters
         ----------
@@ -24,7 +26,7 @@ class GeoSeriesReader:
         self.offsets = self._load_geometry_offsets(geoseries)
         self.buffers = self._read_geometries(geoseries, self.offsets)
 
-    def _load_geometry_offsets(self, geoseries):
+    def _load_geometry_offsets(self, geoseries: gpGeoSeries):
         """
         Precomputes the buffers that will be required to store the geometries.
 
@@ -112,7 +114,9 @@ class GeoSeriesReader:
                 )
         return offsets
 
-    def _read_geometries(self, geoseries, offsets):
+    def _read_geometries(
+        self, geoseries: gpGeoSeries, offsets: dict,
+    ):
         """
         Creates a set of buffers sized to fit all of the geometries and
         iteratively populates them with geometry coordinate values.
@@ -257,4 +261,53 @@ class GeoSeriesReader:
                 )
             else:
                 raise NotImplementedError
-        return (buffers, offsets, input_types, input_lengths, inputs)
+        return {
+            "buffers": buffers,
+            "offsets": offsets,
+            "input_types": input_types,
+            "input_lengths": input_lengths,
+            "inputs": inputs,
+        }
+
+    def get_buffers(self):
+        points_xy = []
+        mpoints_xy = []
+        mpoints_offsets = []
+        lines_xy = []
+        lines_offsets = []
+        mlines = []
+        polygons_xy = []
+        polygons_polygons = []
+        polygons_rings = []
+        mpolygons = []
+        buffers = self.buffers["buffers"]
+        points_xy = buffers["points"]
+        mpoints_xy = buffers["multipoints"]
+        mpoints_offsets = self.offsets["multipoints"]
+        lines_xy = buffers["lines"]
+        lines_offsets = self.offsets["lines"]
+        mlines = self.offsets["mlines"]
+        polygons_xy = buffers["polygons"]["coords"]
+        polygons_polygons = self.offsets["polygons"]["polygons"]
+        polygons_rings = self.offsets["polygons"]["rings"]
+        mpolygons = self.offsets["polygons"]["mpolys"]
+        return {
+            "points_xy": points_xy,
+            "mpoints_xy": mpoints_xy,
+            "mpoints_offsets": mpoints_offsets,
+            "lines_xy": lines_xy,
+            "lines_offsets": lines_offsets,
+            "mlines": mlines,
+            "polygons_xy": polygons_xy,
+            "polygons_polygons": polygons_polygons,
+            "polygons_rings": polygons_rings,
+            "mpolygons": mpolygons,
+        }
+
+    def get_geopandas_meta(self):
+        buffers = self.buffers
+        return {
+            "input_types": buffers["input_types"],
+            "input_lengths": buffers["input_lengths"],
+            "inputs": buffers["inputs"],
+        }
