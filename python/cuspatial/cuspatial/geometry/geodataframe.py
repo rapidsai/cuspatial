@@ -8,7 +8,7 @@ from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
 from cuspatial.geometry.geocolumn import GeoColumn, GeoPandasMeta
 from cuspatial.geometry.geoseries import GeoSeries
 from cuspatial.geometry.geoutil import is_geometry_type
-from cuspatial.io.geoseries_reader import GeoPandasAdapter
+from cuspatial.io.geopandas_adapter import GeoPandasAdapter
 
 
 class GeoDataFrame(cudf.DataFrame):
@@ -48,14 +48,6 @@ class GeoDataFrame(cudf.DataFrame):
     @property
     def _constructor_sliced(self):
         return _GeoSeriesUtility
-
-    """
-    def __setitem__(self, arg, value):
-        if isinstance(value, GeoSeries):
-            self._data[arg] = value
-        else:
-            super().__setitem__(arg, value)
-    """
 
     def to_pandas(self, nullable=False):
         """

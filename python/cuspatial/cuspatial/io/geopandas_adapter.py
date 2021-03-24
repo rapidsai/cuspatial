@@ -26,9 +26,10 @@ class GeoPandasAdapter:
         self.offsets = self._load_geometry_offsets(geoseries)
         self.buffers = self._read_geometries(geoseries, self.offsets)
 
-    def _load_geometry_offsets(self, geoseries: gpGeoSeries):
+    def _load_geometry_offsets(self, geoseries: gpGeoSeries) -> dict:
         """
-        Precomputes the buffers that will be required to store the geometries.
+        Computes the offet arrays and buffer sizes  that will be required
+        to store the geometries.
 
         Parameters
         ----------
@@ -116,7 +117,7 @@ class GeoPandasAdapter:
 
     def _read_geometries(
         self, geoseries: gpGeoSeries, offsets: dict,
-    ):
+    ) -> dict:
         """
         Creates a set of buffers sized to fit all of the geometries and
         iteratively populates them with geometry coordinate values.
@@ -263,13 +264,16 @@ class GeoPandasAdapter:
                 raise NotImplementedError
         return {
             "buffers": buffers,
-            "offsets": offsets,
             "input_types": input_types,
             "input_lengths": input_lengths,
             "inputs": inputs,
         }
 
-    def get_buffers(self):
+    def get_geoarrow_host_buffers(self) -> dict:
+        """
+        Returns a set of host buffers containing the geopandas object converted
+        to GeoArrow format.
+        """
         points_xy = []
         mpoints_xy = []
         mpoints_offsets = []
@@ -304,7 +308,14 @@ class GeoPandasAdapter:
             "mpolygons": mpolygons,
         }
 
-    def get_geopandas_meta(self):
+    def get_geopandas_meta(self) -> dict:
+        """
+        Returns the metadata that was created converting the GeoSeries into
+        GeoArrow format. The metadata essentially contains the object order
+        in the GeoSeries format. GeoArrow doesn't support custom orderings,
+        every GeoArrow data store contains points, multipoints, lines, and
+        polygons in an arbitrary order.
+        """
         buffers = self.buffers
         return {
             "input_types": buffers["input_types"],

@@ -12,7 +12,7 @@ from typing import (
 import cudf
 import geopandas as gpd
 
-from cuspatial.io.geoseries_reader import GeoPandasAdapter
+from cuspatial.io.geopandas_adapter import GeoPandasAdapter
 from cuspatial.geometry.geocolumn import GeoColumn, GeoPandasMeta
 from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
 
@@ -29,7 +29,7 @@ class GeoSeries(cudf.Series):
     def __init__(
         self,
         data: Union[
-            GeoArrowBuffers, cudf.Series, gpd.GeoSeries, pd.Series, dict
+            gpd.GeoSeries,
         ],
         index: Union[cudf.Index, pd.Index] = None,
         dtype=None,
