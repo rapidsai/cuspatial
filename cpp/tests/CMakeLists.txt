@@ -80,7 +80,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${GTEST_LIBRARY_DIR}")
 
 set(CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/cartesian_product_group_index_iterator_test.cpp")
+   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/cartesian_product_group_index_iterator_test.cu")
 ConfigureTest(CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST "${CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST_SRC}")
 
 set(CUBIC_SPLINE_TEST_SRC
