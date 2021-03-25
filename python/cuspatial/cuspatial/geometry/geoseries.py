@@ -36,20 +36,23 @@ class GeoSeries(cudf.Series):
         name=None,
         nan_as_null=True,
     ):
+        # Condition index
         if isinstance(data, (gpGeoSeries, GeoSeries)):
             if index is None:
                 index = data.index
-        if isinstance(data, pd.Series):
-            data = gpGeoSeries(data)
         if index is None:
             index = cudf.RangeIndex(0, len(data))
+        # Condition data
+        if isinstance(data, pd.Series):
+            data = gpGeoSeries(data)
+        # Create column
         if isinstance(data, GeoColumn):
             column = data
         elif isinstance(data, GeoSeries):
             column = data._column
         elif isinstance(data, gpGeoSeries):
             adapter = GeoPandasAdapter(data)
-            buffers = GeoArrowBuffers(adapter.get_buffers())
+            buffers = GeoArrowBuffers(adapter.get_geoarrow_host_buffers())
             pandas_meta = GeoPandasMeta(adapter.get_geopandas_meta())
             column = GeoColumn(buffers, pandas_meta)
         else:

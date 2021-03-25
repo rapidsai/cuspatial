@@ -30,7 +30,9 @@ class GeoDataFrame(cudf.DataFrame):
             for col in data.columns:
                 if is_geometry_type(data[col]):
                     adapter = GeoPandasAdapter(data[col])
-                    buffers = GeoArrowBuffers(adapter.get_buffers())
+                    buffers = GeoArrowBuffers(
+                        adapter.get_geoarrow_host_buffers()
+                    )
                     pandas_meta = GeoPandasMeta(adapter.get_geopandas_meta())
                     column = GeoColumn(buffers, pandas_meta)
                     self._data[col] = column

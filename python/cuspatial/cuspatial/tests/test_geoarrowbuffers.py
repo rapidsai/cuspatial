@@ -17,11 +17,13 @@ def test_points():
 def test_multipoints():
     buffers = GeoArrowBuffers(
         {
-            "mpoints_xy": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+            "mpoints_xy": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             "mpoints_offsets": [0, 3, 5, 8],
         }
     )
-    assert_eq(cudf.Series([0, 1, 2, 3, 4, 5, 6, 7, 8]), buffers.multipoints.xy)
+    assert_eq(
+        cudf.Series([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]), buffers.multipoints.xy
+    )
     assert len(buffers.multipoints) == 3
 
 
@@ -54,7 +56,7 @@ def test_full():
     buffers = GeoArrowBuffers(
         {
             "points_xy": [0, 1, 2, 3],
-            "mpoints_xy": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+            "mpoints_xy": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             "mpoints_offsets": [0, 3, 5, 8],
             "lines_xy": range(12),
             "lines_offsets": np.array(range(5)) * 3,
