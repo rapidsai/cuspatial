@@ -115,9 +115,7 @@ class GeoPandasAdapter:
                 )
         return offsets
 
-    def _read_geometries(
-        self, geoseries: gpGeoSeries, offsets: dict,
-    ) -> dict:
+    def _read_geometries(self, geoseries: gpGeoSeries, offsets: dict,) -> dict:
         """
         Creates a set of buffers sized to fit all of the geometries and
         iteratively populates them with geometry coordinate values.

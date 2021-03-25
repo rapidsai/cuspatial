@@ -28,9 +28,7 @@ class GeoSeries(cudf.Series):
 
     def __init__(
         self,
-        data: Union[
-            gpd.GeoSeries,
-        ],
+        data: Union[gpd.GeoSeries],
         index: Union[cudf.Index, pd.Index] = None,
         dtype=None,
         name=None,

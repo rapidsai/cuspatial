@@ -31,11 +31,13 @@ class GeoPandasMeta:
         self.inputs = meta["inputs"]
 
     def copy(self, deep=True):
-        return GeoPandasMeta({
-            "input_types": self.input_types.copy(),
-            "input_lengths": self.input_lengths.copy(),
-            "inputs": self.inputs.copy(),
-        })
+        return GeoPandasMeta(
+            {
+                "input_types": self.input_types.copy(),
+                "input_lengths": self.input_lengths.copy(),
+                "inputs": self.inputs.copy(),
+            }
+        )
 
 
 class GeoColumn(NumericalColumn):
@@ -156,7 +158,7 @@ class GeoColumn(NumericalColumn):
 
     @_types.setter
     def _types(self, types):
-        raise TypeError('GeoPandasMeta does not support item assignment.')
+        raise TypeError("GeoPandasMeta does not support item assignment.")
 
     @property
     def _lengths(self):
@@ -168,7 +170,7 @@ class GeoColumn(NumericalColumn):
 
     @_lengths.setter
     def _lengths(self, lengths):
-        raise TypeError('GeoPandasMeta does not support item assignment.')
+        raise TypeError("GeoPandasMeta does not support item assignment.")
 
     def __len__(self):
         """
@@ -360,9 +362,7 @@ class gpuPolygon(gpuGeometry):
             else 0
         )
         preceding_polys = preceding_poly_count
-        ring_start = self._source.polygons.polys[
-            multi_index + preceding_polys
-        ]
+        ring_start = self._source.polygons.polys[multi_index + preceding_polys]
         ring_end = self._source.polygons.polys[
             multi_index + preceding_polys + 1
         ]

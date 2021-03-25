@@ -112,32 +112,6 @@ def assert_eq_geo(geo1, geo2):
         assert result.all()
 
 
-"""
-def test_geo_arrow_buffers_multipoints():
-    ints = np.arange(1000)
-    offsets = cudf.Series(np.random.randint(2, 10, 1000)).cumsum() * 2
-    offsets = offsets[offsets < 1000]
-    points = cudf.Series(ints).astype('float64')
-    mpoints = [MultiPoint(points[offsets[i] : offsets[i + 1]].to_array().reshape(offsets[i] - offsets[i + 1], 2)) for i in range(len(offsets) - 1)]
-    geopoints = gpd.GeoSeries(mpoints)
-    cupoints = cuspatial.from_geopandas(geopoints)
-    arrow = GeoArrowBuffers(mpoints_xy=points, mpoints_offsets=offsets)
-    cuarrow = cuspatial.geometry.geoseries.GeoSeries(arrow)
-    assert_eq(cupoints, cuarrow)
-
-
-def test_geo_arrow_buffers_points():
-    ints = np.arange(1000)
-    series = cudf.Series(ints).astype('float64')
-    points = gpd.GeoSeries(
-        [Point(ints[2 * i], ints[2 * i + 1]) for i in range(500)])
-    cupoints = cuspatial.from_geopandas(points)
-    arrow = GeoArrowBuffers(points=series)
-    cuarrow = cuspatial.geometry.geoseries.GeoSeries(arrow)
-    assert_eq(cupoints, cuarrow)
-"""
-
-
 def test_interleaved_point(gs, polys):
     cugs = cuspatial.from_geopandas(gs)
     assert_eq(cugs.points.x, gs[gs.type == "Point"].x.reset_index(drop=True))
@@ -160,17 +134,11 @@ def test_interleaved_point(gs, polys):
     )
     assert_eq(
         cugs.lines.x,
-        pd.Series(
-            np.array([range(11, 34, 2)]).flatten(),
-            dtype="float64",
-        ),
+        pd.Series(np.array([range(11, 34, 2)]).flatten(), dtype="float64",),
     )
     assert_eq(
         cugs.lines.y,
-        pd.Series(
-            np.array([range(12, 35, 2)]).flatten(),
-            dtype="float64",
-        ),
+        pd.Series(np.array([range(12, 35, 2)]).flatten(), dtype="float64",),
     )
     assert_eq(cugs.polygons.x, pd.Series(polys[:, 0], dtype="float64"))
     assert_eq(cugs.polygons.y, pd.Series(polys[:, 1], dtype="float64"))

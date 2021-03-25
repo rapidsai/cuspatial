@@ -200,11 +200,11 @@ class GpuCoordinateArray:
     @xy.setter
     def xy(self, xy):
         if (len(xy) % 2) != 0:
-            raise ValueError('xy must have even length')
+            raise ValueError("xy must have even length")
         try:
             self._xy = cudf.Series(xy)
         except Exception as e:
-            raise TypeError(e, 'xy isn\'t a buffer type supported by `cudf`')
+            raise TypeError(e, "xy isn't a buffer type supported by `cudf`")
 
     @property
     def z(self):
@@ -221,7 +221,7 @@ class GpuCoordinateArray:
         try:
             self._z = cudf.Series(z)
         except Exception as e:
-            raise TypeError(e, 'z isn\'t a buffer type supported by `cudf`')
+            raise TypeError(e, "z isn't a buffer type supported by `cudf`")
 
     def __getitem__(self, index):
         if isinstance(index, slice):
@@ -273,6 +273,7 @@ class GpuPointsArray(GpuCoordinateArray):
     A GeoArrow column of points. Every pair is the `[x,y]` coordinate of the
     position/2th point in this data source. `z` can be included optionally.
     """
+
     def __init__(self, xy, z=None):
         super().__init__(xy, z)
 
@@ -305,7 +306,7 @@ class GpuOffsetArray(GpuCoordinateArray):
             self._offsets = cudf.Series(offsets)
         except Exception as e:
             raise TypeError(
-                e, 'offsets isn\'t a buffer type supported by `cudf`'
+                e, "offsets isn't a buffer type supported by `cudf`"
             )
 
     def __getitem__(self, index):
@@ -374,7 +375,7 @@ class GpuLineArray(GpuOffsetArray):
             self._mlines = cudf.Series(mlines)
         except Exception as e:
             raise TypeError(
-                e, 'mlines isn\'t a buffer type supported by `cudf`'
+                e, "mlines isn't a buffer type supported by `cudf`"
             )
 
     def __repr__(self):
@@ -445,9 +446,7 @@ class GpuPolygonArray(GpuOffsetArray):
         try:
             self.offsets = cudf.Series(rings)
         except Exception as e:
-            raise TypeError(
-                e, 'rings isn\'t a buffer type supported by `cudf`'
-            )
+            raise TypeError(e, "rings isn't a buffer type supported by `cudf`")
 
     @property
     def polys(self):
@@ -465,7 +464,7 @@ class GpuPolygonArray(GpuOffsetArray):
             self._polys = cudf.Series(polys)
         except Exception as e:
             raise TypeError(
-                e, 'polys  isn\'t a buffer type supported by `cudf`'
+                e, "polys  isn't a buffer type supported by `cudf`"
             )
 
     @property
@@ -484,7 +483,7 @@ class GpuPolygonArray(GpuOffsetArray):
             self._mpolys = cudf.Series(mpolys)
         except Exception as e:
             raise TypeError(
-                e, 'mpolys  isn\'t a buffer type supported by `cudf`'
+                e, "mpolys  isn't a buffer type supported by `cudf`"
             )
 
     def __repr__(self):
