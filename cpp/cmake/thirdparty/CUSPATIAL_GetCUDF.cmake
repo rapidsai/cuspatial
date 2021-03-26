@@ -38,11 +38,6 @@ function(find_and_configure_cudf VERSION)
     fix_cmake_global_defaults(cudf::cudf)
     # Make sure consumers of cuspatial can see cudf::cudftestutil
     fix_cmake_global_defaults(cudf::cudftestutil)
-
-    if(NOT cudf_BINARY_DIR IN_LIST CMAKE_PREFIX_PATH)
-        list(APPEND CMAKE_PREFIX_PATH "${cudf_BINARY_DIR}")
-        set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
-    endif()
 endfunction()
 
 set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
