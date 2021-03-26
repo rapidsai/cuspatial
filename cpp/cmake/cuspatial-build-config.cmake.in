@@ -2,6 +2,16 @@
 
 cmake_minimum_required(VERSION 3.18)
 
+set(_possible_targets_to_promote
+      GDAL::GDAL
+      cuspatial::cuspatial)
+
+foreach(target IN LISTS _possible_targets_to_promote)
+  if(NOT TARGET ${target})
+    list(APPEND _targets_to_promote ${target})
+  endif()
+endforeach()
+
 set(CUSPATIAL_VERSION @CUSPATIAL_VERSION@)
 set(CUSPATIAL_VERSION_MAJOR @CUSPATIAL_VERSION_MAJOR@)
 set(CUSPATIAL_VERSION_MINOR @CUSPATIAL_VERSION_MINOR@)
@@ -37,6 +47,12 @@ include("${CMAKE_CURRENT_LIST_DIR}/cuspatial-targets.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cuspatial-config-version.cmake")
 
 check_required_components(cuspatial)
+
+foreach(target IN LISTS _targets_to_promote)
+  if(TARGET ${target})
+    fix_cmake_global_defaults(${target})
+  endif()
+endforeach()
 
 set(${CMAKE_FIND_PACKAGE_NAME}_CONFIG "${CMAKE_CURRENT_LIST_FILE}")
 

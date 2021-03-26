@@ -14,36 +14,23 @@
 # limitations under the License.
 #=============================================================================
 
-function(cuspatial_save_if_enabled var)
-    if(CUSPATIAL_${var})
-        unset(${var} PARENT_SCOPE)
-        unset(${var} CACHE)
-    endif()
-endfunction()
-
-function(cuspatial_restore_if_enabled var)
-    if(CUSPATIAL_${var})
-        set(${var} ON CACHE INTERNAL "" FORCE)
-    endif()
-endfunction()
-
 function(find_and_configure_cudf VERSION)
+
+    if(TARGET cudf::cudf)
+        return()
+    endif()
+
     cuspatial_save_if_enabled(BUILD_TESTS)
     cuspatial_save_if_enabled(BUILD_BENCHMARKS)
-    CPMFindPackage(NAME cudf
-        VERSION         ${VERSION}
-        GIT_REPOSITORY  https://github.com/rapidsai/cudf.git
-        GIT_TAG         branch-${VERSION}
-        GIT_SHALLOW     TRUE
-        SOURCE_SUBDIR   cpp
-        OPTIONS         "BUILD_TESTS OFF"
-                        "BUILD_BENCHMARKS OFF"
-                        "USE_NVTX ${USE_NVTX}"
-                        "JITIFY_USE_CACHE ${JITIFY_USE_CACHE}"
-                        "CUDA_STATIC_RUNTIME ${CUDA_STATIC_RUNTIME}"
-                        "CUDF_USE_ARROW_STATIC ${CUDF_USE_ARROW_STATIC}"
-                        "PER_THREAD_DEFAULT_STREAM ${PER_THREAD_DEFAULT_STREAM}"
-                        "DISABLE_DEPRECATION_WARNING ${DISABLE_DEPRECATION_WARNING}")
+    CPMFindPackage(NAME        cudf
+        VERSION                ${VERSION}
+        GIT_REPOSITORY         https://github.com/rapidsai/cudf.git
+        GIT_TAG                branch-${VERSION}
+        GIT_SHALLOW            TRUE
+        SOURCE_SUBDIR          cpp
+        OPTIONS                "BUILD_TESTS OFF"
+                               "BUILD_BENCHMARKS OFF"
+        FIND_PACKAGE_ARGUMENTS "COMPONENTS testing")
     cuspatial_restore_if_enabled(BUILD_TESTS)
     cuspatial_restore_if_enabled(BUILD_BENCHMARKS)
 

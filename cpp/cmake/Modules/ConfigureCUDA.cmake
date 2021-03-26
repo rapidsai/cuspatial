@@ -18,7 +18,7 @@
 find_package(CUDAToolkit REQUIRED)
 
 # Auto-detect available GPU compute architectures
-include(${CUSPATIAL_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/SetGPUArchs.cmake)
 message(STATUS "CUSPATIAL: Building CUSPATIAL for GPU architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 
 # Must come after find_package(CUDAToolkit) because we symlink

@@ -18,6 +18,19 @@ endif()
 
 include(${CPM_DOWNLOAD_LOCATION})
 
+function(cuspatial_save_if_enabled var)
+    if(CUSPATIAL_${var})
+        unset(${var} PARENT_SCOPE)
+        unset(${var} CACHE)
+    endif()
+endfunction()
+
+function(cuspatial_restore_if_enabled var)
+    if(CUSPATIAL_${var})
+        set(${var} ON CACHE INTERNAL "" FORCE)
+    endif()
+endfunction()
+
 function(fix_cmake_global_defaults target)
     if(TARGET ${target})
         get_target_property(_is_imported ${target} IMPORTED)

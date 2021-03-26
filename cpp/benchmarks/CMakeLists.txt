@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2019-2021, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ add_library(cuspatial_benchmark_common OBJECT
     synchronization/synchronization.cpp)
 
 target_link_libraries(cuspatial_benchmark_common
-    PUBLIC benchmark::benchmark
+    PUBLIC cudf::benchmark
            cudf::cudftestutil
            cuspatial)
 
@@ -39,7 +39,7 @@ function(ConfigureBench CMAKE_BENCH_NAME)
     add_executable(${CMAKE_BENCH_NAME} ${ARGN})
     set_target_properties(${CMAKE_BENCH_NAME}
         PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gbenchmarks>")
-    target_link_libraries(${CMAKE_BENCH_NAME} PRIVATE cuspatial_benchmark_common benchmark::benchmark_main)
+    target_link_libraries(${CMAKE_BENCH_NAME} PRIVATE cuspatial_benchmark_common cudf::benchmark_main)
 endfunction(ConfigureBench)
 
 ###################################################################################################
