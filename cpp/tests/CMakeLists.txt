@@ -27,7 +27,7 @@ function(ConfigureTest CMAKE_TEST_NAME)
                         "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}/src>")
     set_target_properties(${CMAKE_TEST_NAME}
         PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gtests>")
-    target_link_libraries(${CMAKE_TEST_NAME} cudf::gtest_main cudf::gmock_main cudf::cudftestutil cuspatial)
+    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main cudf::cudftestutil cuspatial)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
 endfunction(ConfigureTest)
 

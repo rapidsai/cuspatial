@@ -208,6 +208,14 @@ endif()
 # - add benchmarks --------------------------------------------------------------------------------
 
 if(CUSPATIAL_BUILD_BENCHMARKS)
+    # Find or install GoogleBench
+    CPMFindPackage(NAME benchmark
+        VERSION         1.5.2
+        GIT_REPOSITORY  https://github.com/google/benchmark.git
+        GIT_TAG         v1.5.2
+        GIT_SHALLOW     TRUE
+        OPTIONS         "BENCHMARK_ENABLE_TESTING OFF"
+                        "BENCHMARK_ENABLE_INSTALL OFF")
     add_subdirectory(benchmarks)
 endif()
 

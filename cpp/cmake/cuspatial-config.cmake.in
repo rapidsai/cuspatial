@@ -61,7 +61,10 @@ check_required_components(cuspatial)
 
 foreach(target IN LISTS _targets_to_promote)
   if(TARGET ${target})
-    set_target_properties(${target} PROPERTIES IMPORTED_GLOBAL TRUE)
+    get_target_property(_already_global ${target} IMPORTED_GLOBAL)
+    if(NOT _already_global)
+      set_target_properties(${target} PROPERTIES IMPORTED_GLOBAL TRUE)
+    endif()
   endif()
 endforeach()
 
