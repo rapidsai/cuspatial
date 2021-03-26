@@ -35,13 +35,13 @@ build:
 requirements:
   build:
     - cmake >=3.18
-    - gtest
-    - gmock
   host:
     - libcudf {{ minor_version }}.*
     - librmm {{ minor_version }}.*
     - cudatoolkit {{ cuda_version }}.*
     - gdal >=3.2.0,<3.3.0a0
+    - gtest
+    - gmock
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
 
