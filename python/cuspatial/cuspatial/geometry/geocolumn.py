@@ -1,6 +1,7 @@
 # Copyright (c) 2021 NVIDIA CORPORATION
 
 import numbers
+import numpy as np
 
 from shapely.geometry import (
     Point,
@@ -13,10 +14,7 @@ from shapely.geometry import (
 from typing import TypeVar
 
 import cudf
-from cudf.core.column import (
-    ColumnBase,
-    NumericalColumn,
-)
+from cudf.core.column import ColumnBase, NumericalColumn
 
 from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
 
@@ -24,14 +22,47 @@ from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
 T = TypeVar("T", bound="GeoColumn")
 
 
-class GeoPandasMeta:
-    def __init__(self, meta: dict):
-        self.input_types = meta["input_types"]
-        self.input_lengths = meta["input_lengths"]
-        self.inputs = meta["inputs"]
+class GeoMeta:
+    def __init__(self, buffers: GeoArrowBuffers):
+        self.input_types = []
+        self.input_lengths = []
+        if hasattr(buffers, "points"):
+            self.input_types += list(np.repeat("p", len(buffers.points)))
+            self.input_lengths += list(np.repeat(1, len(buffers.points)))
+        if hasattr(buffers, "multipoints"):
+            self.input_types += list(np.repeat("mp", len(buffers.multipoints)))
+            self.input_lengths += list(np.repeat(1, len(buffers.multipoints)))
+        if hasattr(buffers, "lines"):
+            if hasattr(buffers.lines, "mlines"):
+                self.input_types += list(
+                    np.repeat("l", buffers.lines.mlines[0])
+                )
+                self.input_lengths += list(
+                    np.repeat(1, buffers.lines.mlines[0])
+                )
+                for ml_index in range(len(buffers.mlines) // 2):
+                    self.input_types += list("ml")
+                    self.input_lengths += list(1)
+                    self.input_types += list(
+                        np.repeat(
+                            "l",
+                            buffers.lines.mlines[ml_index * 2 + 1]
+                            - buffers.lines.mlines[ml_index * 2],
+                        )
+                    )
+                    self.input_lengths += list(
+                        np.repeat(
+                            1,
+                            buffers.lines.mlines[ml_index * 2 + 1]
+                            - buffers.lines.mlines[ml_index * 2],
+                        )
+                    )
+            else:
+                self.input_types += list(np.repeat("l", len(buffers.lines)))
+                self.input_lengths += list(np.repeat("l", len(buffers.lines)))
 
     def copy(self, deep=True):
-        return GeoPandasMeta(
+        return type(self)(
             {
                 "input_types": self.input_types.copy(),
                 "input_lengths": self.input_lengths.copy(),
@@ -40,37 +71,39 @@ class GeoPandasMeta:
         )
 
 
+class GeoPandasMeta(GeoMeta):
+    """
+    When a GeoColumn is created from a GeoPandas GeoSeries, this meta data
+    remembers what order the geometries began in.
+    """
+
+    def __init__(self, meta: dict):
+        self.input_types = meta["input_types"]
+        self.input_lengths = meta["input_lengths"]
+        self.inputs = meta["inputs"]
+
+
 class GeoColumn(NumericalColumn):
     """
-    A GPU GeoColumn object.
-
-    The GeoArrow format specifies a tabular data format for geometry
-    information. Supported types include `Point`, `MultiPoint`, `LineString`,
-    `MultiLineString`, `Polygon`, and `MultiPolygon`.  In order to store
-    these coordinate types in a strictly tabular fashion, columns are
-    created for Points, MultiPoints, LineStrings, and Polygons.
-    MultiLines and MultiPolygons are stored in the same data structure
-    as LineStrings and Polygons.
-
     Parameters
     ----------
-    data : A GeoPandas GeoSeries object, or a file path.
-    name : String (optional), the name of the cudf.Series object.
+    data : A GeoArrowBuffers object
+    meta : A GeoPandasMeta object (optional)
 
     Notes
     -----
-    Legacy cuspatial algorithms depend on separated x and y columns. Access
-    them with the `.x` and `.y` properties.
+    The GeoColumn class subclasses `NumericalColumn`. Combined with
+    `_copy_type_metadata`, this assures support for existing cudf algorithms.
     """
 
     def __init__(self, data: GeoArrowBuffers, meta: GeoPandasMeta = None):
         base = cudf.Series(cudf.RangeIndex(0, len(data)))._column.data
         super().__init__(base, dtype="int64")
-        if isinstance(data, GeoColumn):
-            breakpoint()
         self._geo = data
-        self._meta = meta
-        self._internal_index = None
+        if meta is not None:
+            self._meta = meta
+        else:
+            self._meta = GeoMeta(data)
 
     def __iter__(self):
         self._iter_index = 0
@@ -100,15 +133,10 @@ class GeoColumn(NumericalColumn):
 
         def __init__(self, sr):
             self._sr = sr
-            self._internal_index = sr._internal_index
 
         def __getitem__(self, index):
             if not isinstance(index, slice):
-                mapped_index = (
-                    self._internal_index[index]
-                    if self._internal_index is not None
-                    else index
-                )
+                mapped_index = int(self._sr.values[index])
                 return self._getitem_int(mapped_index)
             else:
                 raise NotImplementedError
@@ -152,7 +180,9 @@ class GeoColumn(NumericalColumn):
     def _types(self):
         """
         A list of string types from the set "p", "mp", "l", "ml", "poly", and
-        "mpoly". These are the types of each row of the GeoSeries.
+        "mpoly". These are the types of each row of the GeoColumn. This
+        property only exists when a GeoColumn has been created from a GeoPandas
+        object.
         """
         return self._meta.input_types
 
@@ -212,7 +242,7 @@ class GeoColumn(NumericalColumn):
     @property
     def polygons(self):
         """
-        Polygons contain the coordinates column, a rings column specifying
+        Polygons contain the coordinates column, a rings olumn specifying
         the beginning and end of every polygon, a polygons column specifying
         the beginning, or exterior, ring of each polygon and the end ring.
         All rings after the first ring are interior rings.  Finally a
@@ -242,7 +272,7 @@ class GeoColumn(NumericalColumn):
         return result
 
     def _copy_type_metadata(self: T, other: ColumnBase) -> ColumnBase:
-        self._internal_index = cudf.Series(other)
+        self._data = other.data
         return self
 
 
@@ -279,14 +309,13 @@ class gpuMultiPoint(gpuGeometry):
         for i in range(self._index):
             if types[i] == item_type:
                 item_start = item_start + 1
-        if hasattr(self._source, "_lengths"):
-            item_length = self._source._lengths[self._index] * 2
-        else:
-            item_length = self._source.multipoints._offsets[self._index]
-            -self._source._multipoints._offsets[self._index + 1]
+        item_length = (
+            self._source.multipoints._offsets[item_start + 1]
+            - self._source.multipoints._offsets[item_start]
+        )
         item_source = self._source.multipoints
         result = item_source[item_start]
-        return MultiPoint(result.to_array().reshape(int(item_length / 2), 2))
+        return MultiPoint(result.to_array().reshape(item_length // 2, 2))
 
 
 class gpuLineString(gpuGeometry):
