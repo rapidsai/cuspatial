@@ -40,13 +40,14 @@ class GeoMeta:
                 self.input_lengths += list(
                     np.repeat(1, buffers.lines.mlines[0])
                 )
-                for ml_index in range(len(buffers.mlines) // 2):
-                    self.input_types += list("ml")
-                    self.input_lengths += list(1)
+                for ml_index in range(len(buffers.lines.mlines) // 2):
+                    self.input_types += list(["ml"])
+                    self.input_lengths += [1]
                     self.input_types += list(
                         np.repeat(
                             "l",
                             buffers.lines.mlines[ml_index * 2 + 1]
+                            - 1
                             - buffers.lines.mlines[ml_index * 2],
                         )
                     )
@@ -54,6 +55,7 @@ class GeoMeta:
                         np.repeat(
                             1,
                             buffers.lines.mlines[ml_index * 2 + 1]
+                            - 1
                             - buffers.lines.mlines[ml_index * 2],
                         )
                     )
