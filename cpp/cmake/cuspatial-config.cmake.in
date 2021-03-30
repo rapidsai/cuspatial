@@ -13,6 +13,7 @@ If cuspatial is found, this module defines the following IMPORTED GLOBAL
 targets:
 
  cuspatial::cuspatial             - The main cuspatial library.
+ GDAL::GDAL                       - The Geospatial Data Abstraction Library.
 
 
 Result Variables
