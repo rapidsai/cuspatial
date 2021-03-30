@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,8 +57,6 @@ TYPED_TEST(HaversineTest, Zero)
 {
   using T = TypeParam;
 
-  auto const count = 3;
-
   auto a_lon = fixed_width_column_wrapper<T>({0});
   auto a_lat = fixed_width_column_wrapper<T>({0});
   auto b_lon = fixed_width_column_wrapper<T>({0});
@@ -74,8 +72,6 @@ TYPED_TEST(HaversineTest, Zero)
 TYPED_TEST(HaversineTest, EquivalentPoints)
 {
   using T = TypeParam;
-
-  auto const count = 3;
 
   auto a_lon = fixed_width_column_wrapper<T>({-180, 180});
   auto a_lat = fixed_width_column_wrapper<T>({0, 30});

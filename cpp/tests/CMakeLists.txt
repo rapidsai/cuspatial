@@ -1,5 +1,5 @@
 ﻿#=============================================================================
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2019-2021, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,143 +14,80 @@
 # limitations under the License.
 #=============================================================================
 
-if(NOT CMAKE_CUDA_COMPILER)
-  message(SEND_ERROR "CMake cannot locate a CUDA compiler")
-endif()
-
-###################################################################################################
-# - common test utils -----------------------------------------------------------------------------
-
-find_library(CUDFTESTUTIL_LIBRARY "libcudftestutil.a"
-             HINTS "$ENV{CUDF_ROOT}/lib")
-
-message(STATUS "CUDFTESTUTIL: CUDFTESTUTIL_LIBRARY set to ${CUDFTESTUTIL_LIBRARY}")
-
-add_library(cudftestutil STATIC IMPORTED ${CUDFTESTUTIL_LIBRARY})
-
-if (CUDFTESTUTIL_LIBRARY)
-    set_target_properties(cudftestutil PROPERTIES IMPORTED_LOCATION ${CUDFTESTUTIL_LIBRARY})
-endif (CUDFTESTUTIL_LIBRARY)
-
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
 
-function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
-    add_executable(${CMAKE_TEST_NAME}
-                ${CMAKE_TEST_SRC})
-    set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    # By default the linker doesn't transitively add `DT_NEEDED` entries in executables like it does
-    # for shared libraries, so to work around current libcudf build behavior we're adding the linker
-    # flag
-    target_link_libraries(${CMAKE_TEST_NAME} "-Wl,--copy-dt-needed-entries")
-    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cuspatial
-                          cudftestutil)
-    if(USE_NVTX)
-        target_link_libraries(${CMAKE_TEST_NAME} ${NVTX_LIBRARY})
-    endif(USE_NVTX)
-    set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
-                            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
+function(ConfigureTest CMAKE_TEST_NAME)
+    add_executable(${CMAKE_TEST_NAME} ${ARGN})
+    target_compile_options(${CMAKE_TEST_NAME}
+                PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CUSPATIAL_CXX_FLAGS}>"
+                        "$<$<COMPILE_LANGUAGE:CUDA>:${CUSPATIAL_CUDA_FLAGS}>")
+    target_include_directories(${CMAKE_TEST_NAME}
+                PRIVATE "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}>"
+                        "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}/src>")
+    set_target_properties(${CMAKE_TEST_NAME}
+        PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gtests>")
+    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main cudf::cudftestutil cuspatial)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
 endfunction(ConfigureTest)
 
 ###################################################################################################
-# - include paths ---------------------------------------------------------------------------------
-
-include_directories("${THRUST_INCLUDE_DIR}"
-                    "${LIBCUDACXX_INCLUDE_DIR}")
-
-if(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES)
-	include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
-endif()
-
-include_directories("${CMAKE_BINARY_DIR}/include"
-                    "${CMAKE_SOURCE_DIR}/include"
-                    "${CMAKE_SOURCE_DIR}"
-                    "${CMAKE_SOURCE_DIR}/src"
-                    "${GTEST_INCLUDE_DIR}"
-                    "${RMM_INCLUDE}"
-                    "${CUDF_INCLUDE}")
-
+### test sources ##################################################################################
 ###################################################################################################
-# - library paths ---------------------------------------------------------------------------------
 
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
-                 "${CMAKE_BINARY_DIR}"
-                 "${CONDA_LINK_DIRS}"
-                 "${GTEST_LIBRARY_DIR}")
+ConfigureTest(CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST
+    spatial/cartesian_product_group_index_iterator_test.cu)
 
-set(CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/cartesian_product_group_index_iterator_test.cu")
-ConfigureTest(CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST "${CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST_SRC}")
+ ConfigureTest(CUBIC_SPLINE_TEST
+    interpolate/cubic_spline_test.cpp)
 
-set(CUBIC_SPLINE_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/interpolate/cubic_spline_test.cpp")
- ConfigureTest(CUBIC_SPLINE_TEST "${CUBIC_SPLINE_TEST_SRC}")
+ConfigureTest(COORDINATE_TRANSFORM_TEST
+    spatial/coordinate_transform_test.cu)
 
-set(COORDINATE_TRANSFORM_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/coordinate_transform_test.cu")
-ConfigureTest(COORDINATE_TRANSFORM_TEST "${COORDINATE_TRANSFORM_TEST_SRC}")
+ConfigureTest(HAVERSINE_TEST
+    spatial/haversine_test.cpp)
 
-set(HAVERSINE_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/haversine_test.cpp")
-ConfigureTest(HAVERSINE_TEST "${HAVERSINE_TEST_SRC}")
+ConfigureTest(HAUSDORFF_TEST
+    spatial/hausdorff_test.cpp)
 
-set(HAUSDORFF_TEST_SRC
-   "${CMAKE_CURRENT_SOURCE_DIR}/spatial/hausdorff_test.cpp")
-ConfigureTest(HAUSDORFF_TEST "${HAUSDORFF_TEST_SRC}")
+ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST
+    join/point_in_polygon_test_small.cpp)
 
-set(JOIN_POINT_IN_POLYGON_SMALL_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/join/point_in_polygon_test_small.cpp")
-ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST "${JOIN_POINT_IN_POLYGON_SMALL_TEST_SRC}")
+ConfigureTest(JOIN_POINT_IN_POLYGON_LARGE_TEST
+    join/point_in_polygon_test_large.cpp)
 
-set(JOIN_POINT_IN_POLYGON_LARGE_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/join/point_in_polygon_test_large.cpp")
-ConfigureTest(JOIN_POINT_IN_POLYGON_LARGE_TEST "${JOIN_POINT_IN_POLYGON_LARGE_TEST_SRC}")
+ConfigureTest(JOIN_POINT_TO_POLYLINE_SMALL_TEST
+    join/point_to_nearest_polyline_test_small.cpp)
 
-set(JOIN_POINT_TO_POLYLINE_SMALL_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/join/point_to_nearest_polyline_test_small.cpp")
-ConfigureTest(JOIN_POINT_TO_POLYLINE_SMALL_TEST "${JOIN_POINT_TO_POLYLINE_SMALL_TEST_SRC}")
+ConfigureTest(POINT_IN_POLYGON_TEST
+    spatial/point_in_polygon_test.cpp)
 
-set(POINT_IN_POLYGON_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/point_in_polygon_test.cpp")
-ConfigureTest(POINT_IN_POLYGON_TEST "${POINT_IN_POLYGON_TEST_SRC}")
+ConfigureTest(POINT_QUADTREE_TEST
+    indexing/point_quadtree_test.cu)
 
-set(POINT_QUADTREE_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/indexing/point_quadtree_test.cu")
-ConfigureTest(POINT_QUADTREE_TEST "${POINT_QUADTREE_TEST_SRC}")
+ConfigureTest(POLYLINE_BBOX_TEST
+    spatial/polyline_bbox_test.cu)
 
-set(POLYLINE_BBOX_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/polyline_bbox_test.cu")
-ConfigureTest(POLYLINE_BBOX_TEST "${POLYLINE_BBOX_TEST_SRC}")
+ConfigureTest(POLYGON_BBOX_TEST
+    spatial/polygon_bbox_test.cu)
 
-set(POLYGON_BBOX_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/spatial/polygon_bbox_test.cu")
-ConfigureTest(POLYGON_BBOX_TEST "${POLYGON_BBOX_TEST_SRC}")
+ConfigureTest(SHAPEFILE_READER_TEST
+    io/shp/polygon_shapefile_reader_test.cpp)
 
-set(SHAPEFILE_READER_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/io/shp/polygon_shapefile_reader_test.cpp")
-ConfigureTest(SHAPEFILE_READER_TEST "${SHAPEFILE_READER_TEST_SRC}")
+ConfigureTest(QUADTREE_POLYGON_FILTERING_TEST
+    join/quadtree_polygon_filtering_test.cu)
 
-set(QUADTREE_POLYGON_FILTERING_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/join/quadtree_polygon_filtering_test.cu")
-ConfigureTest(QUADTREE_POLYGON_FILTERING_TEST "${QUADTREE_POLYGON_FILTERING_SRC}")
+ConfigureTest(QUADTREE_POLYLINE_FILTERING_TEST
+    join/quadtree_polyline_filtering_test.cu)
 
-set(QUADTREE_POLYLINE_FILTERING_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/join/quadtree_polyline_filtering_test.cu")
-ConfigureTest(QUADTREE_POLYLINE_FILTERING_TEST "${QUADTREE_POLYLINE_FILTERING_SRC}")
+ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST
+    trajectory/test_trajectory_distances_and_speeds.cu)
 
-set(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_SRC
-"${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_trajectory_distances_and_speeds.cu")
-ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST "${TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_SRC}")
+ConfigureTest(DERIVE_TRAJECTORIES_TEST
+    trajectory/test_derive_trajectories.cu)
 
-set(DERIVE_TRAJECTORIES_TEST_SRC
-"${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_derive_trajectories.cu")
-ConfigureTest(DERIVE_TRAJECTORIES_TEST "${DERIVE_TRAJECTORIES_TEST_SRC}")
+ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST
+    trajectory/test_trajectory_bounding_boxes.cu)
 
-set(TRAJECTORY_BOUNDING_BOXES_TEST_SRC
-"${CMAKE_CURRENT_SOURCE_DIR}/trajectory/test_trajectory_bounding_boxes.cu")
-ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST "${TRAJECTORY_BOUNDING_BOXES_TEST_SRC}")
-
-set(SPATIAL_WINDOW_POINT_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/spatial_window/spatial_window_test.cpp")
-ConfigureTest(SPATIAL_WINDOW_POINT_TEST "${SPATIAL_WINDOW_POINT_TEST_SRC}")
+ConfigureTest(SPATIAL_WINDOW_POINT_TEST
+    spatial_window/spatial_window_test.cpp)
