@@ -23,6 +23,12 @@ T = TypeVar("T", bound="GeoColumn")
 
 
 class GeoMeta:
+    """
+    Creates  input_types and input_lengths for GeoColumns that are created
+    using native GeoArrowBuffers. These will be used to convert to GeoPandas
+    GeoSeries if necessary.
+    """
+
     def __init__(self, buffers: GeoArrowBuffers):
         self.input_types = []
         self.input_lengths = []
@@ -33,7 +39,7 @@ class GeoMeta:
             self.input_types += list(np.repeat("mp", len(buffers.multipoints)))
             self.input_lengths += list(np.repeat(1, len(buffers.multipoints)))
         if hasattr(buffers, "lines"):
-            if hasattr(buffers.lines, "mlines"):
+            if len(buffers.lines.mlines) > 0:
                 self.input_types += list(
                     np.repeat("l", buffers.lines.mlines[0])
                 )
@@ -43,25 +49,38 @@ class GeoMeta:
                 for ml_index in range(len(buffers.lines.mlines) // 2):
                     self.input_types += list(["ml"])
                     self.input_lengths += [1]
-                    self.input_types += list(
-                        np.repeat(
-                            "l",
-                            buffers.lines.mlines[ml_index * 2 + 1]
-                            - 1
-                            - buffers.lines.mlines[ml_index * 2],
-                        )
+                    mline_size = (
+                        buffers.lines.mlines[ml_index * 2 + 1]
+                        - 1
+                        - buffers.lines.mlines[ml_index * 2]
                     )
-                    self.input_lengths += list(
-                        np.repeat(
-                            1,
-                            buffers.lines.mlines[ml_index * 2 + 1]
-                            - 1
-                            - buffers.lines.mlines[ml_index * 2],
-                        )
-                    )
+                    self.input_types += list(np.repeat("l", mline_size))
+                    self.input_lengths += list(np.repeat(1, mline_size))
             else:
                 self.input_types += list(np.repeat("l", len(buffers.lines)))
-                self.input_lengths += list(np.repeat("l", len(buffers.lines)))
+                self.input_lengths += list(np.repeat(1, len(buffers.lines)))
+        if hasattr(buffers, "polygons"):
+            if len(buffers.polygons.mpolys) > 0:
+                self.input_types += list(
+                    np.repeat("poly", buffers.polygons.mpolys[0])
+                )
+                self.input_lengths += list(
+                    np.repeat(1, buffers.polygons.mpolys[0])
+                )
+                for mp_index in range(len(buffers.polygons.mpolys) // 2):
+                    mpoly_size = (
+                        buffers.polygons.mpolys[mp_index * 2 + 1]
+                        - buffers.polygons.mpolys[mp_index * 2]
+                    )
+                    self.input_types += list(["mpoly"])
+                    self.input_lengths += [mpoly_size]
+                    self.input_types += list(np.repeat("poly", mpoly_size))
+                    self.input_lengths += list(np.repeat(1, mpoly_size))
+            else:
+                self.input_types += list(
+                    np.repeat("poly", len(buffers.polygons))
+                )
+                self.input_lengths += list(np.repeat(1, len(buffers.polygons)))
 
     def copy(self, deep=True):
         return type(self)(
@@ -208,10 +227,7 @@ class GeoColumn(NumericalColumn):
         """
         Returns the number of unique geometries stored in this GeoColumn.
         """
-        if self._meta is not None:
-            return len(self._meta.input_types)
-        else:
-            return len(self._geo)
+        return len(self._meta.input_types)
 
     @property
     def points(self):

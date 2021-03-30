@@ -364,7 +364,7 @@ class GpuLineArray(GpuOffsetArray):
         The mlines column of a MultiLine object contains the positions of
         each sub-geometry. Each pair of values in the mlines column specifies
         the beginning index of a sub-geometry in the `.xy` column and beginning
-        of the subsequent sub-geometry. Contains `n+1` values where `n` is the
+        of the subsequent sub-geometry. Contains `2n` values where `n` is the
         number of sub-geometries.
         """
         return self._mlines
