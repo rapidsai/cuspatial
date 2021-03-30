@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ static void BM_hausdorff(benchmark::State& state)
   int32_t num_spaces           = std::min(num_points, num_spaces_asked);
   int32_t num_points_per_space = num_points / num_spaces;
 
-  auto zero_iter = cudf::detail::make_counting_transform_iterator(0, [](auto idx) { return 0; });
+  auto zero_iter = thrust::make_constant_iterator(0);
 
   auto space_offset_iter = cudf::detail::make_counting_transform_iterator(
     0, [num_points_per_space](int32_t idx) { return idx * num_points_per_space; });
