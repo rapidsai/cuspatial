@@ -72,7 +72,8 @@ descend_quadtree(LengthsIter counts,
   thrust::inclusive_scan(
     rmm::exec_policy(stream), parent_counts, parent_counts + num_quads, parent_offsets.begin() + 1);
 
-  parent_offsets.set_element_async(0, 0, stream);
+  uint32_t init{0};
+  parent_offsets.set_element_async(0, init, stream);
 
   auto num_children = parent_offsets.back_element(stream);  // synchronizes stream
 

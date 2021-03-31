@@ -1,14 +1,25 @@
 # cuSpatial 0.19.0 (Date TBD)
 
-## New Features
+Please see https://github.com/rapidsai/cuspatial/releases/tag/v0.19.0a for the latest changes to this development branch.
 
-## Improvements
+# cuSpatial 0.18.0 (24 Feb 2021)
 
-## Bug Fixes
+## Documentation 📖
 
-# 0.18.0
+- Fix directed_hausdorff_distance space_offsets name + documentation (#332) @cwharris
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/branch-0.18-latest for the latest changes to this development branch.
+## New Features 🚀
+
+- New build process script changes &amp; gpuCI enhancements (#338) @raydouglass
+
+## Improvements 🛠️
+
+- Update stale GHA with exemptions &amp; new labels (#357) @mike-wendt
+- Add GHA to mark issues/prs as stale/rotten (#355) @Ethyling
+- Prepare Changelog for Automation (#345) @ajschmidt8
+- Pin gdal to 3.1.x (#339) @weiji14
+- Use simplified `rmm::exec_policy` (#331) @harrism
+- Upgrade to libcu++ on GitHub (#297) @trxcllnt
 
 # cuSpatial 0.17.0 (10 Dec 2020)
 
