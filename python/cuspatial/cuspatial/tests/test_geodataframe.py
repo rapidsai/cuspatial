@@ -17,7 +17,6 @@ from shapely.affinity import rotate
 from cudf.tests.utils import assert_eq
 
 import cuspatial
-from cuspatial.geometry.geodataframe import is_geometry_type
 
 np.random.seed(0)
 
@@ -108,10 +107,7 @@ def assert_eq_geo_df(geo1, geo2):
         assert TypeError
     assert geo1.columns.equals(geo2.columns)
     for col in geo1.columns:
-        if is_geometry_type(geo1[col]):
-            assert geo1[col].equals(geo2[col]).all()
-        else:
-            assert geo1[col].equals(geo2[col])
+        assert geo1[col].equals(geo2[col])
 
 
 def test_select_multiple_columns(gpdf):

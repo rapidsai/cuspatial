@@ -11,7 +11,7 @@ dependencies:
   - cudf=0.16.*
   - cudatoolkit=10.2
   - gdal>=3.0.2
-  - geopandas=0.7.0
+  - geopandas>=0.8
   - cmake>=3.14
   - cython>=0.29,<0.30
   - gtest
