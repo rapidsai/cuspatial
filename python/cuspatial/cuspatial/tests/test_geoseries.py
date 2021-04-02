@@ -177,10 +177,10 @@ def test_getitem_points():
     p1 = Point([3, 4])
     p2 = Point([5, 6])
     gps = gpd.GeoSeries([p0, p1, p2])
-    cus = cuspatial.from_geopandas(gps)
-    assert_eq_point(cus[0].to_shapely(), p0)
-    assert_eq_point(cus[1].to_shapely(), p1)
-    assert_eq_point(cus[2].to_shapely(), p2)
+    cus = cuspatial.from_geopandas(gps).to_pandas()
+    assert_eq_point(cus[0], p0)
+    assert_eq_point(cus[1], p1)
+    assert_eq_point(cus[2], p2)
 
 
 def test_getitem_lines():
@@ -188,10 +188,10 @@ def test_getitem_lines():
     p1 = LineString([[1, 2], [3, 4], [5, 6], [7, 8]])
     p2 = LineString([[1, 2], [3, 4], [5, 6]])
     gps = gpd.GeoSeries([p0, p1, p2])
-    cus = cuspatial.from_geopandas(gps)
-    assert_eq_linestring(cus[0].to_shapely(), p0)
-    assert_eq_linestring(cus[1].to_shapely(), p1)
-    assert_eq_linestring(cus[2].to_shapely(), p2)
+    cus = cuspatial.from_geopandas(gps).to_pandas()
+    assert_eq_linestring(cus[0], p0)
+    assert_eq_linestring(cus[1], p1)
+    assert_eq_linestring(cus[2], p2)
 
 
 @pytest.mark.parametrize(

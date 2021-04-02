@@ -124,7 +124,8 @@ class GeoSeries(cudf.Series):
         """
         if nullable is True:
             raise ValueError("cuGeoSeries doesn't support <NA> yet")
-        output = [geom.to_shapely() for geom in self.geocolumn]
+        host_column = self.geocolumn.to_host()
+        output = [geom.to_shapely() for geom in host_column]
         return gpGeoSeries(output, index=self.index.to_pandas())
 
     def to_pandas(self):

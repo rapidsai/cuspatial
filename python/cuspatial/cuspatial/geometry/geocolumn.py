@@ -11,7 +11,7 @@ from shapely.geometry import (
     Polygon,
     MultiPolygon,
 )
-from typing import TypeVar
+from typing import TypeVar, Union
 
 import cudf
 from cudf.core.column import ColumnBase, NumericalColumn
@@ -29,7 +29,12 @@ class GeoMeta:
     GeoSeries if necessary.
     """
 
-    def __init__(self, buffers: GeoArrowBuffers):
+    def __init__(self, meta: Union[GeoArrowBuffers, dict]):
+        if isinstance(meta, dict):
+            self.input_types = meta["input_types"]
+            self.input_lengths = meta["input_lengths"]
+            return
+        buffers = meta
         self.input_types = []
         self.input_lengths = []
         if hasattr(buffers, "points"):
@@ -87,7 +92,6 @@ class GeoMeta:
             {
                 "input_types": self.input_types.copy(),
                 "input_lengths": self.input_lengths.copy(),
-                "inputs": self.inputs.copy(),
             }
         )
 
@@ -101,7 +105,6 @@ class GeoPandasMeta(GeoMeta):
     def __init__(self, meta: dict):
         self.input_types = meta["input_types"]
         self.input_lengths = meta["input_lengths"]
-        self.inputs = meta["inputs"]
 
 
 class GeoColumn(NumericalColumn):
@@ -117,7 +120,12 @@ class GeoColumn(NumericalColumn):
     `_copy_type_metadata`, this assures support for existing cudf algorithms.
     """
 
-    def __init__(self, data: GeoArrowBuffers, meta: GeoPandasMeta = None):
+    def __init__(
+        self,
+        data: GeoArrowBuffers,
+        meta: GeoPandasMeta = None,
+        shuffle_order: cudf.Index = None,
+    ):
         base = cudf.Series(cudf.RangeIndex(0, len(data)))._column.data
         super().__init__(base, dtype="int64")
         self._geo = data
@@ -125,6 +133,8 @@ class GeoColumn(NumericalColumn):
             self._meta = meta
         else:
             self._meta = GeoMeta(data)
+        if shuffle_order is not None:
+            self._data = shuffle_order
 
     def __iter__(self):
         self._iter_index = 0
@@ -135,6 +145,10 @@ class GeoColumn(NumericalColumn):
             raise StopIteration
         result = self[self._iter_index]
         self._iter_index = self._iter_index + 1
+        return result
+
+    def to_host(self):
+        result = GeoColumn(self._geo.to_host(), self._meta.copy(), self.data)
         return result
 
     class GeoColumnLocIndexer:
@@ -286,7 +300,7 @@ class GeoColumn(NumericalColumn):
         Create a copy of all of the GPU-backed data structures in this
         GeoColumn.
         """
-        result = GeoColumn(self._geo.copy(), self._meta.copy())
+        result = GeoColumn(self._geo.copy(), self._meta.copy(), self.data)
         return result
 
     def _copy_type_metadata(self: T, other: ColumnBase) -> ColumnBase:
@@ -333,7 +347,7 @@ class gpuMultiPoint(gpuGeometry):
         )
         item_source = self._source.multipoints
         result = item_source[item_start]
-        return MultiPoint(result.to_array().reshape(item_length // 2, 2))
+        return MultiPoint(np.array(result).reshape(item_length // 2, 2))
 
 
 class gpuLineString(gpuGeometry):
@@ -361,7 +375,7 @@ class gpuLineString(gpuGeometry):
         item_source = self._source.lines
         result = item_source[item_start:item_end]
         return LineString(
-            result.to_array().reshape(2 * (item_start - item_end), 2)
+            np.array(result).reshape(2 * (item_start - item_end), 2)
         )
 
 
@@ -379,9 +393,9 @@ class gpuMultiLineString(gpuGeometry):
         return MultiLineString(
             [
                 LineString(
-                    self._source.lines[i]
-                    .to_array()
-                    .reshape(int(len(self._source.lines[i]) / 2), 2)
+                    np.array(self._source.lines[i]).reshape(
+                        int(len(self._source.lines[i]) / 2), 2
+                    )
                 )
                 for i in range(line_indices.start, line_indices.stop, 1)
             ]
@@ -417,11 +431,9 @@ class gpuPolygon(gpuGeometry):
         exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
         exterior = self._source.polygons.xy[exterior_slice]
         return Polygon(
-            exterior.to_array().reshape(2 * (ring_start - ring_end), 2),
+            np.array(exterior).reshape(2 * (ring_start - ring_end), 2),
             [
-                self._source.polygons.xy[interior_slice]
-                .to_array()
-                .reshape(
+                np.array(self._source.polygons.xy[interior_slice]).reshape(
                     int((interior_slice.stop - interior_slice.start + 1) / 2),
                     2,
                 )
@@ -454,13 +466,11 @@ class gpuMultiPolygon(gpuGeometry):
             exterior = self._source.polygons.xy[exterior_slice]
             polys.append(
                 Polygon(
-                    exterior.to_array().reshape(
-                        2 * (ring_start - ring_end), 2
-                    ),
+                    np.array(exterior).reshape(2 * (ring_start - ring_end), 2),
                     [
-                        self._source.polygons.xy[interior_slice]
-                        .to_array()
-                        .reshape(
+                        np.array(
+                            self._source.polygons.xy[interior_slice]
+                        ).reshape(
                             int(
                                 (
                                     interior_slice.stop

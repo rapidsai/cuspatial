@@ -4,6 +4,7 @@ from typing import TypeVar, Union
 
 import cudf
 import numpy as np
+import pandas as pd
 
 T = TypeVar("T", bound="GeoArrowBuffers")
 
@@ -64,7 +65,7 @@ class GeoArrowBuffers:
         })
     """
 
-    def __init__(self, data: Union[dict, T]):
+    def __init__(self, data: Union[dict, T], data_locale: object = cudf):
         """
         Parameters
         ----------
@@ -72,18 +73,25 @@ class GeoArrowBuffers:
         """
         if isinstance(data, dict):
             if data.get("points_xy") is not None:
-                self._points = GpuCoordinateArray(data["points_xy"])
+                self._points = CoordinateArray(
+                    data["points_xy"], data_locale=data_locale
+                )
             if data.get("mpoints_xy") is not None:
                 if data.get("mpoints_offsets") is None:
                     raise ValueError("mpoints must include offsets buffer")
-                self._multipoints = GpuMultiPointArray(
-                    data["mpoints_xy"], data["mpoints_offsets"]
+                self._multipoints = MultiPointArray(
+                    data["mpoints_xy"],
+                    data["mpoints_offsets"],
+                    data_locale=data_locale,
                 )
             if data.get("lines_xy") is not None:
                 if data.get("lines_offsets") is None:
                     raise ValueError("lines_xy must include offsets buffer")
-                self._lines = GpuLineArray(
-                    data["lines_xy"], data["lines_offsets"], data.get("mlines")
+                self._lines = LineArray(
+                    data["lines_xy"],
+                    data["lines_offsets"],
+                    data.get("mlines"),
+                    data_locale=data_locale,
                 )
             if data.get("polygons_xy") is not None:
                 if (
@@ -93,21 +101,42 @@ class GeoArrowBuffers:
                     raise ValueError(
                         "polygons_xy must include polygons and" "rings buffers"
                     )
-                self._polygons = GpuPolygonArray(
+                self._polygons = PolygonArray(
                     data["polygons_xy"],
                     data["polygons_polygons"],
                     data["polygons_rings"],
                     data.get("mpolygons"),
+                    data_locale=data_locale,
                 )
         elif isinstance(data, GeoArrowBuffers):
             if hasattr(data, "_points"):
-                self._points = data._points.copy()
+                self._points = CoordinateArray(
+                    data.points.xy, data.points.z, data_locale=data_locale
+                )
             if hasattr(data, "_multipoints"):
-                self._multipoints = data._multipoints.copy()
+                self._multipoints = MultiPointArray(
+                    data.multipoints.xy,
+                    data.multipoints.offsets,
+                    data.multipoints.z,
+                    data_locale=data_locale,
+                )
             if hasattr(data, "_lines"):
-                self._lines = data._lines.copy()
+                self._lines = LineArray(
+                    data.lines.xy,
+                    data.lines.offsets,
+                    data.lines.mlines,
+                    data.lines.z,
+                    data_locale=data_locale,
+                )
             if hasattr(data, "_polygons"):
-                self._polygons = data._polygons.copy()
+                self._polygons = PolygonArray(
+                    data.polygons.xy,
+                    data.polygons.polys,
+                    data.polygons.rings,
+                    data.polygons.mpolys,
+                    data.polygons.z,
+                    data_locale=data_locale,
+                )
         else:
             raise TypeError(
                 f"Invalid type passed to GeoArrowBuffers ctor {type(data)}"
@@ -177,17 +206,58 @@ class GeoArrowBuffers:
         result = GeoArrowBuffers(self)
         return result
 
+    def to_host(self):
+        return GeoArrowBuffers(self, data_locale=pd)
 
-class GpuCoordinateArray:
-    def __init__(self, xy, z=None):
+    def __repr__(self):
+        return (
+            f"{self.points}\n"
+            f"{self.multipoints}\n"
+            f"{self.lines}\n"
+            f"{self.polygons}\n"
+        )
+
+
+class CoordinateArray:
+    def __init__(self, xy, z=None, data_locale=cudf):
         """
-        A GeoArrow column of points. The GpuCoordinateArray stores all of the
+        A GeoArrow column of points. The CoordinateArray stores all of the
         points within a single data source, typically a cuspatial.GeoSeries,
         in the format specified by GeoArrow.
         """
+        self.data_location = data_locale
         self.xy = xy
         if z is not None:
             self.z = z
+
+    @property
+    def data_location(self):
+        """
+        A `Series` supporting python library, expected to be either `cudf` or
+        `pandas`. If `cudf`, GeoArrowBuffer is stored on the GPU and used in
+        cuspatial operations. If `pandas`, GeoArrowBuffer is stored on Host and
+        used for creating GeoPandas objects.
+        """
+        return self._data_location
+
+    @data_location.setter
+    def data_location(self, data_location):
+        if data_location not in [cudf, pd]:
+            raise NotImplementedError(
+                "only cudf and pandas CoordinateArrays "
+                "are supported at this time"
+            )
+        else:
+            self._data_location = data_location
+
+    def _serialize(self, data):
+        try:
+            if hasattr(data, "to_pandas"):
+                return data.to_pandas()
+            else:
+                return cudf.Series(data)
+        except Exception as e:
+            raise TypeError(e, f"{type(data)} is not supported in cuspatial")
 
     @property
     def xy(self):
@@ -201,10 +271,7 @@ class GpuCoordinateArray:
     def xy(self, xy):
         if (len(xy) % 2) != 0:
             raise ValueError("xy must have even length")
-        try:
-            self._xy = cudf.Series(xy)
-        except Exception as e:
-            raise TypeError(e, "xy isn't a buffer type supported by `cudf`")
+        self._xy = self._serialize(xy)
 
     @property
     def z(self):
@@ -218,10 +285,7 @@ class GpuCoordinateArray:
 
     @z.setter
     def z(self, z):
-        try:
-            self._z = cudf.Series(z)
-        except Exception as e:
-            raise TypeError(e, "z isn't a buffer type supported by `cudf`")
+        self._z = self._serialize(z)
 
     def __getitem__(self, index):
         if isinstance(index, slice):
@@ -247,20 +311,20 @@ class GpuCoordinateArray:
             z = self.z.copy(deep)
         else:
             z = None
-        result = GpuCoordinateArray(self.xy.copy(deep), z)
+        result = type(self)(self.xy.copy(deep), z)
         return result
 
     @property
     def x(self):
         """
-        Return packed x-coordinates of this GpuGeometryArray object.
+        Return packed x-coordinates of this GeometryArray object.
         """
         return self.xy[slice(0, None, 2)].reset_index(drop=True)
 
     @property
     def y(self):
         """
-        Return packed y-coordinates of this GpuGeometryArray object.
+        Return packed y-coordinates of this GeometryArray object.
         """
         return self.xy[slice(1, None, 2)].reset_index(drop=True)
 
@@ -268,25 +332,25 @@ class GpuCoordinateArray:
         return len(self.xy) // 2
 
 
-class GpuPointsArray(GpuCoordinateArray):
+class PointsArray(CoordinateArray):
     """
     A GeoArrow column of points. Every pair is the `[x,y]` coordinate of the
     position/2th point in this data source. `z` can be included optionally.
     """
 
-    def __init__(self, xy, z=None):
-        super().__init__(xy, z)
+    def __init__(self, xy, z=None, data_locale=cudf):
+        super().__init__(xy, z, data_locale=data_locale)
 
 
-class GpuOffsetArray(GpuCoordinateArray):
-    def __init__(self, xy, offsets, z=None):
+class OffsetArray(CoordinateArray):
+    def __init__(self, xy, offsets, z=None, data_locale=cudf):
         """
         A GeoArrow column of offset geometries. This is the base class of all
         complex GeoArrow geometries. MultiLineStrings and MultiPolygons store
         extra metadata to identify individual geometry boundaries, but are also
-        based on GpuOffsetArray.
+        based on OffsetArray.
         """
-        super().__init__(xy, z)
+        super().__init__(xy, z, data_locale=data_locale)
         self.offsets = offsets
 
     @property
@@ -302,12 +366,7 @@ class GpuOffsetArray(GpuCoordinateArray):
 
     @offsets.setter
     def offsets(self, offsets):
-        try:
-            self._offsets = cudf.Series(offsets)
-        except Exception as e:
-            raise TypeError(
-                e, "offsets isn't a buffer type supported by `cudf`"
-            )
+        self._offsets = self._serialize(offsets)
 
     def __getitem__(self, index):
         if isinstance(index, slice):
@@ -332,15 +391,15 @@ class GpuOffsetArray(GpuCoordinateArray):
             z = self.z.copy(deep)
         else:
             z = None
-        result = GpuOffsetArray(self.xy.copy(deep), self.offsets.copy(deep), z)
+        result = OffsetArray(self.xy.copy(deep), self.offsets.copy(deep), z)
         return result
 
     def __len__(self):
         return len(self._offsets) - 1
 
 
-class GpuLineArray(GpuOffsetArray):
-    def __init__(self, xy, lines, mlines, z=None):
+class LineArray(OffsetArray):
+    def __init__(self, xy, lines, mlines, z=None, data_locale=cudf):
         """
         A GeoArrow column of LineStrings. This format stores LineStrings and
         MultiLineStrings from a single data source (Such as a GeoSeries).
@@ -355,7 +414,7 @@ class GpuLineArray(GpuOffsetArray):
         mlines : cudf.Series
         z : cudf.Series (optional)
         """
-        super().__init__(xy, lines, z)
+        super().__init__(xy, lines, z, data_locale=data_locale)
         self.mlines = mlines
 
     @property
@@ -371,12 +430,7 @@ class GpuLineArray(GpuOffsetArray):
 
     @mlines.setter
     def mlines(self, mlines):
-        try:
-            self._mlines = cudf.Series(mlines)
-        except Exception as e:
-            raise TypeError(
-                e, "mlines isn't a buffer type supported by `cudf`"
-            )
+        self._mlines = self._serialize(mlines)
 
     def __repr__(self):
         return (
@@ -385,9 +439,7 @@ class GpuLineArray(GpuOffsetArray):
 
     def copy(self, deep=True):
         base = super().copy(deep)
-        result = GpuLineArray(
-            base.xy, base.offsets, self.mlines.copy(), base.z,
-        )
+        result = LineArray(base.xy, base.offsets, self.mlines.copy(), base.z,)
         return result
 
     def __len__(self):
@@ -401,26 +453,26 @@ class GpuLineArray(GpuOffsetArray):
         return (len(self.offsets) - 1) - mlength
 
 
-class GpuMultiPointArray(GpuOffsetArray):
-    def __init__(self, xy, offsets, z=None):
+class MultiPointArray(OffsetArray):
+    def __init__(self, xy, offsets, z=None, data_locale=cudf):
         """
         A GeoArrow column of MultiPoints. These are all of the MultiPoints that
         appear in a GeoSeries or other data source. Single points are stored in
-        the GpuCoordinateArray.
+        the CoordinateArray.
         """
-        super().__init__(xy, z)
+        super().__init__(xy, z, data_locale=data_locale)
         self.offsets = offsets
 
     def copy(self, deep=True):
         base = super().copy(deep)
-        result = GpuMultiPointArray(base.xy, base.offsets, base.z)
+        result = MultiPointArray(base.xy, base.offsets, base.z)
         return result
 
 
-class GpuPolygonArray(GpuOffsetArray):
-    def __init__(self, xy, polys, rings, mpolys, z=None):
+class PolygonArray(OffsetArray):
+    def __init__(self, xy, polys, rings, mpolys, z=None, data_locale=cudf):
         """
-        The GeoArrow column format for GpuPolygons uses the same scheme as the
+        The GeoArrow column format for Polygons uses the same scheme as the
         format for LineStrings - MultiPolygons and Polygons from the same
         GeoSeries (or another data source) are stored in the same contiguous
         buffer. Rings are stored in the offsets array, exterior/interior
@@ -428,8 +480,8 @@ class GpuPolygonArray(GpuOffsetArray):
         `mpolys` array of pairs determines which polys are members of
         MultiPolygons.
         """
-        # GpuPolygonArray uses the offsets buffer for rings!
-        super().__init__(xy, rings, z)
+        # PolygonArray uses the offsets buffer for rings!
+        super().__init__(xy, rings, z, data_locale=data_locale)
         self.polys = polys
         self.mpolys = mpolys
 
@@ -437,16 +489,13 @@ class GpuPolygonArray(GpuOffsetArray):
     def rings(self):
         """
         Each polygon in the GeoSeries is specified in the rings buffer, which
-        follows the same format as `offsets` in GpuOffsetArray.
+        follows the same format as `offsets` in OffsetArray.
         """
         return self.offsets
 
     @rings.setter
     def rings(self, rings):
-        try:
-            self.offsets = cudf.Series(rings)
-        except Exception as e:
-            raise TypeError(e, "rings isn't a buffer type supported by `cudf`")
+        self.offsets = self._serialize(rings)
 
     @property
     def polys(self):
@@ -460,12 +509,7 @@ class GpuPolygonArray(GpuOffsetArray):
 
     @polys.setter
     def polys(self, polys):
-        try:
-            self._polys = cudf.Series(polys)
-        except Exception as e:
-            raise TypeError(
-                e, "polys  isn't a buffer type supported by `cudf`"
-            )
+        self._polys = self._serialize(polys)
 
     @property
     def mpolys(self):
@@ -479,12 +523,7 @@ class GpuPolygonArray(GpuOffsetArray):
 
     @mpolys.setter
     def mpolys(self, mpolys):
-        try:
-            self._mpolys = cudf.Series(mpolys)
-        except Exception as e:
-            raise TypeError(
-                e, "mpolys  isn't a buffer type supported by `cudf`"
-            )
+        self._mpolys = self._serialize(mpolys)
 
     def __repr__(self):
         result = (
@@ -500,12 +539,12 @@ class GpuPolygonArray(GpuOffsetArray):
 
     def copy(self, deep=True):
         """
-        See GpuCoordinateArray
+        See CoordinateArray
         """
         result = super().copy(deep)
         result.polys = self.polys.copy(deep)
         result.rings = self.rings.copy(deep)
-        result.mpolys = self.mpolys.copy()
+        result.mpolys = self.mpolys.copy(deep)
         return result
 
     def __len__(self):
