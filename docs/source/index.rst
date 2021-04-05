@@ -6,10 +6,6 @@ Welcome to cuSpatial's documentation!
    :caption: Contents:
 
    api.rst
-   cuspatial.rst
-   cuspatial.core.rst
-   cuspatial.geometry.rst
-   cuspatial.utils.rst
  
 
 Indices and tables
