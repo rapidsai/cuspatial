@@ -41,6 +41,9 @@ list(APPEND CUSPATIAL_CUDA_FLAGS --expt-extended-lambda --expt-relaxed-constexpr
 list(APPEND CUSPATIAL_CUDA_FLAGS -Werror=cross-execution-space-call)
 list(APPEND CUSPATIAL_CUDA_FLAGS -Xcompiler=-Wall,-Werror,-Wno-error=deprecated-declarations)
 
+# Produce smallest binary size
+list(APPEND CUSPATIAL_CUDA_FLAGS -Xfatbin=-compress-all)
+
 if(DISABLE_DEPRECATION_WARNING)
     list(APPEND CUSPATIAL_CXX_FLAGS -Wno-deprecated-declarations)
     list(APPEND CUSPATIAL_CUDA_FLAGS -Xcompiler=-Wno-deprecated-declarations)
