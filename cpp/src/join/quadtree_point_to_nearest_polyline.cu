@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,58 +23,143 @@
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
+#include <cudf/detail/iterator.cuh>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
+#include <cudf/types.hpp>
 
+#include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/copy.h>
+#include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/remove.h>
+#include <thrust/sort.h>
 #include <thrust/transform.h>
 
 namespace cuspatial {
 namespace detail {
 namespace {
 
-template <typename T, typename PointIter, typename QuadOffsetsIter>
+inline __device__ thrust::tuple<uint32_t, uint32_t> get_quad_poly_and_local_point_indices(
+  uint32_t const global_index, uint32_t const *point_offsets, uint32_t const *point_offsets_end)
+{
+  // Calculate the position in "point_offsets" that `global_index` falls between.
+  // This position is the index of the poly/quad pair for this `global_index`.
+  //
+  // Dereferencing `local_point_offset` yields the zero-based first point position of this
+  // quadrant. Adding this zero-based position to the quadrant's first point position in the
+  // quadtree yields the "global" position in the `point_indices` map.
+  auto const local_point_offset =
+    thrust::upper_bound(thrust::seq, point_offsets, point_offsets_end, global_index) - 1;
+  return thrust::make_tuple(
+    // quad_poly_index
+    thrust::distance(point_offsets, local_point_offset),
+    // local_point_index
+    global_index - *local_point_offset);
+}
+
+inline __device__ thrust::tuple<uint32_t, uint32_t> get_local_poly_index_and_count(
+  uint32_t const poly_index, uint32_t const *quad_offsets, uint32_t const *quad_offsets_end)
+{
+  bool lhs_done{false};
+  bool rhs_done{false};
+  uint32_t num_polys_in_quad{0};
+  auto const l_end       = quad_offsets;
+  auto const r_end       = quad_offsets_end - 1;
+  auto const quad_offset = quad_offsets[poly_index];
+  auto l_itr             = quad_offsets + poly_index;
+  auto r_itr             = quad_offsets + poly_index;
+  do {
+    num_polys_in_quad += !(lhs_done = lhs_done || l_itr <= l_end || *(--l_itr) != quad_offset);
+    num_polys_in_quad += !(rhs_done = rhs_done || r_itr >= r_end || *(++r_itr) != quad_offset);
+  } while (!lhs_done || !rhs_done);
+  auto const local_poly_index =
+    static_cast<uint32_t>(thrust::distance(l_itr, quad_offsets + poly_index));
+  return thrust::make_tuple(max(1u, local_poly_index) - 1, num_polys_in_quad + 1);
+}
+
+inline __device__ thrust::tuple<uint32_t, uint32_t> get_transposed_point_and_pair_index(
+  uint32_t const global_index,
+  uint32_t const *point_offsets,
+  uint32_t const *point_offsets_end,
+  uint32_t const *quad_offsets,
+  uint32_t const *quad_offsets_end,
+  uint32_t const *quad_lengths)
+{
+  uint32_t quad_poly_index{0}, local_point_offset{0};
+  thrust::tie(quad_poly_index, local_point_offset) =
+    get_quad_poly_and_local_point_indices(global_index, point_offsets, point_offsets_end);
+
+  uint32_t local_poly_index{0}, num_polys_in_quad{0};
+  thrust::tie(local_poly_index, num_polys_in_quad) =
+    get_local_poly_index_and_count(quad_poly_index, quad_offsets, quad_offsets_end);
+
+  auto const quad_point_offset      = quad_offsets[quad_poly_index];
+  auto const num_points_in_quad     = quad_lengths[quad_poly_index];
+  auto const quad_poly_offset       = quad_poly_index - local_poly_index;
+  auto const quad_poly_point_start  = local_poly_index * num_points_in_quad;
+  auto const transposed_point_start = quad_poly_point_start + local_point_offset;
+
+  return thrust::make_tuple(
+    // transposed point index
+    (transposed_point_start / num_polys_in_quad) + quad_point_offset,
+    // transposed polyline index
+    (transposed_point_start % num_polys_in_quad) + quad_poly_offset);
+}
+
+struct compute_point_indices {
+  uint32_t const *point_offsets;
+  uint32_t const *point_offsets_end;
+  uint32_t const *quad_offsets;
+  uint32_t const *quad_offsets_end;
+  uint32_t const *quad_lengths;
+  uint32_t __device__ operator()(uint32_t const global_index)
+  {
+    return thrust::get<0>(get_transposed_point_and_pair_index(global_index,
+                                                              point_offsets,
+                                                              point_offsets_end,
+                                                              quad_offsets,
+                                                              quad_offsets_end,
+                                                              quad_lengths));
+  }
+};
+
+template <typename T, typename PointIter>
 struct compute_point_poly_indices_and_distances {
   PointIter points;
-  QuadOffsetsIter quad_point_offsets;
-  uint32_t const *local_point_offsets;
-  size_t const num_local_point_offsets;
-  cudf::column_device_view const poly_indices;
+  uint32_t const *point_offsets;
+  uint32_t const *point_offsets_end;
+  uint32_t const *quad_offsets;
+  uint32_t const *quad_offsets_end;
+  uint32_t const *quad_lengths;
+  uint32_t const *poly_indices;
   cudf::column_device_view const poly_offsets;
   cudf::column_device_view const poly_points_x;
   cudf::column_device_view const poly_points_y;
-  thrust::tuple<uint32_t, uint32_t, T> __device__ operator()(cudf::size_type const i)
+  thrust::tuple<uint32_t, T> __device__ operator()(uint32_t const global_index)
   {
-    // Calculate the position in "local_point_offsets" that `i` falls between.
-    // This position is the index of the poly/quad pair for this `i`.
-    //
-    // Dereferencing `local_point_offset` yields the zero-based first point position of this
-    // quadrant. Adding this zero-based position to the quadrant's first point position in the
-    // quadtree yields the "global" position in the `point_indices` map.
-    auto po_begin                 = local_point_offsets;
-    auto po_end                   = local_point_offsets + num_local_point_offsets;
-    auto const local_point_offset = thrust::upper_bound(thrust::seq, po_begin, po_end, i) - 1;
-    uint32_t const pairs_idx      = thrust::distance(local_point_offsets, local_point_offset);
-    uint32_t const point_idx      = quad_point_offsets[pairs_idx] + (i - *local_point_offset);
-    uint32_t const poly_idx       = poly_indices.element<uint32_t>(pairs_idx);
-    auto const &point             = points[point_idx];
-    auto const distance           = point_to_poly_line_distance(thrust::get<0>(point),
-                                                      thrust::get<1>(point),
+    // (point_index, poly_index)
+    auto const ids = get_transposed_point_and_pair_index(
+      global_index, point_offsets, point_offsets_end, quad_offsets, quad_offsets_end, quad_lengths);
+
+    auto const point_xy = points[thrust::get<0>(ids)];
+    auto const poly_idx = poly_indices[thrust::get<1>(ids)];
+    auto const distance = point_to_poly_line_distance(thrust::get<0>(point_xy),  // x
+                                                      thrust::get<1>(point_xy),  // y
                                                       poly_idx,
                                                       poly_offsets,
                                                       poly_points_x,
                                                       poly_points_y);
-    return thrust::make_tuple(point_idx, poly_idx, distance);
+    return thrust::make_tuple(poly_idx, distance);
   }
 };
 
@@ -99,91 +184,128 @@ struct compute_quadtree_point_to_nearest_polyline {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource *mr)
   {
-    // Wrapped in an IIFE so `local_point_offsets` is freed on return
-    auto poly_point_idxs_and_distances = [&]() {
-      auto quad_lengths        = quadtree.column(3);
-      auto quad_offsets        = quadtree.column(4);
-      auto poly_indices        = poly_quad_pairs.column(0);
-      auto quad_indices        = poly_quad_pairs.column(1);
-      auto num_poly_quad_pairs = poly_quad_pairs.num_rows();
+    auto quad_lengths        = quadtree.column(3);
+    auto quad_offsets        = quadtree.column(4);
+    auto num_poly_quad_pairs = poly_quad_pairs.num_rows();
 
-      auto counting_iter     = thrust::make_counting_iterator(0);
-      auto quad_lengths_iter = thrust::make_permutation_iterator(quad_lengths.begin<uint32_t>(),
-                                                                 quad_indices.begin<uint32_t>());
+    rmm::device_uvector<uint32_t> quad_poly_indices(num_poly_quad_pairs, stream);
+    rmm::device_uvector<uint32_t> quad_point_offsets(num_poly_quad_pairs, stream);
+    rmm::device_uvector<uint32_t> quad_point_lengths(num_poly_quad_pairs, stream);
 
-      auto quad_offsets_iter = thrust::make_permutation_iterator(quad_offsets.begin<uint32_t>(),
-                                                                 quad_indices.begin<uint32_t>());
+    auto quad_poly_indices_and_quad_offsets_lengths = make_zip_iterator(
+      // poly_indices
+      poly_quad_pairs.column(0).begin<uint32_t>(),
+      // quad_offsets
+      thrust::make_permutation_iterator(quadtree.column(4).begin<uint32_t>(),
+                                        poly_quad_pairs.column(1).begin<uint32_t>()),
+      // quad_lengths
+      thrust::make_permutation_iterator(quadtree.column(3).begin<uint32_t>(),
+                                        poly_quad_pairs.column(1).begin<uint32_t>()));
 
-      // Compute a "local" set of zero-based point offsets from number of points in each quadrant
-      // Use `num_poly_quad_pairs + 1` as the length so that the last element produced by
-      // `inclusive_scan` is the total number of points to be tested against any polyline.
-      rmm::device_uvector<uint32_t> local_point_offsets(num_poly_quad_pairs + 1, stream);
+    // Copy the quad/polyline indices into local vectors instead of sorting the input columns
+    thrust::copy(
+      rmm::exec_policy(stream),
+      quad_poly_indices_and_quad_offsets_lengths,
+      quad_poly_indices_and_quad_offsets_lengths + num_poly_quad_pairs,
+      make_zip_iterator(
+        quad_poly_indices.begin(), quad_point_offsets.begin(), quad_point_lengths.begin()));
 
-      thrust::inclusive_scan(rmm::exec_policy(stream),
-                             quad_lengths_iter,
-                             quad_lengths_iter + num_poly_quad_pairs,
-                             local_point_offsets.begin() + 1);
+    // Sort the quad/polyline index pairs by quadrant so that the `point_indices` are
+    // produced/reduced in ascending order below.
+    thrust::stable_sort_by_key(
+      rmm::exec_policy(stream),
+      quad_point_offsets.begin(),
+      quad_point_offsets.end(),
+      make_zip_iterator(quad_point_lengths.begin(), quad_poly_indices.begin()));
 
-      // Ensure local point offsets starts at 0
-      uint32_t init{0};
-      local_point_offsets.set_element_async(0, init, stream);
+    // Compute a "local" set of zero-based point offsets from number of points in each quadrant
+    // Use `num_poly_quad_pairs + 1` as the length so that the last element produced by
+    // `inclusive_scan` is the total number of points to be tested against any polyline.
+    rmm::device_uvector<uint32_t> local_point_offsets(num_poly_quad_pairs + 1, stream);
 
-      // The last element is the total number of points to test against any polyline.
-      auto num_total_points = local_point_offsets.back_element(stream);
+    // Ensure local point offsets starts at 0
+    uint32_t init{0};
+    local_point_offsets.set_element_async(0, init, stream);
 
-      // Allocate memory for the polyline/point indices and distances
-      rmm::device_uvector<uint32_t> poly_idxs(num_total_points, stream);
-      rmm::device_uvector<uint32_t> point_idxs(num_total_points, stream);
-      rmm::device_uvector<T> poly_point_distances(num_total_points, stream);
+    thrust::inclusive_scan(rmm::exec_policy(stream),
+                           quad_point_lengths.begin(),
+                           quad_point_lengths.end(),
+                           local_point_offsets.begin() + 1);
 
-      auto point_poly_indices_and_distances =
-        make_zip_iterator(point_idxs.begin(), poly_idxs.begin(), poly_point_distances.begin());
+    // The last element is the total number of points to test against any polyline.
+    auto num_point_poly_pairs = local_point_offsets.back_element(stream);
 
-      // Enumerate the point X/Ys using the sorted `point_indices` (from quadtree construction)
-      auto point_xys_iter = thrust::make_permutation_iterator(
-        make_zip_iterator(point_x.begin<T>(), point_y.begin<T>()), point_indices.begin<uint32_t>());
+    // Enumerate the point X/Ys using the sorted `point_indices` (from quadtree construction)
+    auto point_xys_iter = thrust::make_permutation_iterator(
+      make_zip_iterator(point_x.begin<T>(), point_y.begin<T>()), point_indices.begin<uint32_t>());
 
-      // Compute the combination of point and polyline index pairs. For each polyline/quadrant pair,
-      // enumerate pairs of (point_index, poly_index) for each point in each quadrant, and calculate
-      // the minimum distance between each point/poly pair.
-      //
-      // In Python pseudocode:
-      // ```
-      // pp_pairs_and_dist = []
-      // for polyline, quadrant in pq_pairs:
-      //   for point in quadrant:
-      //     pp_pairs_and_dist.append((point, polyline, min_distance(point, polyline)))
-      // ```
-      //
-      thrust::transform(rmm::exec_policy(stream),
-                        counting_iter,
-                        counting_iter + num_total_points,
-                        point_poly_indices_and_distances,
-                        compute_point_poly_indices_and_distances<T,
-                                                                 decltype(point_xys_iter),
-                                                                 decltype(quad_offsets_iter)>{
-                          point_xys_iter,
-                          quad_offsets_iter,
-                          local_point_offsets.begin(),
-                          local_point_offsets.size() - 1,
-                          *cudf::column_device_view::create(poly_indices, stream),
-                          *cudf::column_device_view::create(poly_offsets, stream),
-                          *cudf::column_device_view::create(poly_points_x, stream),
-                          *cudf::column_device_view::create(poly_points_y, stream)});
+    //
+    // Compute the combination of point and polyline index pairs. For each polyline/quadrant pair,
+    // enumerate pairs of (point_index, polyline_index) for each point in each quadrant, and
+    // calculate the minimum distance between each point/poly pair.
+    //
+    // In Python pseudocode:
+    // ```
+    // pp_pairs_and_dist = []
+    // for polyline, quadrant in pq_pairs:
+    //   for point in quadrant:
+    //     pp_pairs_and_dist.append((point, polyline, min_distance(point, polyline)))
+    // ```
+    //
+    // However, the above psuedocode produces values in an order such that the distance
+    // from a point to each polyline cannot be reduced with `thrust::reduce_by_key`:
+    // ```
+    //   point | polyline | distance
+    //       0 |        0 |     10.0
+    //       1 |        0 |     30.0
+    //       2 |        0 |     20.0
+    //       0 |        1 |     30.0
+    //       1 |        1 |     20.0
+    //       2 |        1 |     10.0
+    // ```
+    //
+    // In order to use `thrust::reduce_by_key` to compute the minimum distance from a point to
+    // the polylines in its quadrant, the above table needs to be sorted by `point` instead of
+    // `polyline`:
+    // ```
+    //   point | polyline | distance
+    //       0 |        0 |     10.0
+    //       0 |        1 |     30.0
+    //       1 |        0 |     30.0
+    //       1 |        1 |     20.0
+    //       2 |        0 |     20.0
+    //       2 |        1 |     10.0
+    // ```
+    //
+    // A naive approach would be to allocate memory for the above three columns, sort the
+    // columns by `point`, then use `thrust::reduce_by_key` to compute the min distances.
+    //
+    // The sizes of the intermediate buffers required can easily grow beyond available
+    // device memory, so a better approach is to use a Thrust iterator to yield values
+    // in the sorted order on demand instead, which is what we're doing here.
+    //
 
-      // sort the point/polyline indices and distances for `reduce_by_key` below
-      thrust::sort_by_key(rmm::exec_policy(stream),
-                          point_idxs.begin(),
-                          point_idxs.end(),
-                          point_poly_indices_and_distances);
+    auto all_pairs_point_indices =
+      thrust::make_transform_iterator(thrust::make_counting_iterator(0u),
+                                      compute_point_indices{local_point_offsets.begin(),
+                                                            local_point_offsets.end(),
+                                                            quad_point_offsets.begin(),
+                                                            quad_point_offsets.end(),
+                                                            quad_point_lengths.begin()});
 
-      return std::make_tuple(
-        std::move(poly_idxs), std::move(point_idxs), std::move(poly_point_distances));
-    }();
-
-    auto &poly_idxs            = std::get<0>(poly_point_idxs_and_distances);
-    auto &point_idxs           = std::get<1>(poly_point_idxs_and_distances);
-    auto &poly_point_distances = std::get<2>(poly_point_idxs_and_distances);
+    auto all_pairs_poly_indices_and_distances = thrust::make_transform_iterator(
+      thrust::make_counting_iterator(0u),
+      compute_point_poly_indices_and_distances<T, decltype(point_xys_iter)>{
+        point_xys_iter,
+        local_point_offsets.begin(),
+        local_point_offsets.end(),
+        quad_point_offsets.begin(),
+        quad_point_offsets.end(),
+        quad_point_lengths.begin(),
+        quad_poly_indices.begin(),
+        *cudf::column_device_view::create(poly_offsets, stream),
+        *cudf::column_device_view::create(poly_points_x, stream),
+        *cudf::column_device_view::create(poly_points_y, stream)});
 
     // Allocate output columns for the point and polyline index pairs and their distances
     auto point_index_col = make_fixed_width_column<uint32_t>(point_x.size(), stream, mr);
@@ -197,22 +319,20 @@ struct compute_quadtree_point_to_nearest_polyline {
                  std::numeric_limits<T>::max());
 
     // Reduce the intermediate point/poly indices to lists of point/polyline
-    // index pairs and distances, selecting the polyline index closest for each point.
+    // index pairs and distances, selecting the polyline index closest to each point.
     thrust::reduce_by_key(rmm::exec_policy(stream),
-                          // keys_first
-                          point_idxs.begin(),
-                          // keys_last
-                          point_idxs.end(),
-                          // values_first
-                          make_zip_iterator(poly_idxs.begin(), poly_point_distances.begin()),
-                          // keys_output
+                          // point indices in
+                          all_pairs_point_indices,
+                          all_pairs_point_indices + num_point_poly_pairs,
+                          all_pairs_poly_indices_and_distances,
+                          // point indices out
                           point_index_col->mutable_view().begin<uint32_t>(),
-                          // values_output
+                          // polyline indices and distances out
                           make_zip_iterator(poly_index_col->mutable_view().begin<uint32_t>(),
                                             distance_col->mutable_view().template begin<T>()),
-                          // binary_pred
+                          // point index comparator
                           thrust::equal_to<uint32_t>(),
-                          // binary_op
+                          // binop to select the point/polyline pair with the smallest distance
                           [] __device__(auto const &a, auto const &b) {
                             return thrust::get<1>(a) < thrust::get<1>(b) ? a : b;
                           });
