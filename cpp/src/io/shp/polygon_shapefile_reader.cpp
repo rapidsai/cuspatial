@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,7 +140,7 @@ read_polygon_shapefile(std::string const& filename)
   std::vector<double> xs;
   std::vector<double> ys;
 
-  int num_features = read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys);
+  read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys);
 
   feature_lengths.shrink_to_fit();
   ring_lengths.shrink_to_fit();
