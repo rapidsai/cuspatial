@@ -139,6 +139,7 @@ add_library(cuspatial SHARED
 
 set_target_properties(cuspatial
     PROPERTIES BUILD_RPATH                         "\$ORIGIN"
+               INSTALL_RPATH                       "\$ORIGIN"
                # set target compile options
                CXX_STANDARD                        14
                CXX_STANDARD_REQUIRED               ON
