@@ -31,6 +31,8 @@
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/binary_search.h>
+#include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 
 #include <memory>
 
@@ -59,21 +61,19 @@ inline __device__ thrust::tuple<uint32_t, uint32_t> get_quad_poly_and_local_poin
 inline __device__ thrust::tuple<uint32_t, uint32_t> get_local_poly_index_and_count(
   uint32_t const poly_index, uint32_t const *quad_offsets, uint32_t const *quad_offsets_end)
 {
-  bool lhs_done{false};
-  bool rhs_done{false};
-  uint32_t num_polys_in_quad{0};
-  auto const l_end       = quad_offsets;
-  auto const r_end       = quad_offsets_end - 1;
+  auto const lhs_end     = quad_offsets;
+  auto const rhs_end     = quad_offsets_end;
   auto const quad_offset = quad_offsets[poly_index];
-  auto l_itr             = quad_offsets + poly_index;
-  auto r_itr             = quad_offsets + poly_index;
-  do {
-    num_polys_in_quad += !(lhs_done = lhs_done || l_itr <= l_end || *(--l_itr) != quad_offset);
-    num_polys_in_quad += !(rhs_done = rhs_done || r_itr >= r_end || *(++r_itr) != quad_offset);
-  } while (!lhs_done || !rhs_done);
-  auto const local_poly_index =
-    static_cast<uint32_t>(thrust::distance(l_itr, quad_offsets + poly_index));
-  return thrust::make_tuple(max(1u, local_poly_index) - 1, num_polys_in_quad + 1);
+  auto const lhs =
+    thrust::lower_bound(thrust::seq, lhs_end, quad_offsets + poly_index, quad_offset);
+  auto const rhs =
+    thrust::upper_bound(thrust::seq, quad_offsets + poly_index, rhs_end, quad_offset);
+
+  return thrust::make_tuple(
+    // local_poly_index
+    static_cast<uint32_t>(thrust::distance(lhs, quad_offsets + poly_index)),
+    // num_polys_in_quad
+    static_cast<uint32_t>(thrust::distance(lhs, rhs)));
 }
 
 inline __device__ thrust::tuple<uint32_t, uint32_t> get_transposed_point_and_pair_index(
@@ -105,23 +105,6 @@ inline __device__ thrust::tuple<uint32_t, uint32_t> get_transposed_point_and_pai
     (transposed_point_start % num_polys_in_quad) + quad_poly_offset);
 }
 
-struct compute_point_indices {
-  uint32_t const *point_offsets;
-  uint32_t const *point_offsets_end;
-  uint32_t const *quad_offsets;
-  uint32_t const *quad_offsets_end;
-  uint32_t const *quad_lengths;
-  uint32_t __device__ operator()(uint32_t const global_index)
-  {
-    return thrust::get<0>(get_transposed_point_and_pair_index(global_index,
-                                                              point_offsets,
-                                                              point_offsets_end,
-                                                              quad_offsets,
-                                                              quad_offsets_end,
-                                                              quad_lengths));
-  }
-};
-
 template <typename T, typename PointIter>
 struct compute_point_poly_indices_and_distances {
   PointIter points;
@@ -134,21 +117,22 @@ struct compute_point_poly_indices_and_distances {
   cudf::column_device_view const poly_offsets;
   cudf::column_device_view const poly_points_x;
   cudf::column_device_view const poly_points_y;
-  thrust::tuple<uint32_t, T> __device__ operator()(uint32_t const global_index)
+  inline __device__ thrust::tuple<uint32_t, uint32_t, T> operator()(uint32_t const global_index)
   {
     // (point_index, poly_index)
     auto const ids = get_transposed_point_and_pair_index(
       global_index, point_offsets, point_offsets_end, quad_offsets, quad_offsets_end, quad_lengths);
 
-    auto const point_xy = points[thrust::get<0>(ids)];
+    auto const point_id = thrust::get<0>(ids);
+    auto const point_xy = points[point_id];
     auto const poly_idx = poly_indices[thrust::get<1>(ids)];
-    auto const distance = point_to_poly_line_distance(thrust::get<0>(point_xy),  // x
-                                                      thrust::get<1>(point_xy),  // y
-                                                      poly_idx,
-                                                      poly_offsets,
-                                                      poly_points_x,
-                                                      poly_points_y);
-    return thrust::make_tuple(poly_idx, distance);
+    auto const distance = point_to_poly_line_distance<T>(thrust::get<0>(point_xy),  // x
+                                                         thrust::get<1>(point_xy),  // y
+                                                         poly_idx,
+                                                         poly_offsets,
+                                                         poly_points_x,
+                                                         poly_points_y);
+    return thrust::make_tuple(point_id, poly_idx, distance);
   }
 };
 
@@ -274,15 +258,7 @@ struct compute_quadtree_point_to_nearest_polyline {
     // in the sorted order on demand instead, which is what we're doing here.
     //
 
-    auto all_pairs_point_indices =
-      thrust::make_transform_iterator(thrust::make_counting_iterator(0u),
-                                      compute_point_indices{local_point_offsets.begin(),
-                                                            local_point_offsets.end(),
-                                                            quad_point_offsets.begin(),
-                                                            quad_point_offsets.end(),
-                                                            quad_point_lengths.begin()});
-
-    auto all_pairs_poly_indices_and_distances = thrust::make_transform_iterator(
+    auto all_point_poly_indices_and_distances = thrust::make_transform_iterator(
       thrust::make_counting_iterator(0u),
       compute_point_poly_indices_and_distances<T, decltype(point_xys_iter)>{
         point_xys_iter,
@@ -295,6 +271,10 @@ struct compute_quadtree_point_to_nearest_polyline {
         *cudf::column_device_view::create(poly_offsets, stream),
         *cudf::column_device_view::create(poly_points_x, stream),
         *cudf::column_device_view::create(poly_points_y, stream)});
+
+    auto all_point_indices =
+      thrust::make_transform_iterator(all_point_poly_indices_and_distances,
+                                      [] __device__(auto const &x) { return thrust::get<0>(x); });
 
     // Allocate output columns for the point and polyline index pairs and their distances
     auto point_index_col = make_fixed_width_column<uint32_t>(point_x.size(), stream, mr);
@@ -311,19 +291,21 @@ struct compute_quadtree_point_to_nearest_polyline {
     // index pairs and distances, selecting the polyline index closest to each point.
     thrust::reduce_by_key(rmm::exec_policy(stream),
                           // point indices in
-                          all_pairs_point_indices,
-                          all_pairs_point_indices + num_point_poly_pairs,
-                          all_pairs_poly_indices_and_distances,
+                          all_point_indices,
+                          all_point_indices + num_point_poly_pairs,
+                          all_point_poly_indices_and_distances,
                           // point indices out
-                          point_index_col->mutable_view().begin<uint32_t>(),
-                          // polyline indices and distances out
-                          make_zip_iterator(poly_index_col->mutable_view().begin<uint32_t>(),
+                          thrust::make_discard_iterator(),
+                          // point_index_col->mutable_view().begin<uint32_t>(),
+                          // point/polyline indices and distances out
+                          make_zip_iterator(point_index_col->mutable_view().begin<uint32_t>(),
+                                            poly_index_col->mutable_view().begin<uint32_t>(),
                                             distance_col->mutable_view().template begin<T>()),
-                          // point index comparator
+                          // comparator
                           thrust::equal_to<uint32_t>(),
                           // binop to select the point/polyline pair with the smallest distance
                           [] __device__(auto const &a, auto const &b) {
-                            return thrust::get<1>(a) < thrust::get<1>(b) ? a : b;
+                            return thrust::get<2>(a) < thrust::get<2>(b) ? a : b;
                           });
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
