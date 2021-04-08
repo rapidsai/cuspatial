@@ -22,10 +22,19 @@ T = TypeVar("T", bound="GeoSeries")
 
 class GeoSeries(cudf.Series):
     """
-    A wrapper for Series functionality that needs to be subclassed in order
-    to support our implementation of GeoColumn.
-    """
+    cuspatial.GeoSeries enables GPU-backed storage and computation of
+    shapely-like objects. Our goal is to give feature parity with GeoPandas.
+    At this time, only from_geopandas and to_geopandas are directly supported.
+    cuspatial GIS, indexing, and trajectory functions depend on the arrays
+    stored in the `GeoArrowBuffers` object, accessible with the `points`,
+    `multipoints`, `lines`, and `polygons` accessors.
 
+    >>> cuseries.points
+        xy:
+        0   -1.0
+        1    0.0
+        dtype: float64
+    """
     def __init__(
         self,
         data: Union[gpd.GeoSeries],
@@ -61,6 +70,11 @@ class GeoSeries(cudf.Series):
 
     @property
     def geocolumn(self):
+        """
+        The GeoColumn object keeps a reference to a `GeoArrowBuffers` object,
+        which contains all of the geometry coordinates and offsets for thie
+        `GeoSeries`.
+        """
         return self._column
 
     @geocolumn.setter
@@ -72,40 +86,28 @@ class GeoSeries(cudf.Series):
     @property
     def points(self):
         """
-        The Points column is a simple numeric column. x and y coordinates
-        can be stored either interleaved or in separate columns. If a z
-        coordinate is present, it will be stored in a separate column.
+        Access the `PointsArray` of the underlying `GeoArrowBuffers`.
         """
         return self.geocolumn.points
 
     @property
     def multipoints(self):
         """
-        The MultiPoints column is similar to the Points column with the
-        addition of an offsets column. The offsets column stores the comparable
-        sizes and coordinates of each MultiPoint in the cuGeoSeries.
+        Access the `MultiPointArray` of the underlying `GeoArrowBuffers`.
         """
         return self.geocolumn.multipoints
 
     @property
     def lines(self):
         """
-        LineStrings contain the coordinates column, an offsets column, and a
-        multioffsets column. The multioffsets column stores the indices of the
-        offsets that indicate the beginning and end of each MultiLineString
-        segment.
+        Access the `LineArray` of the underlying `GeoArrowBuffers`.
         """
         return self.geocolumn.lines
 
     @property
     def polygons(self):
         """
-        Polygons contain the coordinates column, a rings column specifying
-        the beginning and end of every polygon, a polygons column specifying
-        the beginning, or exterior, ring of each polygon and the end ring.
-        All rings after the first ring are interior rings.  Finally a
-        multipolys column stores the offsets of the polygons that should be
-        grouped into MultiPolygons.
+        Access the `PolygonArray` of the underlying `GeoArrowBuffers`.
         """
         return self.geocolumn.polygons
 
@@ -123,7 +125,7 @@ class GeoSeries(cudf.Series):
         the cuspatial GeoSeries.
         """
         if nullable is True:
-            raise ValueError("cuGeoSeries doesn't support <NA> yet")
+            raise ValueError("GeoSeries doesn't support <NA> yet")
         host_column = self.geocolumn.to_host()
         output = [geom.to_shapely() for geom in host_column]
         return gpGeoSeries(output, index=self.index.to_pandas())

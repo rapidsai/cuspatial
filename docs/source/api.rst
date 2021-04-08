@@ -3,7 +3,7 @@ cuSpatial API Reference
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 cuSpatial provides functionality for fast GPU-based spatial index and join
-functinos via point-in-polygon, a pathing library for trajectory identification
+functions via point-in-polygon, a pathing library for trajectory identification
 and reconstruction, and accelerated GIS functions like haversine distance and grid pro jection. The icing-on-the-cake of cuSpatial is that we integrate neatly
 with `GeoPandas` and RAPIDS `cudf`.
 
@@ -28,24 +28,24 @@ or
 
 .. autoclass:: cuspatial.GeoDataFrame
         :members:
-        :undoc-members:
         :show-inheritance:
 .. autoclass:: cuspatial.GeoSeries
         :members:
-        :undoc-members:
         :show-inheritance:
 .. autoclass:: cuspatial.geometry.geocolumn.GeoColumn
         :members:
-        :undoc-members:
         :show-inheritance:
 .. autoclass:: cuspatial.GeoArrowBuffers
         :members:
-        :undoc-members:
         :show-inheritance:
 
 
 Spatial Indexing
 --------
+
+Spatial indexing functions provide blisteringly-fast on-GPU point-in-polygon
+operations.
+
 .. currentmodule:: cuspatial
 
 .. autofunction:: cuspatial.quadtree_point_in_polygon
@@ -60,6 +60,9 @@ Spatial Indexing
 
 GIS
 ---
+
+Two GIS functions make it easier to compute distances with geographic coordinates.
+
 .. currentmodule:: cuspatial
 
 .. autofunction:: cuspatial.haversine_distance
@@ -68,6 +71,9 @@ GIS
 
 Trajectory
 ----------
+
+Trajectory functions make it easy to identify and group trajectories from point data.
+
 .. currentmodule:: cuspatial
 
 .. autofunction:: cuspatial.derive_trajectories
@@ -81,6 +87,10 @@ Trajectory
 
 IO
 --
+
+cuSpatial offers native GPU-accelerated shapefile reading. In addition, any host-side GeoPandas DataFrame can be copied into GPU memory for use with cuSpatial
+algorithms.
+
 .. currentmodule:: cuspatial
 
 .. autofunction:: cuspatial.read_polygon_shapefile

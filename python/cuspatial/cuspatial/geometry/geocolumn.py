@@ -245,42 +245,18 @@ class GeoColumn(NumericalColumn):
 
     @property
     def points(self):
-        """
-        The Points column is a simple numeric column. x and y coordinates
-        can be stored either interleaved or in separate columns. If a z
-        coordinate is present, it will be stored in a separate column.
-        """
         return self._geo._points
 
     @property
     def multipoints(self):
-        """
-        The MultiPoints column is similar to the Points column with the
-        addition of an offsets column. The offsets column stores the comparable
-        sizes and coordinates of each MultiPoint in the cuGeoSeries.
-        """
         return self._geo._multipoints
 
     @property
     def lines(self):
-        """
-        LineStrings contain the coordinates column, an offsets column, and a
-        multioffsets column. The multioffsets column stores the indices of the
-        offsets that indicate the beginning and end of each MultiLineString
-        segment.
-        """
         return self._geo._lines
 
     @property
     def polygons(self):
-        """
-        Polygons contain the coordinates column, a rings olumn specifying
-        the beginning and end of every polygon, a polygons column specifying
-        the beginning, or exterior, ring of each polygon and the end ring.
-        All rings after the first ring are interior rings.  Finally a
-        multipolys column stores the offsets of the polygons that should be
-        grouped into MultiPolygons.
-        """
         return self._geo._polygons
 
     def _dump(self):
@@ -294,6 +270,16 @@ class GeoColumn(NumericalColumn):
             f"POLYGONS\n"
             f"{self.polygons._repr__()}\n"
         )
+
+    def __repr__(self):
+        return (
+            f"GeoColumn\n"
+            f"{len(self.points)} POINTS\n"
+            f"{len(self.multipoints)} MULTIPOINTS\n"
+            f"{len(self.lines)} LINES\n"
+            f"{len(self.polygons)} POLYGONS\n"
+        )
+
 
     def copy(self, deep=True):
         """
