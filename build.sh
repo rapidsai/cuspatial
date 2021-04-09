@@ -18,7 +18,7 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean libcuspatial cuspatial tests -v -g -n -h --show_depr_warn"
+VALIDARGS="clean libcuspatial cuspatial tests -v -g -n -h --allgpuarch --show_depr_warn"
 HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--show_depr_warn]
    clean            - remove all existing build artifacts and configuration (start
                       over)
@@ -29,6 +29,7 @@ HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--
    -g               - build for debug
    -n               - no install step
    -h               - print this text
+   --allgpuarch     - build for all supported GPU architectures
    --show_depr_warn - show cmake deprecation warnings
    default action (no args) is to build and install 'libcuspatial' then
    'cuspatial' targets
@@ -41,6 +42,7 @@ BUILD_DIRS="${LIBCUSPATIAL_BUILD_DIR} ${CUSPATIAL_BUILD_DIR}"
 VERBOSE_FLAG=""
 BUILD_TESTS=OFF
 BUILD_TYPE=Release
+BUILD_ALL_GPU_ARCH=0
 INSTALL_TARGET=install
 BUILD_DISABLE_DEPRECATION_WARNING=ON
 
@@ -79,7 +81,10 @@ fi
 if hasArg -n; then
     INSTALL_TARGET=""
 fi
-if hasArg --show-_depr_warn; then
+if hasArg --allgpuarch; then
+    BUILD_ALL_GPU_ARCH=1
+fi
+if hasArg --show_depr_warn; then
     BUILD_DISABLE_DEPRECATION_WARNING=OFF
 fi
 
@@ -101,19 +106,32 @@ if hasArg clean; then
     done
 fi
 
+if (( ${BUILD_ALL_GPU_ARCH} == 0 )); then
+    CUSPATIAL_CMAKE_CUDA_ARCHITECTURES="-DCMAKE_CUDA_ARCHITECTURES="
+    echo "Building for the architecture of the GPU in the system..."
+else
+    CUSPATIAL_CMAKE_CUDA_ARCHITECTURES=""
+    echo "Building for *ALL* supported GPU architectures..."
+fi
+
 ################################################################################
 # Configure, build, and install libcuspatial
 if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
-
     mkdir -p ${LIBCUSPATIAL_BUILD_DIR}
     cd ${LIBCUSPATIAL_BUILD_DIR}
     cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
+          ${CUSPATIAL_CMAKE_CUDA_ARCHITECTURES} \
           -DCMAKE_CXX11_ABI=ON \
           -DBUILD_TESTS=${BUILD_TESTS} \
           -DDISABLE_DEPRECATION_WARNING=${BUILD_DISABLE_DEPRECATION_WARNING} \
-          -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
+          -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+          ..
 
-    cmake --build . -j ${PARALLEL_LEVEL} --target install ${VERBOSE_FLAG}
+    cmake --build . -j ${PARALLEL_LEVEL} ${VERBOSE_FLAG}
+
+    if [[ ${INSTALL_TARGET} != "" ]]; then
+        cmake --build . -j ${PARALLEL_LEVEL} --target install ${VERBOSE_FLAG}
+    fi
 fi
 
 # Build and install the cuspatial Python package
@@ -127,4 +145,3 @@ if (( ${NUMARGS} == 0 )) || hasArg cuspatial; then
         PARALLEL_LEVEL=${PARALLEL_LEVEL} python setup.py build_ext --inplace --library-dir=${LIBCUSPATIAL_BUILD_DIR}
     fi
 fi
-

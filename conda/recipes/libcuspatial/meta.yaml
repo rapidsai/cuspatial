@@ -33,7 +33,7 @@ build:
 
 requirements:
   build:
-    - cmake >=3.12.4
+    - cmake >=3.18
   host:
     - libcudf {{ minor_version }}.*
     - librmm {{ minor_version }}.*
@@ -52,4 +52,3 @@ about:
   license_family: Apache
   license_file: LICENSE
   summary: libcuspatial library
-
