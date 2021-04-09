@@ -96,7 +96,7 @@ inline auto make_polygons_geometry(thrust::host_vector<uint32_t> const &poly_off
     }
     polygons.push_back(polygon);
   }
-  return std::move(polygons);
+  return polygons;
 }
 
 template <typename T>
