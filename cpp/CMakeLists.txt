@@ -28,7 +28,7 @@ elseif(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
   set(CUSPATIAL_BUILD_FOR_DETECTED_ARCHS TRUE)
 endif()
 
-project(CUSPATIAL VERSION 0.19.0 LANGUAGES C CXX)
+project(CUSPATIAL VERSION 0.20.0 LANGUAGES C CXX)
 
 # Needed because GoogleBenchmark changes the state of FindThreads.cmake,
 # causing subsequent runs to have different values for the `Threads::Threads` target.
@@ -139,6 +139,7 @@ add_library(cuspatial SHARED
 
 set_target_properties(cuspatial
     PROPERTIES BUILD_RPATH                         "\$ORIGIN"
+               INSTALL_RPATH                       "\$ORIGIN"
                # set target compile options
                CXX_STANDARD                        14
                CXX_STANDARD_REQUIRED               ON
