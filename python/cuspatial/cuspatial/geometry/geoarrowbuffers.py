@@ -252,10 +252,18 @@ class CoordinateArray:
 
     def _serialize(self, data):
         try:
-            if hasattr(data, "to_pandas"):
-                return data.to_pandas()
+            if self._data_location == pd:
+                if isinstance(data, cudf.Series):
+                    return data.to_pandas()
+                else:
+                    return self._data_location.Series(data)
+            elif self._data_location == cudf:
+                return self._data_location.Series(data)
             else:
-                return cudf.Series(data)
+                raise ValueError(
+                    f"{type(self._data_location)} incorrect data"
+                    f"location: pandas or cudf"
+                )
         except Exception as e:
             raise TypeError(e, f"{type(data)} is not supported in cuspatial")
 
