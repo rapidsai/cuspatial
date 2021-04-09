@@ -84,7 +84,7 @@ if [ "$BUILD_CUSPATIAL" == '1' ]; then
     gpuci_conda_retry build --croot ${CONDA_BLD_DIR} conda/recipes/cuspatial
   else
     gpuci_conda_retry build --croot ${CONDA_BLD_DIR} --dirty --no-remove-work-dir \
-        -c $WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/ conda/recipes/cuspatial
+        -c $WORKSPACE/ci/artifacts/cuspatial/cpu/.conda-bld/ conda/recipes/cuspatial
   fi
 fi
 
