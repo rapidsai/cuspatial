@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,9 @@ class scatter_output_iterator_proxy {
   template <typename T>
   __host__ __device__ scatter_output_iterator_proxy operator=(const T& element)
   {
-    auto scatter_idx = *(scatter_map + thrust::distance(begin, out));
+    auto const scatter_idx = static_cast<uint32_t>(*(scatter_map + thrust::distance(begin, out)));
 
-    if (scatter_idx >= 0) {
+    if (scatter_idx != static_cast<uint32_t>(-1)) {
       // forward assignments if and only if the scatter map indicates to do so.
       *(begin + scatter_idx) = element;
     }
