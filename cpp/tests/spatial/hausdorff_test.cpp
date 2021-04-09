@@ -27,12 +27,6 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 
-#include <rmm/cuda_stream_view.hpp>
-#include <rmm/device_uvector.hpp>
-#include <rmm/exec_policy.hpp>
-#include <rmm/mr/device/logging_resource_adaptor.hpp>
-#include <rmm/mr/device/per_device_resource.hpp>
-
 #include <vector>
 
 using namespace cudf;
