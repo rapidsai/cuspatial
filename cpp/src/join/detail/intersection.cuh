@@ -29,6 +29,7 @@
 
 #include <thrust/copy.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/remove.h>
 #include <thrust/tuple.h>
 
@@ -97,8 +98,8 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
   auto d_poly_y_max = cudf::column_device_view::create(poly_bbox.column(3), stream);
 
   thrust::transform(rmm::exec_policy(stream),
-                    make_zip_iterator(node_indices, poly_indices),
-                    make_zip_iterator(node_indices, poly_indices) + num_pairs,
+                    thrust::make_zip_iterator(node_indices, poly_indices),
+                    thrust::make_zip_iterator(node_indices, poly_indices) + num_pairs,
                     node_pairs,
                     [x_min,
                      y_min,

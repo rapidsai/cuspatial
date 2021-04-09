@@ -18,25 +18,13 @@
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/types.hpp>
-#include <cudf/utilities/type_dispatcher.hpp>
 
-#include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
 
-#include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
 
 namespace cuspatial {
 namespace detail {
-
-/**
- * @brief Helper function to reduce verbosity creating thrust zip iterators
- */
-template <typename... Ts>
-inline auto make_zip_iterator(Ts... its)
-{
-  return thrust::make_zip_iterator(thrust::make_tuple(std::forward<Ts>(its)...));
-}
 
 template <typename T>
 struct tuple_sum {

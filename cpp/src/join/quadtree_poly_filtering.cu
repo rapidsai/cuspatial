@@ -30,6 +30,8 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/iterator/zip_iterator.h>
+
 #include <tuple>
 
 namespace cuspatial {
@@ -89,13 +91,13 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
   cudf::size_type num_parents{0};
 
   auto make_current_level_iter = [&]() {
-    return make_zip_iterator(
+    return thrust::make_zip_iterator(
       cur_types.begin(), cur_levels.begin(), cur_node_idxs.begin(), cur_poly_idxs.begin());
   };
 
   auto make_output_values_iter = [&]() {
     return num_results +
-           make_zip_iterator(
+           thrust::make_zip_iterator(
              out_types.begin(), out_levels.begin(), out_node_idxs.begin(), out_poly_idxs.begin());
   };
 
