@@ -33,6 +33,7 @@
 #include <thrust/binary_search.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 
 #include <memory>
 
@@ -165,7 +166,7 @@ struct compute_quadtree_point_to_nearest_polyline {
     rmm::device_uvector<uint32_t> quad_point_offsets(num_poly_quad_pairs, stream);
     rmm::device_uvector<uint32_t> quad_point_lengths(num_poly_quad_pairs, stream);
 
-    auto quad_poly_indices_and_quad_offsets_lengths = make_zip_iterator(
+    auto quad_poly_indices_and_quad_offsets_lengths = thrust::make_zip_iterator(
       // poly_indices
       poly_quad_pairs.column(0).begin<uint32_t>(),
       // quad_offsets
@@ -180,7 +181,7 @@ struct compute_quadtree_point_to_nearest_polyline {
       rmm::exec_policy(stream),
       quad_poly_indices_and_quad_offsets_lengths,
       quad_poly_indices_and_quad_offsets_lengths + num_poly_quad_pairs,
-      make_zip_iterator(
+      thrust::make_zip_iterator(
         quad_poly_indices.begin(), quad_point_offsets.begin(), quad_point_lengths.begin()));
 
     // Sort the quad/polyline index pairs by quadrant so that the `point_indices` are
@@ -189,7 +190,7 @@ struct compute_quadtree_point_to_nearest_polyline {
       rmm::exec_policy(stream),
       quad_point_offsets.begin(),
       quad_point_offsets.end(),
-      make_zip_iterator(quad_point_lengths.begin(), quad_poly_indices.begin()));
+      thrust::make_zip_iterator(quad_point_lengths.begin(), quad_poly_indices.begin()));
 
     // Compute a "local" set of zero-based point offsets from number of points in each quadrant
     // Use `num_poly_quad_pairs + 1` as the length so that the last element produced by
@@ -210,7 +211,8 @@ struct compute_quadtree_point_to_nearest_polyline {
 
     // Enumerate the point X/Ys using the sorted `point_indices` (from quadtree construction)
     auto point_xys_iter = thrust::make_permutation_iterator(
-      make_zip_iterator(point_x.begin<T>(), point_y.begin<T>()), point_indices.begin<uint32_t>());
+      thrust::make_zip_iterator(point_x.begin<T>(), point_y.begin<T>()),
+      point_indices.begin<uint32_t>());
 
     //
     // Compute the combination of point and polyline index pairs. For each polyline/quadrant pair,
@@ -289,24 +291,25 @@ struct compute_quadtree_point_to_nearest_polyline {
 
     // Reduce the intermediate point/poly indices to lists of point/polyline
     // index pairs and distances, selecting the polyline index closest to each point.
-    thrust::reduce_by_key(rmm::exec_policy(stream),
-                          // point indices in
-                          all_point_indices,
-                          all_point_indices + num_point_poly_pairs,
-                          all_point_poly_indices_and_distances,
-                          // point indices out
-                          thrust::make_discard_iterator(),
-                          // point_index_col->mutable_view().begin<uint32_t>(),
-                          // point/polyline indices and distances out
-                          make_zip_iterator(point_index_col->mutable_view().begin<uint32_t>(),
-                                            poly_index_col->mutable_view().begin<uint32_t>(),
-                                            distance_col->mutable_view().template begin<T>()),
-                          // comparator
-                          thrust::equal_to<uint32_t>(),
-                          // binop to select the point/polyline pair with the smallest distance
-                          [] __device__(auto const &a, auto const &b) {
-                            return thrust::get<2>(a) < thrust::get<2>(b) ? a : b;
-                          });
+    thrust::reduce_by_key(
+      rmm::exec_policy(stream),
+      // point indices in
+      all_point_indices,
+      all_point_indices + num_point_poly_pairs,
+      all_point_poly_indices_and_distances,
+      // point indices out
+      thrust::make_discard_iterator(),
+      // point_index_col->mutable_view().begin<uint32_t>(),
+      // point/polyline indices and distances out
+      thrust::make_zip_iterator(point_index_col->mutable_view().begin<uint32_t>(),
+                                poly_index_col->mutable_view().begin<uint32_t>(),
+                                distance_col->mutable_view().template begin<T>()),
+      // comparator
+      thrust::equal_to<uint32_t>(),
+      // binop to select the point/polyline pair with the smallest distance
+      [] __device__(auto const &a, auto const &b) {
+        return thrust::get<2>(a) < thrust::get<2>(b) ? a : b;
+      });
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(3);
