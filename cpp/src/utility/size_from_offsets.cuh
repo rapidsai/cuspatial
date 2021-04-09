@@ -16,16 +16,14 @@
 
 #pragma once
 
-#include <cudf/types.hpp>
-
 namespace cuspatial {
 namespace detail {
 
 template <typename OffsetIterator>
 struct size_from_offsets_functor {
-  uint32_t num_offsets;
-  uint32_t num_elements;
-  OffsetIterator offsets;
+  uint32_t const num_offsets;
+  uint32_t const num_elements;
+  OffsetIterator const offsets;
 
   uint32_t inline __device__ operator()(uint64_t const group_idx)
   {

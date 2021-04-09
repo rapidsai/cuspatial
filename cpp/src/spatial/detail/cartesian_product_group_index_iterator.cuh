@@ -29,16 +29,16 @@ namespace cuspatial {
 namespace detail {
 
 struct cartesian_product_group {
-  uint32_t const idx;
-  uint32_t const size;
-  uint32_t const offset;
+  uint32_t idx;
+  uint32_t size;
+  uint32_t offset;
 };
 
 struct cartesian_product_group_index {
   cartesian_product_group group_a;
   cartesian_product_group group_b;
-  uint32_t const element_a_idx;
-  uint32_t const element_b_idx;
+  uint32_t element_a_idx;
+  uint32_t element_b_idx;
 };
 
 template <typename OffsetIteratorA,

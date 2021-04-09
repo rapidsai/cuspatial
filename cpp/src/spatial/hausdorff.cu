@@ -160,7 +160,7 @@ struct hausdorff_functor {
                       result->mutable_view().begin<T>(),
                       [] __device__(hausdorff_acc<T> const& a) { return static_cast<T>(a); });
 
-    return std::move(result);
+    return result;
   }
 };
 
