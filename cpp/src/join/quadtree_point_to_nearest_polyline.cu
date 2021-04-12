@@ -15,6 +15,7 @@
  */
 
 #include <indexing/construction/detail/utilities.cuh>
+#include <limits>
 #include <utility/point_to_nearest_polyline.cuh>
 
 #include <cuspatial/error.hpp>
@@ -36,6 +37,7 @@
 #include <thrust/iterator/zip_iterator.h>
 
 #include <memory>
+#include "thrust/fill.h"
 
 namespace cuspatial {
 namespace detail {
@@ -285,30 +287,44 @@ struct compute_quadtree_point_to_nearest_polyline {
       rmm::device_uvector<uint32_t> poly_idxs(point_x.size(), stream);
       rmm::device_uvector<T> distances(point_x.size(), stream);
 
+      // Fill distances with 0
+      thrust::fill(rmm::exec_policy(stream), distances.begin(), distances.end(), T{0});
+
       // Reduce the intermediate point/polyline indices to lists of point/polyline index pairs and
       // distances, selecting the polyline index closest to each point.
-      auto const num_distances = thrust::distance(
-        point_idxs.begin(),
-        thrust::reduce_by_key(
-          rmm::exec_policy(stream),
-          // point indices in
-          all_point_indices,
-          all_point_indices + num_point_poly_pairs,
-          all_point_poly_indices_and_distances,
-          // point indices out
-          point_idxs.begin(),
-          // point/polyline indices and distances out
-          thrust::make_zip_iterator(
-            thrust::make_discard_iterator(), poly_idxs.begin(), distances.begin()),
-          // comparator
-          thrust::equal_to<uint32_t>(),
-          // binop to select the point/polyline pair with the smallest distance
-          [] __device__(auto const &lhs, auto const &rhs) {
-            T const &d_lhs = thrust::get<2>(lhs);
-            T const &d_rhs = thrust::get<2>(rhs);
-            return (d_lhs == T{0}) ? rhs : (d_rhs == T{0}) ? lhs : d_lhs < d_rhs ? lhs : rhs;
-          })
-          .first);
+      auto const num_distances =
+        thrust::distance(point_idxs.begin(),
+                         thrust::reduce_by_key(
+                           rmm::exec_policy(stream),
+                           // point indices in
+                           all_point_indices,
+                           all_point_indices + num_point_poly_pairs,
+                           all_point_poly_indices_and_distances,
+                           // point indices out
+                           point_idxs.begin(),
+                           // point/polyline indices and distances out
+                           thrust::make_zip_iterator(
+                             thrust::make_discard_iterator(), poly_idxs.begin(), distances.begin()),
+                           // comparator
+                           thrust::equal_to<uint32_t>(),
+                           // binop to select the point/polyline pair with the smallest distance
+                           [] __device__(auto const &lhs, auto const &rhs) {
+                             T const &d_lhs = thrust::get<2>(lhs);
+                             T const &d_rhs = thrust::get<2>(rhs);
+                             // If lhs distance is 0, choose rhs
+                             if (d_lhs == T{0}) { return rhs; }
+                             // if rhs distance is 0, choose lhs
+                             if (d_rhs == T{0}) { return lhs; }
+                             // If distances to lhs/rhs are the same, choose poly with smallest id
+                             if (d_lhs == d_rhs) {
+                               auto const &i_lhs = thrust::get<1>(lhs);
+                               auto const &i_rhs = thrust::get<1>(rhs);
+                               return i_lhs < i_rhs ? lhs : rhs;
+                             }
+                             // Otherwise choose poly with smallest distance
+                             return d_lhs < d_rhs ? lhs : rhs;
+                           })
+                           .first);
 
       point_idxs.resize(num_distances, stream);
       point_idxs.shrink_to_fit(stream);
