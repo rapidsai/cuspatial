@@ -5,7 +5,7 @@ from geopandas import GeoDataFrame as gpGeoDataFrame
 import cudf
 
 from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
-from cuspatial.geometry.geocolumn import GeoColumn, GeoPandasMeta
+from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta
 from cuspatial.geometry.geoseries import GeoSeries
 from cuspatial.geometry.geoutil import is_geometry_type
 from cuspatial.io.geopandas_adapter import GeoPandasAdapter
@@ -33,7 +33,7 @@ class GeoDataFrame(cudf.DataFrame):
                     buffers = GeoArrowBuffers(
                         adapter.get_geoarrow_host_buffers()
                     )
-                    pandas_meta = GeoPandasMeta(adapter.get_geopandas_meta())
+                    pandas_meta = GeoMeta(adapter.get_geopandas_meta())
                     column = GeoColumn(buffers, pandas_meta)
                     self._data[col] = column
                 else:

@@ -50,8 +50,6 @@ class GeoArrowBuffers:
     GeoArrowBuffers accept a dict as argument:
 
     >>> buffers = GeoArrowBuffers({
-
-    >>> buffers = GeoArrowBuffers({
             "points_xy": [0, 1, 2, 3],
             "multipoints_xy": [0, 1, 2, 3],
             "multipoints_offsets": [0, 1, 2],

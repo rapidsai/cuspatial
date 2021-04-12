@@ -96,23 +96,12 @@ class GeoMeta:
         )
 
 
-class GeoPandasMeta(GeoMeta):
-    """
-    When a GeoColumn is created from a GeoPandas GeoSeries, this meta data
-    remembers what order the geometries began in.
-    """
-
-    def __init__(self, meta: dict):
-        self.input_types = meta["input_types"]
-        self.input_lengths = meta["input_lengths"]
-
-
 class GeoColumn(NumericalColumn):
     """
     Parameters
     ----------
     data : A GeoArrowBuffers object
-    meta : A GeoPandasMeta object (optional)
+    meta : A GeoMeta object (optional)
 
     Notes
     -----
@@ -123,7 +112,7 @@ class GeoColumn(NumericalColumn):
     def __init__(
         self,
         data: GeoArrowBuffers,
-        meta: GeoPandasMeta = None,
+        meta: GeoMeta = None,
         shuffle_order: cudf.Index = None,
     ):
         base = cudf.Series(cudf.RangeIndex(0, len(data)))._column.data
@@ -187,7 +176,7 @@ class GeoColumn(NumericalColumn):
                 "poly": gpuPolygon,
                 "mpoly": gpuMultiPolygon,
             }
-            return type_map[self._sr._types[index]](self._sr, index)
+            return type_map[self._sr._meta.input_types[index]](self._sr, index)
 
     def __getitem__(self, item):
         """
@@ -211,31 +200,6 @@ class GeoColumn(NumericalColumn):
         """
         return self.GeoColumnILocIndexer(self)
 
-    @property
-    def _types(self):
-        """
-        A list of string types from the set "p", "mp", "l", "ml", "poly", and
-        "mpoly". These are the types of each row of the GeoColumn. This
-        property only exists when a GeoColumn has been created from a GeoPandas
-        object.
-        """
-        return self._meta.input_types
-
-    @_types.setter
-    def _types(self, types):
-        raise TypeError("GeoPandasMeta does not support item assignment.")
-
-    @property
-    def _lengths(self):
-        """
-        A list of integers of the length of each Multi geometry. Each non-multi
-        geometry is length 1.
-        """
-        return self._meta.input_lengths
-
-    @_lengths.setter
-    def _lengths(self, lengths):
-        raise TypeError("GeoPandasMeta does not support item assignment.")
 
     def __len__(self):
         """
@@ -310,8 +274,8 @@ class gpuGeometry:
 
 class gpuPoint(gpuGeometry):
     def to_shapely(self):
-        item_type = self._source._types[self._index]
-        types = self._source._types[0 : self._index]
+        item_type = self._source._meta.input_types[self._index]
+        types = self._source._meta.input_types[0 : self._index]
         index = 0
         for i in range(self._index):
             if types[i] == item_type:
@@ -321,8 +285,8 @@ class gpuPoint(gpuGeometry):
 
 class gpuMultiPoint(gpuGeometry):
     def to_shapely(self):
-        item_type = self._source._types[self._index]
-        types = self._source._types[0 : self._index]
+        item_type = self._source._meta.input_types[self._index]
+        types = self._source._meta.input_types[0 : self._index]
         item_start = 0
         for i in range(self._index):
             if types[i] == item_type:
@@ -342,10 +306,10 @@ class gpuLineString(gpuGeometry):
         preceding_line_count = 0
         preceding_ml_count = 0
         while ml_index >= 0:
-            if self._source._types[ml_index] == "ml":
+            if self._source._meta.input_types[ml_index] == "ml":
                 preceding_ml_count = preceding_ml_count + 1
             elif (
-                self._source._types[ml_index] == "l"
+                self._source._meta.input_types[ml_index] == "l"
                 and preceding_ml_count == 0
             ):
                 preceding_line_count = preceding_line_count + 1
@@ -356,7 +320,7 @@ class gpuLineString(gpuGeometry):
             item_start = multi_end + preceding_line_count
         else:
             item_start = preceding_line_count
-        item_length = self._source._lengths[self._index]
+        item_length = self._source._meta.input_lengths[self._index]
         item_end = item_length + item_start
         item_source = self._source.lines
         result = item_source[item_start:item_end]
@@ -367,10 +331,10 @@ class gpuLineString(gpuGeometry):
 
 class gpuMultiLineString(gpuGeometry):
     def to_shapely(self):
-        item_type = self._source._types[self._index]
+        item_type = self._source._meta.input_types[self._index]
         index = 0
         for i in range(self._index):
-            if self._source._types[i] == item_type:
+            if self._source._meta.input_types[i] == item_type:
                 index = index + 1
         line_indices = slice(
             self._source.lines.mlines[index * 2],
@@ -394,10 +358,10 @@ class gpuPolygon(gpuGeometry):
         preceding_poly_count = 0
         preceding_mp_count = 0
         while mp_index >= 0:
-            if self._source._types[mp_index] == "mpoly":
+            if self._source._meta.input_types[mp_index] == "mpoly":
                 preceding_mp_count = preceding_mp_count + 1
             elif (
-                self._source._types[mp_index] == "poly"
+                self._source._meta.input_types[mp_index] == "poly"
                 and preceding_mp_count == 0
             ):
                 preceding_poly_count = preceding_poly_count + 1
@@ -434,10 +398,10 @@ class gpuPolygon(gpuGeometry):
 
 class gpuMultiPolygon(gpuGeometry):
     def to_shapely(self):
-        item_type = self._source._types[self._index]
+        item_type = self._source._meta.input_types[self._index]
         index = 0
         for i in range(self._index):
-            if self._source._types[i] == item_type:
+            if self._source._meta.input_types[i] == item_type:
                 index = index + 1
         poly_indices = slice(
             self._source.polygons.mpolys[index * 2],

@@ -13,7 +13,7 @@ import cudf
 import geopandas as gpd
 
 from cuspatial.io.geopandas_adapter import GeoPandasAdapter
-from cuspatial.geometry.geocolumn import GeoColumn, GeoPandasMeta
+from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta
 from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
 
 
@@ -60,7 +60,7 @@ class GeoSeries(cudf.Series):
         elif isinstance(data, gpGeoSeries):
             adapter = GeoPandasAdapter(data)
             buffers = GeoArrowBuffers(adapter.get_geoarrow_host_buffers())
-            pandas_meta = GeoPandasMeta(adapter.get_geopandas_meta())
+            pandas_meta = GeoMeta(adapter.get_geopandas_meta())
             column = GeoColumn(buffers, pandas_meta)
         else:
             raise TypeError(
