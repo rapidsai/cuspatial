@@ -37,13 +37,13 @@ class GeoMeta:
         buffers = meta
         self.input_types = []
         self.input_lengths = []
-        if hasattr(buffers, "points"):
+        if buffers.points is not None:
             self.input_types += list(np.repeat("p", len(buffers.points)))
             self.input_lengths += list(np.repeat(1, len(buffers.points)))
-        if hasattr(buffers, "multipoints"):
+        if buffers.multipoints is not None:
             self.input_types += list(np.repeat("mp", len(buffers.multipoints)))
             self.input_lengths += list(np.repeat(1, len(buffers.multipoints)))
-        if hasattr(buffers, "lines"):
+        if buffers.lines is not None:
             if len(buffers.lines.mlines) > 0:
                 self.input_types += list(
                     np.repeat("l", buffers.lines.mlines[0])
@@ -64,7 +64,7 @@ class GeoMeta:
             else:
                 self.input_types += list(np.repeat("l", len(buffers.lines)))
                 self.input_lengths += list(np.repeat(1, len(buffers.lines)))
-        if hasattr(buffers, "polygons"):
+        if buffers.polygons is not None:
             if len(buffers.polygons.mpolys) > 0:
                 self.input_types += list(
                     np.repeat("poly", buffers.polygons.mpolys[0])
@@ -140,44 +140,6 @@ class GeoColumn(NumericalColumn):
         result = GeoColumn(self._geo.to_host(), self._meta.copy(), self.data)
         return result
 
-    class GeoColumnLocIndexer:
-        """
-        Not yet supported.
-        """
-
-        def __init__(self):
-            # Todo: Easy to implement with a join.
-            raise NotImplementedError
-
-    class GeoColumnILocIndexer:
-        """
-        Each row of a GeoSeries is one of the six types: Point, MultiPoint,
-        LineString, MultiLineString, Polygon, or MultiPolygon.
-        """
-
-        def __init__(self, sr):
-            self._sr = sr
-
-        def __getitem__(self, index):
-            if not isinstance(index, slice):
-                mapped_index = int(self._sr.values[index])
-                return self._getitem_int(mapped_index)
-            else:
-                raise NotImplementedError
-                # This slice functionality is not ready yet
-                # return self._getitem_slice(index)
-
-        def _getitem_int(self, index):
-            type_map = {
-                "p": gpuPoint,
-                "mp": gpuMultiPoint,
-                "l": gpuLineString,
-                "ml": gpuMultiLineString,
-                "poly": gpuPolygon,
-                "mpoly": gpuMultiPolygon,
-            }
-            return type_map[self._sr._meta.input_types[index]](self._sr, index)
-
     def __getitem__(self, item):
         """
         Returns gpuGeometry objects for each of the rows specified by index.
@@ -191,15 +153,14 @@ class GeoColumn(NumericalColumn):
         """
         Not currently supported.
         """
-        return self.GeoColumnLocIndexer(self)
+        return GeoColumnLocIndexer(self)
 
     @property
     def iloc(self):
         """
         Return the i-th row of the GeoSeries.
         """
-        return self.GeoColumnILocIndexer(self)
-
+        return GeoColumnILocIndexer(self)
 
     def __len__(self):
         """
@@ -244,7 +205,6 @@ class GeoColumn(NumericalColumn):
             f"{len(self.polygons)} POLYGONS\n"
         )
 
-
     def copy(self, deep=True):
         """
         Create a copy of all of the GPU-backed data structures in this
@@ -256,6 +216,46 @@ class GeoColumn(NumericalColumn):
     def _copy_type_metadata(self: T, other: ColumnBase) -> ColumnBase:
         self._data = other.data
         return self
+
+
+class GeoColumnLocIndexer:
+    """
+    Not yet supported.
+    """
+
+    def __init__(self):
+        # Todo: Easy to implement with a join.
+        raise NotImplementedError
+
+
+class GeoColumnILocIndexer:
+    """
+    Each row of a GeoSeries is one of the six types: Point, MultiPoint,
+    LineString, MultiLineString, Polygon, or MultiPolygon.
+    """
+
+    def __init__(self, sr):
+        self._sr = sr
+
+    def __getitem__(self, index):
+        if not isinstance(index, slice):
+            mapped_index = int(self._sr.values[index])
+            return self._getitem_int(mapped_index)
+        else:
+            raise NotImplementedError
+            # This slice functionality is not ready yet
+            # return self._getitem_slice(index)
+
+    def _getitem_int(self, index):
+        type_map = {
+            "p": gpuPoint,
+            "mp": gpuMultiPoint,
+            "l": gpuLineString,
+            "ml": gpuMultiLineString,
+            "poly": gpuPolygon,
+            "mpoly": gpuMultiPolygon,
+        }
+        return type_map[self._sr._meta.input_types[index]](self._sr, index)
 
 
 class gpuGeometry:

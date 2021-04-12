@@ -69,6 +69,10 @@ class GeoArrowBuffers:
         ----------
         data : A dict or a GeoArrowBuffers object.
         """
+        self._points = None
+        self._multipoints = None
+        self._lines = None
+        self._polygons = None
         if isinstance(data, dict):
             if data.get("points_xy") is not None:
                 self._points = CoordinateArray(
@@ -107,18 +111,18 @@ class GeoArrowBuffers:
                     data_locale=data_locale,
                 )
         elif isinstance(data, GeoArrowBuffers):
-            if hasattr(data, "_points"):
+            if data.points is not None:
                 self._points = CoordinateArray(
                     data.points.xy, data.points.z, data_locale=data_locale
                 )
-            if hasattr(data, "_multipoints"):
+            if data.multipoints is not None:
                 self._multipoints = MultiPointArray(
                     data.multipoints.xy,
                     data.multipoints.offsets,
                     data.multipoints.z,
                     data_locale=data_locale,
                 )
-            if hasattr(data, "_lines"):
+            if data.lines is not None:
                 self._lines = LineArray(
                     data.lines.xy,
                     data.lines.offsets,
@@ -126,7 +130,7 @@ class GeoArrowBuffers:
                     data.lines.z,
                     data_locale=data_locale,
                 )
-            if hasattr(data, "_polygons"):
+            if data.polygons is not None:
                 self._polygons = PolygonArray(
                     data.polygons.xy,
                     data.polygons.polys,
@@ -184,13 +188,13 @@ class GeoArrowBuffers:
         """
         The numer of unique geometries stored in this GeoArrowBuffers.
         """
-        points_length = len(self._points) if hasattr(self, "_points") else 0
-        lines_length = len(self._lines) if hasattr(self, "_lines") else 0
+        points_length = len(self._points) if self.points is not None else 0
+        lines_length = len(self._lines) if self.lines is not None else 0
         multipoints_length = (
-            len(self._multipoints) if hasattr(self, "_multipoints") else 0
+            len(self._multipoints) if self.multipoints is not None else 0
         )
         polygons_length = (
-            len(self._polygons) if hasattr(self, "_polygons") else 0
+            len(self._polygons) if self.polygons is not None else 0
         )
         return (
             points_length + lines_length + multipoints_length + polygons_length
@@ -225,8 +229,7 @@ class CoordinateArray:
         """
         self.data_location = data_locale
         self.xy = xy
-        if z is not None:
-            self.z = z
+        self.z = z
 
     @property
     def data_location(self):
@@ -284,10 +287,7 @@ class CoordinateArray:
         """
         An optional third dimension for this Geometry.
         """
-        if hasattr(self, "_z"):
-            return self._z
-        else:
-            return None
+        return self._z
 
     @z.setter
     def z(self, z):
@@ -313,7 +313,7 @@ class CoordinateArray:
             set of GPU memory will be created. If True, GPU memory will be
             copied.
         """
-        if hasattr(self, "_z"):
+        if self.z is not None:
             z = self.z.copy(deep)
         else:
             z = None
@@ -393,7 +393,7 @@ class OffsetArray(CoordinateArray):
         )
 
     def copy(self, deep=True):
-        if hasattr(self, "_z"):
+        if self.z is not None:
             z = self.z.copy(deep)
         else:
             z = None
