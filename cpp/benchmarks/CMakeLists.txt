@@ -21,6 +21,8 @@
 add_library(cuspatial_benchmark_common OBJECT
     synchronization/synchronization.cpp)
 
+target_compile_features(cuspatial_benchmark_common PUBLIC cxx_std_17 cuda_std_17)
+
 target_link_libraries(cuspatial_benchmark_common
     PUBLIC benchmark::benchmark
            cudf::cudftestutil
