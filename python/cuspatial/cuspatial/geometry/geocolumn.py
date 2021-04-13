@@ -142,7 +142,7 @@ class GeoColumn(NumericalColumn):
 
     def __getitem__(self, item):
         """
-        Returns gpuGeometry objects for each of the rows specified by index.
+        Returns GpuGeometry objects for each of the rows specified by index.
         """
         if not isinstance(item, numbers.Integral):
             raise NotImplementedError
@@ -248,23 +248,23 @@ class GeoColumnILocIndexer:
 
     def _getitem_int(self, index):
         type_map = {
-            "p": gpuPoint,
-            "mp": gpuMultiPoint,
-            "l": gpuLineString,
-            "ml": gpuMultiLineString,
-            "poly": gpuPolygon,
-            "mpoly": gpuMultiPolygon,
+            "p": GpuPoint,
+            "mp": GpuMultiPoint,
+            "l": GpuLineString,
+            "ml": GpuMultiLineString,
+            "poly": GpuPolygon,
+            "mpoly": GpuMultiPolygon,
         }
         return type_map[self._sr._meta.input_types[index]](self._sr, index)
 
 
-class gpuGeometry:
+class GpuGeometry:
     def __init__(self, source, index):
         """
         The base class of individual GPU geometries. This and its inheriting
-        classes do not manage any GPU data directly - each gpuGeometry simply
+        classes do not manage any GPU data directly - each GpuGeometry simply
         stores a reference to the GeoSeries it is stored within and the index
-        of the geometry within the GeoSeries. Child gpuGeometry classes
+        of the geometry within the GeoSeries. Child GpuGeometry classes
         contain the logic necessary to serialize and convert GPU data back to
         Shapely.
         """
@@ -272,7 +272,7 @@ class gpuGeometry:
         self._index = index
 
 
-class gpuPoint(gpuGeometry):
+class GpuPoint(GpuGeometry):
     def to_shapely(self):
         item_type = self._source._meta.input_types[self._index]
         types = self._source._meta.input_types[0 : self._index]
@@ -283,7 +283,7 @@ class gpuPoint(gpuGeometry):
         return Point(self._source.points[index].reset_index(drop=True))
 
 
-class gpuMultiPoint(gpuGeometry):
+class GpuMultiPoint(GpuGeometry):
     def to_shapely(self):
         item_type = self._source._meta.input_types[self._index]
         types = self._source._meta.input_types[0 : self._index]
@@ -300,7 +300,7 @@ class gpuMultiPoint(gpuGeometry):
         return MultiPoint(np.array(result).reshape(item_length // 2, 2))
 
 
-class gpuLineString(gpuGeometry):
+class GpuLineString(GpuGeometry):
     def to_shapely(self):
         ml_index = self._index - 1
         preceding_line_count = 0
@@ -329,7 +329,7 @@ class gpuLineString(gpuGeometry):
         )
 
 
-class gpuMultiLineString(gpuGeometry):
+class GpuMultiLineString(GpuGeometry):
     def to_shapely(self):
         item_type = self._source._meta.input_types[self._index]
         index = 0
@@ -352,7 +352,7 @@ class gpuMultiLineString(gpuGeometry):
         )
 
 
-class gpuPolygon(gpuGeometry):
+class GpuPolygon(GpuGeometry):
     def to_shapely(self):
         mp_index = self._index - 1
         preceding_poly_count = 0
@@ -396,7 +396,7 @@ class gpuPolygon(gpuGeometry):
         )
 
 
-class gpuMultiPolygon(gpuGeometry):
+class GpuMultiPolygon(GpuGeometry):
     def to_shapely(self):
         item_type = self._source._meta.input_types[self._index]
         index = 0

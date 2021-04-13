@@ -111,10 +111,6 @@ class GeoSeries(cudf.Series):
         """
         return self.geocolumn.polygons
 
-    def __getitem__(self, key):
-        result = self._column[key]
-        return result
-
     def __repr__(self):
         # TODO: Limit the the number of rows like cudf does
         return self.to_pandas().__repr__()

@@ -1,9 +1,9 @@
 # Copyright (c) 2021 NVIDIA CORPORATION
 
+from functools import cached_property
 from typing import TypeVar, Union
 
 import cudf
-import numpy as np
 import pandas as pd
 
 T = TypeVar("T", bound="GeoArrowBuffers")
@@ -38,7 +38,7 @@ class GeoArrowBuffers:
 
     There are no correlations in length between any of the above columns.
     Accepted host buffer object types include python list and any type that
-    implements numpy's `__array__` protocol.
+    implements numpy's `__array__interface__` protocol.
 
     Notes
     -----
@@ -320,14 +320,14 @@ class CoordinateArray:
         result = type(self)(self.xy.copy(deep), z)
         return result
 
-    @property
+    @cached_property
     def x(self):
         """
         Return packed x-coordinates of this GeometryArray object.
         """
         return self.xy[slice(0, None, 2)].reset_index(drop=True)
 
-    @property
+    @cached_property
     def y(self):
         """
         Return packed y-coordinates of this GeometryArray object.
@@ -449,13 +449,10 @@ class LineArray(OffsetArray):
         return result
 
     def __len__(self):
-        mlength = np.array(
-            [
-                self._mlines[2 * i - 1] - self._mlines[2 * i - 2] - 1
-                for i in range(1, len(self._mlines) // 2 + 1)
-            ],
-            dtype="int64",
-        ).sum()
+        mlength = sum(
+            self._mlines[2 * i - 1] - self._mlines[2 * i - 2] - 1
+            for i in range(1, len(self._mlines) // 2 + 1)
+        )
         return (len(self.offsets) - 1) - mlength
 
 
@@ -554,11 +551,8 @@ class PolygonArray(OffsetArray):
         return result
 
     def __len__(self):
-        mlength = np.array(
-            [
-                self._mpolys[2 * i - 1] - self._mpolys[2 * i - 2] - 1
-                for i in range(1, len(self._mpolys) // 2 + 1)
-            ],
-            dtype="int64",
-        ).sum()
+        mlength = sum(
+            self._mpolys[2 * i - 1] - self._mpolys[2 * i - 2] - 1
+            for i in range(1, len(self._mpolys) // 2 + 1)
+        )
         return (len(self.polys) - 1) - mlength

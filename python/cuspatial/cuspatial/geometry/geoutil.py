@@ -8,8 +8,8 @@ def is_geometry_type(obj):
     """
     Returns `True` if the column is a `GeoPandas` or `cuspatial.GeoSeries`
     """
-    if gp_is_geometry_type(obj):
-        return True
     if isinstance(obj, (GeoSeries, GeoColumn)):
+        return True
+    if gp_is_geometry_type(obj):
         return True
     return False
