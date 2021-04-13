@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 #include <thrust/copy.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/remove.h>
 #include <thrust/transform.h>
 
@@ -144,7 +145,7 @@ struct compute_quadtree_point_in_polygon {
     rmm::device_uvector<uint32_t> poly_idxs(num_total_points, stream);
     rmm::device_uvector<uint32_t> point_idxs(num_total_points, stream);
 
-    auto poly_and_point_indices = make_zip_iterator(poly_idxs.begin(), point_idxs.begin());
+    auto poly_and_point_indices = thrust::make_zip_iterator(poly_idxs.begin(), point_idxs.begin());
 
     // Compute the combination of polygon and point index pairs. For each polygon/quadrant pair,
     // enumerate pairs of (poly_index, point_index) for each point in each quadrant.
@@ -169,7 +170,8 @@ struct compute_quadtree_point_in_polygon {
 
     // Enumerate the point X/Ys using the sorted `point_indices` (from quadtree construction)
     auto point_xys_iter = thrust::make_permutation_iterator(
-      make_zip_iterator(point_x.begin<T>(), point_y.begin<T>()), point_indices.begin<uint32_t>());
+      thrust::make_zip_iterator(point_x.begin<T>(), point_y.begin<T>()),
+      point_indices.begin<uint32_t>());
 
     // Compute the number of intersections by removing (poly, point) pairs that don't intersect
     auto num_intersections = thrust::distance(
