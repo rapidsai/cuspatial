@@ -176,6 +176,23 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
     num_results += num_leaves;
   }
 
+  // Sort the output poly/quad indices by quadrant
+  [&]() {
+    // Copy the relevant `node_offsets` into a tmp vec so we don't modify the quadtree column
+    rmm::device_uvector<uint32_t> tmp_node_offsets(num_results, stream);
+
+    auto const iter =
+      thrust::make_permutation_iterator(node_offsets.begin<uint32_t>(), out_node_idxs.begin());
+
+    thrust::copy(rmm::exec_policy(stream), iter, iter + num_results, tmp_node_offsets.begin());
+
+    thrust::stable_sort_by_key(
+      rmm::exec_policy(stream),
+      tmp_node_offsets.begin(),
+      tmp_node_offsets.end(),
+      thrust::make_zip_iterator(out_poly_idxs.begin(), out_node_idxs.begin()));
+  }();
+
   std::vector<std::unique_ptr<cudf::column>> cols{};
   cols.reserve(2);
   cols.push_back(make_fixed_width_column<uint32_t>(num_results, stream, mr));
