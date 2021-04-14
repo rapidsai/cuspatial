@@ -40,6 +40,73 @@ class GeoArrowBuffers:
     Accepted host buffer object types include python list and any type that
     implements numpy's `__array__interface__` protocol.
 
+    GeoArrow Format
+
+    GeoArrow format packs complex geometry types into 14 single-column Arrow
+    tables. This description is included for better understanding GeoArrow
+    format. Interacting with the GeoArrowBuffers is only required if you want
+    to convert cudf data to GeoPandas objects without starting from GeoPandas.
+
+    The points geometry is the simplest: N points are stored in a length 2*N
+    buffer with interleaved x,y coordinates. An optional z buffer of length N
+    can be used.
+
+    The multipoints geometry is the second simplest - identical to points,
+    with the addition of a multipoints_offsets buffer. The offsets buffer
+    stores N+1 indexes. The first multipoint is specified by 0, which is always
+    stored in offsets[0], and offsets[1], which is the length in points of
+    the first multipoint geometry. Subsequent multipoints are the prefix-sum of
+    the lengths of previous multipoints.
+
+    Consider::
+
+        buffers = GeoArrowBuffers({
+            "multipoints_xy":
+                [0, 0, 0, 1, 0, 2, 1, 0, 1, 1, 1, 2, 2, 0, 2, 1, 2, 2],
+            "multipoints_offsets":
+                [0, 6, 12, 18]
+        })
+
+    which encodes the following GeoPandas Series::
+
+        series = geopandas.Series([
+            MultiPoint((0, 0), (0, 1), (0, 2)),
+            MultiPoint((1, 0), (1, 1), (1, 2)),
+            MultiPoint((2, 0), (2, 1), (2, 2)),
+        ])
+
+    LineString geometry is more complicated than multipoints because the
+    format allows for the use of LineStrings and MultiLineStrings in the same
+    buffer, via the mlines key::
+
+        buffers = GeoArrowBuffers({
+            "lines_xy":
+                [0, 0, 0, 1, 0, 2, 1, 0, 1, 1, 1, 2, 2, 0, 2, 1, 2, 2, 3, 0,
+                 3, 1, 3, 2, 4, 0, 4, 1, 4, 2],
+            "lines_offsets":
+                [0, 6, 12, 18, 24, 30],
+            "mlines":
+                [1, 3]
+        })
+
+    Which encodes a GeoPandas Series::
+
+        series = geopandas.Series([
+            LineString((0, 0), (0, 1), (0, 2)),
+            MultiLineString([(1, 0), (1, 1), (1, 2)],
+                            [(2, 0), (2, 1), (2, 2)],
+            )
+            LineString((3, 0), (3, 1), (3, 2)),
+            LineString((4, 0), (4, 1), (4, 2)),
+        ])
+
+    Polygon geometry includes `mpolygons` for MultiPolygons similar to the
+    LineString geometry. Polygons are encoded using the same format as
+    Shapefiles, with left-wound external rings and right-wound internal rings.
+    An exact example of `GeoArrowBuffers` to `geopandas.Series` is left to the
+    reader as an exercise. Convert any GeoPandas `Series` or `DataFrame` with
+    `cuspatial.from_geopandas(geopandas_object)`.
+
     Notes
     -----
     Legacy cuspatial algorithms depend on separated x and y columns. Access
@@ -47,20 +114,34 @@ class GeoArrowBuffers:
 
     Examples
     --------
-    GeoArrowBuffers accept a dict as argument:
+    GeoArrowBuffers accept a dict as argument. Any or all of the four basic
+    geometry types is supported as argument::
 
-    >>> buffers = GeoArrowBuffers({
-            "points_xy": [0, 1, 2, 3],
-            "multipoints_xy": [0, 1, 2, 3],
-            "multipoints_offsets": [0, 1, 2],
-            "lines_xy": [0, 1, 2, 3],
-            "lines_offsets": [0, 1, 2],
-            "mlines": [1, 3],
-            "polygons_xy": [0, 1, 2, 3],
-            "polygons_polygonsets": [0, 1, 2],
+        buffers = GeoArrowBuffers({
+            "points_xy":
+                [0, 0, 0, 1, 0, 2, 1, 0, 1, 1, 1, 2, 2, 0, 2, 1, 2, 2],
+            "multipoints_xy":
+                [0, 0, 0, 1, 0, 2, 1, 0, 1, 1, 1, 2, 2, 0, 2, 1, 2, 2],
+            "multipoints_offsets":
+                [0, 6, 12, 18]
+            "lines_xy":
+                [0, 0, 0, 1, 0, 2, 1, 0, 1, 1, 1, 2, 2, 0, 2, 1, 2, 2, 3, 0,
+                 3, 1, 3, 2, 4, 0, 4, 1, 4, 2],
+            "lines_offsets":
+                [0, 6, 12, 18, 24, 30],
+            "mlines":
+                [1, 3]
+            "polygons_xy":
+                [0, 0, 0, 1, 0, 2, 1, 0, 1, 1, 1, 2, 2, 0, 2, 1, 2, 2, 3, 0,
+                 3, 1, 3, 2, 4, 0, 4, 1, 4, 2],
+            "polygons_polygons": [0, 1, 2],
             "polygons_rings": [0, 1, 2],
             "mpolygons": [1, 3],
         })
+
+    or another GeoArrowBuffers::
+
+        buffers2 = GeoArrowBuffers(buffers)
     """
 
     def __init__(self, data: Union[dict, T], data_locale: object = cudf):

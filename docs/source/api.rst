@@ -1,21 +1,7 @@
-~~~~~~~~~~~~~~~~~~~~~~~
-cuSpatial API Reference
-~~~~~~~~~~~~~~~~~~~~~~~
-
-cuSpatial provides functionality for fast GPU-based spatial index and join
-functions via point-in-polygon, a pathing library for trajectory identification
-and reconstruction, and accelerated GIS functions like haversine distance and grid pro jection. The icing-on-the-cake of cuSpatial is that we integrate neatly
-with `GeoPandas` and RAPIDS `cudf`.
-
-This enables you to take advantage of all of the features of `GeoPandas`, plus
-blisteringly fast GPU acceleration for pandas-like functionality in `cudf` and
-spatial functions that perform quickly on millions and tens of millions of
-geometries.
-
 GeoPandas Interop
 -----------------
 
-Load geometry information from a `GeoPandas.GeoSeries` or `GeoPandas.GeoDataFrame`.
+We support any geometry format supported by `GeoPandas`. Load geometry information from a `GeoPandas.GeoSeries` or `GeoPandas.GeoDataFrame`.
 
     >>> gpdf = geopandas.read_file('arbitrary.txt')
         cugpdf = cuspatial.from_geopandas(gpdf)
