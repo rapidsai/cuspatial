@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,29 +32,27 @@
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/binary_search.h>
-#include <thrust/functional.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <limits>
 #include <memory>
 
 namespace cuspatial {
 namespace detail {
 namespace {
 
-using size_type = cudf::size_type;
-
 template <typename T>
 struct hausdorff_accumulator_factory {
-  cudf::column_device_view xs;
-  cudf::column_device_view ys;
+  cudf::column_device_view const xs;
+  cudf::column_device_view const ys;
 
-  hausdorff_acc<T> __device__ operator()(cartesian_product_group_index idx)
+  hausdorff_acc<T> inline __device__ operator()(cartesian_product_group_index const& idx)
   {
-    auto a_idx = idx.group_a.offset + idx.element_a_idx;
-    auto b_idx = idx.group_b.offset + idx.element_b_idx;
+    auto const a_idx = idx.group_a.offset + idx.element_a_idx;
+    auto const b_idx = idx.group_b.offset + idx.element_b_idx;
 
-    auto distance = hypot(xs.element<T>(b_idx) - xs.element<T>(a_idx),
-                          ys.element<T>(b_idx) - ys.element<T>(a_idx));
+    auto const distance = hypot(xs.element<T>(b_idx) - xs.element<T>(a_idx),
+                                ys.element<T>(b_idx) - ys.element<T>(a_idx));
 
     return hausdorff_acc<T>{b_idx, b_idx, distance, distance, 0};
   }
@@ -76,9 +74,12 @@ struct hausdorff_functor {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
-    size_type num_points  = xs.size();
-    size_type num_spaces  = space_offsets.size();
-    size_type num_results = num_spaces * num_spaces;
+    auto const num_points  = static_cast<uint32_t>(xs.size());
+    auto const num_spaces  = static_cast<uint32_t>(space_offsets.size());
+    auto const num_results = static_cast<uint64_t>(num_spaces) * static_cast<uint64_t>(num_spaces);
+
+    CUSPATIAL_EXPECTS(num_results < std::numeric_limits<cudf::size_type>::max(),
+                      "Matrix of spaces must be less than 2^31");
 
     if (num_results == 0) {
       return cudf::make_empty_column(cudf::data_type{cudf::type_to_id<T>()});
@@ -87,7 +88,7 @@ struct hausdorff_functor {
     // ===== Make Hausdorff Accumulator ============================================================
 
     auto gcp_iter = make_cartesian_product_group_index_iterator(
-      num_points, num_spaces, space_offsets.begin<cudf::size_type>());
+      num_points, num_spaces, space_offsets.begin<uint32_t>());
 
     auto d_xs = cudf::column_device_view::create(xs);
     auto d_ys = cudf::column_device_view::create(ys);
@@ -98,48 +99,64 @@ struct hausdorff_functor {
     // ===== Materialize ===========================================================================
 
     auto result = cudf::make_fixed_width_column(cudf::data_type{cudf::type_to_id<T>()},
-                                                num_results,
+                                                static_cast<cudf::size_type>(num_results),
                                                 cudf::mask_state::UNALLOCATED,
                                                 stream,
                                                 mr);
 
-    auto result_temp      = rmm::device_buffer(sizeof(hausdorff_acc<T>) * num_results);
-    auto result_temp_iter = static_cast<hausdorff_acc<T>*>(result_temp.data());
+    auto result_temp = rmm::device_uvector<hausdorff_acc<T>>(num_results, stream);
 
     auto scatter_map = thrust::make_transform_iterator(
-      gcp_iter, [num_spaces] __device__(cartesian_product_group_index idx) {
+      gcp_iter, [num_spaces] __device__(cartesian_product_group_index const& idx) {
         // the given output is only a "result" if it is the last output for a given pair-of-spaces
         bool const is_result = idx.element_a_idx + 1 == idx.group_a.size &&  //
                                idx.element_b_idx + 1 == idx.group_b.size;
 
-        if (not is_result) { return -1; }
+        if (not is_result) { return static_cast<uint32_t>(-1); }
 
         // the destination for the result is determined per- pair-of-spaces
         return idx.group_b.idx * num_spaces + idx.group_a.idx;
       });
 
-    auto scatter_out = make_scatter_output_iterator(result_temp_iter, scatter_map);
+    auto scatter_out = make_scatter_output_iterator(result_temp.begin(), scatter_map);
 
-    auto gpc_key_iter =
-      thrust::make_transform_iterator(gcp_iter, [] __device__(cartesian_product_group_index idx) {
+    auto gpc_key_iter = thrust::make_transform_iterator(
+      gcp_iter, [] __device__(cartesian_product_group_index const& idx) {
         return thrust::make_pair(idx.group_a.idx, idx.group_b.idx);
       });
 
     // the following output iterator and `inclusive_scan_by_key` could be replaced by a
     // reduce_by_key, if it supported non-commutative operators.
 
-    auto num_cartesian = num_points * num_points;
+    auto const num_cartesian =
+      static_cast<uint64_t>(num_points) * static_cast<uint64_t>(num_points);
 
-    thrust::inclusive_scan_by_key(rmm::exec_policy(stream),
-                                  gpc_key_iter,
-                                  gpc_key_iter + num_cartesian,
-                                  hausdorff_acc_iter,
-                                  scatter_out,
-                                  thrust::equal_to<thrust::pair<int32_t, int32_t>>());
+    //
+    // `thrust::inclusive_scan_by_key` causes an out-of-memory
+    // error on input sizes close to (but not exactly) INT_MAX.
+    //
+    // Doing the reduction in chunks is a temporary workaround until this is fixed.
+    //
+    // The magic number between OOM vs. no OOM is somewhere between:
+    //                                             (1uL << 31uL) - 2048uL;
+    auto const magic_inclusive_scan_by_key_limit = (1uL << 31uL) - 4096uL;
+
+    for (auto itr = gpc_key_iter, end = gpc_key_iter + num_cartesian; itr < end;) {
+      auto const len = static_cast<uint32_t>(std::min(
+        static_cast<uint64_t>(thrust::distance(itr, end)), magic_inclusive_scan_by_key_limit));
+
+      thrust::inclusive_scan_by_key(rmm::exec_policy(stream),
+                                    itr,
+                                    itr + len,
+                                    hausdorff_acc_iter,
+                                    scatter_out,
+                                    thrust::equal_to<thrust::pair<uint32_t, uint32_t>>());
+      thrust::advance(itr, len);
+    }
 
     thrust::transform(rmm::exec_policy(stream),
-                      result_temp_iter,
-                      result_temp_iter + num_results,
+                      result_temp.begin(),
+                      result_temp.end(),
                       result->mutable_view().begin<T>(),
                       [] __device__(hausdorff_acc<T> const& a) { return static_cast<T>(a); });
 
