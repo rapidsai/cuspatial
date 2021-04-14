@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,9 +107,9 @@ inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_uvector<uint32_t>
                            level_1_size);
 
     auto &offsets     = quad_child_pos;
-    auto offsets_iter = make_zip_iterator(is_quad->view().begin<bool>(),
-                                          quad_child_pos->view().template begin<uint32_t>(),
-                                          quad_point_pos.begin());
+    auto offsets_iter = thrust::make_zip_iterator(is_quad->view().begin<bool>(),
+                                                  quad_child_pos->view().template begin<uint32_t>(),
+                                                  quad_point_pos.begin());
 
     // for each value in `is_quad` copy from `quad_child_pos` if true, else
     // `quad_point_pos`
@@ -129,9 +129,9 @@ inline std::unique_ptr<cudf::table> make_quad_tree(rmm::device_uvector<uint32_t>
   auto lengths = make_fixed_width_column<uint32_t>(num_valid_nodes, stream, mr);
   // for each value in `is_quad` copy from `quad_child_count` if true, else
   // `quad_point_count`
-  auto lengths_iter = make_zip_iterator(is_quad->view().begin<bool>(),  //
-                                        quad_child_count.begin(),
-                                        quad_point_count.begin());
+  auto lengths_iter = thrust::make_zip_iterator(is_quad->view().begin<bool>(),  //
+                                                quad_child_count.begin(),
+                                                quad_point_count.begin());
   thrust::transform(rmm::exec_policy(stream),
                     lengths_iter,
                     lengths_iter + num_valid_nodes,

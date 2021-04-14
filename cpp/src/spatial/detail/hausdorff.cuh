@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ namespace detail {
 */
 template <typename T>
 struct hausdorff_acc {
-  __device__ hausdorff_acc<T> operator+(hausdorff_acc<T> const& rhs) const
+  hausdorff_acc<T> inline __device__ operator+(hausdorff_acc<T> const& rhs) const
   {
     auto const& lhs = *this;
 
@@ -100,18 +100,19 @@ struct hausdorff_acc {
    *
    * @returns Directed hausdorff distance
    */
-  __device__ explicit operator T() const
+  explicit inline __device__ operator T() const
   {
-    auto is_open = this->col_l == this->col_r;
+    auto const is_open = this->col_l == this->col_r;
 
-    auto partial_max = is_open ? min(this->min_l, this->min_r) : max(this->min_l, this->min_r);
+    auto const partial_max =
+      is_open ? min(this->min_l, this->min_r) : max(this->min_l, this->min_r);
 
     return max(this->rolling_max, partial_max);
   }
 
   // running column ids, used to determine when the rolling minimums can be rolled into the maximum
-  int32_t col_l;
-  int32_t col_r;
+  uint32_t col_l;
+  uint32_t col_r;
 
   // rolling minimums for the columns at the current stage of reduction
   T min_l;
