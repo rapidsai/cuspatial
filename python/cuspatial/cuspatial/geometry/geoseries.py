@@ -35,6 +35,7 @@ class GeoSeries(cudf.Series):
         1    0.0
         dtype: float64
     """
+
     def __init__(
         self,
         data: Union[gpd.GeoSeries],

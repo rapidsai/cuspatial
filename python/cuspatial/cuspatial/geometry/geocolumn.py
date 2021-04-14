@@ -46,12 +46,8 @@ class GeoMeta:
             self.input_lengths.extend(repeat(1, len(buffers.multipoints)))
         if buffers.lines is not None:
             if len(buffers.lines.mlines) > 0:
-                self.input_types.extend(
-                    repeat("l", buffers.lines.mlines[0])
-                )
-                self.input_lengths.extend(
-                    repeat(1, buffers.lines.mlines[0])
-                )
+                self.input_types.extend(repeat("l", buffers.lines.mlines[0]))
+                self.input_lengths.extend(repeat(1, buffers.lines.mlines[0]))
                 for ml_index in range(len(buffers.lines.mlines) // 2):
                     self.input_types.extend(["ml"])
                     self.input_lengths += [1]
@@ -83,9 +79,7 @@ class GeoMeta:
                     self.input_types.extend(repeat("poly", mpoly_size))
                     self.input_lengths.extend(repeat(1, mpoly_size))
             else:
-                self.input_types.extend(
-                    repeat("poly", len(buffers.polygons))
-                )
+                self.input_types.extend(repeat("poly", len(buffers.polygons)))
                 self.input_lengths.extend(repeat(1, len(buffers.polygons)))
 
     def copy(self, deep=True):
