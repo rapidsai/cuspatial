@@ -69,7 +69,7 @@ class GeoSeries(cudf.Series):
         super().__init__(column, index, dtype, name, nan_as_null)
 
     @property
-    def geocolumn(self):
+    def _geocolumn(self):
         """
         The GeoColumn object keeps a reference to a `GeoArrowBuffers` object,
         which contains all of the geometry coordinates and offsets for thie
@@ -77,8 +77,8 @@ class GeoSeries(cudf.Series):
         """
         return self._column
 
-    @geocolumn.setter
-    def geocolumn(self, value):
+    @_geocolumn.setter
+    def _geocolumn(self, value):
         if not isinstance(value, GeoColumn):
             raise TypeError
         self._column = value
@@ -88,28 +88,28 @@ class GeoSeries(cudf.Series):
         """
         Access the `PointsArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.geocolumn.points
+        return self._geocolumn.points
 
     @property
     def multipoints(self):
         """
         Access the `MultiPointArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.geocolumn.multipoints
+        return self._geocolumn.multipoints
 
     @property
     def lines(self):
         """
         Access the `LineArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.geocolumn.lines
+        return self._geocolumn.lines
 
     @property
     def polygons(self):
         """
         Access the `PolygonArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.geocolumn.polygons
+        return self._geocolumn.polygons
 
     def __repr__(self):
         # TODO: Limit the the number of rows like cudf does
@@ -122,7 +122,7 @@ class GeoSeries(cudf.Series):
         """
         if nullable is True:
             raise ValueError("GeoSeries doesn't support <NA> yet")
-        host_column = self.geocolumn.to_host()
+        host_column = self._geocolumn.to_host()
         output = [geom.to_shapely() for geom in host_column]
         return gpGeoSeries(output, index=self.index.to_pandas())
 

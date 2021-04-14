@@ -3,6 +3,7 @@
 import numbers
 import numpy as np
 
+from itertools import repeat
 from shapely.geometry import (
     Point,
     MultiPoint,
@@ -38,54 +39,54 @@ class GeoMeta:
         self.input_types = []
         self.input_lengths = []
         if buffers.points is not None:
-            self.input_types += list(np.repeat("p", len(buffers.points)))
-            self.input_lengths += list(np.repeat(1, len(buffers.points)))
+            self.input_types.extend(repeat("p", len(buffers.points)))
+            self.input_lengths.extend(repeat(1, len(buffers.points)))
         if buffers.multipoints is not None:
-            self.input_types += list(np.repeat("mp", len(buffers.multipoints)))
-            self.input_lengths += list(np.repeat(1, len(buffers.multipoints)))
+            self.input_types.extend(repeat("mp", len(buffers.multipoints)))
+            self.input_lengths.extend(repeat(1, len(buffers.multipoints)))
         if buffers.lines is not None:
             if len(buffers.lines.mlines) > 0:
-                self.input_types += list(
-                    np.repeat("l", buffers.lines.mlines[0])
+                self.input_types.extend(
+                    repeat("l", buffers.lines.mlines[0])
                 )
-                self.input_lengths += list(
-                    np.repeat(1, buffers.lines.mlines[0])
+                self.input_lengths.extend(
+                    repeat(1, buffers.lines.mlines[0])
                 )
                 for ml_index in range(len(buffers.lines.mlines) // 2):
-                    self.input_types += list(["ml"])
+                    self.input_types.extend(["ml"])
                     self.input_lengths += [1]
                     mline_size = (
                         buffers.lines.mlines[ml_index * 2 + 1]
                         - 1
                         - buffers.lines.mlines[ml_index * 2]
                     )
-                    self.input_types += list(np.repeat("l", mline_size))
-                    self.input_lengths += list(np.repeat(1, mline_size))
+                    self.input_types.extend(repeat("l", mline_size))
+                    self.input_lengths.extend(repeat(1, mline_size))
             else:
-                self.input_types += list(np.repeat("l", len(buffers.lines)))
-                self.input_lengths += list(np.repeat(1, len(buffers.lines)))
+                self.input_types.extend(repeat("l", len(buffers.lines)))
+                self.input_lengths.extend(repeat(1, len(buffers.lines)))
         if buffers.polygons is not None:
             if len(buffers.polygons.mpolys) > 0:
-                self.input_types += list(
-                    np.repeat("poly", buffers.polygons.mpolys[0])
+                self.input_types.extend(
+                    repeat("poly", buffers.polygons.mpolys[0])
                 )
-                self.input_lengths += list(
-                    np.repeat(1, buffers.polygons.mpolys[0])
+                self.input_lengths.extend(
+                    repeat(1, buffers.polygons.mpolys[0])
                 )
                 for mp_index in range(len(buffers.polygons.mpolys) // 2):
                     mpoly_size = (
                         buffers.polygons.mpolys[mp_index * 2 + 1]
                         - buffers.polygons.mpolys[mp_index * 2]
                     )
-                    self.input_types += list(["mpoly"])
-                    self.input_lengths += [mpoly_size]
-                    self.input_types += list(np.repeat("poly", mpoly_size))
-                    self.input_lengths += list(np.repeat(1, mpoly_size))
+                    self.input_types.extend(["mpoly"])
+                    self.input_lengths.extend([mpoly_size])
+                    self.input_types.extend(repeat("poly", mpoly_size))
+                    self.input_lengths.extend(repeat(1, mpoly_size))
             else:
-                self.input_types += list(
-                    np.repeat("poly", len(buffers.polygons))
+                self.input_types.extend(
+                    repeat("poly", len(buffers.polygons))
                 )
-                self.input_lengths += list(np.repeat(1, len(buffers.polygons)))
+                self.input_lengths.extend(repeat(1, len(buffers.polygons)))
 
     def copy(self, deep=True):
         return type(self)(
