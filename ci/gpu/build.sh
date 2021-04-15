@@ -16,14 +16,14 @@ function hasArg {
 export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
 export CUDA_REL=${CUDA_VERSION%.*}
-export CUDF_HOME="${WORKSPACE}/cudf"
-export CUSPATIAL_HOME="${WORKSPACE}"
+export CUDF_HOME="$WORKSPACE/cudf"
+export CUSPATIAL_HOME="$WORKSPACE"
 
 # Set home to the job's workspace
-export HOME=$WORKSPACE
+export HOME="$WORKSPACE"
 
 # Parse git describe
-cd $WORKSPACE
+cd "$WORKSPACE"
 export GIT_DESCRIBE_TAG=`git describe --tags`
 export MINOR_VERSION=`echo $GIT_DESCRIBE_TAG | grep -o -E '([0-9]+\.[0-9]+)'`
 
@@ -72,7 +72,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     ################################################################################
 
     gpuci_logger "Build cuSpatial"
-    cd $WORKSPACE
+    cd "$WORKSPACE"
     ./build.sh clean libcuspatial cuspatial tests
 
     ###############################################################################
@@ -86,12 +86,12 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
         nvidia-smi
 
         gpuci_logger "GoogleTests"
-        cd $WORKSPACE/cpp/build
+        cd "$WORKSPACE/cpp/build"
 
-        for gt in ${WORKSPACE}/cpp/build/gtests/* ; do
+        for gt in "$WORKSPACE/cpp/build/gtests/"* ; do
             test_name=$(basename ${gt})
             echo "Running GoogleTest $test_name"
-            ${gt} --gtest_output=xml:${WORKSPACE}/test-results/
+            ${gt} --gtest_output=xml:"$WORKSPACE/test-results/"
         done
 
         gpuci_logger "Download/Generate Test Data"
@@ -101,13 +101,13 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
         #TODO
 
         #Python Unit tests for cuSpatial
-        cd $WORKSPACE/python/cuspatial
-        py.test --cache-clear --junitxml=${WORKSPACE}/junit-cuspatial.xml -v
+        cd "$WORKSPACE/python/cuspatial"
+        py.test --cache-clear --junitxml="$WORKSPACE/junit-cuspatial.xml" -v
     fi
 else
-    export LD_LIBRARY_PATH="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/cpp/build:$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/cpp/build":$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
 
-    TESTRESULTS_DIR=${WORKSPACE}/test-results/
+    TESTRESULTS_DIR="$WORKSPACE/test-results/"
     mkdir -p ${TESTRESULTS_DIR}
     SUITEERROR=0
 
@@ -116,7 +116,7 @@ else
 
     gpuci_logger "Running googletests"
     # run gtests
-    cd $WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/
+    cd "$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/"
     for gt in cpp/build/gtests/* ; do
         test_name=$(basename ${gt})
         echo "Running GoogleTest $test_name"
@@ -128,13 +128,13 @@ else
         fi
     done
 
-    cd $WORKSPACE/python
+    cd "$WORKSPACE/python"
     
-    CONDA_FILE=`find $WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/ -name "libcuspatial*.tar.bz2"`
+    CONDA_FILE=`find "$WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/" -name "libcuspatial*.tar.bz2"`
     CONDA_FILE=`basename "$CONDA_FILE" .tar.bz2` #get filename without extension
     CONDA_FILE=${CONDA_FILE//-/=} #convert to conda install
     gpuci_logger "Installing $CONDA_FILE"
-    conda install -c $WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/ "$CONDA_FILE"
+    conda install -c "$WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/" "$CONDA_FILE"
 
     export LIBCUGRAPH_BUILD_DIR="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/build"
     
@@ -142,7 +142,7 @@ else
     "$WORKSPACE/build.sh" -v cuspatial
     
     gpuci_logger "Run pytests"
-    py.test --cache-clear --junitxml=${WORKSPACE}/junit-cuspatial.xml -v
+    py.test --cache-clear --junitxml="$WORKSPACE/junit-cuspatial.xml" -v
 
     EXITCODE=$?
     if (( ${EXITCODE} != 0 )); then
