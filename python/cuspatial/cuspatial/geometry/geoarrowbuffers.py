@@ -114,8 +114,10 @@ class GeoArrowBuffers:
 
     Examples
     --------
-    GeoArrowBuffers accept a dict as argument. Any or all of the four basic
-    geometry types is supported as argument::
+    GeoArrowBuffers accept a dict as argument. Valid keys are in the bullet
+    list above. Valid values are any datatype that implements numpy's
+    `__array_interface__`. Any or all of the four basic geometry types is
+    supported as argument::
 
         buffers = GeoArrowBuffers({
             "points_xy":

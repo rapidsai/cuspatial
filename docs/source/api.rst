@@ -1,5 +1,5 @@
-GeoPandas Interop
------------------
+GeoPandas Compatibility
+-----------------------
 
 We support any geometry format supported by `GeoPandas`. Load geometry information from a `GeoPandas.GeoSeries` or `GeoPandas.GeoDataFrame`.
 
