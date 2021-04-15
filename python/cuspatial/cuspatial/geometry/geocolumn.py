@@ -269,6 +269,10 @@ class GpuGeometry:
 
 class GpuPoint(GpuGeometry):
     def to_shapely(self):
+        """
+        Finds the position in the GeoArrow array of points that corresponds
+        to the row of the column stored at `self._index`.
+        """
         item_type = self._source._meta.input_types[self._index]
         types = self._source._meta.input_types[0 : self._index]
         index = 0
@@ -280,6 +284,11 @@ class GpuPoint(GpuGeometry):
 
 class GpuMultiPoint(GpuGeometry):
     def to_shapely(self):
+        """
+        Finds the position in the GeoArrow array of multipoints that
+        corresponds to the row of the column stored at `self._index`. Returns
+        `item_length` coordinates starting at that position.
+        """
         item_type = self._source._meta.input_types[self._index]
         types = self._source._meta.input_types[0 : self._index]
         item_start = 0
@@ -297,9 +306,15 @@ class GpuMultiPoint(GpuGeometry):
 
 class GpuLineString(GpuGeometry):
     def to_shapely(self):
+        """
+        Finds the start and end position in the GeoArrow array of lines
+        of the LineString referenced by `self._index`, creates one, and
+        returns it.
+        """
         ml_index = self._index - 1
         preceding_line_count = 0
         preceding_ml_count = 0
+        # Skip over any LineStrings that are part of a MultiLineString
         while ml_index >= 0:
             if self._source._meta.input_types[ml_index] == "ml":
                 preceding_ml_count = preceding_ml_count + 1
@@ -326,6 +341,12 @@ class GpuLineString(GpuGeometry):
 
 class GpuMultiLineString(GpuGeometry):
     def to_shapely(self):
+        """
+        Finds the range of LineStrings that are specified by the mlines values.
+        Count the number of MultiLines stored prior to the one referenced by
+        `self._index`, then return the MultiLineString at that position packed
+        with the LineStrings in its range.
+        """
         item_type = self._source._meta.input_types[self._index]
         index = 0
         for i in range(self._index):
@@ -348,6 +369,14 @@ class GpuMultiLineString(GpuGeometry):
 
 
 class GpuPolygon(GpuGeometry):
+    """
+    Find the polygon rings and coordinates in the self._index-th row of the
+    column. Find the last index of the MultiPolygons that precede the
+    desired Polygon, and the number of Polygons that fall between the last
+    MultiPolygon and the desired Polygon. This identifies the index of the
+    first ring of the Polygon. Construct a new Polygon using the first ring
+    as exterior, and subsequent interior rings.
+    """
     def to_shapely(self):
         mp_index = self._index - 1
         preceding_poly_count = 0
@@ -393,6 +422,11 @@ class GpuPolygon(GpuGeometry):
 
 class GpuMultiPolygon(GpuGeometry):
     def to_shapely(self):
+        """
+        Iteratively construct Polygons from exterior (first) rings and
+        subsequent interior rings of all polygons that around bound by the
+        mpolygon specified by self._index.
+        """
         item_type = self._source._meta.input_types[self._index]
         index = 0
         for i in range(self._index):
