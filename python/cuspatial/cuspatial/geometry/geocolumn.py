@@ -377,6 +377,7 @@ class GpuPolygon(GpuGeometry):
     first ring of the Polygon. Construct a new Polygon using the first ring
     as exterior, and subsequent interior rings.
     """
+
     def to_shapely(self):
         mp_index = self._index - 1
         preceding_poly_count = 0
