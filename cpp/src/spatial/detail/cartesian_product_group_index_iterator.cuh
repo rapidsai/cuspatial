@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,22 +22,23 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/pair.h>
+
 #include <utility>
 
 namespace cuspatial {
 namespace detail {
 
 struct cartesian_product_group {
-  int32_t idx;
-  int32_t size;
-  int32_t offset;
+  uint32_t idx;
+  uint32_t size;
+  uint32_t offset;
 };
 
 struct cartesian_product_group_index {
   cartesian_product_group group_a;
   cartesian_product_group group_b;
-  int32_t element_a_idx;
-  int32_t element_b_idx;
+  uint32_t element_a_idx;
+  uint32_t element_b_idx;
 };
 
 template <typename OffsetIteratorA,
@@ -47,7 +48,7 @@ template <typename OffsetIteratorA,
           typename LookupIteratorA,
           typename LookupIteratorB>
 struct cartesian_product_group_index_functor {
-  int32_t const num_elements_b;
+  uint32_t const num_elements_b;
   SizeIteratorA const group_sizes_a;
   SizeIteratorB const group_sizes_b;
   OffsetIteratorA const group_offsets_a;
@@ -55,26 +56,26 @@ struct cartesian_product_group_index_functor {
   LookupIteratorA const group_lookup_a;
   LookupIteratorB const group_lookup_b;
 
-  __device__ cartesian_product_group_index operator()(int64_t const idx) const
+  cartesian_product_group_index inline __device__ operator()(uint64_t const idx) const
   {
     // first dimension
-    int32_t group_lookup_idx_a = idx / num_elements_b;
-    auto group_idx_a           = *(group_lookup_a + group_lookup_idx_a);
-    auto group_size_a          = *(group_sizes_a + group_idx_a);
-    auto group_offset_a        = *(group_offsets_a + group_idx_a);
-    auto group_block_offset_a  = group_offset_a * num_elements_b;
+    uint32_t const group_lookup_idx_a = idx / num_elements_b;
+    auto const group_idx_a            = *(group_lookup_a + group_lookup_idx_a);
+    auto const group_size_a           = *(group_sizes_a + group_idx_a);
+    auto const group_offset_a         = *(group_offsets_a + group_idx_a);
+    auto const group_block_offset_a   = group_offset_a * num_elements_b;
 
     // second dimension
-    int32_t group_lookup_idx_b = (idx - group_block_offset_a) / group_size_a;
-    auto group_idx_b           = *(group_lookup_b + group_lookup_idx_b);
-    auto group_size_b          = *(group_sizes_b + group_idx_b);
-    auto group_offset_b        = *(group_offsets_b + group_idx_b);
-    auto group_block_offset_b  = group_offset_b * group_size_a;
+    uint32_t const group_lookup_idx_b = (idx - group_block_offset_a) / group_size_a;
+    auto const group_idx_b            = *(group_lookup_b + group_lookup_idx_b);
+    auto const group_size_b           = *(group_sizes_b + group_idx_b);
+    auto const group_offset_b         = *(group_offsets_b + group_idx_b);
+    auto const group_block_offset_b   = group_offset_b * group_size_a;
 
     // relative index
-    int32_t relative_idx        = idx - group_block_offset_a - group_block_offset_b;
-    auto relative_element_idx_a = relative_idx % group_size_a;
-    auto relative_element_idx_b = relative_idx / group_size_a;
+    uint32_t const relative_idx       = idx - group_block_offset_a - group_block_offset_b;
+    auto const relative_element_idx_a = relative_idx % group_size_a;
+    auto const relative_element_idx_b = relative_idx / group_size_a;
 
     return cartesian_product_group_index{{group_idx_a, group_size_a, group_offset_a},
                                          {group_idx_b, group_size_b, group_offset_b},
@@ -86,8 +87,8 @@ struct cartesian_product_group_index_functor {
 template <typename OffsetIterator>
 struct group_lookup_functor {
   OffsetIterator group_offsets;
-  int32_t group_count;
-  __device__ int32_t operator()(int32_t element_idx) const
+  uint32_t const group_count;
+  uint32_t inline __device__ operator()(uint64_t const element_idx) const
   {
     return thrust::distance(
              group_offsets,
@@ -129,14 +130,14 @@ struct group_lookup_functor {
  * to `reduce_by_key`.
  */
 template <typename OffsetIteratorA, typename OffsetIteratorB>
-auto make_cartesian_product_group_index_iterator(int32_t const num_elements_a,
-                                                 int32_t const num_elements_b,
-                                                 int32_t const num_groups_a,
-                                                 int32_t const num_groups_b,
+auto make_cartesian_product_group_index_iterator(uint32_t const num_elements_a,
+                                                 uint32_t const num_elements_b,
+                                                 uint32_t const num_groups_a,
+                                                 uint32_t const num_groups_b,
                                                  OffsetIteratorA const group_offsets_a,
                                                  OffsetIteratorB const group_offsets_b)
 {
-  auto count_iter = thrust::make_counting_iterator(0);
+  auto count_iter = thrust::make_counting_iterator(uint64_t{0});
 
   using SizeFunctorA = detail::size_from_offsets_functor<OffsetIteratorA>;
   using SizeFunctorB = detail::size_from_offsets_functor<OffsetIteratorB>;
@@ -183,8 +184,8 @@ auto make_cartesian_product_group_index_iterator(int32_t const num_elements_a,
  * @return auto         Thrust iterator of `cartesian_product_group_index`s. device-only.
  */
 template <typename OffsetIterator>
-auto make_cartesian_product_group_index_iterator(int32_t const element_count,
-                                                 int32_t const group_count,
+auto make_cartesian_product_group_index_iterator(uint32_t const element_count,
+                                                 uint32_t const group_count,
                                                  OffsetIterator const group_offsets)
 {
   return make_cartesian_product_group_index_iterator(

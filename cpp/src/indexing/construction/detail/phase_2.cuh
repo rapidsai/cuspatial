@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ inline rmm::device_uvector<uint32_t> flatten_point_keys(
 {
   rmm::device_uvector<uint32_t> flattened_keys(num_valid_nodes, stream);
   auto keys_and_levels =
-    make_zip_iterator(quad_keys.begin(), quad_level.begin(), indicator.begin<bool>());
+    thrust::make_zip_iterator(quad_keys.begin(), quad_level.begin(), indicator.begin<bool>());
   thrust::transform(rmm::exec_policy(stream),
                     keys_and_levels,
                     keys_and_levels + num_valid_nodes,
@@ -122,7 +122,7 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
       rmm::exec_policy(stream),
       flattened_keys.begin(),
       flattened_keys.end(),
-      make_zip_iterator(initial_sort_indices.begin(), quad_point_count_tmp.begin()));
+      thrust::make_zip_iterator(initial_sort_indices.begin(), quad_point_count_tmp.begin()));
 
     thrust::remove_if(rmm::exec_policy(stream),
                       quad_point_count_tmp.begin(),
@@ -157,7 +157,7 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
                          quad_point_offsets_tmp.begin());
 
   auto counts_and_offsets =
-    make_zip_iterator(quad_point_count_tmp.begin(), quad_point_offsets_tmp.begin());
+    thrust::make_zip_iterator(quad_point_count_tmp.begin(), quad_point_offsets_tmp.begin());
 
   thrust::stable_sort_by_key(rmm::exec_policy(stream),
                              initial_sort_indices.begin(),
@@ -170,7 +170,7 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
                   counts_and_offsets,
                   counts_and_offsets + leaf_offsets.size(),
                   leaf_offsets.begin(),
-                  make_zip_iterator(quad_point_count.begin(), quad_point_offsets.begin()));
+                  thrust::make_zip_iterator(quad_point_count.begin(), quad_point_offsets.begin()));
 
   quad_point_offsets.shrink_to_fit(stream);
 
@@ -261,10 +261,10 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
   // Start counting nodes at level 2, since children of the root node should not
   // be discarded.
   // line 5 of algorithm in Fig. 5 in ref.
-  auto tree = make_zip_iterator(quad_keys.begin() + level_1_size,
-                                quad_point_count.begin() + level_1_size,
-                                quad_child_count.begin() + level_1_size,
-                                quad_levels.begin() + level_1_size);
+  auto tree = thrust::make_zip_iterator(quad_keys.begin() + level_1_size,
+                                        quad_point_count.begin() + level_1_size,
+                                        quad_child_count.begin() + level_1_size,
+                                        quad_levels.begin() + level_1_size);
 
   auto last_valid =
     thrust::remove_if(rmm::exec_policy(stream),

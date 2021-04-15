@@ -48,7 +48,7 @@ extensions = [
             os.path.join(CUSPATIAL_ROOT, "_deps/libcudacxx-src/include"),
             os.path.join(
                 os.path.dirname(sysconfig.get_path("include")),
-                "libcuspatial/libcudacxx",
+                "libcudf/libcudacxx",
             ),
             os.path.dirname(sysconfig.get_path("include")),
             np.get_include(),
