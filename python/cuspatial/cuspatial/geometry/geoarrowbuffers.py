@@ -1,6 +1,5 @@
 # Copyright (c) 2021 NVIDIA CORPORATION
 
-from functools import cached_property
 from typing import TypeVar, Union
 
 import cudf
@@ -403,14 +402,14 @@ class CoordinateArray:
         result = type(self)(self.xy.copy(deep), z)
         return result
 
-    @cached_property
+    @property
     def x(self):
         """
         Return packed x-coordinates of this GeometryArray object.
         """
         return self.xy[slice(0, None, 2)].reset_index(drop=True)
 
-    @cached_property
+    @property
     def y(self):
         """
         Return packed y-coordinates of this GeometryArray object.
