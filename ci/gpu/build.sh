@@ -18,6 +18,7 @@ export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
 export CUDA_REL=${CUDA_VERSION%.*}
 export CUDF_HOME="$WORKSPACE/cudf"
 export CUSPATIAL_HOME="$WORKSPACE"
+export CONDA_ARTIFACT_PATH="$WORKSPACE/ci/artifacts/cuspatial/cpu/.conda-bld/"
 
 # Set home to the job's workspace
 export HOME="$WORKSPACE"
@@ -130,11 +131,11 @@ else
 
     cd "$WORKSPACE/python"
     
-    CONDA_FILE=`find "$WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/" -name "libcuspatial*.tar.bz2"`
+    CONDA_FILE=`find "$CONDA_ARTIFACT_PATH" -name "libcuspatial*.tar.bz2"`
     CONDA_FILE=`basename "$CONDA_FILE" .tar.bz2` #get filename without extension
     CONDA_FILE=${CONDA_FILE//-/=} #convert to conda install
     gpuci_logger "Installing $CONDA_FILE"
-    conda install -c "$WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/" "$CONDA_FILE"
+    conda install -c "$CONDA_ARTIFACT_PATH" "$CONDA_FILE"
 
     export LIBCUGRAPH_BUILD_DIR="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/build"
     
