@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <vector>
-
 #include <cuspatial/error.hpp>
 
 #include <spatial/detail/cartesian_product_group_index_iterator.cuh>
@@ -32,14 +30,16 @@
 
 #include <gtest/gtest.h>
 
+#include <vector>
+
 using namespace cudf;
 using namespace test;
 using cuspatial::detail::cartesian_product_group;
 using cuspatial::detail::cartesian_product_group_index;
 
-void test_equality(int32_t idx,
-                   cartesian_product_group_index lhs,
-                   cartesian_product_group_index rhs)
+void test_equality(int32_t const idx,
+                   cartesian_product_group_index const& lhs,
+                   cartesian_product_group_index const& rhs)
 {
   EXPECT_EQ(lhs.group_a.idx, rhs.group_a.idx) << "idx: " << idx;
   EXPECT_EQ(lhs.group_b.idx, rhs.group_b.idx) << "idx: " << idx;
@@ -65,9 +65,9 @@ TYPED_TEST_CASE(CartesianProductTest, TestTypes);
 TYPED_TEST(CartesianProductTest, Traversal)
 {
   auto group_a_offsets_end = 6;
-  auto group_a_offsets     = std::vector<int32_t>{0, 3, 4};
+  auto h_group_a_offsets   = std::vector<int32_t>{0, 3, 4};
   auto group_b_offsets_end = 6;
-  auto group_b_offsets     = std::vector<int32_t>{0, 2, 5};
+  auto h_group_b_offsets   = std::vector<int32_t>{0, 2, 5};
 
   //     A    A    B    B    B    C
   //   +----+----+----+----+----+----+
@@ -131,15 +131,27 @@ TYPED_TEST(CartesianProductTest, Traversal)
     {group_a_2, group_b_2, 1, 0},  //
   };
 
+  thrust::device_vector<int32_t> d_group_a_offsets(h_group_a_offsets.size());
+  thrust::copy(h_group_a_offsets.begin(), h_group_a_offsets.end(), d_group_a_offsets.begin());
+
+  thrust::device_vector<int32_t> d_group_b_offsets(h_group_b_offsets.size());
+  thrust::copy(h_group_b_offsets.begin(), h_group_b_offsets.end(), d_group_b_offsets.begin());
+
   auto gcp_iter =
     cuspatial::detail::make_cartesian_product_group_index_iterator(group_a_offsets_end,
                                                                    group_b_offsets_end,
-                                                                   group_a_offsets.size(),
-                                                                   group_b_offsets.size(),
-                                                                   group_a_offsets.cbegin(),
-                                                                   group_b_offsets.cbegin());
+                                                                   d_group_a_offsets.size(),
+                                                                   d_group_b_offsets.size(),
+                                                                   d_group_a_offsets.begin(),
+                                                                   d_group_b_offsets.begin());
 
   auto num_cartesian = group_a_offsets_end * group_b_offsets_end;
 
-  for (auto i = 0; i < num_cartesian; i++) { test_equality(i, expected[i], *(gcp_iter + i)); }
+  thrust::device_vector<cartesian_product_group_index> d_actual(num_cartesian);
+  thrust::copy(gcp_iter, gcp_iter + num_cartesian, d_actual.begin());
+
+  std::vector<cartesian_product_group_index> h_actual(num_cartesian);
+  thrust::copy(d_actual.begin(), d_actual.end(), h_actual.begin());
+
+  for (auto i = 0; i < num_cartesian; i++) { test_equality(i, expected.at(i), h_actual.at(i)); }
 }

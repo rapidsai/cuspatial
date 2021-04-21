@@ -134,7 +134,8 @@ struct compute_quadtree_point_in_polygon {
                            local_point_offsets.begin() + 1);
 
     // Ensure local point offsets starts at 0
-    local_point_offsets.set_element_async(0, 0, stream);
+    uint32_t init{0};
+    local_point_offsets.set_element_async(0, init, stream);
 
     // The last element is the total number of points to test against any polygon.
     auto num_total_points = local_point_offsets.back_element(stream);
