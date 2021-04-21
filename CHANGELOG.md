@@ -1,6 +1,28 @@
-# cuSpatial 0.19.0 (Date TBD)
+# cuSpatial 0.19.0 (21 Apr 2021)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v0.19.0a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Revert &quot;Update conda recipes pinning of repo dependencies&quot; ([#372](https://github.com//rapidsai/cuspatial/pull/372)) [@raydouglass](https://github.com/raydouglass)
+- Update conda recipes pinning of repo dependencies ([#370](https://github.com//rapidsai/cuspatial/pull/370)) [@mike-wendt](https://github.com/mike-wendt)
+- Rename cartesian_product_group_index_iterator_test.cpp to .cu ([#369](https://github.com//rapidsai/cuspatial/pull/369)) [@trxcllnt](https://github.com/trxcllnt)
+
+## 🚀 New Features
+
+- Auto-label PRs based on their content ([#337](https://github.com//rapidsai/cuspatial/pull/337)) [@jolorunyomi](https://github.com/jolorunyomi)
+
+## 🛠️ Improvements
+
+- Set `install_rpath` for libcuspatial ([#375](https://github.com//rapidsai/cuspatial/pull/375)) [@trxcllnt](https://github.com/trxcllnt)
+- ENH Reduce cuspatial library size ([#373](https://github.com//rapidsai/cuspatial/pull/373)) [@dillon-cullinan](https://github.com/dillon-cullinan)
+- Eliminate literals passed to device_uvector::set_element_async ([#367](https://github.com//rapidsai/cuspatial/pull/367)) [@harrism](https://github.com/harrism)
+- Update Changelog Link ([#366](https://github.com//rapidsai/cuspatial/pull/366)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Rework libcuspatial CMakeLists.txt to export targets for CPM ([#365](https://github.com//rapidsai/cuspatial/pull/365)) [@trxcllnt](https://github.com/trxcllnt)
+- Prepare Changelog for Automation ([#364](https://github.com//rapidsai/cuspatial/pull/364)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update 0.18 changelog entry ([#363](https://github.com//rapidsai/cuspatial/pull/363)) [@ajschmidt8](https://github.com/ajschmidt8)
+- ENH Build with `cmake --build` &amp; Pass ccache variables to conda recipe &amp; use Ninja in CI ([#359](https://github.com//rapidsai/cuspatial/pull/359)) [@Ethyling](https://github.com/Ethyling)
+- Update make_counting_transform_iterator namespace in tests ([#353](https://github.com//rapidsai/cuspatial/pull/353)) [@trxcllnt](https://github.com/trxcllnt)
+- Fix merge conflicts in #348 ([#349](https://github.com//rapidsai/cuspatial/pull/349)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Pin gdal to 3.2.x ([#347](https://github.com//rapidsai/cuspatial/pull/347)) [@weiji14](https://github.com/weiji14)
 
 # cuSpatial 0.18.0 (24 Feb 2021)
 
