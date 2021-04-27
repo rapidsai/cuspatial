@@ -11,6 +11,10 @@ T = TypeVar("T", bound="GeoArrowBuffers")
 class GeoArrowBuffers:
     """A GPU GeoArrowBuffers object.
 
+    Parameters
+    ----------
+    data : A dict or a GeoArrowBuffers object.
+
     The GeoArrow format specifies a tabular data format for geometry
     information. Supported types include `Point`, `MultiPoint`, `LineString`,
     `MultiLineString`, `Polygon`, and `MultiPolygon`.  In order to store
@@ -146,11 +150,6 @@ class GeoArrowBuffers:
     """
 
     def __init__(self, data: Union[dict, T], data_locale: object = cudf):
-        """
-        Parameters
-        ----------
-        data : A dict or a GeoArrowBuffers object.
-        """
         self._points = None
         self._multipoints = None
         self._lines = None
@@ -325,7 +324,7 @@ class CoordinateArray:
 
     @data_location.setter
     def data_location(self, data_location):
-        if data_location not in [cudf, pd]:
+        if data_location not in (cudf, pd):
             raise NotImplementedError(
                 "only cudf and pandas CoordinateArrays "
                 "are supported at this time"
