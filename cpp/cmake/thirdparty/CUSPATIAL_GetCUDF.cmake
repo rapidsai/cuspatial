@@ -20,8 +20,6 @@ function(find_and_configure_cudf VERSION)
         return()
     endif()
 
-    cuspatial_save_if_enabled(BUILD_TESTS)
-    cuspatial_save_if_enabled(BUILD_BENCHMARKS)
     CPMFindPackage(NAME        cudf
         VERSION                ${VERSION}
         GIT_REPOSITORY         https://github.com/rapidsai/cudf.git
@@ -31,8 +29,6 @@ function(find_and_configure_cudf VERSION)
         OPTIONS                "BUILD_TESTS OFF"
                                "BUILD_BENCHMARKS OFF"
         FIND_PACKAGE_ARGUMENTS "COMPONENTS testing")
-    cuspatial_restore_if_enabled(BUILD_TESTS)
-    cuspatial_restore_if_enabled(BUILD_BENCHMARKS)
 
     # Make sure consumers of cuspatial can see cudf::cudf
     fix_cmake_global_defaults(cudf::cudf)
