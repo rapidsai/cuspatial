@@ -151,6 +151,7 @@ def test_to_shapely_random():
         geos_list.append(geo)
     gi = gpd.GeoSeries(geos_list)
     cugs = cuspatial.from_geopandas(gi)
+    print(cugs)
     cugs_back = cugs.to_geopandas()
     assert_eq_geo(gi, cugs_back)
 

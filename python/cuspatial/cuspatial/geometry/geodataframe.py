@@ -37,7 +37,7 @@ class GeoDataFrame(cudf.DataFrame):
                     column = GeoColumn(buffers, pandas_meta)
                     self._data[col] = column
                 else:
-                    self[col] = data[col]
+                    self._data[col] = data[col]
         elif data is None:
             pass
         else:

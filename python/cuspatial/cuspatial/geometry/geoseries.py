@@ -113,7 +113,7 @@ class GeoSeries(cudf.Series):
         return self._geocolumn.polygons
 
     def __repr__(self):
-        # TODO: Limit the the number of rows like cudf does
+        # TODO: Implement Iloc with slices so that we can use `Series.__repr__`
         return self.to_pandas().__repr__()
 
     def to_geopandas(self, nullable=False):
@@ -124,7 +124,7 @@ class GeoSeries(cudf.Series):
         if nullable is True:
             raise ValueError("GeoSeries doesn't support <NA> yet")
         host_column = self._geocolumn.to_host()
-        output = [geom.to_shapely() for geom in host_column]
+        output = [host_column[i].to_shapely() for i in range(len(host_column))]
         return gpGeoSeries(output, index=self.index.to_pandas())
 
     def to_pandas(self):

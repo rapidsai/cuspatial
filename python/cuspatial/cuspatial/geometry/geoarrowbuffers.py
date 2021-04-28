@@ -286,7 +286,26 @@ class GeoArrowBuffers:
         Create a copy of all of the GPU-backed data structures in this
         GeoArrowBuffers.
         """
-        result = GeoArrowBuffers(self)
+        points = self.points.copy(deep)
+        multipoints = self.multipoints.copy(deep)
+        lines = self.lines.copy(deep)
+        polygons = self.polygons.copy(deep)
+        result = GeoArrowBuffers({
+            "points_xy": points.xy,
+            "points_z": points.z,
+            "multipoints_xy": multipoints.xy,
+            "multipoints_offsets": multipoints.offsets,
+            "multipoints_z": multipoints.z,
+            "lines_xy": lines.xy,
+            "lines_offsets": lines.offsets,
+            "mlines": lines.mlines,
+            "lines_z": lines.z,
+            "polygons_xy": polygons.xy,
+            "polygons_polygons": polygons.polys,
+            "polygons_rings": polygons.rings,
+            "polygons_mpolygons": polygons.mpolys,
+            "polygons_z": polygons.z,
+        })
         return result
 
     def to_host(self):
@@ -526,7 +545,9 @@ class LineArray(OffsetArray):
 
     def copy(self, deep=True):
         base = super().copy(deep)
-        result = LineArray(base.xy, base.offsets, self.mlines.copy(), base.z,)
+        result = LineArray(
+            base.xy, base.offsets, self.mlines.copy(deep), base.z,
+        )
         return result
 
     def __len__(self):

@@ -25,7 +25,7 @@ T = TypeVar("T", bound="GeoColumn")
 
 class GeoMeta:
     """
-    Creates  input_types and input_lengths for GeoColumns that are created
+    Creates input_types and input_lengths for GeoColumns that are created
     using native GeoArrowBuffers. These will be used to convert to GeoPandas
     GeoSeries if necessary.
     """
@@ -82,7 +82,7 @@ class GeoMeta:
                 self.input_types.extend(repeat("poly", len(buffers.polygons)))
                 self.input_lengths.extend(repeat(1, len(buffers.polygons)))
 
-    def copy(self, deep=True):
+    def copy(self):
         return type(self)(
             {
                 "input_types": self.input_types.copy(),
@@ -110,7 +110,7 @@ class GeoColumn(NumericalColumn):
         meta: GeoMeta = None,
         shuffle_order: cudf.Index = None,
     ):
-        base = cudf.Series(cudf.RangeIndex(0, len(data)))._column.data
+        base = cudf.core.column.column.arange(0, len(data), dtype="int64").data
         super().__init__(base, dtype="int64")
         self._geo = data
         if meta is not None:
@@ -119,17 +119,6 @@ class GeoColumn(NumericalColumn):
             self._meta = GeoMeta(data)
         if shuffle_order is not None:
             self._data = shuffle_order
-
-    def __iter__(self):
-        self._iter_index = 0
-        return self
-
-    def __next__(self):
-        if self._iter_index >= len(self):
-            raise StopIteration
-        result = self[self._iter_index]
-        self._iter_index = self._iter_index + 1
-        return result
 
     def to_host(self):
         result = GeoColumn(self._geo.to_host(), self._meta.copy(), self.data)
@@ -205,7 +194,9 @@ class GeoColumn(NumericalColumn):
         Create a copy of all of the GPU-backed data structures in this
         GeoColumn.
         """
-        result = GeoColumn(self._geo.copy(), self._meta.copy(), self.data)
+        result = GeoColumn(
+            self._geo.copy(deep), self._meta.copy(), self.data.copy()
+        )
         return result
 
     def _copy_type_metadata(self: T, other: ColumnBase) -> ColumnBase:
