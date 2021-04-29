@@ -290,22 +290,24 @@ class GeoArrowBuffers:
         multipoints = self.multipoints.copy(deep)
         lines = self.lines.copy(deep)
         polygons = self.polygons.copy(deep)
-        result = GeoArrowBuffers({
-            "points_xy": points.xy,
-            "points_z": points.z,
-            "multipoints_xy": multipoints.xy,
-            "multipoints_offsets": multipoints.offsets,
-            "multipoints_z": multipoints.z,
-            "lines_xy": lines.xy,
-            "lines_offsets": lines.offsets,
-            "mlines": lines.mlines,
-            "lines_z": lines.z,
-            "polygons_xy": polygons.xy,
-            "polygons_polygons": polygons.polys,
-            "polygons_rings": polygons.rings,
-            "polygons_mpolygons": polygons.mpolys,
-            "polygons_z": polygons.z,
-        })
+        result = GeoArrowBuffers(
+            {
+                "points_xy": points.xy,
+                "points_z": points.z,
+                "multipoints_xy": multipoints.xy,
+                "multipoints_offsets": multipoints.offsets,
+                "multipoints_z": multipoints.z,
+                "lines_xy": lines.xy,
+                "lines_offsets": lines.offsets,
+                "mlines": lines.mlines,
+                "lines_z": lines.z,
+                "polygons_xy": polygons.xy,
+                "polygons_polygons": polygons.polys,
+                "polygons_rings": polygons.rings,
+                "polygons_mpolygons": polygons.mpolys,
+                "polygons_z": polygons.z,
+            }
+        )
         return result
 
     def to_host(self):
