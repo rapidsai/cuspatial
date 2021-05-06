@@ -112,7 +112,7 @@ struct compute_quadtree_point_in_polygon {
     rmm::mr::device_memory_resource *mr)
   {
     // Wrapped in an IIFE so `local_point_offsets` is freed on return
-    auto poly_and_point_idxs = [&]() {
+    auto [poly_idxs, point_idxs, num_total_points] = [&]() {
       auto quad_lengths        = quadtree.column(3);
       auto quad_offsets        = quadtree.column(4);
       auto poly_indices        = poly_quad_pairs.column(0);
@@ -174,9 +174,8 @@ struct compute_quadtree_point_in_polygon {
       return std::make_tuple(std::move(poly_idxs), std::move(point_idxs), num_total_points);
     }();
 
-    auto &poly_idxs             = std::get<0>(poly_and_point_idxs);
-    auto &point_idxs            = std::get<1>(poly_and_point_idxs);
-    auto &num_total_points      = std::get<2>(poly_and_point_idxs);
+    // auto &[poly_idxs, point_idxs, num_total_points] = poly_and_point_idxs;
+
     auto poly_and_point_indices = thrust::make_zip_iterator(poly_idxs.begin(), point_idxs.begin());
 
     // Enumerate the point X/Ys using the sorted `point_indices` (from quadtree construction)
