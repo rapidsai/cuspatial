@@ -174,8 +174,6 @@ struct compute_quadtree_point_in_polygon {
       return std::make_tuple(std::move(poly_idxs), std::move(point_idxs), num_total_points);
     }();
 
-    // auto &[poly_idxs, point_idxs, num_total_points] = poly_and_point_idxs;
-
     auto poly_and_point_indices = thrust::make_zip_iterator(poly_idxs.begin(), point_idxs.begin());
 
     // Enumerate the point X/Ys using the sorted `point_indices` (from quadtree construction)
