@@ -160,8 +160,8 @@ struct compute_quadtree_point_to_nearest_polyline {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource *mr)
   {
-    // Wrapped in an IIFE so intermediate allocations are freed on return
-    auto const [point_idxs, poly_idxs, distances] = [&]() {
+    // Wrapped in an IIFE so `local_point_offsets` is freed on return
+    auto const [point_idxs, poly_idxs, distances, num_distances] = [&]() {
       auto num_poly_quad_pairs = poly_quad_pairs.num_rows();
       auto poly_indices        = poly_quad_pairs.column(0).begin<uint32_t>();
       auto quad_lengths        = thrust::make_permutation_iterator(
@@ -302,16 +302,8 @@ struct compute_quadtree_point_to_nearest_polyline {
                            })
                            .first);
 
-      point_idxs.resize(num_distances, stream);
-      point_idxs.shrink_to_fit(stream);
-
-      poly_idxs.resize(num_distances, stream);
-      poly_idxs.shrink_to_fit(stream);
-
-      distances.resize(num_distances, stream);
-      distances.shrink_to_fit(stream);
-
-      return std::make_tuple(std::move(point_idxs), std::move(poly_idxs), std::move(distances));
+      return std::make_tuple(
+        std::move(point_idxs), std::move(poly_idxs), std::move(distances), num_distances);
     }();
 
     // Allocate output columns for the point and polyline index pairs and their distances
@@ -319,15 +311,20 @@ struct compute_quadtree_point_to_nearest_polyline {
     auto poly_index_col  = make_fixed_width_column<uint32_t>(point_x.size(), stream, mr);
     auto distance_col    = make_fixed_width_column<T>(point_x.size(), stream, mr);
 
+    // Note: no need to resize `point_idxs`, `poly_idxs`, or `distances` if we set the end iterator
+    // to `point_poly_idxs_and_distances + num_distances`.
+
+    auto point_poly_idxs_and_distances =
+      thrust::make_zip_iterator(point_idxs.begin(), poly_idxs.begin(), distances.begin());
+
     // scatter the values from their positions after reduction into their output positions
-    thrust::scatter(
-      rmm::exec_policy(stream),
-      thrust::make_zip_iterator(point_idxs.begin(), poly_idxs.begin(), distances.begin()),
-      thrust::make_zip_iterator(point_idxs.end(), poly_idxs.end(), distances.end()),
-      point_idxs.begin(),
-      thrust::make_zip_iterator(point_index_col->mutable_view().begin<uint32_t>(),
-                                poly_index_col->mutable_view().begin<uint32_t>(),
-                                distance_col->mutable_view().template begin<T>()));
+    thrust::scatter(rmm::exec_policy(stream),
+                    point_poly_idxs_and_distances,
+                    point_poly_idxs_and_distances + num_distances,
+                    point_idxs.begin(),
+                    thrust::make_zip_iterator(point_index_col->mutable_view().begin<uint32_t>(),
+                                              poly_index_col->mutable_view().begin<uint32_t>(),
+                                              distance_col->mutable_view().template begin<T>()));
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(3);
