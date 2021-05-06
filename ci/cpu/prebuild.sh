@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #Upload cuspatial once per PYTHON
-if [[ "$CUDA" == "10.1" ]]; then
+if [[ "$CUDA" == "11.0" ]]; then
     export UPLOAD_CUSPATIAL=1
 else
     export UPLOAD_CUSPATIAL=0

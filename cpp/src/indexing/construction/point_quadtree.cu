@@ -355,13 +355,14 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   if (x.is_empty() || y.is_empty()) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(5);
-    cols.push_back(detail::make_fixed_width_column<uint32_t>(0, 0, mr));
-    cols.push_back(detail::make_fixed_width_column<uint8_t>(0, 0, mr));
-    cols.push_back(detail::make_fixed_width_column<bool>(0, 0, mr));
-    cols.push_back(detail::make_fixed_width_column<uint32_t>(0, 0, mr));
-    cols.push_back(detail::make_fixed_width_column<uint32_t>(0, 0, mr));
-    return std::make_pair(detail::make_fixed_width_column<uint32_t>(0, 0, mr),
-                          std::make_unique<cudf::table>(std::move(cols)));
+    cols.push_back(detail::make_fixed_width_column<uint32_t>(0, rmm::cuda_stream_default, mr));
+    cols.push_back(detail::make_fixed_width_column<uint8_t>(0, rmm::cuda_stream_default, mr));
+    cols.push_back(detail::make_fixed_width_column<bool>(0, rmm::cuda_stream_default, mr));
+    cols.push_back(detail::make_fixed_width_column<uint32_t>(0, rmm::cuda_stream_default, mr));
+    cols.push_back(detail::make_fixed_width_column<uint32_t>(0, rmm::cuda_stream_default, mr));
+    return std::make_pair(
+      detail::make_fixed_width_column<uint32_t>(0, rmm::cuda_stream_default, mr),
+      std::make_unique<cudf::table>(std::move(cols)));
   }
   return detail::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, rmm::cuda_stream_default, mr);
