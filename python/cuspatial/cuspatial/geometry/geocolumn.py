@@ -126,7 +126,7 @@ class GeoColumn(NumericalColumn):
 
     def __getitem__(self, item):
         """
-        Returns GpuGeometry objects for each of the rows specified by index.
+        Returns ShapelySerializer objects for each of the rows specified by index.
         """
         if not isinstance(item, numbers.Integral):
             raise NotImplementedError
@@ -234,23 +234,23 @@ class GeoColumnILocIndexer:
 
     def _getitem_int(self, index):
         type_map = {
-            "p": GpuPoint,
-            "mp": GpuMultiPoint,
-            "l": GpuLineString,
-            "ml": GpuMultiLineString,
-            "poly": GpuPolygon,
-            "mpoly": GpuMultiPolygon,
+            "p": PointShapelySerializer,
+            "mp": MultiPointShapelySerializer,
+            "l": LineStringShapelySerializer,
+            "ml": MultiLineStringShapelySerializer,
+            "poly": PolygonShapelySerializer,
+            "mpoly": MultiPolygonShapelySerializer,
         }
         return type_map[self._sr._meta.input_types[index]](self._sr, index)
 
 
-class GpuGeometry:
+class ShapelySerializer:
     def __init__(self, source, index):
         """
         The base class of individual GPU geometries. This and its inheriting
-        classes do not manage any GPU data directly - each GpuGeometry simply
+        classes do not manage any GPU data directly - each ShapelySerializer simply
         stores a reference to the GeoSeries it is stored within and the index
-        of the geometry within the GeoSeries. Child GpuGeometry classes
+        of the geometry within the GeoSeries. Child ShapelySerializer classes
         contain the logic necessary to serialize and convert GPU data back to
         Shapely.
         """
@@ -258,7 +258,7 @@ class GpuGeometry:
         self._index = index
 
 
-class GpuPoint(GpuGeometry):
+class PointShapelySerializer(ShapelySerializer):
     def to_shapely(self):
         """
         Finds the position in the GeoArrow array of points that corresponds
@@ -273,7 +273,7 @@ class GpuPoint(GpuGeometry):
         return Point(self._source.points[index].reset_index(drop=True))
 
 
-class GpuMultiPoint(GpuGeometry):
+class MultiPointShapelySerializer(ShapelySerializer):
     def to_shapely(self):
         """
         Finds the position in the GeoArrow array of multipoints that
@@ -295,7 +295,7 @@ class GpuMultiPoint(GpuGeometry):
         return MultiPoint(np.array(result).reshape(item_length // 2, 2))
 
 
-class GpuLineString(GpuGeometry):
+class LineStringShapelySerializer(ShapelySerializer):
     def to_shapely(self):
         """
         Finds the start and end position in the GeoArrow array of lines
@@ -330,7 +330,7 @@ class GpuLineString(GpuGeometry):
         )
 
 
-class GpuMultiLineString(GpuGeometry):
+class MultiLineStringShapelySerializer(ShapelySerializer):
     def to_shapely(self):
         """
         Finds the range of LineStrings that are specified by the mlines values.
@@ -359,7 +359,7 @@ class GpuMultiLineString(GpuGeometry):
         )
 
 
-class GpuPolygon(GpuGeometry):
+class PolygonShapelySerializer(ShapelySerializer):
     """
     Find the polygon rings and coordinates in the self._index-th row of the
     column. Find the last index of the MultiPolygons that precede the
@@ -412,7 +412,7 @@ class GpuPolygon(GpuGeometry):
         )
 
 
-class GpuMultiPolygon(GpuGeometry):
+class MultiPolygonShapelySerializer(ShapelySerializer):
     def to_shapely(self):
         """
         Iteratively construct Polygons from exterior (first) rings and
