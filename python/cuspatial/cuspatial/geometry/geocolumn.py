@@ -126,7 +126,8 @@ class GeoColumn(NumericalColumn):
 
     def __getitem__(self, item):
         """
-        Returns ShapelySerializer objects for each of the rows specified by index.
+        Returns ShapelySerializer objects for each of the rows specified by
+        index.
         """
         if not isinstance(item, numbers.Integral):
             raise NotImplementedError
@@ -248,11 +249,11 @@ class ShapelySerializer:
     def __init__(self, source, index):
         """
         The base class of individual GPU geometries. This and its inheriting
-        classes do not manage any GPU data directly - each ShapelySerializer simply
-        stores a reference to the GeoSeries it is stored within and the index
-        of the geometry within the GeoSeries. Child ShapelySerializer classes
-        contain the logic necessary to serialize and convert GPU data back to
-        Shapely.
+        classes do not manage any GPU data directly - each ShapelySerializer
+        simply stores a reference to the GeoSeries it is stored within and
+        the index of the geometry within the GeoSeries. Child
+        ShapelySerializer classes contain the logic necessary to serialize
+        and convert GPU data back to Shapely.
         """
         self._source = source
         self._index = index
