@@ -87,7 +87,7 @@ class GeoDataFrame(cudf.DataFrame):
         result = super().groupby(*args, **kwargs)
         for col in self.columns:
             if is_geometry_type(self[col]):
-                result.obj = result.obj.drop(col, axis=1)
+                result.obj.drop(col, axis=1, inplace=True)
         return result
 
 
