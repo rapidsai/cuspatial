@@ -3,6 +3,7 @@
 from typing import TypeVar, Union
 
 import cudf
+import numpy as np
 import pandas as pd
 
 T = TypeVar("T", bound="GeoArrowBuffers")
@@ -553,10 +554,17 @@ class LineArray(OffsetArray):
         return result
 
     def __len__(self):
-        mlength = sum(
-            self._mlines[2 * i - 1] - self._mlines[2 * i - 2] - 1
-            for i in range(1, len(self._mlines) // 2 + 1)
-        )
+        if len(self._mlines) > 0:
+            mlength = (
+                self._mlines[np.arange(1, len(self._mlines), 2)].reset_index(
+                    drop=True
+                )
+                - self._mlines[np.arange(0, len(self._mlines), 2)].reset_index(
+                    drop=True
+                )
+            ).sum() - (len(self._mlines) // 2)
+        else:
+            mlength = 0
         return (len(self.offsets) - 1) - mlength
 
 
@@ -655,8 +663,15 @@ class PolygonArray(OffsetArray):
         return result
 
     def __len__(self):
-        mlength = sum(
-            self._mpolys[2 * i - 1] - self._mpolys[2 * i - 2] - 1
-            for i in range(1, len(self._mpolys) // 2 + 1)
-        )
+        if len(self._mpolys) > 0:
+            mlength = (
+                self._mpolys[np.arange(1, len(self._mpolys), 2)].reset_index(
+                    drop=True
+                )
+                - self._mpolys[np.arange(0, len(self._mpolys), 2)].reset_index(
+                    drop=True
+                )
+            ).sum() - (len(self._mpolys) // 2)
+        else:
+            mlength = 0
         return (len(self.polys) - 1) - mlength
