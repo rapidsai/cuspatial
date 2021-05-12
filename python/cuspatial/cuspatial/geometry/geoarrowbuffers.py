@@ -556,12 +556,16 @@ class LineArray(OffsetArray):
     def __len__(self):
         if len(self._mlines) > 0:
             mlength = (
-                self._mlines[np.arange(1, len(self._mlines), 2)].reset_index(
-                    drop=True
-                )
-                - self._mlines[np.arange(0, len(self._mlines), 2)].reset_index(
-                    drop=True
-                )
+                self._mlines[
+                    np.arangejj(
+                        1, len(self._mlines), 2, like=self._mlines.values
+                    )
+                ].reset_index(drop=True)
+                - self._mlines[
+                    np.arange(
+                        0, len(self._mlines), 2, like=self._mlines.values
+                    )
+                ].reset_index(drop=True)
             ).sum() - (len(self._mlines) // 2)
         else:
             mlength = 0
@@ -665,12 +669,16 @@ class PolygonArray(OffsetArray):
     def __len__(self):
         if len(self._mpolys) > 0:
             mlength = (
-                self._mpolys[np.arange(1, len(self._mpolys), 2)].reset_index(
-                    drop=True
-                )
-                - self._mpolys[np.arange(0, len(self._mpolys), 2)].reset_index(
-                    drop=True
-                )
+                self._mpolys[
+                    np.arange(
+                        1, len(self._mpolys), 2, like=self._mpolys.values
+                    )
+                ].reset_index(drop=True)
+                - self._mpolys[
+                    np.arange(
+                        0, len(self._mpolys), 2, like=self._mpolys.values
+                    )
+                ].reset_index(drop=True)
             ).sum() - (len(self._mpolys) // 2)
         else:
             mlength = 0
