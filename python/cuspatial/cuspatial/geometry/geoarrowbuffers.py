@@ -557,7 +557,7 @@ class LineArray(OffsetArray):
         if len(self._mlines) > 0:
             mlength = (
                 self._mlines[
-                    np.arangejj(
+                    np.arange(
                         1, len(self._mlines), 2, like=self._mlines.values
                     )
                 ].reset_index(drop=True)
