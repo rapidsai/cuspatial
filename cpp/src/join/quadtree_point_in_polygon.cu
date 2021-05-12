@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "detail/point.cuh"
+
 #include <indexing/construction/detail/utilities.cuh>
 #include <utility/point_in_polygon.cuh>
 
@@ -45,23 +47,16 @@ namespace {
 template <typename T, typename QuadOffsetsIter>
 struct compute_poly_and_point_indices {
   QuadOffsetsIter quad_point_offsets;
-  uint32_t const *local_point_offsets;
-  size_t const num_local_point_offsets;
+  uint32_t const *point_offsets;
+  uint32_t const *point_offsets_end;
   cudf::column_device_view const poly_indices;
-  thrust::tuple<uint32_t, uint32_t> __device__ operator()(cudf::size_type const i)
+  thrust::tuple<uint32_t, uint32_t> __device__ operator()(cudf::size_type const global_index)
   {
-    // Calculate the position in "local_point_offsets" that `i` falls between.
-    // This position is the index of the poly/quad pair for this `i`.
-    //
-    // Dereferencing `local_point_offset` yields the zero-based first point position of this
-    // quadrant. Adding this zero-based position to the quadrant's first point position in the
-    // quadtree yields the "global" position in the `point_indices` map.
-    auto po_begin                 = local_point_offsets;
-    auto po_end                   = local_point_offsets + num_local_point_offsets;
-    auto const local_point_offset = thrust::upper_bound(thrust::seq, po_begin, po_end, i) - 1;
-    uint32_t const pairs_idx      = thrust::distance(local_point_offsets, local_point_offset);
-    uint32_t const point_idx      = quad_point_offsets[pairs_idx] + (i - *local_point_offset);
-    uint32_t const poly_idx       = poly_indices.element<uint32_t>(pairs_idx);
+    // uint32_t quad_poly_index, local_point_index;
+    auto const [quad_poly_index, local_point_index] =
+      get_quad_poly_and_local_point_indices(global_index, point_offsets, point_offsets_end);
+    uint32_t const point_idx = quad_point_offsets[quad_poly_index] + local_point_index;
+    uint32_t const poly_idx  = poly_indices.element<uint32_t>(quad_poly_index);
     return thrust::make_tuple(poly_idx, point_idx);
   }
 };
@@ -168,7 +163,7 @@ struct compute_quadtree_point_in_polygon {
                         compute_poly_and_point_indices<T, decltype(quad_offsets_iter)>{
                           quad_offsets_iter,
                           local_point_offsets.begin(),
-                          local_point_offsets.size() - 1,
+                          local_point_offsets.end(),
                           *cudf::column_device_view::create(poly_indices, stream)});
 
       return std::make_tuple(std::move(poly_idxs), std::move(point_idxs), num_total_points);

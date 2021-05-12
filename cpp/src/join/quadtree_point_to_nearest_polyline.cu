@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "detail/point.cuh"
+
 #include <indexing/construction/detail/utilities.cuh>
 #include <utility/point_to_nearest_polyline.cuh>
 
@@ -45,24 +47,6 @@ namespace cuspatial {
 namespace detail {
 namespace {
 
-inline __device__ std::pair<uint32_t, uint32_t> get_quad_poly_and_local_point_indices(
-  uint32_t const global_index, uint32_t const *point_offsets, uint32_t const *point_offsets_end)
-{
-  // Calculate the position in "point_offsets" that `global_index` falls between.
-  // This position is the index of the poly/quad pair for this `global_index`.
-  //
-  // Dereferencing `local_point_offset` yields the zero-based first point position of this
-  // quadrant. Adding this zero-based position to the quadrant's first point position in the
-  // quadtree yields the "global" position in the `point_indices` map.
-  auto const local_point_offset =
-    thrust::upper_bound(thrust::seq, point_offsets, point_offsets_end, global_index) - 1;
-  return std::make_pair(
-    // quad_poly_index
-    thrust::distance(point_offsets, local_point_offset),
-    // local_point_index
-    global_index - *local_point_offset);
-}
-
 template <typename QuadOffsetsIter>
 inline __device__ std::pair<uint32_t, uint32_t> get_local_poly_index_and_count(
   uint32_t const poly_index, QuadOffsetsIter quad_offsets, QuadOffsetsIter quad_offsets_end)
@@ -91,8 +75,8 @@ inline __device__ std::pair<uint32_t, uint32_t> get_transposed_point_and_pair_in
   QuadOffsetsIter quad_offsets_end,
   QuadLengthsIter quad_lengths)
 {
-  // uint32_t quad_poly_index, local_point_offset;
-  auto const [quad_poly_index, local_point_offset] =
+  // uint32_t quad_poly_index, local_point_index;
+  auto const [quad_poly_index, local_point_index] =
     get_quad_poly_and_local_point_indices(global_index, point_offsets, point_offsets_end);
 
   // uint32_t local_poly_index, num_polys_in_quad;
@@ -103,7 +87,7 @@ inline __device__ std::pair<uint32_t, uint32_t> get_transposed_point_and_pair_in
   auto const num_points_in_quad     = quad_lengths[quad_poly_index];
   auto const quad_poly_offset       = quad_poly_index - local_poly_index;
   auto const quad_poly_point_start  = local_poly_index * num_points_in_quad;
-  auto const transposed_point_start = quad_poly_point_start + local_point_offset;
+  auto const transposed_point_start = quad_poly_point_start + local_point_index;
 
   return std::make_pair(
     // transposed point index
