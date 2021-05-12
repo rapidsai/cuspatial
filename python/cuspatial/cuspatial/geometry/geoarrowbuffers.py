@@ -556,20 +556,20 @@ class LineArray(OffsetArray):
     def __len__(self):
         if len(self._mlines) > 0:
             mlength = (
-                self._mlines[
+                self._mlines.values[
                     np.arange(
                         1, len(self._mlines), 2, like=self._mlines.values
                     )
-                ].reset_index(drop=True)
-                - self._mlines[
+                ]
+                - self._mlines.values[
                     np.arange(
                         0, len(self._mlines), 2, like=self._mlines.values
                     )
-                ].reset_index(drop=True)
+                ]
             ).sum() - (len(self._mlines) // 2)
         else:
             mlength = 0
-        return (len(self.offsets) - 1) - mlength
+        return (len(self.offsets) - 1) - int(mlength)
 
 
 class MultiPointArray(OffsetArray):
@@ -669,17 +669,17 @@ class PolygonArray(OffsetArray):
     def __len__(self):
         if len(self._mpolys) > 0:
             mlength = (
-                self._mpolys[
+                self._mpolys.values[
                     np.arange(
                         1, len(self._mpolys), 2, like=self._mpolys.values
                     )
-                ].reset_index(drop=True)
-                - self._mpolys[
+                ]
+                - self._mpolys.values[
                     np.arange(
                         0, len(self._mpolys), 2, like=self._mpolys.values
                     )
-                ].reset_index(drop=True)
+                ]
             ).sum() - (len(self._mpolys) // 2)
         else:
             mlength = 0
-        return (len(self.polys) - 1) - mlength
+        return (len(self.polys) - 1) - int(mlength)
