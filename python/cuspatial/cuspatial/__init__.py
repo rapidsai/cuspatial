@@ -1,3 +1,4 @@
+from ._version import get_versions
 from .core import interpolate
 from .core.gis import (
     directed_hausdorff_distance,
@@ -21,3 +22,6 @@ from .core.trajectory import (
     trajectory_distances_and_speeds,
 )
 from .io.shapefile import read_polygon_shapefile
+
+__version__ = get_versions()["version"]
+del get_versions
