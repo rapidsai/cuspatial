@@ -78,8 +78,9 @@ struct hausdorff_functor {
     auto const num_spaces  = static_cast<uint32_t>(space_offsets.size());
     auto const num_results = static_cast<uint64_t>(num_spaces) * static_cast<uint64_t>(num_spaces);
 
-    CUSPATIAL_EXPECTS(num_results < std::numeric_limits<cudf::size_type>::max(),
-                      "Matrix of spaces must be less than 2^31");
+    CUSPATIAL_EXPECTS(
+      num_results < static_cast<uint64_t>(std::numeric_limits<cudf::size_type>::max()),
+      "Matrix of spaces must be less than 2^31");
 
     if (num_results == 0) {
       return cudf::make_empty_column(cudf::data_type{cudf::type_to_id<T>()});

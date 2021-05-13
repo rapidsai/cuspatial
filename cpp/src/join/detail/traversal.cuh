@@ -19,7 +19,6 @@
 #include <indexing/construction/detail/utilities.cuh>
 #include <utility/z_order.cuh>
 
-#include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
