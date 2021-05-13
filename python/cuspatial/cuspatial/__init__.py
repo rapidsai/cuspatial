@@ -1,4 +1,4 @@
-from cuspatial._version import get_versions
+from ._version import get_versions
 from .core import interpolate
 from .core.gis import (
     directed_hausdorff_distance,
