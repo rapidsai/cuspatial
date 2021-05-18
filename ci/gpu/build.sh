@@ -106,7 +106,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
         py.test --cache-clear --junitxml="$WORKSPACE/junit-cuspatial.xml" -v
     fi
 else
-    export LD_LIBRARY_PATH="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/cpp/build":$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/cpp/build:$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
 
     TESTRESULTS_DIR="$WORKSPACE/test-results/"
     mkdir -p ${TESTRESULTS_DIR}
