@@ -42,9 +42,12 @@ inline __device__ T point_to_poly_line_distance(T const px,
     auto const y0  = poly_points_y.element<T>(i0);
     auto const x1  = poly_points_x.element<T>(i1);
     auto const y1  = poly_points_y.element<T>(i1);
-    auto const dx0 = px - x0, dy0 = py - y0;
-    auto const dx1 = px - x1, dy1 = py - y1;
-    auto const dx2 = x1 - x0, dy2 = y1 - y0;
+    auto const dx0 = px - x0;
+    auto const dy0 = py - y0;
+    auto const dx1 = px - x1;
+    auto const dy1 = py - y1;
+    auto const dx2 = x1 - x0;
+    auto const dy2 = y1 - y0;
     auto const d0    = dx0 * dx0 + dy0 * dy0;
     auto const d1    = dx1 * dx1 + dy1 * dy1;
     auto const d2    = dx2 * dx2 + dy2 * dy2;
