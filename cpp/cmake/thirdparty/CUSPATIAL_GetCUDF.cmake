@@ -36,6 +36,6 @@ function(find_and_configure_cudf VERSION)
     fix_cmake_global_defaults(cudf::cudftestutil)
 endfunction()
 
-set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
+set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}.00")
 
 find_and_configure_cudf(${CUSPATIAL_MIN_VERSION_cudf})
