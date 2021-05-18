@@ -20,10 +20,14 @@ function(find_and_configure_cudf VERSION)
         return()
     endif()
 
+    if(${VERSION} MATCHES [=[([0-9]+)\.([0-9]+)\.([0-9]+)]=])
+        set(MAJOR_AND_MINOR "${CMAKE_MATCH_1}.${CMAKE_MATCH_2}")
+    endif()
+
     CPMFindPackage(NAME        cudf
         VERSION                ${VERSION}
         GIT_REPOSITORY         https://github.com/rapidsai/cudf.git
-        GIT_TAG                branch-${VERSION}
+        GIT_TAG                branch-${MAJOR_AND_MINOR}
         GIT_SHALLOW            TRUE
         SOURCE_SUBDIR          cpp
         OPTIONS                "BUILD_TESTS OFF"
