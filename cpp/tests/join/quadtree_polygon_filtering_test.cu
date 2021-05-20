@@ -235,7 +235,7 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_small)
     "a polygon-quadrant pair table must have 2 columns (polygon-index, quadrant-index)");
 
   expect_tables_equal(
-    cudf::table_view{{fixed_width_column_wrapper<uint32_t>({0, 3, 1, 2, 1, 1, 3, 3}),
-                      fixed_width_column_wrapper<uint32_t>({2, 2, 6, 6, 12, 13, 10, 11})}},
+    cudf::table_view{{fixed_width_column_wrapper<uint32_t>({3, 3, 1, 2, 1, 1, 0, 3}),
+                      fixed_width_column_wrapper<uint32_t>({10, 11, 6, 6, 12, 13, 2, 2})}},
     *polygon_quadrant_pairs);
 }
