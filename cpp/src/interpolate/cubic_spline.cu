@@ -31,8 +31,7 @@
 namespace {  // anonymous
 
 // This functor performs one linear search for each input point in query_coords
-struct parallel_search {
-  template <typename T>
+struct parallel_search { template <typename T>
   std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
     cudf::column_view const& t,
     cudf::column_view const& curve_ids,
@@ -51,17 +50,16 @@ struct parallel_search {
     thrust::for_each(
       rmm::exec_policy(stream),
       thrust::make_counting_iterator<int>(0),
-      thrust::make_counting_iterator<int>(query_coords.size()),
+      thrust::make_counting_iterator<int>(t.size()),
       [p_t, p_curve_ids, p_prefixes, p_query_coords, p_result] __device__(int index) {
         int curve = p_curve_ids[index];
         int len   = p_prefixes[curve + 1] - p_prefixes[curve];
         int h     = p_prefixes[curve];
         int dh    = p_prefixes[curve] - (curve);
         // O(n) search, can do log(n) easily
-        for (int32_t i = 0; i < len; ++i) {
-          if ((p_t[h + i] + 0.0001 - p_query_coords[index]) > 0.00001) {
+        for (int32_t i = 1; i < len; ++i) {
+          if ((p_t[index] + 0.0001 < p_query_coords[h + i] + 0.00001)) {
             p_result[index] = dh + i - 1;
-            if (i == 0) p_result[index] = index - curve;
             return;
           }
         }
@@ -69,7 +67,7 @@ struct parallel_search {
         // This will use the final set of coefficients
         // for t_ values that are outside of the original
         // interpolation range.
-        p_result[index] = h + len - 2;
+        p_result[index] = dh + len - 2;
       });
     return result;
   };
