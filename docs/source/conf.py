@@ -21,7 +21,6 @@
 #
 import os
 import sys
-import cudf
 
 sys.path.insert(0, os.path.abspath("../.."))
 
@@ -35,6 +34,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "sphinx.ext.autosectionlabel",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
@@ -196,6 +196,7 @@ intersphinx_mapping = {"https://docs.python.org/": None}
 numpydoc_show_inherited_class_members = False
 numpydoc_class_members_toctree = False
 nbsphinx_allow_errors = True
+
 
 def setup(app):
     app.add_stylesheet("params.css")
