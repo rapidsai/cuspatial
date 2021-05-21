@@ -41,7 +41,7 @@ std::unique_ptr<cudf::column> make_column(std::vector<T> source,
   auto tid    = cudf::type_to_id<T>();
   auto type   = cudf::data_type{tid};
   auto buffer = rmm::device_buffer(source.data(), sizeof(T) * source.size(), stream, mr);
-  return std::make_unique<cudf::column>(type, source.size(), buffer);
+  return std::make_unique<cudf::column>(type, source.size(), std::move(buffer));
 }
 
 std::tuple<std::vector<cudf::size_type>,
