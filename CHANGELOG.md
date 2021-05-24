@@ -2,9 +2,9 @@
 
 Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.08.00a for the latest changes to this development branch.
 
-# cuSpatial 0.20.0 (Date TBD)
+# cuSpatial 21.06.00 (Date TBD)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v0.20.0a for the latest changes to this development branch.
+Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.06.00a for the latest changes to this development branch.
 
 # cuSpatial 0.19.0 (21 Apr 2021)
 
@@ -64,7 +64,7 @@ Please see https://github.com/rapidsai/cuspatial/releases/tag/v0.20.0a for the l
 - PR #320 Fix quadtree construction bug: zero out `device_uvector` before `scatter`
 - PR #328 Fix point in polygon test for cudf::gather breaking change
 
-# cuSpatial 0.16.0 (Date TBD)
+# cuSpatial 0.16.0 (21 Oct 2020)
 
 ## New Features
 - PR #290 Add Java bindings and a cuSpatial JAR package for Java users.
