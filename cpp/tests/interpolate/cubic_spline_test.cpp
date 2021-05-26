@@ -34,6 +34,14 @@
 struct CubicSplineTest : public cudf::test::BaseFixture {
 };
 
+// TEST_F(CubicSplineTest, test_parallel_search
+// 1. Each value in single set of coefficients
+// 2. Each value in triple set of coefficients
+// 3. Each middle value in single set of coefficients
+// 4. Each middle value in triple set of coefficients
+// 5. End values in single set of coefficients
+// 6. End values in triple set of coefficients
+
 TEST_F(CubicSplineTest, test_coefficients_single)
 {
   cudf::test::fixed_width_column_wrapper<float> t_column{{0, 1, 2, 3, 4}};

@@ -30,6 +30,9 @@
 
 namespace {  // anonymous
 
+const float SEARCH_OFFSET = 0.0001;
+const float QUERY_OFFSET = 0.00001;
+
 // This functor performs one linear search for each input point in query_coords
 struct parallel_search {
   template <typename T>
@@ -46,7 +49,7 @@ struct parallel_search {
     const int32_t* p_prefixes  = prefixes.data<int32_t>();
     const T* p_query_coords    = query_coords.data<T>();
     auto result                = cudf::make_numeric_column(
-                     curve_ids.type(), t.size(), cudf::mask_state::UNALLOCATED, stream, mr);
+                     curve_ids.type(), search_coords.size(), cudf::mask_state::UNALLOCATED, stream, mr);
     int32_t* p_result = result->mutable_view().data<int32_t>();
     thrust::for_each(
       rmm::exec_policy(stream),
@@ -55,20 +58,20 @@ struct parallel_search {
       [p_search_coords, p_curve_ids, p_prefixes, p_query_coords, p_result] __device__(int index) {
         int curve = p_curve_ids[index];
         int len   = p_prefixes[curve + 1] - p_prefixes[curve];
-        int h     = p_prefixes[curve];
-        int dh    = p_prefixes[curve] - (curve);
+        int query_coord_offset       = p_prefixes[curve];
+        int coefficient_table_offset = p_prefixes[curve] - (curve);
         // O(n) search, can do log(n) easily
         for (int32_t i = 1; i < len; ++i) {
-          if ((p_search_coords[index] + 0.0001 < p_query_coords[h + i] + 0.00001)) {
-            p_result[index] = dh + i - 1;
+          if ((p_search_coords[index] + SEARCH_OFFSET  < p_query_coords[query_coord_offset + i] + QUERY_OFFSET)) {
+            p_result[index] = coefficient_table_offset + i - 1;
             return;
           }
         }
-        // TODO: Important failure case:
+        // NOTE: Important failure case:
         // This will use the final set of coefficients
         // for t_ values that are outside of the original
         // interpolation range.
-        p_result[index] = dh + len - 2;
+        p_result[index] = coefficient_table_offset + len - 2;
       });
     return result;
   };
