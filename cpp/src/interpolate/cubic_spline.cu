@@ -31,34 +31,35 @@
 namespace {  // anonymous
 
 // This functor performs one linear search for each input point in query_coords
-struct parallel_search { template <typename T>
+struct parallel_search {
+  template <typename T>
   std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
-    cudf::column_view const& t,
+    cudf::column_view const& search_coords,
     cudf::column_view const& curve_ids,
     cudf::column_view const& prefixes,
     cudf::column_view const& query_coords,
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
-    const T* p_t               = t.data<T>();
+    const T* p_search_coords   = search_coords.data<T>();
     const int32_t* p_curve_ids = curve_ids.data<int32_t>();
     const int32_t* p_prefixes  = prefixes.data<int32_t>();
     const T* p_query_coords    = query_coords.data<T>();
     auto result                = cudf::make_numeric_column(
-      curve_ids.type(), t.size(), cudf::mask_state::UNALLOCATED, stream, mr);
+                     curve_ids.type(), t.size(), cudf::mask_state::UNALLOCATED, stream, mr);
     int32_t* p_result = result->mutable_view().data<int32_t>();
     thrust::for_each(
       rmm::exec_policy(stream),
       thrust::make_counting_iterator<int>(0),
       thrust::make_counting_iterator<int>(t.size()),
-      [p_t, p_curve_ids, p_prefixes, p_query_coords, p_result] __device__(int index) {
+      [p_search_coords, p_curve_ids, p_prefixes, p_query_coords, p_result] __device__(int index) {
         int curve = p_curve_ids[index];
         int len   = p_prefixes[curve + 1] - p_prefixes[curve];
         int h     = p_prefixes[curve];
         int dh    = p_prefixes[curve] - (curve);
         // O(n) search, can do log(n) easily
         for (int32_t i = 1; i < len; ++i) {
-          if ((p_t[index] + 0.0001 < p_query_coords[h + i] + 0.00001)) {
+          if ((p_search_coords[index] + 0.0001 < p_query_coords[h + i] + 0.00001)) {
             p_result[index] = dh + i - 1;
             return;
           }
