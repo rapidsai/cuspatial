@@ -22,7 +22,6 @@
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/table/table_view.hpp>
 
-#include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
