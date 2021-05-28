@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@
 namespace {  // anonymous
 
 const float SEARCH_OFFSET = 0.0001;
-const float QUERY_OFFSET = 0.00001;
+const float QUERY_OFFSET  = 0.00001;
 
 // This functor performs one linear search for each input point in query_coords
 struct parallel_search {
@@ -54,15 +54,16 @@ struct parallel_search {
     thrust::for_each(
       rmm::exec_policy(stream),
       thrust::make_counting_iterator<int>(0),
-      thrust::make_counting_iterator<int>(t.size()),
+      thrust::make_counting_iterator<int>(search_coords.size()),
       [p_search_coords, p_curve_ids, p_prefixes, p_query_coords, p_result] __device__(int index) {
-        int curve = p_curve_ids[index];
-        int len   = p_prefixes[curve + 1] - p_prefixes[curve];
+        int curve                    = p_curve_ids[index];
+        int len                      = p_prefixes[curve + 1] - p_prefixes[curve];
         int query_coord_offset       = p_prefixes[curve];
         int coefficient_table_offset = p_prefixes[curve] - (curve);
         // O(n) search, can do log(n) easily
         for (int32_t i = 1; i < len; ++i) {
-          if ((p_search_coords[index] + SEARCH_OFFSET  < p_query_coords[query_coord_offset + i] + QUERY_OFFSET)) {
+          if ((p_search_coords[index] + SEARCH_OFFSET <
+               p_query_coords[query_coord_offset + i] + QUERY_OFFSET)) {
             p_result[index] = coefficient_table_offset + i - 1;
             return;
           }
@@ -257,6 +258,45 @@ struct compute_spline_tridiagonals {
 namespace cuspatial {
 
 namespace detail {
+
+/**
+ * @brief Finds the lower interpolant position of query_points from a set of
+ * interpolation independent variables.
+ *
+ * @param[in] query_points column of coordinate values to be interpolated.
+ * @param[in] spline_ids ids that identify the spline to interpolate each
+ * coordinate into.
+ * @param[in] offsets int32 column of offsets of the source_points.
+ * This is used to calculate which values from the coefficients are
+ * used for each interpolation.
+ * @param[in] source_points column of the original `t` values used
+ * to compute the coefficients matrix.  These source points are used to
+ * identify which specific spline a given query_point is interpolated with.
+ * cubicspline_coefficients.
+ * @param[in] mr the optional caller specified RMM memory resource
+ * @param[in] stream the optional caller specified cudaStream
+ *
+ * @return cudf::column of size equal to query points, one index position
+ * of the first source_point mapped by offsets that is smaller than each
+ * query point.
+ **/
+std::unique_ptr<cudf::column> find_coefficient_indices(cudf::column_view const& query_points,
+                                                       cudf::column_view const& curve_ids,
+                                                       cudf::column_view const& prefixes,
+                                                       cudf::column_view const& source_points,
+                                                       rmm::cuda_stream_view stream,
+                                                       rmm::mr::device_memory_resource* mr)
+{
+  auto coefficient_indices = cudf::type_dispatcher(query_points.type(),
+                                                   parallel_search{},
+                                                   query_points,
+                                                   curve_ids,
+                                                   prefixes,
+                                                   source_points,
+                                                   stream,
+                                                   mr);
+  return coefficient_indices;
+}
 
 /**
  * @brief Compute cubic interpolations of a set of points based on their
