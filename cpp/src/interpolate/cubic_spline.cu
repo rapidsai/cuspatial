@@ -30,9 +30,6 @@
 
 namespace {  // anonymous
 
-const float SEARCH_OFFSET = 0.0001;
-const float QUERY_OFFSET  = 0.00001;
-
 // This functor performs one linear search for each input point in query_coords
 struct parallel_search {
   template <typename T>
@@ -44,6 +41,9 @@ struct parallel_search {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
+    const T SEARCH_OFFSET{0.0001};
+    const T QUERY_OFFSET{0.00001};
+
     const T* p_search_coords   = search_coords.data<T>();
     const int32_t* p_curve_ids = curve_ids.data<int32_t>();
     const int32_t* p_prefixes  = prefixes.data<int32_t>();
@@ -55,15 +55,15 @@ struct parallel_search {
       rmm::exec_policy(stream),
       thrust::make_counting_iterator<int>(0),
       thrust::make_counting_iterator<int>(search_coords.size()),
-      [p_search_coords, p_curve_ids, p_prefixes, p_query_coords, p_result] __device__(int index) {
+      [=] __device__(int index) {
         int curve                    = p_curve_ids[index];
         int len                      = p_prefixes[curve + 1] - p_prefixes[curve];
         int query_coord_offset       = p_prefixes[curve];
         int coefficient_table_offset = p_prefixes[curve] - (curve);
         // O(n) search, can do log(n) easily
+        const T search_coord = p_search_coords[index] + SEARCH_OFFSET;
         for (int32_t i = 1; i < len; ++i) {
-          if ((p_search_coords[index] + SEARCH_OFFSET <
-               p_query_coords[query_coord_offset + i] + QUERY_OFFSET)) {
+          if ((search_coord < p_query_coords[query_coord_offset + i] + QUERY_OFFSET)) {
             p_result[index] = coefficient_table_offset + i - 1;
             return;
           }
