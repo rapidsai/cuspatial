@@ -49,7 +49,7 @@ struct parallel_search {
     const int32_t* p_prefixes  = prefixes.data<int32_t>();
     const T* p_query_coords    = query_coords.data<T>();
     auto result                = cudf::make_numeric_column(
-                     curve_ids.type(), search_coords.size(), cudf::mask_state::UNALLOCATED, stream, mr);
+      curve_ids.type(), search_coords.size(), cudf::mask_state::UNALLOCATED, stream, mr);
     int32_t* p_result = result->mutable_view().data<int32_t>();
     thrust::for_each(
       rmm::exec_policy(stream),
