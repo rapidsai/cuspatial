@@ -59,7 +59,7 @@ struct parallel_search {
         int curve                    = p_curve_ids[index];
         int len                      = p_prefixes[curve + 1] - p_prefixes[curve];
         int query_coord_offset       = p_prefixes[curve];
-        int coefficient_table_offset = p_prefixes[curve] - (curve);
+        int coefficient_table_offset = p_prefixes[curve] - curve;
         // O(n) search, can do log(n) easily
         const T search_coord = p_search_coords[index] + SEARCH_OFFSET;
         for (int32_t i = 1; i < len; ++i) {
