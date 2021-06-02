@@ -34,11 +34,11 @@ namespace detail {
  * a curve then with n control points there will be n-1 sets of coefficients. This function
  * finds which set of coefficients to use for a given query_point. Each `query_point[i]` is passed
  * with a corresponding `curve_ids[i], identifying which offset `j` to use from `prefixes` into
- * `source_points`. For example, given two sets of `source_points` = [0, 1, 2, 3, 4, 0, 2, 5, 10, 20]
- * with `prefixes = [0, 5, 10], and a single `query_point = 6` with `curve_ids = 1`, the coefficient
- * position `6` is returned.
+ * `source_points`. For example, given two sets of `source_points` = [0, 1, 2, 3, 4, 0, 2, 5, 10,
+ *20] with `prefixes = [0, 5, 10], and a single `query_point = 6` with `curve_ids = 1`, the
+ *coefficient position `6` is returned.
  *
- * The first curve, specified by `curve_ids = 0` uses the first four coefficient indices 0...3, and 
+ * The first curve, specified by `curve_ids = 0` uses the first four coefficient indices 0...3, and
  * the second curve uses the next four indices. `6 > 5` specifying the third pair (ordinal 2)
  * of `source_points` (also known as control points).
  *
