@@ -56,10 +56,10 @@ struct parallel_search {
       thrust::make_counting_iterator<int>(0),
       thrust::make_counting_iterator<int>(search_coords.size()),
       [=] __device__(int index) {
-        int curve                    = p_curve_ids[index];
-        int len                      = p_prefixes[curve + 1] - p_prefixes[curve];
-        int query_coord_offset       = p_prefixes[curve];
-        int coefficient_table_offset = p_prefixes[curve] - curve;
+        int32_t curve                    = p_curve_ids[index];
+        int32_t len                      = p_prefixes[curve + 1] - p_prefixes[curve];
+        int32_t query_coord_offset       = p_prefixes[curve];
+        int32_t coefficient_table_offset = p_prefixes[curve] - curve;
         // O(n) search, can do log(n) easily
         const T search_coord = p_search_coords[index] + SEARCH_OFFSET;
         for (int32_t i = 1; i < len; ++i) {

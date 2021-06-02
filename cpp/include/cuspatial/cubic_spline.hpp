@@ -85,35 +85,4 @@ std::unique_ptr<cudf::table> cubicspline_coefficients(
   cudf::column_view const& offsets,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
-namespace detail {
-
-/**
- * @brief Finds the lower interpolant position of query_points from a set of
- * interpolation independent variables.
- *
- * @param[in] query_points column of coordinate values to be interpolated.
- * @param[in] spline_ids ids that identify the spline to interpolate each
- * coordinate into.
- * @param[in] offsets int32 column of offsets of the source_points.
- * This is used to calculate which values from the coefficients are
- * used for each interpolation.
- * @param[in] source_points column of the original `t` values used
- * to compute the coefficients matrix.  These source points are used to
- * identify which specific spline a given query_point is interpolated with.
- * cubicspline_coefficients.
- * @param[in] mr the optional caller specified RMM memory resource
- * @param[in] stream the optional caller specified cudaStream
- *
- * @return cudf::column of size equal to query points, one index position
- * of the first source_point mapped by offsets that is smaller than each
- * query point.
- **/
-std::unique_ptr<cudf::column> find_coefficient_indices(cudf::column_view const& query_points,
-                                                       cudf::column_view const& curve_ids,
-                                                       cudf::column_view const& prefixes,
-                                                       cudf::column_view const& source_points,
-                                                       rmm::cuda_stream_view stream,
-                                                       rmm::mr::device_memory_resource* mr);
-
-}  // namespace detail
 }  // namespace cuspatial
