@@ -125,11 +125,26 @@ def test_cusparse():
     )
 
 
-def test_class_interpolation():
+def test_class_interpolation_length_five():
     t = cudf.Series([0, 1, 2, 3, 4]).astype("float32")
     x = cudf.Series([3, 2, 3, 4, 3]).astype("float32")
     g = cuspatial.interpolate.CubicSpline(t, x)
     assert_eq(g(t), x)
+
+
+def test_class_interpolation_length_six():
+    t = cudf.Series([0, 1, 2, 3, 4, 5]).astype("float32")
+    x = cudf.Series([3, 2, 3, 4, 3, 4]).astype("float32")
+    g = cuspatial.interpolate.CubicSpline(t, x)
+    assert_eq(g(t), x)
+
+
+def test_class_interpolation_length_six_splits():
+    t = cudf.Series([0, 1, 2, 3, 4, 5]).astype("float32")
+    x = cudf.Series([3, 2, 3, 4, 3, 4]).astype("float32")
+    g = cuspatial.interpolate.CubicSpline(t, x)
+    split_t = cudf.Series(np.linspace(0, 5, 11), dtype="float32")
+    assert_eq(g(split_t)[t * 2].reset_index(drop=True), x)
 
 
 def test_class_triple():
@@ -145,6 +160,68 @@ def test_class_triple():
         np.ravel(np.array([np.repeat(0, 5), np.repeat(1, 5), np.repeat(2, 5)]))
     )
     assert_eq(g(t, groups=groups), x)
+
+
+def test_class_triple_six():
+    t = cudf.Series(
+        [0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5]
+    ).astype("float32")
+    x = cudf.Series(
+        [3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1]
+    ).astype("float32")
+    prefixes = cudf.Series([0, 6, 12, 18]).astype("int32")
+    g = cuspatial.interpolate.CubicSpline(t, x, prefixes=prefixes)
+    groups = cudf.Series(
+        np.ravel(np.array([np.repeat(0, 6), np.repeat(1, 6), np.repeat(2, 6)]))
+    )
+    assert_eq(g(t, groups=groups), x)
+
+
+def test_class_triple_six_splits():
+    t = cudf.Series(
+        [0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5]
+    ).astype("float32")
+    x = cudf.Series(
+        [3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1]
+    ).astype("float32")
+    prefixes = cudf.Series([0, 6, 12, 18]).astype("int32")
+    g = cuspatial.interpolate.CubicSpline(t, x, prefixes=prefixes)
+    groups = cudf.Series(
+        np.ravel(
+            np.array([np.repeat(0, 12), np.repeat(1, 12), np.repeat(2, 12)])
+        )
+    )
+    split_t = cudf.Series(
+        np.ravel(
+            (
+                np.linspace(0, 5, 11),
+                np.linspace(0, 5, 11),
+                np.linspace(0, 5, 11),
+            )
+        ),
+        dtype="float32",
+    )
+    split_t_ind = [
+        0,
+        2,
+        4,
+        6,
+        8,
+        10,
+        11,
+        13,
+        15,
+        17,
+        19,
+        21,
+        22,
+        24,
+        26,
+        28,
+        30,
+        32,
+    ]
+    assert_eq(g(split_t, groups=groups)[split_t_ind].reset_index(drop=True), x)
 
 
 def test_class_new_interpolation():
