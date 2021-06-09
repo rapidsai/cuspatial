@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
 
-#include <rmm/thrust_rmm_allocator.h>
 #include <rmm/device_uvector.hpp>
 
 #include <cudf_test/base_fixture.hpp>
@@ -96,7 +95,7 @@ inline auto make_polygons_geometry(thrust::host_vector<uint32_t> const &poly_off
     }
     polygons.push_back(polygon);
   }
-  return std::move(polygons);
+  return polygons;
 }
 
 template <typename T>

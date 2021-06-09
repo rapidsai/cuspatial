@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@
 #include <indexing/construction/detail/utilities.cuh>
 #include <utility/z_order.cuh>
 
-#include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/gather.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
 #include <thrust/tuple.h>
@@ -106,15 +106,15 @@ descend_quadtree(LengthsIter counts,
                  parent_indices.begin(),
                  parent_indices.begin() + num_children,
                  // curr level iterator
-                 make_zip_iterator(parent_types.begin(),
-                                   parent_levels.begin(),
-                                   parent_node_indices.begin(),
-                                   parent_poly_indices.begin()),
+                 thrust::make_zip_iterator(parent_types.begin(),
+                                           parent_levels.begin(),
+                                           parent_node_indices.begin(),
+                                           parent_poly_indices.begin()),
                  // next level iterator
-                 make_zip_iterator(child_types.begin(),
-                                   child_levels.begin(),
-                                   child_quad_indices.begin(),
-                                   child_poly_indices.begin()));
+                 thrust::make_zip_iterator(child_types.begin(),
+                                           child_levels.begin(),
+                                           child_quad_indices.begin(),
+                                           child_poly_indices.begin()));
 
   rmm::device_uvector<uint32_t> relative_child_offsets(num_children, stream);
   thrust::exclusive_scan_by_key(rmm::exec_policy(stream),

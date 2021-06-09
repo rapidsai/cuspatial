@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,11 @@
 #include <cudf/table/table.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
-#include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
+
+#include <thrust/iterator/zip_iterator.h>
 
 #include <tuple>
 
@@ -89,13 +90,13 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
   cudf::size_type num_parents{0};
 
   auto make_current_level_iter = [&]() {
-    return make_zip_iterator(
+    return thrust::make_zip_iterator(
       cur_types.begin(), cur_levels.begin(), cur_node_idxs.begin(), cur_poly_idxs.begin());
   };
 
   auto make_output_values_iter = [&]() {
     return num_results +
-           make_zip_iterator(
+           thrust::make_zip_iterator(
              out_types.begin(), out_levels.begin(), out_node_idxs.begin(), out_poly_idxs.begin());
   };
 
@@ -173,6 +174,23 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
 
     num_results += num_leaves;
   }
+
+  // Sort the output poly/quad indices by quadrant
+  [&]() {
+    // Copy the relevant `node_offsets` into a tmp vec so we don't modify the quadtree column
+    rmm::device_uvector<uint32_t> tmp_node_offsets(num_results, stream);
+
+    auto const iter =
+      thrust::make_permutation_iterator(node_offsets.begin<uint32_t>(), out_node_idxs.begin());
+
+    thrust::copy(rmm::exec_policy(stream), iter, iter + num_results, tmp_node_offsets.begin());
+
+    thrust::stable_sort_by_key(
+      rmm::exec_policy(stream),
+      tmp_node_offsets.begin(),
+      tmp_node_offsets.end(),
+      thrust::make_zip_iterator(out_poly_idxs.begin(), out_node_idxs.begin()));
+  }();
 
   std::vector<std::unique_ptr<cudf::column>> cols{};
   cols.reserve(2);

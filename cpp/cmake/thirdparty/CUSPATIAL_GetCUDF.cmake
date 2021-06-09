@@ -20,19 +20,21 @@ function(find_and_configure_cudf VERSION)
         return()
     endif()
 
-    cuspatial_save_if_enabled(BUILD_TESTS)
-    cuspatial_save_if_enabled(BUILD_BENCHMARKS)
+    if(${VERSION} MATCHES [=[([0-9]+)\.([0-9]+)\.([0-9]+)]=])
+        set(MAJOR_AND_MINOR "${CMAKE_MATCH_1}.${CMAKE_MATCH_2}")
+    else()
+        set(MAJOR_AND_MINOR "${VERSION}")
+    endif()
+
     CPMFindPackage(NAME        cudf
         VERSION                ${VERSION}
         GIT_REPOSITORY         https://github.com/rapidsai/cudf.git
-        GIT_TAG                branch-${VERSION}
+        GIT_TAG                branch-${MAJOR_AND_MINOR}
         GIT_SHALLOW            TRUE
         SOURCE_SUBDIR          cpp
         OPTIONS                "BUILD_TESTS OFF"
                                "BUILD_BENCHMARKS OFF"
         FIND_PACKAGE_ARGUMENTS "COMPONENTS testing")
-    cuspatial_restore_if_enabled(BUILD_TESTS)
-    cuspatial_restore_if_enabled(BUILD_BENCHMARKS)
 
     # Make sure consumers of cuspatial can see cudf::cudf
     fix_cmake_global_defaults(cudf::cudf)
@@ -40,6 +42,6 @@ function(find_and_configure_cudf VERSION)
     fix_cmake_global_defaults(cudf::cudftestutil)
 endfunction()
 
-set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
+set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}.00")
 
 find_and_configure_cudf(${CUSPATIAL_MIN_VERSION_cudf})

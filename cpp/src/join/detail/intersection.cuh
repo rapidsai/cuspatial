@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/table/table_view.hpp>
 
-#include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/copy.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/remove.h>
 #include <thrust/tuple.h>
 
@@ -97,8 +97,8 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
   auto d_poly_y_max = cudf::column_device_view::create(poly_bbox.column(3), stream);
 
   thrust::transform(rmm::exec_policy(stream),
-                    make_zip_iterator(node_indices, poly_indices),
-                    make_zip_iterator(node_indices, poly_indices) + num_pairs,
+                    thrust::make_zip_iterator(node_indices, poly_indices),
+                    thrust::make_zip_iterator(node_indices, poly_indices) + num_pairs,
                     node_pairs,
                     [x_min,
                      y_min,

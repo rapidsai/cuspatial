@@ -23,8 +23,9 @@ export CUDA_REL=${CUDA_VERSION%.*}
 export GPUCI_CONDA_RETRY_MAX=1
 export GPUCI_CONDA_RETRY_SLEEP=30
 
-# Use Ninja to build
+# Use Ninja to build, setup conda build dir
 export CMAKE_GENERATOR="Ninja"
+export CONDA_BLD_DIR="${WORKSPACE}/.conda-bld"
 
 # Switch to project root; also root of repo checkout
 cd $WORKSPACE
@@ -49,6 +50,11 @@ gpuci_logger "Activate conda env"
 . /opt/conda/etc/profile.d/conda.sh
 conda activate rapids
 
+# Remove rapidsai-nightly channel if we are building main branch
+if [ "$SOURCE_BRANCH" = "main" ]; then
+  conda config --system --remove channels rapidsai-nightly
+fi
+
 gpuci_logger "Check compiler versions"
 python --version
 $CC --version
@@ -69,19 +75,21 @@ conda config --set ssl_verify False
 if [ "$BUILD_LIBCUSPATIAL" == '1' ]; then
   gpuci_logger "Build conda pkg for libcuspatial"
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
-    gpuci_conda_retry build conda/recipes/libcuspatial
+    gpuci_conda_retry build --no-build-id --croot ${CONDA_BLD_DIR} conda/recipes/libcuspatial
   else
-    gpuci_conda_retry build --dirty --no-remove-work-dir conda/recipes/libcuspatial
+    gpuci_conda_retry build --no-build-id --croot ${CONDA_BLD_DIR} --dirty --no-remove-work-dir conda/recipes/libcuspatial
+    mkdir -p ${CONDA_BLD_DIR}/libcuspatial/work
+    cp -r ${CONDA_BLD_DIR}/work/* ${CONDA_BLD_DIR}/libcuspatial/work
   fi
 fi
 
 if [ "$BUILD_CUSPATIAL" == '1' ]; then
   gpuci_logger "Build conda pkg for cuspatial"
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
-    gpuci_conda_retry build conda/recipes/cuspatial
+    gpuci_conda_retry build --croot ${CONDA_BLD_DIR} conda/recipes/cuspatial
   else
-    gpuci_conda_retry build --dirty --no-remove-work-dir \
-        -c $WORKSPACE/ci/artifacts/cuspatial/cpu/conda-bld/ conda/recipes/cuspatial
+    gpuci_conda_retry build --croot ${CONDA_BLD_DIR} --dirty --no-remove-work-dir \
+        -c $WORKSPACE/ci/artifacts/cuspatial/cpu/.conda-bld/ conda/recipes/cuspatial
   fi
 fi
 

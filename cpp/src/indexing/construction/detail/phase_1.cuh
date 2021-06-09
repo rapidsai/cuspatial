@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@
 #include <cudf/types.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
-#include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
@@ -65,8 +64,8 @@ compute_point_keys_and_sorted_indices(cudf::column_view const &x,
 {
   rmm::device_uvector<uint32_t> keys(x.size(), stream);
   thrust::transform(rmm::exec_policy(stream),
-                    make_zip_iterator(x.begin<T>(), y.begin<T>()),
-                    make_zip_iterator(x.begin<T>(), y.begin<T>()) + x.size(),
+                    thrust::make_zip_iterator(x.begin<T>(), y.begin<T>()),
+                    thrust::make_zip_iterator(x.begin<T>(), y.begin<T>()) + x.size(),
                     keys.begin(),
                     [=] __device__(auto const &point) {
                       T x, y;
@@ -147,11 +146,11 @@ build_tree_levels(int8_t max_depth,
     keys_begin, [] __device__(uint32_t const child_key) { return (child_key >> 2); });
 
   // iterator for the current level's quad node point and child counts
-  auto child_nodes = make_zip_iterator(quad_point_count_begin, quad_child_count_begin);
+  auto child_nodes = thrust::make_zip_iterator(quad_point_count_begin, quad_child_count_begin);
 
   // iterator for the current level's initial values
   auto child_values =
-    make_zip_iterator(quad_point_count_begin, thrust::make_constant_iterator<uint32_t>(1));
+    thrust::make_zip_iterator(quad_point_count_begin, thrust::make_constant_iterator<uint32_t>(1));
 
   for (cudf::size_type level = max_depth - 1; level >= 0; --level) {
     auto num_full_quads = build_tree_level(parent_keys + begin,
