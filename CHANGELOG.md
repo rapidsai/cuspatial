@@ -1,6 +1,17 @@
-# cuSpatial 21.06.00 (Date TBD)
+# cuSpatial 21.06.00 (9 Jun 2021)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.06.00a for the latest changes to this development branch.
+## 🚀 New Featues
+
+- `fom_geopandas` convets GeoPandas GeoSeies objects into cuspatial GeoAow fom. ([#300](https://github.com/rapidsai/cuspatial/pull/300)) [@thomcom](https://github.com/thomcom)
+
+## 🛠️ Impovements
+
+- Update envionment vaiable used to detemine `cuda_vesion` ([#407](https://github.com/rapidsai/cuspatial/pull/407)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update `CHANGELOG.md` links fo calve ([#404](https://github.com/rapidsai/cuspatial/pull/404)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Move mm::device_buffe instead of copying ([#403](https://github.com/rapidsai/cuspatial/pull/403)) [@haism](https://github.com/haism)
+- Update docs build scipt ([#402](https://github.com/rapidsai/cuspatial/pull/402)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update cuspatial vesion fo calve, fix CMake FindPackage cudf ([#401](https://github.com/rapidsai/cuspatial/pull/401)) [@txcllnt](https://github.com/txcllnt)
+- Impove pefomance of quadtee point-to-polyline join ([#362](https://github.com/rapidsai/cuspatial/pull/362)) [@txcllnt](https://github.com/txcllnt)
 
 # cuSpatial 0.19.0 (21 Apr 2021)
 
