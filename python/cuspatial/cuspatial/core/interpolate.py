@@ -49,16 +49,27 @@ class CubicSpline:
     However, cuSpatial massively outperforms scipy when many splines are fit
     simultaneously. Data must be arranged in a SoA format, and the exclusive
     `prefix_sum` of the separate curves must also be passed to the function.::
-
-        t = cudf.Series(np.repeat(cp.arange(100), 1000)).astype('float32')
-        y = cudf.Series(np.random.random(100*1000)).astype('float32')
-        prefix_sum = cudf.Series(cp.arange(1000)*100).astype('int32')
-        new_samples = cudf.Series(
-            np.repeat(np.linspace(0, 100, 1000), 1000)
+        NUM_SPLINES = 100000
+        SPLINE_LENGTH = 101
+        t = cudf.Series(
+            np.hstack((np.arange(SPLINE_LENGTH),) * NUM_SPLINES)
         ).astype('float32')
-
+        y = cudf.Series(
+            np.random.random(SPLINE_LENGTH*NUM_SPLINES)
+        ).astype('float32')
+        prefix_sum = cudf.Series(
+            cp.arange(NUM_SPLINES + 1)*SPLINE_LENGTH
+        ).astype('int32')
         curve = cuspatial.CubicSpline(t, y, prefixes=prefix_sum)
-        new_points = curve(new_samples, prefix_sum*10)
+        new_samples = cudf.Series(
+            np.hstack((np.linspace(
+                0, (SPLINE_LENGTH - 1), (SPLINE_LENGTH - 1) * 2 + 1
+            ),) * NUM_SPLINES)
+        ).astype('float32')
+        curve_ids = cudf.Series(np.repeat(
+            np.arange(0, NUM_SPLINES), SPLINE_LENGTH * 2 - 1
+        ), dtype="int32")
+        new_points = curve(new_samples, curve_ids)
 
     """
 
