@@ -2,9 +2,20 @@
 
 Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.08.00a for the latest changes to this development branch.
 
-# cuSpatial 21.06.00 (Date TBD)
+# cuSpatial 21.06.00 (9 Jun 2021)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.06.00a for the latest changes to this development branch.
+## 🚀 New Features
+
+- `from_geopandas` converts GeoPandas GeoSeries objects into cuspatial GeoArrow form. ([#300](https://github.com/rapidsai/cuspatial/pull/300)) [@thomcom](https://github.com/thomcom)
+
+## 🛠️ Improvements
+
+- Update environment variable used to determine `cuda_version` ([#407](https://github.com/rapidsai/cuspatial/pull/407)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update `CHANGELOG.md` links for calver ([#404](https://github.com/rapidsai/cuspatial/pull/404)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Move rmm::device_buffer instead of copying ([#403](https://github.com/rapidsai/cuspatial/pull/403)) [@harrism](https://github.com/harrism)
+- Update docs build script ([#402](https://github.com/rapidsai/cuspatial/pull/402)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update cuspatial version for calver, fix CMake FindPackage cudf ([#401](https://github.com/rapidsai/cuspatial/pull/401)) [@trxcllnt](https://github.com/trxcllnt)
+- Improve performance of quadtree point-to-polyline join ([#362](https://github.com/rapidsai/cuspatial/pull/362)) [@trxcllnt](https://github.com/trxcllnt)
 
 # cuSpatial 0.19.0 (21 Apr 2021)
 
