@@ -15,7 +15,7 @@ LANG=C.UTF-8
 conda activate rapids
 
 # Run isort and get results/return code
-ISORT=`isort --check-only python/**/*.py`
+ISORT=`isort --check-only python/cuspatial --settings-path=python/cuspatial/setup.cfg`
 ISORT_RETVAL=$?
 
 # Run black and get results/return code
