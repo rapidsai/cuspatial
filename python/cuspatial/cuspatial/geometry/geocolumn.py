@@ -1,24 +1,23 @@
 # Copyright (c) 2021 NVIDIA CORPORATION
 
 import numbers
-import numpy as np
-
 from itertools import repeat
+from typing import TypeVar, Union
+
+import numpy as np
 from shapely.geometry import (
-    Point,
-    MultiPoint,
     LineString,
     MultiLineString,
-    Polygon,
+    MultiPoint,
     MultiPolygon,
+    Point,
+    Polygon,
 )
-from typing import TypeVar, Union
 
 import cudf
 from cudf.core.column import ColumnBase, NumericalColumn
 
 from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
-
 
 T = TypeVar("T", bound="GeoColumn")
 

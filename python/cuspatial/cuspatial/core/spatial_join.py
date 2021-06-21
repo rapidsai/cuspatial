@@ -6,14 +6,13 @@ from cudf import DataFrame
 from cudf.core.column import as_column
 
 from cuspatial._lib import spatial_join
-
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
 def join_quadtree_and_bounding_boxes(
     quadtree, poly_bounding_boxes, x_min, x_max, y_min, y_max, scale, max_depth
 ):
-    """ Search a quadtree for polygon or polyline bounding box intersections.
+    """Search a quadtree for polygon or polyline bounding box intersections.
 
     Parameters
     ----------
@@ -88,7 +87,7 @@ def quadtree_point_in_polygon(
     poly_points_x,
     poly_points_y,
 ):
-    """ Test whether the specified points are inside any of the specified
+    """Test whether the specified points are inside any of the specified
     polygons.
 
     Uses the table of (polygon, quadrant) pairs returned by
@@ -168,7 +167,7 @@ def quadtree_point_to_nearest_polyline(
     poly_points_x,
     poly_points_y,
 ):
-    """ Finds the nearest polyline to each point in a quadrant, and computes
+    """Finds the nearest polyline to each point in a quadrant, and computes
     the distances between each point and polyline.
 
     Uses the table of (polyline, quadrant) pairs returned by

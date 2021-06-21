@@ -1,15 +1,16 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
-from cudf._lib.table cimport table, Table
-from cudf._lib.column cimport column, Column
+from libcpp.memory cimport unique_ptr
+from libcpp.utility cimport move
+
+from cudf._lib.column cimport Column, column
+from cudf._lib.table cimport Table, table
 
 from cuspatial._lib.cpp.interpolate cimport (
-    cubicspline_interpolate as cpp_cubicspline_interpolate,
     cubicspline_coefficients as cpp_cubicspline_coefficients,
+    cubicspline_interpolate as cpp_cubicspline_interpolate,
 )
 
-from libcpp.utility cimport move
-from libcpp.memory cimport unique_ptr
 
 cpdef cubicspline_coefficients(
     Column t,

@@ -1,9 +1,9 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+from libcpp.memory cimport unique_ptr
+
 from cudf._lib.column cimport column, column_view
 from cudf._lib.table cimport table, table_view
-
-from libcpp.memory cimport unique_ptr
 
 
 cdef extern from "cuspatial/spatial_window.hpp" namespace "cuspatial" nogil:

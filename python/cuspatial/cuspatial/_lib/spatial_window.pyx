@@ -1,13 +1,15 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
-from cudf._lib.table cimport table, Table
-from cudf._lib.column cimport column, column_view, Column
-
-from cuspatial._lib.cpp.spatial_window \
-    cimport points_in_spatial_window as cpp_points_in_spatial_window
-
-from libcpp.utility cimport move
 from libcpp.memory cimport unique_ptr
+from libcpp.utility cimport move
+
+from cudf._lib.column cimport Column, column, column_view
+from cudf._lib.table cimport Table, table
+
+from cuspatial._lib.cpp.spatial_window cimport (
+    points_in_spatial_window as cpp_points_in_spatial_window,
+)
+
 
 cpdef points_in_spatial_window(
     double window_min_x,

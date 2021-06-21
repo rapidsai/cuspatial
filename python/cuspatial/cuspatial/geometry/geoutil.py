@@ -1,7 +1,8 @@
 # Copyright (c) 2021, NVIDIA CORPORATION
 
 from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
-from cuspatial.geometry.geoseries import GeoSeries, GeoColumn
+
+from cuspatial.geometry.geoseries import GeoColumn, GeoSeries
 
 
 def is_geometry_type(obj):

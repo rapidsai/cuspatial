@@ -1,18 +1,17 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION.
 
 import geopandas as gpd
-
-import pytest
-from shapely.geometry import (
-    Point,
-    MultiPoint,
-    LineString,
-    MultiLineString,
-    Polygon,
-    MultiPolygon,
-)
 import numpy as np
 import pandas as pd
+import pytest
+from shapely.geometry import (
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+)
 
 
 @pytest.fixture
@@ -25,7 +24,9 @@ def gs():
     g5 = MultiLineString((((15, 16), (17, 18)), ((19, 20), (21, 22))))
     g6 = MultiLineString((((23, 24), (25, 26)), ((27, 28), (29, 30))))
     g7 = LineString(((31, 32), (33, 34)))
-    g8 = Polygon(((35, 36), (37, 38), (39, 40), (41, 42)),)
+    g8 = Polygon(
+        ((35, 36), (37, 38), (39, 40), (41, 42)),
+    )
     g9 = MultiPolygon(
         [
             (

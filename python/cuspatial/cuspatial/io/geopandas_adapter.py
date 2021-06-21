@@ -1,15 +1,14 @@
 # Copyright (c) 2020-2021 NVIDIA CORPORATION.
 
 import numpy as np
-
 from geopandas import GeoSeries as gpGeoSeries
 from shapely.geometry import (
-    Point,
-    MultiPoint,
     LineString,
     MultiLineString,
-    Polygon,
+    MultiPoint,
     MultiPolygon,
+    Point,
+    Polygon,
 )
 
 
@@ -115,7 +114,11 @@ class GeoPandasAdapter:
                 )
         return offsets
 
-    def _read_geometries(self, geoseries: gpGeoSeries, offsets: dict,) -> dict:
+    def _read_geometries(
+        self,
+        geoseries: gpGeoSeries,
+        offsets: dict,
+    ) -> dict:
         """
         Creates a set of buffers sized to fit all of the geometries and
         iteratively populates them with geometry coordinate values.

@@ -1,19 +1,20 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+from libcpp.memory cimport unique_ptr
+from libcpp.pair cimport pair
+from libcpp.utility cimport move
+
+from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column cimport column
 from cudf._lib.cpp.column.column_view cimport column_view
 from cudf._lib.cpp.table.table cimport table
 from cudf._lib.cpp.types cimport size_type
-from cudf._lib.column cimport Column
 from cudf._lib.table cimport Table
 
 from cuspatial._lib.cpp.polyline_bounding_box cimport (
     polyline_bounding_boxes as cpp_polyline_bounding_boxes,
 )
 
-from libcpp.memory cimport unique_ptr
-from libcpp.pair cimport pair
-from libcpp.utility cimport move
 
 cpdef polyline_bounding_boxes(Column poly_offsets,
                               Column x, Column y,

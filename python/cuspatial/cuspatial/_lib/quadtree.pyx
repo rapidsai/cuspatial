@@ -1,21 +1,21 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+from libc.stdint cimport int8_t
+from libcpp.memory cimport unique_ptr
+from libcpp.pair cimport pair
+from libcpp.utility cimport move
+
+from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column cimport column
 from cudf._lib.cpp.column.column_view cimport column_view
 from cudf._lib.cpp.table.table cimport table
 from cudf._lib.cpp.types cimport size_type
-from cudf._lib.column cimport Column
 from cudf._lib.table cimport Table
 
 from cuspatial._lib.cpp.quadtree cimport (
     quadtree_on_points as cpp_quadtree_on_points,
 )
 
-from libc.stdint cimport int8_t
-
-from libcpp.memory cimport unique_ptr
-from libcpp.pair cimport pair
-from libcpp.utility cimport move
 
 cpdef quadtree_on_points(Column x, Column y,
                          double x_min, double x_max,
