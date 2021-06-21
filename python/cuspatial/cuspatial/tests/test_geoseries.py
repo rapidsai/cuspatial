@@ -134,17 +134,11 @@ def test_interleaved_point(gs, polys):
     )
     assert_eq(
         cugs.lines.x,
-        pd.Series(
-            np.array([range(11, 34, 2)]).flatten(),
-            dtype="float64",
-        ),
+        pd.Series(np.array([range(11, 34, 2)]).flatten(), dtype="float64",),
     )
     assert_eq(
         cugs.lines.y,
-        pd.Series(
-            np.array([range(12, 35, 2)]).flatten(),
-            dtype="float64",
-        ),
+        pd.Series(np.array([range(12, 35, 2)]).flatten(), dtype="float64",),
     )
     assert_eq(cugs.polygons.x, pd.Series(polys[:, 0], dtype="float64"))
     assert_eq(cugs.polygons.y, pd.Series(polys[:, 1], dtype="float64"))

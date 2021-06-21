@@ -550,10 +550,7 @@ class LineArray(OffsetArray):
     def copy(self, deep=True):
         base = super().copy(deep)
         result = LineArray(
-            base.xy,
-            base.offsets,
-            self.mlines.copy(deep),
-            base.z,
+            base.xy, base.offsets, self.mlines.copy(deep), base.z,
         )
         return result
 
