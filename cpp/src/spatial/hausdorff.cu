@@ -129,7 +129,7 @@ struct hausdorff_functor {
     // the following output iterator and `inclusive_scan_by_key` could be replaced by a
     // reduce_by_key, if it supported non-commutative operators and more inputs (int 64).
 
-    // copy offsets to host for batching purposes.
+    // copy offsets to host to be used in batch-size deduction.
 
     thrust::host_vector<uint32_t> h_space_offsets(space_offsets.size());
 
@@ -142,9 +142,24 @@ struct hausdorff_functor {
     stream.synchronize();
 
     for (uint32_t i = 1; i <= h_space_offsets.size(); i++) {
-      uint64_t space_size =
-        (i < h_space_offsets.size() ? h_space_offsets[i] : xs.size()) - h_space_offsets[i - 1];
-      uint64_t elements_in_batch = xs.size() * space_size;
+
+      uint32_t elements_in_batch = 0;
+
+      auto starting_i = i;
+
+      // deduce appropriate batch size based on input.
+
+      while (i <= h_space_offsets.size()) {
+
+        uint32_t space_size = (i < h_space_offsets.size() ? h_space_offsets[i] : xs.size()) - h_space_offsets[i - 1];
+        uint32_t next_size = xs.size() * space_size;
+        if (elements_in_batch > std::numeric_limits<int32_t>::max() - next_size) {
+          break;
+        }
+        elements_in_batch += next_size;
+        i++;
+      }
+
 
       thrust::inclusive_scan_by_key(rmm::exec_policy(stream),
                                     gcp_key_iter,
