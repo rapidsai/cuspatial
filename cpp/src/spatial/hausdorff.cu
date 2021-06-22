@@ -151,7 +151,7 @@ struct hausdorff_functor {
                                     gcp_key_iter + elements_in_batch,
                                     hausdorff_acc_iter,
                                     scatter_out,
-                                    thrust::equal_to<thrust::pair<int32_t, int32_t>>());
+                                    thrust::equal_to<>());
 
       hausdorff_acc_iter += elements_in_batch;
       gcp_key_iter += elements_in_batch;
