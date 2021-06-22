@@ -121,38 +121,41 @@ struct hausdorff_functor {
 
     auto scatter_out = make_scatter_output_iterator(result_temp.begin(), scatter_map);
 
-    auto gpc_key_iter = thrust::make_transform_iterator(
+    auto gcp_key_iter = thrust::make_transform_iterator(
       gcp_iter, [] __device__(cartesian_product_group_index const& idx) {
         return thrust::make_pair(idx.group_a.idx, idx.group_b.idx);
       });
 
     // the following output iterator and `inclusive_scan_by_key` could be replaced by a
-    // reduce_by_key, if it supported non-commutative operators.
+    // reduce_by_key, if it supported non-commutative operators and more inputs (int 64).
 
-    auto const num_cartesian =
-      static_cast<uint64_t>(num_points) * static_cast<uint64_t>(num_points);
+    // copy offsets to host for batching purposes.
 
-    //
-    // `thrust::inclusive_scan_by_key` causes an out-of-memory
-    // error on input sizes close to (but not exactly) INT_MAX.
-    //
-    // Doing the reduction in chunks is a temporary workaround until this is fixed.
-    //
-    // The magic number between OOM vs. no OOM is somewhere between:
-    //                                             (1uL << 31uL) - 2048uL;
-    auto const magic_inclusive_scan_by_key_limit = (1uL << 31uL) - 4096uL;
+    thrust::host_vector<uint32_t> h_space_offsets(space_offsets.size());
 
-    for (auto itr = gpc_key_iter, end = gpc_key_iter + num_cartesian; itr < end;) {
-      auto const len = static_cast<uint32_t>(std::min(
-        static_cast<uint64_t>(thrust::distance(itr, end)), magic_inclusive_scan_by_key_limit));
+    CUDA_TRY(cudaMemcpyAsync(h_space_offsets.data(),
+                             space_offsets.data<uint32_t>(),
+                             space_offsets.size() * sizeof(uint32_t),
+                             cudaMemcpyDeviceToHost,
+                             stream.value()));
+
+    stream.synchronize();
+
+    for (uint32_t i = 1; i <= h_space_offsets.size(); i++) {
+      uint64_t space_size =
+        (i < h_space_offsets.size() ? h_space_offsets[i] : xs.size()) - h_space_offsets[i - 1];
+      uint64_t elements_in_batch = xs.size() * space_size;
 
       thrust::inclusive_scan_by_key(rmm::exec_policy(stream),
-                                    itr,
-                                    itr + len,
+                                    gcp_key_iter,
+                                    gcp_key_iter + elements_in_batch,
                                     hausdorff_acc_iter,
                                     scatter_out,
-                                    thrust::equal_to<thrust::pair<uint32_t, uint32_t>>());
-      thrust::advance(itr, len);
+                                    thrust::equal_to<thrust::pair<int32_t, int32_t>>());
+
+      hausdorff_acc_iter += elements_in_batch;
+      gcp_key_iter += elements_in_batch;
+      scatter_out += elements_in_batch;
     }
 
     thrust::transform(rmm::exec_policy(stream),

@@ -63,17 +63,18 @@ struct cartesian_product_group_index_functor {
     auto const group_idx_a            = *(group_lookup_a + group_lookup_idx_a);
     auto const group_size_a           = *(group_sizes_a + group_idx_a);
     auto const group_offset_a         = *(group_offsets_a + group_idx_a);
-    auto const group_block_offset_a   = group_offset_a * num_elements_b;
+    auto const group_block_offset_a   = static_cast<uint64_t>(group_offset_a) * num_elements_b;
 
     // second dimension
     uint32_t const group_lookup_idx_b = (idx - group_block_offset_a) / group_size_a;
     auto const group_idx_b            = *(group_lookup_b + group_lookup_idx_b);
     auto const group_size_b           = *(group_sizes_b + group_idx_b);
     auto const group_offset_b         = *(group_offsets_b + group_idx_b);
-    auto const group_block_offset_b   = group_offset_b * group_size_a;
+    auto const group_block_offset_b   = static_cast<uint64_t>(group_offset_b) * group_size_a;
 
     // relative index
-    uint32_t const relative_idx       = idx - group_block_offset_a - group_block_offset_b;
+    auto const relative_idx =
+      static_cast<uint32_t>(idx - group_block_offset_a - group_block_offset_b);
     auto const relative_element_idx_a = relative_idx % group_size_a;
     auto const relative_element_idx_b = relative_idx / group_size_a;
 
