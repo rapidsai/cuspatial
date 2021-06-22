@@ -84,4 +84,5 @@ std::unique_ptr<cudf::table> cubicspline_coefficients(
   cudf::column_view const& ids,
   cudf::column_view const& offsets,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
 }  // namespace cuspatial
