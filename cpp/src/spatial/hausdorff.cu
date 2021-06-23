@@ -141,20 +141,20 @@ struct hausdorff_functor {
 
     stream.synchronize();
 
+    // This algorithm processes n^2 comparisons, which cannot be handled in a single pass.
+    // The following loop enables multiple passes over the data, and the inner loop
+    // combines batches of elements to fit as many as possible in a single pass.
+
     for (uint32_t i = 1; i <= h_space_offsets.size(); i++) {
-      uint32_t elements_in_batch = 0;
+      uint32_t elements_in_pass = 0;
 
-      auto starting_i = i;
-
-      // deduce appropriate batch size based on input.
-
-      while (i <= h_space_offsets.size()) {
+      // deduce appropriate pass size based on input.
+      for (;i <= h_space_offsets.size(); i++) {
         uint32_t space_size =
           (i < h_space_offsets.size() ? h_space_offsets[i] : xs.size()) - h_space_offsets[i - 1];
-        uint32_t next_size = xs.size() * space_size;
-        if (elements_in_batch > std::numeric_limits<int32_t>::max() - next_size) { break; }
-        elements_in_batch += next_size;
-        i++;
+        uint32_t elements_in_batch = xs.size() * space_size;
+        if (elements_in_pass > std::numeric_limits<int32_t>::max() - elements_in_batch) { break; }
+        elements_in_pass += elements_in_batch;
       }
 
       thrust::inclusive_scan_by_key(rmm::exec_policy(stream),
