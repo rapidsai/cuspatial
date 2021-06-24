@@ -99,7 +99,6 @@ __global__ void kernel_hausdorff(size_type num_points,
 
   // loop over each RHS space, as determined by space_offsets
   for (uint32_t rhs_space_idx = 0; rhs_space_idx < num_spaces; rhs_space_idx++) {
-    
     // determine the begin/end offsets of points contained within this RHS space.
     auto const rhs_p_idx_begin = space_offsets[rhs_space_idx];
     auto const rhs_p_idx_end =
@@ -111,7 +110,6 @@ __global__ void kernel_hausdorff(size_type num_points,
 
     // loop over each point in the current RHS space
     for (uint32_t rhs_p_idx = rhs_p_idx_begin; rhs_p_idx < rhs_p_idx_end; rhs_p_idx++) {
-
       // get the x and y coordinate of this RHS point
       auto const rhs_p_x = xs[rhs_p_idx];
       auto const rhs_p_y = ys[rhs_p_idx];
