@@ -37,8 +37,6 @@ namespace {
 
 using size_type = cudf::size_type;
 
-constexpr cudf::size_type THREADS_PER_BLOCK = 64;
-
 template <typename T>
 constexpr auto magnitude_squared(T a, T b)
 {
@@ -60,16 +58,16 @@ constexpr auto magnitude_squared(T a, T b)
  * this is the first step to computing Hausdorff distance. The second step of computing Hausdorff
  * distance is to determine the maximum of these minimums, which is done by each thread writing
  * it's minimum to the output using atomicMax. This is done once per thread per RHS space. Once
- * all threads have run to completion, all "maximums of the minumum distances" (aka, Hausdorff
- * distance) resides in the output.
+ * all threads have run to completion, all "maximums of the minumum distances" (aka, directed
+ * Hausdorff distances) reside in the output.
  *
  * @tparam T type of coordinate, either float or double.
  * @param num_points number of total points in the input (sum of points from all spaces)
  * @param xs x coordinates
  * @param ys y coordinates
  * @param num_spaces number of spaces in the input
- * @param space_offsets starting position of each first point in each space.
- * @param results Hausdorff distances computed by kernel
+ * @param space_offsets starting position of each first point in each space
+ * @param results directed Hausdorff distances computed by kernel
  * @return
  */
 template <typename T>
@@ -86,7 +84,7 @@ __global__ void kernel_hausdorff(size_type num_points,
 
   if (lhs_p_idx >= num_points) { return; }
 
-  // detemine the LHS space this point belongs to.
+  // determine the LHS space this point belongs to.
   auto const lhs_space_idx =
     thrust::distance(
       space_offsets,
@@ -148,7 +146,7 @@ struct hausdorff_functor {
     auto const num_points = static_cast<uint32_t>(xs.size());
     auto const num_spaces = static_cast<uint32_t>(space_offsets.size());
 
-    CUSPATIAL_EXPECTS(num_spaces < (1 << 15), "Total number of spaces must be less than 2^15");
+    CUSPATIAL_EXPECTS(num_spaces < (1 << 15), "Total number of spaces must be less than 2^16");
 
     auto const num_results = num_spaces * num_spaces;
 
@@ -158,14 +156,16 @@ struct hausdorff_functor {
 
     if (result->size() == 0) { return result; }
 
-    auto kernel    = kernel_hausdorff<T>;
-    auto num_tiles = (xs.size() + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    auto const threads_per_block = 64;
+    auto const num_tiles         = (num_points + threads_per_block - 1) / threads_per_block;
 
-    kernel<<<num_tiles, THREADS_PER_BLOCK, 0, stream.value()>>>(
-      xs.size(),
+    auto kernel = kernel_hausdorff<T>;
+
+    kernel<<<num_tiles, threads_per_block, 0, stream.value()>>>(
+      num_points,
       xs.data<T>(),
       ys.data<T>(),
-      space_offsets.size(),
+      num_spaces,
       space_offsets.begin<cudf::size_type>(),
       result->mutable_view().data<T>());
 
