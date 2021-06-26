@@ -156,6 +156,14 @@ struct hausdorff_functor {
 
     if (result->size() == 0) { return result; }
 
+    auto const result_view = result->mutable_view();
+
+    // due to hausdorff kernel using `atomicMax` for output, the output must be initialized to 0.
+    thrust::fill(rmm::exec_policy(stream),
+                 result_view.begin<T>(),
+                 result_view.end<T>(),
+                 0);
+
     auto const threads_per_block = 64;
     auto const num_tiles         = (num_points + threads_per_block - 1) / threads_per_block;
 
@@ -167,7 +175,7 @@ struct hausdorff_functor {
       ys.data<T>(),
       num_spaces,
       space_offsets.begin<cudf::size_type>(),
-      result->mutable_view().data<T>());
+      result_view.begin<T>());
 
     CUDA_TRY(cudaGetLastError());
 
