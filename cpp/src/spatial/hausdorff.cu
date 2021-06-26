@@ -103,7 +103,8 @@ __global__ void kernel_hausdorff(size_type num_points,
       (rhs_space_idx + 1 == num_spaces) ? num_points : space_offsets[rhs_space_idx + 1];
 
     // each space must contain at least one point, this initial value is just an identity value to
-    // simplify calculations.
+    // simplify calculations. If a space contains <= 0 points, then this initial value will be
+    // written to the output, which can serve as a signal that their input is ill-formed.
     auto min_distance_squared = std::numeric_limits<T>::max();
 
     // loop over each point in the current RHS space
@@ -158,8 +159,11 @@ struct hausdorff_functor {
 
     auto const result_view = result->mutable_view();
 
-    // due to hausdorff kernel using `atomicMax` for output, the output must be initialized to 0.
-    thrust::fill(rmm::exec_policy(stream), result_view.begin<T>(), result_view.end<T>(), 0);
+    // due to hausdorff kernel using `atomicMax` for output, the output must be initialized to <= 0
+    // here the output is being initialized to -1, which should always be overwritten. If -1 is
+    // found in the output, there is a bug where the output is not being written to in the hausdorff
+    // kernel.
+    thrust::fill(rmm::exec_policy(stream), result_view.begin<T>(), result_view.end<T>(), -1);
 
     auto const threads_per_block = 64;
     auto const num_tiles         = (num_points + threads_per_block - 1) / threads_per_block;
