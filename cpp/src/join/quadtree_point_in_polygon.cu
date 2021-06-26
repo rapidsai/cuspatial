@@ -47,8 +47,8 @@ namespace {
 template <typename T, typename QuadOffsetsIter>
 struct compute_poly_and_point_indices {
   QuadOffsetsIter quad_point_offsets;
-  uint32_t const *point_offsets;
-  uint32_t const *point_offsets_end;
+  uint32_t const* point_offsets;
+  uint32_t const* point_offsets_end;
   cudf::column_device_view const poly_indices;
   thrust::tuple<uint32_t, uint32_t> __device__ operator()(cudf::size_type const global_index)
   {
@@ -69,10 +69,10 @@ struct test_poly_point_intersection {
   cudf::column_device_view const poly_points_x;
   cudf::column_device_view const poly_points_y;
 
-  bool __device__ operator()(thrust::tuple<uint32_t, uint32_t> const &poly_point_idxs)
+  bool __device__ operator()(thrust::tuple<uint32_t, uint32_t> const& poly_point_idxs)
   {
-    auto &poly_idx  = thrust::get<0>(poly_point_idxs);
-    auto &point_idx = thrust::get<1>(poly_point_idxs);
+    auto& poly_idx  = thrust::get<0>(poly_point_idxs);
+    auto& point_idx = thrust::get<1>(poly_point_idxs);
     auto point      = points[point_idx];
     return not is_point_in_polygon(thrust::get<0>(point),
                                    thrust::get<1>(point),
@@ -87,24 +87,24 @@ struct test_poly_point_intersection {
 struct compute_quadtree_point_in_polygon {
   template <typename T, typename... Args>
   std::enable_if_t<!std::is_floating_point<T>::value, std::unique_ptr<cudf::table>> operator()(
-    Args &&...)
+    Args&&...)
   {
     CUDF_FAIL("Non-floating point operation is not supported");
   }
 
   template <typename T>
   std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::table>> operator()(
-    cudf::table_view const &poly_quad_pairs,
-    cudf::table_view const &quadtree,
-    cudf::column_view const &point_indices,
-    cudf::column_view const &point_x,
-    cudf::column_view const &point_y,
-    cudf::column_view const &poly_offsets,
-    cudf::column_view const &ring_offsets,
-    cudf::column_view const &poly_points_x,
-    cudf::column_view const &poly_points_y,
+    cudf::table_view const& poly_quad_pairs,
+    cudf::table_view const& quadtree,
+    cudf::column_view const& point_indices,
+    cudf::column_view const& point_x,
+    cudf::column_view const& point_y,
+    cudf::column_view const& poly_offsets,
+    cudf::column_view const& ring_offsets,
+    cudf::column_view const& poly_points_x,
+    cudf::column_view const& poly_points_y,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource *mr)
+    rmm::mr::device_memory_resource* mr)
   {
     // Wrapped in an IIFE so `local_point_offsets` is freed on return
     auto [poly_idxs, point_idxs, num_total_points] = [&]() {
@@ -218,17 +218,17 @@ struct compute_quadtree_point_in_polygon {
 
 }  // namespace
 
-std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const &poly_quad_pairs,
-                                                       cudf::table_view const &quadtree,
-                                                       cudf::column_view const &point_indices,
-                                                       cudf::column_view const &point_x,
-                                                       cudf::column_view const &point_y,
-                                                       cudf::column_view const &poly_offsets,
-                                                       cudf::column_view const &ring_offsets,
-                                                       cudf::column_view const &poly_points_x,
-                                                       cudf::column_view const &poly_points_y,
+std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const& poly_quad_pairs,
+                                                       cudf::table_view const& quadtree,
+                                                       cudf::column_view const& point_indices,
+                                                       cudf::column_view const& point_x,
+                                                       cudf::column_view const& point_y,
+                                                       cudf::column_view const& poly_offsets,
+                                                       cudf::column_view const& ring_offsets,
+                                                       cudf::column_view const& poly_points_x,
+                                                       cudf::column_view const& poly_points_y,
                                                        rmm::cuda_stream_view stream,
-                                                       rmm::mr::device_memory_resource *mr)
+                                                       rmm::mr::device_memory_resource* mr)
 {
   return cudf::type_dispatcher(point_x.type(),
                                compute_quadtree_point_in_polygon{},
@@ -247,16 +247,16 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const &p
 
 }  // namespace detail
 
-std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const &poly_quad_pairs,
-                                                       cudf::table_view const &quadtree,
-                                                       cudf::column_view const &point_indices,
-                                                       cudf::column_view const &point_x,
-                                                       cudf::column_view const &point_y,
-                                                       cudf::column_view const &poly_offsets,
-                                                       cudf::column_view const &ring_offsets,
-                                                       cudf::column_view const &poly_points_x,
-                                                       cudf::column_view const &poly_points_y,
-                                                       rmm::mr::device_memory_resource *mr)
+std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const& poly_quad_pairs,
+                                                       cudf::table_view const& quadtree,
+                                                       cudf::column_view const& point_indices,
+                                                       cudf::column_view const& point_x,
+                                                       cudf::column_view const& point_y,
+                                                       cudf::column_view const& poly_offsets,
+                                                       cudf::column_view const& ring_offsets,
+                                                       cudf::column_view const& poly_points_x,
+                                                       cudf::column_view const& poly_points_y,
+                                                       rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(poly_quad_pairs.num_columns() == 2,
                     "a quadrant-polygon table must have 2 columns");

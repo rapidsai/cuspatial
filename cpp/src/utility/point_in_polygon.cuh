@@ -34,16 +34,16 @@ inline __device__ bool is_point_in_polygon(T const x,
   bool in_polygon     = false;
   uint32_t poly_begin = poly_offsets.element<uint32_t>(poly_idx);
   uint32_t poly_end   = poly_idx < poly_offsets.size() - 1
-                        ? poly_offsets.element<uint32_t>(poly_idx + 1)
-                        : ring_offsets.size();
+                          ? poly_offsets.element<uint32_t>(poly_idx + 1)
+                          : ring_offsets.size();
 
   for (uint32_t ring_idx = poly_begin; ring_idx < poly_end; ring_idx++)  // for each ring
   {
     auto ring_begin = ring_offsets.element<uint32_t>(ring_idx);
     auto ring_end   = ring_idx < ring_offsets.size() - 1
-                      ? ring_offsets.element<uint32_t>(ring_idx + 1)
-                      : poly_points_x.size();
-    auto ring_len = ring_end - ring_begin;
+                        ? ring_offsets.element<uint32_t>(ring_idx + 1)
+                        : poly_points_x.size();
+    auto ring_len   = ring_end - ring_begin;
     for (auto point_idx = 0; point_idx < ring_len; ++point_idx) {
       T x0                 = poly_points_x.element<T>(ring_begin + ((point_idx + 0) % ring_len));
       T y0                 = poly_points_y.element<T>(ring_begin + ((point_idx + 0) % ring_len));

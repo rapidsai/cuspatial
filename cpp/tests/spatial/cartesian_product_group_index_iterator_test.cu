@@ -153,5 +153,7 @@ TYPED_TEST(CartesianProductTest, Traversal)
   std::vector<cartesian_product_group_index> h_actual(num_cartesian);
   thrust::copy(d_actual.begin(), d_actual.end(), h_actual.begin());
 
-  for (auto i = 0; i < num_cartesian; i++) { test_equality(i, expected.at(i), h_actual.at(i)); }
+  for (auto i = 0; i < num_cartesian; i++) {
+    test_equality(i, expected.at(i), h_actual.at(i));
+  }
 }

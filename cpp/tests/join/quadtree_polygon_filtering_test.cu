@@ -177,7 +177,7 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_small)
   auto pair = cuspatial::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, this->mr());
 
-  auto &quadtree = std::get<1>(pair);
+  auto& quadtree = std::get<1>(pair);
 
   fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
   fixed_width_column_wrapper<int32_t> ring_offsets({0, 3, 8, 12});

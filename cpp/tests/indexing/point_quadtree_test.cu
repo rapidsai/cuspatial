@@ -47,7 +47,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_empty)
 
   auto quadtree_pair =
     cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
-  auto &quadtree = std::get<1>(quadtree_pair);
+  auto& quadtree = std::get<1>(quadtree_pair);
 
   CUSPATIAL_EXPECTS(
     quadtree->num_columns() == 5,
@@ -72,7 +72,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_single)
 
   auto quadtree_pair =
     cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
-  auto &quadtree = std::get<1>(quadtree_pair);
+  auto& quadtree = std::get<1>(quadtree_pair);
 
   CUSPATIAL_EXPECTS(
     quadtree->num_columns() == 5,
@@ -106,7 +106,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_two)
 
   auto quadtree_pair =
     cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
-  auto &quadtree = std::get<1>(quadtree_pair);
+  auto& quadtree = std::get<1>(quadtree_pair);
 
   CUSPATIAL_EXPECTS(
     quadtree->num_columns() == 5,
@@ -176,7 +176,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_small)
 
   auto quadtree_pair =
     cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
-  auto &quadtree = std::get<1>(quadtree_pair);
+  auto& quadtree = std::get<1>(quadtree_pair);
 
   CUSPATIAL_EXPECTS(
     quadtree->num_columns() == 5,
@@ -211,7 +211,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
 
   auto quadtree_pair =
     cuspatial::quadtree_on_points(x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size);
-  auto &quadtree = std::get<1>(quadtree_pair);
+  auto& quadtree = std::get<1>(quadtree_pair);
 
   CUSPATIAL_EXPECTS(
     quadtree->num_columns() == 5,

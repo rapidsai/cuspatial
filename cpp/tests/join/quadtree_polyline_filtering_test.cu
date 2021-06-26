@@ -90,7 +90,7 @@ TYPED_TEST(QuadtreePolylineBoundingBoxJoinTest, test_small)
   auto pair = cuspatial::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, this->mr());
 
-  auto &quadtree = std::get<1>(pair);
+  auto& quadtree = std::get<1>(pair);
 
   double const expansion_radius{2.0};
   fixed_width_column_wrapper<int32_t> poly_offsets({0, 3, 8, 12});
