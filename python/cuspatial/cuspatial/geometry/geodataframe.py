@@ -90,26 +90,6 @@ class GeoDataFrame(cudf.DataFrame):
                 result.obj.drop(col, axis=1, inplace=True)
         return result
 
-    # @classmethod
-    # def _from_data(cls, data, index = None, columns = None, ):
-    #     return cudf.DataFrame._from_data(data, index, columns)
-
-    @classmethod
-    def _from_data(
-        cls,
-        data,
-        index = None,
-        columns = None,
-    ):
-        out = cls.__new__(cls)
-        out._data = data
-        if index is None:
-            index = cudf.Index(range(data.nrows))
-        out._index = index
-        if columns is not None:
-            out.columns = columns
-        return out
-
 
 class _GeoSeriesUtility:
     @classmethod
