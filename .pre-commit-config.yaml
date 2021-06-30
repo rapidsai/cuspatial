@@ -12,10 +12,12 @@ repos:
         rev: 19.10b0
         hooks:
               - id: black
+                files: python/cuspatial/.*
       - repo: https://gitlab.com/pycqa/flake8
         rev: 3.7.7
         hooks:
               - id: flake8
+                files: python/cuspatial/.*\.py
       - repo: https://gitlab.com/pycqa/flake8
         rev: 3.7.7
         hooks:
