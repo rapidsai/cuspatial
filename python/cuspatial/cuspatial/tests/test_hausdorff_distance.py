@@ -1,10 +1,8 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
-
 import numpy as np
 import pytest
 
 import cudf
-from cudf.testing._utils import assert_eq
 
 import cuspatial
 
@@ -24,7 +22,7 @@ def test_empty():
 
     expected = cudf.DataFrame([])
 
-    assert_eq(expected, actual)
+    cudf.testing.assert_frame_equal(expected, actual)
 
 
 def test_zeros():
@@ -32,20 +30,24 @@ def test_zeros():
 
     expected = cudf.DataFrame([0.0])
 
-    assert_eq(expected, actual)
+    cudf.testing.assert_frame_equal(expected, actual)
 
 
 def test_empty_x():
     with pytest.raises(RuntimeError):
         cuspatial.directed_hausdorff_distance(
-            [], [0.0], [0],
+            [],
+            [0.0],
+            [0],
         )
 
 
 def test_empty_y():
     with pytest.raises(RuntimeError):
         cuspatial.directed_hausdorff_distance(
-            [0.0], [], [0],
+            [0.0],
+            [],
+            [0],
         )
 
 
@@ -56,7 +58,7 @@ def test_large():
 
     expected = cudf.DataFrame({0: [0.0, 1.0], 1: [1.0, 0.0]})
 
-    assert_eq(expected, actual)
+    cudf.testing.assert_frame_equal(expected, actual)
 
 
 def test_count_one():
@@ -64,7 +66,7 @@ def test_count_one():
 
     expected = cudf.DataFrame({0: [0.0, 1.0], 1: [1.0, 0.0]})
 
-    assert_eq(expected, actual)
+    cudf.testing.assert_frame_equal(expected, actual)
 
 
 def test_count_two():
@@ -76,7 +78,7 @@ def test_count_two():
         {0: [0.0, 1.4142135623730951], 1: [1.0, 0.0000000000000000]}
     )
 
-    assert_eq(expected, actual)
+    cudf.testing.assert_frame_equal(expected, actual)
 
 
 def test_values():
@@ -96,4 +98,4 @@ def test_values():
         }
     )
 
-    assert_eq(expected, actual)
+    cudf.testing.assert_frame_equal(expected, actual)
