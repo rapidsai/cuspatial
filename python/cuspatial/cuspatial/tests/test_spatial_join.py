@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import cudf
-from cudf.testing._utils import assert_eq
 
 import cuspatial
 
@@ -227,9 +226,13 @@ def test_empty(dtype):
     )
     # empty should not throw
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
-        quadtree, poly_bboxes, *bbox_1, 1, 1,  # bbox  # scale  # max_depth
+        quadtree,
+        poly_bboxes,
+        *bbox_1,
+        1,
+        1,  # bbox  # scale  # max_depth
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         intersections,
         cudf.DataFrame(
             {
@@ -265,12 +268,22 @@ def test_polygon_join_small(dtype):
         min_size,
     )
     poly_bboxes = cuspatial.polygon_bounding_boxes(
-        small_poly_offsets, small_ring_offsets, poly_points_x, poly_points_y,
+        small_poly_offsets,
+        small_ring_offsets,
+        poly_points_x,
+        poly_points_y,
     )
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
-        quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
+        quadtree,
+        poly_bboxes,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        scale,
+        max_depth,
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         intersections,
         cudf.DataFrame(
             {
@@ -311,12 +324,22 @@ def test_polyline_join_small(dtype):
         min_size,
     )
     poly_bboxes = cuspatial.polyline_bounding_boxes(
-        small_ring_offsets, poly_points_x, poly_points_y, expansion_radius,
+        small_ring_offsets,
+        poly_points_x,
+        poly_points_y,
+        expansion_radius,
     )
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
-        quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
+        quadtree,
+        poly_bboxes,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        scale,
+        max_depth,
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         intersections,
         cudf.DataFrame(
             {
@@ -402,10 +425,20 @@ def test_quadtree_point_in_polygon_small(dtype):
         min_size,
     )
     poly_bboxes = cuspatial.polygon_bounding_boxes(
-        small_poly_offsets, small_ring_offsets, poly_points_x, poly_points_y,
+        small_poly_offsets,
+        small_ring_offsets,
+        poly_points_x,
+        poly_points_y,
     )
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
-        quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
+        quadtree,
+        poly_bboxes,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        scale,
+        max_depth,
     )
     polygons_and_points = cuspatial.quadtree_point_in_polygon(
         intersections,
@@ -418,7 +451,7 @@ def test_quadtree_point_in_polygon_small(dtype):
         poly_points_x,
         poly_points_y,
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         polygons_and_points,
         cudf.DataFrame(
             {
@@ -482,10 +515,20 @@ def run_test_quadtree_point_to_nearest_polyline_small(
         min_size,
     )
     poly_bboxes = cuspatial.polyline_bounding_boxes(
-        small_ring_offsets, poly_points_x, poly_points_y, expansion_radius,
+        small_ring_offsets,
+        poly_points_x,
+        poly_points_y,
+        expansion_radius,
     )
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
-        quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth,
+        quadtree,
+        poly_bboxes,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        scale,
+        max_depth,
     )
     p2np_result = cuspatial.quadtree_point_to_nearest_polyline(
         intersections,
@@ -497,7 +540,7 @@ def run_test_quadtree_point_to_nearest_polyline_small(
         poly_points_x,
         poly_points_y,
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         p2np_result,
         cudf.DataFrame(
             {
