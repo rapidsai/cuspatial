@@ -1,5 +1,4 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION.
-
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -114,8 +113,14 @@ def assert_eq_geo(geo1, geo2):
 
 def test_interleaved_point(gs, polys):
     cugs = cuspatial.from_geopandas(gs)
-    pd.testing.assert_series_equal(cugs.points.x.to_pandas(), gs[gs.type == "Point"].x.reset_index(drop=True))
-    pd.testing.assert_series_equal(cugs.points.y.to_pandas(), gs[gs.type == "Point"].y.reset_index(drop=True))
+    pd.testing.assert_series_equal(
+        cugs.points.x.to_pandas(),
+        gs[gs.type == "Point"].x.reset_index(drop=True),
+    )
+    pd.testing.assert_series_equal(
+        cugs.points.y.to_pandas(),
+        gs[gs.type == "Point"].y.reset_index(drop=True),
+    )
     cudf.testing.assert_series_equal(
         cugs.multipoints.x,
         cudf.Series(
@@ -134,14 +139,24 @@ def test_interleaved_point(gs, polys):
     )
     cudf.testing.assert_series_equal(
         cugs.lines.x,
-        cudf.Series(np.array([range(11, 34, 2)]).flatten(), dtype="float64",),
+        cudf.Series(
+            np.array([range(11, 34, 2)]).flatten(),
+            dtype="float64",
+        ),
     )
     cudf.testing.assert_series_equal(
         cugs.lines.y,
-        cudf.Series(np.array([range(12, 35, 2)]).flatten(), dtype="float64",),
+        cudf.Series(
+            np.array([range(12, 35, 2)]).flatten(),
+            dtype="float64",
+        ),
     )
-    cudf.testing.assert_series_equal(cugs.polygons.x, cudf.Series(polys[:, 0], dtype="float64"))
-    cudf.testing.assert_series_equal(cugs.polygons.y, cudf.Series(polys[:, 1], dtype="float64"))
+    cudf.testing.assert_series_equal(
+        cugs.polygons.x, cudf.Series(polys[:, 0], dtype="float64")
+    )
+    cudf.testing.assert_series_equal(
+        cugs.polygons.y, cudf.Series(polys[:, 1], dtype="float64")
+    )
 
 
 def test_to_shapely_random():
