@@ -23,9 +23,9 @@ def test_geobuffer_len(gs):
 def test_mixed_dataframe(gs):
     gpdf = gpd.GeoDataFrame({"a": list(range(100, 100 + len(gs))), "b": gs})
     cgdf = cuspatial.from_geopandas(gpdf)
-    pd.testing.assert_frame_equal(gpdf["a"], cgdf["a"].to_pandas())
+    pd.testing.assert_series_equal(gpdf["a"], cgdf["a"].to_pandas())
     assert gpdf["b"].equals(cgdf["b"].to_pandas())
-    pd.testing.assert_frame_equal(gpdf, cgdf)
+    pd.testing.assert_frame_equal(gpdf, cgdf.to_pandas())
 
 
 def test_dataframe_column_access(gs):
