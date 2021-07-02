@@ -1,5 +1,4 @@
 # Copyright (c) 2021 NVIDIA CORPORATION
-
 import numbers
 from itertools import repeat
 from typing import TypeVar, Union
@@ -15,7 +14,7 @@ from shapely.geometry import (
 )
 
 import cudf
-from cudf.core.column import ColumnBase, NumericalColumn
+from cudf.core.column import NumericalColumn
 
 from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
 
@@ -198,10 +197,6 @@ class GeoColumn(NumericalColumn):
             self._geo.copy(deep), self._meta.copy(), self.data.copy()
         )
         return result
-
-    def _copy_type_metadata(self: T, other: ColumnBase) -> ColumnBase:
-        self._data = other.data
-        return self
 
 
 class GeoColumnLocIndexer:

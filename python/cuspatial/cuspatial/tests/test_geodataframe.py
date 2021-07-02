@@ -14,7 +14,7 @@ from shapely.geometry import (
     Polygon,
 )
 
-from cudf.tests.utils import assert_eq
+from cudf.testing._utils import assert_eq
 
 import cuspatial
 

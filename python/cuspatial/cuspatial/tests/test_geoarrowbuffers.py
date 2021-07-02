@@ -12,7 +12,7 @@ from shapely.geometry import (
 )
 
 import cudf
-from cudf.tests.utils import assert_eq
+from cudf.testing._utils import assert_eq
 
 from cuspatial import GeoArrowBuffers, GeoSeries
 from cuspatial.geometry.geocolumn import GeoColumn
