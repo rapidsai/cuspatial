@@ -15,7 +15,6 @@ from shapely.geometry import (
 )
 
 import cudf
-from cudf.testing import assert_series_equal
 
 import cuspatial
 
@@ -130,7 +129,7 @@ def test_interleaved_point(gpdf, polys):
     gs = gpdf["geometry"]
     pd.testing.assert_series_equal(cugs.points.x.to_pandas(), gs[gs.type == "Point"].x.reset_index(drop=True))
     pd.testing.assert_series_equal(cugs.points.y.to_pandas(), gs[gs.type == "Point"].y.reset_index(drop=True))
-    assert_series_equal(
+    cudf.testing.assert_series_equal(
         cugs.multipoints.x,
         cudf.Series(
             np.array(
@@ -138,7 +137,7 @@ def test_interleaved_point(gpdf, polys):
             ).flatten()
         ),
     )
-    assert_series_equal(
+    cudf.testing.assert_series_equal(
         cugs.multipoints.y,
         cudf.Series(
             np.array(
@@ -146,16 +145,16 @@ def test_interleaved_point(gpdf, polys):
             ).flatten()
         ),
     )
-    assert_series_equal(
+    cudf.testing.assert_series_equal(
         cugs.lines.x,
         cudf.Series(np.array([range(11, 34, 2)]).flatten(), dtype="float64",),
     )
-    assert_series_equal(
+    cudf.testing.assert_series_equal(
         cugs.lines.y,
         cudf.Series(np.array([range(12, 35, 2)]).flatten(), dtype="float64",),
     )
-    assert_series_equal(cugs.polygons.x, cudf.Series(polys[:, 0], dtype="float64"))
-    assert_series_equal(cugs.polygons.y, cudf.Series(polys[:, 1], dtype="float64"))
+    cudf.testing.assert_series_equal(cugs.polygons.x, cudf.Series(polys[:, 0], dtype="float64"))
+    cudf.testing.assert_series_equal(cugs.polygons.y, cudf.Series(polys[:, 1], dtype="float64"))
 
 
 def test_to_shapely_random():

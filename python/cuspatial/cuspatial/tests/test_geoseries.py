@@ -14,7 +14,7 @@ from shapely.geometry import (
     Polygon,
 )
 
-from cudf.testing._utils import assert_eq
+import cudf
 
 import cuspatial
 
@@ -84,7 +84,7 @@ def assert_eq_linestring(p1, p2):
     assert type(p1) == type(p2)
     assert len(p1.coords) == len(p2.coords)
     for i in range(len(p1.coords)):
-        assert_eq(p1.coords[i], p2.coords[i])
+        assert p1.coords[i] == p2.coords[i]
 
 
 def assert_eq_multilinestring(p1, p2):
@@ -114,34 +114,34 @@ def assert_eq_geo(geo1, geo2):
 
 def test_interleaved_point(gs, polys):
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs.points.x, gs[gs.type == "Point"].x.reset_index(drop=True))
-    assert_eq(cugs.points.y, gs[gs.type == "Point"].y.reset_index(drop=True))
-    assert_eq(
+    pd.testing.assert_series_equal(cugs.points.x.to_pandas(), gs[gs.type == "Point"].x.reset_index(drop=True))
+    pd.testing.assert_series_equal(cugs.points.y.to_pandas(), gs[gs.type == "Point"].y.reset_index(drop=True))
+    cudf.testing.assert_series_equal(
         cugs.multipoints.x,
-        pd.Series(
+        cudf.Series(
             np.array(
                 [np.array(p)[:, 0] for p in gs[gs.type == "MultiPoint"]]
             ).flatten()
         ),
     )
-    assert_eq(
+    cudf.testing.assert_series_equal(
         cugs.multipoints.y,
-        pd.Series(
+        cudf.Series(
             np.array(
                 [np.array(p)[:, 1] for p in gs[gs.type == "MultiPoint"]]
             ).flatten()
         ),
     )
-    assert_eq(
+    cudf.testing.assert_series_equal(
         cugs.lines.x,
-        pd.Series(np.array([range(11, 34, 2)]).flatten(), dtype="float64",),
+        cudf.Series(np.array([range(11, 34, 2)]).flatten(), dtype="float64",),
     )
-    assert_eq(
+    cudf.testing.assert_series_equal(
         cugs.lines.y,
-        pd.Series(np.array([range(12, 35, 2)]).flatten(), dtype="float64",),
+        cudf.Series(np.array([range(12, 35, 2)]).flatten(), dtype="float64",),
     )
-    assert_eq(cugs.polygons.x, pd.Series(polys[:, 0], dtype="float64"))
-    assert_eq(cugs.polygons.y, pd.Series(polys[:, 1], dtype="float64"))
+    cudf.testing.assert_series_equal(cugs.polygons.x, cudf.Series(polys[:, 0], dtype="float64"))
+    cudf.testing.assert_series_equal(cugs.polygons.y, cudf.Series(polys[:, 1], dtype="float64"))
 
 
 def test_to_shapely_random():
