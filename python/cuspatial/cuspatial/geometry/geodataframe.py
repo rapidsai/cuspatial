@@ -92,7 +92,8 @@ class GeoDataFrame(cudf.DataFrame):
 
 
 class _GeoSeriesUtility:
-    def _from_data(self, new_data, name=None, index=False):
+    @classmethod
+    def _from_data(cls, new_data, name=None, index=False):
         new_column = new_data.columns[0]
         if is_geometry_type(new_column):
             return GeoSeries(new_column, name=name, index=index)
