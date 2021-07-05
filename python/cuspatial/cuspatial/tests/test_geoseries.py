@@ -14,7 +14,7 @@ from shapely.geometry import (
 )
 from shapely.affinity import rotate
 
-from cudf.tests.utils import assert_eq
+from cudf.testing._utils import assert_eq
 
 import cuspatial
 

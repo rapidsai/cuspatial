@@ -35,9 +35,6 @@ endfunction(ConfigureTest)
 ### test sources ##################################################################################
 ###################################################################################################
 
-ConfigureTest(CARTESIAN_PRODUCT_GROUP_INDEX_ITERATOR_TEST
-    spatial/cartesian_product_group_index_iterator_test.cu)
-
  ConfigureTest(CUBIC_SPLINE_TEST
     interpolate/cubic_spline_test.cpp)
 
