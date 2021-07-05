@@ -24,10 +24,9 @@
 
 static void BM_hausdorff(benchmark::State& state)
 {
-  int32_t num_points           = state.range(1) - 1;
-  int32_t num_spaces_asked     = state.range(0) - 1;
-  int32_t num_spaces           = std::min(num_points, num_spaces_asked);
-  int32_t num_points_per_space = num_points / num_spaces;
+  int32_t num_spaces           = state.range(0) - 1;
+  int32_t num_points_per_space = state.range(1) - 1;
+  int32_t num_points           = num_points_per_space * num_spaces;
 
   auto zero_iter = thrust::make_constant_iterator(0);
 
@@ -62,7 +61,7 @@ class HausdorffBenchmark : public cuspatial::benchmark {
     BM_hausdorff(state);                                                   \
   }                                                                        \
   BENCHMARK_REGISTER_F(HausdorffBenchmark, name)                           \
-    ->Ranges({{1 << 10, 1 << 14}, {1 << 10, 1 << 15}})                     \
+    ->Ranges({{1 << 5, 1 << 13}, {1 << 2, 1 << 7}})                        \
     ->UseManualTime()                                                      \
     ->Unit(benchmark::kMillisecond);
 
