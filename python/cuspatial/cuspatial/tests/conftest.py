@@ -1,18 +1,17 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION.
 
 import geopandas as gpd
-
-import pytest
-from shapely.geometry import (
-    Point,
-    MultiPoint,
-    LineString,
-    MultiLineString,
-    Polygon,
-    MultiPolygon,
-)
 import numpy as np
 import pandas as pd
+import pytest
+from shapely.geometry import (
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+)
 
 
 @pytest.fixture

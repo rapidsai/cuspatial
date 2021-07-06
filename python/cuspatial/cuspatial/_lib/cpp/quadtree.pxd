@@ -1,14 +1,13 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+from libc.stdint cimport int8_t
+from libcpp.memory cimport unique_ptr
+from libcpp.pair cimport pair
+
 from cudf._lib.cpp.column.column cimport column
 from cudf._lib.cpp.column.column_view cimport column_view
 from cudf._lib.cpp.table.table cimport table
 from cudf._lib.cpp.types cimport size_type
-
-from libc.stdint cimport int8_t
-
-from libcpp.pair cimport pair
-from libcpp.memory cimport unique_ptr
 
 
 cdef extern from "cuspatial/point_quadtree.hpp" namespace "cuspatial" nogil:

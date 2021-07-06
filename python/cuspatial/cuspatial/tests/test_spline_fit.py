@@ -1,11 +1,11 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+import cupy as cp
 import numpy as np
 import pytest
 
 import cudf
 from cudf.testing._utils import assert_eq
-import cupy as cp
 
 import cuspatial
 

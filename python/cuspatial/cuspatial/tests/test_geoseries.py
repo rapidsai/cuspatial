@@ -4,15 +4,15 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
+from shapely.affinity import rotate
 from shapely.geometry import (
-    Point,
-    MultiPoint,
     LineString,
     MultiLineString,
-    Polygon,
+    MultiPoint,
     MultiPolygon,
+    Point,
+    Polygon,
 )
-from shapely.affinity import rotate
 
 from cudf.testing._utils import assert_eq
 

@@ -1,12 +1,13 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-from cudf._lib.column cimport column, column_view, Column
-
-from cuspatial._lib.cpp.hausdorff \
-    cimport directed_hausdorff_distance as directed_cpp_hausdorff_distance
-
-from libcpp.utility cimport move
 from libcpp.memory cimport unique_ptr
+from libcpp.utility cimport move
+
+from cudf._lib.column cimport Column, column, column_view
+
+from cuspatial._lib.cpp.hausdorff cimport (
+    directed_hausdorff_distance as directed_cpp_hausdorff_distance,
+)
 
 
 def directed_hausdorff_distance(

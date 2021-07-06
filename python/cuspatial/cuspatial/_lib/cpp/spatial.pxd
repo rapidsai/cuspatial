@@ -1,8 +1,8 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
-from cudf._lib.column cimport column, column_view
-
 from libcpp.memory cimport unique_ptr
+
+from cudf._lib.column cimport column, column_view
 
 
 cdef extern from "cuspatial/haversine.hpp" namespace "cuspatial" nogil:

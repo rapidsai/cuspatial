@@ -1,24 +1,21 @@
 # Copyright (c) 2021, NVIDIA CORPORATION.
 
-from geopandas import GeoSeries as gpGeoSeries
 import numpy as np
+from geopandas import GeoSeries as gpGeoSeries
 from shapely.geometry import (
-    Point,
-    MultiPoint,
     LineString,
     MultiLineString,
-    Polygon,
+    MultiPoint,
     MultiPolygon,
+    Point,
+    Polygon,
 )
 
 import cudf
 from cudf.testing._utils import assert_eq
 
+from cuspatial import GeoArrowBuffers, GeoSeries
 from cuspatial.geometry.geocolumn import GeoColumn
-from cuspatial import (
-    GeoArrowBuffers,
-    GeoSeries,
-)
 
 
 def test_points():
