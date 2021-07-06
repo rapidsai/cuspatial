@@ -231,7 +231,9 @@ struct compute_spline_tridiagonals {
                          p_d[h + ci + 1] = (p_h[h + ci + 1] + p_h[h + (n - 2) - ci]) * 2;
                          p_u[h + ci + 1] = (p_i[h + ci + 1] - p_i[h + (n - 2) - ci]) * 6;
                        }
-                       for (ci = 0; ci < n - 3; ++ci) { p_dlu[h + ci + 1] = p_i[h + ci + 1]; }
+                       for (ci = 0; ci < n - 3; ++ci) {
+                         p_dlu[h + ci + 1] = p_i[h + ci + 1];
+                       }
                      });
   }
   template <typename T>

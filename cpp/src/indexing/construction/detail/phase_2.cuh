@@ -42,7 +42,7 @@
 namespace cuspatial {
 namespace detail {
 
-inline rmm::device_uvector<uint32_t> compute_leaf_positions(cudf::column_view const &indicator,
+inline rmm::device_uvector<uint32_t> compute_leaf_positions(cudf::column_view const& indicator,
                                                             cudf::size_type num_valid_nodes,
                                                             rmm::cuda_stream_view stream)
 {
@@ -60,9 +60,9 @@ inline rmm::device_uvector<uint32_t> compute_leaf_positions(cudf::column_view co
 }
 
 inline rmm::device_uvector<uint32_t> flatten_point_keys(
-  rmm::device_uvector<uint32_t> const &quad_keys,
-  rmm::device_uvector<uint8_t> const &quad_level,
-  cudf::column_view const &indicator,
+  rmm::device_uvector<uint32_t> const& quad_keys,
+  rmm::device_uvector<uint8_t> const& quad_level,
+  cudf::column_view const& indicator,
   cudf::size_type num_valid_nodes,
   int8_t max_depth,
   rmm::cuda_stream_view stream)
@@ -74,7 +74,7 @@ inline rmm::device_uvector<uint32_t> flatten_point_keys(
                     keys_and_levels,
                     keys_and_levels + num_valid_nodes,
                     flattened_keys.begin(),
-                    [last_level = max_depth - 1] __device__(auto const &val) {
+                    [last_level = max_depth - 1] __device__(auto const& val) {
                       bool is_quad{false};
                       uint32_t key{}, level{};
                       thrust::tie(key, level, is_quad) = val;
@@ -93,10 +93,10 @@ inline rmm::device_uvector<uint32_t> flatten_point_keys(
  * z-order keys
  */
 inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
-  rmm::device_uvector<uint32_t> const &quad_keys,
-  rmm::device_uvector<uint8_t> const &quad_level,
-  rmm::device_uvector<uint32_t> &quad_point_count,
-  cudf::column_view const &indicator,
+  rmm::device_uvector<uint32_t> const& quad_keys,
+  rmm::device_uvector<uint8_t> const& quad_level,
+  rmm::device_uvector<uint32_t>& quad_point_count,
+  cudf::column_view const& indicator,
   cudf::size_type num_valid_nodes,
   int8_t max_depth,
   rmm::cuda_stream_view stream)
@@ -135,8 +135,8 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
     return std::make_pair(std::move(initial_sort_indices), std::move(quad_point_count_tmp));
   }();
 
-  auto &initial_sort_indices = std::get<0>(sorted_order_and_point_counts);
-  auto &quad_point_count_tmp = std::get<1>(sorted_order_and_point_counts);
+  auto& initial_sort_indices = std::get<0>(sorted_order_and_point_counts);
+  auto& quad_point_count_tmp = std::get<1>(sorted_order_and_point_counts);
 
   auto leaf_offsets = compute_leaf_positions(indicator, num_valid_nodes, stream);
 
@@ -177,7 +177,7 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
 }
 
 inline rmm::device_uvector<uint32_t> compute_parent_positions(
-  rmm::device_uvector<uint32_t> const &quad_child_count,
+  rmm::device_uvector<uint32_t> const& quad_child_count,
   cudf::size_type num_parent_nodes,
   cudf::size_type num_child_nodes,
   rmm::cuda_stream_view stream)
@@ -227,10 +227,10 @@ inline rmm::device_uvector<uint32_t> compute_parent_positions(
  * @return std::pair<uint32_t, uint32_t>
  */
 inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
-  rmm::device_uvector<uint32_t> &quad_keys,
-  rmm::device_uvector<uint32_t> &quad_point_count,
-  rmm::device_uvector<uint32_t> &quad_child_count,
-  rmm::device_uvector<uint8_t> &quad_levels,
+  rmm::device_uvector<uint32_t>& quad_keys,
+  rmm::device_uvector<uint32_t>& quad_point_count,
+  rmm::device_uvector<uint32_t>& quad_child_count,
+  rmm::device_uvector<uint8_t>& quad_levels,
   cudf::size_type num_parent_nodes,
   cudf::size_type num_child_nodes,
   cudf::size_type min_size,
@@ -300,11 +300,11 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
  * @return std::unique_ptr<cudf::column>
  */
 inline std::unique_ptr<cudf::column> construct_non_leaf_indicator(
-  rmm::device_uvector<uint32_t> &quad_point_count,
+  rmm::device_uvector<uint32_t>& quad_point_count,
   cudf::size_type num_parent_nodes,
   cudf::size_type num_valid_nodes,
   cudf::size_type min_size,
-  rmm::mr::device_memory_resource *mr,
+  rmm::mr::device_memory_resource* mr,
   rmm::cuda_stream_view stream)
 {
   //

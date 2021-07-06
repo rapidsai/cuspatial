@@ -51,8 +51,8 @@ namespace detail {
  */
 template <typename T>
 inline std::pair<rmm::device_uvector<uint32_t>, std::unique_ptr<cudf::column>>
-compute_point_keys_and_sorted_indices(cudf::column_view const &x,
-                                      cudf::column_view const &y,
+compute_point_keys_and_sorted_indices(cudf::column_view const& x,
+                                      cudf::column_view const& y,
                                       T x_min,
                                       T x_max,
                                       T y_min,
@@ -60,14 +60,14 @@ compute_point_keys_and_sorted_indices(cudf::column_view const &x,
                                       T scale,
                                       int8_t max_depth,
                                       rmm::cuda_stream_view stream,
-                                      rmm::mr::device_memory_resource *mr)
+                                      rmm::mr::device_memory_resource* mr)
 {
   rmm::device_uvector<uint32_t> keys(x.size(), stream);
   thrust::transform(rmm::exec_policy(stream),
                     thrust::make_zip_iterator(x.begin<T>(), y.begin<T>()),
                     thrust::make_zip_iterator(x.begin<T>(), y.begin<T>()) + x.size(),
                     keys.begin(),
-                    [=] __device__(auto const &point) {
+                    [=] __device__(auto const& point) {
                       T x, y;
                       thrust::tie(x, y) = point;
                       if (x < x_min || x > x_max || y < y_min || y > y_max) {
@@ -187,11 +187,11 @@ inline std::tuple<rmm::device_uvector<uint32_t>,
                   rmm::device_uvector<uint32_t>,
                   rmm::device_uvector<uint32_t>,
                   rmm::device_uvector<uint8_t>>
-reverse_tree_levels(rmm::device_uvector<uint32_t> const &quad_keys_in,
-                    rmm::device_uvector<uint32_t> const &quad_point_count_in,
-                    rmm::device_uvector<uint32_t> const &quad_child_count_in,
-                    std::vector<cudf::size_type> const &begin_pos,
-                    std::vector<cudf::size_type> const &end_pos,
+reverse_tree_levels(rmm::device_uvector<uint32_t> const& quad_keys_in,
+                    rmm::device_uvector<uint32_t> const& quad_point_count_in,
+                    rmm::device_uvector<uint32_t> const& quad_child_count_in,
+                    std::vector<cudf::size_type> const& begin_pos,
+                    std::vector<cudf::size_type> const& end_pos,
                     int8_t max_depth,
                     rmm::cuda_stream_view stream)
 {
@@ -246,8 +246,8 @@ reverse_tree_levels(rmm::device_uvector<uint32_t> const &quad_keys_in,
  *
  */
 template <typename T>
-inline auto make_full_levels(cudf::column_view const &x,
-                             cudf::column_view const &y,
+inline auto make_full_levels(cudf::column_view const& x,
+                             cudf::column_view const& y,
                              T x_min,
                              T x_max,
                              T y_min,
@@ -256,7 +256,7 @@ inline auto make_full_levels(cudf::column_view const &x,
                              int8_t max_depth,
                              cudf::size_type min_size,
                              rmm::cuda_stream_view stream,
-                             rmm::mr::device_memory_resource *mr)
+                             rmm::mr::device_memory_resource* mr)
 {
   // Compute point keys and sort into bottom-level quadrants
   // (i.e. quads at level `max_depth - 1`)
@@ -265,8 +265,8 @@ inline auto make_full_levels(cudf::column_view const &x,
   auto keys_and_indices = compute_point_keys_and_sorted_indices<T>(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, stream, mr);
 
-  auto &point_keys    = keys_and_indices.first;
-  auto &point_indices = keys_and_indices.second;
+  auto& point_keys    = keys_and_indices.first;
+  auto& point_indices = keys_and_indices.second;
 
   rmm::device_uvector<uint32_t> quad_keys(x.size(), stream);
   rmm::device_uvector<uint32_t> quad_point_count(x.size(), stream);
@@ -284,7 +284,7 @@ inline auto make_full_levels(cudf::column_view const &x,
 
   // Repurpose the `point_keys` vector now the points have been grouped into the
   // leaf quadrants
-  auto &quad_child_count = point_keys;
+  auto& quad_child_count = point_keys;
 
   quad_keys.resize(num_bottom_quads * (max_depth + 1), stream);
   quad_point_count.resize(num_bottom_quads * (max_depth + 1), stream);
@@ -331,10 +331,10 @@ inline auto make_full_levels(cudf::column_view const &x,
                                  quad_child_count.begin(),
                                  stream);
 
-  auto const &num_parent_nodes = std::get<0>(quads);
-  auto const &quad_tree_size   = std::get<1>(quads);
-  auto const &begin_pos        = std::get<2>(quads);
-  auto const &end_pos          = std::get<3>(quads);
+  auto const& num_parent_nodes = std::get<0>(quads);
+  auto const& quad_tree_size   = std::get<1>(quads);
+  auto const& begin_pos        = std::get<2>(quads);
+  auto const& end_pos          = std::get<3>(quads);
 
   // Shrink vectors' underlying device allocations to reduce peak memory usage
   quad_keys.resize(quad_tree_size, stream);

@@ -50,7 +50,7 @@ inline cudf::size_type copy_leaf_intersections(InputIterator input_begin,
   return thrust::distance(
     output_begin,
     thrust::copy_if(
-      rmm::exec_policy(stream), input_begin, input_end, output_begin, [] __device__(auto const &t) {
+      rmm::exec_policy(stream), input_begin, input_end, output_begin, [] __device__(auto const& t) {
         return thrust::get<0>(t) == leaf_indicator;
       }));
 }
@@ -64,7 +64,7 @@ inline cudf::size_type remove_non_quad_intersections(InputIterator input_begin,
   return thrust::distance(
     output_begin,
     thrust::remove_if(
-      rmm::exec_policy(stream), input_begin, input_end, output_begin, [] __device__(auto const &t) {
+      rmm::exec_policy(stream), input_begin, input_end, output_begin, [] __device__(auto const& t) {
         return thrust::get<0>(t) != quad_indicator;
       }));
 }
@@ -75,8 +75,8 @@ template <typename T,
           typename NodePairsIterator,
           typename LeafPairsIterator>
 inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
-  cudf::table_view const &quadtree,
-  cudf::table_view const &poly_bbox,
+  cudf::table_view const& quadtree,
+  cudf::table_view const& poly_bbox,
   NodeIndicesIterator node_indices,
   PolyIndicesIterator poly_indices,
   NodePairsIterator node_pairs,
@@ -110,9 +110,9 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
                      poly_x_mins = *d_poly_x_min,
                      poly_y_mins = *d_poly_y_min,
                      poly_x_maxs = *d_poly_x_max,
-                     poly_y_maxs = *d_poly_y_max] __device__(auto const &node_and_poly) {
-                      auto &node      = thrust::get<0>(node_and_poly);
-                      auto &poly      = thrust::get<1>(node_and_poly);
+                     poly_y_maxs = *d_poly_y_max] __device__(auto const& node_and_poly) {
+                      auto& node      = thrust::get<0>(node_and_poly);
+                      auto& poly      = thrust::get<1>(node_and_poly);
                       auto key        = keys.element<uint32_t>(node);
                       auto level      = levels.element<uint8_t>(node);
                       auto poly_x_min = poly_x_mins.element<T>(poly);

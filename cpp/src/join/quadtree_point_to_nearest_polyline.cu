@@ -69,8 +69,8 @@ inline __device__ std::pair<uint32_t, uint32_t> get_local_poly_index_and_count(
 template <typename QuadOffsetsIter, typename QuadLengthsIter>
 inline __device__ std::pair<uint32_t, uint32_t> get_transposed_point_and_pair_index(
   uint32_t const global_index,
-  uint32_t const *point_offsets,
-  uint32_t const *point_offsets_end,
+  uint32_t const* point_offsets,
+  uint32_t const* point_offsets_end,
   QuadOffsetsIter quad_offsets,
   QuadOffsetsIter quad_offsets_end,
   QuadLengthsIter quad_lengths)
@@ -99,12 +99,12 @@ inline __device__ std::pair<uint32_t, uint32_t> get_transposed_point_and_pair_in
 template <typename T, typename PointIter, typename QuadOffsetsIter, typename QuadLengthsIter>
 struct compute_point_poly_indices_and_distances {
   PointIter points;
-  uint32_t const *point_offsets;
-  uint32_t const *point_offsets_end;
+  uint32_t const* point_offsets;
+  uint32_t const* point_offsets_end;
   QuadOffsetsIter quad_offsets;
   QuadOffsetsIter quad_offsets_end;
   QuadLengthsIter quad_lengths;
-  uint32_t const *poly_indices;
+  uint32_t const* poly_indices;
   cudf::column_device_view const poly_offsets;
   cudf::column_device_view const poly_points_x;
   cudf::column_device_view const poly_points_y;
@@ -126,23 +126,23 @@ struct compute_point_poly_indices_and_distances {
 struct compute_quadtree_point_to_nearest_polyline {
   template <typename T, typename... Args>
   std::enable_if_t<!std::is_floating_point<T>::value, std::unique_ptr<cudf::table>> operator()(
-    Args &&...)
+    Args&&...)
   {
     CUDF_FAIL("Non-floating point operation is not supported");
   }
 
   template <typename T>
   std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::table>> operator()(
-    cudf::table_view const &poly_quad_pairs,
-    cudf::table_view const &quadtree,
-    cudf::column_view const &point_indices,
-    cudf::column_view const &point_x,
-    cudf::column_view const &point_y,
-    cudf::column_view const &poly_offsets,
-    cudf::column_view const &poly_points_x,
-    cudf::column_view const &poly_points_y,
+    cudf::table_view const& poly_quad_pairs,
+    cudf::table_view const& quadtree,
+    cudf::column_view const& point_indices,
+    cudf::column_view const& point_x,
+    cudf::column_view const& point_y,
+    cudf::column_view const& poly_offsets,
+    cudf::column_view const& poly_points_x,
+    cudf::column_view const& poly_points_y,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource *mr)
+    rmm::mr::device_memory_resource* mr)
   {
     // Wrapped in an IIFE so `local_point_offsets` is freed on return
     auto const [point_idxs, poly_idxs, distances, num_distances] = [&]() {
@@ -240,7 +240,7 @@ struct compute_quadtree_point_to_nearest_polyline {
 
       auto all_point_indices =
         thrust::make_transform_iterator(all_point_poly_indices_and_distances,
-                                        [] __device__(auto const &x) { return thrust::get<0>(x); });
+                                        [] __device__(auto const& x) { return thrust::get<0>(x); });
 
       // Allocate vectors for the distances min reduction
       rmm::device_uvector<uint32_t> point_idxs(point_x.size(), stream);
@@ -268,17 +268,17 @@ struct compute_quadtree_point_to_nearest_polyline {
                            // comparator
                            thrust::equal_to<uint32_t>(),
                            // binop to select the point/polyline pair with the smallest distance
-                           [] __device__(auto const &lhs, auto const &rhs) {
-                             T const &d_lhs = thrust::get<2>(lhs);
-                             T const &d_rhs = thrust::get<2>(rhs);
+                           [] __device__(auto const& lhs, auto const& rhs) {
+                             T const& d_lhs = thrust::get<2>(lhs);
+                             T const& d_rhs = thrust::get<2>(rhs);
                              // If lhs distance is 0, choose rhs
                              if (d_lhs == T{0}) { return rhs; }
                              // if rhs distance is 0, choose lhs
                              if (d_rhs == T{0}) { return lhs; }
                              // If distances to lhs/rhs are the same, choose poly with smallest id
                              if (d_lhs == d_rhs) {
-                               auto const &i_lhs = thrust::get<1>(lhs);
-                               auto const &i_rhs = thrust::get<1>(rhs);
+                               auto const& i_lhs = thrust::get<1>(lhs);
+                               auto const& i_rhs = thrust::get<1>(rhs);
                                return i_lhs < i_rhs ? lhs : rhs;
                              }
                              // Otherwise choose poly with smallest distance
@@ -322,16 +322,16 @@ struct compute_quadtree_point_to_nearest_polyline {
 }  // namespace
 
 std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
-  cudf::table_view const &poly_quad_pairs,
-  cudf::table_view const &quadtree,
-  cudf::column_view const &point_indices,
-  cudf::column_view const &point_x,
-  cudf::column_view const &point_y,
-  cudf::column_view const &poly_offsets,
-  cudf::column_view const &poly_points_x,
-  cudf::column_view const &poly_points_y,
+  cudf::table_view const& poly_quad_pairs,
+  cudf::table_view const& quadtree,
+  cudf::column_view const& point_indices,
+  cudf::column_view const& point_x,
+  cudf::column_view const& point_y,
+  cudf::column_view const& poly_offsets,
+  cudf::column_view const& poly_points_x,
+  cudf::column_view const& poly_points_y,
   rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource *mr)
+  rmm::mr::device_memory_resource* mr)
 {
   return cudf::type_dispatcher(point_x.type(),
                                compute_quadtree_point_to_nearest_polyline{},
@@ -350,15 +350,15 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
 }  // namespace detail
 
 std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
-  cudf::table_view const &poly_quad_pairs,
-  cudf::table_view const &quadtree,
-  cudf::column_view const &point_indices,
-  cudf::column_view const &point_x,
-  cudf::column_view const &point_y,
-  cudf::column_view const &poly_offsets,
-  cudf::column_view const &poly_points_x,
-  cudf::column_view const &poly_points_y,
-  rmm::mr::device_memory_resource *mr)
+  cudf::table_view const& poly_quad_pairs,
+  cudf::table_view const& quadtree,
+  cudf::column_view const& point_indices,
+  cudf::column_view const& point_x,
+  cudf::column_view const& point_y,
+  cudf::column_view const& poly_offsets,
+  cudf::column_view const& poly_points_x,
+  cudf::column_view const& poly_points_y,
+  rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(poly_quad_pairs.num_columns() == 2,
                     "a quadrant-polyline table must have 2 columns");
