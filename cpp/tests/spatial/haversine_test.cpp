@@ -29,6 +29,8 @@
 
 using namespace cudf::test;
 
+constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
+
 template <typename T>
 struct HaversineTest : public BaseFixture {
 };
@@ -50,7 +52,7 @@ TYPED_TEST(HaversineTest, Empty)
 
   auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
 
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(HaversineTest, Zero)
@@ -66,7 +68,7 @@ TYPED_TEST(HaversineTest, Zero)
 
   auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
 
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(HaversineTest, EquivalentPoints)
@@ -82,7 +84,7 @@ TYPED_TEST(HaversineTest, EquivalentPoints)
 
   auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
 
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(HaversineTest, MismatchSize)
