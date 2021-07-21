@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import cudf
-from cudf.testing._utils import assert_eq
 
 import cuspatial
 from cuspatial.utils import gis_utils
@@ -45,7 +44,7 @@ def test_missing_2():
     )
 
     expected = cudf.DataFrame()
-    assert_eq(expected, result)
+    cudf.testing.assert_frame_equal(expected, result)
 
 
 def test_missing_3():
@@ -106,7 +105,7 @@ def test_one_point_in():
         cudf.Series([-1, 1, -1, -1]),
     )
     expected = cudf.DataFrame({0: True})
-    assert_eq(expected, result)
+    cudf.testing.assert_frame_equal(expected, result)
 
 
 def test_one_point_out():
@@ -119,7 +118,7 @@ def test_one_point_out():
         cudf.Series([-1, 1, -1, -1]),
     )
     expected = cudf.DataFrame({0: False})
-    assert_eq(expected, result)
+    cudf.testing.assert_frame_equal(expected, result)
 
 
 def test_one_point_in_two_rings():
@@ -132,7 +131,7 @@ def test_one_point_in_two_rings():
         cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
     )
     expected = cudf.DataFrame({0: True})
-    assert_eq(expected, result)
+    cudf.testing.assert_frame_equal(expected, result)
 
 
 def test_one_point_in_two_rings_no_repeat():
@@ -145,7 +144,7 @@ def test_one_point_in_two_rings_no_repeat():
         cudf.Series([-1, 1, -1, 3, 5, 3]),
     )
     expected = cudf.DataFrame({0: True})
-    assert_eq(expected, result)
+    cudf.testing.assert_frame_equal(expected, result)
 
 
 def test_one_point_out_two_rings():
@@ -158,7 +157,7 @@ def test_one_point_out_two_rings():
         cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
     )
     expected = cudf.DataFrame({0: False})
-    assert_eq(expected, result)
+    cudf.testing.assert_frame_equal(expected, result)
 
 
 def test_one_point_out_two_rings_no_repeat():
@@ -171,7 +170,7 @@ def test_one_point_out_two_rings_no_repeat():
         cudf.Series([-1, 1, -1, 3, 5, 3]),
     )
     expected = cudf.DataFrame({0: False})
-    assert_eq(expected, result)
+    cudf.testing.assert_frame_equal(expected, result)
 
 
 def test_one_point_in_one_out_two_rings():
@@ -184,7 +183,7 @@ def test_one_point_in_one_out_two_rings():
         cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
     )
     expected = cudf.DataFrame({0: [True, False]})
-    assert_eq(expected, result)
+    cudf.testing.assert_frame_equal(expected, result)
 
 
 def test_one_point_out_one_in_two_rings():
@@ -197,7 +196,7 @@ def test_one_point_out_one_in_two_rings():
         cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
     )
     expected = cudf.DataFrame({0: [False, True]})
-    assert_eq(expected, result)
+    cudf.testing.assert_frame_equal(expected, result)
 
 
 def test_two_points_out_two_rings():
@@ -210,7 +209,7 @@ def test_two_points_out_two_rings():
         cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
     )
     expected = cudf.DataFrame({0: [False, False]})
-    assert_eq(expected, result)
+    cudf.testing.assert_frame_equal(expected, result)
 
 
 def test_two_points_in_two_rings():
@@ -223,7 +222,7 @@ def test_two_points_in_two_rings():
         cudf.Series([-1, 1, -1, -1, 3, 5, 3, 3]),
     )
     expected = cudf.DataFrame({0: [True, True]})
-    assert_eq(expected, result)
+    cudf.testing.assert_frame_equal(expected, result)
 
 
 def test_three_points_two_features():
@@ -238,7 +237,7 @@ def test_three_points_two_features():
     expected = cudf.DataFrame()
     expected[0] = [True, True, False]
     expected[1] = [True, False, True]
-    assert_eq(expected, result)
+    cudf.testing.assert_frame_equal(expected, result)
 
 
 def test_pip_bitmap_column_to_binary_array():

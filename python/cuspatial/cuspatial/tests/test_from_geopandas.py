@@ -1,6 +1,6 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION.
-
 import geopandas as gpd
+import pandas as pd
 from shapely.geometry import (
     LineString,
     MultiLineString,
@@ -11,7 +11,6 @@ from shapely.geometry import (
 )
 
 import cudf
-from cudf.testing._utils import assert_eq
 
 import cuspatial
 
@@ -24,9 +23,9 @@ def test_geobuffer_len(gs):
 def test_mixed_dataframe(gs):
     gpdf = gpd.GeoDataFrame({"a": list(range(100, 100 + len(gs))), "b": gs})
     cgdf = cuspatial.from_geopandas(gpdf)
-    assert_eq(gpdf["a"], cgdf["a"].to_pandas())
+    pd.testing.assert_series_equal(gpdf["a"], cgdf["a"].to_pandas())
     assert gpdf["b"].equals(cgdf["b"].to_pandas())
-    assert_eq(gpdf, cgdf)
+    pd.testing.assert_frame_equal(gpdf, cgdf.to_pandas())
 
 
 def test_dataframe_column_access(gs):
@@ -48,21 +47,27 @@ def test_from_geoseries_complex(gs):
 def test_from_geopandas_point():
     gs = gpd.GeoSeries(Point(1.0, 2.0))
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs.points.xy, cudf.Series([1.0, 2.0]))
+    cudf.testing.assert_series_equal(cugs.points.xy, cudf.Series([1.0, 2.0]))
 
 
 def test_from_geopandas_multipoint():
     gs = gpd.GeoSeries(MultiPoint([(1.0, 2.0), (3.0, 4.0)]))
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs.multipoints.xy, cudf.Series([1.0, 2.0, 3.0, 4.0]))
-    assert_eq(cugs.multipoints.offsets, cudf.Series([0, 4]))
+    cudf.testing.assert_series_equal(
+        cugs.multipoints.xy, cudf.Series([1.0, 2.0, 3.0, 4.0])
+    )
+    cudf.testing.assert_series_equal(
+        cugs.multipoints.offsets, cudf.Series([0, 4])
+    )
 
 
 def test_from_geopandas_linestring():
     gs = gpd.GeoSeries(LineString(((4.0, 3.0), (2.0, 1.0))))
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(cugs.lines.xy, cudf.Series([4.0, 3.0, 2.0, 1.0]))
-    assert_eq(cugs.lines.offsets, cudf.Series([0, 4]))
+    cudf.testing.assert_series_equal(
+        cugs.lines.xy, cudf.Series([4.0, 3.0, 2.0, 1.0])
+    )
+    cudf.testing.assert_series_equal(cugs.lines.offsets, cudf.Series([0, 4]))
 
 
 def test_from_geopandas_multilinestring():
@@ -70,10 +75,12 @@ def test_from_geopandas_multilinestring():
         MultiLineString((((1.0, 2.0), (3.0, 4.0)), ((5.0, 6.0), (7.0, 8.0)),))
     )
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(
+    cudf.testing.assert_series_equal(
         cugs.lines.xy, cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]),
     )
-    assert_eq(cugs.lines.offsets, cudf.Series([0, 4, 8]))
+    cudf.testing.assert_series_equal(
+        cugs.lines.offsets, cudf.Series([0, 4, 8])
+    )
 
 
 def test_from_geopandas_polygon():
@@ -81,12 +88,12 @@ def test_from_geopandas_polygon():
         Polygon(((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)),)
     )
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(
+    cudf.testing.assert_series_equal(
         cugs.polygons.xy,
         cudf.Series([0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
     )
-    assert_eq(cugs.polygons.polys, cudf.Series([0, 1]))
-    assert_eq(cugs.polygons.rings, cudf.Series([0, 8]))
+    cudf.testing.assert_series_equal(cugs.polygons.polys, cudf.Series([0, 1]))
+    cudf.testing.assert_series_equal(cugs.polygons.rings, cudf.Series([0, 8]))
 
 
 def test_from_geopandas_polygon_hole():
@@ -97,7 +104,7 @@ def test_from_geopandas_polygon_hole():
         )
     )
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(
+    cudf.testing.assert_series_equal(
         cugs.polygons.xy,
         cudf.Series(
             [
@@ -120,8 +127,10 @@ def test_from_geopandas_polygon_hole():
             ]
         ),
     )
-    assert_eq(cugs.polygons.polys, cudf.Series([0, 2]))
-    assert_eq(cugs.polygons.rings, cudf.Series([0, 8, 16]))
+    cudf.testing.assert_series_equal(cugs.polygons.polys, cudf.Series([0, 2]))
+    cudf.testing.assert_series_equal(
+        cugs.polygons.rings, cudf.Series([0, 8, 16])
+    )
 
 
 def test_from_geopandas_multipolygon():
@@ -136,7 +145,7 @@ def test_from_geopandas_multipolygon():
         )
     )
     cugs = cuspatial.from_geopandas(gs)
-    assert_eq(
+    cudf.testing.assert_series_equal(
         cugs.polygons.xy,
         cudf.Series(
             [
@@ -159,5 +168,7 @@ def test_from_geopandas_multipolygon():
             ]
         ),
     )
-    assert_eq(cugs.polygons.polys, cudf.Series([0, 2]))
-    assert_eq(cugs.polygons.rings, cudf.Series([0, 8, 16]))
+    cudf.testing.assert_series_equal(cugs.polygons.polys, cudf.Series([0, 2]))
+    cudf.testing.assert_series_equal(
+        cugs.polygons.rings, cudf.Series([0, 8, 16])
+    )
