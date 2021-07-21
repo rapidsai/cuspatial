@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 import cudf
-from cudf.testing._utils import assert_eq
 
 import cuspatial
 
@@ -41,7 +40,7 @@ def test_class_coefs():
     t = cudf.Series([0, 1, 2, 3, 4]).astype("float32")
     x = cudf.Series([3, 2, 3, 4, 3]).astype("float32")
     g = cuspatial.interpolate.CubicSpline(t, x)
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         g.c,
         cudf.DataFrame(
             {
@@ -61,7 +60,7 @@ def test_min():
         cudf.Series([3, 2, 3, 4, 3]).astype("float32"),
         cudf.Series([0, 5]).astype("int32"),
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result.c,
         cudf.DataFrame(
             {
@@ -85,7 +84,7 @@ def test_cusparse():
         ),
         prefixes=cudf.Series([0, 5, 10, 15]).astype("int32"),
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result.c,
         cudf.DataFrame(
             {
@@ -129,14 +128,14 @@ def test_class_interpolation_length_five():
     t = cudf.Series([0, 1, 2, 3, 4]).astype("float32")
     x = cudf.Series([3, 2, 3, 4, 3]).astype("float32")
     g = cuspatial.interpolate.CubicSpline(t, x)
-    assert_eq(g(t), x)
+    cudf.testing.assert_series_equal(g(t), x)
 
 
 def test_class_interpolation_length_six():
     t = cudf.Series([0, 1, 2, 3, 4, 5]).astype("float32")
     x = cudf.Series([3, 2, 3, 4, 3, 4]).astype("float32")
     g = cuspatial.interpolate.CubicSpline(t, x)
-    assert_eq(g(t), x)
+    cudf.testing.assert_series_equal(g(t), x)
 
 
 def test_class_interpolation_length_six_splits():
@@ -144,7 +143,9 @@ def test_class_interpolation_length_six_splits():
     x = cudf.Series([3, 2, 3, 4, 3, 4]).astype("float32")
     g = cuspatial.interpolate.CubicSpline(t, x)
     split_t = cudf.Series(np.linspace(0, 5, 11), dtype="float32")
-    assert_eq(g(split_t)[t * 2].reset_index(drop=True), x)
+    cudf.testing.assert_series_equal(
+        g(split_t)[t * 2].reset_index(drop=True), x
+    )
 
 
 def test_class_triple():
@@ -159,7 +160,7 @@ def test_class_triple():
     groups = cudf.Series(
         np.ravel(np.array([np.repeat(0, 5), np.repeat(1, 5), np.repeat(2, 5)]))
     )
-    assert_eq(g(t, groups=groups), x)
+    cudf.testing.assert_series_equal(g(t, groups=groups), x)
 
 
 def test_class_triple_six():
@@ -174,7 +175,7 @@ def test_class_triple_six():
     groups = cudf.Series(
         np.ravel(np.array([np.repeat(0, 6), np.repeat(1, 6), np.repeat(2, 6)]))
     )
-    assert_eq(g(t, groups=groups), x)
+    cudf.testing.assert_series_equal(g(t, groups=groups), x)
 
 
 def test_class_triple_six_splits():
@@ -221,7 +222,9 @@ def test_class_triple_six_splits():
         30,
         32,
     ]
-    assert_eq(g(split_t, groups=groups)[split_t_ind].reset_index(drop=True), x)
+    cudf.testing.assert_series_equal(
+        g(split_t, groups=groups)[split_t_ind].reset_index(drop=True), x
+    )
 
 
 def test_class_new_interpolation():
@@ -244,4 +247,4 @@ def test_class_new_interpolation():
     new_points_at_control_points.index = cudf.RangeIndex(
         0, len(new_points_at_control_points)
     )
-    assert_eq(new_points_at_control_points, old_points)
+    cudf.testing.assert_series_equal(new_points_at_control_points, old_points)
