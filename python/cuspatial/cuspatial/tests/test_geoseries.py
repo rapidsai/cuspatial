@@ -139,17 +139,11 @@ def test_interleaved_point(gs, polys):
     )
     cudf.testing.assert_series_equal(
         cugs.lines.x,
-        cudf.Series(
-            np.array([range(11, 34, 2)]).flatten(),
-            dtype="float64",
-        ),
+        cudf.Series(np.array([range(11, 34, 2)]).flatten(), dtype="float64",),
     )
     cudf.testing.assert_series_equal(
         cugs.lines.y,
-        cudf.Series(
-            np.array([range(12, 35, 2)]).flatten(),
-            dtype="float64",
-        ),
+        cudf.Series(np.array([range(12, 35, 2)]).flatten(), dtype="float64",),
     )
     cudf.testing.assert_series_equal(
         cugs.polygons.x, cudf.Series(polys[:, 0], dtype="float64")
