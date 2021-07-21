@@ -49,6 +49,8 @@
  * and popc. Thrust primitives to divide quadrants into sub-blocks are also tested.
  */
 
+constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
+
 template <typename T>
 struct PIPRefineTestLarge : public cudf::test::BaseFixture {
 };
@@ -271,17 +273,17 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
     fixed_width_column_wrapper<uint32_t>(expected_poly_indices.begin(),
                                          expected_poly_indices.end()),
     fixed_width_column_wrapper<uint32_t>(actual_poly_indices.begin(), actual_poly_indices.end()),
-    true);
+    verbosity);
 
   cudf::test::expect_columns_equal(
     fixed_width_column_wrapper<uint32_t>(expected_point_indices.begin(),
                                          expected_point_indices.end()),
     fixed_width_column_wrapper<uint32_t>(actual_point_indices.begin(), actual_point_indices.end()),
-    true);
+    verbosity);
 
   cudf::test::expect_columns_equal(
     fixed_width_column_wrapper<uint32_t>(expected_point_lengths.begin(),
                                          expected_point_lengths.end()),
     fixed_width_column_wrapper<uint32_t>(actual_point_lengths.begin(), actual_point_lengths.end()),
-    true);
+    verbosity);
 }
