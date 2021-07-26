@@ -10,7 +10,7 @@ from cudf._lib.cpp.column.column cimport column
 from cudf._lib.cpp.column.column_view cimport column_view
 from cudf._lib.cpp.table.table cimport table
 from cudf._lib.cpp.types cimport size_type
-from cudf._lib.table cimport Table
+from cudf._lib.utils cimport data_from_unique_ptr
 
 from cuspatial._lib.cpp.quadtree cimport (
     quadtree_on_points as cpp_quadtree_on_points,
@@ -32,7 +32,7 @@ cpdef quadtree_on_points(Column x, Column y,
         ))
     return (
         Column.from_unique_ptr(move(result.first)),
-        Table.from_unique_ptr(
+        data_from_unique_ptr(
             move(result.second),
             column_names=["key", "level", "is_quad", "length", "offset"]
         )

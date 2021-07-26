@@ -287,8 +287,8 @@ def polygon_bounding_boxes(poly_offsets, ring_offsets, xs, ys):
     poly_offsets = as_column(poly_offsets, dtype="int32")
     ring_offsets = as_column(ring_offsets, dtype="int32")
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
-    return DataFrame._from_table(
-        cpp_polygon_bounding_boxes(poly_offsets, ring_offsets, xs, ys)
+    return DataFrame._from_data(
+        *cpp_polygon_bounding_boxes(poly_offsets, ring_offsets, xs, ys)
     )
 
 
@@ -322,6 +322,6 @@ def polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius):
     """
     poly_offsets = as_column(poly_offsets, dtype="int32")
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
-    return DataFrame._from_table(
-        cpp_polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius)
+    return DataFrame._from_data(
+        *cpp_polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius)
     )
