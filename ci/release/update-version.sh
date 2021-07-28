@@ -30,7 +30,7 @@ function sed_runner() {
 }
 
 # cpp update
-sed_runner 's/'"CUDA_SPATIAL VERSION .* LANGUAGES"'/'"CUDA_SPATIAL VERSION ${NEXT_FULL_TAG} LANGUAGES"'/g' cpp/CMakeLists.txt
+sed_runner 's/'"CUSPATIAL VERSION .* LANGUAGES"'/'"CUSPATIAL VERSION ${NEXT_FULL_TAG} LANGUAGES"'/g' cpp/CMakeLists.txt
 
 # RTD update
 sed_runner 's/version = .*/version = '"'${NEXT_SHORT_TAG}'"'/g' docs/source/conf.py
