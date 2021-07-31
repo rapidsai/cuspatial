@@ -1,15 +1,15 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
+from libcpp.memory cimport unique_ptr
+from libcpp.string cimport string
+from libcpp.utility cimport move
+from libcpp.vector cimport vector
+
 from cudf._lib.column cimport Column, column
 
 from cuspatial._lib.cpp.shapefile_reader cimport (
     read_polygon_shapefile as cpp_read_polygon_shapefile,
 )
-
-from libcpp.memory cimport unique_ptr
-from libcpp.string cimport string
-from libcpp.utility cimport move
-from libcpp.vector cimport vector
 
 
 cpdef read_polygon_shapefile(object filepath):

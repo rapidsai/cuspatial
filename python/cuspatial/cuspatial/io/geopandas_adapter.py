@@ -1,15 +1,14 @@
 # Copyright (c) 2020-2021 NVIDIA CORPORATION.
 
 import numpy as np
-
 from geopandas import GeoSeries as gpGeoSeries
 from shapely.geometry import (
-    Point,
-    MultiPoint,
     LineString,
     MultiLineString,
-    Polygon,
+    MultiPoint,
     MultiPolygon,
+    Point,
+    Polygon,
 )
 
 

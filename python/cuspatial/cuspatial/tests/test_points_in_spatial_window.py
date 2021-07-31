@@ -3,7 +3,6 @@
 import pytest
 
 import cudf
-from cudf.testing._utils import assert_eq
 
 import cuspatial
 
@@ -19,7 +18,9 @@ def test_centered():
     result = cuspatial.points_in_spatial_window(
         -1, 1, -1, 1, cudf.Series([0.0]), cudf.Series([0.0])
     )
-    assert_eq(result, cudf.DataFrame({"x": [0.0], "y": [0.0]}))
+    cudf.testing.assert_frame_equal(
+        result, cudf.DataFrame({"x": [0.0], "y": [0.0]})
+    )
 
 
 @pytest.mark.parametrize(
@@ -30,21 +31,25 @@ def test_corners(coords):
     result = cuspatial.points_in_spatial_window(
         -1.1, 1.1, -1.1, 1.1, cudf.Series([x]), cudf.Series([y])
     )
-    assert_eq(result, cudf.DataFrame({"x": [x], "y": [y]}))
+    cudf.testing.assert_frame_equal(
+        result, cudf.DataFrame({"x": [x], "y": [y]})
+    )
 
 
 def test_pair():
     result = cuspatial.points_in_spatial_window(
         -1.1, 1.1, -1.1, 1.1, cudf.Series([0.0, 1.0]), cudf.Series([1.0, 0.0])
     )
-    assert_eq(result, cudf.DataFrame({"x": [0.0, 1.0], "y": [1.0, 0.0]}))
+    cudf.testing.assert_frame_equal(
+        result, cudf.DataFrame({"x": [0.0, 1.0], "y": [1.0, 0.0]})
+    )
 
 
 def test_oob():
     result = cuspatial.points_in_spatial_window(
         -1, 1, -1, 1, cudf.Series([-2.0, 2.0]), cudf.Series([2.0, -2.0])
     )
-    assert_eq(result, cudf.DataFrame({"x": [], "y": []}))
+    cudf.testing.assert_frame_equal(result, cudf.DataFrame({"x": [], "y": []}))
 
 
 def test_half():
@@ -57,4 +62,6 @@ def test_half():
         cudf.Series([1.0, -1.0, 3.0, -3.0]),
     )
     print(result)
-    assert_eq(result, cudf.DataFrame({"x": [-1.0, 1.0], "y": [1.0, -1.0]}))
+    cudf.testing.assert_frame_equal(
+        result, cudf.DataFrame({"x": [-1.0, 1.0], "y": [1.0, -1.0]})
+    )

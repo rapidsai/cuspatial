@@ -1,12 +1,11 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION.
 
 import pandas as pd
-
-from geopandas.geoseries import GeoSeries as gpGeoSeries
 from geopandas import GeoDataFrame as gpGeoDataFrame
+from geopandas.geoseries import GeoSeries as gpGeoSeries
 
-from cuspatial.geometry.geoseries import GeoSeries
 from cuspatial.geometry.geodataframe import GeoDataFrame
+from cuspatial.geometry.geoseries import GeoSeries
 
 
 def from_geopandas(gpdf):

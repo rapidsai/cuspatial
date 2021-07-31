@@ -58,10 +58,10 @@ inline std::tuple<cudf::size_type,
 descend_quadtree(LengthsIter counts,
                  OffsetsIter offsets,
                  cudf::size_type num_quads,
-                 rmm::device_uvector<uint8_t> &parent_types,
-                 rmm::device_uvector<uint8_t> &parent_levels,
-                 rmm::device_uvector<uint32_t> &parent_node_indices,
-                 rmm::device_uvector<uint32_t> &parent_poly_indices,
+                 rmm::device_uvector<uint8_t>& parent_types,
+                 rmm::device_uvector<uint8_t>& parent_levels,
+                 rmm::device_uvector<uint32_t>& parent_node_indices,
+                 rmm::device_uvector<uint32_t>& parent_poly_indices,
                  rmm::cuda_stream_view stream)
 {
   // Use the current parent node indices as the lookup into the global child counts

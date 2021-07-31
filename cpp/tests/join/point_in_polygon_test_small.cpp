@@ -97,8 +97,8 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto quadtree_pair = cuspatial::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, this->mr());
 
-  auto &quadtree      = std::get<1>(quadtree_pair);
-  auto &point_indices = std::get<0>(quadtree_pair);
+  auto& quadtree      = std::get<1>(quadtree_pair);
+  auto& point_indices = std::get<0>(quadtree_pair);
 
   fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
   fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14});

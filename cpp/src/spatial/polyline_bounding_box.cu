@@ -44,7 +44,7 @@ namespace {
 template <typename T>
 struct point_to_square {
   T expansion_radius{0};
-  inline __device__ thrust::tuple<T, T, T, T> operator()(thrust::tuple<T, T> const &point)
+  inline __device__ thrust::tuple<T, T, T, T> operator()(thrust::tuple<T, T> const& point)
   {
     return thrust::make_tuple(thrust::get<0>(point) - expansion_radius,   // x
                               thrust::get<1>(point) - expansion_radius,   // y
@@ -54,12 +54,12 @@ struct point_to_square {
 };
 
 template <typename T>
-std::unique_ptr<cudf::table> compute_polyline_bounding_boxes(cudf::column_view const &poly_offsets,
-                                                             cudf::column_view const &x,
-                                                             cudf::column_view const &y,
+std::unique_ptr<cudf::table> compute_polyline_bounding_boxes(cudf::column_view const& poly_offsets,
+                                                             cudf::column_view const& x,
+                                                             cudf::column_view const& y,
                                                              T expansion_radius,
                                                              rmm::cuda_stream_view stream,
-                                                             rmm::mr::device_memory_resource *mr)
+                                                             rmm::mr::device_memory_resource* mr)
 {
   auto num_polygons = poly_offsets.size();
   rmm::device_vector<int32_t> point_ids(x.size());
@@ -107,7 +107,7 @@ std::unique_ptr<cudf::table> compute_polyline_bounding_boxes(cudf::column_view c
                         thrust::make_discard_iterator(),
                         bboxes_iter,
                         thrust::equal_to<int32_t>(),
-                        [] __device__(auto const &a, auto const &b) {
+                        [] __device__(auto const& a, auto const& b) {
                           T min_x_a, min_y_a, max_x_a, max_y_a;
                           T min_x_b, min_y_b, max_x_b, max_y_b;
                           thrust::tie(min_x_a, min_y_a, max_x_a, max_y_a) = a;
@@ -124,19 +124,19 @@ std::unique_ptr<cudf::table> compute_polyline_bounding_boxes(cudf::column_view c
 struct dispatch_compute_polyline_bounding_boxes {
   template <typename T, typename... Args>
   inline std::enable_if_t<!std::is_floating_point<T>::value, std::unique_ptr<cudf::table>>
-  operator()(Args &&...)
+  operator()(Args&&...)
   {
     CUSPATIAL_FAIL("Only floating-point types are supported");
   }
 
   template <typename T>
   inline std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::table>>
-  operator()(cudf::column_view const &poly_offsets,
-             cudf::column_view const &x,
-             cudf::column_view const &y,
+  operator()(cudf::column_view const& poly_offsets,
+             cudf::column_view const& x,
+             cudf::column_view const& y,
              double expansion_radius,
              rmm::cuda_stream_view stream,
-             rmm::mr::device_memory_resource *mr)
+             rmm::mr::device_memory_resource* mr)
   {
     return compute_polyline_bounding_boxes<T>(
       poly_offsets, x, y, static_cast<T>(expansion_radius), stream, mr);
@@ -147,12 +147,12 @@ struct dispatch_compute_polyline_bounding_boxes {
 
 namespace detail {
 
-std::unique_ptr<cudf::table> polyline_bounding_boxes(cudf::column_view const &poly_offsets,
-                                                     cudf::column_view const &x,
-                                                     cudf::column_view const &y,
+std::unique_ptr<cudf::table> polyline_bounding_boxes(cudf::column_view const& poly_offsets,
+                                                     cudf::column_view const& x,
+                                                     cudf::column_view const& y,
                                                      double expansion_radius,
                                                      rmm::cuda_stream_view stream,
-                                                     rmm::mr::device_memory_resource *mr)
+                                                     rmm::mr::device_memory_resource* mr)
 {
   return cudf::type_dispatcher(x.type(),
                                dispatch_compute_polyline_bounding_boxes{},
@@ -166,11 +166,11 @@ std::unique_ptr<cudf::table> polyline_bounding_boxes(cudf::column_view const &po
 
 }  // namespace detail
 
-std::unique_ptr<cudf::table> polyline_bounding_boxes(cudf::column_view const &poly_offsets,
-                                                     cudf::column_view const &x,
-                                                     cudf::column_view const &y,
+std::unique_ptr<cudf::table> polyline_bounding_boxes(cudf::column_view const& poly_offsets,
+                                                     cudf::column_view const& x,
+                                                     cudf::column_view const& y,
                                                      double expansion_radius,
-                                                     rmm::mr::device_memory_resource *mr)
+                                                     rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(x.type() == y.type(), "Data type mismatch");
   CUSPATIAL_EXPECTS(x.size() == y.size(), "x and y must be the same size");

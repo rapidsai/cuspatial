@@ -1,10 +1,8 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
-
 import numpy as np
 import pytest
 
 import cudf
-from cudf.testing._utils import assert_eq
 
 import cuspatial
 
@@ -22,7 +20,7 @@ def test_empty():
         1,  # max_depth
         1,  # min_size
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         quadtree,
         cudf.DataFrame(
             {
@@ -46,7 +44,7 @@ def test_one_point(dtype):
         1,  # max_depth
         1,  # min_size
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         quadtree,
         cudf.DataFrame(
             {
@@ -70,7 +68,7 @@ def test_two_points(dtype):
         1,  # max_depth
         1,  # min_size
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         quadtree,
         cudf.DataFrame(
             {
@@ -249,7 +247,7 @@ def test_small_number_of_points(dtype):
         3,  # max_depth
         12,  # min_size
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         quadtree,
         cudf.DataFrame(
             {

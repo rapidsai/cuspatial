@@ -23,7 +23,7 @@ namespace cuspatial {
 namespace detail {
 
 inline __device__ std::pair<uint32_t, uint32_t> get_quad_poly_and_local_point_indices(
-  uint32_t const global_index, uint32_t const *point_offsets, uint32_t const *point_offsets_end)
+  uint32_t const global_index, uint32_t const* point_offsets, uint32_t const* point_offsets_end)
 {
   // Calculate the position in "point_offsets" that `global_index` falls between.
   // This position is the index of the poly/quad pair for this `global_index`.

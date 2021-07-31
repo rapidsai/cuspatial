@@ -1,3 +1,7 @@
+# cuSpatial 21.10.00 (Date TBD)
+
+Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.10.00a for the latest changes to this development branch.
+
 # cuSpatial 21.08.00 (Date TBD)
 
 Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.08.00a for the latest changes to this development branch.

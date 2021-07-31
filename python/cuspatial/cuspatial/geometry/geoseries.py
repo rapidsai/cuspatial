@@ -1,21 +1,16 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION
 
-import pandas as pd
+from typing import TypeVar, Union
 
+import geopandas as gpd
+import pandas as pd
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 
-from typing import (
-    TypeVar,
-    Union,
-)
-
 import cudf
-import geopandas as gpd
 
-from cuspatial.io.geopandas_adapter import GeoPandasAdapter
-from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta
 from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
-
+from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta
+from cuspatial.io.geopandas_adapter import GeoPandasAdapter
 
 T = TypeVar("T", bound="GeoSeries")
 

@@ -6,7 +6,6 @@ from cudf import DataFrame
 from cudf.core.column import as_column
 
 from cuspatial._lib import spatial_join
-
 from cuspatial.utils.column_utils import normalize_point_columns
 
 

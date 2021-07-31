@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 import cudf
-from cudf.testing._utils import assert_eq
 
 import cuspatial
 
@@ -26,9 +25,13 @@ def test_zero_polygons():
     f_pos, r_pos, points = cuspatial.read_polygon_shapefile(
         os.path.join(shapefiles_path, "empty_poly.shp")
     )
-    assert_eq(f_pos, cudf.Series(dtype=np.int32, name="f_pos"))
-    assert_eq(r_pos, cudf.Series(dtype=np.int32, name="r_pos"))
-    assert_eq(
+    cudf.testing.assert_series_equal(
+        f_pos, cudf.Series(dtype=np.int32, name="f_pos")
+    )
+    cudf.testing.assert_series_equal(
+        r_pos, cudf.Series(dtype=np.int32, name="r_pos")
+    )
+    cudf.testing.assert_frame_equal(
         points,
         cudf.DataFrame(
             {
@@ -43,9 +46,13 @@ def test_one_polygon():
     f_pos, r_pos, points = cuspatial.read_polygon_shapefile(
         os.path.join(shapefiles_path, "one_poly.shp")
     )
-    assert_eq(f_pos, cudf.Series([0], dtype=np.int32, name="f_pos"))
-    assert_eq(r_pos, cudf.Series([0], dtype=np.int32, name="r_pos"))
-    assert_eq(
+    cudf.testing.assert_series_equal(
+        f_pos, cudf.Series([0], dtype=np.int32, name="f_pos")
+    )
+    cudf.testing.assert_series_equal(
+        r_pos, cudf.Series([0], dtype=np.int32, name="r_pos")
+    )
+    cudf.testing.assert_frame_equal(
         points,
         cudf.DataFrame(
             {
@@ -60,9 +67,13 @@ def test_two_polygons():
     f_pos, r_pos, points = cuspatial.read_polygon_shapefile(
         os.path.join(shapefiles_path, "two_polys.shp")
     )
-    assert_eq(f_pos, cudf.Series([0, 1], dtype=np.int32, name="f_pos"))
-    assert_eq(r_pos, cudf.Series([0, 5], dtype=np.int32, name="r_pos"))
-    assert_eq(
+    cudf.testing.assert_series_equal(
+        f_pos, cudf.Series([0, 1], dtype=np.int32, name="f_pos")
+    )
+    cudf.testing.assert_series_equal(
+        r_pos, cudf.Series([0, 5], dtype=np.int32, name="r_pos")
+    )
+    cudf.testing.assert_frame_equal(
         points,
         cudf.DataFrame(
             {
