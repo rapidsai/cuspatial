@@ -2,9 +2,10 @@
 
 from typing import TypeVar, Union
 
-import cudf
 import numpy as np
 import pandas as pd
+
+import cudf
 
 T = TypeVar("T", bound="GeoArrowBuffers")
 

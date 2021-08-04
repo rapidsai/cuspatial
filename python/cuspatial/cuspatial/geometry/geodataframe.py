@@ -90,9 +90,48 @@ class GeoDataFrame(cudf.DataFrame):
                 result.obj.drop(col, axis=1, inplace=True)
         return result
 
+    def _copy_type_metadata(self, other, include_index: bool = True):
+        """
+        Copy type metadata from each column of `other` to the corresponding
+        column of `self`.
+        See `ColumnBase._with_type_metadata` for more information.
+        """
+        for name, col, other_col in zip(
+            self._data.keys(), self._data.values(), other._data.values()
+        ):
+            # libcudf APIs lose all information about GeoColumns, operating
+            # solely on the underlying base data. Therefore, our only recourse
+            # is to recreate a new GeoColumn with the same underlying data.
+            # Since there's no easy way to create a GeoColumn from a
+            # NumericalColumn, we're forced to do so manually.
+            if isinstance(other_col, GeoColumn):
+                col = GeoColumn(
+                    other_col._geo, other_col._meta, cudf.Index(col)
+                )
+
+            self._data.set_by_label(
+                name, col._with_type_metadata(other_col.dtype), validate=False
+            )
+
+        if include_index:
+            if self._index is not None and other._index is not None:
+                self._index._copy_type_metadata(other._index)
+                # When other._index is a CategoricalIndex, there is
+                if isinstance(
+                    other._index, cudf.core.index.CategoricalIndex
+                ) and not isinstance(
+                    self._index, cudf.core.index.CategoricalIndex
+                ):
+                    self._index = cudf.core.index.Index._from_table(
+                        self._index
+                    )
+
+        return self
+
 
 class _GeoSeriesUtility:
-    def _from_data(self, new_data, name=None, index=False):
+    @classmethod
+    def _from_data(cls, new_data, name=None, index=False):
         new_column = new_data.columns[0]
         if is_geometry_type(new_column):
             return GeoSeries(new_column, name=name, index=index)

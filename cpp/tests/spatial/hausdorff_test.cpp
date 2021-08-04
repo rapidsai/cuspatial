@@ -32,6 +32,8 @@
 using namespace cudf;
 using namespace test;
 
+constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
+
 template <typename T, uint32_t num_spaces, uint32_t elements_per_space>
 void generic_hausdorff_test(rmm::mr::device_memory_resource* mr)
 {
@@ -74,7 +76,7 @@ TYPED_TEST(HausdorffTest, Empty)
 
   auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets, this->mr());
 
-  expect_columns_equivalent(expected, actual->view(), true);
+  expect_columns_equivalent(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(HausdorffTest, Simple)
@@ -89,7 +91,7 @@ TYPED_TEST(HausdorffTest, Simple)
 
   auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets, this->mr());
 
-  expect_columns_equivalent(expected, actual->view(), true);
+  expect_columns_equivalent(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(HausdorffTest, SingleTrajectorySinglePoint)
@@ -104,7 +106,7 @@ TYPED_TEST(HausdorffTest, SingleTrajectorySinglePoint)
 
   auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets, this->mr());
 
-  expect_columns_equivalent(expected, actual->view(), true);
+  expect_columns_equivalent(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(HausdorffTest, TwoShortSpaces)
@@ -119,7 +121,7 @@ TYPED_TEST(HausdorffTest, TwoShortSpaces)
 
   auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets, this->mr());
 
-  expect_columns_equivalent(expected, actual->view(), true);
+  expect_columns_equivalent(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(HausdorffTest, TwoShortSpaces2)
@@ -142,7 +144,7 @@ TYPED_TEST(HausdorffTest, TwoShortSpaces2)
 
   auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets, this->mr());
 
-  expect_columns_equivalent(expected, actual->view(), true);
+  expect_columns_equivalent(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(HausdorffTest, 500Spaces100Points)
@@ -208,5 +210,5 @@ TYPED_TEST(HausdorffTest, ThreeSpacesLengths543)
 
   auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets, this->mr());
 
-  expect_columns_equivalent(expected, actual->view(), true);
+  expect_columns_equivalent(expected, actual->view(), verbosity);
 }

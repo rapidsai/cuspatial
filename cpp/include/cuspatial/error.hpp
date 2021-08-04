@@ -35,7 +35,7 @@ struct logic_error : public std::logic_error {
 
 }  // namespace cuspatial
 
-#define STRINGIFY_DETAIL(x) #x
+#define STRINGIFY_DETAIL(x)    #x
 #define CUSPATIAL_STRINGIFY(x) STRINGIFY_DETAIL(x)
 
 /**---------------------------------------------------------------------------*

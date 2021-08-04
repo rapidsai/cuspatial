@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import cudf
-from cudf.tests.utils import assert_eq
 
 import cuspatial
 
@@ -17,7 +16,7 @@ def test_polyline_bounding_boxes_empty(dtype):
         cudf.Series([], dtype=dtype),
         0,  # expansion_radius
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {
@@ -38,7 +37,7 @@ def test_polyline_bounding_boxes_one(dtype):
         cudf.Series([5.856625, 5.008840, 4.586599], dtype=dtype),
         0,  # expansion_radius
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {
@@ -109,7 +108,7 @@ def test_polyline_bounding_boxes_small(dtype):
         ),
         0.5,  # expansion_radius
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {

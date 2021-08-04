@@ -1,10 +1,14 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
+from libcpp.memory cimport unique_ptr
+from libcpp.pair cimport pair
+from libcpp.utility cimport move
+
+from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column cimport column
 from cudf._lib.cpp.column.column_view cimport column_view
 from cudf._lib.cpp.table.table cimport table
 from cudf._lib.cpp.types cimport size_type
-from cudf._lib.column cimport Column
 from cudf._lib.table cimport Table
 
 from cuspatial._lib.cpp.trajectory cimport (
@@ -13,9 +17,6 @@ from cuspatial._lib.cpp.trajectory cimport (
     trajectory_distances_and_speeds as cpp_trajectory_distances_and_speeds,
 )
 
-from libcpp.memory cimport unique_ptr
-from libcpp.pair cimport pair
-from libcpp.utility cimport move
 
 cpdef derive_trajectories(Column object_id, Column x,
                           Column y, Column timestamp):

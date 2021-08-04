@@ -27,6 +27,8 @@
 
 #include <type_traits>
 
+constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
+
 template <typename T>
 struct SpatialWindowTest : public cudf::test::BaseFixture {
 };
@@ -49,8 +51,8 @@ TYPED_TEST(SpatialWindowTest, SimpleTest)
 
   auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y);
 
-  cudf::test::expect_columns_equivalent(result->get_column(0), expected_points_x, true);
-  cudf::test::expect_columns_equivalent(result->get_column(1), expected_points_y, true);
+  cudf::test::expect_columns_equivalent(result->get_column(0), expected_points_x, verbosity);
+  cudf::test::expect_columns_equivalent(result->get_column(1), expected_points_y, verbosity);
 }
 
 // Test that windows with min/max reversed still work
@@ -68,8 +70,8 @@ TYPED_TEST(SpatialWindowTest, ReversedWindow)
 
   auto result = cuspatial::points_in_spatial_window(5.5, 1.5, 5.5, 1.5, points_x, points_y);
 
-  cudf::test::expect_columns_equivalent(result->get_column(0), expected_points_x, true);
-  cudf::test::expect_columns_equivalent(result->get_column(1), expected_points_y, true);
+  cudf::test::expect_columns_equivalent(result->get_column(0), expected_points_x, verbosity);
+  cudf::test::expect_columns_equivalent(result->get_column(1), expected_points_y, verbosity);
 }
 
 struct SpatialWindowErrorTest : public cudf::test::BaseFixture {

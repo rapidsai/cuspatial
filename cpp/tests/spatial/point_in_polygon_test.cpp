@@ -38,6 +38,8 @@ struct PointInPolygonTest : public BaseFixture {
 using TestTypes = FloatingPointTypes;
 TYPED_TEST_CASE(PointInPolygonTest, TestTypes);
 
+constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
+
 TYPED_TEST(PointInPolygonTest, Empty)
 {
   using T = TypeParam;
@@ -54,7 +56,7 @@ TYPED_TEST(PointInPolygonTest, Empty)
   auto actual = cuspatial::point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
 
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
@@ -73,7 +75,7 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
   auto actual = cuspatial::point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
 
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
@@ -92,7 +94,7 @@ TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
   auto actual = cuspatial::point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
 
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
@@ -113,7 +115,7 @@ TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
   auto actual = cuspatial::point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
 
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
@@ -141,7 +143,7 @@ TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
   auto actual = cuspatial::point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
 
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(PointInPolygonTest, CornersOfSquare)
@@ -169,7 +171,7 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
   auto actual = cuspatial::point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
 
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
@@ -214,7 +216,7 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
   auto actual = cuspatial::point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
 
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), verbosity);
 }
 
 template <typename T>
@@ -364,7 +366,7 @@ TYPED_TEST(PointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
   auto expected      = wrapper<int32_t>({0b0, 0b1, 0b0});
   auto actual        = cuspatial::point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(PointInPolygonTest, SelfClosingLoopRightEdgeMissing)
@@ -380,5 +382,5 @@ TYPED_TEST(PointInPolygonTest, SelfClosingLoopRightEdgeMissing)
   auto expected      = wrapper<int32_t>({0b0, 0b1, 0b0});
   auto actual        = cuspatial::point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
-  expect_columns_equal(expected, actual->view(), true);
+  expect_columns_equal(expected, actual->view(), verbosity);
 }

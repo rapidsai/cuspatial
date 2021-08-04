@@ -1,20 +1,22 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
 from cudf import Series
-from cudf._lib.column cimport Column
-from cudf._lib.cpp.column.column cimport column
-from cudf._lib.cpp.column.column_view cimport column_view
-from cuspatial._lib.cpp.coordinate_transform cimport (
-    lonlat_to_cartesian as cpp_lonlat_to_cartesian
-)
-
-from cuspatial._lib.cpp.spatial cimport (
-    haversine_distance as cpp_haversine_distance
-)
 
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 from libcpp.utility cimport move
+
+from cudf._lib.column cimport Column
+from cudf._lib.cpp.column.column cimport column
+from cudf._lib.cpp.column.column_view cimport column_view
+
+from cuspatial._lib.cpp.coordinate_transform cimport (
+    lonlat_to_cartesian as cpp_lonlat_to_cartesian,
+)
+from cuspatial._lib.cpp.spatial cimport (
+    haversine_distance as cpp_haversine_distance,
+)
+
 
 cpdef haversine_distance(Column x1, Column y1, Column x2, Column y2):
     cdef column_view c_x1 = x1.view()

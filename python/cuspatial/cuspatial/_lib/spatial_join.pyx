@@ -1,8 +1,13 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+from libc.stdint cimport int8_t
+from libcpp.memory cimport unique_ptr
+from libcpp.pair cimport pair
+from libcpp.utility cimport move
+
+from cudf._lib.column cimport Column, column, column_view
 from cudf._lib.cpp.types cimport size_type
-from cudf._lib.table cimport table, table_view, Table
-from cudf._lib.column cimport column, column_view, Column
+from cudf._lib.table cimport Table, table, table_view
 
 from cuspatial._lib.cpp.spatial_join cimport (
     join_quadtree_and_bounding_boxes as cpp_join_quadtree_and_bounding_boxes,
@@ -10,11 +15,6 @@ from cuspatial._lib.cpp.spatial_join cimport (
     quadtree_point_to_nearest_polyline as cpp_quadtree_p2p,
 )
 
-from libc.stdint cimport int8_t
-
-from libcpp.memory cimport unique_ptr
-from libcpp.pair cimport pair
-from libcpp.utility cimport move
 
 cpdef join_quadtree_and_bounding_boxes(Table quadtree,
                                        Table poly_bounding_boxes,

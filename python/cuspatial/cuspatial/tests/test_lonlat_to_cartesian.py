@@ -3,7 +3,6 @@
 import pytest
 
 import cudf
-from cudf.tests.utils import assert_eq
 
 import cuspatial
 
@@ -43,21 +42,25 @@ def test_camera_corners(corner):
     result = cuspatial.lonlat_to_cartesian(
         x[corner], y[corner], cudf.Series(x[corner]), cudf.Series(y[corner])
     )
-    assert_eq(result, cudf.DataFrame({"x": [0.0], "y": [0.0]}))
+    cudf.testing.assert_frame_equal(
+        result, cudf.DataFrame({"x": [0.0], "y": [0.0]})
+    )
 
 
 def test_longest_distance():
     result = cuspatial.lonlat_to_cartesian(
         -180, -90, cudf.Series([180.0]), cudf.Series([90.0])
     )
-    assert_eq(result, cudf.DataFrame({"x": [-40000.0], "y": [-20000.0]}))
+    cudf.testing.assert_frame_equal(
+        result, cudf.DataFrame({"x": [-40000.0], "y": [-20000.0]})
+    )
 
 
 def test_half_distance():
     result = cuspatial.lonlat_to_cartesian(
         -180.0, -90.0, cudf.Series([0.0]), cudf.Series([0.0])
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result, cudf.DataFrame({"x": [-14142.135623730952], "y": [-10000.0]})
     )
 
@@ -73,7 +76,9 @@ def test_zeros():
     result = cuspatial.lonlat_to_cartesian(
         0.0, 0.0, cudf.Series([0.0]), cudf.Series([0.0])
     )
-    assert_eq(result, cudf.DataFrame({"x": [0.0], "y": [0.0]}))
+    cudf.testing.assert_frame_equal(
+        result, cudf.DataFrame({"x": [0.0], "y": [0.0]})
+    )
 
 
 def test_values():
@@ -85,7 +90,7 @@ def test_values():
 
     # note: x/y coordinates in killometers -km
     result = cuspatial.lonlat_to_cartesian(cam_lon, cam_lat, py_lon, py_lat)
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {

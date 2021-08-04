@@ -26,6 +26,8 @@
 
 using namespace cudf::test;
 
+constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
+
 std::string get_shapefile_path(std::string filename)
 {
   const char* cuspatial_home = std::getenv("CUSPATIAL_HOME");
@@ -51,10 +53,10 @@ void test(std::string const& shapefile_name,
   auto expected_poly_point_xs = wrapper<double>(xs.begin(), xs.end());
   auto expected_poly_point_ys = wrapper<double>(ys.begin(), ys.end());
 
-  expect_columns_equivalent(expected_poly_offsets, polygon_columns.at(0)->view(), true);
-  expect_columns_equivalent(expected_ring_offsets, polygon_columns.at(1)->view(), true);
-  expect_columns_equivalent(expected_poly_point_xs, polygon_columns.at(2)->view(), true);
-  expect_columns_equivalent(expected_poly_point_ys, polygon_columns.at(3)->view(), true);
+  expect_columns_equivalent(expected_poly_offsets, polygon_columns.at(0)->view(), verbosity);
+  expect_columns_equivalent(expected_ring_offsets, polygon_columns.at(1)->view(), verbosity);
+  expect_columns_equivalent(expected_poly_point_xs, polygon_columns.at(2)->view(), verbosity);
+  expect_columns_equivalent(expected_poly_point_ys, polygon_columns.at(3)->view(), verbosity);
 }
 
 struct PolygonShapefileReaderTest : public BaseFixture {

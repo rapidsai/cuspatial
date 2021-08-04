@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import cudf
-from cudf.tests.utils import assert_eq
 
 import cuspatial
 
@@ -16,7 +15,7 @@ def test_trajectory_bounding_boxes_empty_float32():
         cudf.Series([], dtype=np.float32),
         cudf.Series([], dtype=np.float32),
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {
@@ -36,7 +35,7 @@ def test_trajectory_bounding_boxes_empty_float64():
         cudf.Series([], dtype=np.float64),
         cudf.Series([], dtype=np.float64),
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {
@@ -53,7 +52,7 @@ def test_trajectory_bounding_boxes_zeros():
     result = cuspatial.trajectory_bounding_boxes(
         1, cudf.Series([0]), cudf.Series([0]), cudf.Series([0])
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {"x_min": [0.0], "y_min": [0.0], "x_max": [0.0], "y_max": [0.0]}
@@ -65,7 +64,7 @@ def test_trajectory_bounding_boxes_ones():
     result = cuspatial.trajectory_bounding_boxes(
         1, cudf.Series([1]), cudf.Series([1]), cudf.Series([1])
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {"x_min": [1.0], "y_min": [1.0], "x_max": [1.0], "y_max": [1.0]}
@@ -77,7 +76,7 @@ def test_trajectory_bounding_boxes_zero_to_one():
     result = cuspatial.trajectory_bounding_boxes(
         1, cudf.Series([0, 0]), cudf.Series([0, 0]), cudf.Series([0, 1]),
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {"x_min": [0.0], "y_min": [0.0], "x_max": [0.0], "y_max": [1.0]}
@@ -89,7 +88,7 @@ def test_trajectory_bounding_boxes_zero_to_one_xy():
     result = cuspatial.trajectory_bounding_boxes(
         1, cudf.Series([0, 0]), cudf.Series([0, 1]), cudf.Series([0, 1]),
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {"x_min": [0.0], "y_min": [0.0], "x_max": [1.0], "y_max": [1.0]}
@@ -104,7 +103,7 @@ def test_trajectory_bounding_boxes_subsetted():
         cudf.Series([0, 1, -1, 2]),
         cudf.Series([0, 1, -1, 2]),
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {
@@ -124,7 +123,7 @@ def test_trajectory_bounding_boxes_intersected():
         cudf.Series([0, 2, 1, 3]),
         cudf.Series([0, 2, 1, 3]),
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {
@@ -144,7 +143,7 @@ def test_trajectory_bounding_boxes_two_and_three():
         cudf.Series([0, 2, 1, 3, 2]),
         cudf.Series([0, 2, 1, 3, 2]),
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(
             {
@@ -164,8 +163,10 @@ def test_derive_trajectories_zeros():
         cudf.Series([0]),  # y
         cudf.Series([0]),  # timestamp
     )
-    assert_eq(traj_offsets, cudf.Series([0], dtype="int32"))
-    assert_eq(
+    cudf.testing.assert_series_equal(
+        traj_offsets, cudf.Series([0], dtype="int32")
+    )
+    cudf.testing.assert_frame_equal(
         objects,
         cudf.DataFrame(
             {
@@ -185,8 +186,10 @@ def test_derive_trajectories_ones():
         cudf.Series([1]),  # y
         cudf.Series([1]),  # timestamp
     )
-    assert_eq(traj_offsets, cudf.Series([0], dtype="int32"))
-    assert_eq(
+    cudf.testing.assert_series_equal(
+        traj_offsets, cudf.Series([0], dtype="int32")
+    )
+    cudf.testing.assert_frame_equal(
         objects,
         cudf.DataFrame(
             {
@@ -206,8 +209,10 @@ def test_derive_trajectories_two():
         cudf.Series([0, 1]),  # y
         cudf.Series([0, 1]),  # timestamp
     )
-    assert_eq(traj_offsets, cudf.Series([0, 1], dtype="int32"))
-    assert_eq(
+    cudf.testing.assert_series_equal(
+        traj_offsets, cudf.Series([0, 1], dtype="int32")
+    )
+    cudf.testing.assert_frame_equal(
         objects,
         cudf.DataFrame(
             {
@@ -231,9 +236,11 @@ def test_derive_trajectories_many():
     )
 
     sorted_idxs = cudf.DataFrame({"id": object_id, "ts": timestamp}).argsort()
-    assert_eq(traj_offsets, cudf.Series([0, 1, 2, 5, 6, 8, 9], dtype="int32"))
+    cudf.testing.assert_series_equal(
+        traj_offsets, cudf.Series([0, 1, 2, 5, 6, 8, 9], dtype="int32")
+    )
     print(objects)
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         objects,
         cudf.DataFrame(
             {
@@ -264,8 +271,12 @@ def test_trajectory_distances_and_speeds_zeros():
         objects["y"],
         objects["timestamp"],
     )
-    assert_eq(result["distance"], cudf.Series([0.0]), check_names=False)
-    assert_eq(result["speed"], cudf.Series([0.0]), check_names=False)
+    cudf.testing.assert_series_equal(
+        result["distance"], cudf.Series([0.0]), check_names=False
+    )
+    cudf.testing.assert_series_equal(
+        result["speed"], cudf.Series([0.0]), check_names=False
+    )
 
 
 def test_trajectory_distances_and_speeds_ones():
@@ -279,8 +290,12 @@ def test_trajectory_distances_and_speeds_ones():
         objects["y"],
         objects["timestamp"],
     )
-    assert_eq(result["distance"], cudf.Series([0.0]), check_names=False)
-    assert_eq(result["speed"], cudf.Series([0.0]), check_names=False)
+    cudf.testing.assert_series_equal(
+        result["distance"], cudf.Series([0.0]), check_names=False
+    )
+    cudf.testing.assert_series_equal(
+        result["speed"], cudf.Series([0.0]), check_names=False
+    )
 
 
 def test_derive_one_trajectory_one_meter_one_second():
@@ -297,8 +312,12 @@ def test_derive_one_trajectory_one_meter_one_second():
         objects["y"],
         objects["timestamp"],
     )
-    assert_eq(result["distance"], cudf.Series([1.0]), check_names=False)
-    assert_eq(result["speed"], cudf.Series([1.0]), check_names=False)
+    cudf.testing.assert_series_equal(
+        result["distance"], cudf.Series([1.0]), check_names=False
+    )
+    cudf.testing.assert_series_equal(
+        result["speed"], cudf.Series([1.0]), check_names=False
+    )
 
 
 def test_derive_two_trajectories_one_meter_one_second():
@@ -315,8 +334,12 @@ def test_derive_two_trajectories_one_meter_one_second():
         objects["y"],
         objects["timestamp"],
     )
-    assert_eq(result["distance"], cudf.Series([1.0, 1.0]), check_names=False)
-    assert_eq(result["speed"], cudf.Series([1.0, 1.0]), check_names=False)
+    cudf.testing.assert_series_equal(
+        result["distance"], cudf.Series([1.0, 1.0]), check_names=False
+    )
+    cudf.testing.assert_series_equal(
+        result["speed"], cudf.Series([1.0, 1.0]), check_names=False
+    )
 
 
 def test_trajectory_distances_and_speeds_single_trajectory():
@@ -333,12 +356,12 @@ def test_trajectory_distances_and_speeds_single_trajectory():
         objects["y"],
         objects["timestamp"],
     )
-    assert_eq(
+    cudf.testing.assert_series_equal(
         result["distance"],
         cudf.Series([7892.922363, 6812.55908203125, 8485.28125]),
         check_names=False,
     )
-    assert_eq(
+    cudf.testing.assert_series_equal(
         result["speed"],
         cudf.Series([1973230.625, 2270853.0, 4242640.5]),
         check_names=False,
@@ -384,7 +407,7 @@ def test_trajectory_distances_and_speeds_timestamp_types(timestamp_type):
         objects["y"],
         objects["timestamp"],
     )
-    assert_eq(
+    cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame({"distance": [1.0, 1.0], "speed": [1.0, 1.0]}),
         check_names=False,

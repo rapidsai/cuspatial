@@ -45,7 +45,7 @@ namespace {
 
 template <typename T>
 struct point_to_square {
-  inline __device__ thrust::tuple<T, T, T, T> operator()(thrust::tuple<T, T> const &point)
+  inline __device__ thrust::tuple<T, T, T, T> operator()(thrust::tuple<T, T> const& point)
   {
     return thrust::make_tuple(thrust::get<0>(point),   // x
                               thrust::get<1>(point),   // y
@@ -55,12 +55,12 @@ struct point_to_square {
 };
 
 template <typename T>
-std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view const &poly_offsets,
-                                                            cudf::column_view const &ring_offsets,
-                                                            cudf::column_view const &x,
-                                                            cudf::column_view const &y,
+std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view const& poly_offsets,
+                                                            cudf::column_view const& ring_offsets,
+                                                            cudf::column_view const& x,
+                                                            cudf::column_view const& y,
                                                             rmm::cuda_stream_view stream,
-                                                            rmm::mr::device_memory_resource *mr)
+                                                            rmm::mr::device_memory_resource* mr)
 {
   auto num_polygons = poly_offsets.size();
   // Wrapped in an IEFE so `first_ring_offsets` is freed on return
@@ -120,7 +120,7 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
                         thrust::make_discard_iterator(),
                         bboxes_iter,
                         thrust::equal_to<int32_t>(),
-                        [] __device__(auto const &a, auto const &b) {
+                        [] __device__(auto const& a, auto const& b) {
                           T min_x_a, min_y_a, max_x_a, max_y_a;
                           T min_x_b, min_y_b, max_x_b, max_y_b;
                           thrust::tie(min_x_a, min_y_a, max_x_a, max_y_a) = a;
@@ -137,19 +137,19 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
 struct dispatch_compute_polygon_bounding_boxes {
   template <typename T, typename... Args>
   inline std::enable_if_t<!std::is_floating_point<T>::value, std::unique_ptr<cudf::table>>
-  operator()(Args &&...)
+  operator()(Args&&...)
   {
     CUSPATIAL_FAIL("Only floating-point types are supported");
   }
 
   template <typename T>
   inline std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::table>>
-  operator()(cudf::column_view const &poly_offsets,
-             cudf::column_view const &ring_offsets,
-             cudf::column_view const &x,
-             cudf::column_view const &y,
+  operator()(cudf::column_view const& poly_offsets,
+             cudf::column_view const& ring_offsets,
+             cudf::column_view const& x,
+             cudf::column_view const& y,
              rmm::cuda_stream_view stream,
-             rmm::mr::device_memory_resource *mr)
+             rmm::mr::device_memory_resource* mr)
   {
     return compute_polygon_bounding_boxes<T>(poly_offsets, ring_offsets, x, y, stream, mr);
   }
@@ -159,12 +159,12 @@ struct dispatch_compute_polygon_bounding_boxes {
 
 namespace detail {
 
-std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const &poly_offsets,
-                                                    cudf::column_view const &ring_offsets,
-                                                    cudf::column_view const &x,
-                                                    cudf::column_view const &y,
+std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& poly_offsets,
+                                                    cudf::column_view const& ring_offsets,
+                                                    cudf::column_view const& x,
+                                                    cudf::column_view const& y,
                                                     rmm::cuda_stream_view stream,
-                                                    rmm::mr::device_memory_resource *mr)
+                                                    rmm::mr::device_memory_resource* mr)
 {
   return cudf::type_dispatcher(x.type(),
                                dispatch_compute_polygon_bounding_boxes{},
@@ -178,11 +178,11 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const &pol
 
 }  // namespace detail
 
-std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const &poly_offsets,
-                                                    cudf::column_view const &ring_offsets,
-                                                    cudf::column_view const &x,
-                                                    cudf::column_view const &y,
-                                                    rmm::mr::device_memory_resource *mr)
+std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& poly_offsets,
+                                                    cudf::column_view const& ring_offsets,
+                                                    cudf::column_view const& x,
+                                                    cudf::column_view const& y,
+                                                    rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(ring_offsets.size() >= poly_offsets.size(),
                     "number of rings must be greater than or equal to the number of polygons");

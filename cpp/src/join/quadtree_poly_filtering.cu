@@ -46,8 +46,8 @@ inline auto make_counting_transform_iterator(cudf::size_type start, UnaryFunctio
 }
 
 template <typename T>
-inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view const &quadtree,
-                                                             cudf::table_view const &poly_bbox,
+inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view const& quadtree,
+                                                             cudf::table_view const& poly_bbox,
                                                              T x_min,
                                                              T x_max,
                                                              T y_min,
@@ -55,7 +55,7 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
                                                              T scale,
                                                              int8_t max_depth,
                                                              rmm::cuda_stream_view stream,
-                                                             rmm::mr::device_memory_resource *mr)
+                                                             rmm::mr::device_memory_resource* mr)
 {
   auto const node_levels  = quadtree.column(1);  // uint8_t
   auto const node_counts  = quadtree.column(3);  // uint32_t
@@ -211,9 +211,9 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
 }
 
 struct dispatch_quadtree_bounding_box_join {
-  template <typename T, std::enable_if_t<std::is_floating_point<T>::value> * = nullptr>
-  inline std::unique_ptr<cudf::table> operator()(cudf::table_view const &quadtree,
-                                                 cudf::table_view const &poly_bbox,
+  template <typename T, std::enable_if_t<std::is_floating_point<T>::value>* = nullptr>
+  inline std::unique_ptr<cudf::table> operator()(cudf::table_view const& quadtree,
+                                                 cudf::table_view const& poly_bbox,
                                                  double x_min,
                                                  double x_max,
                                                  double y_min,
@@ -221,7 +221,7 @@ struct dispatch_quadtree_bounding_box_join {
                                                  double scale,
                                                  int8_t max_depth,
                                                  rmm::cuda_stream_view stream,
-                                                 rmm::mr::device_memory_resource *mr)
+                                                 rmm::mr::device_memory_resource* mr)
   {
     return join_quadtree_and_bboxes<T>(quadtree,
                                        poly_bbox,
@@ -235,17 +235,17 @@ struct dispatch_quadtree_bounding_box_join {
                                        mr);
   }
   template <typename T,
-            std::enable_if_t<!std::is_floating_point<T>::value> * = nullptr,
+            std::enable_if_t<!std::is_floating_point<T>::value>* = nullptr,
             typename... Args>
-  inline std::unique_ptr<cudf::table> operator()(Args &&...)
+  inline std::unique_ptr<cudf::table> operator()(Args&&...)
   {
     CUSPATIAL_FAIL("Only floating-point types are supported");
   }
 };
 }  // namespace
 
-std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view const &quadtree,
-                                                              cudf::table_view const &poly_bbox,
+std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view const& quadtree,
+                                                              cudf::table_view const& poly_bbox,
                                                               double x_min,
                                                               double x_max,
                                                               double y_min,
@@ -253,7 +253,7 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view c
                                                               double scale,
                                                               int8_t max_depth,
                                                               rmm::cuda_stream_view stream,
-                                                              rmm::mr::device_memory_resource *mr)
+                                                              rmm::mr::device_memory_resource* mr)
 {
   return cudf::type_dispatcher(poly_bbox.column(0).type(),
                                dispatch_quadtree_bounding_box_join{},
@@ -271,15 +271,15 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view c
 
 }  // namespace detail
 
-std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view const &quadtree,
-                                                              cudf::table_view const &poly_bbox,
+std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view const& quadtree,
+                                                              cudf::table_view const& poly_bbox,
                                                               double x_min,
                                                               double x_max,
                                                               double y_min,
                                                               double y_max,
                                                               double scale,
                                                               int8_t max_depth,
-                                                              rmm::mr::device_memory_resource *mr)
+                                                              rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "quadtree table must have 5 columns");
   CUSPATIAL_EXPECTS(poly_bbox.num_columns() == 4, "polygon bbox table must have 4 columns");
