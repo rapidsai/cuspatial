@@ -122,9 +122,7 @@ class GeoDataFrame(cudf.DataFrame):
                 ) and not isinstance(
                     self._index, cudf.core.index.CategoricalIndex
                 ):
-                    self._index = cudf.core.index.Index._from_table(
-                        self._index
-                    )
+                    self._index = cudf.Index(self._index._column)
 
         return self
 

@@ -173,4 +173,4 @@ def quadtree_on_points(
         max_depth,
         min_size,
     )
-    return Series(key_to_point), DataFrame._from_table(quadtree)
+    return Series(key_to_point), DataFrame._from_data(*quadtree)

@@ -4,7 +4,8 @@ from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column, column, column_view
-from cudf._lib.table cimport Table, table
+from cudf._lib.table cimport table
+from cudf._lib.utils cimport data_from_unique_ptr
 
 from cuspatial._lib.cpp.spatial_window cimport (
     points_in_spatial_window as cpp_points_in_spatial_window,
@@ -36,5 +37,4 @@ cpdef points_in_spatial_window(
             )
         )
 
-    table = Table.from_unique_ptr(move(c_result), column_names=["x", "y"])
-    return table
+    return data_from_unique_ptr(move(c_result), column_names=["x", "y"])
