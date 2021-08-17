@@ -43,7 +43,8 @@ def points_in_spatial_window(min_x, max_x, min_y, max_y, xs, ys):
     * Swaps ``min_y`` and ``max_y`` if ``min_y > max_y``
     """
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
-    result = spatial_window.points_in_spatial_window(
-        min_x, max_x, min_y, max_y, xs, ys
+    return DataFrame._from_data(
+        *spatial_window.points_in_spatial_window(
+            min_x, max_x, min_y, max_y, xs, ys
+        )
     )
-    return DataFrame._from_table(result)

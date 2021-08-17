@@ -8,6 +8,7 @@ from libcpp.utility cimport move
 from cudf._lib.column cimport Column, column, column_view
 from cudf._lib.cpp.types cimport size_type
 from cudf._lib.table cimport Table, table, table_view
+from cudf._lib.utils cimport data_from_unique_ptr
 
 from cuspatial._lib.cpp.spatial_join cimport (
     join_quadtree_and_bounding_boxes as cpp_join_quadtree_and_bounding_boxes,
@@ -33,7 +34,7 @@ cpdef join_quadtree_and_bounding_boxes(Table quadtree,
             c_poly_bounding_boxes,
             x_min, x_max, y_min, y_max, scale, max_depth
         ))
-    return Table.from_unique_ptr(
+    return data_from_unique_ptr(
         move(result),
         column_names=["poly_offset", "quad_offset"]
     )
@@ -70,7 +71,7 @@ cpdef quadtree_point_in_polygon(Table poly_quad_pairs,
             c_poly_points_x,
             c_poly_points_y
         ))
-    return Table.from_unique_ptr(
+    return data_from_unique_ptr(
         move(result),
         column_names=["polygon_index", "point_index"]
     )
@@ -104,7 +105,7 @@ cpdef quadtree_point_to_nearest_polyline(Table poly_quad_pairs,
             c_poly_points_x,
             c_poly_points_y
         ))
-    return Table.from_unique_ptr(
+    return data_from_unique_ptr(
         move(result),
         column_names=["point_index", "polyline_index", "distance"]
     )
