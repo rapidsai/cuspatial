@@ -2,7 +2,7 @@
 
 import warnings
 
-from cudf.core import DataFrame, Series
+from cudf import DataFrame, Series
 from cudf.core.column import as_column
 
 from cuspatial._lib.quadtree import (
