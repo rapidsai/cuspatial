@@ -45,8 +45,8 @@ gpuci_mamba_retry install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" \
     "rapids-build-env=$MINOR_VERSION.*"
 
 # https://docs.rapids.ai/maintainers/depmgmt/ 
-gpuci_mamba_retry remove --force rapids-build-env
-gpuci_mamba_retry install "gdal=3.3.1"
+# gpuci_mamba_retry remove --force rapids-build-env
+# gpuci_mamba_retry install "gdal=3.3.1"
 
 gpuci_logger "Check versions"
 python --version
