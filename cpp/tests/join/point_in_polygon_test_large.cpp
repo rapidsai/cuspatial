@@ -271,19 +271,19 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
 
   auto poly_a = fixed_width_column_wrapper<uint32_t>(expected_poly_indices.begin(),
                                                      expected_poly_indices.end());
-  auto poly_b =  fixed_width_column_wrapper<uint32_t>(actual_poly_indices.begin(),
-                                                      actual_poly_indices.end());
+  auto poly_b =
+    fixed_width_column_wrapper<uint32_t>(actual_poly_indices.begin(), actual_poly_indices.end());
   cudf::test::expect_columns_equal(poly_a, poly_b, verbosity);
 
   auto point_a = fixed_width_column_wrapper<uint32_t>(expected_point_indices.begin(),
                                                       expected_point_indices.end());
-  auto point_b = fixed_width_column_wrapper<uint32_t>(actual_point_indices.begin(),
-                                                      actual_point_indices.end());
+  auto point_b =
+    fixed_width_column_wrapper<uint32_t>(actual_point_indices.begin(), actual_point_indices.end());
   cudf::test::expect_columns_equal(point_a, point_b, verbosity);
 
   auto lengths_a = fixed_width_column_wrapper<uint32_t>(expected_point_lengths.begin(),
                                                         expected_point_lengths.end());
-  auto lengths_b = fixed_width_column_wrapper<uint32_t>(actual_point_lengths.begin(),
-                                                        actual_point_lengths.end());
+  auto lengths_b =
+    fixed_width_column_wrapper<uint32_t>(actual_point_lengths.begin(), actual_point_lengths.end());
   cudf::test::expect_columns_equal(lengths_a, lengths_b, verbosity);
 }
