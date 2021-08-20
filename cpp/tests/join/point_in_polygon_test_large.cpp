@@ -153,8 +153,8 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   auto host_points = generate_points<T>(quads, min_size);
   auto& h_x        = std::get<0>(host_points);
   auto& h_y        = std::get<1>(host_points);
-  fixed_width_column_wrapper<T> x(h_x.begin(), h_x.end());
-  fixed_width_column_wrapper<T> y(h_y.begin(), h_y.end());
+  auto x           = fixed_width_column_wrapper<T>(h_x.begin(), h_x.end());
+  auto y           = fixed_width_column_wrapper<T>(h_y.begin(), h_y.end());
 
   auto quadtree_pair = cuspatial::quadtree_on_points(
     x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, this->mr());
@@ -164,54 +164,54 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   auto points         = cudf::gather(
     cudf::table_view{{x, y}}, *point_indices, cudf::out_of_bounds_policy::DONT_CHECK, this->mr());
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14});
-  fixed_width_column_wrapper<T> poly_x({// ring 1
-                                        2.488450,
-                                        1.333584,
-                                        3.460720,
-                                        2.488450,
-                                        // ring 2
-                                        5.039823,
-                                        5.561707,
-                                        7.103516,
-                                        7.190674,
-                                        5.998939,
-                                        5.039823,
-                                        // ring 3
-                                        5.998939,
-                                        5.573720,
-                                        6.703534,
-                                        5.998939,
-                                        // ring 4
-                                        2.088115,
-                                        1.034892,
-                                        2.415080,
-                                        3.208660,
-                                        2.088115});
-  fixed_width_column_wrapper<T> poly_y({// ring 1
-                                        5.856625,
-                                        5.008840,
-                                        4.586599,
-                                        5.856625,
-                                        // ring 2
-                                        4.229242,
-                                        1.825073,
-                                        1.503906,
-                                        4.025879,
-                                        5.653384,
-                                        4.229242,
-                                        // ring 3
-                                        1.235638,
-                                        0.197808,
-                                        0.086693,
-                                        1.235638,
-                                        // ring 4
-                                        4.541529,
-                                        3.530299,
-                                        2.896937,
-                                        3.745936,
-                                        4.541529});
+  auto poly_offsets = fixed_width_column_wrapper<int32_t>({0, 1, 2, 3});
+  auto ring_offsets = fixed_width_column_wrapper<int32_t>({0, 4, 10, 14});
+  auto poly_x       = fixed_width_column_wrapper<T>({// ring 1
+                                               2.488450,
+                                               1.333584,
+                                               3.460720,
+                                               2.488450,
+                                               // ring 2
+                                               5.039823,
+                                               5.561707,
+                                               7.103516,
+                                               7.190674,
+                                               5.998939,
+                                               5.039823,
+                                               // ring 3
+                                               5.998939,
+                                               5.573720,
+                                               6.703534,
+                                               5.998939,
+                                               // ring 4
+                                               2.088115,
+                                               1.034892,
+                                               2.415080,
+                                               3.208660,
+                                               2.088115});
+  auto poly_y       = fixed_width_column_wrapper<T>({// ring 1
+                                               5.856625,
+                                               5.008840,
+                                               4.586599,
+                                               5.856625,
+                                               // ring 2
+                                               4.229242,
+                                               1.825073,
+                                               1.503906,
+                                               4.025879,
+                                               5.653384,
+                                               4.229242,
+                                               // ring 3
+                                               1.235638,
+                                               0.197808,
+                                               0.086693,
+                                               1.235638,
+                                               // ring 4
+                                               4.541529,
+                                               3.530299,
+                                               2.896937,
+                                               3.745936,
+                                               4.541529});
 
   auto polygon_bboxes =
     cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, poly_x, poly_y, this->mr());
