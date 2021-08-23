@@ -225,7 +225,7 @@ endif()
 
 include(GNUInstallDirs)
 
-set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/cuspatial)
+set(INSTALL_CONFIGDIR lib/cmake/cuspatial)
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME cuspatial)
 
 install(TARGETS cuspatial

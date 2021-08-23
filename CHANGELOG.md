@@ -2,9 +2,26 @@
 
 Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.10.00a for the latest changes to this development branch.
 
-# cuSpatial 21.08.00 (Date TBD)
+# cuSpatial 21.08.00 (4 Aug 2021)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.08.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Fix usage of assert_columns* APIs. ([#433](https://github.com/rapidsai/cuspatial/pull/433)) [@vyasr](https://github.com/vyasr)
+- Switch to using public cudf testing utilities ([#431](https://github.com/rapidsai/cuspatial/pull/431)) [@vyasr](https://github.com/vyasr)
+- Update CMake, fix testing use of assert_eq, and correct metadata copying ([#430](https://github.com/rapidsai/cuspatial/pull/430)) [@vyasr](https://github.com/vyasr)
+- Improve Hausdorff perf and accept larger number of inputs. ([#424](https://github.com/rapidsai/cuspatial/pull/424)) [@cwharris](https://github.com/cwharris)
+- Fix a critical issue with `parallel_search` functor. ([#405](https://github.com/rapidsai/cuspatial/pull/405)) [@thomcom](https://github.com/thomcom)
+
+## 🛠️ Improvements
+
+- Updating Clang Version to 11.0.0 ([#426](https://github.com/rapidsai/cuspatial/pull/426)) [@codereport](https://github.com/codereport)
+- Update sphinx config ([#421](https://github.com/rapidsai/cuspatial/pull/421)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Bump isort, enable Cython package resorting ([#419](https://github.com/rapidsai/cuspatial/pull/419)) [@charlesbluca](https://github.com/charlesbluca)
+- Fix `21.08` forward-merge conflicts ([#418](https://github.com/rapidsai/cuspatial/pull/418)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Correct the docs example for `cuspatial.CubicSpline` ([#411](https://github.com/rapidsai/cuspatial/pull/411)) [@thomcom](https://github.com/thomcom)
+- Update version to 21.08.00 in cmakelists ([#410](https://github.com/rapidsai/cuspatial/pull/410)) [@harrism](https://github.com/harrism)
+- Fix merge conflicts ([#408](https://github.com/rapidsai/cuspatial/pull/408)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Support spaces in build.sh paths ([#385](https://github.com/rapidsai/cuspatial/pull/385)) [@jolorunyomi](https://github.com/jolorunyomi)
 
 # cuSpatial 21.06.00 (9 Jun 2021)
 
