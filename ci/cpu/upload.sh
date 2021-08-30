@@ -27,7 +27,7 @@ fi
 
 gpuci_logger "Get conda file output locations"
 export LIBCUSPATIAL_FILE=`conda build --no-build-id --croot ${CONDA_BLD_DIR} conda/recipes/libcuspatial  --output`
-export CUSPATIAL_FILE=`conda build --croot ${CONDA_BLD_DIR} conda/recipes/cuspatial --python=$PYTHON --output`
+export CUSPATIAL_FILE=`conda build --croot ${CONDA_BLD_DIR} conda/recipes/cuspatial --python=$PYTHON_VER --output`
 
 ################################################################################
 # UPLOAD - Conda packages
