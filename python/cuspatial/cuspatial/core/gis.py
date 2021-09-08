@@ -250,7 +250,9 @@ def point_in_polygon(
         polygon_bitmap_column=result, width=len(poly_offsets)
     )
     result = DataFrame(result)
-    result = result._apply_support_method("astype", dtype="bool")
+    result = DataFrame._from_data(
+        {name: col.astype("bool") for name, col in result._data.items()}
+    )
     result.columns = [x for x in list(reversed(poly_offsets.index))]
     result = result[list(reversed(result.columns))]
     return result
