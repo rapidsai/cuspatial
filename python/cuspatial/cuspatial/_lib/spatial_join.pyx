@@ -7,7 +7,7 @@ from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column, column, column_view
 from cudf._lib.cpp.types cimport size_type
-from cudf._lib.table cimport Table, table, table_view
+from cudf._lib.table cimport Table, table, table_view, table_view_from_table
 from cudf._lib.utils cimport data_from_unique_ptr
 
 from cuspatial._lib.cpp.spatial_join cimport (
@@ -25,8 +25,10 @@ cpdef join_quadtree_and_bounding_boxes(Table quadtree,
                                        double y_max,
                                        double scale,
                                        int8_t max_depth):
-    cdef table_view c_quadtree = quadtree.data_view()
-    cdef table_view c_poly_bounding_boxes = poly_bounding_boxes.data_view()
+    cdef table_view c_quadtree = table_view_from_table(
+        quadtree, ignore_index=True)
+    cdef table_view c_poly_bounding_boxes = table_view_from_table(
+        poly_bounding_boxes, ignore_index=True)
     cdef unique_ptr[table] result
     with nogil:
         result = move(cpp_join_quadtree_and_bounding_boxes(
@@ -49,8 +51,10 @@ cpdef quadtree_point_in_polygon(Table poly_quad_pairs,
                                 Column ring_offsets,
                                 Column poly_points_x,
                                 Column poly_points_y):
-    cdef table_view c_poly_quad_pairs = poly_quad_pairs.data_view()
-    cdef table_view c_quadtree = quadtree.data_view()
+    cdef table_view c_poly_quad_pairs = table_view_from_table(
+        poly_quad_pairs, ignore_index=True)
+    cdef table_view c_quadtree = table_view_from_table(
+        quadtree, ignore_index=True)
     cdef column_view c_point_indices = point_indices.view()
     cdef column_view c_points_x = points_x.view()
     cdef column_view c_points_y = points_y.view()
@@ -85,8 +89,10 @@ cpdef quadtree_point_to_nearest_polyline(Table poly_quad_pairs,
                                          Column poly_offsets,
                                          Column poly_points_x,
                                          Column poly_points_y):
-    cdef table_view c_poly_quad_pairs = poly_quad_pairs.data_view()
-    cdef table_view c_quadtree = quadtree.data_view()
+    cdef table_view c_poly_quad_pairs = table_view_from_table(
+        poly_quad_pairs, ignore_index=True)
+    cdef table_view c_quadtree = table_view_from_table(
+        quadtree, ignore_index=True)
     cdef column_view c_point_indices = point_indices.view()
     cdef column_view c_points_x = points_x.view()
     cdef column_view c_points_y = points_y.view()
