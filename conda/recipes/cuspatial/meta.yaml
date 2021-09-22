@@ -35,9 +35,9 @@ requirements:
     - gdal >=3.3.0,<3.4.0a0
     - geopandas >=0.9.0,<0.10.0a0
 
-test:
-  commands:
-    - python -c "import cuspatial"
+test:                               # [linux64]
+  commands:                         # [linux64]
+    - python -c "import cuspatial"  # [linux64]
 
 about:
   home: http://rapids.ai/
