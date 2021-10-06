@@ -16,9 +16,9 @@ def _cubic_spline_coefficients(x, y, ids, prefix_sums):
     y_c = y._column
     ids_c = ids._column
     prefix_c = prefix_sums._column
-    result_table = cubicspline_coefficients(x_c, y_c, ids_c, prefix_c)
-    result = DataFrame._from_table(result_table)
-    return result
+    return DataFrame._from_data(
+        *cubicspline_coefficients(x_c, y_c, ids_c, prefix_c)
+    )
 
 
 def _cubic_spline_fit(points, points_ids, prefixes, original_t, c):

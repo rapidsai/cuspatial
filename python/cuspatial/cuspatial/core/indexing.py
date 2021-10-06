@@ -2,7 +2,7 @@
 
 import warnings
 
-from cudf.core import DataFrame, Series
+from cudf import DataFrame, Series
 from cudf.core.column import as_column
 
 from cuspatial._lib.quadtree import (
@@ -173,4 +173,4 @@ def quadtree_on_points(
         max_depth,
         min_size,
     )
-    return Series(key_to_point), DataFrame._from_table(quadtree)
+    return Series(key_to_point), DataFrame._from_data(*quadtree)

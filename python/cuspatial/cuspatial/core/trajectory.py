@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from cudf.core import DataFrame, Series
+from cudf import DataFrame, Series
 from cudf.core.column import as_column
 
 from cuspatial._lib.trajectory import (
@@ -68,7 +68,7 @@ def derive_trajectories(object_ids, xs, ys, timestamps):
     objects, traj_offsets = cpp_derive_trajectories(
         object_ids, xs, ys, timestamps
     )
-    return DataFrame._from_table(objects), Series(data=traj_offsets)
+    return DataFrame._from_data(*objects), Series(data=traj_offsets)
 
 
 def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
@@ -123,8 +123,8 @@ def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
 
     object_ids = as_column(object_ids, dtype=np.int32)
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
-    return DataFrame._from_table(
-        cpp_trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys)
+    return DataFrame._from_data(
+        *cpp_trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys)
     )
 
 
@@ -177,8 +177,8 @@ def trajectory_distances_and_speeds(
     object_ids = as_column(object_ids, dtype=np.int32)
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     timestamps = normalize_timestamp_column(as_column(timestamps))
-    df = DataFrame._from_table(
-        cpp_trajectory_distances_and_speeds(
+    df = DataFrame._from_data(
+        *cpp_trajectory_distances_and_speeds(
             num_trajectories, object_ids, xs, ys, timestamps
         )
     )

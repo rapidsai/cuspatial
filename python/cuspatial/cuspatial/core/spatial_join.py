@@ -62,8 +62,8 @@ def join_quadtree_and_bounding_boxes(
             + "scale {}. Clamping to minimum scale".format(min_scale)
         )
 
-    return DataFrame._from_table(
-        spatial_join.join_quadtree_and_bounding_boxes(
+    return DataFrame._from_data(
+        *spatial_join.join_quadtree_and_bounding_boxes(
             quadtree,
             poly_bounding_boxes,
             x_min,
@@ -142,8 +142,8 @@ def quadtree_point_in_polygon(
         as_column(poly_points_x),
         as_column(poly_points_y),
     )
-    return DataFrame._from_table(
-        spatial_join.quadtree_point_in_polygon(
+    return DataFrame._from_data(
+        *spatial_join.quadtree_point_in_polygon(
             poly_quad_pairs,
             quadtree,
             as_column(point_indices, dtype="uint32"),
@@ -218,8 +218,8 @@ def quadtree_point_to_nearest_polyline(
         as_column(poly_points_x),
         as_column(poly_points_y),
     )
-    return DataFrame._from_table(
-        spatial_join.quadtree_point_to_nearest_polyline(
+    return DataFrame._from_data(
+        *spatial_join.quadtree_point_to_nearest_polyline(
             poly_quad_pairs,
             quadtree,
             as_column(point_indices, dtype="uint32"),

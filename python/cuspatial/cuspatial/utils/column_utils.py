@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from cudf.utils.dtypes import is_datetime_dtype
+from cudf.api.types import is_datetime_dtype
 
 
 def normalize_point_columns(*cols):
