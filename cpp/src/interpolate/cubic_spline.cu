@@ -75,10 +75,11 @@ struct parallel_search {
         p_result[index] = coefficient_table_offset + len - 2;
       });
     return result;
-  };
+  }
+
   template <typename T, typename... Args>
   std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
-    Args&&... args)
+    Args&&...)
   {
     CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
@@ -117,7 +118,7 @@ struct interpolate {
   };
   template <typename T, typename... Args>
   std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
-    Args&&... args)
+    Args&&...)
   {
     CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
@@ -138,8 +139,7 @@ struct coefficients_compute {
     cudf::mutable_column_view const& d2,
     cudf::mutable_column_view const& d1,
     cudf::mutable_column_view const& d0,
-    rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::cuda_stream_view stream)
   {
     const T* p_t              = t.data<T>();
     const T* p_y              = y.data<T>();
@@ -172,21 +172,10 @@ struct coefficients_compute {
           p_d0[dh + ci] = a - t * (b - t * (c - t * d));  // horners
         }
       });
-  };
-  template <typename T>
-  std::enable_if_t<not std::is_floating_point<T>::value, void> operator()(
-    cudf::column_view const& t,
-    cudf::column_view const& y,
-    cudf::column_view const& prefixes,
-    cudf::mutable_column_view const& h,
-    cudf::mutable_column_view const& i,
-    cudf::mutable_column_view const& z,
-    cudf::mutable_column_view const& d3,
-    cudf::mutable_column_view const& d2,
-    cudf::mutable_column_view const& d1,
-    cudf::mutable_column_view const& d0,
-    rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+  }
+
+  template <typename T, typename... Args>
+  std::enable_if_t<not std::is_floating_point<T>::value, void> operator()(Args&&...)
   {
     CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
@@ -205,8 +194,7 @@ struct compute_spline_tridiagonals {
     cudf::mutable_column_view const& u,
     cudf::mutable_column_view const& h,
     cudf::mutable_column_view const& i,
-    rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::cuda_stream_view stream)
   {
     const T* p_t              = t.data<T>();
     const T* p_y              = y.data<T>();
@@ -236,18 +224,9 @@ struct compute_spline_tridiagonals {
                        }
                      });
   }
-  template <typename T>
-  std::enable_if_t<not std::is_floating_point<T>::value, void> operator()(
-    cudf::column_view const& t,
-    cudf::column_view const& y,
-    cudf::column_view const& prefixes,
-    cudf::mutable_column_view const& D,
-    cudf::mutable_column_view const& Dlu,
-    cudf::mutable_column_view const& u,
-    cudf::mutable_column_view const& h,
-    cudf::mutable_column_view const& i,
-    rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+
+  template <typename T, typename... Args>
+  std::enable_if_t<not std::is_floating_point<T>::value, void> operator()(Args&&...)
   {
     CUSPATIAL_FAIL("Non-floating point operation is not supported.");
   }
@@ -413,8 +392,7 @@ std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t
                         u_buffer,
                         h_buffer,
                         i_buffer,
-                        stream,
-                        mr);
+                        stream);
 
   // cusparse solve n length m tridiagonal systems
   // 4. call cusparse<T>gtsv2() to solve
@@ -483,8 +461,7 @@ std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t
                         d2,
                         d1,
                         d0,
-                        stream,
-                        mr);
+                        stream);
 
   // Place d3..0 into a table and return
   std::vector<std::unique_ptr<cudf::column>> table;

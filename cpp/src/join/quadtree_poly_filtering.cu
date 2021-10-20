@@ -49,9 +49,7 @@ template <typename T>
 inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view const& quadtree,
                                                              cudf::table_view const& poly_bbox,
                                                              T x_min,
-                                                             T x_max,
                                                              T y_min,
-                                                             T y_max,
                                                              T scale,
                                                              int8_t max_depth,
                                                              rmm::cuda_stream_view stream,
@@ -215,9 +213,7 @@ struct dispatch_quadtree_bounding_box_join {
   inline std::unique_ptr<cudf::table> operator()(cudf::table_view const& quadtree,
                                                  cudf::table_view const& poly_bbox,
                                                  double x_min,
-                                                 double x_max,
                                                  double y_min,
-                                                 double y_max,
                                                  double scale,
                                                  int8_t max_depth,
                                                  rmm::cuda_stream_view stream,
@@ -226,9 +222,7 @@ struct dispatch_quadtree_bounding_box_join {
     return join_quadtree_and_bboxes<T>(quadtree,
                                        poly_bbox,
                                        static_cast<T>(x_min),
-                                       static_cast<T>(x_max),
                                        static_cast<T>(y_min),
-                                       static_cast<T>(y_max),
                                        static_cast<T>(scale),
                                        max_depth,
                                        stream,
@@ -247,9 +241,7 @@ struct dispatch_quadtree_bounding_box_join {
 std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view const& quadtree,
                                                               cudf::table_view const& poly_bbox,
                                                               double x_min,
-                                                              double x_max,
                                                               double y_min,
-                                                              double y_max,
                                                               double scale,
                                                               int8_t max_depth,
                                                               rmm::cuda_stream_view stream,
@@ -260,9 +252,7 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view c
                                quadtree,
                                poly_bbox,
                                x_min,
-                               x_max,
                                y_min,
-                               y_max,
                                scale,
                                max_depth,
                                stream,
@@ -297,16 +287,8 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view c
     return std::make_unique<cudf::table>(std::move(cols));
   }
 
-  return detail::join_quadtree_and_bounding_boxes(quadtree,
-                                                  poly_bbox,
-                                                  x_min,
-                                                  x_max,
-                                                  y_min,
-                                                  y_max,
-                                                  scale,
-                                                  max_depth,
-                                                  rmm::cuda_stream_default,
-                                                  mr);
+  return detail::join_quadtree_and_bounding_boxes(
+    quadtree, poly_bbox, x_min, y_min, scale, max_depth, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial
