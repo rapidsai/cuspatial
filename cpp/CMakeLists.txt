@@ -28,7 +28,7 @@ elseif(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
   set(CUSPATIAL_BUILD_FOR_DETECTED_ARCHS TRUE)
 endif()
 
-project(CUSPATIAL VERSION 21.12.00 LANGUAGES C CXX)
+project(CUSPATIAL VERSION 22.02.00 LANGUAGES C CXX)
 
 # Needed because GoogleBenchmark changes the state of FindThreads.cmake,
 # causing subsequent runs to have different values for the `Threads::Threads` target.
