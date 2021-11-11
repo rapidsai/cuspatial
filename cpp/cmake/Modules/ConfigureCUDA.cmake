@@ -38,7 +38,9 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 list(APPEND CUSPATIAL_CUDA_FLAGS --expt-extended-lambda --expt-relaxed-constexpr)
 
 # set warnings as errors
-list(APPEND CUSPATIAL_CUDA_FLAGS -Werror=cross-execution-space-call)
+if(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 11.2.0)
+    list(APPEND CUSPATIAL_CUDA_FLAGS -Werror=all-warnings)
+endif()
 list(APPEND CUSPATIAL_CUDA_FLAGS -Xcompiler=-Wall,-Werror,-Wno-error=deprecated-declarations)
 
 # Produce smallest binary size
