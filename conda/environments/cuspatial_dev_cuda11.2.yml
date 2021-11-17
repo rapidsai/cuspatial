@@ -5,8 +5,8 @@ channels:
   - rapidsai-nightly
   - conda-forge
 dependencies:
-  - clang=11.0.0
-  - clang-tools=11.0.0
+  - clang=11.1.0
+  - clang-tools=11.1.0
   - cudf=21.12.*
   - cudatoolkit=11.2
   - gdal>=3.0.2
