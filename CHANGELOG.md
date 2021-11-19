@@ -2,9 +2,23 @@
 
 Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.12.00a for the latest changes to this development branch.
 
-# cuSpatial 21.10.00 (Date TBD)
+# cuSpatial 21.10.00 (7 Oct 2021)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.10.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Stop using now removed _apply_support_method function. ([#448](https://github.com/rapidsai/cuspatial/pull/448)) [@vyasr](https://github.com/vyasr)
+- Remove cudf.core ([#444](https://github.com/rapidsai/cuspatial/pull/444)) [@thomcom](https://github.com/thomcom)
+- FIX Sync version update script with CMakeLists and update version in … ([#438](https://github.com/rapidsai/cuspatial/pull/438)) [@dillon-cullinan](https://github.com/dillon-cullinan)
+
+## 🛠️ Improvements
+
+- Fix default cuda version in prebuild.sh for arm64 ([#451](https://github.com/rapidsai/cuspatial/pull/451)) [@Ethyling](https://github.com/Ethyling)
+- Skip imports tests on arm64 ([#450](https://github.com/rapidsai/cuspatial/pull/450)) [@Ethyling](https://github.com/Ethyling)
+- Update Cython Table APIs to match changes in cudf. ([#449](https://github.com/rapidsai/cuspatial/pull/449)) [@vyasr](https://github.com/vyasr)
+- Fix Forward-Merge Conflicts ([#445](https://github.com/rapidsai/cuspatial/pull/445)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update cudf table apis ([#437](https://github.com/rapidsai/cuspatial/pull/437)) [@vyasr](https://github.com/vyasr)
+- ENH Replace gpuci_conda_retry with gpuci_mamba_retry ([#432](https://github.com/rapidsai/cuspatial/pull/432)) [@dillon-cullinan](https://github.com/dillon-cullinan)
+- Pin gdal to 3.3.x ([#420](https://github.com/rapidsai/cuspatial/pull/420)) [@weiji14](https://github.com/weiji14)
 
 # cuSpatial 21.08.00 (4 Aug 2021)
 
