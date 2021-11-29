@@ -1,14 +1,6 @@
 #!/usr/bin/env bash
 
-ARCH=$(arch)
-if [ "${ARCH}" = "x86_64" ]; then
-  DEFAULT_CUDA_VER="11.0"
-elif [ "${ARCH}" = "aarch64" ]; then
-  DEFAULT_CUDA_VER="11.2"
-else
-  echo "Unsupported arch ${ARCH}"
-  exit 1
-fi
+DEFAULT_CUDA_VER="11.5"
 
 #Upload cuspatial once per PYTHON
 if [[ "$CUDA" == "${DEFAULT_CUDA_VER}" ]]; then
