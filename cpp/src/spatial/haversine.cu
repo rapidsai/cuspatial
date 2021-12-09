@@ -72,7 +72,7 @@ struct haversine_functor {
     if (a_lon.is_empty()) { return cudf::empty_like(a_lon); }
 
     auto mask_policy = cudf::mask_allocation_policy::NEVER;
-    auto result      = cudf::allocate_like(a_lon, a_lon.size(), mask_policy);
+    auto result      = cudf::allocate_like(a_lon, a_lon.size(), mask_policy, mr);
 
     auto input_tuple = thrust::make_tuple(thrust::make_constant_iterator(static_cast<T>(radius)),
                                           a_lon.begin<T>(),

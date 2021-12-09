@@ -4,8 +4,8 @@ from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column, column
-from cudf._lib.table cimport Table, table, table_view_from_table
-from cudf._lib.utils cimport data_from_unique_ptr
+from cudf._lib.cpp.table.table cimport table
+from cudf._lib.utils cimport data_from_unique_ptr, table_view_from_table
 
 from cuspatial._lib.cpp.interpolate cimport (
     cubicspline_coefficients as cpp_cubicspline_coefficients,
@@ -40,7 +40,7 @@ cpdef cubicspline_interpolate(
     Column ids,
     Column prefixes,
     Column original_t,
-    Table coefficients
+    object coefficients
 ):
     p_v = points.view()
     ids_v = ids.view()

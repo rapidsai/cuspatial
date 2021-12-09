@@ -102,14 +102,9 @@ struct dispatch_element {
     return std::make_unique<cudf::table>(std::move(cols));
   }
 
-  template <typename Element>
+  template <typename Element, typename... Args>
   std::enable_if_t<not std::is_floating_point<Element>::value, std::unique_ptr<cudf::table>>
-  operator()(cudf::size_type num_trajectories,
-             cudf::column_view const& object_id,
-             cudf::column_view const& x,
-             cudf::column_view const& y,
-             rmm::cuda_stream_view stream,
-             rmm::mr::device_memory_resource* mr)
+  operator()(Args&&...)
   {
     CUSPATIAL_FAIL("X and Y must be floating point types");
   }

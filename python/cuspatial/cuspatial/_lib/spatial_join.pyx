@@ -6,9 +6,9 @@ from libcpp.pair cimport pair
 from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column, column, column_view
+from cudf._lib.cpp.table.table cimport table, table_view
 from cudf._lib.cpp.types cimport size_type
-from cudf._lib.table cimport Table, table, table_view, table_view_from_table
-from cudf._lib.utils cimport data_from_unique_ptr
+from cudf._lib.utils cimport data_from_unique_ptr, table_view_from_table
 
 from cuspatial._lib.cpp.spatial_join cimport (
     join_quadtree_and_bounding_boxes as cpp_join_quadtree_and_bounding_boxes,
@@ -17,8 +17,8 @@ from cuspatial._lib.cpp.spatial_join cimport (
 )
 
 
-cpdef join_quadtree_and_bounding_boxes(Table quadtree,
-                                       Table poly_bounding_boxes,
+cpdef join_quadtree_and_bounding_boxes(object quadtree,
+                                       object poly_bounding_boxes,
                                        double x_min,
                                        double x_max,
                                        double y_min,
@@ -42,8 +42,8 @@ cpdef join_quadtree_and_bounding_boxes(Table quadtree,
     )
 
 
-cpdef quadtree_point_in_polygon(Table poly_quad_pairs,
-                                Table quadtree,
+cpdef quadtree_point_in_polygon(object poly_quad_pairs,
+                                object quadtree,
                                 Column point_indices,
                                 Column points_x,
                                 Column points_y,
@@ -81,8 +81,8 @@ cpdef quadtree_point_in_polygon(Table poly_quad_pairs,
     )
 
 
-cpdef quadtree_point_to_nearest_polyline(Table poly_quad_pairs,
-                                         Table quadtree,
+cpdef quadtree_point_to_nearest_polyline(object poly_quad_pairs,
+                                         object quadtree,
                                          Column point_indices,
                                          Column points_x,
                                          Column points_y,
