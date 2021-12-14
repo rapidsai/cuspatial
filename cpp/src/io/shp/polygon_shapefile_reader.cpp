@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include <ogrsf_frmts.h>
 #include <cuspatial/error.hpp>
+
+#include <ogrsf_frmts.h>
 
 #include <cudf/types.hpp>
 
