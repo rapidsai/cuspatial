@@ -15,7 +15,6 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/types.hpp>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_device_view.cuh>
