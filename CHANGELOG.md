@@ -6,9 +6,19 @@ Please see https://github.com/rapidsai/cuspatial/releases/tag/v22.04.00a for the
 
 Please see https://github.com/rapidsai/cuspatial/releases/tag/v22.02.00a for the latest changes to this development branch.
 
-# cuSpatial 21.12.00 (Date TBD)
+# cuSpatial 21.12.00 (9 Dec 2021)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.12.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Remove use of now removed cudf Table object. ([#455](https://github.com/rapidsai/cuspatial/pull/455)) [@vyasr](https://github.com/vyasr)
+
+## 🛠️ Improvements
+
+- Update DEFAULT_CUDA_VER in ci/cpu/prebuild.sh ([#468](https://github.com/rapidsai/cuspatial/pull/468)) [@Ethyling](https://github.com/Ethyling)
+- Fix Changelog Merge Conflicts for `branch-21.12` ([#467](https://github.com/rapidsai/cuspatial/pull/467)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Upgrade `clang` to `11.1.0` ([#463](https://github.com/rapidsai/cuspatial/pull/463)) [@galipremsagar](https://github.com/galipremsagar)
+- NVCC warnings are errors ([#458](https://github.com/rapidsai/cuspatial/pull/458)) [@trxcllnt](https://github.com/trxcllnt)
+- Update `conda` recipes for Enhanced Compatibility effort ([#457](https://github.com/rapidsai/cuspatial/pull/457)) [@ajschmidt8](https://github.com/ajschmidt8)
 
 # cuSpatial 21.10.00 (7 Oct 2021)
 
