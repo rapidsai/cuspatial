@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 DEFAULT_CUDA_VER="11.5"
+DEFAULT_PYTHON_VER="3.8"
 
 #Upload cuspatial once per PYTHON
 if [[ "$CUDA" == "${DEFAULT_CUDA_VER}" ]]; then
@@ -10,7 +11,7 @@ else
 fi
 
 #Upload libcuspatial once per CUDA
-if [[ "$PYTHON" == "3.7" ]]; then
+if [[ "$PYTHON" == "${DEFAULT_PYTHON_VER}" ]]; then
     export UPLOAD_LIBCUSPATIAL=1
 else
     export UPLOAD_LIBCUSPATIAL=0
