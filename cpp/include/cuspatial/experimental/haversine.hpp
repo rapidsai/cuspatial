@@ -30,8 +30,6 @@ namespace cuspatial {
  * is computed for each (a_lon[i], a_lat[i]) and (b_lon[i], b_lat[i]) point pair. `distance_first`
  * must be an iterator to output storage allocated for N distances.
  *
- * All iterators must have the same floating-point `value_type`.
- *
  * https://en.wikipedia.org/wiki/Haversine_formula
  *
  * @param[in]  a_lon_first: beginning of range of longitude of points in set A
@@ -39,23 +37,26 @@ namespace cuspatial {
  * @param[in]  b_lon_first: beginning of range of longitude of points in set B
  * @param[in]  b_lat_first: beginning of range of latitude of points in set B
  * @param[out] distance_first: beginning of output range of haversine distances
- * @param[in] radius: radius of the sphere on which the points reside. default: 6371.0
+ * @param[in]  radius: radius of the sphere on which the points reside. default: 6371.0
  *            (approximate radius of Earth in km)
  *
- * @tparam LonItA must meet the requirements of [LegacyForwardIterator][LinkLFI] and be
+ * All iterators must have the same floating-point `value_type`.
+ *
+ * @tparam LonItA must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be
  * device-accessible.
- * @tparam LatItA must meet the requirements of [LegacyForwardIterator][LinkLFI] and be
+ * @tparam LatItA must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be
  * device-accessible.
- * @tparam LonItB must meet the requirements of [LegacyForwardIterator][LinkLFI] and be
+ * @tparam LonItB must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be
  * device-accessible.
- * @tparam LatItB must meet the requirements of [LegacyForwardIterator][LinkLFI] and be
+ * @tparam LatItB must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be
  * device-accessible.
- * @tparam OutputIt must meet the requirements of [LegacyForwardIterator][LinkLFI] and be
+ * @tparam OutputIt must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be
  * device-accessible.
  *
  * @return Output iterator to the element past the last distance computed.
  *
- * [LinkLFI]: https://en.cppreference.com/w/cpp/named_req/ForwardIterator "LegacyForwardIterator"
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
  */
 template <class LonItA,
           class LatItA,
