@@ -26,9 +26,9 @@ namespace cuspatial {
 /**
  * brief Compute haversine distances between points in set A to the corresponding points in set B.
  *
- * Computes N haversine distances, where N is `std::distance(a_lon_first, a_lon_last)`. One distance
- * is computed for each (a_lon[i], a_lat[i]) and (b_lon[i], b_lat[i]) point pair. `distance_first`
- * must be an iterator to output storage allocated for N distances.
+ * Computes N haversine distances, where N is `std::distance(a_lon_first, a_lon_last)`.
+ * The distance for each `(a_lon[i], a_lat[i])` and `(b_lon[i], b_lat[i])` point pair is assigned to `distance_first[i]`. 
+ * `distance_first` must be an iterator to output storage allocated for N distances.
  *
  * All iterators must have the same floating-point `value_type`.
  *
