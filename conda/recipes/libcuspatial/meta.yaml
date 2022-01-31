@@ -31,6 +31,8 @@ build:
     - SCCACHE_BUCKET=rapids-sccache
     - SCCACHE_REGION=us-west-2
     - SCCACHE_IDLE_TIMEOUT=32768
+    - SCCACHE_ERROR_LOG
+    - SCCACHE_LOG
   run_exports:
     - {{ pin_subpackage("libcuspatial", max_pin="x.x") }}
 
