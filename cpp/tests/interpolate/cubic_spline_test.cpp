@@ -28,9 +28,9 @@
 #include <cuspatial/detail/cubic_spline.hpp>
 #include <cuspatial/error.hpp>
 
+#include <string>
 #include <sys/time.h>
 #include <time.h>
-#include <string>
 
 struct CubicSplineTest : public cudf::test::BaseFixture {
 };

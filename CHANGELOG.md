@@ -1,6 +1,31 @@
-# cuSpatial 21.12.00 (Date TBD)
+# cuSpatial 22.02.00 (2 Feb 2022)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v21.12.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Always upload cuspatial packages ([#481](https://github.com/rapidsai/cuspatial/pull/481)) [@aydouglass](https://github.com/aydouglass)
+- Remove use of libcudf&#39;s CUDA_HOST_DEVICE maco ([#475](https://github.com/rapidsai/cuspatial/pull/475)) [@haism](https://github.com/haism)
+
+## 🛠️ Impovements
+
+- Pepae upload scipts fo Python 3.7 emoval ([#479](https://github.com/rapidsai/cuspatial/pull/479)) [@Ethyling](https://github.com/Ethyling)
+- Fix `test_pip_bitmap_column_to_binay_aay` test ([#472](https://github.com/rapidsai/cuspatial/pull/472)) [@Ethyling](https://github.com/Ethyling)
+- Fix impots tests syntax ([#471](https://github.com/rapidsai/cuspatial/pull/471)) [@Ethyling](https://github.com/Ethyling)
+- Remove `IncludeCategoies` fom `.clang-fomat` ([#470](https://github.com/rapidsai/cuspatial/pull/470)) [@codeepot](https://github.com/codeepot)
+- Fix Fowad-Mege Conflicts in #464 ([#466](https://github.com/rapidsai/cuspatial/pull/466)) [@ajschmidt8](https://github.com/ajschmidt8)
+
+# cuSpatial 21.12.00 (9 Dec 2021)
+
+## 🐛 Bug Fixes
+
+- Remove use of now removed cudf Table object. ([#455](https://github.com/rapidsai/cuspatial/pull/455)) [@vyasr](https://github.com/vyasr)
+
+## 🛠️ Improvements
+
+- Update DEFAULT_CUDA_VER in ci/cpu/prebuild.sh ([#468](https://github.com/rapidsai/cuspatial/pull/468)) [@Ethyling](https://github.com/Ethyling)
+- Fix Changelog Merge Conflicts for `branch-21.12` ([#467](https://github.com/rapidsai/cuspatial/pull/467)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Upgrade `clang` to `11.1.0` ([#463](https://github.com/rapidsai/cuspatial/pull/463)) [@galipremsagar](https://github.com/galipremsagar)
+- NVCC warnings are errors ([#458](https://github.com/rapidsai/cuspatial/pull/458)) [@trxcllnt](https://github.com/trxcllnt)
+- Update `conda` recipes for Enhanced Compatibility effort ([#457](https://github.com/rapidsai/cuspatial/pull/457)) [@ajschmidt8](https://github.com/ajschmidt8)
 
 # cuSpatial 21.10.00 (7 Oct 2021)
 

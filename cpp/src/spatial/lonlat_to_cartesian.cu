@@ -35,17 +35,14 @@ constexpr double earth_circumference_km            = 40000.0;
 constexpr double earth_circumference_km_per_degree = earth_circumference_km / 360.0;
 constexpr double deg_to_rad                        = M_PI / 180;
 
-CUDA_HOST_DEVICE_CALLABLE
-double midpoint(double a, double b) { return (a + b) / 2; }
+__device__ inline double midpoint(double a, double b) { return (a + b) / 2; }
 
-CUDA_HOST_DEVICE_CALLABLE
-double lon_to_x(double lon, double lat)
+__device__ inline double lon_to_x(double lon, double lat)
 {
   return lon * earth_circumference_km_per_degree * cos(lat * deg_to_rad);
 };
 
-CUDA_HOST_DEVICE_CALLABLE
-double lat_to_y(double lat) { return lat * earth_circumference_km_per_degree; };
+__device__ inline double lat_to_y(double lat) { return lat * earth_circumference_km_per_degree; };
 
 struct lonlat_to_cartesian_functor {
   template <typename T, typename... Args>
