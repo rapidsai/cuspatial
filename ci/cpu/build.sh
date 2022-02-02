@@ -77,7 +77,6 @@ conda config --set ssl_verify False
 ##########################################################################################
 
 if [ "$BUILD_LIBCUSPATIAL" == '1' ]; then
-  sccache --zero-stats
   gpuci_logger "Build conda pkg for libcuspatial"
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     gpuci_conda_retry build --no-build-id --croot ${CONDA_BLD_DIR} conda/recipes/libcuspatial
