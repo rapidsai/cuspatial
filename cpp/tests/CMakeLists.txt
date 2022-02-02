@@ -25,17 +25,25 @@ function(ConfigureTest CMAKE_TEST_NAME)
     target_include_directories(${CMAKE_TEST_NAME}
                 PRIVATE "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}>"
                         "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}/src>")
-    set_target_properties(${CMAKE_TEST_NAME}
-        PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gtests>")
+    set_target_properties(
+        ${CMAKE_TEST_NAME}
+        PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gtests>"
+                   INSTALL_RPATH "\$ORIGIN/../lib"
+    )
     target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main cudf::cudftestutil cuspatial)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
+    install(
+        TARGETS ${CMAKE_TEST_NAME}
+        COMPONENT testing
+        EXCLUDE_FROM_ALL
+    )
 endfunction(ConfigureTest)
 
 ###################################################################################################
 ### test sources ##################################################################################
 ###################################################################################################
 
- ConfigureTest(CUBIC_SPLINE_TEST
+ConfigureTest(CUBIC_SPLINE_TEST
     interpolate/cubic_spline_test.cpp)
 
 ConfigureTest(COORDINATE_TRANSFORM_TEST
