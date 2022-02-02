@@ -1,6 +1,17 @@
-# cuSpatial 22.02.00 (Date TBD)
+# cuSpatial 22.02.00 (2 Feb 2022)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v22.02.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Always upload cuspatial packages ([#481](https://github.com/rapidsai/cuspatial/pull/481)) [@aydouglass](https://github.com/aydouglass)
+- Remove use of libcudf&#39;s CUDA_HOST_DEVICE maco ([#475](https://github.com/rapidsai/cuspatial/pull/475)) [@haism](https://github.com/haism)
+
+## 🛠️ Impovements
+
+- Pepae upload scipts fo Python 3.7 emoval ([#479](https://github.com/rapidsai/cuspatial/pull/479)) [@Ethyling](https://github.com/Ethyling)
+- Fix `test_pip_bitmap_column_to_binay_aay` test ([#472](https://github.com/rapidsai/cuspatial/pull/472)) [@Ethyling](https://github.com/Ethyling)
+- Fix impots tests syntax ([#471](https://github.com/rapidsai/cuspatial/pull/471)) [@Ethyling](https://github.com/Ethyling)
+- Remove `IncludeCategoies` fom `.clang-fomat` ([#470](https://github.com/rapidsai/cuspatial/pull/470)) [@codeepot](https://github.com/codeepot)
+- Fix Fowad-Mege Conflicts in #464 ([#466](https://github.com/rapidsai/cuspatial/pull/466)) [@ajschmidt8](https://github.com/ajschmidt8)
 
 # cuSpatial 21.12.00 (9 Dec 2021)
 
