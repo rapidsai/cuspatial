@@ -39,6 +39,10 @@ fi
 export GPUCI_CONDA_RETRY_MAX=1
 export GPUCI_CONDA_RETRY_SLEEP=30
 
+export CMAKE_CUDA_COMPILER_LAUNCHER="sccache"
+export CMAKE_CXX_COMPILER_LAUNCHER="sccache"
+export CMAKE_C_COMPILER_LAUNCHER="sccache"
+
 ################################################################################
 # SETUP - Check environment
 ################################################################################
@@ -81,6 +85,8 @@ if [ "$BUILD_LIBCUSPATIAL" == '1' ]; then
     mkdir -p ${CONDA_BLD_DIR}/libcuspatial/work
     cp -r ${CONDA_BLD_DIR}/work/* ${CONDA_BLD_DIR}/libcuspatial/work
   fi
+  gpuci_logger "sccache stats"
+  sccache --show-stats
 fi
 
 if [ "$BUILD_CUSPATIAL" == '1' ]; then
