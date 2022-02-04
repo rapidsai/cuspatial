@@ -28,13 +28,14 @@ function(ConfigureTest CMAKE_TEST_NAME)
     set_target_properties(
         ${CMAKE_TEST_NAME}
         PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gtests>"
-                   INSTALL_RPATH "\$ORIGIN/../lib"
+                   INSTALL_RPATH "\$ORIGIN/../../../lib"
     )
     target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main cudf::cudftestutil cuspatial)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
     install(
         TARGETS ${CMAKE_TEST_NAME}
         COMPONENT testing
+        DESTINATION bin/gtests/libcuspatial
         EXCLUDE_FROM_ALL
     )
 endfunction(ConfigureTest)
