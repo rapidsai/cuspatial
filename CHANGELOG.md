@@ -2,16 +2,16 @@
 
 ## 🐛 Bug Fixes
 
-- Always upload cuspatial packages ([#481](https://github.com/rapidsai/cuspatial/pull/481)) [@aydouglass](https://github.com/aydouglass)
-- Remove use of libcudf&#39;s CUDA_HOST_DEVICE maco ([#475](https://github.com/rapidsai/cuspatial/pull/475)) [@haism](https://github.com/haism)
+- Always upload cuspatial packages ([#481](https://github.com/rapidsai/cuspatial/pull/481)) [@raydouglass](https://github.com/raydouglass)
+- Remove use of libcudf&#39;s CUDA_HOST_DEVICE macro ([#475](https://github.com/rapidsai/cuspatial/pull/475)) [@harrism](https://github.com/harrism)
 
-## 🛠️ Impovements
+## 🛠️ Improvements
 
-- Pepae upload scipts fo Python 3.7 emoval ([#479](https://github.com/rapidsai/cuspatial/pull/479)) [@Ethyling](https://github.com/Ethyling)
-- Fix `test_pip_bitmap_column_to_binay_aay` test ([#472](https://github.com/rapidsai/cuspatial/pull/472)) [@Ethyling](https://github.com/Ethyling)
-- Fix impots tests syntax ([#471](https://github.com/rapidsai/cuspatial/pull/471)) [@Ethyling](https://github.com/Ethyling)
-- Remove `IncludeCategoies` fom `.clang-fomat` ([#470](https://github.com/rapidsai/cuspatial/pull/470)) [@codeepot](https://github.com/codeepot)
-- Fix Fowad-Mege Conflicts in #464 ([#466](https://github.com/rapidsai/cuspatial/pull/466)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Prepare upload scripts for Python 3.7 removal ([#479](https://github.com/rapidsai/cuspatial/pull/479)) [@Ethyling](https://github.com/Ethyling)
+- Fix `test_pip_bitmap_column_to_binary_array` test ([#472](https://github.com/rapidsai/cuspatial/pull/472)) [@Ethyling](https://github.com/Ethyling)
+- Fix imports tests syntax ([#471](https://github.com/rapidsai/cuspatial/pull/471)) [@Ethyling](https://github.com/Ethyling)
+- Remove `IncludeCategories` from `.clang-format` ([#470](https://github.com/rapidsai/cuspatial/pull/470)) [@codereport](https://github.com/codereport)
+- Fix Forward-Merge Conflicts in #464 ([#466](https://github.com/rapidsai/cuspatial/pull/466)) [@ajschmidt8](https://github.com/ajschmidt8)
 
 # cuSpatial 21.12.00 (9 Dec 2021)
 
