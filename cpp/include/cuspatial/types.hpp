@@ -27,39 +27,15 @@
 namespace cuspatial {
 
 /**
- * @brief A 2D location: latitude and longitude, altitude
+ * @brief A 2D location: latitude and longitude
  *
  * @tparam T the base type for the coordinates
  */
 template <typename T>
-struct location_2d {
+struct alignas(2 * sizeof(T)) location_2d {
   using value_type = T;
   value_type longitude;
   value_type latitude;
-};
-
-/**
- * @brief A 3D location: latitude, longitude, altitude
- *
- * @tparam T the base type for the coordinates
- */
-template <typename T>
-struct location_3d {
-  using value_type = T;
-  value_type longitude;
-  value_type latitude;
-  value_type altitude;
-};
-
-/**
- * @brief A 2D Cartesian location (x, y)
- *
- * @tparam T the base type for the coordinates
- */
-template <typename T>
-struct coord_2d {
-  T x;
-  T y;
 };
 
 /**
