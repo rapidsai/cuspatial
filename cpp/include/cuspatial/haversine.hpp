@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,4 +44,5 @@ std::unique_ptr<cudf::column> haversine_distance(
   cudf::column_view const& b_lat,
   double const radius                 = EARTH_RADIUS_KM,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
 }  // namespace cuspatial
