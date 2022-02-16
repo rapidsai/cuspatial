@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "cuspatial/types.hpp"
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/types.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
