@@ -21,18 +21,16 @@
 
 namespace cuspatial {
 
-namespace {
+namespace detail {
 template <typename T>
 struct tuple_to_location_2d {
-  // using result_type = cuspatial::location_2d<T>;
-
-  CUSPATIAL_HOST_DEVICE cuspatial::location_2d<T> operator()(thrust::tuple<T, T> lonlat)
+  __device__ cuspatial::location_2d<T> operator()(thrust::tuple<T, T> lonlat)
   {
     return cuspatial::location_2d<T>{thrust::get<0>(lonlat), thrust::get<1>(lonlat)};
   }
 };
 
-}  // anonymous namespace
+}  // namespace detail
 
 // convert two iterators to an iterator<location_2d<T>
 template <typename LonIter, typename LatIter>
@@ -43,7 +41,7 @@ auto to_location_2d(LonIter lon, LatIter lat)
                 "Iterator value_type mismatch");
 
   auto zipped = thrust::make_zip_iterator(thrust::make_tuple(lon, lat));
-  return thrust::make_transform_iterator(zipped, tuple_to_location_2d<T>());
+  return thrust::make_transform_iterator(zipped, detail::tuple_to_location_2d<T>());
 }
 
 }  // namespace cuspatial
