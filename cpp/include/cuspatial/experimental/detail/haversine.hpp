@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "cuspatial/types.hpp"
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
 
@@ -36,87 +37,72 @@ namespace cuspatial {
 namespace detail {
 
 template <typename T>
-__device__ T calculate_haversine_distance(T radius, T a_lon, T a_lat, T b_lon, T b_lat)
-{
-  auto ax = a_lon * DEGREE_TO_RADIAN;
-  auto ay = a_lat * DEGREE_TO_RADIAN;
-  auto bx = b_lon * DEGREE_TO_RADIAN;
-  auto by = b_lat * DEGREE_TO_RADIAN;
+struct haversine_distance_functor {
+  haversine_distance_functor(T radius) : radius_(radius) {}
 
-  // haversine formula
-  auto x        = (bx - ax) / 2;
-  auto y        = (by - ay) / 2;
-  auto sinysqrd = sin(y) * sin(y);
-  auto sinxsqrd = sin(x) * sin(x);
-  auto scale    = cos(ay) * cos(by);
+  __device__ T operator()(location_2d<T> a_lonlat, location_2d<T> b_lonlat)
+  {
+    auto ax = a_lonlat.longitude * DEGREE_TO_RADIAN;
+    auto ay = a_lonlat.latitude * DEGREE_TO_RADIAN;
+    auto bx = b_lonlat.longitude * DEGREE_TO_RADIAN;
+    auto by = b_lonlat.latitude * DEGREE_TO_RADIAN;
 
-  return 2 * radius * asin(sqrt(sinysqrd + sinxsqrd * scale));
+    // haversine formula
+    auto x        = (bx - ax) / 2;
+    auto y        = (by - ay) / 2;
+    auto sinysqrd = sin(y) * sin(y);
+    auto sinxsqrd = sin(x) * sin(x);
+    auto scale    = cos(ay) * cos(by);
+
+    return 2 * radius_ * asin(sqrt(sinysqrd + sinxsqrd * scale));
+  }
+
+  T radius_{};
 };
 
-template <class LonItA,
-          class LatItA,
-          class LonItB,
-          class LatItB,
+template <class LonLatItA,
+          class LonLatItB,
           class OutputIt,
-          class T = typename std::iterator_traits<LonItA>::value_type>
-OutputIt haversine_distance(LonItA a_lon_first,
-                            LonItA a_lon_last,
-                            LatItA a_lat_first,
-                            LonItB b_lon_first,
-                            LatItB b_lat_first,
+          class Location = typename std::iterator_traits<LonLatItA>::value_type,
+          class T        = typename Location::value_type>
+OutputIt haversine_distance(LonLatItA a_lonlat_first,
+                            LonLatItA a_lonlat_last,
+                            LonLatItB b_lonlat_first,
                             OutputIt distance_first,
                             T const radius               = EARTH_RADIUS_KM,
                             rmm::cuda_stream_view stream = rmm::cuda_stream_default)
 {
+  using LocationB = typename std::iterator_traits<LonLatItB>::value_type;
+  static_assert(std::conjunction_v<std::is_same<location_2d<T>, Location>,
+                                   std::is_same<location_2d<T>, LocationB>>,
+                "Inputs must be cuspatial::location_2d");
   static_assert(
     std::conjunction_v<std::is_floating_point<T>,
-                       std::is_floating_point<typename std::iterator_traits<LonItA>::value_type>,
-                       std::is_floating_point<typename std::iterator_traits<LatItA>::value_type>,
-                       std::is_floating_point<typename std::iterator_traits<LonItB>::value_type>,
-                       std::is_floating_point<typename std::iterator_traits<LatItB>::value_type>,
+                       std::is_floating_point<typename LocationB::value_type>,
                        std::is_floating_point<typename std::iterator_traits<OutputIt>::value_type>>,
     "Haversine distance supports only floating-point coordinates.");
 
   CUSPATIAL_EXPECTS(radius > 0, "radius must be positive.");
 
-  auto input_tuple = thrust::make_tuple(thrust::make_constant_iterator(static_cast<T>(radius)),
-                                        a_lon_first,
-                                        a_lat_first,
-                                        b_lon_first,
-                                        b_lat_first);
-
-  auto input_iter = thrust::make_zip_iterator(input_tuple);
-
-  auto output_size = std::distance(a_lon_first, a_lon_last);
-
   return thrust::transform(rmm::exec_policy(stream),
-                           input_iter,
-                           input_iter + output_size,
+                           a_lonlat_first,
+                           a_lonlat_last,
+                           b_lonlat_first,
                            distance_first,
-                           [] __device__(auto inputs) {
-                             return calculate_haversine_distance(thrust::get<0>(inputs),
-                                                                 thrust::get<1>(inputs),
-                                                                 thrust::get<2>(inputs),
-                                                                 thrust::get<3>(inputs),
-                                                                 thrust::get<4>(inputs));
-                           });
+                           haversine_distance_functor<T>(radius));
 }
 }  // namespace detail
 
-template <class LonItA, class LatItA, class LonItB, class LatItB, class OutputIt, class T>
-OutputIt haversine_distance(LonItA a_lon_first,
-                            LonItA a_lon_last,
-                            LatItA a_lat_first,
-                            LonItB b_lon_first,
-                            LatItB b_lat_first,
+template <class LonLatItA, class LonLatItB, class OutputIt, class Location, class T>
+OutputIt haversine_distance(LonLatItA a_lonlat_first,
+                            LonLatItA a_lonlat_last,
+                            LonLatItB b_lonlat_first,
                             OutputIt distance_first,
                             T const radius)
 {
-  return detail::haversine_distance(a_lon_first,
-                                    a_lon_last,
-                                    a_lat_first,
-                                    b_lon_first,
-                                    b_lat_first,
+  return detail::haversine_distance(a_lonlat_first,
+                                    a_lonlat_last,
+                                    b_lonlat_first,
                                     distance_first,
                                     radius,
                                     rmm::cuda_stream_default);

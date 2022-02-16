@@ -17,6 +17,8 @@
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/haversine.hpp>
+#include <cuspatial/experimental/type_utils.hpp>
+#include <cuspatial/types.hpp>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_view.hpp>
@@ -37,7 +39,7 @@ struct haversine_functor {
   std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
     Args&&...)
   {
-    CUSPATIAL_FAIL("haversine_distance does not support non-floating-point types.");
+    CUSPATIAL_FAIL("haversine_distance supports only floating-point types.");
   }
 
   template <typename T>
@@ -55,12 +57,13 @@ struct haversine_functor {
     auto mask_policy = cudf::mask_allocation_policy::NEVER;
     auto result      = cudf::allocate_like(a_lon, a_lon.size(), mask_policy, mr);
 
+    auto lonlat_a = cuspatial::to_location_2d(a_lon.begin<T>(), a_lat.begin<T>());
+    auto lonlat_b = cuspatial::to_location_2d(b_lon.begin<T>(), b_lat.begin<T>());
+
     cuspatial::detail::haversine_distance(
-      a_lon.begin<T>(),
-      a_lon.end<T>(),
-      a_lat.begin<T>(),
-      b_lon.begin<T>(),
-      b_lat.begin<T>(),
+      lonlat_a,
+      lonlat_a + a_lon.size(),
+      lonlat_b,
       static_cast<cudf::mutable_column_view>(*result).begin<T>(),
       T{radius},
       stream);
@@ -72,7 +75,6 @@ struct haversine_functor {
 }  // anonymous namespace
 
 namespace cuspatial {
-
 namespace detail {
 
 std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,

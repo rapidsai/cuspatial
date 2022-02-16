@@ -17,6 +17,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/haversine.hpp>
 
+#include <initializer_list>
 #include <rmm/device_vector.hpp>
 
 #include <gtest/gtest.h>
@@ -31,18 +32,17 @@ TYPED_TEST_CASE(HaversineTest, TestTypes);
 
 TYPED_TEST(HaversineTest, Empty)
 {
-  using T = TypeParam;
+  using T        = TypeParam;
+  using Location = cuspatial::location_2d<T>;
 
-  auto a_lon = rmm::device_vector<T>{};
-  auto a_lat = rmm::device_vector<T>{};
-  auto b_lon = rmm::device_vector<T>{};
-  auto b_lat = rmm::device_vector<T>{};
+  auto a_lonlat = rmm::device_vector<Location>{};
+  auto b_lonlat = rmm::device_vector<Location>{};
 
   auto distance = rmm::device_vector<T>{};
   auto expected = rmm::device_vector<T>{};
 
   auto distance_end = cuspatial::haversine_distance(
-    a_lon.begin(), a_lon.end(), a_lat.begin(), b_lon.begin(), b_lat.begin(), distance.begin());
+    a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
 
   EXPECT_EQ(distance, expected);
   EXPECT_EQ(0, std::distance(distance.begin(), distance_end));
@@ -50,18 +50,18 @@ TYPED_TEST(HaversineTest, Empty)
 
 TYPED_TEST(HaversineTest, Zero)
 {
-  using T = TypeParam;
+  using T        = TypeParam;
+  using Location = cuspatial::location_2d<T>;
+  using LocVec   = std::vector<Location>;
 
-  auto a_lon = rmm::device_vector<T>{1, 0};
-  auto a_lat = rmm::device_vector<T>{1, 0};
-  auto b_lon = rmm::device_vector<T>{1, 0};
-  auto b_lat = rmm::device_vector<T>{1, 0};
+  auto a_lonlat = rmm::device_vector<Location>(1, Location{0, 0});
+  auto b_lonlat = rmm::device_vector<Location>(1, Location{0, 0});
 
   auto distance = rmm::device_vector<T>{1, -1};
   auto expected = rmm::device_vector<T>{1, 0};
 
   auto distance_end = cuspatial::haversine_distance(
-    a_lon.begin(), a_lon.end(), a_lat.begin(), b_lon.begin(), b_lat.begin(), distance.begin());
+    a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
 
   EXPECT_EQ(expected, distance);
   EXPECT_EQ(1, std::distance(distance.begin(), distance_end));
@@ -69,46 +69,39 @@ TYPED_TEST(HaversineTest, Zero)
 
 TYPED_TEST(HaversineTest, NegativeRadius)
 {
-  using T = TypeParam;
+  using T        = TypeParam;
+  using Location = cuspatial::location_2d<T>;
+  using LocVec   = std::vector<Location>;
 
-  auto a_lon = rmm::device_vector<T>{1, 0};
-  auto a_lat = rmm::device_vector<T>{1, 0};
-  auto b_lon = rmm::device_vector<T>{1, 0};
-  auto b_lat = rmm::device_vector<T>{1, 0};
+  auto a_lonlat = rmm::device_vector<Location>(LocVec({Location{1, 1}, Location{0, 0}}));
+  auto b_lonlat = rmm::device_vector<Location>(LocVec({Location{1, 1}, Location{0, 0}}));
 
   auto distance = rmm::device_vector<T>{1, -1};
   auto expected = rmm::device_vector<T>{1, 0};
 
-  EXPECT_THROW(cuspatial::haversine_distance(a_lon.begin(),
-                                             a_lon.end(),
-                                             a_lat.begin(),
-                                             b_lon.begin(),
-                                             b_lat.begin(),
-                                             distance.begin(),
-                                             T{-10}),
+  EXPECT_THROW(cuspatial::haversine_distance(
+                 a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin(), T{-10}),
                cuspatial::logic_error);
 }
 
 TYPED_TEST(HaversineTest, EquivalentPoints)
 {
-  using T = TypeParam;
+  using T        = TypeParam;
+  using Location = cuspatial::location_2d<T>;
 
-  auto h_a_lon    = std::vector<T>({-180, 180});
-  auto h_a_lat    = std::vector<T>({0, 30});
-  auto h_b_lon    = std::vector<T>({180, -180});
-  auto h_b_lat    = std::vector<T>({0, 30});
+  auto h_a_lonlat = std::vector<Location>({{-180, 0}, {180, 30}});
+  auto h_b_lonlat = std::vector<Location>({{180, 0}, {-180, 30}});
+
   auto h_expected = std::vector<T>({1.5604449514735574e-12, 1.3513849691832763e-12});
 
-  auto a_lon = rmm::device_vector<T>{h_a_lon};
-  auto a_lat = rmm::device_vector<T>{h_a_lat};
-  auto b_lon = rmm::device_vector<T>{h_b_lon};
-  auto b_lat = rmm::device_vector<T>{h_b_lat};
+  auto a_lonlat = rmm::device_vector<Location>{h_a_lonlat};
+  auto b_lonlat = rmm::device_vector<Location>{h_b_lonlat};
 
   auto distance = rmm::device_vector<T>{2, -1};
   auto expected = rmm::device_vector<T>{h_expected};
 
   auto distance_end = cuspatial::haversine_distance(
-    a_lon.begin(), a_lon.end(), a_lat.begin(), b_lon.begin(), b_lat.begin(), distance.begin());
+    a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
 
   EXPECT_EQ(expected, distance);
   EXPECT_EQ(2, std::distance(distance.begin(), distance_end));
