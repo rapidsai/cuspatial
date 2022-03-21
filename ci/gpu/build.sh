@@ -28,10 +28,6 @@ cd "$WORKSPACE"
 export GIT_DESCRIBE_TAG=`git describe --tags`
 export MINOR_VERSION=`echo $GIT_DESCRIBE_TAG | grep -o -E '([0-9]+\.[0-9]+)'`
 
-export CMAKE_CUDA_COMPILER_LAUNCHER="sccache"
-export CMAKE_CXX_COMPILER_LAUNCHER="sccache"
-export CMAKE_C_COMPILER_LAUNCHER="sccache"
-
 ################################################################################
 # SETUP - Check environment
 ################################################################################
@@ -48,7 +44,7 @@ conda activate rapids
 gpuci_mamba_retry install "cudf=${MINOR_VERSION}.*" "cudatoolkit=$CUDA_REL" \
     "rapids-build-env=$MINOR_VERSION.*"
 
-# https://docs.rapids.ai/maintainers/depmgmt/ 
+# https://docs.rapids.ai/maintainers/depmgmt/
 # gpuci_mamba_retry remove --force rapids-build-env
 # gpuci_mamba_retry install "your-pkg=1.0.0"
 
@@ -110,8 +106,6 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
         py.test --cache-clear --junitxml="$WORKSPACE/junit-cuspatial.xml" -v
     fi
 else
-    export LD_LIBRARY_PATH="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/cpp/build:$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
-
     TESTRESULTS_DIR="$WORKSPACE/test-results/"
     mkdir -p ${TESTRESULTS_DIR}
     SUITEERROR=0
@@ -119,10 +113,10 @@ else
     gpuci_logger "Check GPU usage"
     nvidia-smi
 
+    gpuci_mamba_retry install -c "${CONDA_ARTIFACT_PATH}" libcuspatial libcuspatial-tests
+
     gpuci_logger "Running googletests"
-    # run gtests
-    cd "$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/"
-    for gt in cpp/build/gtests/* ; do
+    for gt in "${CONDA_PREFIX}/bin/gtests/libcuspatial/"*; do
         test_name=$(basename ${gt})
         echo "Running GoogleTest $test_name"
         ${gt} --gtest_output=xml:${TESTRESULTS_DIR}
@@ -134,18 +128,10 @@ else
     done
 
     cd "$WORKSPACE/python"
-    
-    CONDA_FILE=`find "$CONDA_ARTIFACT_PATH" -name "libcuspatial*.tar.bz2"`
-    CONDA_FILE=`basename "$CONDA_FILE" .tar.bz2` #get filename without extension
-    CONDA_FILE=${CONDA_FILE//-/=} #convert to conda install
-    gpuci_logger "Installing $CONDA_FILE"
-    conda install -c "$CONDA_ARTIFACT_PATH" "$CONDA_FILE"
 
-    export LIBCUGRAPH_BUILD_DIR="$WORKSPACE/ci/artifacts/cuspatial/cpu/conda_work/build"
-    
     gpuci_logger "Building cuspatial"
     "$WORKSPACE/build.sh" -v cuspatial
-    
+
     gpuci_logger "Run pytests"
     py.test --cache-clear --junitxml="$WORKSPACE/junit-cuspatial.xml" -v
 

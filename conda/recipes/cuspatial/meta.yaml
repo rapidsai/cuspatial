@@ -21,7 +21,7 @@ build:
     - CUDAHOSTCXX
 
 requirements:
-  build:
+  host:
     - python
     - cython >=0.29,<0.30
     - setuptools
