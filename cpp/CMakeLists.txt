@@ -117,7 +117,7 @@ include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
 
-add_library(cuspatial SHARED
+add_library(cuspatial
     src/indexing/construction/point_quadtree.cu
     src/interpolate/cubic_spline.cu
     src/io/shp/polygon_shapefile_reader.cpp
