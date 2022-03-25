@@ -19,6 +19,8 @@
 #include <cudf/types.hpp>
 #include <cudf/utilities/span.hpp>
 
+namespace cuspatial {
+
 /**
  * @brief Compute the shortest distance between every pair of spaces.
  *
@@ -34,4 +36,6 @@ std::unique_ptr<cudf::column> polygon_distance(
   cudf::column_view const& xs,
   cudf::column_view const& ys,
   cudf::device_span<cudf::size_type> const& space_offsets,
-  rmm::mr::device_memory_resource* mr);
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+}  // namespace cuspatial

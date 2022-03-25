@@ -77,6 +77,9 @@ ConfigureTest(POLYLINE_BBOX_TEST
 ConfigureTest(POLYGON_BBOX_TEST
     spatial/polygon_bbox_test.cu)
 
+ConfigureTest(POLYGON_DISTANCE_TEST
+    spatial/polygon_distance_test.cu)
+
 ConfigureTest(SHAPEFILE_READER_TEST
     io/shp/polygon_shapefile_reader_test.cpp)
 
