@@ -38,6 +38,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 ###################################################################################################
 # - build options ---------------------------------------------------------------------------------
 
+option(BUILD_SHARED_LIBS "Build cuSpatial shared libraries" ON)
 option(USE_NVTX "Build with NVTX support" ON)
 option(BUILD_TESTS "Configure CMake to build tests" OFF)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
