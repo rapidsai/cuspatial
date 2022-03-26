@@ -58,3 +58,51 @@ TYPED_TEST(PolygonDistanceTest, ZeroPoints)
   // space_offsets = fixed_width_column_wrapper<size_type>{};
   // got = polygon_distance(xs, ys, column_view(space_offsets));
 }
+
+TYPED_TEST(PolygonDistanceTest, TwoPolygonsNoIntersect)
+{
+  // Polygon 1: (0, 0), (0, 2), (2, 0), (0, 0)
+  // Polygon 2: (3, 1), (3, -1), (7, 5), (7, 1), (5, 2), (3, 1)
+  // Distance: 1, from point (2, 0) to line segment (3, 1)->(3,-1)
+  auto const xs = fixed_width_column_wrapper<TypeParam>{0, 0, 2, 0, 3, 3, 7, 7, 5, 3};
+  auto const ys = fixed_width_column_wrapper<TypeParam>{0, 2, 0, 0, 1, -1, 5, 1, 2, 1};
+  std::vector<size_type> h_space_offsets{0, 5};
+  thrust::device_vector<size_type> d_space_offsests(h_space_offsets.begin(), h_space_offsets.end());
+
+  auto const expected = fixed_width_column_wrapper<TypeParam>{0, 1, 1, 0};
+  auto got            = cuspatial::polygon_distance(xs, ys, d_space_offsests);
+
+  expect_columns_equal(expected, *got);
+}
+
+TYPED_TEST(PolygonDistanceTest, TwoPolygonsIntersect)
+{
+  // Polygon 1: (0, 0), (0, 2), (2, 0), (0, 0)
+  // Polygon 2: (1, 1), (2, 1), (2, 2), (1, 2), (1, 1)
+  // Distance: 0, two polygons intersects
+  auto const xs = fixed_width_column_wrapper<TypeParam>{0, 0, 2, 0, 1, 2, 2, 1, 1};
+  auto const ys = fixed_width_column_wrapper<TypeParam>{0, 2, 0, 0, 1, 1, 2, 2, 1};
+  std::vector<size_type> h_space_offsets{0, 5};
+  thrust::device_vector<size_type> d_space_offsests(h_space_offsets.begin(), h_space_offsets.end());
+
+  auto const expected = fixed_width_column_wrapper<TypeParam>{0, 0, 0, 0};
+  auto got            = cuspatial::polygon_distance(xs, ys, d_space_offsests);
+
+  expect_columns_equal(expected, *got);
+}
+
+TYPED_TEST(PolygonDistanceTest, TwoPolygonsContainTest)
+{
+  // Polygon 1: (0, 0), (3, 0), (3, 3), (0, 3), (0, 0)
+  // Polygon 2: (1, 1), (1, 2), (2, 2), (2, 1), (1, 1)
+  // Distance: 0, polygon 1 contains polygon 2
+  auto const xs = fixed_width_column_wrapper<TypeParam>{0, 0, 2, 0, 1, 2, 2, 1, 1};
+  auto const ys = fixed_width_column_wrapper<TypeParam>{0, 2, 0, 0, 1, 1, 2, 2, 1};
+  std::vector<size_type> h_space_offsets{0, 5};
+  thrust::device_vector<size_type> d_space_offsests(h_space_offsets.begin(), h_space_offsets.end());
+
+  auto const expected = fixed_width_column_wrapper<TypeParam>{0, 0, 0, 0};
+  auto got            = cuspatial::polygon_distance(xs, ys, d_space_offsests);
+
+  expect_columns_equal(expected, *got);
+}
