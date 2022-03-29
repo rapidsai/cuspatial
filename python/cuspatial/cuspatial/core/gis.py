@@ -217,9 +217,9 @@ def point_in_polygon(
 
     note
     poly_ring_offsets must contain only the rings that make up the polygons
-    indexed by poly_offsets. If there are rings in poly_ring_offsets that are not
-    part of the polygons in poly_offsets, results are likely to be incorrect and
-    behavior is undefined.
+    indexed by poly_offsets. If there are rings in poly_ring_offsets that
+    are not part of the polygons in poly_offsets, results are likely to be
+    incorrect and behavior is undefined.
 
     Returns
     -------
