@@ -27,7 +27,7 @@ only libcuspatial API, we can avoid problem 1 and problem 2 for users of the leg
 
 ## Example API
 
-Following is an example iterator-based API for `cuspatial::haversine_distance`. 
+Following is an example iterator-based API for `cuspatial::haversine_distance`.
 
 ```C++
 template <class LonLatItA,
