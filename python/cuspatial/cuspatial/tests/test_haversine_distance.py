@@ -72,7 +72,7 @@ def test_triple():
         cudf.Series(pnt_y2),
     )
     assert np.allclose(
-        distance.to_array(),
+        distance.values_host,
         [
             [
                 0.0,
