@@ -71,4 +71,4 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             T const radius = EARTH_RADIUS_KM);
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/haversine.hpp>
+#include <cuspatial/experimental/detail/haversine.cuh>

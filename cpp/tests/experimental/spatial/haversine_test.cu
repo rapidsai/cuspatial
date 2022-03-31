@@ -17,7 +17,7 @@
 #include "cuspatial/types.hpp"
 #include "thrust/iterator/transform_iterator.h"
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/haversine.hpp>
+#include <cuspatial/experimental/haversine.cuh>
 
 #include <initializer_list>
 #include <rmm/device_vector.hpp>

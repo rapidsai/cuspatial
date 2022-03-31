@@ -16,7 +16,7 @@
 
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/haversine.hpp>
+#include <cuspatial/experimental/haversine.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
 #include <cuspatial/types.hpp>
 
