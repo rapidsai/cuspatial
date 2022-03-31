@@ -39,10 +39,6 @@ fi
 export GPUCI_CONDA_RETRY_MAX=1
 export GPUCI_CONDA_RETRY_SLEEP=30
 
-export CMAKE_CUDA_COMPILER_LAUNCHER="sccache"
-export CMAKE_CXX_COMPILER_LAUNCHER="sccache"
-export CMAKE_C_COMPILER_LAUNCHER="sccache"
-
 ################################################################################
 # SETUP - Check environment
 ################################################################################
