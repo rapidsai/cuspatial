@@ -263,3 +263,6 @@ cuspatial::detail::haversine_distance(
 
 Existing libcudf-based API tests can mostly be left alone. New tests should be added to exercise
 the header-only API separately in case the libcudf-based API is removed.
+
+Note that tests, like the header-only API, should not depend on libcudf or libcudf_test. The cuDF-based API made the mistake of depending on libcudf_test, which results in breakages
+of cuSpatial sometimes when libcudf_test changes.
