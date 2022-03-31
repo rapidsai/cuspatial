@@ -34,6 +34,10 @@
 #include <memory>
 #include <type_traits>
 
+#ifndef DEBUG
+#define DEBUG 1
+#endif
+
 namespace cuspatial {
 namespace {
 
@@ -83,8 +87,13 @@ double __device__ segment_distance(coord_2d<T> const& A,
   // If both parameters are within [0, 1], the intersection exists.
 
   double r_denom = (B.x - A.x) * (D.y - C.y) - (B.y - A.y) * (D.x - C.x);
-  if (r_denom == 0) { return 0.0; }  // parallel or conincide
-  double r = ((A.y - C.y) * (D.x - C.x) - (A.x - C.x) * (D.y - C.y)) / r_denom;
+  double r_numer = (A.y - C.y) * (D.x - C.x) - (A.x - C.x) * (D.y - C.y);
+  if (r_denom == 0) {
+    if (r_numer == 0) { return 0.0; }  // Segments coincides
+    // Segments parallel
+    return segment_distance_no_intersect(A, B, C, D);
+  }
+  double r = r_numer / r_denom;
   double s = ((A.y - C.y) * (B.x - A.x) - (A.x - C.x) * (B.y - A.x)) /
              ((B.x - A.x) * (D.y - C.y) - (B.y - A.y) * (D.x - C.x));
   if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return 0.0; }
@@ -134,11 +143,13 @@ struct linestirngs_pairs_min_distance_functor {
     auto const l2pts_start = linestring2_offsets[idx];
     auto const l2pts_end =
       idx == (num_linestrings - 1) ? linestring2_num_points : linestring2_offsets[idx + 1];
+#ifdef DEBUG
     printf("idx: %d\n", idx);
     printf("num_points_ls1: %d\n", linestring1_num_points);
     printf("num_points_ls2: %d\n", linestring2_num_points);
     printf("l1pts: %d, %d\n", l1pts_start, l1pts_end);
     printf("l2pts: %d, %d\n", l2pts_start, l2pts_end);
+#endif
     double min_distance = std::numeric_limits<T>::max();
     for (cudf::size_type i = l1pts_start; i < l1pts_end - 1; i++) {
       for (cudf::size_type j = l2pts_start; j < l2pts_end - 1; j++) {
@@ -147,8 +158,9 @@ struct linestirngs_pairs_min_distance_functor {
         coord_2d<T> C{linestring2_points_xs[j], linestring2_points_ys[j]};
         coord_2d<T> D{linestring2_points_xs[j + 1], linestring2_points_ys[j + 1]};
         min_distance = std::min(segment_distance(A, B, C, D), min_distance);
-
+#ifdef DEBUG
         printf("%d %d, %f\n", i, j, min_distance);
+#endif
       }
     }
     return min_distance;
