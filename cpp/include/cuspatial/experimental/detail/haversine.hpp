@@ -91,6 +91,7 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                            distance_first,
                            haversine_distance_functor<T>(radius));
 }
+
 }  // namespace detail
 
 template <class LonLatItA, class LonLatItB, class OutputIt, class Location, class T>

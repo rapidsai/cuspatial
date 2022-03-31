@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "cuspatial/types.hpp"
+#include "thrust/iterator/transform_iterator.h"
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/haversine.hpp>
 
@@ -102,6 +104,39 @@ TYPED_TEST(HaversineTest, EquivalentPoints)
 
   auto distance_end = cuspatial::haversine_distance(
     a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
+
+  EXPECT_EQ(expected, distance);
+  EXPECT_EQ(2, std::distance(distance.begin(), distance_end));
+}
+
+template <typename T>
+struct identity_xform {
+  using Location = cuspatial::location_2d<T>;
+  __device__ Location operator()(Location const& loc) { return loc; };
+};
+
+// This test verifies that fancy iterators can be passed by using a pass-through transform_iterator
+TYPED_TEST(HaversineTest, TransformIterator)
+{
+  using T        = TypeParam;
+  using Location = cuspatial::location_2d<T>;
+
+  auto h_a_lonlat = std::vector<Location>({{-180, 0}, {180, 30}});
+  auto h_b_lonlat = std::vector<Location>({{180, 0}, {-180, 30}});
+
+  auto h_expected = std::vector<T>({1.5604449514735574e-12, 1.3513849691832763e-12});
+
+  auto a_lonlat = rmm::device_vector<Location>{h_a_lonlat};
+  auto b_lonlat = rmm::device_vector<Location>{h_b_lonlat};
+
+  auto distance = rmm::device_vector<T>{2, -1};
+  auto expected = rmm::device_vector<T>{h_expected};
+
+  auto xform_begin = thrust::make_transform_iterator(a_lonlat.begin(), identity_xform<T>{});
+  auto xform_end   = thrust::make_transform_iterator(a_lonlat.end(), identity_xform<T>{});
+
+  auto distance_end =
+    cuspatial::haversine_distance(xform_begin, xform_end, b_lonlat.begin(), distance.begin());
 
   EXPECT_EQ(expected, distance);
   EXPECT_EQ(2, std::distance(distance.begin(), distance_end));
