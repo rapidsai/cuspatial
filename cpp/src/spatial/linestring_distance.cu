@@ -217,7 +217,7 @@ struct pariwise_linestring_distance_functor {
 };
 
 /**
- * @brief Check if every linestring in the input contains at least 1 segment.
+ * @brief Check if every linestring in the input contains at least 2 end points.
  */
 bool validate_linestring(cudf::device_span<cudf::size_type const> linestring_offsets,
                          cudf::column_view const& linestring_points_x,
