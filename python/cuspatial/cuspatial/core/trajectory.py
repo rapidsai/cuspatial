@@ -72,7 +72,7 @@ def derive_trajectories(object_ids, xs, ys, timestamps):
 
 
 def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
-    """ Compute the bounding boxes of sets of trajectories.
+    """Compute the bounding boxes of sets of trajectories.
 
     Parameters
     ----------
