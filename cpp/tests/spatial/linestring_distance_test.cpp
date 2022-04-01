@@ -87,6 +87,52 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringEndpointsDistance)
   expect_columns_equivalent(expected, *got, verbosity);
 }
 
+TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringProjectionNotOnLine)
+{
+  using T = TypeParam;
+  // Linestring 1: (0.0, 0.0), (1.0, 1.0)
+  // Linestring 2: (3.0, 1.5), (3.0, 2.0)
+  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<T> linestring1_points_x{0.0, 1.0};
+  wrapper<T> linestring1_points_y{0.0, 1.0};
+  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<T> linestring2_points_x{3.0, 3.0};
+  wrapper<T> linestring2_points_y{1.5, 2.0};
+
+  wrapper<T> expected{2.0615528128088303};
+
+  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
+                                          linestring1_points_x,
+                                          linestring1_points_y,
+                                          column_view(linestring2_offsets),
+                                          linestring2_points_x,
+                                          linestring2_points_y);
+  expect_columns_equivalent(expected, *got, verbosity);
+}
+
+TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringPerpendicular)
+{
+  using T = TypeParam;
+  // Linestring 1: (0.0, 0.0), (2.0, 0.0)
+  // Linestring 2: (1.0, 1.0), (1.0, 2.0)
+  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<T> linestring1_points_x{0.0, 2.0};
+  wrapper<T> linestring1_points_y{0.0, 0.0};
+  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<T> linestring2_points_x{1.0, 1.0};
+  wrapper<T> linestring2_points_y{1.0, 2.0};
+
+  wrapper<T> expected{1.0};
+
+  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
+                                          linestring1_points_x,
+                                          linestring1_points_y,
+                                          column_view(linestring2_offsets),
+                                          linestring2_points_x,
+                                          linestring2_points_y);
+  expect_columns_equivalent(expected, *got, verbosity);
+}
+
 TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringIntersects)
 {
   using T = TypeParam;
