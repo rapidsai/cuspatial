@@ -21,10 +21,12 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
+#include <iterator>
+
 namespace cuspatial {
 
 /**
- * brief Compute haversine distances between points in set A to the corresponding points in set B.
+ * @brief Compute haversine distances between points in set A to the corresponding points in set B.
  *
  * Computes N haversine distances, where N is `std::distance(a_lon_first, a_lon_last)`.
  * The distance for each `(a_lon[i], a_lat[i])` and `(b_lon[i], b_lat[i])` point pair is assigned to
