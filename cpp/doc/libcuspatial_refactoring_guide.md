@@ -39,7 +39,8 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,
                             OutputIt distance_first,
-                            T const radius = EARTH_RADIUS_KM);
+                            T const radius = EARTH_RADIUS_KM,
+                            rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 ```
 
 There are a few key points to notice.
@@ -59,6 +60,8 @@ There are a few key points to notice.
   8. This API returns an iterator to the element past the last element written to the output. This
      is inspired by `std::transform`, even though as with `transform`, many uses of 
      `haversine_distance` will not need this returned iterator.
+  9. All APIs that run CUDA device code (including Thrust algorithms) or allocate memory take a CUDA
+     stream on which to execute the device code and allocate memory.
 
 ## Example Documentation
 
@@ -81,6 +84,7 @@ Following is the (Doxygen) documentation for the above `cuspatial::haversine_dis
  * @param[out] distance_first: beginning of output range of haversine distances
  * @param[in]  radius: radius of the sphere on which the points reside. default: 6371.0
  *            (approximate radius of Earth in km)
+ * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
  *
  * All iterators must have the same floating-point `value_type`.
  *
@@ -137,6 +141,8 @@ key points:
   2. All inputs are arrays of scalars. Longitude and latitude are separate. 
   3. The output is a returned `unique_ptr<cudf::column>`.
   4. The output is allocated inside the function using the passed memory resource.
+  5. The public API does not take a stream. There is a `detail` version of the API that takes a
+     stream. This follows libcudf, and may change in the future.
 
 ## File Structure
 
@@ -183,8 +189,8 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,
                             OutputIt distance_first,
-                            T const radius               = EARTH_RADIUS_KM,
-                            rmm::cuda_stream_view stream = rmm::cuda_stream_default)
+                            T const radius,
+                            rmm::cuda_stream_view stream)
 {
   using LocationB = typename std::iterator_traits<LonLatItB>::value_type;
   static_assert(std::conjunction_v<std::is_same<location_2d<T>, Location>,
@@ -203,7 +209,7 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                            a_lonlat_last,
                            b_lonlat_first,
                            distance_first,
-                           haversine_distance_functor<T>(radius));
+                           detail::haversine_distance_functor<T>(radius));
 }
 ```
 
@@ -250,7 +256,7 @@ And replace it with the following code.
 auto lonlat_a = cuspatial::to_location_2d(a_lon.begin<T>(), a_lat.begin<T>());
 auto lonlat_b = cuspatial::to_location_2d(b_lon.begin<T>(), b_lat.begin<T>());
 
-cuspatial::detail::haversine_distance(
+cuspatial::haversine_distance(
   lonlat_a,
   lonlat_a + a_lon.size(),
   lonlat_b,
@@ -264,5 +270,6 @@ cuspatial::detail::haversine_distance(
 Existing libcudf-based API tests can mostly be left alone. New tests should be added to exercise
 the header-only API separately in case the libcudf-based API is removed.
 
-Note that tests, like the header-only API, should not depend on libcudf or libcudf_test. The cuDF-based API made the mistake of depending on libcudf_test, which results in breakages
+Note that tests, like the header-only API, should not depend on libcudf or libcudf_test. The 
+cuDF-based API made the mistake of depending on libcudf_test, which results in breakages
 of cuSpatial sometimes when libcudf_test changes.

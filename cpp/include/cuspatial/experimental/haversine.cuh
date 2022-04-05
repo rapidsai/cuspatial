@@ -41,6 +41,7 @@ namespace cuspatial {
  * @param[out] distance_first: beginning of output range of haversine distances
  * @param[in]  radius: radius of the sphere on which the points reside. default: 6371.0
  *            (approximate radius of Earth in km)
+ * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
  *
  * All iterators must have the same floating-point `value_type`.
  *
@@ -70,7 +71,9 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,
                             OutputIt distance_first,
-                            T const radius = EARTH_RADIUS_KM);
+                            T const radius               = EARTH_RADIUS_KM,
+                            rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+
 }  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/haversine.cuh>

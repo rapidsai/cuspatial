@@ -60,17 +60,15 @@ struct haversine_distance_functor {
   T radius_{};
 };
 
-template <class LonLatItA,
-          class LonLatItB,
-          class OutputIt,
-          class Location = typename std::iterator_traits<LonLatItA>::value_type,
-          class T        = typename Location::value_type>
+}  // namespace detail
+
+template <class LonLatItA, class LonLatItB, class OutputIt, class Location, class T>
 OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,
                             OutputIt distance_first,
-                            T const radius               = EARTH_RADIUS_KM,
-                            rmm::cuda_stream_view stream = rmm::cuda_stream_default)
+                            T const radius,
+                            rmm::cuda_stream_view stream)
 {
   using LocationB = typename std::iterator_traits<LonLatItB>::value_type;
   static_assert(std::conjunction_v<std::is_same<location_2d<T>, Location>,
@@ -89,24 +87,7 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                            a_lonlat_last,
                            b_lonlat_first,
                            distance_first,
-                           haversine_distance_functor<T>(radius));
-}
-
-}  // namespace detail
-
-template <class LonLatItA, class LonLatItB, class OutputIt, class Location, class T>
-OutputIt haversine_distance(LonLatItA a_lonlat_first,
-                            LonLatItA a_lonlat_last,
-                            LonLatItB b_lonlat_first,
-                            OutputIt distance_first,
-                            T const radius)
-{
-  return detail::haversine_distance(a_lonlat_first,
-                                    a_lonlat_last,
-                                    b_lonlat_first,
-                                    distance_first,
-                                    radius,
-                                    rmm::cuda_stream_default);
+                           detail::haversine_distance_functor<T>(radius));
 }
 
 }  // namespace cuspatial

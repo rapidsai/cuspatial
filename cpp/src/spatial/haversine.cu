@@ -60,13 +60,12 @@ struct haversine_functor {
     auto lonlat_a = cuspatial::to_location_2d(a_lon.begin<T>(), a_lat.begin<T>());
     auto lonlat_b = cuspatial::to_location_2d(b_lon.begin<T>(), b_lat.begin<T>());
 
-    cuspatial::detail::haversine_distance(
-      lonlat_a,
-      lonlat_a + a_lon.size(),
-      lonlat_b,
-      static_cast<cudf::mutable_column_view>(*result).begin<T>(),
-      T{radius},
-      stream);
+    cuspatial::haversine_distance(lonlat_a,
+                                  lonlat_a + a_lon.size(),
+                                  lonlat_b,
+                                  static_cast<cudf::mutable_column_view>(*result).begin<T>(),
+                                  T{radius},
+                                  stream);
 
     return result;
   }
