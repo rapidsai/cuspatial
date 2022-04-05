@@ -18,6 +18,8 @@
 
 #include <cuspatial/types.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
+
 #include <iterator>
 
 namespace cuspatial {
@@ -26,6 +28,7 @@ template <class InputIt, class OutputIt, class Location, class Coordinates>
 OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
                              InputIt lon_lat_last,
                              OutputIt xy_first,
-                             Location origin);
+                             Location origin,
+                             rmm::cuda_stream_view stream);
 
 }  // namespace cuspatial

@@ -18,6 +18,8 @@
 
 #include <cuspatial/types.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
+
 #include <iterator>
 
 namespace cuspatial {
@@ -25,10 +27,11 @@ namespace cuspatial {
 /**
  * @brief Translate longitude/latitude relative to origin to cartesian (x/y) coordinates in km.
  *
- * @param[in] lon_lat_first beginning of range of input longitude/latitude coordinates.
- * @param[in] lon_lat_last end of range of input longitude/latitude coordinates.
- * @param[in] origin: longitude and latitude of origin.
+ * @param[in]  lon_lat_first beginning of range of input longitude/latitude coordinates.
+ * @param[in]  lon_lat_last end of range of input longitude/latitude coordinates.
+ * @param[in]  origin: longitude and latitude of origin.
  * @param[out] xy_first: beginning of range of output x/y coordinates.
+ * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
  *
  * All input iterators must have a `value_type` of `cuspatial::location_2d<T>`, and the output
  * iterator must have `value_type` of `cuspatial::coord_2d<T>`.
@@ -52,7 +55,8 @@ template <class InputIt,
 OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
                              InputIt lon_lat_last,
                              OutputIt xy_first,
-                             Location origin);
+                             Location origin,
+                             rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
 
