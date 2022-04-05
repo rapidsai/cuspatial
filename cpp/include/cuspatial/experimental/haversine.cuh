@@ -21,10 +21,12 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
+#include <iterator>
+
 namespace cuspatial {
 
 /**
- * brief Compute haversine distances between points in set A to the corresponding points in set B.
+ * @brief Compute haversine distances between points in set A to the corresponding points in set B.
  *
  * Computes N haversine distances, where N is `std::distance(a_lon_first, a_lon_last)`.
  * The distance for each `(a_lon[i], a_lat[i])` and `(b_lon[i], b_lat[i])` point pair is assigned to
@@ -39,6 +41,7 @@ namespace cuspatial {
  * @param[out] distance_first: beginning of output range of haversine distances
  * @param[in]  radius: radius of the sphere on which the points reside. default: 6371.0
  *            (approximate radius of Earth in km)
+ * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
  *
  * All iterators must have the same floating-point `value_type`.
  *
@@ -68,7 +71,9 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,
                             OutputIt distance_first,
-                            T const radius = EARTH_RADIUS_KM);
+                            T const radius               = EARTH_RADIUS_KM,
+                            rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+
 }  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/haversine.cuh>
