@@ -72,11 +72,17 @@ def test_from_geopandas_linestring():
 
 def test_from_geopandas_multilinestring():
     gs = gpd.GeoSeries(
-        MultiLineString((((1.0, 2.0), (3.0, 4.0)), ((5.0, 6.0), (7.0, 8.0)),))
+        MultiLineString(
+            (
+                ((1.0, 2.0), (3.0, 4.0)),
+                ((5.0, 6.0), (7.0, 8.0)),
+            )
+        )
     )
     cugs = cuspatial.from_geopandas(gs)
     cudf.testing.assert_series_equal(
-        cugs.lines.xy, cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]),
+        cugs.lines.xy,
+        cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]),
     )
     cudf.testing.assert_series_equal(
         cugs.lines.offsets, cudf.Series([0, 4, 8])
@@ -85,7 +91,9 @@ def test_from_geopandas_multilinestring():
 
 def test_from_geopandas_polygon():
     gs = gpd.GeoSeries(
-        Polygon(((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)),)
+        Polygon(
+            ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)),
+        )
     )
     cugs = cuspatial.from_geopandas(gs)
     cudf.testing.assert_series_equal(
