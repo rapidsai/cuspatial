@@ -18,8 +18,12 @@
 
 #pragma once
 
+namespace cuspatial {
+
 constexpr double DEGREE_TO_RADIAN = M_PI / 180.0;
 constexpr double RADIAN_TO_DEGREE = 180.0 / M_PI;
 
 constexpr double EARTH_RADIUS_KM                = 6371.0;
 constexpr double EARTH_CIRCUMFERENCE_EQUATOR_KM = 40000.0;
+
+}  // namespace cuspatial
