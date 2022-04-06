@@ -92,11 +92,11 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(
  * @throw cuspatial::logic_error If the types of point and polygon vertices are different.
  *
  * @return A cudf table with two columns, where each row represents a point/polygon intersection:
- *   point_offset - UINT32 column of point indices
  * polygon_offset - UINT32 column of polygon indices
+ *   point_offset - UINT32 column of point indices
  *
- * @note The returned point and polygon indices are offsets into the (point_x, point_y) and
- * poly_quad_pairs inputs, respectively.
+ * @note The returned polygon and point indices are offsets into the poly_quad_pairs inputs and
+ * (point_x, point_y), respectively.
  *
  **/
 std::unique_ptr<cudf::table> quadtree_point_in_polygon(

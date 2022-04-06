@@ -1,17 +1,36 @@
+# cuSpatial 22.04.00 (6 Apr 2022)
+
+## 🐛 Bug Fixes
+
+- Swap NumericalColumn.values_host for now removed to_array ([#485](https://github.com/rapidsai/cuspatial/pull/485)) [@vyasr](https://github.com/vyasr)
+
+## 📖 Documentation
+
+- Improve point_in_polygon documentation regarding poly_ring_offsets ([#497](https://github.com/rapidsai/cuspatial/pull/497)) [@harrism](https://github.com/harrism)
+- Fix documentation of return type of quadtree_point_in_polygon ([#490](https://github.com/rapidsai/cuspatial/pull/490)) [@harrism](https://github.com/harrism)
+
+## 🛠️ Improvements
+
+- Temporarily disable new `ops-bot` functionality ([#501](https://github.com/rapidsai/cuspatial/pull/501)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Pin gtest/gmock to 1.10.0 in dev envs ([#498](https://github.com/rapidsai/cuspatial/pull/498)) [@trxcllnt](https://github.com/trxcllnt)
+- Add `.github/ops-bot.yaml` config file ([#496](https://github.com/rapidsai/cuspatial/pull/496)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add CMake `install` rule for tests ([#488](https://github.com/rapidsai/cuspatial/pull/488)) [@ajschmidt8](https://github.com/ajschmidt8)
+- replace `ccache` with `sccache` ([#483](https://github.com/rapidsai/cuspatial/pull/483)) [@AyodeAwe](https://github.com/AyodeAwe)
+
 # cuSpatial 22.02.00 (2 Feb 2022)
 
 ## 🐛 Bug Fixes
 
-- Always upload cuspatial packages ([#481](https://github.com/rapidsai/cuspatial/pull/481)) [@aydouglass](https://github.com/aydouglass)
-- Remove use of libcudf&#39;s CUDA_HOST_DEVICE maco ([#475](https://github.com/rapidsai/cuspatial/pull/475)) [@haism](https://github.com/haism)
+- Always upload cuspatial packages ([#481](https://github.com/rapidsai/cuspatial/pull/481)) [@raydouglass](https://github.com/raydouglass)
+- Remove use of libcudf&#39;s CUDA_HOST_DEVICE macro ([#475](https://github.com/rapidsai/cuspatial/pull/475)) [@harrism](https://github.com/harrism)
 
-## 🛠️ Impovements
+## 🛠️ Improvements
 
-- Pepae upload scipts fo Python 3.7 emoval ([#479](https://github.com/rapidsai/cuspatial/pull/479)) [@Ethyling](https://github.com/Ethyling)
-- Fix `test_pip_bitmap_column_to_binay_aay` test ([#472](https://github.com/rapidsai/cuspatial/pull/472)) [@Ethyling](https://github.com/Ethyling)
-- Fix impots tests syntax ([#471](https://github.com/rapidsai/cuspatial/pull/471)) [@Ethyling](https://github.com/Ethyling)
-- Remove `IncludeCategoies` fom `.clang-fomat` ([#470](https://github.com/rapidsai/cuspatial/pull/470)) [@codeepot](https://github.com/codeepot)
-- Fix Fowad-Mege Conflicts in #464 ([#466](https://github.com/rapidsai/cuspatial/pull/466)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Prepare upload scripts for Python 3.7 removal ([#479](https://github.com/rapidsai/cuspatial/pull/479)) [@Ethyling](https://github.com/Ethyling)
+- Fix `test_pip_bitmap_column_to_binary_array` test ([#472](https://github.com/rapidsai/cuspatial/pull/472)) [@Ethyling](https://github.com/Ethyling)
+- Fix imports tests syntax ([#471](https://github.com/rapidsai/cuspatial/pull/471)) [@Ethyling](https://github.com/Ethyling)
+- Remove `IncludeCategories` from `.clang-format` ([#470](https://github.com/rapidsai/cuspatial/pull/470)) [@codereport](https://github.com/codereport)
+- Fix Forward-Merge Conflicts in #464 ([#466](https://github.com/rapidsai/cuspatial/pull/466)) [@ajschmidt8](https://github.com/ajschmidt8)
 
 # cuSpatial 21.12.00 (9 Dec 2021)
 

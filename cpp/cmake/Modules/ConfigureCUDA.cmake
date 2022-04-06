@@ -22,7 +22,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/SetGPUArchs.cmake)
 message(STATUS "CUSPATIAL: Building CUSPATIAL for GPU architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 
 # Must come after find_package(CUDAToolkit) because we symlink
-# ccache as a compiler front-end for nvcc in gpuCI CPU builds.
+# sccache as a compiler front-end for nvcc in gpuCI CPU builds.
 # Must also come after we detect and potentially rewrite
 # CMAKE_CUDA_ARCHITECTURES
 enable_language(CUDA)

@@ -47,6 +47,9 @@ namespace cuspatial {
  * defined by the format), and does _not_ verify whether the input adheres to the shapefile format.
  * @note Overlapping rings negate each other. This behavior is not limited to a single negation,
  * allowing for "islands" within the same polygon.
+ * @note `poly_ring_offsets` must contain only the rings that make up the polygons indexed by
+ * `poly_offsets`. If there are rings in `poly_ring_offsets` that are not part of the polygons in
+ * `poly_offsets`, results are likely to be incorrect and behavior is undefined.
  *
  *   poly w/two rings         poly w/four rings
  * +-----------+          +------------------------+
