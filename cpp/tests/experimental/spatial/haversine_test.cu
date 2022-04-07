@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "cuspatial/types.hpp"
-#include "thrust/iterator/transform_iterator.h"
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/haversine.cuh>
+#include <cuspatial/types.hpp>
 
-#include <initializer_list>
 #include <rmm/device_vector.hpp>
+
+#include <thrust/iterator/transform_iterator.h>
 
 #include <gtest/gtest.h>
 
