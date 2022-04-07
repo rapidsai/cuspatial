@@ -14,6 +14,18 @@
 # limitations under the License.
 #=============================================================================
 
+# If a target is installed, found by the `find_package` step of CPMFindPackage,
+# and marked as IMPORTED, make it globally accessible to consumers of our libs.
+function(fix_cmake_global_defaults target)
+    if(TARGET ${target})
+        get_target_property(_is_imported ${target} IMPORTED)
+        get_target_property(_already_global ${target} IMPORTED_GLOBAL)
+        if(_is_imported AND NOT _already_global)
+            set_target_properties(${target} PROPERTIES IMPORTED_GLOBAL TRUE)
+        endif()
+    endif()
+endfunction()
+
 function(find_and_configure_cudf VERSION)
 
     if(TARGET cudf::cudf)
@@ -26,15 +38,15 @@ function(find_and_configure_cudf VERSION)
         set(MAJOR_AND_MINOR "${VERSION}")
     endif()
 
-    CPMFindPackage(NAME        cudf
-        VERSION                ${VERSION}
-        GIT_REPOSITORY         https://github.com/rapidsai/cudf.git
-        GIT_TAG                branch-${MAJOR_AND_MINOR}
-        GIT_SHALLOW            TRUE
-        SOURCE_SUBDIR          cpp
-        OPTIONS                "BUILD_TESTS OFF"
-                               "BUILD_BENCHMARKS OFF"
-        FIND_PACKAGE_ARGUMENTS "COMPONENTS testing")
+    rapids_cpm_find(
+      cudf ${VERSION}
+      CPM_ARGS
+      GIT_REPOSITORY https://github.com/rapidsai/cudf.git
+      GIT_TAG branch-${MAJOR_AND_MINOR}
+      GIT_SHALLOW TRUE
+      OPTIONS "BUILD_TESTS OFF" "BUILD_BENCHMARKS OFF"
+      FIND_PACKAGE_ARGUMENTS "COMPONENTS testing"
+    )
 
     # Make sure consumers of cuspatial can see cudf::cudf
     fix_cmake_global_defaults(cudf::cudf)
