@@ -22,6 +22,7 @@
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cudf/copying.hpp>
+#include <cudf/detail/iterator.cuh>
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -36,13 +37,26 @@
 
 #ifndef DEBUG
 #define DEBUG 1
+
+template <typename T>
+void __device__ print(cuspatial::coord_2d<T> const& point)
+{
+  printf("POINT (%f, %f)\n", point.x, point.y);
+}
+
+template <typename T>
+void __device__ print(cuspatial::coord_2d<T> const& A, cuspatial::coord_2d<T> const& B)
+{
+  printf("SEGMENT (%f, %f) -> (%f, %f)\n", A.x, A.y, B.x, B.y);
+}
+
 #endif
 
 namespace cuspatial {
 namespace {
 
 template <typename T>
-double __device__ point_to_segment_distance(coord_2d<T> const& P,
+double __device__ point_to_segment_distance(coord_2d<T> const& C,
                                             coord_2d<T> const& A,
                                             coord_2d<T> const& B)
 {
@@ -52,13 +66,15 @@ double __device__ point_to_segment_distance(coord_2d<T> const& P,
   // length to one of the end points.
 
   double L_squared = (A.x - B.x) * (A.x - B.x) + (A.y - B.y) * (A.y - B.y);
-  if (L_squared == 0) { return hypot(P.x - A.x, P.y - A.y); }
-  double r = ((P.x - A.x) * (B.x - A.x) + (P.y - A.y) * (B.y - A.y)) / L_squared;
+  if (L_squared == 0) { return hypot(C.x - A.x, C.y - A.y); }
+  double r = ((C.x - A.x) * (B.x - A.x) + (C.y - A.y) * (B.y - A.y)) / L_squared;
+  printf("\t r=%f\n", r);
   if (r <= 0 or r >= 1) {
-    return std::min(hypot(P.x - A.x, P.y - A.y), hypot(P.x - B.x, P.y - A.y));
+    return std::min(hypot(C.x - A.x, C.y - A.y), hypot(C.x - B.x, C.y - B.y));
   }
-  double s = ((A.y - P.y) * (B.x - A.x) - (A.x - P.x) * (B.y - A.y)) / L_squared;
-  return fabs(s) * sqrt(L_squared);
+  double Px = A.x + r * (B.x - A.x);
+  double Py = A.y + r * (B.y - A.y);
+  return hypot(C.x - Px, C.y - Py);
 }
 
 template <typename T>
@@ -67,6 +83,29 @@ double __device__ segment_distance_no_intersect(coord_2d<T> const& A,
                                                 coord_2d<T> const& C,
                                                 coord_2d<T> const& D)
 {
+  printf("From: \n");
+  print(A);
+  printf("To: \n");
+  print(C, D);
+  printf("Distance %f\n", point_to_segment_distance(A, C, D));
+
+  printf("From: \n");
+  print(B);
+  printf("To: \n");
+  print(C, D);
+  printf("Distance %f\n", point_to_segment_distance(B, C, D));
+
+  printf("From: \n");
+  print(C);
+  printf("To: \n");
+  print(A, B);
+  printf("Distance %f\n", point_to_segment_distance(C, A, B));
+
+  printf("From: \n");
+  print(D);
+  printf("To: \n");
+  print(A, B);
+  printf("Distance %f\n", point_to_segment_distance(D, A, B));
   return std::min(std::min(point_to_segment_distance(A, C, D), point_to_segment_distance(B, C, D)),
                   std::min(point_to_segment_distance(C, A, B), point_to_segment_distance(D, A, B)));
 }
@@ -224,16 +263,35 @@ bool validate_linestring(cudf::device_span<cudf::size_type const> linestring_off
                          rmm::cuda_stream_view stream)
 {
   if (linestring_offsets.size() == 1) { return linestring_points_x.size() >= 2; }
-  auto linestring_validate_iter = thrust::make_transform_iterator(
-    thrust::make_zip_iterator(linestring_offsets.begin(), linestring_offsets.begin() + 1),
-    [] __device__(thrust::tuple<cudf::size_type, cudf::size_type> indices) {
-      return (indices.get<1>() - indices.get<0>()) >= 2;
+  // auto linestring_validate_iter = cudf::detail::make_counting_transform_iterator(
+  //   0,
+  //   [offsets    = linestring_offsets.begin(),
+  //    num_points = static_cast<cudf::size_type>(linestring_points_x.size()),
+  //    num_offsets =
+  //      static_cast<cudf::size_type>(linestring_offsets.size())] __device__(cudf::size_type idx) {
+  //     cudf::size_type begin = offsets[idx];
+  //     cudf::size_type end   = idx == num_offsets ? num_points : offsets[idx + 1];
+  //     return (end - begin) >= 2;
+  //   });
+  // return thrust::reduce(rmm::exec_policy(stream),
+  //                       linestring_validate_iter,
+  //                       linestring_validate_iter + linestring_offsets.size(),
+  //                       true,
+  //                       [](auto i, auto j) { return i && j; });
+
+  return thrust::reduce(
+    rmm::exec_policy(stream),
+    thrust::make_counting_iterator(cudf::size_type{0}),
+    thrust::make_counting_iterator(static_cast<cudf::size_type>(linestring_offsets.size())),
+    true,
+    [offsets     = linestring_offsets.begin(),
+     num_offsets = static_cast<cudf::size_type>(linestring_offsets.size()),
+     num_points  = static_cast<cudf::size_type>(
+       linestring_points_x.size())] __device__(bool prev, cudf::size_type i) {
+      cudf::size_type begin = offsets[i];
+      cudf::size_type end   = i == num_offsets ? num_points : offsets[i + 1];
+      return prev && (end - begin);
     });
-  return thrust::reduce(rmm::exec_policy(stream),
-                        linestring_validate_iter,
-                        linestring_validate_iter + linestring_offsets.size() - 1,
-                        true,
-                        thrust::logical_and<bool>());
 }
 
 std::unique_ptr<cudf::column> pairwise_linestring_distance(

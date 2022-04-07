@@ -202,5 +202,73 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringCoincide)
   expect_columns_equivalent(expected, *got, verbosity);
 }
 
+TYPED_TEST(PairwiseLinestringDistanceTest, OnePairRandom1)
+{
+  using T = TypeParam;
+  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<T> linestring1_points_x{-22556.235212018168, -16375.655690574613, -20082.724633593425};
+  wrapper<T> linestring1_points_y{41094.0501840996, 42992.319790050366, 33759.13529113619};
+  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<T> linestring2_points_x{4365.496374409238, 1671.0269165650761};
+  wrapper<T> linestring2_points_y{-59857.47177852941, -54931.9723439855};
+
+  wrapper<T> expected{91319.97744223749};
+
+  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
+                                          linestring1_points_x,
+                                          linestring1_points_y,
+                                          column_view(linestring2_offsets),
+                                          linestring2_points_x,
+                                          linestring2_points_y);
+  expect_columns_equivalent(expected, *got, verbosity);
+}
+
+TYPED_TEST(PairwiseLinestringDistanceTest, TwoPairs)
+{
+  using T = TypeParam;
+  wrapper<cudf::size_type> linestring1_offsets{0, 4};
+  wrapper<T> linestring1_points_x{
+    41658.902315589876,
+    46600.70359801489,
+    47079.510547637154,
+    51498.48049880379,
+    -27429.917796286478,
+    -21764.269974046114,
+    -14460.71813363161,
+    -18226.13032712476,
+  };
+  wrapper<T> linestring1_points_y{14694.11814724456,
+                                  8771.431887804214,
+                                  10199.68027155776,
+                                  17049.62665643919,
+                                  -33240.8339287343,
+                                  -37974.45515744517,
+                                  -31333.481529957502,
+                                  -30181.03842467982};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2};
+  wrapper<T> linestring2_points_x{
+    24046.170375947084,
+    20614.007047185743,
+    48381.39607717942,
+    53346.77764665915,
+  };
+  wrapper<T> linestring2_points_y{
+    27878.56737867571,
+    26489.74880629428,
+    -8366.313156569413,
+    -2066.3869793077383,
+  };
+
+  wrapper<T> expected{22000.86425379464, 66907.56415814416};
+
+  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
+                                          linestring1_points_x,
+                                          linestring1_points_y,
+                                          column_view(linestring2_offsets),
+                                          linestring2_points_x,
+                                          linestring2_points_y);
+  expect_columns_equivalent(expected, *got, verbosity);
+}
+
 }  // namespace test
 }  // namespace cuspatial
