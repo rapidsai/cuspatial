@@ -18,8 +18,7 @@
 
 #include <cuspatial/constants.hpp>
 
-#include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/cuda_stream_view.hpp>
 
 #include <iterator>
 
@@ -54,7 +53,7 @@ namespace cuspatial {
  * @tparam OutputIt Output iterator. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam Location The `value_type` of `LonLatItA` and `LonLatItB`. Must be
- * `cuspatial::location_2d<T>`.
+ * `cuspatial::vec_2d<T>`.
  * @tparam T The underlying coordinate type. Must be a floating-point type.
  *
  * @return Output iterator to the element past the last distance computed.

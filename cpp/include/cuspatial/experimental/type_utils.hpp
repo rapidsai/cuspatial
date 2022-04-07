@@ -27,24 +27,16 @@ namespace cuspatial {
 namespace detail {
 
 template <typename T>
-struct tuple_to_location_2d {
-  __device__ cuspatial::location_2d<T> operator()(thrust::tuple<T, T> lonlat)
+struct tuple_to_vec_2d {
+  __device__ cuspatial::vec_2d<T> operator()(thrust::tuple<T, T> pos)
   {
-    return cuspatial::location_2d<T>{thrust::get<0>(lonlat), thrust::get<1>(lonlat)};
+    return cuspatial::vec_2d<T>{thrust::get<0>(pos), thrust::get<1>(pos)};
   }
 };
 
 template <typename T>
-struct tuple_to_coordinate_2d {
-  __device__ cuspatial::coordinate_2d<T> operator()(thrust::tuple<T, T> xy)
-  {
-    return cuspatial::coordinate_2d<T>{thrust::get<0>(xy), thrust::get<1>(xy)};
-  }
-};
-
-template <typename T>
-struct coordinate_2d_to_tuple {
-  __device__ thrust::tuple<T, T> operator()(cuspatial::coordinate_2d<T> xy)
+struct vec_2d_to_tuple {
+  __device__ thrust::tuple<T, T> operator()(cuspatial::vec_2d<T> xy)
   {
     return thrust::make_tuple(xy.x, xy.y);
   }
@@ -52,34 +44,23 @@ struct coordinate_2d_to_tuple {
 
 }  // namespace detail
 
-// convert two iterators to an iterator<location_2d<T>>
-template <typename LonIter, typename LatIter>
-auto to_location_2d(LonIter lon, LatIter lat)
+template <typename FirstIter, typename SecondIter>
+auto make_vec_2d_iterator(FirstIter first, SecondIter second)
 {
-  using T = typename std::iterator_traits<LonIter>::value_type;
-  static_assert(std::is_same_v<T, typename std::iterator_traits<LatIter>::value_type>,
+  using T = typename std::iterator_traits<FirstIter>::value_type;
+  static_assert(std::is_same_v<T, typename std::iterator_traits<SecondIter>::value_type>,
                 "Iterator value_type mismatch");
 
-  auto zipped = thrust::make_zip_iterator(thrust::make_tuple(lon, lat));
-  return thrust::make_transform_iterator(zipped, detail::tuple_to_location_2d<T>());
+  auto zipped = thrust::make_zip_iterator(thrust::make_tuple(first, second));
+  return thrust::make_transform_iterator(zipped, detail::tuple_to_vec_2d<T>());
 }
 
-// convert two iterators to an iterator<coordinate_2d<T>>
-template <typename XIter, typename YIter>
-auto to_coordinate_2d(XIter lon, YIter lat)
+template <typename FirstIter, typename SecondIter>
+auto make_zipped_vec_2d_output_iterator(FirstIter first, SecondIter second)
 {
-  using T = typename std::iterator_traits<XIter>::value_type;
-  static_assert(std::is_same_v<T, typename std::iterator_traits<YIter>::value_type>,
-                "Iterator value_type mismatch");
-
-  auto zipped = thrust::make_zip_iterator(thrust::make_tuple(lon, lat));
-  return thrust::make_transform_iterator(zipped, detail::tuple_to_coordinate_2d<T>());
-}
-
-template <typename T, typename OutputIter>
-auto coordinate_2d_to_zip(OutputIter out)
-{
-  return thrust::make_transform_output_iterator(out, detail::coordinate_2d_to_tuple<T>());
+  using T         = typename std::iterator_traits<FirstIter>::value_type;
+  auto zipped_out = thrust::make_zip_iterator(thrust::make_tuple(first, second));
+  return thrust::make_transform_output_iterator(zipped_out, detail::vec_2d_to_tuple<T>());
 }
 
 }  // namespace cuspatial

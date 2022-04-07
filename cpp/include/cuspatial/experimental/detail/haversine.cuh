@@ -22,11 +22,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/per_device_resource.hpp>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/zip_iterator.h>
 #include <thrust/transform.h>
 #include <thrust/tuple.h>
 
@@ -40,12 +36,12 @@ template <typename T>
 struct haversine_distance_functor {
   haversine_distance_functor(T radius) : radius_(radius) {}
 
-  __device__ T operator()(location_2d<T> a_lonlat, location_2d<T> b_lonlat)
+  __device__ T operator()(vec_2d<T> a_lonlat, vec_2d<T> b_lonlat)
   {
-    auto ax = a_lonlat.longitude * DEGREE_TO_RADIAN;
-    auto ay = a_lonlat.latitude * DEGREE_TO_RADIAN;
-    auto bx = b_lonlat.longitude * DEGREE_TO_RADIAN;
-    auto by = b_lonlat.latitude * DEGREE_TO_RADIAN;
+    auto ax = a_lonlat.x * DEGREE_TO_RADIAN;
+    auto ay = a_lonlat.y * DEGREE_TO_RADIAN;
+    auto bx = b_lonlat.x * DEGREE_TO_RADIAN;
+    auto by = b_lonlat.y * DEGREE_TO_RADIAN;
 
     // haversine formula
     auto x        = (bx - ax) / 2;
@@ -71,9 +67,9 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             rmm::cuda_stream_view stream)
 {
   using LocationB = typename std::iterator_traits<LonLatItB>::value_type;
-  static_assert(std::conjunction_v<std::is_same<location_2d<T>, Location>,
-                                   std::is_same<location_2d<T>, LocationB>>,
-                "Inputs must be cuspatial::location_2d");
+  static_assert(
+    std::conjunction_v<std::is_same<vec_2d<T>, Location>, std::is_same<vec_2d<T>, LocationB>>,
+    "Inputs must be cuspatial::vec_2d");
   static_assert(
     std::conjunction_v<std::is_floating_point<T>,
                        std::is_floating_point<typename LocationB::value_type>,
