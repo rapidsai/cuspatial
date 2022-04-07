@@ -37,6 +37,7 @@
 
 #ifndef DEBUG
 #define DEBUG 1
+#endif
 
 template <typename T>
 void __device__ print(cuspatial::coord_2d<T> const& point)
@@ -49,8 +50,6 @@ void __device__ print(cuspatial::coord_2d<T> const& A, cuspatial::coord_2d<T> co
 {
   printf("SEGMENT (%f, %f) -> (%f, %f)\n", A.x, A.y, B.x, B.y);
 }
-
-#endif
 
 namespace cuspatial {
 namespace {
@@ -83,6 +82,7 @@ double __device__ segment_distance_no_intersect(coord_2d<T> const& A,
                                                 coord_2d<T> const& C,
                                                 coord_2d<T> const& D)
 {
+#ifdef DEBUG
   printf("From: \n");
   print(A);
   printf("To: \n");
@@ -106,6 +106,7 @@ double __device__ segment_distance_no_intersect(coord_2d<T> const& A,
   printf("To: \n");
   print(A, B);
   printf("Distance %f\n", point_to_segment_distance(D, A, B));
+#endif
   return std::min(std::min(point_to_segment_distance(A, C, D), point_to_segment_distance(B, C, D)),
                   std::min(point_to_segment_distance(C, A, B), point_to_segment_distance(D, A, B)));
 }
