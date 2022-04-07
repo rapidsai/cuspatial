@@ -407,7 +407,7 @@ std::unique_ptr<cudf::table> cubicspline_coefficients(cudf::column_view const& t
   // pBuffer: get size of thisu by gtsv2_bufferSizeExt
   cusparseHandle_t handle;
 
-  CUDA_TRY(cudaMalloc(&handle, sizeof(cusparseHandle_t)));
+  CUDF_CUDA_TRY(cudaMalloc(&handle, sizeof(cusparseHandle_t)));
   CUSPARSE_TRY(cusparseCreate(&handle));
 
   size_t pBufferSize;

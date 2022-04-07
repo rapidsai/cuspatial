@@ -8,7 +8,7 @@ from cuspatial.utils.column_utils import normalize_point_columns
 
 
 def points_in_spatial_window(min_x, max_x, min_y, max_y, xs, ys):
-    """ Return only the subset of coordinates that fall within a
+    """Return only the subset of coordinates that fall within a
     rectangular window.
 
     A point `(x, y)` is inside the query window if and only if
