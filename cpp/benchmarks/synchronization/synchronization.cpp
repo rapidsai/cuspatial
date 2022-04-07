@@ -16,7 +16,7 @@
 
 #include "synchronization.hpp"
 
-#include <cudf/utilities/error.hpp>
+#include <cuspatial/error.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
@@ -29,32 +29,33 @@ cuda_event_timer::cuda_event_timer(benchmark::State& state,
   // flush all of L2$
   if (flush_l2_cache) {
     int current_device = 0;
-    CUDA_TRY(cudaGetDevice(&current_device));
+    CUSPATIAL_CUDA_TRY(cudaGetDevice(&current_device));
 
     int l2_cache_bytes = 0;
-    CUDA_TRY(cudaDeviceGetAttribute(&l2_cache_bytes, cudaDevAttrL2CacheSize, current_device));
+    CUSPATIAL_CUDA_TRY(
+      cudaDeviceGetAttribute(&l2_cache_bytes, cudaDevAttrL2CacheSize, current_device));
 
     if (l2_cache_bytes > 0) {
       const int memset_value = 0;
       rmm::device_buffer l2_cache_buffer(l2_cache_bytes, stream);
-      CUDA_TRY(
+      CUSPATIAL_CUDA_TRY(
         cudaMemsetAsync(l2_cache_buffer.data(), memset_value, l2_cache_bytes, stream.value()));
     }
   }
 
-  CUDA_TRY(cudaEventCreate(&start));
-  CUDA_TRY(cudaEventCreate(&stop));
-  CUDA_TRY(cudaEventRecord(start, stream.value()));
+  CUSPATIAL_CUDA_TRY(cudaEventCreate(&start));
+  CUSPATIAL_CUDA_TRY(cudaEventCreate(&stop));
+  CUSPATIAL_CUDA_TRY(cudaEventRecord(start, stream.value()));
 }
 
 cuda_event_timer::~cuda_event_timer()
 {
-  CUDA_TRY(cudaEventRecord(stop, stream.value()));
-  CUDA_TRY(cudaEventSynchronize(stop));
+  CUSPATIAL_CUDA_TRY(cudaEventRecord(stop, stream.value()));
+  CUSPATIAL_CUDA_TRY(cudaEventSynchronize(stop));
 
   float milliseconds = 0.0f;
-  CUDA_TRY(cudaEventElapsedTime(&milliseconds, start, stop));
+  CUSPATIAL_CUDA_TRY(cudaEventElapsedTime(&milliseconds, start, stop));
   p_state->SetIterationTime(milliseconds / (1000.0f));
-  CUDA_TRY(cudaEventDestroy(start));
-  CUDA_TRY(cudaEventDestroy(stop));
+  CUSPATIAL_CUDA_TRY(cudaEventDestroy(start));
+  CUSPATIAL_CUDA_TRY(cudaEventDestroy(stop));
 }
