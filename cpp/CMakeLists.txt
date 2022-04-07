@@ -23,7 +23,7 @@ include(rapids-cuda)
 include(rapids-export)
 include(rapids-find)
 
-rapids_cuda_init_architectures(CUDF)
+rapids_cuda_init_architectures(CUSPATIAL)
 
 project(CUSPATIAL VERSION 22.06.00 LANGUAGES C CXX CUDA)
 
