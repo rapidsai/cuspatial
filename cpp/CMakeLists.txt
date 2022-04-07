@@ -79,8 +79,11 @@ rapids_cmake_support_conda_env(conda_env MODIFY_PREFIX_PATH)
 
 rapids_find_package(
   CUDAToolkit REQUIRED
-  BUILD_EXPORT_SET cuspatial-exports
-  INSTALL_EXPORT_SET cuspatial-exports
+  # TODO: Do we want cuspatial to export CUDA the same way that cudf does? I
+  # think probably not since we treat cudf as the central package setting
+  # dependencies for everything else, but I'm not sure.
+  #BUILD_EXPORT_SET cuspatial-exports
+  #INSTALL_EXPORT_SET cuspatial-exports
 )
 # * find CUDAToolkit package
 # * determine GPU architectures
@@ -92,6 +95,10 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 # - dependencies ----------------------------------------------------------------------------------
 
 # find gdal
+# TODO: How do we add this to rapids-export? I don't think we want to
+# rapids-cpm-find this because we're not looking to download and build a local
+# copy, so should we be using one of the rapids_export_* functions to manually
+# add it to the list?
 find_package(GDAL REQUIRED)
 # add third party dependencies using CPM
 rapids_cpm_init()
@@ -216,37 +223,48 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME cuspatial)
 
 install(TARGETS cuspatial
         DESTINATION lib
-        EXPORT cuspatial-targets)
+        EXPORT cuspatial-exports)
 
 install(DIRECTORY ${CUSPATIAL_SOURCE_DIR}/include/cuspatial
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-include(CMakePackageConfigHelpers)
-
-configure_package_config_file(cmake/cuspatial-config.cmake.in "${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config.cmake"
-                              INSTALL_DESTINATION "${INSTALL_CONFIGDIR}")
-
-write_basic_package_version_file("${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config-version.cmake"
-                                 COMPATIBILITY SameMinorVersion)
 
 install(FILES   "${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config.cmake"
                 "${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config-version.cmake"
     DESTINATION "${INSTALL_CONFIGDIR}")
 
-install(EXPORT  cuspatial-targets
-    FILE        cuspatial-targets.cmake
-    NAMESPACE   cuspatial::
-    DESTINATION "${INSTALL_CONFIGDIR}")
+set(doc_string
+    [=[
+Provide targets for the cuSpatial library.
+
+cuSpatial is a GPU-accelerated library for spatial data management and analytics.
+
+Imported Targets
+^^^^^^^^^^^^^^^^
+
+If cuspatial is found, this module defines the following IMPORTED GLOBAL
+targets:
+
+ cuspatial::cuspatial             - The main cuspatial library.
+    ]=]
+)
+
+rapids_export(
+  INSTALL cuspatial
+  EXPORT_SET cuspatial-exports
+  GLOBAL_TARGETS cuspatial
+  NAMESPACE cuspatial::
+  DOCUMENTATION doc_string
+)
+
 
 ################################################################################################
 # - build export -------------------------------------------------------------------------------
 
-configure_package_config_file(cmake/cuspatial-build-config.cmake.in ${CUSPATIAL_BINARY_DIR}/cuspatial-config.cmake
-                              INSTALL_DESTINATION ${CUSPATIAL_BINARY_DIR})
-
-write_basic_package_version_file(${CUSPATIAL_BINARY_DIR}/cuspatial-config-version.cmake
-                                 COMPATIBILITY SameMinorVersion)
-
-export(EXPORT cuspatial-targets
-    FILE ${CUSPATIAL_BINARY_DIR}/cuspatial-targets.cmake
-    NAMESPACE   cuspatial::)
+# TODO: I'm not sure how these two exports should differ here.
+#rapids_export(
+#  INSTALL cuspatial
+#  EXPORT_SET cuspatial-exports
+#  GLOBAL_TARGETS cuspatial
+#  NAMESPACE cuspatial::
+#  DOCUMENTATION doc_string
+#)
