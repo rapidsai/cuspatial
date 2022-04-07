@@ -40,7 +40,7 @@ target_include_directories(cuspatial_benchmark_common
 function(ConfigureBench CMAKE_BENCH_NAME)
     add_executable(${CMAKE_BENCH_NAME} ${ARGN})
     set_target_properties(${CMAKE_BENCH_NAME}
-        PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gbenchmarks>"
+        PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/benchmarks>"
                    INSTALL_RPATH "\$ORIGIN/../../../lib"
         )
     target_link_libraries(${CMAKE_BENCH_NAME} PRIVATE benchmark::benchmark_main cuspatial_benchmark_common)
@@ -51,6 +51,25 @@ function(ConfigureBench CMAKE_BENCH_NAME)
         EXCLUDE_FROM_ALL
     )
 endfunction(ConfigureBench)
+
+function(ConfigureNVBench CMAKE_BENCH_NAME)
+    add_executable(${CMAKE_BENCH_NAME} ${ARGN})
+    set_target_properties(
+        ${CMAKE_BENCH_NAME}
+        PROPERTIES  RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/benchmarks>"
+                    INSTALL_RPATH "\$ORIGIN/../../../lib"
+    )
+    target_link_libraries(
+        ${CMAKE_BENCH_NAME} PRIVATE cuspatial_benchmark_common nvbench::main
+    )
+    install(
+        TARGETS ${CMAKE_BENCH_NAME}
+        COMPONENT testing
+        DESTINATION bin/benchmarks/libcuspatial
+        EXCLUDE_FROM_ALL
+    )
+
+endfunction(ConfigureNVBench)
 
 ###################################################################################################
 ### benchmark sources #############################################################################
