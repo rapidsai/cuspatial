@@ -55,11 +55,10 @@ template <typename Location, typename T = typename Location::value_type>
 struct to_cartesian_functor {
   to_cartesian_functor(Location origin) : _origin(origin) {}
 
-  coordinate_2d<T> __device__ operator()(Location loc)
+  vec_2d<T> __device__ operator()(Location loc)
   {
-    return coordinate_2d{
-      lon_to_x(_origin.longitude - loc.longitude, midpoint(loc.latitude, _origin.latitude)),
-      lat_to_y(_origin.latitude - loc.latitude)};
+    return vec_2d<T>{lon_to_x(_origin.x - loc.x, midpoint(loc.y, _origin.y)),
+                     lat_to_y(_origin.y - loc.y)};
   }
 
  private:
@@ -68,7 +67,7 @@ struct to_cartesian_functor {
 
 }  // namespace detail
 
-template <class InputIt, class OutputIt, class Location, class Coordinates>
+template <class InputIt, class OutputIt, class Location>
 OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
                              InputIt lon_lat_last,
                              OutputIt xy_first,
@@ -76,23 +75,23 @@ OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
                              rmm::cuda_stream_view stream)
 {
   using T = typename Location::value_type;
-  static_assert(std::conjunction_v<
-                  std::is_same<location_2d<T>, Location>,
-                  std::is_same<location_2d<T>, typename std::iterator_traits<InputIt>::value_type>>,
-                "Input type must be cuspatial::location_2d");
 
-  /*static_assert(
-    std::is_same_v<coordinate_2d<T>, typename std::iterator_traits<OutputIt>::value_type>,
-    "Output type must be cuspatial::coordinate_2d");*/
+  static_assert(
+    std::conjunction_v<std::is_same<vec_2d<T>, Location>,
+                       std::is_same<vec_2d<T>, typename std::iterator_traits<InputIt>::value_type>>,
+    "Input type must be cuspatial::vec_2d");
 
   static_assert(std::is_floating_point_v<T>,
                 "lonlat_to_cartesian supports only floating-point coordinates.");
 
-  thrust::transform(rmm::exec_policy(stream),
-                    lon_lat_first,
-                    lon_lat_last,
-                    xy_first,
-                    detail::to_cartesian_functor{origin});
+  CUSPATIAL_EXPECTS(origin.x >= -180 && origin.x <= 180 && origin.y >= -90 && origin.y <= 90,
+                    "origin must have valid longitude [-180, 180] and latitude [-90, 90]");
+
+  return thrust::transform(rmm::exec_policy(stream),
+                           lon_lat_first,
+                           lon_lat_last,
+                           xy_first,
+                           detail::to_cartesian_functor{origin});
 }
 
 }  // namespace cuspatial

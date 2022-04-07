@@ -101,3 +101,6 @@ ConfigureTest(SPATIAL_WINDOW_POINT_TEST
 # Experimental API
 ConfigureTest(HAVERSINE_TEST_EXP
     experimental/spatial/haversine_test.cu)
+
+ConfigureTest(COORDINATE_TRANSFORM_TEST_EXP
+    experimental/spatial/coordinate_transform_test.cu)

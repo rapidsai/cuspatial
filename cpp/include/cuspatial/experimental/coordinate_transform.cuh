@@ -33,15 +33,15 @@ namespace cuspatial {
  * @param[out] xy_first: beginning of range of output x/y coordinates.
  * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
  *
- * All input iterators must have a `value_type` of `cuspatial::location_2d<T>`, and the output
- * iterator must have `value_type` of `cuspatial::coord_2d<T>`.
+ * All input iterators must have a `value_type` of `cuspatial::vec_2d<T>` (Lat/Lon coordinates),
+ * and the output iterator must be able to accept for storage values of type
+ * `cuspatial::vec_2d<T>` (Cartesian coordinates).
  *
  * @tparam InputIt Iterator to must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI]
  * and be device-accessible.
  * @tparam OutputIt must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be
  * device-accessible.
- * @tparam Location the type of input longitude/latitude coordinates, e.g. cuspatial::location_2d<T>
- * @tparam Coordinates the type of output x/y coordinates, e.g. cuspatial::coord_2d<T>
+ * @tparam Location the type of input longitude/latitude coordinates, e.g. cuspatial::vec_2d<T>
  *
  * @return Output iterator to the element past the last x/y coordinate computed.
  *
@@ -50,8 +50,7 @@ namespace cuspatial {
  */
 template <class InputIt,
           class OutputIt,
-          class Location    = typename std::iterator_traits<InputIt>::value_type,
-          class Coordinates = typename std::iterator_traits<OutputIt>::value_type>
+          class Location = typename std::iterator_traits<InputIt>::value_type>
 OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
                              InputIt lon_lat_last,
                              OutputIt xy_first,

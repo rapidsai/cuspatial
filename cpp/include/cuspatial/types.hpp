@@ -36,17 +36,11 @@ struct alignas(2 * sizeof(T)) vec_2d {
   value_type y;
 };
 
-/**
- * @brief A 2D Cartesian coordinate pair: x and y
- *
- * @tparam T the base type for the coordinates
- */
 template <typename T>
-struct alignas(2 * sizeof(T)) coordinate_2d {
-  using value_type = T;
-  value_type x;
-  value_type y;
-};
+bool operator==(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+{
+  return (lhs.x == rhs.x) && (lhs.y == rhs.y);
+}
 
 /**
  * @brief A timestamp
