@@ -21,15 +21,19 @@
 namespace cuspatial {
 
 /**
- * @brief A 2D location: latitude and longitude
+ * @brief A 2D vector
+ *
+ * Used in cuspatial for both Longitude/Latitude (LonLat) coordinate pairs and Cartesian (X/Y)
+ * coordinate pairs. For LonLat pairs, the `x` member represents Longitude, and `y` represents
+ * Latitude.
  *
  * @tparam T the base type for the coordinates
  */
 template <typename T>
-struct alignas(2 * sizeof(T)) location_2d {
+struct alignas(2 * sizeof(T)) vec_2d {
   using value_type = T;
-  value_type longitude;
-  value_type latitude;
+  value_type x;
+  value_type y;
 };
 
 /**
