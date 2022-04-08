@@ -7,8 +7,7 @@ from numba import cuda
 
 @cuda.jit
 def binarize(in_col, out, width):
-    """Convert any positive integer to a binary array.
-    """
+    """Convert any positive integer to a binary array."""
     i = cuda.grid(1)
     if i < in_col.size:
         n = in_col[i]

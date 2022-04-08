@@ -36,14 +36,18 @@ def test_zeros():
 def test_empty_x():
     with pytest.raises(RuntimeError):
         cuspatial.directed_hausdorff_distance(
-            [], [0.0], [0],
+            [],
+            [0.0],
+            [0],
         )
 
 
 def test_empty_y():
     with pytest.raises(RuntimeError):
         cuspatial.directed_hausdorff_distance(
-            [0.0], [], [0],
+            [0.0],
+            [],
+            [0],
         )
 
 

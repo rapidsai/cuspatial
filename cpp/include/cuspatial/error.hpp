@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 #include <stdexcept>
 #include <string>
 
@@ -33,6 +35,12 @@ struct logic_error : public std::logic_error {
   logic_error(std::string const& message) : std::logic_error(message) {}
 };
 
+/**
+ * @brief Exception thrown when a CUDA error is encountered.
+ */
+struct cuda_error : public std::runtime_error {
+  cuda_error(std::string const& message) : std::runtime_error(message) {}
+};
 }  // namespace cuspatial
 
 #define STRINGIFY_DETAIL(x)    #x
@@ -78,5 +86,28 @@ struct logic_error : public std::logic_error {
 namespace cuspatial {
 namespace detail {
 
+inline void throw_cuda_error(cudaError_t error, const char* file, unsigned int line)
+{
+  throw cuspatial::cuda_error(std::string{
+    "CUDA error encountered at: " + std::string{file} + ":" + std::to_string(line) + ": " +
+    std::to_string(error) + " " + cudaGetErrorName(error) + " " + cudaGetErrorString(error)});
+}
+
 }  // namespace detail
 }  // namespace cuspatial
+
+/**
+ * @brief Error checking macro for CUDA runtime API functions.
+ *
+ * Invokes a CUDA runtime API function call, if the call does not return
+ * cudaSuccess, invokes cudaGetLastError() to clear the error and throws an
+ * exception detailing the CUDA error that occurred
+ */
+#define CUSPATIAL_CUDA_TRY(call)                                       \
+  do {                                                                 \
+    cudaError_t const status = (call);                                 \
+    if (cudaSuccess != status) {                                       \
+      cudaGetLastError();                                              \
+      cuspatial::detail::throw_cuda_error(status, __FILE__, __LINE__); \
+    }                                                                  \
+  } while (0);

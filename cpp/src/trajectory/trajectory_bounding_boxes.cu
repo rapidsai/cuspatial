@@ -97,7 +97,7 @@ struct dispatch_element {
       });
 
     // check for errors
-    CHECK_CUDA(stream.value());
+    CUDF_CHECK_CUDA(stream.value());
 
     return std::make_unique<cudf::table>(std::move(cols));
   }

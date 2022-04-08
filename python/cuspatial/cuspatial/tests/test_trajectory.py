@@ -74,7 +74,10 @@ def test_trajectory_bounding_boxes_ones():
 
 def test_trajectory_bounding_boxes_zero_to_one():
     result = cuspatial.trajectory_bounding_boxes(
-        1, cudf.Series([0, 0]), cudf.Series([0, 0]), cudf.Series([0, 1]),
+        1,
+        cudf.Series([0, 0]),
+        cudf.Series([0, 0]),
+        cudf.Series([0, 1]),
     )
     cudf.testing.assert_frame_equal(
         result,
@@ -86,7 +89,10 @@ def test_trajectory_bounding_boxes_zero_to_one():
 
 def test_trajectory_bounding_boxes_zero_to_one_xy():
     result = cuspatial.trajectory_bounding_boxes(
-        1, cudf.Series([0, 0]), cudf.Series([0, 1]), cudf.Series([0, 1]),
+        1,
+        cudf.Series([0, 0]),
+        cudf.Series([0, 1]),
+        cudf.Series([0, 1]),
     )
     cudf.testing.assert_frame_equal(
         result,
@@ -262,7 +268,10 @@ def test_derive_trajectories_many():
 
 def test_trajectory_distances_and_speeds_zeros():
     objects, traj_offsets = cuspatial.derive_trajectories(
-        [0], [0], [0], [0],  # object_id  # xs  # ys  # timestamp
+        [0],
+        [0],
+        [0],
+        [0],  # object_id  # xs  # ys  # timestamp
     )
     result = cuspatial.trajectory_distances_and_speeds(
         len(traj_offsets),
@@ -281,7 +290,10 @@ def test_trajectory_distances_and_speeds_zeros():
 
 def test_trajectory_distances_and_speeds_ones():
     objects, traj_offsets = cuspatial.derive_trajectories(
-        [1], [1], [1], [1],  # object_id  # xs  # ys  # timestamp
+        [1],
+        [1],
+        [1],
+        [1],  # object_id  # xs  # ys  # timestamp
     )
     result = cuspatial.trajectory_distances_and_speeds(
         len(traj_offsets),

@@ -87,7 +87,9 @@ def directed_hausdorff_distance(xs, ys, space_offsets):
         return DataFrame()
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     result = cpp_directed_hausdorff_distance(
-        xs, ys, as_column(space_offsets, dtype="uint32"),
+        xs,
+        ys,
+        as_column(space_offsets, dtype="uint32"),
     )
     result = result.data_array_view
     result = result.reshape(num_spaces, num_spaces)
@@ -95,7 +97,7 @@ def directed_hausdorff_distance(xs, ys, space_offsets):
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
-    """ Compute the haversine distances between an arbitrary list of lon/lat
+    """Compute the haversine distances between an arbitrary list of lon/lat
     pairs
 
     Parameters
@@ -166,7 +168,7 @@ def point_in_polygon(
     poly_points_x,
     poly_points_y,
 ):
-    """ Compute from a set of points and a set of polygons which points fall
+    """Compute from a set of points and a set of polygons which points fall
     within which polygons. Note that `polygons_(x,y)` must be specified as
     closed polygons: the first and last coordinate of each polygon must be
     the same.
@@ -214,6 +216,12 @@ def point_in_polygon(
     note
     input Series x and y will not be index aligned, but computed as
     sequential arrays.
+
+    note
+    poly_ring_offsets must contain only the rings that make up the polygons
+    indexed by poly_offsets. If there are rings in poly_ring_offsets that
+    are not part of the polygons in poly_offsets, results are likely to be
+    incorrect and behavior is undefined.
 
     Returns
     -------
