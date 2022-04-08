@@ -82,6 +82,8 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
   auto [ls2_x, ls2_y, ls2_offset] =
     generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, 100, stream);
 
+  cudaStreamSynchronize(stream.value());
+
   auto const total_points = ls1_x->size() + ls2_x->size();
 
   state.add_element_count(num_string_pairs, "LineStringPairs");
