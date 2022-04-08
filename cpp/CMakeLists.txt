@@ -219,6 +219,22 @@ if(CUSPATIAL_BUILD_BENCHMARKS)
         GIT_SHALLOW     TRUE
         OPTIONS         "BENCHMARK_ENABLE_TESTING OFF"
                         "BENCHMARK_ENABLE_INSTALL OFF")
+
+    set(nvbench_with_nvml "OFF")
+    if(TARGET CUDA::nvml)
+        set(nvbench_with_nvml "ON")
+    endif()
+                      
+    message("nvbench configured with nvml ${nvbench_with_nvml}")
+    # Find or install NVBench
+    CPMFindPackage(NAME NVBench
+        VERSION         0.1.0
+        GIT_REPOSITORY  https://github.com/NVIDIA/nvbench.git
+        GIT_TAG         main
+        GIT_SHALLOW     TRUE
+        OPTIONS         "NVBench_ENABLE_EXAMPLES OFF"
+                        "NVBench_ENABLE_TESTING OFF"
+                        "NVBench_ENABLE_NVML ${nvbench_with_nvml}")
     add_subdirectory(benchmarks)
 endif()
 
