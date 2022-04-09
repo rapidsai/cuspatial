@@ -89,6 +89,7 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
   state.add_element_count(num_string_pairs, "LineStringPairs");
   state.add_element_count(total_points, "NumPoints");
   state.add_global_memory_reads<T>(total_points * 2, "CoordinatesDataSize");
+  state.add_global_memory_reads<cudf::size_type>(num_string_pairs * 2, "OffsetsDataSize");
   state.add_global_memory_writes<T>(num_string_pairs);
 
   state.exec(nvbench::exec_tag::sync,
@@ -106,7 +107,7 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
 using floating_point_types = nvbench::type_list<float, double>;
 NVBENCH_BENCH_TYPES(pairwise_linestring_distance_benchmark, NVBENCH_TYPE_AXES(floating_point_types))
   .set_type_axes_names({"CoordsType"})
-  .add_int64_axis("NumStrings", {100'000, 1'000'000, 10'000'000})
-  .add_int64_axis("NumSegmentsPerString", {100, 1'000, 10'000});
+  .add_int64_axis("NumStrings", {1'000, 10'000, 100'000})
+  .add_int64_axis("NumSegmentsPerString", {10, 100, 1'000});
 
 }  // namespace cuspatial
