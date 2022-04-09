@@ -23,11 +23,13 @@
 #include <cudf/column/column_view.hpp>
 #include <cudf/copying.hpp>
 #include <cudf/detail/iterator.cuh>
+#include <cudf/detail/utilities/device_atomics.cuh>
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/binary_search.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
@@ -36,7 +38,7 @@
 #include <type_traits>
 
 #ifndef DEBUG
-#define DEBUG 1
+// #define DEBUG 1
 #endif
 
 template <typename T>
@@ -67,7 +69,9 @@ double __device__ point_to_segment_distance(coord_2d<T> const& C,
   double L_squared = (A.x - B.x) * (A.x - B.x) + (A.y - B.y) * (A.y - B.y);
   if (L_squared == 0) { return hypot(C.x - A.x, C.y - A.y); }
   double r = ((C.x - A.x) * (B.x - A.x) + (C.y - A.y) * (B.y - A.y)) / L_squared;
+#ifdef DEBUG
   printf("\t r=%f\n", r);
+#endif
   if (r <= 0 or r >= 1) {
     return std::min(hypot(C.x - A.x, C.y - A.y), hypot(C.x - B.x, C.y - B.y));
   }
@@ -140,72 +144,87 @@ double __device__ segment_distance(coord_2d<T> const& A,
   return segment_distance_no_intersect(A, B, C, D);
 }
 
-template <typename CoordinateIterator, typename OffsetIterator>
-struct linestirngs_pairs_min_distance_functor {
+template <typename CoordinateIterator, typename OffsetIterator, typename OutputIterator>
+void __global__ kernel(OffsetIterator linestring1_offsets_begin,
+                       OffsetIterator linestring1_offsets_end,
+                       CoordinateIterator linestring1_points_xs_begin,
+                       CoordinateIterator linestring1_points_xs_end,
+                       CoordinateIterator linestring1_points_ys_begin,
+                       OffsetIterator linestring2_offsets_begin,
+                       CoordinateIterator linestring2_points_xs_begin,
+                       CoordinateIterator linestring2_points_xs_end,
+                       CoordinateIterator linestring2_points_ys_begin,
+                       OutputIterator min_distances)
+{
   using T = typename std::iterator_traits<CoordinateIterator>::value_type;
 
-  cudf::size_type num_linestrings;
-  cudf::size_type linestring1_num_points;
-  cudf::size_type linestring2_num_points;
-  OffsetIterator linestring1_offsets;
-  CoordinateIterator linestring1_points_xs;
-  CoordinateIterator linestring1_points_ys;
-  OffsetIterator linestring2_offsets;
-  CoordinateIterator linestring2_points_xs;
-  CoordinateIterator linestring2_points_ys;
+  auto const p1Idx = threadIdx.x + blockIdx.x * blockDim.x;
+  cudf::size_type const num_linestrings =
+    thrust::distance(linestring1_offsets_begin, linestring1_offsets_end);
+  cudf::size_type const linestring1_num_points =
+    thrust::distance(linestring1_points_xs_begin, linestring1_points_xs_end);
+  cudf::size_type const linestring2_num_points =
+    thrust::distance(linestring2_points_xs_begin, linestring2_points_xs_end);
 
-  linestirngs_pairs_min_distance_functor(cudf::size_type num_linestrings,
-                                         cudf::size_type linestring1_num_points,
-                                         cudf::size_type linestring2_num_points,
-                                         OffsetIterator linestring1_offsets,
-                                         CoordinateIterator linestring1_points_xs,
-                                         CoordinateIterator linestring1_points_ys,
-                                         OffsetIterator linestring2_offsets,
-                                         CoordinateIterator linestring2_points_xs,
-                                         CoordinateIterator linestring2_points_ys)
-    : num_linestrings(num_linestrings),
-      linestring1_num_points(linestring1_num_points),
-      linestring2_num_points(linestring2_num_points),
-      linestring1_offsets(linestring1_offsets),
-      linestring1_points_xs(linestring1_points_xs),
-      linestring1_points_ys(linestring1_points_ys),
-      linestring2_offsets(linestring2_offsets),
-      linestring2_points_xs(linestring2_points_xs),
-      linestring2_points_ys(linestring2_points_ys)
-  {
+#ifdef DEBUG
+  printf("p1Idx: %d\n", p1Idx);
+  printf("linestring1_num_points: %d\n", linestring1_num_points);
+#endif
+
+  if (p1Idx >= linestring1_num_points) { return; }
+
+  cudf::size_type const linestring_idx =
+    thrust::distance(
+      linestring1_offsets_begin,
+      thrust::upper_bound(thrust::seq, linestring1_offsets_begin, linestring1_offsets_end, p1Idx)) -
+    1;
+
+  cudf::size_type ls1End =
+    (linestring_idx == (num_linestrings - 1) ? (linestring1_num_points)
+                                             : *(linestring1_offsets_begin + linestring_idx + 1)) -
+    1;
+
+#ifdef DEBUG
+  printf("p1Idx: %d\n", p1Idx);
+  printf("ls1End: %d\n", ls1End);
+  printf("linestring_idx: %d\n", linestring_idx);
+  printf("num_linestrings: %d\n", num_linestrings);
+#endif
+  if (p1Idx == ls1End) {
+    // Current point is the end point of the line string.
+    return;
   }
 
-  T __device__ operator()(cudf::size_type idx)
-  {
-    auto const l1pts_start = linestring1_offsets[idx];
-    auto const l1pts_end =
-      idx == (num_linestrings - 1) ? linestring1_num_points : linestring1_offsets[idx + 1];
-    auto const l2pts_start = linestring2_offsets[idx];
-    auto const l2pts_end =
-      idx == (num_linestrings - 1) ? linestring2_num_points : linestring2_offsets[idx + 1];
+  cudf::size_type ls2Start = *(linestring2_offsets_begin + linestring_idx);
+  cudf::size_type ls2End =
+    (linestring_idx == (num_linestrings - 1) ? linestring2_num_points
+                                             : *(linestring2_offsets_begin + linestring_idx + 1)) -
+    1;
+
+  coord_2d<T> A{linestring1_points_xs_begin[p1Idx], linestring1_points_ys_begin[p1Idx]};
+  coord_2d<T> B{linestring1_points_xs_begin[p1Idx + 1], linestring1_points_ys_begin[p1Idx + 1]};
+
 #ifdef DEBUG
-    printf("idx: %d\n", idx);
-    printf("num_points_ls1: %d\n", linestring1_num_points);
-    printf("num_points_ls2: %d\n", linestring2_num_points);
-    printf("l1pts: %d, %d\n", l1pts_start, l1pts_end);
-    printf("l2pts: %d, %d\n", l2pts_start, l2pts_end);
+  printf("linestring_idx: %d\n", linestring_idx);
+  printf("num_linestrings: %d\n", num_linestrings);
+  printf("linestring1_num_points: %d\n", linestring1_num_points);
+  printf("linestring2_num_points: %d\n", linestring2_num_points);
+  printf("p1Idx: %d\n", p1Idx);
+  printf("ls2Start: %d\n", ls2Start);
+  printf("ls2End: %d\n", ls2End);
+  print(A, B);
 #endif
-    double min_distance = std::numeric_limits<T>::max();
-    for (cudf::size_type i = l1pts_start; i < l1pts_end - 1; i++) {
-      for (cudf::size_type j = l2pts_start; j < l2pts_end - 1; j++) {
-        coord_2d<T> A{linestring1_points_xs[i], linestring1_points_ys[i]};
-        coord_2d<T> B{linestring1_points_xs[i + 1], linestring1_points_ys[i + 1]};
-        coord_2d<T> C{linestring2_points_xs[j], linestring2_points_ys[j]};
-        coord_2d<T> D{linestring2_points_xs[j + 1], linestring2_points_ys[j + 1]};
-        min_distance = std::min(segment_distance(A, B, C, D), min_distance);
+  double min_distance = std::numeric_limits<double>::max();
+  for (cudf::size_type p2Idx = ls2Start; p2Idx < ls2End; p2Idx++) {
+    coord_2d<T> C{linestring2_points_xs_begin[p2Idx], linestring2_points_ys_begin[p2Idx]};
+    coord_2d<T> D{linestring2_points_xs_begin[p2Idx + 1], linestring2_points_ys_begin[p2Idx + 1]};
 #ifdef DEBUG
-        printf("%d %d, %f\n", i, j, min_distance);
+    print(C, D);
 #endif
-      }
-    }
-    return min_distance;
+    min_distance = std::min(min_distance, segment_distance(A, B, C, D));
   }
-};
+  atomicMin(min_distances + linestring_idx, static_cast<T>(min_distance));
+}
 
 }  // anonymous namespace
 
@@ -224,27 +243,54 @@ struct pariwise_linestring_distance_functor {
   {
     using namespace cudf;
 
-    auto const num_strings = static_cast<size_type>(linestring1_offsets.size());
+    auto const num_string_pairs = static_cast<size_type>(linestring1_offsets.size());
 
     auto min_distances =
-      make_numeric_column(data_type{type_to_id<T>()}, num_strings, mask_state::UNALLOCATED);
+      make_numeric_column(data_type{type_to_id<T>()}, num_string_pairs, mask_state::UNALLOCATED);
 
-    auto functor = linestirngs_pairs_min_distance_functor(num_strings,
-                                                          linestring1_points_x.size(),
-                                                          linestring2_points_x.size(),
-                                                          linestring1_offsets.begin(),
-                                                          linestring1_points_x.begin<T>(),
-                                                          linestring1_points_y.begin<T>(),
-                                                          linestring2_offsets.begin(),
-                                                          linestring2_points_x.begin<T>(),
-                                                          linestring2_points_y.begin<T>());
+    // auto functor = linestirngs_pairs_min_distance_functor(num_string_pairs,
+    //                                                       linestring1_points_x.size(),
+    //                                                       linestring2_points_x.size(),
+    //                                                       linestring1_offsets.begin(),
+    //                                                       linestring1_points_x.begin<T>(),
+    //                                                       linestring1_points_y.begin<T>(),
+    //                                                       linestring2_offsets.begin(),
+    //                                                       linestring2_points_x.begin<T>(),
+    //                                                       linestring2_points_y.begin<T>());
 
-    std::cout << "number of strings: " << num_strings << std::endl;
-    thrust::transform(rmm::exec_policy(stream),
-                      thrust::make_counting_iterator(0),
-                      thrust::make_counting_iterator(num_strings),
-                      min_distances->mutable_view().begin<T>(),
-                      functor);
+    // thrust::transform(rmm::exec_policy(stream),
+    //                   thrust::make_counting_iterator(0),
+    //                   thrust::make_counting_iterator(num_string_pairs),
+    //                   min_distances->mutable_view().begin<T>(),
+    //                   functor);
+
+    thrust::fill(rmm::exec_policy(stream),
+                 min_distances->mutable_view().begin<T>(),
+                 min_distances->mutable_view().end<T>(),
+                 std::numeric_limits<T>::max());
+
+    std::size_t const threads_per_block = 64;
+    std::size_t const num_blocks =
+      (linestring1_points_x.size() + threads_per_block - 1) / threads_per_block;
+
+#ifdef DEBUG
+    std::cout << "number of strings: " << num_string_pairs << std::endl;
+    std::cout << "num blocks" << num_blocks << std::endl;
+#endif
+    kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
+      linestring1_offsets.begin(),
+      linestring1_offsets.end(),
+      linestring1_points_x.begin<T>(),
+      linestring1_points_x.end<T>(),
+      linestring1_points_y.begin<T>(),
+      linestring2_offsets.begin(),
+      linestring2_points_x.begin<T>(),
+      linestring2_points_x.end<T>(),
+      linestring2_points_y.begin<T>(),
+      min_distances->mutable_view().begin<T>());
+
+    CUSPATIAL_CUDA_TRY(cudaGetLastError());
+
     return min_distances;
   }
 
@@ -264,22 +310,6 @@ bool validate_linestring(cudf::device_span<cudf::size_type const> linestring_off
                          rmm::cuda_stream_view stream)
 {
   if (linestring_offsets.size() == 1) { return linestring_points_x.size() >= 2; }
-  // auto linestring_validate_iter = cudf::detail::make_counting_transform_iterator(
-  //   0,
-  //   [offsets    = linestring_offsets.begin(),
-  //    num_points = static_cast<cudf::size_type>(linestring_points_x.size()),
-  //    num_offsets =
-  //      static_cast<cudf::size_type>(linestring_offsets.size())] __device__(cudf::size_type idx) {
-  //     cudf::size_type begin = offsets[idx];
-  //     cudf::size_type end   = idx == num_offsets ? num_points : offsets[idx + 1];
-  //     return (end - begin) >= 2;
-  //   });
-  // return thrust::reduce(rmm::exec_policy(stream),
-  //                       linestring_validate_iter,
-  //                       linestring_validate_iter + linestring_offsets.size(),
-  //                       true,
-  //                       [](auto i, auto j) { return i && j; });
-
   return thrust::reduce(
     rmm::exec_policy(stream),
     thrust::make_counting_iterator(cudf::size_type{0}),
