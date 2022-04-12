@@ -111,3 +111,26 @@ inline void throw_cuda_error(cudaError_t error, const char* file, unsigned int l
       cuspatial::detail::throw_cuda_error(status, __FILE__, __LINE__); \
     }                                                                  \
   } while (0);
+
+/**
+ * @brief Debug macro to check for CUDA errors
+ *
+ * In a non-release build, this macro will synchronize the specified stream
+ * before error checking. In both release and non-release builds, this macro
+ * checks for any pending CUDA errors from previous calls. If an error is
+ * reported, an exception is thrown detailing the CUDA error that occurred.
+ *
+ * The intent of this macro is to provide a mechanism for synchronous and
+ * deterministic execution for debugging asynchronous CUDA execution. It should
+ * be used after any asynchronous CUDA call, e.g., cudaMemcpyAsync, or an
+ * asynchronous kernel launch.
+ */
+#ifndef NDEBUG
+#define CUSPATIAL_CHECK_CUDA(stream)                   \
+  do {                                                 \
+    CUSPATIAL_CUDA_TRY(cudaStreamSynchronize(stream)); \
+    CUSPATIAL_CUDA_TRY(cudaPeekAtLastError());         \
+  } while (0);
+#else
+#define CUSPATIAL_CHECK_CUDA(stream) CUSPATIAL_CUDA_TRY(cudaPeekAtLastError());
+#endif
