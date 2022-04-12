@@ -225,10 +225,6 @@ install(TARGETS cuspatial
 install(DIRECTORY ${CUSPATIAL_SOURCE_DIR}/include/cuspatial
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-install(FILES   "${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config.cmake"
-                "${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config-version.cmake"
-    DESTINATION "${INSTALL_CONFIGDIR}")
-
 set(doc_string
     [=[
 Provide targets for the cuSpatial library.
