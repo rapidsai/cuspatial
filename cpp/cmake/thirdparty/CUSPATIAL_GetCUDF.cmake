@@ -40,6 +40,7 @@ function(find_and_configure_cudf VERSION)
 
     rapids_cpm_find(
       cudf ${VERSION}
+      GLOBAL_TARGETS cudf::cudf cudf::cudftestutil
       CPM_ARGS
       GIT_REPOSITORY https://github.com/rapidsai/cudf.git
       GIT_TAG branch-${MAJOR_AND_MINOR}
@@ -47,11 +48,6 @@ function(find_and_configure_cudf VERSION)
       OPTIONS "BUILD_TESTS OFF" "BUILD_BENCHMARKS OFF"
       FIND_PACKAGE_ARGUMENTS "COMPONENTS testing"
     )
-
-    # Make sure consumers of cuspatial can see cudf::cudf
-    fix_cmake_global_defaults(cudf::cudf)
-    # Make sure consumers of cuspatial can see cudf::cudftestutil
-    fix_cmake_global_defaults(cudf::cudftestutil)
 endfunction()
 
 set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}.00")

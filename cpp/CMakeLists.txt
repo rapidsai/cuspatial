@@ -79,11 +79,8 @@ rapids_cmake_support_conda_env(conda_env MODIFY_PREFIX_PATH)
 
 rapids_find_package(
   CUDAToolkit REQUIRED
-  # TODO: Do we want cuspatial to export CUDA the same way that cudf does? I
-  # think probably not since we treat cudf as the central package setting
-  # dependencies for everything else, but I'm not sure.
-  #BUILD_EXPORT_SET cuspatial-exports
-  #INSTALL_EXPORT_SET cuspatial-exports
+  BUILD_EXPORT_SET cuspatial-exports
+  INSTALL_EXPORT_SET cuspatial-exports
 )
 # * find CUDAToolkit package
 # * determine GPU architectures
@@ -95,11 +92,11 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 # - dependencies ----------------------------------------------------------------------------------
 
 # find gdal
-# TODO: How do we add this to rapids-export? I don't think we want to
-# rapids-cpm-find this because we're not looking to download and build a local
-# copy, so should we be using one of the rapids_export_* functions to manually
-# add it to the list?
-find_package(GDAL REQUIRED)
+rapids_find_package(
+    GDAL REQUIRED
+    BUILD_EXPORT_SET cuspatial-exports
+    INSTALL_EXPORT_SET cuspatial-exports
+)
 # add third party dependencies using CPM
 rapids_cpm_init()
 # find or add cuDF
@@ -260,11 +257,10 @@ rapids_export(
 ################################################################################################
 # - build export -------------------------------------------------------------------------------
 
-# TODO: I'm not sure how these two exports should differ here.
-#rapids_export(
-#  INSTALL cuspatial
-#  EXPORT_SET cuspatial-exports
-#  GLOBAL_TARGETS cuspatial
-#  NAMESPACE cuspatial::
-#  DOCUMENTATION doc_string
-#)
+rapids_export(
+  BUILD cuspatial
+  EXPORT_SET cuspatial-exports
+  GLOBAL_TARGETS cuspatial
+  NAMESPACE cuspatial::
+  DOCUMENTATION doc_string
+)
