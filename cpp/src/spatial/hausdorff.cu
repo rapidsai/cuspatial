@@ -178,7 +178,7 @@ struct hausdorff_functor {
       space_offsets.begin<cudf::size_type>(),
       result_view.begin<T>());
 
-    CUDF_CUDA_TRY(cudaGetLastError());
+    CUSPATIAL_CUDA_TRY(cudaGetLastError());
 
     return result;
   }
