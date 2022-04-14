@@ -31,26 +31,16 @@ struct location_3d {
 };
 
 /**
- * @brief A 2D coordinate (x, y)
+ * @brief A 2D Cartesian location (x, y)
  *
  * @tparam T the base type for the coordinates
  */
 template <typename T>
-struct alignas(2 * sizeof(T)) coord_2d {
-  using value_type = T;
+struct coord_2d {
   T x;
   T y;
 };
 
-// Longtitude/Latitude coordinates
-template <typename T>
-struct lonlat_2d : coord_2d<T> {
-};
-
-// Cartesian coordinates
-template <typename T>
-struct cart_2d : coord_2d<T> {
-};
 /**
  * @brief A timestamp
  *
