@@ -30,7 +30,8 @@ template <typename CoordType, typename T = typename CoordType::value_type>
 struct tuple_to_coord_2d {
   __device__ CoordType operator()(thrust::tuple<T, T> pos)
   {
-    static_assert(std::is_base_of_v<coord_2d<T>, CoordType>, "Can only convert to coord_2d type.");
+    static_assert(std::is_base_of_v<coord_2d<T>, CoordType>(),
+                  "Can only convert to coord_2d type.");
     return CoordType{thrust::get<0>(pos), thrust::get<1>(pos)};
   }
 };

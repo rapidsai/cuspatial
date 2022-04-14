@@ -32,19 +32,17 @@
 #include <memory>
 #include <type_traits>
 
-namespace cuspatial {
+namespace cuspatital {
 namespace detail {
 
-template <typename T, typename... Ts>
-constexpr bool is_same()
-{
-  return std::conjunction_v<std::is_same<T, Ts>...>;
+template<typename T, typename ...Ts>
+constexpr bool is_same() {
+    return std::conjunction_v<std::is_same<T, Ts>...>;
 }
 
-template <typename... Ts>
-constexpr bool is_floating_point()
-{
-  return std::conjunction_v<std::is_floating_point<Ts>...>;
+template<typename ...Ts>
+constexpr bool is_floating_point() {
+    return std::conjunction_v<std::is_floating_point<Ts>...>;
 }
 
 template <typename T>
@@ -111,8 +109,7 @@ template <typename Cart2dItA,
           typename Cart2dItB,
           typename OffsetIterator,
           typename OutputIterator,
-          typename Cart2d = typename std::iterator_traits<Cart2dItA>::value_type,
-          typename T      = typename Cart2d::value_type>
+          typename T = typename std::iterator_traits<Cart2dItA>::value_type>
 void __global__ kernel(OffsetIterator linestring1_offsets_begin,
                        OffsetIterator linestring1_offsets_end,
                        Cart2dItA linestring1_points_begin,
@@ -161,102 +158,99 @@ void __global__ kernel(OffsetIterator linestring1_offsets_begin,
   for (cudf::size_type p2Idx = ls2Start; p2Idx < ls2End; p2Idx++) {
     cuspatial::cart_2d<T> const& C = linestring2_points_begin[p2Idx];
     cuspatial::cart_2d<T> const& D = linestring2_points_begin[p2Idx + 1];
-    min_distance                   = std::min(min_distance, segment_distance(A, B, C, D));
+    min_distance = std::min(min_distance, segment_distance(A, B, C, D));
   }
   atomicMin(min_distances + linestring_idx, static_cast<T>(min_distance));
 }
 
-}  // namespace detail
+
+} // namespace detail
 
 /**
  * @brief Check if every linestring in the input contains at least 2 end points.
  */
-template <typename OffsetIterator, typename Cart2dIt>
+template<typename OffsetIterator, typename Cart2dIt>
 bool validate_linestring(OffsetIterator linestring_offsets_first,
                          cudf::size_type num_linestring_pairs,
                          Cart2dIt linestring_points_x_first,
                          cudf::size_type num_points,
                          rmm::cuda_stream_view stream)
 {
-  if (num_linestring_pairs == 1) { return num_points >= 2; }
+  if (num_linestring_pairs == 1) {
+    return num_points >= 2;
+  }
 
-  return thrust::reduce(rmm::exec_policy(stream),
-                        thrust::make_counting_iterator(cudf::size_type{0}),
-                        thrust::make_counting_iterator(num_linestring_pairs),
-                        true,
-                        [linestring_offsets_first, num_linestring_pairs, num_points] __device__(
-                          bool prev, cudf::size_type i) {
-                          cudf::size_type begin = linestring_offsets_first[i];
-                          cudf::size_type end   = i == num_linestring_pairs
-                                                    ? num_points
-                                                    : linestring_offsets_first[i + 1];
-                          return prev && (end - begin);
-                        });
+  return thrust::reduce(
+    rmm::exec_policy(stream),
+    thrust::make_counting_iterator(cudf::size_type{0}),
+    thrust::make_counting_iterator(num_linestring_pairs),
+    true,
+    [linestring_offsets_first,
+     num_linestring_pairs,
+     num_points] __device__(bool prev, cudf::size_type i) {
+      cudf::size_type begin = linestring_offsets_first[i];
+      cudf::size_type end   = i == num_linestring_pairs ? num_points : linestring_offsets_first[i + 1];
+      return prev && (end - begin);
+    });
 }
 
-template <class Cart2dItA,
-          class Cart2dItB,
-          class OffsetIterator,
-          class OutputIt,
-          class Cart2d,
-          class T>
-void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
-                                  OffsetIterator linestring1_offsets_last,
-                                  Cart2dItA linestring1_points_first,
-                                  Cart2dItA linestring1_points_last,
-                                  OffsetIterator linestring2_offsets_first,
-                                  Cart2dItB linestring2_points_first,
-                                  Cart2dItB linestring2_points_last,
-                                  OutputIt distances_first,
-                                  rmm::cuda_stream_view stream)
-{
-  using Cart2dB = typename std::iterator_traits<Cart2dItB>::value_type;
-  static_assert(detail::is_same<cuspatial::cart_2d<T>, Cart2d, Cart2dB>(),
-                "Inputs must be cuspatial::cart_2d");
-  static_assert(detail::is_floating_point<T,
-                                          typename Cart2dB::value_type,
-                                          typename std::iterator_traits<OutputIt>::value_type>(),
-                "Inputs must be floating point types.");
+template<class Cart2dItA,
+         class Cart2dItB,
+         class OffsetIterator,
+         class OutputIt,
+         class Cart2d,
+         class T>
+ void pairwise_linestring_distance(
+  OffsetIterator linestring1_offsets_first,
+  OffsetIterator linestring1_offsets_last,
+  Cart2dItA linestring1_points_first,
+  Cart2dItA linestring1_points_last,
+  OffsetIterator linestring2_offsets_first,
+  Cart2dItB linestring2_points_first,
+  Cart2dItB linestring2_points_last,
+  OutputIt distances_first,
+  rmm::cuda_stream_view stream) {
+        using Cart2dB = typename std::iterator_traits<Cart2dItB>::value_type;
+        static_assert(
+            detail::is_same<cuspatial::cart_2d, Cart2d, Cart2dB>(), "Inputs must be cuspatial::cart_2d"
+        );
+        static_assert(
+            detail::is_floating_point<T, typename Cart2dB::value_type, typename std::iterator_traits<OutputIt>::value_type>(),
+            "Inputs must be floating point types."
+        );
 
-  auto const num_string_pairs =
-    thrust::distance(linestring1_offsets_first, linestring1_offsets_last);
-  auto const num_linestring1_points =
-    thrust::distance(linestring1_points_first, linestring1_points_last);
-  auto const num_linestring2_points =
-    thrust::distance(linestring2_points_first, linestring2_points_last);
+        auto const num_string_pairs = thrust::distance(linestring1_offsets_first, linestring1_offsets_last);
+        auto const num_linestring1_points = thrust::distance(linestring1_points_first, linestring1_points_last);
+        auto const num_linestring2_points = thrust::distance(linestring2_points_first, linestring2_points_last);
 
-  CUSPATIAL_EXPECTS(validate_linestring(linestring1_offsets_first,
-                                        num_string_pairs,
-                                        linestring1_points_first,
-                                        num_linestring1_points,
-                                        stream),
-                    "Each item of linestring1 should contain at least 2 end points.");
-  CUSPATIAL_EXPECTS(validate_linestring(linestring2_offsets_first,
-                                        num_string_pairs,
-                                        linestring2_points_first,
-                                        num_linestring2_points,
-                                        stream),
-                    "Each item of linestring2 should contain at least 2 end points.");
+        CUSPATIAL_EXPECTS(validate_linestring(
+            linestring1_offsets_first, num_string_pairs, linestring1_points_first, num_linestring1_points, stream),
+                            "Each item of linestring1 should contain at least 2 end points.");
+        CUSPATIAL_EXPECTS(validate_linestring(
+            linestring2_offsets_first, num_string_pairs, linestring2_points_first, num_linestring2_points, stream),
+                            "Each item of linestring2 should contain at least 2 end points.");
 
-  thrust::fill(rmm::exec_policy(stream),
-               distances_first,
-               distances_first + num_string_pairs,
-               std::numeric_limits<T>::max());
 
-  std::size_t const threads_per_block = 64;
-  std::size_t const num_blocks =
-    (num_linestring1_points + threads_per_block - 1) / threads_per_block;
+        thrust::fill(rmm::exec_policy(stream),
+                    distances_first,
+                    distances_first + num_string_pairs,
+                    std::numeric_limits<T>::max());
+        
+        std::size_t const threads_per_block = 64;
+        std::size_t const num_blocks = (num_linestring1_points + threads_per_block - 1) / threads_per_block;
 
-  kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(linestring1_offsets_first,
-                                                               linestring1_offsets_last,
-                                                               linestring1_points_first,
-                                                               linestring1_points_last,
-                                                               linestring2_offsets_first,
-                                                               linestring2_points_first,
-                                                               linestring2_points_last,
-                                                               distances_first);
+        kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
+            linestring1_offsets_first,
+            linestring1_offsets_last,
+            linestring1_points_first,
+            linestring1_points_last,
+            linestring2_offsets_first,
+            linestring2_points_first,
+            linestring2_points_last,
+            distances_first
+        );
 
-  CUSPATIAL_CUDA_TRY(cudaGetLastError());
-}
+        CUSPATIAL_CUDA_TRY(cudaGetLastError());
+  }
 
-}  // namespace cuspatial
+} // namespace cuspatial

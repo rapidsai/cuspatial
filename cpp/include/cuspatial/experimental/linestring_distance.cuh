@@ -14,28 +14,30 @@
  * limitations under the License.
  */
 
+
 #pragma once
 
 #include <rmm/cuda_stream_view.hpp>
 
 namespace cuspatial {
 
-template <class Cart2dItA,
-          class Cart2dItB,
-          class OffsetIterator,
-          class OutputIt,
-          class Cart2d = typename std::iterator_traits<Cart2dItA>::value_type,
-          class T      = typename Cart2d::value_type>
-void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
-                                  OffsetIterator linestring1_offsets_last,
-                                  Cart2dItA linestring1_points_first,
-                                  Cart2dItA linestring1_points_last,
-                                  OffsetIterator linestring2_offsets_first,
-                                  Cart2dItB linestring2_points_first,
-                                  Cart2dItB linestring2_points_last,
-                                  OutputIt distances_first,
-                                  rmm::cuda_stream_view stream);
+template<class Cart2dItA,
+         class Cart2dItB,
+         class OffsetIterator,
+         class OutputIt,
+         class Cart2d = typename std::iterator_traits<Cart2dItA>::value_type,
+         class T = typename Cart2d::value_type>
+ void pairwise_linestring_distance(
+  OffsetIterator linestring1_offsets_first,
+  OffsetIterator linestring1_offsets_last,
+  Cart2dItA linestring1_points_first,
+  Cart2dItA linestring1_points_last,
+  OffsetIterator linestring2_offsets_first,
+  Cart2dItB linestring2_points_first,
+  Cart2dItB linestring2_points_last,
+  OutputIt distances_first,
+  rmm::cuda_stream_view stream);
 
 }
 
-#include <cuspatial/experimental/detail/linestring_distance.cuh>
+#include "detail/linestring_distance.cuh"
