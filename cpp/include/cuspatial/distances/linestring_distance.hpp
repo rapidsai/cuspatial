@@ -24,7 +24,11 @@
 namespace cuspatial {
 
 /**
- * @brief Compute distance between pairs of linestrings
+ * @brief Compute shortest distance between pairs of linestrings
+ *
+ * The shortest distances between two linestrings are defined as the shortest distances
+ * between all pairs of segments between the linestrings. If any of the segments intersects,
+ * the distance is 0.
  *
  * @param linestring1_offsets Indices to the start coordinate to the first linestring of the pair
  * @param linestring1_points_x x component for points consisting linestrings 1

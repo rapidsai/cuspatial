@@ -37,41 +37,20 @@
 #include <memory>
 #include <type_traits>
 
-#ifndef DEBUG
-// #define DEBUG 1
-#endif
-
-template <typename T>
-void __device__ print(cuspatial::coord_2d<T> const& point)
-{
-  printf("POINT (%f, %f)\n", point.x, point.y);
-}
-
-template <typename T>
-void __device__ print(cuspatial::coord_2d<T> const& A, cuspatial::coord_2d<T> const& B)
-{
-  printf("SEGMENT (%f, %f) -> (%f, %f)\n", A.x, A.y, B.x, B.y);
-}
-
 namespace cuspatial {
 namespace {
 
+/**
+ * @brief Computes shortest distance between @p C and segment @p A @p B
+ */
 template <typename T>
 double __device__ point_to_segment_distance(coord_2d<T> const& C,
                                             coord_2d<T> const& A,
                                             coord_2d<T> const& B)
 {
-  // Subject 1.02 of https://www.inf.pucrs.br/~pinho/CG/faq.html
-  // Project the point to the segment, if it lands on the segment,
-  // the distance is the length of proejction, otherwise it's the
-  // length to one of the end points.
-
   double L_squared = (A.x - B.x) * (A.x - B.x) + (A.y - B.y) * (A.y - B.y);
   if (L_squared == 0) { return hypot(C.x - A.x, C.y - A.y); }
   double r = ((C.x - A.x) * (B.x - A.x) + (C.y - A.y) * (B.y - A.y)) / L_squared;
-#ifdef DEBUG
-  printf("\t r=%f\n", r);
-#endif
   if (r <= 0 or r >= 1) {
     return std::min(hypot(C.x - A.x, C.y - A.y), hypot(C.x - B.x, C.y - B.y));
   }
@@ -80,37 +59,15 @@ double __device__ point_to_segment_distance(coord_2d<T> const& C,
   return hypot(C.x - Px, C.y - Py);
 }
 
+/**
+ * @brief Computes shortest distance between two segments that doesn't intersect.
+ */
 template <typename T>
 double __device__ segment_distance_no_intersect(coord_2d<T> const& A,
                                                 coord_2d<T> const& B,
                                                 coord_2d<T> const& C,
                                                 coord_2d<T> const& D)
 {
-#ifdef DEBUG
-  printf("From: \n");
-  print(A);
-  printf("To: \n");
-  print(C, D);
-  printf("Distance %f\n", point_to_segment_distance(A, C, D));
-
-  printf("From: \n");
-  print(B);
-  printf("To: \n");
-  print(C, D);
-  printf("Distance %f\n", point_to_segment_distance(B, C, D));
-
-  printf("From: \n");
-  print(C);
-  printf("To: \n");
-  print(A, B);
-  printf("Distance %f\n", point_to_segment_distance(C, A, B));
-
-  printf("From: \n");
-  print(D);
-  printf("To: \n");
-  print(A, B);
-  printf("Distance %f\n", point_to_segment_distance(D, A, B));
-#endif
   return std::min(std::min(point_to_segment_distance(A, C, D), point_to_segment_distance(B, C, D)),
                   std::min(point_to_segment_distance(C, A, B), point_to_segment_distance(D, A, B)));
 }
@@ -118,7 +75,8 @@ double __device__ segment_distance_no_intersect(coord_2d<T> const& A,
 /**
  * @brief Computes shortest distance between two segments.
  *
- * If two segment intersects, distance is 0.
+ * If two segment intersects, distance is 0. Otherwise compute the shortest point
+ * to segment distance.
  */
 template <typename T>
 double __device__ segment_distance(coord_2d<T> const& A,
@@ -126,10 +84,6 @@ double __device__ segment_distance(coord_2d<T> const& A,
                                    coord_2d<T> const& C,
                                    coord_2d<T> const& D)
 {
-  // Subject 1.03 of https://www.inf.pucrs.br/~pinho/CG/faq.html
-  // Construct a parametrized ray of AB and CD, solve for the parameters.
-  // If both parameters are within [0, 1], the intersection exists.
-
   double r_denom = (B.x - A.x) * (D.y - C.y) - (B.y - A.y) * (D.x - C.x);
   double r_numer = (A.y - C.y) * (D.x - C.x) - (A.x - C.x) * (D.y - C.y);
   if (r_denom == 0) {
@@ -144,17 +98,58 @@ double __device__ segment_distance(coord_2d<T> const& A,
   return segment_distance_no_intersect(A, B, C, D);
 }
 
+/**
+ * @brief The kernel to compute point to linestring distance
+ *
+ * Each thread of the kernel computes the distance between a segment in a linestring in pair 1
+ * to a linestring in pair 2. For a segment in pair 1, the linestring index is looked up from
+ * the offset array and mapped to the linestring in the pair 2. The segment is then computed
+ * with all segments in the corresponding linestringin pair 2. This forms a local minima of the
+ * shortest distance, which is then combined with other segment results via an atomic operation
+ * to form the globally minimum distance between the linestrings.
+ *
+ * @tparam CoordinateIterator Iterator to coordinates. Must meet requirements of
+ * [LegacyRandomAccessIterator][https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator]
+ * and is device-accessible.
+ * @tparam OffsetIterator Iterator to linestring offsets.  Must meet requirements of
+ * [LegacyRandomAccessIterator][https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator]
+ * and is device-accessible.
+ * @tparam OutputIterator Iterator to output distances.  Must meet requirements of
+ * [LegacyRandomAccessIterator][https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator]
+ * and is device-accessible.
+ *
+ * @param[in] linestring1_offsets_begin Iterator to the begin of the range of linestring offsets
+ * in pair 1.
+ * @param[in] linestring1_offsets_end Iterator to the end of the range of linestring offsets
+ * in pair 1.
+ * @param[in] linestring1_points_xs_begin Iterator to the begin of the range of x coordinates of
+ * points in pair 1.
+ * @param[in] linestring1_points_xs_end Iterator to the end of the range of x coordiantes of points
+ * in pair 1.
+ * @param[in] linestring1_points_ys_begin Iterator to the begin of the range of y coordinates of
+ * points in pair 1.
+ * @param[in] linestring2_offsets_begin Iterator to the begin of the range of linestring offsets
+ * in pair 2.
+ * @param[in] linestring2_points_xs_begin Iterator to the begin of the range of x coordinates of
+ * points in pair 2.
+ * @param[in] linestring2_points_xs_end Iterator to the end of the range of x coordiantes of points
+ * in pair 2.
+ * @param[in] linestring2_points_ys_begin Iterator to the begin of the range of y coordinates of
+ * points in pair 2.
+ * @param[out] distances Iterator to the output range of shortest distances between pairs.
+ * @return
+ */
 template <typename CoordinateIterator, typename OffsetIterator, typename OutputIterator>
-void __global__ kernel(OffsetIterator linestring1_offsets_begin,
-                       OffsetIterator linestring1_offsets_end,
-                       CoordinateIterator linestring1_points_xs_begin,
-                       CoordinateIterator linestring1_points_xs_end,
-                       CoordinateIterator linestring1_points_ys_begin,
-                       OffsetIterator linestring2_offsets_begin,
-                       CoordinateIterator linestring2_points_xs_begin,
-                       CoordinateIterator linestring2_points_xs_end,
-                       CoordinateIterator linestring2_points_ys_begin,
-                       OutputIterator min_distances)
+void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_offsets_begin,
+                                                    OffsetIterator linestring1_offsets_end,
+                                                    CoordinateIterator linestring1_points_xs_begin,
+                                                    CoordinateIterator linestring1_points_xs_end,
+                                                    CoordinateIterator linestring1_points_ys_begin,
+                                                    OffsetIterator linestring2_offsets_begin,
+                                                    CoordinateIterator linestring2_points_xs_begin,
+                                                    CoordinateIterator linestring2_points_xs_end,
+                                                    CoordinateIterator linestring2_points_ys_begin,
+                                                    OutputIterator distances)
 {
   using T = typename std::iterator_traits<CoordinateIterator>::value_type;
 
@@ -165,11 +160,6 @@ void __global__ kernel(OffsetIterator linestring1_offsets_begin,
     thrust::distance(linestring1_points_xs_begin, linestring1_points_xs_end);
   cudf::size_type const linestring2_num_points =
     thrust::distance(linestring2_points_xs_begin, linestring2_points_xs_end);
-
-#ifdef DEBUG
-  printf("p1Idx: %d\n", p1Idx);
-  printf("linestring1_num_points: %d\n", linestring1_num_points);
-#endif
 
   if (p1Idx >= linestring1_num_points) { return; }
 
@@ -184,12 +174,6 @@ void __global__ kernel(OffsetIterator linestring1_offsets_begin,
                                              : *(linestring1_offsets_begin + linestring_idx + 1)) -
     1;
 
-#ifdef DEBUG
-  printf("p1Idx: %d\n", p1Idx);
-  printf("ls1End: %d\n", ls1End);
-  printf("linestring_idx: %d\n", linestring_idx);
-  printf("num_linestrings: %d\n", num_linestrings);
-#endif
   if (p1Idx == ls1End) {
     // Current point is the end point of the line string.
     return;
@@ -204,31 +188,22 @@ void __global__ kernel(OffsetIterator linestring1_offsets_begin,
   coord_2d<T> A{linestring1_points_xs_begin[p1Idx], linestring1_points_ys_begin[p1Idx]};
   coord_2d<T> B{linestring1_points_xs_begin[p1Idx + 1], linestring1_points_ys_begin[p1Idx + 1]};
 
-#ifdef DEBUG
-  printf("linestring_idx: %d\n", linestring_idx);
-  printf("num_linestrings: %d\n", num_linestrings);
-  printf("linestring1_num_points: %d\n", linestring1_num_points);
-  printf("linestring2_num_points: %d\n", linestring2_num_points);
-  printf("p1Idx: %d\n", p1Idx);
-  printf("ls2Start: %d\n", ls2Start);
-  printf("ls2End: %d\n", ls2End);
-  print(A, B);
-#endif
   double min_distance = std::numeric_limits<double>::max();
   for (cudf::size_type p2Idx = ls2Start; p2Idx < ls2End; p2Idx++) {
     coord_2d<T> C{linestring2_points_xs_begin[p2Idx], linestring2_points_ys_begin[p2Idx]};
     coord_2d<T> D{linestring2_points_xs_begin[p2Idx + 1], linestring2_points_ys_begin[p2Idx + 1]};
-#ifdef DEBUG
-    print(C, D);
-#endif
     min_distance = std::min(min_distance, segment_distance(A, B, C, D));
   }
-  atomicMin(min_distances + linestring_idx, static_cast<T>(min_distance));
+  atomicMin(distances + linestring_idx, static_cast<T>(min_distance));
 }
 
 }  // anonymous namespace
 
 namespace detail {
+
+/**
+ * @brief Functor that launches the kernel to compute pairwise linestring distances.
+ */
 struct pariwise_linestring_distance_functor {
   template <typename T>
   std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
@@ -245,39 +220,19 @@ struct pariwise_linestring_distance_functor {
 
     auto const num_string_pairs = static_cast<size_type>(linestring1_offsets.size());
 
-    auto min_distances =
+    auto distances =
       make_numeric_column(data_type{type_to_id<T>()}, num_string_pairs, mask_state::UNALLOCATED);
 
-    // auto functor = linestirngs_pairs_min_distance_functor(num_string_pairs,
-    //                                                       linestring1_points_x.size(),
-    //                                                       linestring2_points_x.size(),
-    //                                                       linestring1_offsets.begin(),
-    //                                                       linestring1_points_x.begin<T>(),
-    //                                                       linestring1_points_y.begin<T>(),
-    //                                                       linestring2_offsets.begin(),
-    //                                                       linestring2_points_x.begin<T>(),
-    //                                                       linestring2_points_y.begin<T>());
-
-    // thrust::transform(rmm::exec_policy(stream),
-    //                   thrust::make_counting_iterator(0),
-    //                   thrust::make_counting_iterator(num_string_pairs),
-    //                   min_distances->mutable_view().begin<T>(),
-    //                   functor);
-
     thrust::fill(rmm::exec_policy(stream),
-                 min_distances->mutable_view().begin<T>(),
-                 min_distances->mutable_view().end<T>(),
+                 distances->mutable_view().begin<T>(),
+                 distances->mutable_view().end<T>(),
                  std::numeric_limits<T>::max());
 
     std::size_t const threads_per_block = 64;
     std::size_t const num_blocks =
       (linestring1_points_x.size() + threads_per_block - 1) / threads_per_block;
 
-#ifdef DEBUG
-    std::cout << "number of strings: " << num_string_pairs << std::endl;
-    std::cout << "num blocks" << num_blocks << std::endl;
-#endif
-    kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
+    pairwise_linestring_distance_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
       linestring1_offsets.begin(),
       linestring1_offsets.end(),
       linestring1_points_x.begin<T>(),
@@ -287,11 +242,11 @@ struct pariwise_linestring_distance_functor {
       linestring2_points_x.begin<T>(),
       linestring2_points_x.end<T>(),
       linestring2_points_y.begin<T>(),
-      min_distances->mutable_view().begin<T>());
+      distances->mutable_view().begin<T>());
 
     CUSPATIAL_CUDA_TRY(cudaGetLastError());
 
-    return min_distances;
+    return distances;
   }
 
   template <typename T, typename... Args>
