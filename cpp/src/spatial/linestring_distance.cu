@@ -40,6 +40,24 @@
 namespace cuspatial {
 namespace {
 
+/** @brief Get the index that is one-past the end point of linestring at @p linestring_idx
+ *
+ * @note The last endpoint of the linestring is not included in the offset array, thus
+ * @p num_points is returned.
+ */
+template <typename OffsetIterator>
+inline cudf::size_type __device__
+endpoint_index_of_linestring(cudf::size_type const& linestring_idx,
+                             OffsetIterator const& linestring_offsets_begin,
+                             cudf::size_type const& num_linestrings,
+                             cudf::size_type const& num_points)
+{
+  return (linestring_idx == (num_linestrings - 1)
+            ? (num_points)
+            : *(linestring_offsets_begin + linestring_idx + 1)) -
+         1;
+}
+
 /**
  * @brief Computes shortest distance between @p C and segment @p A @p B
  */
@@ -169,10 +187,8 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
       thrust::upper_bound(thrust::seq, linestring1_offsets_begin, linestring1_offsets_end, p1Idx)) -
     1;
 
-  cudf::size_type ls1End =
-    (linestring_idx == (num_linestrings - 1) ? (linestring1_num_points)
-                                             : *(linestring1_offsets_begin + linestring_idx + 1)) -
-    1;
+  cudf::size_type ls1End = endpoint_index_of_linestring(
+    linestring_idx, linestring1_offsets_begin, num_linestrings, linestring1_num_points);
 
   if (p1Idx == ls1End) {
     // Current point is the end point of the line string.
@@ -180,10 +196,8 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
   }
 
   cudf::size_type ls2Start = *(linestring2_offsets_begin + linestring_idx);
-  cudf::size_type ls2End =
-    (linestring_idx == (num_linestrings - 1) ? linestring2_num_points
-                                             : *(linestring2_offsets_begin + linestring_idx + 1)) -
-    1;
+  cudf::size_type ls2End   = endpoint_index_of_linestring(
+    linestring_idx, linestring2_offsets_begin, num_linestrings, linestring2_num_points);
 
   coord_2d<T> A{linestring1_points_xs_begin[p1Idx], linestring1_points_ys_begin[p1Idx]};
   coord_2d<T> B{linestring1_points_xs_begin[p1Idx + 1], linestring1_points_ys_begin[p1Idx + 1]};
