@@ -202,7 +202,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringCoincide)
   expect_columns_equivalent(expected, *got, verbosity);
 }
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairRandom1)
+TYPED_TEST(PairwiseLinestringDistanceTest, OnePairRandom)
 {
   using T = TypeParam;
   wrapper<cudf::size_type> linestring1_offsets{0};
