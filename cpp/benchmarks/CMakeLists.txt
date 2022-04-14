@@ -80,6 +80,3 @@ endfunction(ConfigureNVBench)
 
 ConfigureBench(HAUSDORFF_BENCH
     hausdorff_benchmark.cpp)
-
-ConfigureNVBench(DISTANCES_BENCH
-    pairwise_linestring_distance.cu)
