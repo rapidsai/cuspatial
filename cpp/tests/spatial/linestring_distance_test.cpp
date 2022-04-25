@@ -223,6 +223,46 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairRandom)
   expect_columns_equivalent(expected, *got, verbosity);
 }
 
+TYPED_TEST(PairwiseLinestringDistanceTest, OnePairGeolife)
+{
+  // Example extracted from a pair of trajectry in geolife dataset
+  using T = TypeParam;
+  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<T> linestring1_points_x{39.97551667, 39.97585, 39.97598333, 39.9761, 39.97623333};
+  wrapper<T> linestring1_points_y{116.33028333, 116.3304, 116.33046667, 116.3305, 116.33056667};
+  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<T> linestring2_points_x{
+    39.97381667, 39.97341667, 39.9731,     39.97293333, 39.97233333, 39.97218333, 39.97218333,
+    39.97215,    39.97168333, 39.97093333, 39.97073333, 39.9705,     39.96991667, 39.96961667,
+    39.96918333, 39.96891667, 39.97531667, 39.97533333, 39.97535,    39.97515,    39.97506667,
+    39.97508333, 39.9751,     39.97513333, 39.97511667, 39.97503333, 39.97513333, 39.97523333,
+    39.97521667, 39.97503333, 39.97463333, 39.97443333, 39.96838333, 39.96808333, 39.96771667,
+    39.96745,    39.96735,    39.9673,     39.96718333, 39.96751667, 39.9678,     39.9676,
+    39.96741667, 39.9672,     39.97646667, 39.9764,     39.97625,    39.9762,     39.97603333,
+    39.97581667, 39.9757,     39.97551667, 39.97535,    39.97543333, 39.97538333};
+  wrapper<T> linestring2_points_y{
+    116.34211667, 116.34215,    116.34218333, 116.34221667, 116.34225,    116.34243333,
+    116.34296667, 116.34478333, 116.34486667, 116.34485,    116.34468333, 116.34461667,
+    116.34465,    116.34465,    116.34466667, 116.34465,    116.33036667, 116.32961667,
+    116.3292,     116.32903333, 116.32985,    116.33128333, 116.33195,    116.33618333,
+    116.33668333, 116.33818333, 116.34,       116.34045,    116.34183333, 116.342,
+    116.34203333, 116.3422,     116.3445,     116.34451667, 116.3445,     116.34453333,
+    116.34493333, 116.34506667, 116.3451,     116.34483333, 116.3448,     116.3449,
+    116.345,      116.34506667, 116.33006667, 116.33015,    116.33026667, 116.33038333,
+    116.33036667, 116.3303,     116.33033333, 116.33035,    116.3304,     116.33078333,
+    116.33066667};
+
+  wrapper<T> expected{0.0};
+
+  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
+                                          linestring1_points_x,
+                                          linestring1_points_y,
+                                          column_view(linestring2_offsets),
+                                          linestring2_points_x,
+                                          linestring2_points_y);
+  expect_columns_equivalent(expected, *got, verbosity);
+}
+
 TYPED_TEST(PairwiseLinestringDistanceTest, TwoPairs)
 {
   using T = TypeParam;
