@@ -108,7 +108,7 @@ double __device__ segment_distance(coord_2d<T> const& A,
     return segment_distance_no_intersect(A, B, C, D);
   }
   double r = r_numer / r_denom;
-  double s = ((A.y - C.y) * (B.x - A.x) - (A.x - C.x) * (B.y - A.x)) /
+  double s = ((A.y - C.y) * (B.x - A.x) - (A.x - C.x) * (B.y - A.y)) /
              ((B.x - A.x) * (D.y - C.y) - (B.y - A.y) * (D.x - C.x));
   if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return 0.0; }
   return segment_distance_no_intersect(A, B, C, D);
