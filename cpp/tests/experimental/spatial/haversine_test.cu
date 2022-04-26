@@ -35,7 +35,7 @@ TYPED_TEST_CASE(HaversineTest, TestTypes);
 TYPED_TEST(HaversineTest, Empty)
 {
   using T        = TypeParam;
-  using Location = cuspatial::vec_2d<T>;
+  using Location = cuspatial::lonlat_2d<T>;
 
   auto a_lonlat = rmm::device_vector<Location>{};
   auto b_lonlat = rmm::device_vector<Location>{};
@@ -53,7 +53,7 @@ TYPED_TEST(HaversineTest, Empty)
 TYPED_TEST(HaversineTest, Zero)
 {
   using T        = TypeParam;
-  using Location = cuspatial::vec_2d<T>;
+  using Location = cuspatial::lonlat_2d<T>;
   using LocVec   = std::vector<Location>;
 
   auto a_lonlat = rmm::device_vector<Location>(1, Location{0, 0});
@@ -72,7 +72,7 @@ TYPED_TEST(HaversineTest, Zero)
 TYPED_TEST(HaversineTest, NegativeRadius)
 {
   using T        = TypeParam;
-  using Location = cuspatial::vec_2d<T>;
+  using Location = cuspatial::lonlat_2d<T>;
   using LocVec   = std::vector<Location>;
 
   auto a_lonlat = rmm::device_vector<Location>(LocVec({Location{1, 1}, Location{0, 0}}));
@@ -89,7 +89,7 @@ TYPED_TEST(HaversineTest, NegativeRadius)
 TYPED_TEST(HaversineTest, EquivalentPoints)
 {
   using T        = TypeParam;
-  using Location = cuspatial::vec_2d<T>;
+  using Location = cuspatial::lonlat_2d<T>;
 
   auto h_a_lonlat = std::vector<Location>({{-180, 0}, {180, 30}});
   auto h_b_lonlat = std::vector<Location>({{180, 0}, {-180, 30}});
@@ -111,7 +111,7 @@ TYPED_TEST(HaversineTest, EquivalentPoints)
 
 template <typename T>
 struct identity_xform {
-  using Location = cuspatial::vec_2d<T>;
+  using Location = cuspatial::lonlat_2d<T>;
   __device__ Location operator()(Location const& loc) { return loc; };
 };
 
@@ -119,7 +119,7 @@ struct identity_xform {
 TYPED_TEST(HaversineTest, TransformIterator)
 {
   using T        = TypeParam;
-  using Location = cuspatial::vec_2d<T>;
+  using Location = cuspatial::lonlat_2d<T>;
 
   auto h_a_lonlat = std::vector<Location>({{-180, 0}, {180, 30}});
   auto h_b_lonlat = std::vector<Location>({{180, 0}, {-180, 30}});

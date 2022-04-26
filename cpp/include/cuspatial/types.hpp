@@ -42,6 +42,14 @@ bool operator==(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
   return (lhs.x == rhs.x) && (lhs.y == rhs.y);
 }
 
+template <typename T>
+struct alignas(2 * sizeof(T)) lonlat_2d : vec_2d<T> {
+};
+
+template <typename T>
+struct alignas(2 * sizeof(T)) cartesian_2d : vec_2d<T> {
+};
+
 /**
  * @brief A timestamp
  *

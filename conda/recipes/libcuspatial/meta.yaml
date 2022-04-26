@@ -53,6 +53,8 @@ outputs:
         - cmake {{ cmake_version }}
       run:
         - cudatoolkit {{ cuda_spec }}
+        - libcudf {{ minor_version }}.*
+        - librmm {{ minor_version }}.*
     test:
       commands:
         - test -f $PREFIX/lib/libcuspatial.so

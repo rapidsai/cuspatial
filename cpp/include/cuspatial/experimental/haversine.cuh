@@ -53,7 +53,7 @@ namespace cuspatial {
  * @tparam OutputIt Output iterator. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam Location The `value_type` of `LonLatItA` and `LonLatItB`. Must be
- * `cuspatial::vec_2d<T>`.
+ * `cuspatial::lonlat_2d<T>`.
  * @tparam T The underlying coordinate type. Must be a floating-point type.
  *
  * @return Output iterator to the element past the last distance computed.
