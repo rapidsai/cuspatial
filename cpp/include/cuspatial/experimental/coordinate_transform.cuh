@@ -33,15 +33,15 @@ namespace cuspatial {
  * @param[out] xy_first: beginning of range of output x/y coordinates.
  * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
  *
- * All input iterators must have a `value_type` of `cuspatial::vec_2d<T>` (Lat/Lon coordinates),
+ * All input iterators must have a `value_type` of `cuspatial::lonlat_2d<T>` (Lat/Lon coordinates),
  * and the output iterator must be able to accept for storage values of type
- * `cuspatial::vec_2d<T>` (Cartesian coordinates).
+ * `cuspatial::cartesian_2d<T>` (Cartesian coordinates).
  *
  * @tparam InputIt Iterator to must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI]
  * and be device-accessible.
  * @tparam OutputIt must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be
  * device-accessible.
- * @tparam Location the type of input longitude/latitude coordinates, e.g. cuspatial::vec_2d<T>
+ * @tparam Location the type of input longitude/latitude coordinates, e.g. cuspatial::lonlat_2d<T>
  *
  * @return Output iterator to the element past the last x/y coordinate computed.
  *

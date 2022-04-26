@@ -55,10 +55,10 @@ template <typename Location, typename T = typename Location::value_type>
 struct to_cartesian_functor {
   to_cartesian_functor(Location origin) : _origin(origin) {}
 
-  vec_2d<T> __device__ operator()(Location loc)
+  cartesian_2d<T> __device__ operator()(Location loc)
   {
-    return vec_2d<T>{lon_to_x(_origin.x - loc.x, midpoint(loc.y, _origin.y)),
-                     lat_to_y(_origin.y - loc.y)};
+    return cartesian_2d<T>{lon_to_x(_origin.x - loc.x, midpoint(loc.y, _origin.y)),
+                           lat_to_y(_origin.y - loc.y)};
   }
 
  private:
@@ -76,10 +76,10 @@ OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
 {
   using T = typename Location::value_type;
 
-  static_assert(
-    std::conjunction_v<std::is_same<vec_2d<T>, Location>,
-                       std::is_same<vec_2d<T>, typename std::iterator_traits<InputIt>::value_type>>,
-    "Input type must be cuspatial::vec_2d");
+  static_assert(std::conjunction_v<
+                  std::is_same<lonlat_2d<T>, Location>,
+                  std::is_same<lonlat_2d<T>, typename std::iterator_traits<InputIt>::value_type>>,
+                "Input type must be cuspatial::lonlat_2d");
 
   static_assert(std::is_floating_point_v<T>,
                 "lonlat_to_cartesian supports only floating-point coordinates.");
