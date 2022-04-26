@@ -136,7 +136,7 @@ std::unique_ptr<cudf::column> haversine_distance(
 ```
 
 key points:
-  1. All input data are `cudf::column_view`. This is a type0erased container so determining the 
+  1. All input data are `cudf::column_view`. This is a type-erased container so determining the 
      type of data must be done at run time.
   2. All inputs are arrays of scalars. Longitude and latitude are separate. 
   3. The output is a returned `unique_ptr<cudf::column>`.
