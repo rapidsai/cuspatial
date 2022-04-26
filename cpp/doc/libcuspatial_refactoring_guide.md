@@ -47,7 +47,7 @@ There are a few key points to notice.
 
   1. The API is very similar to STL algorithms such as `std::transform`.
   2. All array inputs and outputs are iterator type templates. 
-  3. Longitude/Latitude data is passed as array of structures, using the `cuspatial::location_2d`
+  3. Longitude/Latitude data is passed as array of structures, using the `cuspatial::lonlat_2d`
      type (include/cuspatial/types.hpp)
   4. The `Location` type is a template that is by default equal to the `value_type` of the input
      iterators.
@@ -97,7 +97,7 @@ Following is the (Doxygen) documentation for the above `cuspatial::haversine_dis
  * @tparam OutputIt Output iterator. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam Location The `value_type` of `LonLatItA` and `LonLatItB`. Must be
- * `cuspatial::location_2d<T>`.
+ * `cuspatial::lonlat_2d<T>`.
  * @tparam T The underlying coordinate type. Must be a floating-point type.
  *
  * @return Output iterator to the element past the last distance computed.
@@ -114,7 +114,7 @@ Key points:
   3. States the C++ standard iterator concepts that must be implemented, and that iterators must be
      device-accessible.
   4. Documents requirements such as that the input iterators must have `value_type` of
-     `cuspatial::location_2d<T>`, and that all iterators must have the same floating-point 
+     `cuspatial::lonlat_2d<T>`, and that all iterators must have the same floating-point 
      `value_type`.
   5. Documents the units of any inputs or outputs that have them.
 
@@ -193,9 +193,9 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             rmm::cuda_stream_view stream)
 {
   using LocationB = typename std::iterator_traits<LonLatItB>::value_type;
-  static_assert(std::conjunction_v<std::is_same<location_2d<T>, Location>,
-                                   std::is_same<location_2d<T>, LocationB>>,
-                "Inputs must be cuspatial::location_2d");
+  static_assert(std::conjunction_v<std::is_same<lonlat_2d<T>, Location>,
+                                   std::is_same<lonlat_2d<T>, LocationB>>,
+                "Inputs must be cuspatial::lonlat_2d");
   static_assert(
     std::conjunction_v<std::is_floating_point<T>,
                        std::is_floating_point<typename LocationB::value_type>,
@@ -215,7 +215,7 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
 
 Note that we `static_assert` that the types of the iterator inputs match documented expectations.
 We also do a runtime check that the radius is positive. Finally we just call `thrust::transform`, 
-passing it an instance of `haversine_distance_functor`, which is a function of two `location_2d`
+passing it an instance of `haversine_distance_functor`, which is a function of two `lonlat_2d`
 inputs that implements the Haversine distance formula.
 
 ### libcudf-based API Implementation
@@ -223,7 +223,7 @@ inputs that implements the Haversine distance formula.
 The substance of the refactoring is making the libcudf-based API a wrapper around the header-only 
 API. This mostly involves replacing business logic implementation in the type-dispatched functor 
 with a call to the header-only API. We also need to convert disjoint latitude and longitude inputs 
-into `location_2d<T>` structs. This is easily done using the `cuspatial::to_location_2d` utility
+into `lonlat_2d<T>` structs. This is easily done using the `cuspatial::make_lonlat_iterator` utility
 provided in `type_utils.hpp`. 
 
 So, to refactor the libcudf-based API, we remove the following code.
@@ -253,16 +253,15 @@ thrust::transform(rmm::exec_policy(stream),
 And replace it with the following code.
 
 ```C++
-auto lonlat_a = cuspatial::to_location_2d(a_lon.begin<T>(), a_lat.begin<T>());
-auto lonlat_b = cuspatial::to_location_2d(b_lon.begin<T>(), b_lat.begin<T>());
+auto lonlat_a = cuspatial::make_lonlat_iterator(a_lon.begin<T>(), a_lat.begin<T>());
+auto lonlat_b = cuspatial::make_lonlat_iterator(b_lon.begin<T>(), b_lat.begin<T>());
 
-cuspatial::haversine_distance(
-  lonlat_a,
-  lonlat_a + a_lon.size(),
-  lonlat_b,
-  static_cast<cudf::mutable_column_view>(*result).begin<T>(),
-  T{radius},
-  stream);
+cuspatial::haversine_distance(lonlat_a,
+                              lonlat_a + a_lon.size(),
+                              lonlat_b,
+                              static_cast<cudf::mutable_column_view>(*result).begin<T>(),
+                              T{radius},
+                              stream);
 ```
 
 ## Testing
