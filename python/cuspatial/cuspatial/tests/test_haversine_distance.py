@@ -15,7 +15,7 @@ def test_zeros():
         cudf.Series([0.0]),
         cudf.Series([0.0]),
     )
-    assert distance[0] == 0
+    assert distance.element_indexing(0) == 0
 
 
 def test_empty_x1():
