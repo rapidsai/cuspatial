@@ -36,12 +36,12 @@ template <typename T>
 struct haversine_distance_functor {
   haversine_distance_functor(T radius) : radius_(radius) {}
 
-  __device__ T operator()(vec_2d<T> a_lonlat, vec_2d<T> b_lonlat)
+  __device__ T operator()(lonlat_2d<T> point_a, lonlat_2d<T> point_b)
   {
-    auto ax = a_lonlat.x * DEGREE_TO_RADIAN;
-    auto ay = a_lonlat.y * DEGREE_TO_RADIAN;
-    auto bx = b_lonlat.x * DEGREE_TO_RADIAN;
-    auto by = b_lonlat.y * DEGREE_TO_RADIAN;
+    auto ax = point_a.x * DEGREE_TO_RADIAN;
+    auto ay = point_a.y * DEGREE_TO_RADIAN;
+    auto bx = point_b.x * DEGREE_TO_RADIAN;
+    auto by = point_b.y * DEGREE_TO_RADIAN;
 
     // haversine formula
     auto x        = (bx - ax) / 2;
@@ -68,8 +68,8 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
 {
   using LocationB = typename std::iterator_traits<LonLatItB>::value_type;
   static_assert(
-    std::conjunction_v<std::is_same<vec_2d<T>, Location>, std::is_same<vec_2d<T>, LocationB>>,
-    "Inputs must be cuspatial::vec_2d");
+    std::conjunction_v<std::is_same<lonlat_2d<T>, Location>, std::is_same<lonlat_2d<T>, LocationB>>,
+    "Inputs must be cuspatial::lonlat_2d");
   static_assert(
     std::conjunction_v<std::is_floating_point<T>,
                        std::is_floating_point<typename LocationB::value_type>,

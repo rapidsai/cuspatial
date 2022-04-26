@@ -23,17 +23,17 @@
 namespace cuspatial {
 
 namespace detail {
-template <typename T>
+template <typename T, typename VectorType>
 struct tuple_to_vec_2d {
-  __device__ cuspatial::vec_2d<T> operator()(thrust::tuple<T, T> pos)
+  __device__ VectorType operator()(thrust::tuple<T, T> const& pos)
   {
-    return cuspatial::vec_2d<T>{thrust::get<0>(pos), thrust::get<1>(pos)};
+    return VectorType{thrust::get<0>(pos), thrust::get<1>(pos)};
   }
 };
 
-template <typename T>
+template <typename T, typename VectorType>
 struct vec_2d_to_tuple {
-  __device__ thrust::tuple<T, T> operator()(cuspatial::vec_2d<T> xy)
+  __device__ thrust::tuple<T, T> operator()(VectorType const& xy)
   {
     return thrust::make_tuple(xy.x, xy.y);
   }
@@ -41,7 +41,7 @@ struct vec_2d_to_tuple {
 
 }  // namespace detail
 
-template <typename FirstIter, typename SecondIter>
+template <typename VectorType, typename FirstIter, typename SecondIter>
 auto make_vec_2d_iterator(FirstIter first, SecondIter second)
 {
   using T = typename std::iterator_traits<FirstIter>::value_type;
@@ -49,15 +49,44 @@ auto make_vec_2d_iterator(FirstIter first, SecondIter second)
                 "Iterator value_type mismatch");
 
   auto zipped = thrust::make_zip_iterator(thrust::make_tuple(first, second));
-  return thrust::make_transform_iterator(zipped, detail::tuple_to_vec_2d<T>());
+  return thrust::make_transform_iterator(zipped, detail::tuple_to_vec_2d<T, VectorType>());
 }
 
 template <typename FirstIter, typename SecondIter>
+auto make_lonlat_iterator(FirstIter first, SecondIter second)
+{
+  using T = typename std::iterator_traits<FirstIter>::value_type;
+  return make_vec_2d_iterator<lonlat_2d<T>>(first, second);
+}
+
+template <typename FirstIter, typename SecondIter>
+auto make_cartesian_2d_iterator(FirstIter first, SecondIter second)
+{
+  using T = typename std::iterator_traits<FirstIter>::value_type;
+  return make_vec_2d_iterator<cartesian_2d<T>>(first, second);
+}
+
+template <typename VectorType, typename FirstIter, typename SecondIter>
 auto make_zipped_vec_2d_output_iterator(FirstIter first, SecondIter second)
 {
   using T         = typename std::iterator_traits<FirstIter>::value_type;
   auto zipped_out = thrust::make_zip_iterator(thrust::make_tuple(first, second));
-  return thrust::make_transform_output_iterator(zipped_out, detail::vec_2d_to_tuple<T>());
+  return thrust::make_transform_output_iterator(zipped_out,
+                                                detail::vec_2d_to_tuple<T, VectorType>());
+}
+
+template <typename FirstIter, typename SecondIter>
+auto make_zipped_lonlat_output_iterator(FirstIter first, SecondIter second)
+{
+  using T = typename std::iterator_traits<FirstIter>::value_type;
+  return make_zipped_vec_2d_output_iterator<lonlat_2d<T>>(first, second);
+}
+
+template <typename FirstIter, typename SecondIter>
+auto make_zipped_cartesian_2d_output_iterator(FirstIter first, SecondIter second)
+{
+  using T = typename std::iterator_traits<FirstIter>::value_type;
+  return make_zipped_vec_2d_output_iterator<cartesian_2d<T>>(first, second);
 }
 
 }  // namespace cuspatial
