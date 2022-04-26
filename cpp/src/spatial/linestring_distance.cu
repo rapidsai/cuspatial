@@ -79,10 +79,10 @@ double __device__ point_to_segment_distance(coord_2d<T> const& C,
  * @brief Computes shortest distance between two segments that doesn't intersect.
  */
 template <typename T>
-double __device__ segment_distance_no_intersect(coord_2d<T> const& A,
-                                                coord_2d<T> const& B,
-                                                coord_2d<T> const& C,
-                                                coord_2d<T> const& D)
+double __device__ segment_distance_no_intersect_or_collinear(coord_2d<T> const& A,
+                                                             coord_2d<T> const& B,
+                                                             coord_2d<T> const& C,
+                                                             coord_2d<T> const& D)
 {
   return std::min(std::min(point_to_segment_distance(A, C, D), point_to_segment_distance(B, C, D)),
                   std::min(point_to_segment_distance(C, A, B), point_to_segment_distance(D, A, B)));
@@ -103,15 +103,14 @@ double __device__ segment_distance(coord_2d<T> const& A,
   double r_denom = (B.x - A.x) * (D.y - C.y) - (B.y - A.y) * (D.x - C.x);
   double r_numer = (A.y - C.y) * (D.x - C.x) - (A.x - C.x) * (D.y - C.y);
   if (r_denom == 0) {
-    if (r_numer == 0) { return 0.0; }  // Segments coincides
-    // Segments parallel
-    return segment_distance_no_intersect(A, B, C, D);
+    // Segments parallel or collinear
+    return segment_distance_no_intersect_or_collinear(A, B, C, D);
   }
   double r = r_numer / r_denom;
   double s = ((A.y - C.y) * (B.x - A.x) - (A.x - C.x) * (B.y - A.y)) /
              ((B.x - A.x) * (D.y - C.y) - (B.y - A.y) * (D.x - C.x));
   if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return 0.0; }
-  return segment_distance_no_intersect(A, B, C, D);
+  return segment_distance_no_intersect_or_collinear(A, B, C, D);
 }
 
 /**
