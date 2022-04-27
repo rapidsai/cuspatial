@@ -215,7 +215,7 @@ namespace detail {
 /**
  * @brief Functor that launches the kernel to compute pairwise linestring distances.
  */
-struct pariwise_linestring_distance_functor {
+struct pairwise_linestring_distance_functor {
   template <typename T>
   std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
     cudf::device_span<cudf::size_type const> linestring1_offsets,
@@ -321,7 +321,7 @@ std::unique_ptr<cudf::column> pairwise_linestring_distance(
                     "Each item of linestring2 should contain at least 2 end points.");
 
   return cudf::type_dispatcher(linestring1_points_x.type(),
-                               pariwise_linestring_distance_functor{},
+                               pairwise_linestring_distance_functor{},
                                linestring1_offsets,
                                linestring1_points_x,
                                linestring1_points_y,
