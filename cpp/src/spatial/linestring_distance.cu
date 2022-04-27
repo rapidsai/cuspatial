@@ -91,7 +91,7 @@ double __device__ segment_distance_no_intersect_or_collinear(coord_2d<T> const& 
 /**
  * @brief Computes shortest distance between two segments.
  *
- * If two segment intersects, distance is 0. Otherwise compute the shortest point
+ * If two segments intersect, the distance is 0. Otherwise compute the shortest point
  * to segment distance.
  */
 template <typename T>
