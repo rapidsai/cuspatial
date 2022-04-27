@@ -40,8 +40,8 @@ namespace cuspatial {
  * @return A column of shortest distances between each pair of linestrings.
  *
  * @throw cuspatial::logic_error if `linestring1_offsets.size() != linestring2_offsets.size()`
- * @throw cuspatial::logic_error if there is a size mismatch between the x- and y-coordinates of the linestring
- * points.
+ * @throw cuspatial::logic_error if there is a size mismatch between the x- and y-coordinates of the
+ * linestring points.
  * @throw cuspatial::logic_error if any of the point arrays have mismatched types.
  * @throw cuspatial::logic_error if any linestring has fewer than 2 points.
  *
