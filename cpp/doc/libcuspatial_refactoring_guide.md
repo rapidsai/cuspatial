@@ -15,7 +15,7 @@ is a header-only template API with an iterator-based interface. This has a numbe
      input data, by using "fancy" iterators. Examples include transform iterators and counting
      iterators.
   4. Memory resources only need to be part of APIs that allocate temporary intermediate storage.
-     Output storage need not be allocated inside the API using a memory resource, since
+     Output storage is allocated outside the API and an output iterator is passed as an argument. 
 
 The main disadvantages of this type of API are
 
@@ -69,7 +69,7 @@ Following is the (Doxygen) documentation for the above `cuspatial::haversine_dis
 
 ```C++
 /**
- * brief Compute haversine distances between points in set A to the corresponding points in set B.
+ * @brief Compute haversine distances between points in set A to the corresponding points in set B.
  *
  * Computes N haversine distances, where N is `std::distance(a_lon_first, a_lon_last)`.
  * The distance for each `(a_lon[i], a_lat[i])` and `(b_lon[i], b_lat[i])` point pair is assigned to
@@ -119,8 +119,6 @@ Key points:
   5. Documents the units of any inputs or outputs that have them.
 
 ## cuSpatial libcudf-based C++ API (legacy API)
-
-[Note: I hesitate to call this the legacy API because we have not decided to deprecate it yet.]
 
 This is the existing API, unchanged by refactoring. Here is the existing 
 `cuspatial::haversine_distance`:
