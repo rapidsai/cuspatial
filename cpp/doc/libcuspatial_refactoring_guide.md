@@ -27,7 +27,8 @@ only libcuspatial API, we can avoid problem 1 and problem 2 for users of the leg
 
 ## Example API
 
-Following is an example iterator-based API for `cuspatial::haversine_distance`.
+Following is an example iterator-based API for `cuspatial::haversine_distance`. (See below for 
+discussion of API documentation.)
 
 ```C++
 template <class LonLatItA,
@@ -39,7 +40,7 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,
                             OutputIt distance_first,
-                            T const radius = EARTH_RADIUS_KM,
+                            T const radius               = EARTH_RADIUS_KM,
                             rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 ```
 
@@ -48,7 +49,8 @@ There are a few key points to notice.
   1. The API is very similar to STL algorithms such as `std::transform`.
   2. All array inputs and outputs are iterator type templates. 
   3. Longitude/Latitude data is passed as array of structures, using the `cuspatial::lonlat_2d`
-     type (include/cuspatial/types.hpp)
+     type (include/cuspatial/types.hpp). This is enforced using a `static_assert` in the function
+     body (discussed later).
   4. The `Location` type is a template that is by default equal to the `value_type` of the input
      iterators.
   5. The floating point type is a template (`T`) that is by default equal to the `value_type` of
@@ -71,10 +73,12 @@ Following is the (Doxygen) documentation for the above `cuspatial::haversine_dis
 /**
  * @brief Compute haversine distances between points in set A to the corresponding points in set B.
  *
- * Computes N haversine distances, where N is `std::distance(a_lon_first, a_lon_last)`.
- * The distance for each `(a_lon[i], a_lat[i])` and `(b_lon[i], b_lat[i])` point pair is assigned to
+ * Computes N haversine distances, where N is `std::distance(a_lonlat_first, a_lonlat_last)`.
+ * The distance for each `a_lonlat[i]` and `b_lonlat[i]` point pair is assigned to
  * `distance_first[i]`. `distance_first` must be an iterator to output storage allocated for N
  * distances.
+ *
+ * Computed distances will have the same units as `radius`.
  *
  * https://en.wikipedia.org/wiki/Haversine_formula
  *
@@ -86,10 +90,6 @@ Following is the (Doxygen) documentation for the above `cuspatial::haversine_dis
  *            (approximate radius of Earth in km)
  * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
  *
- * All iterators must have the same floating-point `value_type`.
- *
- * Computed distances will have the same units as `radius`.
- *
  * @tparam LonLatItA Iterator to input location set A. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam LonLatItB Iterator to input location set B. Must meet the requirements of
@@ -99,6 +99,15 @@ Following is the (Doxygen) documentation for the above `cuspatial::haversine_dis
  * @tparam Location The `value_type` of `LonLatItA` and `LonLatItB`. Must be
  * `cuspatial::lonlat_2d<T>`.
  * @tparam T The underlying coordinate type. Must be a floating-point type.
+ *
+ * @pre `a_lonlat_first` may equal `distance_first`, but the range `[a_lonlat_first, a_lonlat_last)`
+ * shall not overlap the range `[distance_first, distance_first + (a_lonlat_last - a_lonlat_last))
+ * otherwise.
+ * @pre `b_lonlat_first` may equal `distance_first`, but the range `[b_lonlat_first, b_lonlat_last)`
+ * shall not overlap the range `[distance_first, distance_first + (b_lonlat_last - b_lonlat_last))
+ * otherwise. 
+ * @pre All iterators must have the same `Location` type, with  the same underlying floating-point
+ * coordinate type (e.g. `cuspatial::lonlat_2d<float>`).
  *
  * @return Output iterator to the element past the last distance computed.
  *
@@ -113,10 +122,9 @@ Key points:
   2. All parameters and all template parameters are documented.
   3. States the C++ standard iterator concepts that must be implemented, and that iterators must be
      device-accessible.
-  4. Documents requirements such as that the input iterators must have `value_type` of
-     `cuspatial::lonlat_2d<T>`, and that all iterators must have the same floating-point 
-     `value_type`.
-  5. Documents the units of any inputs or outputs that have them.
+  4. Documents requirements as preconditions using `@pre`. 
+  5. Uses preconditions to explicitly document what input ranges are allowed to overlap.
+  6. Documents the units of any inputs or outputs that have them.
 
 ## cuSpatial libcudf-based C++ API (legacy API)
 

@@ -27,10 +27,12 @@ namespace cuspatial {
 /**
  * @brief Compute haversine distances between points in set A to the corresponding points in set B.
  *
- * Computes N haversine distances, where N is `std::distance(a_lon_first, a_lon_last)`.
- * The distance for each `(a_lon[i], a_lat[i])` and `(b_lon[i], b_lat[i])` point pair is assigned to
+ * Computes N haversine distances, where N is `std::distance(a_lonlat_first, a_lonlat_last)`.
+ * The distance for each `a_lonlat[i]` and `b_lonlat[i]` point pair is assigned to
  * `distance_first[i]`. `distance_first` must be an iterator to output storage allocated for N
  * distances.
+ *
+ * Computed distances will have the same units as `radius`.
  *
  * https://en.wikipedia.org/wiki/Haversine_formula
  *
@@ -42,10 +44,6 @@ namespace cuspatial {
  *            (approximate radius of Earth in km)
  * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
  *
- * All iterators must have the same floating-point `value_type`.
- *
- * Computed distances will have the same units as `radius`.
- *
  * @tparam LonLatItA Iterator to input location set A. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam LonLatItB Iterator to input location set B. Must meet the requirements of
@@ -55,6 +53,15 @@ namespace cuspatial {
  * @tparam Location The `value_type` of `LonLatItA` and `LonLatItB`. Must be
  * `cuspatial::lonlat_2d<T>`.
  * @tparam T The underlying coordinate type. Must be a floating-point type.
+ *
+ * @pre `a_lonlat_first` may equal `distance_first`, but the range `[a_lonlat_first, a_lonlat_last)`
+ * shall not overlap the range `[distance_first, distance_first + (a_lonlat_last - a_lonlat_last))
+ * otherwise.
+ * @pre `b_lonlat_first` may equal `distance_first`, but the range `[b_lonlat_first, b_lonlat_last)`
+ * shall not overlap the range `[distance_first, distance_first + (b_lonlat_last - b_lonlat_last))
+ * otherwise. 
+ * @pre All iterators must have the same `Location` type, with  the same underlying floating-point
+ * coordinate type (e.g. `cuspatial::lonlat_2d<float>`).
  *
  * @return Output iterator to the element past the last distance computed.
  *
