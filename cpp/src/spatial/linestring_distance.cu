@@ -168,7 +168,7 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
 {
   using T = typename std::iterator_traits<CoordinateIterator>::value_type;
 
-  auto const p1Idx = threadIdx.x + blockIdx.x * blockDim.x;
+  auto const p1_idx = threadIdx.x + blockIdx.x * blockDim.x;
   cudf::size_type const num_linestrings =
     thrust::distance(linestring1_offsets_begin, linestring1_offsets_end);
   cudf::size_type const linestring1_num_points =
@@ -176,33 +176,33 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
   cudf::size_type const linestring2_num_points =
     thrust::distance(linestring2_points_xs_begin, linestring2_points_xs_end);
 
-  if (p1Idx >= linestring1_num_points) { return; }
+  if (p1_idx >= linestring1_num_points) { return; }
 
   cudf::size_type const linestring_idx =
-    thrust::distance(
-      linestring1_offsets_begin,
-      thrust::upper_bound(thrust::seq, linestring1_offsets_begin, linestring1_offsets_end, p1Idx)) -
+    thrust::distance(linestring1_offsets_begin,
+                     thrust::upper_bound(
+                       thrust::seq, linestring1_offsets_begin, linestring1_offsets_end, p1_idx)) -
     1;
 
-  cudf::size_type ls1End = endpoint_index_of_linestring(
+  cudf::size_type ls1_end = endpoint_index_of_linestring(
     linestring_idx, linestring1_offsets_begin, num_linestrings, linestring1_num_points);
 
-  if (p1Idx == ls1End) {
+  if (p1_idx == ls1_end) {
     // Current point is the end point of the line string.
     return;
   }
 
-  cudf::size_type ls2Start = *(linestring2_offsets_begin + linestring_idx);
-  cudf::size_type ls2End   = endpoint_index_of_linestring(
+  cudf::size_type ls2_start = *(linestring2_offsets_begin + linestring_idx);
+  cudf::size_type ls2_end   = endpoint_index_of_linestring(
     linestring_idx, linestring2_offsets_begin, num_linestrings, linestring2_num_points);
 
-  coord_2d<T> A{linestring1_points_xs_begin[p1Idx], linestring1_points_ys_begin[p1Idx]};
-  coord_2d<T> B{linestring1_points_xs_begin[p1Idx + 1], linestring1_points_ys_begin[p1Idx + 1]};
+  coord_2d<T> A{linestring1_points_xs_begin[p1_idx], linestring1_points_ys_begin[p1_idx]};
+  coord_2d<T> B{linestring1_points_xs_begin[p1_idx + 1], linestring1_points_ys_begin[p1_idx + 1]};
 
   double min_distance = std::numeric_limits<double>::max();
-  for (cudf::size_type p2Idx = ls2Start; p2Idx < ls2End; p2Idx++) {
-    coord_2d<T> C{linestring2_points_xs_begin[p2Idx], linestring2_points_ys_begin[p2Idx]};
-    coord_2d<T> D{linestring2_points_xs_begin[p2Idx + 1], linestring2_points_ys_begin[p2Idx + 1]};
+  for (cudf::size_type p2_idx = ls2_start; p2_idx < ls2_end; p2_idx++) {
+    coord_2d<T> C{linestring2_points_xs_begin[p2_idx], linestring2_points_ys_begin[p2_idx]};
+    coord_2d<T> D{linestring2_points_xs_begin[p2_idx + 1], linestring2_points_ys_begin[p2_idx + 1]};
     min_distance = std::min(min_distance, segment_distance(A, B, C, D));
   }
   atomicMin(distances + linestring_idx, static_cast<T>(min_distance));
