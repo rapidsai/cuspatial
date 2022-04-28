@@ -1,5 +1,5 @@
 ﻿#=============================================================================
-# Copyright (c) 2019-2021, NVIDIA CORPORATION.
+# Copyright (c) 2019-2022, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -97,3 +97,7 @@ ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST
 
 ConfigureTest(SPATIAL_WINDOW_POINT_TEST
     spatial_window/spatial_window_test.cpp)
+
+# Experimental API
+ConfigureTest(HAVERSINE_TEST_EXP
+    experimental/spatial/haversine_test.cu)

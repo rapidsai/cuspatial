@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,17 @@
 
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/haversine.cuh>
+#include <cuspatial/experimental/type_utils.hpp>
+#include <cuspatial/types.hpp>
 
 #include <cudf/column/column.hpp>
-#include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cudf/copying.hpp>
 #include <cudf/types.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <memory>
@@ -33,30 +34,12 @@
 
 namespace {
 
-template <typename T>
-__device__ T calculate_haversine_distance(T radius, T a_lon, T a_lat, T b_lon, T b_lat)
-{
-  auto ax = a_lon * DEGREE_TO_RADIAN;
-  auto ay = a_lat * DEGREE_TO_RADIAN;
-  auto bx = b_lon * DEGREE_TO_RADIAN;
-  auto by = b_lat * DEGREE_TO_RADIAN;
-
-  // haversine formula
-  auto x        = (bx - ax) / 2;
-  auto y        = (by - ay) / 2;
-  auto sinysqrd = sin(y) * sin(y);
-  auto sinxsqrd = sin(x) * sin(x);
-  auto scale    = cos(ay) * cos(by);
-
-  return 2 * radius * asin(sqrt(sinysqrd + sinxsqrd * scale));
-};
-
 struct haversine_functor {
   template <typename T, typename... Args>
   std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
     Args&&...)
   {
-    CUSPATIAL_FAIL("haversine_distance does not support non-floating-point types.");
+    CUSPATIAL_FAIL("haversine_distance supports only floating-point types.");
   }
 
   template <typename T>
@@ -65,7 +48,7 @@ struct haversine_functor {
     cudf::column_view const& a_lat,
     cudf::column_view const& b_lon,
     cudf::column_view const& b_lat,
-    double radius,
+    T radius,
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
@@ -74,25 +57,15 @@ struct haversine_functor {
     auto mask_policy = cudf::mask_allocation_policy::NEVER;
     auto result      = cudf::allocate_like(a_lon, a_lon.size(), mask_policy, mr);
 
-    auto input_tuple = thrust::make_tuple(thrust::make_constant_iterator(static_cast<T>(radius)),
-                                          a_lon.begin<T>(),
-                                          a_lat.begin<T>(),
-                                          b_lon.begin<T>(),
-                                          b_lat.begin<T>());
+    auto lonlat_a = cuspatial::make_lonlat_iterator(a_lon.begin<T>(), a_lat.begin<T>());
+    auto lonlat_b = cuspatial::make_lonlat_iterator(b_lon.begin<T>(), b_lat.begin<T>());
 
-    auto input_iter = thrust::make_zip_iterator(input_tuple);
-
-    thrust::transform(rmm::exec_policy(stream),
-                      input_iter,
-                      input_iter + result->size(),
-                      result->mutable_view().begin<T>(),
-                      [] __device__(auto inputs) {
-                        return calculate_haversine_distance(thrust::get<0>(inputs),
-                                                            thrust::get<1>(inputs),
-                                                            thrust::get<2>(inputs),
-                                                            thrust::get<3>(inputs),
-                                                            thrust::get<4>(inputs));
-                      });
+    cuspatial::haversine_distance(lonlat_a,
+                                  lonlat_a + a_lon.size(),
+                                  lonlat_b,
+                                  static_cast<cudf::mutable_column_view>(*result).begin<T>(),
+                                  T{radius},
+                                  stream);
 
     return result;
   }
@@ -101,7 +74,6 @@ struct haversine_functor {
 }  // anonymous namespace
 
 namespace cuspatial {
-
 namespace detail {
 
 std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
