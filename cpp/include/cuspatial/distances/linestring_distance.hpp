@@ -30,6 +30,56 @@ namespace cuspatial {
  * between all pairs of segments of the two linestrings. If any of the segments intersect,
  * the distance is 0.
  *
+ * The following example contains 4 pairs of linestrings.
+ *
+ * First pair:
+ * (0, 1) -> (1, 0) -> (-1, 0)
+ * (1, 1) -> (2, 1) -> (2, 0) -> (3, 0)
+ *
+ *     |
+ *     *   #---#
+ *     | \     |
+ * ----O---*---#---#
+ *     | /
+ *     *
+ *     |
+ *
+ * The shortest distance between the two linstrings are the distance
+ * from point (1, 1) to segment (0, 1) -> (1, 0), which is sqrt(2)/2.
+ *
+ * Second pair:
+ *
+ * (0, 0) -> (0, 1)
+ * (0, 2) -> (0, 3) -> (1, 3)
+ *
+ * Both linestrings contains degenerate segments, their distance is 1.
+ *
+ * Third pair:
+ *
+ * (0, 0) -> (2, 2) -> (-2, 0)
+ * (2, 0) -> (0, 2)
+ *
+ * These linestrings intersects, their distance is 0
+ *
+ * Forth pair:
+ *
+ * (2, 2) -> (-2, -2)
+ * (1, 1) -> (5, 5) -> (10, 0)
+ *
+ * These linestrings contain collinear and overlapping sections,
+ * their distance is 0.
+ *
+ * The input of above example is:
+ * linestring1_offsets:  {0, 3, 5, 8}
+ * linestring1_points_x: {0, 1, -1, 0, 0, 0, 2, -2, 2, -2}
+ * linestring1_points_y: {1, 0, 0, 0, 1, 0, 2, 0, 2, -2}
+ * linestring2_offsets:  {0, 4, 7, 9}
+ * linestring2_points_x: {1, 2, 2, 3, 0, 0, 1, 2, 0, 1, 5, 10}
+ * linestring2_points_y: {1, 1, 0, 0, 2, 3, 3, 0, 2, 1, 5, 0}
+ *
+ * Result:
+ * {sqrt(2.0)/2, 1, 0, 0}
+ *
  * @param linestring1_offsets Indices of the first point of the first linestring of each pair.
  * @param linestring1_points_x x-components of points in the first linestring of each pair.
  * @param linestring1_points_y y-component of points in the first linestring of each pair.
