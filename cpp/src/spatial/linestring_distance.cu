@@ -81,10 +81,10 @@ T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
  * @brief Computes shortest distance between two segments that doesn't intersect.
  */
 template <typename T>
-double __device__ segment_distance_no_intersect_or_collinear(vec_2d<T> const& a,
-                                                             vec_2d<T> const& b,
-                                                             vec_2d<T> const& c,
-                                                             vec_2d<T> const& d)
+T __device__ segment_distance_no_intersect_or_collinear(vec_2d<T> const& a,
+                                                        vec_2d<T> const& b,
+                                                        vec_2d<T> const& c,
+                                                        vec_2d<T> const& d)
 {
   auto dist_sqr = std::min(std::min(point_to_segment_distance_squared(a, c, d),
                                     point_to_segment_distance_squared(b, c, d)),
@@ -100,7 +100,7 @@ double __device__ segment_distance_no_intersect_or_collinear(vec_2d<T> const& a,
  * to segment distance.
  */
 template <typename T>
-double __device__
+T __device__
 segment_distance(vec_2d<T> const& a, vec_2d<T> const& b, vec_2d<T> const& c, vec_2d<T> const& d)
 {
   auto ab    = b - a;
@@ -112,9 +112,9 @@ segment_distance(vec_2d<T> const& a, vec_2d<T> const& b, vec_2d<T> const& c, vec
     // Segments parallel or collinear
     return segment_distance_no_intersect_or_collinear(a, b, c, d);
   }
-  double r_numer = det(ac, cd);
-  double r       = r_numer / denom;
-  double s       = det(ac, ab) / denom;
+  auto r_numer = det(ac, cd);
+  auto r       = r_numer / denom;
+  auto s       = det(ac, ab) / denom;
   if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return 0.0; }
   return segment_distance_no_intersect_or_collinear(a, b, c, d);
 }
@@ -205,7 +205,7 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
   vec_2d<T> A{linestring1_points_xs_begin[p1_idx], linestring1_points_ys_begin[p1_idx]};
   vec_2d<T> B{linestring1_points_xs_begin[p1_idx + 1], linestring1_points_ys_begin[p1_idx + 1]};
 
-  double min_distance = std::numeric_limits<double>::max();
+  T min_distance = std::numeric_limits<T>::max();
   for (cudf::size_type p2_idx = ls2_start; p2_idx < ls2_end; p2_idx++) {
     vec_2d<T> C{linestring2_points_xs_begin[p2_idx], linestring2_points_ys_begin[p2_idx]};
     vec_2d<T> D{linestring2_points_xs_begin[p2_idx + 1], linestring2_points_ys_begin[p2_idx + 1]};
