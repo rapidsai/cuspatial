@@ -36,7 +36,7 @@ struct location_3d {
  * @tparam T the base type for the coordinates
  */
 template <typename T>
-struct coord_2d {
+struct vec_2d {
   T x;
   T y;
 };

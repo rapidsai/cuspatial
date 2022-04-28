@@ -38,6 +38,48 @@
 namespace cuspatial {
 namespace {
 
+template <typename T>
+vec_2d<T> __device__ operator+(vec_2d<T> const& a, vec_2d<T> const& b)
+{
+  return vec_2d<T>{a.x + b.x, a.y + b.y};
+}
+
+template <typename T>
+vec_2d<T> __device__ operator-(vec_2d<T> const& a, vec_2d<T> const& b)
+{
+  return vec_2d<T>{a.x - b.x, a.y - b.y};
+}
+
+template <typename T>
+vec_2d<T> __device__ operator*(vec_2d<T> const& a, vec_2d<T> const& b)
+{
+  return vec_2d<T>{a.x * b.x, a.y * b.y};
+}
+
+template <typename T>
+vec_2d<T> __device__ operator*(vec_2d<T> vec, T const& r)
+{
+  return vec_2d<T>{vec.x * r, vec.y * r};
+}
+
+template <typename T>
+vec_2d<T> __device__ operator*(T const& r, vec_2d<T> vec)
+{
+  return vec * r;
+}
+
+template <typename T>
+T __device__ dot(vec_2d<T> const& a, vec_2d<T> const& b)
+{
+  return a.x * b.x + a.y * b.y;
+}
+
+template <typename T>
+T __device__ det(vec_2d<T> const& a, vec_2d<T> const& b)
+{
+  return a.x * b.y - a.y * b.x;
+}
+
 /** @brief Get the index that is one-past the end point of linestring at @p linestring_idx
  *
  * @note The last endpoint of the linestring is not included in the offset array, thus
@@ -60,32 +102,36 @@ endpoint_index_of_linestring(cudf::size_type const& linestring_idx,
  * @brief Computes shortest distance between @p C and segment @p A @p B
  */
 template <typename T>
-double __device__ point_to_segment_distance(coord_2d<T> const& C,
-                                            coord_2d<T> const& A,
-                                            coord_2d<T> const& B)
+T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
+                                               vec_2d<T> const& a,
+                                               vec_2d<T> const& b)
 {
-  double L_squared = (A.x - B.x) * (A.x - B.x) + (A.y - B.y) * (A.y - B.y);
-  if (L_squared == 0) { return hypot(C.x - A.x, C.y - A.y); }
-  double r = ((C.x - A.x) * (B.x - A.x) + (C.y - A.y) * (B.y - A.y)) / L_squared;
-  if (r <= 0 or r >= 1) {
-    return std::min(hypot(C.x - A.x, C.y - A.y), hypot(C.x - B.x, C.y - B.y));
-  }
-  double Px = A.x + r * (B.x - A.x);
-  double Py = A.y + r * (B.y - A.y);
-  return hypot(C.x - Px, C.y - Py);
+  vec_2d<T> ab = b - a;
+  auto ac      = c - a;
+  auto bc      = c - b;
+  T l_squared  = dot(ab, ab);
+  if (l_squared == 0) { return dot(ac, ac); }
+  T r = dot(ac, ab) / l_squared;
+  if (r <= 0 or r >= 1) { return std::min(dot(ac, ac), dot(bc, bc)); }
+  auto p  = a + r * ab;
+  auto pc = c - p;
+  return dot(pc, pc);
 }
 
 /**
  * @brief Computes shortest distance between two segments that doesn't intersect.
  */
 template <typename T>
-double __device__ segment_distance_no_intersect_or_collinear(coord_2d<T> const& A,
-                                                             coord_2d<T> const& B,
-                                                             coord_2d<T> const& C,
-                                                             coord_2d<T> const& D)
+double __device__ segment_distance_no_intersect_or_collinear(vec_2d<T> const& A,
+                                                             vec_2d<T> const& B,
+                                                             vec_2d<T> const& C,
+                                                             vec_2d<T> const& D)
 {
-  return std::min(std::min(point_to_segment_distance(A, C, D), point_to_segment_distance(B, C, D)),
-                  std::min(point_to_segment_distance(C, A, B), point_to_segment_distance(D, A, B)));
+  auto dist_sqr = std::min(std::min(point_to_segment_distance_squared(A, C, D),
+                                    point_to_segment_distance_squared(B, C, D)),
+                           std::min(point_to_segment_distance_squared(C, A, B),
+                                    point_to_segment_distance_squared(D, A, B)));
+  return std::sqrt(dist_sqr);
 }
 
 /**
@@ -95,10 +141,8 @@ double __device__ segment_distance_no_intersect_or_collinear(coord_2d<T> const& 
  * to segment distance.
  */
 template <typename T>
-double __device__ segment_distance(coord_2d<T> const& A,
-                                   coord_2d<T> const& B,
-                                   coord_2d<T> const& C,
-                                   coord_2d<T> const& D)
+double __device__
+segment_distance(vec_2d<T> const& A, vec_2d<T> const& B, vec_2d<T> const& C, vec_2d<T> const& D)
 {
   double r_denom = (B.x - A.x) * (D.y - C.y) - (B.y - A.y) * (D.x - C.x);
   double r_numer = (A.y - C.y) * (D.x - C.x) - (A.x - C.x) * (D.y - C.y);
@@ -196,13 +240,13 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
   cudf::size_type ls2_end   = endpoint_index_of_linestring(
     linestring_idx, linestring2_offsets_begin, num_linestrings, linestring2_num_points);
 
-  coord_2d<T> A{linestring1_points_xs_begin[p1_idx], linestring1_points_ys_begin[p1_idx]};
-  coord_2d<T> B{linestring1_points_xs_begin[p1_idx + 1], linestring1_points_ys_begin[p1_idx + 1]};
+  vec_2d<T> A{linestring1_points_xs_begin[p1_idx], linestring1_points_ys_begin[p1_idx]};
+  vec_2d<T> B{linestring1_points_xs_begin[p1_idx + 1], linestring1_points_ys_begin[p1_idx + 1]};
 
   double min_distance = std::numeric_limits<double>::max();
   for (cudf::size_type p2_idx = ls2_start; p2_idx < ls2_end; p2_idx++) {
-    coord_2d<T> C{linestring2_points_xs_begin[p2_idx], linestring2_points_ys_begin[p2_idx]};
-    coord_2d<T> D{linestring2_points_xs_begin[p2_idx + 1], linestring2_points_ys_begin[p2_idx + 1]};
+    vec_2d<T> C{linestring2_points_xs_begin[p2_idx], linestring2_points_ys_begin[p2_idx]};
+    vec_2d<T> D{linestring2_points_xs_begin[p2_idx + 1], linestring2_points_ys_begin[p2_idx + 1]};
     min_distance = std::min(min_distance, segment_distance(A, B, C, D));
   }
   atomicMin(distances + linestring_idx, static_cast<T>(min_distance));
