@@ -49,7 +49,7 @@ T CUSPATIAL_HOST_DEVICE dot(vec_2d<T> const& a, vec_2d<T> const& b)
 }
 
 /**
- * @brief Compute 2d determinant of two 2d vectors.
+ * @brief Compute 2d determinant of a 2x2 matrix with column vectors @p a and @p b.
  */
 template <typename T>
 T CUSPATIAL_HOST_DEVICE det(vec_2d<T> const& a, vec_2d<T> const& b)
