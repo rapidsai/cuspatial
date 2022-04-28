@@ -31,54 +31,14 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuspatial/utility/vec_2d.cuh>
+
 #include <limits>
 #include <memory>
 #include <type_traits>
 
 namespace cuspatial {
 namespace {
-
-template <typename T>
-vec_2d<T> __device__ operator+(vec_2d<T> const& a, vec_2d<T> const& b)
-{
-  return vec_2d<T>{a.x + b.x, a.y + b.y};
-}
-
-template <typename T>
-vec_2d<T> __device__ operator-(vec_2d<T> const& a, vec_2d<T> const& b)
-{
-  return vec_2d<T>{a.x - b.x, a.y - b.y};
-}
-
-template <typename T>
-vec_2d<T> __device__ operator*(vec_2d<T> const& a, vec_2d<T> const& b)
-{
-  return vec_2d<T>{a.x * b.x, a.y * b.y};
-}
-
-template <typename T>
-vec_2d<T> __device__ operator*(vec_2d<T> vec, T const& r)
-{
-  return vec_2d<T>{vec.x * r, vec.y * r};
-}
-
-template <typename T>
-vec_2d<T> __device__ operator*(T const& r, vec_2d<T> vec)
-{
-  return vec * r;
-}
-
-template <typename T>
-T __device__ dot(vec_2d<T> const& a, vec_2d<T> const& b)
-{
-  return a.x * b.x + a.y * b.y;
-}
-
-template <typename T>
-T __device__ det(vec_2d<T> const& a, vec_2d<T> const& b)
-{
-  return a.x * b.y - a.y * b.x;
-}
 
 /** @brief Get the index that is one-past the end point of linestring at @p linestring_idx
  *
