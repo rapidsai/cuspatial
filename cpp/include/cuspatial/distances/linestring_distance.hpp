@@ -26,24 +26,24 @@ namespace cuspatial {
 /**
  * @brief Compute shortest distance between pairs of linestrings
  *
- * The shortest distances between two linestrings are defined as the shortest distances
- * between all pairs of segments between the linestrings. If any of the segments intersects,
+ * The shortest distance between two linestrings is defined as the shortest distance
+ * between all pairs of segments of the two linestrings. If any of the segments intersect,
  * the distance is 0.
  *
- * @param linestring1_offsets Indices to the start coordinate to the first linestring of the pair
- * @param linestring1_points_x x component for points consisting linestrings 1
- * @param linestring1_points_y y component for points consisting linestrings 1
- * @param linestring2_offsets Indices to the start coordinate to the second linestring of the pair
- * @param linestring2_points_x x component for points consisting linestrings 2
- * @param linestring2_points_y y component for points consisting linestrings 2
- * @param mr Device memory resource used to allocate the returned column's device memory
- * @return A column of shortest distances between the pair of linestrings
+ * @param linestring1_offsets Indices of the first point of the first linestring of each pair.
+ * @param linestring1_points_x x-components of points in the first linestring of each pair.
+ * @param linestring1_points_y y-component of points in the first linestring of each pair.
+ * @param linestring2_offsets Indices of the first point of the second linestring of each pair.
+ * @param linestring2_points_x x-component of points in the first linestring of each pair.
+ * @param linestring2_points_y y-component of points in the first linestring of each pair.
+ * @param mr Device memory resource used to allocate the returned column's device memory.
+ * @return A column of shortest distances between each pair of linestrings.
  *
  * @throw cuspatial::logic_error if `linestring1_offsets.size() != linestring2_offsets.size()`
- * @throw cuspatial::logic_error if size mismatch between the x, y components of the linestring
- * points.
- * @throw cuspatial::logic_error if any of the point arrays have mismatch types.
- * @throw cuspatial::logic_error if any linestring has less than 2 end points.
+ * @throw cuspatial::logic_error if there is a size mismatch between the x- and y-coordinates of the
+ * linestring points.
+ * @throw cuspatial::logic_error if any of the point arrays have mismatched types.
+ * @throw cuspatial::logic_error if any linestring has fewer than 2 points.
  *
  */
 std::unique_ptr<cudf::column> pairwise_linestring_distance(
