@@ -16,6 +16,7 @@
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/types.hpp>
+#include <cuspatial/utility/vec_2d.cuh>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
@@ -30,8 +31,6 @@
 #include <thrust/binary_search.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
-
-#include <cuspatial/utility/vec_2d.cuh>
 
 #include <limits>
 #include <memory>
