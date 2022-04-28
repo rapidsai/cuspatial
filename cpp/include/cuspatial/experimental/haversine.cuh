@@ -59,7 +59,7 @@ namespace cuspatial {
  * otherwise.
  * @pre `b_lonlat_first` may equal `distance_first`, but the range `[b_lonlat_first, b_lonlat_last)`
  * shall not overlap the range `[distance_first, distance_first + (b_lonlat_last - b_lonlat_last))
- * otherwise. 
+ * otherwise.
  * @pre All iterators must have the same `Location` type, with  the same underlying floating-point
  * coordinate type (e.g. `cuspatial::lonlat_2d<float>`).
  *
