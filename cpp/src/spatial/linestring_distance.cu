@@ -81,15 +81,15 @@ T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
  * @brief Computes shortest distance between two segments that doesn't intersect.
  */
 template <typename T>
-double __device__ segment_distance_no_intersect_or_collinear(vec_2d<T> const& A,
-                                                             vec_2d<T> const& B,
-                                                             vec_2d<T> const& C,
-                                                             vec_2d<T> const& D)
+double __device__ segment_distance_no_intersect_or_collinear(vec_2d<T> const& a,
+                                                             vec_2d<T> const& b,
+                                                             vec_2d<T> const& c,
+                                                             vec_2d<T> const& d)
 {
-  auto dist_sqr = std::min(std::min(point_to_segment_distance_squared(A, C, D),
-                                    point_to_segment_distance_squared(B, C, D)),
-                           std::min(point_to_segment_distance_squared(C, A, B),
-                                    point_to_segment_distance_squared(D, A, B)));
+  auto dist_sqr = std::min(std::min(point_to_segment_distance_squared(a, c, d),
+                                    point_to_segment_distance_squared(b, c, d)),
+                           std::min(point_to_segment_distance_squared(c, a, b),
+                                    point_to_segment_distance_squared(d, a, b)));
   return std::sqrt(dist_sqr);
 }
 
@@ -101,19 +101,22 @@ double __device__ segment_distance_no_intersect_or_collinear(vec_2d<T> const& A,
  */
 template <typename T>
 double __device__
-segment_distance(vec_2d<T> const& A, vec_2d<T> const& B, vec_2d<T> const& C, vec_2d<T> const& D)
+segment_distance(vec_2d<T> const& a, vec_2d<T> const& b, vec_2d<T> const& c, vec_2d<T> const& d)
 {
-  double r_denom = (B.x - A.x) * (D.y - C.y) - (B.y - A.y) * (D.x - C.x);
-  double r_numer = (A.y - C.y) * (D.x - C.x) - (A.x - C.x) * (D.y - C.y);
-  if (r_denom == 0) {
+  auto ab    = b - a;
+  auto ac    = c - a;
+  auto cd    = d - c;
+  auto denom = det(ab, cd);
+
+  if (denom == 0) {
     // Segments parallel or collinear
-    return segment_distance_no_intersect_or_collinear(A, B, C, D);
+    return segment_distance_no_intersect_or_collinear(a, b, c, d);
   }
-  double r = r_numer / r_denom;
-  double s = ((A.y - C.y) * (B.x - A.x) - (A.x - C.x) * (B.y - A.y)) /
-             ((B.x - A.x) * (D.y - C.y) - (B.y - A.y) * (D.x - C.x));
+  double r_numer = det(ac, cd);
+  double r       = r_numer / denom;
+  double s       = det(ac, ab) / denom;
   if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return 0.0; }
-  return segment_distance_no_intersect_or_collinear(A, B, C, D);
+  return segment_distance_no_intersect_or_collinear(a, b, c, d);
 }
 
 /**
