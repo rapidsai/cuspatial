@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,32 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace cuspatial {
 
 /**
- * @brief A 3D location: latitude, longitude, altitude
+ * @brief A 2D vector
+ *
+ * Used in cuspatial for both Longitude/Latitude (LonLat) coordinate pairs and Cartesian (X/Y)
+ * coordinate pairs. For LonLat pairs, the `x` member represents Longitude, and `y` represents
+ * Latitude.
  *
  * @tparam T the base type for the coordinates
  */
 template <typename T>
-struct location_3d {
-  T latitude;
-  T longitude;
-  T altitude;
+struct alignas(2 * sizeof(T)) vec_2d {
+  using value_type = T;
+  value_type x;
+  value_type y;
 };
 
-/**
- * @brief A 2D Cartesian location (x, y)
- *
- * @tparam T the base type for the coordinates
- */
 template <typename T>
-struct vec_2d {
-  T x;
-  T y;
+struct alignas(2 * sizeof(T)) lonlat_2d : vec_2d<T> {
+};
+
+template <typename T>
+struct alignas(2 * sizeof(T)) cartesian_2d : vec_2d<T> {
 };
 
 /**
@@ -46,16 +49,16 @@ struct vec_2d {
  *
  */
 struct its_timestamp {
-  uint32_t y   : 6;
-  uint32_t m   : 4;
-  uint32_t d   : 5;
-  uint32_t hh  : 5;
-  uint32_t mm  : 6;
-  uint32_t ss  : 6;
-  uint32_t wd  : 3;
-  uint32_t yd  : 9;
-  uint32_t ms  : 10;
-  uint32_t pid : 10;
+  std::uint32_t y   : 6;
+  std::uint32_t m   : 4;
+  std::uint32_t d   : 5;
+  std::uint32_t hh  : 5;
+  std::uint32_t mm  : 6;
+  std::uint32_t ss  : 6;
+  std::uint32_t wd  : 3;
+  std::uint32_t yd  : 9;
+  std::uint32_t ms  : 10;
+  std::uint32_t pid : 10;
 };
 
 }  // namespace cuspatial

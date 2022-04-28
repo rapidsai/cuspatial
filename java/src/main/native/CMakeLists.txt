@@ -13,7 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #=============================================================================
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
+
+include(../../../../fetch_rapids.cmake)
+
+# TODO: The logic for setting the architectures was previously not here. Was
+# that just an oversight, or is there a reason not to include this here?
+rapids_cuda_init_architectures(CUSPATIAL_JNI)
 
 project(CUDF_JNI VERSION 0.7.0 LANGUAGES C CXX CUDA)
 
@@ -21,16 +27,7 @@ project(CUDF_JNI VERSION 0.7.0 LANGUAGES C CXX CUDA)
 # - build type ------------------------------------------------------------------------------------
 
 # Set a default build type if none was specified
-set(DEFAULT_BUILD_TYPE "Release")
-
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' since none specified.")
-  set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE
-      STRING "Choose the type of build." FORCE)
-  # Set the possible values of build type for cmake-gui
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
+rapids_cmake_build_type("Release")
 
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
@@ -54,8 +51,8 @@ if(CMAKE_COMPILER_IS_GNUCXX)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -D_GLIBCXX_USE_CXX11_ABI=0")
-    endif(CMAKE_CXX11_ABI)
-endif(CMAKE_COMPILER_IS_GNUCXX)
+    endif()
+endif()
 
 #set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61")
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_60,code=sm_60")
@@ -71,13 +68,13 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Werror cross-execution-space-call -Xc
 option(CMAKE_CUDA_LINEINFO "Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler" OFF)
 if (CMAKE_CUDA_LINEINFO)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lineinfo")
-endif(CMAKE_CUDA_LINEINFO)
+endif()
 
 # Debug options
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Building with debugging flags")
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -Xcompiler -rdynamic")
-endif(CMAKE_BUILD_TYPE MATCHES Debug)
+endif()
 
 option(BUILD_TESTS "Configure CMake to build tests"
        ON)
@@ -93,7 +90,7 @@ if(CUDA_STATIC_RUNTIME)
     set(CUDART_LIBRARY "cudart_static")
 else()
     set(CUDART_LIBRARY "cudart")
-endif(CUDA_STATIC_RUNTIME)
+endif()
 
 ###################################################################################################
 # - cmake modules ---------------------------------------------------------------------------------
@@ -174,7 +171,7 @@ if(JNI_FOUND)
     message(STATUS "JDK with JNI in ${JNI_INCLUDE_DIRS}")
 else()
     message(FATAL_ERROR "JDK with JNI not found, please check your settings.")
-endif(JNI_FOUND)
+endif()
 
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
@@ -213,13 +210,13 @@ if(USE_NVTX)
     find_library(NVTX_LIBRARY nvToolsExt PATH ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
     target_link_libraries(cuspatialjni ${NVTX_LIBRARY})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_NVTX")
-endif(USE_NVTX)
+endif()
 
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 if(PER_THREAD_DEFAULT_STREAM)
     message(STATUS "Using per-thread default stream")
     add_compile_definitions(CUDA_API_PER_THREAD_DEFAULT_STREAM)
-endif(PER_THREAD_DEFAULT_STREAM)
+endif()
 
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
