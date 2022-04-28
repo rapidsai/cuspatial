@@ -22,15 +22,6 @@ vec_2d<T> CUSPATIAL_HOST_DEVICE operator-(vec_2d<T> const& a, vec_2d<T> const& b
 }
 
 /**
- * @brief Element-wise multiply of two 2d vectors.
- */
-template <typename T>
-vec_2d<T> CUSPATIAL_HOST_DEVICE operator*(vec_2d<T> const& a, vec_2d<T> const& b)
-{
-  return vec_2d<T>{a.x * b.x, a.y * b.y};
-}
-
-/**
  * @brief Scale a 2d vector by ratio @p r.
  */
 template <typename T>
