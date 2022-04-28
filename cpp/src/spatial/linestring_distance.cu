@@ -274,29 +274,6 @@ struct pairwise_linestring_distance_functor {
   }
 };
 
-/**
- * @brief Check if every linestring in the input contains at least 2 end points.
- */
-bool validate_linestring(cudf::device_span<cudf::size_type const> linestring_offsets,
-                         cudf::column_view const& linestring_points_x,
-                         rmm::cuda_stream_view stream)
-{
-  if (linestring_offsets.size() == 1) { return linestring_points_x.size() >= 2; }
-  return thrust::reduce(
-    rmm::exec_policy(stream),
-    thrust::make_counting_iterator(cudf::size_type{0}),
-    thrust::make_counting_iterator(static_cast<cudf::size_type>(linestring_offsets.size())),
-    true,
-    [offsets     = linestring_offsets.begin(),
-     num_offsets = static_cast<cudf::size_type>(linestring_offsets.size()),
-     num_points  = static_cast<cudf::size_type>(
-       linestring_points_x.size())] __device__(bool prev, cudf::size_type i) {
-      cudf::size_type begin = offsets[i];
-      cudf::size_type end   = i == num_offsets ? num_points : offsets[i + 1];
-      return prev && (end - begin);
-    });
-}
-
 std::unique_ptr<cudf::column> pairwise_linestring_distance(
   cudf::device_span<cudf::size_type const> linestring1_offsets,
   cudf::column_view const& linestring1_points_x,
@@ -320,11 +297,6 @@ std::unique_ptr<cudf::column> pairwise_linestring_distance(
                     "The types of linestring coordinates arrays mismatch.");
 
   if (linestring1_offsets.size() == 0) { return cudf::empty_like(linestring1_points_x); }
-
-  CUSPATIAL_EXPECTS(validate_linestring(linestring1_offsets, linestring1_points_x, stream),
-                    "Each item of linestring1 should contain at least 2 end points.");
-  CUSPATIAL_EXPECTS(validate_linestring(linestring2_offsets, linestring2_points_x, stream),
-                    "Each item of linestring2 should contain at least 2 end points.");
 
   return cudf::type_dispatcher(linestring1_points_x.type(),
                                pairwise_linestring_distance_functor{},

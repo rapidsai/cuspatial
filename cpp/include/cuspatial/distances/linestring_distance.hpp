@@ -39,6 +39,8 @@ namespace cuspatial {
  * @param mr Device memory resource used to allocate the returned column's device memory.
  * @return A column of shortest distances between each pair of linestrings.
  *
+ * @note If any of the linestring contains less than 2 points, the behavior is undefined.
+ *
  * @throw cuspatial::logic_error if `linestring1_offsets.size() != linestring2_offsets.size()`
  * @throw cuspatial::logic_error if there is a size mismatch between the x- and y-coordinates of the
  * linestring points.
