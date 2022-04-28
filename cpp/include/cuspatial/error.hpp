@@ -41,10 +41,11 @@ struct logic_error : public std::logic_error {
 struct cuda_error : public std::runtime_error {
   cuda_error(std::string const& message) : std::runtime_error(message) {}
 };
+
 }  // namespace cuspatial
 
-#define STRINGIFY_DETAIL(x)    #x
-#define CUSPATIAL_STRINGIFY(x) STRINGIFY_DETAIL(x)
+#define CUSPATIAL_STRINGIFY_DETAIL(x) #x
+#define CUSPATIAL_STRINGIFY(x)        CUSPATIAL_STRINGIFY_DETAIL(x)
 
 /**---------------------------------------------------------------------------*
  * @brief Macro for checking (pre-)conditions that throws an exception when

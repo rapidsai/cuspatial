@@ -2,9 +2,24 @@
 
 Please see https://github.com/rapidsai/cuspatial/releases/tag/v22.06.00a for the latest changes to this development branch.
 
-# cuSpatial 22.04.00 (Date TBD)
+# cuSpatial 22.04.00 (6 Apr 2022)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v22.04.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Swap NumericalColumn.values_host for now removed to_array ([#485](https://github.com/rapidsai/cuspatial/pull/485)) [@vyasr](https://github.com/vyasr)
+
+## 📖 Documentation
+
+- Improve point_in_polygon documentation regarding poly_ring_offsets ([#497](https://github.com/rapidsai/cuspatial/pull/497)) [@harrism](https://github.com/harrism)
+- Fix documentation of return type of quadtree_point_in_polygon ([#490](https://github.com/rapidsai/cuspatial/pull/490)) [@harrism](https://github.com/harrism)
+
+## 🛠️ Improvements
+
+- Temporarily disable new `ops-bot` functionality ([#501](https://github.com/rapidsai/cuspatial/pull/501)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Pin gtest/gmock to 1.10.0 in dev envs ([#498](https://github.com/rapidsai/cuspatial/pull/498)) [@trxcllnt](https://github.com/trxcllnt)
+- Add `.github/ops-bot.yaml` config file ([#496](https://github.com/rapidsai/cuspatial/pull/496)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add CMake `install` rule for tests ([#488](https://github.com/rapidsai/cuspatial/pull/488)) [@ajschmidt8](https://github.com/ajschmidt8)
+- replace `ccache` with `sccache` ([#483](https://github.com/rapidsai/cuspatial/pull/483)) [@AyodeAwe](https://github.com/AyodeAwe)
 
 # cuSpatial 22.02.00 (2 Feb 2022)
 

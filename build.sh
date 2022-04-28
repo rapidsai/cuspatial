@@ -107,10 +107,10 @@ if hasArg clean; then
 fi
 
 if (( ${BUILD_ALL_GPU_ARCH} == 0 )); then
-    CUSPATIAL_CMAKE_CUDA_ARCHITECTURES="-DCMAKE_CUDA_ARCHITECTURES="
+    CUSPATIAL_CMAKE_CUDA_ARCHITECTURES="-DCMAKE_CUDA_ARCHITECTURES=NATIVE"
     echo "Building for the architecture of the GPU in the system..."
 else
-    CUSPATIAL_CMAKE_CUDA_ARCHITECTURES=""
+    CUSPATIAL_CMAKE_CUDA_ARCHITECTURES="-DCMAKE_CUDA_ARCHITECTURES=ALL"
     echo "Building for *ALL* supported GPU architectures..."
 fi
 
