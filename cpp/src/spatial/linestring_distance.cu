@@ -65,12 +65,12 @@ T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
                                                vec_2d<T> const& a,
                                                vec_2d<T> const& b)
 {
-  vec_2d<T> ab = b - a;
-  auto ac      = c - a;
-  auto bc      = c - b;
-  T l_squared  = dot(ab, ab);
+  vec_2d<T> ab   = b - a;
+  auto ac        = c - a;
+  auto bc        = c - b;
+  auto l_squared = dot(ab, ab);
   if (l_squared == 0) { return dot(ac, ac); }
-  T r = dot(ac, ab) / l_squared;
+  auto r = dot(ac, ab) / l_squared;
   if (r <= 0 or r >= 1) { return std::min(dot(ac, ac), dot(bc, bc)); }
   auto p  = a + r * ab;
   auto pc = c - p;
