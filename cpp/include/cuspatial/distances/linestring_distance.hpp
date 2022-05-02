@@ -77,8 +77,7 @@ namespace cuspatial {
  * linestring2_points_x: {1, 2, 2, 3, 0, 0, 1, 2, 0, 1, 5, 10}
  * linestring2_points_y: {1, 1, 0, 0, 2, 3, 3, 0, 2, 1, 5, 0}
  *
- * Result:
- * {sqrt(2.0)/2, 1, 0, 0}
+ * Result: {sqrt(2.0)/2, 1, 0, 0}
  *
  * @param linestring1_offsets Indices of the first point of the first linestring of each pair.
  * @param linestring1_points_x x-components of points in the first linestring of each pair.
