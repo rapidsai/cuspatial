@@ -16,7 +16,7 @@
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/types.hpp>
-#include <cuspatial/utility/vec_2d.cuh>
+#include <cuspatial/utility/vec_2d.hpp>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
