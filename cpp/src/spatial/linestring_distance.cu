@@ -81,7 +81,7 @@ T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
  * @brief Computes shortest distance between two segments that doesn't intersect.
  */
 template <typename T>
-T __device__ segment_distance_no_intersect_or_collinear(vec_2d<T> const& a,
+T __device__ segment_distance_no_intersect_or_colinear(vec_2d<T> const& a,
                                                         vec_2d<T> const& b,
                                                         vec_2d<T> const& c,
                                                         vec_2d<T> const& d)
@@ -110,13 +110,13 @@ segment_distance(vec_2d<T> const& a, vec_2d<T> const& b, vec_2d<T> const& c, vec
 
   if (denom == 0) {
     // Segments parallel or collinear
-    return segment_distance_no_intersect_or_collinear(a, b, c, d);
+    return segment_distance_no_intersect_or_colinear(a, b, c, d);
   }
   auto r_numer = det(ac, cd);
   auto r       = r_numer / denom;
   auto s       = det(ac, ab) / denom;
   if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return 0.0; }
-  return segment_distance_no_intersect_or_collinear(a, b, c, d);
+  return segment_distance_no_intersect_or_colinear(a, b, c, d);
 }
 
 /**
