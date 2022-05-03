@@ -44,12 +44,12 @@ namespace {
  * @note The last endpoint of the linestring is not included in the offset array, thus
  * @p num_points is returned.
  */
-template <typename OffsetIterator>
-inline cudf::size_type __device__
-endpoint_index_of_linestring(cudf::size_type const& linestring_idx,
+template <typename SizeType, typename OffsetIterator>
+inline SizeType __device__
+endpoint_index_of_linestring(SizeType const& linestring_idx,
                              OffsetIterator const& linestring_offsets_begin,
-                             cudf::size_type const& num_linestrings,
-                             cudf::size_type const& num_points)
+                             SizeType const& num_linestrings,
+                             SizeType const& num_points)
 {
   return (linestring_idx == (num_linestrings - 1)
             ? (num_points)
@@ -82,9 +82,9 @@ T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
  */
 template <typename T>
 T __device__ segment_distance_no_intersect_or_colinear(vec_2d<T> const& a,
-                                                        vec_2d<T> const& b,
-                                                        vec_2d<T> const& c,
-                                                        vec_2d<T> const& d)
+                                                       vec_2d<T> const& b,
+                                                       vec_2d<T> const& c,
+                                                       vec_2d<T> const& d)
 {
   auto dist_sqr = std::min(std::min(point_to_segment_distance_squared(a, c, d),
                                     point_to_segment_distance_squared(b, c, d)),
