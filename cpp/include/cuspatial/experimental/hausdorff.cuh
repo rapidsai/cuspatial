@@ -78,10 +78,14 @@ namespace cuspatial {
  * @param[in] distance_first: beginning of range of output Hausdorff distance for each pair of
  * spaces
  *
- * @tparam PointIt Iterator to input points. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam PointIt Iterator to input points. Points must be of a type that is convertible to
+ * `cuspatial::vec_2d<T>`. Must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI] and
+ * be device-accessible.
+ * @tparam OffsetIt Iterator to space offsets. Value type must be integral. Must meet the
+ * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt Output iterator. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ *
  *
  * @pre `points_first` may equal `distance_first`, but the range `[points_first, points_last)`
  * shall not overlap the range `[distance_first, distance_first + (points_last - points_first))
@@ -101,3 +105,5 @@ OutputIt directed_hausdorff_distance(PointIt points_first,
                                      rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
+
+#include <cuspatial/experimental/detail/hausdorff.cuh>
