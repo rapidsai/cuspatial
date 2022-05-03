@@ -19,6 +19,8 @@
 #include <cudf/types.hpp>
 #include <memory>
 
+#include <rmm/cuda_stream_view.hpp>
+
 namespace cuspatial {
 
 /**
@@ -76,19 +78,26 @@ namespace cuspatial {
  * @param[in] distance_first: beginning of range of output Hausdorff distance for each pair of
  * spaces
  *
- * @returns Output iterator to the element past the last distance computed.
+ * @tparam PointIt Iterator to input points. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OutputIt Output iterator. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ *
+ * @pre `points_first` may equal `distance_first`, but the range `[points_first, points_last)`
+ * shall not overlap the range `[distance_first, distance_first + (points_last - points_first))
+ * otherwise.
+ * @pre All the same underlying floating-point value type.
+ *
+ * @return Output iterator to the element past the last distance computed.
  *
  * @note Hausdorff distances are asymmetrical
  */
-template <class PointIter,
-          class OffsetIter,
-          class OutputIt,
-          OutputIt directed_hausdorff_distance(
-            PointIter points_first,
-            PointIter points_last,
-            OffsetIter space_offsets_first,
-            OffsetIter space_offsets_last,
-            OutputIter distance_first,
-            rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+template <class PointIt, class OffsetIt, class OutputIt>
+OutputIt directed_hausdorff_distance(PointIt points_first,
+                                     PointIt points_last,
+                                     OffsetIt space_offsets_first,
+                                     OffsetIt space_offsets_last,
+                                     OutputIt distance_first,
+                                     rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
