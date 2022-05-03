@@ -44,7 +44,7 @@ namespace cuspatial {
  *     *
  *     |
  *
- * The shortest distance between the two linstrings are the distance
+ * The shortest distance between the two linestrings is the distance
  * from point (1, 1) to segment (0, 1) -> (1, 0), which is sqrt(2)/2.
  *
  * Second pair:
@@ -52,21 +52,21 @@ namespace cuspatial {
  * (0, 0) -> (0, 1)
  * (0, 2) -> (0, 3) -> (1, 3)
  *
- * Both linestrings contains degenerate segments, their distance is 1.
+ * Both linestrings contain degenerate segments. Their distance is 1 (point (0, 1) to point (0, 2)).
  *
  * Third pair:
  *
  * (0, 0) -> (2, 2) -> (-2, 0)
  * (2, 0) -> (0, 2)
  *
- * These linestrings intersects, their distance is 0
+ * These linestrings intersect, so their distance is 0.
  *
  * Forth pair:
  *
  * (2, 2) -> (-2, -2)
  * (1, 1) -> (5, 5) -> (10, 0)
  *
- * These linestrings contain collinear and overlapping sections,
+ * These linestrings contain colinear and overlapping sections, so
  * their distance is 0.
  *
  * The input of above example is:
