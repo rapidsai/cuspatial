@@ -272,7 +272,7 @@ TEST_F(PairwiseLinestringDistanceTestUntyped, OnePairDeterminantDoublePrecisionD
 {
   // Vector ab: (1e-155, 2e-155)
   // Vector cd: (2e-155, 1e-155)
-  // deternminant of matrix [a, b] = -3e-310, a denormalized number
+  // determinant of matrix [a, b] = -3e-310, a denormalized number
 
   wrapper<cudf::size_type> linestring1_offsets{0};
   wrapper<double> linestring1_points_x{0.0, 1e-155};
@@ -296,7 +296,7 @@ TEST_F(PairwiseLinestringDistanceTestUntyped, OnePairDeterminantSinglePrecisionD
 {
   // Vector ab: (1e-20, 2e-20)
   // Vector cd: (2e-20, 1e-20)
-  // deternminant of matrix [ab, cd] = -3e-40, a denormalized number
+  // determinant of matrix [ab, cd] = -3e-40, a denormalized number
 
   wrapper<cudf::size_type> linestring1_offsets{0};
   wrapper<float> linestring1_points_x{0.0, 1e-20};
