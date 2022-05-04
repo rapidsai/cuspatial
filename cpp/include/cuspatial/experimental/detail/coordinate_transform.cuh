@@ -51,36 +51,29 @@ __device__ inline T lat_to_y(T lat)
   return lat * EARTH_CIRCUMFERENCE_KM_PER_DEGREE;
 };
 
-template <typename Location, typename T = typename Location::value_type>
+template <typename T>
 struct to_cartesian_functor {
-  to_cartesian_functor(Location origin) : _origin(origin) {}
+  to_cartesian_functor(lonlat_2d<T> origin) : _origin(origin) {}
 
-  cartesian_2d<T> __device__ operator()(Location loc)
+  cartesian_2d<T> __device__ operator()(lonlat_2d<T> loc)
   {
     return cartesian_2d<T>{lon_to_x(_origin.x - loc.x, midpoint(loc.y, _origin.y)),
                            lat_to_y(_origin.y - loc.y)};
   }
 
  private:
-  Location _origin{};
+  lonlat_2d<T> _origin{};
 };
 
 }  // namespace detail
 
-template <class InputIt, class OutputIt, class Location>
+template <class InputIt, class OutputIt, class T>
 OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
                              InputIt lon_lat_last,
                              OutputIt xy_first,
-                             Location origin,
+                             lonlat_2d<T> origin,
                              rmm::cuda_stream_view stream)
 {
-  using T = typename Location::value_type;
-
-  static_assert(std::conjunction_v<
-                  std::is_same<lonlat_2d<T>, Location>,
-                  std::is_same<lonlat_2d<T>, typename std::iterator_traits<InputIt>::value_type>>,
-                "Input type must be cuspatial::lonlat_2d");
-
   static_assert(std::is_floating_point_v<T>,
                 "lonlat_to_cartesian supports only floating-point coordinates.");
 
