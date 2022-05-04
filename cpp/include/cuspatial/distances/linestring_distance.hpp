@@ -50,9 +50,9 @@ namespace cuspatial {
  * Second pair:
  *
  * (0, 0) -> (0, 1)
- * (0, 2) -> (0, 3) -> (1, 3)
+ * (1, 0) -> (1, 1) -> (1, 2)
  *
- * Both linestrings contain degenerate segments. Their distance is 1 (point (0, 1) to point (0, 2)).
+ * These linestrings are parallel. Their distance is 1 (point (0, 0) to point (1, 0)).
  *
  * Third pair:
  *
@@ -74,8 +74,8 @@ namespace cuspatial {
  * linestring1_points_x: {0, 1, -1, 0, 0, 0, 2, -2, 2, -2}
  * linestring1_points_y: {1, 0, 0, 0, 1, 0, 2, 0, 2, -2}
  * linestring2_offsets:  {0, 4, 7, 9}
- * linestring2_points_x: {1, 2, 2, 3, 0, 0, 1, 2, 0, 1, 5, 10}
- * linestring2_points_y: {1, 1, 0, 0, 2, 3, 3, 0, 2, 1, 5, 0}
+ * linestring2_points_x: {1, 2, 2, 3, 1, 1, 1, 2, 0, 1, 5, 10}
+ * linestring2_points_y: {1, 1, 0, 0, 0, 1, 2, 0, 2, 1, 5, 0}
  *
  * Result: {sqrt(2.0)/2, 1, 0, 0}
  *
