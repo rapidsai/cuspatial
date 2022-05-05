@@ -16,7 +16,7 @@
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/types.hpp>
-#include <cuspatial/utility/vec_2d.cuh>
+#include <cuspatial/utility/vec_2d.hpp>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
@@ -44,12 +44,12 @@ namespace {
  * @note The last endpoint of the linestring is not included in the offset array, thus
  * @p num_points is returned.
  */
-template <typename OffsetIterator>
-inline cudf::size_type __device__
-endpoint_index_of_linestring(cudf::size_type const& linestring_idx,
+template <typename SizeType, typename OffsetIterator>
+inline SizeType __device__
+endpoint_index_of_linestring(SizeType const& linestring_idx,
                              OffsetIterator const& linestring_offsets_begin,
-                             cudf::size_type const& num_linestrings,
-                             cudf::size_type const& num_points)
+                             SizeType const& num_linestrings,
+                             SizeType const& num_points)
 {
   return (linestring_idx == (num_linestrings - 1)
             ? (num_points)
@@ -65,12 +65,12 @@ T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
                                                vec_2d<T> const& a,
                                                vec_2d<T> const& b)
 {
-  vec_2d<T> ab = b - a;
-  auto ac      = c - a;
-  auto bc      = c - b;
-  T l_squared  = dot(ab, ab);
+  vec_2d<T> ab   = b - a;
+  auto ac        = c - a;
+  auto bc        = c - b;
+  auto l_squared = dot(ab, ab);
   if (l_squared == 0) { return dot(ac, ac); }
-  T r = dot(ac, ab) / l_squared;
+  auto r = dot(ac, ab) / l_squared;
   if (r <= 0 or r >= 1) { return std::min(dot(ac, ac), dot(bc, bc)); }
   auto p  = a + r * ab;
   auto pc = c - p;
@@ -81,16 +81,16 @@ T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
  * @brief Computes shortest distance between two segments that doesn't intersect.
  */
 template <typename T>
-T __device__ segment_distance_no_intersect_or_collinear(vec_2d<T> const& a,
-                                                        vec_2d<T> const& b,
-                                                        vec_2d<T> const& c,
-                                                        vec_2d<T> const& d)
+T __device__ segment_distance_no_intersect_or_colinear(vec_2d<T> const& a,
+                                                       vec_2d<T> const& b,
+                                                       vec_2d<T> const& c,
+                                                       vec_2d<T> const& d)
 {
   auto dist_sqr = std::min(std::min(point_to_segment_distance_squared(a, c, d),
                                     point_to_segment_distance_squared(b, c, d)),
                            std::min(point_to_segment_distance_squared(c, a, b),
                                     point_to_segment_distance_squared(d, a, b)));
-  return std::sqrt(dist_sqr);
+  return dist_sqr;
 }
 
 /**
@@ -100,8 +100,10 @@ T __device__ segment_distance_no_intersect_or_collinear(vec_2d<T> const& a,
  * to segment distance.
  */
 template <typename T>
-T __device__
-segment_distance(vec_2d<T> const& a, vec_2d<T> const& b, vec_2d<T> const& c, vec_2d<T> const& d)
+T __device__ squared_segment_distance(vec_2d<T> const& a,
+                                      vec_2d<T> const& b,
+                                      vec_2d<T> const& c,
+                                      vec_2d<T> const& d)
 {
   auto ab    = b - a;
   auto ac    = c - a;
@@ -110,13 +112,13 @@ segment_distance(vec_2d<T> const& a, vec_2d<T> const& b, vec_2d<T> const& c, vec
 
   if (denom == 0) {
     // Segments parallel or collinear
-    return segment_distance_no_intersect_or_collinear(a, b, c, d);
+    return segment_distance_no_intersect_or_colinear(a, b, c, d);
   }
   auto r_numer = det(ac, cd);
   auto r       = r_numer / denom;
   auto s       = det(ac, ab) / denom;
   if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return 0.0; }
-  return segment_distance_no_intersect_or_collinear(a, b, c, d);
+  return segment_distance_no_intersect_or_colinear(a, b, c, d);
 }
 
 /**
@@ -130,14 +132,11 @@ segment_distance(vec_2d<T> const& a, vec_2d<T> const& b, vec_2d<T> const& c, vec
  * to form the globally minimum distance between the linestrings.
  *
  * @tparam CoordinateIterator Iterator to coordinates. Must meet requirements of
- * [LegacyRandomAccessIterator][https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator]
- * and is device-accessible.
- * @tparam OffsetIterator Iterator to linestring offsets.  Must meet requirements of
- * [LegacyRandomAccessIterator][https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator]
- * and is device-accessible.
- * @tparam OutputIterator Iterator to output distances.  Must meet requirements of
- * [LegacyRandomAccessIterator][https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator]
- * and is device-accessible.
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OffsetIterator Iterator to linestring offsets. Must meet requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OutputIterator Iterator to output distances. Must meet requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  *
  * @param[in] linestring1_offsets_begin Iterator to the begin of the range of linestring offsets
  * in pair 1.
@@ -158,7 +157,9 @@ segment_distance(vec_2d<T> const& a, vec_2d<T> const& b, vec_2d<T> const& c, vec
  * @param[in] linestring2_points_ys_begin Iterator to the begin of the range of y coordinates of
  * points in pair 2.
  * @param[out] distances Iterator to the output range of shortest distances between pairs.
- * @return
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
  */
 template <typename CoordinateIterator, typename OffsetIterator, typename OutputIterator>
 void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_offsets_begin,
@@ -205,13 +206,13 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
   vec_2d<T> A{linestring1_points_xs_begin[p1_idx], linestring1_points_ys_begin[p1_idx]};
   vec_2d<T> B{linestring1_points_xs_begin[p1_idx + 1], linestring1_points_ys_begin[p1_idx + 1]};
 
-  T min_distance = std::numeric_limits<T>::max();
+  T min_squared_distance = std::numeric_limits<T>::max();
   for (cudf::size_type p2_idx = ls2_start; p2_idx < ls2_end; p2_idx++) {
     vec_2d<T> C{linestring2_points_xs_begin[p2_idx], linestring2_points_ys_begin[p2_idx]};
     vec_2d<T> D{linestring2_points_xs_begin[p2_idx + 1], linestring2_points_ys_begin[p2_idx + 1]};
-    min_distance = std::min(min_distance, segment_distance(A, B, C, D));
+    min_squared_distance = std::min(min_squared_distance, squared_segment_distance(A, B, C, D));
   }
-  atomicMin(distances + linestring_idx, static_cast<T>(min_distance));
+  atomicMin(distances + linestring_idx, static_cast<T>(std::sqrt(min_squared_distance)));
 }
 
 }  // anonymous namespace

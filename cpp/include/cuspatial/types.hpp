@@ -27,30 +27,6 @@
 namespace cuspatial {
 
 /**
- * @brief A 2D vector
- *
- * Used in cuspatial for both Longitude/Latitude (LonLat) coordinate pairs and Cartesian (X/Y)
- * coordinate pairs. For LonLat pairs, the `x` member represents Longitude, and `y` represents
- * Latitude.
- *
- * @tparam T the base type for the coordinates
- */
-template <typename T>
-struct alignas(2 * sizeof(T)) vec_2d {
-  using value_type = T;
-  value_type x;
-  value_type y;
-};
-
-template <typename T>
-struct alignas(2 * sizeof(T)) lonlat_2d : vec_2d<T> {
-};
-
-template <typename T>
-struct alignas(2 * sizeof(T)) cartesian_2d : vec_2d<T> {
-};
-
-/**
  * @brief A timestamp
  *
  */

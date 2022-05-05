@@ -4,6 +4,30 @@
 namespace cuspatial {
 
 /**
+ * @brief A 2D vector
+ *
+ * Used in cuspatial for both Longitude/Latitude (LonLat) coordinate pairs and Cartesian (X/Y)
+ * coordinate pairs. For LonLat pairs, the `x` member represents Longitude, and `y` represents
+ * Latitude.
+ *
+ * @tparam T the base type for the coordinates
+ */
+template <typename T>
+struct alignas(2 * sizeof(T)) vec_2d {
+  using value_type = T;
+  value_type x;
+  value_type y;
+};
+
+template <typename T>
+struct alignas(2 * sizeof(T)) lonlat_2d : vec_2d<T> {
+};
+
+template <typename T>
+struct alignas(2 * sizeof(T)) cartesian_2d : vec_2d<T> {
+};
+
+/**
  * @brief Element-wise add of two 2d vectors.
  */
 template <typename T>
@@ -49,7 +73,7 @@ T CUSPATIAL_HOST_DEVICE dot(vec_2d<T> const& a, vec_2d<T> const& b)
 }
 
 /**
- * @brief Compute 2d determinant of two 2d vectors.
+ * @brief Compute 2d determinant of a 2x2 matrix with column vectors @p a and @p b.
  */
 template <typename T>
 T CUSPATIAL_HOST_DEVICE det(vec_2d<T> const& a, vec_2d<T> const& b)

@@ -35,6 +35,9 @@ template <typename T>
 struct PairwiseLinestringDistanceTest : public BaseFixture {
 };
 
+struct PairwiseLinestringDistanceTestUntyped : public BaseFixture {
+};
+
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = FloatingPointTypes;
 TYPED_TEST_CASE(PairwiseLinestringDistanceTest, TestTypes);
@@ -265,6 +268,54 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairDegenerateCollinearIntersect)
   expect_columns_equivalent(expected, *got, verbosity);
 }
 
+TEST_F(PairwiseLinestringDistanceTestUntyped, OnePairDeterminantDoublePrecisionDenormalized)
+{
+  // Vector ab: (1e-155, 2e-155)
+  // Vector cd: (2e-155, 1e-155)
+  // determinant of matrix [a, b] = -3e-310, a denormalized number
+
+  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<double> linestring1_points_x{0.0, 1e-155};
+  wrapper<double> linestring1_points_y{0.0, 2e-155};
+  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<double> linestring2_points_x{4e-155, 6e-155};
+  wrapper<double> linestring2_points_y{5e-155, 6e-155};
+
+  wrapper<double> expected{4.24264068711929e-155};
+
+  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
+                                          linestring1_points_x,
+                                          linestring1_points_y,
+                                          column_view(linestring2_offsets),
+                                          linestring2_points_x,
+                                          linestring2_points_y);
+  expect_columns_equivalent(expected, *got, verbosity);
+}
+
+TEST_F(PairwiseLinestringDistanceTestUntyped, OnePairDeterminantSinglePrecisionDenormalized)
+{
+  // Vector ab: (1e-20, 2e-20)
+  // Vector cd: (2e-20, 1e-20)
+  // determinant of matrix [ab, cd] = -3e-40, a denormalized number
+
+  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<float> linestring1_points_x{0.0, 1e-20};
+  wrapper<float> linestring1_points_y{0.0, 2e-20};
+  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<float> linestring2_points_x{4e-20, 6e-20};
+  wrapper<float> linestring2_points_y{5e-20, 6e-20};
+
+  wrapper<float> expected{4.2426405524813e-20};
+
+  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
+                                          linestring1_points_x,
+                                          linestring1_points_y,
+                                          column_view(linestring2_offsets),
+                                          linestring2_points_x,
+                                          linestring2_points_y);
+  expect_columns_equivalent(expected, *got, verbosity);
+}
+
 TYPED_TEST(PairwiseLinestringDistanceTest, OnePairRandom1)
 {
   using T = TypeParam;
@@ -286,7 +337,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairRandom1)
   expect_columns_equivalent(expected, *got, verbosity);
 }
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairGeolife)
+TYPED_TEST(PairwiseLinestringDistanceTest, OnePairIntersectFromRealData1)
 {
   // Example extracted from a pair of trajectry in geolife dataset
   using T = TypeParam;
@@ -326,7 +377,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairGeolife)
   expect_columns_equivalent(expected, *got, verbosity);
 }
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairGeolife2)
+TYPED_TEST(PairwiseLinestringDistanceTest, OnePairFromRealData)
 {
   // Example extracted from a pair of trajectry in geolife dataset
   using T = TypeParam;
@@ -385,6 +436,27 @@ TYPED_TEST(PairwiseLinestringDistanceTest, TwoPairs)
   };
 
   wrapper<T> expected{22000.86425379464, 66907.56415814416};
+
+  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
+                                          linestring1_points_x,
+                                          linestring1_points_y,
+                                          column_view(linestring2_offsets),
+                                          linestring2_points_x,
+                                          linestring2_points_y);
+  expect_columns_equivalent(expected, *got, verbosity);
+}
+
+TYPED_TEST(PairwiseLinestringDistanceTest, FourPairs)
+{
+  using T = TypeParam;
+  wrapper<cudf::size_type> linestring1_offsets{0, 3, 5, 8};
+  wrapper<T> linestring1_points_x{0, 1, -1, 0, 0, 0, 2, -2, 2, -2};
+  wrapper<T> linestring1_points_y{1, 0, 0, 0, 1, 0, 2, 0, 2, -2};
+  wrapper<cudf::size_type> linestring2_offsets{0, 4, 7, 9};
+  wrapper<T> linestring2_points_x{1, 2, 2, 3, 1, 1, 1, 2, 0, 1, 5, 10};
+  wrapper<T> linestring2_points_y{1, 1, 0, 0, 0, 1, 2, 0, 2, 1, 5, 0};
+
+  wrapper<T> expected{std::sqrt(2.0) * 0.5, 1.0, 0.0, 0.0};
 
   auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
                                           linestring1_points_x,
