@@ -90,7 +90,7 @@ T __device__ segment_distance_no_intersect_or_colinear(vec_2d<T> const& a,
                                     point_to_segment_distance_squared(b, c, d)),
                            std::min(point_to_segment_distance_squared(c, a, b),
                                     point_to_segment_distance_squared(d, a, b)));
-  return std::sqrt(dist_sqr);
+  return dist_sqr;
 }
 
 /**
@@ -100,8 +100,10 @@ T __device__ segment_distance_no_intersect_or_colinear(vec_2d<T> const& a,
  * to segment distance.
  */
 template <typename T>
-T __device__
-segment_distance(vec_2d<T> const& a, vec_2d<T> const& b, vec_2d<T> const& c, vec_2d<T> const& d)
+T __device__ squared_segment_distance(vec_2d<T> const& a,
+                                      vec_2d<T> const& b,
+                                      vec_2d<T> const& c,
+                                      vec_2d<T> const& d)
 {
   auto ab    = b - a;
   auto ac    = c - a;
@@ -205,13 +207,13 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
   vec_2d<T> A{linestring1_points_xs_begin[p1_idx], linestring1_points_ys_begin[p1_idx]};
   vec_2d<T> B{linestring1_points_xs_begin[p1_idx + 1], linestring1_points_ys_begin[p1_idx + 1]};
 
-  T min_distance = std::numeric_limits<T>::max();
+  T min_squared_distance = std::numeric_limits<T>::max();
   for (cudf::size_type p2_idx = ls2_start; p2_idx < ls2_end; p2_idx++) {
     vec_2d<T> C{linestring2_points_xs_begin[p2_idx], linestring2_points_ys_begin[p2_idx]};
     vec_2d<T> D{linestring2_points_xs_begin[p2_idx + 1], linestring2_points_ys_begin[p2_idx + 1]};
-    min_distance = std::min(min_distance, segment_distance(A, B, C, D));
+    min_squared_distance = std::min(min_squared_distance, squared_segment_distance(A, B, C, D));
   }
-  atomicMin(distances + linestring_idx, static_cast<T>(min_distance));
+  atomicMin(distances + linestring_idx, static_cast<T>(std::sqrt(min_squared_distance)));
 }
 
 }  // anonymous namespace
