@@ -70,9 +70,9 @@ T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
   auto bc        = c - b;
   auto l_squared = dot(ab, ab);
   if (l_squared == 0) { return dot(ac, ac); }
-  auto r = dot(ac, ab) / l_squared;
-  if (r <= 0 or r >= 1) { return std::min(dot(ac, ac), dot(bc, bc)); }
-  auto p  = a + r * ab;
+  auto r = dot(ac, ab);
+  if (r <= 0 or r >= l_squared) { return std::min(dot(ac, ac), dot(bc, bc)); }
+  auto p  = a + (r / l_squared) * ab;
   auto pc = c - p;
   return dot(pc, pc);
 }
@@ -106,7 +106,6 @@ T __device__ squared_segment_distance(vec_2d<T> const& a,
                                       vec_2d<T> const& d)
 {
   auto ab    = b - a;
-  auto ac    = c - a;
   auto cd    = d - c;
   auto denom = det(ab, cd);
 
@@ -114,6 +113,8 @@ T __device__ squared_segment_distance(vec_2d<T> const& a,
     // Segments parallel or collinear
     return segment_distance_no_intersect_or_colinear(a, b, c, d);
   }
+
+  auto ac    = c - a;
   auto r_numer = det(ac, cd);
   auto r       = r_numer / denom;
   auto s       = det(ac, ab) / denom;
