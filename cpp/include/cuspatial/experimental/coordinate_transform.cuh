@@ -37,24 +37,22 @@ namespace cuspatial {
  * and the output iterator must be able to accept for storage values of type
  * `cuspatial::cartesian_2d<T>` (Cartesian coordinates).
  *
- * @tparam InputIt Iterator to must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI]
- * and be device-accessible.
- * @tparam OutputIt must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be
- * device-accessible.
- * @tparam Location the type of input longitude/latitude coordinates, e.g. cuspatial::lonlat_2d<T>
+ * @tparam InputIt Iterator over longitude/latitude locations. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OutputIt Iterator over Cartesian output points. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam T the floating-point coordinate value type of input longitude/latitude coordinates.
  *
  * @return Output iterator to the element past the last x/y coordinate computed.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <class InputIt,
-          class OutputIt,
-          class Location = typename std::iterator_traits<InputIt>::value_type>
+template <class InputIt, class OutputIt, class T>
 OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
                              InputIt lon_lat_last,
                              OutputIt xy_first,
-                             Location origin,
+                             lonlat_2d<T> origin,
                              rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
