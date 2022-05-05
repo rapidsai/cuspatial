@@ -58,27 +58,29 @@ endpoint_index_of_linestring(SizeType const& linestring_idx,
 }
 
 /**
- * @brief Computes shortest distance between @p C and segment @p A @p B
+ * @brief Computes shortest distance between @p c and segment ab
  */
 template <typename T>
 T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
                                                vec_2d<T> const& a,
                                                vec_2d<T> const& b)
 {
-  vec_2d<T> ab   = b - a;
+  auto ab        = b - a;
   auto ac        = c - a;
-  auto bc        = c - b;
   auto l_squared = dot(ab, ab);
   if (l_squared == 0) { return dot(ac, ac); }
-  auto r = dot(ac, ab) / l_squared;
-  if (r <= 0 or r >= 1) { return std::min(dot(ac, ac), dot(bc, bc)); }
-  auto p  = a + r * ab;
+  auto r  = dot(ac, ab);
+  auto bc = c - b;
+  // If the projection of `c` is outside of segment `ab`, compute point-point distance.
+  if (r <= 0 or r >= l_squared) { return std::min(dot(ac, ac), dot(bc, bc)); }
+  auto p  = a + (r / l_squared) * ab;
   auto pc = c - p;
   return dot(pc, pc);
 }
 
 /**
- * @brief Computes shortest distance between two segments that doesn't intersect.
+ * @brief Computes shortest distance between two segments (ab and cd) that
+ * doesn't intersect.
  */
 template <typename T>
 T __device__ segment_distance_no_intersect_or_colinear(vec_2d<T> const& a,
@@ -106,7 +108,6 @@ T __device__ squared_segment_distance(vec_2d<T> const& a,
                                       vec_2d<T> const& d)
 {
   auto ab    = b - a;
-  auto ac    = c - a;
   auto cd    = d - c;
   auto denom = det(ab, cd);
 
@@ -114,9 +115,12 @@ T __device__ squared_segment_distance(vec_2d<T> const& a,
     // Segments parallel or collinear
     return segment_distance_no_intersect_or_colinear(a, b, c, d);
   }
-  auto r_numer = det(ac, cd);
-  auto r       = r_numer / denom;
-  auto s       = det(ac, ab) / denom;
+
+  auto ac               = c - a;
+  auto r_numer          = det(ac, cd);
+  auto denom_reciprocal = 1 / denom;
+  auto r                = r_numer * denom_reciprocal;
+  auto s                = det(ac, ab) * denom_reciprocal;
   if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return 0.0; }
   return segment_distance_no_intersect_or_colinear(a, b, c, d);
 }
@@ -246,7 +250,7 @@ struct pairwise_linestring_distance_functor {
                  distances->mutable_view().end<T>(),
                  std::numeric_limits<T>::max());
 
-    std::size_t const threads_per_block = 64;
+    std::size_t constexpr threads_per_block = 64;
     std::size_t const num_blocks =
       (linestring1_points_x.size() + threads_per_block - 1) / threads_per_block;
 
