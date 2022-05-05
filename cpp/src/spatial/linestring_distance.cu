@@ -65,7 +65,7 @@ T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
                                                vec_2d<T> const& a,
                                                vec_2d<T> const& b)
 {
-  vec_2d<T> ab   = b - a;
+  auto ab   = b - a;
   auto ac        = c - a;
   auto bc        = c - b;
   auto l_squared = dot(ab, ab);
