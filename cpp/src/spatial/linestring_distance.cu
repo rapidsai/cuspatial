@@ -132,14 +132,11 @@ T __device__ squared_segment_distance(vec_2d<T> const& a,
  * to form the globally minimum distance between the linestrings.
  *
  * @tparam CoordinateIterator Iterator to coordinates. Must meet requirements of
- * [LegacyRandomAccessIterator][https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator]
- * and is device-accessible.
- * @tparam OffsetIterator Iterator to linestring offsets.  Must meet requirements of
- * [LegacyRandomAccessIterator][https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator]
- * and is device-accessible.
- * @tparam OutputIterator Iterator to output distances.  Must meet requirements of
- * [LegacyRandomAccessIterator][https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator]
- * and is device-accessible.
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OffsetIterator Iterator to linestring offsets. Must meet requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OutputIterator Iterator to output distances. Must meet requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  *
  * @param[in] linestring1_offsets_begin Iterator to the begin of the range of linestring offsets
  * in pair 1.
@@ -160,7 +157,9 @@ T __device__ squared_segment_distance(vec_2d<T> const& a,
  * @param[in] linestring2_points_ys_begin Iterator to the begin of the range of y coordinates of
  * points in pair 2.
  * @param[out] distances Iterator to the output range of shortest distances between pairs.
- * @return
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
  */
 template <typename CoordinateIterator, typename OffsetIterator, typename OutputIterator>
 void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_offsets_begin,
