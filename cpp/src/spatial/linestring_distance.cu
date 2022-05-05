@@ -58,7 +58,7 @@ endpoint_index_of_linestring(SizeType const& linestring_idx,
 }
 
 /**
- * @brief Computes shortest distance between @p C and segment @p A @p B
+ * @brief Computes shortest distance between @p c and segment ab
  */
 template <typename T>
 T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
@@ -71,6 +71,7 @@ T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
   if (l_squared == 0) { return dot(ac, ac); }
   auto r  = dot(ac, ab);
   auto bc = c - b;
+  // If the projection of `c` is outside of segment `ab`, compute point-point distance.
   if (r <= 0 or r >= l_squared) { return std::min(dot(ac, ac), dot(bc, bc)); }
   auto p  = a + (r / l_squared) * ab;
   auto pc = c - p;
@@ -78,7 +79,8 @@ T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
 }
 
 /**
- * @brief Computes shortest distance between two segments that doesn't intersect.
+ * @brief Computes shortest distance between two segments (ab and cd) that
+ * doesn't intersect.
  */
 template <typename T>
 T __device__ segment_distance_no_intersect_or_colinear(vec_2d<T> const& a,
