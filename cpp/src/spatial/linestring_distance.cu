@@ -247,7 +247,7 @@ struct pairwise_linestring_distance_functor {
                  distances->mutable_view().end<T>(),
                  std::numeric_limits<T>::max());
 
-    std::size_t const threads_per_block = 64;
+    std::size_t constexpr threads_per_block = 64;
     std::size_t const num_blocks =
       (linestring1_points_x.size() + threads_per_block - 1) / threads_per_block;
 
