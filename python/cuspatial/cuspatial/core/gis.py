@@ -97,7 +97,7 @@ def directed_hausdorff_distance(xs, ys, space_offsets):
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
-    """Compute the haversine distances between an arbitrary list of lon/lat
+    """Compute the haversine distances in kilometers between an arbitrary list of lon/lat
     pairs
 
     Parameters
