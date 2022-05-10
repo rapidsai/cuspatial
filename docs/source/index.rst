@@ -26,18 +26,21 @@ which enables very-fast copy between CPU, GPU, and NIC.
 Any data source that is loaded into cuSpatial via :func:`cuspatial.from_geopandas`
 can then take advantage of `cudf`'s GPU-accelerated Arrow I/O routines.
 
-Read more about GeoArrow format in :func:`GeoArrowBuffers<cuspatial.GeoArrowBuffers>`
-   
+Read more about GeoArrow format in :ref:`GeoArrow Format`.
+
 cuSpatial API Reference
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
-   api_docs/index
-
-~~~~~~~~~~~~~~~~~~~~~~~
+   api_docs/gis.rst
+   api_docs/io.rst
+   api_docs/spatial_indexing.rst
+   api_docs/trajectory.rst
+   api_docs/geopandas_compatibility.rst
+   api_docs/internals.rst
+ 
 
 Indices and tables
 ==================

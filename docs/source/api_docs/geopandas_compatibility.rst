@@ -14,13 +14,5 @@ or
 
 .. autoclass:: cuspatial.GeoDataFrame
         :members:
-        :show-inheritance:
 .. autoclass:: cuspatial.GeoSeries
         :members:
-        :show-inheritance:
-.. autoclass:: cuspatial.geometry.geocolumn.GeoColumn
-        :members:
-        :show-inheritance:
-.. autoclass:: cuspatial.GeoArrowBuffers
-        :members:
-        :show-inheritance:

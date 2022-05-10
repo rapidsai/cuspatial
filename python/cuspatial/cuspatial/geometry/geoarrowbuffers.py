@@ -313,6 +313,9 @@ class GeoArrowBuffers:
         return result
 
     def to_host(self):
+        """
+        Return a copy of GeoArrowBuffers backed by host data structures.
+        """
         return GeoArrowBuffers(self, data_locale=pd)
 
     def __repr__(self):

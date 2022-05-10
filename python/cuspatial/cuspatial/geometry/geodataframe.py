@@ -22,7 +22,7 @@ class GeoDataFrame(cudf.DataFrame):
 
         Parameters
         ----------
-        data : A geopandas.geodataframe.GeoDataFrame object
+        data : A geopandas.GeoDataFrame object
         """
         super().__init__()
         if isinstance(data, gpGeoDataFrame):

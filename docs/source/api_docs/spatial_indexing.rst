@@ -1,5 +1,5 @@
 Spatial Indexing
---------
+----------------
 
 Spatial indexing functions provide blisteringly-fast on-GPU point-in-polygon
 operations.
