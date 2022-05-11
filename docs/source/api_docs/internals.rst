@@ -38,11 +38,11 @@ can be used.
 
 A `Multipoint` is a group of points, and is the second simplest GeoArrow 
 geometry type. It is identical to points, with the addition of a 
-`multipoints_offsets` buffer. The offsets buffer stores N+1 indices. The
+``multipoints_offsets`` buffer. The offsets buffer stores N+1 indices. The
 first multipoint offset is specified by 0, which is always stored in 
-`offsets[0]`. The second offset is stored in `offsets[1]`, and so on.
-The number of points in multipoint `i` is the difference between
-`offsets[i+1]` and `offsets[i]`. 
+``offsets[0]``. The second offset is stored in ``offsets[1]``, and so on.
+The number of points in multipoint ``i`` is the difference between
+``offsets[i+1]`` and ``offsets[i]``. 
 
 
 Consider::
@@ -63,8 +63,13 @@ which encodes the following GeoPandas Series::
     ])
 
 `LineString` geometry is more complicated than multipoints because the
-format allows for the use of `LineStrings` and `MultiLineStrings` in the same
-buffer, via the `mlines` key::
+format allows for the use of `LineString` and `MultiLineString` in the same
+buffer, via the ``mlines`` buffer. The ``mlines`` buffer stores 2M indices, where M
+is the number of `MultiLineString` s. The starting and ending **Linestring offset** of the `i` th
+`MultiLineString` is stored at ``mlines[2*i]`` and ``mlines[2*i+1]`` respectively.
+
+
+Consider::
 
     buffers = GeoArrowBuffers({
         "lines_xy":
@@ -86,6 +91,10 @@ Which encodes a GeoPandas Series::
         LineString((3, 0), (3, 1), (3, 2)),
         LineString((4, 0), (4, 1), (4, 2)),
     ])
+
+Note that ``mlines`` has 2 entries, and therefore there is 1
+`MultiLineString` in ``buffers``. It consists of 2
+`LineStrings`: the `LineString` at position 1 and position 2.
 
 Polygon geometry includes `mpolygons` for MultiPolygons similar to the
 LineString geometry. Polygons are encoded using the same format as
