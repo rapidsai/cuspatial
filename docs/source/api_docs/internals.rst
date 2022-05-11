@@ -7,15 +7,15 @@ data structure of cuspatial.
 GeoArrow Format
 +++++++++++++++
 
-Geospatial data is context rich - aside from just a set of
+Geospatial data is context rich; aside from just a set of
 numbers representing coordinates, they together represent certain geometry
 that requires grouping. For example, given 5 points in a plane,
 they could be 5 separate points, 2 line segments, a single linestring,
-or a pantagon. Many geometry libraries stores the points in
-array of geometric objects, commonly known as "Array of Structure" (AoS).
+or a pentagon. Many geometry libraries stores the points in
+arrays of geometric objects, commonly known as "Array of Structure" (AoS).
 AoS is not efficient for accelerated computing on parallel devices such
 as GPU. Therefore, GeoArrow format was introduced to store geodata in
-densely packed format, commonly known as "Structure of Array" (SoA).
+densely packed format, commonly known as "Structure of Arrays" (SoA).
 
 The GeoArrow format specifies a tabular data format for geometry
 information. Supported types include `Point`, `MultiPoint`, `LineString`,
@@ -32,16 +32,17 @@ for the complete list of keys for the columns.
 Examples
 ********
 
-The `Point` geometry is the simplest: N points are stored in a length 2*N
+The `Point` geometry is the simplest. N points are stored in a length 2*N
 buffer with interleaved x,y coordinates. An optional z buffer of length N
 can be used.
 
-The `Multipoint` geometry is the second simplest - identical to points,
-with the addition of a `multipoints_offsets` buffer. The offsets buffer
-stores N+1 indexes. The first multipoint is specified by 0, which is always
-stored in offsets[0], and offsets[1], which is the length in points of
-the first multipoint geometry. Subsequent multipoints are the prefix-sum of
-the lengths of previous multipoints.
+A `Multipoint` is a group of points, and is the second simplest GeoArrow 
+geometry type. It is identical to points, with the addition of a 
+`multipoints_offsets` buffer. The offsets buffer stores N+1 indices. The
+first multipoint offset is specified by 0, which is always stored in 
+`offsets[0]`. The second offset is stored in `offsets[1]`, and so on.
+The number of points in multipoint `i` is the difference between
+`offsets[i+1]` and `offsets[i]`. 
 
 
 Consider::
@@ -63,7 +64,7 @@ which encodes the following GeoPandas Series::
 
 `LineString` geometry is more complicated than multipoints because the
 format allows for the use of `LineStrings` and `MultiLineStrings` in the same
-buffer, via the mlines key::
+buffer, via the `mlines` key::
 
     buffers = GeoArrowBuffers({
         "lines_xy":
@@ -88,7 +89,8 @@ Which encodes a GeoPandas Series::
 
 Polygon geometry includes `mpolygons` for MultiPolygons similar to the
 LineString geometry. Polygons are encoded using the same format as
-Shapefiles, with left-wound external rings and right-wound internal rings.
+`Shapefile <https://en.wikipedia.org/wiki/Shapefile>`_ ,
+with left-wound external rings and right-wound internal rings.
 
 GeoArrow Internal APIs
 **********************

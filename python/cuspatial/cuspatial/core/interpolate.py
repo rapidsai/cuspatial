@@ -46,9 +46,10 @@ class CubicSpline:
     host based interpolation performance is likely to exceed GPU performance
     for a single curve.
 
-    However, cuSpatial massively outperforms scipy when many splines are fit
-    simultaneously. Data must be arranged in a SoA format, and the exclusive
-    `prefix_sum` of the separate curves must also be passed to the function.::
+    However, cuSpatial significantly outperforms scipy when many splines are
+    fit simultaneously. Data must be arranged in a SoA format, and the
+    exclusive `prefix_sum` of the separate curves must also be passed to the
+    function.::
 
         NUM_SPLINES = 100000
         SPLINE_LENGTH = 101

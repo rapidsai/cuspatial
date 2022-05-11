@@ -1,7 +1,7 @@
 Trajectory
 ----------
 
-Trajectory functions make it easy to identify and group trajectories from point data.
+Functions for identifying and grouping trajectories from point data.
 
 .. currentmodule:: cuspatial
 

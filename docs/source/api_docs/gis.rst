@@ -1,7 +1,7 @@
 GIS
 ---
 
-Two GIS functions make it easier to compute distances with geographic coordinates.
+Functions for computing geographic coordinates.
 
 .. currentmodule:: cuspatial
 

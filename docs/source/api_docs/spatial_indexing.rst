@@ -1,8 +1,7 @@
 Spatial Indexing
 ----------------
 
-Spatial indexing functions provide blisteringly-fast on-GPU point-in-polygon
-operations.
+Spatial indexing functions provide GPU-accelerated point-in-polygon and spatial join operations.
 
 .. currentmodule:: cuspatial
 

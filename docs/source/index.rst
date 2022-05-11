@@ -21,7 +21,7 @@ for the six fundamental geometry types:
 Point, MultiPoint, Lines, MultiLines, Polygons, and MultiPolygons.
 MultiGeometry is a possibility that may be implemented in the future.
 GeoArrow uses packed coordinate and offset columns to define objects,
-which enables very-fast copy between CPU, GPU, and NIC.
+which enables very fast copies between CPU, GPU, and NIC.
 
 Any data source that is loaded into cuSpatial via :func:`cuspatial.from_geopandas`
 can then take advantage of `cudf`'s GPU-accelerated Arrow I/O routines.
