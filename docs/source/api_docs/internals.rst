@@ -94,7 +94,9 @@ Which encodes a GeoPandas Series::
 
 Note that ``mlines`` has 2 entries, and therefore there is 1
 `MultiLineString` in ``buffers``. It consists of 2
-`LineStrings`: the `LineString` at position 1 and position 2.
+`LineStrings`: the second and third `LineString` in the defined by
+``lines_offsets``.
+
 
 Polygon geometry includes `mpolygons` for MultiPolygons similar to the
 LineString geometry. Polygons are encoded using the same format as
