@@ -35,10 +35,10 @@ cuSpatial API Reference
    :maxdepth: 2
 
    api_docs/gis.rst
-   api_docs/io.rst
    api_docs/spatial_indexing.rst
    api_docs/trajectory.rst
    api_docs/geopandas_compatibility.rst
+   api_docs/io.rst
    api_docs/internals.rst
  
 
