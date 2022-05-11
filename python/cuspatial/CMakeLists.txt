@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
 
 set(cuspatial_version 22.06.00)
 
-file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-22.06/RAPIDS.cmake
+file(DOWNLOAD https://raw.githubusercontent.com/vyasr/rapids-cmake/fix/cython_rpath_origin/RAPIDS.cmake
      ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
 include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
 
@@ -44,6 +44,12 @@ if(NOT cuspatial_FOUND)
   # languages for the C++ project even if this project does not require those languges.
   enable_language(CUDA)
   add_subdirectory(../../cpp cuspatial-cpp)
+
+  # TODO: TBD if this is the best solution. It implies that we are going to
+  # always have a single directory with all the Cython modules, and that
+  # `rapids-cmake::create_cython_modules` is going to set the RPATH to origin.
+  # We should consider more robust solutions.
+  install(TARGETS cuspatial DESTINATION cuspatial/_lib)
 endif()
 
 include(rapids-cython)
