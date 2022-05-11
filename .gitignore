@@ -19,6 +19,7 @@ DartConfiguration.tcl
 dist/
 cuspatial.egg-info/
 python/build
+_skbuild
 python/*/build
 python/cuspatial/*/_lib/**/*.cpp
 python/cuspatial/*/_lib/**/*.h
