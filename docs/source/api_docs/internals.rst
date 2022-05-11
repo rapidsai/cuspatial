@@ -1,7 +1,7 @@
 Internals
 ---------
 
-This page includes information to help you understand the internal
+This page includes information to help users understand the internal
 data structure of cuspatial.
 
 GeoArrow Format
