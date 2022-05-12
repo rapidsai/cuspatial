@@ -132,13 +132,11 @@ def test_100_randomized_input():
     offset1 = cp.concatenate((cp.zeros((1,)), offset1[:-1]))
     offset2 = cp.concatenate((cp.zeros((1,)), offset2[:-1]))
 
-    # confine the linestrings with small overlap to avoid
-    # always intersecting
     points1_x = rng.uniform(-1, 1, (num_points_1,))
     points1_y = rng.uniform(-1, 1, (num_points_1,))
 
-    points2_x = rng.uniform(0.5, 4, (num_points_2,))
-    points2_y = rng.uniform(0.5, 4, (num_points_2,))
+    points2_x = rng.uniform(0.5, 2.5, (num_points_2,))
+    points2_y = rng.uniform(0.5, 2.5, (num_points_2,))
 
     got = cuspatial.pairwise_linestring_distance(
         points1_x, points1_y, offset1, points2_x, points2_y, offset2
