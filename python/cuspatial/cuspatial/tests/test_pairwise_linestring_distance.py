@@ -10,6 +10,7 @@ import cuspatial
 
 def shapely_pairwise_linestring_distance(data1, data2, offset1, offset2):
     """Compute pairwise linestring distances with shapely."""
+
     def make_linestring(group):
         return shapely.geometry.LineString([*zip(group["x"], group["y"])])
 
