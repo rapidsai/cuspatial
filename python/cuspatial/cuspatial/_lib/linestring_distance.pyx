@@ -5,7 +5,7 @@ from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column cimport column
 from cudf._lib.cpp.column.column_view cimport column_view
 
-from cuspatial._lib.cpp.linestring_distances cimport (
+from cuspatial._lib.cpp.linestring_distance cimport (
     pairwise_linestring_distance as cpp_pairwise_linestring_distance,
 )
 
