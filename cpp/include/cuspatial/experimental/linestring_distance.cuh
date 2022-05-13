@@ -27,10 +27,14 @@ namespace cuspatial {
  * between all pairs of segments of the two linestrings. If any of the segments intersect,
  * the distance is 0.
  *
- * @tparam Cart2dItA iterator type for point array of the first linestring of each pair
- * @tparam Cart2dItB iterator type for point array of the second linestring of each pair
- * @tparam OffsetIterator iterator type for offset array
- * @tparam OutputIt iterator type for output array
+ * @tparam Cart2dItA iterator type for point array of the first linestring of each pair. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam Cart2dItB iterator type for point array of the second linestring of each pair. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OffsetIterator iterator type for offset array. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OutputIt iterator type for output array. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam std::iterator_traits<Cart2dItA>::value_type value type of `Cart2dItA`, must be
  * `cuspatial::cartesian_2d`
  * @tparam std::iterator_traits<Cart2dItB>::value_type value type of `Cart2dItB`, must be
@@ -51,6 +55,9 @@ namespace cuspatial {
  * @pre all input iterators for coordinates must have `cuspatial::cartesian_2d` type.
  * @pre all scalar types must be floating point types, and must be the same type for all input
  * iterators and output iterators.
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
  */
 template <class Cart2dItA,
           class Cart2dItB,
