@@ -45,10 +45,6 @@ if(NOT cuspatial_FOUND)
   enable_language(CUDA)
   add_subdirectory(../../cpp cuspatial-cpp)
 
-  # TODO: TBD if this is the best solution. It implies that we are going to
-  # always have a single directory with all the Cython modules, and that
-  # `rapids-cmake::create_cython_modules` is going to set the RPATH to origin.
-  # We should consider more robust solutions.
   install(TARGETS cuspatial DESTINATION cuspatial/_lib)
 endif()
 
