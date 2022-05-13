@@ -29,6 +29,8 @@ function(find_and_configure_cudf VERSION)
     rapids_cpm_find(
       cudf ${VERSION}
       GLOBAL_TARGETS cudf::cudf cudf::cudftestutil
+      BUILD_EXPORT_SET cuspatial-exports
+      INSTALL_EXPORT_SET cuspatial-exports
       CPM_ARGS
       GIT_REPOSITORY https://github.com/rapidsai/cudf.git
       GIT_TAG branch-${MAJOR_AND_MINOR}
