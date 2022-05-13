@@ -20,6 +20,38 @@
 
 namespace cuspatial {
 
+/**
+ * @copybrief cuspatial::pairwise_linestring_distance
+ *
+ * The shortest distance between two linestrings is defined as the shortest distance
+ * between all pairs of segments of the two linestrings. If any of the segments intersect,
+ * the distance is 0.
+ *
+ * @tparam Cart2dItA iterator type for point array of the first linestring of each pair
+ * @tparam Cart2dItB iterator type for point array of the second linestring of each pair
+ * @tparam OffsetIterator iterator type for offset array
+ * @tparam OutputIt iterator type for output array
+ * @tparam std::iterator_traits<Cart2dItA>::value_type value type of `Cart2dItA`, must be
+ * `cuspatial::cartesian_2d`
+ * @tparam std::iterator_traits<Cart2dItB>::value_type value type of `Cart2dItB`, must be
+ * `cuspatial::cartesian_2d`
+ *
+ * @param linestring1_offsets_first begin of range of the offsets to the first linestring of each
+ * pair
+ * @param linestring1_offsets_last end of range of the offsets to the first linestring of each pair
+ * @param linestring1_points_first begin of range of the point of the first linestring of each pair
+ * @param linestring1_points_last end of range of the point of the first linestring of each pair
+ * @param linestring2_offsets_first begin of range of the offsets to the second linestring of each
+ * pair
+ * @param linestring2_points_first begin of range of the point of the second linestring of each pair
+ * @param linestring2_points_last end of range of the point of the second linestring of each pair
+ * @param distances_first begin to output array
+ * @param stream Used for device memory operations and kernel launches.
+ *
+ * @pre all input iterators for coordinates must have `cuspatial::cartesian_2d` type.
+ * @pre all scalar types must be floating point types, and must be the same type for all input
+ * iterators and output iterators.
+ */
 template <class Cart2dItA,
           class Cart2dItB,
           class OffsetIterator,
@@ -36,6 +68,6 @@ void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
                                   OutputIt distances_first,
                                   rmm::cuda_stream_view stream);
 
-}
+}  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/linestring_distance.cuh>
