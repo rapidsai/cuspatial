@@ -168,11 +168,9 @@ T __device__ segment_distance_no_intersect_or_colinear(vec_2d<T> const& a,
  * If two segments intersect, the distance is 0. Otherwise compute the shortest point
  * to segment distance.
  */
-template <typename T>
-T __device__ squared_segment_distance(vec_2d<T> const& a,
-                                      vec_2d<T> const& b,
-                                      vec_2d<T> const& c,
-                                      vec_2d<T> const& d)
+template <typename Vec2d, typename T = typename Vec2d::value_type>
+T __device__
+squared_segment_distance(Vec2d const& a, Vec2d const& b, Vec2d const& c, Vec2d const& d)
 {
   auto ab    = b - a;
   auto cd    = d - c;
@@ -269,16 +267,18 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
   auto ls2_end   = endpoint_index_of_linestring(
     linestring_idx, linestring2_offsets_begin, num_linestrings, linestring2_num_points);
 
-  auto const& A = linestring1_points_begin[p1_idx];
-  auto const& B = linestring1_points_begin[p1_idx + 1];
+  auto const& A = thrust::raw_reference_cast(linestring1_points_begin[p1_idx]);
+  auto const& B = thrust::raw_reference_cast(linestring1_points_begin[p1_idx + 1]);
 
   auto min_squared_distance = std::numeric_limits<T>::max();
   for (auto p2_idx = ls2_start; p2_idx < ls2_end; p2_idx++) {
-    auto C               = linestring2_points_begin[p2_idx];
-    auto D               = linestring2_points_begin[p2_idx + 1];
+    auto const& C        = thrust::raw_reference_cast(linestring2_points_begin[p2_idx]);
+    auto const& D        = thrust::raw_reference_cast(linestring2_points_begin[p2_idx + 1]);
     min_squared_distance = std::min(min_squared_distance, squared_segment_distance(A, B, C, D));
   }
-  atomicMin(distances + linestring_idx, static_cast<T>(std::sqrt(min_squared_distance)));
+
+  atomicMin(&thrust::raw_reference_cast(*(distances + linestring_idx)),
+            static_cast<T>(std::sqrt(min_squared_distance)));
 }
 
 }  // namespace detail
