@@ -40,9 +40,16 @@ else()
 endif()
 
 if(NOT cuspatial_FOUND)
-  # TODO: This will not be necessary once we upgrade to CMake 3.22, which will pull in the required
-  # languages for the C++ project even if this project does not require those languges.
+  # TODO: This will not be necessary once we upgrade to CMake 3.22, which will
+  # pull in the required languages for the C++ project even if this project
+  # does not require those languges.
+  include(rapids-cuda)
+  rapids_cuda_init_architectures(cuspatial)
   enable_language(CUDA)
+  # Since cuspatial only enables CUDA optionally we need to manually include the file that
+  # rapids_cuda_init_architectures relies on `project` including.
+  include("${CMAKE_PROJECT_cuspatial_INCLUDE}")
+
   add_subdirectory(../../cpp cuspatial-cpp)
 
   install(TARGETS cuspatial DESTINATION cuspatial/_lib)
