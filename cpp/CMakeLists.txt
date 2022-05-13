@@ -94,6 +94,7 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 # find gdal
 rapids_find_package(
     GDAL REQUIRED
+    GLOBAL_TARGETS GDAL::GDAL
     BUILD_EXPORT_SET cuspatial-exports
     INSTALL_EXPORT_SET cuspatial-exports
 )
