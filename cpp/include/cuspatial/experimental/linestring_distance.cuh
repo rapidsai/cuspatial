@@ -73,7 +73,7 @@ void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
                                   Cart2dItB linestring2_points_first,
                                   Cart2dItB linestring2_points_last,
                                   OutputIt distances_first,
-                                  rmm::cuda_stream_view stream);
+                                  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
 
