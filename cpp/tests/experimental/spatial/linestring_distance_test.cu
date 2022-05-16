@@ -50,7 +50,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSeparateArrayInputs)
     CartVec({{0.0f, 0.0f}, {1.0f, 0.0f}, {2.0f, 0.0f}, {3.0f, 0.0f}, {4.0f, 0.0f}})};
   auto b_cart2d = rmm::device_vector<cartesian_2d<T>>{
     CartVec({{0.0f, 1.0f}, {1.0f, 1.0f}, {2.0f, 1.0f}, {3.0f, 1.0f}, {4.0f, 1.0f}})};
-  auto offset = rmm::device_vector<int32_t>{0};
+  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{std::vector<int32_t>{0}}};
 
   auto distance = rmm::device_vector<T>{std::vector<T>{0.0}};
   auto expected = rmm::device_vector<T>{std::vector<T>{1.0}};
@@ -74,7 +74,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSamePointArrayInput)
 
   auto cart2ds = rmm::device_vector<cartesian_2d<T>>{
     CartVec({{0.0f, 0.0f}, {1.0f, 0.0f}, {2.0f, 0.0f}, {3.0f, 0.0f}, {4.0f, 0.0f}})};
-  auto offset = rmm::device_vector<int32_t>{0};
+  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
 
   auto a_begin = cart2ds.begin();
   auto a_end   = cart2ds.begin() + 3;
@@ -107,7 +107,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromTransformIterator)
   auto b_begin = make_cartesian_2d_iterator(b_cart2d_x.begin(), b_cart2d_y.begin());
   auto b_end   = b_begin + b_cart2d_x.size();
 
-  auto offset = rmm::device_vector<int32_t>{0};
+  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
 
   auto distance = rmm::device_vector<T>{std::vector<T>{0.0}};
   auto expected = rmm::device_vector<T>{std::vector<T>{1.0}};
@@ -132,7 +132,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromMixedIterator)
   auto b_begin = make_cartesian_2d_iterator(b_cart2d_x.begin(), b_cart2d_y.begin());
   auto b_end   = b_begin + b_cart2d_x.size();
 
-  auto offset = rmm::device_vector<int32_t>{0};
+  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
 
   auto distance = rmm::device_vector<T>{std::vector<T>{0.0}};
   auto expected = rmm::device_vector<T>{std::vector<T>{1.0}};
