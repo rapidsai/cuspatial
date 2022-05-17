@@ -246,7 +246,7 @@ targets:
 rapids_export(
   INSTALL cuspatial
   EXPORT_SET cuspatial-exports
-  GLOBAL_TARGETS cuspatial
+  GLOBAL_TARGETS cuspatial GDAL::GDAL
   NAMESPACE cuspatial::
   DOCUMENTATION doc_string
 )
@@ -258,7 +258,7 @@ rapids_export(
 rapids_export(
   BUILD cuspatial
   EXPORT_SET cuspatial-exports
-  GLOBAL_TARGETS cuspatial
+  GLOBAL_TARGETS cuspatial GDAL::GDAL
   NAMESPACE cuspatial::
   DOCUMENTATION doc_string
 )
