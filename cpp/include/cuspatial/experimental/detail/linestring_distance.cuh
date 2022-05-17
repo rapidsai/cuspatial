@@ -20,7 +20,6 @@
 #include <cuspatial/utility/device_atomics.cuh>
 #include <cuspatial/utility/vec_2d.hpp>
 
-#include <iterator>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
@@ -28,6 +27,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <type_traits>
