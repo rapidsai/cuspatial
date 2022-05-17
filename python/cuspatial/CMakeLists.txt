@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
 
 set(cuspatial_version 22.06.00)
 
-file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-22.06/RAPIDS.cmake
+file(DOWNLOAD https://raw.githubusercontent.com/vyasr/rapids-cmake/cuspatial_testing/RAPIDS.cmake
      ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
 include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
 
@@ -34,6 +34,12 @@ option(FIND_CUSPATIAL_CPP "Search for existing cuspatial C++ installations befor
 
 # If the user requested it we attempt to find cuspatial.
 if(FIND_CUSPATIAL_CPP)
+    message("Starting to find package\
+    \
+    \
+    \
+    \
+    ")
   find_package(cuspatial ${cuspatial_version})
 else()
   set(cuspatial_FOUND OFF)
