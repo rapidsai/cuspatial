@@ -48,64 +48,6 @@ constexpr bool is_floating_point()
   return std::conjunction_v<std::is_floating_point<Ts>...>;
 }
 
-template <typename T>
-double __device__ point_to_segment_distance(vec_2d<T> const& C,
-                                            vec_2d<T> const& A,
-                                            vec_2d<T> const& B)
-{
-  // Subject 1.02 of https://www.inf.pucrs.br/~pinho/CG/faq.html
-  // Project the point to the segment, if it lands on the segment,
-  // the distance is the length of proejction, otherwise it's the
-  // length to one of the end points.
-
-  double L_squared = (A.x - B.x) * (A.x - B.x) + (A.y - B.y) * (A.y - B.y);
-  if (L_squared == 0) { return hypot(C.x - A.x, C.y - A.y); }
-  double r = ((C.x - A.x) * (B.x - A.x) + (C.y - A.y) * (B.y - A.y)) / L_squared;
-  if (r <= 0 or r >= 1) {
-    return std::min(hypot(C.x - A.x, C.y - A.y), hypot(C.x - B.x, C.y - B.y));
-  }
-  double Px = A.x + r * (B.x - A.x);
-  double Py = A.y + r * (B.y - A.y);
-  return hypot(C.x - Px, C.y - Py);
-}
-
-template <typename T>
-double __device__ segment_distance_no_intersect(vec_2d<T> const& A,
-                                                vec_2d<T> const& B,
-                                                vec_2d<T> const& C,
-                                                vec_2d<T> const& D)
-{
-  return std::min(std::min(point_to_segment_distance(A, C, D), point_to_segment_distance(B, C, D)),
-                  std::min(point_to_segment_distance(C, A, B), point_to_segment_distance(D, A, B)));
-}
-
-/**
- * @brief Computes shortest distance between two segments.
- *
- * If two segment intersects, distance is 0.
- */
-template <typename T>
-double __device__
-segment_distance(vec_2d<T> const& A, vec_2d<T> const& B, vec_2d<T> const& C, vec_2d<T> const& D)
-{
-  // Subject 1.03 of https://www.inf.pucrs.br/~pinho/CG/faq.html
-  // Construct a parametrized ray of AB and CD, solve for the parameters.
-  // If both parameters are within [0, 1], the intersection exists.
-
-  double r_denom = (B.x - A.x) * (D.y - C.y) - (B.y - A.y) * (D.x - C.x);
-  double r_numer = (A.y - C.y) * (D.x - C.x) - (A.x - C.x) * (D.y - C.y);
-  if (r_denom == 0) {
-    if (r_numer == 0) { return 0.0; }  // Segments coincides
-    // Segments parallel
-    return segment_distance_no_intersect(A, B, C, D);
-  }
-  double r = r_numer / r_denom;
-  double s = ((A.y - C.y) * (B.x - A.x) - (A.x - C.x) * (B.y - A.x)) /
-             ((B.x - A.x) * (D.y - C.y) - (B.y - A.y) * (D.x - C.x));
-  if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return 0.0; }
-  return segment_distance_no_intersect(A, B, C, D);
-}
-
 /** @brief Get the index that is one-past the end point of linestring at @p linestring_idx
  *
  * @note The last endpoint of the linestring is not included in the offset array, thus
@@ -168,9 +110,11 @@ T __device__ segment_distance_no_intersect_or_colinear(vec_2d<T> const& a,
  * If two segments intersect, the distance is 0. Otherwise compute the shortest point
  * to segment distance.
  */
-template <typename Vec2d, typename T = typename Vec2d::value_type>
-T __device__
-squared_segment_distance(Vec2d const& a, Vec2d const& b, Vec2d const& c, Vec2d const& d)
+template <typename T>
+T __device__ squared_segment_distance(vec_2d<T> const& a,
+                                      vec_2d<T> const& b,
+                                      vec_2d<T> const& c,
+                                      vec_2d<T> const& d)
 {
   auto ab    = b - a;
   auto cd    = d - c;
