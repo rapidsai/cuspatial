@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
 
 set(cuspatial_version 22.06.00)
 
-file(DOWNLOAD https://raw.githubusercontent.com/vyasr/rapids-cmake/fix/cython_rpath_origin/RAPIDS.cmake
+file(DOWNLOAD https://raw.githubusercontent.com/rapidai/rapids-cmake/branch-22.06/RAPIDS.cmake
      ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
 include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
 
