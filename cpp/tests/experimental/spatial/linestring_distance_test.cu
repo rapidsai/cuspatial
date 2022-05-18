@@ -27,6 +27,9 @@
 #include <cudf_test/column_wrapper.hpp>
 #include <cudf_test/type_lists.hpp>
 
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
+
 namespace cuspatial {
 namespace test {
 
@@ -52,7 +55,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSeparateArrayInputs)
     CartVec({{0.0f, 1.0f}, {1.0f, 1.0f}, {2.0f, 1.0f}, {3.0f, 1.0f}, {4.0f, 1.0f}})};
   auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{std::vector<int32_t>{0}}};
 
-  auto distance = rmm::device_vector<T>{std::vector<T>{0.0}};
+  auto distance = rmm::device_vector<T>{1};
   auto expected = rmm::device_vector<T>{std::vector<T>{1.0}};
 
   pairwise_linestring_distance(offset.begin(),
@@ -81,7 +84,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSamePointArrayInput)
   auto b_begin = cart2ds.begin() + 1;
   auto b_end   = cart2ds.end();
 
-  auto distance = rmm::device_vector<T>{std::vector<T>{0.0}};
+  auto distance = rmm::device_vector<T>{1};
   auto expected = rmm::device_vector<T>{std::vector<T>{0.0}};
 
   pairwise_linestring_distance(
@@ -109,7 +112,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromTransformIterator)
 
   auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
 
-  auto distance = rmm::device_vector<T>{std::vector<T>{0.0}};
+  auto distance = rmm::device_vector<T>{1};
   auto expected = rmm::device_vector<T>{std::vector<T>{1.0}};
 
   pairwise_linestring_distance(
@@ -134,7 +137,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromMixedIterator)
 
   auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
 
-  auto distance = rmm::device_vector<T>{std::vector<T>{0.0}};
+  auto distance = rmm::device_vector<T>{1};
   auto expected = rmm::device_vector<T>{std::vector<T>{1.0}};
 
   pairwise_linestring_distance(offset.begin(),
@@ -144,6 +147,40 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromMixedIterator)
                                offset.begin(),
                                b_begin,
                                b_end,
+                               distance.begin());
+
+  EXPECT_EQ(distance, expected);
+}
+
+TYPED_TEST(PairwiseLinestringDistanceTest, FromLongInputs)
+{
+  using T       = TypeParam;
+  using CartVec = std::vector<cartesian_2d<T>>;
+
+  auto num_points = 1000;
+
+  auto a_cart2d_x_begin = thrust::make_constant_iterator(T{0.0});
+  auto a_cart2d_y_begin = thrust::make_counting_iterator(T{0.0});
+  auto a_cart2d_begin   = make_cartesian_2d_iterator(a_cart2d_x_begin, a_cart2d_y_begin);
+  auto a_cart2d_end     = a_cart2d_begin + num_points;
+
+  auto b_cart2d_x_begin = thrust::make_constant_iterator(T{42.0});
+  auto b_cart2d_y_begin = thrust::make_counting_iterator(T{0.0});
+  auto b_cart2d_begin   = make_cartesian_2d_iterator(b_cart2d_x_begin, b_cart2d_y_begin);
+  auto b_cart2d_end     = b_cart2d_begin + num_points;
+
+  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0, 100, 200, 300, 400}};
+
+  auto distance = rmm::device_vector<T>{1};
+  auto expected = rmm::device_vector<T>{std::vector<T>{42.0, 42.0, 42.0, 42.0, 42.0}};
+
+  pairwise_linestring_distance(offset.begin(),
+                               offset.end(),
+                               a_cart2d_begin,
+                               a_cart2d_end,
+                               offset.begin(),
+                               b_cart2d_begin,
+                               b_cart2d_end,
                                distance.begin());
 
   EXPECT_EQ(distance, expected);

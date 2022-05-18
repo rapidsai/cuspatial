@@ -183,16 +183,18 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
 {
   using T = typename std::iterator_traits<Cart2dItA>::value_type::value_type;
 
-  auto const p1_idx          = threadIdx.x + blockIdx.x * blockDim.x;
-  auto const num_linestrings = thrust::distance(linestring1_offsets_begin, linestring1_offsets_end);
-  auto const linestring1_num_points =
+  auto const p1_idx = threadIdx.x + blockIdx.x * blockDim.x;
+  size_t const num_linestrings =
+    thrust::distance(linestring1_offsets_begin, linestring1_offsets_end);
+
+  size_t const linestring1_num_points =
     thrust::distance(linestring1_points_begin, linestring1_points_end);
-  auto const linestring2_num_points =
+  size_t const linestring2_num_points =
     thrust::distance(linestring2_points_begin, linestring2_points_end);
 
   if (p1_idx >= linestring1_num_points) { return; }
 
-  auto const linestring_idx =
+  size_t const linestring_idx =
     thrust::distance(linestring1_offsets_begin,
                      thrust::upper_bound(
                        thrust::seq, linestring1_offsets_begin, linestring1_offsets_end, p1_idx)) -
