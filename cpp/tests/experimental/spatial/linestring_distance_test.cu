@@ -171,7 +171,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromLongInputs)
 
   auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0, 100, 200, 300, 400}};
 
-  auto distance = rmm::device_vector<T>{1};
+  auto distance = rmm::device_vector<T>{5};
   auto expected = rmm::device_vector<T>{std::vector<T>{42.0, 42.0, 42.0, 42.0, 42.0}};
 
   pairwise_linestring_distance(offset.begin(),
