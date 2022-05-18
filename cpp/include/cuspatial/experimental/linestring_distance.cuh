@@ -36,14 +36,16 @@ namespace cuspatial {
  * @tparam OutputIt iterator type for output array. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  *
- * @param linestring1_offsets_first beginning of range of the offsets to the first linestring of each
- * pair
+ * @param linestring1_offsets_first beginning of range of the offsets to the first linestring of
+ * each pair
  * @param linestring1_offsets_last end of range of the offsets to the first linestring of each pair
- * @param linestring1_points_first beginning of range of the point of the first linestring of each pair
- * @param linestring1_points_last end of range of the point of the first linestring of each pair
- * @param linestring2_offsets_first beginning of range of the offsets to the second linestring of each
+ * @param linestring1_points_first beginning of range of the point of the first linestring of each
  * pair
- * @param linestring2_points_first beginning of range of the point of the second linestring of each pair
+ * @param linestring1_points_last end of range of the point of the first linestring of each pair
+ * @param linestring2_offsets_first beginning of range of the offsets to the second linestring of
+ * each pair
+ * @param linestring2_points_first beginning of range of the point of the second linestring of each
+ * pair
  * @param linestring2_points_last end of range of the point of the second linestring of each pair
  * @param distances_first beginning iterator to output
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
