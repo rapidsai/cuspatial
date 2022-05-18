@@ -35,10 +35,6 @@ namespace cuspatial {
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt iterator type for output array. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam std::iterator_traits<Cart2dItA>::value_type value type of `Cart2dItA`, must be
- * `cuspatial::cartesian_2d`
- * @tparam std::iterator_traits<Cart2dItB>::value_type value type of `Cart2dItB`, must be
- * `cuspatial::cartesian_2d`
  *
  * @param linestring1_offsets_first begin of range of the offsets to the first linestring of each
  * pair
@@ -59,12 +55,7 @@ namespace cuspatial {
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <class Cart2dItA,
-          class Cart2dItB,
-          class OffsetIterator,
-          class OutputIt,
-          class Cart2dA = typename std::iterator_traits<Cart2dItA>::value_type,
-          class Cart2dB = typename std::iterator_traits<Cart2dItB>::value_type>
+template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt>
 void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
                                   OffsetIterator linestring1_offsets_last,
                                   Cart2dItA linestring1_points_first,

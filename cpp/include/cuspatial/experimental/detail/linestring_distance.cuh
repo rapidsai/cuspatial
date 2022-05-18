@@ -228,12 +228,7 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
 
 }  // namespace detail
 
-template <class Cart2dItA,
-          class Cart2dItB,
-          class OffsetIterator,
-          class OutputIt,
-          class Cart2dA,
-          class Cart2dB>
+template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt>
 void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
                                   OffsetIterator linestring1_offsets_last,
                                   Cart2dItA linestring1_points_first,
@@ -244,7 +239,7 @@ void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
                                   OutputIt distances_first,
                                   rmm::cuda_stream_view stream)
 {
-  using T = typename Cart2dA::value_type;
+  using T = typename std::iterator_traits<Cart2dItA>::value_type::value_type;
 
   static_assert(detail::is_floating_point<T,
                                           typename Cart2dB::value_type,
@@ -256,7 +251,9 @@ void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
                                 typename std::iterator_traits<OutputIt>::value_type>(),
                 "Inputs and output must be the same types.");
 
-  static_assert(detail::is_same<cartesian_2d<T>, Cart2dA, Cart2dB>(),
+  static_assert(detail::is_same<cartesian_2d<T>,
+                                std::iterator_traits<Cart2dItA>::value_type,
+                                std::iterator_traits<Cart2dItB>::value_type>(),
                 "Inputs must be cuspatial::cartesian_2d");
 
   auto const num_string_pairs =
