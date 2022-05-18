@@ -36,17 +36,17 @@ namespace cuspatial {
  * @tparam OutputIt iterator type for output array. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  *
- * @param linestring1_offsets_first begin of range of the offsets to the first linestring of each
+ * @param linestring1_offsets_first beginning of range of the offsets to the first linestring of each
  * pair
  * @param linestring1_offsets_last end of range of the offsets to the first linestring of each pair
- * @param linestring1_points_first begin of range of the point of the first linestring of each pair
+ * @param linestring1_points_first beginning of range of the point of the first linestring of each pair
  * @param linestring1_points_last end of range of the point of the first linestring of each pair
- * @param linestring2_offsets_first begin of range of the offsets to the second linestring of each
+ * @param linestring2_offsets_first beginning of range of the offsets to the second linestring of each
  * pair
- * @param linestring2_points_first begin of range of the point of the second linestring of each pair
+ * @param linestring2_points_first beginning of range of the point of the second linestring of each pair
  * @param linestring2_points_last end of range of the point of the second linestring of each pair
- * @param distances_first begin to output array
- * @param stream Used for device memory operations and kernel launches.
+ * @param distances_first beginning iterator to output
+ * @param stream The CUDA stream to use for device memory operations and kernel launches.
  *
  * @pre all input iterators for coordinates must have `cuspatial::cartesian_2d` type.
  * @pre all scalar types must be floating point types, and must be the same type for all input
