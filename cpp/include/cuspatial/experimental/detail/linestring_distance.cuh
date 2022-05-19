@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/utility/traits.hpp>
 #include <cuspatial/utility/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -35,18 +36,6 @@
 
 namespace cuspatial {
 namespace detail {
-
-template <typename T, typename... Ts>
-constexpr bool is_same()
-{
-  return std::conjunction_v<std::is_same<T, Ts>...>;
-}
-
-template <typename... Ts>
-constexpr bool is_floating_point()
-{
-  return std::conjunction_v<std::is_floating_point<Ts>...>;
-}
 
 /**
  * @internal
@@ -229,8 +218,7 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
     min_squared_distance = std::min(min_squared_distance, squared_segment_distance(A, B, C, D));
   }
 
-  cuda::atomic_ref<T, cuda::thread_scope_device> ref{
-    thrust::raw_reference_cast(*(distances + linestring_idx))};
+  cuda::atomic_ref<T, cuda::thread_scope_device> ref{*(distances + linestring_idx)};
   ref.fetch_min(static_cast<T>(std::sqrt(min_squared_distance)), cuda::memory_order_relaxed);
 }
 
