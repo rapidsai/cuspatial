@@ -218,7 +218,8 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
     min_squared_distance = std::min(min_squared_distance, squared_segment_distance(A, B, C, D));
   }
 
-  cuda::atomic_ref<T, cuda::thread_scope_device> ref{*(distances + linestring_idx)};
+  cuda::atomic_ref<T, cuda::thread_scope_device> ref{
+    thrust::raw_reference_cast(*(distances + linestring_idx))};
   ref.fetch_min(static_cast<T>(std::sqrt(min_squared_distance)), cuda::memory_order_relaxed);
 }
 
