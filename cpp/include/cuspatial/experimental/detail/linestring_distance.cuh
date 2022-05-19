@@ -48,7 +48,9 @@ constexpr bool is_floating_point()
   return std::conjunction_v<std::is_floating_point<Ts>...>;
 }
 
-/** @brief Get the index that is one-past the end point of linestring at @p linestring_idx
+/**
+ * @internal
+ * @brief Get the index that is one-past the end point of linestring at @p linestring_idx
  *
  * @note The last endpoint of the linestring is not included in the offset array, thus
  * @p num_points is returned.
@@ -67,6 +69,7 @@ endpoint_index_of_linestring(SizeType const& linestring_idx,
 }
 
 /**
+ * @internal
  * @brief Computes shortest distance between @p c and segment ab
  */
 template <typename T>
@@ -88,6 +91,7 @@ T __device__ point_to_segment_distance_squared(vec_2d<T> const& c,
 }
 
 /**
+ * @internal
  * @brief Computes shortest distance between two segments (ab and cd) that
  * doesn't intersect.
  */
@@ -105,6 +109,7 @@ T __device__ segment_distance_no_intersect_or_colinear(vec_2d<T> const& a,
 }
 
 /**
+ * @internal
  * @brief Computes shortest distance between two segments.
  *
  * If two segments intersect, the distance is 0. Otherwise compute the shortest point
@@ -135,6 +140,7 @@ T __device__ squared_segment_distance(vec_2d<T> const& a,
 }
 
 /**
+ * @internal
  * @brief The kernel to compute point to linestring distance
  *
  * Each thread of the kernel computes the distance between a segment in a linestring in pair 1
@@ -223,7 +229,8 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
     min_squared_distance = std::min(min_squared_distance, squared_segment_distance(A, B, C, D));
   }
 
-  cuda::atomic_ref<T, cuda::thread_scope_device> ref{thrust::raw_reference_cast(*(distances + linestring_idx))};
+  cuda::atomic_ref<T, cuda::thread_scope_device> ref{
+    thrust::raw_reference_cast(*(distances + linestring_idx))};
   ref.fetch_min(static_cast<T>(std::sqrt(min_squared_distance)), cuda::memory_order_relaxed);
 }
 
