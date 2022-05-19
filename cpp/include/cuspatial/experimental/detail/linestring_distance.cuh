@@ -241,19 +241,20 @@ void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
 {
   using T = typename std::iterator_traits<Cart2dItA>::value_type::value_type;
 
-  static_assert(detail::is_floating_point<T,
-                                          typename Cart2dB::value_type,
-                                          typename std::iterator_traits<OutputIt>::value_type>(),
-                "Inputs and output must be floating point types.");
+  static_assert(
+    detail::is_floating_point<T,
+                              typename std::iterator_traits<Cart2dItB>::value_type::value_type,
+                              typename std::iterator_traits<OutputIt>::value_type>(),
+    "Inputs and output must be floating point types.");
 
   static_assert(detail::is_same<T,
-                                typename Cart2dB::value_type,
+                                typename std::iterator_traits<Cart2dItB>::value_type::value_type,
                                 typename std::iterator_traits<OutputIt>::value_type>(),
                 "Inputs and output must be the same types.");
 
   static_assert(detail::is_same<cartesian_2d<T>,
-                                std::iterator_traits<Cart2dItA>::value_type,
-                                std::iterator_traits<Cart2dItB>::value_type>(),
+                                typename std::iterator_traits<Cart2dItA>::value_type,
+                                typename std::iterator_traits<Cart2dItB>::value_type>(),
                 "Inputs must be cuspatial::cartesian_2d");
 
   auto const num_string_pairs =
