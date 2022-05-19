@@ -94,6 +94,7 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 # find gdal
 rapids_find_package(
     GDAL REQUIRED
+    GLOBAL_TARGETS GDAL::GDAL
     BUILD_EXPORT_SET cuspatial-exports
     INSTALL_EXPORT_SET cuspatial-exports
 )
@@ -119,6 +120,7 @@ add_library(cuspatial
     src/spatial_window/spatial_window.cu
     src/spatial/haversine.cu
     src/spatial/hausdorff.cu
+    src/spatial/linestring_distance.cu
     src/spatial/lonlat_to_cartesian.cu
     src/trajectory/derive_trajectories.cu
     src/trajectory/trajectory_bounding_boxes.cu

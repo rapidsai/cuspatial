@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuspatial/types.hpp>
+#include <cuspatial/utility/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 
