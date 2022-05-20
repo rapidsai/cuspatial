@@ -77,7 +77,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
 
     gpuci_logger "Build cuSpatial"
     cd "$WORKSPACE"
-    ./build.sh clean libcuspatial cuspatial tests
+    ./build.sh clean libcuspatial cuspatial tests --cmake-args=\"-DFIND_CUSPATIAL_CPP=ON\"
 
     ###############################################################################
     # TEST - Run libcuspatial and cuSpatial Unit Tests

@@ -60,6 +60,7 @@ outputs:
         - cudatoolkit {{ cuda_spec }}
         - libcudf {{ minor_version }}.*
         - librmm {{ minor_version }}.*
+        - gdal {{ gdal_version }}
     test:
       commands:
         - test -f $PREFIX/lib/libcuspatial.so
