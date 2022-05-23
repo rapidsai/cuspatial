@@ -25,8 +25,12 @@ namespace cuspatial {
 
 /**
  * @addtogroup distance
+ * @brief APIs related to distance computation
  * @{
  * @file
+ * @file hausdorff.hpp
+ * @file haversine.hpp
+ * @file haversine.cuh
  */
 
 /**

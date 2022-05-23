@@ -24,9 +24,9 @@ namespace cuspatial {
 
 /**
  * @addtogroup spatial_indexing
+ * @brief APIs related to spatial indexing
  * @{
  * @file
- * @brief APIs related to spatial indexing
  */
 
 /**

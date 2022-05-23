@@ -23,6 +23,7 @@ namespace cuspatial {
 
 /**
  * @addtogroup io
+ * @brief APIs for spatial data I/O
  * @{
  * @file
  */

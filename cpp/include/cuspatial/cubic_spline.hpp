@@ -26,9 +26,9 @@ namespace cuspatial {
 
 /**
  * @addtogroup cubic_spline
+ * @brief APIs related to cubic splines
  * @{
  * @file
- * @brief APIs related to cubic splines
  */
 
 /**

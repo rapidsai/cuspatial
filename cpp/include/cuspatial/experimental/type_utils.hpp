@@ -44,13 +44,14 @@ struct vec_2d_to_tuple {
 /**
  * @addtogroup type_factories
  *
+ * @brief Factory method to create coordinate iterators
+ *
  * CuSpatial functions inside `experimental` folder are header-only and only accepts
  * input/output iterators on coordinates. These factory functions are convenient ways
  * to create iterators from data in various format.
  *
  * @{
  * @file
- * @brief Factory method to create coordinate iterators
  *
  * @copydetails type_factories
  */

@@ -24,7 +24,6 @@ namespace cuspatial {
 /**
  * @brief computes Hausdorff distances for all pairs in a collection of spaces
  *
- * @file
  * @ingroup distance
  *
  * https://en.wikipedia.org/wiki/Hausdorff_distance

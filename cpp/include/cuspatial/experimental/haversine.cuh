@@ -27,7 +27,6 @@ namespace cuspatial {
 /**
  * @brief Compute haversine distances between points in set A to the corresponding points in set B.
  *
- * @file
  * @ingroup distance
  *
  * Computes N haversine distances, where N is `std::distance(a_lonlat_first, a_lonlat_last)`.

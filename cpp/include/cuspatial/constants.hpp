@@ -20,9 +20,9 @@
 
 /**
  * @addtogroup cuspatial_constants
+ * @brief Constants used in cuspatial APIs
  * @{
  * @file
- * @brief Constants used in cuspatial APIs
  */
 
 constexpr double DEGREE_TO_RADIAN = M_PI / 180.0;
