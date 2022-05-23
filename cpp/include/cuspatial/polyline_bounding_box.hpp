@@ -25,6 +25,9 @@ namespace cuspatial {
 /**
  * @brief Compute minimum bounding boxes of a set of polylines and an expansion radius.
  *
+ * @file
+ * @ingroup spatial_relationship
+ *
  * @param poly_offsets Begin indices of the first point in each polyline (i.e. prefix-sum)
  * @param x Polyline point x-coordinates
  * @param y Polyline point y-coordinates

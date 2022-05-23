@@ -24,6 +24,9 @@ namespace cuspatial {
 /**
  * @brief Find all points (x,y) that fall within a rectangular query window.
  *
+ * @file
+ * @ingroup spatial_relationship
+ *
  * A point (x, y) is in the window if `x > window_min_x && x < window_min_y && y > window_min_y && y
  * < window_max_y`.
  *

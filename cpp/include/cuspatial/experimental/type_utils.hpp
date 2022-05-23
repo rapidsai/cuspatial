@@ -41,6 +41,20 @@ struct vec_2d_to_tuple {
 
 }  // namespace detail
 
+/**
+ * @addtogroup type_factories
+ *
+ * CuSpatial functions inside `experimental` folder are header-only and only accepts
+ * input/output iterators on coordinates. These factory functions are convenient ways
+ * to create iterators from data in various format.
+ *
+ * @{
+ * @file
+ * @brief Factory method to create coordinate iterators
+ *
+ * @copydetails type_factories
+ */
+
 template <typename VectorType, typename FirstIter, typename SecondIter>
 auto make_vec_2d_iterator(FirstIter first, SecondIter second)
 {
@@ -88,5 +102,9 @@ auto make_zipped_cartesian_2d_output_iterator(FirstIter first, SecondIter second
   using T = typename std::iterator_traits<FirstIter>::value_type;
   return make_zipped_vec_2d_output_iterator<cartesian_2d<T>>(first, second);
 }
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

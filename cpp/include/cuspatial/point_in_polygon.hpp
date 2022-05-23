@@ -25,6 +25,13 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup spatial_relationship
+ * @{
+ * @file
+ * @brief APIs related to spatial relationship
+ */
+
+/**
  * @brief Tests whether the specified points are inside any of the specified polygons.
  *
  * Tests whether points are inside at most 31 polygons. Polygons are a collection of one or more
@@ -51,6 +58,7 @@ namespace cuspatial {
  * `poly_offsets`. If there are rings in `poly_ring_offsets` that are not part of the polygons in
  * `poly_offsets`, results are likely to be incorrect and behavior is undefined.
  *
+ * ```
  *   poly w/two rings         poly w/four rings
  * +-----------+          +------------------------+
  * :███████████:          :████████████████████████:
@@ -61,6 +69,7 @@ namespace cuspatial {
  *        :███████████:   :██+------------------+██:
  *        :███████████:   :████████████████████████:
  *        +-----------+   +------------------------+
+ * ```
  */
 std::unique_ptr<cudf::column> point_in_polygon(
   cudf::column_view const& test_points_x,
@@ -70,5 +79,9 @@ std::unique_ptr<cudf::column> point_in_polygon(
   cudf::column_view const& poly_points_x,
   cudf::column_view const& poly_points_y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

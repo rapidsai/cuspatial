@@ -25,6 +25,13 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup cubic_spline
+ * @{
+ * @file
+ * @brief APIs related to cubic splines
+ */
+
+/**
  * @brief Create a table of cubic spline coefficients from columns of coordinates.
  *
  * Computes coefficients for a natural cubic spline similar to the method
@@ -85,4 +92,7 @@ std::unique_ptr<cudf::table> cubicspline_coefficients(
   cudf::column_view const& offsets,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
+/**
+ * @} // end of doxygen group
+ */
 }  // namespace cuspatial

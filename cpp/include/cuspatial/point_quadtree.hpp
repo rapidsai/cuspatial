@@ -23,6 +23,13 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup spatial_indexing
+ * @{
+ * @file
+ * @brief APIs related to spatial indexing
+ */
+
+/**
  * @brief Construct a quadtree structure from points.
  *
  * @see http://www.adms-conf.org/2019-camera-ready/zhang_adms19.pdf for details.
@@ -72,5 +79,9 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   int8_t max_depth,
   cudf::size_type min_size,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

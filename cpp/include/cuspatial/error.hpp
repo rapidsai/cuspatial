@@ -23,6 +23,13 @@
 
 namespace cuspatial {
 
+/**
+ * @addtogroup exception
+ * @{
+ * @file
+ * @brief cuSpatial exception types
+ */
+
 /**---------------------------------------------------------------------------*
  * @brief Exception thrown when logical precondition is violated.
  *
@@ -41,6 +48,10 @@ struct logic_error : public std::logic_error {
 struct cuda_error : public std::runtime_error {
   cuda_error(std::string const& message) : std::runtime_error(message) {}
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial
 

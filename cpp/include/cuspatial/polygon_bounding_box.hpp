@@ -25,6 +25,9 @@ namespace cuspatial {
 /**
  * @brief Compute minimum bounding boxes for a set of polygons.
  *
+ * @file
+ * @ingroup spatial_relationship
+ *
  * @param poly_offsets Begin indices of the first ring in each polygon (i.e. prefix-sum)
  * @param ring_offsets Begin indices of the first point in each ring (i.e. prefix-sum)
  * @param x Polygon point x-coordinates

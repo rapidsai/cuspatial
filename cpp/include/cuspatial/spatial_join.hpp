@@ -23,6 +23,13 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup spatial_join
+ * @{
+ * @file
+ * @brief APIs related to spatial join
+ */
+
+/**
  * @brief Search a quadtree for polygon or polyline bounding box intersections.
  *
  * @note `scale` is applied to (x - x_min) and (y - y_min) to convert coordinates into a Morton code
@@ -158,5 +165,9 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
   cudf::column_view const& poly_points_x,
   cudf::column_view const& poly_points_y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

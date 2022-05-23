@@ -23,6 +23,13 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup trajectory_api
+ * @{
+ * @file
+ * @brief APIs related to trajectories
+ */
+
+/**
  * @brief Derive trajectories from object ids, points, and timestamps.
  *
  * Groups the input object ids to determine unique trajectories. Returns a
@@ -118,5 +125,9 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(
   cudf::column_view const& x,
   cudf::column_view const& y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

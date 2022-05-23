@@ -24,7 +24,10 @@
 namespace cuspatial {
 
 /**
- * brief Compute haversine distances between points in set A to the corresponding points in set B.
+ * @brief Compute haversine distances between points in set A to the corresponding points in set B.
+ *
+ * @file
+ * @ingroup distance
  *
  * https://en.wikipedia.org/wiki/Haversine_formula
  *
@@ -44,5 +47,9 @@ std::unique_ptr<cudf::column> haversine_distance(
   cudf::column_view const& b_lat,
   double const radius                 = EARTH_RADIUS_KM,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

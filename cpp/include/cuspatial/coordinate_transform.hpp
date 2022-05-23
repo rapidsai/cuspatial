@@ -22,6 +22,13 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup coordinate_transform
+ * @{
+ * @file
+ * @brief APIs to transform coordinates
+ */
+
+/**
  * @brief Translates lon/lat relative to origin and converts to cartesian (x/y) coordinates.
  *
  * @param[in] origin_lon: longitude of origin
@@ -38,5 +45,9 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> lonlat_t
   cudf::column_view const& input_lon,
   cudf::column_view const& input_lat,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial
