@@ -4,5 +4,8 @@ c_compiler_version:
 cxx_compiler_version:
   - 9
 
+cuda_compiler:
+  - nvcc
+
 sysroot_version:
   - "2.17"
