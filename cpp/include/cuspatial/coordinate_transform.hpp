@@ -23,9 +23,7 @@ namespace cuspatial {
 
 /**
  * @addtogroup coordinate_transform
- * @brief APIs to transform coordinates
  * @{
- * @file
  */
 
 /**

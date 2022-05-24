@@ -26,12 +26,7 @@ namespace cuspatial {
 
 /**
  * @addtogroup spatial_relationship
- * @brief APIs related to spatial relationship
  * @{
- * @file
- * @file polygon_bounding_box.hpp
- * @file polyline_bounding_box.hpp
- * @file spatial_window.hpp
  */
 
 /**

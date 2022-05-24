@@ -23,6 +23,11 @@
 namespace cuspatial {
 
 namespace detail {
+
+/**
+ * @internal
+ * @brief Helper to convert a tuple of elements into a `vec_2d`
+ */
 template <typename T, typename VectorType>
 struct tuple_to_vec_2d {
   __device__ VectorType operator()(thrust::tuple<T, T> const& pos)
@@ -31,6 +36,10 @@ struct tuple_to_vec_2d {
   }
 };
 
+/**
+ * @internal
+ * @brief Helper to convert a `vec_2d` into a tuple of elements
+ */
 template <typename T, typename VectorType>
 struct vec_2d_to_tuple {
   __device__ thrust::tuple<T, T> operator()(VectorType const& xy)
@@ -43,23 +52,14 @@ struct vec_2d_to_tuple {
 
 /**
  * @addtogroup type_factories
- *
- * @brief Factory method to create coordinate iterators
- *
- * CuSpatial functions inside `experimental` folder are header-only and only accepts
- * input/output iterators on coordinates. These factory functions are convenient ways
- * to create iterators from data in various format.
- *
  * @{
- * @file
- *
- * @copydetails type_factories
  */
 
 /**
  * @brief Create an iterator to `vec_2d` data from two input iterators.
  *
- * Interleaves x and y coordinates from separate iterators into a single iterator to x-y coordinates.
+ * Interleaves x and y coordinates from separate iterators into a single iterator to x-y
+ * coordinates.
  *
  * @tparam VectorType cuSpatial vector type, must be `vec_2d`, `lonlat_2d` or `cartesian_2d`
  * @tparam FirstIter Iterator type to the first component of `vec_2d`. Must meet the requirements of
@@ -89,7 +89,8 @@ auto make_vec_2d_iterator(FirstIter first, SecondIter second)
 /**
  * @brief Create an iterator to `lonlat_2d` data from two input iterators.
  *
- * Interleaves longitude and latitude from separate iterators into a single iterator to lon/lat coordinates.
+ * Interleaves longitude and latitude from separate iterators into a single iterator to lon/lat
+ * coordinates.
  * @tparam FirstIter Iterator type to the first component of `lonlat_2d`. Must meet the requirements
  * of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam SecondIter Iterator type to the second component of `lonlat_2d`. Must meet the
@@ -113,7 +114,8 @@ auto make_lonlat_iterator(FirstIter first, SecondIter second)
 /**
  * @brief Create an iterator to `cartesian_2d` data from two input iterators.
  *
- * Interleaves x and y coordinates from separate iterators into a single iterator to x-y coordinates.
+ * Interleaves x and y coordinates from separate iterators into a single iterator to x-y
+ * coordinates.
  * @tparam FirstIter Iterator type to the first component of `cartesian_2d`. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam SecondIter Iterator type to the second component of `cartesian_2d`. Must meet the
@@ -168,7 +170,7 @@ auto make_zipped_vec_2d_output_iterator(FirstIter first, SecondIter second)
  * @brief Create an output iterator to `lonlat_2d` from two output iterators.
  *
  * Creates an output iterator from separate iterators to longitude and latitude data
- * to which can be written interleaved longitude/latitude data. This allows using two 
+ * to which can be written interleaved longitude/latitude data. This allows using two
  * separate arrays of output data with APIs that expect an iterator to interleaved
  * data.
  *

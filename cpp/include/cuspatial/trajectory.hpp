@@ -24,9 +24,7 @@ namespace cuspatial {
 
 /**
  * @addtogroup trajectory_api
- * @brief APIs related to trajectories
  * @{
- * @file
  */
 
 /**

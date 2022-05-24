@@ -25,9 +25,7 @@ namespace cuspatial {
 
 /**
  * @addtogroup exception
- * @brief cuSpatial exception types
  * @{
- * @file
  */
 
 /**---------------------------------------------------------------------------*

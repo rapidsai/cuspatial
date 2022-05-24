@@ -24,9 +24,7 @@ namespace cuspatial {
 
 /**
  * @addtogroup spatial_join
- * @brief APIs related to spatial join
  * @{
- * @file
  */
 
 /**
