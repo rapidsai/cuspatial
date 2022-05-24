@@ -213,15 +213,14 @@ endif()
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
 
+rapids_cmake_install_lib_dir(lib_dir)
 include(CPack)
-
 include(GNUInstallDirs)
 
-set(INSTALL_CONFIGDIR lib/cmake/cuspatial)
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME cuspatial)
 
 install(TARGETS cuspatial
-        DESTINATION lib
+        DESTINATION ${lib_dir}
         EXPORT cuspatial-exports)
 
 install(DIRECTORY ${CUSPATIAL_SOURCE_DIR}/include/cuspatial
