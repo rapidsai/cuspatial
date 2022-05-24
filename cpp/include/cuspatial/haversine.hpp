@@ -24,7 +24,7 @@
 namespace cuspatial {
 
 /**
- * @brief Compute haversine distances between points in set A to the corresponding points in set B.
+ * @brief Compute haversine distances between points in set A and the corresponding points in set B.
  *
  * @ingroup distance
  *

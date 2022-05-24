@@ -1,3 +1,3 @@
 # libcuspatial
 
-libcuspatial is a C++ GPU library for spatial and trajectory computation, spatial data indexing and spatial join operations.
+libcuspatial is a GPU-accelerated C++ library for spatial data analysis including distance and trajectory computations, spatial data indexing and spatial join operations.

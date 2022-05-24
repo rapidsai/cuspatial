@@ -57,15 +57,17 @@ struct vec_2d_to_tuple {
  */
 
 /**
- * @brief Create an iterator of `vec_2d` from two input interators
+ * @brief Create an iterator to `vec_2d` data from two input iterators.
+ *
+ * Interleaves x and y coordinates from separate iterators into a single iterator to x-y coordinates.
  *
  * @tparam VectorType cuSpatial vector type, must be `vec_2d`, `lonlat_2d` or `cartesian_2d`
  * @tparam FirstIter Iterator type to the first component of `vec_2d`. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam SecondIter Iterator type to the second component of `vec_2d`. Must meet the requirements
  * of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @param first Iterator of beginning of `vec_2d::x`
- * @param second Iterator of beginning of `vec_2d::y`
+ * @param first Iterator to beginning of `vec_2d::x`
+ * @param second Iterator to beginning of `vec_2d::y`
  * @return Iterator to `vec_2d`
  *
  * @pre `first` and `second` must iterate on same data type.
@@ -85,14 +87,15 @@ auto make_vec_2d_iterator(FirstIter first, SecondIter second)
 }
 
 /**
- * @brief Create an iterator of `lonlat_2d` from two input interators
+ * @brief Create an iterator to `lonlat_2d` data from two input iterators.
  *
+ * Interleaves longitude and latitude from separate iterators into a single iterator to lon/lat coordinates.
  * @tparam FirstIter Iterator type to the first component of `lonlat_2d`. Must meet the requirements
  * of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam SecondIter Iterator type to the second component of `lonlat_2d`. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @param first Iterator of beginning of `lonlat_2d::x`
- * @param second Iterator of beginning of `lonlat_2d::y`
+ * @param first Iterator to beginning of `lonlat_2d::x`
+ * @param second Iterator to beginning of `lonlat_2d::y`
  * @return Iterator to `lonlat_2d`
  *
  * @pre `first` and `second` must iterate on same data type.
@@ -108,14 +111,15 @@ auto make_lonlat_iterator(FirstIter first, SecondIter second)
 }
 
 /**
- * @brief Create an iterator of `cartesian_2d` from two input interators
+ * @brief Create an iterator to `cartesian_2d` data from two input iterators.
  *
+ * Interleaves x and y coordinates from separate iterators into a single iterator to x-y coordinates.
  * @tparam FirstIter Iterator type to the first component of `cartesian_2d`. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam SecondIter Iterator type to the second component of `cartesian_2d`. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @param first Iterator of beginning of `cartesian_2d::x`
- * @param second Iterator of beginning of `cartesian_2d::y`
+ * @param first Iterator to beginning of `cartesian_2d::x`
+ * @param second Iterator to beginning of `cartesian_2d::y`
  * @return Iterator to `cartesian_2d`
  *
  * @pre `first` and `second` must iterate on same data type.
@@ -131,15 +135,19 @@ auto make_cartesian_2d_iterator(FirstIter first, SecondIter second)
 }
 
 /**
- * @brief Create an output iterator to `vec_2d` from two output interators
+ * @brief Create an output iterator to `vec_2d` data from two output iterators.
+ *
+ * Creates an output iterator from separate iterators to x and y data to which
+ * can be written interleaved x/y data. This allows using two separate arrays of
+ * output data with APIs that expect an iterator to structured data.
  *
  * @tparam VectorType cuSpatial vector type, must be `vec_2d`, `lonlat_2d` or `cartesian_2d`
  * @tparam FirstIter Iterator type to the first component of `vec_2d`. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
  * @tparam SecondIter Iterator type to the second component of `vec_2d`. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
- * @param first Iterator of beginning of `vec_2d::x`
- * @param second Iterator of beginning of `vec_2d::y`
+ * @param first Iterator to beginning of `x` data.
+ * @param second Iterator to beginning of `y` data.
  * @return Iterator to `vec_2d`
  *
  * @pre `first` and `second` must iterate on same data type.
@@ -157,14 +165,19 @@ auto make_zipped_vec_2d_output_iterator(FirstIter first, SecondIter second)
 }
 
 /**
- * @brief Create an output iterator to `lonlat_2d` from two output interators
+ * @brief Create an output iterator to `lonlat_2d` from two output iterators.
+ *
+ * Creates an output iterator from separate iterators to longitude and latitude data
+ * to which can be written interleaved longitude/latitude data. This allows using two 
+ * separate arrays of output data with APIs that expect an iterator to interleaved
+ * data.
  *
  * @tparam FirstIter Iterator type to the first component of `lonlat_2d`. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
  * @tparam SecondIter Iterator type to the second component of `lonlat_2d`. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
- * @param first Iterator of beginning of `lonlat_2d::x`
- * @param second Iterator of beginning of `lonlat_2d::y`
+ * @param first Iterator to beginning of longitude data.
+ * @param second Iterator of beginning of latitude data.
  * @return Iterator to `lonlat_2d`
  *
  * @pre `first` and `second` must iterate on same data type.
@@ -180,14 +193,17 @@ auto make_zipped_lonlat_output_iterator(FirstIter first, SecondIter second)
 }
 
 /**
- * @brief Create an output iterator to `cartesian_2d` from two output interators
+ * @brief Create an output iterator to `cartesian_2d` from two output iterators.
  *
+ * Creates an output iterator from separate iterators to x and y data to which
+ * can be written interleaved x/y data. This allows using two separate arrays of
+ * output data with APIs that expect an iterator to structured data.
  * @tparam FirstIter Iterator type to the first component of `cartesian_2d`. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
  * @tparam SecondIter Iterator type to the second component of `cartesian_2d`. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
- * @param first Iterator of beginning of `cartesian_2d::x`
- * @param second Iterator of beginning of `cartesian_2d::y`
+ * @param first Iterator to beginning of `x` data.
+ * @param second Iterator to beginning of `y` data.
  * @return Iterator to `cartesian_2d`
  *
  * @pre `first` and `second` must iterate on same data type.

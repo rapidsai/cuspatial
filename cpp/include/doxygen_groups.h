@@ -25,7 +25,7 @@
 // the Modules page in the specified order.
 //
 // To add a new API to an existing group, just use the
-// @ingroup tag to the API's doxygen comment.
+// @ingroup tag in the API's doxygen comment.
 // Add a new group by first specifying in the hierarchy below.
 
 /**
