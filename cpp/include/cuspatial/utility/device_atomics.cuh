@@ -49,5 +49,37 @@ __device__ float atomicMin(float* addr, float val)
   return __uint_as_float(old);
 }
 
+__device__ double atomicMax(double* addr, double val)
+{
+  unsigned long long int* address_as_ull = (unsigned long long int*)addr;
+  unsigned long long int old             = *address_as_ull, assumed;
+
+  do {
+    assumed = old;
+    old     = atomicCAS(
+      address_as_ull, assumed, __double_as_longlong(std::max(val, __longlong_as_double(assumed))));
+
+    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
+  } while (assumed != old);
+
+  return __longlong_as_double(old);
+}
+
+__device__ float atomicMax(float* addr, float val)
+{
+  unsigned int* address_as_ull = (unsigned int*)addr;
+  unsigned int old             = *address_as_ull, assumed;
+
+  do {
+    assumed = old;
+    old =
+      atomicCAS(address_as_ull, assumed, __float_as_uint(std::max(val, __uint_as_float(assumed))));
+
+    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
+  } while (assumed != old);
+
+  return __uint_as_float(old);
+}
+
 }  // namespace detail
 }  // namespace cuspatial
