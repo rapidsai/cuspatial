@@ -19,9 +19,8 @@ namespace detail {
 
 __device__ double atomicMin(double* addr, double val)
 {
-  double old_double            = *addr;
   long long int* address_as_ll = reinterpret_cast<long long int*>(addr);
-  long long int old            = __double_as_longlong(old_double);
+  long long int old            = __double_as_longlong(*addr);
   long long int assumed;
 
   do {
@@ -37,9 +36,8 @@ __device__ double atomicMin(double* addr, double val)
 
 __device__ float atomicMin(float* addr, float val)
 {
-  float old_float             = *addr;
   unsigned int* address_as_ui = reinterpret_cast<unsigned int*>(addr);
-  unsigned int old            = __float_as_uint(old_float);
+  unsigned int old            = __float_as_uint(*addr);
   unsigned int assumed;
 
   do {
@@ -55,9 +53,8 @@ __device__ float atomicMin(float* addr, float val)
 
 __device__ double atomicMax(double* addr, double val)
 {
-  double old_double            = *addr;
   long long int* address_as_ll = reinterpret_cast<long long int*>(addr);
-  long long int old            = __double_as_longlong(old_double);
+  long long int old            = __double_as_longlong(*addr);
   long long int assumed;
 
   do {
@@ -73,9 +70,8 @@ __device__ double atomicMax(double* addr, double val)
 
 __device__ float atomicMax(float* addr, float val)
 {
-  float old_float             = *addr;
   unsigned int* address_as_ui = reinterpret_cast<unsigned int*>(addr);
-  unsigned int old            = __float_as_uint(old_float);
+  unsigned int old            = __float_as_uint(*addr);
   unsigned int assumed;
 
   do {
