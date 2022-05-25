@@ -18,6 +18,7 @@
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/utility/traits.hpp>
+#include <cuspatial/utility/device_atomics.cuh>
 #include <cuspatial/utility/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -26,8 +27,6 @@
 #include <thrust/binary_search.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
-
-#include <cuda/atomic>
 
 #include <iterator>
 #include <limits>
@@ -218,9 +217,8 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
     min_squared_distance = std::min(min_squared_distance, squared_segment_distance(A, B, C, D));
   }
 
-  cuda::atomic_ref<T, cuda::thread_scope_device> ref{
-    thrust::raw_reference_cast(*(distances + linestring_idx))};
-  ref.fetch_min(static_cast<T>(std::sqrt(min_squared_distance)), cuda::memory_order_relaxed);
+  atomicMin(&thrust::raw_reference_cast(*(distances + linestring_idx)),
+            static_cast<T>(std::sqrt(min_squared_distance)));
 }
 
 }  // namespace detail
