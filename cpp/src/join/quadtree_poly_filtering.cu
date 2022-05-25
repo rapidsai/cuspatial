@@ -29,7 +29,13 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/copy.h>
+#include <thrust/count.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/permutation_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/sort.h>
 
 #include <tuple>
 

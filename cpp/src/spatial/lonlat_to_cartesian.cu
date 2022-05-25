@@ -24,6 +24,11 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/pair.h>
+#include <thrust/transform.h>
+#include <thrust/tuple.h>
+
 #include <type_traits>
 #include <utility>
 
