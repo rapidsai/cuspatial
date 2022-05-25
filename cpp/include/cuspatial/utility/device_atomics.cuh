@@ -19,9 +19,9 @@ namespace detail {
 
 __device__ double atomicMin(double* addr, double val)
 {
-  long long int* address_as_ll = reinterpret_cast<long long int*>(addr);
-  long long int old            = __double_as_longlong(*addr);
-  long long int assumed;
+  unsigned long long int* address_as_ll = reinterpret_cast<unsigned long long int*>(addr);
+  unsigned long long int old            = __double_as_longlong(*addr);
+  unsigned long long int assumed;
 
   do {
     assumed = old;
@@ -53,9 +53,9 @@ __device__ float atomicMin(float* addr, float val)
 
 __device__ double atomicMax(double* addr, double val)
 {
-  long long int* address_as_ll = reinterpret_cast<long long int*>(addr);
-  long long int old            = __double_as_longlong(*addr);
-  long long int assumed;
+  unsigned long long int* address_as_ll = reinterpret_cast<unsigned long long int*>(addr);
+  unsigned long long int old            = __double_as_longlong(*addr);
+  unsigned long long int assumed;
 
   do {
     assumed = old;
