@@ -19,13 +19,15 @@ namespace detail {
 
 __device__ double atomicMin(double* addr, double val)
 {
-  unsigned long long int* address_as_ull = (unsigned long long int*)addr;
-  unsigned long long int old             = *address_as_ull, assumed;
+  double old_double            = *addr;
+  long long int* address_as_ll = reinterpret_cast<long long int*>(addr);
+  long long int old            = __double_as_longlong(old_double);
+  long long int assumed;
 
   do {
     assumed = old;
     old     = atomicCAS(
-      address_as_ull, assumed, __double_as_longlong(std::min(val, __longlong_as_double(assumed))));
+      address_as_ll, assumed, __double_as_longlong(std::min(val, __longlong_as_double(assumed))));
 
     // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
   } while (assumed != old);
@@ -35,13 +37,15 @@ __device__ double atomicMin(double* addr, double val)
 
 __device__ float atomicMin(float* addr, float val)
 {
-  unsigned int* address_as_ull = (unsigned int*)addr;
-  unsigned int old             = *address_as_ull, assumed;
+  float old_float             = *addr;
+  unsigned int* address_as_ui = reinterpret_cast<unsigned int*>(addr);
+  unsigned int old            = __float_as_uint(old_float);
+  unsigned int assumed;
 
   do {
     assumed = old;
     old =
-      atomicCAS(address_as_ull, assumed, __float_as_uint(std::min(val, __uint_as_float(assumed))));
+      atomicCAS(address_as_ui, assumed, __float_as_uint(std::min(val, __uint_as_float(assumed))));
 
     // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
   } while (assumed != old);
@@ -51,13 +55,15 @@ __device__ float atomicMin(float* addr, float val)
 
 __device__ double atomicMax(double* addr, double val)
 {
-  unsigned long long int* address_as_ull = (unsigned long long int*)addr;
-  unsigned long long int old             = *address_as_ull, assumed;
+  double old_double            = *addr;
+  long long int* address_as_ll = reinterpret_cast<long long int*>(addr);
+  long long int old            = __double_as_longlong(old_double);
+  long long int assumed;
 
   do {
     assumed = old;
     old     = atomicCAS(
-      address_as_ull, assumed, __double_as_longlong(std::max(val, __longlong_as_double(assumed))));
+      address_as_ll, assumed, __double_as_longlong(std::max(val, __longlong_as_double(assumed))));
 
     // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
   } while (assumed != old);
@@ -67,13 +73,15 @@ __device__ double atomicMax(double* addr, double val)
 
 __device__ float atomicMax(float* addr, float val)
 {
-  unsigned int* address_as_ull = (unsigned int*)addr;
-  unsigned int old             = *address_as_ull, assumed;
+  float old_float             = *addr;
+  unsigned int* address_as_ui = reinterpret_cast<unsigned int*>(addr);
+  unsigned int old            = __float_as_uint(old_float);
+  unsigned int assumed;
 
   do {
     assumed = old;
     old =
-      atomicCAS(address_as_ull, assumed, __float_as_uint(std::max(val, __uint_as_float(assumed))));
+      atomicCAS(address_as_ui, assumed, __float_as_uint(std::max(val, __uint_as_float(assumed))));
 
     // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
   } while (assumed != old);
