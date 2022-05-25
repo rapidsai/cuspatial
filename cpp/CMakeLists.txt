@@ -100,8 +100,11 @@ rapids_find_package(
 )
 # add third party dependencies using CPM
 rapids_cpm_init()
+# find libcu++
+include(cmake/thirdparty/get_libcudacxx.cmake)
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
+
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
@@ -182,7 +185,7 @@ endif()
 target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
 # Specify the target module library dependencies
-target_link_libraries(cuspatial PUBLIC GDAL::GDAL cudf::cudf CUDA::cusparse)
+target_link_libraries(cuspatial PUBLIC libcudacxx::libcudacxx GDAL::GDAL cudf::cudf CUDA::cusparse)
 
 add_library(cuspatial::cuspatial ALIAS cuspatial)
 
