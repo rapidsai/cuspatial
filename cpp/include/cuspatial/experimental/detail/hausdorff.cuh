@@ -17,12 +17,14 @@
 #pragma once
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/types.hpp>
+#include <cuspatial/utility/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/binary_search.h>
+
+#include <cuda/atomic>
 
 #include <type_traits>
 
@@ -63,12 +65,16 @@ constexpr auto magnitude_squared(T a, T b)
  * @param results directed Hausdorff distances computed by kernel
  * @return
  */
-template <typename T, typename Index>
+template <typename T,
+          typename Index,
+          typename PointsIter,
+          typename OffsetsIter,
+          typename OutputIter>
 __global__ void kernel_hausdorff(Index num_points,
-                                 cuspatial::vec_2d<T>* points,
+                                 PointsIter points,
                                  Index num_spaces,
-                                 Index const* space_offsets,
-                                 T* results)
+                                 OffsetsIter space_offsets,
+                                 OutputIter results)
 {
   // determine the LHS point this thread is responsible for.
   auto const thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -114,7 +120,10 @@ __global__ void kernel_hausdorff(Index num_points,
     auto output_idx = lhs_space_idx * num_spaces + rhs_space_idx;
 
     // use atomicMax to find the maximum of the minimum distance calculated for each space pair.
-    atomicMax(results + output_idx, sqrt(min_distance_squared));
+    auto max_of_mins = cuda::atomic_ref<T, cuda::thread_scope_device>{
+      thrust::raw_reference_cast(*(results + output_idx))};
+    auto ret =
+      max_of_mins.fetch_max(static_cast<T>(sqrt(min_distance_squared)), cuda::memory_order_relaxed);
   }
 }
 
@@ -126,7 +135,7 @@ OutputIt directed_hausdorff_distance(PointIt points_first,
                                      OffsetIt space_offsets_first,
                                      OffsetIt space_offsets_last,
                                      OutputIt distance_first,
-                                     rmm::cuda_stream_view stream = rmm::cuda_stream_default)
+                                     rmm::cuda_stream_view stream)
 {
   using Point = typename std::iterator_traits<PointIt>::value_type;
   using Index = typename std::iterator_traits<OffsetIt>::value_type;
@@ -144,23 +153,25 @@ OutputIt directed_hausdorff_distance(PointIt points_first,
 
   auto const num_results = num_spaces * num_spaces;
 
-  // due to hausdorff kernel using `atomicMax` for output, the output must be initialized to <= 0
+  // TODO: Update: initializing to 0 rather than -1 due to an issue with `cuda::atomic::fetch_max`.
+  // https://github.com/NVIDIA/libcudacxx/issues/279 . Change this back when that issue is fixed.
+
+  // Due to hausdorff kernel using `atomicMax` for output, the output must be initialized to <= 0
   // here the output is being initialized to -1, which should always be overwritten. If -1 is
   // found in the output, there is a bug where the output is not being written to in the hausdorff
   // kernel.
-  thrust::fill_n(rmm::exec_policy(stream), distance_first, num_results, -1);
+  thrust::fill_n(rmm::exec_policy(stream), distance_first, num_results, 0);
 
   auto const threads_per_block = 64;
   auto const num_tiles         = (num_points + threads_per_block - 1) / threads_per_block;
 
-  auto kernel = detail::kernel_hausdorff<T>;
-
-  kernel<<<num_tiles, threads_per_block, 0, stream.value()>>>(
-    num_points, points_first, num_spaces, space_offsets_first, distance_first);
+  detail::kernel_hausdorff<T, decltype(num_points)>
+    <<<num_tiles, threads_per_block, 0, stream.value()>>>(
+      num_points, points_first, num_spaces, space_offsets_first, distance_first);
 
   CUSPATIAL_CUDA_TRY(cudaGetLastError());
 
-  distance_first + num_results;
+  return distance_first + num_results;
 }
 
 }  // namespace cuspatial

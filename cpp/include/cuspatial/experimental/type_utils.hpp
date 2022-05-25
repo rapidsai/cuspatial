@@ -15,6 +15,7 @@
  */
 
 #include <cuspatial/types.hpp>
+#include <cuspatial/utility/vec_2d.hpp>
 
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
@@ -53,6 +54,13 @@ auto make_vec_2d_iterator(FirstIter first, SecondIter second)
 
   auto zipped = thrust::make_zip_iterator(thrust::make_tuple(first, second));
   return thrust::make_transform_iterator(zipped, detail::tuple_to_vec_2d<T, VectorType>());
+}
+
+template <typename FirstIter, typename SecondIter>
+auto make_vec_2d_iterator(FirstIter first, SecondIter second)
+{
+  using T = typename std::iterator_traits<FirstIter>::value_type;
+  return make_vec_2d_iterator<vec_2d<T>>(first, second);
 }
 
 template <typename FirstIter, typename SecondIter>
