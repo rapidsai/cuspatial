@@ -27,6 +27,9 @@ rapids_cuda_init_architectures(CUSPATIAL)
 
 project(CUSPATIAL VERSION 22.08.00 LANGUAGES C CXX CUDA)
 
+include(${rapids-cmake-dir}/cpm/package_override.cmake)
+rapids_cpm_package_override(${CMAKE_CURRENT_SOURCE_DIR}/versions.json)
+
 # Needed because GoogleBenchmark changes the state of FindThreads.cmake,
 # causing subsequent runs to have different values for the `Threads::Threads` target.
 # Setting this flag ensures `Threads::Threads` is the same value in first run and subsequent runs.
