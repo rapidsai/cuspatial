@@ -40,7 +40,7 @@ namespace cuspatial {
  * @tparam InputIt Iterator over longitude/latitude locations. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt Iterator over Cartesian output points. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  * @tparam T the floating-point coordinate value type of input longitude/latitude coordinates.
  *
  * @return Output iterator to the element past the last x/y coordinate computed.
