@@ -340,23 +340,27 @@ def polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius):
     )
 
 
-def pairwise_linestring_distance(xs1, ys1, offsets1, xs2, ys2, offsets2):
-    """Compute the distances of pairs of linestrings from two arrays.
+def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
+    """Compute shortest distance between pairs of linestrings (a.k.a. polylines)
+
+    The shortest distance between two linestrings is defined as the shortest distance
+    between all pairs of segments of the two linestrings. If any of the segments intersect,
+    the distance is 0.
 
     Parameters
     ----------
-    xs1
-        First linestrings point x-coordinates
-    ys1
-        First linestrings point y-coordinates
     offsets1
-        Begin indices of the first point in the first linestrings
-    xs2
-        Second linestrings point x-coordinates
-    ys2
-        Second linestrings point y-coordinates
+        Indices of the first point of the first linestring of each pair.
+    xs1
+        x-components of points in the first linestring of each pair.
+    ys1
+        y-component of points in the first linestring of each pair.
     offsets2
-        Begin indices of the first point in the second linestrings
+        Indices of the first point of the second linestring of each pair.
+    xs2
+        x-component of points in the second linestring of each pair.
+    ys2
+        y-component of points in the second linestring of each pair.
 
     Returns
     -------
