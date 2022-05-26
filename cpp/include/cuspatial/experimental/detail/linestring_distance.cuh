@@ -145,7 +145,7 @@ T __device__ squared_segment_distance(vec_2d<T> const& a,
  * @tparam OffsetIterator Iterator to linestring offsets. Must meet requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIterator Iterator to output distances. Must meet requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  *
  * @param[in] linestring1_offsets_begin Iterator to the begin of the range of linestring offsets
  * in pair 1.
