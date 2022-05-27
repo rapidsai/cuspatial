@@ -366,6 +366,64 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
     -------
     distance : cudf.Series
         the distance between each pair of linestrings
+
+    Examples
+    --------
+    The following example contains 4 pairs of linestrings.
+ 
+    First pair::
+
+        (0, 1) -> (1, 0) -> (-1, 0)
+        (1, 1) -> (2, 1) -> (2, 0) -> (3, 0)
+
+            |
+            *   #---#
+            | \     |
+        ----O---*---#---#
+            | /
+            *
+            |
+
+    The shortest distance between the two linestrings is the distance
+    from point ``(1, 1)`` to segment ``(0, 1) -> (1, 0)``, which is
+    ``sqrt(2)/2``.
+
+    Second pair::
+
+        (0, 0) -> (0, 1)
+        (1, 0) -> (1, 1) -> (1, 2)
+
+
+    These linestrings are parallel. Their distance is 1 (point
+    ``(0, 0)`` to point ``(1, 0)``).
+    
+    Third pair::
+
+        (0, 0) -> (2, 2) -> (-2, 0)
+        (2, 0) -> (0, 2)
+    
+
+    These linestrings intersect, so their distance is 0.
+    
+    Forth pair::
+
+        (2, 2) -> (-2, -2)
+        (1, 1) -> (5, 5) -> (10, 0)
+
+
+    These linestrings contain colinear and overlapping sections, so
+    their distance is 0.
+    
+    The input of above example is::
+
+        linestring1_offsets:  {0, 3, 5, 8}
+        linestring1_points_x: {0, 1, -1, 0, 0, 0, 2, -2, 2, -2}
+        linestring1_points_y: {1, 0, 0, 0, 1, 0, 2, 0, 2, -2}
+        linestring2_offsets:  {0, 4, 7, 9}
+        linestring2_points_x: {1, 2, 2, 3, 1, 1, 1, 2, 0, 1, 5, 10}
+        linestring2_points_y: {1, 1, 0, 0, 0, 1, 2, 0, 2, 1, 5, 0}
+        
+        Result: {sqrt(2.0)/2, 1, 0, 0}
     """
     xs1, ys1, xs2, ys2 = normalize_point_columns(
         as_column(xs1), as_column(ys1), as_column(xs2), as_column(ys2)
