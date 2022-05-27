@@ -343,9 +343,9 @@ def polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius):
 def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
     """Compute shortest distance between pairs of linestrings (a.k.a. polylines)
 
-    The shortest distance between two linestrings is defined as the shortest distance
-    between all pairs of segments of the two linestrings. If any of the segments intersect,
-    the distance is 0.
+    The shortest distance between two linestrings is defined as the shortest
+    distance between all pairs of segments of the two linestrings. If any of
+    the segments intersect, the distance is 0.
 
     Parameters
     ----------
@@ -370,17 +370,17 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
     Examples
     --------
     The following example contains 4 pairs of linestrings.
- 
+
     First pair::
 
         (0, 1) -> (1, 0) -> (-1, 0)
         (1, 1) -> (2, 1) -> (2, 0) -> (3, 0)
 
             |
-            *   #---#
-            | \     |
-        ----O---*---#---#
-            | /
+            *   #####
+            | *     #
+        ----O---*---#####
+            | *
             *
             |
 
@@ -396,15 +396,15 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
 
     These linestrings are parallel. Their distance is 1 (point
     ``(0, 0)`` to point ``(1, 0)``).
-    
+
     Third pair::
 
         (0, 0) -> (2, 2) -> (-2, 0)
         (2, 0) -> (0, 2)
-    
+
 
     These linestrings intersect, so their distance is 0.
-    
+
     Forth pair::
 
         (2, 2) -> (-2, -2)
@@ -413,7 +413,7 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
 
     These linestrings contain colinear and overlapping sections, so
     their distance is 0.
-    
+
     The input of above example is::
 
         linestring1_offsets:  {0, 3, 5, 8}
@@ -422,7 +422,7 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
         linestring2_offsets:  {0, 4, 7, 9}
         linestring2_points_x: {1, 2, 2, 3, 1, 1, 1, 2, 0, 1, 5, 10}
         linestring2_points_y: {1, 1, 0, 0, 0, 1, 2, 0, 2, 1, 5, 0}
-        
+
         Result: {sqrt(2.0)/2, 1, 0, 0}
     """
     xs1, ys1, xs2, ys2 = normalize_point_columns(
