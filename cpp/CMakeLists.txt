@@ -94,6 +94,7 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 # find gdal
 rapids_find_package(
     GDAL REQUIRED
+    GLOBAL_TARGETS GDAL::GDAL
     BUILD_EXPORT_SET cuspatial-exports
     INSTALL_EXPORT_SET cuspatial-exports
 )
@@ -212,15 +213,14 @@ endif()
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
 
+rapids_cmake_install_lib_dir(lib_dir)
 include(CPack)
-
 include(GNUInstallDirs)
 
-set(INSTALL_CONFIGDIR lib/cmake/cuspatial)
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME cuspatial)
 
 install(TARGETS cuspatial
-        DESTINATION lib
+        DESTINATION ${lib_dir}
         EXPORT cuspatial-exports)
 
 install(DIRECTORY ${CUSPATIAL_SOURCE_DIR}/include/cuspatial
