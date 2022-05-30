@@ -15,8 +15,8 @@ def from_geopandas(gpdf):
 
     Possible inputs:
 
-    geopandas.geoseries.GeoSeries
-    geopandas.geodataframe.GeoDataFrame
+    - :class:`geopandas.GeoSeries`
+    - :class:`geopandas.GeoDataFrame`
     """
     if isinstance(gpdf, gpGeoSeries):
         return GeoSeries(gpdf)

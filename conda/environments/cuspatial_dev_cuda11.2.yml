@@ -16,3 +16,4 @@ dependencies:
   - scikit-build>=0.13.1
   - gtest=1.10.0
   - gmock=1.10.0
+  - pydata-sphinx-theme
