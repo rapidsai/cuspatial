@@ -66,6 +66,9 @@ build/
 cpp/build/
 cpp/thirdparty/googletest/
 
+## CI build directories
+build_rapidsai*/
+
 ## Eclipse IDE
 .project
 .cproject
