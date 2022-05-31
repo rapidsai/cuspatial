@@ -91,9 +91,9 @@ auto make_vec_2d_iterator(FirstIter first, SecondIter second)
  *
  * Interleaves longitude and latitude from separate iterators into a single iterator to lon/lat
  * coordinates.
- * @tparam FirstIter Iterator type to the first component of `lonlat_2d`. Must meet the requirements
+ * @tparam FirstIter Iterator type to the first component (the longitude) of `lonlat_2d`. Must meet the requirements
  * of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam SecondIter Iterator type to the second component of `lonlat_2d`. Must meet the
+ * @tparam SecondIter Iterator type to the second component (the latitude) of `lonlat_2d`. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @param first Iterator to beginning of `lonlat_2d::x`
  * @param second Iterator to beginning of `lonlat_2d::y`

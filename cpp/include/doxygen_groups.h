@@ -84,12 +84,10 @@
  * @}
  * @defgroup cuspatial_types Types
  * @{
- *      @defgroup type_definition_operator Definition and Operators
- *      @{
- *          @brief Type declarations for cuspatial
- *          @file types.hpp
- *          @file vec_2d.hpp
- *      @}
+ *      @brief Type declarations for cuspatial
+ *      @file types.hpp
+ *      @file vec_2d.hpp
+ *
  *      @defgroup type_factories Factory Methods
  *      @{
  *          @brief Factory method to create coordinate iterators

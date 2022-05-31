@@ -52,8 +52,8 @@ namespace cuspatial {
  * @throw cuspatial::logic_error If max_depth is less than 1 or greater than 15
  *
  * @return A cudf table with two columns:
- * poly_offset - INT32 column of indices for each poly bbox that intersects with the quadtree.
- * quad_offset - INT32 column of indices for each leaf quadrant intersecting with a poly bbox.
+ *   - poly_offset - INT32 column of indices for each poly bbox that intersects with the quadtree.
+ *   - quad_offset - INT32 column of indices for each leaf quadrant intersecting with a poly bbox.
  */
 std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(
   cudf::table_view const& quadtree,

@@ -27,7 +27,7 @@
 namespace cuspatial {
 
 /**
- * @addtogroup type_definition_operator
+ * @addtogroup types
  * @{
  */
 
