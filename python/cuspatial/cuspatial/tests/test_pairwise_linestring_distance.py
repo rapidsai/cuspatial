@@ -74,7 +74,7 @@ def test_one_pair():
     offset2 = cudf.Series([0], dtype="int32")
 
     got = cuspatial.pairwise_linestring_distance(
-        data1["x"], data2["y"], offset1, data2["x"], data2["y"], offset2
+        offset1, data1["x"], data1["y"], offset2, data2["x"], data2["y"]
     )
     expected = shapely_pairwise_linestring_distance(
         data1.to_pandas(),
@@ -103,7 +103,7 @@ def test_two_pairs():
     offset2 = cudf.Series([0, 2], dtype="int32")
 
     got = cuspatial.pairwise_linestring_distance(
-        data1["x"], data1["y"], offset1, data2["x"], data2["y"], offset2
+        offset1, data1["x"], data1["y"], offset2, data2["x"], data2["y"]
     )
     expected = shapely_pairwise_linestring_distance(
         data1.to_pandas(),
@@ -140,7 +140,7 @@ def test_100_randomized_input():
     points2_y = rng.uniform(0.5, 2.5, (num_points_2,))
 
     got = cuspatial.pairwise_linestring_distance(
-        points1_x, points1_y, offset1, points2_x, points2_y, offset2
+         offset1, points1_x, points1_y, offset2, points2_x, points2_y
     )
     expected = shapely_pairwise_linestring_distance(
         pd.DataFrame({"x": points1_x.get(), "y": points1_y.get()}),
