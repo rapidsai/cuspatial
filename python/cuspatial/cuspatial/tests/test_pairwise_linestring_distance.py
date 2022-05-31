@@ -140,7 +140,7 @@ def test_100_randomized_input():
     points2_y = rng.uniform(0.5, 2.5, (num_points_2,))
 
     got = cuspatial.pairwise_linestring_distance(
-         offset1, points1_x, points1_y, offset2, points2_x, points2_y
+        offset1, points1_x, points1_y, offset2, points2_x, points2_y
     )
     expected = shapely_pairwise_linestring_distance(
         pd.DataFrame({"x": points1_x.get(), "y": points1_y.get()}),
