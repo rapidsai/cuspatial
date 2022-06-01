@@ -14,9 +14,6 @@ source:
 
 build:
   script_env:
-    - CC
-    - CXX
-    - CUDAHOSTCXX
     - PARALLEL_LEVEL
     - VERSION_SUFFIX
     - PROJECT_FLASH
@@ -33,6 +30,10 @@ build:
 requirements:
   build:
     - cmake {{ cmake_version }}
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ compiler('cuda') }} {{ cuda_version }}
+    - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
     - libcudf {{ minor_version }}.*
     - librmm {{ minor_version }}.*
@@ -48,6 +49,8 @@ outputs:
       string: cuda{{ cuda_major }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
       run_exports:
         - {{ pin_subpackage("libcuspatial", max_pin="x.x") }}
+      ignore_run_exports_from:
+        - {{ compiler('cuda') }}
     requirements:
       build:
         - cmake {{ cmake_version }}
@@ -55,6 +58,7 @@ outputs:
         - cudatoolkit {{ cuda_spec }}
         - libcudf {{ minor_version }}.*
         - librmm {{ minor_version }}.*
+        - gdal {{ gdal_version }}
     test:
       commands:
         - test -f $PREFIX/lib/libcuspatial.so
@@ -70,6 +74,8 @@ outputs:
     build:
       number: {{ GIT_DESCRIBE_NUMBER }}
       string: cuda{{ cuda_major }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
+      ignore_run_exports_from:
+        - {{ compiler('cuda') }}
     requirements:
       build:
         - cmake {{ cmake_version }}

@@ -88,7 +88,7 @@ namespace cuspatial {
  * @param linestring1_offsets Indices of the first point of the first linestring of each pair
  * @param linestring1_points_x x-components of points in the first linestring of each pair
  * @param linestring1_points_y y-component of points in the first linestring of each pair
- * @param linestring2_offsets Indices of the second point of the second linestring of each pair
+ * @param linestring2_offsets Indices of the first point of the second linestring of each pair
  * @param linestring2_points_x x-component of points in the second linestring of each pair
  * @param linestring2_points_y y-component of points in the second linestring of each pair
  * @param mr Device memory resource used to allocate the returned column's device memory
