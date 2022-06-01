@@ -184,7 +184,7 @@ class CubicSpline:
                 self.groups = groups.astype("int32")
             else:
                 self.groups = Series(
-                    cp.repeat(cp.array(0), len(self.t))
+                    cp.repeat(cp.array(0), len(coordinates))
                 ).astype("int32")
             result = _cubic_spline_fit(
                 coordinates, self.groups, self.prefix, self.t, self.c
