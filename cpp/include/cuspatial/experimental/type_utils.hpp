@@ -20,6 +20,8 @@
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 
+#include <type_traits>
+
 namespace cuspatial {
 
 namespace detail {

@@ -25,9 +25,11 @@ namespace cuspatial {
  */
 
 /**
- * @brief A 2D vector
+ * @brief A generic 2D vector type.
  *
- * Generic 2d vector type.
+ * This is the base type used in cuspatial for both Longitude/Latitude (LonLat) coordinate pairs and
+ * Cartesian (X/Y) coordinate pairs. For LonLat pairs, the `x` member represents Longitude, and `y`
+ * represents Latitude.
  *
  * @tparam T the base type for the coordinates
  */
@@ -39,10 +41,9 @@ struct alignas(2 * sizeof(T)) vec_2d {
 };
 
 /**
- * @brief A LonLat coordinate pair
+ * @brief A geographical Longitude/Latitude (LonLat) coordinate pair
  *
- * Longitude/Latitude (LonLat) coordinate pairs. The x member represents Longitude,
- * and y represents Latitude.
+ * `x` is the longitude coordinate, `y` is the latitude coordinate.
  *
  * @tparam T the base type for the coordinates
  */
@@ -51,16 +52,25 @@ struct alignas(2 * sizeof(T)) lonlat_2d : vec_2d<T> {
 };
 
 /**
- * @brief A Cartesian (X/Y) coordinate pair
+ * @brief A Cartesian (x/y) coordinate pair.
  *
- * @tparam T the base type for the coordinates
+ * @tparam T the base type for the coordinates.
  */
 template <typename T>
 struct alignas(2 * sizeof(T)) cartesian_2d : vec_2d<T> {
 };
 
 /**
- * @brief Element-wise add of two 2d vectors.
+ * @brief Compare two 2D vectors for equality.
+ */
+template <typename T>
+bool operator==(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+{
+  return (lhs.x == rhs.x) && (lhs.y == rhs.y);
+}
+
+/**
+ * @brief Element-wise addition of two 2D vectors.
  */
 template <typename T>
 vec_2d<T> CUSPATIAL_HOST_DEVICE operator+(vec_2d<T> const& a, vec_2d<T> const& b)
@@ -69,7 +79,7 @@ vec_2d<T> CUSPATIAL_HOST_DEVICE operator+(vec_2d<T> const& a, vec_2d<T> const& b
 }
 
 /**
- * @brief Element-wise subtract of two 2d vectors.
+ * @brief Element-wise subtraction of two 2D vectors.
  */
 template <typename T>
 vec_2d<T> CUSPATIAL_HOST_DEVICE operator-(vec_2d<T> const& a, vec_2d<T> const& b)
@@ -78,7 +88,7 @@ vec_2d<T> CUSPATIAL_HOST_DEVICE operator-(vec_2d<T> const& a, vec_2d<T> const& b
 }
 
 /**
- * @brief Scale a 2d vector by ratio @p r.
+ * @brief Scale a 2D vector by a factor @p r.
  */
 template <typename T>
 vec_2d<T> CUSPATIAL_HOST_DEVICE operator*(vec_2d<T> vec, T const& r)
@@ -96,7 +106,7 @@ vec_2d<T> CUSPATIAL_HOST_DEVICE operator*(T const& r, vec_2d<T> vec)
 }
 
 /**
- * @brief Compute dot product of two 2d vectors.
+ * @brief Compute dot product of two 2D vectors.
  */
 template <typename T>
 T CUSPATIAL_HOST_DEVICE dot(vec_2d<T> const& a, vec_2d<T> const& b)
@@ -105,7 +115,7 @@ T CUSPATIAL_HOST_DEVICE dot(vec_2d<T> const& a, vec_2d<T> const& b)
 }
 
 /**
- * @brief Compute 2d determinant of a 2x2 matrix with column vectors @p a and @p b.
+ * @brief Compute 2D determinant of a 2x2 matrix with column vectors @p a and @p b.
  */
 template <typename T>
 T CUSPATIAL_HOST_DEVICE det(vec_2d<T> const& a, vec_2d<T> const& b)

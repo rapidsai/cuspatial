@@ -51,7 +51,7 @@ namespace cuspatial {
  * @tparam LonLatItB Iterator to input location set B. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt Output iterator. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  * @tparam Location The `value_type` of `LonLatItA` and `LonLatItB`. Must be
  * `cuspatial::lonlat_2d<T>`.
  * @tparam T The underlying coordinate type. Must be a floating-point type.
