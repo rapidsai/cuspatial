@@ -169,6 +169,6 @@ if (( ${NUMARGS} == 0 )) || hasArg cuspatial; then
     cd ${REPODIR}/python/cuspatial
     python setup.py build_ext -j${PARALLEL_LEVEL:-1} --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR} ${CMAKE_ARGS}
     if [[ ${INSTALL_TARGET} != "" ]]; then
-        python setup.py install --single-version-externally-managed --record=record.txt -- ${CMAKE_ARGS}
+        python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR} ${CMAKE_ARGS}
     fi
 fi
