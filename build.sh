@@ -116,9 +116,9 @@ if hasArg tests; then
 fi
 
 # Append `-DFIND_CUSPATIAL_CPP=ON` to CMAKE_ARGS unless a user specified the option.
-#if [[ "${CMAKE_ARGS}" != *"DFIND_CUSPATIAL_CPP"* ]]; then
-#    CMAKE_ARGS="${CMAKE_ARGS} -DFIND_CUSPATIAL_CPP=ON"
-#fi
+if [[ "${CMAKE_ARGS}" != *"DFIND_CUSPATIAL_CPP"* ]]; then
+    CMAKE_ARGS="${CMAKE_ARGS} -DFIND_CUSPATIAL_CPP=ON"
+fi
 
 # If clean given, run it prior to any other steps
 if hasArg clean; then
