@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/utility/device_atomics.cuh>
 #include <cuspatial/utility/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -120,10 +121,8 @@ __global__ void kernel_hausdorff(Index num_points,
     auto output_idx = lhs_space_idx * num_spaces + rhs_space_idx;
 
     // use atomicMax to find the maximum of the minimum distance calculated for each space pair.
-    auto max_of_mins = cuda::atomic_ref<T, cuda::thread_scope_device>{
-      thrust::raw_reference_cast(*(results + output_idx))};
-    auto ret =
-      max_of_mins.fetch_max(static_cast<T>(sqrt(min_distance_squared)), cuda::memory_order_relaxed);
+    atomicMax(&thrust::raw_reference_cast(*(results + output_idx)),
+              static_cast<T>(std::sqrt(min_distance_squared)));
   }
 }
 
