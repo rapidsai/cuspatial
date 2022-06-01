@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 namespace cuspatial {
 namespace detail {
 
@@ -30,7 +32,7 @@ namespace detail {
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ double atomicMin(double* addr, double val)
+__device__ inline double atomicMin(double* addr, double val)
 {
   unsigned long long int* address_as_ll = reinterpret_cast<unsigned long long int*>(addr);
   unsigned long long int old            = __double_as_longlong(*addr);
@@ -60,7 +62,7 @@ __device__ double atomicMin(double* addr, double val)
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ float atomicMin(float* addr, float val)
+__device__ inline float atomicMin(float* addr, float val)
 {
   unsigned int* address_as_ui = reinterpret_cast<unsigned int*>(addr);
   unsigned int old            = __float_as_uint(*addr);
@@ -90,7 +92,7 @@ __device__ float atomicMin(float* addr, float val)
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ double atomicMax(double* addr, double val)
+__device__ inline double atomicMax(double* addr, double val)
 {
   unsigned long long int* address_as_ll = reinterpret_cast<unsigned long long int*>(addr);
   unsigned long long int old            = __double_as_longlong(*addr);
@@ -120,7 +122,7 @@ __device__ double atomicMax(double* addr, double val)
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ float atomicMax(float* addr, float val)
+__device__ inline float atomicMax(float* addr, float val)
 {
   unsigned int* address_as_ui = reinterpret_cast<unsigned int*>(addr);
   unsigned int old            = __float_as_uint(*addr);
