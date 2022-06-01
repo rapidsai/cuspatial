@@ -20,7 +20,12 @@
 namespace cuspatial {
 
 /**
- * @brief A 2D vector
+ * @addtogroup types
+ * @{
+ */
+
+/**
+ * @brief A generic 2D vector type.
  *
  * This is the base type used in cuspatial for both Longitude/Latitude (LonLat) coordinate pairs and
  * Cartesian (X/Y) coordinate pairs. For LonLat pairs, the `x` member represents Longitude, and `y`
@@ -36,18 +41,18 @@ struct alignas(2 * sizeof(T)) vec_2d {
 };
 
 /**
- * @brief A strongly typed geographical longitude/latitude coordinate pair.
+ * @brief A geographical Longitude/Latitude (LonLat) coordinate pair
  *
  * `x` is the longitude coordinate, `y` is the latitude coordinate.
  *
- * @tparam T the base type for the coordinates.
+ * @tparam T the base type for the coordinates
  */
 template <typename T>
 struct alignas(2 * sizeof(T)) lonlat_2d : vec_2d<T> {
 };
 
 /**
- * @brief A strongly typed Cartesian x/y coordinate pair.
+ * @brief A Cartesian (x/y) coordinate pair.
  *
  * @tparam T the base type for the coordinates.
  */
@@ -117,5 +122,9 @@ T CUSPATIAL_HOST_DEVICE det(vec_2d<T> const& a, vec_2d<T> const& b)
 {
   return a.x * b.y - a.y * b.x;
 }
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial
