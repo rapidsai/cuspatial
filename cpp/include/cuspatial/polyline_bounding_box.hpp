@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ namespace cuspatial {
 
 /**
  * @brief Compute minimum bounding boxes of a set of polylines and an expansion radius.
+ *
+ * @ingroup spatial_relationship
  *
  * @param poly_offsets Begin indices of the first point in each polyline (i.e. prefix-sum)
  * @param x Polyline point x-coordinates
