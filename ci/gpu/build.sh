@@ -1,5 +1,5 @@
 #!/bin/bash
-# COPYRIGHT (c) 2020, NVIDIA CORPORATION.
+# COPYRIGHT (c) 2020-2022, NVIDIA CORPORATION.
 #########################################
 # cuSpatial GPU build and test script for CI #
 #########################################
@@ -77,7 +77,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
 
     gpuci_logger "Build cuSpatial"
     cd "$WORKSPACE"
-    ./build.sh clean libcuspatial cuspatial tests
+    ./build.sh clean libcuspatial cuspatial tests --cmake-args=\"-DFIND_CUSPATIAL_CPP=ON\"
 
     ###############################################################################
     # TEST - Run libcuspatial and cuSpatial Unit Tests
@@ -119,10 +119,13 @@ else
     gpuci_logger "Installing libcuspatial and libcuspatial-tests"
     gpuci_mamba_retry install -c "${CONDA_ARTIFACT_PATH}" libcuspatial libcuspatial-tests
 
+    # TODO: Move boa install to gpuci/rapidsai
+    gpuci_mamba_retry install boa
+
     gpuci_logger "Building and installing cuspatial"
     export CONDA_BLD_DIR="${WORKSPACE}/.conda-bld"
     export VERSION_SUFFIX=""
-    gpuci_conda_retry build --croot "${CONDA_BLD_DIR}" -c "${CONDA_ARTIFACT_PATH}" -c "${CONDA_BLD_DIR}" conda/recipes/cuspatial
+    gpuci_conda_retry mambabuild --croot "${CONDA_BLD_DIR}" -c "${CONDA_ARTIFACT_PATH}" -c "${CONDA_BLD_DIR}" conda/recipes/cuspatial
     gpuci_mamba_retry install -c "${CONDA_BLD_DIR}" -c "${CONDA_ARTIFACT_PATH}" cuspatial
 
     gpuci_logger "Running googletests"
