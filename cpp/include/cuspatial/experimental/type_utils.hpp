@@ -20,9 +20,12 @@
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 
+#include <type_traits>
+
 namespace cuspatial {
 
 namespace detail {
+
 template <typename T, typename VectorType>
 struct tuple_to_vec_2d {
   __device__ VectorType operator()(thrust::tuple<T, T> const& pos)
