@@ -15,7 +15,7 @@ export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
 export HOME="$WORKSPACE"
 export PROJECT_WORKSPACE=/rapids/cuspatial
 export LIBCUDF_KERNEL_CACHE_PATH="$HOME/.jitify-cache"
-export PROJECTS=(cuspatial)
+export PROJECTS=(cuspatial libcuspatial)
 
 gpuci_logger "Check environment"
 env
@@ -26,10 +26,6 @@ nvidia-smi
 gpuci_logger "Activate conda env"
 . /opt/conda/etc/profile.d/conda.sh
 conda activate rapids
-# TODO: Move installs to docs-build-env meta package
-gpuci_conda_retry install -c anaconda markdown beautifulsoup4 jq
-pip install sphinx-markdown-tables
-
 
 gpuci_logger "Check versions"
 python --version
@@ -41,6 +37,11 @@ conda info
 conda config --show-sources
 conda list --show-channel-urls
 
+# Build C++ docs
+gpuci_logger "Build Doxygen docs"
+cd "$PROJECT_WORKSPACE/cpp/doxygen"
+doxygen Doxyfile
+
 # Build Python docs
 gpuci_logger "Build Sphinx docs"
 cd "$PROJECT_WORKSPACE/docs"
@@ -50,10 +51,9 @@ make html
 cd "$DOCS_WORKSPACE"
 
 for PROJECT in ${PROJECTS[@]}; do
-    if [ ! -d "api/$PROJECT/$BRANCH_VERSION" ]; then
-        mkdir -p api/$PROJECT/$BRANCH_VERSION
-    fi
+    mkdir -p "$DOCS_WORKSPACE/api/$PROJECT/$BRANCH_VERSION"
     rm -rf "$DOCS_WORKSPACE/api/$PROJECT/$BRANCH_VERSION/"*
 done
 
 mv "$PROJECT_WORKSPACE/docs/build/html/"* "$DOCS_WORKSPACE/api/cuspatial/$BRANCH_VERSION"
+mv "$PROJECT_WORKSPACE/cpp/doxygen/html/"* "$DOCS_WORKSPACE/api/libcuspatial/$BRANCH_VERSION"
