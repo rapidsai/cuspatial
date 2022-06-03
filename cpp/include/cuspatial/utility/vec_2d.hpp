@@ -15,9 +15,13 @@
  */
 
 #pragma once
-#include <cuspatial/types.hpp>
-
 namespace cuspatial {
+
+#ifdef __CUDACC__
+#define CUSPATIAL_HOST_DEVICE __host__ __device__
+#else
+#define CUSPATIAL_HOST_DEVICE
+#endif
 
 /**
  * @addtogroup types

@@ -18,7 +18,6 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/haversine.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
-#include <cuspatial/types.hpp>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_view.hpp>
