@@ -1,5 +1,5 @@
 ﻿#=============================================================================
-# Copyright (c) 2019-2021, NVIDIA CORPORATION.
+# Copyright (c) 2019-2022, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,6 +77,9 @@ ConfigureTest(POLYLINE_BBOX_TEST
 ConfigureTest(POLYGON_BBOX_TEST
     spatial/polygon_bbox_test.cu)
 
+ConfigureTest(LINESTRING_DISTANCE_TEST
+    spatial/linestring_distance_test.cpp spatial/linestring_distance_test_medium.cpp)
+
 ConfigureTest(SHAPEFILE_READER_TEST
     io/shp/polygon_shapefile_reader_test.cpp)
 
@@ -97,3 +100,13 @@ ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST
 
 ConfigureTest(SPATIAL_WINDOW_POINT_TEST
     spatial_window/spatial_window_test.cpp)
+
+# Experimental API
+ConfigureTest(HAVERSINE_TEST_EXP
+    experimental/spatial/haversine_test.cu)
+
+ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
+    experimental/spatial/linestring_distance_test.cu)
+
+ConfigureTest(COORDINATE_TRANSFORM_TEST_EXP
+    experimental/spatial/coordinate_transform_test.cu)

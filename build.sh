@@ -19,23 +19,23 @@ ARGS=$*
 REPODIR=$(cd $(dirname $0); pwd)
 
 VALIDARGS="clean libcuspatial cuspatial tests -v -g -n -h --allgpuarch --show_depr_warn"
-HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--show_depr_warn]
-   clean            - remove all existing build artifacts and configuration (start
-                      over)
-   libcuspatial     - build the libcuspatial C++ code only
-   cuspatial        - build the cuspatial Python package
-   tests            - build tests
-   -v               - verbose build mode
-   -g               - build for debug
-   -n               - no install step
-   -h               - print this text
-   --allgpuarch     - build for all supported GPU architectures
-   --show_depr_warn - show cmake deprecation warnings
+HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--show_depr_warn] [--cmake-args=\"<args>\"]
+   clean                       - remove all existing build artifacts and configuration (start over)
+   libcuspatial                - build the libcuspatial C++ code only
+   cuspatial                   - build the cuspatial Python package
+   tests                       - build tests
+   -v                          - verbose build mode
+   -g                          - build for debug
+   -n                          - no install step
+   -h                          - print this text
+   --allgpuarch                - build for all supported GPU architectures
+   --show_depr_warn            - show cmake deprecation warnings
+   --cmake-args=\\\"<args>\\\" - pass arbitrary list of CMake configuration options (escape all quotes in argument)
    default action (no args) is to build and install 'libcuspatial' then
    'cuspatial' targets
 "
 LIBCUSPATIAL_BUILD_DIR=${REPODIR}/cpp/build
-CUSPATIAL_BUILD_DIR=${REPODIR}/python/cuspatial/build
+CUSPATIAL_BUILD_DIR=${REPODIR}/python/cuspatial/_skbuild
 BUILD_DIRS="${LIBCUSPATIAL_BUILD_DIR} ${CUSPATIAL_BUILD_DIR}"
 
 # Set defaults for vars modified by flags to this script
@@ -56,6 +56,28 @@ function hasArg {
     (( ${NUMARGS} != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")
 }
 
+function cmakeArgs {
+    # Check for multiple cmake args options
+    if [[ $(echo $ARGS | { grep -Eo "\-\-cmake\-args" || true; } | wc -l ) -gt 1 ]]; then
+        echo "Multiple --cmake-args options were provided, please provide only one: ${ARGS}"
+        exit 1
+    fi
+
+    # Check for cmake args option
+    if [[ -n $(echo $ARGS | { grep -E "\-\-cmake\-args" || true; } ) ]]; then
+        # There are possible weird edge cases that may cause this regex filter to output nothing and fail silently
+        # the true pipe will catch any weird edge cases that may happen and will cause the program to fall back
+        # on the invalid option error
+        CMAKE_ARGS=$(echo $ARGS | { grep -Eo "\-\-cmake\-args=\".+\"" || true; })
+        if [[ -n ${CMAKE_ARGS} ]]; then
+            # Remove the full  CMAKE_ARGS argument from list of args so that it passes validArgs function
+            ARGS=${ARGS//$CMAKE_ARGS/}
+            # Filter the full argument down to just the extra string that will be added to cmake call
+            CMAKE_ARGS=$(echo $CMAKE_ARGS | grep -Eo "\".+\"" | sed -e 's/^"//' -e 's/"$//')
+        fi
+    fi
+}
+
 if hasArg -h; then
     echo "${HELP}"
     exit 0
@@ -63,6 +85,7 @@ fi
 
 # Check for valid usage
 if (( ${NUMARGS} != 0 )); then
+    cmakeArgs
     for a in ${ARGS}; do
     if ! (echo " ${VALIDARGS} " | grep -q " ${a} "); then
         echo "Invalid option: ${a}"
@@ -107,10 +130,10 @@ if hasArg clean; then
 fi
 
 if (( ${BUILD_ALL_GPU_ARCH} == 0 )); then
-    CUSPATIAL_CMAKE_CUDA_ARCHITECTURES="-DCMAKE_CUDA_ARCHITECTURES="
+    CUSPATIAL_CMAKE_CUDA_ARCHITECTURES="-DCMAKE_CUDA_ARCHITECTURES=NATIVE"
     echo "Building for the architecture of the GPU in the system..."
 else
-    CUSPATIAL_CMAKE_CUDA_ARCHITECTURES=""
+    CUSPATIAL_CMAKE_CUDA_ARCHITECTURES="-DCMAKE_CUDA_ARCHITECTURES=ALL"
     echo "Building for *ALL* supported GPU architectures..."
 fi
 
@@ -125,6 +148,7 @@ if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
           -DBUILD_TESTS=${BUILD_TESTS} \
           -DDISABLE_DEPRECATION_WARNING=${BUILD_DISABLE_DEPRECATION_WARNING} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+          ${CMAKE_ARGS} \
           ..
 
     cmake --build . -j ${PARALLEL_LEVEL} ${VERBOSE_FLAG}
@@ -138,10 +162,8 @@ fi
 if (( ${NUMARGS} == 0 )) || hasArg cuspatial; then
 
     cd ${REPODIR}/python/cuspatial
+    python setup.py build_ext -j${PARALLEL_LEVEL:-1} --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR} ${CMAKE_ARGS}
     if [[ ${INSTALL_TARGET} != "" ]]; then
-        PARALLEL_LEVEL=${PARALLEL_LEVEL} python setup.py build_ext --inplace
-        python setup.py install --single-version-externally-managed --record=record.txt
-    else
-        PARALLEL_LEVEL=${PARALLEL_LEVEL} python setup.py build_ext --inplace --library-dir=${LIBCUSPATIAL_BUILD_DIR}
+        python setup.py install --single-version-externally-managed --record=record.txt -- ${CMAKE_ARGS}
     fi
 fi

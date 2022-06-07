@@ -26,20 +26,25 @@ function(find_and_configure_cudf VERSION)
         set(MAJOR_AND_MINOR "${VERSION}")
     endif()
 
-    CPMFindPackage(NAME        cudf
-        VERSION                ${VERSION}
-        GIT_REPOSITORY         https://github.com/rapidsai/cudf.git
-        GIT_TAG                branch-${MAJOR_AND_MINOR}
-        GIT_SHALLOW            TRUE
-        SOURCE_SUBDIR          cpp
-        OPTIONS                "BUILD_TESTS OFF"
-                               "BUILD_BENCHMARKS OFF"
-        FIND_PACKAGE_ARGUMENTS "COMPONENTS testing")
+    set(global_targets cudf::cudf)
+    set(find_package_args "")
+    if(BUILD_TESTS)
+      list(APPEND global_targets cudf::cudftestutil)
+      set(find_package_args "COMPONENTS testing")
+    endif()
 
-    # Make sure consumers of cuspatial can see cudf::cudf
-    fix_cmake_global_defaults(cudf::cudf)
-    # Make sure consumers of cuspatial can see cudf::cudftestutil
-    fix_cmake_global_defaults(cudf::cudftestutil)
+    rapids_cpm_find(
+      cudf ${VERSION}
+      GLOBAL_TARGETS "${global_targets}"
+      BUILD_EXPORT_SET cuspatial-exports
+      INSTALL_EXPORT_SET cuspatial-exports
+      CPM_ARGS
+      GIT_REPOSITORY https://github.com/rapidsai/cudf.git
+      GIT_TAG branch-${MAJOR_AND_MINOR}
+      GIT_SHALLOW TRUE
+      OPTIONS "BUILD_TESTS OFF" "BUILD_BENCHMARKS OFF"
+      FIND_PACKAGE_ARGUMENTS "${find_package_args}"
+    )
 endfunction()
 
 set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}.00")

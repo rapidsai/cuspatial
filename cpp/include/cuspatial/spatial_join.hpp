@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,11 @@
 #include <memory>
 
 namespace cuspatial {
+
+/**
+ * @addtogroup spatial_join
+ * @{
+ */
 
 /**
  * @brief Search a quadtree for polygon or polyline bounding box intersections.
@@ -47,8 +52,8 @@ namespace cuspatial {
  * @throw cuspatial::logic_error If max_depth is less than 1 or greater than 15
  *
  * @return A cudf table with two columns:
- * poly_offset - INT32 column of indices for each poly bbox that intersects with the quadtree.
- * quad_offset - INT32 column of indices for each leaf quadrant intersecting with a poly bbox.
+ *   - poly_offset - INT32 column of indices for each poly bbox that intersects with the quadtree.
+ *   - quad_offset - INT32 column of indices for each leaf quadrant intersecting with a poly bbox.
  */
 std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(
   cudf::table_view const& quadtree,
@@ -158,5 +163,9 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_polyline(
   cudf::column_view const& poly_points_x,
   cudf::column_view const& poly_points_y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

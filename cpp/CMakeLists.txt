@@ -14,21 +14,18 @@
 # limitations under the License.
 #=============================================================================
 
-cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
 
-# If `CMAKE_CUDA_ARCHITECTURES` is not defined, build for all supported architectures. If
-# `CMAKE_CUDA_ARCHITECTURES` is set to an empty string (""), build for only the current
-# architecture. If `CMAKE_CUDA_ARCHITECTURES` is specified by the user, use user setting.
+include(../fetch_rapids.cmake)
+include(rapids-cmake)
+include(rapids-cpm)
+include(rapids-cuda)
+include(rapids-export)
+include(rapids-find)
 
-# This needs to be run before enabling the CUDA language due to the default initialization behavior
-# of `CMAKE_CUDA_ARCHITECTURES`, https://gitlab.kitware.com/cmake/cmake/-/issues/21302
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES OR CMAKE_CUDA_ARCHITECTURES STREQUAL "ALL")
-  set(CUSPATIAL_BUILD_FOR_ALL_ARCHS TRUE)
-elseif(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
-  set(CUSPATIAL_BUILD_FOR_DETECTED_ARCHS TRUE)
-endif()
+rapids_cuda_init_architectures(CUSPATIAL)
 
-project(CUSPATIAL VERSION 22.04.00 LANGUAGES C CXX)
+project(CUSPATIAL VERSION 22.06.00 LANGUAGES C CXX CUDA)
 
 # Needed because GoogleBenchmark changes the state of FindThreads.cmake,
 # causing subsequent runs to have different values for the `Threads::Threads` target.
@@ -38,6 +35,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 ###################################################################################################
 # - build options ---------------------------------------------------------------------------------
 
+option(BUILD_SHARED_LIBS "Build cuSpatial shared libraries" ON)
 option(USE_NVTX "Build with NVTX support" ON)
 option(BUILD_TESTS "Configure CMake to build tests" OFF)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
@@ -57,7 +55,7 @@ message(STATUS "CUSPATIAL: Enable the -lineinfo option for nvcc (useful for cuda
 message(STATUS "CUSPATIAL: Statically link the CUDA runtime: ${CUDA_STATIC_RUNTIME}")
 
 # Set a default build type if none was specified
-set(DEFAULT_BUILD_TYPE "Release")
+rapids_cmake_build_type("Release")
 set(CUSPATIAL_BUILD_TESTS ${BUILD_TESTS})
 set(CUSPATIAL_BUILD_BENCHMARKS ${BUILD_BENCHMARKS})
 
@@ -65,15 +63,6 @@ set(CUSPATIAL_CXX_FLAGS "")
 set(CUSPATIAL_CUDA_FLAGS "")
 set(CUSPATIAL_CXX_DEFINITIONS "")
 set(CUSPATIAL_CUDA_DEFINITIONS "")
-
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' since none specified.")
-  set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE
-      STRING "Choose the type of build." FORCE)
-  # Set the possible values of build type for cmake-gui
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
 
 # Set RMM logging level
 set(RMM_LOGGING_LEVEL "INFO" CACHE STRING "Choose the logging level.")
@@ -83,21 +72,16 @@ message(STATUS "CUSPATIAL: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'.")
 ###################################################################################################
 # - conda environment -----------------------------------------------------------------------------
 
-if("$ENV{CONDA_BUILD}" STREQUAL "1")
-    set(CMAKE_PREFIX_PATH "$ENV{BUILD_PREFIX};$ENV{PREFIX};${CMAKE_PREFIX_PATH}")
-    set(CONDA_INCLUDE_DIRS "$ENV{BUILD_PREFIX}/include" "$ENV{PREFIX}/include")
-    set(CONDA_LINK_DIRS "$ENV{BUILD_PREFIX}/lib" "$ENV{PREFIX}/lib")
-    message(VERBOSE "CUSPATIAL: Conda build detected, CMAKE_PREFIX_PATH set to: ${CMAKE_PREFIX_PATH}")
-elseif(DEFINED ENV{CONDA_PREFIX})
-    set(CMAKE_PREFIX_PATH "$ENV{CONDA_PREFIX};${CMAKE_PREFIX_PATH}")
-    set(CONDA_INCLUDE_DIRS "$ENV{CONDA_PREFIX}/include")
-    set(CONDA_LINK_DIRS "$ENV{CONDA_PREFIX}/lib")
-    message(VERBOSE "CUSPATIAL: Conda environment detected, CMAKE_PREFIX_PATH set to: ${CMAKE_PREFIX_PATH}")
-endif()
+rapids_cmake_support_conda_env(conda_env MODIFY_PREFIX_PATH)
 
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
 
+rapids_find_package(
+  CUDAToolkit REQUIRED
+  BUILD_EXPORT_SET cuspatial-exports
+  INSTALL_EXPORT_SET cuspatial-exports
+)
 # * find CUDAToolkit package
 # * determine GPU architectures
 # * enable the CMake CUDA language
@@ -108,16 +92,21 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 # - dependencies ----------------------------------------------------------------------------------
 
 # find gdal
-find_package(GDAL REQUIRED)
+rapids_find_package(
+    GDAL REQUIRED
+    GLOBAL_TARGETS GDAL::GDAL
+    BUILD_EXPORT_SET cuspatial-exports
+    INSTALL_EXPORT_SET cuspatial-exports
+)
 # add third party dependencies using CPM
-include(cmake/thirdparty/CUSPATIAL_GetCPM.cmake)
+rapids_cpm_init()
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
 
-add_library(cuspatial SHARED
+add_library(cuspatial
     src/indexing/construction/point_quadtree.cu
     src/interpolate/cubic_spline.cu
     src/io/shp/polygon_shapefile_reader.cpp
@@ -131,6 +120,7 @@ add_library(cuspatial SHARED
     src/spatial_window/spatial_window.cu
     src/spatial/haversine.cu
     src/spatial/hausdorff.cu
+    src/spatial/linestring_distance.cu
     src/spatial/lonlat_to_cartesian.cu
     src/trajectory/derive_trajectories.cu
     src/trajectory/trajectory_bounding_boxes.cu
@@ -223,46 +213,51 @@ endif()
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
 
+rapids_cmake_install_lib_dir(lib_dir)
 include(CPack)
-
 include(GNUInstallDirs)
 
-set(INSTALL_CONFIGDIR lib/cmake/cuspatial)
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME cuspatial)
 
 install(TARGETS cuspatial
-        DESTINATION lib
-        EXPORT cuspatial-targets)
+        DESTINATION ${lib_dir}
+        EXPORT cuspatial-exports)
 
 install(DIRECTORY ${CUSPATIAL_SOURCE_DIR}/include/cuspatial
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-include(CMakePackageConfigHelpers)
+set(doc_string
+    [=[
+Provide targets for the cuSpatial library.
 
-configure_package_config_file(cmake/cuspatial-config.cmake.in "${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config.cmake"
-                              INSTALL_DESTINATION "${INSTALL_CONFIGDIR}")
+cuSpatial is a GPU-accelerated library for spatial data management and analytics.
 
-write_basic_package_version_file("${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config-version.cmake"
-                                 COMPATIBILITY SameMinorVersion)
+Imported Targets
+^^^^^^^^^^^^^^^^
 
-install(FILES   "${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config.cmake"
-                "${CUSPATIAL_BINARY_DIR}/cmake/cuspatial-config-version.cmake"
-    DESTINATION "${INSTALL_CONFIGDIR}")
+If cuspatial is found, this module defines the following IMPORTED GLOBAL
+targets:
 
-install(EXPORT  cuspatial-targets
-    FILE        cuspatial-targets.cmake
-    NAMESPACE   cuspatial::
-    DESTINATION "${INSTALL_CONFIGDIR}")
+ cuspatial::cuspatial             - The main cuspatial library.
+    ]=]
+)
+
+rapids_export(
+  INSTALL cuspatial
+  EXPORT_SET cuspatial-exports
+  GLOBAL_TARGETS cuspatial
+  NAMESPACE cuspatial::
+  DOCUMENTATION doc_string
+)
+
 
 ################################################################################################
 # - build export -------------------------------------------------------------------------------
 
-configure_package_config_file(cmake/cuspatial-build-config.cmake.in ${CUSPATIAL_BINARY_DIR}/cuspatial-config.cmake
-                              INSTALL_DESTINATION ${CUSPATIAL_BINARY_DIR})
-
-write_basic_package_version_file(${CUSPATIAL_BINARY_DIR}/cuspatial-config-version.cmake
-                                 COMPATIBILITY SameMinorVersion)
-
-export(EXPORT cuspatial-targets
-    FILE ${CUSPATIAL_BINARY_DIR}/cuspatial-targets.cmake
-    NAMESPACE   cuspatial::)
+rapids_export(
+  BUILD cuspatial
+  EXPORT_SET cuspatial-exports
+  GLOBAL_TARGETS cuspatial
+  NAMESPACE cuspatial::
+  DOCUMENTATION doc_string
+)

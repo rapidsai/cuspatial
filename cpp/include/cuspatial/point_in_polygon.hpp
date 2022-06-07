@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,11 @@
 #include <memory>
 
 namespace cuspatial {
+
+/**
+ * @addtogroup spatial_relationship
+ * @{
+ */
 
 /**
  * @brief Tests whether the specified points are inside any of the specified polygons.
@@ -51,6 +56,7 @@ namespace cuspatial {
  * `poly_offsets`. If there are rings in `poly_ring_offsets` that are not part of the polygons in
  * `poly_offsets`, results are likely to be incorrect and behavior is undefined.
  *
+ * ```
  *   poly w/two rings         poly w/four rings
  * +-----------+          +------------------------+
  * :███████████:          :████████████████████████:
@@ -61,6 +67,7 @@ namespace cuspatial {
  *        :███████████:   :██+------------------+██:
  *        :███████████:   :████████████████████████:
  *        +-----------+   +------------------------+
+ * ```
  */
 std::unique_ptr<cudf::column> point_in_polygon(
   cudf::column_view const& test_points_x,
@@ -70,5 +77,9 @@ std::unique_ptr<cudf::column> point_in_polygon(
   cudf::column_view const& poly_points_x,
   cudf::column_view const& poly_points_y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

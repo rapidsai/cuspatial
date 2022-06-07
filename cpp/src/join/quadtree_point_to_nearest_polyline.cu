@@ -27,7 +27,6 @@
 #include <cudf/column/column_view.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
-#include <cudf/utilities/error.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -248,7 +247,8 @@ struct compute_quadtree_point_to_nearest_polyline {
       rmm::device_uvector<T> distances(point_x.size(), stream);
 
       // Fill distances with 0
-      CUDA_TRY(cudaMemsetAsync(distances.data(), 0, distances.size() * sizeof(T), stream.value()));
+      CUSPATIAL_CUDA_TRY(
+        cudaMemsetAsync(distances.data(), 0, distances.size() * sizeof(T), stream.value()));
 
       // Reduce the intermediate point/polyline indices to lists of point/polyline index pairs and
       // distances, selecting the polyline index closest to each point.

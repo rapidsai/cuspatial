@@ -22,29 +22,19 @@ if [ -z "$MY_UPLOAD_KEY" ]; then
 fi
 
 ################################################################################
-# SETUP - Get conda file output locations
-################################################################################
-
-gpuci_logger "Get conda file output locations"
-export LIBCUSPATIAL_FILE=`conda build --no-build-id --croot ${CONDA_BLD_DIR} conda/recipes/libcuspatial  --output`
-export CUSPATIAL_FILE=`conda build --croot ${CONDA_BLD_DIR} conda/recipes/cuspatial --python=$PYTHON --output`
-
-################################################################################
 # UPLOAD - Conda packages
 ################################################################################
 
 gpuci_logger "Starting conda uploads"
 
 if [[ "$BUILD_LIBCUSPATIAL" == "1" && "$UPLOAD_LIBCUSPATIAL" == "1" ]]; then
-  LABEL_OPTION="--label main"
-  echo "LABEL_OPTION=${LABEL_OPTION}"
-  test -e ${LIBCUSPATIAL_FILE}
+  LIBCUSPATIAL_FILES=$(conda build --no-build-id --croot ${CONDA_BLD_DIR} conda/recipes/libcuspatial --output)
   echo "Upload libcuspatial"
-  echo ${LIBCUSPATIAL_FILE}
-  gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing ${LIBCUSPATIAL_FILE} --no-progress
+  gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing --no-progress ${LIBCUSPATIAL_FILES}
 fi
 
 if [[ "$BUILD_CUSPATIAL" == "1" && "$UPLOAD_CUSPATIAL" == "1" ]]; then
+  CUSPATIAL_FILE=$(conda build --croot ${CONDA_BLD_DIR} conda/recipes/cuspatial --python=$PYTHON --output)
   LABEL_OPTION="--label main"
   echo "LABEL_OPTION=${LABEL_OPTION}"
   test -e ${CUSPATIAL_FILE}
