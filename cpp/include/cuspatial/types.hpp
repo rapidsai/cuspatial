@@ -27,6 +27,11 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup types
+ * @{
+ */
+
+/**
  * @brief A timestamp
  *
  */
@@ -42,5 +47,9 @@ struct its_timestamp {
   std::uint32_t ms  : 10;
   std::uint32_t pid : 10;
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

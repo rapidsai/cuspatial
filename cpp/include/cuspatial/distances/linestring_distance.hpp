@@ -24,6 +24,11 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup distance
+ * @{
+ */
+
+/**
  * @brief Compute shortest distance between pairs of linestrings (a.k.a. polylines)
  *
  * The shortest distance between two linestrings is defined as the shortest distance
@@ -31,7 +36,7 @@ namespace cuspatial {
  * the distance is 0.
  *
  * The following example contains 4 pairs of linestrings.
- *
+ * ```
  * First pair:
  * (0, 1) -> (1, 0) -> (-1, 0)
  * (1, 1) -> (2, 1) -> (2, 0) -> (3, 0)
@@ -78,15 +83,16 @@ namespace cuspatial {
  * linestring2_points_y: {1, 1, 0, 0, 0, 1, 2, 0, 2, 1, 5, 0}
  *
  * Result: {sqrt(2.0)/2, 1, 0, 0}
+ * ```
  *
- * @param linestring1_offsets Indices of the first point of the first linestring of each pair.
- * @param linestring1_points_x x-components of points in the first linestring of each pair.
- * @param linestring1_points_y y-component of points in the first linestring of each pair.
- * @param linestring2_offsets Indices of the first point of the second linestring of each pair.
- * @param linestring2_points_x x-component of points in the second linestring of each pair.
- * @param linestring2_points_y y-component of points in the second linestring of each pair.
- * @param mr Device memory resource used to allocate the returned column's device memory.
- * @return A column of shortest distances between each pair of linestrings.
+ * @param linestring1_offsets Indices of the first point of the first linestring of each pair
+ * @param linestring1_points_x x-components of points in the first linestring of each pair
+ * @param linestring1_points_y y-component of points in the first linestring of each pair
+ * @param linestring2_offsets Indices of the first point of the second linestring of each pair
+ * @param linestring2_points_x x-component of points in the second linestring of each pair
+ * @param linestring2_points_y y-component of points in the second linestring of each pair
+ * @param mr Device memory resource used to allocate the returned column's device memory
+ * @return A column of shortest distances between each pair of linestrings
  *
  * @note If any of the linestring contains less than 2 points, the behavior is undefined.
  *
@@ -105,5 +111,9 @@ std::unique_ptr<cudf::column> pairwise_linestring_distance(
   cudf::column_view const& linestring2_points_x,
   cudf::column_view const& linestring2_points_y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial
