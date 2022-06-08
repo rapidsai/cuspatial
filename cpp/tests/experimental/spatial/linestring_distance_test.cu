@@ -53,7 +53,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSeparateArrayInputs)
     CartVec({{0.0f, 0.0f}, {1.0f, 0.0f}, {2.0f, 0.0f}, {3.0f, 0.0f}, {4.0f, 0.0f}})};
   auto b_cart2d = rmm::device_vector<cartesian_2d<T>>{
     CartVec({{0.0f, 1.0f}, {1.0f, 1.0f}, {2.0f, 1.0f}, {3.0f, 1.0f}, {4.0f, 1.0f}})};
-  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{std::vector<int32_t>{0}}};
+  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
 
   auto distance = rmm::device_vector<T>{1};
   auto expected = rmm::device_vector<T>{std::vector<T>{1.0}};

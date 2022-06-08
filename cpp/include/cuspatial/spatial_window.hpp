@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ namespace cuspatial {
 
 /**
  * @brief Find all points (x,y) that fall within a rectangular query window.
+ *
+ * @ingroup spatial_relationship
  *
  * A point (x, y) is in the window if `x > window_min_x && x < window_min_y && y > window_min_y && y
  * < window_max_y`.

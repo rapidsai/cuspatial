@@ -27,6 +27,8 @@ namespace cuspatial {
 /**
  * @brief Compute haversine distances between points in set A to the corresponding points in set B.
  *
+ * @ingroup distance
+ *
  * Computes N haversine distances, where N is `std::distance(a_lonlat_first, a_lonlat_last)`.
  * The distance for each `a_lonlat[i]` and `b_lonlat[i]` point pair is assigned to
  * `distance_first[i]`. `distance_first` must be an iterator to output storage allocated for N
@@ -49,7 +51,7 @@ namespace cuspatial {
  * @tparam LonLatItB Iterator to input location set B. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt Output iterator. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  * @tparam Location The `value_type` of `LonLatItA` and `LonLatItB`. Must be
  * `cuspatial::lonlat_2d<T>`.
  * @tparam T The underlying coordinate type. Must be a floating-point type.
