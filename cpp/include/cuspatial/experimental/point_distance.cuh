@@ -21,9 +21,10 @@
 namespace cuspatial {
 
 /**
+ * @ingroup distance
  * @copybrief cuspatial::pairwise_point_distance
  *
- * Computes pairwise distance between points.
+ * Computes cartesian distances between points.
  *
  * @tparam Cart2dItA iterator type for point array of the first point of each pair. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.

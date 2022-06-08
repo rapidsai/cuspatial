@@ -22,7 +22,17 @@
 namespace cuspatial {
 
 /**
+ * @ingroup distance
  * @brief Compute pairwise point to point cartesian distance
+ *
+ * Computes cartesian distances between points.
+ *
+ * @param points1_x Column of x coordinates to the first point in pair
+ * @param points1_y Column of y coordinates to the first point in pair
+ * @param points2_x Column of x coordinates to the second point in pair
+ * @param points2_y Column of y coordinates to the second point in pair
+ * @param stream The CUDA stream to use for device memory operations and kernel launches
+ * @return Column of distances
  */
 std::unique_ptr<cudf::column> pairwise_point_distance(
   cudf::column_view const& points1_x,
