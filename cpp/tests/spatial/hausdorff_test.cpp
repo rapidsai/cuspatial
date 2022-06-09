@@ -174,18 +174,6 @@ TYPED_TEST(HausdorffTest, MoreSpacesThanPoints)
                cuspatial::logic_error);
 }
 
-TYPED_TEST(HausdorffTest, TooFewPoints)
-{
-  using T = TypeParam;
-
-  auto x             = cudf::test::fixed_width_column_wrapper<T>({0});
-  auto y             = cudf::test::fixed_width_column_wrapper<T>({0});
-  auto space_offsets = cudf::test::fixed_width_column_wrapper<uint32_t>({0, 1});
-
-  EXPECT_THROW(cuspatial::directed_hausdorff_distance(x, y, space_offsets, this->mr()),
-               cuspatial::logic_error);
-}
-
 TYPED_TEST(HausdorffTest, ThreeSpacesLengths543)
 {
   using T = TypeParam;

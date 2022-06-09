@@ -97,9 +97,6 @@ std::unique_ptr<cudf::column> directed_hausdorff_distance(cudf::column_view cons
   CUSPATIAL_EXPECTS(not xs.has_nulls() and not ys.has_nulls() and not space_offsets.has_nulls(),
                     "Inputs must not have nulls.");
 
-  CUSPATIAL_EXPECTS(xs.size() >= space_offsets.size(),
-                    "At least one point is required for each space");
-
   return cudf::type_dispatcher(
     xs.type(), hausdorff_functor(), xs, ys, space_offsets, rmm::cuda_stream_default, mr);
 }

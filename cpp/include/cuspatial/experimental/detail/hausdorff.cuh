@@ -77,27 +77,29 @@ __global__ void kernel_hausdorff(Index num_points,
                                  OffsetsIter space_offsets,
                                  OutputIter results)
 {
+  using Point = typename std::iterator_traits<PointsIter>::value_type;
+
   // determine the LHS point this thread is responsible for.
   auto const thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
-  auto const lhs_p_idx  = thread_idx;
+  Index const lhs_p_idx = thread_idx;
 
   if (lhs_p_idx >= num_points) { return; }
 
   // determine the LHS space this point belongs to.
-  auto const lhs_space_idx =
+  Index const lhs_space_idx =
     thrust::distance(
       space_offsets,
       thrust::upper_bound(thrust::seq, space_offsets, space_offsets + num_spaces, lhs_p_idx)) -
     1;
 
   // get the coordinates of this LHS point.
-  auto const lhs_p = points[lhs_p_idx];
+  Point const lhs_p = points[lhs_p_idx];
 
   // loop over each RHS space, as determined by space_offsets
   for (uint32_t rhs_space_idx = 0; rhs_space_idx < num_spaces; rhs_space_idx++) {
     // determine the begin/end offsets of points contained within this RHS space.
-    auto const rhs_p_idx_begin = space_offsets[rhs_space_idx];
-    auto const rhs_p_idx_end =
+    Index const rhs_p_idx_begin = space_offsets[rhs_space_idx];
+    Index const rhs_p_idx_end =
       (rhs_space_idx + 1 == num_spaces) ? num_points : space_offsets[rhs_space_idx + 1];
 
     // each space must contain at least one point, this initial value is just an identity value to
@@ -108,7 +110,7 @@ __global__ void kernel_hausdorff(Index num_points,
     // loop over each point in the current RHS space
     for (uint32_t rhs_p_idx = rhs_p_idx_begin; rhs_p_idx < rhs_p_idx_end; rhs_p_idx++) {
       // get the x and y coordinate of this RHS point
-      auto const rhs_p = points[rhs_p_idx];
+      Point const rhs_p = thrust::raw_reference_cast(points[rhs_p_idx]);
 
       // get distance between the LHS and RHS point
       auto const distance_squared = magnitude_squared(rhs_p.x - lhs_p.x, rhs_p.y - lhs_p.y);
@@ -118,7 +120,7 @@ __global__ void kernel_hausdorff(Index num_points,
     }
 
     // determine the output offset for this pair of spaces (LHS, RHS)
-    auto output_idx = lhs_space_idx * num_spaces + rhs_space_idx;
+    Index output_idx = lhs_space_idx * num_spaces + rhs_space_idx;
 
     // use atomicMax to find the maximum of the minimum distance calculated for each space pair.
     atomicMax(&thrust::raw_reference_cast(*(results + output_idx)),
@@ -140,35 +142,35 @@ OutputIt directed_hausdorff_distance(PointIt points_first,
   using Index = typename std::iterator_traits<OffsetIt>::value_type;
   using T     = typename Point::value_type;
 
-  static_assert(std::is_convertible_v<cuspatial::vec_2d<T>, Point>,
-                "Input points must be cuspatial::lonlat_2d");
+  static_assert(std::is_convertible_v<Point, cuspatial::vec_2d<T>>,
+                "Input points must be convertible to cuspatial::vec_2d");
   static_assert(std::is_floating_point_v<T>, "Hausdorff supports only floating-point coordinates.");
   static_assert(std::is_integral_v<Index>, "Indices must be integral");
 
   auto const num_points = std::distance(points_first, points_last);
   auto const num_spaces = std::distance(space_offsets_first, space_offsets_last);
 
+  CUSPATIAL_EXPECTS(num_points >= num_spaces, "At least one point is required for each space");
   CUSPATIAL_EXPECTS(num_spaces < (1 << 15), "Total number of spaces must be less than 2^16");
 
   auto const num_results = num_spaces * num_spaces;
 
-  // TODO: Update: initializing to 0 rather than -1 due to an issue with `cuda::atomic::fetch_max`.
-  // https://github.com/NVIDIA/libcudacxx/issues/279 . Change this back when that issue is fixed.
+  if (num_results > 0) {
+    // Due to hausdorff kernel using `atomicMax` for output, the output must be initialized to <= 0
+    // here the output is being initialized to -1, which should always be overwritten. If -1 is
+    // found in the output, there is a bug where the output is not being written to in the hausdorff
+    // kernel.
+    thrust::fill_n(rmm::exec_policy(stream), distance_first, num_results, -1);
 
-  // Due to hausdorff kernel using `atomicMax` for output, the output must be initialized to <= 0
-  // here the output is being initialized to -1, which should always be overwritten. If -1 is
-  // found in the output, there is a bug where the output is not being written to in the hausdorff
-  // kernel.
-  thrust::fill_n(rmm::exec_policy(stream), distance_first, num_results, 0);
+    auto const threads_per_block = 64;
+    auto const num_tiles         = (num_points + threads_per_block - 1) / threads_per_block;
 
-  auto const threads_per_block = 64;
-  auto const num_tiles         = (num_points + threads_per_block - 1) / threads_per_block;
+    detail::kernel_hausdorff<T, decltype(num_points)>
+      <<<num_tiles, threads_per_block, 0, stream.value()>>>(
+        num_points, points_first, num_spaces, space_offsets_first, distance_first);
 
-  detail::kernel_hausdorff<T, decltype(num_points)>
-    <<<num_tiles, threads_per_block, 0, stream.value()>>>(
-      num_points, points_first, num_spaces, space_offsets_first, distance_first);
-
-  CUSPATIAL_CUDA_TRY(cudaGetLastError());
+    CUSPATIAL_CUDA_TRY(cudaGetLastError());
+  }
 
   return distance_first + num_results;
 }

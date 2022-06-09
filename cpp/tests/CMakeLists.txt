@@ -105,6 +105,10 @@ ConfigureTest(SPATIAL_WINDOW_POINT_TEST
 ConfigureTest(HAVERSINE_TEST_EXP
     experimental/spatial/haversine_test.cu)
 
+ConfigureTest(HAUSDORFF_TEST_EXP
+    experimental/spatial/hausdorff_test.cu)
+
+
 ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
     experimental/spatial/linestring_distance_test.cu)
 
