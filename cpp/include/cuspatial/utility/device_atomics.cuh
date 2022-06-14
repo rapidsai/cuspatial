@@ -85,7 +85,7 @@ namespace detail {
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ double atomicMin(double* addr, double val)
+__device__ inline double atomicMin(double* addr, double val)
 {
   return atomicOp<double>(addr, val, min<double>);
 }
@@ -103,7 +103,7 @@ __device__ double atomicMin(double* addr, double val)
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ float atomicMin(float* addr, float val)
+__device__ inline float atomicMin(float* addr, float val)
 {
   return atomicOp<float>(addr, val, min<float>);
 }
@@ -121,7 +121,7 @@ __device__ float atomicMin(float* addr, float val)
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ double atomicMax(double* addr, double val)
+__device__ inline double atomicMax(double* addr, double val)
 {
   return atomicOp<double>(addr, val, max<double>);
 }
@@ -139,7 +139,7 @@ __device__ double atomicMax(double* addr, double val)
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ float atomicMax(float* addr, float val)
+__device__ inline float atomicMax(float* addr, float val)
 {
   return atomicOp<float>(addr, val, max<float>);
 }
