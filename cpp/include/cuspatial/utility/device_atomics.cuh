@@ -16,6 +16,59 @@
 
 #pragma once
 
+#include <algorithm>
+#include <type_traits>
+
+namespace {
+
+template <typename T>
+const T& __device__ min(const T& a, const T& b)
+{
+  return std::min(a, b);
+}
+
+template <typename T>
+const T& __device__ max(const T& a, const T& b)
+{
+  return std::max(a, b);
+}
+
+template <typename T,
+          typename RepresentationType,
+          typename OpType,
+          typename ToRepFuncType,
+          typename FromRepFuncType>
+__device__ T
+atomicOpImpl(T* addr, T val, OpType op, ToRepFuncType toRepFunc, FromRepFuncType fromRepFunc)
+{
+  RepresentationType* address_as_ll = reinterpret_cast<RepresentationType*>(addr);
+  RepresentationType old            = toRepFunc(*addr);
+  RepresentationType assumed;
+
+  do {
+    assumed = old;
+    old     = atomicCAS(address_as_ll, assumed, toRepFunc(op(val, fromRepFunc(assumed))));
+    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
+  } while (assumed != old);
+
+  return fromRepFunc(old);
+}
+
+template <typename T, typename OpType>
+__device__ std::enable_if_t<std::is_same_v<T, double>, T> atomicOp(T* addr, T val, OpType op)
+{
+  return atomicOpImpl<double, unsigned long long int>(
+    addr, val, op, __double_as_longlong, __longlong_as_double);
+}
+
+template <typename T, typename OpType>
+__device__ std::enable_if_t<std::is_same_v<T, float>, T> atomicOp(T* addr, T val, OpType op)
+{
+  return atomicOpImpl<float, unsigned int>(addr, val, op, __float_as_uint, __uint_as_float);
+}
+
+}  // namespace
+
 namespace cuspatial {
 namespace detail {
 
@@ -32,7 +85,10 @@ namespace detail {
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ double atomicMin(double* addr, double val);
+__device__ double atomicMin(double* addr, double val)
+{
+  return atomicOp<double>(addr, val, min<double>);
+}
 
 /**
  * @internal
@@ -47,7 +103,10 @@ __device__ double atomicMin(double* addr, double val);
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ float atomicMin(float* addr, float val);
+__device__ float atomicMin(float* addr, float val)
+{
+  return atomicOp<float>(addr, val, min<float>);
+}
 
 /**
  * @internal
@@ -62,7 +121,10 @@ __device__ float atomicMin(float* addr, float val);
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ double atomicMax(double* addr, double val);
+__device__ double atomicMax(double* addr, double val)
+{
+  return atomicOp<double>(addr, val, max<double>);
+}
 
 /**
  * @internal
@@ -77,7 +139,10 @@ __device__ double atomicMax(double* addr, double val);
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ float atomicMax(float* addr, float val);
+__device__ float atomicMax(float* addr, float val)
+{
+  return atomicOp<float>(addr, val, max<float>);
+}
 
 }  // namespace detail
 }  // namespace cuspatial
