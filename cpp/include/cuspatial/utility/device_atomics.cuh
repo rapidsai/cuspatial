@@ -39,32 +39,32 @@ template <typename T,
           typename ToRepFuncType,
           typename FromRepFuncType>
 __device__ T
-atomicOpImpl(T* addr, T val, OpType op, ToRepFuncType toRepFunc, FromRepFuncType fromRepFunc)
+atomic_op_impl(T* addr, T val, OpType op, ToRepFuncType to_rep_func, FromRepFuncType from_rep_func)
 {
   RepresentationType* address_as_ll = reinterpret_cast<RepresentationType*>(addr);
-  RepresentationType old            = toRepFunc(*addr);
+  RepresentationType old            = to_rep_func(*addr);
   RepresentationType assumed;
 
   do {
     assumed = old;
-    old     = atomicCAS(address_as_ll, assumed, toRepFunc(op(val, fromRepFunc(assumed))));
+    old     = atomicCAS(address_as_ll, assumed, to_rep_func(op(val, from_rep_func(assumed))));
     // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
   } while (assumed != old);
 
-  return fromRepFunc(old);
+  return from_rep_func(old);
 }
 
 template <typename T, typename OpType>
 __device__ std::enable_if_t<std::is_same_v<T, double>, T> atomicOp(T* addr, T val, OpType op)
 {
-  return atomicOpImpl<double, unsigned long long int>(
+  return atomic_op_impl<double, unsigned long long int>(
     addr, val, op, __double_as_longlong, __longlong_as_double);
 }
 
 template <typename T, typename OpType>
 __device__ std::enable_if_t<std::is_same_v<T, float>, T> atomicOp(T* addr, T val, OpType op)
 {
-  return atomicOpImpl<float, unsigned int>(addr, val, op, __float_as_uint, __uint_as_float);
+  return atomic_op_impl<float, unsigned int>(addr, val, op, __float_as_uint, __uint_as_float);
 }
 
 }  // namespace
