@@ -14,6 +14,61 @@
  * limitations under the License.
  */
 
+#pragma once
+
+#include <algorithm>
+#include <type_traits>
+
+namespace {
+
+template <typename T>
+const T& __device__ min(const T& a, const T& b)
+{
+  return std::min(a, b);
+}
+
+template <typename T>
+const T& __device__ max(const T& a, const T& b)
+{
+  return std::max(a, b);
+}
+
+template <typename T,
+          typename RepresentationType,
+          typename OpType,
+          typename ToRepFuncType,
+          typename FromRepFuncType>
+__device__ T
+atomic_op_impl(T* addr, T val, OpType op, ToRepFuncType to_rep_func, FromRepFuncType from_rep_func)
+{
+  RepresentationType* address_as_ll = reinterpret_cast<RepresentationType*>(addr);
+  RepresentationType old            = to_rep_func(*addr);
+  RepresentationType assumed;
+
+  do {
+    assumed = old;
+    old     = atomicCAS(address_as_ll, assumed, to_rep_func(op(val, from_rep_func(assumed))));
+    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
+  } while (assumed != old);
+
+  return from_rep_func(old);
+}
+
+template <typename T, typename OpType>
+__device__ std::enable_if_t<std::is_same_v<T, double>, T> atomicOp(T* addr, T val, OpType op)
+{
+  return atomic_op_impl<double, unsigned long long int>(
+    addr, val, op, __double_as_longlong, __longlong_as_double);
+}
+
+template <typename T, typename OpType>
+__device__ std::enable_if_t<std::is_same_v<T, float>, T> atomicOp(T* addr, T val, OpType op)
+{
+  return atomic_op_impl<float, unsigned int>(addr, val, op, __float_as_uint, __uint_as_float);
+}
+
+}  // namespace
+
 namespace cuspatial {
 namespace detail {
 
@@ -30,21 +85,9 @@ namespace detail {
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ double atomicMin(double* addr, double val)
+__device__ inline double atomicMin(double* addr, double val)
 {
-  unsigned long long int* address_as_ll = reinterpret_cast<unsigned long long int*>(addr);
-  unsigned long long int old            = __double_as_longlong(*addr);
-  unsigned long long int assumed;
-
-  do {
-    assumed = old;
-    old     = atomicCAS(
-      address_as_ll, assumed, __double_as_longlong(std::min(val, __longlong_as_double(assumed))));
-
-    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
-  } while (assumed != old);
-
-  return __longlong_as_double(old);
+  return atomicOp<double>(addr, val, min<double>);
 }
 
 /**
@@ -60,21 +103,9 @@ __device__ double atomicMin(double* addr, double val)
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ float atomicMin(float* addr, float val)
+__device__ inline float atomicMin(float* addr, float val)
 {
-  unsigned int* address_as_ui = reinterpret_cast<unsigned int*>(addr);
-  unsigned int old            = __float_as_uint(*addr);
-  unsigned int assumed;
-
-  do {
-    assumed = old;
-    old =
-      atomicCAS(address_as_ui, assumed, __float_as_uint(std::min(val, __uint_as_float(assumed))));
-
-    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
-  } while (assumed != old);
-
-  return __uint_as_float(old);
+  return atomicOp<float>(addr, val, min<float>);
 }
 
 /**
@@ -90,21 +121,9 @@ __device__ float atomicMin(float* addr, float val)
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ double atomicMax(double* addr, double val)
+__device__ inline double atomicMax(double* addr, double val)
 {
-  unsigned long long int* address_as_ll = reinterpret_cast<unsigned long long int*>(addr);
-  unsigned long long int old            = __double_as_longlong(*addr);
-  unsigned long long int assumed;
-
-  do {
-    assumed = old;
-    old     = atomicCAS(
-      address_as_ll, assumed, __double_as_longlong(std::max(val, __longlong_as_double(assumed))));
-
-    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
-  } while (assumed != old);
-
-  return __longlong_as_double(old);
+  return atomicOp<double>(addr, val, max<double>);
 }
 
 /**
@@ -120,21 +139,9 @@ __device__ double atomicMax(double* addr, double val)
  * @param val The value to compare
  * @return The old value stored in `addr`.
  */
-__device__ float atomicMax(float* addr, float val)
+__device__ inline float atomicMax(float* addr, float val)
 {
-  unsigned int* address_as_ui = reinterpret_cast<unsigned int*>(addr);
-  unsigned int old            = __float_as_uint(*addr);
-  unsigned int assumed;
-
-  do {
-    assumed = old;
-    old =
-      atomicCAS(address_as_ui, assumed, __float_as_uint(std::max(val, __uint_as_float(assumed))));
-
-    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
-  } while (assumed != old);
-
-  return __uint_as_float(old);
+  return atomicOp<float>(addr, val, max<float>);
 }
 
 }  // namespace detail
