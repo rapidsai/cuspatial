@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,11 @@
 #include <memory>
 
 namespace cuspatial {
+
+/**
+ * @addtogroup spatial_indexing
+ * @{
+ */
 
 /**
  * @brief Construct a quadtree structure from points.
@@ -72,5 +77,9 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   int8_t max_depth,
   cudf::size_type min_size,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

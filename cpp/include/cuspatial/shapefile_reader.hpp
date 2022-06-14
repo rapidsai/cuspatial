@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,21 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup io
+ * @{
+ */
+
+/**
  * @brief read polygon data from an ESRI Shapefile.
  *
  * @param[in] filename: ESRI Shapefile file path (usually ends in .shp)
  * @param[in] mr:       Optional, The resource to use to allocate the returned data
  *
  * @return Vector of 4 columns representing one or more polygons:
- *  0 - INT32:   beginning index of the first ring in each polygon
- *  1 - INT32:   beginning index of the first point in each ring
- *  2 - FLOAT64: x component of polygon points
- *  3 - FLOAT64: y component of polygon points
+ *  - Column 0, INT32:   beginning index of the first ring in each polygon
+ *  - Column 1, INT32:   beginning index of the first point in each ring
+ *  - Column 2, FLOAT64: x component of polygon points
+ *  - Column 3, FLOAT64: y component of polygon points
  *
  * @note The number of polygons is equal to the length of the first column
  *
@@ -39,5 +44,9 @@ namespace cuspatial {
 std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
   std::string const& filename,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial
