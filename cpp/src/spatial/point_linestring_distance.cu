@@ -57,7 +57,6 @@ struct pairwise_point_linestring_distance_functor {
     pairwise_point_linestring_distance(points_it,
                                        points_it + points_x.size(),
                                        linestring_offsets.begin(),
-                                       linestring_offsets.end(),
                                        linestring_coords_it,
                                        linestring_coords_it + linestring_points_x.size(),
                                        distances->mutable_view().begin<T>(),
