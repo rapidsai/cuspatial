@@ -26,8 +26,6 @@
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/binary_search.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 
 #include <iterator>
 #include <limits>
@@ -40,6 +38,10 @@ namespace detail {
 /**
  * @internal
  * @brief The kernel to compute point to linestring distance
+ *
+ * Each thread computes the distance between a line segment in the linestring and the
+ * corresponding point in the pair. The shortest distance is computed in the output
+ * array via an atomic operation.
  *
  * @tparam Cart2dItA Iterator to 2d cartesian coordinates. Must meet requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
@@ -63,7 +65,6 @@ namespace detail {
  */
 template <typename Cart2dItA, typename Cart2dItB, typename OffsetIterator, typename OutputIterator>
 void __global__ pairwise_point_linestring_distance(Cart2dItA points_first,
-                                                   Cart2dItA points_last,
                                                    OffsetIterator linestring_offsets_first,
                                                    OffsetIterator linestring_offsets_last,
                                                    Cart2dItB linestring_points_first,
@@ -73,15 +74,18 @@ void __global__ pairwise_point_linestring_distance(Cart2dItA points_first,
   using T = typename std::iterator_traits<Cart2dItA>::value_type::value_type;
 
   auto const idx = threadIdx.x + blockIdx.x * blockDim.x;
+  // Pointer to the last point in linestring array.
   if (linestring_points_first + idx >= thrust::prev(linestring_points_last)) { return; }
 
-  auto offsets_iter = thrust::prev(
-    thrust::upper_bound(thrust::seq, linestring_offsets_first, linestring_offsets_last, idx));
-  auto pair_idx = thrust::distance(linestring_offsets_first, offsets_iter);
+  auto offsets_iter =
+    thrust::upper_bound(thrust::seq, linestring_offsets_first, linestring_offsets_last, idx);
+  // Pointer to the last point in the linestring.
+  if (*offsets_iter - 1 == idx) { return; }
 
-  auto const c = *(points_first + pair_idx);
-  auto const a = *(linestring_points_first + idx);
-  auto const b = *(linestring_points_first + idx + 1);
+  auto pair_idx = thrust::distance(linestring_offsets_first, thrust::prev(offsets_iter));
+  auto const c  = thrust::raw_reference_cast(points_first[pair_idx]);
+  auto const a  = thrust::raw_reference_cast(linestring_points_first[idx]);
+  auto const b  = thrust::raw_reference_cast(linestring_points_first[idx + 1]);
 
   auto const distance_squared = point_to_segment_distance_squared(c, a, b);
 
@@ -95,7 +99,6 @@ template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt
 void pairwise_point_linestring_distance(Cart2dItA points_first,
                                         Cart2dItA points_last,
                                         OffsetIterator linestring_offsets_first,
-                                        OffsetIterator linestring_offsets_last,
                                         Cart2dItB linestring_points_first,
                                         Cart2dItB linestring_points_last,
                                         OutputIt distances_first,
@@ -121,9 +124,7 @@ void pairwise_point_linestring_distance(Cart2dItA points_first,
 
   auto const num_pairs = thrust::distance(points_first, points_last);
 
-  CUSPATIAL_EXPECTS(
-    num_pairs == thrust::distance(linestring_offsets_first, linestring_offsets_last),
-    "Mismatch pairs of points and linestrings.");
+  if (num_pairs == 0) { return; }
 
   auto const num_linestring_points =
     thrust::distance(linestring_points_first, linestring_points_last);
@@ -139,11 +140,10 @@ void pairwise_point_linestring_distance(Cart2dItA points_first,
 
   detail::pairwise_point_linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     points_first,
-    points_last,
     linestring_offsets_first,
-    linestring_offsets_last,
+    linestring_offsets_first + num_pairs,
     linestring_points_first,
-    linestring_points_last,
+    linestring_points_first + num_linestring_points,
     distances_first);
 
   CUSPATIAL_CUDA_TRY(cudaGetLastError());

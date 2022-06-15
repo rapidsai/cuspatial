@@ -37,8 +37,6 @@ namespace cuspatial {
  * @param points_last end of range of the point of the first linestring of each pair
  * @param linestring_offsets_first beginning of range of the offsets to the linestring of
  * each pair
- * @param linestring_offsets_last  beginning of range of the offsets to the linestring of
- * each pair
  * @param linestring_points_first beginning of range of the point of the second linestring of each
  * pair
  * @param linestring_points_last end of range of the point of the second linestring of each pair
@@ -56,7 +54,6 @@ template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt
 void pairwise_point_linestring_distance(Cart2dItA points_first,
                                         Cart2dItA points_last,
                                         OffsetIterator linestring_offsets_first,
-                                        OffsetIterator linestring_offsets_last,
                                         Cart2dItB linestring_points_first,
                                         Cart2dItB linestring_points_last,
                                         OutputIt distances_first,
