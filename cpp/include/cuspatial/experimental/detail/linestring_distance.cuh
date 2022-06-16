@@ -17,7 +17,7 @@
 #pragma once
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/utility/device_atomics.cuh>
+#include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/utility/traits.hpp>
 #include <cuspatial/utility/vec_2d.hpp>
 
