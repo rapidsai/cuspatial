@@ -82,6 +82,9 @@ std::unique_ptr<cudf::column> pairwise_point_distance(cudf::column_view const& p
   CUSPATIAL_EXPECTS(points1_x.type() == points1_y.type() and
                       points2_x.type() == points2_y.type() and points1_x.type() == points2_x.type(),
                     "The types of point coordinates arrays mismatch.");
+  CUSPATIAL_EXPECTS(not points1_x.has_nulls() and not points1_y.has_nulls() and
+                      not points2_x.has_nulls() and not points2_y.has_nulls(),
+                    "The coordinate columns cannot have nulls.");
 
   if (points1_x.size() == 0) { return cudf::empty_like(points1_x); }
 
