@@ -82,7 +82,7 @@ atomic_op_impl(T* addr, T val, OpType op, ToRepFuncType to_rep_func, FromRepFunc
 
   do {
     assumed = old;
-    old     = atomicCAS(address_as_ll, assumed, to_rep_func(op(val, from_rep_func(assumed))));
+    old     = atomicCAS(address_as_ll, assumed, to_rep_func(op(from_rep_func(assumed), val)));
     // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
   } while (assumed != old);
 
