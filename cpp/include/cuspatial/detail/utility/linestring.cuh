@@ -19,7 +19,7 @@ endpoint_index_of_linestring(SizeType const& linestring_idx,
                              SizeType const& num_points)
 {
   auto const is_end = linestring_idx == (num_linestrings - 1);
-  return is_end ? num_points : *(linestring_offsets_begin + linestring_idx + 1) - 1;
+  return (is_end ? num_points : *(linestring_offsets_begin + linestring_idx + 1)) - 1;
 }
 
 /**
