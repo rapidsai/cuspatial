@@ -52,20 +52,4 @@ TYPED_TEST(PairwisePointDistanceTest, Empty)
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
 
-TYPED_TEST(PairwisePointDistanceTest, OnePair)
-{
-  using T = TypeParam;
-
-  auto x1 = fixed_width_column_wrapper<T>{1.0};
-  auto y1 = fixed_width_column_wrapper<T>{1.0};
-  auto x2 = fixed_width_column_wrapper<T>{0.0};
-  auto y2 = fixed_width_column_wrapper<T>{0.0};
-
-  auto expect = fixed_width_column_wrapper<T>{std::sqrt(2)};
-
-  auto got = pairwise_point_distance(x1, y1, x2, y2);
-
-  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
-}
-
 }  // namespace cuspatial
