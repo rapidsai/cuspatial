@@ -17,7 +17,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/coordinate_transform.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
-#include <cuspatial/utility/vec_2d.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_device_view.cuh>
