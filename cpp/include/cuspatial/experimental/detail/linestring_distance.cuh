@@ -16,10 +16,10 @@
 
 #pragma once
 
+#include <cuspatial/detail/utility/linestring.cuh>
+#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/utility/device_atomics.cuh>
-#include <cuspatial/detail/utility/geometry_utility.cuh>
-#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
