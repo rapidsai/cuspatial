@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cuspatial/utility/vec_2d.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 namespace cuspatial {
 namespace detail {
