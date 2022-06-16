@@ -24,8 +24,6 @@ namespace cuspatial {
  * @ingroup distance
  * @copybrief cuspatial::pairwise_point_distance
  *
- * Computes cartesian distances between points.
- *
  * @tparam Cart2dItA iterator type for point array of the first point of each pair. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam Cart2dItB iterator type for point array of the second point of each pair. Must meet
@@ -33,16 +31,14 @@ namespace cuspatial {
  * @tparam OutputIt iterator type for output array. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
  *
- * @param points1_first beginning of range of the point of the first point of each
- * pair
- * @param points1_last end of range of the point of the first point of each pair
- * @param points2_first beginning of range of the point of the second point of each
- * pair
+ * @param points1_first beginning of range of the first point of each pair
+ * @param points1_last end of range of the first point of each pair
+ * @param points2_first beginning of range of the second point of each pair
  * @param distances_first beginning iterator to output
  * @param stream The CUDA stream to use for device memory operations and kernel launches
  * @return Output iterator to one past the last element in the output range
  *
- * @pre all input iterators for coordinates must have `cuspatial::cartesian_2d` type.
+ * @pre all input iterators for coordinates must have a `value_type` of `cuspatial::cartesian_2d`.
  * @pre all scalar types must be floating point types, and must be the same type for all input
  * iterators and output iterators.
  *
