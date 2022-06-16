@@ -21,18 +21,53 @@
 
 namespace {
 
+/**
+ * @internal
+ * This helper is required to avoid ambiguous lookup of std::min. There are
+ * two overloads for std::min with one template parameters.
+ */
 template <typename T>
 const T& __device__ min(const T& a, const T& b)
 {
   return std::min(a, b);
 }
 
+/**
+ * @internal
+ * This helper is required to avoid ambiguous lookup of std::max. There are
+ * two overloads for std::min with one template parameters.
+ */
 template <typename T>
 const T& __device__ max(const T& a, const T& b)
 {
   return std::max(a, b);
 }
 
+/**
+ * @internal
+ * @brief General implementation for atomic ops.
+ *
+ * Reads the value from `addr`, performs `op(*addr, val)`, and stores the result
+ * to `addr` in one atomic transaction.
+ *
+ * @tparam T The type value to apply atomic operation to
+ * @tparam RepresentationType The unsigned integer type that has the same bit width as `T`
+ * @tparam OpType The type of the atomic operation
+ * @tparam ToRepFuncType The type of function to cast `T` to `RepresentationType`
+ * @tparam FromRepFuncType The type of function to cast `RepresentationType` to T
+ * @param addr The address where the atomic operation will perform on
+ * @param val The right hand side value of the opeartion
+ * @param op The atomic operation to perform
+ * @param to_rep_func The function to cast `T` to `RepresentationType`, see notes below.
+ * @param from_rep_func The function to cast `RepresentationType` to `T`, see notes below.
+ * @return
+ *
+ * @note based on https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
+ * @note `T`, `RepresentationType`, `to_rep_func` and `from_rep_func` are correlated. 32-bit floats
+ * corresponds to `unsigned int`, `__float_as_uint`, `__uint_as_float` respectively. 64-bit floats
+ * corresponds to `unsgined long long int`, `__double_as_longlong`, `__longlong_as_double`
+ * respectively.
+ */
 template <typename T,
           typename RepresentationType,
           typename OpType,
@@ -54,6 +89,10 @@ atomic_op_impl(T* addr, T val, OpType op, ToRepFuncType to_rep_func, FromRepFunc
   return from_rep_func(old);
 }
 
+/**
+ * @internal
+ * @brief `float` specialization for `atomic_op_impl`
+ */
 template <typename T, typename OpType>
 __device__ std::enable_if_t<std::is_same_v<T, double>, T> atomicOp(T* addr, T val, OpType op)
 {
@@ -61,6 +100,10 @@ __device__ std::enable_if_t<std::is_same_v<T, double>, T> atomicOp(T* addr, T va
     addr, val, op, __double_as_longlong, __longlong_as_double);
 }
 
+/**
+ * @internal
+ * @brief `double` specialization for `atomic_op_impl`
+ */
 template <typename T, typename OpType>
 __device__ std::enable_if_t<std::is_same_v<T, float>, T> atomicOp(T* addr, T val, OpType op)
 {
