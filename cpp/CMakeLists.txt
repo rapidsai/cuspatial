@@ -103,6 +103,7 @@ rapids_find_package(
 )
 # add third party dependencies using CPM
 rapids_cpm_init()
+include(cmake/thirdparty/get_thrust.cmake)
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
 
