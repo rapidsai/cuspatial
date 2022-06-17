@@ -34,11 +34,14 @@
 
 #include <thrust/binary_search.h>
 #include <thrust/copy.h>
+#include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/remove.h>
+#include <thrust/scan.h>
 #include <thrust/transform.h>
+#include <thrust/tuple.h>
 
 namespace cuspatial {
 namespace detail {

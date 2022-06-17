@@ -26,8 +26,11 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/distance.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/reduce.h>
+#include <thrust/scan.h>
 
 #include <memory>
 #include <vector>

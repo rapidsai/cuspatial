@@ -28,9 +28,18 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/copy.h>
+#include <thrust/distance.h>
+#include <thrust/fill.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/reduce.h>
+#include <thrust/sequence.h>
+#include <thrust/sort.h>
+#include <thrust/transform.h>
+#include <thrust/tuple.h>
 
 #include <memory>
 #include <tuple>
