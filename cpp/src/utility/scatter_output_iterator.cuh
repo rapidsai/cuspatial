@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+#include <thrust/detail/use_default.h>
 #include <thrust/distance.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_facade.h>
 
 #pragma once
 

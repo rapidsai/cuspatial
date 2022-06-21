@@ -16,7 +16,6 @@
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/coordinate_transform.cuh>
-#include <cuspatial/types.hpp>
 
 #include <rmm/device_vector.hpp>
 
