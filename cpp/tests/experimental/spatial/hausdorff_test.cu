@@ -16,7 +16,6 @@
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/hausdorff.cuh>
-#include <cuspatial/types.hpp>
 #include <cuspatial/utility/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
