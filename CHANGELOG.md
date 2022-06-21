@@ -2,9 +2,43 @@
 
 Please see https://github.com/rapidsai/cuspatial/releases/tag/v22.08.00a for the latest changes to this development branch.
 
-# cuSpatial 22.06.00 (Date TBD)
+# cuSpatial 22.06.00 (7 Jun 2022)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v22.06.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Fix out of bounds access in spline interpolation ([#544](https://github.com/rapidsai/cuspatial/pull/544)) [@vyasr](https://github.com/vyasr)
+- Fix `libcuspatial` recipe dependencies ([#513](https://github.com/rapidsai/cuspatial/pull/513)) [@ajschmidt8](https://github.com/ajschmidt8)
+
+## 📖 Documentation
+
+- Add Doxygen Documentation for `libcuspatial` ([#534](https://github.com/rapidsai/cuspatial/pull/534)) [@isVoid](https://github.com/isVoid)
+- add units to haversine distance docstring ([#522](https://github.com/rapidsai/cuspatial/pull/522)) [@bandersen23](https://github.com/bandersen23)
+- Merge branch-22.04 into branch-22.06 ([#518](https://github.com/rapidsai/cuspatial/pull/518)) [@harrism](https://github.com/harrism)
+
+## 🚀 New Features
+
+- Refactor `linestring_distance` to header only API ([#526](https://github.com/rapidsai/cuspatial/pull/526)) [@isVoid](https://github.com/isVoid)
+- Python Bindings for Pairwise Linestring Distance ([#521](https://github.com/rapidsai/cuspatial/pull/521)) [@isVoid](https://github.com/isVoid)
+- Refactor lonlat_to_cartesian to header-only API ([#514](https://github.com/rapidsai/cuspatial/pull/514)) [@harrism](https://github.com/harrism)
+- C++ pairwise linestring distance ([#510](https://github.com/rapidsai/cuspatial/pull/510)) [@isVoid](https://github.com/isVoid)
+
+## 🛠️ Improvements
+
+- Fix library directory for installation ([#537](https://github.com/rapidsai/cuspatial/pull/537)) [@vyasr](https://github.com/vyasr)
+- Fix conda recipes ([#532](https://github.com/rapidsai/cuspatial/pull/532)) [@Ethyling](https://github.com/Ethyling)
+- Fix various issues with CMake exports ([#527](https://github.com/rapidsai/cuspatial/pull/527)) [@vyasr](https://github.com/vyasr)
+- Build cuspatial with scikit-build ([#524](https://github.com/rapidsai/cuspatial/pull/524)) [@vyasr](https://github.com/vyasr)
+- Update Documentation with Pydata Sphinx Theme, and more ([#523](https://github.com/rapidsai/cuspatial/pull/523)) [@isVoid](https://github.com/isVoid)
+- Use conda to build python packages during GPU tests ([#517](https://github.com/rapidsai/cuspatial/pull/517)) [@Ethyling](https://github.com/Ethyling)
+- Replace `CUDA_TRY` with `CUSPATIAL_CUDA_TRY` ([#516](https://github.com/rapidsai/cuspatial/pull/516)) [@isVoid](https://github.com/isVoid)
+- Use rapids-cmake for builds ([#515](https://github.com/rapidsai/cuspatial/pull/515)) [@vyasr](https://github.com/vyasr)
+- Update black to 22.3.0, update usage of libcudf macros, and remove direct column indexing ([#511](https://github.com/rapidsai/cuspatial/pull/511)) [@charlesbluca](https://github.com/charlesbluca)
+- Enable building static libs ([#506](https://github.com/rapidsai/cuspatial/pull/506)) [@trxcllnt](https://github.com/trxcllnt)
+- Add clang-format to pre-commit hook ([#505](https://github.com/rapidsai/cuspatial/pull/505)) [@isVoid](https://github.com/isVoid)
+- Add libcuspatial-tests package ([#499](https://github.com/rapidsai/cuspatial/pull/499)) [@Ethyling](https://github.com/Ethyling)
+- Use conda compilers ([#495](https://github.com/rapidsai/cuspatial/pull/495)) [@Ethyling](https://github.com/Ethyling)
+- Build packages using mambabuild ([#486](https://github.com/rapidsai/cuspatial/pull/486)) [@Ethyling](https://github.com/Ethyling)
+- Refactor haversine_distance to a header-only API ([#477](https://github.com/rapidsai/cuspatial/pull/477)) [@harrism](https://github.com/harrism)
 
 # cuSpatial 22.04.00 (6 Apr 2022)
 

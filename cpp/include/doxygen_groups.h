@@ -85,7 +85,6 @@
  * @defgroup cuspatial_types Types
  * @{
  *      @brief Type declarations for cuspatial
- *      @file types.hpp
  *      @file vec_2d.hpp
  *
  *      @defgroup type_factories Factory Methods

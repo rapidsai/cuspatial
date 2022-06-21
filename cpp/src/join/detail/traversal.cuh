@@ -23,10 +23,16 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/fill.h>
+#include <thrust/functional.h>
 #include <thrust/gather.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
+#include <thrust/transform.h>
 #include <thrust/tuple.h>
 
 #include <tuple>

@@ -31,6 +31,8 @@
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/binary_search.h>
+#include <thrust/distance.h>
+#include <thrust/fill.h>
 
 #include <memory>
 #include <type_traits>
