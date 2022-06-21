@@ -18,8 +18,8 @@
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/utility/device_atomics.cuh>
+#include <cuspatial/utility/traits.hpp>
 #include <cuspatial/utility/vec_2d.hpp>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
@@ -138,13 +138,15 @@ OutputIt directed_hausdorff_distance(PointIt points_first,
                                      OutputIt distance_first,
                                      rmm::cuda_stream_view stream)
 {
-  using Point = typename std::iterator_traits<PointIt>::value_type;
-  using Index = typename std::iterator_traits<OffsetIt>::value_type;
-  using T     = typename Point::value_type;
+  using Point   = typename std::iterator_traits<PointIt>::value_type;
+  using Index   = typename std::iterator_traits<OffsetIt>::value_type;
+  using T       = typename Point::value_type;
+  using OutputT = typename std::iterator_traits<OutputIt>::value_type;
 
   static_assert(std::is_convertible_v<Point, cuspatial::vec_2d<T>>,
                 "Input points must be convertible to cuspatial::vec_2d");
-  static_assert(std::is_floating_point_v<T>, "Hausdorff supports only floating-point coordinates.");
+  static_assert(detail::is_floating_point<T, OutputT>(),
+                "Hausdorff supports only floating-point coordinates.");
   static_assert(std::is_integral_v<Index>, "Indices must be integral");
 
   auto const num_points = std::distance(points_first, points_last);
