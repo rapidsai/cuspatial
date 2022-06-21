@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 #include <indexing/construction/detail/utilities.cuh>
 #include <utility/point_in_polygon.cuh>
 
+#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/spatial_join.hpp>
 
@@ -45,19 +46,13 @@ namespace cuspatial {
 namespace detail {
 namespace {
 
-template <typename UnaryFunction>
-inline auto make_counting_transform_iterator(cudf::size_type start, UnaryFunction f)
-{
-  return thrust::make_transform_iterator(thrust::make_counting_iterator(start), f);
-}
-
 template <typename T, typename QuadOffsetsIter>
 struct compute_poly_and_point_indices {
   QuadOffsetsIter quad_point_offsets;
   uint32_t const* point_offsets;
   uint32_t const* point_offsets_end;
   cudf::column_device_view const poly_indices;
-  
+
   inline thrust::tuple<uint32_t, uint32_t> __device__
   operator()(cudf::size_type const global_index) const
   {
@@ -169,7 +164,7 @@ struct compute_quadtree_point_in_polygon {
       //     pp_pairs.append((polygon, point))
       // ```
       //
-      auto global_to_poly_and_point_indices = make_counting_transform_iterator(
+      auto global_to_poly_and_point_indices = detail::make_counting_transform_iterator(
         0,
         compute_poly_and_point_indices<T, decltype(quad_offsets_iter)>{
           quad_offsets_iter,
