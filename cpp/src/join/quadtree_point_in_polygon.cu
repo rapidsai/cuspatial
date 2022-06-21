@@ -57,6 +57,7 @@ struct compute_poly_and_point_indices {
   uint32_t const* point_offsets;
   uint32_t const* point_offsets_end;
   cudf::column_device_view const poly_indices;
+  
   inline thrust::tuple<uint32_t, uint32_t> __device__
   operator()(cudf::size_type const global_index) const
   {
