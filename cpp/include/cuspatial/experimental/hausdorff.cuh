@@ -87,11 +87,7 @@ namespace cuspatial {
  * @tparam OutputIt Output iterator. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  *
- *
- * @pre `points_first` may equal `distance_first`, but the range `[points_first, points_last)`
- * shall not overlap the range `[distance_first, distance_first + (points_last - points_first))
- * otherwise.
- * @pre All the same underlying floating-point value type.
+ * @pre All iterators must have the same underlying floating-point value type.
  *
  * @return Output iterator to the element past the last distance computed.
  *
