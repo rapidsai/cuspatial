@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <algorithm>
 #include <type_traits>
 
 namespace {
@@ -29,7 +28,7 @@ namespace {
 template <typename T>
 const T& __device__ min(const T& a, const T& b)
 {
-  return std::min(a, b);
+  return min(a, b);
 }
 
 /**
@@ -40,7 +39,7 @@ const T& __device__ min(const T& a, const T& b)
 template <typename T>
 const T& __device__ max(const T& a, const T& b)
 {
-  return std::max(a, b);
+  return max(a, b);
 }
 
 /**
