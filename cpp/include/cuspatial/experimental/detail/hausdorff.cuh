@@ -59,12 +59,10 @@ constexpr auto magnitude_squared(T a, T b)
  *
  * @tparam T type of coordinate, either float or double.
  * @param num_points number of total points in the input (sum of points from all spaces)
- * @param xs x coordinates
- * @param ys y coordinates
+ * @param points x/y points to compute the distances between
  * @param num_spaces number of spaces in the input
- * @param space_offsets starting position of each first point in each space
+ * @param space_offsets starting position of first point in each space
  * @param results directed Hausdorff distances computed by kernel
- * @return
  */
 template <typename T,
           typename Index,

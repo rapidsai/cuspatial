@@ -24,6 +24,7 @@
 namespace cuspatial {
 
 /**
+ * @ingroup distance
  * @brief Computes Hausdorff distances for all pairs in a collection of spaces
  *
  * https://en.wikipedia.org/wiki/Hausdorff_distance
@@ -84,7 +85,7 @@ namespace cuspatial {
  * @tparam OffsetIt Iterator to space offsets. Value type must be integral. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt Output iterator. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  *
  *
  * @pre `points_first` may equal `distance_first`, but the range `[points_first, points_last)`
