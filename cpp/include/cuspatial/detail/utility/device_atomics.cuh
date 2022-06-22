@@ -94,7 +94,7 @@ atomic_op_impl(T* addr, T val, OpType op, ToRepFuncType to_rep_func, FromRepFunc
  * @brief `float` specialization for `atomic_op_impl`
  */
 template <typename T, typename OpType>
-__device__ std::enable_if_t<std::is_same_v<T, double>, T> atomicOp(T* addr, T val, OpType op)
+__device__ std::enable_if_t<std::is_same_v<T, double>, T> inline atomicOp(T* addr, T val, OpType op)
 {
   return atomic_op_impl<double, unsigned long long int>(
     addr, val, op, __double_as_longlong, __longlong_as_double);
@@ -105,7 +105,7 @@ __device__ std::enable_if_t<std::is_same_v<T, double>, T> atomicOp(T* addr, T va
  * @brief `double` specialization for `atomic_op_impl`
  */
 template <typename T, typename OpType>
-__device__ std::enable_if_t<std::is_same_v<T, float>, T> atomicOp(T* addr, T val, OpType op)
+__device__ std::enable_if_t<std::is_same_v<T, float>, T> inline atomicOp(T* addr, T val, OpType op)
 {
   return atomic_op_impl<float, unsigned int>(addr, val, op, __float_as_uint, __uint_as_float);
 }
