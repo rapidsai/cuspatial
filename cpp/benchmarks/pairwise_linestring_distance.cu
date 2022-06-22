@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include <benchmarks/fixture/rmm_pool_raii.hpp>
 #include <nvbench/nvbench.cuh>
 
