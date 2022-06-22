@@ -72,9 +72,11 @@ TYPED_TEST(PairwisePointDistanceTest, Empty)
   rmm::device_vector<T> expected{};
   rmm::device_vector<T> got(points1.size());
 
-  pairwise_point_distance(points1.begin(), points1.end(), points2.begin(), got.begin());
+  auto ret_it =
+    pairwise_point_distance(points1.begin(), points1.end(), points2.begin(), got.begin());
 
   EXPECT_EQ(expected, got);
+  EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
 TYPED_TEST(PairwisePointDistanceTest, OnePair)
@@ -89,9 +91,11 @@ TYPED_TEST(PairwisePointDistanceTest, OnePair)
   rmm::device_vector<T> expected{std::vector<T>{std::sqrt(T{2.0})}};
   rmm::device_vector<T> got(points1.size());
 
-  pairwise_point_distance(points1.begin(), points1.end(), points2.begin(), got.begin());
+  auto ret_it =
+    pairwise_point_distance(points1.begin(), points1.end(), points2.begin(), got.begin());
 
   EXPECT_EQ(expected, got);
+  EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
 template <typename T>
@@ -129,7 +133,8 @@ TYPED_TEST(PairwisePointDistanceTest, ManyRandom)
   auto expected = compute_point_distance_host(points1, points2);
   rmm::device_vector<T> got(points1.size());
 
-  pairwise_point_distance(points1.begin(), points1.end(), points2.begin(), got.begin());
+  auto ret_it =
+    pairwise_point_distance(points1.begin(), points1.end(), points2.begin(), got.begin());
   thrust::host_vector<T> hgot(got);
 
   if constexpr (std::is_same_v<T, float>) {
@@ -137,6 +142,7 @@ TYPED_TEST(PairwisePointDistanceTest, ManyRandom)
   } else {
     EXPECT_THAT(expected, ::testing::Pointwise(::testing::DoubleEq(), hgot));
   }
+  EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
 TYPED_TEST(PairwisePointDistanceTest, CompareWithShapely)
@@ -252,7 +258,7 @@ TYPED_TEST(PairwisePointDistanceTest, CompareWithShapely)
     -88.44856487882186,  -23.53818606503958,  -29.02780534888051,  -29.346481830318815,
     74.28318391238213,   -38.37789665677865,  56.28623833724116,   -81.09317815145866};
 
-  std::vector<T> expect{
+  std::vector<T> expected{
     128.64717656028176, 87.88562670763609,  90.19632281028372,  91.76013021796666,
     118.4215357030851,  39.44788631062081,  86.58624490836462,  83.77327247860025,
     79.6690804001798,   167.7366440763836,  83.73027552297903,  99.54006861093508,
@@ -285,15 +291,16 @@ TYPED_TEST(PairwisePointDistanceTest, CompareWithShapely)
   auto p1_begin = make_cartesian_2d_iterator(dx1.begin(), dy1.begin());
   auto p2_begin = make_cartesian_2d_iterator(dx2.begin(), dy2.begin());
 
-  pairwise_point_distance(p1_begin, p1_begin + dx1.size(), p2_begin, got.begin());
+  auto ret_it = pairwise_point_distance(p1_begin, p1_begin + dx1.size(), p2_begin, got.begin());
 
   thrust::host_vector<T> hgot(got);
 
   if constexpr (std::is_same_v<T, float>) {
-    EXPECT_THAT(expect, ::testing::Pointwise(::testing::FloatEq(), hgot));
+    EXPECT_THAT(expected, ::testing::Pointwise(::testing::FloatEq(), hgot));
   } else {
-    EXPECT_THAT(expect, ::testing::Pointwise(::testing::DoubleEq(), hgot));
+    EXPECT_THAT(expected, ::testing::Pointwise(::testing::DoubleEq(), hgot));
   }
+  EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
 }  // namespace cuspatial
