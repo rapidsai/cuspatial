@@ -18,7 +18,7 @@
 
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/utility/vec_2d.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
