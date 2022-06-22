@@ -83,17 +83,15 @@ __global__ void kernel_hausdorff(Index num_points,
 
   if (lhs_p_idx >= num_points) { return; }
 
+  auto const lhs_space_iter =
+    thrust::upper_bound(thrust::seq, space_offsets, space_offsets + num_spaces, lhs_p_idx);
   // determine the LHS space this point belongs to.
-  Index const lhs_space_idx =
-    thrust::distance(
-      space_offsets,
-      thrust::upper_bound(thrust::seq, space_offsets, space_offsets + num_spaces, lhs_p_idx)) -
-    1;
+  Index const lhs_space_idx = thrust::distance(space_offsets, thrust::prev(lhs_space_iter));
 
   // get the coordinates of this LHS point.
   Point const lhs_p = points[lhs_p_idx];
 
-  // loop over each RHS space, as determined by space_offsets
+  // loop over each RHS space, as determined by spa ce_offsets
   for (uint32_t rhs_space_idx = 0; rhs_space_idx < num_spaces; rhs_space_idx++) {
     // determine the begin/end offsets of points contained within this RHS space.
     Index const rhs_p_idx_begin = space_offsets[rhs_space_idx];
