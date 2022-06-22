@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,11 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup coordinate_transform
+ * @{
+ */
+
+/**
  * @brief Translates lon/lat relative to origin and converts to cartesian (x/y) coordinates.
  *
  * @param[in] origin_lon: longitude of origin
@@ -38,5 +43,9 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> lonlat_t
   cudf::column_view const& input_lon,
   cudf::column_view const& input_lat,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

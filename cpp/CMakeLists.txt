@@ -25,7 +25,7 @@ include(rapids-find)
 
 rapids_cuda_init_architectures(CUSPATIAL)
 
-project(CUSPATIAL VERSION 22.06.00 LANGUAGES C CXX CUDA)
+project(CUSPATIAL VERSION 22.08.00 LANGUAGES C CXX CUDA)
 
 # Needed because GoogleBenchmark changes the state of FindThreads.cmake,
 # causing subsequent runs to have different values for the `Threads::Threads` target.
@@ -94,6 +94,7 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 # find gdal
 rapids_find_package(
     GDAL REQUIRED
+    GLOBAL_TARGETS GDAL::GDAL
     BUILD_EXPORT_SET cuspatial-exports
     INSTALL_EXPORT_SET cuspatial-exports
 )
@@ -119,6 +120,7 @@ add_library(cuspatial
     src/spatial_window/spatial_window.cu
     src/spatial/haversine.cu
     src/spatial/hausdorff.cu
+    src/spatial/linestring_distance.cu
     src/spatial/lonlat_to_cartesian.cu
     src/trajectory/derive_trajectories.cu
     src/trajectory/trajectory_bounding_boxes.cu
@@ -215,15 +217,14 @@ endif()
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
 
+rapids_cmake_install_lib_dir(lib_dir)
 include(CPack)
-
 include(GNUInstallDirs)
 
-set(INSTALL_CONFIGDIR lib/cmake/cuspatial)
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME cuspatial)
 
 install(TARGETS cuspatial
-        DESTINATION lib
+        DESTINATION ${lib_dir}
         EXPORT cuspatial-exports)
 
 install(DIRECTORY ${CUSPATIAL_SOURCE_DIR}/include/cuspatial

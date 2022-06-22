@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,11 @@
 #include <memory>
 
 namespace cuspatial {
+
+/**
+ * @addtogroup cubic_spline
+ * @{
+ */
 
 /**
  * @brief Create a table of cubic spline coefficients from columns of coordinates.
@@ -85,4 +90,7 @@ std::unique_ptr<cudf::table> cubicspline_coefficients(
   cudf::column_view const& offsets,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
+/**
+ * @} // end of doxygen group
+ */
 }  // namespace cuspatial

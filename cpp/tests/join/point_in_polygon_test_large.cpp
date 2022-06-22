@@ -33,7 +33,10 @@
 #include <cudf_test/table_utilities.hpp>
 #include <cudf_test/type_lists.hpp>
 
+#include <thrust/distance.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
+#include <thrust/reduce.h>
 #include <thrust/sort.h>
 
 #include <ogrsf_frmts.h>

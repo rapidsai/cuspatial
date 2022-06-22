@@ -19,6 +19,8 @@
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/type_lists.hpp>
 
+#include <thrust/host_vector.h>
+
 #include <cmath>
 
 template <typename T>

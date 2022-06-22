@@ -1,10 +1,13 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
-from cudf import DataFrame
+from cudf import DataFrame, Series
 from cudf.core.column import as_column
 
 from cuspatial._lib.hausdorff import (
     directed_hausdorff_distance as cpp_directed_hausdorff_distance,
+)
+from cuspatial._lib.linestring_distance import (
+    pairwise_linestring_distance as cpp_pairwise_linestring_distance,
 )
 from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_point_in_polygon,
@@ -97,8 +100,8 @@ def directed_hausdorff_distance(xs, ys, space_offsets):
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
-    """Compute the haversine distances between an arbitrary list of lon/lat
-    pairs
+    """Compute the haversine distances in kilometers between an arbitrary
+    list of lon/lat pairs
 
     Parameters
     ----------
@@ -334,4 +337,103 @@ def polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius):
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     return DataFrame._from_data(
         *cpp_polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius)
+    )
+
+
+def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
+    """Compute shortest distance between pairs of linestrings (a.k.a. polylines)
+
+    The shortest distance between two linestrings is defined as the shortest
+    distance between all pairs of segments of the two linestrings. If any of
+    the segments intersect, the distance is 0.
+
+    Parameters
+    ----------
+    offsets1
+        Indices of the first point of the first linestring of each pair.
+    xs1
+        x-components of points in the first linestring of each pair.
+    ys1
+        y-component of points in the first linestring of each pair.
+    offsets2
+        Indices of the first point of the second linestring of each pair.
+    xs2
+        x-component of points in the second linestring of each pair.
+    ys2
+        y-component of points in the second linestring of each pair.
+
+    Returns
+    -------
+    distance : cudf.Series
+        the distance between each pair of linestrings
+
+    Examples
+    --------
+    The following example contains 4 pairs of linestrings.
+
+    First pair::
+
+        (0, 1) -> (1, 0) -> (-1, 0)
+        (1, 1) -> (2, 1) -> (2, 0) -> (3, 0)
+
+            |
+            *   #####
+            | *     #
+        ----O---*---#####
+            | *
+            *
+            |
+
+    The shortest distance between the two linestrings is the distance
+    from point ``(1, 1)`` to segment ``(0, 1) -> (1, 0)``, which is
+    ``sqrt(2)/2``.
+
+    Second pair::
+
+        (0, 0) -> (0, 1)
+        (1, 0) -> (1, 1) -> (1, 2)
+
+
+    These linestrings are parallel. Their distance is 1 (point
+    ``(0, 0)`` to point ``(1, 0)``).
+
+    Third pair::
+
+        (0, 0) -> (2, 2) -> (-2, 0)
+        (2, 0) -> (0, 2)
+
+
+    These linestrings intersect, so their distance is 0.
+
+    Forth pair::
+
+        (2, 2) -> (-2, -2)
+        (1, 1) -> (5, 5) -> (10, 0)
+
+
+    These linestrings contain colinear and overlapping sections, so
+    their distance is 0.
+
+    The input of above example is::
+
+        linestring1_offsets:  {0, 3, 5, 8}
+        linestring1_points_x: {0, 1, -1, 0, 0, 0, 2, -2, 2, -2}
+        linestring1_points_y: {1, 0, 0, 0, 1, 0, 2, 0, 2, -2}
+        linestring2_offsets:  {0, 4, 7, 9}
+        linestring2_points_x: {1, 2, 2, 3, 1, 1, 1, 2, 0, 1, 5, 10}
+        linestring2_points_y: {1, 1, 0, 0, 0, 1, 2, 0, 2, 1, 5, 0}
+
+        Result: {sqrt(2.0)/2, 1, 0, 0}
+    """
+    xs1, ys1, xs2, ys2 = normalize_point_columns(
+        as_column(xs1), as_column(ys1), as_column(xs2), as_column(ys2)
+    )
+    offsets1 = as_column(offsets1, dtype="int32")
+    offsets2 = as_column(offsets2, dtype="int32")
+    return Series._from_data(
+        {
+            None: cpp_pairwise_linestring_distance(
+                offsets1, xs1, ys1, offsets2, xs2, ys2
+            )
+        }
     )
