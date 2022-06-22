@@ -1,7 +1,8 @@
 #include <benchmarks/fixture/rmm_pool_raii.hpp>
 #include <nvbench/nvbench.cuh>
 
-#include <cuspatial/distances/linestring_distance.hpp>
+#include <cuspatial/experimental/linestring_distance.cuh>
+#include <cuspatial/experimental/type_utils.hpp>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/types.hpp>
@@ -17,6 +18,31 @@
 
 namespace cuspatial {
 
+/**
+ * @brief Helper to generate linestrings used for benchmarks.
+ *
+ * The generator adopts a walking algorithm. The ith point is computed by
+ * walking (cos(i) * segment_length, sin(i) * segment_length) from the `i-1`
+ * point. The initial point of the linestring is at `(init_xy, init_xy)`.
+ *
+ * The number of line segments per linestring is constrolled by
+ * `num_segment_per_string`.
+ *
+ * Since the outreach upper bound of the linestring group is
+ * `(init_xy + num_strings * num_segments_per_string * segment_length)`,
+ * user may control the locality of the linestring group via these four
+ * arguments.
+ *
+ * @tparam T The floating point type for the coordinates
+ * @param num_strings Total number of linestrings
+ * @param num_segments_per_string Number of line segments per linestring
+ * @param segment_length Length of each segment, or stride of walk
+ * @param init_xy The initial coordinate to start the walk
+ * @param stream The CUDA stream to use for device memory operations and kernel launches
+ * @return A tuple of x and y coordinates of points and offsets to which the first point
+ * of each linestring starts.
+ *
+ */
 template <typename T>
 std::tuple<std::unique_ptr<cudf::column>,
            std::unique_ptr<cudf::column>,
@@ -82,6 +108,14 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
   auto [ls2_x, ls2_y, ls2_offset] =
     generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, 100, stream);
 
+  auto ls1_points_begin = cuspatial::make_cartesian_2d_iterator(ls1_x->view().template begin<T>(),
+                                                                ls1_y->view().template begin<T>());
+  auto ls2_points_begin = cuspatial::make_cartesian_2d_iterator(ls2_x->view().template begin<T>(),
+                                                                ls2_y->view().template begin<T>());
+  auto distances        = cudf::make_fixed_width_column(
+    cudf::data_type{cudf::type_to_id<T>()}, ls1_x->size(), cudf::mask_state::UNALLOCATED);
+  auto out_it = distances->mutable_view().template begin<T>();
+
   cudaStreamSynchronize(stream.value());
 
   auto const total_points = ls1_x->size() + ls2_x->size();
@@ -94,13 +128,20 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
 
   state.exec(nvbench::exec_tag::sync,
              [ls1_offset = cudf::device_span<cudf::size_type>(ls1_offset),
-              ls1_x      = ls1_x->view(),
-              ls1_y      = ls1_y->view(),
+              &ls1_points_begin,
+              ls1_size   = ls1_x->size(),
               ls2_offset = cudf::device_span<cudf::size_type>(ls2_offset),
-              ls2_x      = ls2_x->view(),
-              ls2_y      = ls2_y->view()](nvbench::launch& launch) {
-               cuspatial::pairwise_linestring_distance(
-                 ls1_offset, ls1_x, ls1_y, ls2_offset, ls2_x, ls2_y);
+              &ls2_points_begin,
+              ls2_size = ls2_x->size(),
+              &out_it](nvbench::launch& launch) {
+               cuspatial::pairwise_linestring_distance(ls1_offset.begin(),
+                                                       ls1_offset.end(),
+                                                       ls1_points_begin,
+                                                       ls1_points_begin + ls1_size,
+                                                       ls2_offset.begin(),
+                                                       ls2_points_begin,
+                                                       ls2_points_begin + ls2_size,
+                                                       out_it);
              });
 }
 
