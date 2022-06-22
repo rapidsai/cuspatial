@@ -23,7 +23,7 @@ namespace detail {
 
 /**
  * @internal
- * A helper function to help lookup the correct overload of CUDA intrinsic
+ * @brief A helper function to help lookup the correct overload of CUDA intrinsic
  * function min.
  */
 template <typename T>
@@ -34,7 +34,7 @@ const T __device__ min_(const T a, const T b)
 
 /**
  * @internal
- * A helper function to help lookup the correct overload of CUDA intrinsic
+ * @brief A helper function to help lookup the correct overload of CUDA intrinsic
  * function max.
  */
 template <typename T>
@@ -65,7 +65,7 @@ const T __device__ max_(const T a, const T b)
  * @note based on https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
  * @note `T`, `RepresentationType`, `to_rep_func` and `from_rep_func` are correlated. 32-bit floats
  * corresponds to `unsigned int`, `__float_as_uint`, `__uint_as_float` respectively. 64-bit floats
- * corresponds to `unsgined long long int`, `__double_as_longlong`, `__longlong_as_double`
+ * corresponds to `unsigned long long int`, `__double_as_longlong`, `__longlong_as_double`
  * respectively.
  */
 template <typename T,
