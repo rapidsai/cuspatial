@@ -22,6 +22,8 @@
 #include <cudf/detail/iterator.cuh>
 #include <cudf_test/column_wrapper.hpp>
 
+#include <thrust/iterator/constant_iterator.h>
+
 static void BM_hausdorff(benchmark::State& state)
 {
   int32_t num_spaces           = state.range(0) - 1;
