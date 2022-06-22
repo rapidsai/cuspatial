@@ -18,26 +18,27 @@
 
 #include <type_traits>
 
-namespace {
+namespace cuspatial {
+namespace detail {
 
 /**
  * @internal
- * This helper is required to avoid ambiguous lookup of std::min. There are
- * two overloads for std::min with one template parameters.
+ * A helper function to help lookup the correct overload of CUDA intrinsic
+ * function min.
  */
 template <typename T>
-const T& __device__ min(const T& a, const T& b)
+const T __device__ min_(const T a, const T b)
 {
   return min(a, b);
 }
 
 /**
  * @internal
- * This helper is required to avoid ambiguous lookup of std::max. There are
- * two overloads for std::min with one template parameters.
+ * A helper function to help lookup the correct overload of CUDA intrinsic
+ * function max.
  */
 template <typename T>
-const T& __device__ max(const T& a, const T& b)
+const T __device__ max_(const T a, const T b)
 {
   return max(a, b);
 }
@@ -109,11 +110,6 @@ __device__ std::enable_if_t<std::is_same_v<T, float>, T> atomicOp(T* addr, T val
   return atomic_op_impl<float, unsigned int>(addr, val, op, __float_as_uint, __uint_as_float);
 }
 
-}  // namespace
-
-namespace cuspatial {
-namespace detail {
-
 /**
  * @internal
  * @brief CUDA device atomic minimum for double
@@ -129,7 +125,7 @@ namespace detail {
  */
 __device__ inline double atomicMin(double* addr, double val)
 {
-  return atomicOp<double>(addr, val, min<double>);
+  return atomicOp<double>(addr, val, min_<double>);
 }
 
 /**
@@ -147,7 +143,7 @@ __device__ inline double atomicMin(double* addr, double val)
  */
 __device__ inline float atomicMin(float* addr, float val)
 {
-  return atomicOp<float>(addr, val, min<float>);
+  return atomicOp<float>(addr, val, min_<float>);
 }
 
 /**
@@ -165,7 +161,7 @@ __device__ inline float atomicMin(float* addr, float val)
  */
 __device__ inline double atomicMax(double* addr, double val)
 {
-  return atomicOp<double>(addr, val, max<double>);
+  return atomicOp<double>(addr, val, max_<double>);
 }
 
 /**
@@ -183,7 +179,7 @@ __device__ inline double atomicMax(double* addr, double val)
  */
 __device__ inline float atomicMax(float* addr, float val)
 {
-  return atomicOp<float>(addr, val, max<float>);
+  return atomicOp<float>(addr, val, max_<float>);
 }
 
 }  // namespace detail
