@@ -43,6 +43,12 @@ namespace cuspatial {
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  * @tparam T the floating-point coordinate value type of input longitude/latitude coordinates.
  *
+ * @pre `b_lonlat_first` may equal `distance_first`, but the range `[b_lonlat_first, b_lonlat_last)`
+ * shall not overlap the range `[distance_first, distance_first + (b_lonlat_last - b_lonlat_last))
+ * otherwise.
+ * @pre All iterators must have the same `Location` type, with  the same underlying floating-point
+ * coordinate type (e.g. `cuspatial::lonlat_2d<float>`).
+ *
  * @return Output iterator to the element past the last x/y coordinate computed.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
