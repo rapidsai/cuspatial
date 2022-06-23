@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <cuspatial/vec_2d.hpp>
+
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
