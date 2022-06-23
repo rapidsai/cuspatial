@@ -15,11 +15,14 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/spatial_window.cuh>
+#include <cuspatial/experimental/type_utils.hpp>
 
-#include <cudf/column/column_device_view.cuh>
+#include <cudf/column/column.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cudf/copying.hpp>
-#include <cudf/detail/copy_if.cuh>
+#include <cudf/detail/copy.hpp>
+#include <cudf/table/table.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 
@@ -27,41 +30,6 @@
 #include <type_traits>
 
 namespace {
-
-// Functor to filter out points that are not inside the query window
-// This is passed to cudf::detail::copy_if
-template <typename T>
-struct spatial_window_filter {
-  spatial_window_filter(T window_min_x,
-                        T window_max_x,
-                        T window_min_y,
-                        T window_max_y,
-                        cudf::column_device_view const& x,
-                        cudf::column_device_view const& y)
-    : min_x{std::min(window_min_x, window_max_x)},  // support mirrored rectangles
-      max_x{std::max(window_min_x, window_max_x)},  // where specified min > max
-      min_y{std::min(window_min_y, window_max_y)},
-      max_y{std::max(window_min_y, window_max_y)},
-      points_x{x},
-      points_y{y}
-  {
-  }
-
-  __device__ inline bool operator()(cudf::size_type i)
-  {
-    auto x = points_x.element<T>(i);
-    auto y = points_y.element<T>(i);
-    return x > min_x && x < max_x && y > min_y && y < max_y;
-  }
-
- protected:
-  T min_x;
-  T max_x;
-  T min_y;
-  T max_y;
-  cudf::column_device_view points_x;
-  cudf::column_device_view points_y;
-};
 
 // Type-dispatch functor that creates the spatial window filter of the correct type.
 // Only floating point types are supported.
@@ -76,17 +44,29 @@ struct spatial_window_dispatch {
                                           rmm::cuda_stream_view stream,
                                           rmm::mr::device_memory_resource* mr)
   {
-    auto device_x = cudf::column_device_view::create(x, stream);
-    auto device_y = cudf::column_device_view::create(y, stream);
-    return cudf::detail::copy_if(cudf::table_view{{x, y}},
-                                 spatial_window_filter<T>{static_cast<T>(window_min_x),
-                                                          static_cast<T>(window_max_x),
-                                                          static_cast<T>(window_min_y),
-                                                          static_cast<T>(window_max_y),
-                                                          *device_x,
-                                                          *device_y},
-                                 stream,
-                                 mr);
+    std::vector<std::unique_ptr<cudf::column>> cols{};
+    cols.reserve(2);
+    auto mask_policy = cudf::mask_allocation_policy::NEVER;
+    cols.push_back(cudf::detail::allocate_like(x, x.size(), mask_policy, stream, mr));
+    cols.push_back(cudf::detail::allocate_like(y, y.size(), mask_policy, stream, mr));
+
+    auto& output_x = cols[0];
+    auto& output_y = cols[1];
+
+    auto points_begin = cuspatial::make_cartesian_2d_iterator(x.begin<T>(), y.begin<T>());
+
+    auto output_zip = cuspatial::make_zipped_cartesian_2d_output_iterator(
+      output_x->mutable_view().begin<T>(), output_y->mutable_view().begin<T>());
+
+    auto window_min =
+      cuspatial::vec_2d<T>{static_cast<T>(window_min_x), static_cast<T>(window_min_y)};
+    auto window_max =
+      cuspatial::vec_2d<T>{static_cast<T>(window_max_x), static_cast<T>(window_max_y)};
+
+    cuspatial::points_in_spatial_window(
+      window_min, window_max, points_begin, points_begin + x.size(), output_zip, stream);
+
+    return std::make_unique<cudf::table>(std::move(cols));
   }
 
   template <typename T,
