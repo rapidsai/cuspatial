@@ -28,6 +28,9 @@
 
 #include <cusparse.h>
 
+#include <thrust/for_each.h>
+#include <thrust/iterator/counting_iterator.h>
+
 namespace {  // anonymous
 
 // This functor performs one linear search for each input point in query_coords

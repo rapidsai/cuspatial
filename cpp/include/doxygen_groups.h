@@ -50,6 +50,7 @@
  *          @file point_distance.hpp
  *          @file linestring_distance.hpp
  *          @file hausdorff.hpp
+ *          @file experimental/hausdorff.cuh
  *          @file haversine.hpp
  *          @file haversine.cuh
  *      @}
@@ -86,7 +87,6 @@
  * @defgroup cuspatial_types Types
  * @{
  *      @brief Type declarations for cuspatial
- *      @file types.hpp
  *      @file vec_2d.hpp
  *
  *      @defgroup type_factories Factory Methods

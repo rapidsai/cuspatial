@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-#include <cuspatial/types.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/tuple.h>
 
 #include <type_traits>
 
@@ -106,6 +107,13 @@ auto make_vec_2d_iterator(FirstIter first, SecondIter second)
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
+template <typename FirstIter, typename SecondIter>
+auto make_vec_2d_iterator(FirstIter first, SecondIter second)
+{
+  using T = typename std::iterator_traits<FirstIter>::value_type;
+  return make_vec_2d_iterator<vec_2d<T>>(first, second);
+}
+
 template <typename FirstIter, typename SecondIter>
 auto make_lonlat_iterator(FirstIter first, SecondIter second)
 {
