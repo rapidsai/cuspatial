@@ -16,9 +16,9 @@
 
 #pragma once
 
+#include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/utility/device_atomics.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -41,6 +41,7 @@ constexpr auto magnitude_squared(T a, T b)
 }
 
 /**
+ * @internal
  * @brief computes Hausdorff distance by equally dividing up work on a per-thread basis.
  *
  * Each thread is responsible for computing the distance from a single point in the input against
@@ -59,24 +60,26 @@ constexpr auto magnitude_squared(T a, T b)
  * Hausdorff distances) reside in the output.
  *
  * @tparam T type of coordinate, either float or double.
+ * @tparam Index type of indices, e.g. int32_t.
+ * @tparam PointsIter Iterator to input points. Points must be of a type that is convertible to
+ * `cuspatial::vec_2d<T>`. Must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI] and
+ * be device-accessible.
+ * @tparam OffsetsIter Iterator to space offsets. Value type must be integral. Must meet the
+ * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OutputIt Output iterator. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
+ *
  * @param num_points number of total points in the input (sum of points from all spaces)
  * @param points x/y points to compute the distances between
  * @param num_spaces number of spaces in the input
  * @param space_offsets starting position of first point in each space
  * @param results directed Hausdorff distances computed by kernel
  */
-template <typename T,
-          typename Index,
-          typename PointsIter,
-          typename OffsetsIter,
-          typename OutputIter>
-__global__ void kernel_hausdorff(Index num_points,
-                                 PointsIter points,
-                                 Index num_spaces,
-                                 OffsetsIter space_offsets,
-                                 OutputIter results)
+template <typename T, typename Index, typename PointIt, typename OffsetIt, typename OutputIt>
+__global__ void kernel_hausdorff(
+  Index num_points, PointIt points, Index num_spaces, OffsetIt space_offsets, OutputIt results)
 {
-  using Point = typename std::iterator_traits<PointsIter>::value_type;
+  using Point = typename std::iterator_traits<PointIt>::value_type;
 
   // determine the LHS point this thread is responsible for.
   auto const thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
