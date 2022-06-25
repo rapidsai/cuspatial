@@ -17,15 +17,12 @@
 #include <benchmarks/fixture/rmm_pool_raii.hpp>
 #include <nvbench/nvbench.cuh>
 
+#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/linestring_distance.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
 
-#include <cudf/column/column_factories.hpp>
-#include <cudf/types.hpp>
-#include <cudf/utilities/span.hpp>
-
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/device_uvector.hpp>
+#include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
@@ -65,51 +62,42 @@ namespace cuspatial {
  *
  */
 template <typename T>
-std::tuple<std::unique_ptr<cudf::column>,
-           std::unique_ptr<cudf::column>,
-           rmm::device_uvector<cudf::size_type>>
-generate_linestring(cudf::size_type num_strings,
-                    cudf::size_type num_segments_per_string,
+std::tuple<rmm::device_vector<T>, rmm::device_vector<T>, rmm::device_vector<int32_t>>
+generate_linestring(int32_t num_strings,
+                    int32_t num_segments_per_string,
                     T segment_length,
                     T init_xy,
                     rmm::cuda_stream_view stream)
 {
-  cudf::size_type num_points = num_strings * (num_segments_per_string + 1);
-  rmm::device_uvector<cudf::size_type> offsets(num_points, stream);
-  thrust::transform(
-    rmm::exec_policy(stream),
-    thrust::make_counting_iterator(static_cast<cudf::size_type>(0)),
-    thrust::make_counting_iterator(static_cast<cudf::size_type>(num_points)),
-    offsets.begin(),
-    [num_segments_per_string] __device__(auto i) { return i * num_segments_per_string; });
-  auto points_x = cudf::make_fixed_width_column(
-    cudf::data_type{cudf::type_to_id<T>()}, num_points, cudf::mask_state::UNALLOCATED);
-  auto points_y = cudf::make_fixed_width_column(
-    cudf::data_type{cudf::type_to_id<T>()}, num_points, cudf::mask_state::UNALLOCATED);
-  thrust::transform(rmm::exec_policy(stream),
-                    thrust::counting_iterator(static_cast<cudf::size_type>(0)),
-                    thrust::counting_iterator(static_cast<cudf::size_type>(num_points)),
-                    points_x->mutable_view().begin<T>(),
-                    [] __device__(auto i) { return cos(i); });
-  thrust::exclusive_scan(
-    rmm::exec_policy(stream),
-    points_x->view().begin<T>(),
-    points_x->view().end<T>(),
-    points_x->mutable_view().begin<T>(),
-    init_xy,
-    [segment_length] __device__(T prev, T rad) { return prev + segment_length * rad; });
-  thrust::transform(rmm::exec_policy(stream),
-                    thrust::counting_iterator(static_cast<cudf::size_type>(0)),
-                    thrust::counting_iterator(static_cast<cudf::size_type>(num_points)),
-                    points_y->mutable_view().begin<T>(),
-                    [] __device__(auto i) { return sin(i); });
-  thrust::exclusive_scan(
-    rmm::exec_policy(stream),
-    points_y->view().begin<T>(),
-    points_y->view().end<T>(),
-    points_y->mutable_view().begin<T>(),
-    init_xy,
-    [segment_length] __device__(T prev, T rad) { return prev + segment_length * rad; });
+  int32_t num_points = num_strings * (num_segments_per_string + 1);
+
+  auto offset_iter = detail::make_counting_transform_iterator(
+    0, [num_segments_per_string] __device__(auto i) { return i * num_segments_per_string; });
+  auto points_x_iter =
+    detail::make_counting_transform_iterator(0, [] __device__(auto i) { return cos(i); });
+  auto points_y_iter =
+    detail::make_counting_transform_iterator(0, [] __device__(auto i) { return sin(i); });
+
+  rmm::device_vector<int32_t> offsets(offset_iter, offset_iter + num_strings);
+  rmm::device_vector<T> points_x(points_x_iter, points_x_iter + num_points);
+  rmm::device_vector<T> points_y(points_y_iter, points_y_iter + num_points);
+
+  auto random_walk_func = [segment_length] __device__(T prev, T rad) {
+    return prev + segment_length * rad;
+  };
+  thrust::exclusive_scan(rmm::exec_policy(stream),
+                         points_x.begin(),
+                         points_x.end(),
+                         points_x.begin(),
+                         init_xy,
+                         random_walk_func);
+
+  thrust::exclusive_scan(rmm::exec_policy(stream),
+                         points_y.begin(),
+                         points_y.end(),
+                         points_y.begin(),
+                         init_xy,
+                         random_walk_func);
 
   return std::tuple(std::move(points_x), std::move(points_y), std::move(offsets));
 }
@@ -129,37 +117,37 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
   auto [ls2_x, ls2_y, ls2_offset] =
     generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, 100, stream);
 
-  auto ls1_points_begin = cuspatial::make_cartesian_2d_iterator(ls1_x->view().template begin<T>(),
-                                                                ls1_y->view().template begin<T>());
-  auto ls2_points_begin = cuspatial::make_cartesian_2d_iterator(ls2_x->view().template begin<T>(),
-                                                                ls2_y->view().template begin<T>());
-  auto distances        = cudf::make_fixed_width_column(
-    cudf::data_type{cudf::type_to_id<T>()}, ls1_x->size(), cudf::mask_state::UNALLOCATED);
-  auto out_it = distances->mutable_view().template begin<T>();
+  auto ls1_offset_begin = ls1_offset.begin();
+  auto ls2_offset_begin = ls2_offset.begin();
+  auto ls1_points_begin = cuspatial::make_cartesian_2d_iterator(ls1_x.begin(), ls1_y.begin());
+  auto ls2_points_begin = cuspatial::make_cartesian_2d_iterator(ls2_x.begin(), ls2_y.begin());
+  auto distances        = rmm::device_vector<T>(ls1_x.size());
+  auto out_it           = distances.begin();
 
   cudaStreamSynchronize(stream.value());
 
-  auto const total_points = ls1_x->size() + ls2_x->size();
+  auto const total_points = ls1_x.size() + ls2_x.size();
 
   state.add_element_count(num_string_pairs, "LineStringPairs");
   state.add_element_count(total_points, "NumPoints");
   state.add_global_memory_reads<T>(total_points * 2, "CoordinatesDataSize");
-  state.add_global_memory_reads<cudf::size_type>(num_string_pairs * 2, "OffsetsDataSize");
+  state.add_global_memory_reads<int32_t>(num_string_pairs * 2, "OffsetsDataSize");
   state.add_global_memory_writes<T>(num_string_pairs);
 
   state.exec(nvbench::exec_tag::sync,
-             [ls1_offset = cudf::device_span<cudf::size_type>(ls1_offset),
+             [&ls1_offset_begin,
+              &num_string_pairs,
               &ls1_points_begin,
-              ls1_size   = ls1_x->size(),
-              ls2_offset = cudf::device_span<cudf::size_type>(ls2_offset),
+              ls1_size = ls1_x.size(),
+              &ls2_offset_begin,
               &ls2_points_begin,
-              ls2_size = ls2_x->size(),
+              ls2_size = ls2_x.size(),
               &out_it](nvbench::launch& launch) {
-               cuspatial::pairwise_linestring_distance(ls1_offset.begin(),
-                                                       ls1_offset.end(),
+               cuspatial::pairwise_linestring_distance(ls1_offset_begin,
+                                                       ls1_offset_begin + num_string_pairs,
                                                        ls1_points_begin,
                                                        ls1_points_begin + ls1_size,
-                                                       ls2_offset.begin(),
+                                                       ls2_offset_begin,
                                                        ls2_points_begin,
                                                        ls2_points_begin + ls2_size,
                                                        out_it);
