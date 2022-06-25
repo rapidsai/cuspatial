@@ -40,6 +40,8 @@ namespace cuspatial {
  * The generator adopts a walking algorithm. The ith point is computed by
  * walking (cos(i) * segment_length, sin(i) * segment_length) from the `i-1`
  * point. The initial point of the linestring is at `(init_xy, init_xy)`.
+ * Since equidistance sampling on a sinusoid will result in random values,
+ * the shape of the linestring is random.
  *
  * The number of line segments per linestring is constrolled by
  * `num_segment_per_string`.
@@ -47,7 +49,10 @@ namespace cuspatial {
  * Since the outreach upper bound of the linestring group is
  * `(init_xy + num_strings * num_segments_per_string * segment_length)`,
  * user may control the locality of the linestring group via these four
- * arguments.
+ * arguments. It's important to control the locality between pairs of
+ * the linestrings. Linestrings pair that do not intersect will take
+ * the longest compute path in the kernel and will benchmark the worst
+ * case performance of the API.
  *
  * @tparam T The floating point type for the coordinates
  * @param num_strings Total number of linestrings
