@@ -49,6 +49,7 @@
  *
  *          @file linestring_distance.hpp
  *          @file hausdorff.hpp
+ *          @file experimental/hausdorff.cuh
  *          @file haversine.hpp
  *          @file haversine.cuh
  *      @}
