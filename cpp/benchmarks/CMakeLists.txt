@@ -46,7 +46,7 @@ function(ConfigureBench CMAKE_BENCH_NAME)
     target_link_libraries(${CMAKE_BENCH_NAME} PRIVATE benchmark::benchmark_main cuspatial_benchmark_common)
     install(
         TARGETS ${CMAKE_BENCH_NAME}
-        COMPONENT testing
+        COMPONENT benchmark
         DESTINATION bin/benchmarks/libcuspatial
         EXCLUDE_FROM_ALL
     )
@@ -66,7 +66,7 @@ function(ConfigureNVBench CMAKE_BENCH_NAME)
   )
   install(
     TARGETS ${CMAKE_BENCH_NAME}
-    COMPONENT testing
+    COMPONENT benchmark
     DESTINATION bin/benchmarks/libcuspatial
     EXCLUDE_FROM_ALL
   )
