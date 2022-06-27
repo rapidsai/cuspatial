@@ -21,22 +21,12 @@
 #include <cuspatial/experimental/linestring_distance.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 
 #include <memory>
-
-namespace {
-
-// float __device__ mycos(float x) { return cosf(x); }
-// double __device__ mycos(double x) { return cos(x); }
-// float __device__ mysin(float x) { return sinf(x); }
-// double __device__ mysin(double x) { return sin(x); }
-
-}
 
 namespace cuspatial {
 
@@ -71,37 +61,30 @@ namespace cuspatial {
  *
  */
 template <typename T>
-std::tuple<rmm::device_vector<T>, rmm::device_vector<T>, rmm::device_vector<int32_t>>
-generate_linestring(int32_t num_strings,
-                    int32_t num_segments_per_string,
-                    T segment_length,
-                    T init_xy,
-                    rmm::cuda_stream_view stream)
+std::tuple<rmm::device_vector<cartesian_2d<T>>, rmm::device_vector<int32_t>> generate_linestring(
+  int32_t num_strings, int32_t num_segments_per_string, T segment_length, cartesian_2d<T> init_xy)
 {
   int32_t num_points = num_strings * (num_segments_per_string + 1);
 
   auto offset_iter = detail::make_counting_transform_iterator(
     0, [num_segments_per_string](auto i) { return i * num_segments_per_string; });
-  auto points_x_iter =
-    detail::make_counting_transform_iterator(0, [](auto i) { return cos(static_cast<T>(i)); });
-  auto points_y_iter =
-    detail::make_counting_transform_iterator(0, [](auto i) { return sin(static_cast<T>(i)); });
+  auto rads_iter = detail::make_counting_transform_iterator(0, [](auto i) {
+    return cartesian_2d<T>{cos(static_cast<T>(i)), sin(static_cast<T>(i))};
+  });
 
   std::vector<int32_t> offsets(offset_iter, offset_iter + num_strings);
-  std::vector<T> points_x(points_x_iter, points_x_iter + num_points);
-  std::vector<T> points_y(points_y_iter, points_y_iter + num_points);
+  std::vector<cartesian_2d<T>> rads(rads_iter, rads_iter + num_points);
+  std::vector<cartesian_2d<T>> points(num_points);
 
-  auto random_walk_func = [segment_length](T const& prev, T const& rad) {
-    return prev + segment_length * rad;
+  auto random_walk_func = [segment_length](auto const& prev, auto const& rad) {
+    return cartesian_2d<T>{prev.x + segment_length * rad.x, prev.y + segment_length * rad.y};
   };
 
   thrust::exclusive_scan(
-    thrust::host, points_x.begin(), points_x.end(), points_x.begin(), init_xy, random_walk_func);
+    thrust::host, points.begin(), points.end(), points.begin(), init_xy, random_walk_func);
 
-  thrust::exclusive_scan(
-    thrust::host, points_y.begin(), points_y.end(), points_y.begin(), init_xy, random_walk_func);
-
-  return std::tuple(std::move(points_x), std::move(points_y), std::move(offsets));
+  // Implicitly constructing a device vector from host vector.
+  return std::tuple(std::move(points), std::move(offsets));
 }
 
 template <typename T>
@@ -112,23 +95,20 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
 
   auto const num_string_pairs{state.get_int64("NumStrings")},
     num_segments_per_string{state.get_int64("NumSegmentsPerString")};
-  auto stream = rmm::cuda_stream_default;
 
-  auto [ls1_x, ls1_y, ls1_offset] =
-    generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, 0, stream);
-  auto [ls2_x, ls2_y, ls2_offset] =
-    generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, 100, stream);
+  auto [ls1, ls1_offset] =
+    generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, {0, 0}, stream);
+  auto [ls2, ls2_offset] =
+    generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, {100, 100}, stream);
 
   auto ls1_offset_begin = ls1_offset.begin();
   auto ls2_offset_begin = ls2_offset.begin();
-  auto ls1_points_begin = cuspatial::make_cartesian_2d_iterator(ls1_x.begin(), ls1_y.begin());
-  auto ls2_points_begin = cuspatial::make_cartesian_2d_iterator(ls2_x.begin(), ls2_y.begin());
-  auto distances        = rmm::device_vector<T>(ls1_x.size());
+  auto ls1_points_begin = ls1.begin();
+  auto ls2_points_begin = ls2.begin();
+  auto distances        = rmm::device_vector<T>(ls1.size());
   auto out_it           = distances.begin();
 
-  cudaStreamSynchronize(stream.value());
-
-  auto const total_points = ls1_x.size() + ls2_x.size();
+  auto const total_points = ls1.size() + ls2.size();
 
   state.add_element_count(num_string_pairs, "LineStringPairs");
   state.add_element_count(total_points, "NumPoints");
@@ -140,10 +120,10 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
              [&ls1_offset_begin,
               &num_string_pairs,
               &ls1_points_begin,
-              ls1_size = ls1_x.size(),
+              ls1_size = ls1.size(),
               &ls2_offset_begin,
               &ls2_points_begin,
-              ls2_size = ls2_x.size(),
+              ls2_size = ls2.size(),
               &out_it](nvbench::launch& launch) {
                cuspatial::pairwise_linestring_distance(ls1_offset_begin,
                                                        ls1_offset_begin + num_string_pairs,
