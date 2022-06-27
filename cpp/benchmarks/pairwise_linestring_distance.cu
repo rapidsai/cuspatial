@@ -29,6 +29,15 @@
 
 #include <memory>
 
+namespace {
+
+// float __device__ mycos(float x) { return cosf(x); }
+// double __device__ mycos(double x) { return cos(x); }
+// float __device__ mysin(float x) { return sinf(x); }
+// double __device__ mysin(double x) { return sin(x); }
+
+}
+
 namespace cuspatial {
 
 /**
@@ -72,32 +81,25 @@ generate_linestring(int32_t num_strings,
   int32_t num_points = num_strings * (num_segments_per_string + 1);
 
   auto offset_iter = detail::make_counting_transform_iterator(
-    0, [num_segments_per_string] __device__(auto i) { return i * num_segments_per_string; });
+    0, [num_segments_per_string](auto i) { return i * num_segments_per_string; });
   auto points_x_iter =
-    detail::make_counting_transform_iterator(0, [] __device__(auto i) { return cos(i); });
+    detail::make_counting_transform_iterator(0, [](auto i) { return cos(static_cast<T>(i)); });
   auto points_y_iter =
-    detail::make_counting_transform_iterator(0, [] __device__(auto i) { return sin(i); });
+    detail::make_counting_transform_iterator(0, [](auto i) { return sin(static_cast<T>(i)); });
 
-  rmm::device_vector<int32_t> offsets(offset_iter, offset_iter + num_strings);
-  rmm::device_vector<T> points_x(points_x_iter, points_x_iter + num_points);
-  rmm::device_vector<T> points_y(points_y_iter, points_y_iter + num_points);
+  std::vector<int32_t> offsets(offset_iter, offset_iter + num_strings);
+  std::vector<T> points_x(points_x_iter, points_x_iter + num_points);
+  std::vector<T> points_y(points_y_iter, points_y_iter + num_points);
 
-  auto random_walk_func = [segment_length] __device__(T prev, T rad) {
+  auto random_walk_func = [segment_length](T const& prev, T const& rad) {
     return prev + segment_length * rad;
   };
-  thrust::exclusive_scan(rmm::exec_policy(stream),
-                         points_x.begin(),
-                         points_x.end(),
-                         points_x.begin(),
-                         init_xy,
-                         random_walk_func);
 
-  thrust::exclusive_scan(rmm::exec_policy(stream),
-                         points_y.begin(),
-                         points_y.end(),
-                         points_y.begin(),
-                         init_xy,
-                         random_walk_func);
+  thrust::exclusive_scan(
+    thrust::host, points_x.begin(), points_x.end(), points_x.begin(), init_xy, random_walk_func);
+
+  thrust::exclusive_scan(
+    thrust::host, points_y.begin(), points_y.end(), points_y.begin(), init_xy, random_walk_func);
 
   return std::tuple(std::move(points_x), std::move(points_y), std::move(offsets));
 }
