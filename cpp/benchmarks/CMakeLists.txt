@@ -50,7 +50,7 @@ function(ConfigureBench CMAKE_BENCH_NAME)
         DESTINATION bin/benchmarks/libcuspatial
         EXCLUDE_FROM_ALL
     )
-endfunction(ConfigureBench)
+endfunction()
 
 # This function takes in a benchmark name and benchmark source for nvbench benchmarks and handles
 # setting all of the associated properties and linking to build the benchmark
@@ -70,7 +70,7 @@ function(ConfigureNVBench CMAKE_BENCH_NAME)
     DESTINATION bin/benchmarks/libcuspatial
     EXCLUDE_FROM_ALL
   )
-endfunction(ConfigureNVBench)
+endfunction()
 
 ###################################################################################################
 ### benchmark sources #############################################################################
