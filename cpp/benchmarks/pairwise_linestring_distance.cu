@@ -97,9 +97,9 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
     num_segments_per_string{state.get_int64("NumSegmentsPerString")};
 
   auto [ls1, ls1_offset] =
-    generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, {0, 0}, stream);
+    generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, {0, 0});
   auto [ls2, ls2_offset] =
-    generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, {100, 100}, stream);
+    generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, {100, 100});
 
   auto ls1_offset_begin = ls1_offset.begin();
   auto ls2_offset_begin = ls2_offset.begin();
