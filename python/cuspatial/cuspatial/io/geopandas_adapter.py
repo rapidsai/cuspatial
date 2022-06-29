@@ -39,7 +39,7 @@ class GeoPandasAdapter:
             "multipoints": [0],
             "lines": [0],
             "mlines": [],
-            "polygons": {"polygons": [0], "rings": [0], "mpolys": []},
+            "polygons": {"polygons": [0], "rings": [0], "mpolys": [0]},
         }
         for geometry in geoseries:
             if isinstance(geometry, Point):
@@ -90,11 +90,10 @@ class GeoPandasAdapter:
                     num_rings = num_rings + 1
                 current = offsets["polygons"]["polygons"][-1]
                 offsets["polygons"]["polygons"].append(num_rings + current)
+                offsets["polygons"]["mpolys"].append(
+                    offsets["polygons"]["mpolys"][-1] + 1)
             elif isinstance(geometry, MultiPolygon):
                 current = offsets["polygons"]["polygons"][-1]
-                offsets["polygons"]["mpolys"].append(
-                    len(offsets["polygons"]["polygons"]) - 1
-                )
                 for poly in geometry:
                     current = offsets["polygons"]["polygons"][-1]
                     num_rings = 1
@@ -110,8 +109,9 @@ class GeoPandasAdapter:
                         num_rings = num_rings + 1
                     offsets["polygons"]["polygons"].append(num_rings + current)
                 offsets["polygons"]["mpolys"].append(
-                    len(offsets["polygons"]["polygons"]) - 1
-                )
+                    np.array(
+                        offsets["polygons"]["mpolys"]
+                    ).sum() + len(geometry) - 1)
         return offsets
 
     def _read_geometries(

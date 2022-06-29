@@ -603,19 +603,4 @@ class PolygonArray(OffsetArray):
         return result
 
     def __len__(self):
-        if len(self._mpolys) > 0:
-            mlength = (
-                self._mpolys.values[
-                    np.arange(
-                        1, len(self._mpolys), 2, like=self._mpolys.values
-                    )
-                ]
-                - self._mpolys.values[
-                    np.arange(
-                        0, len(self._mpolys), 2, like=self._mpolys.values
-                    )
-                ]
-            ).sum() - (len(self._mpolys) // 2)
-        else:
-            mlength = 0
-        return (len(self.polys) - 1) - int(mlength)
+        return len(self._mpolys) - 1

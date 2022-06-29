@@ -4,6 +4,7 @@ from itertools import repeat
 from typing import TypeVar, Union
 
 import numpy as np
+import pyarrow as pa
 from shapely.geometry import (
     LineString,
     MultiLineString,
@@ -17,6 +18,7 @@ import cudf
 from cudf.core.column import NumericalColumn
 
 from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
+
 
 T = TypeVar("T", bound="GeoColumn")
 
@@ -233,7 +235,7 @@ class GeoColumnILocIndexer:
             "mp": MultiPointShapelySerializer,
             "l": LineStringShapelySerializer,
             "ml": MultiLineStringShapelySerializer,
-            "poly": PolygonShapelySerializer,
+            "poly": MultiPolygonShapelySerializer,
             "mpoly": MultiPolygonShapelySerializer,
         }
         return type_map[self._sr._meta.input_types[index]](self._sr, index)
@@ -406,7 +408,6 @@ class PolygonShapelySerializer(ShapelySerializer):
             ],
         )
 
-
 class MultiPolygonShapelySerializer(ShapelySerializer):
     def to_shapely(self):
         """
@@ -414,15 +415,26 @@ class MultiPolygonShapelySerializer(ShapelySerializer):
         subsequent interior rings of all polygons that around bound by the
         mpolygon specified by self._index.
         """
-        item_type = self._source._meta.input_types[self._index]
-        index = 0
-        for i in range(self._index):
-            if self._source._meta.input_types[i] == item_type:
-                index = index + 1
-        poly_indices = slice(
-            self._source.polygons.mpolys[index * 2],
-            self._source.polygons.mpolys[index * 2 + 1],
-        )
+        multipolygon_type = pa.list_(
+            pa.field("polygons", pa.list_(
+                pa.field("parts", pa.list_(
+                    pa.field("rings", pa.list_(
+                        pa.field("vertices", pa.list_(
+                            pa.field("xy", pa.float64(), nullable=False), 
+                            2), nullable=False)), nullable=False))))))
+        coords_type = pa.list_(
+                        pa.field("vertices", pa.list_(
+                            pa.field("xy", pa.float64(), nullable=False), 
+                            2), nullable=False))
+        breakpoint()
+        x = pa.array([self._source.polygons.offsets, self._source.polygons.xy], coords_type)
+        mpolygons = pa.array(self._source.polygons.xy, multipolygon_type)
+        index = np.array(self._source._meta.input_types[
+            0:(self._index + 1)]).apply({lambda x: x in [
+                "poly", "mpoly"]}).sum()[0]
+        start_index = self._source.polygons.mpolys[index - 1]
+        end_index = self._source.polygons.mpolys[index]
+        poly_indices = slice(start_index, end_index)
         polys = []
         for i in range(poly_indices.start, poly_indices.stop):
             ring_start = self._source.polygons.polys[i]
@@ -454,4 +466,9 @@ class MultiPolygonShapelySerializer(ShapelySerializer):
                     ],
                 )
             )
-        return MultiPolygon(polys)
+        print(poly_indices)
+        print(polys)
+        if (end_index - start_index) == 1:
+            return Polygon(polys[0])
+        else:
+            return MultiPolygon(polys)
