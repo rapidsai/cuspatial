@@ -28,7 +28,7 @@
 
 #include <memory>
 
-namespace cuspatial {
+using namespace cuspatial;
 
 /**
  * @brief Helper to generate linestrings used for benchmarks.
@@ -125,14 +125,14 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
               &ls2_points_begin,
               ls2_size = ls2.size(),
               &out_it](nvbench::launch& launch) {
-               cuspatial::pairwise_linestring_distance(ls1_offset_begin,
-                                                       ls1_offset_begin + num_string_pairs,
-                                                       ls1_points_begin,
-                                                       ls1_points_begin + ls1_size,
-                                                       ls2_offset_begin,
-                                                       ls2_points_begin,
-                                                       ls2_points_begin + ls2_size,
-                                                       out_it);
+               pairwise_linestring_distance(ls1_offset_begin,
+                                            ls1_offset_begin + num_string_pairs,
+                                            ls1_points_begin,
+                                            ls1_points_begin + ls1_size,
+                                            ls2_offset_begin,
+                                            ls2_points_begin,
+                                            ls2_points_begin + ls2_size,
+                                            out_it);
              });
 }
 
@@ -141,5 +141,3 @@ NVBENCH_BENCH_TYPES(pairwise_linestring_distance_benchmark, NVBENCH_TYPE_AXES(fl
   .set_type_axes_names({"CoordsType"})
   .add_int64_axis("NumStrings", {1'000, 10'000, 100'000})
   .add_int64_axis("NumSegmentsPerString", {10, 100, 1'000});
-
-}  // namespace cuspatial
