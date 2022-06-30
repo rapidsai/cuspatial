@@ -84,7 +84,7 @@ def getGeoArrowUnionRootType() -> pa.union:
     )
 
 
-def from_geopandas(geoseries: gpd.GeoSeries):
+def from_geopandas(geoseries: gpd.GeoSeries) -> pa.lib.UnionArray:
     def get_coordinates(data) -> tuple:
         point_coords = []
         mpoint_coords = []
@@ -143,16 +143,10 @@ def from_geopandas(geoseries: gpd.GeoSeries):
         pa.array(buffers[3], type=getArrowLinestringsType()),
         pa.array(buffers[4], type=getArrowPolygonsType()),
     ]
-    arrow = DenseUnion(
+
+    return pa.UnionArray.from_dense(
         type_buffer, all_offsets, children, ["points", "mpoints", "lines", "polygons"]
     )
-
-
-class DenseUnion:
-    _union = None
-
-    def __init__(self, types, offsets, children, names):
-        self._union = pa.UnionArray.from_dense(types, offsets, children, names)
 
 
 class GeoArrow:

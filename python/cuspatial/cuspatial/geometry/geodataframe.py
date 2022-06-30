@@ -1,8 +1,9 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION
+# Copyright (c) 2020-2022, NVIDIA CORPORATION
 
 from geopandas import GeoDataFrame as gpGeoDataFrame
 
 import cudf
+import pyarrow as pa
 
 from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
 from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta
@@ -31,7 +32,7 @@ class GeoDataFrame(cudf.DataFrame):
                 if is_geometry_type(data[col]):
                     adapter = GeoPandasAdapter(data[col])
                     buffers = GeoArrowBuffers(
-                        adapter.get_geoarrow_host_buffers()
+                        adapter.get_geoarrow_union(), data_locale=pa
                     )
                     pandas_meta = GeoMeta(adapter.get_geopandas_meta())
                     column = GeoColumn(buffers, pandas_meta)
@@ -105,9 +106,7 @@ class GeoDataFrame(cudf.DataFrame):
             # Since there's no easy way to create a GeoColumn from a
             # NumericalColumn, we're forced to do so manually.
             if isinstance(other_col, GeoColumn):
-                col = GeoColumn(
-                    other_col._geo, other_col._meta, cudf.Index(col)
-                )
+                col = GeoColumn(other_col._geo, other_col._meta, cudf.Index(col))
 
             self._data.set_by_label(
                 name, col._with_type_metadata(other_col.dtype), validate=False
@@ -119,9 +118,7 @@ class GeoDataFrame(cudf.DataFrame):
                 # When other._index is a CategoricalIndex, there is
                 if isinstance(
                     other._index, cudf.core.index.CategoricalIndex
-                ) and not isinstance(
-                    self._index, cudf.core.index.CategoricalIndex
-                ):
+                ) and not isinstance(self._index, cudf.core.index.CategoricalIndex):
                     self._index = cudf.Index(self._index._column)
 
         return self

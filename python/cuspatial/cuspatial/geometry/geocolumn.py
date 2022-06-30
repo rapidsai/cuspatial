@@ -1,9 +1,11 @@
-# Copyright (c) 2021 NVIDIA CORPORATION
+# Copyright (c) 2021-2022 NVIDIA CORPORATION
 import numbers
 from itertools import repeat
 from typing import TypeVar, Union
 
 import numpy as np
+import pyarrow as pa
+
 from shapely.geometry import (
     LineString,
     MultiLineString,
@@ -61,12 +63,8 @@ class GeoMeta:
                 self.input_lengths.extend(repeat(1, len(buffers.lines)))
         if buffers.polygons is not None:
             if len(buffers.polygons.mpolys) > 0:
-                self.input_types.extend(
-                    repeat("poly", buffers.polygons.mpolys[0])
-                )
-                self.input_lengths.extend(
-                    repeat(1, buffers.polygons.mpolys[0])
-                )
+                self.input_types.extend(repeat("poly", buffers.polygons.mpolys[0]))
+                self.input_lengths.extend(repeat(1, buffers.polygons.mpolys[0]))
                 for mp_index in range(len(buffers.polygons.mpolys) // 2):
                     mpoly_size = (
                         buffers.polygons.mpolys[mp_index * 2 + 1]
@@ -83,8 +81,16 @@ class GeoMeta:
     def copy(self):
         return type(self)(
             {
-                "input_types": self.input_types.copy(),
-                "input_lengths": self.input_lengths.copy(),
+                "input_types": pa.Int8Array.from_buffers(
+                    self.input_types.type,
+                    len(self.input_types),
+                    self.input_types.buffers(),
+                ),
+                "input_lengths": pa.Int32Array.from_buffers(
+                    self.input_lengths.type,
+                    len(self.input_lengths),
+                    self.input_lengths.buffers(),
+                ),
             }
         )
 
@@ -193,10 +199,15 @@ class GeoColumn(NumericalColumn):
         Create a copy of all of the GPU-backed data structures in this
         GeoColumn.
         """
-        result = GeoColumn(
-            self._geo.copy(deep), self._meta.copy(), self.data.copy()
-        )
+        result = GeoColumn(self._geo.copy(deep), self._meta.copy(), self.data.copy())
         return result
+
+    def from_arrow(self):
+        """
+        I know what to do!
+        """
+        print("Not ready to convert from arrow")
+        breakpoint()
 
 
 class GeoColumnLocIndexer:
@@ -229,14 +240,14 @@ class GeoColumnILocIndexer:
 
     def _getitem_int(self, index):
         type_map = {
-            "p": PointShapelySerializer,
-            "mp": MultiPointShapelySerializer,
-            "l": LineStringShapelySerializer,
-            "ml": MultiLineStringShapelySerializer,
-            "poly": PolygonShapelySerializer,
-            "mpoly": MultiPolygonShapelySerializer,
+            0: PointShapelySerializer,
+            1: MultiPointShapelySerializer,
+            2: LineStringShapelySerializer,
+            3: MultiLineStringShapelySerializer,
+            4: PolygonShapelySerializer,
+            5: MultiPolygonShapelySerializer,
         }
-        return type_map[self._sr._meta.input_types[index]](self._sr, index)
+        return type_map[self._sr._meta.input_types[index].as_py()](self._sr, index)
 
 
 class ShapelySerializer:
@@ -317,12 +328,10 @@ class LineStringShapelySerializer(ShapelySerializer):
         else:
             item_start = preceding_line_count
         item_length = self._source._meta.input_lengths[self._index]
-        item_end = item_length + item_start
+        item_end = item_length.as_py() * 2 + item_start
         item_source = self._source.lines
         result = item_source[item_start:item_end]
-        return LineString(
-            np.array(result).reshape(2 * (item_start - item_end), 2)
-        )
+        return LineString(np.array(result).reshape(2 * (item_start - item_end), 2))
 
 
 class MultiLineStringShapelySerializer(ShapelySerializer):
@@ -385,9 +394,7 @@ class PolygonShapelySerializer(ShapelySerializer):
         )
         preceding_polys = preceding_poly_count
         ring_start = self._source.polygons.polys[multi_index + preceding_polys]
-        ring_end = self._source.polygons.polys[
-            multi_index + preceding_polys + 1
-        ]
+        ring_end = self._source.polygons.polys[multi_index + preceding_polys + 1]
         rings = self._source.polygons.rings
         exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
         exterior = self._source.polygons.xy[exterior_slice]
@@ -434,17 +441,8 @@ class MultiPolygonShapelySerializer(ShapelySerializer):
                 Polygon(
                     np.array(exterior).reshape(2 * (ring_start - ring_end), 2),
                     [
-                        np.array(
-                            self._source.polygons.xy[interior_slice]
-                        ).reshape(
-                            int(
-                                (
-                                    interior_slice.stop
-                                    - interior_slice.start
-                                    + 1
-                                )
-                                / 2
-                            ),
+                        np.array(self._source.polygons.xy[interior_slice]).reshape(
+                            int((interior_slice.stop - interior_slice.start + 1) / 2),
                             2,
                         )
                         for interior_slice in [

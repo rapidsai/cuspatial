@@ -1,9 +1,10 @@
-# Copyright (c) 2021 NVIDIA CORPORATION
+# Copyright (c) 2021-2022 NVIDIA CORPORATION
 
 from typing import TypeVar, Union
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 
 import cudf
 
@@ -83,6 +84,7 @@ class GeoArrowBuffers:
         self._multipoints = None
         self._lines = None
         self._polygons = None
+
         if isinstance(data, dict):
             if data.get("points_xy") is not None:
                 self._points = CoordinateArray(
@@ -120,6 +122,7 @@ class GeoArrowBuffers:
                     data.get("mpolygons"),
                     data_locale=data_locale,
                 )
+
         elif isinstance(data, GeoArrowBuffers):
             if data.points is not None:
                 self._points = CoordinateArray(
@@ -149,10 +152,34 @@ class GeoArrowBuffers:
                     data.polygons.z,
                     data_locale=data_locale,
                 )
-        else:
-            raise TypeError(
-                f"Invalid type passed to GeoArrowBuffers ctor {type(data)}"
+
+        elif isinstance(data, pa.lib.UnionArray):
+            self._points = CoordinateArray(
+                data.field(0).values, [], data_locale=data_locale
             )
+            self._multipoints = MultiPointArray(
+                data.field(1).values.values,
+                data.field(1).offsets,
+                [],
+                data_locale=data_locale,
+            )
+            self._lines = LineArray(
+                data.field(2).values.values.values,
+                data.field(2).values.offsets,
+                data.field(2).offsets,
+                [],
+                data_locale=data_locale,
+            )
+            self._polygons = PolygonArray(
+                data.field(3).values.values.values.values,
+                data.field(3).values.values.offsets,
+                data.field(3).values.offsets,
+                data.field(3).offsets,
+                [],
+                data_locale=data_locale,
+            )
+        else:
+            raise TypeError(f"Invalid type passed to GeoArrowBuffers ctor {type(data)}")
 
     @property
     def points(self):
@@ -205,12 +232,8 @@ class GeoArrowBuffers:
         multipoints_length = (
             len(self._multipoints) if self.multipoints is not None else 0
         )
-        polygons_length = (
-            len(self._polygons) if self.polygons is not None else 0
-        )
-        return (
-            points_length + lines_length + multipoints_length + polygons_length
-        )
+        polygons_length = len(self._polygons) if self.polygons is not None else 0
+        return points_length + lines_length + multipoints_length + polygons_length
 
     def copy(self, deep=True):
         """
@@ -257,6 +280,10 @@ class GeoArrowBuffers:
 
 
 class CoordinateArray:
+    _data_location = None
+    _xy = None
+    _z = None
+
     def __init__(self, xy, z=None, data_locale=cudf):
         """
         A GeoArrow column of points. The CoordinateArray stores all of the
@@ -279,17 +306,18 @@ class CoordinateArray:
 
     @data_location.setter
     def data_location(self, data_location):
-        if data_location not in (cudf, pd):
+        if data_location not in (cudf, pd, pa):
             raise NotImplementedError(
-                "only cudf and pandas CoordinateArrays "
-                "are supported at this time"
+                "only cudf, pandas, and pa CoordinateArrays " "are supported at this time"
             )
         else:
             self._data_location = data_location
 
     def _serialize(self, data):
         try:
-            if self._data_location == pd:
+            if self._data_location == pa:
+                return data
+            elif self._data_location == pd:
                 if isinstance(data, cudf.Series):
                     return data.to_pandas()
                 else:
@@ -316,7 +344,9 @@ class CoordinateArray:
     def xy(self, xy):
         if (len(xy) % 2) != 0:
             raise ValueError("xy must have even length")
-        self._xy = self._serialize(xy)
+        temp = self._serialize(xy)
+        print(temp)
+        self._xy = temp
 
     @property
     def z(self):
@@ -385,6 +415,8 @@ class PointsArray(CoordinateArray):
 
 
 class OffsetArray(CoordinateArray):
+    _offsets = None
+
     def __init__(self, xy, offsets, z=None, data_locale=cudf):
         """
         A GeoArrow column of offset geometries. This is the base class of all
@@ -422,11 +454,7 @@ class OffsetArray(CoordinateArray):
         return result
 
     def __repr__(self):
-        return (
-            f"{super().__repr__()}"
-            f"offsets:\n"
-            f"{self.offsets.__repr__()}\n"
-        )
+        return f"{super().__repr__()}" f"offsets:\n" f"{self.offsets.__repr__()}\n"
 
     def copy(self, deep=True):
         if self.z is not None:
@@ -475,9 +503,7 @@ class LineArray(OffsetArray):
         self._mlines = self._serialize(mlines)
 
     def __repr__(self):
-        return (
-            f"{super().__repr__()}" f"mlines:\n" f"{self.mlines.__repr__()}\n"
-        )
+        return f"{super().__repr__()}" f"mlines:\n" f"{self.mlines.__repr__()}\n"
 
     def copy(self, deep=True):
         base = super().copy(deep)
@@ -490,17 +516,14 @@ class LineArray(OffsetArray):
         return result
 
     def __len__(self):
+        return len(self._mlines) - 1
         if len(self._mlines) > 0:
             mlength = (
                 self._mlines.values[
-                    np.arange(
-                        1, len(self._mlines), 2, like=self._mlines.values
-                    )
+                    np.arange(1, len(self._mlines), 2, like=self._mlines.values)
                 ]
                 - self._mlines.values[
-                    np.arange(
-                        0, len(self._mlines), 2, like=self._mlines.values
-                    )
+                    np.arange(0, len(self._mlines), 2, like=self._mlines.values)
                 ]
             ).sum() - (len(self._mlines) // 2)
         else:
@@ -603,17 +626,14 @@ class PolygonArray(OffsetArray):
         return result
 
     def __len__(self):
+        return len(self._mpolys) - 1
         if len(self._mpolys) > 0:
             mlength = (
                 self._mpolys.values[
-                    np.arange(
-                        1, len(self._mpolys), 2, like=self._mpolys.values
-                    )
+                    np.arange(1, len(self._mpolys), 2, like=self._mpolys.values)
                 ]
                 - self._mpolys.values[
-                    np.arange(
-                        0, len(self._mpolys), 2, like=self._mpolys.values
-                    )
+                    np.arange(0, len(self._mpolys), 2, like=self._mpolys.values)
                 ]
             ).sum() - (len(self._mpolys) // 2)
         else:
