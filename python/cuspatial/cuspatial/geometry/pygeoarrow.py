@@ -7,12 +7,21 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 
+from shapely.geometry import (
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+)
+
 import cudf
 
 T = TypeVar("T", bound="GeoArrowBuffers")
 
 
-def getArrowPolygonType() -> pa.list_:
+def getArrowPolygonsType() -> pa.list_:
     return pa.list_(
         pa.field(
             "polygons",
@@ -33,7 +42,7 @@ def getArrowPolygonType() -> pa.list_:
     )
 
 
-def getArrowLinestringType() -> pa.list_:
+def getArrowLinestringsType() -> pa.list_:
     return pa.list_(
         pa.field(
             "lines",
@@ -68,14 +77,14 @@ def getGeoArrowUnionRootType() -> pa.union:
         [
             getArrowPointsType(),
             getArrowMultiPointsType(),
-            getArrowLinestringType(),
-            getArrowPolygonType(),
+            getArrowLinestringsType(),
+            getArrowPolygonsType(),
         ],
         mode="dense",
     )
 
 
-def from_geopandas(series: gpd.GeoSeries):
+def from_geopandas(geoseries: gpd.GeoSeries):
     def get_coordinates(data) -> tuple:
         point_coords = []
         mpoint_coords = []
@@ -86,21 +95,36 @@ def from_geopandas(series: gpd.GeoSeries):
 
         for geom in data:
             coords = geom.__geo_interface__["coordinates"]
-            if isinstance(geom, shapely.geometry.point.Point):
+            if isinstance(geom, Point):
                 point_coords.append(coords)
+                all_offsets.append(1)
             elif isinstance(geom, MultiPoint):
                 mpoint_coords.append(coords)
-                mpoint_offsets.append(mpoint_offsets[-1] + len(mpoint_coords))
-            elif isinstance(geom, LineString) or isinstance(geom, MultiLineString):
+                all_offsets.append(len(coords))
+            elif isinstance(geom, LineString):
+                line_coords.append([coords])
+                all_offsets.append(1)
+            elif isinstance(geom, MultiLineString):
                 line_coords.append(coords)
-                line_offsets.append(line_offsets[-1] + len(line_coords))
-            elif isinstance(geom, MultiPolygon) or isinstance(geom, Polygon):
+                all_offsets.append(len(coords))
+            elif isinstance(geom, Polygon):
+                polygon_coords.append([coords])
+                all_offsets.append(1)
+            elif isinstance(geom, MultiPolygon):
                 polygon_coords.append(coords)
-                polygon_offsets.append(polygon_offsets[-1] + len(polygon_coords))
+                all_offsets.append(len(coords))
             else:
                 raise TypeError(type(geom))
-            all_offsets.append(all_offsets[-1] + len(all_coords[-1]))
-            type_buffer.append(type(geom))
+            type_buffer.append(
+                {
+                    Point: 0,
+                    MultiPoint: 1,
+                    LineString: 2,
+                    MultiLineString: 3,
+                    Polygon: 4,
+                    MultiPolygon: 5,
+                }[type(geom)]
+            )
         return (
             type_buffer,
             point_coords,
@@ -110,13 +134,13 @@ def from_geopandas(series: gpd.GeoSeries):
             all_offsets,
         )
 
-    buffers = get_coordinates(geoSeries)
+    buffers = get_coordinates(geoseries)
     type_buffer = pa.array(buffers[0]).cast(pa.int8())
     all_offsets = pa.array(buffers[5]).cast(pa.int32())
     children = [
         pa.array(buffers[1], type=getArrowPointsType()),
         pa.array(buffers[2], type=getArrowMultiPointsType()),
-        pa.array(buffers[3], type=getArrowLinesType()),
+        pa.array(buffers[3], type=getArrowLinestringsType()),
         pa.array(buffers[4], type=getArrowPolygonsType()),
     ]
     arrow = DenseUnion(
@@ -125,7 +149,7 @@ def from_geopandas(series: gpd.GeoSeries):
 
 
 class DenseUnion:
-    self._union = None
+    _union = None
 
     def __init__(self, types, offsets, children, names):
         self._union = pa.UnionArray.from_dense(types, offsets, children, names)

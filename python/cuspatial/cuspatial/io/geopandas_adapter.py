@@ -12,7 +12,7 @@ from shapely.geometry import (
     Polygon,
 )
 
-import pygeoarrow
+from cuspatial.geometry import pygeoarrow
 
 
 class GeoPandasAdapter:
@@ -26,59 +26,7 @@ class GeoPandasAdapter:
         geoseries : A GeoPandas GeoSeries
         """
 
-        self.buffers = self._read_geopandas_to_geoarrow(geoseries)
-
-    def _read_geopandas_to_geoarrow(geoseries: gpGeoSeries) -> pygeoarrow.union_
-        point_coords = []
-        mpoint_coords = []
-        mpoint_offsets = [0]
-        line_coords = []
-        line_offsets = [0]
-        polygon_coords = []
-        polygon_offsets = [0]
-        all_coords = []
-        all_offsets = [0]
-        type_buffer = []
-    
-
-        for geom in data:
-            coords = geom.__geo_interface__["coordinates"]
-            if isinstance(geom, Point):
-                point_coords.append(coords)
-            elif isinstance(geom, MultiPoint):
-                mpoint_coords.append(coords)
-                mpoint_offsets.append(mpoint_offsets[-1] + len(mpoint_coords))
-            elif isinstance(geom, LineString):
-                line_coords.append([coords])
-                line_offsets.append(line_offsets[-1] + len(line_coords))
-            elif isinstance(geom, MultiLineString):
-                line_coords.append(coords)
-                line_offsets.append(line_offsets[-1] + len(line_coords))
-            elif isinstance(geom, Polygon):
-                polygon_coords.append([coords])
-                polygon_offsets.append(polygon_offsets[-1] + len(polygon_coords))
-            elif isinstance(geom, MultiPolygon) or isinstance(geom, Polygon):
-                polygon_coords.append(coords)
-                polygon_offsets.append(polygon_offsets[-1] + len(polygon_coords))
-            else:
-                raise TypeError(type(geom))
-            all_coords.append(coords)
-            all_offsets.append(all_offsets[-1] + len(all_coords[-1]))
-            type_buffer.append({
-                Point: 0,
-                MultiPoint: 1,
-                LineString: 2,
-                MultiLineString: 2,
-                Polygon: 3,
-                MultiPolygon: 3
-            }[type(geom)])
-
-        return pygeoarrow.DenseUnion(
-            type_buffer,
-            all_offsets,
-                children,
-                ["points", "mpoints", "lines", "polygons"]
-        )
+        self.buffers = pygeoarrow.from_geopandas(geoseries)
 
     def _load_geometry_offsets(self, geoseries: gpGeoSeries) -> dict:
         """
@@ -125,9 +73,7 @@ class GeoPandasAdapter:
                 offsets["mlines"].append(len(offsets["lines"]) - 1)
                 for linestring in geometry:
                     current = offsets["lines"][-1]
-                    offsets["lines"].append(
-                        2 * len(linestring.coords) + current
-                    )
+                    offsets["lines"].append(2 * len(linestring.coords) + current)
                 offsets["mlines"].append(len(offsets["lines"]) - 1)
             elif isinstance(geometry, Polygon):
                 # A Polygon geometry is stored like a LineString and also
@@ -218,9 +164,7 @@ class GeoPandasAdapter:
                 size = points.shape[0] * 2
                 i = read_count["multipoints"]
                 buffers["multipoints"][slice(i, i + size, 2)] = points[:, 0]
-                buffers["multipoints"][slice(i + 1, i + size, 2)] = points[
-                    :, 1
-                ]
+                buffers["multipoints"][slice(i + 1, i + size, 2)] = points[:, 1]
                 read_count["multipoints"] = read_count["multipoints"] + size
                 input_types.append("mp")
                 input_lengths.append(len(geometry))
@@ -240,9 +184,7 @@ class GeoPandasAdapter:
                     size = len(linestring.xy[0]) * 2
                     i = read_count["lines"]
                     buffers["lines"][slice(i, i + size, 2)] = linestring.xy[0]
-                    buffers["lines"][
-                        slice(i + 1, i + size, 2)
-                    ] = linestring.xy[1]
+                    buffers["lines"][slice(i + 1, i + size, 2)] = linestring.xy[1]
                     read_count["lines"] = read_count["lines"] + size
                     substrings.append({"type": "l", "length": size})
                 input_types.append("ml")
@@ -259,12 +201,8 @@ class GeoPandasAdapter:
                 exterior = geometry.exterior.coords.xy
                 size = len(exterior[0]) * 2
                 i = read_count["polygons"]
-                buffers["polygons"]["coords"][
-                    slice(i, i + size, 2)
-                ] = exterior[0]
-                buffers["polygons"]["coords"][
-                    slice(i + 1, i + size, 2)
-                ] = exterior[1]
+                buffers["polygons"]["coords"][slice(i, i + size, 2)] = exterior[0]
+                buffers["polygons"]["coords"][slice(i + 1, i + size, 2)] = exterior[1]
                 read_count["polygons"] = read_count["polygons"] + size
                 interiors = geometry.interiors
                 for interior in interiors:
@@ -287,12 +225,10 @@ class GeoPandasAdapter:
                     exterior = polygon.exterior.coords.xy
                     size = len(exterior[0]) * 2
                     i = read_count["polygons"]
-                    buffers["polygons"]["coords"][
-                        slice(i, i + size, 2)
-                    ] = exterior[0]
-                    buffers["polygons"]["coords"][
-                        slice(i + 1, i + size, 2)
-                    ] = exterior[1]
+                    buffers["polygons"]["coords"][slice(i, i + size, 2)] = exterior[0]
+                    buffers["polygons"]["coords"][slice(i + 1, i + size, 2)] = exterior[
+                        1
+                    ]
                     read_count["polygons"] = read_count["polygons"] + size
                     interiors = polygon.interiors
                     for interior in interiors:
