@@ -1,6 +1,7 @@
 # Copyright (c) 2020-2021 NVIDIA CORPORATION.
 
 import numpy as np
+import pyarrow as pa
 from geopandas import GeoSeries as gpGeoSeries
 from shapely.geometry import (
     LineString,
@@ -10,6 +11,8 @@ from shapely.geometry import (
     Point,
     Polygon,
 )
+
+import pygeoarrow
 
 
 class GeoPandasAdapter:
@@ -22,8 +25,60 @@ class GeoPandasAdapter:
         ----------
         geoseries : A GeoPandas GeoSeries
         """
-        self.offsets = self._load_geometry_offsets(geoseries)
-        self.buffers = self._read_geometries(geoseries, self.offsets)
+
+        self.buffers = self._read_geopandas_to_geoarrow(geoseries)
+
+    def _read_geopandas_to_geoarrow(geoseries: gpGeoSeries) -> pygeoarrow.union_
+        point_coords = []
+        mpoint_coords = []
+        mpoint_offsets = [0]
+        line_coords = []
+        line_offsets = [0]
+        polygon_coords = []
+        polygon_offsets = [0]
+        all_coords = []
+        all_offsets = [0]
+        type_buffer = []
+    
+
+        for geom in data:
+            coords = geom.__geo_interface__["coordinates"]
+            if isinstance(geom, Point):
+                point_coords.append(coords)
+            elif isinstance(geom, MultiPoint):
+                mpoint_coords.append(coords)
+                mpoint_offsets.append(mpoint_offsets[-1] + len(mpoint_coords))
+            elif isinstance(geom, LineString):
+                line_coords.append([coords])
+                line_offsets.append(line_offsets[-1] + len(line_coords))
+            elif isinstance(geom, MultiLineString):
+                line_coords.append(coords)
+                line_offsets.append(line_offsets[-1] + len(line_coords))
+            elif isinstance(geom, Polygon):
+                polygon_coords.append([coords])
+                polygon_offsets.append(polygon_offsets[-1] + len(polygon_coords))
+            elif isinstance(geom, MultiPolygon) or isinstance(geom, Polygon):
+                polygon_coords.append(coords)
+                polygon_offsets.append(polygon_offsets[-1] + len(polygon_coords))
+            else:
+                raise TypeError(type(geom))
+            all_coords.append(coords)
+            all_offsets.append(all_offsets[-1] + len(all_coords[-1]))
+            type_buffer.append({
+                Point: 0,
+                MultiPoint: 1,
+                LineString: 2,
+                MultiLineString: 2,
+                Polygon: 3,
+                MultiPolygon: 3
+            }[type(geom)])
+
+        return pygeoarrow.DenseUnion(
+            type_buffer,
+            all_offsets,
+                children,
+                ["points", "mpoints", "lines", "polygons"]
+        )
 
     def _load_geometry_offsets(self, geoseries: gpGeoSeries) -> dict:
         """
