@@ -266,7 +266,7 @@ class PointShapelySerializer(ShapelySerializer):
         to the row of the column stored at `self._index`.
         """
         item_type = self._source._meta.input_types[self._index]
-        types = self._source._meta.input_types[0: self._index]
+        types = self._source._meta.input_types[0 : self._index]
         index = 0
         for i in range(self._index):
             if types[i] == item_type:
@@ -282,7 +282,7 @@ class MultiPointShapelySerializer(ShapelySerializer):
         `item_length` coordinates starting at that position.
         """
         item_type = self._source._meta.input_types[self._index]
-        types = self._source._meta.input_types[0: self._index]
+        types = self._source._meta.input_types[0 : self._index]
         item_start = 0
         for i in range(self._index):
             if types[i] == item_type:

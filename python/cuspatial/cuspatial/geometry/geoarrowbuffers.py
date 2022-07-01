@@ -375,7 +375,7 @@ class CoordinateArray:
         if isinstance(index, slice):
             new_index = slice(index.start * 2, index.stop * 2 + 1, index.step)
             return self.xy.iloc[new_index]
-        return self.xy.iloc[(index * 2): (index * 2) + 2]
+        return self.xy.iloc[(index * 2) : (index * 2) + 2]
 
     def __repr__(self):
         return f"xy:\n" f"{self.xy.__repr__()}\n"
