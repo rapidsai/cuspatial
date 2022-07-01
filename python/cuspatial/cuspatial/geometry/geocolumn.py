@@ -4,7 +4,6 @@ from itertools import repeat
 from typing import TypeVar, Union
 
 import pyarrow as pa
-
 from shapely.geometry import (
     LineString,
     MultiLineString,

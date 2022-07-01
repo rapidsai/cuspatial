@@ -1,9 +1,9 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION
 
+import pyarrow as pa
 from geopandas import GeoDataFrame as gpGeoDataFrame
 
 import cudf
-import pyarrow as pa
 
 from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
 from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta

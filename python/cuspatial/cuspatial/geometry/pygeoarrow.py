@@ -6,7 +6,6 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pyarrow as pa
-
 from shapely.geometry import (
     LineString,
     MultiLineString,
