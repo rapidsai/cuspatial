@@ -52,7 +52,9 @@ def generator(size, has_z=False):
             return LineString(points)
         elif obj_type == 4:
             num_lines = np.random.randint(3, np.ceil(np.sqrt(size)) + 3)
-            points = np.random.random(num_lines * size * 2).reshape(num_lines, size, 2)
+            points = np.random.random(num_lines * size * 2).reshape(
+                num_lines, size, 2
+            )
             return MultiLineString(tuple(points))
         elif obj_type == 5:
             return random_polygon(size)
@@ -137,13 +139,17 @@ def test_interleaved_point(gpdf, polys):
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.multipoints.x),
         cudf.Series(
-            np.array([np.array(p)[:, 0] for p in gs[gs.type == "MultiPoint"]]).flatten()
+            np.array(
+                [np.array(p)[:, 0] for p in gs[gs.type == "MultiPoint"]]
+            ).flatten()
         ),
     )
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.multipoints.y),
         cudf.Series(
-            np.array([np.array(p)[:, 1] for p in gs[gs.type == "MultiPoint"]]).flatten()
+            np.array(
+                [np.array(p)[:, 1] for p in gs[gs.type == "MultiPoint"]]
+            ).flatten()
         ),
     )
     cudf.testing.assert_series_equal(
@@ -175,7 +181,9 @@ def test_to_shapely_random():
     for i in range(250):
         geo = generator(3)
         geos_list.append(geo)
-    gi = gpd.GeoDataFrame({"geometry": geos_list, "integer": range(len(geos_list))})
+    gi = gpd.GeoDataFrame(
+        {"geometry": geos_list, "integer": range(len(geos_list))}
+    )
     cugpdf = cuspatial.from_geopandas(gi)
     cugpdf_back = cugpdf.to_geopandas()
     assert_eq_geo_df(gi, cugpdf_back)

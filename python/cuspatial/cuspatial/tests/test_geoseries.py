@@ -52,7 +52,9 @@ def generator(size, has_z=False):
             return LineString(points)
         elif obj_type == 4:
             num_lines = np.random.randint(3, np.ceil(np.sqrt(size)) + 3)
-            points = np.random.random(num_lines * size * 2).reshape(num_lines, size, 2)
+            points = np.random.random(num_lines * size * 2).reshape(
+                num_lines, size, 2
+            )
             return MultiLineString(tuple(points))
         elif obj_type == 5:
             return random_polygon(size)
@@ -124,13 +126,17 @@ def test_interleaved_point(gs, polys):
     cudf.testing.assert_series_equal(
         cudf.Series(cugs.multipoints.x).reset_index(drop=True),
         cudf.Series(
-            np.array([np.array(p)[:, 0] for p in gs[gs.type == "MultiPoint"]]).flatten()
+            np.array(
+                [np.array(p)[:, 0] for p in gs[gs.type == "MultiPoint"]]
+            ).flatten()
         ).reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
         cudf.Series(cugs.multipoints.y).reset_index(drop=True),
         cudf.Series(
-            np.array([np.array(p)[:, 1] for p in gs[gs.type == "MultiPoint"]]).flatten()
+            np.array(
+                [np.array(p)[:, 1] for p in gs[gs.type == "MultiPoint"]]
+            ).flatten()
         ).reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(

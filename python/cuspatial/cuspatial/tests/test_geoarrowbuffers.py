@@ -19,7 +19,9 @@ from cuspatial.geometry.geocolumn import GeoColumn
 
 def test_points():
     buffers = GeoArrowBuffers({"points_xy": [0, 1, 2, 3]})
-    cudf.testing.assert_series_equal(cudf.Series([0, 1, 2, 3]), buffers.points.xy)
+    cudf.testing.assert_series_equal(
+        cudf.Series([0, 1, 2, 3]), buffers.points.xy
+    )
     assert len(buffers.points) == 2
     column = GeoColumn(buffers)
     pd.testing.assert_series_equal(

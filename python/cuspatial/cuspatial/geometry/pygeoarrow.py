@@ -1,10 +1,6 @@
 # Copyright (c) 2021 NVIDIA CORPORATION
 
-from typing import TypeVar, Union
-
 import geopandas as gpd
-import numpy as np
-import pandas as pd
 import pyarrow as pa
 from shapely.geometry import (
     LineString,
@@ -14,8 +10,6 @@ from shapely.geometry import (
     Point,
     Polygon,
 )
-
-import cudf
 
 
 def getArrowPolygonsType() -> pa.list_:
@@ -28,7 +22,9 @@ def getArrowPolygonsType() -> pa.list_:
                     pa.list_(
                         pa.field(
                             "vertices",
-                            pa.list_(pa.field("xy", pa.float64(), nullable=False), 2),
+                            pa.list_(
+                                pa.field("xy", pa.float64(), nullable=False), 2
+                            ),
                             nullable=False,
                         )
                     ),

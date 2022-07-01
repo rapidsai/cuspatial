@@ -169,7 +169,9 @@ def test_derive_trajectories_zeros():
         cudf.Series([0]),  # y
         cudf.Series([0]),  # timestamp
     )
-    cudf.testing.assert_series_equal(traj_offsets, cudf.Series([0], dtype="int32"))
+    cudf.testing.assert_series_equal(
+        traj_offsets, cudf.Series([0], dtype="int32")
+    )
     cudf.testing.assert_frame_equal(
         objects,
         cudf.DataFrame(
@@ -190,7 +192,9 @@ def test_derive_trajectories_ones():
         cudf.Series([1]),  # y
         cudf.Series([1]),  # timestamp
     )
-    cudf.testing.assert_series_equal(traj_offsets, cudf.Series([0], dtype="int32"))
+    cudf.testing.assert_series_equal(
+        traj_offsets, cudf.Series([0], dtype="int32")
+    )
     cudf.testing.assert_frame_equal(
         objects,
         cudf.DataFrame(
@@ -211,7 +215,9 @@ def test_derive_trajectories_two():
         cudf.Series([0, 1]),  # y
         cudf.Series([0, 1]),  # timestamp
     )
-    cudf.testing.assert_series_equal(traj_offsets, cudf.Series([0, 1], dtype="int32"))
+    cudf.testing.assert_series_equal(
+        traj_offsets, cudf.Series([0, 1], dtype="int32")
+    )
     cudf.testing.assert_frame_equal(
         objects,
         cudf.DataFrame(
@@ -231,7 +237,9 @@ def test_derive_trajectories_many():
     xs = cudf.Series(np.random.randint(0, 10, 10))
     ys = cudf.Series(np.random.randint(0, 10, 10))
     timestamp = cudf.Series(np.random.randint(0, 10, 10))
-    objects, traj_offsets = cuspatial.derive_trajectories(object_id, xs, ys, timestamp)
+    objects, traj_offsets = cuspatial.derive_trajectories(
+        object_id, xs, ys, timestamp
+    )
 
     sorted_idxs = cudf.DataFrame({"id": object_id, "ts": timestamp}).argsort()
     cudf.testing.assert_series_equal(
@@ -243,8 +251,12 @@ def test_derive_trajectories_many():
         cudf.DataFrame(
             {
                 "object_id": object_id.sort_values().reset_index(drop=True),
-                "x": xs.take(sorted_idxs).reset_index(drop=True).astype("float64"),
-                "y": ys.take(sorted_idxs).reset_index(drop=True).astype("float64"),
+                "x": xs.take(sorted_idxs)
+                .reset_index(drop=True)
+                .astype("float64"),
+                "y": ys.take(sorted_idxs)
+                .reset_index(drop=True)
+                .astype("float64"),
                 "timestamp": timestamp.take(sorted_idxs)
                 .reset_index(drop=True)
                 .astype("datetime64[ms]"),

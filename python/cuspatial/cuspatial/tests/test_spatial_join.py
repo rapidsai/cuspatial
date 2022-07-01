@@ -287,7 +287,9 @@ def test_polygon_join_small(dtype):
         intersections,
         cudf.DataFrame(
             {
-                "poly_offset": cudf.Series([3, 3, 1, 2, 1, 1, 0, 3], dtype=np.uint32),
+                "poly_offset": cudf.Series(
+                    [3, 3, 1, 2, 1, 1, 0, 3], dtype=np.uint32
+                ),
                 "quad_offset": cudf.Series(
                     [10, 11, 6, 6, 12, 13, 2, 2], dtype=np.uint32
                 ),
@@ -486,7 +488,9 @@ def test_quadtree_point_in_polygon_small(dtype):
     )
 
 
-def run_test_quadtree_point_to_nearest_polyline_small(dtype, expected_distances):
+def run_test_quadtree_point_to_nearest_polyline_small(
+    dtype, expected_distances
+):
     x_min = 0
     x_max = 8
     y_min = 0

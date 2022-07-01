@@ -16,15 +16,21 @@ shapefiles_path = os.path.join(
 
 def test_non_existent_file():
     with pytest.raises(RuntimeError):
-        f_pos, r_pos, points = cuspatial.read_polygon_shapefile("non_exist.shp")
+        f_pos, r_pos, points = cuspatial.read_polygon_shapefile(
+            "non_exist.shp"
+        )
 
 
 def test_zero_polygons():
     f_pos, r_pos, points = cuspatial.read_polygon_shapefile(
         os.path.join(shapefiles_path, "empty_poly.shp")
     )
-    cudf.testing.assert_series_equal(f_pos, cudf.Series(dtype=np.int32, name="f_pos"))
-    cudf.testing.assert_series_equal(r_pos, cudf.Series(dtype=np.int32, name="r_pos"))
+    cudf.testing.assert_series_equal(
+        f_pos, cudf.Series(dtype=np.int32, name="f_pos")
+    )
+    cudf.testing.assert_series_equal(
+        r_pos, cudf.Series(dtype=np.int32, name="r_pos")
+    )
     cudf.testing.assert_frame_equal(
         points,
         cudf.DataFrame(

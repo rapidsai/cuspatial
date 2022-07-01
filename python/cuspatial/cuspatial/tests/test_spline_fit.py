@@ -76,8 +76,12 @@ def test_min():
 
 def test_cusparse():
     result = cuspatial.CubicSpline(
-        cudf.Series([0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4]).astype("float32"),
-        cudf.Series([3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3]).astype("float32"),
+        cudf.Series([0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4]).astype(
+            "float32"
+        ),
+        cudf.Series([3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3]).astype(
+            "float32"
+        ),
         prefixes=cudf.Series([0, 5, 10, 15]).astype("int32"),
     )
     cudf.testing.assert_frame_equal(
@@ -139,12 +143,18 @@ def test_class_interpolation_length_six_splits():
     x = cudf.Series([3, 2, 3, 4, 3, 4]).astype("float32")
     g = cuspatial.interpolate.CubicSpline(t, x)
     split_t = cudf.Series(np.linspace(0, 5, 11), dtype="float32")
-    cudf.testing.assert_series_equal(g(split_t)[t * 2].reset_index(drop=True), x)
+    cudf.testing.assert_series_equal(
+        g(split_t)[t * 2].reset_index(drop=True), x
+    )
 
 
 def test_class_triple():
-    t = cudf.Series([0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4]).astype("float32")
-    x = cudf.Series([3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3]).astype("float32")
+    t = cudf.Series([0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4]).astype(
+        "float32"
+    )
+    x = cudf.Series([3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3]).astype(
+        "float32"
+    )
     prefixes = cudf.Series([0, 5, 10, 15]).astype("int32")
     g = cuspatial.interpolate.CubicSpline(t, x, prefixes=prefixes)
     groups = cudf.Series(
@@ -154,12 +164,12 @@ def test_class_triple():
 
 
 def test_class_triple_six():
-    t = cudf.Series([0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5]).astype(
-        "float32"
-    )
-    x = cudf.Series([3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1]).astype(
-        "float32"
-    )
+    t = cudf.Series(
+        [0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5]
+    ).astype("float32")
+    x = cudf.Series(
+        [3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1]
+    ).astype("float32")
     prefixes = cudf.Series([0, 6, 12, 18]).astype("int32")
     g = cuspatial.interpolate.CubicSpline(t, x, prefixes=prefixes)
     groups = cudf.Series(
@@ -169,16 +179,18 @@ def test_class_triple_six():
 
 
 def test_class_triple_six_splits():
-    t = cudf.Series([0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5]).astype(
-        "float32"
-    )
-    x = cudf.Series([3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1]).astype(
-        "float32"
-    )
+    t = cudf.Series(
+        [0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5]
+    ).astype("float32")
+    x = cudf.Series(
+        [3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1]
+    ).astype("float32")
     prefixes = cudf.Series([0, 6, 12, 18]).astype("int32")
     g = cuspatial.interpolate.CubicSpline(t, x, prefixes=prefixes)
     groups = cudf.Series(
-        np.ravel(np.array([np.repeat(0, 12), np.repeat(1, 12), np.repeat(2, 12)]))
+        np.ravel(
+            np.array([np.repeat(0, 12), np.repeat(1, 12), np.repeat(2, 12)])
+        )
     )
     split_t = cudf.Series(
         np.ravel(
@@ -217,9 +229,13 @@ def test_class_triple_six_splits():
 
 def test_class_new_interpolation():
     t = cudf.Series(np.hstack((np.arange(5),) * 3)).astype("float32")
-    y = cudf.Series([3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3]).astype("float32")
+    y = cudf.Series([3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3]).astype(
+        "float32"
+    )
     prefix_sum = cudf.Series(cp.arange(4) * 5).astype("int32")
-    new_samples = cudf.Series(np.hstack((np.linspace(0, 4, 9),) * 3)).astype("float32")
+    new_samples = cudf.Series(np.hstack((np.linspace(0, 4, 9),) * 3)).astype(
+        "float32"
+    )
     curve = cuspatial.CubicSpline(t, y, prefixes=prefix_sum)
     new_x = cudf.Series(np.repeat(np.arange(0, 3), 9)).astype("int32")
     old_x = cudf.Series(np.repeat(np.arange(0, 3), 5)).astype("int32")
