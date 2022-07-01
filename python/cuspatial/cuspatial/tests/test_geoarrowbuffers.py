@@ -19,9 +19,7 @@ from cuspatial.geometry.geocolumn import GeoColumn
 
 def test_points():
     buffers = GeoArrowBuffers({"points_xy": [0, 1, 2, 3]})
-    cudf.testing.assert_series_equal(
-        cudf.Series([0, 1, 2, 3]), buffers.points.xy
-    )
+    cudf.testing.assert_series_equal(cudf.Series([0, 1, 2, 3]), buffers.points.xy)
     assert len(buffers.points) == 2
     column = GeoColumn(buffers)
     pd.testing.assert_series_equal(
@@ -31,7 +29,7 @@ def test_points():
 
 def test_multipoints():
     buffers = GeoArrowBuffers(
-        {"mpoints_xy": np.arange(0, 16), "mpoints_offsets": [0, 4, 8, 12, 16]}
+        {"mpoints_xy": np.arange(0, 16), "mpoints_offsets": [0, 2, 4, 6, 8]}
     )
     cudf.testing.assert_series_equal(
         cudf.Series(np.arange(0, 16)), buffers.multipoints.xy
@@ -53,10 +51,10 @@ def test_multipoints():
 
 def test_homogeneous_lines():
     buffers = GeoArrowBuffers(
-        {"lines_xy": range(24), "lines_offsets": np.array(range(5)) * 6}
+        {"lines_xy": range(24), "lines_offsets": np.array(range(5)) * 3}
     )
     cudf.testing.assert_series_equal(cudf.Series(range(24)), buffers.lines.xy)
-    assert len(buffers.lines) == 4
+    assert len(buffers.lines.offsets) == 5
     column = GeoColumn(buffers)
     pd.testing.assert_series_equal(
         GeoSeries(column).to_pandas(),
@@ -75,12 +73,12 @@ def test_mixed_lines():
     buffers = GeoArrowBuffers(
         {
             "lines_xy": range(24),
-            "lines_offsets": np.array(range(5)) * 6,
-            "mlines": [1, 3],
+            "lines_offsets": np.array(range(5)) * 3,
+            "mlines": [0, 1, 3, 4],
         }
     )
     cudf.testing.assert_series_equal(cudf.Series(range(24)), buffers.lines.xy)
-    assert len(buffers.lines) == 3
+    assert len(buffers.lines.offsets) == 5
     column = GeoColumn(buffers)
     pd.testing.assert_series_equal(
         GeoSeries(column).to_pandas(),
@@ -100,17 +98,13 @@ def test_mixed_lines():
 
 
 def test_homogeneous_polygons():
-    polygons_xy = np.array(
-        [
-            np.concatenate((x[0:6], x[0:2]), axis=None)
-            for x in np.arange(60).reshape(10, 6)
-        ]
-    )
+    polygons_xy = np.arange(60)
     buffers = GeoArrowBuffers(
         {
-            "polygons_xy": polygons_xy.flatten(),
-            "polygons_polygons": np.array([0, 1, 3, 5, 7, 9, 10]),
-            "polygons_rings": np.arange(11) * 8,
+            "polygons_xy": polygons_xy,
+            "polygons_polygons": [0, 1, 3, 5, 7, 9, 10],
+            "polygons_rings": np.arange(11) * 3,
+            "mpolygons": [0, 1, 2, 3, 4, 5, 6],
         }
     )
     cudf.testing.assert_series_equal(
@@ -146,18 +140,13 @@ def test_homogeneous_polygons():
 
 
 def test_polygons():
-    polygons_xy = np.array(
-        [
-            np.concatenate((x[0:6], x[0:2]), axis=None)
-            for x in np.arange(60).reshape(10, 6)
-        ]
-    )
+    polygons_xy = np.arange(60)
     buffers = GeoArrowBuffers(
         {
-            "polygons_xy": polygons_xy.flatten(),
-            "polygons_polygons": np.array([0, 1, 3, 5, 7, 9, 10]),
-            "polygons_rings": np.arange(11) * 8,
-            "mpolygons": [2, 4],
+            "polygons_xy": polygons_xy,
+            "polygons_polygons": [0, 1, 3, 5, 7, 9, 10],
+            "polygons_rings": np.arange(11) * 3,
+            "mpolygons": [0, 1, 2, 4, 5, 6],
         }
     )
     cudf.testing.assert_series_equal(
@@ -208,7 +197,7 @@ def test_full():
             "polygons_xy": range(12),
             "polygons_polygons": np.array(range(5)),
             "polygons_rings": np.array(range(5)) * 3,
-            "mpolygons": [1, 3],
+            "mpolygons": [0, 1, 3, 5],
         }
     )
-    assert len(buffers) == 11
+    assert len(buffers) == 9

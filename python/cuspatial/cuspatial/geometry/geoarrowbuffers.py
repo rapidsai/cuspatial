@@ -89,7 +89,7 @@ class GeoArrowBuffers:
         if isinstance(data, dict):
             if data.get("points_xy") is not None:
                 self._points = CoordinateArray(
-                    data["points_xy"], data_locale=data_locale
+                    pa.array(data["points_xy"]), data_locale=data_locale
                 )
             if data.get("mpoints_xy") is not None:
                 if data.get("mpoints_offsets") is None:
@@ -105,7 +105,9 @@ class GeoArrowBuffers:
                 self._lines = LineArray(
                     data["lines_xy"],
                     data["lines_offsets"],
-                    data.get("mlines"),
+                    data["mlines"]
+                    if data.get("mlines")
+                    else np.arange(len(data["lines_offsets"])),
                     data_locale=data_locale,
                 )
             if data.get("polygons_xy") is not None:
@@ -120,7 +122,9 @@ class GeoArrowBuffers:
                     data["polygons_xy"],
                     data["polygons_rings"],
                     data["polygons_polygons"],
-                    data.get("mpolygons"),
+                    data["mpolygons"]
+                    if data.get("mpolygons")
+                    else np.arange(len(data["polygons_polygons"])),
                     data_locale=data_locale,
                 )
 
@@ -229,12 +233,12 @@ class GeoArrowBuffers:
         """
         The numer of unique geometries stored in this GeoArrowBuffers.
         """
-        points_length = len(self._points) if self.points is not None else 0
-        lines_length = len(self._lines) if self.lines is not None else 0
+        points_length = len(self.points) if self.points is not None else 0
+        lines_length = len(self.lines) if self.lines is not None else 0
         multipoints_length = (
-            len(self._multipoints) if self.multipoints is not None else 0
+            len(self.multipoints) if self.multipoints is not None else 0
         )
-        polygons_length = len(self._polygons) if self.polygons is not None else 0
+        polygons_length = len(self.polygons) if self.polygons is not None else 0
         return points_length + lines_length + multipoints_length + polygons_length
 
     def copy(self, deep=True):
@@ -348,7 +352,6 @@ class CoordinateArray:
         if (len(xy) % 2) != 0:
             raise ValueError("xy must have even length")
         temp = self._serialize(xy)
-        print(temp)
         self._xy = temp
 
     @property
@@ -394,14 +397,14 @@ class CoordinateArray:
         """
         Return packed x-coordinates of this GeometryArray object.
         """
-        return self.xy[slice(0, None, 2)].reset_index(drop=True)
+        return self.xy[slice(0, None, 2)]
 
     @property
     def y(self):
         """
         Return packed y-coordinates of this GeometryArray object.
         """
-        return self.xy[slice(1, None, 2)].reset_index(drop=True)
+        return self.xy[slice(1, None, 2)]
 
     def __len__(self):
         return len(self.xy) // 2
@@ -520,18 +523,6 @@ class LineArray(OffsetArray):
 
     def __len__(self):
         return len(self._mlines) - 1
-        if len(self._mlines) > 0:
-            mlength = (
-                self._mlines.values[
-                    np.arange(1, len(self._mlines), 2, like=self._mlines.values)
-                ]
-                - self._mlines.values[
-                    np.arange(0, len(self._mlines), 2, like=self._mlines.values)
-                ]
-            ).sum() - (len(self._mlines) // 2)
-        else:
-            mlength = 0
-        return (len(self.offsets) - 1) - int(mlength)
 
 
 class MultiPointArray(OffsetArray):
@@ -630,15 +621,3 @@ class PolygonArray(OffsetArray):
 
     def __len__(self):
         return len(self._mpolys) - 1
-        if len(self._mpolys) > 0:
-            mlength = (
-                self._mpolys.values[
-                    np.arange(1, len(self._mpolys), 2, like=self._mpolys.values)
-                ]
-                - self._mpolys.values[
-                    np.arange(0, len(self._mpolys), 2, like=self._mpolys.values)
-                ]
-            ).sum() - (len(self._mpolys) // 2)
-        else:
-            mlength = 0
-        return (len(self.polys) - 1) - int(mlength)

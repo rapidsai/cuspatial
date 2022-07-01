@@ -39,44 +39,33 @@ class GeoMeta:
         self.input_types = []
         self.input_lengths = []
         if buffers.points is not None:
-            self.input_types.extend(repeat("p", len(buffers.points)))
+            self.input_types.extend(repeat(0, len(buffers.points)))
             self.input_lengths.extend(repeat(1, len(buffers.points)))
         if buffers.multipoints is not None:
-            self.input_types.extend(repeat("mp", len(buffers.multipoints)))
+            self.input_types.extend(repeat(1, len(buffers.multipoints)))
             self.input_lengths.extend(repeat(1, len(buffers.multipoints)))
         if buffers.lines is not None:
-            if len(buffers.lines.mlines) > 0:
-                self.input_types.extend(repeat("l", buffers.lines.mlines[0]))
-                self.input_lengths.extend(repeat(1, buffers.lines.mlines[0]))
-                for ml_index in range(len(buffers.lines.mlines) // 2):
-                    self.input_types.extend(["ml"])
-                    self.input_lengths += [1]
-                    mline_size = (
-                        buffers.lines.mlines[ml_index * 2 + 1]
-                        - 1
-                        - buffers.lines.mlines[ml_index * 2]
-                    )
-                    self.input_types.extend(repeat("l", mline_size))
-                    self.input_lengths.extend(repeat(1, mline_size))
-            else:
-                self.input_types.extend(repeat("l", len(buffers.lines)))
-                self.input_lengths.extend(repeat(1, len(buffers.lines)))
+            for index in range(len(buffers.lines.mlines) - 1):
+                line_len = buffers.lines.mlines[index + 1] - buffers.lines.mlines[index]
+                if line_len > 1:
+                    self.input_types.extend([3])
+                    self.input_lengths.extend([line_len])
+                else:
+                    self.input_types.extend([2])
+                    self.input_lengths.extend([1])
         if buffers.polygons is not None:
-            if len(buffers.polygons.mpolys) > 0:
-                self.input_types.extend(repeat("poly", buffers.polygons.mpolys[0]))
-                self.input_lengths.extend(repeat(1, buffers.polygons.mpolys[0]))
-                for mp_index in range(len(buffers.polygons.mpolys) // 2):
-                    mpoly_size = (
-                        buffers.polygons.mpolys[mp_index * 2 + 1]
-                        - buffers.polygons.mpolys[mp_index * 2]
-                    )
-                    self.input_types.extend(["mpoly"])
-                    self.input_lengths.extend([mpoly_size])
-                    self.input_types.extend(repeat("poly", mpoly_size))
-                    self.input_lengths.extend(repeat(1, mpoly_size))
-            else:
-                self.input_types.extend(repeat("poly", len(buffers.polygons)))
-                self.input_lengths.extend(repeat(1, len(buffers.polygons)))
+            for index in range(len(buffers.polygons.mpolys) - 1):
+                poly_len = (
+                    buffers.polygons.mpolys[index + 1] - buffers.polygons.mpolys[index]
+                )
+                if poly_len > 1:
+                    self.input_types.extend([5])
+                    self.input_lengths.extend([poly_len])
+                else:
+                    self.input_types.extend([4])
+                    self.input_lengths.extend([1])
+        self.input_types = pa.array(self.input_types).cast(pa.int8())
+        self.input_lengths = pa.array(self.input_lengths).cast(pa.int32())
 
     def copy(self):
         return type(self)(
@@ -298,7 +287,7 @@ class MultiPointShapelySerializer(ShapelySerializer):
         )
         item_source = self._source.multipoints
         result = item_source[item_start]
-        return MultiPoint(np.array(result).reshape(item_length, 2))
+        return MultiPoint(result.to_numpy().reshape(item_length, 2))
 
 
 class LineStringShapelySerializer(ShapelySerializer):
@@ -308,30 +297,20 @@ class LineStringShapelySerializer(ShapelySerializer):
         of the LineString referenced by `self._index`, creates one, and
         returns it.
         """
-        ml_index = self._index - 1
-        preceding_line_count = 0
-        preceding_ml_count = 0
-        # Skip over any LineStrings that are part of a MultiLineString
-        while ml_index >= 0:
-            if self._source._meta.input_types[ml_index] == "ml":
-                preceding_ml_count = preceding_ml_count + 1
-            elif (
-                self._source._meta.input_types[ml_index] == "l"
-                and preceding_ml_count == 0
+        index = 0
+        for i in range(self._index):
+            if (
+                self._source._meta.input_types[i] == pa.array([2]).cast(pa.int8())[0]
+                or self._source._meta.input_types[i] == pa.array([3]).cast(pa.int8())[0]
             ):
-                preceding_line_count = preceding_line_count + 1
-            ml_index = ml_index - 1
-        preceding_multis = preceding_ml_count
-        if preceding_multis > 0:
-            multi_end = self._source.lines.mlines[preceding_multis * 2 - 1]
-            item_start = multi_end + preceding_line_count
-        else:
-            item_start = preceding_line_count
-        item_length = self._source._meta.input_lengths[self._index]
-        item_end = item_length.as_py() * 2 + item_start
-        item_source = self._source.lines
-        result = item_source[item_start:item_end]
-        return LineString(np.array(result).reshape(2 * (item_start - item_end), 2))
+                index = index + 1
+        ring_start = self._source.lines.mlines[index]
+        ring_end = self._source.lines.mlines[index + 1]
+        rings = self._source.lines.offsets * 2
+        item_start = rings[ring_start]
+        item_end = rings[ring_end]
+        result = self._source.lines.xy[item_start:item_end]
+        return LineString(result.to_numpy().reshape(2 * (item_start - item_end), 2))
 
 
 class MultiLineStringShapelySerializer(ShapelySerializer):
@@ -345,8 +324,6 @@ class MultiLineStringShapelySerializer(ShapelySerializer):
         item_type = self._source._meta.input_types[self._index]
         index = 0
         for i in range(self._index):
-            print("honk")
-            print(self._source._meta.input_types[i])
             if (
                 self._source._meta.input_types[i] == pa.array([2]).cast(pa.int8())[0]
                 or self._source._meta.input_types[i] == pa.array([3]).cast(pa.int8())[0]
@@ -359,9 +336,9 @@ class MultiLineStringShapelySerializer(ShapelySerializer):
         return MultiLineString(
             [
                 LineString(
-                    np.array(self._source.lines[i]).reshape(
-                        int(len(self._source.lines[i]) / 2), 2
-                    )
+                    self._source.lines[i]
+                    .to_numpy()
+                    .reshape(int(len(self._source.lines[i]) / 2), 2)
                 )
                 for i in range(line_indices.start, line_indices.stop, 1)
             ]
@@ -379,34 +356,26 @@ class PolygonShapelySerializer(ShapelySerializer):
     """
 
     def to_shapely(self):
-        mp_index = self._index - 1
-        preceding_poly_count = 0
-        preceding_mp_count = 0
-        while mp_index >= 0:
-            if self._source._meta.input_types[mp_index] == "mpoly":
-                preceding_mp_count = preceding_mp_count + 1
-            elif (
-                self._source._meta.input_types[mp_index] == "poly"
-                and preceding_mp_count == 0
+        index = 0
+        for i in range(self._index):
+            if (
+                self._source._meta.input_types[i] == pa.array([4]).cast(pa.int8())[0]
+                or self._source._meta.input_types[i] == pa.array([5]).cast(pa.int8())[0]
             ):
-                preceding_poly_count = preceding_poly_count + 1
-            mp_index = mp_index - 1
-        preceding_multis = preceding_mp_count
-        multi_index = (
-            self._source.polygons.mpolys[preceding_multis * 2 - 1]
-            if preceding_multis > 0
-            else 0
-        )
-        preceding_polys = preceding_poly_count
-        ring_start = self._source.polygons.polys[multi_index + preceding_polys]
-        ring_end = self._source.polygons.polys[multi_index + preceding_polys + 1]
+                index = index + 1
+        polygon_start = self._source.polygons.mpolys[index]
+        polygon_end = self._source.polygons.mpolys[index + 1]
+        ring_start = self._source.polygons.polys[polygon_start]
+        ring_end = self._source.polygons.polys[polygon_end]
         rings = self._source.polygons.rings * 2
         exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
         exterior = self._source.polygons.xy[exterior_slice]
         return Polygon(
-            np.array(exterior).reshape(2 * (ring_start - ring_end), 2),
+            exterior.to_numpy().reshape(2 * (ring_start - ring_end), 2),
             [
-                np.array(self._source.polygons.xy[interior_slice]).reshape(
+                self._source.polygons.xy[interior_slice]
+                .to_numpy()
+                .reshape(
                     int((interior_slice.stop - interior_slice.start + 1) / 2),
                     2,
                 )
@@ -426,7 +395,6 @@ class MultiPolygonShapelySerializer(ShapelySerializer):
         subsequent interior rings of all polygons that around bound by the
         mpolygon specified by self._index.
         """
-        item_type = self._source._meta.input_types[self._index]
         index = 0
         for i in range(self._index):
             if (
@@ -447,9 +415,11 @@ class MultiPolygonShapelySerializer(ShapelySerializer):
             exterior = self._source.polygons.xy[exterior_slice]
             polys.append(
                 Polygon(
-                    np.array(exterior).reshape(2 * (ring_start - ring_end), 2),
+                    exterior.to_numpy().reshape(2 * (ring_start - ring_end), 2),
                     [
-                        np.array(self._source.polygons.xy[interior_slice]).reshape(
+                        self._source.polygons.xy[interior_slice]
+                        .to_numpy()
+                        .reshape(
                             int((interior_slice.stop - interior_slice.start + 1) / 2),
                             2,
                         )

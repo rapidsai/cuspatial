@@ -52,9 +52,7 @@ def generator(size, has_z=False):
             return LineString(points)
         elif obj_type == 4:
             num_lines = np.random.randint(3, np.ceil(np.sqrt(size)) + 3)
-            points = np.random.random(num_lines * size * 2).reshape(
-                num_lines, size, 2
-            )
+            points = np.random.random(num_lines * size * 2).reshape(num_lines, size, 2)
             return MultiLineString(tuple(points))
         elif obj_type == 5:
             return random_polygon(size)
@@ -114,48 +112,48 @@ def assert_eq_geo(geo1, geo2):
 def test_interleaved_point(gs, polys):
     cugs = cuspatial.from_geopandas(gs)
     pd.testing.assert_series_equal(
-        cugs.points.x.to_pandas(),
-        gs[gs.type == "Point"].x.reset_index(drop=True),
+        pd.Series(cugs.points.x, dtype="float64"),
+        gs[gs.type == "Point"].x,
+        check_index=False,
     )
     pd.testing.assert_series_equal(
         cugs.points.y.to_pandas(),
-        gs[gs.type == "Point"].y.reset_index(drop=True),
+        gs[gs.type == "Point"].y,
+        check_index=False,
     )
     cudf.testing.assert_series_equal(
-        cugs.multipoints.x,
+        cudf.Series(cugs.multipoints.x).reset_index(drop=True),
         cudf.Series(
-            np.array(
-                [np.array(p)[:, 0] for p in gs[gs.type == "MultiPoint"]]
-            ).flatten()
-        ),
+            np.array([np.array(p)[:, 0] for p in gs[gs.type == "MultiPoint"]]).flatten()
+        ).reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
-        cugs.multipoints.y,
+        cudf.Series(cugs.multipoints.y).reset_index(drop=True),
         cudf.Series(
-            np.array(
-                [np.array(p)[:, 1] for p in gs[gs.type == "MultiPoint"]]
-            ).flatten()
-        ),
+            np.array([np.array(p)[:, 1] for p in gs[gs.type == "MultiPoint"]]).flatten()
+        ).reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
-        cugs.lines.x,
+        cudf.Series(cugs.lines.x).reset_index(drop=True),
         cudf.Series(
             np.array([range(11, 34, 2)]).flatten(),
             dtype="float64",
-        ),
+        ).reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
-        cugs.lines.y,
+        cudf.Series(cugs.lines.y).reset_index(drop=True),
         cudf.Series(
             np.array([range(12, 35, 2)]).flatten(),
             dtype="float64",
-        ),
+        ).reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
-        cugs.polygons.x, cudf.Series(polys[:, 0], dtype="float64")
+        cudf.Series(cugs.polygons.x).reset_index(drop=True),
+        cudf.Series(polys[:, 0], dtype="float64").reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
-        cugs.polygons.y, cudf.Series(polys[:, 1], dtype="float64")
+        cudf.Series(cugs.polygons.y).reset_index(drop=True),
+        cudf.Series(polys[:, 1], dtype="float64").reset_index(drop=True),
     )
 
 
