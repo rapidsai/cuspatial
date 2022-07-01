@@ -84,6 +84,7 @@ class GeoArrowBuffers:
         self._multipoints = None
         self._lines = None
         self._polygons = None
+        self.data = None
 
         if isinstance(data, dict):
             if data.get("points_xy") is not None:
@@ -154,6 +155,7 @@ class GeoArrowBuffers:
                 )
 
         elif isinstance(data, pa.lib.UnionArray):
+            self.data = data
             self._points = CoordinateArray(
                 data.field(0).values, [], data_locale=data_locale
             )
@@ -308,7 +310,8 @@ class CoordinateArray:
     def data_location(self, data_location):
         if data_location not in (cudf, pd, pa):
             raise NotImplementedError(
-                "only cudf, pandas, and pa CoordinateArrays " "are supported at this time"
+                "only cudf, pandas, and pa CoordinateArrays "
+                "are supported at this time"
             )
         else:
             self._data_location = data_location
