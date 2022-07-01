@@ -118,8 +118,8 @@ class GeoArrowBuffers:
                     )
                 self._polygons = PolygonArray(
                     data["polygons_xy"],
-                    data["polygons_polygons"],
                     data["polygons_rings"],
+                    data["polygons_polygons"],
                     data.get("mpolygons"),
                     data_locale=data_locale,
                 )
@@ -147,8 +147,8 @@ class GeoArrowBuffers:
             if data.polygons is not None:
                 self._polygons = PolygonArray(
                     data.polygons.xy,
-                    data.polygons.polys,
                     data.polygons.rings,
+                    data.polygons.polys,
                     data.polygons.mpolys,
                     data.polygons.z,
                     data_locale=data_locale,
@@ -450,9 +450,9 @@ class OffsetArray(CoordinateArray):
             rindex = index
         else:
             rindex = slice(index, index + 1, 1)
-        new_slice = slice(self.offsets[rindex.start], None)
+        new_slice = slice(self.offsets[rindex.start] * 2, None)
         if rindex.stop < len(self.offsets):
-            new_slice = slice(new_slice.start, self.offsets[rindex.stop])
+            new_slice = slice(new_slice.start, self.offsets[rindex.stop] * 2)
         result = self.xy[new_slice]
         return result
 
@@ -551,7 +551,7 @@ class MultiPointArray(OffsetArray):
 
 
 class PolygonArray(OffsetArray):
-    def __init__(self, xy, polys, rings, mpolys, z=None, data_locale=cudf):
+    def __init__(self, xy, rings, polys, mpolys, z=None, data_locale=cudf):
         """
         The GeoArrow column format for Polygons uses the same scheme as the
         format for LineStrings - MultiPolygons and Polygons from the same

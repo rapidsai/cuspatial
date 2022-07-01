@@ -298,7 +298,7 @@ class MultiPointShapelySerializer(ShapelySerializer):
         )
         item_source = self._source.multipoints
         result = item_source[item_start]
-        return MultiPoint(np.array(result).reshape(item_length // 2, 2))
+        return MultiPoint(np.array(result).reshape(item_length, 2))
 
 
 class LineStringShapelySerializer(ShapelySerializer):
@@ -345,11 +345,16 @@ class MultiLineStringShapelySerializer(ShapelySerializer):
         item_type = self._source._meta.input_types[self._index]
         index = 0
         for i in range(self._index):
-            if self._source._meta.input_types[i] == item_type:
+            print("honk")
+            print(self._source._meta.input_types[i])
+            if (
+                self._source._meta.input_types[i] == pa.array([2]).cast(pa.int8())[0]
+                or self._source._meta.input_types[i] == pa.array([3]).cast(pa.int8())[0]
+            ):
                 index = index + 1
         line_indices = slice(
-            self._source.lines.mlines[index * 2],
-            self._source.lines.mlines[index * 2 + 1],
+            self._source.lines.mlines[index],
+            self._source.lines.mlines[index + 1],
         )
         return MultiLineString(
             [
@@ -395,7 +400,7 @@ class PolygonShapelySerializer(ShapelySerializer):
         preceding_polys = preceding_poly_count
         ring_start = self._source.polygons.polys[multi_index + preceding_polys]
         ring_end = self._source.polygons.polys[multi_index + preceding_polys + 1]
-        rings = self._source.polygons.rings
+        rings = self._source.polygons.rings * 2
         exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
         exterior = self._source.polygons.xy[exterior_slice]
         return Polygon(
@@ -424,17 +429,20 @@ class MultiPolygonShapelySerializer(ShapelySerializer):
         item_type = self._source._meta.input_types[self._index]
         index = 0
         for i in range(self._index):
-            if self._source._meta.input_types[i] == item_type:
+            if (
+                self._source._meta.input_types[i] == pa.array([4]).cast(pa.int8())[0]
+                or self._source._meta.input_types[i] == pa.array([5]).cast(pa.int8())[0]
+            ):
                 index = index + 1
         poly_indices = slice(
-            self._source.polygons.mpolys[index * 2],
-            self._source.polygons.mpolys[index * 2 + 1],
+            self._source.polygons.mpolys[index],
+            self._source.polygons.mpolys[index + 1],
         )
         polys = []
         for i in range(poly_indices.start, poly_indices.stop):
             ring_start = self._source.polygons.polys[i]
             ring_end = self._source.polygons.polys[i + 1]
-            rings = self._source.polygons.rings
+            rings = self._source.polygons.rings * 2
             exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
             exterior = self._source.polygons.xy[exterior_slice]
             polys.append(
