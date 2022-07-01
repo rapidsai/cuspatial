@@ -106,7 +106,9 @@ class GeoDataFrame(cudf.DataFrame):
             # Since there's no easy way to create a GeoColumn from a
             # NumericalColumn, we're forced to do so manually.
             if isinstance(other_col, GeoColumn):
-                col = GeoColumn(other_col._geo, other_col._meta, cudf.Index(col))
+                col = GeoColumn(
+                    other_col._geo, other_col._meta, cudf.Index(col)
+                )
 
             self._data.set_by_label(
                 name, col._with_type_metadata(other_col.dtype), validate=False
@@ -118,7 +120,9 @@ class GeoDataFrame(cudf.DataFrame):
                 # When other._index is a CategoricalIndex, there is
                 if isinstance(
                     other._index, cudf.core.index.CategoricalIndex
-                ) and not isinstance(self._index, cudf.core.index.CategoricalIndex):
+                ) and not isinstance(
+                    self._index, cudf.core.index.CategoricalIndex
+                ):
                     self._index = cudf.Index(self._index._column)
 
         return self

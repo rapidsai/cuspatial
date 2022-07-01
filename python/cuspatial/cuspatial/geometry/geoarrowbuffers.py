@@ -185,7 +185,9 @@ class GeoArrowBuffers:
                 data_locale=data_locale,
             )
         else:
-            raise TypeError(f"Invalid type passed to GeoArrowBuffers ctor {type(data)}")
+            raise TypeError(
+                f"Invalid type passed to GeoArrowBuffers ctor {type(data)}"
+            )
 
     @property
     def points(self):
@@ -238,8 +240,12 @@ class GeoArrowBuffers:
         multipoints_length = (
             len(self.multipoints) if self.multipoints is not None else 0
         )
-        polygons_length = len(self.polygons) if self.polygons is not None else 0
-        return points_length + lines_length + multipoints_length + polygons_length
+        polygons_length = (
+            len(self.polygons) if self.polygons is not None else 0
+        )
+        return (
+            points_length + lines_length + multipoints_length + polygons_length
+        )
 
     def copy(self, deep=True):
         """
@@ -460,7 +466,11 @@ class OffsetArray(CoordinateArray):
         return result
 
     def __repr__(self):
-        return f"{super().__repr__()}" f"offsets:\n" f"{self.offsets.__repr__()}\n"
+        return (
+            f"{super().__repr__()}"
+            f"offsets:\n"
+            f"{self.offsets.__repr__()}\n"
+        )
 
     def copy(self, deep=True):
         if self.z is not None:
@@ -509,7 +519,9 @@ class LineArray(OffsetArray):
         self._mlines = self._serialize(mlines)
 
     def __repr__(self):
-        return f"{super().__repr__()}" f"mlines:\n" f"{self.mlines.__repr__()}\n"
+        return (
+            f"{super().__repr__()}" f"mlines:\n" f"{self.mlines.__repr__()}\n"
+        )
 
     def copy(self, deep=True):
         base = super().copy(deep)

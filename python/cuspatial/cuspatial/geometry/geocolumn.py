@@ -3,7 +3,6 @@ import numbers
 from itertools import repeat
 from typing import TypeVar, Union
 
-import numpy as np
 import pyarrow as pa
 
 from shapely.geometry import (
@@ -46,7 +45,10 @@ class GeoMeta:
             self.input_lengths.extend(repeat(1, len(buffers.multipoints)))
         if buffers.lines is not None:
             for index in range(len(buffers.lines.mlines) - 1):
-                line_len = buffers.lines.mlines[index + 1] - buffers.lines.mlines[index]
+                line_len = (
+                    buffers.lines.mlines[index + 1]
+                    - buffers.lines.mlines[index]
+                )
                 if line_len > 1:
                     self.input_types.extend([3])
                     self.input_lengths.extend([line_len])
@@ -56,7 +58,8 @@ class GeoMeta:
         if buffers.polygons is not None:
             for index in range(len(buffers.polygons.mpolys) - 1):
                 poly_len = (
-                    buffers.polygons.mpolys[index + 1] - buffers.polygons.mpolys[index]
+                    buffers.polygons.mpolys[index + 1]
+                    - buffers.polygons.mpolys[index]
                 )
                 if poly_len > 1:
                     self.input_types.extend([5])
@@ -188,7 +191,9 @@ class GeoColumn(NumericalColumn):
         Create a copy of all of the GPU-backed data structures in this
         GeoColumn.
         """
-        result = GeoColumn(self._geo.copy(deep), self._meta.copy(), self.data.copy())
+        result = GeoColumn(
+            self._geo.copy(deep), self._meta.copy(), self.data.copy()
+        )
         return result
 
     def from_arrow(self):
@@ -236,7 +241,9 @@ class GeoColumnILocIndexer:
             4: PolygonShapelySerializer,
             5: MultiPolygonShapelySerializer,
         }
-        return type_map[self._sr._meta.input_types[index].as_py()](self._sr, index)
+        return type_map[self._sr._meta.input_types[index].as_py()](
+            self._sr, index
+        )
 
 
 class ShapelySerializer:
@@ -300,8 +307,10 @@ class LineStringShapelySerializer(ShapelySerializer):
         index = 0
         for i in range(self._index):
             if (
-                self._source._meta.input_types[i] == pa.array([2]).cast(pa.int8())[0]
-                or self._source._meta.input_types[i] == pa.array([3]).cast(pa.int8())[0]
+                self._source._meta.input_types[i]
+                == pa.array([2]).cast(pa.int8())[0]
+                or self._source._meta.input_types[i]
+                == pa.array([3]).cast(pa.int8())[0]
             ):
                 index = index + 1
         ring_start = self._source.lines.mlines[index]
@@ -310,7 +319,9 @@ class LineStringShapelySerializer(ShapelySerializer):
         item_start = rings[ring_start]
         item_end = rings[ring_end]
         result = self._source.lines.xy[item_start:item_end]
-        return LineString(result.to_numpy().reshape(2 * (item_start - item_end), 2))
+        return LineString(
+            result.to_numpy().reshape(2 * (item_start - item_end), 2)
+        )
 
 
 class MultiLineStringShapelySerializer(ShapelySerializer):
@@ -321,12 +332,13 @@ class MultiLineStringShapelySerializer(ShapelySerializer):
         `self._index`, then return the MultiLineString at that position packed
         with the LineStrings in its range.
         """
-        item_type = self._source._meta.input_types[self._index]
         index = 0
         for i in range(self._index):
             if (
-                self._source._meta.input_types[i] == pa.array([2]).cast(pa.int8())[0]
-                or self._source._meta.input_types[i] == pa.array([3]).cast(pa.int8())[0]
+                self._source._meta.input_types[i]
+                == pa.array([2]).cast(pa.int8())[0]
+                or self._source._meta.input_types[i]
+                == pa.array([3]).cast(pa.int8())[0]
             ):
                 index = index + 1
         line_indices = slice(
@@ -359,8 +371,10 @@ class PolygonShapelySerializer(ShapelySerializer):
         index = 0
         for i in range(self._index):
             if (
-                self._source._meta.input_types[i] == pa.array([4]).cast(pa.int8())[0]
-                or self._source._meta.input_types[i] == pa.array([5]).cast(pa.int8())[0]
+                self._source._meta.input_types[i]
+                == pa.array([4]).cast(pa.int8())[0]
+                or self._source._meta.input_types[i]
+                == pa.array([5]).cast(pa.int8())[0]
             ):
                 index = index + 1
         polygon_start = self._source.polygons.mpolys[index]
@@ -398,8 +412,10 @@ class MultiPolygonShapelySerializer(ShapelySerializer):
         index = 0
         for i in range(self._index):
             if (
-                self._source._meta.input_types[i] == pa.array([4]).cast(pa.int8())[0]
-                or self._source._meta.input_types[i] == pa.array([5]).cast(pa.int8())[0]
+                self._source._meta.input_types[i]
+                == pa.array([4]).cast(pa.int8())[0]
+                or self._source._meta.input_types[i]
+                == pa.array([5]).cast(pa.int8())[0]
             ):
                 index = index + 1
         poly_indices = slice(
@@ -415,12 +431,21 @@ class MultiPolygonShapelySerializer(ShapelySerializer):
             exterior = self._source.polygons.xy[exterior_slice]
             polys.append(
                 Polygon(
-                    exterior.to_numpy().reshape(2 * (ring_start - ring_end), 2),
+                    exterior.to_numpy().reshape(
+                        2 * (ring_start - ring_end), 2
+                    ),
                     [
                         self._source.polygons.xy[interior_slice]
                         .to_numpy()
                         .reshape(
-                            int((interior_slice.stop - interior_slice.start + 1) / 2),
+                            int(
+                                (
+                                    interior_slice.stop
+                                    - interior_slice.start
+                                    + 1
+                                )
+                                / 2
+                            ),
                             2,
                         )
                         for interior_slice in [

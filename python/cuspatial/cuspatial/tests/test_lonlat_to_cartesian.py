@@ -42,9 +42,7 @@ def test_camera_corners(corner):
     result = cuspatial.lonlat_to_cartesian(
         x[corner], y[corner], cudf.Series(x[corner]), cudf.Series(y[corner])
     )
-    cudf.testing.assert_frame_equal(
-        result, cudf.DataFrame({"x": [0.0], "y": [0.0]})
-    )
+    cudf.testing.assert_frame_equal(result, cudf.DataFrame({"x": [0.0], "y": [0.0]}))
 
 
 def test_longest_distance():
@@ -76,9 +74,7 @@ def test_zeros():
     result = cuspatial.lonlat_to_cartesian(
         0.0, 0.0, cudf.Series([0.0]), cudf.Series([0.0])
     )
-    cudf.testing.assert_frame_equal(
-        result, cudf.DataFrame({"x": [0.0], "y": [0.0]})
-    )
+    cudf.testing.assert_frame_equal(result, cudf.DataFrame({"x": [0.0], "y": [0.0]}))
 
 
 def test_values():
