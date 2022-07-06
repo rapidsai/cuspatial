@@ -77,24 +77,46 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
   EXPECT_EQ(ret, got.end());
 }
 
-// TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
-// {
-//   using T = TypeParam;
+TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
+{
+  auto test_point = this->make_device_points({{-2.0, 0.0},
+                                              {2.0, 0.0},
+                                              {0.0, -2.0},
+                                              {0.0, 2.0},
+                                              {-0.5, 0.0},
+                                              {0.5, 0.0},
+                                              {0.0, -0.5},
+                                              {0.0, 0.5}});
 
-//   auto test_point_xs     = wrapper<T>({-2.0, 2.0, 0.0, 0.0, -0.5, 0.5, 0.0, 0.0});
-//   auto test_point_ys     = wrapper<T>({0.0, 0.0, -2.0, 2.0, 0.0, 0.0, -0.5, 0.5});
-//   auto poly_offsets      = wrapper<cudf::size_type>({0, 1});
-//   auto poly_ring_offsets = wrapper<cudf::size_type>({0, 5});
-//   auto poly_point_ys     = wrapper<T>({-1.0, -1.0, 1.0, 1.0, -1.0, 0.0, 1.0, 0.0, -1.0, 0.0});
-//   auto poly_point_xs     = wrapper<T>({-1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 0.0, -1.0, 0.0, 1.0});
+  auto poly_offsets      = this->make_device_offsets({0, 1});
+  auto poly_ring_offsets = this->make_device_offsets({0, 5});
+  auto poly_point        = this->make_device_points({{-1.0, -1.0},
+                                              {-1.0, 1.0},
+                                              {1.0, 1.0},
+                                              {1.0, -1.0},
+                                              {-1.0, -1.0},
+                                              {0.0, 1.0},
+                                              {1.0, 0.0},
+                                              {0.0, -1.0},
+                                              {-1.0, 0.0},
+                                              {0.0, 1.0}});
 
-//   auto expected = wrapper<int32_t>({0b00, 0b00, 0b00, 0b00, 0b11, 0b11, 0b11, 0b11});
+  auto got      = rmm::device_vector<int32_t>(test_point.size());
+  auto expected = std::vector<int32_t>({0b00, 0b00, 0b00, 0b00, 0b11, 0b11, 0b11, 0b11});
 
-//   auto actual = cuspatial::point_in_polygon(
-//     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
+  auto ret = point_in_polygon(test_point.begin(),
+                              test_point.end(),
+                              poly_offsets.begin(),
+                              poly_offsets.end(),
+                              poly_ring_offsets.begin(),
+                              poly_ring_offsets.end(),
+                              poly_point.begin(),
+                              poly_point.end(),
+                              got.begin());
 
-//   expect_columns_equal(expected, actual->view(), verbosity);
-// }
+  EXPECT_EQ(got, expected);
+  EXPECT_EQ(ret, got.end());
+}
 
 // TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
 // {
