@@ -16,11 +16,14 @@
 
 #pragma once
 
+#include "thrust/detail/raw_reference_cast.h"
 #include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+
+#include <thrust/memory.h>
 
 #include <iterator>
 #include <type_traits>
@@ -47,7 +50,7 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_begin,
 
   int32_t hit_mask = 0;
 
-  auto const test_point = test_points_begin[idx];
+  auto const test_point = thrust::raw_reference_cast(test_points_begin[idx]);
 
   // for each polygon
   for (auto poly_idx = 0; poly_idx < num_polys; poly_idx++) {
@@ -67,8 +70,10 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_begin,
 
       // for each line segment
       for (auto point_idx = 0; point_idx < ring_len; point_idx++) {
-        auto const a = poly_points_begin[ring_begin + ((point_idx + 0) % ring_len)];
-        auto const b = poly_points_begin[ring_begin + ((point_idx + 1) % ring_len)];
+        auto const a =
+          thrust::raw_reference_cast(poly_points_begin[ring_begin + ((point_idx + 0) % ring_len)]);
+        auto const b =
+          thrust::raw_reference_cast(poly_points_begin[ring_begin + ((point_idx + 1) % ring_len)]);
 
         bool y_between_ay_by =
           a.y <= test_point.y && test_point.y < b.y;  // is y in range [ay, by) when ay < by?
@@ -87,7 +92,6 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_begin,
 
     hit_mask |= point_is_within << poly_idx;
   }
-
   result[idx] = hit_mask;
 }
 
