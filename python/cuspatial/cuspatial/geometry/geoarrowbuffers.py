@@ -398,7 +398,7 @@ class CoordinateArray:
         """
         Return packed x-coordinates of this GeometryArray object.
         """
-        return self.xy[slice(0, None, 2)]
+        return self.xy[::2]
 
     @property
     def y(self):
