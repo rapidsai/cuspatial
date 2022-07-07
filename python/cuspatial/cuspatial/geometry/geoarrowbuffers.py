@@ -405,7 +405,7 @@ class CoordinateArray:
         """
         Return packed y-coordinates of this GeometryArray object.
         """
-        return self.xy[slice(1, None, 2)]
+        return self.xy[1::2]
 
     def __len__(self):
         return len(self.xy) // 2
