@@ -353,8 +353,7 @@ class CoordinateArray:
     def xy(self, xy):
         if (len(xy) % 2) != 0:
             raise ValueError("xy must have even length")
-        temp = self._serialize(xy)
-        self._xy = temp
+        self._xy = self._serialize(xy)
 
     @property
     def z(self):
@@ -399,14 +398,14 @@ class CoordinateArray:
         """
         Return packed x-coordinates of this GeometryArray object.
         """
-        return self.xy[slice(0, None, 2)]
+        return self.xy[::2]
 
     @property
     def y(self):
         """
         Return packed y-coordinates of this GeometryArray object.
         """
-        return self.xy[slice(1, None, 2)]
+        return self.xy[1::2]
 
     def __len__(self):
         return len(self.xy) // 2

@@ -66,11 +66,11 @@ class GeoMeta:
                 else:
                     self.input_types.extend([4])
                     self.input_lengths.extend([1])
-        self.input_types = pa.array(self.input_types).cast(pa.int8())
+        self.input_types = pa.array(self.input_types, type=pa.int8())
         self.input_lengths = pa.array(self.input_lengths).cast(pa.int32())
 
     def copy(self):
-        return type(self)(
+        return self.__class__(
             {
                 "input_types": pa.Int8Array.from_buffers(
                     self.input_types.type,
