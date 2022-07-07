@@ -47,8 +47,8 @@ def test_from_geoseries_complex(gs):
 def test_from_geopandas_point():
     gs = gpd.GeoSeries(Point(1.0, 2.0))
     cugs = cuspatial.from_geopandas(gs)
-    cudf.testing._utils.assert_eq(
-        cugs.points.xy, cudf.Series([1.0, 2.0], dtype="float64").to_arrow()
+    cudf.testing.assert_series_equal(
+        cudf.Series(cugs.points.xy), cudf.Series([1.0, 2.0], dtype="float64")
     )
 
 

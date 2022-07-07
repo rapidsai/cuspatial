@@ -292,10 +292,6 @@ class GeoArrowBuffers:
 
 
 class CoordinateArray:
-    _data_location = None
-    _xy = None
-    _z = None
-
     def __init__(self, xy, z=None, data_locale=cudf):
         """
         A GeoArrow column of points. The CoordinateArray stores all of the
@@ -427,8 +423,6 @@ class PointsArray(CoordinateArray):
 
 
 class OffsetArray(CoordinateArray):
-    _offsets = None
-
     def __init__(self, xy, offsets, z=None, data_locale=cudf):
         """
         A GeoArrow column of offset geometries. This is the base class of all
