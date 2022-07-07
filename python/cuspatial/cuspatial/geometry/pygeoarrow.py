@@ -12,66 +12,32 @@ from shapely.geometry import (
 )
 
 
-def getArrowPolygonsType() -> pa.list_:
-    return pa.list_(
-        pa.field(
-            "polygons",
-            pa.list_(
-                pa.field(
-                    "rings",
-                    pa.list_(
-                        pa.field(
-                            "vertices",
-                            pa.list_(
-                                pa.field("xy", pa.float64(), nullable=False), 2
-                            ),
-                            nullable=False,
-                        )
-                    ),
-                    nullable=False,
-                )
-            ),
-        )
-    )
+def named_list(name, x, size=-1):
+    return pa.list_(pa.field(name, x, nullable=False), list_size=size)
 
 
-def getArrowLinestringsType() -> pa.list_:
-    return pa.list_(
-        pa.field(
-            "lines",
-            pa.list_(
-                pa.field(
-                    "offsets",
-                    pa.list_(pa.field("xy", pa.float64(), nullable=False), 2),
-                    nullable=False,
-                )
-            ),
-            nullable=False,
-        )
-    )
+XYType: pa.ListType = named_list("xy", pa.float64(), size=2)
 
+ArrowPolygonsType: pa.ListType = named_list(
+    "polygons", named_list("rings", named_list("vertices", XYType))
+)
 
-def getArrowMultiPointsType() -> pa.list_:
-    return pa.list_(
-        pa.field(
-            "points",
-            pa.list_(pa.field("xy", pa.float64(), nullable=False), 2),
-            nullable=False,
-        )
-    )
+ArrowLinestringsType: pa.ListType = named_list(
+    "lines", named_list("offsets", XYType)
+)
 
+ArrowMultiPointsType: pa.ListType = named_list("points", XYType)
 
-def getArrowPointsType() -> pa.list_:
-    return pa.list_(pa.field("xy", pa.float64(), nullable=False), 2)
+ArrowPointsType: pa.ListType = XYType
 
 
 def getGeoArrowUnionRootType() -> pa.union:
     return pa.union(
         [
-            getArrowPointsType(),
-            getArrowMultiPointsType(),
-            getArrowLinestringsType(),
-            getArrowPolygonsType(),
+            ArrowPointsType,
+            ArrowMultiPointsType,
+            ArrowLinestringsType,
+            ArrowPolygonsType,
         ],
         mode="dense",
     )
@@ -131,10 +97,10 @@ def from_geopandas(geoseries: gpd.GeoSeries) -> pa.lib.UnionArray:
     type_buffer = pa.array(buffers[0]).cast(pa.int8())
     all_offsets = pa.array(buffers[5]).cast(pa.int32())
     children = [
-        pa.array(buffers[1], type=getArrowPointsType()),
-        pa.array(buffers[2], type=getArrowMultiPointsType()),
-        pa.array(buffers[3], type=getArrowLinestringsType()),
-        pa.array(buffers[4], type=getArrowPolygonsType()),
+        pa.array(buffers[1], type=ArrowPointsType),
+        pa.array(buffers[2], type=ArrowMultiPointsType),
+        pa.array(buffers[3], type=ArrowLinestringsType),
+        pa.array(buffers[4], type=ArrowPolygonsType),
     ]
 
     return pa.UnionArray.from_dense(
