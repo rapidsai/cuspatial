@@ -353,8 +353,7 @@ class CoordinateArray:
     def xy(self, xy):
         if (len(xy) % 2) != 0:
             raise ValueError("xy must have even length")
-        temp = self._serialize(xy)
-        self._xy = temp
+        self._xy = self._serialize(xy)
 
     @property
     def z(self):
