@@ -70,7 +70,7 @@ class GeoMeta:
         self.input_lengths = pa.array(self.input_lengths).cast(pa.int32())
 
     def copy(self):
-        return type(self)(
+        return self.__class__(
             {
                 "input_types": pa.Int8Array.from_buffers(
                     self.input_types.type,
