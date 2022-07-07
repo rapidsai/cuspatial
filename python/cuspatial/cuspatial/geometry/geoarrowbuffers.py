@@ -1,9 +1,10 @@
-# Copyright (c) 2021 NVIDIA CORPORATION
+# Copyright (c) 2021-2022 NVIDIA CORPORATION
 
 from typing import TypeVar, Union
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 
 import cudf
 
@@ -83,10 +84,12 @@ class GeoArrowBuffers:
         self._multipoints = None
         self._lines = None
         self._polygons = None
+        self.data = None
+
         if isinstance(data, dict):
             if data.get("points_xy") is not None:
                 self._points = CoordinateArray(
-                    data["points_xy"], data_locale=data_locale
+                    pa.array(data["points_xy"]), data_locale=data_locale
                 )
             if data.get("mpoints_xy") is not None:
                 if data.get("mpoints_offsets") is None:
@@ -102,7 +105,9 @@ class GeoArrowBuffers:
                 self._lines = LineArray(
                     data["lines_xy"],
                     data["lines_offsets"],
-                    data.get("mlines"),
+                    data["mlines"]
+                    if data.get("mlines")
+                    else np.arange(len(data["lines_offsets"])),
                     data_locale=data_locale,
                 )
             if data.get("polygons_xy") is not None:
@@ -115,11 +120,14 @@ class GeoArrowBuffers:
                     )
                 self._polygons = PolygonArray(
                     data["polygons_xy"],
-                    data["polygons_polygons"],
                     data["polygons_rings"],
-                    data.get("mpolygons"),
+                    data["polygons_polygons"],
+                    data["mpolygons"]
+                    if data.get("mpolygons")
+                    else np.arange(len(data["polygons_polygons"])),
                     data_locale=data_locale,
                 )
+
         elif isinstance(data, GeoArrowBuffers):
             if data.points is not None:
                 self._points = CoordinateArray(
@@ -143,12 +151,39 @@ class GeoArrowBuffers:
             if data.polygons is not None:
                 self._polygons = PolygonArray(
                     data.polygons.xy,
-                    data.polygons.polys,
                     data.polygons.rings,
+                    data.polygons.polys,
                     data.polygons.mpolys,
                     data.polygons.z,
                     data_locale=data_locale,
                 )
+
+        elif isinstance(data, pa.lib.UnionArray):
+            self.data = data
+            self._points = CoordinateArray(
+                data.field(0).values, [], data_locale=data_locale
+            )
+            self._multipoints = MultiPointArray(
+                data.field(1).values.values,
+                data.field(1).offsets,
+                [],
+                data_locale=data_locale,
+            )
+            self._lines = LineArray(
+                data.field(2).values.values.values,
+                data.field(2).values.offsets,
+                data.field(2).offsets,
+                [],
+                data_locale=data_locale,
+            )
+            self._polygons = PolygonArray(
+                data.field(3).values.values.values.values,
+                data.field(3).values.values.offsets,
+                data.field(3).values.offsets,
+                data.field(3).offsets,
+                [],
+                data_locale=data_locale,
+            )
         else:
             raise TypeError(
                 f"Invalid type passed to GeoArrowBuffers ctor {type(data)}"
@@ -200,13 +235,13 @@ class GeoArrowBuffers:
         """
         The numer of unique geometries stored in this GeoArrowBuffers.
         """
-        points_length = len(self._points) if self.points is not None else 0
-        lines_length = len(self._lines) if self.lines is not None else 0
+        points_length = len(self.points) if self.points is not None else 0
+        lines_length = len(self.lines) if self.lines is not None else 0
         multipoints_length = (
-            len(self._multipoints) if self.multipoints is not None else 0
+            len(self.multipoints) if self.multipoints is not None else 0
         )
         polygons_length = (
-            len(self._polygons) if self.polygons is not None else 0
+            len(self.polygons) if self.polygons is not None else 0
         )
         return (
             points_length + lines_length + multipoints_length + polygons_length
@@ -279,9 +314,9 @@ class CoordinateArray:
 
     @data_location.setter
     def data_location(self, data_location):
-        if data_location not in (cudf, pd):
+        if data_location not in (cudf, pd, pa):
             raise NotImplementedError(
-                "only cudf and pandas CoordinateArrays "
+                "only cudf, pandas, and pa CoordinateArrays "
                 "are supported at this time"
             )
         else:
@@ -289,7 +324,9 @@ class CoordinateArray:
 
     def _serialize(self, data):
         try:
-            if self._data_location == pd:
+            if self._data_location == pa:
+                return data
+            elif self._data_location == pd:
                 if isinstance(data, cudf.Series):
                     return data.to_pandas()
                 else:
@@ -361,14 +398,14 @@ class CoordinateArray:
         """
         Return packed x-coordinates of this GeometryArray object.
         """
-        return self.xy[slice(0, None, 2)].reset_index(drop=True)
+        return self.xy[::2]
 
     @property
     def y(self):
         """
         Return packed y-coordinates of this GeometryArray object.
         """
-        return self.xy[slice(1, None, 2)].reset_index(drop=True)
+        return self.xy[1::2]
 
     def __len__(self):
         return len(self.xy) // 2
@@ -415,9 +452,9 @@ class OffsetArray(CoordinateArray):
             rindex = index
         else:
             rindex = slice(index, index + 1, 1)
-        new_slice = slice(self.offsets[rindex.start], None)
+        new_slice = slice(self.offsets[rindex.start] * 2, None)
         if rindex.stop < len(self.offsets):
-            new_slice = slice(new_slice.start, self.offsets[rindex.stop])
+            new_slice = slice(new_slice.start, self.offsets[rindex.stop] * 2)
         result = self.xy[new_slice]
         return result
 
@@ -490,22 +527,7 @@ class LineArray(OffsetArray):
         return result
 
     def __len__(self):
-        if len(self._mlines) > 0:
-            mlength = (
-                self._mlines.values[
-                    np.arange(
-                        1, len(self._mlines), 2, like=self._mlines.values
-                    )
-                ]
-                - self._mlines.values[
-                    np.arange(
-                        0, len(self._mlines), 2, like=self._mlines.values
-                    )
-                ]
-            ).sum() - (len(self._mlines) // 2)
-        else:
-            mlength = 0
-        return (len(self.offsets) - 1) - int(mlength)
+        return len(self._mlines) - 1
 
 
 class MultiPointArray(OffsetArray):
@@ -525,7 +547,7 @@ class MultiPointArray(OffsetArray):
 
 
 class PolygonArray(OffsetArray):
-    def __init__(self, xy, polys, rings, mpolys, z=None, data_locale=cudf):
+    def __init__(self, xy, rings, polys, mpolys, z=None, data_locale=cudf):
         """
         The GeoArrow column format for Polygons uses the same scheme as the
         format for LineStrings - MultiPolygons and Polygons from the same
@@ -603,19 +625,4 @@ class PolygonArray(OffsetArray):
         return result
 
     def __len__(self):
-        if len(self._mpolys) > 0:
-            mlength = (
-                self._mpolys.values[
-                    np.arange(
-                        1, len(self._mpolys), 2, like=self._mpolys.values
-                    )
-                ]
-                - self._mpolys.values[
-                    np.arange(
-                        0, len(self._mpolys), 2, like=self._mpolys.values
-                    )
-                ]
-            ).sum() - (len(self._mpolys) // 2)
-        else:
-            mlength = 0
-        return (len(self.polys) - 1) - int(mlength)
+        return len(self._mpolys) - 1

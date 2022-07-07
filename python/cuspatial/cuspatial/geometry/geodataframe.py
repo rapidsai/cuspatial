@@ -1,5 +1,6 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION
+# Copyright (c) 2020-2022, NVIDIA CORPORATION
 
+import pyarrow as pa
 from geopandas import GeoDataFrame as gpGeoDataFrame
 
 import cudf
@@ -31,7 +32,7 @@ class GeoDataFrame(cudf.DataFrame):
                 if is_geometry_type(data[col]):
                     adapter = GeoPandasAdapter(data[col])
                     buffers = GeoArrowBuffers(
-                        adapter.get_geoarrow_host_buffers()
+                        adapter.get_geoarrow_union(), data_locale=pa
                     )
                     pandas_meta = GeoMeta(adapter.get_geopandas_meta())
                     column = GeoColumn(buffers, pandas_meta)

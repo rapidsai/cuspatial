@@ -61,7 +61,6 @@ def test_half():
         cudf.Series([-1.0, 1.0, 3.0, -3.0]),
         cudf.Series([1.0, -1.0, 3.0, -3.0]),
     )
-    print(result)
     cudf.testing.assert_frame_equal(
         result, cudf.DataFrame({"x": [-1.0, 1.0], "y": [1.0, -1.0]})
     )
