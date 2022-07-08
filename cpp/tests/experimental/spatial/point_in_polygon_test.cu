@@ -223,66 +223,72 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
 }
 
 struct OffsetIteratorFunctor {
-  std::size_t __device__ operator()(std::size_t idx) {return idx * 5;}
+  std::size_t __device__ operator()(std::size_t idx) { return idx * 5; }
 };
 
-template<typename T>
+template <typename T>
 struct PolyPointIteratorFunctorA {
-  T __device__ operator()(std::size_t idx) {    switch (idx % 5) {
+  T __device__ operator()(std::size_t idx)
+  {
+    switch (idx % 5) {
       case 0:
       case 1: return -1.0;
       case 2:
       case 3: return 1.0;
       case 4:
       default: return -1.0;
-    }}
+    }
+  }
 };
 
-template<typename T>
+template <typename T>
 struct PolyPointIteratorFunctorB {
-  T __device__ operator()(std::size_t idx) {    switch (idx % 5) {
-     case 0: return -1.0;
+  T __device__ operator()(std::size_t idx)
+  {
+    switch (idx % 5) {
+      case 0: return -1.0;
       case 1:
       case 2: return 1.0;
       case 3:
       case 4:
       default: return -1.0;
-    }}
+    }
+  }
 };
 
 TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
 {
   using T = TypeParam;
 
-  auto constexpr num_polys = 31;
+  auto constexpr num_polys       = 31;
   auto constexpr num_poly_points = num_polys * 5;
 
-  auto test_point = this->make_device_points({{0.0, 0.0}, {2.0, 0.0}});
-  auto offsets_iter      = thrust::make_counting_iterator<std::size_t>(0);
+  auto test_point   = this->make_device_points({{0.0, 0.0}, {2.0, 0.0}});
+  auto offsets_iter = thrust::make_counting_iterator<std::size_t>(0);
   auto poly_ring_offsets_iter =
     thrust::make_transform_iterator(offsets_iter, OffsetIteratorFunctor{});
-  auto poly_point_xs_iter = thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorA<T>{});
-  auto poly_point_ys_iter = thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorB<T>{});
+  auto poly_point_xs_iter =
+    thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorA<T>{});
+  auto poly_point_ys_iter =
+    thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorB<T>{});
   auto poly_point_iter = make_cartesian_2d_iterator(poly_point_xs_iter, poly_point_ys_iter);
 
   auto expected =
     std::vector<int32_t>({0b1111111111111111111111111111111, 0b0000000000000000000000000000000});
   auto got = rmm::device_vector<int32_t>(test_point.size());
 
-  auto ret = point_in_polygon(
-    test_point.begin(),
-    test_point.end(),
-    offsets_iter,
-    offsets_iter + num_polys,
-    poly_ring_offsets_iter,
-    poly_ring_offsets_iter + num_polys,
-    poly_point_iter,
-    poly_point_iter + num_poly_points,
-    got.begin());
-  
+  auto ret = point_in_polygon(test_point.begin(),
+                              test_point.end(),
+                              offsets_iter,
+                              offsets_iter + num_polys,
+                              poly_ring_offsets_iter,
+                              poly_ring_offsets_iter + num_polys,
+                              poly_point_iter,
+                              poly_point_iter + num_poly_points,
+                              got.begin());
+
   EXPECT_EQ(got, expected);
   EXPECT_EQ(ret, got.end());
-
 }
 
 // template <typename T>

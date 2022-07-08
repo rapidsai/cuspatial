@@ -30,7 +30,11 @@
 namespace cuspatial {
 namespace detail {
 
-template <class Cart2dItA, class Cart2dItB, class OffsetIteratorA, class OffsetIteratorB, class OutputIt>
+template <class Cart2dItA,
+          class Cart2dItB,
+          class OffsetIteratorA,
+          class OffsetIteratorB,
+          class OutputIt>
 __global__ void point_in_polygon_kernel(Cart2dItA test_points_begin,
                                         int32_t const num_test_points,
                                         OffsetIteratorA poly_offsets_begin,
@@ -96,7 +100,11 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_begin,
 
 }  // namespace detail
 
-template <class Cart2dItA, class Cart2dItB, class OffsetIteratorA, class OffsetIteratorB , class OutputIt>
+template <class Cart2dItA,
+          class Cart2dItB,
+          class OffsetIteratorA,
+          class OffsetIteratorB,
+          class OutputIt>
 OutputIt point_in_polygon(Cart2dItA points_begin,
                           Cart2dItA points_end,
                           OffsetIteratorA polygon_offsets_begin,
@@ -124,7 +132,8 @@ OutputIt point_in_polygon(Cart2dItA points_begin,
                                 typename std::iterator_traits<Cart2dItB>::value_type>(),
                 "Inputs must be cuspatial::cartesian_2d");
 
-  static_assert(std::is_integral_v<typename std::iterator_traits<OffsetIteratorA>::value_type> && std::is_integral_v<typename std::iterator_traits<OffsetIteratorB>::value_type>,
+  static_assert(std::is_integral_v<typename std::iterator_traits<OffsetIteratorA>::value_type> &&
+                  std::is_integral_v<typename std::iterator_traits<OffsetIteratorB>::value_type>,
                 "OffsetIterator must point to integral type.");
 
   static_assert(std::is_same_v<typename std::iterator_traits<OutputIt>::value_type, int32_t>,
