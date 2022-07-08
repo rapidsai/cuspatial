@@ -30,12 +30,12 @@
 namespace cuspatial {
 namespace detail {
 
-template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt>
+template <class Cart2dItA, class Cart2dItB, class OffsetIteratorA, class OffsetIteratorB, class OutputIt>
 __global__ void point_in_polygon_kernel(Cart2dItA test_points_begin,
                                         int32_t const num_test_points,
-                                        OffsetIterator poly_offsets_begin,
+                                        OffsetIteratorA poly_offsets_begin,
                                         int32_t const num_polys,
-                                        OffsetIterator ring_offsets_begin,
+                                        OffsetIteratorB ring_offsets_begin,
                                         int32_t const num_rings,
                                         Cart2dItB poly_points_begin,
                                         int32_t const num_poly_points,
@@ -96,13 +96,13 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_begin,
 
 }  // namespace detail
 
-template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt>
+template <class Cart2dItA, class Cart2dItB, class OffsetIteratorA, class OffsetIteratorB , class OutputIt>
 OutputIt point_in_polygon(Cart2dItA points_begin,
                           Cart2dItA points_end,
-                          OffsetIterator polygon_offsets_begin,
-                          OffsetIterator polygon_offsets_end,
-                          OffsetIterator ring_offsets_begin,
-                          OffsetIterator ring_offsets_end,
+                          OffsetIteratorA polygon_offsets_begin,
+                          OffsetIteratorA polygon_offsets_end,
+                          OffsetIteratorB ring_offsets_begin,
+                          OffsetIteratorB ring_offsets_end,
                           Cart2dItB polygon_points_begin,
                           Cart2dItB polygon_points_end,
                           OutputIt output,
@@ -124,7 +124,7 @@ OutputIt point_in_polygon(Cart2dItA points_begin,
                                 typename std::iterator_traits<Cart2dItB>::value_type>(),
                 "Inputs must be cuspatial::cartesian_2d");
 
-  static_assert(std::is_integral_v<typename std::iterator_traits<OffsetIterator>::value_type>,
+  static_assert(std::is_integral_v<typename std::iterator_traits<OffsetIteratorA>::value_type> && std::is_integral_v<typename std::iterator_traits<OffsetIteratorB>::value_type>,
                 "OffsetIterator must point to integral type.");
 
   static_assert(std::is_same_v<typename std::iterator_traits<OutputIt>::value_type, int32_t>,

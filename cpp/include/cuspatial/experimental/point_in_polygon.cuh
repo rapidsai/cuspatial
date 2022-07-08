@@ -23,13 +23,13 @@ namespace cuspatial {
 /**
  * @copybrief
  */
-template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt>
+template <class Cart2dItA, class Cart2dItB, class OffsetIteratorA, class OffsetIteratorB , class OutputIt>
 OutputIt point_in_polygon(Cart2dItA points_begin,
                           Cart2dItA points_end,
-                          OffsetIterator polygon_offsets_begin,
-                          OffsetIterator polygon_offsets_end,
-                          OffsetIterator ring_offsets_begin,
-                          OffsetIterator ring_offsets_end,
+                          OffsetIteratorA polygon_offsets_begin,
+                          OffsetIteratorA polygon_offsets_end,
+                          OffsetIteratorB ring_offsets_begin,
+                          OffsetIteratorB ring_offsets_end,
                           Cart2dItB polygon_points_begin,
                           Cart2dItB polygon_points_end,
                           OutputIt output,
