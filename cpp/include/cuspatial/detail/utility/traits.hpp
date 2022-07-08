@@ -25,6 +25,16 @@ constexpr bool is_floating_point()
 
 /**
  * @internal
+ * @brief returns true if all types are floating point types.
+ */
+template <typename... Ts>
+constexpr bool is_integral()
+{
+  return std::conjunction_v<std::is_integral<Ts>...>;
+}
+
+/**
+ * @internal
  * @brief returns true if T and all types Ts... are the same floating point type.
  */
 template <typename T, typename... Ts>

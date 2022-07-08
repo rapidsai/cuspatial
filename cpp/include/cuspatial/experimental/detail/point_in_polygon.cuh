@@ -136,9 +136,9 @@ OutputIt point_in_polygon(Cart2dItA points_begin,
                                 detail::iterator_value_type<Cart2dItB>>(),
                 "Inputs must be cuspatial::cartesian_2d");
 
-  static_assert(std::is_integral_v<detail::iterator_value_type<OffsetIteratorA>> &&
-                  std::is_integral_v<detail::iterator_value_type<OffsetIteratorB>>,
-                "OffsetIterator must point to integral type.");
+  static_assert(detail::is_integral<detail::iterator_value_type<OffsetIteratorA>,
+                                    detail::iterator_value_type<OffsetIteratorB>>(),
+                "OffsetIterators must point to integral type.");
 
   static_assert(std::is_same_v<typename detail::iterator_value_type<OutputIt>, int32_t>,
                 "OutputIt must point to 32 bit integer type.");
