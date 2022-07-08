@@ -30,12 +30,6 @@
 namespace cuspatial {
 namespace detail {
 
-template <typename Iterator>
-using iterator_value_type = typename std::iterator_traits<Iterator>::value_type;
-
-template <typename Iterator>
-using iterator_vec_base_type = typename iterator_value_type<Iterator>::value_type;
-
 template <class Cart2dItA,
           class Cart2dItB,
           class OffsetIteratorA,
@@ -140,7 +134,7 @@ OutputIt point_in_polygon(Cart2dItA points_begin,
                                     detail::iterator_value_type<OffsetIteratorB>>(),
                 "OffsetIterators must point to integral type.");
 
-  static_assert(std::is_same_v<typename detail::iterator_value_type<OutputIt>, int32_t>,
+  static_assert(std::is_same_v<detail::iterator_value_type<OutputIt>, int32_t>,
                 "OutputIt must point to 32 bit integer type.");
 
   CUSPATIAL_EXPECTS(num_polys <= std::numeric_limits<int32_t>::digits,

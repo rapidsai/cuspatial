@@ -44,5 +44,23 @@ constexpr bool is_same_floating_point()
          std::conjunction_v<std::is_floating_point<Ts>...>;
 }
 
+/**
+ * @internal
+ * @brief Get the value type of @p Iterator type
+ *
+ * @tparam Iterator The iterator type to get from
+ */
+template <typename Iterator>
+using iterator_value_type = typename std::iterator_traits<Iterator>::value_type;
+
+/**
+ * @internal
+ * @brief Get the value type of the underlying vec_2d type from @p Iterator type
+ *
+ * @tparam Iterator The value type to get from, must point to a cuspatial::vec_2d
+ */
+template <typename Iterator>
+using iterator_vec_base_type = typename iterator_value_type<Iterator>::value_type;
+
 }  // namespace detail
 }  // namespace cuspatial
