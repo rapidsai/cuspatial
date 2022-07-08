@@ -30,6 +30,12 @@
 namespace cuspatial {
 namespace detail {
 
+template <typename Iterator>
+using iterator_value_type = typename std::iterator_traits<Iterator>::value_type;
+
+template <typename Iterator>
+using iterator_vec_base_type = typename iterator_value_type<Iterator>::value_type;
+
 template <class Cart2dItA,
           class Cart2dItB,
           class OffsetIteratorA,
@@ -45,7 +51,7 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_begin,
                                         int32_t const num_poly_points,
                                         OutputIt result)
 {
-  using T = typename std::iterator_traits<Cart2dItA>::value_type::value_type;
+  using T = iterator_vec_base_type<Cart2dItA>;
 
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -116,27 +122,25 @@ OutputIt point_in_polygon(Cart2dItA points_begin,
                           OutputIt output,
                           rmm::cuda_stream_view stream)
 {
-  using T = typename std::iterator_traits<Cart2dItA>::value_type::value_type;
+  using T = detail::iterator_vec_base_type<Cart2dItA>;
 
   auto const num_test_points = std::distance(points_begin, points_end);
   auto const num_polys       = std::distance(polygon_offsets_begin, polygon_offsets_end);
   auto const num_rings       = std::distance(ring_offsets_begin, ring_offsets_end);
   auto const num_poly_points = std::distance(polygon_points_begin, polygon_points_end);
 
-  static_assert(
-    detail::
-      is_same_floating_point<T, typename std::iterator_traits<Cart2dItB>::value_type::value_type>(),
-    "Underlying type of Cart2dItA and Cart2dItB must be the same floating point type");
+  static_assert(detail::is_same_floating_point<T, detail::iterator_vec_base_type<Cart2dItB>>(),
+                "Underlying type of Cart2dItA and Cart2dItB must be the same floating point type");
   static_assert(detail::is_same<cartesian_2d<T>,
-                                typename std::iterator_traits<Cart2dItA>::value_type,
-                                typename std::iterator_traits<Cart2dItB>::value_type>(),
+                                detail::iterator_value_type<Cart2dItA>,
+                                detail::iterator_value_type<Cart2dItB>>(),
                 "Inputs must be cuspatial::cartesian_2d");
 
-  static_assert(std::is_integral_v<typename std::iterator_traits<OffsetIteratorA>::value_type> &&
-                  std::is_integral_v<typename std::iterator_traits<OffsetIteratorB>::value_type>,
+  static_assert(std::is_integral_v<detail::iterator_value_type<OffsetIteratorA>> &&
+                  std::is_integral_v<detail::iterator_value_type<OffsetIteratorB>>,
                 "OffsetIterator must point to integral type.");
 
-  static_assert(std::is_same_v<typename std::iterator_traits<OutputIt>::value_type, int32_t>,
+  static_assert(std::is_same_v<typename detail::iterator_value_type<OutputIt>, int32_t>,
                 "OutputIt must point to 32 bit integer type.");
 
   CUSPATIAL_EXPECTS(num_polys <= std::numeric_limits<int32_t>::digits,
