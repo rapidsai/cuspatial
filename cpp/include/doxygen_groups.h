@@ -58,6 +58,7 @@
  *          @brief APIs related to spatial relationship
  *
  *          @file point_in_polygon.hpp
+ *          @file experimental/point_in_polygon.cuh
  *          @file polygon_bounding_box.hpp
  *          @file polyline_bounding_box.hpp
  *          @file spatial_window.hpp

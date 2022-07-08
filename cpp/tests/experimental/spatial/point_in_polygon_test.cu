@@ -192,7 +192,7 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
 {
   auto test_point        = this->make_device_points({{0.0, 0.0}});
   auto poly_offsets      = this->make_device_offsets({0, 1, 2, 3});
-  auto poly_ring_offsets = this->make_device_offsets({0, 4, 8, 12});
+  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10, 15});
 
   // 0: min x min y corner
   // 1: min x max y corner

@@ -30,18 +30,28 @@
 namespace cuspatial {
 namespace detail {
 
+/**
+ * @brief Kernel to test if a point is inside all polygons.
+ *
+ * The algorithm is based on testing if the point is on one side of the segments in a polygon ring.
+ * Each point is tested against all segments in the polygon ring. If the point is on the the "same
+ * side" of a segment, it will flip the flag of `point_is_within`. Starting with `point_is_within`
+ * as `False`, a point is in the polygon if the flag is flipped odd number of times. Note that for a
+ * polygon ring with n vertices, the algorithm tests `n` segments (not `n-1`), including the segment
+ * between the last and first vertex.
+ */
 template <class Cart2dItA,
           class Cart2dItB,
           class OffsetIteratorA,
           class OffsetIteratorB,
           class OutputIt>
-__global__ void point_in_polygon_kernel(Cart2dItA test_points_begin,
+__global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
                                         int32_t const num_test_points,
-                                        OffsetIteratorA poly_offsets_begin,
+                                        OffsetIteratorA poly_offsets_first,
                                         int32_t const num_polys,
-                                        OffsetIteratorB ring_offsets_begin,
+                                        OffsetIteratorB ring_offsets_first,
                                         int32_t const num_rings,
-                                        Cart2dItB poly_points_begin,
+                                        Cart2dItB poly_points_first,
                                         int32_t const num_poly_points,
                                         OutputIt result)
 {
@@ -53,30 +63,30 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_begin,
 
   int32_t hit_mask = 0;
 
-  auto const test_point = thrust::raw_reference_cast(test_points_begin[idx]);
+  auto const test_point = thrust::raw_reference_cast(test_points_first[idx]);
 
   // for each polygon
   for (auto poly_idx = 0; poly_idx < num_polys; poly_idx++) {
     auto poly_idx_next = poly_idx + 1;
-    auto poly_begin    = poly_offsets_begin[poly_idx];
-    auto poly_end = (poly_idx_next < num_polys) ? poly_offsets_begin[poly_idx_next] : num_rings;
+    auto poly_begin    = poly_offsets_first[poly_idx];
+    auto poly_end = (poly_idx_next < num_polys) ? poly_offsets_first[poly_idx_next] : num_rings;
 
     bool point_is_within = false;
 
     // for each ring
     for (auto ring_idx = poly_begin; ring_idx < poly_end; ring_idx++) {
       auto ring_idx_next = ring_idx + 1;
-      auto ring_begin    = ring_offsets_begin[ring_idx];
+      auto ring_begin    = ring_offsets_first[ring_idx];
       auto ring_end =
-        (ring_idx_next < num_rings) ? ring_offsets_begin[ring_idx_next] : num_poly_points;
+        (ring_idx_next < num_rings) ? ring_offsets_first[ring_idx_next] : num_poly_points;
       auto ring_len = ring_end - ring_begin;
 
-      // for each line segment
+      // for each line segment, including the segment between the last and first vertex
       for (auto point_idx = 0; point_idx < ring_len; point_idx++) {
         auto const a =
-          thrust::raw_reference_cast(poly_points_begin[ring_begin + ((point_idx + 0) % ring_len)]);
+          thrust::raw_reference_cast(poly_points_first[ring_begin + ((point_idx + 0) % ring_len)]);
         auto const b =
-          thrust::raw_reference_cast(poly_points_begin[ring_begin + ((point_idx + 1) % ring_len)]);
+          thrust::raw_reference_cast(poly_points_first[ring_begin + ((point_idx + 1) % ring_len)]);
 
         bool y_between_ay_by =
           a.y <= test_point.y && test_point.y < b.y;  // is y in range [ay, by) when ay < by?
@@ -105,23 +115,23 @@ template <class Cart2dItA,
           class OffsetIteratorA,
           class OffsetIteratorB,
           class OutputIt>
-OutputIt point_in_polygon(Cart2dItA points_begin,
-                          Cart2dItA points_end,
-                          OffsetIteratorA polygon_offsets_begin,
-                          OffsetIteratorA polygon_offsets_end,
-                          OffsetIteratorB ring_offsets_begin,
-                          OffsetIteratorB ring_offsets_end,
-                          Cart2dItB polygon_points_begin,
-                          Cart2dItB polygon_points_end,
+OutputIt point_in_polygon(Cart2dItA test_points_first,
+                          Cart2dItA test_points_last,
+                          OffsetIteratorA polygon_offsets_first,
+                          OffsetIteratorA polygon_offsets_last,
+                          OffsetIteratorB poly_ring_offsets_first,
+                          OffsetIteratorB poly_ring_offsets_last,
+                          Cart2dItB polygon_points_first,
+                          Cart2dItB polygon_points_last,
                           OutputIt output,
                           rmm::cuda_stream_view stream)
 {
   using T = detail::iterator_vec_base_type<Cart2dItA>;
 
-  auto const num_test_points = std::distance(points_begin, points_end);
-  auto const num_polys       = std::distance(polygon_offsets_begin, polygon_offsets_end);
-  auto const num_rings       = std::distance(ring_offsets_begin, ring_offsets_end);
-  auto const num_poly_points = std::distance(polygon_points_begin, polygon_points_end);
+  auto const num_test_points = std::distance(test_points_first, test_points_last);
+  auto const num_polys       = std::distance(polygon_offsets_first, polygon_offsets_last);
+  auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last);
+  auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
 
   static_assert(detail::is_same_floating_point<T, detail::iterator_vec_base_type<Cart2dItB>>(),
                 "Underlying type of Cart2dItA and Cart2dItB must be the same floating point type");
@@ -147,13 +157,13 @@ OutputIt point_in_polygon(Cart2dItA points_begin,
   auto const num_blocks     = (num_test_points + block_size - 1) / block_size;
 
   detail::point_in_polygon_kernel<<<num_blocks, block_size, 0, stream.value()>>>(
-    points_begin,
+    test_points_first,
     num_test_points,
-    polygon_offsets_begin,
+    polygon_offsets_first,
     num_polys,
-    ring_offsets_begin,
+    poly_ring_offsets_first,
     num_rings,
-    polygon_points_begin,
+    polygon_points_first,
     num_poly_points,
     output);
   CUSPATIAL_CUDA_TRY(cudaGetLastError());
