@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "thrust/detail/raw_reference_cast.h"
 #include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/vec_2d.hpp>
