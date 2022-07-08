@@ -291,63 +291,6 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
   EXPECT_EQ(ret, got.end());
 }
 
-// template <typename T>
-// struct PointInPolygonUnsupportedTypesTest : ::testing::Test {
-// };
-
-// using UnsupportedTestTypes = RemoveIf<ContainedIn<TestTypes>, NumericTypes>;
-// TYPED_TEST_CASE(PointInPolygonUnsupportedTypesTest, UnsupportedTestTypes);
-
-// TYPED_TEST(PointInPolygonUnsupportedTypesTest, UnsupportedPointType)
-// {
-//   using T = TypeParam;
-
-//   auto test_point = this->make_device_point({{0.0, 0.0}});
-//   auto poly_offsets = this->make_device_offset({0});
-//   auto poly_ring_offsets = this->make_device_offset({0});
-//   auto poly_point = this->make_device_point({{0.0, 1.0},{ 1.0,  0.0},{ 0.0,  -1.0},{ -1.0,
-//   0.0}});
-
-//   auto got      = rmm::device_vector<int32_t>(test_point.size());
-
-//   EXPECT_THROW(
-//      point_in_polygon(test_point.begin(),
-//             test_point.end(),
-//             poly_offsets.begin(),
-//             poly_offsets.end(),
-//             poly_ring_offsets.begin(),
-//             poly_ring_offsets.end(),
-//             poly_point.begin(),
-//             poly_point.end(),
-//             got.begin()),
-//     cuspatial::logic_error);
-// }
-
-// template <typename T>
-// struct PointInPolygonUnsupportedChronoTypesTest : public BaseFixture {
-// };
-
-// TYPED_TEST_CASE(PointInPolygonUnsupportedChronoTypesTest, ChronoTypes);
-
-// TYPED_TEST(PointInPolygonUnsupportedChronoTypesTest, UnsupportedPointChronoType)
-// {
-//   using T = TypeParam;
-//   using R = typename T::rep;
-
-//   auto test_point_xs     = wrapper<T, R>({R{0}, R{0}});
-//   auto test_point_ys     = wrapper<T, R>({R{0}});
-//   auto poly_offsets      = wrapper<cudf::size_type>({0});
-//   auto poly_ring_offsets = wrapper<cudf::size_type>({0});
-//   auto poly_point_xs     = wrapper<T, R>({R{0}, R{1}, R{0}, R{-1}});
-//   auto poly_point_ys     = wrapper<T, R>({R{1}, R{0}, R{-1}, R{0}});
-
-//   EXPECT_THROW(
-//     cuspatial::point_in_polygon(
-//       test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs,
-//       poly_point_ys),
-//     cuspatial::logic_error);
-// }
-
 struct PointInPolygonErrorTest : public PointInPolygonTest<double> {
 };
 
