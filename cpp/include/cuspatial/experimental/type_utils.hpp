@@ -108,6 +108,13 @@ auto make_vec_2d_iterator(FirstIter first, SecondIter second)
  * "LegacyRandomAccessIterator"
  */
 template <typename FirstIter, typename SecondIter>
+auto make_vec_2d_iterator(FirstIter first, SecondIter second)
+{
+  using T = typename std::iterator_traits<FirstIter>::value_type;
+  return make_vec_2d_iterator<vec_2d<T>>(first, second);
+}
+
+template <typename FirstIter, typename SecondIter>
 auto make_lonlat_iterator(FirstIter first, SecondIter second)
 {
   using T = typename std::iterator_traits<FirstIter>::value_type;

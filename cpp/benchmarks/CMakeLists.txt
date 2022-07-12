@@ -40,17 +40,37 @@ target_include_directories(cuspatial_benchmark_common
 function(ConfigureBench CMAKE_BENCH_NAME)
     add_executable(${CMAKE_BENCH_NAME} ${ARGN})
     set_target_properties(${CMAKE_BENCH_NAME}
-        PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gbenchmarks>"
+        PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/benchmarks>"
                    INSTALL_RPATH "\$ORIGIN/../../../lib"
         )
     target_link_libraries(${CMAKE_BENCH_NAME} PRIVATE benchmark::benchmark_main cuspatial_benchmark_common)
     install(
         TARGETS ${CMAKE_BENCH_NAME}
-        COMPONENT testing
+        COMPONENT benchmark
         DESTINATION bin/benchmarks/libcuspatial
         EXCLUDE_FROM_ALL
     )
-endfunction(ConfigureBench)
+endfunction()
+
+# This function takes in a benchmark name and benchmark source for nvbench benchmarks and handles
+# setting all of the associated properties and linking to build the benchmark
+function(ConfigureNVBench CMAKE_BENCH_NAME)
+  add_executable(${CMAKE_BENCH_NAME} ${ARGN})
+  set_target_properties(
+    ${CMAKE_BENCH_NAME}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/benchmarks>"
+               INSTALL_RPATH "\$ORIGIN/../../../lib"
+  )
+  target_link_libraries(
+    ${CMAKE_BENCH_NAME} PRIVATE cuspatial_benchmark_common nvbench::main
+  )
+  install(
+    TARGETS ${CMAKE_BENCH_NAME}
+    COMPONENT benchmark
+    DESTINATION bin/benchmarks/libcuspatial
+    EXCLUDE_FROM_ALL
+  )
+endfunction()
 
 ###################################################################################################
 ### benchmark sources #############################################################################
@@ -61,3 +81,6 @@ endfunction(ConfigureBench)
 
 ConfigureBench(HAUSDORFF_BENCH
     hausdorff_benchmark.cpp)
+
+ConfigureNVBench(DISTANCES_BENCH
+    pairwise_linestring_distance.cu)
