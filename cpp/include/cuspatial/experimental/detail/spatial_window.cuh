@@ -49,6 +49,31 @@ struct spatial_window_filter {
 
 }  // namespace detail
 
+template <class InputIt, class T>
+typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spatial_window(
+  vec_2d<T> window_min,
+  vec_2d<T> window_max,
+  InputIt points_first,
+  InputIt points_last,
+  rmm::cuda_stream_view stream)
+{
+  using Point       = typename std::iterator_traits<InputIt>::value_type;
+  using OutputPoint = typename std::iterator_traits<InputIt>::value_type;
+
+  static_assert(detail::is_convertible_to<cuspatial::vec_2d<T>, Point, OutputPoint>(),
+                "Input and Output points must be convertible to cuspatial::vec_2d");
+
+  static_assert(detail::is_same_floating_point<T,
+                                               typename Point::value_type,
+                                               typename OutputPoint::value_type>(),
+                "Inputs and output must have the same value type.");
+
+  return thrust::count_if(rmm::exec_policy(stream),
+                          points_first,
+                          points_last,
+                          detail::spatial_window_filter{window_min, window_max});
+}
+
 template <class InputIt, class OutputIt, class T>
 OutputIt points_in_spatial_window(vec_2d<T> window_min,
                                   vec_2d<T> window_max,

@@ -44,24 +44,27 @@ struct spatial_window_dispatch {
                                           rmm::cuda_stream_view stream,
                                           rmm::mr::device_memory_resource* mr)
   {
-    std::vector<std::unique_ptr<cudf::column>> cols{};
-    cols.reserve(2);
-    auto mask_policy = cudf::mask_allocation_policy::NEVER;
-    cols.push_back(cudf::detail::allocate_like(x, x.size(), mask_policy, stream, mr));
-    cols.push_back(cudf::detail::allocate_like(y, y.size(), mask_policy, stream, mr));
-
-    auto& output_x = cols[0];
-    auto& output_y = cols[1];
-
     auto points_begin = cuspatial::make_cartesian_2d_iterator(x.begin<T>(), y.begin<T>());
-
-    auto output_zip = cuspatial::make_zipped_cartesian_2d_output_iterator(
-      output_x->mutable_view().begin<T>(), output_y->mutable_view().begin<T>());
 
     auto window_min =
       cuspatial::vec_2d<T>{static_cast<T>(window_min_x), static_cast<T>(window_min_y)};
     auto window_max =
       cuspatial::vec_2d<T>{static_cast<T>(window_max_x), static_cast<T>(window_max_y)};
+
+    auto output_size = cuspatial::count_points_in_spatial_window(
+      window_min, window_max, points_begin, points_begin + x.size(), stream);
+
+    std::vector<std::unique_ptr<cudf::column>> cols{};
+    cols.reserve(2);
+    auto mask_policy = cudf::mask_allocation_policy::NEVER;
+    cols.push_back(cudf::detail::allocate_like(x, output_size, mask_policy, stream, mr));
+    cols.push_back(cudf::detail::allocate_like(y, output_size, mask_policy, stream, mr));
+
+    auto& output_x = cols[0];
+    auto& output_y = cols[1];
+
+    auto output_zip = cuspatial::make_zipped_cartesian_2d_output_iterator(
+      output_x->mutable_view().begin<T>(), output_y->mutable_view().begin<T>());
 
     cuspatial::points_in_spatial_window(
       window_min, window_max, points_begin, points_begin + x.size(), output_zip, stream);
