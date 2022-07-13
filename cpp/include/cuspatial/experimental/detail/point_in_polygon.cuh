@@ -55,7 +55,8 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
                                         int32_t const num_poly_points,
                                         OutputIt result)
 {
-  using T = iterator_vec_base_type<Cart2dItA>;
+  using Cart2d = iterator_value_type<Cart2dItA>;
+  using T      = iterator_vec_base_type<Cart2dItA>;
 
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -63,7 +64,7 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
 
   int32_t hit_mask = 0;
 
-  auto const test_point = thrust::raw_reference_cast(test_points_first[idx]);
+  Cart2d const test_point = test_points_first[idx];
 
   // for each polygon
   for (auto poly_idx = 0; poly_idx < num_polys; poly_idx++) {
@@ -83,10 +84,8 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
 
       // for each line segment, including the segment between the last and first vertex
       for (auto point_idx = 0; point_idx < ring_len; point_idx++) {
-        auto const a =
-          thrust::raw_reference_cast(poly_points_first[ring_begin + ((point_idx + 0) % ring_len)]);
-        auto const b =
-          thrust::raw_reference_cast(poly_points_first[ring_begin + ((point_idx + 1) % ring_len)]);
+        Cart2d const a = poly_points_first[ring_begin + ((point_idx + 0) % ring_len)];
+        Cart2d const b = poly_points_first[ring_begin + ((point_idx + 1) % ring_len)];
 
         bool y_between_ay_by =
           a.y <= test_point.y && test_point.y < b.y;  // is y in range [ay, by) when ay < by?
