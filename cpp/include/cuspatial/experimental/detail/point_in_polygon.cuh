@@ -30,6 +30,61 @@
 namespace cuspatial {
 namespace detail {
 
+template <class Cart2d,
+          class Cart2dIdxType,
+          class OffsetIteratorA,
+          class OffsetIteratorB,
+          class Cart2dIt,
+          class OffsetItADiffType = typename std::iterator_traits<OffsetIteratorA>::difference_type,
+          class OffsetItBDiffType = typename std::iterator_traits<OffsetIteratorB>::difference_type,
+          class Cart2dItDiffType  = typename std::iterator_traits<Cart2dIt>::difference_type>
+__device__ inline bool is_point_in_polygon(Cart2d const& test_point,
+                                           Cart2dIdxType const& poly_idx,
+                                           OffsetIteratorA poly_offsets_first,
+                                           OffsetItADiffType const& num_polys,
+                                           OffsetIteratorB ring_offsets_first,
+                                           OffsetItBDiffType const& num_rings,
+                                           Cart2dIt poly_points_first,
+                                           Cart2dItDiffType const& num_poly_points)
+{
+  using T = iterator_vec_base_type<Cart2dIt>;
+
+  bool point_is_within = false;
+  auto poly_idx_next   = poly_idx + 1;
+  auto poly_begin      = poly_offsets_first[poly_idx];
+  auto poly_end = (poly_idx_next < num_polys) ? poly_offsets_first[poly_idx_next] : num_rings;
+
+  // for each ring
+  for (auto ring_idx = poly_begin; ring_idx < poly_end; ring_idx++) {
+    auto ring_idx_next = ring_idx + 1;
+    auto ring_begin    = ring_offsets_first[ring_idx];
+    auto ring_end =
+      (ring_idx_next < num_rings) ? ring_offsets_first[ring_idx_next] : num_poly_points;
+    auto ring_len = ring_end - ring_begin;
+
+    // for each line segment, including the segment between the last and first vertex
+    for (auto point_idx = 0; point_idx < ring_len; point_idx++) {
+      Cart2d const a = poly_points_first[ring_begin + ((point_idx + 0) % ring_len)];
+      Cart2d const b = poly_points_first[ring_begin + ((point_idx + 1) % ring_len)];
+
+      bool y_between_ay_by =
+        a.y <= test_point.y && test_point.y < b.y;  // is y in range [ay, by) when ay < by?
+      bool y_between_by_ay =
+        b.y <= test_point.y && test_point.y < a.y;  // is y in range [by, ay) when by < ay?
+      bool y_in_bounds = y_between_ay_by || y_between_by_ay;  // is y in range [by, ay]?
+      T run            = b.x - a.x;
+      T rise           = b.y - a.y;
+      T rise_to_point  = test_point.y - a.y;
+
+      if (y_in_bounds && test_point.x < (run / rise) * rise_to_point + a.x) {
+        point_is_within = not point_is_within;
+      }
+    }
+  }
+
+  return point_is_within;
+}
+
 /**
  * @brief Kernel to test if a point is inside all polygons.
  *
@@ -44,21 +99,23 @@ template <class Cart2dItA,
           class Cart2dItB,
           class OffsetIteratorA,
           class OffsetIteratorB,
-          class OutputIt>
+          class OutputIt,
+          class Cart2dItADiffType = typename std::iterator_traits<Cart2dItA>::difference_type,
+          class Cart2dItBDiffType = typename std::iterator_traits<Cart2dItB>::difference_type,
+          class OffsetItADiffType = typename std::iterator_traits<OffsetIteratorA>::difference_type,
+          class OffsetItBDiffType = typename std::iterator_traits<OffsetIteratorB>::difference_type>
 __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
-                                        int32_t const num_test_points,
+                                        Cart2dItADiffType const num_test_points,
                                         OffsetIteratorA poly_offsets_first,
-                                        int32_t const num_polys,
+                                        OffsetItADiffType const num_polys,
                                         OffsetIteratorB ring_offsets_first,
-                                        int32_t const num_rings,
+                                        OffsetItBDiffType const num_rings,
                                         Cart2dItB poly_points_first,
-                                        int32_t const num_poly_points,
+                                        Cart2dItBDiffType const num_poly_points,
                                         OutputIt result)
 {
   using Cart2d = iterator_value_type<Cart2dItA>;
-  using T      = iterator_vec_base_type<Cart2dItA>;
-
-  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+  auto idx     = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (idx > num_test_points) { return; }
 
@@ -68,39 +125,14 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
 
   // for each polygon
   for (auto poly_idx = 0; poly_idx < num_polys; poly_idx++) {
-    auto poly_idx_next = poly_idx + 1;
-    auto poly_begin    = poly_offsets_first[poly_idx];
-    auto poly_end = (poly_idx_next < num_polys) ? poly_offsets_first[poly_idx_next] : num_rings;
-
-    bool point_is_within = false;
-
-    // for each ring
-    for (auto ring_idx = poly_begin; ring_idx < poly_end; ring_idx++) {
-      auto ring_idx_next = ring_idx + 1;
-      auto ring_begin    = ring_offsets_first[ring_idx];
-      auto ring_end =
-        (ring_idx_next < num_rings) ? ring_offsets_first[ring_idx_next] : num_poly_points;
-      auto ring_len = ring_end - ring_begin;
-
-      // for each line segment, including the segment between the last and first vertex
-      for (auto point_idx = 0; point_idx < ring_len; point_idx++) {
-        Cart2d const a = poly_points_first[ring_begin + ((point_idx + 0) % ring_len)];
-        Cart2d const b = poly_points_first[ring_begin + ((point_idx + 1) % ring_len)];
-
-        bool y_between_ay_by =
-          a.y <= test_point.y && test_point.y < b.y;  // is y in range [ay, by) when ay < by?
-        bool y_between_by_ay =
-          b.y <= test_point.y && test_point.y < a.y;  // is y in range [by, ay) when by < ay?
-        bool y_in_bounds = y_between_ay_by || y_between_by_ay;  // is y in range [by, ay]?
-        T run            = b.x - a.x;
-        T rise           = b.y - a.y;
-        T rise_to_point  = test_point.y - a.y;
-
-        if (y_in_bounds && test_point.x < (run / rise) * rise_to_point + a.x) {
-          point_is_within = not point_is_within;
-        }
-      }
-    }
+    bool const point_is_within = is_point_in_polygon(test_point,
+                                                     poly_idx,
+                                                     poly_offsets_first,
+                                                     num_polys,
+                                                     ring_offsets_first,
+                                                     num_rings,
+                                                     poly_points_first,
+                                                     num_poly_points);
 
     hit_mask |= point_is_within << poly_idx;
   }
