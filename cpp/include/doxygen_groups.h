@@ -42,6 +42,7 @@
  *
  *          This module contains APIs that transforms cartesian and geodesic coordinates.
  *          @file coordinate_transform.hpp
+            @file coordinate_transform.cuh
  *      @}
  *      @defgroup distance Distance
  *      @{
@@ -49,7 +50,7 @@
  *
  *          @file linestring_distance.hpp
  *          @file hausdorff.hpp
- *          @file experimental/hausdorff.cuh
+ *          @file hausdorff.cuh
  *          @file haversine.hpp
  *          @file haversine.cuh
  *      @}
