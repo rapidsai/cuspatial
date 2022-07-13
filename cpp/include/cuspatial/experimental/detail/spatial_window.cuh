@@ -47,6 +47,8 @@ struct spatial_window_filter {
   vec_2d<T> max;
 };
 
+}  // namespace detail
+
 template <class InputIt, class OutputIt, class T>
 OutputIt points_in_spatial_window(vec_2d<T> window_min,
                                   vec_2d<T> window_max,
@@ -61,16 +63,16 @@ OutputIt points_in_spatial_window(vec_2d<T> window_min,
   static_assert(detail::is_convertible_to<cuspatial::vec_2d<T>, Point, OutputPoint>(),
                 "Input and Output points must be convertible to cuspatial::vec_2d");
 
-  static_assert(detail::is_same_floating_point<T, Point::value_type, OutputPoint::value_type>(),
+  static_assert(detail::is_same_floating_point<T,
+                                               typename Point::value_type,
+                                               typename OutputPoint::value_type>(),
                 "Inputs and output must have the same value type.");
 
   return thrust::copy_if(rmm::exec_policy(stream),
                          points_first,
                          points_last,
                          output_points_first,
-                         spatial_window_filter{window_min, window_max});
+                         detail::spatial_window_filter{window_min, window_max});
 }
-
-}  // namespace detail
 
 }  // namespace cuspatial
