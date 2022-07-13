@@ -56,7 +56,7 @@ typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spati
   vec_2d<T> window_max,
   InputIt points_first,
   InputIt points_last,
-  rmm::cuda_stream_view stream);
+  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 /**
  * @brief Find all points (x,y) that fall within a rectangular query window.
