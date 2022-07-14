@@ -80,7 +80,9 @@ class GeoColumn(NumericalColumn):
         """
         if not isinstance(item, numbers.Integral):
             raise NotImplementedError
-        return self.iloc[item]
+        # Map Step
+        index = self._data[item] if self._data is not None else item
+        return self.iloc[index]
 
     @property
     def loc(self):

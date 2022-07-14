@@ -81,21 +81,24 @@ class GeoSeries(cudf.Series):
         return result
 
     class GeoColumnAccessor:
-        def __init__(self, list_column):
-            self._col = list_column._column
-            self._col
+        def __init__(self, list_series):
+            self._series = list_series
+            self._col = self._series._column
 
         @property
         def x(self):
-            return cudf.Series(self._col.leaves())[0::2]
+            result = cudf.Series(self._col.leaves().values[0::2])
+            return result
 
         @property
         def y(self):
-            return cudf.Series(self._col.leaves())[1::2]
+            return cudf.Series(self._col.leaves().values[1::2])
+            return result
 
         @property
         def xy(self):
-            return cudf.Series(self._col.leaves())
+            return cudf.Series(self._col.leaves().values)
+            return result
 
     @property
     def points(self):

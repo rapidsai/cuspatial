@@ -137,7 +137,7 @@ def test_interleaved_point(gpdf, polys):
         gs[gs.type == "Point"].y.reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series.from_arrow(cugs.multipoints.x),
+        cudf.Series.from_arrow(cugs.multipoints.x.to_arrow()),
         cudf.Series(
             np.array(
                 [np.array(p)[:, 0] for p in gs[gs.type == "MultiPoint"]]
@@ -145,7 +145,7 @@ def test_interleaved_point(gpdf, polys):
         ),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series.from_arrow(cugs.multipoints.y),
+        cudf.Series.from_arrow(cugs.multipoints.y.to_arrow()),
         cudf.Series(
             np.array(
                 [np.array(p)[:, 1] for p in gs[gs.type == "MultiPoint"]]
@@ -153,25 +153,25 @@ def test_interleaved_point(gpdf, polys):
         ),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series.from_arrow(cugs.lines.x),
+        cudf.Series.from_arrow(cugs.lines.x.to_arrow()),
         cudf.Series(
             np.array([range(11, 34, 2)]).flatten(),
             dtype="float64",
         ),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series.from_arrow(cugs.lines.y),
+        cudf.Series.from_arrow(cugs.lines.y.to_arrow()),
         cudf.Series(
             np.array([range(12, 35, 2)]).flatten(),
             dtype="float64",
         ),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series.from_arrow(cugs.polygons.x),
+        cudf.Series.from_arrow(cugs.polygons.x.to_arrow()),
         cudf.Series(polys[:, 0], dtype="float64"),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series.from_arrow(cugs.polygons.y),
+        cudf.Series.from_arrow(cugs.polygons.y.to_arrow()),
         cudf.Series(polys[:, 1], dtype="float64"),
     )
 

@@ -106,7 +106,14 @@ class GeoDataFrame(cudf.DataFrame):
             # NumericalColumn, we're forced to do so manually.
             if isinstance(other_col, GeoColumn):
                 col = GeoColumn(
-                    other_col._geo, other_col._meta, cudf.Index(col)
+                    (
+                        other_col.points,
+                        other_col.mpoints,
+                        other_col.lines,
+                        other_col.polygons,
+                    ),
+                    other_col._meta,
+                    cudf.Index(col),
                 )
 
             self._data.set_by_label(
