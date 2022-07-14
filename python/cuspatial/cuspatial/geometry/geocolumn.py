@@ -25,13 +25,14 @@ class GeoColumn(NumericalColumn):
     """
     Parameters
     ----------
-    data : A GeoArrowBuffers object
+    data : A tuple of four cudf.ListSeries
     meta : A GeoMeta object (optional)
 
     Notes
     -----
     The GeoColumn class subclasses `NumericalColumn`. Combined with
-    `_copy_type_metadata`, this assures support for existing cudf algorithms.
+    `_copy_type_metadata`, this assures support for sort, groupby,
+    and potential other `cudf` algorithms.
     """
 
     def __init__(
@@ -63,7 +64,7 @@ class GeoColumn(NumericalColumn):
     def to_arrow(self):
         return pa.UnionArray(
             self._meta.type_codes.to_arrow(),
-            self._meta.offsets.to_arrow(),
+            self._meta.union_offsets.to_arrow(),
             (
                 self.points.to_arrow(),
                 self.mpoints.to_arrow(),
@@ -196,7 +197,7 @@ class GeoColumnILocIndexer:
             )
         result_types = self._sr._meta.input_types[index]
         field = self.type_int_to_field(result_types)
-        result_index = self._sr._meta.input_lengths[index]
+        result_index = self._sr._meta.union_offsets[index]
         shapely_class = self._getitem_int(result_types)
         if result_types == 0:
             result = field[result_index]

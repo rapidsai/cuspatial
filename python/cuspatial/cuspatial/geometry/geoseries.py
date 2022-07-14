@@ -158,7 +158,7 @@ class GeoSeries(cudf.Series):
                 "Can't index GeoSeries with non-integer at this time"
             )
         result_types = self._column._meta.input_types[index]
-        result_index = self._column._meta.input_lengths[index]
+        result_index = self._column._meta.union_offsets[index]
         field = self.type_int_to_field(result_index)
         return field[result_index]
 

@@ -2,7 +2,6 @@
 
 from enum import Enum
 
-import pyarrow as pa
 from geopandas import GeoSeries as gpGeoSeries
 
 import cudf
@@ -160,9 +159,6 @@ class GeoPandasReader:
             polygons,
         )
 
-    def get_geoarrow_union(self) -> pa.UnionArray:
-        return self.buffers
-
     def get_geopandas_meta(self) -> dict:
         """
         Returns the metadata that was created converting the GeoSeries into
@@ -174,6 +170,6 @@ class GeoPandasReader:
         buffers = self.buffers
         return {
             "input_types": buffers.type_codes,
-            "input_lengths": buffers.offsets,
+            "union_offsets": buffers.offsets,
             "inputs": self.source,
         }
