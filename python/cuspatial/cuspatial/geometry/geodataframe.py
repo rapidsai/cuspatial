@@ -5,7 +5,6 @@ from geopandas import GeoDataFrame as gpGeoDataFrame
 
 import cudf
 
-from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
 from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta
 from cuspatial.geometry.geoseries import GeoSeries
 from cuspatial.geometry.geoutil import is_geometry_type

@@ -1,7 +1,7 @@
 # Copyright (c) 2021-2022 NVIDIA CORPORATION
 import numbers
-from itertools import repeat
-from typing import TypeVar, Union
+import string
+from typing import TypeVar, Union, Tuple
 
 import pyarrow as pa
 from shapely.geometry import (
@@ -14,76 +14,12 @@ from shapely.geometry import (
 )
 
 import cudf
-from cudf.core.column import NumericalColumn
+from cudf.core.column import ListColumn, NumericalColumn
 
-from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
+from cuspatial.geometry.pygeoarrow import GeoArrowArray
+from cuspatial.geometry.geometa import GeoMeta
 
 T = TypeVar("T", bound="GeoColumn")
-
-
-class GeoMeta:
-    """
-    Creates input_types and input_lengths for GeoColumns that are created
-    using native GeoArrowBuffers. These will be used to convert to GeoPandas
-    GeoSeries if necessary.
-    """
-
-    def __init__(self, meta: Union[GeoArrowBuffers, dict]):
-        if isinstance(meta, dict):
-            self.input_types = meta["input_types"]
-            self.input_lengths = meta["input_lengths"]
-            return
-        buffers = meta
-        self.input_types = []
-        self.input_lengths = []
-        if buffers.points is not None:
-            self.input_types.extend(repeat(0, len(buffers.points)))
-            self.input_lengths.extend(repeat(1, len(buffers.points)))
-        if buffers.multipoints is not None:
-            self.input_types.extend(repeat(1, len(buffers.multipoints)))
-            self.input_lengths.extend(repeat(1, len(buffers.multipoints)))
-        if buffers.lines is not None:
-            for index in range(len(buffers.lines.mlines) - 1):
-                line_len = (
-                    buffers.lines.mlines[index + 1]
-                    - buffers.lines.mlines[index]
-                )
-                if line_len > 1:
-                    self.input_types.extend([3])
-                    self.input_lengths.extend([line_len])
-                else:
-                    self.input_types.extend([2])
-                    self.input_lengths.extend([1])
-        if buffers.polygons is not None:
-            for index in range(len(buffers.polygons.mpolys) - 1):
-                poly_len = (
-                    buffers.polygons.mpolys[index + 1]
-                    - buffers.polygons.mpolys[index]
-                )
-                if poly_len > 1:
-                    self.input_types.extend([5])
-                    self.input_lengths.extend([poly_len])
-                else:
-                    self.input_types.extend([4])
-                    self.input_lengths.extend([1])
-        self.input_types = pa.array(self.input_types, type=pa.int8())
-        self.input_lengths = pa.array(self.input_lengths).cast(pa.int32())
-
-    def copy(self):
-        return self.__class__(
-            {
-                "input_types": pa.Int8Array.from_buffers(
-                    self.input_types.type,
-                    len(self.input_types),
-                    self.input_types.buffers(),
-                ),
-                "input_lengths": pa.Int32Array.from_buffers(
-                    self.input_lengths.type,
-                    len(self.input_lengths),
-                    self.input_lengths.buffers(),
-                ),
-            }
-        )
 
 
 class GeoColumn(NumericalColumn):
@@ -101,23 +37,41 @@ class GeoColumn(NumericalColumn):
 
     def __init__(
         self,
-        data: GeoArrowBuffers,
+        data: Tuple,
         meta: GeoMeta = None,
         shuffle_order: cudf.Index = None,
     ):
-        base = cudf.core.column.column.arange(0, len(data), dtype="int64").data
-        super().__init__(base, dtype="int64")
-        self._geo = data
+        if (
+            not isinstance(data[0], cudf.Series)
+            or not isinstance(data[1], cudf.Series)
+            or not isinstance(data[2], cudf.Series)
+            or not isinstance(data[3], cudf.Series)
+        ):
+            raise TypeError("All Tuple arguments must be cudf.ListSeries")
         if meta is not None:
             self._meta = meta
         else:
             self._meta = GeoMeta(data)
+        self.points = data[0]
+        self.mpoints = data[1]
+        self.lines = data[2]
+        self.polygons = data[3]
+        base = cudf.core.column.column.arange(0, len(self), dtype="int64").data
+        super().__init__(base, dtype="int64")
         if shuffle_order is not None:
             self._data = shuffle_order
 
-    def to_host(self):
-        result = GeoColumn(self._geo.to_host(), self._meta.copy(), self.data)
-        return result
+    def to_arrow(self):
+        return pa.UnionArray(
+            self._meta.type_codes.to_arrow(),
+            self._meta.offsets.to_arrow(),
+            (
+                self.points.to_arrow(),
+                self.mpoints.to_arrow(),
+                self.lines.to_arrow(),
+                self.polygons.to_arrow(),
+            ),
+        )
 
     def __getitem__(self, item):
         """
@@ -148,22 +102,6 @@ class GeoColumn(NumericalColumn):
         """
         return len(self._meta.input_types)
 
-    @property
-    def points(self):
-        return self._geo._points
-
-    @property
-    def multipoints(self):
-        return self._geo._multipoints
-
-    @property
-    def lines(self):
-        return self._geo._lines
-
-    @property
-    def polygons(self):
-        return self._geo._polygons
-
     def _dump(self):
         return (
             f"POINTS\n"
@@ -180,18 +118,26 @@ class GeoColumn(NumericalColumn):
         return (
             f"GeoColumn\n"
             f"{len(self.points)} POINTS\n"
-            f"{len(self.multipoints)} MULTIPOINTS\n"
+            f"{len(self.mpoints)} MULTIPOINTS\n"
             f"{len(self.lines)} LINES\n"
             f"{len(self.polygons)} POLYGONS\n"
         )
 
     def copy(self, deep=True):
+        """TODO"""
         """
         Create a copy of all of the GPU-backed data structures in this
         GeoColumn.
         """
         result = GeoColumn(
-            self._geo.copy(deep), self._meta.copy(), self.data.copy()
+            (
+                self.points.copy(deep),
+                self.mpoints.copy(deep),
+                self.lines.copy(deep),
+                self.polygons.copy(deep),
+            ),
+            self._meta.copy(),
+            self.data.copy(),
         )
         return result
 
@@ -222,236 +168,73 @@ class GeoColumnILocIndexer:
     def __init__(self, sr):
         self._sr = sr
 
+    def type_int_to_field(self, type_int):
+        from cuspatial.io.geopandas_reader import Feature_Enum, Field_Enum
+
+        return {
+            Feature_Enum.POINT: self._sr.points,
+            Feature_Enum.MULTIPOINT: self._sr.mpoints,
+            Feature_Enum.LINESTRING: self._sr.lines,
+            Feature_Enum.MULTILINESTRING: self._sr.lines,
+            Feature_Enum.POLYGON: self._sr.polygons,
+            Feature_Enum.MULTIPOLYGON: self._sr.polygons,
+        }[Feature_Enum(type_int)]
+
     def __getitem__(self, index):
-        if not isinstance(index, slice):
-            mapped_index = int(self._sr.values[index])
-            return self._getitem_int(mapped_index)
-        else:
-            raise NotImplementedError
-            # This slice functionality is not ready yet
-            # return self._getitem_slice(index)
+        """
+        NOTE:
+        Using GeoMeta, we're hacking together the logic for a
+        UnionColumn. We don't want to implement this in cudf at
+        this time.
+        TODO: Do this. So far we're going to stick to one element
+        at a time like in the previous implementation.
+        """
+        if not isinstance(index, numbers.Integral):
+            raise NotImplementedError(
+                "Can't index GeoSeries with non-integer at this time"
+            )
+        result_types = self._sr._meta.input_types[index]
+        field = self.type_int_to_field(result_types)
+        result_index = self._sr._meta.input_lengths[index]
+        shapely_class = self._getitem_int(result_types)
+        if result_types == 0:
+            result = field[result_index]
+            return shapely_class(result)
+        if result_types == 1:
+            points = field[result_index]
+            return shapely_class(points)
+        if result_types == 2:
+            linestring = field[result_index]
+            result = [tuple(x) for x in linestring[0]]
+            return shapely_class(result)
+        if result_types == 3:
+            linestrings = []
+            for linestring in field[result_index]:
+                linestrings.append(
+                    LineString([tuple(child) for child in linestring])
+                )
+            return shapely_class(linestrings)
+        if result_types == 4:
+            rings = []
+            for ring in field[result_index][0]:
+                rings.append(tuple(tuple(point) for point in ring))
+            return shapely_class(rings[0], rings[1:])
+        if result_types == 5:
+            polygons = []
+            for p in field[result_index]:
+                rings = []
+                for ring in p:
+                    rings.append(tuple([tuple(point) for point in ring]))
+                polygons.append(Polygon(rings[0], rings[1:]))
+            return shapely_class(polygons)
 
     def _getitem_int(self, index):
         type_map = {
-            0: PointShapelySerializer,
-            1: MultiPointShapelySerializer,
-            2: LineStringShapelySerializer,
-            3: MultiLineStringShapelySerializer,
-            4: PolygonShapelySerializer,
-            5: MultiPolygonShapelySerializer,
+            0: Point,
+            1: MultiPoint,
+            2: LineString,
+            3: MultiLineString,
+            4: Polygon,
+            5: MultiPolygon,
         }
-        return type_map[self._sr._meta.input_types[index].as_py()](
-            self._sr, index
-        )
-
-
-class ShapelySerializer:
-    def __init__(self, source, index):
-        """
-        The base class of individual GPU geometries. This and its inheriting
-        classes do not manage any GPU data directly - each ShapelySerializer
-        simply stores a reference to the GeoSeries it is stored within and
-        the index of the geometry within the GeoSeries. Child
-        ShapelySerializer classes contain the logic necessary to serialize
-        and convert GPU data back to Shapely.
-        """
-        self._source = source
-        self._index = index
-
-
-class PointShapelySerializer(ShapelySerializer):
-    def to_shapely(self):
-        """
-        Finds the position in the GeoArrow array of points that corresponds
-        to the row of the column stored at `self._index`.
-        """
-        item_type = self._source._meta.input_types[self._index]
-        types = self._source._meta.input_types[0 : self._index]
-        index = 0
-        for i in range(self._index):
-            if types[i] == item_type:
-                index = index + 1
-        return Point(self._source.points[index].reset_index(drop=True))
-
-
-class MultiPointShapelySerializer(ShapelySerializer):
-    def to_shapely(self):
-        """
-        Finds the position in the GeoArrow array of multipoints that
-        corresponds to the row of the column stored at `self._index`. Returns
-        `item_length` coordinates starting at that position.
-        """
-        item_type = self._source._meta.input_types[self._index]
-        types = self._source._meta.input_types[0 : self._index]
-        item_start = 0
-        for i in range(self._index):
-            if types[i] == item_type:
-                item_start = item_start + 1
-        item_length = (
-            self._source.multipoints._offsets[item_start + 1]
-            - self._source.multipoints._offsets[item_start]
-        )
-        item_source = self._source.multipoints
-        result = item_source[item_start]
-        return MultiPoint(result.to_numpy().reshape(item_length, 2))
-
-
-class LineStringShapelySerializer(ShapelySerializer):
-    def to_shapely(self):
-        """
-        Finds the start and end position in the GeoArrow array of lines
-        of the LineString referenced by `self._index`, creates one, and
-        returns it.
-        """
-        index = 0
-        for i in range(self._index):
-            if (
-                self._source._meta.input_types[i]
-                == pa.array([2]).cast(pa.int8())[0]
-                or self._source._meta.input_types[i]
-                == pa.array([3]).cast(pa.int8())[0]
-            ):
-                index = index + 1
-        ring_start = self._source.lines.mlines[index]
-        ring_end = self._source.lines.mlines[index + 1]
-        rings = self._source.lines.offsets * 2
-        item_start = rings[ring_start]
-        item_end = rings[ring_end]
-        result = self._source.lines.xy[item_start:item_end]
-        return LineString(
-            result.to_numpy().reshape(2 * (item_start - item_end), 2)
-        )
-
-
-class MultiLineStringShapelySerializer(ShapelySerializer):
-    def to_shapely(self):
-        """
-        Finds the range of LineStrings that are specified by the mlines values.
-        Count the number of MultiLines stored prior to the one referenced by
-        `self._index`, then return the MultiLineString at that position packed
-        with the LineStrings in its range.
-        """
-        index = 0
-        for i in range(self._index):
-            if (
-                self._source._meta.input_types[i]
-                == pa.array([2]).cast(pa.int8())[0]
-                or self._source._meta.input_types[i]
-                == pa.array([3]).cast(pa.int8())[0]
-            ):
-                index = index + 1
-        line_indices = slice(
-            self._source.lines.mlines[index],
-            self._source.lines.mlines[index + 1],
-        )
-        return MultiLineString(
-            [
-                LineString(
-                    self._source.lines[i]
-                    .to_numpy()
-                    .reshape(int(len(self._source.lines[i]) / 2), 2)
-                )
-                for i in range(line_indices.start, line_indices.stop, 1)
-            ]
-        )
-
-
-class PolygonShapelySerializer(ShapelySerializer):
-    """
-    Find the polygon rings and coordinates in the self._index-th row of the
-    column. Find the last index of the MultiPolygons that precede the
-    desired Polygon, and the number of Polygons that fall between the last
-    MultiPolygon and the desired Polygon. This identifies the index of the
-    first ring of the Polygon. Construct a new Polygon using the first ring
-    as exterior, and subsequent interior rings.
-    """
-
-    def to_shapely(self):
-        index = 0
-        for i in range(self._index):
-            if (
-                self._source._meta.input_types[i]
-                == pa.array([4]).cast(pa.int8())[0]
-                or self._source._meta.input_types[i]
-                == pa.array([5]).cast(pa.int8())[0]
-            ):
-                index = index + 1
-        polygon_start = self._source.polygons.mpolys[index]
-        polygon_end = self._source.polygons.mpolys[index + 1]
-        ring_start = self._source.polygons.polys[polygon_start]
-        ring_end = self._source.polygons.polys[polygon_end]
-        rings = self._source.polygons.rings * 2
-        exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
-        exterior = self._source.polygons.xy[exterior_slice]
-        return Polygon(
-            exterior.to_numpy().reshape(2 * (ring_start - ring_end), 2),
-            [
-                self._source.polygons.xy[interior_slice]
-                .to_numpy()
-                .reshape(
-                    int((interior_slice.stop - interior_slice.start + 1) / 2),
-                    2,
-                )
-                for interior_slice in [
-                    slice(rings[interior], rings[interior + 1])
-                    for interior in range(ring_end - (ring_start + 1))
-                    + (ring_start + 1)
-                ]
-            ],
-        )
-
-
-class MultiPolygonShapelySerializer(ShapelySerializer):
-    def to_shapely(self):
-        """
-        Iteratively construct Polygons from exterior (first) rings and
-        subsequent interior rings of all polygons that around bound by the
-        mpolygon specified by self._index.
-        """
-        index = 0
-        for i in range(self._index):
-            if (
-                self._source._meta.input_types[i]
-                == pa.array([4]).cast(pa.int8())[0]
-                or self._source._meta.input_types[i]
-                == pa.array([5]).cast(pa.int8())[0]
-            ):
-                index = index + 1
-        poly_indices = slice(
-            self._source.polygons.mpolys[index],
-            self._source.polygons.mpolys[index + 1],
-        )
-        polys = []
-        for i in range(poly_indices.start, poly_indices.stop):
-            ring_start = self._source.polygons.polys[i]
-            ring_end = self._source.polygons.polys[i + 1]
-            rings = self._source.polygons.rings * 2
-            exterior_slice = slice(rings[ring_start], rings[ring_start + 1])
-            exterior = self._source.polygons.xy[exterior_slice]
-            polys.append(
-                Polygon(
-                    exterior.to_numpy().reshape(
-                        2 * (ring_start - ring_end), 2
-                    ),
-                    [
-                        self._source.polygons.xy[interior_slice]
-                        .to_numpy()
-                        .reshape(
-                            int(
-                                (
-                                    interior_slice.stop
-                                    - interior_slice.start
-                                    + 1
-                                )
-                                / 2
-                            ),
-                            2,
-                        )
-                        for interior_slice in [
-                            slice(rings[interior], rings[interior + 1])
-                            for interior in range(ring_start + 1, ring_end)
-                        ]
-                    ],
-                )
-            )
-        return MultiPolygon(polys)
+        return type_map[index]

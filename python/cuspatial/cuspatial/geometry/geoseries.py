@@ -1,6 +1,7 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION
 
-from typing import TypeVar, Union
+import numbers
+from typing import TypeVar, Union, List, Tuple
 
 import geopandas as gpd
 import pandas as pd
@@ -9,9 +10,7 @@ from geopandas.geoseries import GeoSeries as gpGeoSeries
 
 import cudf
 
-from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
 from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta
-from cuspatial.io.geopandas_adapter import GeoPandasAdapter
 
 T = TypeVar("T", bound="GeoSeries")
 
@@ -34,7 +33,7 @@ class GeoSeries(cudf.Series):
 
     def __init__(
         self,
-        data: Union[gpd.GeoSeries],
+        data: Union[gpd.GeoSeries, Tuple],
         index: Union[cudf.Index, pd.Index] = None,
         dtype=None,
         name=None,
@@ -55,12 +54,11 @@ class GeoSeries(cudf.Series):
         elif isinstance(data, GeoSeries):
             column = data._column
         elif isinstance(data, gpGeoSeries):
-            adapter = GeoPandasAdapter(data)
-            buffers = GeoArrowBuffers(
-                adapter.get_geoarrow_union(), data_locale=pa
-            )
+            from cuspatial.io.geopandas_reader import GeoPandasReader
+
+            adapter = GeoPandasReader(data)
             pandas_meta = GeoMeta(adapter.get_geopandas_meta())
-            column = GeoColumn(buffers, pandas_meta)
+            column = GeoColumn(adapter._get_geotuple(), pandas_meta)
         else:
             raise TypeError(
                 f"Incompatible object passed to GeoSeries ctor {type(data)}"
@@ -68,51 +66,98 @@ class GeoSeries(cudf.Series):
         super().__init__(column, index, dtype, name, nan_as_null)
 
     @property
-    def _geocolumn(self):
-        """
-        The GeoColumn object keeps a reference to a `GeoArrowBuffers` object,
-        which contains all of the geometry coordinates and offsets for thie
-        `GeoSeries`.
-        """
-        return self._column
+    def type(self):
+        gpu_types = cudf.Series(self._column._meta.input_types).astype("str")
+        result = gpu_types.replace(
+            {
+                "0": "Point",
+                "1": "MultiPoint",
+                "2": "Linestring",
+                "3": "MultiLinestring",
+                "4": "Polygon",
+                "5": "MultiPolygon",
+            }
+        )
+        return result
 
-    @_geocolumn.setter
-    def _geocolumn(self, value):
-        if not isinstance(value, GeoColumn):
-            raise TypeError
-        self._column = value
+    class GeoColumnAccessor:
+        def __init__(self, list_column):
+            self._col = list_column._column
+            self._col
+
+        @property
+        def x(self):
+            return cudf.Series(self._col.leaves())[0::2]
+
+        @property
+        def y(self):
+            return cudf.Series(self._col.leaves())[1::2]
+
+        @property
+        def xy(self):
+            return cudf.Series(self._col.leaves())
 
     @property
     def points(self):
         """
         Access the `PointsArray` of the underlying `GeoArrowBuffers`.
         """
-        return self._geocolumn.points
+        return self.GeoColumnAccessor(self._column.points)
 
     @property
     def multipoints(self):
         """
         Access the `MultiPointArray` of the underlying `GeoArrowBuffers`.
         """
-        return self._geocolumn.multipoints
+        return self.GeoColumnAccessor(self._column.mpoints)
 
     @property
     def lines(self):
         """
         Access the `LineArray` of the underlying `GeoArrowBuffers`.
         """
-        return self._geocolumn.lines
+        return self.GeoColumnAccessor(self._column.lines)
 
     @property
     def polygons(self):
         """
         Access the `PolygonArray` of the underlying `GeoArrowBuffers`.
         """
-        return self._geocolumn.polygons
+        return self.GeoColumnAccessor(self._column.polygons)
 
     def __repr__(self):
         # TODO: Implement Iloc with slices so that we can use `Series.__repr__`
         return self.to_pandas().__repr__()
+
+    def type_int_to_field(self, type_int):
+        from cuspatial.io.geopandas_reader import Feature_Enum, Field_Enum
+
+        return {
+            Feature_Enum.POINT: self.points,
+            Feature_Enum.MULTIPOINT: self.mpoints,
+            Feature_Enum.LINESTRING: self.lines,
+            Feature_Enum.MULTILINESTRING: self.lines,
+            Feature_Enum.POLYGON: self.polygons,
+            Feature_Enum.MULTIPOLYGON: self.polygons,
+        }[type_int]
+
+    def __getitem__(self, index):
+        """
+        NOTE:
+        Using GeoMeta, we're hacking together the logic for a
+        UnionColumn. We don't want to implement this in cudf at
+        this time.
+        TODO: Do this. So far we're going to stick to one element
+        at a time like in the previous implementation.
+        """
+        if not isinstance(index, numbers.Integral):
+            raise TypeError(
+                "Can't index GeoSeries with non-integer at this time"
+            )
+        result_types = self._column._meta.input_types[index]
+        result_index = self._column._meta.input_lengths[index]
+        field = self.type_int_to_field(result_index)
+        return field[result_index]
 
     def to_geopandas(self, nullable=False):
         """
@@ -121,8 +166,7 @@ class GeoSeries(cudf.Series):
         """
         if nullable is True:
             raise ValueError("GeoSeries doesn't support <NA> yet")
-        host_column = self._geocolumn.to_host()
-        output = [host_column[i].to_shapely() for i in range(len(host_column))]
+        output = [self._column[i] for i in range(len(self._column))]
         return gpGeoSeries(output, index=self.index.to_pandas())
 
     def to_pandas(self):
