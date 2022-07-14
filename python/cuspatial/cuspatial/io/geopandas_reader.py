@@ -104,7 +104,6 @@ class GeoPandasReader:
         geoseries : A GeoPandas GeoSeries
         """
         self.buffers = pygeoarrow.from_geopandas(parse_geometries(geoseries))
-        self.source = geoseries
 
     def get_geoarrow_host_buffers(self) -> dict:
         """
@@ -171,5 +170,4 @@ class GeoPandasReader:
         return {
             "input_types": buffers.type_codes,
             "union_offsets": buffers.offsets,
-            "inputs": self.source,
         }

@@ -1,5 +1,7 @@
 # Copyright (c) 2021-2022 NVIDIA CORPORATION
 
+# This allows GeoMeta as its own init type
+from __future__ import annotations
 from typing import Union
 
 from itertools import repeat
