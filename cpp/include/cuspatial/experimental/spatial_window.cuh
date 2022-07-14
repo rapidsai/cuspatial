@@ -29,7 +29,7 @@ namespace cuspatial {
  *
  * @ingroup spatial_relationship
  *
- * A point (x, y) is in the window if `x > window_min_x && x < window_min_y && y > window_min_y &&
+ * A point (x, y) is in the window if `x > window_min_x && x < window_max_x && y > window_min_y &&
  * y < window_max_y`.
  *
  * Swaps `window_min.x` and `window_max.x` if `window_min.x > window_max.x`.
@@ -63,7 +63,7 @@ typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spati
  *
  * @ingroup spatial_relationship
  *
- * A point (x, y) is in the window if `x > window_min_x && x < window_min_y && y > window_min_y &&
+ * A point (x, y) is in the window if `x > window_min_x && x < window_max_x && y > window_min_y &&
  * y < window_max_y`.
  *
  * Swaps `window_min.x` and `window_max.x` if `window_min.x > window_max.x`.

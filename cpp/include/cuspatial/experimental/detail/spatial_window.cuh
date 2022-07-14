@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#pragma once
 
 #include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
@@ -57,16 +59,10 @@ typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spati
   InputIt points_last,
   rmm::cuda_stream_view stream)
 {
-  using Point       = typename std::iterator_traits<InputIt>::value_type;
-  using OutputPoint = typename std::iterator_traits<InputIt>::value_type;
+  using Point = typename std::iterator_traits<InputIt>::value_type;
 
-  static_assert(detail::is_convertible_to<cuspatial::vec_2d<T>, Point, OutputPoint>(),
-                "Input and Output points must be convertible to cuspatial::vec_2d");
-
-  static_assert(detail::is_same_floating_point<T,
-                                               typename Point::value_type,
-                                               typename OutputPoint::value_type>(),
-                "Inputs and output must have the same value type.");
+  static_assert(detail::is_convertible_to<cuspatial::vec_2d<T>, Point>(),
+                "Input points must be convertible to cuspatial::vec_2d");
 
   return thrust::count_if(rmm::exec_policy(stream),
                           points_first,
@@ -83,14 +79,12 @@ OutputIt points_in_spatial_window(vec_2d<T> window_min,
                                   rmm::cuda_stream_view stream)
 {
   using Point       = typename std::iterator_traits<InputIt>::value_type;
-  using OutputPoint = typename std::iterator_traits<InputIt>::value_type;
+  using OutputPoint = typename std::iterator_traits<OutputIt>::value_type;
 
-  static_assert(detail::is_convertible_to<cuspatial::vec_2d<T>, Point, OutputPoint>(),
-                "Input and Output points must be convertible to cuspatial::vec_2d");
+  static_assert(detail::is_convertible_to<cuspatial::vec_2d<T>, Point>(),
+                "Input points must be convertible to cuspatial::vec_2d");
 
-  static_assert(detail::is_same_floating_point<T,
-                                               typename Point::value_type,
-                                               typename OutputPoint::value_type>(),
+  static_assert(detail::is_same_floating_point<T, typename Point::value_type>(),
                 "Inputs and output must have the same value type.");
 
   return thrust::copy_if(rmm::exec_policy(stream),
