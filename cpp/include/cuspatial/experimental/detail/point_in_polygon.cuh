@@ -30,30 +30,36 @@
 namespace cuspatial {
 namespace detail {
 
+/**
+ * @brief Kernel to test if a point is inside a polygon.
+ *
+ * The algorithm is based on testing if the point is on one side of the segments in a polygon ring.
+ * Each point is tested against all segments in the polygon ring. If the point is on the the "same
+ * side" of a segment, it will flip the flag of `point_is_within`. Starting with `point_is_within`
+ * as `False`, a point is in the polygon if the flag is flipped odd number of times.
+ *
+ * TODO: the ultimate goal of refactoring this as independent function is to remove
+ * src/utility/point_in_polygon.cuh and its usage in quadtree_point_in_polygon.cu. It isn't
+ * possible today without further work to refactor quadtree_point_in_polygon into header only
+ * API.
+ */
 template <class Cart2d,
-          class Cart2dIdxType,
-          class OffsetIteratorA,
-          class OffsetIteratorB,
+          class OffsetType,
+          class OffsetIterator,
           class Cart2dIt,
-          class OffsetItADiffType = typename std::iterator_traits<OffsetIteratorA>::difference_type,
-          class OffsetItBDiffType = typename std::iterator_traits<OffsetIteratorB>::difference_type,
-          class Cart2dItDiffType  = typename std::iterator_traits<Cart2dIt>::difference_type>
+          class OffsetItDiffType = typename std::iterator_traits<OffsetIterator>::difference_type,
+          class Cart2dItDiffType = typename std::iterator_traits<Cart2dIt>::difference_type>
 __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
-                                           Cart2dIdxType const& poly_idx,
-                                           OffsetIteratorA poly_offsets_first,
-                                           OffsetItADiffType const& num_polys,
-                                           OffsetIteratorB ring_offsets_first,
-                                           OffsetItBDiffType const& num_rings,
+                                           OffsetType poly_begin,
+                                           OffsetType poly_end,
+                                           OffsetIterator ring_offsets_first,
+                                           OffsetItDiffType const& num_rings,
                                            Cart2dIt poly_points_first,
                                            Cart2dItDiffType const& num_poly_points)
 {
   using T = iterator_vec_base_type<Cart2dIt>;
 
   bool point_is_within = false;
-  auto poly_idx_next   = poly_idx + 1;
-  auto poly_begin      = poly_offsets_first[poly_idx];
-  auto poly_end = (poly_idx_next < num_polys) ? poly_offsets_first[poly_idx_next] : num_rings;
-
   // for each ring
   for (auto ring_idx = poly_begin; ring_idx < poly_end; ring_idx++) {
     auto ring_idx_next = ring_idx + 1;
@@ -85,16 +91,6 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
   return point_is_within;
 }
 
-/**
- * @brief Kernel to test if a point is inside all polygons.
- *
- * The algorithm is based on testing if the point is on one side of the segments in a polygon ring.
- * Each point is tested against all segments in the polygon ring. If the point is on the the "same
- * side" of a segment, it will flip the flag of `point_is_within`. Starting with `point_is_within`
- * as `False`, a point is in the polygon if the flag is flipped odd number of times. Note that for a
- * polygon ring with n vertices, the algorithm tests `n` segments (not `n-1`), including the segment
- * between the last and first vertex.
- */
 template <class Cart2dItA,
           class Cart2dItB,
           class OffsetIteratorA,
@@ -114,8 +110,10 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
                                         Cart2dItBDiffType const num_poly_points,
                                         OutputIt result)
 {
-  using Cart2d = iterator_value_type<Cart2dItA>;
-  auto idx     = blockIdx.x * blockDim.x + threadIdx.x;
+  using Cart2d     = iterator_value_type<Cart2dItA>;
+  using OffsetType = iterator_value_type<OffsetIteratorA>;
+
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (idx > num_test_points) { return; }
 
@@ -125,10 +123,14 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
 
   // for each polygon
   for (auto poly_idx = 0; poly_idx < num_polys; poly_idx++) {
+    auto poly_idx_next    = poly_idx + 1;
+    OffsetType poly_begin = poly_offsets_first[poly_idx];
+    OffsetType poly_end =
+      (poly_idx_next < num_polys) ? poly_offsets_first[poly_idx_next] : num_rings;
+
     bool const point_is_within = is_point_in_polygon(test_point,
-                                                     poly_idx,
-                                                     poly_offsets_first,
-                                                     num_polys,
+                                                     poly_begin,
+                                                     poly_end,
                                                      ring_offsets_first,
                                                      num_rings,
                                                      poly_points_first,
