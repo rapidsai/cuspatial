@@ -48,6 +48,7 @@
  *          @brief Distance computation APIs
  *
  *          @file linestring_distance.hpp
+ *          @file linestring_distance.cuh
  *          @file hausdorff.hpp
  *          @file experimental/hausdorff.cuh
  *          @file haversine.hpp
@@ -58,7 +59,7 @@
  *          @brief APIs related to spatial relationship
  *
  *          @file point_in_polygon.hpp
- *          @file experimental/point_in_polygon.cuh
+ *          @file point_in_polygon.cuh
  *          @file polygon_bounding_box.hpp
  *          @file polyline_bounding_box.hpp
  *          @file spatial_window.hpp
