@@ -113,7 +113,6 @@ def test_sort_values(gpdf):
 
 def test_groupby(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
-    breakpoint()
     pd.testing.assert_frame_equal(
         gpdf.groupby("key")[["integer", "random"]].min().sort_index(),
         cugpdf.groupby("key")[["integer", "random"]]
@@ -144,7 +143,10 @@ def test_interleaved_point(gpdf, polys):
         cudf.Series.from_arrow(cugs.multipoints.x.to_arrow()),
         cudf.Series(
             np.array(
-                [np.array(p)[:, 0] for p in gs[gs.type == "MultiPoint"]]
+                [
+                    np.array(p.__geo_interface__["coordinates"])[:, 0]
+                    for p in gs[gs.type == "MultiPoint"]
+                ]
             ).flatten()
         ),
     )
@@ -152,7 +154,10 @@ def test_interleaved_point(gpdf, polys):
         cudf.Series.from_arrow(cugs.multipoints.y.to_arrow()),
         cudf.Series(
             np.array(
-                [np.array(p)[:, 1] for p in gs[gs.type == "MultiPoint"]]
+                [
+                    np.array(p.__geo_interface__["coordinates"])[:, 1]
+                    for p in gs[gs.type == "MultiPoint"]
+                ]
             ).flatten()
         ),
     )
