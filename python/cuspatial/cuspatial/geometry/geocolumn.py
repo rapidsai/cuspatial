@@ -16,7 +16,6 @@ from shapely.geometry import (
 import cudf
 from cudf.core.column import ListColumn, NumericalColumn
 
-from cuspatial.geometry.pygeoarrow import GeoArrowArray
 from cuspatial.geometry.geometa import GeoMeta
 
 T = TypeVar("T", bound="GeoColumn")

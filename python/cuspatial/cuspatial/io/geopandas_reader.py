@@ -104,7 +104,7 @@ class GeoPandasReader:
         ----------
         geoseries : A GeoPandas GeoSeries
         """
-        self.buffers = pygeoarrow.from_geopandas(geoseries)
+        self.buffers = pygeoarrow.from_geopandas(parse_geometries(geoseries))
         self.source = geoseries
 
     def get_geoarrow_host_buffers(self) -> dict:
