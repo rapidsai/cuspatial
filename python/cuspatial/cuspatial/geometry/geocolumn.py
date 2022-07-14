@@ -143,13 +143,6 @@ class GeoColumn(NumericalColumn):
         )
         return result
 
-    def from_arrow(self):
-        """
-        I know what to do!
-        """
-        print("Not ready to convert from arrow")
-        breakpoint()
-
 
 class GeoColumnLocIndexer:
     """

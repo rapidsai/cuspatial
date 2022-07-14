@@ -83,13 +83,6 @@ class GeoDataFrame(cudf.DataFrame):
     def __repr__(self):
         return self.to_pandas().__repr__() + "\n" + "(GPU)" + "\n"
 
-    def groupby(self, *args, **kwargs):
-        result = super().groupby(*args, **kwargs)
-        for col in self.columns:
-            if is_geometry_type(self[col]):
-                result.obj.drop(col, axis=1, inplace=True)
-        return result
-
     def _copy_type_metadata(self, other, include_index: bool = True):
         """
         Copy type metadata from each column of `other` to the corresponding
