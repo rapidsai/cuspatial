@@ -113,9 +113,13 @@ def test_sort_values(gpdf):
 
 def test_groupby(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
+    breakpoint()
     pd.testing.assert_frame_equal(
-        gpdf.groupby("key").min().sort_index(),
-        cugpdf.groupby("key").min().sort_index().to_pandas(),
+        gpdf.groupby("key")[["integer", "random"]].min().sort_index(),
+        cugpdf.groupby("key")[["integer", "random"]]
+        .min()
+        .sort_index()
+        .to_pandas(),
     )
 
 

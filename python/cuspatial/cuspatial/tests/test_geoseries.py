@@ -127,7 +127,10 @@ def test_interleaved_point(gs, polys):
         cudf.Series(cugs.multipoints.x).reset_index(drop=True),
         cudf.Series(
             np.array(
-                [np.array(p)[:, 0] for p in gs[gs.type == "MultiPoint"]]
+                [
+                    np.array(p.__geo_interface__["coordinates"])[:, 0]
+                    for p in gs[gs.type == "MultiPoint"]
+                ]
             ).flatten()
         ).reset_index(drop=True),
     )
@@ -135,7 +138,10 @@ def test_interleaved_point(gs, polys):
         cudf.Series(cugs.multipoints.y).reset_index(drop=True),
         cudf.Series(
             np.array(
-                [np.array(p)[:, 1] for p in gs[gs.type == "MultiPoint"]]
+                [
+                    np.array(p.__geo_interface__["coordinates"])[:, 1]
+                    for p in gs[gs.type == "MultiPoint"]
+                ]
             ).flatten()
         ).reset_index(drop=True),
     )
