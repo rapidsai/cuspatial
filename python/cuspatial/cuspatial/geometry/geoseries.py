@@ -1,6 +1,5 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION
 
-import numbers
 from typing import Tuple, TypeVar, Union
 
 import geopandas as gpd
