@@ -1,4 +1,5 @@
 # Copyright (c) 2021-2022 NVIDIA CORPORATION
+from functools import cached_property
 import numbers
 from typing import Tuple, TypeVar
 
@@ -162,7 +163,8 @@ class GeoColumnILocIndexer:
     def __init__(self, sr):
         self._sr = sr
 
-    def type_int_to_field(self, type_int):
+    @cached_property
+    def type_int_to_field(self):
         from cuspatial.io.geopandas_reader import Feature_Enum
 
         return {
@@ -172,7 +174,21 @@ class GeoColumnILocIndexer:
             Feature_Enum.MULTILINESTRING: self._sr.lines,
             Feature_Enum.POLYGON: self._sr.polygons,
             Feature_Enum.MULTIPOLYGON: self._sr.polygons,
-        }[Feature_Enum(type_int)]
+        }
+
+    @cached_property
+    def _get_shapely_class_for_Feature_Enum(self):
+        from cuspatial.io.geopandas_reader import Feature_Enum
+
+        type_map = {
+            Feature_Enum.POINT: Point,
+            Feature_Enum.MULTIPOINT: MultiPoint,
+            Feature_Enum.LINESTRING: LineString,
+            Feature_Enum.MULTILINESTRING: MultiLineString,
+            Feature_Enum.POLYGON: Polygon,
+            Feature_Enum.MULTIPOLYGON: MultiPolygon,
+        }
+        return type_map
 
     def __getitem__(self, index):
         """
@@ -183,14 +199,19 @@ class GeoColumnILocIndexer:
         TODO: Do this. So far we're going to stick to one element
         at a time like in the previous implementation.
         """
+        from cuspatial.io.geopandas_reader import Feature_Enum
+
         if not isinstance(index, numbers.Integral):
             raise NotImplementedError(
                 "Can't index GeoSeries with non-integer at this time"
             )
         result_types = self._sr._meta.input_types[index]
-        field = self.type_int_to_field(result_types)
+        field = self.type_int_to_field[Feature_Enum(result_types)]
         result_index = self._sr._meta.union_offsets[index]
-        shapely_class = self._getitem_int(result_types)
+        shapely_class = self._get_shapely_class_for_Feature_Enum[
+            Feature_Enum(result_types)
+        ]
+
         if result_types == 0:
             result = field[result_index]
             return shapely_class(result)
@@ -221,14 +242,3 @@ class GeoColumnILocIndexer:
                     rings.append(tuple([tuple(point) for point in ring]))
                 polygons.append(Polygon(rings[0], rings[1:]))
             return shapely_class(polygons)
-
-    def _getitem_int(self, index):
-        type_map = {
-            0: Point,
-            1: MultiPoint,
-            2: LineString,
-            3: MultiLineString,
-            4: Polygon,
-            5: MultiPolygon,
-        }
-        return type_map[index]
