@@ -1,7 +1,6 @@
 # Copyright (c) 2021-2022 NVIDIA CORPORATION
 import numbers
-import string
-from typing import TypeVar, Union, Tuple
+from typing import Tuple, TypeVar
 
 import pyarrow as pa
 from shapely.geometry import (
@@ -14,7 +13,7 @@ from shapely.geometry import (
 )
 
 import cudf
-from cudf.core.column import ListColumn, NumericalColumn
+from cudf.core.column import NumericalColumn
 
 from cuspatial.geometry.geometa import GeoMeta
 
@@ -62,7 +61,7 @@ class GeoColumn(NumericalColumn):
             self._data = shuffle_order
 
     def to_arrow(self):
-        return pa.UnionArray(
+        return pa.UnionArray.from_dense(
             self._meta.type_codes.to_arrow(),
             self._meta.union_offsets.to_arrow(),
             (
@@ -164,7 +163,7 @@ class GeoColumnILocIndexer:
         self._sr = sr
 
     def type_int_to_field(self, type_int):
-        from cuspatial.io.geopandas_reader import Feature_Enum, Field_Enum
+        from cuspatial.io.geopandas_reader import Feature_Enum
 
         return {
             Feature_Enum.POINT: self._sr.points,

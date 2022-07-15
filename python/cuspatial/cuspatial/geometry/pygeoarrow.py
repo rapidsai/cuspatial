@@ -1,10 +1,6 @@
-# Copyright (c) 2021 NVIDIA CORPORATION
+# Copyright (c) 2022 NVIDIA CORPORATION
 
-from re import L
-from typing import Tuple
 import pyarrow as pa
-import geopandas as gpd
-
 
 ArrowPolygonsType: pa.ListType = pa.list_(
     pa.list_(pa.list_(pa.list_(pa.float64())))

@@ -3,18 +3,18 @@
 from enum import Enum
 
 from geopandas import GeoSeries as gpGeoSeries
-
-import cudf
-from cuspatial.geometry import pygeoarrow
-
 from shapely.geometry import (
-    Point,
-    MultiPoint,
     LineString,
     MultiLineString,
-    Polygon,
+    MultiPoint,
     MultiPolygon,
+    Point,
+    Polygon,
 )
+
+import cudf
+
+from cuspatial.geometry import pygeoarrow
 
 
 class Feature_Enum(Enum):
@@ -47,7 +47,6 @@ def parse_geometries(geoseries: gpGeoSeries) -> tuple:
 
     for geom in geoseries:
         coords = geom.__geo_interface__["coordinates"]
-        length = len(coords)
         if isinstance(geom, Point):
             point_coords.append(coords)
             all_offsets.append(point_offsets[-1])

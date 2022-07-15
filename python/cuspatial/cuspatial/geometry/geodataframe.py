@@ -1,6 +1,5 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION
 
-import pyarrow as pa
 from geopandas import GeoDataFrame as gpGeoDataFrame
 
 import cudf

@@ -1,11 +1,10 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION
 
 import numbers
-from typing import TypeVar, Union, List, Tuple
+from typing import Tuple, TypeVar, Union
 
 import geopandas as gpd
 import pandas as pd
-import pyarrow as pa
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 
 import cudf
@@ -87,18 +86,15 @@ class GeoSeries(cudf.Series):
 
         @property
         def x(self):
-            result = cudf.Series(self._col.leaves().values[0::2])
-            return result
+            return cudf.Series(self._col.leaves().values[0::2])
 
         @property
         def y(self):
             return cudf.Series(self._col.leaves().values[1::2])
-            return result
 
         @property
         def xy(self):
             return cudf.Series(self._col.leaves().values)
-            return result
 
     @property
     def points(self):
@@ -133,7 +129,7 @@ class GeoSeries(cudf.Series):
         return self.to_pandas().__repr__()
 
     def type_int_to_field(self, type_int):
-        from cuspatial.io.geopandas_reader import Feature_Enum, Field_Enum
+        from cuspatial.io.geopandas_reader import Feature_Enum
 
         return {
             Feature_Enum.POINT: self.points,
@@ -153,11 +149,12 @@ class GeoSeries(cudf.Series):
         TODO: Do this. So far we're going to stick to one element
         at a time like in the previous implementation.
         """
+
         if not isinstance(index, numbers.Integral):
             raise TypeError(
                 "Can't index GeoSeries with non-integer at this time"
             )
-        result_types = self._column._meta.input_types[index]
+        field = self._column._meta.input_types[index]
         result_index = self._column._meta.union_offsets[index]
         field = self.type_int_to_field(result_index)
         return field[result_index]

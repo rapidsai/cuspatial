@@ -2,18 +2,11 @@
 
 # This allows GeoMeta as its own init type
 from __future__ import annotations
+
 from typing import Union
 
-from itertools import repeat
 import pyarrow as pa
-from shapely.geometry import (
-    LineString,
-    MultiLineString,
-    MultiPoint,
-    MultiPolygon,
-    Point,
-    Polygon,
-)
+
 import cudf
 
 
