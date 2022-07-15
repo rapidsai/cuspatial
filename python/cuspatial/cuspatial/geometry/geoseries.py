@@ -133,7 +133,7 @@ class GeoSeries(cudf.Series):
 
         return {
             Feature_Enum.POINT: self.points,
-            Feature_Enum.MULTIPOINT: self.mpoints,
+            Feature_Enum.MULTIPOINT: self.multipoints,
             Feature_Enum.LINESTRING: self.lines,
             Feature_Enum.MULTILINESTRING: self.lines,
             Feature_Enum.POLYGON: self.polygons,
@@ -149,15 +149,7 @@ class GeoSeries(cudf.Series):
         TODO: Do this. So far we're going to stick to one element
         at a time like in the previous implementation.
         """
-
-        if not isinstance(index, numbers.Integral):
-            raise TypeError(
-                "Can't index GeoSeries with non-integer at this time"
-            )
-        field = self._column._meta.input_types[index]
-        result_index = self._column._meta.union_offsets[index]
-        field = self.type_int_to_field(result_index)
-        return field[result_index]
+        return self._column[index]
 
     def to_geopandas(self, nullable=False):
         """

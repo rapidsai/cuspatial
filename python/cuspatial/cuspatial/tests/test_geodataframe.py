@@ -94,7 +94,10 @@ def assert_eq_geo_df(geo1, geo2):
         assert TypeError
     assert geo1.columns.equals(geo2.columns)
     for col in geo1.columns:
-        assert geo1[col].equals(geo2[col])
+        if geo1[col].dtype == "geometry":
+            assert geo1[col].equals(geo2[col])
+        else:
+            pd.testing.assert_series_equal(geo1[col], geo2[col])
 
 
 def test_select_multiple_columns(gpdf):
@@ -183,6 +186,12 @@ def test_interleaved_point(gpdf, polys):
         cudf.Series.from_arrow(cugs.polygons.y.to_arrow()),
         cudf.Series(polys[:, 1], dtype="float64"),
     )
+
+
+def test_to_geopandas_with_geopandas_dataset():
+    df = gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
+    gdf = cuspatial.from_geopandas(df)
+    assert_eq_geo_df(df, gdf.to_geopandas())
 
 
 def test_to_shapely_random():
