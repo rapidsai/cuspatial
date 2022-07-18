@@ -1,6 +1,6 @@
 # Copyright (c) 2021-2022 NVIDIA CORPORATION
-from functools import cached_property
 import numbers
+from functools import cached_property
 from typing import Tuple, TypeVar
 
 import pyarrow as pa

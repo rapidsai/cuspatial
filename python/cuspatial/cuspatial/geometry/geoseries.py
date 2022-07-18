@@ -149,7 +149,6 @@ class GeoSeries(cudf.Series):
         at a time like in the previous implementation.
         """
         # copy self to host for faster indexing
-        host_data = self.to_arrow()
         return self._column[index]
 
     def to_geopandas(self, nullable=False):
