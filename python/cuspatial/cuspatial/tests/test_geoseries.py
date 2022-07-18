@@ -81,9 +81,7 @@ def assert_eq_multipoint(p1, p2):
 
 def assert_eq_linestring(p1, p2):
     assert type(p1) == type(p2)
-    assert len(p1.coords) == len(p2.coords)
-    for i in range(len(p1.coords)):
-        assert p1.coords[i] == p2.coords[i]
+    assert p1 == p2
 
 
 def assert_eq_multilinestring(p1, p2):
@@ -217,6 +215,34 @@ def test_getitem_lines():
     assert_eq_linestring(cus[0], p0)
     assert_eq_linestring(cus[1], p1)
     assert_eq_linestring(cus[2], p2)
+
+
+def test_getitem_slice_points():
+    p0 = Point([1, 2])
+    p1 = Point([3, 4])
+    p2 = Point([5, 6])
+    gps = gpd.GeoSeries([p0, p1, p2])
+    cus = cuspatial.from_geopandas(gps)
+    assert_eq_point(cus[0:1], gps[0:1])
+    assert_eq_point(cus[0:2], gps[0:2])
+    assert_eq_point(cus[1:2], gps[1:2])
+    assert_eq_point(cus[0:3], gps[0:3])
+    assert_eq_point(cus[1:3], gps[1:3])
+    assert_eq_point(cus[2:3], gps[2:3])
+
+
+def test_getitem_slice_lines():
+    p0 = LineString([[1, 2], [3, 4]])
+    p1 = LineString([[1, 2], [3, 4], [5, 6], [7, 8]])
+    p2 = LineString([[1, 2], [3, 4], [5, 6]])
+    gps = gpd.GeoSeries([p0, p1, p2])
+    cus = cuspatial.from_geopandas(gps)
+    assert_eq_linestring(cus[1:2][0], gps[1:2][0])
+    assert_eq_linestring(cus[0:1][0], gps[0:1][0])
+    assert_eq_linestring(cus[0:2][0], gps[0:2][0])
+    assert_eq_linestring(cus[0:3][0], gps[0:3][0])
+    assert_eq_linestring(cus[1:3][0], gps[1:3][0])
+    assert_eq_linestring(cus[2:3][0], gps[2:3][0])
 
 
 @pytest.mark.parametrize(
