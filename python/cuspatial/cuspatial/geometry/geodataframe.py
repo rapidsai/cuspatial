@@ -7,7 +7,7 @@ import cudf
 from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta
 from cuspatial.geometry.geoseries import GeoSeries
 from cuspatial.geometry.geoutil import is_geometry_type
-from cuspatial.io.geopandas_adapter import GeoPandasAdapter
+from cuspatial.io.geopandas_reader import GeoPandasReader
 
 
 class GeoDataFrame(cudf.DataFrame):
@@ -28,12 +28,9 @@ class GeoDataFrame(cudf.DataFrame):
             self.index = data.index
             for col in data.columns:
                 if is_geometry_type(data[col]):
-                    adapter = GeoPandasAdapter(data[col])
-                    buffers = GeoArrowBuffers(
-                        adapter.get_geoarrow_union(), data_locale=pa
-                    )
+                    adapter = GeoPandasReader(data[col])
                     pandas_meta = GeoMeta(adapter.get_geopandas_meta())
-                    column = GeoColumn(buffers, pandas_meta)
+                    column = GeoColumn(adapter._get_geotuple(), pandas_meta)
                     self._data[col] = column
                 else:
                     self._data[col] = data[col]

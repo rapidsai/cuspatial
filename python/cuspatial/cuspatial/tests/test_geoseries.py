@@ -114,7 +114,7 @@ def assert_eq_geo(geo1, geo2):
 def test_interleaved_point(gs, polys):
     cugs = cuspatial.from_geopandas(gs)
     pd.testing.assert_series_equal(
-        pd.Series(cugs.points.x, dtype="float64"),
+        cugs.points.x.to_pandas(),
         gs[gs.type == "Point"].x,
         check_index=False,
     )
@@ -124,7 +124,7 @@ def test_interleaved_point(gs, polys):
         check_index=False,
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(cugs.multipoints.x).reset_index(drop=True),
+        cugs.multipoints.x.reset_index(drop=True),
         cudf.Series(
             np.array(
                 [
@@ -135,7 +135,7 @@ def test_interleaved_point(gs, polys):
         ).reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(cugs.multipoints.y).reset_index(drop=True),
+        cugs.multipoints.y.reset_index(drop=True),
         cudf.Series(
             np.array(
                 [
@@ -146,25 +146,25 @@ def test_interleaved_point(gs, polys):
         ).reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(cugs.lines.x).reset_index(drop=True),
+        cugs.lines.x.reset_index(drop=True),
         cudf.Series(
             np.array([range(11, 34, 2)]).flatten(),
             dtype="float64",
         ).reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(cugs.lines.y).reset_index(drop=True),
+        cugs.lines.y.reset_index(drop=True),
         cudf.Series(
             np.array([range(12, 35, 2)]).flatten(),
             dtype="float64",
         ).reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(cugs.polygons.x).reset_index(drop=True),
+        cugs.polygons.x.reset_index(drop=True),
         cudf.Series(polys[:, 0], dtype="float64").reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(cugs.polygons.y).reset_index(drop=True),
+        cugs.polygons.y.reset_index(drop=True),
         cudf.Series(polys[:, 1], dtype="float64").reset_index(drop=True),
     )
 
