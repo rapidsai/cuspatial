@@ -223,12 +223,12 @@ def test_getitem_slice_points():
     p2 = Point([5, 6])
     gps = gpd.GeoSeries([p0, p1, p2])
     cus = cuspatial.from_geopandas(gps)
-    assert_eq_point(cus[0:1], gps[0:1])
-    assert_eq_point(cus[0:2], gps[0:2])
-    assert_eq_point(cus[1:2], gps[1:2])
-    assert_eq_point(cus[0:3], gps[0:3])
-    assert_eq_point(cus[1:3], gps[1:3])
-    assert_eq_point(cus[2:3], gps[2:3])
+    assert_eq_point(cus[0:1][0], gps[0:1][0])
+    assert_eq_point(cus[0:2][0], gps[0:2][0])
+    assert_eq_point(cus[1:2][1], gps[1:2][1])
+    assert_eq_point(cus[0:3][0], gps[0:3][0])
+    assert_eq_point(cus[1:3][1], gps[1:3][1])
+    assert_eq_point(cus[2:3][2], gps[2:3][2])
 
 
 def test_getitem_slice_lines():
@@ -237,12 +237,12 @@ def test_getitem_slice_lines():
     p2 = LineString([[1, 2], [3, 4], [5, 6]])
     gps = gpd.GeoSeries([p0, p1, p2])
     cus = cuspatial.from_geopandas(gps)
-    assert_eq_linestring(cus[1:2][0], gps[1:2][0])
     assert_eq_linestring(cus[0:1][0], gps[0:1][0])
     assert_eq_linestring(cus[0:2][0], gps[0:2][0])
+    assert_eq_linestring(cus[1:2][1], gps[1:2][1])
     assert_eq_linestring(cus[0:3][0], gps[0:3][0])
-    assert_eq_linestring(cus[1:3][0], gps[1:3][0])
-    assert_eq_linestring(cus[2:3][0], gps[2:3][0])
+    assert_eq_linestring(cus[1:3][1], gps[1:3][1])
+    assert_eq_linestring(cus[2:3][2], gps[2:3][2])
 
 
 @pytest.mark.parametrize(
