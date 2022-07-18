@@ -181,15 +181,18 @@ class GeoSeries(cudf.Series):
             }
             return type_map
 
-        def __getitem__(self, index):
+        def __getitem__(self, item):
             """
-            NOTE:
-            Using GeoMeta, we're hacking together the logic for a
-            UnionColumn. We don't want to implement this in cudf at
-            this time.
-            TODO: Do this. So far we're going to stick to one element
-            at a time like in the previous implementation.
+            Use a host copy of a pyarrow DenseUnion to index into
+            the GPU data for local copies.
             """
+            # Use the reordering _column._data if it is set
+            index = (
+                self._sr._column._data[item].to_pandas()
+                if self._sr._column._data is not None
+                else item
+            )
+
             # Fix types: There's only four fields
             result_types = self._sr._column._meta.input_types.to_arrow()
             union_types = self._sr._column._meta.input_types.replace(3, 2)
@@ -200,6 +203,7 @@ class GeoSeries(cudf.Series):
                 for x in result_types.to_numpy()
             ]
 
+            # Copy the GPU data to host for iteration and deserialization
             union = pa.UnionArray.from_dense(
                 pa.array(union_types),
                 self._sr._column._meta.union_offsets.to_arrow(),
@@ -224,22 +228,20 @@ class GeoSeries(cudf.Series):
             elif isinstance(index, Iterable):
                 indexes = index
                 utypes = union_types[index]
-                classes = shapely_classes[index]
+                classes = pd.Series(shapely_classes)[index]
             else:
                 indexes = [index]
                 utypes = [union_types[index]]
                 classes = [shapely_classes[index]]
-            breakpoint()
+
             results = []
             for result_type, result_index, shapely_class in zip(
                 utypes, indexes, classes
             ):
-                if result_type == 0:
+                if result_type == 0 or result_type == 1:
                     result = union[result_index]
                     results.append(shapely_class(result.as_py()))
-                elif result_type == 1:
-                    points = union[result_index]
-                    results.append(shapely_class(points.as_py()))
+
                 elif result_type == 2:
                     linestring = union[result_index].as_py()
                     if len(linestring) == 1:
@@ -254,6 +256,7 @@ class GeoSeries(cudf.Series):
                                 )
                             )
                         results.append(shapely_class(linestrings))
+
                 elif result_type == 3:
                     polygon = union[result_index].as_py()
                     if len(polygon) == 1:
@@ -272,7 +275,7 @@ class GeoSeries(cudf.Series):
                             polygons.append(Polygon(rings[0], rings[1:]))
                         results.append(shapely_class(polygons))
 
-            if isinstance(index, Iterable):
+            if isinstance(index, Iterable) or isinstance(index, slice):
                 return results
             else:
                 return results[0]
@@ -292,12 +295,8 @@ class GeoSeries(cudf.Series):
         return self.GeoSeriesILocIndexer(self)
 
     def __getitem__(self, item):
-        index = (
-            self._column._data[item]
-            if self._column._data is not None
-            else item
-        )
-        return self.iloc[index]
+        result = self.iloc[item]
+        return gpGeoSeries(result, index=self.index[item].to_pandas())
 
     def to_geopandas(self, nullable=False):
         """
