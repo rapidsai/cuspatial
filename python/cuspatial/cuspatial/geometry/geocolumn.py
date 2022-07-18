@@ -1,5 +1,4 @@
 # Copyright (c) 2021-2022 NVIDIA CORPORATION
-import numbers
 from typing import Tuple, TypeVar
 
 import pyarrow as pa
@@ -8,8 +7,6 @@ import cudf
 from cudf.core.column import NumericalColumn
 
 from cuspatial.geometry.geometa import GeoMeta
-from cuspatial.io.geopandas_reader import Feature_Enum
-
 
 T = TypeVar("T", bound="GeoColumn")
 
