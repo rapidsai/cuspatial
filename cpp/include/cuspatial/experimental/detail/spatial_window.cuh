@@ -78,14 +78,13 @@ OutputIt points_in_spatial_window(vec_2d<T> window_min,
                                   OutputIt output_points_first,
                                   rmm::cuda_stream_view stream)
 {
-  using Point       = typename std::iterator_traits<InputIt>::value_type;
-  using OutputPoint = typename std::iterator_traits<OutputIt>::value_type;
+  using Point = typename std::iterator_traits<InputIt>::value_type;
 
   static_assert(detail::is_convertible_to<cuspatial::vec_2d<T>, Point>(),
                 "Input points must be convertible to cuspatial::vec_2d");
 
   static_assert(detail::is_same_floating_point<T, typename Point::value_type>(),
-                "Inputs and output must have the same value type.");
+                "Inputs and window coordinates must have the same value type.");
 
   return thrust::copy_if(rmm::exec_policy(stream),
                          points_first,
