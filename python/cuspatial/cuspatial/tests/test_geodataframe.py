@@ -208,16 +208,52 @@ def test_to_shapely_random():
 
 
 @pytest.mark.parametrize(
-    "series_slice",
+    "pre_slice",
+    [
+        (slice(0, 12)),
+        (slice(0, 10, 1)),
+        (slice(0, 3, 1)),
+        (slice(3, 6, 1)),
+        (slice(6, 9, 1)),
+    ],
+)
+def test_pre_slice(gpdf, pre_slice):
+    geometries = gpdf.iloc[pre_slice, :]
+    gi = gpd.GeoDataFrame(geometries)
+    cugpdf = cuspatial.from_geopandas(gi)
+    cugpdf_back = cugpdf.to_geopandas()
+    assert_eq_geo_df(gi, cugpdf_back)
+
+
+@pytest.mark.parametrize(
+    "post_slice",
     [slice(0, 12)]
     + [slice(0, 10, 1)]
     + [slice(0, 3, 1)]
     + [slice(3, 6, 1)]
     + [slice(6, 9, 1)],
 )
-def test_to_shapely(gpdf, series_slice):
-    geometries = gpdf.iloc[series_slice, :]
+def test_post_slice(gpdf, post_slice):
+    geometries = gpdf
     gi = gpd.GeoDataFrame(geometries)
     cugpdf = cuspatial.from_geopandas(gi)
     cugpdf_back = cugpdf.to_geopandas()
-    assert_eq_geo_df(gi, cugpdf_back)
+    assert_eq_geo_df(gi[post_slice], cugpdf_back[post_slice])
+
+
+@pytest.mark.parametrize(
+    "df_boolmask",
+    [
+        np.repeat(True, 12),
+        np.repeat((np.repeat(True, 3), np.repeat(False, 3)), 2).flatten(),
+        np.repeat(False, 12),
+        np.repeat((np.repeat(False, 3), np.repeat(True, 3)), 2).flatten(),
+        np.repeat([True, False], 6).flatten(),
+    ],
+)
+def test_boolmask(gpdf, post_slice):
+    geometries = gpdf
+    gi = gpd.GeoDataFrame(geometries)
+    cugpdf = cuspatial.from_geopandas(gi)
+    cugpdf_back = cugpdf.to_geopandas()
+    assert_eq_geo_df(gi[post_slice], cugpdf_back[post_slice])

@@ -179,20 +179,57 @@ def test_to_shapely_random():
 
 
 @pytest.mark.parametrize(
-    "series_slice",
-    list(np.arange(10))
-    + [slice(0, 12)]
-    + [slice(0, 10, 1)]
-    + [slice(0, 3, 1)]
-    + [slice(3, 6, 1)]
-    + [slice(6, 9, 1)],
+    "pre_slice",
+    [
+        list(np.arange(10)),
+        (slice(0, 12)),
+        (slice(0, 10, 1)),
+        (slice(0, 3, 1)),
+        (slice(3, 6, 1)),
+        (slice(6, 9, 1)),
+    ],
 )
-def test_to_shapely(gs, series_slice):
-    geometries = gs[series_slice]
+def test_to_shapely(gs, pre_slice):
+    geometries = gs[pre_slice]
     gi = gpd.GeoSeries(geometries)
     cugs = cuspatial.from_geopandas(gi)
     cugs_back = cugs.to_geopandas()
     assert_eq_geo(gi, cugs_back)
+
+
+@pytest.mark.parametrize(
+    "series_slice",
+    [
+        list(np.arange(10)),
+        [slice(0, 12)],
+        [slice(0, 10, 1)],
+        [slice(0, 3, 1)],
+        [slice(3, 6, 1)],
+        [slice(6, 9, 1)],
+    ],
+)
+def test_slice(gs, series_slice):
+    gi = gpd.GeoSeries(gs)
+    cugs = cuspatial.from_geopandas(gi)
+    cugs_back = cugs.to_geopandas()
+    assert_eq_geo(gi[series_slice], cugs_back[series_slice])
+
+
+@pytest.mark.parametrize(
+    "series_boolmask",
+    [
+        np.repeat(True, 12),
+        np.repeat((np.repeat(True, 3), np.repeat(False, 3)), 2).flatten(),
+        np.repeat(False, 12),
+        np.repeat((np.repeat(False, 3), np.repeat(True, 3)), 2).flatten(),
+        np.repeat([True, False], 6).flatten(),
+    ],
+)
+def test_boolmask(gs, series_boolmask):
+    gi = gpd.GeoSeries(gs)
+    cugs = cuspatial.from_geopandas(gi)
+    cugs_back = cugs.to_geopandas()
+    assert_eq_geo(gi[series_boolmask], cugs_back[series_boolmask])
 
 
 def test_getitem_points():
