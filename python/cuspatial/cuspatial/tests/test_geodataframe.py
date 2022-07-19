@@ -251,9 +251,9 @@ def test_post_slice(gpdf, post_slice):
         np.repeat([True, False], 6).flatten(),
     ],
 )
-def test_boolmask(gpdf, post_slice):
+def test_boolmask(gpdf, df_boolmask):
     geometries = gpdf
     gi = gpd.GeoDataFrame(geometries)
     cugpdf = cuspatial.from_geopandas(gi)
     cugpdf_back = cugpdf.to_geopandas()
-    assert_eq_geo_df(gi[post_slice], cugpdf_back[post_slice])
+    assert_eq_geo_df(gi[df_boolmask], cugpdf_back[df_boolmask])
