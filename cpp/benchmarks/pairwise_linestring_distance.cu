@@ -95,7 +95,7 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
   cuspatial::rmm_pool_raii rmm_pool;
 
   auto const num_string_pairs{state.get_int64("NumStrings")};
-  auto num_segments_per_string{state.get_int64("NumSegmentsPerString")};
+  auto const num_segments_per_string{state.get_int64("NumSegmentsPerString")};
 
   auto [ls1, ls1_offset] =
     generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, {0, 0});
