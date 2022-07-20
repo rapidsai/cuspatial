@@ -1,9 +1,10 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION
+# Copyright (c) 2020-2022, NVIDIA CORPORATION
 
 from typing import TypeVar, Union
 
 import geopandas as gpd
 import pandas as pd
+import pyarrow as pa
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 
 import cudf
@@ -55,7 +56,9 @@ class GeoSeries(cudf.Series):
             column = data._column
         elif isinstance(data, gpGeoSeries):
             adapter = GeoPandasAdapter(data)
-            buffers = GeoArrowBuffers(adapter.get_geoarrow_host_buffers())
+            buffers = GeoArrowBuffers(
+                adapter.get_geoarrow_union(), data_locale=pa
+            )
             pandas_meta = GeoMeta(adapter.get_geopandas_meta())
             column = GeoColumn(buffers, pandas_meta)
         else:
