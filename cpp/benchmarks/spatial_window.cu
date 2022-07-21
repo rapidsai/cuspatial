@@ -21,9 +21,7 @@
 #include <cuspatial/spatial_window.hpp>
 #include <cuspatial/vec_2d.hpp>
 
-#include <cudf_test/column_wrapper.hpp>
-
-#include <rmm/device_vector.hpp>
+#include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
 #include <nvbench/nvbench.cuh>
@@ -54,11 +52,15 @@ using namespace cuspatial;
 template <class PointsIter, typename T>
 void generate_points(PointsIter begin, PointsIter end, vec_2d<T> window_min, vec_2d<T> window_max)
 {
-  auto engine = deterministic_engine(std::distance(begin, end));
+  auto engine_x = deterministic_engine(std::distance(begin, end));
+  auto engine_y = deterministic_engine(2 * std::distance(begin, end));
+
   auto x_dist = make_uniform_dist(window_min.x, window_max.x);
   auto y_dist = make_uniform_dist(window_min.y, window_max.y);
-  auto x_gen  = value_generator{window_min.x, window_max.x, engine, x_dist};
-  auto y_gen  = value_generator{window_min.y, window_max.y, engine, y_dist};
+
+  auto x_gen = value_generator{window_min.x, window_max.x, engine_x, x_dist};
+  auto y_gen = value_generator{window_min.y, window_max.y, engine_y, y_dist};
+
   thrust::tabulate(rmm::exec_policy(), begin, end, [x_gen, y_gen] __device__(size_t n) mutable {
     return vec_2d<T>{x_gen(n), y_gen(n)};
   });
@@ -75,25 +77,34 @@ void points_in_spatial_window_benchmark(nvbench::state& state, nvbench::type_lis
   auto window_min = vec_2d<T>{-100, -100};
   auto window_max = vec_2d<T>{100, 100};
 
-  auto range_min = vec_2d<T>{200, 200};
+  auto range_min = vec_2d<T>{-200, -200};
   auto range_max = vec_2d<T>{200, 200};
 
   auto d_points = rmm::device_uvector<vec_2d<T>>(num_points, rmm::cuda_stream_default);
   generate_points(d_points.begin(), d_points.end(), range_min, range_max);
 
-  auto x_begin = thrust::make_transform_iterator(d_points.begin(),
-                                                 [] __device__(auto point) { return point.x; });
+  auto d_x = rmm::device_uvector<T>(num_points, rmm::cuda_stream_default);
+  auto d_y = rmm::device_uvector<T>(num_points, rmm::cuda_stream_default);
 
-  auto y_begin = thrust::make_transform_iterator(d_points.begin(),
-                                                 [] __device__(auto point) { return point.y; });
+  thrust::transform(
+    rmm::exec_policy(), d_points.begin(), d_points.end(), d_x.begin(), [] __device__(auto point) {
+      return point.x;
+    });
+  thrust::transform(
+    rmm::exec_policy(), d_points.begin(), d_points.end(), d_y.begin(), [] __device__(auto point) {
+      return point.y;
+    });
 
-  auto xs = cudf::test::fixed_width_column_wrapper<double>(x_begin, x_begin + num_points);
-  auto ys = cudf::test::fixed_width_column_wrapper<double>(y_begin, y_begin + num_points);
+  auto xs = cudf::column(cudf::data_type{cudf::type_to_id<T>()}, num_points, d_x.release());
+  auto ys = cudf::column(cudf::data_type{cudf::type_to_id<T>()}, num_points, d_y.release());
 
-  state.add_element_count(num_points, "NumPoints");
+  state.add_element_count(num_points);
+
+  points_in_spatial_window(window_min.x, window_max.x, window_min.y, window_max.y, xs, ys);
 
   state.exec(nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    points_in_spatial_window(window_min.x, window_max.x, window_min.y, window_max.y, xs, ys);
+    auto points_in =
+      points_in_spatial_window(window_min.x, window_max.x, window_min.y, window_max.y, xs, ys);
   });
 }
 
