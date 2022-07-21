@@ -33,10 +33,9 @@ namespace detail {
 /**
  * @brief Kernel to test if a point is inside a polygon.
  *
- * The algorithm is based on testing if the point is on one side of the segments in a polygon ring.
- * Each point is tested against all segments in the polygon ring. If the point is on the the "same
- * side" of a segment, it will flip the flag of `point_is_within`. Starting with `point_is_within`
- * as `False`, a point is in the polygon if the flag is flipped odd number of times.
+ * Implemented based on Eric Haines's crossings-multiply algorithm:
+ * See "Crossings test" section of http://erich.realtimerendering.com/ptinpoly/,
+ * the improvement in addenda is also addopted to remove divisions in this kernel.
  *
  * TODO: the ultimate goal of refactoring this as independent function is to remove
  * src/utility/point_in_polygon.cuh and its usage in quadtree_point_in_polygon.cu. It isn't
