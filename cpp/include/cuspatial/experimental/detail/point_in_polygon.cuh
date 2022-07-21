@@ -67,26 +67,26 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
     int32_t ring_end =
       (ring_idx_next < num_rings) ? ring_offsets_first[ring_idx_next] : num_poly_points;
 
-    Cart2d b = poly_points_first[ring_end-1];
+    Cart2d b     = poly_points_first[ring_end - 1];
     bool y0_flag = b.y > test_point.y;
     bool y1_flag;
     // for each line segment, including the segment between the last and first vertex
     for (auto point_idx = ring_begin; point_idx < ring_end; point_idx++) {
       Cart2d const a = poly_points_first[point_idx];
-      y1_flag = a.y > test_point.y;
+      y1_flag        = a.y > test_point.y;
       if (y1_flag != y0_flag) {
-        T run            = b.x - a.x;
-        T rise           = b.y - a.y;
-        T rise_to_point  = test_point.y - a.y;
+        T run           = b.x - a.x;
+        T rise          = b.y - a.y;
+        T rise_to_point = test_point.y - a.y;
 
         if (rise > 0 && (test_point.x - a.x) * rise < run * rise_to_point)
           point_is_within = not point_is_within;
         else if (rise < 0 && (test_point.x - a.x) * rise > run * rise_to_point)
           point_is_within = not point_is_within;
       }
-      b = a;
+      b       = a;
       y0_flag = y1_flag;
-  }
+    }
   }
 
   return point_is_within;
