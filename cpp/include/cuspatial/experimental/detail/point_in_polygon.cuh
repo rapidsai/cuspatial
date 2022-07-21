@@ -62,30 +62,30 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
   bool point_is_within = false;
   // for each ring
   for (auto ring_idx = poly_begin; ring_idx < poly_end; ring_idx++) {
-    auto ring_idx_next = ring_idx + 1;
-    auto ring_begin    = ring_offsets_first[ring_idx];
-    auto ring_end =
+    int32_t ring_idx_next = ring_idx + 1;
+    int32_t ring_begin    = ring_offsets_first[ring_idx];
+    int32_t ring_end =
       (ring_idx_next < num_rings) ? ring_offsets_first[ring_idx_next] : num_poly_points;
-    auto ring_len = ring_end - ring_begin;
 
+    Cart2d b = poly_points_first[ring_end-1];
+    bool y0_flag = b.y > test_point.y;
+    bool y1_flag;
     // for each line segment, including the segment between the last and first vertex
-    for (auto point_idx = 0; point_idx < ring_len; point_idx++) {
-      Cart2d const a = poly_points_first[ring_begin + ((point_idx + 0) % ring_len)];
-      Cart2d const b = poly_points_first[ring_begin + ((point_idx + 1) % ring_len)];
+    for (auto point_idx = ring_begin; point_idx < ring_end; point_idx++) {
+      Cart2d const a = poly_points_first[point_idx];
+      y1_flag = a.y > test_point.y;
+      if (y1_flag != y0_flag) {
+        T run            = b.x - a.x;
+        T rise           = b.y - a.y;
+        T rise_to_point  = test_point.y - a.y;
 
-      bool y_between_ay_by =
-        a.y <= test_point.y && test_point.y < b.y;  // is y in range [ay, by) when ay < by?
-      bool y_between_by_ay =
-        b.y <= test_point.y && test_point.y < a.y;  // is y in range [by, ay) when by < ay?
-      bool y_in_bounds = y_between_ay_by || y_between_by_ay;  // is y in range [by, ay]?
-      T run            = b.x - a.x;
-      T rise           = b.y - a.y;
-      T rise_to_point  = test_point.y - a.y;
-
-      if (y_in_bounds && test_point.x < (run / rise) * rise_to_point + a.x) {
-        point_is_within = not point_is_within;
+        if (test_point.x < (run / rise) * rise_to_point + a.x) {
+          point_is_within = not point_is_within;
+        }
       }
-    }
+      b = a;
+      y0_flag = y1_flag;
+  }
   }
 
   return point_is_within;
@@ -115,7 +115,7 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
 
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (idx > num_test_points) { return; }
+  if (idx >= num_test_points) { return; }
 
   int32_t hit_mask = 0;
 
