@@ -79,9 +79,10 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
         T rise           = b.y - a.y;
         T rise_to_point  = test_point.y - a.y;
 
-        if (test_point.x < (run / rise) * rise_to_point + a.x) {
+        if (rise > 0 && (test_point.x - a.x) * rise < run * rise_to_point)
           point_is_within = not point_is_within;
-        }
+        else if (rise < 0 && (test_point.x - a.x) * rise > run * rise_to_point)
+          point_is_within = not point_is_within;
       }
       b = a;
       y0_flag = y1_flag;
