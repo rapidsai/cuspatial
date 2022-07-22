@@ -79,14 +79,14 @@ def parse_geometries(geoseries: gpGeoSeries) -> tuple:
             type_buffer.append(Feature_Enum.MULTIPOLYGON.value)
         else:
             raise TypeError(type(geom))
-    return {
-        "type_buffer": type_buffer,
-        "point_coords": point_coords,
-        "mpoint_coords": mpoint_coords,
-        "line_coords": line_coords,
-        "polygon_coords": polygon_coords,
-        "all_offsets": all_offsets,
-    }
+    return (
+        type_buffer,
+        all_offsets,
+        point_coords,
+        mpoint_coords,
+        line_coords,
+        polygon_coords,
+    )
 
 
 class GeoPandasReader:
@@ -102,35 +102,7 @@ class GeoPandasReader:
         ----------
         geoseries : A GeoPandas GeoSeries
         """
-        self.buffers = pygeoarrow.from_geopandas(parse_geometries(geoseries))
-
-    def get_geoarrow_host_buffers(self) -> dict:
-        """
-        Returns a set of host buffers containing the geopandas object converted
-        to GeoArrow format.
-        """
-        points_xy = self.buffers.field(0).values
-        mpoints_xy = self.buffers.field(1).values
-        mpoints_offsets = self.buffers.field(1).offsets
-        lines_xy = self.buffers.field(2).values.values
-        lines_offsets = self.buffers.field(2).offsets
-        mlines = lines_offsets
-        polygons_xy = self.buffers.field(3).values.values.values
-        mpolygons = self.buffers.field(3).offsets
-        polygons_polygons = self.buffers.field(3).values.offsets
-        polygons_rings = self.buffers.field(3).values.values.offsets
-        return {
-            "points_xy": points_xy,
-            "mpoints_xy": mpoints_xy,
-            "mpoints_offsets": mpoints_offsets,
-            "lines_xy": lines_xy,
-            "lines_offsets": lines_offsets,
-            "mlines": mlines,
-            "polygons_xy": polygons_xy,
-            "polygons_polygons": polygons_polygons,
-            "polygons_rings": polygons_rings,
-            "mpolygons": mpolygons,
-        }
+        self.buffers = pygeoarrow.from_lists(*parse_geometries(geoseries))
 
     def _get_geotuple(self) -> cudf.Series:
         """
