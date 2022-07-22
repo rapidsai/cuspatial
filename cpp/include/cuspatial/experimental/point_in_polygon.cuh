@@ -61,6 +61,8 @@ namespace cuspatial {
  * @note Direction of rings does not matter.
  * @note This algorithm supports the ESRI shapefile format, but assumes all polygons are "clean" (as
  * defined by the format), and does _not_ verify whether the input adheres to the shapefile format.
+ * @note The points of the rings can be either explicitly closed (the first and last vertex overlaps),
+ * or implicitly closed (not overlaps). Either input format is supported.
  * @note Overlapping rings negate each other. This behavior is not limited to a single negation,
  * allowing for "islands" within the same polygon.
  * @note `poly_ring_offsets` must contain only the rings that make up the polygons indexed by
