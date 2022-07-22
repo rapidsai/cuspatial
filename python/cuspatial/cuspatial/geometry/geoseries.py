@@ -164,9 +164,7 @@ class GeoSeries(cudf.Series):
                 Feature_Enum.POINT: self._sr.points,
                 Feature_Enum.MULTIPOINT: self._sr.mpoints,
                 Feature_Enum.LINESTRING: self._sr.lines,
-                Feature_Enum.MULTILINESTRING: self._sr.lines,
                 Feature_Enum.POLYGON: self._sr.polygons,
-                Feature_Enum.MULTIPOLYGON: self._sr.polygons,
             }
 
         def _linestring_to_shapely(self, geom):
@@ -202,21 +200,7 @@ class GeoSeries(cudf.Series):
                 Feature_Enum.POINT: Point,
                 Feature_Enum.MULTIPOINT: MultiPoint,
                 Feature_Enum.LINESTRING: self._linestring_to_shapely,
-                Feature_Enum.MULTILINESTRING: self._linestring_to_shapely,
                 Feature_Enum.POLYGON: self._polygon_to_shapely,
-                Feature_Enum.MULTIPOLYGON: self._polygon_to_shapely,
-            }
-            return type_map
-
-        @cached_property
-        def _get_shapely_class_for_Feature_Enum(self):
-            type_map = {
-                Feature_Enum.POINT: Point,
-                Feature_Enum.MULTIPOINT: MultiPoint,
-                Feature_Enum.LINESTRING: LineString,
-                Feature_Enum.MULTILINESTRING: MultiLineString,
-                Feature_Enum.POLYGON: Polygon,
-                Feature_Enum.MULTIPOLYGON: MultiPolygon,
             }
             return type_map
 
@@ -239,9 +223,7 @@ class GeoSeries(cudf.Series):
             # following replaces the six types (0, 1, 2, 3, 4, 5) with their
             # corresponding union field types: (0, 1, 2, 2, 3, 3).
             result_types = self._sr._column._meta.input_types.to_arrow()
-            union_types = self._sr._column._meta.input_types.replace(3, 2)
-            union_types = union_types.replace(4, 3)
-            union_types = union_types.replace(5, 3)
+            union_types = self._sr._column._meta.input_types
 
             # Get the shapely serialization methods we'll use here.
             shapely_fns = [

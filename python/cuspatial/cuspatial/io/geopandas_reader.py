@@ -21,9 +21,7 @@ class Feature_Enum(Enum):
     POINT = 0
     MULTIPOINT = 1
     LINESTRING = 2
-    MULTILINESTRING = 3
-    POLYGON = 4
-    MULTIPOLYGON = 5
+    POLYGON = 3
 
 
 class Field_Enum(Enum):
@@ -66,7 +64,7 @@ def parse_geometries(geoseries: gpGeoSeries) -> tuple:
             line_coords.append(coords)
             all_offsets.append(line_offsets[-1])
             line_offsets.append(line_offsets[-1] + 1)
-            type_buffer.append(Feature_Enum.MULTILINESTRING.value)
+            type_buffer.append(Feature_Enum.LINESTRING.value)
         elif isinstance(geom, Polygon):
             polygon_coords.append([coords])
             all_offsets.append(polygon_offsets[-1])
@@ -76,7 +74,7 @@ def parse_geometries(geoseries: gpGeoSeries) -> tuple:
             polygon_coords.append(coords)
             all_offsets.append(polygon_offsets[-1])
             polygon_offsets.append(polygon_offsets[-1] + 1)
-            type_buffer.append(Feature_Enum.MULTIPOLYGON.value)
+            type_buffer.append(Feature_Enum.POLYGON.value)
         else:
             raise TypeError(type(geom))
     return (
