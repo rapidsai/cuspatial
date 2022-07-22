@@ -209,13 +209,6 @@ class GeoSeries(cudf.Series):
             Use a host copy of a pyarrow DenseUnion to index into
             the GPU data for local copies.
             """
-            # Use the reordering _column._data if it is set
-            index = (
-                self._sr._column._data[item].to_pandas()
-                if self._sr._column._data is not None
-                else item
-            )
-
             # Fix types: There's only four fields.
             #
             # There are six types of constructors for Shapely objects, but only
@@ -258,10 +251,13 @@ class GeoSeries(cudf.Series):
                 else polygons.to_arrow()
             )
 
+            index = item
             # Copy the GPU data to host for iteration and deserialization
+            new_union_types = union_types[index]
+            new_union_offsets = self._sr._column._meta.union_offsets[index]
             union = pygeoarrow.from_pyarrow_lists(
-                union_types.to_arrow(),
-                self._sr._column._meta.union_offsets.to_arrow(),
+                new_union_types.to_arrow(),
+                new_union_offsets.to_arrow(),
                 arrow_points,
                 arrow_mpoints,
                 arrow_lines,
@@ -271,28 +267,32 @@ class GeoSeries(cudf.Series):
             # Convert the iterable types into a predictable format for the
             # upcoming zip
             if isinstance(index, slice):
-                indexes = list(
-                    range(
-                        index.start if index.start else 0,
-                        index.stop if index.stop else len(union),
-                        index.step if index.step else 1,
-                    )
+                start, stop, step = index.indices(len(union_types))
+                indexes = range(0, max(stop - start, 1), step)
+                # Use the reordering _column._data if it is set
+                indexes = (
+                    self._sr._column._data[indexes].to_pandas()
+                    if self._sr._column._data is not None
+                    else indexes
                 )
-                utypes = union_types[index]
-                serialization_functions = shapely_fns[index]
+                serialization_functions = pd.Series(shapely_fns)[indexes]
             elif isinstance(index, Iterable):
-                indexes = index
-                utypes = union_types[index]
-                serialization_functions = pd.Series(shapely_fns)[index]
+                indexes = list(range(len(list(index))))
+                # Use the reordering _column._data if it is set
+                indexes = (
+                    self._sr._column._data[indexes].to_pandas()
+                    if self._sr._column._data is not None
+                    else indexes
+                )
+                serialization_functions = pd.Series(shapely_fns)[indexes]
             else:
                 indexes = [index]
-                utypes = [union_types[index]]
-                serialization_functions = [shapely_fns[index]]
+                serialization_functions = [shapely_fns[indexes]]
 
             # Serialize to Shapely!
             results = []
-            for (result_type, result_index, shapely_serialization_fn) in zip(
-                utypes.values_host, indexes, serialization_functions
+            for (result_index, shapely_serialization_fn) in zip(
+                indexes, serialization_functions
             ):
                 results.append(
                     shapely_serialization_fn(union[result_index].as_py())
