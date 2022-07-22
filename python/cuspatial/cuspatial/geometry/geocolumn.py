@@ -95,7 +95,6 @@ class GeoColumn(NumericalColumn):
         )
 
     def copy(self, deep=True):
-        """TODO"""
         """
         Create a copy of all of the GPU-backed data structures in this
         GeoColumn.

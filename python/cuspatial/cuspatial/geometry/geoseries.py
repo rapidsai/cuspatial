@@ -43,7 +43,7 @@ class GeoSeries(cudf.Series):
 
     def __init__(
         self,
-        data: Union[gpd.GeoSeries, Tuple],
+        data: Union[gpd.GeoSeries, Tuple, T, pd.Series, GeoColumn],
         index: Union[cudf.Index, pd.Index] = None,
         dtype=None,
         name=None,
@@ -193,11 +193,18 @@ class GeoSeries(cudf.Series):
                 else item
             )
 
-            # Fix types: There's only four fields
+            # Fix types: There's only four fields.
+            #
+            # There are six types of constructors for Shapely objects, but only
+            # four types in the DenseUnion that this Series represents. The
+            # following replaces the six types (0, 1, 2, 3, 4, 5) with their
+            # corresponding union field types: (0, 1, 2, 2, 3, 3).
             result_types = self._sr._column._meta.input_types.to_arrow()
             union_types = self._sr._column._meta.input_types.replace(3, 2)
             union_types = union_types.replace(4, 3)
             union_types = union_types.replace(5, 3).values_host
+
+            # Get the shapely serialization methods we'll use here.
             shapely_classes = [
                 self._get_shapely_class_for_Feature_Enum[Feature_Enum(x)]
                 for x in result_types.to_numpy()
