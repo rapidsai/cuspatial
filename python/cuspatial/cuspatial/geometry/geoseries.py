@@ -170,6 +170,45 @@ class GeoSeries(cudf.Series):
                 Feature_Enum.MULTIPOLYGON: self._sr.polygons,
             }
 
+        def _linestring_to_shapely(self, geom):
+            if len(geom) == 1:
+                result = [tuple(x) for x in geom[0]]
+                return LineString(result)
+            else:
+                linestrings = []
+                for linestring in geom:
+                    linestrings.append(
+                        LineString([tuple(child) for child in linestring])
+                    )
+                return MultiLineString(linestrings)
+
+        def _polygon_to_shapely(self, geom):
+            if len(geom) == 1:
+                rings = []
+                for ring in geom[0]:
+                    rings.append(tuple(tuple(point) for point in ring))
+                return Polygon(rings[0], rings[1:])
+            else:
+                polygons = []
+                for p in geom:
+                    rings = []
+                    for ring in p:
+                        rings.append(tuple([tuple(point) for point in ring]))
+                    polygons.append(Polygon(rings[0], rings[1:]))
+                return MultiPolygon(polygons)
+
+        @cached_property
+        def _arrow_to_shapely(self):
+            type_map = {
+                Feature_Enum.POINT: Point,
+                Feature_Enum.MULTIPOINT: MultiPoint,
+                Feature_Enum.LINESTRING: self._linestring_to_shapely,
+                Feature_Enum.MULTILINESTRING: self._linestring_to_shapely,
+                Feature_Enum.POLYGON: self._polygon_to_shapely,
+                Feature_Enum.MULTIPOLYGON: self._polygon_to_shapely,
+            }
+            return type_map
+
         @cached_property
         def _get_shapely_class_for_Feature_Enum(self):
             type_map = {
@@ -207,7 +246,7 @@ class GeoSeries(cudf.Series):
 
             # Get the shapely serialization methods we'll use here.
             shapely_classes = [
-                self._get_shapely_class_for_Feature_Enum[Feature_Enum(x)]
+                self._arrow_to_shapely[Feature_Enum(x)]
                 for x in result_types.to_numpy()
             ]
 
@@ -248,6 +287,8 @@ class GeoSeries(cudf.Series):
                 arrow_polygons,
             )
 
+            # Convert the iterable types into a predictable format for the
+            # upcoming zip
             if isinstance(index, slice):
                 indexes = list(
                     range(
@@ -271,43 +312,10 @@ class GeoSeries(cudf.Series):
             for (result_type, result_index, shapely_class) in zip(
                 utypes.values_host, indexes, classes
             ):
-                if result_type == 0 or result_type == 1:
-                    result = union[result_index]
-                    results.append(shapely_class(result.as_py()))
+                results.append(shapely_class(union[result_index].as_py()))
 
-                elif result_type == 2:
-                    linestring = union[result_index].as_py()
-                    if len(linestring) == 1:
-                        result = [tuple(x) for x in linestring[0]]
-                        results.append(shapely_class(result))
-                    else:
-                        linestrings = []
-                        for linestring in union[result_index].as_py():
-                            linestrings.append(
-                                LineString(
-                                    [tuple(child) for child in linestring]
-                                )
-                            )
-                        results.append(shapely_class(linestrings))
-
-                elif result_type == 3:
-                    polygon = union[result_index].as_py()
-                    if len(polygon) == 1:
-                        rings = []
-                        for ring in polygon[0]:
-                            rings.append(tuple(tuple(point) for point in ring))
-                        results.append(shapely_class(rings[0], rings[1:]))
-                    else:
-                        polygons = []
-                        for p in union[result_index].as_py():
-                            rings = []
-                            for ring in p:
-                                rings.append(
-                                    tuple([tuple(point) for point in ring])
-                                )
-                            polygons.append(Polygon(rings[0], rings[1:]))
-                        results.append(shapely_class(polygons))
-
+            # Finally, a slice determines that we return a list, otherwise
+            # an object.
             if isinstance(index, Iterable) or isinstance(index, slice):
                 return results
             else:
