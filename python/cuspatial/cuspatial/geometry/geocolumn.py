@@ -15,7 +15,7 @@ class GeoColumn(NumericalColumn):
     """
     Parameters
     ----------
-    data : A tuple of four cudf.ListSeries
+    data : A tuple of four cudf.Series of list dtype
     meta : A GeoMeta object (optional)
 
     Notes

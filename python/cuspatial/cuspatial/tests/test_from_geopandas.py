@@ -58,11 +58,12 @@ def test_from_geopandas_point():
 def test_from_geopandas_multipoint():
     gs = gpd.GeoSeries(MultiPoint([(1.0, 2.0), (3.0, 4.0)]))
     cugs = cuspatial.from_geopandas(gs)
-    cudf.testing._utils.assert_eq(
-        cugs.multipoints.xy, cudf.Series([1.0, 2.0, 3.0, 4.0], dtype="float64")
+    cudf.testing.assert_series_equal(
+        cugs.multipoints.xy,
+        cudf.Series([1.0, 2.0, 3.0, 4.0], dtype="float64"),
     )
-    cudf.testing._utils.assert_eq(
-        cugs._column.mpoints._column.base_children[0],
+    cudf.testing.assert_series_equal(
+        cudf.Series(cugs._column.mpoints._column.base_children[0]),
         cudf.Series([0, 2], dtype="int32"),
     )
 
@@ -70,11 +71,11 @@ def test_from_geopandas_multipoint():
 def test_from_geopandas_linestring():
     gs = gpd.GeoSeries(LineString(((4.0, 3.0), (2.0, 1.0))))
     cugs = cuspatial.from_geopandas(gs)
-    cudf.testing._utils.assert_eq(
+    cudf.testing.assert_series_equal(
         cugs.lines.xy, cudf.Series([4.0, 3.0, 2.0, 1.0], dtype="float64")
     )
-    cudf.testing._utils.assert_eq(
-        cugs._column.lines._column.base_children[0],
+    cudf.testing.assert_series_equal(
+        cudf.Series(cugs._column.lines._column.base_children[0]),
         cudf.Series([0, 1], dtype="int32"),
     )
 
@@ -89,12 +90,12 @@ def test_from_geopandas_multilinestring():
         )
     )
     cugs = cuspatial.from_geopandas(gs)
-    cudf.testing._utils.assert_eq(
+    cudf.testing.assert_series_equal(
         cugs.lines.xy,
         cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], dtype="float64"),
     )
-    cudf.testing._utils.assert_eq(
-        cugs._column.lines._column.base_children[0],
+    cudf.testing.assert_series_equal(
+        cudf.Series(cugs._column.lines._column.base_children[0]),
         cudf.Series([0, 2], dtype="int32"),
     )
 
@@ -106,17 +107,19 @@ def test_from_geopandas_polygon():
         )
     )
     cugs = cuspatial.from_geopandas(gs)
-    cudf.testing._utils.assert_eq(
+    cudf.testing.assert_series_equal(
         cugs.polygons.xy,
         cudf.Series([0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0], dtype="float64"),
     )
-    cudf.testing._utils.assert_eq(
-        cugs._column.polygons._column.base_children[0],
-        cudf.Series([0, 1], dtype="int32").to_arrow(),
+    cudf.testing.assert_series_equal(
+        cudf.Series(cugs._column.polygons._column.base_children[0]),
+        cudf.Series([0, 1], dtype="int32"),
     )
-    cudf.testing._utils.assert_eq(
-        cugs._column.polygons._column.base_children[1].base_children[0],
-        cudf.Series([0, 1], dtype="int32").to_arrow(),
+    cudf.testing.assert_series_equal(
+        cudf.Series(
+            cugs._column.polygons._column.base_children[1].base_children[0]
+        ),
+        cudf.Series([0, 1], dtype="int32"),
     )
 
 
@@ -128,7 +131,7 @@ def test_from_geopandas_polygon_hole():
         )
     )
     cugs = cuspatial.from_geopandas(gs)
-    cudf.testing._utils.assert_eq(
+    cudf.testing.assert_series_equal(
         cugs.polygons.xy,
         cudf.Series(
             [
@@ -152,12 +155,14 @@ def test_from_geopandas_polygon_hole():
             dtype="float64",
         ),
     )
-    cudf.testing._utils.assert_eq(
-        cugs._column.polygons._column.base_children[0],
+    cudf.testing.assert_series_equal(
+        cudf.Series(cugs._column.polygons._column.base_children[0]),
         cudf.Series([0, 1], dtype="int32"),
     )
-    cudf.testing._utils.assert_eq(
-        cugs._column.polygons._column.base_children[1].base_children[0],
+    cudf.testing.assert_series_equal(
+        cudf.Series(
+            cugs._column.polygons._column.base_children[1].base_children[0]
+        ),
         cudf.Series([0, 2], dtype="int32"),
     )
 
@@ -174,7 +179,7 @@ def test_from_geopandas_multipolygon():
         )
     )
     cugs = cuspatial.from_geopandas(gs)
-    cudf.testing._utils.assert_eq(
+    cudf.testing.assert_series_equal(
         cugs.polygons.xy,
         cudf.Series(
             [
@@ -198,11 +203,13 @@ def test_from_geopandas_multipolygon():
             dtype="float64",
         ),
     )
-    cudf.testing._utils.assert_eq(
-        cugs._column.polygons._column.base_children[0],
+    cudf.testing.assert_series_equal(
+        cudf.Series(cugs._column.polygons._column.base_children[0]),
         cudf.Series([0, 1], dtype="int32"),
     )
-    cudf.testing._utils.assert_eq(
-        cugs._column.polygons._column.base_children[1].base_children[0],
+    cudf.testing.assert_series_equal(
+        cudf.Series(
+            cugs._column.polygons._column.base_children[1].base_children[0]
+        ),
         cudf.Series([0, 2], dtype="int32"),
     )
