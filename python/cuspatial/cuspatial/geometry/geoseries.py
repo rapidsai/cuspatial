@@ -6,7 +6,6 @@ from typing import Tuple, TypeVar, Union
 
 import geopandas as gpd
 import pandas as pd
-import pyarrow as pa
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 from shapely.geometry import (
     LineString,
@@ -19,9 +18,9 @@ from shapely.geometry import (
 
 import cudf
 
+import cuspatial.geometry.pygeoarrow as pygeoarrow
 from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta
 from cuspatial.io.geopandas_reader import Feature_Enum
-import cuspatial.geometry.pygeoarrow as pygeoarrow
 
 T = TypeVar("T", bound="GeoSeries")
 
@@ -245,7 +244,7 @@ class GeoSeries(cudf.Series):
             union_types = union_types.replace(5, 3)
 
             # Get the shapely serialization methods we'll use here.
-            shapely_classes = [
+            shapely_fns = [
                 self._arrow_to_shapely[Feature_Enum(x)]
                 for x in result_types.to_numpy()
             ]
@@ -298,21 +297,24 @@ class GeoSeries(cudf.Series):
                     )
                 )
                 utypes = union_types[index]
-                classes = shapely_classes[index]
+                serialization_functions = shapely_fns[index]
             elif isinstance(index, Iterable):
                 indexes = index
                 utypes = union_types[index]
-                classes = pd.Series(shapely_classes)[index]
+                serialization_functions = pd.Series(shapely_fns)[index]
             else:
                 indexes = [index]
                 utypes = [union_types[index]]
-                classes = [shapely_classes[index]]
+                serialization_functions = [shapely_fns[index]]
 
+            # Serialize to Shapely!
             results = []
-            for (result_type, result_index, shapely_class) in zip(
-                utypes.values_host, indexes, classes
+            for (result_type, result_index, shapely_serialization_fn) in zip(
+                utypes.values_host, indexes, serialization_functions
             ):
-                results.append(shapely_class(union[result_index].as_py()))
+                results.append(
+                    shapely_serialization_fn(union[result_index].as_py())
+                )
 
             # Finally, a slice determines that we return a list, otherwise
             # an object.

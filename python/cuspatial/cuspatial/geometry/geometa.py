@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Union
 
-import pyarrow as pa
-
 import cudf
 
 
