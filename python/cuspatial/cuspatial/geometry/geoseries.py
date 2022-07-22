@@ -21,6 +21,7 @@ import cudf
 
 from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta
 from cuspatial.io.geopandas_reader import Feature_Enum
+import cuspatial.geometry.pygeoarrow as pygeoarrow
 
 T = TypeVar("T", bound="GeoSeries")
 
@@ -202,7 +203,7 @@ class GeoSeries(cudf.Series):
             result_types = self._sr._column._meta.input_types.to_arrow()
             union_types = self._sr._column._meta.input_types.replace(3, 2)
             union_types = union_types.replace(4, 3)
-            union_types = union_types.replace(5, 3).values_host
+            union_types = union_types.replace(5, 3)
 
             # Get the shapely serialization methods we'll use here.
             shapely_classes = [
@@ -210,16 +211,41 @@ class GeoSeries(cudf.Series):
                 for x in result_types.to_numpy()
             ]
 
+            # Arrow can't view an empty list, so we need to prep the buffers
+            # here.
+            points = self._sr._column.points
+            mpoints = self._sr._column.mpoints
+            lines = self._sr._column.lines
+            polygons = self._sr._column.polygons
+            arrow_points = (
+                points.to_arrow().view(pygeoarrow.ArrowPointsType)
+                if len(points) > 0
+                else points.to_arrow()
+            )
+            arrow_mpoints = (
+                mpoints.to_arrow().view(pygeoarrow.ArrowMultiPointsType)
+                if len(mpoints) > 1
+                else mpoints.to_arrow()
+            )
+            arrow_lines = (
+                lines.to_arrow().view(pygeoarrow.ArrowLinestringsType)
+                if len(lines) > 1
+                else lines.to_arrow()
+            )
+            arrow_polygons = (
+                polygons.to_arrow().view(pygeoarrow.ArrowPolygonsType)
+                if len(polygons) > 1
+                else polygons.to_arrow()
+            )
+
             # Copy the GPU data to host for iteration and deserialization
-            union = pa.UnionArray.from_dense(
-                pa.array(union_types),
+            union = pygeoarrow.from_pyarrow_lists(
+                union_types.to_arrow(),
                 self._sr._column._meta.union_offsets.to_arrow(),
-                [
-                    self._sr._column.points.to_arrow(),
-                    self._sr._column.mpoints.to_arrow(),
-                    self._sr._column.lines.to_arrow(),
-                    self._sr._column.polygons.to_arrow(),
-                ],
+                arrow_points,
+                arrow_mpoints,
+                arrow_lines,
+                arrow_polygons,
             )
 
             if isinstance(index, slice):
@@ -242,8 +268,8 @@ class GeoSeries(cudf.Series):
                 classes = [shapely_classes[index]]
 
             results = []
-            for result_type, result_index, shapely_class in zip(
-                utypes, indexes, classes
+            for (result_type, result_index, shapely_class) in zip(
+                utypes.values_host, indexes, classes
             ):
                 if result_type == 0 or result_type == 1:
                     result = union[result_index]

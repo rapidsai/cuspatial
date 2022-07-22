@@ -17,9 +17,13 @@ class GeoMeta:
     GeoSeries if necessary.
     """
 
-    def __init__(self, meta: GeoMeta):
-        self.input_types = cudf.Series(meta["input_types"])
-        self.union_offsets = cudf.Series(meta["union_offsets"])
+    def __init__(self, meta: Union[GeoMeta, dict]):
+        if isinstance(meta, dict):
+            self.input_types = cudf.Series(meta["input_types"])
+            self.union_offsets = cudf.Series(meta["union_offsets"])
+        else:
+            self.input_types = cudf.Series(meta.input_types, dtype="int8")
+            self.union_offsets = cudf.Series(meta.union_offsets, dtype="int32")
 
     def copy(self):
         return self.__class__(

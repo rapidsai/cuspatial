@@ -27,6 +27,31 @@ def getGeoArrowUnionRootType() -> pa.union:
     )
 
 
+def from_pyarrow_lists(
+    type_buffer: pa.list_,
+    all_offsets: pa.list_,
+    point_coords: pa.list_,
+    mpoint_coords: pa.list_,
+    line_coords: pa.list_,
+    polygon_coords: pa.list_,
+) -> pa.lib.UnionArray:
+    type_buffer = type_buffer
+    all_offsets = all_offsets
+    children = [
+        point_coords,
+        mpoint_coords,
+        line_coords,
+        polygon_coords,
+    ]
+
+    return pa.UnionArray.from_dense(
+        type_buffer,
+        all_offsets,
+        children,
+        ["points", "mpoints", "lines", "polygons"],
+    )
+
+
 def from_lists(
     type_buffer: List,
     all_offsets: List,
@@ -35,18 +60,11 @@ def from_lists(
     line_coords: List,
     polygon_coords: List,
 ) -> pa.lib.UnionArray:
-    type_buffer = pa.array(type_buffer).cast(pa.int8())
-    all_offsets = pa.array(all_offsets).cast(pa.int32())
-    children = [
+    return from_pyarrow_lists(
+        pa.array(type_buffer).cast(pa.int8()),
+        pa.array(all_offsets).cast(pa.int32()),
         pa.array(point_coords, type=ArrowPointsType),
         pa.array(mpoint_coords, type=ArrowMultiPointsType),
         pa.array(line_coords, type=ArrowLinestringsType),
         pa.array(polygon_coords, type=ArrowPolygonsType),
-    ]
-
-    return pa.UnionArray.from_dense(
-        type_buffer,
-        all_offsets,
-        children,
-        ["points", "mpoints", "lines", "polygons"],
     )

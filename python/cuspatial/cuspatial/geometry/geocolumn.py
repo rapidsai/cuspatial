@@ -38,10 +38,7 @@ class GeoColumn(NumericalColumn):
             or not isinstance(data[3], cudf.Series)
         ):
             raise TypeError("All Tuple arguments must be cudf.ListSeries")
-        if meta is not None:
-            self._meta = meta
-        else:
-            self._meta = GeoMeta(data)
+        self._meta = GeoMeta(meta)
         self.points = data[0]
         self.points.name = "points"
         self.mpoints = data[1]
