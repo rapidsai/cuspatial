@@ -20,10 +20,6 @@
 
 #include <cuspatial/detail/utility/z_order.cuh>
 
-#include <cudf/column/column_factories.hpp>
-#include <cudf/types.hpp>
-#include <cudf/utilities/type_dispatcher.hpp>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
@@ -58,43 +54,42 @@ namespace detail {
  * @brief Compute Morton codes (z-order) for each point, and the sorted indices
  * mapping original point index to sorted z-order.
  */
-template <typename T>
-inline std::pair<rmm::device_uvector<uint32_t>, std::unique_ptr<cudf::column>>
-compute_point_keys_and_sorted_indices(cudf::column_view const& x,
-                                      cudf::column_view const& y,
-                                      T x_min,
-                                      T x_max,
-                                      T y_min,
-                                      T y_max,
-                                      T scale,
-                                      int8_t max_depth,
+template <class PointIt, class Coord>
+inline std::pair<rmm::device_uvector<uint32_t>, rmm::device_uvector<uint32_t>>
+compute_point_keys_and_sorted_indices(PointIt points_first,
+                                      PointIt points_last,
+                                      Coord x_min,
+                                      Coord x_max,
+                                      Coord y_min,
+                                      Coord y_max,
+                                      Coord scale,
+                                      uint8_t max_depth,
                                       rmm::cuda_stream_view stream,
                                       rmm::mr::device_memory_resource* mr)
 {
-  rmm::device_uvector<uint32_t> keys(x.size(), stream);
+  auto num_points = thrust::distance(points_first, points_last);
+  rmm::device_uvector<uint32_t> keys(num_points, stream);
   thrust::transform(rmm::exec_policy(stream),
-                    thrust::make_zip_iterator(x.begin<T>(), y.begin<T>()),
-                    thrust::make_zip_iterator(x.begin<T>(), y.begin<T>()) + x.size(),
+                    points_first,
+                    points_last,
                     keys.begin(),
                     [=] __device__(auto const& point) {
-                      T x, y;
-                      thrust::tie(x, y) = point;
+                      auto const& x = point.x;
+                      auto const& y = point.y;
                       if (x < x_min || x > x_max || y < y_min || y > y_max) {
                         // If the point is outside the bbox, return a max_level key
                         return static_cast<uint32_t>((1 << (2 * max_depth)) - 1);
                       }
-                      return utility::z_order((x - x_min) / scale, (y - y_min) / scale);
+                      return cuspatial::detail::utility::z_order((x - x_min) / scale,
+                                                                 (y - y_min) / scale);
                     });
 
-  auto indices = make_fixed_width_column<uint32_t>(keys.size(), stream, mr);
+  rmm::device_uvector<uint32_t> indices(keys.size(), stream, mr);
 
-  thrust::sequence(rmm::exec_policy(stream),
-                   indices->mutable_view().begin<uint32_t>(),
-                   indices->mutable_view().end<uint32_t>());
+  thrust::sequence(rmm::exec_policy(stream), indices.begin(), indices.end());
 
   // Sort the codes and point indices
-  thrust::stable_sort_by_key(
-    rmm::exec_policy(stream), keys.begin(), keys.end(), indices->mutable_view().begin<int32_t>());
+  thrust::stable_sort_by_key(rmm::exec_policy(stream), keys.begin(), keys.end(), indices.begin());
 
   return std::make_pair(std::move(keys), std::move(indices));
 }
@@ -109,13 +104,13 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryOp>
-inline cudf::size_type build_tree_level(InputIterator1 keys_begin,
-                                        InputIterator1 keys_end,
-                                        InputIterator2 vals_in,
-                                        OutputIterator1 keys_out,
-                                        OutputIterator2 vals_out,
-                                        BinaryOp binary_op,
-                                        rmm::cuda_stream_view stream)
+inline int32_t build_tree_level(InputIterator1 keys_begin,
+                                InputIterator1 keys_end,
+                                InputIterator2 vals_in,
+                                OutputIterator1 keys_out,
+                                OutputIterator2 vals_out,
+                                BinaryOp binary_op,
+                                rmm::cuda_stream_view stream)
 {
   auto result = thrust::reduce_by_key(rmm::exec_policy(stream),
                                       keys_begin,
@@ -133,22 +128,19 @@ inline cudf::size_type build_tree_level(InputIterator1 keys_begin,
  * starting from the leaf levels and working up to the root node.
  */
 template <typename KeysIterator, typename ValsIterator>
-inline std::tuple<cudf::size_type,
-                  cudf::size_type,
-                  std::vector<cudf::size_type>,
-                  std::vector<cudf::size_type>>
-build_tree_levels(int8_t max_depth,
-                  cudf::size_type num_top_quads,
-                  KeysIterator keys_begin,
-                  ValsIterator quad_point_count_begin,
-                  ValsIterator quad_child_count_begin,
-                  rmm::cuda_stream_view stream)
+inline std::tuple<int32_t, int32_t, std::vector<int32_t>, std::vector<int32_t>> build_tree_levels(
+  uint8_t max_depth,
+  int32_t num_top_quads,
+  KeysIterator keys_begin,
+  ValsIterator quad_point_count_begin,
+  ValsIterator quad_child_count_begin,
+  rmm::cuda_stream_view stream)
 {
   // begin/end offsets
-  cudf::size_type begin{0};
-  cudf::size_type end{num_top_quads};
-  std::vector<cudf::size_type> begin_pos(max_depth);
-  std::vector<cudf::size_type> end_pos(max_depth);
+  int32_t begin{0};
+  int32_t end{num_top_quads};
+  std::vector<int32_t> begin_pos(max_depth);
+  std::vector<int32_t> end_pos(max_depth);
 
   // iterator for the parent level's quad node keys
   auto parent_keys = thrust::make_transform_iterator(
@@ -161,7 +153,7 @@ build_tree_levels(int8_t max_depth,
   auto child_values =
     thrust::make_zip_iterator(quad_point_count_begin, thrust::make_constant_iterator<uint32_t>(1));
 
-  for (cudf::size_type level = max_depth - 1; level >= 0; --level) {
+  for (int32_t level = max_depth - 1; level >= 0; --level) {
     auto num_full_quads = build_tree_level(parent_keys + begin,
                                            parent_keys + end,
                                            child_values + begin,
@@ -199,21 +191,21 @@ inline std::tuple<rmm::device_uvector<uint32_t>,
 reverse_tree_levels(rmm::device_uvector<uint32_t> const& quad_keys_in,
                     rmm::device_uvector<uint32_t> const& quad_point_count_in,
                     rmm::device_uvector<uint32_t> const& quad_child_count_in,
-                    std::vector<cudf::size_type> const& begin_pos,
-                    std::vector<cudf::size_type> const& end_pos,
-                    int8_t max_depth,
+                    std::vector<int32_t> const& begin_pos,
+                    std::vector<int32_t> const& end_pos,
+                    uint8_t max_depth,
                     rmm::cuda_stream_view stream)
 {
   rmm::device_uvector<uint32_t> quad_keys(quad_keys_in.size(), stream);
   rmm::device_uvector<uint8_t> quad_levels(quad_keys_in.size(), stream);
   rmm::device_uvector<uint32_t> quad_point_count(quad_point_count_in.size(), stream);
   rmm::device_uvector<uint32_t> quad_child_count(quad_child_count_in.size(), stream);
-  cudf::size_type offset{0};
+  int32_t offset{0};
 
-  for (cudf::size_type level{0}; level < max_depth; ++level) {
-    cudf::size_type level_end   = end_pos[level];
-    cudf::size_type level_begin = begin_pos[level];
-    cudf::size_type num_quads   = level_end - level_begin;
+  for (int32_t level{0}; level < max_depth; ++level) {
+    int32_t level_end   = end_pos[level];
+    int32_t level_begin = begin_pos[level];
+    int32_t num_quads   = level_end - level_begin;
     thrust::fill(rmm::exec_policy(stream),
                  quad_levels.begin() + offset,
                  quad_levels.begin() + offset + num_quads,
@@ -254,31 +246,32 @@ reverse_tree_levels(rmm::device_uvector<uint32_t> const& quad_keys_in,
  * are freed on return if we end up swapping the levels.
  *
  */
-template <typename T>
-inline auto make_full_levels(cudf::column_view const& x,
-                             cudf::column_view const& y,
-                             T x_min,
-                             T x_max,
-                             T y_min,
-                             T y_max,
-                             T scale,
-                             int8_t max_depth,
-                             cudf::size_type min_size,
+template <class PointIt, class Coord>
+inline auto make_full_levels(PointIt points_first,
+                             PointIt points_last,
+                             Coord x_min,
+                             Coord x_max,
+                             Coord y_min,
+                             Coord y_max,
+                             Coord scale,
+                             uint8_t max_depth,
+                             uint32_t min_size,
                              rmm::cuda_stream_view stream,
                              rmm::mr::device_memory_resource* mr)
 {
+  auto num_points = thrust::distance(points_first, points_last);
   // Compute point keys and sort into bottom-level quadrants
   // (i.e. quads at level `max_depth - 1`)
 
   // Compute Morton code (z-order) keys for each point
-  auto keys_and_indices = compute_point_keys_and_sorted_indices<T>(
-    x, y, x_min, x_max, y_min, y_max, scale, max_depth, stream, mr);
+  auto keys_and_indices = compute_point_keys_and_sorted_indices(
+    points_first, points_last, x_min, x_max, y_min, y_max, scale, max_depth, stream, mr);
 
   auto& point_keys    = keys_and_indices.first;
   auto& point_indices = keys_and_indices.second;
 
-  rmm::device_uvector<uint32_t> quad_keys(x.size(), stream);
-  rmm::device_uvector<uint32_t> quad_point_count(x.size(), stream);
+  rmm::device_uvector<uint32_t> quad_keys(num_points, stream);
+  rmm::device_uvector<uint32_t> quad_point_count(num_points, stream);
 
   // Construct quadrants at the finest level of detail, i.e. the quadrants
   // furthest from the root. Reduces points with common z-order codes into

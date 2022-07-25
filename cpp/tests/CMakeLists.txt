@@ -125,3 +125,6 @@ ConfigureTest(POINTS_IN_RANGE_TEST_EXP
 
 ConfigureTest(POINT_IN_POLYGON_TEST_EXP
     experimental/spatial/point_in_polygon_test.cu)
+
+ConfigureTest(POINT_QUADTREE_TEST_EXP
+    experimental/indexing/point_quadtree_test.cu)
