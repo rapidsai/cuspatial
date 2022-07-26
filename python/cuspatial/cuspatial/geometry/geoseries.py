@@ -2,7 +2,6 @@
 
 from collections.abc import Iterable
 from functools import cached_property
-from numbers import Integral
 from typing import Tuple, TypeVar, Union
 
 import geopandas as gpd
@@ -388,10 +387,12 @@ class GeoSeries(cudf.Series):
         """
         Outputs how much memory is used by the underlying geometries.
         """
-        final_size = 0
-        points_size = self.points._col.memory_usage
-        multipoints_size = self.multipoints._col.memory_usage
-        lines_size = self.lines._col.memory_usage
-        polygons_size = self.polygons._col.memory_usage
-        breakpoint()
+        final_size = self._column._meta.input_types.memory_usage()
+        final_size = (
+            final_size + self._column._meta.union_offsets.memory_usage()
+        )
+        final_size = final_size + self.points._col.memory_usage
+        final_size = final_size + self.multipoints._col.memory_usage
+        final_size = final_size + self.lines._col.memory_usage
+        final_size = final_size + self.polygons._col.memory_usage
         return final_size
