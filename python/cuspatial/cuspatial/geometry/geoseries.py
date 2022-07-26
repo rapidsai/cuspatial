@@ -377,3 +377,17 @@ class GeoSeries(cudf.Series):
                 arrow_polygons,
             ],
         )
+
+    def memory_usage(self):
+        """
+        Outputs how much memory is used by the underlying geometries.
+        """
+        final_size = self._column._meta.input_types.memory_usage()
+        final_size = (
+            final_size + self._column._meta.union_offsets.memory_usage()
+        )
+        final_size = final_size + self.points._col.memory_usage
+        final_size = final_size + self.multipoints._col.memory_usage
+        final_size = final_size + self.lines._col.memory_usage
+        final_size = final_size + self.polygons._col.memory_usage
+        return final_size
