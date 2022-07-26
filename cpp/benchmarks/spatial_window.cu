@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#include "cuspatial/error.hpp"
 #include <benchmarks/fixture/rmm_pool_raii.hpp>
 #include <benchmarks/utility/random.cuh>
 
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/experimental/type_utils.hpp>
 #include <cuspatial/spatial_window.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -80,27 +82,20 @@ void points_in_spatial_window_benchmark(nvbench::state& state, nvbench::type_lis
   auto range_min = vec_2d<T>{-200, -200};
   auto range_max = vec_2d<T>{200, 200};
 
-  auto d_points = rmm::device_uvector<vec_2d<T>>(num_points, rmm::cuda_stream_default);
-  generate_points(d_points.begin(), d_points.end(), range_min, range_max);
-
   auto d_x = rmm::device_uvector<T>(num_points, rmm::cuda_stream_default);
   auto d_y = rmm::device_uvector<T>(num_points, rmm::cuda_stream_default);
 
-  thrust::transform(
-    rmm::exec_policy(), d_points.begin(), d_points.end(), d_x.begin(), [] __device__(auto point) {
-      return point.x;
-    });
-  thrust::transform(
-    rmm::exec_policy(), d_points.begin(), d_points.end(), d_y.begin(), [] __device__(auto point) {
-      return point.y;
-    });
+  auto d_points =
+    cuspatial::make_zipped_vec_2d_output_iterator<cuspatial::vec_2d<T>>(d_x.begin(), d_y.begin());
+
+  generate_points(d_points, d_points + num_points, range_min, range_max);
 
   auto xs = cudf::column(cudf::data_type{cudf::type_to_id<T>()}, num_points, d_x.release());
   auto ys = cudf::column(cudf::data_type{cudf::type_to_id<T>()}, num_points, d_y.release());
 
-  state.add_element_count(num_points);
+  CUSPATIAL_CUDA_TRY(cudaDeviceSynchronize());
 
-  points_in_spatial_window(window_min.x, window_max.x, window_min.y, window_max.y, xs, ys);
+  state.add_element_count(num_points);
 
   state.exec(nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
     auto points_in =
