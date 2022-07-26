@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "cuspatial/vec_2d.hpp"
+#include <cuspatial/vec_2d.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/spatial_window.cuh>
 

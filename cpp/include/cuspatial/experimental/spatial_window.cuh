@@ -39,7 +39,7 @@ namespace cuspatial {
  * @param[in] window_max upper-right (x, y) coordinate of the query window
  * @param[in] points_first beginning of range of (x, y) coordinates of points to be queried
  * @param[in] points_last end of range of (x, y) coordinates of points to be queried
- * @param[in] stream: The CUDA stream on which to perform computations
+ * @param[in] stream The CUDA stream on which to perform computations
  *
  * @tparam InputIt Iterator to input points. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
