@@ -198,24 +198,6 @@ def test_to_shapely(gs, pre_slice):
 
 
 @pytest.mark.parametrize(
-    "series_slice",
-    [
-        list(np.arange(10)),
-        [slice(0, 12)],
-        [slice(0, 10, 1)],
-        [slice(0, 3, 1)],
-        [slice(3, 6, 1)],
-        [slice(6, 9, 1)],
-    ],
-)
-def test_slice(gs, series_slice):
-    gi = gpd.GeoSeries(gs)
-    cugs = cuspatial.from_geopandas(gi)
-    cugs_back = cugs.to_geopandas()
-    assert_eq_geo(gi[series_slice], cugs_back[series_slice])
-
-
-@pytest.mark.parametrize(
     "series_boolmask",
     [
         np.repeat(True, 12),
@@ -260,12 +242,12 @@ def test_getitem_slice_points():
     p2 = Point([5, 6])
     gps = gpd.GeoSeries([p0, p1, p2])
     cus = cuspatial.from_geopandas(gps)
-    assert_eq_point(cus[0:1][0], gps[0:1][0])
-    assert_eq_point(cus[0:2][0], gps[0:2][0])
-    assert_eq_point(cus[1:2][1], gps[1:2][1])
-    assert_eq_point(cus[0:3][0], gps[0:3][0])
-    assert_eq_point(cus[1:3][1], gps[1:3][1])
-    assert_eq_point(cus[2:3][2], gps[2:3][2])
+    assert_eq_point(cus[0:1][0].to_shapely(), gps[0:1][0])
+    assert_eq_point(cus[0:2][0].to_shapely(), gps[0:2][0])
+    assert_eq_point(cus[1:2][1].to_shapely(), gps[1:2][1])
+    assert_eq_point(cus[0:3][0].to_shapely(), gps[0:3][0])
+    assert_eq_point(cus[1:3][1].to_shapely(), gps[1:3][1])
+    assert_eq_point(cus[2:3][2].to_shapely(), gps[2:3][2])
 
 
 def test_getitem_slice_lines():
@@ -274,12 +256,12 @@ def test_getitem_slice_lines():
     p2 = LineString([[1, 2], [3, 4], [5, 6]])
     gps = gpd.GeoSeries([p0, p1, p2])
     cus = cuspatial.from_geopandas(gps)
-    assert_eq_linestring(cus[0:1][0], gps[0:1][0])
-    assert_eq_linestring(cus[0:2][0], gps[0:2][0])
-    assert_eq_linestring(cus[1:2][1], gps[1:2][1])
-    assert_eq_linestring(cus[0:3][0], gps[0:3][0])
-    assert_eq_linestring(cus[1:3][1], gps[1:3][1])
-    assert_eq_linestring(cus[2:3][2], gps[2:3][2])
+    assert_eq_linestring(cus[0:1][0].to_shapely(), gps[0:1][0])
+    assert_eq_linestring(cus[0:2][0].to_shapely(), gps[0:2][0])
+    assert_eq_linestring(cus[1:2][1].to_shapely(), gps[1:2][1])
+    assert_eq_linestring(cus[0:3][0].to_shapely(), gps[0:3][0])
+    assert_eq_linestring(cus[1:3][1].to_shapely(), gps[1:3][1])
+    assert_eq_linestring(cus[2:3][2].to_shapely(), gps[2:3][2])
 
 
 @pytest.mark.parametrize(

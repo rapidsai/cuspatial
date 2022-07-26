@@ -10,6 +10,7 @@ from shapely.geometry import (
     MultiPolygon,
     Point,
     Polygon,
+    mapping,
 )
 
 import cudf
@@ -44,7 +45,7 @@ def parse_geometries(geoseries: gpGeoSeries) -> tuple:
     polygon_offsets = [0]
 
     for geom in geoseries:
-        coords = geom.__geo_interface__["coordinates"]
+        coords = mapping(geom)["coordinates"]
         if isinstance(geom, Point):
             point_coords.append(coords)
             all_offsets.append(point_offsets[-1])

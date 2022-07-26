@@ -2,10 +2,12 @@
 
 from collections.abc import Iterable
 from functools import cached_property
+from numbers import Integral
 from typing import Tuple, TypeVar, Union
 
 import geopandas as gpd
 import pandas as pd
+import pyarrow as pa
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 from shapely.geometry import (
     LineString,
@@ -167,62 +169,22 @@ class GeoSeries(cudf.Series):
                 Feature_Enum.POLYGON: self._sr.polygons,
             }
 
-        def _linestring_to_shapely(self, geom):
-            if len(geom) == 1:
-                result = [tuple(x) for x in geom[0]]
-                return LineString(result)
-            else:
-                linestrings = []
-                for linestring in geom:
-                    linestrings.append(
-                        LineString([tuple(child) for child in linestring])
-                    )
-                return MultiLineString(linestrings)
-
-        def _polygon_to_shapely(self, geom):
-            if len(geom) == 1:
-                rings = []
-                for ring in geom[0]:
-                    rings.append(tuple(tuple(point) for point in ring))
-                return Polygon(rings[0], rings[1:])
-            else:
-                polygons = []
-                for p in geom:
-                    rings = []
-                    for ring in p:
-                        rings.append(tuple([tuple(point) for point in ring]))
-                    polygons.append(Polygon(rings[0], rings[1:]))
-                return MultiPolygon(polygons)
-
-        @cached_property
-        def _arrow_to_shapely(self):
-            type_map = {
-                Feature_Enum.POINT: Point,
-                Feature_Enum.MULTIPOINT: MultiPoint,
-                Feature_Enum.LINESTRING: self._linestring_to_shapely,
-                Feature_Enum.POLYGON: self._polygon_to_shapely,
-            }
-            return type_map
-
         def __getitem__(self, item):
             """
             Use a host copy of a pyarrow DenseUnion to index into
             the GPU data for local copies.
             """
-            # Fix types: There's only four fields.
-            #
-            # There are six types of constructors for Shapely objects, but only
-            # four types in the DenseUnion that this Series represents. The
-            # following replaces the six types (0, 1, 2, 3, 4, 5) with their
-            # corresponding union field types: (0, 1, 2, 2, 3, 3).
-            result_types = self._sr._column._meta.input_types.to_arrow()
-            union_types = self._sr._column._meta.input_types
 
-            # Get the shapely serialization methods we'll use here.
-            shapely_fns = [
-                self._arrow_to_shapely[Feature_Enum(x)]
-                for x in result_types.to_numpy()
-            ]
+            # Use the reordering _column._data if it is set
+            indexes = (
+                self._sr._column._data[item].to_pandas()
+                if self._sr._column._data is not None
+                else item
+            )
+
+            # Slice the types and offsets
+            union_offsets = self._sr._column._meta.union_offsets[indexes]
+            union_types = self._sr._column._meta.input_types[indexes]
 
             # Arrow can't view an empty list, so we need to prep the buffers
             # here.
@@ -230,80 +192,31 @@ class GeoSeries(cudf.Series):
             mpoints = self._sr._column.mpoints
             lines = self._sr._column.lines
             polygons = self._sr._column.polygons
-            arrow_points = (
-                points.to_arrow().view(pygeoarrow.ArrowPointsType)
-                if len(points) > 0
-                else points.to_arrow()
-            )
-            arrow_mpoints = (
-                mpoints.to_arrow().view(pygeoarrow.ArrowMultiPointsType)
-                if len(mpoints) > 1
-                else mpoints.to_arrow()
-            )
-            arrow_lines = (
-                lines.to_arrow().view(pygeoarrow.ArrowLinestringsType)
-                if len(lines) > 1
-                else lines.to_arrow()
-            )
-            arrow_polygons = (
-                polygons.to_arrow().view(pygeoarrow.ArrowPolygonsType)
-                if len(polygons) > 1
-                else polygons.to_arrow()
+
+            column = GeoColumn(
+                (points, mpoints, lines, polygons),
+                {
+                    "input_types": union_types,
+                    "union_offsets": union_offsets,
+                },
             )
 
-            index = item
-            # Copy the GPU data to host for iteration and deserialization
-            new_union_types = union_types[index]
-            new_union_offsets = self._sr._column._meta.union_offsets[index]
-            union = pygeoarrow.from_pyarrow_lists(
-                new_union_types.to_arrow(),
-                new_union_offsets.to_arrow(),
-                arrow_points,
-                arrow_mpoints,
-                arrow_lines,
-                arrow_polygons,
-            )
+            return GeoSeries(column)
 
-            # Convert the iterable types into a predictable format for the
-            # upcoming zip
-            if isinstance(index, slice):
-                start, stop, step = index.indices(len(union_types))
-                indexes = range(0, max(stop - start, 1), step)
-                # Use the reordering _column._data if it is set
-                indexes = (
-                    self._sr._column._data[indexes].to_pandas()
-                    if self._sr._column._data is not None
-                    else indexes
-                )
-                serialization_functions = pd.Series(shapely_fns)[indexes]
-            elif isinstance(index, Iterable):
-                indexes = list(range(len(list(index))))
-                # Use the reordering _column._data if it is set
-                indexes = (
-                    self._sr._column._data[indexes].to_pandas()
-                    if self._sr._column._data is not None
-                    else indexes
-                )
-                serialization_functions = pd.Series(shapely_fns)[indexes]
-            else:
-                indexes = [index]
-                serialization_functions = [shapely_fns[indexes]]
-
-            # Serialize to Shapely!
-            results = []
-            for (result_index, shapely_serialization_fn) in zip(
-                indexes, serialization_functions
-            ):
-                results.append(
-                    shapely_serialization_fn(union[result_index].as_py())
-                )
-
-            # Finally, a slice determines that we return a list, otherwise
-            # an object.
-            if isinstance(index, Iterable) or isinstance(index, slice):
-                return results
-            else:
-                return results[0]
+    def from_arrow(union):
+        column = GeoColumn(
+            (
+                cudf.Series(union.child(0)),
+                cudf.Series(union.child(1)),
+                cudf.Series(union.child(2)),
+                cudf.Series(union.child(3)),
+            ),
+            {
+                "input_types": union.type_codes,
+                "union_offsets": union.offsets,
+            },
+        )
+        return GeoSeries(column)
 
     @property
     def loc(self):
@@ -320,8 +233,7 @@ class GeoSeries(cudf.Series):
         return self.GeoSeriesILocIndexer(self)
 
     def __getitem__(self, item):
-        result = self.iloc[item]
-        return gpGeoSeries(result, index=self.index[item].to_pandas())
+        return self.iloc[item]
 
     def to_geopandas(self, nullable=False):
         """
@@ -330,7 +242,7 @@ class GeoSeries(cudf.Series):
         """
         if nullable is True:
             raise ValueError("GeoSeries doesn't support <NA> yet")
-        final_union_slice = self[0 : len(self)]
+        final_union_slice = self[0 : len(self)].to_shapely()
         return gpGeoSeries(final_union_slice, index=self.index.to_pandas())
 
     def to_pandas(self):
@@ -339,3 +251,147 @@ class GeoSeries(cudf.Series):
         compatibility with pandas.
         """
         return self.to_geopandas()
+
+    def _linestring_to_shapely(self, geom):
+        if len(geom) == 1:
+            result = [tuple(x) for x in geom[0]]
+            return LineString(result)
+        else:
+            linestrings = []
+            for linestring in geom:
+                linestrings.append(
+                    LineString([tuple(child) for child in linestring])
+                )
+            return MultiLineString(linestrings)
+
+    def _polygon_to_shapely(self, geom):
+        if len(geom) == 1:
+            rings = []
+            for ring in geom[0]:
+                rings.append(tuple(tuple(point) for point in ring))
+            return Polygon(rings[0], rings[1:])
+        else:
+            polygons = []
+            for p in geom:
+                rings = []
+                for ring in p:
+                    rings.append(tuple([tuple(point) for point in ring]))
+                polygons.append(Polygon(rings[0], rings[1:]))
+            return MultiPolygon(polygons)
+
+    @cached_property
+    def _arrow_to_shapely(self):
+        type_map = {
+            Feature_Enum.POINT: Point,
+            Feature_Enum.MULTIPOINT: MultiPoint,
+            Feature_Enum.LINESTRING: self._linestring_to_shapely,
+            Feature_Enum.POLYGON: self._polygon_to_shapely,
+        }
+        return type_map
+
+    def to_shapely(self):
+        # Copy the GPU data to host for iteration and deserialization
+        result_types = self._column._meta.input_types.to_arrow()
+        union_types = self._column._meta.input_types
+
+        # Get the shapely serialization methods we'll use here.
+        shapely_fns = [
+            self._arrow_to_shapely[Feature_Enum(x)]
+            for x in result_types.to_numpy()
+        ]
+
+        union = self.to_arrow()
+
+        index = range(0, len(self))
+        # Convert the iterable types into a predictable format for the
+        # upcoming zip
+        if isinstance(index, slice):
+            start, stop, step = index.indices(len(union_types))
+            indexes = range(0, max(stop - start, 1), step)
+            # Use the reordering _column._data if it is set
+            indexes = (
+                self._column._data[indexes].to_pandas()
+                if self._column._data is not None
+                else indexes
+            )
+            serialization_functions = pd.Series(shapely_fns)[indexes]
+        elif isinstance(index, Iterable):
+            indexes = list(range(len(list(index))))
+            # Use the reordering _column._data if it is set
+            indexes = (
+                self._column._data[indexes].to_pandas()
+                if self._column._data is not None
+                else indexes
+            )
+            serialization_functions = pd.Series(shapely_fns)[indexes]
+        else:
+            indexes = [index]
+            serialization_functions = [shapely_fns[indexes]]
+
+        # Serialize to Shapely!
+        results = []
+        for (result_index, shapely_serialization_fn) in zip(
+            indexes, serialization_functions
+        ):
+            results.append(
+                shapely_serialization_fn(union[result_index].as_py())
+            )
+
+        # Finally, a slice determines that we return a list, otherwise
+        # an object.
+        if len(results) == 1:
+            return results[0]
+        else:
+            return results
+
+    def to_arrow(self):
+        # Arrow can't view an empty list, so we need to prep the buffers
+        # here.
+        points = self._column.points
+        mpoints = self._column.mpoints
+        lines = self._column.lines
+        polygons = self._column.polygons
+        arrow_points = (
+            points.to_arrow().view(pygeoarrow.ArrowPointsType)
+            if len(points) > 0
+            else points.to_arrow()
+        )
+        arrow_mpoints = (
+            mpoints.to_arrow().view(pygeoarrow.ArrowMultiPointsType)
+            if len(mpoints) > 1
+            else mpoints.to_arrow()
+        )
+        arrow_lines = (
+            lines.to_arrow().view(pygeoarrow.ArrowLinestringsType)
+            if len(lines) > 1
+            else lines.to_arrow()
+        )
+        arrow_polygons = (
+            polygons.to_arrow().view(pygeoarrow.ArrowPolygonsType)
+            if len(polygons) > 1
+            else polygons.to_arrow()
+        )
+
+        return pa.UnionArray.from_dense(
+            self._column._meta.input_types.to_arrow(),
+            self._column._meta.union_offsets.to_arrow(),
+            [
+                arrow_points,
+                arrow_mpoints,
+                arrow_lines,
+                arrow_polygons,
+            ],
+        )
+
+    @property
+    def memory_usage(self):
+        """
+        Outputs how much memory is used by the underlying geometries.
+        """
+        final_size = 0
+        points_size = self.points._col.memory_usage
+        multipoints_size = self.multipoints._col.memory_usage
+        lines_size = self.lines._col.memory_usage
+        polygons_size = self.polygons._col.memory_usage
+        breakpoint()
+        return final_size
