@@ -49,6 +49,9 @@ namespace cuspatial {
  * coordinate type (e.g. `cuspatial::vec_2d<float>`).
  *
  * @returns The number of input points that fall within the specified window.
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
  */
 template <class InputIt, class T>
 typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spatial_window(
@@ -90,6 +93,9 @@ typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spati
  * coordinate type (e.g. `cuspatial::vec_2d<float>`).
  *
  * @returns Output iterator to the element past the last output point.
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
  */
 template <class InputIt, class OutputIt, class T>
 OutputIt points_in_spatial_window(vec_2d<T> window_min,
