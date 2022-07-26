@@ -29,14 +29,13 @@ namespace cuspatial {
  *
  * @ingroup spatial_relationship
  *
- * A point (x, y) is in the window if `x > window_min_x && x < window_max_x && y > window_min_y &&
- * y < window_max_y`.
+ * The query window is an axis-aligned rectangle defined by a pair of opposite vertices, `v1` and
+ * `v2`. A point (x, y) is in the window if `x` lies between `v1.x` and `v2.x` and `y` lies between
+ * `v1.y` and `v2.y`. A point is only counted if it is strictly within the interior of the query
+ * rectangle. Points exactly on an edge or vertex of the rectangle are not counted.
  *
- * Swaps `window_min.x` and `window_max.x` if `window_min.x > window_max.x`.
- * Swaps `window_min.y` and `window_max.y` if `window_min.y > window_max.y`.
- *
- * @param[in] window_min lower-left (x, y) coordinate of the query window
- * @param[in] window_max upper-right (x, y) coordinate of the query window
+ * @param[in] vertex_1 Vertex of the query rectangle
+ * @param[in] vertex_2 Vertex of the query rectangle opposite `corner_1`
  * @param[in] points_first beginning of range of (x, y) coordinates of points to be queried
  * @param[in] points_last end of range of (x, y) coordinates of points to be queried
  * @param[in] stream The CUDA stream on which to perform computations
@@ -55,8 +54,8 @@ namespace cuspatial {
  */
 template <class InputIt, class T>
 typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spatial_window(
-  vec_2d<T> window_min,
-  vec_2d<T> window_max,
+  vec_2d<T> vertex_1,
+  vec_2d<T> vertex_2,
   InputIt points_first,
   InputIt points_last,
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
@@ -66,14 +65,13 @@ typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spati
  *
  * @ingroup spatial_relationship
  *
- * A point (x, y) is in the window if `x > window_min_x && x < window_max_x && y > window_min_y &&
- * y < window_max_y`.
+ * The query window is an axis-aligned rectangle defined by a pair of opposite vertices, `v1` and
+ * `v2`. A point (x, y) is in the window if `x` lies between `v1.x` and `v2.x` and `y` lies between
+ * `v1.y` and `v2.y`. A point is only returned if it is strictly within the interior of the query
+ * rectangle. Points exactly on an edge or vertex of the rectangle are not returned.
  *
- * Swaps `window_min.x` and `window_max.x` if `window_min.x > window_max.x`.
- * Swaps `window_min.y` and `window_max.y` if `window_min.y > window_max.y`.
- *
- * @param[in] window_min lower-left (x, y) coordinate of the query window
- * @param[in] window_max upper-right (x, y) coordinate of the query window
+ * @param[in] vertex_1 Vertex of the query rectangle
+ * @param[in] vertex_2 Vertex of the query rectangle opposite `corner_1`
  * @param[in] points_first beginning of range of (x, y) coordinates of points to be queried
  * @param[in] points_last end of range of (x, y) coordinates of points to be queried
  * @param[out] output_points_first beginning of output range of (x, y) coordinates within the
@@ -98,8 +96,8 @@ typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spati
  * "LegacyRandomAccessIterator"
  */
 template <class InputIt, class OutputIt, class T>
-OutputIt points_in_spatial_window(vec_2d<T> window_min,
-                                  vec_2d<T> window_max,
+OutputIt points_in_spatial_window(vec_2d<T> vertex_1,
+                                  vec_2d<T> vertex_2,
                                   InputIt points_first,
                                   InputIt points_last,
                                   OutputIt output_points_first,

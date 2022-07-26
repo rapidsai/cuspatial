@@ -28,33 +28,31 @@
 namespace cuspatial {
 namespace detail {
 
-// Functor to filter out points that are not inside the query window
-// This is passed to thrust::copy_if
+// Functor to filter out points that are not inside the query window. Passed to thrust::copy_if
 template <typename T>
 struct spatial_window_filter {
-  spatial_window_filter(vec_2d<T> window_min, vec_2d<T> window_max)
-    : min{std::min(window_min.x, window_max.x),   // support mirrored rectangles
-          std::min(window_min.y, window_max.y)},  // where specified min > max
-      max{std::max(window_min.x, window_max.x), std::max(window_min.y, window_max.y)}
+  spatial_window_filter(vec_2d<T> vertex_1, vec_2d<T> vertex_2)
+    : v1{std::min(vertex_1.x, vertex_2.x), std::min(vertex_1.y, vertex_2.y)},
+      v2{std::max(vertex_1.x, vertex_2.x), std::max(vertex_1.y, vertex_2.y)}
   {
   }
 
   __device__ inline bool operator()(vec_2d<T> point)
   {
-    return point.x > min.x && point.x < max.x && point.y > min.y && point.y < max.y;
+    return point.x > v1.x && point.x < v2.x && point.y > v1.y && point.y < v2.y;
   }
 
  protected:
-  vec_2d<T> min;
-  vec_2d<T> max;
+  vec_2d<T> v1;
+  vec_2d<T> v2;
 };
 
 }  // namespace detail
 
 template <class InputIt, class T>
 typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spatial_window(
-  vec_2d<T> window_min,
-  vec_2d<T> window_max,
+  vec_2d<T> vertex_1,
+  vec_2d<T> vertex_2,
   InputIt points_first,
   InputIt points_last,
   rmm::cuda_stream_view stream)
@@ -67,12 +65,12 @@ typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spati
   return thrust::count_if(rmm::exec_policy(stream),
                           points_first,
                           points_last,
-                          detail::spatial_window_filter{window_min, window_max});
+                          detail::spatial_window_filter{vertex_1, vertex_2});
 }
 
 template <class InputIt, class OutputIt, class T>
-OutputIt points_in_spatial_window(vec_2d<T> window_min,
-                                  vec_2d<T> window_max,
+OutputIt points_in_spatial_window(vec_2d<T> vertex_1,
+                                  vec_2d<T> vertex_2,
                                   InputIt points_first,
                                   InputIt points_last,
                                   OutputIt output_points_first,
@@ -90,7 +88,7 @@ OutputIt points_in_spatial_window(vec_2d<T> window_min,
                          points_first,
                          points_last,
                          output_points_first,
-                         detail::spatial_window_filter{window_min, window_max});
+                         detail::spatial_window_filter{vertex_1, vertex_2});
 }
 
 }  // namespace cuspatial
