@@ -108,9 +108,11 @@ ConfigureTest(HAVERSINE_TEST_EXP
 ConfigureTest(HAUSDORFF_TEST_EXP
     experimental/spatial/hausdorff_test.cu)
 
-
 ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
     experimental/spatial/linestring_distance_test.cu)
 
 ConfigureTest(COORDINATE_TRANSFORM_TEST_EXP
     experimental/spatial/coordinate_transform_test.cu)
+
+ConfigureTest(POINT_IN_POLYGON_TEST_EXP
+    experimental/spatial/point_in_polygon_test.cu)
