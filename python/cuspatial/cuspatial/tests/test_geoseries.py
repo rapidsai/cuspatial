@@ -1,5 +1,8 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION.
+
+from enum import Enum
 import geopandas as gpd
+from numbers import Integral
 import numpy as np
 import pandas as pd
 import pytest
@@ -18,6 +21,13 @@ import cudf
 import cuspatial
 
 np.random.seed(0)
+
+
+class Test_Feature_Enum(Enum):
+    POINT = 0
+    MULTIPOINT = 1
+    LINESTRING = 2
+    POLYGON = 3
 
 
 def random_polygon(distance_from_origin):
@@ -39,8 +49,10 @@ def random_multipolygon(size):
     return result
 
 
-def generator(size, has_z=False):
-    obj_type = np.random.randint(1, 7)
+def generate_random_shapely_feature(
+    size: Integral, has_z: bool = False, obj_type: Test_Feature_Enum = None
+):
+    obj_type = obj_type.value if obj_type else np.random.randint(1, 7)
     if obj_type == 1:
         return Point(np.random.random(2))
     else:
@@ -60,6 +72,14 @@ def generator(size, has_z=False):
             return random_polygon(size)
         elif obj_type == 6:
             return random_multipolygon(size)
+
+
+def generator(size: Integral, obj_type: Test_Feature_Enum = None):
+    geos_list = []
+    for i in range(size):
+        geo = generate_random_shapely_feature(3, obj_type)
+        geos_list.append(geo)
+    return geos_list
 
 
 def assert_eq_point(p1, p2):
@@ -168,10 +188,7 @@ def test_interleaved_point(gs, polys):
 
 
 def test_to_shapely_random():
-    geos_list = []
-    for i in range(250):
-        geo = generator(3)
-        geos_list.append(geo)
+    geos_list = generator(250)
     gi = gpd.GeoSeries(geos_list)
     cugs = cuspatial.from_geopandas(gi)
     cugs_back = cugs.to_geopandas()
@@ -236,18 +253,43 @@ def test_getitem_lines():
     assert_eq_linestring(cus[2], p2)
 
 
+def test_getitem_slice_same_index():
+    gps = gpd.GeoSeries(generator(3, Test_Feature_Enum.POINT))
+    cus = cuspatial.from_geopandas(gps)
+    assert_eq_geo(cus[0:1].to_geopandas(), gps[0:1])
+    assert_eq_geo(cus[0:1].to_geopandas(), gps[0:1])
+    assert_eq_geo(cus[0:1].to_geopandas(), gps[0:1])
+    assert_eq_geo(cus[0:3].to_geopandas(), gps[0:3])
+    assert_eq_geo(cus[1:3].to_geopandas(), gps[1:3])
+    assert_eq_geo(cus[2:3].to_geopandas(), gps[2:3])
+
+
+def test_getitem_slice_points_loc():
+    p0 = Point([1, 2])
+    p1 = Point([3, 4])
+    p2 = Point([5, 6])
+    gps = gpd.GeoSeries([p0, p1, p2])
+    cus = cuspatial.from_geopandas(gps)
+    assert_eq_point(cus[0:1][0], gps[0:1][0])
+    assert_eq_point(cus[0:2][0], gps[0:2][0])
+    assert_eq_point(cus[1:2][1], gps[1:2][1])
+    assert_eq_point(cus[0:3][0], gps[0:3][0])
+    assert_eq_point(cus[1:3][1], gps[1:3][1])
+    assert_eq_point(cus[2:3][2], gps[2:3][2])
+
+
 def test_getitem_slice_points():
     p0 = Point([1, 2])
     p1 = Point([3, 4])
     p2 = Point([5, 6])
     gps = gpd.GeoSeries([p0, p1, p2])
     cus = cuspatial.from_geopandas(gps)
-    assert_eq_point(cus[0:1][0].to_shapely(), gps[0:1][0])
-    assert_eq_point(cus[0:2][0].to_shapely(), gps[0:2][0])
-    assert_eq_point(cus[1:2][1].to_shapely(), gps[1:2][1])
-    assert_eq_point(cus[0:3][0].to_shapely(), gps[0:3][0])
-    assert_eq_point(cus[1:3][1].to_shapely(), gps[1:3][1])
-    assert_eq_point(cus[2:3][2].to_shapely(), gps[2:3][2])
+    assert_eq_point(cus[0:1].iloc[0], gps[0:1].iloc[0])
+    assert_eq_point(cus[0:2].iloc[0], gps[0:2].iloc[0])
+    assert_eq_point(cus[1:2].iloc[0], gps[1:2].iloc[0])
+    assert_eq_point(cus[0:3].iloc[0], gps[0:3].iloc[0])
+    assert_eq_point(cus[1:3].iloc[0], gps[1:3].iloc[0])
+    assert_eq_point(cus[2:3].iloc[0], gps[2:3].iloc[0])
 
 
 def test_getitem_slice_lines():
@@ -256,12 +298,36 @@ def test_getitem_slice_lines():
     p2 = LineString([[1, 2], [3, 4], [5, 6]])
     gps = gpd.GeoSeries([p0, p1, p2])
     cus = cuspatial.from_geopandas(gps)
-    assert_eq_linestring(cus[0:1][0].to_shapely(), gps[0:1][0])
-    assert_eq_linestring(cus[0:2][0].to_shapely(), gps[0:2][0])
-    assert_eq_linestring(cus[1:2][1].to_shapely(), gps[1:2][1])
-    assert_eq_linestring(cus[0:3][0].to_shapely(), gps[0:3][0])
-    assert_eq_linestring(cus[1:3][1].to_shapely(), gps[1:3][1])
-    assert_eq_linestring(cus[2:3][2].to_shapely(), gps[2:3][2])
+    assert_eq_linestring(cus[0:1].iloc[0], gps[0:1].iloc[0])
+    assert_eq_linestring(cus[0:2].iloc[0], gps[0:2].iloc[0])
+    assert_eq_linestring(cus[1:2].iloc[0], gps[1:2].iloc[0])
+    assert_eq_linestring(cus[0:3].iloc[0], gps[0:3].iloc[0])
+    assert_eq_linestring(cus[1:3].iloc[0], gps[1:3].iloc[0])
+    assert_eq_linestring(cus[2:3].iloc[0], gps[2:3].iloc[0])
+
+
+def test_getitem_slice_mlines(gs):
+    gps = gs[gs.type == "MultiLineString"]
+    cus = cuspatial.from_geopandas(gps)
+    assert_eq_linestring(cus[0:1].iloc[0], gps[0:1].iloc[0])
+    assert_eq_linestring(cus[0:2].iloc[0], gps[0:2].iloc[0])
+    assert_eq_linestring(cus[1:2].iloc[0], gps[1:2].iloc[0])
+
+
+def test_getitem_slice_polygons(gs):
+    gps = gs[gs.type == "Polygon"]
+    cus = cuspatial.from_geopandas(gps)
+    assert_eq_linestring(cus[0:1].iloc[0], gps[0:1].iloc[0])
+    assert_eq_linestring(cus[0:2].iloc[0], gps[0:2].iloc[0])
+    assert_eq_linestring(cus[1:2].iloc[0], gps[1:2].iloc[0])
+
+
+def test_getitem_slice_mpolygons(gs):
+    gps = gs[gs.type == "MultiPolygon"]
+    cus = cuspatial.from_geopandas(gps)
+    assert_eq_linestring(cus[0:1].iloc[0], gps[0:1].iloc[0])
+    assert_eq_linestring(cus[0:2].iloc[0], gps[0:2].iloc[0])
+    assert_eq_linestring(cus[1:2].iloc[0], gps[1:2].iloc[0])
 
 
 @pytest.mark.parametrize(

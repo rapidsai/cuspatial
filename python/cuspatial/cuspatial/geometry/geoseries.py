@@ -2,8 +2,10 @@
 
 from collections.abc import Iterable
 from functools import cached_property
+from numbers import Integral
 from typing import Tuple, TypeVar, Union
 
+import cupy as cp
 import geopandas as gpd
 import pandas as pd
 import pyarrow as pa
@@ -142,12 +144,29 @@ class GeoSeries(cudf.Series):
 
     class GeoSeriesLocIndexer:
         """
-        Not yet supported.
+        Map the index to an integer Series and use that.
+
+        Warning! This only supports single values as input at this time.
         """
 
-        def __init__(self):
-            # Todo: Easy to implement with a join.
-            raise NotImplementedError
+        def __init__(self, _sr):
+            self._sr = _sr
+
+        def __getitem__(self, item):
+            map_df = cudf.DataFrame(
+                {
+                    "map": self._sr.index,
+                    "idx": cp.arange(len(self._sr.index))
+                    if not isinstance(item, Integral)
+                    else 0,
+                }
+            )
+            index_df = cudf.DataFrame({"map": self._sr.index})
+            new_index = index_df.merge(map_df)["idx"]
+            if isinstance(item, Integral):
+                return self._sr.iloc[new_index[0]]
+            else:
+                return self._sr.iloc[new_index]
 
     class GeoSeriesILocIndexer:
 
@@ -169,11 +188,6 @@ class GeoSeries(cudf.Series):
             }
 
         def __getitem__(self, item):
-            """
-            Use a host copy of a pyarrow DenseUnion to index into
-            the GPU data for local copies.
-            """
-
             # Use the reordering _column._data if it is set
             indexes = (
                 self._sr._column._data[item].to_pandas()
@@ -182,8 +196,8 @@ class GeoSeries(cudf.Series):
             )
 
             # Slice the types and offsets
-            union_offsets = self._sr._column._meta.union_offsets[indexes]
-            union_types = self._sr._column._meta.input_types[indexes]
+            union_offsets = self._sr._column._meta.union_offsets.iloc[indexes]
+            union_types = self._sr._column._meta.input_types.iloc[indexes]
 
             # Arrow can't view an empty list, so we need to prep the buffers
             # here.
@@ -200,7 +214,10 @@ class GeoSeries(cudf.Series):
                 },
             )
 
-            return GeoSeries(column)
+            if isinstance(item, Integral):
+                return GeoSeries(column).to_shapely()
+            else:
+                return GeoSeries(column, index=self._sr.index[indexes])
 
     def from_arrow(union):
         column = GeoColumn(
@@ -232,7 +249,10 @@ class GeoSeries(cudf.Series):
         return self.GeoSeriesILocIndexer(self)
 
     def __getitem__(self, item):
-        return self.iloc[item]
+        if item in self.index:
+            return self.loc[item]
+        else:
+            return self.iloc[item]
 
     def to_geopandas(self, nullable=False):
         """
@@ -241,8 +261,11 @@ class GeoSeries(cudf.Series):
         """
         if nullable is True:
             raise ValueError("GeoSeries doesn't support <NA> yet")
-        final_union_slice = self[0 : len(self)].to_shapely()
-        return gpGeoSeries(final_union_slice, index=self.index.to_pandas())
+        final_union_slice = self[0 : len(self)]
+        return gpGeoSeries(
+            final_union_slice.to_shapely(),
+            index=self.index.to_pandas(),
+        )
 
     def to_pandas(self):
         """
