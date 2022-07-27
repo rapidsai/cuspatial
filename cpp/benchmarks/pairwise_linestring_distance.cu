@@ -20,6 +20,7 @@
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/linestring_distance.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
@@ -93,8 +94,8 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
   // TODO: to be replaced by nvbench fixture once it's ready
   cuspatial::rmm_pool_raii rmm_pool;
 
-  auto const num_string_pairs{state.get_int64("NumStrings")},
-    num_segments_per_string{state.get_int64("NumSegmentsPerString")};
+  auto const num_string_pairs{state.get_int64("NumStrings")};
+  auto const num_segments_per_string{state.get_int64("NumSegmentsPerString")};
 
   auto [ls1, ls1_offset] =
     generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, {0, 0});
