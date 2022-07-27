@@ -87,3 +87,6 @@ ConfigureNVBench(DISTANCES_BENCH
 
 ConfigureNVBench(POINT_IN_POLYGON_BENCH
     point_in_polygon.cu)
+
+ConfigureNVBench(SPATIAL_WINDOW_BENCH
+    spatial_window.cu)
