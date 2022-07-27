@@ -4,14 +4,14 @@ from typing import Tuple, TypeVar
 import pyarrow as pa
 
 import cudf
-from cudf.core.column import NumericalColumn
+from cudf.core.column import ColumnBase
 
 from cuspatial.geometry.geometa import GeoMeta
 
 T = TypeVar("T", bound="GeoColumn")
 
 
-class GeoColumn(NumericalColumn):
+class GeoColumn(ColumnBase):
     """
     Parameters
     ----------
@@ -47,8 +47,8 @@ class GeoColumn(NumericalColumn):
         self.lines.name = "lines"
         self.polygons = data[3]
         self.polygons.name = "polygons"
-        base = cudf.core.column.column.arange(0, len(self), dtype="int64").data
-        super().__init__(base, dtype="int64")
+        base = cudf.core.column.column.arange(0, len(self), dtype="int32").data
+        super().__init__(base, size=len(self), dtype="int32")
         if shuffle_order is not None:
             self._data = shuffle_order
 
@@ -80,15 +80,6 @@ class GeoColumn(NumericalColumn):
             f"{self.lines._repr__()}\n"
             f"POLYGONS\n"
             f"{self.polygons._repr__()}\n"
-        )
-
-    def __repr__(self):
-        return (
-            f"GeoColumn\n"
-            f"{len(self.points)} POINTS\n"
-            f"{len(self.mpoints)} MULTIPOINTS\n"
-            f"{len(self.lines)} LINES\n"
-            f"{len(self.polygons)} POLYGONS\n"
         )
 
     def copy(self, deep=True):
