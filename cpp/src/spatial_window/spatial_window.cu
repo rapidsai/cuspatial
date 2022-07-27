@@ -51,7 +51,7 @@ struct spatial_window_dispatch {
     auto window_max =
       cuspatial::vec_2d<T>{static_cast<T>(window_max_x), static_cast<T>(window_max_y)};
 
-    auto output_size = cuspatial::count_points_in_spatial_window(
+    auto output_size = cuspatial::count_points_in_range(
       window_min, window_max, points_begin, points_begin + x.size(), stream);
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
@@ -66,7 +66,7 @@ struct spatial_window_dispatch {
     auto output_zip = cuspatial::make_zipped_cartesian_2d_output_iterator(
       output_x->mutable_view().begin<T>(), output_y->mutable_view().begin<T>());
 
-    cuspatial::points_in_spatial_window(
+    cuspatial::copy_points_in_range(
       window_min, window_max, points_begin, points_begin + x.size(), output_zip, stream);
 
     return std::make_unique<cudf::table>(std::move(cols));

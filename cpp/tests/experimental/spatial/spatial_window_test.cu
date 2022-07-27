@@ -37,20 +37,18 @@ template <typename T>
 using DeviceVecVec = rmm::device_vector<Vec<T>>;
 
 template <typename T>
-struct SpatialWindowTest : public testing::Test {
-  void spatial_window_test(Vec<T> const& v1,
-                           Vec<T> const& v2,
-                           DeviceVecVec<T> const& points,
-                           DeviceVecVec<T> const& expected_points)
+struct SpatialRangeTest : public testing::Test {
+  void spatial_range_test(Vec<T> const& v1,
+                          Vec<T> const& v2,
+                          DeviceVecVec<T> const& points,
+                          DeviceVecVec<T> const& expected_points)
   {
-    auto result_size =
-      cuspatial::count_points_in_spatial_window(v1, v2, points.begin(), points.end());
+    auto result_size = cuspatial::count_points_in_range(v1, v2, points.begin(), points.end());
 
     EXPECT_EQ(result_size, expected_points.size());
 
     auto result_points = DeviceVecVec<T>(result_size);
-    cuspatial::points_in_spatial_window(
-      v1, v2, points.begin(), points.end(), result_points.begin());
+    cuspatial::copy_points_in_range(v1, v2, points.begin(), points.end(), result_points.begin());
 
     EXPECT_EQ(expected_points, result_points);
   }
@@ -58,18 +56,18 @@ struct SpatialWindowTest : public testing::Test {
 
 using TestTypes = ::testing::Types<float, double>;
 
-TYPED_TEST_CASE(SpatialWindowTest, TestTypes);
+TYPED_TEST_CASE(SpatialRangeTest, TestTypes);
 
-TYPED_TEST(SpatialWindowTest, Empty)
+TYPED_TEST(SpatialRangeTest, Empty)
 {
   using T              = TypeParam;
   auto points          = DeviceVecVec<T>{};
   auto expected_points = DeviceVecVec<T>{};
 
-  this->spatial_window_test(Vec<T>{1.5, 1.5}, Vec<T>{5.5, 5.5}, points, expected_points);
+  this->spatial_range_test(Vec<T>{1.5, 1.5}, Vec<T>{5.5, 5.5}, points, expected_points);
 }
 
-TYPED_TEST(SpatialWindowTest, SimpleTest)
+TYPED_TEST(SpatialRangeTest, SimpleTest)
 {
   using T     = TypeParam;
   auto points = DeviceVecVec<T>(VecVec<T>({{1.0, 0.0},
@@ -87,11 +85,11 @@ TYPED_TEST(SpatialWindowTest, SimpleTest)
 
   auto expected_points = DeviceVecVec<T>(VecVec<T>({{3.0, 2.0}, {5.0, 3.0}, {2.0, 5.0}}));
 
-  this->spatial_window_test(Vec<T>{1.5, 1.5}, Vec<T>{5.5, 5.5}, points, expected_points);
+  this->spatial_range_test(Vec<T>{1.5, 1.5}, Vec<T>{5.5, 5.5}, points, expected_points);
 }
 
-// Test that windows with min/max reversed still work
-TYPED_TEST(SpatialWindowTest, ReversedWindow)
+// Test that ranges with min/max reversed still work
+TYPED_TEST(SpatialRangeTest, ReversedRange)
 {
   using T     = TypeParam;
   auto points = DeviceVecVec<T>(VecVec<T>({{1.0, 0.0},
@@ -109,10 +107,10 @@ TYPED_TEST(SpatialWindowTest, ReversedWindow)
 
   auto expected_points = DeviceVecVec<T>(VecVec<T>({{3.0, 2.0}, {5.0, 3.0}, {2.0, 5.0}}));
 
-  this->spatial_window_test(Vec<T>{5.5, 5.5}, Vec<T>{1.5, 1.5}, points, expected_points);
+  this->spatial_range_test(Vec<T>{5.5, 5.5}, Vec<T>{1.5, 1.5}, points, expected_points);
 }
 
-TYPED_TEST(SpatialWindowTest, AllPointsInWindow)
+TYPED_TEST(SpatialRangeTest, AllPointsInRange)
 {
   using T     = TypeParam;
   auto points = DeviceVecVec<T>(VecVec<T>({{1.0, 0.0},
@@ -141,10 +139,10 @@ TYPED_TEST(SpatialWindowTest, AllPointsInWindow)
                                                     {3.0, 7.0},
                                                     {6.0, 4.0}}));
 
-  this->spatial_window_test(Vec<T>{-10.0, -10.0}, Vec<T>{10.0, 10.0}, points, expected_points);
+  this->spatial_range_test(Vec<T>{-10.0, -10.0}, Vec<T>{10.0, 10.0}, points, expected_points);
 }
 
-TYPED_TEST(SpatialWindowTest, PointsOnOrNearEdges)
+TYPED_TEST(SpatialRangeTest, PointsOnOrNearEdges)
 {
   using T = TypeParam;
 
@@ -190,5 +188,5 @@ TYPED_TEST(SpatialWindowTest, PointsOnOrNearEdges)
   auto expected_points =
     DeviceVecVec<T>(VecVec<T>({in_ll, in_ul, in_lr, in_ur, in_left, in_right, in_bottom, in_top}));
 
-  this->spatial_window_test(v1, v2, points, expected_points);
+  this->spatial_range_test(v1, v2, points, expected_points);
 }

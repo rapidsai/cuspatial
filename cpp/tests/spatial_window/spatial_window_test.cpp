@@ -30,7 +30,7 @@
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
 
 template <typename T>
-struct SpatialWindowTest : public cudf::test::BaseFixture {
+struct SpatialRangeTest : public cudf::test::BaseFixture {
 };
 
 using TestTypes = cudf::test::Types<float, double>;

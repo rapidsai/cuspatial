@@ -28,10 +28,10 @@
 namespace cuspatial {
 namespace detail {
 
-// Functor to filter out points that are not inside the query window. Passed to thrust::copy_if
+// Functor to filter out points that are not inside the query range. Passed to thrust::copy_if
 template <typename T>
-struct spatial_window_filter {
-  spatial_window_filter(vec_2d<T> vertex_1, vec_2d<T> vertex_2)
+struct range_filter {
+  range_filter(vec_2d<T> vertex_1, vec_2d<T> vertex_2)
     : v1{std::min(vertex_1.x, vertex_2.x), std::min(vertex_1.y, vertex_2.y)},
       v2{std::max(vertex_1.x, vertex_2.x), std::max(vertex_1.y, vertex_2.y)}
   {
@@ -50,7 +50,7 @@ struct spatial_window_filter {
 }  // namespace detail
 
 template <class InputIt, class T>
-typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spatial_window(
+typename thrust::iterator_traits<InputIt>::difference_type count_points_in_range(
   vec_2d<T> vertex_1,
   vec_2d<T> vertex_2,
   InputIt points_first,
@@ -62,19 +62,17 @@ typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spati
   static_assert(detail::is_convertible_to<cuspatial::vec_2d<T>, Point>(),
                 "Input points must be convertible to cuspatial::vec_2d");
 
-  return thrust::count_if(rmm::exec_policy(stream),
-                          points_first,
-                          points_last,
-                          detail::spatial_window_filter{vertex_1, vertex_2});
+  return thrust::count_if(
+    rmm::exec_policy(stream), points_first, points_last, detail::range_filter{vertex_1, vertex_2});
 }
 
 template <class InputIt, class OutputIt, class T>
-OutputIt points_in_spatial_window(vec_2d<T> vertex_1,
-                                  vec_2d<T> vertex_2,
-                                  InputIt points_first,
-                                  InputIt points_last,
-                                  OutputIt output_points_first,
-                                  rmm::cuda_stream_view stream)
+OutputIt copy_points_in_range(vec_2d<T> vertex_1,
+                              vec_2d<T> vertex_2,
+                              InputIt points_first,
+                              InputIt points_last,
+                              OutputIt output_points_first,
+                              rmm::cuda_stream_view stream)
 {
   using Point = typename std::iterator_traits<InputIt>::value_type;
 
@@ -82,13 +80,13 @@ OutputIt points_in_spatial_window(vec_2d<T> vertex_1,
                 "Input points must be convertible to cuspatial::vec_2d");
 
   static_assert(detail::is_same_floating_point<T, typename Point::value_type>(),
-                "Inputs and window coordinates must have the same value type.");
+                "Inputs and Range coordinates must have the same value type.");
 
   return thrust::copy_if(rmm::exec_policy(stream),
                          points_first,
                          points_last,
                          output_points_first,
-                         detail::spatial_window_filter{vertex_1, vertex_2});
+                         detail::range_filter{vertex_1, vertex_2});
 }
 
 }  // namespace cuspatial

@@ -25,19 +25,22 @@
 namespace cuspatial {
 
 /**
- * @brief Count of points (x,y) that fall within a rectangular query window.
+ * @brief Count of points (x,y) that fall within a query range.
  *
  * @ingroup spatial_relationship
  *
- * The query window is an axis-aligned rectangle defined by a pair of opposite vertices, `v1` and
- * `v2`. A point (x, y) is in the window if `x` lies between `v1.x` and `v2.x` and `y` lies between
- * `v1.y` and `v2.y`. A point is only counted if it is strictly within the interior of the query
- * rectangle. Points exactly on an edge or vertex of the rectangle are not counted.
+ * The query range is defined by a pair of opposite vertices within the coordinate system of the
+ * input points, `v1` and `v2`. A point (x, y) is in the range if `x` lies between `v1.x` and `v2.x`
+ * and `y` lies between `v1.y` and `v2.y`. A point is only counted if it is strictly within the
+ * interior of the query range. Points exactly on an edge or vertex of the range are not counted.
  *
- * @param[in] vertex_1 Vertex of the query rectangle
- * @param[in] vertex_2 Vertex of the query rectangle opposite `corner_1`
- * @param[in] points_first beginning of range of (x, y) coordinates of points to be queried
- * @param[in] points_last end of range of (x, y) coordinates of points to be queried
+ * The query range vertices and the input points are assumed to be defined in the same coordinate
+ * system.
+ *
+ * @param[in] vertex_1 Vertex of the query range quadrilateral
+ * @param[in] vertex_2 Vertex of the query range quadrilateral opposite `vertex_1`
+ * @param[in] points_first beginning of sequence of (x, y) coordinates of points to be queried
+ * @param[in] points_last end of sequence of (x, y) coordinates of points to be queried
  * @param[in] stream The CUDA stream on which to perform computations
  *
  * @tparam InputIt Iterator to input points. Must meet the requirements of
@@ -47,13 +50,13 @@ namespace cuspatial {
  * @pre All iterators must have the same `value_type`, with the same underlying floating-point
  * coordinate type (e.g. `cuspatial::vec_2d<float>`).
  *
- * @returns The number of input points that fall within the specified window.
+ * @returns The number of input points that fall within the specified query range.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
 template <class InputIt, class T>
-typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spatial_window(
+typename thrust::iterator_traits<InputIt>::difference_type count_points_in_range(
   vec_2d<T> vertex_1,
   vec_2d<T> vertex_2,
   InputIt points_first,
@@ -61,22 +64,29 @@ typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spati
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 /**
- * @brief Find all points (x,y) that fall within a rectangular query window.
+ * @brief Copies points (x,y) that fall within a query range.
  *
  * @ingroup spatial_relationship
  *
- * The query window is an axis-aligned rectangle defined by a pair of opposite vertices, `v1` and
- * `v2`. A point (x, y) is in the window if `x` lies between `v1.x` and `v2.x` and `y` lies between
- * `v1.y` and `v2.y`. A point is only returned if it is strictly within the interior of the query
- * rectangle. Points exactly on an edge or vertex of the rectangle are not returned.
+ * The query range is defined by a pair of opposite vertices of a quadrilateral within the
+ * coordinate system of the input points, `v1` and `v2`. A point (x, y) is in the range if `x` lies
+ * between `v1.x` and `v2.x` and `y` lies between `v1.y` and `v2.y`. A point is only counted if it
+ * is strictly within the interior of the query range. Points exactly on an edge or vertex of the
+ * range are not copied.
  *
- * @param[in] vertex_1 Vertex of the query rectangle
- * @param[in] vertex_2 Vertex of the query rectangle opposite `corner_1`
- * @param[in] points_first beginning of range of (x, y) coordinates of points to be queried
- * @param[in] points_last end of range of (x, y) coordinates of points to be queried
+ * The query range vertices and the input points are assumed to be defined in the same coordinate
+ * system.
+ *
+ * `output_points_first` must be an iterator to storage of sufficient size for the points that will
+ * be copied. cuspatial::count_points_in_range may be used to determine the size required.
+ *
+ * @param[in] vertex_1 Vertex of the query range quadrilateral
+ * @param[in] vertex_2 Vertex of the query range quadrilateral opposite `vertex_1`
+ * @param[in] points_first beginning of sequence of (x, y) coordinates of points to be queried
+ * @param[in] points_last end of sequence of (x, y) coordinates of points to be queried
  * @param[out] output_points_first beginning of output range of (x, y) coordinates within the
- * query window
- * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
+ * query range
+ * @param[in] stream The CUDA stream on which to perform computations and allocate memory.
  *
  * @tparam InputIt Iterator to input points. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
@@ -96,12 +106,12 @@ typename thrust::iterator_traits<InputIt>::difference_type count_points_in_spati
  * "LegacyRandomAccessIterator"
  */
 template <class InputIt, class OutputIt, class T>
-OutputIt points_in_spatial_window(vec_2d<T> vertex_1,
-                                  vec_2d<T> vertex_2,
-                                  InputIt points_first,
-                                  InputIt points_last,
-                                  OutputIt output_points_first,
-                                  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+OutputIt copy_points_in_range(vec_2d<T> vertex_1,
+                              vec_2d<T> vertex_2,
+                              InputIt points_first,
+                              InputIt points_last,
+                              OutputIt output_points_first,
+                              rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
 
