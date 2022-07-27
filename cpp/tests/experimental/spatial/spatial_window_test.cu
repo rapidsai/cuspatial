@@ -18,6 +18,7 @@
 #include <cuspatial/experimental/spatial_window.cuh>
 #include <cuspatial/vec_2d.hpp>
 
+#include <limits>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/device_vector.hpp>
@@ -27,7 +28,32 @@
 #include <gtest/gtest.h>
 
 template <typename T>
+using Vec = cuspatial::vec_2d<T>;
+
+template <typename T>
+using VecVec = std::vector<Vec<T>>;
+
+template <typename T>
+using DeviceVecVec = rmm::device_vector<Vec<T>>;
+
+template <typename T>
 struct SpatialWindowTest : public testing::Test {
+  void spatial_window_test(Vec<T> const& v1,
+                           Vec<T> const& v2,
+                           DeviceVecVec<T> const& points,
+                           DeviceVecVec<T> const& expected_points)
+  {
+    auto result_size =
+      cuspatial::count_points_in_spatial_window(v1, v2, points.begin(), points.end());
+
+    EXPECT_EQ(result_size, expected_points.size());
+
+    auto result_points = DeviceVecVec<T>(result_size);
+    cuspatial::points_in_spatial_window(
+      v1, v2, points.begin(), points.end(), result_points.begin());
+
+    EXPECT_EQ(expected_points, result_points);
+  }
 };
 
 using TestTypes = ::testing::Types<float, double>;
@@ -36,86 +62,133 @@ TYPED_TEST_CASE(SpatialWindowTest, TestTypes);
 
 TYPED_TEST(SpatialWindowTest, Empty)
 {
-  using T      = TypeParam;
-  using Vec    = cuspatial::vec_2d<T>;
-  using VecVec = std::vector<Vec>;
-  auto points  = rmm::device_vector<Vec>{};
+  using T              = TypeParam;
+  auto points          = DeviceVecVec<T>{};
+  auto expected_points = DeviceVecVec<T>{};
 
-  auto result_size = cuspatial::count_points_in_spatial_window(
-    Vec{1.5, 1.5}, Vec{5.5, 5.5}, points.begin(), points.end());
-
-  EXPECT_EQ(result_size, 0);
-
-  auto expected_points = rmm::device_vector<Vec>{};
-  auto result_points   = rmm::device_vector<Vec>{};
-
-  cuspatial::points_in_spatial_window(
-    Vec{1.5, 1.5}, Vec{5.5, 5.5}, points.begin(), points.end(), result_points.begin());
-
-  EXPECT_EQ(expected_points, result_points);
+  this->spatial_window_test(Vec<T>{1.5, 1.5}, Vec<T>{5.5, 5.5}, points, expected_points);
 }
 
 TYPED_TEST(SpatialWindowTest, SimpleTest)
 {
-  using T      = TypeParam;
-  using Vec    = cuspatial::vec_2d<T>;
-  using VecVec = std::vector<Vec>;
-  auto points  = rmm::device_vector<Vec>(VecVec({{1.0, 0.0},
-                                                {2.0, 1.0},
-                                                {3.0, 2.0},
-                                                {5.0, 3.0},
-                                                {7.0, 1.0},
-                                                {1.0, 3.0},
-                                                {2.0, 5.0},
-                                                {3.0, 6.0},
-                                                {6.0, 5.0},
-                                                {0.0, 4.0},
-                                                {3.0, 7.0},
-                                                {6.0, 4.0}}));
+  using T     = TypeParam;
+  auto points = DeviceVecVec<T>(VecVec<T>({{1.0, 0.0},
+                                           {2.0, 1.0},
+                                           {3.0, 2.0},
+                                           {5.0, 3.0},
+                                           {7.0, 1.0},
+                                           {1.0, 3.0},
+                                           {2.0, 5.0},
+                                           {3.0, 6.0},
+                                           {6.0, 5.0},
+                                           {0.0, 4.0},
+                                           {3.0, 7.0},
+                                           {6.0, 4.0}}));
 
-  auto expected_points = rmm::device_vector<Vec>(VecVec({{3.0, 2.0}, {5.0, 3.0}, {2.0, 5.0}}));
+  auto expected_points = DeviceVecVec<T>(VecVec<T>({{3.0, 2.0}, {5.0, 3.0}, {2.0, 5.0}}));
 
-  auto result_size = cuspatial::count_points_in_spatial_window(
-    Vec{1.5, 1.5}, Vec{5.5, 5.5}, points.begin(), points.end());
-
-  EXPECT_EQ(result_size, expected_points.size());
-
-  auto result_points = rmm::device_vector<Vec>(result_size);
-  cuspatial::points_in_spatial_window(
-    Vec{1.5, 1.5}, Vec{5.5, 5.5}, points.begin(), points.end(), result_points.begin());
-
-  EXPECT_EQ(expected_points, result_points);
+  this->spatial_window_test(Vec<T>{1.5, 1.5}, Vec<T>{5.5, 5.5}, points, expected_points);
 }
 
 // Test that windows with min/max reversed still work
 TYPED_TEST(SpatialWindowTest, ReversedWindow)
 {
-  using T      = TypeParam;
-  using Vec    = cuspatial::vec_2d<T>;
-  using VecVec = std::vector<Vec>;
-  auto points  = rmm::device_vector<Vec>(VecVec({{1.0, 0.0},
-                                                {2.0, 1.0},
-                                                {3.0, 2.0},
-                                                {5.0, 3.0},
-                                                {7.0, 1.0},
-                                                {1.0, 3.0},
-                                                {2.0, 5.0},
-                                                {3.0, 6.0},
-                                                {6.0, 5.0},
-                                                {0.0, 4.0},
-                                                {3.0, 7.0},
-                                                {6.0, 4.0}}));
+  using T     = TypeParam;
+  auto points = DeviceVecVec<T>(VecVec<T>({{1.0, 0.0},
+                                           {2.0, 1.0},
+                                           {3.0, 2.0},
+                                           {5.0, 3.0},
+                                           {7.0, 1.0},
+                                           {1.0, 3.0},
+                                           {2.0, 5.0},
+                                           {3.0, 6.0},
+                                           {6.0, 5.0},
+                                           {0.0, 4.0},
+                                           {3.0, 7.0},
+                                           {6.0, 4.0}}));
 
-  auto expected_points = rmm::device_vector<Vec>(VecVec({{3.0, 2.0}, {5.0, 3.0}, {2.0, 5.0}}));
+  auto expected_points = DeviceVecVec<T>(VecVec<T>({{3.0, 2.0}, {5.0, 3.0}, {2.0, 5.0}}));
 
-  auto result_size = cuspatial::count_points_in_spatial_window(
-    Vec{5.5, 5.5}, Vec{1.5, 1.5}, points.begin(), points.end());
+  this->spatial_window_test(Vec<T>{5.5, 5.5}, Vec<T>{1.5, 1.5}, points, expected_points);
+}
 
-  EXPECT_EQ(result_size, expected_points.size());
+TYPED_TEST(SpatialWindowTest, AllPointsInWindow)
+{
+  using T     = TypeParam;
+  auto points = DeviceVecVec<T>(VecVec<T>({{1.0, 0.0},
+                                           {2.0, 1.0},
+                                           {3.0, 2.0},
+                                           {5.0, 3.0},
+                                           {7.0, 1.0},
+                                           {1.0, 3.0},
+                                           {2.0, 5.0},
+                                           {3.0, 6.0},
+                                           {6.0, 5.0},
+                                           {0.0, 4.0},
+                                           {3.0, 7.0},
+                                           {6.0, 4.0}}));
 
-  auto result_points = rmm::device_vector<Vec>(result_size);
-  cuspatial::points_in_spatial_window(
-    Vec{5.5, 5.5}, Vec{1.5, 1.5}, points.begin(), points.end(), result_points.begin());
+  auto expected_points = DeviceVecVec<T>(VecVec<T>({{1.0, 0.0},
+                                                    {2.0, 1.0},
+                                                    {3.0, 2.0},
+                                                    {5.0, 3.0},
+                                                    {7.0, 1.0},
+                                                    {1.0, 3.0},
+                                                    {2.0, 5.0},
+                                                    {3.0, 6.0},
+                                                    {6.0, 5.0},
+                                                    {0.0, 4.0},
+                                                    {3.0, 7.0},
+                                                    {6.0, 4.0}}));
 
-  EXPECT_EQ(expected_points, result_points);
+  this->spatial_window_test(Vec<T>{-10.0, -10.0}, Vec<T>{10.0, 10.0}, points, expected_points);
+}
+
+TYPED_TEST(SpatialWindowTest, PointsOnOrNearEdges)
+{
+  using T = TypeParam;
+
+  Vec<T> v1 = {0.0, 0.0};
+  Vec<T> v2 = {1.0, 1.0};
+
+  auto eps   = std::numeric_limits<T>::epsilon();
+  auto v_eps = Vec<T>{eps, eps};
+
+  auto on_ll = v1;
+  auto on_ul = Vec<T>{v1.x, v2.y};
+  auto on_lr = Vec<T>{v2.x, v1.y};
+  auto on_ur = v2;
+
+  auto on_left   = Vec<T>{v1.x, 0.5};
+  auto on_right  = Vec<T>{v2.x, 0.5};
+  auto on_bottom = Vec<T>{0.5, v1.y};
+  auto on_top    = Vec<T>{0.5, v2.y};
+
+  auto in_ll     = on_ll + v_eps;
+  auto in_ul     = on_ul + Vec<T>{eps, -eps};
+  auto in_lr     = on_lr + Vec<T>{-eps, eps};
+  auto in_ur     = on_ur - v_eps;
+  auto in_left   = on_left + v_eps;
+  auto in_right  = on_right - v_eps;
+  auto in_bottom = on_bottom + v_eps;
+  auto in_top    = on_top - v_eps;
+
+  auto out_ll     = on_ll - v_eps;
+  auto out_ul     = on_ul + Vec<T>{-eps, eps};
+  auto out_lr     = on_lr + Vec<T>{eps, -eps};
+  auto out_ur     = on_ur + v_eps;
+  auto out_left   = on_left - v_eps;
+  auto out_right  = on_right + v_eps;
+  auto out_bottom = on_bottom - v_eps;
+  auto out_top    = on_top + v_eps;
+
+  auto points = DeviceVecVec<T>(
+    VecVec<T>({on_ll,  on_ul,  on_lr,  on_ur,  on_left,  on_right,  on_bottom,  on_top,
+               in_ll,  in_ul,  in_lr,  in_ur,  in_left,  in_right,  in_bottom,  in_top,
+               out_ll, out_ul, out_lr, out_ur, out_left, out_right, out_bottom, out_top}));
+
+  auto expected_points =
+    DeviceVecVec<T>(VecVec<T>({in_ll, in_ul, in_lr, in_ur, in_left, in_right, in_bottom, in_top}));
+
+  this->spatial_window_test(v1, v2, points, expected_points);
 }
