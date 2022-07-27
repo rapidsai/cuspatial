@@ -6,6 +6,7 @@ from typing import Tuple, TypeVar, Union
 
 import cupy as cp
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 from geopandas.geoseries import GeoSeries as gpGeoSeries
@@ -152,6 +153,10 @@ class GeoSeries(cudf.Series):
             self._sr = _sr
 
         def __getitem__(self, item):
+            booltest = cudf.Series(item)
+            if booltest.dtype in (bool, np.bool_):
+                return self._sr.iloc[item]
+
             map_df = cudf.DataFrame(
                 {
                     "map": self._sr.index,

@@ -227,8 +227,7 @@ def test_to_shapely(gs, pre_slice):
 def test_boolmask(gs, series_boolmask):
     gi = gpd.GeoSeries(gs)
     cugs = cuspatial.from_geopandas(gi)
-    cugs_back = cugs.to_geopandas()
-    assert_eq_geo(gi[series_boolmask], cugs_back[series_boolmask])
+    assert_eq_geo(gi[series_boolmask], cugs[series_boolmask].to_geopandas())
 
 
 def test_getitem_points():
