@@ -54,14 +54,14 @@ class GeoColumn(ColumnBase):
 
     def to_arrow(self):
         return pa.UnionArray.from_dense(
-            self._meta.type_codes.to_arrow(),
+            self._meta.input_types.to_arrow(),
             self._meta.union_offsets.to_arrow(),
-            (
+            [
                 self.points.to_arrow(),
                 self.mpoints.to_arrow(),
                 self.lines.to_arrow(),
                 self.polygons.to_arrow(),
-            ),
+            ],
         )
 
     def __len__(self):
