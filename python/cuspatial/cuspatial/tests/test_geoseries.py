@@ -343,3 +343,15 @@ def test_size(gs, series_slice):
     gi = gpd.GeoSeries(geometries)
     cugs = cuspatial.from_geopandas(gi)
     assert len(gi) == len(cugs)
+
+
+def test_loc(gs):
+    index = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"]
+    gs.index = index
+    cugs = cuspatial.from_geopandas(gs)
+    gsslice = gs[0:5]
+    cugsslice = cugs[0:5]
+    assert_eq_geo(gsslice, cugsslice.to_geopandas())
+    gsslice = gs[["l", "k", "j", "i"]]
+    cugsslice = cugs[["l", "k", "j", "i"]]
+    assert_eq_geo(gsslice, cugsslice.to_geopandas())

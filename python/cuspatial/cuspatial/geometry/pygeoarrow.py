@@ -28,12 +28,12 @@ def getGeoArrowUnionRootType() -> pa.union:
 
 
 def from_pyarrow_lists(
-    type_buffer: pa.list_,
-    all_offsets: pa.list_,
-    point_coords: pa.list_,
-    mpoint_coords: pa.list_,
-    line_coords: pa.list_,
-    polygon_coords: pa.list_,
+    type_buffer: pa.ListArray,
+    all_offsets: pa.ListArray,
+    point_coords: pa.ListArray,
+    mpoint_coords: pa.ListArray,
+    line_coords: pa.ListArray,
+    polygon_coords: pa.ListArray,
 ) -> pa.lib.UnionArray:
     type_buffer = type_buffer
     all_offsets = all_offsets

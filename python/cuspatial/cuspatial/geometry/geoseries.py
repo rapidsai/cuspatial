@@ -161,12 +161,14 @@ class GeoSeries(cudf.Series):
                     else 0,
                 }
             )
-            index_df = cudf.DataFrame({"map": self._sr.index})
-            new_index = index_df.merge(map_df)["idx"]
+            index_df = cudf.DataFrame({"map": item})
+            new_index = index_df.merge(map_df, how="left")["idx"]
             if isinstance(item, Integral):
                 return self._sr.iloc[new_index[0]]
             else:
-                return self._sr.iloc[new_index]
+                result = self._sr.iloc[new_index]
+                result.index = item
+                return result
 
     class GeoSeriesILocIndexer:
 
@@ -248,12 +250,6 @@ class GeoSeries(cudf.Series):
         """
         return self.GeoSeriesILocIndexer(self)
 
-    def __getitem__(self, item):
-        if item in self.index:
-            return self.loc[item]
-        else:
-            return self.iloc[item]
-
     def to_geopandas(self, nullable=False):
         """
         Returns a new GeoPandas GeoSeries object from the coordinates in
@@ -324,36 +320,10 @@ class GeoSeries(cudf.Series):
 
         union = self.to_arrow()
 
-        index = range(0, len(self))
-        # Convert the iterable types into a predictable format for the
-        # upcoming zip
-        if isinstance(index, slice):
-            start, stop, step = index.indices(len(union_types))
-            indexes = range(0, max(stop - start, 1), step)
-            # Use the reordering _column._data if it is set
-            indexes = (
-                self._column._data[indexes].to_pandas()
-                if self._column._data is not None
-                else indexes
-            )
-            serialization_functions = pd.Series(shapely_fns)[indexes]
-        elif isinstance(index, Iterable):
-            indexes = list(range(len(list(index))))
-            # Use the reordering _column._data if it is set
-            indexes = (
-                self._column._data[indexes].to_pandas()
-                if self._column._data is not None
-                else indexes
-            )
-            serialization_functions = pd.Series(shapely_fns)[indexes]
-        else:
-            indexes = [index]
-            serialization_functions = [shapely_fns[indexes]]
-
         # Serialize to Shapely!
         results = []
         for (result_index, shapely_serialization_fn) in zip(
-            indexes, serialization_functions
+            range(0, len(self)), shapely_fns
         ):
             results.append(
                 shapely_serialization_fn(union[result_index].as_py())
