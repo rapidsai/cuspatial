@@ -85,5 +85,8 @@ ConfigureBench(HAUSDORFF_BENCH
 ConfigureNVBench(DISTANCES_BENCH
     pairwise_linestring_distance.cu)
 
+ConfigureNVBench(POINT_IN_POLYGON_BENCH
+    point_in_polygon.cu)
+
 ConfigureNVBench(SPATIAL_WINDOW_BENCH
     spatial_window.cu)
