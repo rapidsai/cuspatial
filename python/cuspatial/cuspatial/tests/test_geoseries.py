@@ -355,3 +355,7 @@ def test_loc(gs):
     gsslice = gs[["l", "k", "j", "i"]]
     cugsslice = cugs[["l", "k", "j", "i"]]
     assert_eq_geo(gsslice, cugsslice.to_geopandas())
+
+
+def test_memory_usage(gs):
+    assert gs.memory_usage() == 224
