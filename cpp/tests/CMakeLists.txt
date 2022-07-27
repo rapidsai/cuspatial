@@ -114,5 +114,5 @@ ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
 ConfigureTest(COORDINATE_TRANSFORM_TEST_EXP
     experimental/spatial/coordinate_transform_test.cu)
 
-ConfigureTest(SPATIAL_WINDOW_POINT_TEST_EXP
-    experimental/spatial/spatial_window_test.cu)
+ConfigureTest(POINTS_IN_RANGE_TEST_EXP
+    experimental/spatial/points_in_range_test.cu)

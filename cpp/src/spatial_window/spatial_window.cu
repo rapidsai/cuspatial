@@ -15,7 +15,7 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/spatial_window.cuh>
+#include <cuspatial/experimental/points_in_range.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
 
 #include <cudf/column/column.hpp>

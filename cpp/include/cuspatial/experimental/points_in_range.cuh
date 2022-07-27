@@ -115,4 +115,4 @@ OutputIt copy_points_in_range(vec_2d<T> vertex_1,
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/spatial_window.cuh>
+#include <cuspatial/experimental/detail/points_in_range.cuh>

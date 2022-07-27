@@ -15,7 +15,7 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/spatial_window.cuh>
+#include <cuspatial/experimental/points_in_range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <limits>
