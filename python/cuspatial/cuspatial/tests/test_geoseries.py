@@ -277,7 +277,3 @@ def test_size(gs, series_slice):
     gi = gpd.GeoSeries(geometries)
     cugs = cuspatial.from_geopandas(gi)
     assert len(gi) == len(cugs)
-
-
-def test_memory_usage(gs):
-    assert gs.memory_usage() == 224
