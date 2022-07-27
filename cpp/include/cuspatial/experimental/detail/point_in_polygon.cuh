@@ -78,12 +78,12 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
         T rise          = b.y - a.y;
         T rise_to_point = test_point.y - a.y;
 
-// Transform the following inequality to avoid division
-//  test_point.x < (run / rise) * rise_to_point + a.x
-auto lhs = (test_point.x - a.x) * rise;
-auto rhs = run * rise_to_point;
-if ((rise > 0 && lhs < rhs) || (rise < 0 && lhs > rhs))
-  point_is_within = not point_is_within;
+        // Transform the following inequality to avoid division
+        //  test_point.x < (run / rise) * rise_to_point + a.x
+        auto lhs = (test_point.x - a.x) * rise;
+        auto rhs = run * rise_to_point;
+        if ((rise > 0 && lhs < rhs) || (rise < 0 && lhs > rhs))
+          point_is_within = not point_is_within;
       }
       b       = a;
       y0_flag = y1_flag;
