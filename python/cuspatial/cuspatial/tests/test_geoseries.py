@@ -1,8 +1,9 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION.
 
 from enum import Enum
-import geopandas as gpd
 from numbers import Integral
+
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
