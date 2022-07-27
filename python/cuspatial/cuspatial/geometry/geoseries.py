@@ -1,6 +1,5 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION
 
-from collections.abc import Iterable
 from functools import cached_property
 from numbers import Integral
 from typing import Tuple, TypeVar, Union
@@ -310,7 +309,6 @@ class GeoSeries(cudf.Series):
     def to_shapely(self):
         # Copy the GPU data to host for iteration and deserialization
         result_types = self._column._meta.input_types.to_arrow()
-        union_types = self._column._meta.input_types
 
         # Get the shapely serialization methods we'll use here.
         shapely_fns = [
