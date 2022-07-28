@@ -1,6 +1,7 @@
 # libcuspatial C++ Developer Guide
 
-This document serves as a guide for contributors to libcuspatial C++ code. Developers should also refer to these additional files for further documentation of libcudf best practices.
+This document serves as a guide for contributors to libcuspatial C++ code. Developers should also
+refer to these additional files for further documentation of libcudf best practices.
 
 * [Documentation Guide](DOCUMENTATION.md) for guidelines on documenting libcudf code.
 * [Testing Guide](TESTING.md) for guidelines on writing unit tests.
@@ -15,7 +16,8 @@ computations, and spatial indexing.
 
 libcuspatial currently has two interfaces. The first is a C++ API based on data types from 
 libcudf, (the [CUDA Dataframe library C++ API](https://github.com/rapidsai/cudf/)). In this document
-we refer to it as the "column-based API". The column-based API represents spatial data as tables of type-erased columns. 
+we refer to it as the "column-based API". The column-based API represents spatial data as tables of
+type-erased columns. 
 
 The second API is the cuSpatial header-only C++ API, which is independent of libcudf and represents
 data as arrays of structures (e.g. 2D points). The header-only API uses iterators for input and
@@ -34,7 +36,8 @@ TODO: add terms
 
 External/public libcuspatial APIs are grouped based on functionality into an appropriately titled
 header file in `cuspatial/cpp/include/cuspatial/`. For example, 
-`cuspatial/cpp/include/cuspatial/coordinate_transform.hpp` contains the declarations of public API functions related to transforming coordinates. Note the `.hpp` file extension used to indicate a 
+`cuspatial/cpp/include/cuspatial/coordinate_transform.hpp` contains the declarations of public API
+functions related to transforming coordinates. Note the `.hpp` file extension used to indicate a
 C++ header file that can be included from a `.cpp` source file.
 
 Header files should use the `#pragma once` include guard.
@@ -359,7 +362,8 @@ only two objects of different types. Multiple objects of the same type may be re
 `std::vector<T>`.
 
 Alternatively, C++17
-[structured binding](https://en.cppreference.com/w/cpp/language/structured_binding) may be used to disaggregate multiple return values:
+[structured binding](https://en.cppreference.com/w/cpp/language/structured_binding) may be used to
+disaggregate multiple return values:
 
 ```c++
 auto [out0, out1] = cudf::return_two_outputs();
