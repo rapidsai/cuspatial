@@ -15,7 +15,7 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/haversine.hpp>
+#include <cuspatial/distance/haversine.hpp>
 
 #include <cudf_test/base_fixture.hpp>
 #include <cudf_test/column_utilities.hpp>
