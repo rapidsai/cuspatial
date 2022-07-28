@@ -17,7 +17,6 @@
 #pragma once
 
 #include <cudf/column/column_view.hpp>
-#include <cudf/utilities/span.hpp>
 
 namespace cuspatial {
 
@@ -37,6 +36,6 @@ std::unique_ptr<cudf::column> pairwise_point_distance(
   cudf::column_view const& points1_y,
   cudf::column_view const& points2_x,
   cudf::column_view const& points2_y,
-  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial
