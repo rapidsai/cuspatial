@@ -23,7 +23,7 @@ namespace cuspatial {
 
 /**
  * @ingroup distance
- * @brief Compute pairwise point to point cartesian distance
+ * @brief Compute pairwise point-to-point Cartesian distance
  *
  * @param points1_x Column of x coordinates to the first point in each pair
  * @param points1_y Column of y coordinates to the first point in each pair

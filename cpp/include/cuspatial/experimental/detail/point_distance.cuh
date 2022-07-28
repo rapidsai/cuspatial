@@ -48,7 +48,7 @@ OutputIt pairwise_point_distance(Cart2dItA points1_first,
   static_assert(detail::is_same<cartesian_2d<T>,
                                 typename std::iterator_traits<Cart2dItA>::value_type,
                                 typename std::iterator_traits<Cart2dItB>::value_type>(),
-                "Input types mismatches or input types are not cuspatial::cartesian_2d");
+                "All Input types must be cuspatial::cartesian_2d with the same value type");
 
   return thrust::transform(rmm::exec_policy(stream),
                            points1_first,
