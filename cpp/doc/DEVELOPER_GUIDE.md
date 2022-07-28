@@ -35,7 +35,7 @@ TODO: add terms
 # Directory Structure and File Naming
 
 External/public libcuspatial APIs are grouped based on functionality into an appropriately titled
-header file in `cuspatial/cpp/include/cuspatial/`. For example, 
+header file in `cuspatial/cpp/include/cuspatial/`. For example,
 `cuspatial/cpp/include/cuspatial/coordinate_transform.hpp` contains the declarations of public API
 functions related to transforming coordinates. Note the `.hpp` file extension used to indicate a
 C++ header file that can be included from a `.cpp` source file.
@@ -156,7 +156,8 @@ The header-only libcuspatial API is agnostic to the type of containers used by t
 hold its data, because the header-only API is based on iterators. The cuDF-based cuSpatial API, on 
 the other hand, uses cuDF Columns and Tables to store and access application data. 
 
-See the [libcudf Developer guide](https://github.com/rapidsai/cudf/blob/main/cpp/docs/DEVELOPER_GUIDE.md#libcudf-data-structures) for more information on cuDF data structures, including views.
+See the [libcudf Developer guide](https://github.com/rapidsai/cudf/blob/main/cpp/docs/DEVELOPER_GUIDE.md#libcudf-data-structures)
+for more information on cuDF data structures, including views.
 
 ## Views and Ownership
 
