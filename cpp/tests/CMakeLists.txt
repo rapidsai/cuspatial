@@ -77,6 +77,9 @@ ConfigureTest(POLYLINE_BBOX_TEST
 ConfigureTest(POLYGON_BBOX_TEST
     spatial/polygon_bbox_test.cu)
 
+ConfigureTest(POINT_DISTANCE_TEST
+    spatial/point_distance_test.cpp)
+
 ConfigureTest(LINESTRING_DISTANCE_TEST
     spatial/linestring_distance_test.cpp spatial/linestring_distance_test_medium.cpp)
 
