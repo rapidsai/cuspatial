@@ -158,7 +158,7 @@ void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
   static_assert(detail::is_same<cartesian_2d<T>,
                                 typename std::iterator_traits<Cart2dItA>::value_type,
                                 typename std::iterator_traits<Cart2dItB>::value_type>(),
-                "Input types mismatches or input types are not cuspatial::cartesian_2d");
+                "All input types must be cuspatial::cartesian_2d with the same value type");
 
   auto const num_linestring_pairs =
     thrust::distance(linestring1_offsets_first, linestring1_offsets_last);
