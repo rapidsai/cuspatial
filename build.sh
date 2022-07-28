@@ -18,12 +18,13 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean libcuspatial cuspatial tests -v -g -n -h --allgpuarch --show_depr_warn"
+VALIDARGS="clean libcuspatial cuspatial tests benchmarks -v -g -n -h --allgpuarch --show_depr_warn"
 HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--show_depr_warn] [--cmake-args=\"<args>\"]
    clean                       - remove all existing build artifacts and configuration (start over)
    libcuspatial                - build the libcuspatial C++ code only
    cuspatial                   - build the cuspatial Python package
    tests                       - build tests
+   benchmarks                  - build benchmarks
    -v                          - verbose build mode
    -g                          - build for debug
    -n                          - no install step
@@ -41,6 +42,7 @@ BUILD_DIRS="${LIBCUSPATIAL_BUILD_DIR} ${CUSPATIAL_BUILD_DIR}"
 # Set defaults for vars modified by flags to this script
 VERBOSE_FLAG=""
 BUILD_TESTS=OFF
+BUILD_BENCHMARKS=OFF
 BUILD_TYPE=Release
 BUILD_ALL_GPU_ARCH=0
 INSTALL_TARGET=install
@@ -115,6 +117,10 @@ if hasArg tests; then
     BUILD_TESTS=ON
 fi
 
+if hasArg benchmarks; then
+    BUILD_BENCHMARKS=ON
+fi
+
 # Append `-DFIND_CUSPATIAL_CPP=ON` to EXTRA_CMAKE_ARGS unless a user specified the option.
 if [[ "${EXTRA_CMAKE_ARGS}" != *"DFIND_CUSPATIAL_CPP"* ]]; then
     EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DFIND_CUSPATIAL_CPP=ON"
@@ -151,6 +157,7 @@ if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
           ${CUSPATIAL_CMAKE_CUDA_ARCHITECTURES} \
           -DCMAKE_CXX11_ABI=ON \
           -DBUILD_TESTS=${BUILD_TESTS} \
+          -DBUILD_BENCHMARKS=${BUILD_BENCHMARKS} \
           -DDISABLE_DEPRECATION_WARNING=${BUILD_DISABLE_DEPRECATION_WARNING} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
           ${EXTRA_CMAKE_ARGS} \

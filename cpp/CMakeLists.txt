@@ -209,6 +209,10 @@ if(CUSPATIAL_BUILD_BENCHMARKS)
         GIT_SHALLOW     TRUE
         OPTIONS         "BENCHMARK_ENABLE_TESTING OFF"
                         "BENCHMARK_ENABLE_INSTALL OFF")
+
+    # Find or install NVBench
+    include(${rapids-cmake-dir}/cpm/nvbench.cmake)
+    rapids_cpm_nvbench()
     add_subdirectory(benchmarks)
 endif()
 

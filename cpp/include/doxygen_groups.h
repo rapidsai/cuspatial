@@ -42,6 +42,7 @@
  *
  *          This module contains APIs that transforms cartesian and geodesic coordinates.
  *          @file coordinate_transform.hpp
+            @file coordinate_transform.cuh
  *      @}
  *      @defgroup distance Distance
  *      @{
@@ -49,8 +50,9 @@
  *
  *          @file point_distance.hpp
  *          @file linestring_distance.hpp
+ *          @file linestring_distance.cuh
  *          @file hausdorff.hpp
- *          @file experimental/hausdorff.cuh
+ *          @file hausdorff.cuh
  *          @file haversine.hpp
  *          @file haversine.cuh
  *      @}
@@ -59,6 +61,7 @@
  *          @brief APIs related to spatial relationship
  *
  *          @file point_in_polygon.hpp
+ *          @file point_in_polygon.cuh
  *          @file polygon_bounding_box.hpp
  *          @file polyline_bounding_box.hpp
  *          @file spatial_window.hpp
