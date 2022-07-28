@@ -94,7 +94,10 @@ def assert_eq_geo_df(geo1, geo2):
         assert TypeError
     assert geo1.columns.equals(geo2.columns)
     for col in geo1.columns:
-        assert geo1[col].equals(geo2[col])
+        if geo1[col].dtype == "geometry":
+            assert geo1[col].equals(geo2[col])
+        else:
+            pd.testing.assert_series_equal(geo1[col], geo2[col])
 
 
 def test_select_multiple_columns(gpdf):
@@ -114,8 +117,11 @@ def test_sort_values(gpdf):
 def test_groupby(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     pd.testing.assert_frame_equal(
-        gpdf.groupby("key").min().sort_index(),
-        cugpdf.groupby("key").min().sort_index().to_pandas(),
+        gpdf.groupby("key")[["integer", "random"]].min().sort_index(),
+        cugpdf.groupby("key")[["integer", "random"]]
+        .min()
+        .sort_index()
+        .to_pandas(),
     )
 
 
@@ -137,43 +143,55 @@ def test_interleaved_point(gpdf, polys):
         gs[gs.type == "Point"].y.reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series.from_arrow(cugs.multipoints.x),
+        cudf.Series.from_arrow(cugs.multipoints.x.to_arrow()),
         cudf.Series(
             np.array(
-                [np.array(p)[:, 0] for p in gs[gs.type == "MultiPoint"]]
+                [
+                    np.array(p.__geo_interface__["coordinates"])[:, 0]
+                    for p in gs[gs.type == "MultiPoint"]
+                ]
             ).flatten()
         ),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series.from_arrow(cugs.multipoints.y),
+        cudf.Series.from_arrow(cugs.multipoints.y.to_arrow()),
         cudf.Series(
             np.array(
-                [np.array(p)[:, 1] for p in gs[gs.type == "MultiPoint"]]
+                [
+                    np.array(p.__geo_interface__["coordinates"])[:, 1]
+                    for p in gs[gs.type == "MultiPoint"]
+                ]
             ).flatten()
         ),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series.from_arrow(cugs.lines.x),
+        cudf.Series.from_arrow(cugs.lines.x.to_arrow()),
         cudf.Series(
             np.array([range(11, 34, 2)]).flatten(),
             dtype="float64",
         ),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series.from_arrow(cugs.lines.y),
+        cudf.Series.from_arrow(cugs.lines.y.to_arrow()),
         cudf.Series(
             np.array([range(12, 35, 2)]).flatten(),
             dtype="float64",
         ),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series.from_arrow(cugs.polygons.x),
+        cudf.Series.from_arrow(cugs.polygons.x.to_arrow()),
         cudf.Series(polys[:, 0], dtype="float64"),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series.from_arrow(cugs.polygons.y),
+        cudf.Series.from_arrow(cugs.polygons.y.to_arrow()),
         cudf.Series(polys[:, 1], dtype="float64"),
     )
+
+
+def test_to_geopandas_with_geopandas_dataset():
+    df = gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
+    gdf = cuspatial.from_geopandas(df)
+    assert_eq_geo_df(df, gdf.to_geopandas())
 
 
 def test_to_shapely_random():
@@ -190,16 +208,52 @@ def test_to_shapely_random():
 
 
 @pytest.mark.parametrize(
-    "series_slice",
+    "pre_slice",
+    [
+        (slice(0, 12)),
+        (slice(0, 10, 1)),
+        (slice(0, 3, 1)),
+        (slice(3, 6, 1)),
+        (slice(6, 9, 1)),
+    ],
+)
+def test_pre_slice(gpdf, pre_slice):
+    geometries = gpdf.iloc[pre_slice, :]
+    gi = gpd.GeoDataFrame(geometries)
+    cugpdf = cuspatial.from_geopandas(gi)
+    cugpdf_back = cugpdf.to_geopandas()
+    assert_eq_geo_df(gi, cugpdf_back)
+
+
+@pytest.mark.parametrize(
+    "post_slice",
     [slice(0, 12)]
     + [slice(0, 10, 1)]
     + [slice(0, 3, 1)]
     + [slice(3, 6, 1)]
     + [slice(6, 9, 1)],
 )
-def test_to_shapely(gpdf, series_slice):
-    geometries = gpdf.iloc[series_slice, :]
+def test_post_slice(gpdf, post_slice):
+    geometries = gpdf
     gi = gpd.GeoDataFrame(geometries)
     cugpdf = cuspatial.from_geopandas(gi)
     cugpdf_back = cugpdf.to_geopandas()
-    assert_eq_geo_df(gi, cugpdf_back)
+    assert_eq_geo_df(gi[post_slice], cugpdf_back[post_slice])
+
+
+@pytest.mark.parametrize(
+    "df_boolmask",
+    [
+        np.repeat(True, 12),
+        np.repeat((np.repeat(True, 3), np.repeat(False, 3)), 2).flatten(),
+        np.repeat(False, 12),
+        np.repeat((np.repeat(False, 3), np.repeat(True, 3)), 2).flatten(),
+        np.repeat([True, False], 6).flatten(),
+    ],
+)
+def test_boolmask(gpdf, df_boolmask):
+    geometries = gpdf
+    gi = gpd.GeoDataFrame(geometries)
+    cugpdf = cuspatial.from_geopandas(gi)
+    cugpdf_back = cugpdf.to_geopandas()
+    assert_eq_geo_df(gi[df_boolmask], cugpdf_back[df_boolmask])
