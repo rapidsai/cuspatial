@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <cuspatial/distances/point_distance.hpp>
-#include <cuspatial/utility/vec_2d.hpp>
+#include <cuspatial/distance/point_distance.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/column_wrapper.hpp>
