@@ -24,10 +24,10 @@ namespace cuspatial {
  * @ingroup distance
  * @brief Compute pairwise point-to-point Cartesian distance
  *
- * @param points1_x Column of x coordinates to the first point in each pair
- * @param points1_y Column of y coordinates to the first point in each pair
- * @param points2_x Column of x coordinates to the second point in each pair
- * @param points2_y Column of y coordinates to the second point in each pair
+ * @param points1_x Column of x-coordinates of the first point in each pair
+ * @param points1_y Column of y-coordinates of the first point in each pair
+ * @param points2_x Column of x-coordinates of the second point in each pair
+ * @param points2_y Column of y-coordinates of the second point in each pair
  * @param stream The CUDA stream to use for device memory operations and kernel launches
  * @return Column of distances between each pair of input points
  */
