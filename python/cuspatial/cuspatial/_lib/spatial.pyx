@@ -13,7 +13,7 @@ from cudf._lib.cpp.column.column_view cimport column_view
 from cuspatial._lib.cpp.coordinate_transform cimport (
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
 )
-from cuspatial._lib.cpp.spatial cimport (
+from cuspatial._lib.cpp.distance.haversine cimport (
     haversine_distance as cpp_haversine_distance,
 )
 
