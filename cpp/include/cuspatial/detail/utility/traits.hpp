@@ -23,7 +23,7 @@ namespace detail {
 
 /**
  * @internal
- * @brief returns true if all types are the same.
+ * @brief returns true if all types Ts... are the same as T.
  */
 template <typename T, typename... Ts>
 constexpr bool is_same()
@@ -33,7 +33,17 @@ constexpr bool is_same()
 
 /**
  * @internal
- * @brief returns true if all types are floating point types.
+ * @brief returns true if all types Ts... are convertible to U.
+ */
+template <typename U, typename... Ts>
+constexpr bool is_convertible_to()
+{
+  return std::conjunction_v<std::is_convertible<Ts, U>...>;
+}
+
+/**
+ * @internal
+ * @brief returns true if all types Ts... are floating point types.
  */
 template <typename... Ts>
 constexpr bool is_floating_point()
