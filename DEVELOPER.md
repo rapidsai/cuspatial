@@ -224,7 +224,7 @@ gpu_dataframe.sort_value("name")
 sorted_dataframe = gpu_dataframe.to_geopandas()
 geopandas[0]
 ```
-![afghanistan.png](img/afghanistan/png)
+![afghanistan.png](img/afghanistan.png)
 
 ## Spatial joins
 
