@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <cuspatial/hausdorff.hpp>
+#include <cuspatial/distance/hausdorff.hpp>
 
 #include <benchmarks/fixture/benchmark_fixture.hpp>
 #include <benchmarks/synchronization/synchronization.hpp>

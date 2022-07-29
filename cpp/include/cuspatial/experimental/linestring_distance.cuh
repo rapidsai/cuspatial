@@ -21,6 +21,7 @@
 namespace cuspatial {
 
 /**
+ * @ingroup distance
  * @copybrief cuspatial::pairwise_linestring_distance
  *
  * The shortest distance between two linestrings is defined as the shortest distance

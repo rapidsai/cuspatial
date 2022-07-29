@@ -6,7 +6,8 @@ from cudf._lib.cpp.column.column cimport column
 from cudf._lib.cpp.column.column_view cimport column_view
 
 
-cdef extern from "cuspatial/hausdorff.hpp" namespace "cuspatial" nogil:
+cdef extern from "cuspatial/distance/hausdorff.hpp" \
+        namespace "cuspatial" nogil:
 
     cdef unique_ptr[column] directed_hausdorff_distance(
         const column_view& xs,
