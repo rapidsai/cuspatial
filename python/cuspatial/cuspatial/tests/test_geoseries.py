@@ -355,3 +355,43 @@ def test_loc(gs):
     gsslice = gs[["l", "k", "j", "i"]]
     cugsslice = cugs[["l", "k", "j", "i"]]
     assert_eq_geo(gsslice, cugsslice.to_geopandas())
+
+
+def test_shapefile_constructor():
+    # Restarting this test above using our existing shapefile data
+    # that has been used previously, successfully, for demos.
+    # host_dataframe = gpd.read_file("its_4326_roi")
+    # gs = host_dataframe["geometry"]
+    # data = cuspatial.read_polygon_shapefile("its_4326_roi")
+    # host_dataframe = gpd.read_file("NYC_boroughs")
+    # gs = host_dataframe["geometry"]
+    # data = cuspatial.read_polygon_shapefile("NYC_boroughs")
+    host_dataframe = gpd.read_file(
+        gpd.datasets.get_path("naturalearth_lowres")
+    )
+    gs = host_dataframe["geometry"]
+    gs.to_file("naturalearth_lowres")
+    fs = gpd.read_file("naturalearth_lowres")
+    data = cuspatial.read_polygon_shapefile("naturalearth_lowres")
+    cus = cuspatial.GeoSeries(data)
+    base = cus._column.polygons._column.base_children
+    polygons = base[0]
+    rings = base[1].base_children[0]
+    fixed_size = base[1].base_children[1].base_children[0]
+    values = base[1].base_children[1].base_children[1].base_children[0]
+    assert polygons == data[0]._column
+    assert rings == data[1]._column
+    cus_good = cuspatial.from_geopandas(gs)
+    _base = cus_good._column.polygons._column.base_children
+    _polygons = _base[0]
+    _rings = _base[1].base_children[0]
+    _fixed_size = _base[1].base_children[1].base_children[0]
+    _values = _base[1].base_children[1].base_children[1].base_children[0]
+    # The below fails because polygon #25 is not read by
+    # cuspatial.read_polygon_shapefile("naturalearth_lowres")
+    assert _polygons == polygons
+    assert _rings == rings
+    assert _fixed_size == fixed_size
+    assert _values == values
+    assert_eq_geo(gs, cus_good.to_geopandas())
+    assert_eq_geo(gs, cus.to_geopandas())

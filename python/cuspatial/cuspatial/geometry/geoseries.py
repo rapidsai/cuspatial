@@ -79,13 +79,18 @@ class GeoSeries(cudf.Series):
                 data,
                 GeoMeta(
                     {
-                        input_types: cp.repeat(
-                            Feature_Enum.POLYGON.value, len(data[0])
+                        "input_types": cp.repeat(
+                            cp.array(
+                                [Feature_Enum.POLYGON.value], dtype="int8"
+                            ),
+                            len(data[0]),
                         ),
-                        union_offsets: cp.arange(len(data[0])),
+                        "union_offsets": cp.arange(
+                            len(data[0]), dtype="int32"
+                        ),
                     }
                 ),
-                from_polygon_shapefile=True,
+                from_read_polygon_shapefile=True,
             )
         else:
             raise TypeError(

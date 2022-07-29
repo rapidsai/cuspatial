@@ -1,6 +1,7 @@
 # Copyright (c) 2021-2022 NVIDIA CORPORATION
 from typing import Tuple, TypeVar
 
+import cupy as cp
 import pyarrow as pa
 
 import cudf
@@ -33,24 +34,63 @@ class GeoColumn(ColumnBase):
         from_read_polygon_shapefile=False,
     ):
         if from_read_polygon_shapefile:
-            pass
-
-        if (
-            not isinstance(data[0], cudf.Series)
-            or not isinstance(data[1], cudf.Series)
-            or not isinstance(data[2], cudf.Series)
-            or not isinstance(data[3], cudf.Series)
+            polygons = data[0].astype("int32")
+            rings = data[1].astype("int32")
+            coordinates = (
+                data[2].stack().astype("float64").reset_index(drop=True)
+            )
+            coordinate_offsets = cudf.Series(
+                cp.arange(len(coordinates)), dtype="int32"
+            )
+            coords = cudf.core.column.ListColumn(
+                size=len(coordinate_offsets) - 1,
+                dtype=cudf.ListDtype(coordinates.dtype),
+                children=(coordinate_offsets._column, coordinates._column),
+            )
+            point_offsets = cudf.Series(
+                cp.arange(len(coordinates) // 2) * 2, dtype="int32"
+            )
+            points = cudf.core.column.ListColumn(
+                size=len(point_offsets) - 1,
+                dtype=cudf.ListDtype(coords.dtype),
+                children=(point_offsets._column, coords),
+            )
+            child = cudf.core.column.ListColumn(
+                size=len(rings) - 1,
+                dtype=cudf.ListDtype(points.dtype),
+                children=(rings._column, points),
+            )
+            parent = cudf.core.column.ListColumn(
+                size=len(polygons) - 2,
+                dtype=cudf.ListDtype(child.dtype),
+                children=(polygons._column, child),
+            )
+            self.points = cudf.Series([])
+            self.points.name = "points"
+            self.mpoints = cudf.Series([])
+            self.mpoints.name = "mpoints"
+            self.lines = cudf.Series([])
+            self.lines.name = "lines"
+            self.polygons = cudf.Series(parent)
+            self.polygons.name = "polygons"
+            self._meta = meta
+        elif (
+            isinstance(data[0], cudf.Series)
+            and isinstance(data[1], cudf.Series)
+            and isinstance(data[2], cudf.Series)
+            and isinstance(data[3], cudf.Series)
         ):
-            raise TypeError("All Tuple arguments must be cudf.ListSeries")
-        self._meta = GeoMeta(meta)
-        self.points = data[0]
-        self.points.name = "points"
-        self.mpoints = data[1]
-        self.mpoints.name = "mpoints"
-        self.lines = data[2]
-        self.lines.name = "lines"
-        self.polygons = data[3]
-        self.polygons.name = "polygons"
+            self._meta = GeoMeta(meta)
+            self.points = data[0]
+            self.points.name = "points"
+            self.mpoints = data[1]
+            self.mpoints.name = "mpoints"
+            self.lines = data[2]
+            self.lines.name = "lines"
+            self.polygons = data[3]
+            self.polygons.name = "polygons"
+        else:
+            raise TypeError("All four Tuple arguments must be cudf.ListSeries")
         base = cudf.core.column.column.arange(0, len(self), dtype="int32").data
         super().__init__(base, size=len(self), dtype="int32")
         if shuffle_order is not None:
