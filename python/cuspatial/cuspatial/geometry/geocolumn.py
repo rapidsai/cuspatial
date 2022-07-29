@@ -30,7 +30,11 @@ class GeoColumn(ColumnBase):
         data: Tuple,
         meta: GeoMeta = None,
         shuffle_order: cudf.Index = None,
+        from_read_polygon_shapefile=False,
     ):
+        if from_read_polygon_shapefile:
+            pass
+
         if (
             not isinstance(data[0], cudf.Series)
             or not isinstance(data[1], cudf.Series)

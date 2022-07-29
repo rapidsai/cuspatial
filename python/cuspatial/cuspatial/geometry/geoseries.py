@@ -72,6 +72,21 @@ class GeoSeries(cudf.Series):
             adapter = GeoPandasReader(data)
             pandas_meta = GeoMeta(adapter.get_geopandas_meta())
             column = GeoColumn(adapter._get_geotuple(), pandas_meta)
+        elif isinstance(data, Tuple):
+            # This must be a Polygon Tuple returned by
+            # cuspatial.read_polygon_shapefile
+            column = GeoColumn(
+                data,
+                GeoMeta(
+                    {
+                        input_types: cp.repeat(
+                            Feature_Enum.POLYGON.value, len(data[0])
+                        ),
+                        union_offsets: cp.arange(len(data[0])),
+                    }
+                ),
+                from_polygon_shapefile=True,
+            )
         else:
             raise TypeError(
                 f"Incompatible object passed to GeoSeries ctor {type(data)}"
