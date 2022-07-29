@@ -15,6 +15,7 @@
  */
 
 #include <cuspatial/distance/point_distance.hpp>
+#include <cuspatial/error.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <cudf_test/column_utilities.hpp>
@@ -50,6 +51,69 @@ TYPED_TEST(PairwisePointDistanceTest, Empty)
   auto got = pairwise_point_distance(x1, y1, x2, y2);
 
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
+}
+
+struct PairwisePointDistanceTestThrow : public ::testing::Test {
+};
+
+TEST_F(PairwisePointDistanceTestThrow, SizeMismatch)
+{
+  auto x1 = fixed_width_column_wrapper<float>{1, 2, 3};
+  auto y1 = fixed_width_column_wrapper<float>{1, 2, 3};
+  auto x2 = fixed_width_column_wrapper<float>{};
+  auto y2 = fixed_width_column_wrapper<float>{};
+
+  auto expect = fixed_width_column_wrapper<float>{};
+
+  EXPECT_THROW(pairwise_point_distance(x1, y1, x2, y2), cuspatial::logic_error);
+}
+
+TEST_F(PairwisePointDistanceTestThrow, SizeMismatch2)
+{
+  auto x1 = fixed_width_column_wrapper<float>{};
+  auto y1 = fixed_width_column_wrapper<float>{1, 2, 3};
+  auto x2 = fixed_width_column_wrapper<float>{1, 2, 3};
+  auto y2 = fixed_width_column_wrapper<float>{1, 2, 3};
+
+  auto expect = fixed_width_column_wrapper<float>{};
+
+  EXPECT_THROW(pairwise_point_distance(x1, y1, x2, y2), cuspatial::logic_error);
+}
+
+TEST_F(PairwisePointDistanceTestThrow, TypeMismatch)
+{
+  auto x1 = fixed_width_column_wrapper<float>{1, 2, 3};
+  auto y1 = fixed_width_column_wrapper<double>{1, 2, 3};
+  auto x2 = fixed_width_column_wrapper<float>{1, 2, 3};
+  auto y2 = fixed_width_column_wrapper<float>{1, 2, 3};
+
+  auto expect = fixed_width_column_wrapper<float>{};
+
+  EXPECT_THROW(pairwise_point_distance(x1, y1, x2, y2), cuspatial::logic_error);
+}
+
+TEST_F(PairwisePointDistanceTestThrow, TypeMismatch2)
+{
+  auto x1 = fixed_width_column_wrapper<float>{1, 2, 3};
+  auto y1 = fixed_width_column_wrapper<float>{1, 2, 3};
+  auto x2 = fixed_width_column_wrapper<double>{1, 2, 3};
+  auto y2 = fixed_width_column_wrapper<double>{1, 2, 3};
+
+  auto expect = fixed_width_column_wrapper<float>{};
+
+  EXPECT_THROW(pairwise_point_distance(x1, y1, x2, y2), cuspatial::logic_error);
+}
+
+TEST_F(PairwisePointDistanceTestThrow, ContainsNull)
+{
+  auto x1 = fixed_width_column_wrapper<float>{{1, 2, 3}, {1, 0, 1}};
+  auto y1 = fixed_width_column_wrapper<float>{1, 2, 3};
+  auto x2 = fixed_width_column_wrapper<float>{1, 2, 3};
+  auto y2 = fixed_width_column_wrapper<float>{1, 2, 3};
+
+  auto expect = fixed_width_column_wrapper<float>{};
+
+  EXPECT_THROW(pairwise_point_distance(x1, y1, x2, y2), cuspatial::logic_error);
 }
 
 }  // namespace cuspatial
