@@ -207,6 +207,10 @@ print(continents_dataframe)
 (GPU)
 ```
 
+```
+# TODO: Another example
+```
+
 Though the operations will run on your CPU and lose GPU efficiency, you can also convert  
 between GPU-backed `cuspatial.GeoDataFrame` and host-backed `geopandas.GeoDataFrame` with  
 `from_geopandas` and `to_geopandas`, enabling you to take advantage of any native GeoPandas  
@@ -214,18 +218,29 @@ operation. The following example displays the `Polygon` associated with the firs
 the dataframe sorted alphabetically by name.
 
 ```python
-host_dataframe = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres))
+host_dataframe = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
 gpu_dataframe = cuspatial.from_geopandas(host_dataframe)
-gpu_dataframe.sort_value("names")
+gpu_dataframe.sort_value("name")
 sorted_dataframe = gpu_dataframe.to_geopandas()
 geopandas[0]
 ```
+![afghanistan.png](img/afghanistan/png)
 
 ## Spatial joins
+
+cuspatial supports high-performance spatial joins. The API surface for spatial joins does  
+not yet map to GeoPandas, but with knowledge of our underlying data formats you can call  
+`cuspatial.point_in_polygon` for large numbers of points on 32 polygons or less, or call  
+`cuspatial.point_in_polygon_quadtree` for large numbers of points and polygons.
+
+```python
+host_dataframe = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres))
+gpu_dataframe = cuspatial.from_geopandas(host_dataframe)
+```
+
 
 ## Trajectory fits
 
 ## Spatial utilities
 
-
-
+## GeoArrow data format
