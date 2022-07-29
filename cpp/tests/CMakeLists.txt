@@ -77,6 +77,9 @@ ConfigureTest(POLYLINE_BBOX_TEST
 ConfigureTest(POLYGON_BBOX_TEST
     spatial/polygon_bbox_test.cu)
 
+ConfigureTest(POINT_DISTANCE_TEST
+    spatial/point_distance_test.cpp)
+
 ConfigureTest(LINESTRING_DISTANCE_TEST
     spatial/linestring_distance_test.cpp spatial/linestring_distance_test_medium.cpp)
 
@@ -104,6 +107,9 @@ ConfigureTest(SPATIAL_WINDOW_POINT_TEST
 # Experimental API
 ConfigureTest(HAVERSINE_TEST_EXP
     experimental/spatial/haversine_test.cu)
+
+ConfigureTest(POINT_DISTANCE_TEST_EXP
+    experimental/spatial/point_distance_test.cu)
 
 ConfigureTest(HAUSDORFF_TEST_EXP
     experimental/spatial/hausdorff_test.cu)

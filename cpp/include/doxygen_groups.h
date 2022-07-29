@@ -48,6 +48,7 @@
  *      @{
  *          @brief Distance computation APIs
  *
+ *          @file point_distance.hpp
  *          @file linestring_distance.hpp
  *          @file linestring_distance.cuh
  *          @file hausdorff.hpp
