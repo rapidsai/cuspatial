@@ -50,7 +50,7 @@ auto compute_point_distance_host(Cart2DVec const& point1, Cart2DVec const& point
   auto result_iter = thrust::make_transform_iterator(pair_iter, [](auto p) {
     auto p0 = thrust::get<0>(p);
     auto p1 = thrust::get<1>(p);
-    return std::sqrt((p0.x - p1.x) * (p0.x - p1.x) + (p0.y - p1.y) * (p0.y - p1.y));
+    return std::sqrt(dot(p0 - p1, p0 - p1));
   });
 
   return thrust::host_vector<T>(result_iter, result_iter + point1.size());
