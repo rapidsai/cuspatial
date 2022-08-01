@@ -21,6 +21,7 @@
 namespace cuspatial {
 
 /**
+ * @ingroup distance
  * @copybrief cuspatial::pairwise_point_linestring_distance
  *
  * @tparam Cart2dItA iterator type for point array of the first linestring of each pair. Must meet

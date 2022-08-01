@@ -110,7 +110,6 @@ ConfigureTest(SPATIAL_WINDOW_POINT_TEST
 # Experimental API
 ConfigureTest(HAVERSINE_TEST_EXP
     experimental/spatial/haversine_test.cu)
-    
 ConfigureTest(POINT_DISTANCE_TEST_EXP
     experimental/spatial/point_distance_test.cu)
 
