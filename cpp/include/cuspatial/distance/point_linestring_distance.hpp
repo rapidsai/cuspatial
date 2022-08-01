@@ -17,6 +17,47 @@
 #include <cudf/column/column_view.hpp>
 
 namespace cuspatial {
+
+/**
+ * @brief Compute shortest distance between pairs of points and linestrings (a.k.a. polylines)
+ *
+ * The shortest distance between a pair of point and linestring is defined as the shortest
+ * distance between the point to all line-segments of the linestring.
+ *
+ * The following example contains 2 pairs of points and linestrings.
+ * ```
+ * First pair:
+ * Point: (0, 0)
+ * Linestring: (0, 1) -> (1, 0) -> (-1, 0)
+ *
+ * Second pair:
+ * Point: (1, 1)
+ * Linestring: (0, 0) -> (1, 1) -> (2, 0) -> (3, 0) -> (3, 1)
+ *
+ * The input of the abbove example is:
+ * points_x: {0, 1}
+ * points_y: {0, 1}
+ * linestring_offsets: {0, 3}
+ * linestring_x: {0, 1, -1, 0, 1, 2, 3, 3}
+ * linestring_y: {1, 0, 0, 0, 1, 0, 0, 1}
+ *
+ * Result: {sqrt(2)/2, 0}
+ * ```
+ *
+ * @param points_x Coordinate of points along the x-axis.
+ * @param points_y Coordinate of points along the y-axis.
+ * @param linestring_offsets Indices of the start of each linestring in the `linestring_x` and
+ * `linestring_y` arrays.
+ * @param linestring_points_x Coordinate of linestring points along the x-axis.
+ * @param linestring_points_y Coordinate of linestring points along the y-axis.
+ * @param mr Device memory resource used to allocate the returned column.
+ * @return A column containing the shortest distance between each pair of points and linestrings.
+ *
+ * @throws cuspatial::logic_error if the number of points and linestrings do not match.
+ * @throws cuspatial::logic_error if there is a size mismatch between the x- and y-coordinates of
+ * the points or linestring points.
+ * @throws cuspatial::logic_error if the any of the point arrays have mismatched types.
+ */
 std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
   cudf::column_view const& points_x,
   cudf::column_view const& points_y,
@@ -25,4 +66,4 @@ std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
   cudf::column_view const& linestring_points_y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
-}
+}  // namespace cuspatial
