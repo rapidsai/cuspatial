@@ -80,6 +80,9 @@ ConfigureTest(POLYGON_BBOX_TEST
 ConfigureTest(POINT_DISTANCE_TEST
     spatial/point_distance_test.cpp)
 
+ConfigureTest(POINT_LINESTRING_DISTANCE_TEST
+    spatial/point_linestring_distance_test.cpp)
+
 ConfigureTest(LINESTRING_DISTANCE_TEST
     spatial/linestring_distance_test.cpp spatial/linestring_distance_test_medium.cpp)
 
