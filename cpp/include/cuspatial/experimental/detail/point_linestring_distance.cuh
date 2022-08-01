@@ -16,11 +16,11 @@
 
 #pragma once
 
+#include <cuspatial/detail/utility/device_atomics.cuh>
+#include <cuspatial/detail/utility/linestring.cuh>
+#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/utility/device_atomics.cuh>
-#include <cuspatial/utility/geometry_utility.cuh>
-#include <cuspatial/utility/traits.hpp>
-#include <cuspatial/utility/vec_2d.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
@@ -83,9 +83,9 @@ void __global__ pairwise_point_linestring_distance(Cart2dItA points_first,
   if (*offsets_iter - 1 == idx) { return; }
 
   auto pair_idx = thrust::distance(linestring_offsets_first, thrust::prev(offsets_iter));
-  auto const c  = thrust::raw_reference_cast(points_first[pair_idx]);
-  auto const a  = thrust::raw_reference_cast(linestring_points_first[idx]);
-  auto const b  = thrust::raw_reference_cast(linestring_points_first[idx + 1]);
+  cartesian_2d<T> const a  = linestring_points_first[idx];
+  cartesian_2d<T> const b  = linestring_points_first[idx + 1];
+  cartesian_2d<T> const c  = points_first[pair_idx];
 
   auto const distance_squared = point_to_segment_distance_squared(c, a, b);
 
