@@ -27,6 +27,16 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/copy.h>
+#include <thrust/fill.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/reduce.h>
+#include <thrust/replace.h>
+#include <thrust/scan.h>
+#include <thrust/transform.h>
+#include <thrust/tuple.h>
+
 /*
  * quadtree indexing on points using the bottom-up algorithm described at ref.
  * http://www.adms-conf.org/2019-camera-ready/zhang_adms19.pdf

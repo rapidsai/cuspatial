@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-#include <cuspatial/hausdorff.hpp>
+#include <cuspatial/distance/hausdorff.hpp>
 
 #include <benchmarks/fixture/benchmark_fixture.hpp>
 #include <benchmarks/synchronization/synchronization.hpp>
 
 #include <cudf/detail/iterator.cuh>
 #include <cudf_test/column_wrapper.hpp>
+
+#include <thrust/iterator/constant_iterator.h>
 
 static void BM_hausdorff(benchmark::State& state)
 {

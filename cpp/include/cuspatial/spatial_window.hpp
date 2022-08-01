@@ -16,7 +16,12 @@
 
 #pragma once
 
+#include <cudf/column/column_view.hpp>
+#include <cudf/table/table.hpp>
 #include <cudf/types.hpp>
+
+#include <rmm/mr/device/per_device_resource.hpp>
+
 #include <memory>
 
 namespace cuspatial {
@@ -31,6 +36,9 @@ namespace cuspatial {
  *
  * Swaps `window_min_x` and `window_max_x` if `window_min_x > window_max_x`.
  * Swaps `window_min_y` and `window_max_y` if `window_min_y > window_max_y`.
+ *
+ * The window coordinates and the (x, y) points to be tested are assumed to be defined in the same
+ * coordinate system.
  *
  * @param[in] window_min_x lower x-coordinate of the query window
  * @param[in] window_max_x upper x-coordinate of the query window

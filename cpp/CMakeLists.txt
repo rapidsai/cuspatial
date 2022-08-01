@@ -103,6 +103,7 @@ rapids_cpm_init()
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
 
+
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
 
@@ -121,6 +122,7 @@ add_library(cuspatial
     src/spatial/haversine.cu
     src/spatial/hausdorff.cu
     src/spatial/linestring_distance.cu
+    src/spatial/point_distance.cu
     src/spatial/point_linestring_distance.cu
     src/spatial/lonlat_to_cartesian.cu
     src/trajectory/derive_trajectories.cu
@@ -208,6 +210,10 @@ if(CUSPATIAL_BUILD_BENCHMARKS)
         GIT_SHALLOW     TRUE
         OPTIONS         "BENCHMARK_ENABLE_TESTING OFF"
                         "BENCHMARK_ENABLE_INSTALL OFF")
+
+    # Find or install NVBench
+    include(${rapids-cmake-dir}/cpm/nvbench.cmake)
+    rapids_cpm_nvbench()
     add_subdirectory(benchmarks)
 endif()
 

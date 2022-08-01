@@ -15,17 +15,19 @@
  */
 
 #pragma once
+
+#include <cudf/types.hpp>
+
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
 namespace cuspatial {
 namespace detail {
 
-template <typename T = std::size_t, typename UnaryFunction>
-inline auto make_counting_transform_iterator(T start, UnaryFunction f)
+template <typename UnaryFunction>
+inline auto make_counting_transform_iterator(cudf::size_type start, UnaryFunction f)
 {
   return thrust::make_transform_iterator(thrust::make_counting_iterator(start), f);
 }
-
 }  // namespace detail
 }  // namespace cuspatial

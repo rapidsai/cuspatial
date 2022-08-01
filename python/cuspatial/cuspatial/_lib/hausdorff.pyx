@@ -5,7 +5,7 @@ from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column, column, column_view
 
-from cuspatial._lib.cpp.hausdorff cimport (
+from cuspatial._lib.cpp.distance.hausdorff cimport (
     directed_hausdorff_distance as directed_cpp_hausdorff_distance,
 )
 

@@ -17,7 +17,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/coordinate_transform.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
-#include <cuspatial/utility/vec_2d.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_device_view.cuh>
@@ -26,6 +26,11 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
+
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/pair.h>
+#include <thrust/transform.h>
+#include <thrust/tuple.h>
 
 #include <type_traits>
 #include <utility>

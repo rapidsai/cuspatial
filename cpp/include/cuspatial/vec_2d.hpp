@@ -15,7 +15,8 @@
  */
 
 #pragma once
-#include <cuspatial/types.hpp>
+
+#include <cuspatial/cuda_utils.hpp>
 
 namespace cuspatial {
 

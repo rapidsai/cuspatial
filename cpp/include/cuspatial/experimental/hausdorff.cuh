@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,14 @@
 #pragma once
 
 #include <cudf/types.hpp>
-#include <memory>
+
+#include <rmm/cuda_stream_view.hpp>
 
 namespace cuspatial {
 
 /**
- * @brief computes Hausdorff distances for all pairs in a collection of spaces
- *
  * @ingroup distance
+ * @brief Computes Hausdorff distances for all pairs in a collection of spaces
  *
  * https://en.wikipedia.org/wiki/Hausdorff_distance
  *
@@ -71,23 +71,35 @@ namespace cuspatial {
  * [0 2 4 3 0 2 9 6 0]
  * ```
  *
- * @param[in] xs: x component of points
- * @param[in] ys: y component of points
- * @param[in] space_offsets: beginning index of each space, plus the last space's end offset.
+ * @param[in] points_first: xs: beginning of range of (x,y) points
+ * @param[in] points_lasts: xs: end of range of (x,y) points
+ * @param[in] space_offsets_first: beginning of range of indices to each space.
+ * @param[in] space_offsets_first: end of range of indices to each space. Last index is the last
+ * @param[in] distance_first: beginning of range of output Hausdorff distance for each pair of
+ * spaces
  *
- * @returns Hausdorff distances for each pair of spaces
+ * @tparam PointIt Iterator to input points. Points must be of a type that is convertible to
+ * `cuspatial::vec_2d<T>`. Must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI] and
+ * be device-accessible.
+ * @tparam OffsetIt Iterator to space offsets. Value type must be integral. Must meet the
+ * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OutputIt Output iterator. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  *
- * @throw cudf::cuda_error if `xs` and `ys` lengths differ
- * @throw cudf::cuda_error if `xs` and `ys` types differ
- * @throw cudf::cuda_error if `space_offsets` size is less than `xs` and `xy`
- * @throw cudf::cuda_error if `xs`, `ys`, or `space_offsets` has nulls
+ * @pre All iterators must have the same underlying floating-point value type.
+ *
+ * @return Output iterator to the element past the last distance computed.
  *
  * @note Hausdorff distances are asymmetrical
  */
-std::unique_ptr<cudf::column> directed_hausdorff_distance(
-  cudf::column_view const& xs,
-  cudf::column_view const& ys,
-  cudf::column_view const& space_offsets,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+template <class PointIt, class OffsetIt, class OutputIt>
+OutputIt directed_hausdorff_distance(PointIt points_first,
+                                     PointIt points_last,
+                                     OffsetIt space_offsets_first,
+                                     OffsetIt space_offsets_last,
+                                     OutputIt distance_first,
+                                     rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
+
+#include <cuspatial/experimental/detail/hausdorff.cuh>

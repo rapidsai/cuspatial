@@ -16,11 +16,11 @@
 
 #pragma once
 
+#include <cuspatial/detail/utility/device_atomics.cuh>
+#include <cuspatial/detail/utility/linestring.cuh>
+#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/utility/device_atomics.cuh>
-#include <cuspatial/utility/geometry_utility.cuh>
-#include <cuspatial/utility/traits.hpp>
-#include <cuspatial/utility/vec_2d.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
@@ -152,15 +152,13 @@ void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
                               typename std::iterator_traits<OutputIt>::value_type>(),
     "Inputs and output must have floating point value type.");
 
-  static_assert(detail::is_same<T,
-                                typename std::iterator_traits<Cart2dItB>::value_type::value_type,
-                                typename std::iterator_traits<OutputIt>::value_type>(),
+  static_assert(detail::is_same<T, typename std::iterator_traits<OutputIt>::value_type>(),
                 "Inputs and output must have the same value type.");
 
   static_assert(detail::is_same<cartesian_2d<T>,
                                 typename std::iterator_traits<Cart2dItA>::value_type,
                                 typename std::iterator_traits<Cart2dItB>::value_type>(),
-                "Inputs must be cuspatial::cartesian_2d");
+                "All input types must be cuspatial::cartesian_2d with the same value type");
 
   auto const num_linestring_pairs =
     thrust::distance(linestring1_offsets_first, linestring1_offsets_last);
