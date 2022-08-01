@@ -20,7 +20,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/point_linestring_distance.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
-#include <cuspatial/utility/vec_2d.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
 
@@ -158,7 +158,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, ManyPairsFromIterators)
   expect_vector_equivalent(expect, hgot);
 }
 
-TYPED_TEST(PairwisePointLinestringDistanceTest, FiftyPairsFromSeparateArrayCompareWithShapely)
+TYPED_TEST(PairwisePointLinestringDistanceTest, FiftyPairsCompareWithShapely)
 {
   using T       = TypeParam;
   using CartVec = std::vector<cartesian_2d<T>>;
