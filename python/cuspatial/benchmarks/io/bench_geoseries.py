@@ -2,9 +2,7 @@
 
 """Benchmarks of GeoSeries methods."""
 
-import pytest
-from config import cuspatial, cupy
-from utils import benchmark_with_object
+from config import cuspatial
 
 
 def bench_from_geoseries_100(benchmark, gpdf_100):
