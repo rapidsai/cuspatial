@@ -2,7 +2,7 @@
 
 """Benchmarks of GeoSeries methods."""
 
-from config import cuspatial
+import cuspatial
 
 
 def bench_from_geoseries_100(benchmark, gpdf_100):
