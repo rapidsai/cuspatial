@@ -15,7 +15,10 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/point_in_polygon.hpp>
 #include <cuspatial/shapefile_reader.hpp>
+
+#include <rmm/device_vector.hpp>
 
 #include <cudf_test/base_fixture.hpp>
 #include <cudf_test/column_utilities.hpp>
@@ -72,7 +75,7 @@ TEST_F(PolygonShapefileReaderTest, ZeroPolygons) { test("empty_poly.shp", {}, {}
 
 TEST_F(PolygonShapefileReaderTest, OnePolygon)
 {
-  test("one_poly.shp", {0}, {0}, {-10, 5, 5, -10, -10}, {-10, -10, 5, 5, -10});
+  test("one_poly.shp", {0}, {0}, {-10, -10, 5, 5, -10}, {-10, 5, 5, -10, -10});
 }
 
 TEST_F(PolygonShapefileReaderTest, TwoPolygons)
@@ -80,6 +83,29 @@ TEST_F(PolygonShapefileReaderTest, TwoPolygons)
   test("two_polys.shp",
        {0, 1},
        {0, 5},
-       {-10, 5, 5, -10, -10, 0, 10, 10, 0, 0},
-       {-10, -10, 5, 5, -10, 0, 0, 10, 10, 0});
+       {-10, -10, 5, 5, -10, 0, 0, 10, 10, 0},
+       {-10, 5, 5, -10, -10, 0, 10, 10, 0, 0});
+}
+
+TEST_F(PolygonShapefileReaderTest, OnePointInPolygon)
+{
+  auto shape_filename  = get_shapefile_path("one_poly.shp");
+  auto polygon_columns = cuspatial::read_polygon_shapefile(shape_filename);
+
+  auto polygons = polygon_columns.at(0)->view();
+  auto rings = polygon_columns.at(1)->view();
+  auto xs = polygon_columns.at(2)->view();
+  auto ys = polygon_columns.at(3)->view();
+  fixed_width_column_wrapper<double> test_xs({0.0});
+  fixed_width_column_wrapper<double> test_ys({0.0});
+  fixed_width_column_wrapper<int32_t> expected({true});
+
+  auto ret = cuspatial::point_in_polygon(test_xs,
+                                         test_ys,
+                                         polygons, 
+                                         rings,
+                                         xs,
+                                         ys);
+
+  expect_columns_equivalent(ret->view(), expected);
 }
