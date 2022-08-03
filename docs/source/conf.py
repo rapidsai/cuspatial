@@ -42,7 +42,7 @@ extensions = [
     "IPython.sphinxext.ipython_console_highlighting",
     "IPython.sphinxext.ipython_directive",
     "nbsphinx",
-    "recommonmark",
+    "myst_parser"
 ]
 
 ipython_mplbackend = "str"
