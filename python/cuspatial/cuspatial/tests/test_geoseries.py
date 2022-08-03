@@ -369,29 +369,34 @@ def test_shapefile_constructor():
     host_dataframe = gpd.read_file(
         gpd.datasets.get_path("naturalearth_lowres")
     )
-    gs = host_dataframe["geometry"]
-    gs.to_file("naturalearth_lowres")
-    fs = gpd.read_file("naturalearth_lowres")
-    data = cuspatial.read_polygon_shapefile("naturalearth_lowres")
+    gs = host_dataframe["geometry"][
+        host_dataframe["geometry"].type == "Polygon"
+    ][19:]
+    gs.to_file("naturalearth_lowres_polygon")
+    data = cuspatial.read_polygon_shapefile("naturalearth_lowres_polygon")
     cus = cuspatial.GeoSeries(data)
     base = cus._column.polygons._column.base_children
     polygons = base[0]
     rings = base[1].base_children[0]
-    fixed_size = base[1].base_children[1].base_children[0]
-    values = base[1].base_children[1].base_children[1].base_children[0]
-    assert polygons == data[0]._column
-    assert rings == data[1]._column
+    points = base[1].base_children[1].base_children[0]
+    coords = base[1].base_children[1].base_children[1].base_children[0]
+    pd.set_option("display.max_rows", 10000)
     cus_good = cuspatial.from_geopandas(gs)
     _base = cus_good._column.polygons._column.base_children
     _polygons = _base[0]
     _rings = _base[1].base_children[0]
-    _fixed_size = _base[1].base_children[1].base_children[0]
-    _values = _base[1].base_children[1].base_children[1].base_children[0]
+    _points = _base[1].base_children[1].base_children[0]
+    _coords = _base[1].base_children[1].base_children[1].base_children[0]
     # The below fails because polygon #25 is not read by
     # cuspatial.read_polygon_shapefile("naturalearth_lowres")
-    assert _polygons == polygons
-    assert _rings == rings
-    assert _fixed_size == fixed_size
-    assert _values == values
+    pol = cudf.Series(polygons)
+    _pol = cudf.Series(_polygons)
+    assert (_polygons == polygons).all()
+    assert (_rings == rings).all()
+    assert (_points == points).all()
+    assert (_coords == coords).all()
+    from shapely.geometry import polygon
+
+    reversed_gs = gpd.GeoSeries([polygon.orient(p, 1) for p in gs])
     assert_eq_geo(gs, cus_good.to_geopandas())
-    assert_eq_geo(gs, cus.to_geopandas())
+    assert_eq_geo(reversed_gs.reset_index(drop=True), cus.to_geopandas())

@@ -52,12 +52,6 @@ class GeoSeries(cudf.Series):
         name=None,
         nan_as_null=True,
     ):
-        # Condition index
-        if isinstance(data, (gpGeoSeries, GeoSeries)):
-            if index is None:
-                index = data.index
-        if index is None:
-            index = cudf.RangeIndex(0, len(data))
         # Condition data
         if isinstance(data, pd.Series):
             data = gpGeoSeries(data)
@@ -75,6 +69,9 @@ class GeoSeries(cudf.Series):
         elif isinstance(data, Tuple):
             # This must be a Polygon Tuple returned by
             # cuspatial.read_polygon_shapefile
+            # TODO: If an index is passed in, it needs to be reflected
+            # in the column, because otherwise .iloc indexing will ignore
+            # it.
             column = GeoColumn(
                 data,
                 GeoMeta(
@@ -92,10 +89,17 @@ class GeoSeries(cudf.Series):
                 ),
                 from_read_polygon_shapefile=True,
             )
+
         else:
             raise TypeError(
                 f"Incompatible object passed to GeoSeries ctor {type(data)}"
             )
+        # Condition index
+        if isinstance(data, (gpGeoSeries, GeoSeries)):
+            if index is None:
+                index = data.index
+        if index is None:
+            index = cudf.RangeIndex(0, len(column))
         super().__init__(column, index, dtype, name, nan_as_null)
 
     @property
@@ -281,7 +285,7 @@ class GeoSeries(cudf.Series):
         """
         if nullable is True:
             raise ValueError("GeoSeries doesn't support <NA> yet")
-        final_union_slice = self[0 : len(self)]
+        final_union_slice = self.iloc[0 : len(self._column)]
         return gpGeoSeries(
             final_union_slice.to_shapely(),
             index=self.index.to_pandas(),

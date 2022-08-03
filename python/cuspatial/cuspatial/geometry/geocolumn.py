@@ -34,36 +34,58 @@ class GeoColumn(ColumnBase):
         from_read_polygon_shapefile=False,
     ):
         if from_read_polygon_shapefile:
-            polygons = data[0].astype("int32")
-            rings = data[1].astype("int32")
+            polygons_col = data[0].astype("int32")
+            rings_col = data[1].astype("int32")
             coordinates = (
                 data[2].stack().astype("float64").reset_index(drop=True)
             )
-            coordinate_offsets = cudf.Series(
-                cp.arange(len(coordinates)), dtype="int32"
-            )
+            coordinate_offsets = cudf.concat(
+                [
+                    cudf.Series(
+                        cp.arange(len(coordinates) // 2) * 2, dtype="int32"
+                    ),
+                    cudf.Series([len(coordinates) // 2 * 2], dtype="int32"),
+                ]
+            ).reset_index(drop=True)
+            point_offsets = cudf.concat(
+                [
+                    cudf.Series(
+                        cp.arange(len(coordinates) // 2), dtype="int32"
+                    ),
+                    cudf.Series([len(coordinates) // 2 - 1], dtype="int32"),
+                ]
+            ).reset_index(drop=True)
+            rings_offsets = cudf.concat(
+                [
+                    cudf.Series(rings_col),
+                    cudf.Series([len(point_offsets) - 1], dtype="int32"),
+                ]
+            ).reset_index(drop=True)
+            polygons_offsets = cudf.concat(
+                [
+                    cudf.Series(polygons_col),
+                    cudf.Series([len(polygons_col)], dtype="int32"),
+                ]
+            ).reset_index(drop=True)
             coords = cudf.core.column.ListColumn(
                 size=len(coordinate_offsets) - 1,
                 dtype=cudf.ListDtype(coordinates.dtype),
                 children=(coordinate_offsets._column, coordinates._column),
             )
-            point_offsets = cudf.Series(
-                cp.arange(len(coordinates) // 2) * 2, dtype="int32"
-            )
             points = cudf.core.column.ListColumn(
-                size=len(point_offsets) - 1,
+                size=len(rings_offsets) - 1,
                 dtype=cudf.ListDtype(coords.dtype),
-                children=(point_offsets._column, coords),
+                children=(rings_offsets._column, coords),
             )
-            child = cudf.core.column.ListColumn(
-                size=len(rings) - 1,
+            rings = cudf.core.column.ListColumn(
+                size=len(polygons_offsets) - 1,
                 dtype=cudf.ListDtype(points.dtype),
-                children=(rings._column, points),
+                children=(polygons_offsets._column, points),
             )
             parent = cudf.core.column.ListColumn(
-                size=len(polygons) - 2,
-                dtype=cudf.ListDtype(child.dtype),
-                children=(polygons._column, child),
+                size=len(polygons_offsets) - 1,
+                dtype=cudf.ListDtype(rings.dtype),
+                children=(polygons_offsets._column, rings),
             )
             self.points = cudf.Series([])
             self.points.name = "points"
@@ -74,6 +96,7 @@ class GeoColumn(ColumnBase):
             self.polygons = cudf.Series(parent)
             self.polygons.name = "polygons"
             self._meta = meta
+
         elif (
             isinstance(data[0], cudf.Series)
             and isinstance(data[1], cudf.Series)
