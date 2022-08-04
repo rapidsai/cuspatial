@@ -358,45 +358,36 @@ def test_loc(gs):
 
 
 def test_shapefile_constructor():
-    # Restarting this test above using our existing shapefile data
-    # that has been used previously, successfully, for demos.
-    # host_dataframe = gpd.read_file("its_4326_roi")
-    # gs = host_dataframe["geometry"]
-    # data = cuspatial.read_polygon_shapefile("its_4326_roi")
-    # host_dataframe = gpd.read_file("NYC_boroughs")
-    # gs = host_dataframe["geometry"]
-    # data = cuspatial.read_polygon_shapefile("NYC_boroughs")
     host_dataframe = gpd.read_file(
         gpd.datasets.get_path("naturalearth_lowres")
     )
+    # Shapefile reader only works with Polygons so we drop
+    # all the MultiPolygons by slicing the first 19 out.
     gs = host_dataframe["geometry"][
         host_dataframe["geometry"].type == "Polygon"
     ][19:]
     gs.to_file("naturalearth_lowres_polygon")
     data = cuspatial.read_polygon_shapefile("naturalearth_lowres_polygon")
     cus = cuspatial.GeoSeries(data)
-    base = cus._column.polygons._column.base_children
-    polygons = base[0]
-    rings = base[1].base_children[0]
-    points = base[1].base_children[1].base_children[0]
-    coords = base[1].base_children[1].base_children[1].base_children[0]
-    pd.set_option("display.max_rows", 10000)
-    cus_good = cuspatial.from_geopandas(gs)
-    _base = cus_good._column.polygons._column.base_children
-    _polygons = _base[0]
-    _rings = _base[1].base_children[0]
-    _points = _base[1].base_children[1].base_children[0]
-    _coords = _base[1].base_children[1].base_children[1].base_children[0]
-    # The below fails because polygon #25 is not read by
-    # cuspatial.read_polygon_shapefile("naturalearth_lowres")
-    pol = cudf.Series(polygons)
-    _pol = cudf.Series(_polygons)
-    assert (_polygons == polygons).all()
-    assert (_rings == rings).all()
-    assert (_points == points).all()
-    assert (_coords == coords).all()
+    assert_eq_geo(gs.reset_index(drop=True), cus.to_geopandas())
+
+
+def test_shapefile_constructor():
+    host_dataframe = gpd.read_file(
+        gpd.datasets.get_path("naturalearth_lowres")
+    )
+    # Shapefile reader only works with Polygons so we drop
+    # all the MultiPolygons by slicing the first 19 out.
+    gs = host_dataframe["geometry"][
+        host_dataframe["geometry"].type == "Polygon"
+    ][19:]
+    gs.to_file("naturalearth_lowres_polygon")
+    data = cuspatial.read_polygon_shapefile(
+        "naturalearth_lowres_polygon", reversed=True
+    )
+    cus = cuspatial.GeoSeries(data)
+
     from shapely.geometry import polygon
 
     reversed_gs = gpd.GeoSeries([polygon.orient(p, 1) for p in gs])
-    assert_eq_geo(gs, cus_good.to_geopandas())
-    assert_eq_geo(reversed_gs.reset_index(drop=True), cus.to_geopandas())
+    assert_eq_geo(reversed_gs, cus.to_geopandas())

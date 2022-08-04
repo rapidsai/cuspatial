@@ -12,11 +12,11 @@ from cuspatial._lib.cpp.shapefile_reader cimport (
 )
 
 
-cpdef read_polygon_shapefile(object filepath):
+cpdef read_polygon_shapefile(object filepath, bint reversed):
     cdef string c_string = str(filepath).encode()
     cdef vector[unique_ptr[column]] c_result
     with nogil:
-        c_result = move(cpp_read_polygon_shapefile(c_string))
+        c_result = move(cpp_read_polygon_shapefile(c_string, reversed))
     return (
         Column.from_unique_ptr(move(c_result[0])),
         Column.from_unique_ptr(move(c_result[1])),

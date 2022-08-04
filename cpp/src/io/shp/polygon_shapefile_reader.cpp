@@ -26,15 +26,25 @@
 
 namespace {
 
+bool _reverse_winding = false;
+
 cudf::size_type read_ring(OGRLinearRing const& ring,
                           std::vector<double>& xs,
                           std::vector<double>& ys)
 {
   cudf::size_type num_vertices = ring.getNumPoints();
 
-  for (cudf::size_type i = 0; i < num_vertices; ++i) {
-    xs.push_back(ring.getX(i));
-    ys.push_back(ring.getY(i));
+  if (_reverse_winding == true) {
+    for (cudf::size_type i = num_vertices; i >= 0; --i) {
+      xs.push_back(ring.getX(i));
+      ys.push_back(ring.getY(i));
+    }
+  }
+  else {
+    for (cudf::size_type i = 0; i < num_vertices; ++i) {
+      xs.push_back(ring.getX(i));
+      ys.push_back(ring.getY(i));
+    }
   }
 
   return num_vertices;
@@ -123,7 +133,7 @@ std::tuple<std::vector<cudf::size_type>,
            std::vector<cudf::size_type>,
            std::vector<double>,
            std::vector<double>>
-read_polygon_shapefile(std::string const& filename)
+read_polygon_shapefile(std::string const& filename, const bool reversed = false)
 {
   GDALAllRegister();
 
@@ -140,6 +150,7 @@ read_polygon_shapefile(std::string const& filename)
   std::vector<double> xs;
   std::vector<double> ys;
 
+  _reverse_winding = reversed;
   read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys);
 
   feature_lengths.shrink_to_fit();
