@@ -11,4 +11,4 @@ cdef extern from "cuspatial/shapefile_reader.hpp" namespace "cuspatial" nogil:
     cdef vector[unique_ptr[column]] \
         read_polygon_shapefile(
             const string filename, const bint reversed
-        ) except +
+    ) except +
