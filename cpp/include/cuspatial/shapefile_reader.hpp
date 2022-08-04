@@ -46,7 +46,7 @@ namespace cuspatial {
  **/
 std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
   std::string const& filename,
-  const bool reversed = false,
+  const bool reversed                 = false,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**

@@ -39,8 +39,7 @@ cudf::size_type read_ring(OGRLinearRing const& ring,
       xs.push_back(ring.getX(i));
       ys.push_back(ring.getY(i));
     }
-  }
-  else {
+  } else {
     for (cudf::size_type i = 0; i < num_vertices; ++i) {
       xs.push_back(ring.getX(i));
       ys.push_back(ring.getY(i));

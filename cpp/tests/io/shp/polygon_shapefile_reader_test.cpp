@@ -93,19 +93,14 @@ TEST_F(PolygonShapefileReaderTest, OnePointInPolygon)
   auto polygon_columns = cuspatial::read_polygon_shapefile(shape_filename);
 
   auto polygons = polygon_columns.at(0)->view();
-  auto rings = polygon_columns.at(1)->view();
-  auto xs = polygon_columns.at(2)->view();
-  auto ys = polygon_columns.at(3)->view();
+  auto rings    = polygon_columns.at(1)->view();
+  auto xs       = polygon_columns.at(2)->view();
+  auto ys       = polygon_columns.at(3)->view();
   fixed_width_column_wrapper<double> test_xs({0.0});
   fixed_width_column_wrapper<double> test_ys({0.0});
   fixed_width_column_wrapper<int32_t> expected({true});
 
-  auto ret = cuspatial::point_in_polygon(test_xs,
-                                         test_ys,
-                                         polygons, 
-                                         rings,
-                                         xs,
-                                         ys);
+  auto ret = cuspatial::point_in_polygon(test_xs, test_ys, polygons, rings, xs, ys);
 
   expect_columns_equivalent(ret->view(), expected);
 }
