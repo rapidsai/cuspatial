@@ -372,7 +372,7 @@ def test_shapefile_constructor():
     assert_eq_geo(gs.reset_index(drop=True), cus.to_geopandas())
 
 
-def test_shapefile_constructor():
+def test_shapefile_constructor_reversed():
     host_dataframe = gpd.read_file(
         gpd.datasets.get_path("naturalearth_lowres")
     )
