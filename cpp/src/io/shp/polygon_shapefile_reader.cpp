@@ -33,7 +33,8 @@ cudf::size_type read_ring(OGRLinearRing const& ring,
                           std::vector<double>& ys)
 {
   cudf::size_type num_vertices = ring.getNumPoints();
-
+  xs.reserve(num_vertices);
+  ys.reserve(num_vertices);
   if (_reverse_winding == true) {
     for (cudf::size_type i = num_vertices - 1; i >= 0; --i) {
       xs.push_back(ring.getX(i));
