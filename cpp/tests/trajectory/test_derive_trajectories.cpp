@@ -119,6 +119,3 @@ TEST_F(DeriveTrajectoriesTest, DerivesThreeTrajectories)
     *results.second,
     cudf::test::fixed_width_column_wrapper<int32_t>{0, 2 * id.size() / 3, 5 * id.size() / 6});
 }
-
-// Test only column-API-specifics
-// Add header-only API tests.
