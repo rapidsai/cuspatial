@@ -96,7 +96,7 @@ ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST
     trajectory/test_trajectory_distances_and_speeds.cu)
 
 ConfigureTest(DERIVE_TRAJECTORIES_TEST
-    trajectory/test_derive_trajectories.cu)
+    trajectory/test_derive_trajectories.cpp)
 
 ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST
     trajectory/test_trajectory_bounding_boxes.cu)
