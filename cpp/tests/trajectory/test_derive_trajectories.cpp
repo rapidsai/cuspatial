@@ -18,6 +18,7 @@
 #include "trajectory_utilities.cuh"
 
 #include <cudf/types.hpp>
+#include <cudf/wrappers/timestamps.hpp>
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/table_utilities.hpp>
 
@@ -104,6 +105,16 @@ TEST_F(DeriveTrajectoriesTest, Nulls)
     EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
+}
+
+TEST_F(DeriveTrajectoriesTest, Empty)
+{
+  auto id      = cudf::test::fixed_width_column_wrapper<int32_t>();
+  auto xs      = cudf::test::fixed_width_column_wrapper<double>();
+  auto ys      = cudf::test::fixed_width_column_wrapper<double>();
+  auto ts      = cudf::test::fixed_width_column_wrapper<cudf::timestamp_ms>();
+  auto results = cuspatial::derive_trajectories(id, xs, ys, ts, this->mr());
+  EXPECT_EQ(results.first->num_rows(), 0);
 }
 
 TEST_F(DeriveTrajectoriesTest, DerivesThreeTrajectories)
