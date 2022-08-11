@@ -21,10 +21,14 @@
 #include <rmm/device_vector.hpp>
 
 #include <thrust/host_vector.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include <iterator>
 
 template <typename T>
 struct HausdorffTest : public ::testing::Test {
