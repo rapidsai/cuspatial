@@ -71,26 +71,26 @@ void __global__ pairwise_point_linestring_distance(Cart2dItA points_first,
                                                    Cart2dItB linestring_points_last,
                                                    OutputIterator distances)
 {
-  using T = typename std::iterator_traits<Cart2dItA>::value_type::value_type;
+  using T = typename iterator_vec_base_type<Cart2dItA>;
 
-  auto const idx = threadIdx.x + blockIdx.x * blockDim.x;
-  // Pointer to the last point in linestring array.
-  if (linestring_points_first + idx >= thrust::prev(linestring_points_last)) { return; }
+  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x;
+       idx < std::distance(linestring_points_first, linestring_points_last);
+       idx += gridDim.x * blockDim.x) {
+    auto offsets_iter =
+      thrust::upper_bound(thrust::seq, linestring_offsets_first, linestring_offsets_last, idx);
+    // Pointer to the last point in the linestring.
+    if (*offsets_iter - 1 == idx) { return; }
 
-  auto offsets_iter =
-    thrust::upper_bound(thrust::seq, linestring_offsets_first, linestring_offsets_last, idx);
-  // Pointer to the last point in the linestring.
-  if (*offsets_iter - 1 == idx) { return; }
+    auto point_idx = thrust::distance(linestring_offsets_first, thrust::prev(offsets_iter));
+    cartesian_2d<T> const a = linestring_points_first[idx];
+    cartesian_2d<T> const b = linestring_points_first[idx + 1];
+    cartesian_2d<T> const c = points_first[point_idx];
 
-  auto pair_idx = thrust::distance(linestring_offsets_first, thrust::prev(offsets_iter));
-  cartesian_2d<T> const a  = linestring_points_first[idx];
-  cartesian_2d<T> const b  = linestring_points_first[idx + 1];
-  cartesian_2d<T> const c  = points_first[pair_idx];
+    auto const distance_squared = point_to_segment_distance_squared(c, a, b);
 
-  auto const distance_squared = point_to_segment_distance_squared(c, a, b);
-
-  atomicMin(&thrust::raw_reference_cast(*(distances + pair_idx)),
-            static_cast<T>(std::sqrt(distance_squared)));
+    atomicMin(&thrust::raw_reference_cast(*(distances + point_idx)),
+              static_cast<T>(std::sqrt(distance_squared)));
+  }
 }
 
 }  // namespace detail
@@ -104,22 +104,16 @@ void pairwise_point_linestring_distance(Cart2dItA points_first,
                                         OutputIt distances_first,
                                         rmm::cuda_stream_view stream)
 {
-  using T = typename std::iterator_traits<Cart2dItA>::value_type::value_type;
+  using T = typename iterator_vec_base_type<Cart2dItA>;
 
-  static_assert(
-    detail::is_floating_point<T,
-                              typename std::iterator_traits<Cart2dItB>::value_type::value_type,
-                              typename std::iterator_traits<OutputIt>::value_type>(),
-    "Inputs and output must have floating point value type.");
-
-  static_assert(detail::is_same<T,
-                                typename std::iterator_traits<Cart2dItB>::value_type::value_type,
-                                typename std::iterator_traits<OutputIt>::value_type>(),
-                "Inputs and output must have the same value type.");
+  static_assert(detail::is_same_floating_point < T,
+                iterator_vec_base_type<Cart2dItB>,
+                iterator_value_type<OutputIt>,
+                "Inputs and output must have same floating point value type.");
 
   static_assert(detail::is_same<cartesian_2d<T>,
-                                typename std::iterator_traits<Cart2dItA>::value_type,
-                                typename std::iterator_traits<Cart2dItB>::value_type>(),
+                                iterator_value_type<Cart2dItA>,
+                                iterator_value_type<Cart2dItB>>(),
                 "Inputs must be cuspatial::cartesian_2d");
 
   auto const num_pairs = thrust::distance(points_first, points_last);
@@ -129,10 +123,8 @@ void pairwise_point_linestring_distance(Cart2dItA points_first,
   auto const num_linestring_points =
     thrust::distance(linestring_points_first, linestring_points_last);
 
-  thrust::fill(rmm::exec_policy(stream),
-               distances_first,
-               distances_first + num_pairs,
-               std::numeric_limits<T>::max());
+  thrust::fill_n(
+    rmm::exec_policy(stream), distances_first, num_pairs, std::numeric_limits<T>::max());
 
   std::size_t constexpr threads_per_block = 64;
   std::size_t const num_blocks =

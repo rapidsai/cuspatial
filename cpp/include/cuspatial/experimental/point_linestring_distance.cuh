@@ -23,24 +23,26 @@ namespace cuspatial {
 /**
  * @copybrief cuspatial::pairwise_point_linestring_distance
  *
- * @tparam Cart2dItA iterator type for point array of the first linestring of each pair. Must meet
+ * The number of distances computed is `std::distance(points_first, points_last)`.
+ *
+ * @tparam Cart2dItA iterator type for point array of the point element of each pair. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam Cart2dItB iterator type for point array of the second linestring of each pair. Must meet
+ * @tparam Cart2dItB iterator type for point array of the linestring element of each pair. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OffsetIterator iterator type for offset array. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt iterator type for output array. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  *
- * @param points_first beginning of range of the point of the first linestring of each
+ * @param points_first beginning of the range of points making up the first element of each
  * pair
- * @param points_last end of range of the point of the first linestring of each pair
- * @param linestring_offsets_first beginning of range of the offsets to the linestring of
- * each pair
- * @param linestring_points_first beginning of range of the point of the second linestring of each
+ * @param points_last end of the range of the points making up the first element of each pair
+ * @param linestring_offsets_first beginning of the range of the offsets to the linestring element
+ * of each pair
+ * @param linestring_points_first beginning of the range of points of the linestring element of each
  * pair
- * @param linestring_points_last end of range of the point of the second linestring of each pair
- * @param distances_first beginning iterator to output
+ * @param linestring_points_last end of the range of points of the linestring element of each pair
+ * @param distances_first beginning the output range of distances
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
  *
  * @pre all input iterators for coordinates must have `cuspatial::cartesian_2d` type.
