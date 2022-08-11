@@ -21,6 +21,7 @@
 namespace cuspatial {
 
 /**
+ * @ingroup distance
  * @copybrief cuspatial::pairwise_point_linestring_distance
  *
  * The number of distances computed is `std::distance(points_first, points_last)`.
