@@ -73,8 +73,9 @@ struct dispatch_construct_quadtree {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
-    auto pair = construct_quadtree(cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>()),
-                                   cuspatial::make_vec_2d_iterator(x.end<T>(), y.end<T>()),
+    auto points = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
+    auto pair   = construct_quadtree(points,
+                                   points + x.size(),
                                    x_min,
                                    x_max,
                                    y_min,
@@ -85,12 +86,11 @@ struct dispatch_construct_quadtree {
                                    mr,
                                    stream);
 
-    auto& idxs = pair.first;
+    auto point_indices = std::make_unique<cudf::column>(
+      cudf::data_type{cudf::type_id::UINT32}, x.size(), pair.first.release());
+
     auto& tree = pair.second;
     auto size  = static_cast<cudf::size_type>(tree.key.size());
-
-    auto keys_map = std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::UINT32}, idxs.size(), idxs.release());
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.push_back(std::make_unique<cudf::column>(
@@ -104,7 +104,7 @@ struct dispatch_construct_quadtree {
     cols.push_back(std::make_unique<cudf::column>(
       cudf::data_type{cudf::type_id::UINT32}, size, tree.offset.release()));
 
-    return std::make_pair(std::move(keys_map), std::make_unique<cudf::table>(std::move(cols)));
+    return std::make_pair(std::move(point_indices), std::make_unique<cudf::table>(std::move(cols)));
   }
 };
 

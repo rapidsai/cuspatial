@@ -71,18 +71,21 @@ struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
                                               min_size,
                                               mr());
 
-    auto& quadtree  = pair.second;
-    auto& key_d     = quadtree.key;
-    auto& level_d   = quadtree.level;
-    auto& is_quad_d = quadtree.is_quad;
-    auto& length_d  = quadtree.length;
-    auto& offset_d  = quadtree.offset;
+    auto& point_indices = pair.first;
+    EXPECT_EQ(point_indices.size(), points.size());
 
-    CUSPATIAL_EXPECTS(key_d.size() == expected_key.size(), "key sizes must match");
-    CUSPATIAL_EXPECTS(level_d.size() == expected_level.size(), "level sizes must match");
-    CUSPATIAL_EXPECTS(is_quad_d.size() == expected_is_quad.size(), "is_quad sizes must match");
-    CUSPATIAL_EXPECTS(length_d.size() == expected_length.size(), "length sizes must match");
-    CUSPATIAL_EXPECTS(offset_d.size() == expected_offset.size(), "offset sizes must match");
+    auto& tree      = pair.second;
+    auto& key_d     = tree.key;
+    auto& level_d   = tree.level;
+    auto& is_quad_d = tree.is_quad;
+    auto& length_d  = tree.length;
+    auto& offset_d  = tree.offset;
+
+    EXPECT_EQ(key_d.size(), expected_key.size());
+    EXPECT_EQ(level_d.size(), expected_level.size());
+    EXPECT_EQ(is_quad_d.size(), expected_is_quad.size());
+    EXPECT_EQ(length_d.size(), expected_length.size());
+    EXPECT_EQ(offset_d.size(), expected_offset.size());
 
     auto key_h     = device_uvector_to_host<uint32_t>(key_d);
     auto level_h   = device_uvector_to_host<uint8_t>(level_d);
