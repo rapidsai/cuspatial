@@ -39,11 +39,10 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "numpydoc",
-    "sphinx_markdown_tables",
     "IPython.sphinxext.ipython_console_highlighting",
     "IPython.sphinxext.ipython_directive",
     "nbsphinx",
-    "recommonmark",
+    "myst_parser"
 ]
 
 ipython_mplbackend = "str"
@@ -79,7 +78,7 @@ release = '22.10.00'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en-US"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -197,4 +196,5 @@ nbsphinx_allow_errors = True
 
 
 def setup(app):
-    app.add_css_file("params.css")
+    app.add_css_file("https://docs.rapids.ai/assets/css/custom.css")
+    app.add_js_file("https://docs.rapids.ai/assets/js/custom.js", loading_method="defer")

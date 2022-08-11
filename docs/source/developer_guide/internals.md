@@ -1,5 +1,4 @@
-Internals
----------
+# Internals
 
 This page includes information to help users understand the internal
 data structure of cuspatial.
