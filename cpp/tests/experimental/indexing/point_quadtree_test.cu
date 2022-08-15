@@ -29,14 +29,13 @@ namespace {
 template <typename T>
 std::vector<T> inline device_uvector_to_host(rmm::device_uvector<T> const& uvec)
 {
-  thrust::device_vector<T> dvec(uvec.size());
-  thrust::fill(dvec.begin(), dvec.end(), T{0});
-  thrust::copy(rmm::exec_policy(uvec.stream()), uvec.begin(), uvec.end(), dvec.begin());
-
-  std::vector<T> hvec(dvec.size());
-  std::fill(hvec.begin(), hvec.end(), T{0});
-  thrust::copy(dvec.begin(), dvec.end(), hvec.begin());
-
+  std::vector<T> hvec(uvec.size());
+  cudaMemcpyAsync(hvec.data(),
+                  uvec.data(),
+                  uvec.size() * sizeof(T),
+                  cudaMemcpyKind::cudaMemcpyDeviceToHost,
+                  uvec.stream());
+  uvec.stream().synchronize();
   return hvec;
 }
 
