@@ -1,5 +1,5 @@
 from ._version import get_versions
-from .core import interpolate
+from .core.trajectory import interpolate
 from .core.gis import (
     directed_hausdorff_distance,
     haversine_distance,
@@ -10,7 +10,7 @@ from .core.gis import (
     pairwise_linestring_distance,
 )
 from .core.indexing import quadtree_on_points
-from .core.interpolate import CubicSpline
+from .core.trajectory import CubicSpline
 from .core.spatial_join import (
     join_quadtree_and_bounding_boxes,
     quadtree_point_in_polygon,
