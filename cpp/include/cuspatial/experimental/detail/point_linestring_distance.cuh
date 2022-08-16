@@ -126,7 +126,7 @@ void pairwise_point_linestring_distance(Cart2dItA points_first,
   thrust::fill_n(
     rmm::exec_policy(stream), distances_first, num_pairs, std::numeric_limits<T>::max());
 
-  std::size_t constexpr threads_per_block = 64;
+  std::size_t constexpr threads_per_block = 256;
   std::size_t const num_blocks =
     (num_linestring_points + threads_per_block - 1) / threads_per_block;
 
