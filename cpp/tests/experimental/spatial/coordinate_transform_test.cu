@@ -21,6 +21,8 @@
 
 #include <gtest/gtest.h>
 
+#include <thrust/iterator/transform_iterator.h>
+
 template <typename T>
 struct LonLatToCartesianTest : public ::testing::Test {
 };
