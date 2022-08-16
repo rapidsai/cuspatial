@@ -71,7 +71,7 @@ void __global__ pairwise_point_linestring_distance(Cart2dItA points_first,
                                                    Cart2dItB linestring_points_last,
                                                    OutputIterator distances)
 {
-  using T = typename iterator_vec_base_type<Cart2dItA>;
+  using T = iterator_vec_base_type<Cart2dItA>;
 
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x;
        idx < std::distance(linestring_points_first, linestring_points_last);
@@ -104,16 +104,16 @@ void pairwise_point_linestring_distance(Cart2dItA points_first,
                                         OutputIt distances_first,
                                         rmm::cuda_stream_view stream)
 {
-  using T = typename iterator_vec_base_type<Cart2dItA>;
+  using T = detail::iterator_vec_base_type<Cart2dItA>;
 
-  static_assert(detail::is_same_floating_point < T,
-                iterator_vec_base_type<Cart2dItB>,
-                iterator_value_type<OutputIt>,
+  static_assert(detail::is_same_floating_point<T,
+                                               detail::iterator_vec_base_type<Cart2dItB>,
+                                               detail::iterator_value_type<OutputIt>>(),
                 "Inputs and output must have same floating point value type.");
 
   static_assert(detail::is_same<cartesian_2d<T>,
-                                iterator_value_type<Cart2dItA>,
-                                iterator_value_type<Cart2dItB>>(),
+                                detail::iterator_value_type<Cart2dItA>,
+                                detail::iterator_value_type<Cart2dItB>>(),
                 "Inputs must be cuspatial::cartesian_2d");
 
   auto const num_pairs = thrust::distance(points_first, points_last);
