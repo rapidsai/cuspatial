@@ -25,6 +25,7 @@
 
 #include <thrust/copy.h>
 #include <thrust/count.h>
+#include <thrust/iterator/iterator_traits.h>
 
 #include <type_traits>
 
