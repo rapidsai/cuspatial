@@ -10,6 +10,7 @@ from cuspatial._lib.interpolate import (
     cubicspline_interpolate,
 )
 
+
 def _cubic_spline_coefficients(x, y, ids, prefix_sums):
     x_c = x._column
     y_c = y._column
