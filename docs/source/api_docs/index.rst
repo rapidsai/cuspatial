@@ -12,5 +12,6 @@ This page provides a list of all publicly accessible modules, methods and classe
     gis
     spatial_indexing
     trajectory
+    interpolation
     geopandas_compatibility
     io
