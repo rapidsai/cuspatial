@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <thrust/tuple.h>
+
 #include <cuspatial/vec_2d.hpp>
 
 namespace cuspatial {
@@ -40,6 +42,34 @@ endpoint_index_of_linestring(SizeType const& linestring_idx,
 
 /**
  * @internal
+ * @brief Computes shortest distance and nearest point between @p c and segment
+ * ab
+ */
+template <typename T>
+__forceinline__ thrust::tuple<T, vec_2d<T>> __device__
+point_to_segment_distance_squared_nearest_point(vec_2d<T> const& c,
+                                                vec_2d<T> const& a,
+                                                vec_2d<T> const& b)
+{
+  auto ab        = b - a;
+  auto ac        = c - a;
+  auto l_squared = dot(ab, ab);
+  if (l_squared == 0) { return thrust::tuple(dot(ac, ac), a); }
+  auto r  = dot(ac, ab);
+  auto bc = c - b;
+  // If the projection of `c` is outside of segment `ab`, compute point-point distance.
+  if (r <= 0 or r >= l_squared) {
+    auto dac = dot(ac, ac);
+    auto dbc = dot(bc, bc);
+    return dac < dbc ? thrust::tuple(dac, a) : thrust::tuple(dbc, b);
+  }
+  auto p  = a + (r / l_squared) * ab;
+  auto pc = c - p;
+  return thrust::tuple(dot(pc, pc), p);
+}
+
+/**
+ * @internal
  * @brief Computes shortest distance between @p c and segment ab
  */
 template <typename T>
@@ -47,17 +77,8 @@ __forceinline__ T __device__ point_to_segment_distance_squared(vec_2d<T> const& 
                                                                vec_2d<T> const& a,
                                                                vec_2d<T> const& b)
 {
-  auto ab        = b - a;
-  auto ac        = c - a;
-  auto l_squared = dot(ab, ab);
-  if (l_squared == 0) { return dot(ac, ac); }
-  auto r  = dot(ac, ab);
-  auto bc = c - b;
-  // If the projection of `c` is outside of segment `ab`, compute point-point distance.
-  if (r <= 0 or r >= l_squared) { return std::min(dot(ac, ac), dot(bc, bc)); }
-  auto p  = a + (r / l_squared) * ab;
-  auto pc = c - p;
-  return dot(pc, pc);
+  auto tpl = point_to_segment_distance_squared_nearest_point(c, a, b);
+  return thrust::get<0>(tpl);
 }
 
 /**
