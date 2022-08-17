@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include "cuspatial/error.hpp"
 #include "trajectory_utilities.cuh"
+
+#include <cuspatial/error.hpp>
 
 #include <cudf/types.hpp>
 #include <cudf/wrappers/timestamps.hpp>
