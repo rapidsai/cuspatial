@@ -117,6 +117,8 @@ void pairwise_point_linestring_nearest_point(Cart2dItA points_first,
     linestring_points_last,
     nearest_points,
     nearest_point_linestring_idx);
+
+  CUSPATIAL_CUDA_TRY(cudaGetLastError());
 }
 
 }  // namespace cuspatial
