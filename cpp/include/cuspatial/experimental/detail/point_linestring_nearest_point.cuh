@@ -37,29 +37,53 @@ namespace detail {
 
 /**
  * @internal
- * @brief The kernel to compute point to linestring distance
  */
 template <typename Cart2dItA,
           typename Cart2dItB,
           typename OffsetIterator,
-          typename OutputIterator>
+          typename OutputItA,
+          typename OutputItB>
 void __global__
 pairwise_point_linestring_nearest_point_kernel(Cart2dItA points_first,
+                                               Cart2dItA points_last,
                                                OffsetIterator linestring_offsets_first,
-                                               OffsetIterator linestring_offsets_last,
                                                Cart2dItB linestring_points_first,
                                                Cart2dItB linestring_points_last,
-                                               OutputIterator nearest_points_linestring_idx_zipped)
+                                               OutputItA nearest_points,
+                                               OutputItB nearest_linestring_idxes)
 {
-  using T = iterator_vec_base_type<Cart2dItA>;
+  using T       = iterator_vec_base_type<Cart2dItA>;
+  using Integer = std::iterator_traits<OffsetIterator>::value_type;
 
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x;
-       idx < std::distance(linestring_points_first, linestring_points_last);
-       idx += gridDim.x * blockDim.x) {
-    auto offsets_iter =
-      thrust::upper_bound(thrust::seq, linestring_offsets_first, linestring_offsets_last, idx);
-    // Pointer to the last point in the linestring.
-    if (*offsets_iter - 1 == idx) { return; }
+  auto num_pairs             = std::distance(points_first, points_last);
+  auto num_linestring_points = std::distance(linestring_points_first, linestring_points_last);
+  for (auto pair_idx = threadIdx.x + blockIdx.x * blockDim.x; pair_idx < num_pairs;
+       pair_idx += gridDim.x * blockDim.x) {
+    Integer linestring_points_start = linestring_offsets_first[pair_idx];
+    Integer linestring_points_end   = endpoint_index_of_linestring(
+        pair_idx, linestring_offsets_first, num_pairs, num_linestring_points);
+
+    T min_distance_squared = std::numeric_limits<T>::max();
+    vec_2d<T> nearest_point;
+    Integer nearest_linestring_idx;
+    for (auto linestring_point_idx = linestring_points_start;
+         linestring_point_idx < linestring_points_end;
+         linestring_point_idx++) {
+      vec_2d<T> c = points_first[pair_idx];
+      vec_2d<T> a = linestring_points_first[linestring_point_idx];
+      vec_2d<T> b = linestring_points_first[linestring_point_idx + 1];
+
+      auto distance_point_pair = point_to_segment_distance_squared_nearest_point(c, a, b);
+      auto distance_squared    = thrust::get<0>(distance_point_pair);
+      if (distance_squared < min_distance_squared) {
+        min_distance_squared   = distance_squared;
+        nearest_point          = thrust::get<1>(distance_point_pair);
+        nearest_linestring_idx = linestring_point_idx;
+      }
+    }
+
+    nearest_points[pair_idx]           = nearest_point;
+    nearest_linestring_idxes[pair_idx] = nearest_linestring_idx;
   }
 }
 
@@ -76,6 +100,23 @@ void pairwise_point_linestring_nearest_point(Cart2dItA points_first,
                                              rmm::cuda_stream_view stream)
 {
   using T = typename std::iterator_traits<Cart2dItA>::value_type::value_type;
+
+  auto num_pairs = std::distance(points_first, points_last);
+
+  auto constexpr threads_per_block = 256;
+  auto num_blocks                  = (num_pairs + threads_per_block - 1) / threads_per_block;
+
+  detail::pairwise_point_linestring_nearest_point_kernel<<<num_blocks,
+                                                           threads_per_block,
+                                                           0,
+                                                           stream.value()>>>(
+    points_first,
+    points_last,
+    linestring_offsets_first,
+    linestring_points_first,
+    linestring_points_last,
+    nearest_points,
+    nearest_point_linestring_idx);
 }
 
 }  // namespace cuspatial
