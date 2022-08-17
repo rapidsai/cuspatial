@@ -125,3 +125,6 @@ ConfigureTest(POINTS_IN_RANGE_TEST_EXP
 
 ConfigureTest(POINT_IN_POLYGON_TEST_EXP
     experimental/spatial/point_in_polygon_test.cu)
+
+ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP
+    experimental/spatial/derive_trajectories_test.cu)
