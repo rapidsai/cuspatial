@@ -79,7 +79,7 @@ void __global__ pairwise_point_linestring_distance(Cart2dItA points_first,
     auto offsets_iter =
       thrust::upper_bound(thrust::seq, linestring_offsets_first, linestring_offsets_last, idx);
     // Pointer to the last point in the linestring.
-    if (*offsets_iter - 1 == idx) { return; }
+    if (offsets_iter == linestring_offsets_last or *offsets_iter - 1 == idx) { continue; }
 
     auto point_idx = thrust::distance(linestring_offsets_first, thrust::prev(offsets_iter));
     cartesian_2d<T> const a = linestring_points_first[idx];
