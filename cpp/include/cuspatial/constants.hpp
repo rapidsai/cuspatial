@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <math.h>
-
 #pragma once
+
+#include <math.h>
 
 /**
  * @addtogroup cuspatial_constants

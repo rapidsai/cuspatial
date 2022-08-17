@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <cuspatial/distances/linestring_distance.hpp>
+#include <cuspatial/distance/linestring_distance.hpp>
 #include <cuspatial/error.hpp>
 
 #include <cudf_test/base_fixture.hpp>

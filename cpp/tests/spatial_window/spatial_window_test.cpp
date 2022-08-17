@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,49 +30,10 @@
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
 
 template <typename T>
-struct SpatialWindowTest : public cudf::test::BaseFixture {
+struct SpatialRangeTest : public cudf::test::BaseFixture {
 };
 
 using TestTypes = cudf::test::Types<float, double>;
-
-TYPED_TEST_CASE(SpatialWindowTest, TestTypes);
-
-TYPED_TEST(SpatialWindowTest, SimpleTest)
-{
-  using T = TypeParam;
-
-  auto points_x = cudf::test::fixed_width_column_wrapper<T>(
-    {1.0, 2.0, 3.0, 5.0, 7.0, 1.0, 2.0, 3.0, 6.0, 0.0, 3.0, 6.0});
-  auto points_y = cudf::test::fixed_width_column_wrapper<T>(
-    {0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0});
-
-  auto expected_points_x = cudf::test::fixed_width_column_wrapper<T>({3.0, 5.0, 2.0});
-  auto expected_points_y = cudf::test::fixed_width_column_wrapper<T>({2.0, 3.0, 5.0});
-
-  auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y);
-
-  cudf::test::expect_columns_equivalent(result->get_column(0), expected_points_x, verbosity);
-  cudf::test::expect_columns_equivalent(result->get_column(1), expected_points_y, verbosity);
-}
-
-// Test that windows with min/max reversed still work
-TYPED_TEST(SpatialWindowTest, ReversedWindow)
-{
-  using T = TypeParam;
-
-  auto points_x = cudf::test::fixed_width_column_wrapper<T>(
-    {1.0, 2.0, 3.0, 5.0, 7.0, 1.0, 2.0, 3.0, 6.0, 0.0, 3.0, 6.0});
-  auto points_y = cudf::test::fixed_width_column_wrapper<T>(
-    {0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0});
-
-  auto expected_points_x = cudf::test::fixed_width_column_wrapper<T>({3.0, 5.0, 2.0});
-  auto expected_points_y = cudf::test::fixed_width_column_wrapper<T>({2.0, 3.0, 5.0});
-
-  auto result = cuspatial::points_in_spatial_window(5.5, 1.5, 5.5, 1.5, points_x, points_y);
-
-  cudf::test::expect_columns_equivalent(result->get_column(0), expected_points_x, verbosity);
-  cudf::test::expect_columns_equivalent(result->get_column(1), expected_points_y, verbosity);
-}
 
 struct SpatialWindowErrorTest : public cudf::test::BaseFixture {
 };

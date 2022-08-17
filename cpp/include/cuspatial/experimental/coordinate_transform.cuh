@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuspatial/utility/vec_2d.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 
@@ -42,6 +42,10 @@ namespace cuspatial {
  * @tparam OutputIt Iterator over Cartesian output points. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  * @tparam T the floating-point coordinate value type of input longitude/latitude coordinates.
+ *
+ * @pre `lonlat_first` may equal `xy_first`, but the range `[lonlat_first, lonlat_last)`
+ * shall not otherwise overlap the range `[xy_first, xy_first + std::distance(lonlat_first,
+ * lonlat_last))`.
  *
  * @return Output iterator to the element past the last x/y coordinate computed.
  *

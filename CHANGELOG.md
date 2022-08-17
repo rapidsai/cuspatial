@@ -1,3 +1,46 @@
+# cuSpatial 22.08.00 (17 Aug 2022)
+
+## 🚨 Breaking Changes
+
+- Pairwise Point to Point Distance; Rename Folder `distances` to `distance` ([#558](https://github.com/rapidsai/cuspatial/pull/558)) [@isVoid](https://github.com/isVoid)
+
+## 🐛 Bug Fixes
+
+- Fix Broken Link in NYC Taxi Notebook ([#616](https://github.com/rapidsai/cuspatial/pull/616)) [@isVoid](https://github.com/isVoid)
+- Add missing rmm includes ([#590](https://github.com/rapidsai/cuspatial/pull/590)) [@harrism](https://github.com/harrism)
+- Fix failed automerge 22.06 into 22.08 ([#562](https://github.com/rapidsai/cuspatial/pull/562)) [@harrism](https://github.com/harrism)
+- Bump cuspatial python version in scikit-build ([#550](https://github.com/rapidsai/cuspatial/pull/550)) [@isVoid](https://github.com/isVoid)
+
+## 📖 Documentation
+
+- Defer loading of `custom.js` ([#631](https://github.com/rapidsai/cuspatial/pull/631)) [@galipremsagar](https://github.com/galipremsagar)
+- Use documented header template for `doxygen` ([#619](https://github.com/rapidsai/cuspatial/pull/619)) [@galipremsagar](https://github.com/galipremsagar)
+- Fix issues with day &amp; night modes in python docs ([#613](https://github.com/rapidsai/cuspatial/pull/613)) [@isVoid](https://github.com/isVoid)
+
+## 🚀 New Features
+
+- Add NVBench and linestring distance benchmark ([#577](https://github.com/rapidsai/cuspatial/pull/577)) [@isVoid](https://github.com/isVoid)
+- Pairwise Point to Point Distance; Rename Folder `distances` to `distance` ([#558](https://github.com/rapidsai/cuspatial/pull/558)) [@isVoid](https://github.com/isVoid)
+
+## 🛠️ Improvements
+
+- Bump `gdal` version ([#623](https://github.com/rapidsai/cuspatial/pull/623)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Build benchmarks in CI ([#597](https://github.com/rapidsai/cuspatial/pull/597)) [@vyasr](https://github.com/vyasr)
+- Add benchmark for points_in_spatial_window ([#595](https://github.com/rapidsai/cuspatial/pull/595)) [@harrism](https://github.com/harrism)
+- Update isort to version 5.10.1 ([#589](https://github.com/rapidsai/cuspatial/pull/589)) [@vyasr](https://github.com/vyasr)
+- Header-only Refactor of `point_in_polygon` ([#587](https://github.com/rapidsai/cuspatial/pull/587)) [@isVoid](https://github.com/isVoid)
+- Remove GeoArrow glue code replacing gpu storage with cudf.Series and host storage with pyarrow ([#585](https://github.com/rapidsai/cuspatial/pull/585)) [@thomcom](https://github.com/thomcom)
+- Create `pygeoarrow` and use it for cuSpatial feature storage and i/o ([#583](https://github.com/rapidsai/cuspatial/pull/583)) [@thomcom](https://github.com/thomcom)
+- Header-only refactoring of `points_in_spatial_window` ([#579](https://github.com/rapidsai/cuspatial/pull/579)) [@harrism](https://github.com/harrism)
+- Update Python version support. ([#574](https://github.com/rapidsai/cuspatial/pull/574)) [@bdice](https://github.com/bdice)
+- Combine `device_atomics` ([#561](https://github.com/rapidsai/cuspatial/pull/561)) [@isVoid](https://github.com/isVoid)
+- Relocate Utility Files ([#560](https://github.com/rapidsai/cuspatial/pull/560)) [@isVoid](https://github.com/isVoid)
+- Fuse `transform` and `copy_if` operations in `quadtree_point_in_polygon` ([#559](https://github.com/rapidsai/cuspatial/pull/559)) [@trxcllnt](https://github.com/trxcllnt)
+- Remove `itstimestamp` and `types.hpp` ([#554](https://github.com/rapidsai/cuspatial/pull/554)) [@isVoid](https://github.com/isVoid)
+- Change build.sh to find C++ library by default and avoid shadowing CMAKE_ARGS ([#543](https://github.com/rapidsai/cuspatial/pull/543)) [@vyasr](https://github.com/vyasr)
+- Add missing Thrust includes ([#539](https://github.com/rapidsai/cuspatial/pull/539)) [@bdice](https://github.com/bdice)
+- Refactor Hausdorff distance to header-only API ([#538](https://github.com/rapidsai/cuspatial/pull/538)) [@harrism](https://github.com/harrism)
+
 # cuSpatial 22.06.00 (7 Jun 2022)
 
 ## 🐛 Bug Fixes

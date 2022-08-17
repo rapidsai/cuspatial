@@ -1,14 +1,13 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION
+# Copyright (c) 2020-2022, NVIDIA CORPORATION
 
 from geopandas import GeoDataFrame as gpGeoDataFrame
 
 import cudf
 
-from cuspatial.geometry.geoarrowbuffers import GeoArrowBuffers
 from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta
 from cuspatial.geometry.geoseries import GeoSeries
 from cuspatial.geometry.geoutil import is_geometry_type
-from cuspatial.io.geopandas_adapter import GeoPandasAdapter
+from cuspatial.io.geopandas_reader import GeoPandasReader
 
 
 class GeoDataFrame(cudf.DataFrame):
@@ -29,12 +28,9 @@ class GeoDataFrame(cudf.DataFrame):
             self.index = data.index
             for col in data.columns:
                 if is_geometry_type(data[col]):
-                    adapter = GeoPandasAdapter(data[col])
-                    buffers = GeoArrowBuffers(
-                        adapter.get_geoarrow_host_buffers()
-                    )
+                    adapter = GeoPandasReader(data[col])
                     pandas_meta = GeoMeta(adapter.get_geopandas_meta())
-                    column = GeoColumn(buffers, pandas_meta)
+                    column = GeoColumn(adapter._get_geotuple(), pandas_meta)
                     self._data[col] = column
                 else:
                     self._data[col] = data[col]
@@ -83,13 +79,6 @@ class GeoDataFrame(cudf.DataFrame):
     def __repr__(self):
         return self.to_pandas().__repr__() + "\n" + "(GPU)" + "\n"
 
-    def groupby(self, *args, **kwargs):
-        result = super().groupby(*args, **kwargs)
-        for col in self.columns:
-            if is_geometry_type(self[col]):
-                result.obj.drop(col, axis=1, inplace=True)
-        return result
-
     def _copy_type_metadata(self, other, include_index: bool = True):
         """
         Copy type metadata from each column of `other` to the corresponding
@@ -106,7 +95,14 @@ class GeoDataFrame(cudf.DataFrame):
             # NumericalColumn, we're forced to do so manually.
             if isinstance(other_col, GeoColumn):
                 col = GeoColumn(
-                    other_col._geo, other_col._meta, cudf.Index(col)
+                    (
+                        other_col.points,
+                        other_col.mpoints,
+                        other_col.lines,
+                        other_col.polygons,
+                    ),
+                    other_col._meta,
+                    cudf.Index(col),
                 )
 
             self._data.set_by_label(

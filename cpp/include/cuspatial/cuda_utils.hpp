@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,40 +16,8 @@
 
 #pragma once
 
-#include <cstdint>
-
 #ifdef __CUDACC__
 #define CUSPATIAL_HOST_DEVICE __host__ __device__
 #else
 #define CUSPATIAL_HOST_DEVICE
 #endif
-
-namespace cuspatial {
-
-/**
- * @addtogroup types
- * @{
- */
-
-/**
- * @brief A timestamp
- *
- */
-struct its_timestamp {
-  std::uint32_t y   : 6;
-  std::uint32_t m   : 4;
-  std::uint32_t d   : 5;
-  std::uint32_t hh  : 5;
-  std::uint32_t mm  : 6;
-  std::uint32_t ss  : 6;
-  std::uint32_t wd  : 3;
-  std::uint32_t yd  : 9;
-  std::uint32_t ms  : 10;
-  std::uint32_t pid : 10;
-};
-
-/**
- * @} // end of doxygen group
- */
-
-}  // namespace cuspatial

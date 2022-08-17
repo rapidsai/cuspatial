@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #include "detail/intersection.cuh"
 #include "detail/traversal.cuh"
 
+#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/spatial_join.hpp>
 
@@ -29,7 +30,13 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/copy.h>
+#include <thrust/count.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/permutation_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/sort.h>
 
 #include <tuple>
 
@@ -38,12 +45,6 @@ namespace cuspatial {
 namespace detail {
 
 namespace {
-
-template <typename UnaryFunction>
-inline auto make_counting_transform_iterator(cudf::size_type start, UnaryFunction f)
-{
-  return thrust::make_transform_iterator(thrust::make_counting_iterator(start), f);
-}
 
 template <typename T>
 inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view const& quadtree,
@@ -103,10 +104,10 @@ inline std::unique_ptr<cudf::table> join_quadtree_and_bboxes(cudf::table_view co
     find_intersections(quadtree,
                        poly_bbox,
                        // The top-level node indices
-                       make_counting_transform_iterator(
+                       detail::make_counting_transform_iterator(
                          0, [=] __device__(auto i) { return i % num_top_level_leaves; }),
                        // The top-level poly indices
-                       make_counting_transform_iterator(
+                       detail::make_counting_transform_iterator(
                          0, [=] __device__(auto i) { return i / num_top_level_leaves; }),
                        make_current_level_iter(),  // intermediate intersections or parent quadrants
                                                    // found during traversal
