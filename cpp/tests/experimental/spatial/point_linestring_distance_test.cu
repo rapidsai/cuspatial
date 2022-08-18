@@ -128,31 +128,17 @@ struct times_three_functor {
   T __device__ operator()(T i) { return i * 3; }
 };
 
-template <typename Integer>
-struct linestring_offset_functor {
-  Integer num_points_per_linestring;
-  Integer num_linestring_points;
-
-  Integer __device__ operator()(Integer i)
-  {
-    auto offset = i * num_points_per_linestring;
-    return offset < num_linestring_points ? offset : num_linestring_points;
-  }
-};
-
 TYPED_TEST(PairwisePointLinestringDistanceTest, ManyPairsFromIterators)
 {
   using T = TypeParam;
 
-  auto const num_pairs                 = 100;
-  auto const num_points_per_linestring = 3;
-  auto const num_linestring_points     = num_pairs * 3;
+  auto const num_pairs             = 100;
+  auto const num_linestring_points = num_pairs * 3;
 
   auto linestring_points_x = thrust::make_counting_iterator(T{0.0});
   auto linestring_points_y = thrust::make_constant_iterator(T{1.0});
   auto linestring_points   = make_cartesian_2d_iterator(linestring_points_x, linestring_points_y);
-  auto offsets             = detail::make_counting_transform_iterator(
-                0, linestring_offset_functor<int32_t>{num_points_per_linestring, num_linestring_points});
+  auto offsets = detail::make_counting_transform_iterator(0, times_three_functor<int32_t>{});
 
   auto points_x = detail::make_counting_transform_iterator(T{0.0}, times_three_functor<T>{});
   auto points_y = thrust::make_constant_iterator(T{0.0});
@@ -176,8 +162,6 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, FiftyPairsCompareWithShapely)
 {
   using T       = TypeParam;
   using CartVec = std::vector<cartesian_2d<T>>;
-
-  auto const num_points_per_linestring = 3;
 
   // All point coordinates are confined in [-1e9, 0] inverval
   auto d_points_x = rmm::device_vector<T>(std::vector<T>{
@@ -306,10 +290,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, FiftyPairsCompareWithShapely)
                    1424632154.129706,  1642663437.0646927, 440103049.49988014, 1607161773.8117433,
                    1520123653.1998143, 1027033461.3751863};
 
-  auto offsets = detail::make_counting_transform_iterator(
-    0,
-    linestring_offset_functor<int32_t>{num_points_per_linestring,
-                                       static_cast<int32_t>(d_linestring_points_x.size())});
+  auto offsets = detail::make_counting_transform_iterator(0, times_three_functor<int32_t>{});
 
   auto points = make_cartesian_2d_iterator(d_points_x.begin(), d_points_y.begin());
   auto linestring_points =
