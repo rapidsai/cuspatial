@@ -112,10 +112,8 @@ void pairwise_point_linestring_distance(Cart2dItA points_first,
 {
   using T = detail::iterator_vec_base_type<Cart2dItA>;
 
-  static_assert(detail::is_same_floating_point<T,
-                                               detail::iterator_vec_base_type<Cart2dItB>,
-                                               detail::iterator_value_type<OutputIt>>(),
-                "Inputs and output must have same floating point value type.");
+  static_assert(detail::is_same_floating_point<T, detail::iterator_vec_base_type<Cart2dItB>>(),
+                "Inputs must have same floating point value type.");
 
   static_assert(detail::is_same<cartesian_2d<T>,
                                 detail::iterator_value_type<Cart2dItA>,
