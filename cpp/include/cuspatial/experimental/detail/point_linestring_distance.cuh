@@ -57,11 +57,13 @@ namespace detail {
  * @tparam OutputIterator Iterator to output distances. Must meet requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  *
- * @param[in] points_first Iterator to the begin of the range of the points
+ * @param[in] points_first Iterator to the beginning of the range of the points
  * @param[in] points_last  Iterator to the end of the range of the points
- * @param[in] linestring_offsets_begin Iterator to the begin of the range of the linestring offsets
+ * @param[in] linestring_offsets_begin Iterator to the beginning of the range of the linestring
+ * offsets
  * @param[in] linestring_offsets_end Iterator to the end of the range of the linestring offsets
- * @param[in] linestring_points_begin Iterator to the begin of the range of the linestring points
+ * @param[in] linestring_points_begin Iterator to the beginning of the range of the linestring
+ * points
  * @param[in] linestring_points_end Iterator to the end of the range of the linestring points
  * @param[out] distances Iterator to the output range of shortest distances between pairs.
  *
