@@ -139,7 +139,7 @@ void pairwise_point_linestring_distance(Cart2dItA points_first,
   detail::pairwise_point_linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     points_first,
     linestring_offsets_first,
-    linestring_offsets_first + num_pairs,
+    linestring_offsets_first + num_pairs + 1,
     linestring_points_first,
     linestring_points_first + num_linestring_points,
     distances_first);
