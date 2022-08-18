@@ -6,10 +6,11 @@ Functions that operates on spatial data.
 .. currentmodule:: cuspatial
 
 Spatial Indexing Functions
-
+++++++++++++++++++++++++++
 .. autofunction:: cuspatial.quadtree_on_points
 
 Spatial Join Functions
+++++++++++++++++++++++
 
 .. autofunction:: cuspatial.point_in_polygon
 .. autofunction:: cuspatial.quadtree_point_in_polygon
@@ -17,20 +18,24 @@ Spatial Join Functions
 .. autofunction:: cuspatial.join_quadtree_and_bounding_boxes
 
 Measurement Functions
++++++++++++++++++++++
 
 .. autofunction:: cuspatial.directed_hausdorff_distance
 .. autofunction:: cuspatial.haversine_distance
 .. autofunction:: cuspatial.pairwise_linestring_distance
 
 Bounding Boxes
+++++++++++++++
 
 .. autofunction:: cuspatial.polygon_bounding_boxes
 .. autofunction:: cuspatial.polyline_bounding_boxes
 
 Projection Functions
+++++++++++++++++++++
 
 .. autofunction:: cuspatial.lonlat_to_cartesian
 
 Spatial Filtering Functions
++++++++++++++++++++++++++++
 
 .. autofunction:: cuspatial.points_in_spatial_window
