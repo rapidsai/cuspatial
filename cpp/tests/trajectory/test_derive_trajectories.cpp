@@ -14,54 +14,50 @@
  * limitations under the License.
  */
 
-#include "trajectory_utilities.cuh"
+#include "../base_fixture.hpp"
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/trajectory.hpp>
 
+#include <cudf/column/column.hpp>
 #include <cudf/types.hpp>
 #include <cudf/wrappers/timestamps.hpp>
-#include <cudf_test/column_utilities.hpp>
-#include <cudf_test/table_utilities.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 
 #include <gtest/gtest.h>
 
-struct DeriveTrajectoriesTest : public cudf::test::BaseFixture {
+struct DeriveTrajectoriesTest : public cuspatial::test::BaseFixture {
 };
 
 TEST_F(DeriveTrajectoriesTest, SizeMismatch)
 {
-  auto sorted = cuspatial::test::make_test_trajectories_table<double>(1000, this->mr());
+  auto const size = 1000;
 
   {
-    auto id = sorted->get_column(0);
-    auto xs = sorted->get_column(1);
-    // only half the data
-    auto ys = cudf::column(
-      cudf::device_span<double const>(sorted->get_column(2).view().data<double>(), 500));
-    auto ts = sorted->get_column(3);
+    auto id = cudf::column(rmm::device_uvector<int>(size, rmm::cuda_stream_default));
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size / 2, rmm::cuda_stream_default));
+    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default));
+
     EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
   {
-    auto id = cudf::column(cudf::device_span<cudf::size_type const>(
-      sorted->get_column(0).view().data<cudf::size_type>(), 500));
-    auto xs = sorted->get_column(1);
-    auto ys = sorted->get_column(2);
-
-    auto ts = sorted->get_column(3);
+    auto id = cudf::column(rmm::device_uvector<int>(size / 2, rmm::cuda_stream_default));
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default));
     EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
   {
-    auto id = sorted->get_column(0);
-    auto xs = sorted->get_column(1);
-    auto ys = sorted->get_column(2);
-
-    auto ts = cudf::column(cudf::device_span<cudf::timestamp_ms const>(
-      sorted->get_column(0).view().data<cudf::timestamp_ms>(), 500));
+    auto id = cudf::column(rmm::device_uvector<int>(size, rmm::cuda_stream_default));
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ts =
+      cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size / 2, rmm::cuda_stream_default));
     EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
@@ -69,22 +65,25 @@ TEST_F(DeriveTrajectoriesTest, SizeMismatch)
 
 TEST_F(DeriveTrajectoriesTest, TypeError)
 {
-  auto sorted = cuspatial::test::make_test_trajectories_table<double>(1000, this->mr());
+  // auto sorted = cuspatial::test::make_test_trajectories_table<double>(1000, this->mr());
+  auto const size = 1000;
 
   {
-    auto id = sorted->get_column(1);  // not integer
-    auto xs = sorted->get_column(1);
-    auto ys = sorted->get_column(2);
-    auto ts = sorted->get_column(3);
+    auto id =
+      cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));  // not integer
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size / 2, rmm::cuda_stream_default));
+    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default));
     EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
 
   {
-    auto id = sorted->get_column(0);
-    auto xs = sorted->get_column(1);
-    auto ys = sorted->get_column(2);
-    auto ts = sorted->get_column(1);  // not timestamp
+    auto id = cudf::column(rmm::device_uvector<int>(size, rmm::cuda_stream_default));
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size / 2, rmm::cuda_stream_default));
+    auto ts =
+      cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));  // not timestamp
     EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
@@ -92,42 +91,20 @@ TEST_F(DeriveTrajectoriesTest, TypeError)
 
 TEST_F(DeriveTrajectoriesTest, Nulls)
 {
-  auto sorted = cuspatial::test::make_test_trajectories_table<double>(1000, this->mr());
+  //  auto sorted = cuspatial::test::make_test_trajectories_table<double>(1000, this->mr());
+  auto const size = 1000;
 
   {
-    auto id    = sorted->get_column(0);
+    auto id = cudf::column(rmm::device_uvector<int>(size, rmm::cuda_stream_default));
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default));
+
     auto nulls = rmm::device_uvector<int>(1000, rmm::cuda_stream_default);
     cudaMemsetAsync(nulls.data(), 0xcccc, nulls.size(), rmm::cuda_stream_default.value());
     auto nulls_buffer = nulls.release();
     id.set_null_mask(nulls_buffer);
-    auto xs = sorted->get_column(1);
-    auto ys = sorted->get_column(2);
-    auto ts = sorted->get_column(3);
     EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
-}
-
-TEST_F(DeriveTrajectoriesTest, Empty)
-{
-  auto id      = cudf::test::fixed_width_column_wrapper<int32_t>();
-  auto xs      = cudf::test::fixed_width_column_wrapper<double>();
-  auto ys      = cudf::test::fixed_width_column_wrapper<double>();
-  auto ts      = cudf::test::fixed_width_column_wrapper<cudf::timestamp_ms>();
-  auto results = cuspatial::derive_trajectories(id, xs, ys, ts, this->mr());
-  EXPECT_EQ(results.first->num_rows(), 0);
-}
-
-TEST_F(DeriveTrajectoriesTest, DerivesThreeTrajectories)
-{
-  auto sorted  = cuspatial::test::make_test_trajectories_table<double>(1000, this->mr());
-  auto id      = sorted->get_column(0);
-  auto xs      = sorted->get_column(1);
-  auto ys      = sorted->get_column(2);
-  auto ts      = sorted->get_column(3);
-  auto results = cuspatial::derive_trajectories(id, xs, ys, ts, this->mr());
-  cudf::test::expect_tables_equal(*results.first, *sorted);
-  cudf::test::expect_columns_equal(
-    *results.second,
-    cudf::test::fixed_width_column_wrapper<int32_t>{0, 2 * id.size() / 3, 5 * id.size() / 6});
 }

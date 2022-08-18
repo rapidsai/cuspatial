@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2022, NVIDIA CORPORATION.
  *
@@ -13,40 +14,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/experimental/derive_trajectories.cuh>
+
+#pragma once
+
 #include <cuspatial/vec_2d.hpp>
 
-#include <rmm/cuda_stream_view.hpp>
+#include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
-#include <rmm/mr/device/per_device_resource.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/gather.h>
 #include <thrust/random.h>
-#include <thrust/random/uniform_int_distribution.h>
-#include <thrust/scan.h>
+#include <thrust/sequence.h>
 #include <thrust/shuffle.h>
+#include <thrust/tabulate.h>
+#include <thrust/transform.h>
 
-#include <gtest/gtest.h>
-
-#include <cuda/std/chrono>
-
+#include <chrono>
 #include <cstdint>
-#include <numeric>
-#include <random>
 
-template <typename T>
-struct DeriveTrajectoriesTest : public ::testing::Test {
-};
+namespace cuspatial {
+namespace test {
 
-using TestTypes = ::testing::Types<float, double>;
-TYPED_TEST_CASE(DeriveTrajectoriesTest, TestTypes);
+using time_point = std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>;
 
+/* Test data generation for trajectory APIs. Generates num_trajectories trajectories of random
+   size between 1 and max_trajectory_size points. Creates both a reference (sorted) set of
+   trajectory IDs, timestamps, and points, and a shuffled (unsorted) set of the same for test
+   input. The sorted data can be input directly into `trajectory_distance_and_speed`, while
+   the shuffled data can be input to `derive_trajectories`.
+
+   The times are not random, but do vary somewhat between trajectories and trajectory lenghts.
+
+   Likewise, the positions are not random, but follow a sinusoid pattern based on the time stamps.
+*/
 template <typename T>
 struct trajectory_test_data {
-  using time_point = std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>;
-
   rmm::device_vector<std::int32_t> offsets;
 
   rmm::device_vector<std::int32_t> ids;
@@ -63,16 +66,17 @@ struct trajectory_test_data {
   }
 
   struct id_functor {
-    int32_t* offsets_begin{};
-    int32_t* offsets_end{};
+    std::int32_t* offsets_begin{};
+    std::int32_t* offsets_end{};
 
-    id_functor(int32_t* offsets_begin, int32_t* offsets_end)
+    id_functor(std::int32_t* offsets_begin, std::int32_t* offsets_end)
       : offsets_begin(offsets_begin), offsets_end(offsets_end)
     {
     }
 
-    __device__ int32_t operator()(int i)
+    __device__ std::int32_t operator()(int i)
     {
+      // Find the index within the current trajectory
       return thrust::distance(
         offsets_begin,
         thrust::prev(thrust::upper_bound(thrust::seq, offsets_begin, offsets_end, i)));
@@ -80,10 +84,10 @@ struct trajectory_test_data {
   };
 
   struct timestamp_functor {
-    int32_t* offsets_begin{};
-    int32_t* offsets_end{};
+    std::int32_t* offsets_begin{};
+    std::int32_t* offsets_end{};
 
-    timestamp_functor(int32_t* offsets_begin, int32_t* offsets_end)
+    timestamp_functor(std::int32_t* offsets_begin, std::int32_t* offsets_end)
       : offsets_begin(offsets_begin), offsets_end(offsets_end)
     {
     }
@@ -92,7 +96,9 @@ struct trajectory_test_data {
     {
       auto offset = thrust::prev(thrust::upper_bound(thrust::seq, offsets_begin, offsets_end, i));
       auto time_step = i - *offset;
-      auto duration  = (id % 10) * std::chrono::milliseconds(1000) +
+      // The arithmetic here just adds some variance to the time step but keeps it monotonically
+      // increasing with `i`
+      auto duration = (id % 10) * std::chrono::milliseconds(1000) +
                       time_step * std::chrono::milliseconds(100) +
                       std::chrono::milliseconds(int(10 * cos(time_step)));
       return time_point{duration};
@@ -100,8 +106,9 @@ struct trajectory_test_data {
   };
 
   struct point_functor {
-    __device__ cuspatial::vec_2d<T> operator()(time_point const& time, int32_t id)
+    __device__ cuspatial::vec_2d<T> operator()(time_point const& time, std::int32_t id)
     {
+      // X is time in seconds, Y is cosine(time), offset by ID
       float duration = (time - time_point{std::chrono::milliseconds(0)}).count();
       return cuspatial::vec_2d<T>{duration / 1000, id + cos(duration)};
     }
@@ -116,7 +123,7 @@ struct trajectory_test_data {
       : gen(gen), size_rand(size_rand)
     {
     }
-    __device__ int32_t operator()(int i)
+    __device__ std::int32_t operator()(int i)
     {
       gen.discard(i);
       return size_rand(gen);
@@ -168,7 +175,6 @@ struct trajectory_test_data {
                       point_functor());
 
     // shuffle input data to create randomized order
-
     rmm::device_vector<std::int32_t> map(total_points);
     thrust::sequence(rmm::exec_policy(), map.begin(), map.end(), 0);
     thrust::shuffle(rmm::exec_policy(), map.begin(), map.end(), gen);
@@ -177,43 +183,8 @@ struct trajectory_test_data {
     thrust::gather(rmm::exec_policy(), map.begin(), map.end(), times_sorted.begin(), times.begin());
     thrust::gather(
       rmm::exec_policy(), map.begin(), map.end(), points_sorted.begin(), points.begin());
-
-    /*for (int i = 0; i < total_points; i++) {
-      time_point tp              = times_sorted[i];
-      cuspatial::vec_2d<T> point = points_sorted[i];
-      std::cout << ids_sorted[i] << " " << tp.time_since_epoch().count() << " " << point.x << " "
-                << point.y << std::endl;
-    }
-
-    std::cout << std::endl;
-
-    for (int i = 0; i < total_points; i++) {
-      time_point tp              = times[i];
-      cuspatial::vec_2d<T> point = points[i];
-      std::cout << ids[i] << " " << tp.time_since_epoch().count() << " " << point.x << " "
-                << point.y << std::endl;
-    }*/
   }
 };
 
-TYPED_TEST(DeriveTrajectoriesTest, OneMillionTrajectories)
-{
-  auto data = trajectory_test_data<TypeParam>(1'000'000, 50);
-
-  auto traj_ids    = rmm::device_vector<int32_t>(data.ids.size());
-  auto traj_points = rmm::device_vector<cuspatial::vec_2d<TypeParam>>(data.points.size());
-  auto traj_times =
-    rmm::device_vector<typename trajectory_test_data<TypeParam>::time_point>(data.times.size());
-
-  auto traj_offsets = cuspatial::derive_trajectories(data.ids.begin(),
-                                                     data.ids.end(),
-                                                     data.points.begin(),
-                                                     data.times.begin(),
-                                                     traj_ids.begin(),
-                                                     traj_points.begin(),
-                                                     traj_times.begin());
-
-  EXPECT_EQ(traj_ids, data.ids_sorted);
-  EXPECT_EQ(traj_points, data.points_sorted);
-  EXPECT_EQ(traj_times, data.times_sorted);
-}
+}  // namespace test
+}  // namespace cuspatial
