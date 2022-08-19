@@ -55,7 +55,7 @@ pairwise_point_linestring_nearest_point_kernel(OffsetIteratorA points_parts_offs
                                                OffsetIteratorC linestring_offsets_last,
                                                Cart2dItB linestring_points_first,
                                                Cart2dItB linestring_points_last,
-                                               OutputIt nearest_points_linestring_idx_tuple_first)
+                                               OutputIt part_idx_segment_idx_nearest_point_first)
 {
   using T       = iterator_vec_base_type<Cart2dItA>;
   using Integer = iterator_value_type<OffsetIteratorA>;
@@ -65,8 +65,9 @@ pairwise_point_linestring_nearest_point_kernel(OffsetIteratorA points_parts_offs
 
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < num_pairs;
        idx += gridDim.x * blockDim.x) {
+    Integer nearest_part_idx;
+    Integer nearest_segment_idx;
     vec_2d<T> nearest_point;
-    Integer nearest_linestring_idx;
     for (auto point_idx = points_parts_offsets_first[idx];
          point_idx < points_parts_offsets_first[idx + 1];
          point_idx++) {
@@ -86,15 +87,16 @@ pairwise_point_linestring_nearest_point_kernel(OffsetIteratorA points_parts_offs
           auto distance_point_pair = point_to_segment_distance_squared_nearest_point(c, a, b);
           auto distance_squared    = thrust::get<0>(distance_point_pair);
           if (distance_squared < min_distance_squared) {
-            min_distance_squared   = distance_squared;
-            nearest_point          = thrust::get<1>(distance_point_pair);
-            nearest_linestring_idx = segment_idx;
+            min_distance_squared = distance_squared;
+            nearest_point        = thrust::get<1>(distance_point_pair);
+            nearest_part_idx     = part_idx;
+            nearest_segment_idx  = segment_idx;
           }
         }
       }
 
       nearest_points_linestring_idx_tuple_first[idx] =
-        thrust::tuple(nearest_point, nearest_linestring_idx);
+        thrust::make_tuple(nearest_part_idx, nearest_segment_idx, nearest_point);
     }
   }
 
@@ -106,17 +108,17 @@ template <class Cart2dItA,
           class OffsetIteratorB,
           class OffsetIteratorC,
           class OutputIt>
-void pairwise_point_linestring_nearest_point(OffsetIteratorA points_parts_offsets_first,
-                                             OffsetIteratorA points_parts_offsets_last,
-                                             Cart2dItA points_first,
-                                             Cart2dItA points_last,
-                                             OffsetIteratorB linestring_parts_offsets_first,
-                                             OffsetIteratorC linestring_offsets_first,
-                                             OffsetIteratorC linestring_offsets_last,
-                                             Cart2dItB linestring_points_first,
-                                             Cart2dItB linestring_points_last,
-                                             OutputIt nearest_points_linestring_idx_tuple_first,
-                                             rmm::cuda_stream_view stream)
+OutputIt pairwise_point_linestring_nearest_point(OffsetIteratorA points_parts_offsets_first,
+                                                 OffsetIteratorA points_parts_offsets_last,
+                                                 Cart2dItA points_first,
+                                                 Cart2dItA points_last,
+                                                 OffsetIteratorB linestring_parts_offsets_first,
+                                                 OffsetIteratorC linestring_offsets_first,
+                                                 OffsetIteratorC linestring_offsets_last,
+                                                 Cart2dItB linestring_points_first,
+                                                 Cart2dItB linestring_points_last,
+                                                 OutputIt part_idx_segment_idx_nearest_point_first,
+                                                 rmm::cuda_stream_view stream)
 {
   using T = typename std::iterator_traits<Cart2dItA>::value_type::value_type;
 
@@ -140,6 +142,8 @@ void pairwise_point_linestring_nearest_point(OffsetIteratorA points_parts_offset
     nearest_points_linestring_idx_tuple_first);
 
   CUSPATIAL_CUDA_TRY(cudaGetLastError());
+
+  return part_idx_segment_idx_nearest_point_first + num_pairs;
 }
 
 }  // namespace cuspatial

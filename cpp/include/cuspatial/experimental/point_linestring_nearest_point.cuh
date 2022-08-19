@@ -26,7 +26,7 @@ template <class Cart2dItA,
           class OffsetIteratorB,
           class OffsetIteratorC,
           class OutputIt>
-void pairwise_point_linestring_nearest_point(
+OutputIt pairwise_point_linestring_nearest_point(
   OffsetIteratorA points_parts_offsets_first,
   OffsetIteratorA points_parts_offsets_last,
   Cart2dItA points_first,
@@ -36,6 +36,8 @@ void pairwise_point_linestring_nearest_point(
   OffsetIteratorC linestring_offsets_last,
   Cart2dItB linestring_points_first,
   Cart2dItB linestring_points_last,
-  OutputIt nearest_points_linestring_idx_tuple_first,
+  OutputIt part_idx_segment_idx_nearest_point_first,
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial
+
+#include <cuspatial/experimental/detail/point_linestring_nearest_point.cuh>
