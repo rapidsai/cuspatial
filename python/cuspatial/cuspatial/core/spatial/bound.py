@@ -1,3 +1,5 @@
+# Copyright (c) 2022, NVIDIA CORPORATION.
+
 from cuspatial._lib.polygon_bounding_boxes import (
     polygon_bounding_boxes as cpp_polygon_bounding_boxes,
 )
@@ -9,6 +11,7 @@ from cuspatial.utils.column_utils import normalize_point_columns
 
 from cudf.core.column import as_column
 from cudf import DataFrame
+
 
 def polygon_bounding_boxes(poly_offsets, ring_offsets, xs, ys):
     """Compute the minimum bounding-boxes for a set of polygons.

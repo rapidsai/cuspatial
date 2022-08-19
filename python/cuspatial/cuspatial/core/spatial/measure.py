@@ -1,3 +1,4 @@
+# Copyright (c) 2022, NVIDIA CORPORATION.
 
 from cuspatial._lib.spatial import (
     haversine_distance as cpp_haversine_distance,
@@ -13,6 +14,7 @@ from cuspatial.utils.column_utils import normalize_point_columns
 
 from cudf import DataFrame, Series
 from cudf.core.column import as_column
+
 
 def directed_hausdorff_distance(xs, ys, space_offsets):
     """Compute the directed Hausdorff distances between all pairs of
@@ -117,7 +119,6 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
     return cpp_haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat)
 
 
-
 def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
     """Compute shortest distance between pairs of linestrings (a.k.a. polylines)
 
@@ -209,9 +210,5 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
     offsets1 = as_column(offsets1, dtype="int32")
     offsets2 = as_column(offsets2, dtype="int32")
     return Series._from_data(
-        {
-            None: cpp_pairwise_linestring_distance(
-                offsets1, xs1, ys1, offsets2, xs2, ys2
-            )
-        }
+        {None: cpp_pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2)}
     )

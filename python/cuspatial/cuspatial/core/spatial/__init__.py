@@ -1,3 +1,5 @@
+# Copyright (c) 2022, NVIDIA CORPORATION.
+
 from .bound import (
     polygon_bounding_boxes,
     polyline_bounding_boxes,
@@ -10,13 +12,13 @@ from .join import (
     point_in_polygon,
     join_quadtree_and_bounding_boxes,
     quadtree_point_in_polygon,
-    quadtree_point_to_nearest_polyline
+    quadtree_point_to_nearest_polyline,
 )
 
 from .measure import (
     directed_hausdorff_distance,
     haversine_distance,
-    pairwise_linestring_distance
+    pairwise_linestring_distance,
 )
 
 from .project import (
@@ -35,5 +37,5 @@ __all__ = [
     "points_in_spatial_window",
     "quadtree_on_points",
     "quadtree_point_in_polygon",
-    "quadtree_point_to_nearest_polyline"
+    "quadtree_point_to_nearest_polyline",
 ]

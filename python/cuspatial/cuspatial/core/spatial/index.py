@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2022, NVIDIA CORPORATION.
 
 import warnings
 
@@ -11,9 +11,7 @@ from cuspatial._lib.quadtree import (
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
-def quadtree_on_points(
-    xs, ys, x_min, x_max, y_min, y_max, scale, max_depth, min_size
-):
+def quadtree_on_points(xs, ys, x_min, x_max, y_min, y_max, scale, max_depth, min_size):
     """Construct a quadtree from a set of points for a given area-of-interest
         bounding box.
 

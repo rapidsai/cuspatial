@@ -5,6 +5,7 @@ from cuspatial._lib.spatial import (
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
 )
 
+
 def lonlat_to_cartesian(origin_lon, origin_lat, input_lon, input_lat):
     """
     Convert lon/lat to ``x,y`` coordinates with respect to an origin lon/lat

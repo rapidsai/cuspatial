@@ -18,22 +18,16 @@ def test_centered():
     result = cuspatial.points_in_spatial_window(
         -1, 1, -1, 1, cudf.Series([0.0]), cudf.Series([0.0])
     )
-    cudf.testing.assert_frame_equal(
-        result, cudf.DataFrame({"x": [0.0], "y": [0.0]})
-    )
+    cudf.testing.assert_frame_equal(result, cudf.DataFrame({"x": [0.0], "y": [0.0]}))
 
 
-@pytest.mark.parametrize(
-    "coords", [(-1.0, -1.0), (-1.0, 1.0), (1.0, -1.0), (1.0, 1.0)]
-)
+@pytest.mark.parametrize("coords", [(-1.0, -1.0), (-1.0, 1.0), (1.0, -1.0), (1.0, 1.0)])
 def test_corners(coords):
     x, y = coords
     result = cuspatial.points_in_spatial_window(
         -1.1, 1.1, -1.1, 1.1, cudf.Series([x]), cudf.Series([y])
     )
-    cudf.testing.assert_frame_equal(
-        result, cudf.DataFrame({"x": [x], "y": [y]})
-    )
+    cudf.testing.assert_frame_equal(result, cudf.DataFrame({"x": [x], "y": [y]}))
 
 
 def test_pair():
