@@ -230,6 +230,41 @@ auto make_zipped_cartesian_2d_output_iterator(FirstIter first, SecondIter second
   return make_zipped_vec_2d_output_iterator<cartesian_2d<T>>(first, second);
 }
 
+template <typename T, typename VectorType = vec_2d<T>>
+struct interleaved_to_vec_2d {
+  T const* it;
+  __device__ VectorType operator()(std::size_t i) { return VectorType{it[2 * i], it[2 * i + 1]}; }
+};
+
+template <typename It, typename VectorType = vec_2d<T>>
+struct vec_2d_to_interleaved {
+  It it;
+  __device__ VectorType operator()(std::size_t i) { return VectorType{it[2 * i], it[2 * i + 1]}; }
+};
+
+template <typename Iter>
+auto interleaved_iterator_to_vec_2d_iterator(Iter d_points_begin)
+{
+  using T = typename std::iterator_traits<Iter>::value_type;
+  return detail::make_counting_transform_iterator(0, interleaved_to_vec_2d<T>{d_points_begin});
+}
+
+template <typename Iter>
+auto interleaved_iterator_to_cartesian_2d_iterator(Iter d_points_begin)
+{
+  using T = typename std::iterator_traits<Iter>::value_type;
+  return detail::make_counting_transform_iterator(
+    0, interleaved_to_vec_2d<T, cartesian_2d<T>>{d_points_begin});
+}
+
+template <typename Iter>
+auto interleaved_iterator_to_lonlat_2d_iterator(Iter d_points_begin)
+{
+  using T = typename std::iterator_traits<Iter>::value_type;
+  return detail::make_counting_transform_iterator(
+    0, interleaved_to_vec_2d<T, lonlat_2d<T>>{d_points_begin});
+}
+
 /**
  * @} // end of doxygen group
  */
