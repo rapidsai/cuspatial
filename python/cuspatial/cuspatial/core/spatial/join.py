@@ -5,13 +5,12 @@ import warnings
 from cudf import DataFrame
 from cudf.core.column import as_column
 
+from cuspatial._lib import spatial_join
 from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_point_in_polygon,
 )
-from cuspatial._lib import spatial_join
-
-from cuspatial.utils.column_utils import normalize_point_columns
 from cuspatial.utils import gis_utils
+from cuspatial.utils.column_utils import normalize_point_columns
 
 
 def point_in_polygon(
@@ -242,7 +241,12 @@ def quadtree_point_in_polygon(
             Indices of each point that intersects with a polygon.
     """
 
-    (points_x, points_y, poly_points_x, poly_points_y,) = normalize_point_columns(
+    (
+        points_x,
+        points_y,
+        poly_points_x,
+        poly_points_y,
+    ) = normalize_point_columns(
         as_column(points_x),
         as_column(points_y),
         as_column(poly_points_x),
@@ -313,7 +317,12 @@ def quadtree_point_to_nearest_polyline(
         distance : cudf.Series
             Distances between each point and its nearest polyline.
     """
-    (points_x, points_y, poly_points_x, poly_points_y,) = normalize_point_columns(
+    (
+        points_x,
+        points_y,
+        poly_points_x,
+        poly_points_y,
+    ) = normalize_point_columns(
         as_column(points_x),
         as_column(points_y),
         as_column(poly_points_x),

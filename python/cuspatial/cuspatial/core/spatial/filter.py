@@ -44,5 +44,7 @@ def points_in_spatial_window(min_x, max_x, min_y, max_y, xs, ys):
     """
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     return DataFrame._from_data(
-        *spatial_window.points_in_spatial_window(min_x, max_x, min_y, max_y, xs, ys)
+        *spatial_window.points_in_spatial_window(
+            min_x, max_x, min_y, max_y, xs, ys
+        )
     )

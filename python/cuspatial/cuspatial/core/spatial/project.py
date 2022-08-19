@@ -1,6 +1,7 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
 from cudf import DataFrame
+
 from cuspatial._lib.spatial import (
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
 )
