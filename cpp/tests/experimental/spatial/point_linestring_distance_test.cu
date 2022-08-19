@@ -46,81 +46,108 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, Empty)
   using T       = TypeParam;
   using CartVec = std::vector<cartesian_2d<T>>;
 
+  std::vector<int> point_part_offsets{0};
   CartVec points{};
+  std::vector<int> linestring_part_offsets{0};
   std::vector<int> linestring_offsets{0};
   CartVec linestring_points{};
 
+  rmm::device_vector<int> d_point_parts(point_part_offsets);
   rmm::device_vector<cartesian_2d<T>> d_points(points);
-  rmm::device_vector<int> d_offsets(linestring_offsets);
+  rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
+  rmm::device_vector<int> d_linestrings(linestring_offsets);
   rmm::device_vector<cartesian_2d<T>> d_linestring_points(linestring_points);
 
   rmm::device_vector<T> got{};
 
   thrust::host_vector<T> expect{};
 
-  pairwise_point_linestring_distance(d_points.begin(),
-                                     d_points.end(),
-                                     d_offsets.begin(),
-                                     d_linestring_points.begin(),
-                                     d_linestring_points.end(),
-                                     got.begin());
+  auto ret = pairwise_point_linestring_distance(d_point_parts.begin(),
+                                                d_point_parts.end(),
+                                                d_points.begin(),
+                                                d_points.end(),
+                                                d_linestring_parts.begin(),
+                                                d_linestrings.begin(),
+                                                d_linestrings.end(),
+                                                d_linestring_points.begin(),
+                                                d_linestring_points.end(),
+                                                got.begin());
 
   thrust::host_vector<T> hgot(got);
   expect_vector_equivalent(expect, hgot);
+  EXPECT_EQ(ret, got.end());
 }
 
-TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairFromVector)
+TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairFromVectorSingleComponent)
 {
   using T       = TypeParam;
   using CartVec = std::vector<cartesian_2d<T>>;
 
+  std::vector<int> point_part_offsets{0, 1};
   CartVec points{{0, 0}};
+  std::vector<int> linestring_part_offsets{0, 1};
   std::vector<int> linestring_offsets{0, 3};
   CartVec linestring_points{{1, 1}, {2, 2}, {3, 3}};
   thrust::host_vector<T> expect(std::vector<T>{std::sqrt(T{2.0})});
 
+  rmm::device_vector<int> d_point_parts(point_part_offsets);
   rmm::device_vector<cartesian_2d<T>> d_points(points);
+  rmm::device_vector<int> d_linestring_parts(linestring_offsets);
   rmm::device_vector<int> d_offsets(linestring_offsets);
   rmm::device_vector<cartesian_2d<T>> d_linestring_points(linestring_points);
 
   rmm::device_vector<T> got(points.size());
 
-  pairwise_point_linestring_distance(d_points.begin(),
-                                     d_points.end(),
-                                     d_offsets.begin(),
-                                     d_linestring_points.begin(),
-                                     d_linestring_points.end(),
-                                     got.begin());
+  auto ret = pairwise_point_linestring_distance(d_point_parts.begin(),
+                                                d_point_parts.end(),
+                                                d_points.begin(),
+                                                d_points.end(),
+                                                d_linestring_parts.begin(),
+                                                d_offsets.begin(),
+                                                d_offsets.end(),
+                                                d_linestring_points.begin(),
+                                                d_linestring_points.end(),
+                                                got.begin());
 
   thrust::host_vector<T> hgot(got);
   expect_vector_equivalent(expect, hgot);
+  EXPECT_EQ(ret, got.end());
 }
 
-TYPED_TEST(PairwisePointLinestringDistanceTest, TwoPairFromVector)
+TYPED_TEST(PairwisePointLinestringDistanceTest, TwoPairFromVectorSingleComponent)
 {
   using T       = TypeParam;
   using CartVec = std::vector<cartesian_2d<T>>;
 
+  std::vector<int> point_part_offsets{0, 1, 2};
   CartVec points{{0, 0}, {0, 0}};
+  std::vector<int> linestring_part_offsets{0, 1, 2};
   std::vector<int> linestring_offsets{0, 3, 6};
   CartVec linestring_points{{1, 1}, {2, 2}, {3, 3}, {-1, -1}, {-2, -2}, {-3, -3}};
   thrust::host_vector<T> expect(std::vector<T>{std::sqrt(T{2.0}), std::sqrt(T{2.0})});
 
+  rmm::device_vector<int> d_point_parts(point_part_offsets);
   rmm::device_vector<cartesian_2d<T>> d_points(points);
+  rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
   rmm::device_vector<int> d_offsets(linestring_offsets);
   rmm::device_vector<cartesian_2d<T>> d_linestring_points(linestring_points);
 
   rmm::device_vector<T> got(points.size());
 
-  pairwise_point_linestring_distance(d_points.begin(),
-                                     d_points.end(),
-                                     d_offsets.begin(),
-                                     d_linestring_points.begin(),
-                                     d_linestring_points.end(),
-                                     got.begin());
+  auto ret = pairwise_point_linestring_distance(d_point_parts.begin(),
+                                                d_point_parts.end(),
+                                                d_points.begin(),
+                                                d_points.end(),
+                                                d_linestring_parts.begin(),
+                                                d_offsets.begin(),
+                                                d_offsets.end(),
+                                                d_linestring_points.begin(),
+                                                d_linestring_points.end(),
+                                                got.begin());
 
   thrust::host_vector<T> hgot(got);
   expect_vector_equivalent(expect, hgot);
+  EXPECT_EQ(ret, got.end());
 }
 
 template <typename T>
@@ -128,7 +155,7 @@ struct times_three_functor {
   T __device__ operator()(T i) { return i * 3; }
 };
 
-TYPED_TEST(PairwisePointLinestringDistanceTest, ManyPairsFromIterators)
+TYPED_TEST(PairwisePointLinestringDistanceTest, ManyPairsFromIteratorsSingleComponent)
 {
   using T = TypeParam;
 
@@ -139,26 +166,33 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, ManyPairsFromIterators)
   auto linestring_points_y = thrust::make_constant_iterator(T{1.0});
   auto linestring_points   = make_cartesian_2d_iterator(linestring_points_x, linestring_points_y);
   auto offsets = detail::make_counting_transform_iterator(0, times_three_functor<int32_t>{});
+  auto linestring_parts = thrust::make_counting_iterator(0);
 
-  auto points_x = detail::make_counting_transform_iterator(T{0.0}, times_three_functor<T>{});
-  auto points_y = thrust::make_constant_iterator(T{0.0});
-  auto points   = make_cartesian_2d_iterator(points_x, points_y);
+  auto points_x    = detail::make_counting_transform_iterator(T{0.0}, times_three_functor<T>{});
+  auto points_y    = thrust::make_constant_iterator(T{0.0});
+  auto points      = make_cartesian_2d_iterator(points_x, points_y);
+  auto point_parts = thrust::make_counting_iterator(0);
 
   std::vector<T> expect(num_pairs, T{1.0});
   rmm::device_vector<T> got(num_pairs);
 
-  pairwise_point_linestring_distance(points,
-                                     points + num_pairs,
-                                     offsets,
-                                     linestring_points,
-                                     linestring_points + num_linestring_points,
-                                     got.begin());
+  auto ret = pairwise_point_linestring_distance(point_parts,
+                                                point_parts + num_pairs + 1,
+                                                points,
+                                                points + num_pairs,
+                                                linestring_parts,
+                                                offsets,
+                                                offsets + num_pairs,
+                                                linestring_points,
+                                                linestring_points + num_linestring_points,
+                                                got.begin());
 
   thrust::host_vector<T> hgot(got);
   expect_vector_equivalent(expect, hgot);
+  EXPECT_EQ(ret, got.end());
 }
 
-TYPED_TEST(PairwisePointLinestringDistanceTest, FiftyPairsCompareWithShapely)
+TYPED_TEST(PairwisePointLinestringDistanceTest, OnePartFiftyPairsCompareWithShapely)
 {
   using T       = TypeParam;
   using CartVec = std::vector<cartesian_2d<T>>;
@@ -290,23 +324,69 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, FiftyPairsCompareWithShapely)
                    1424632154.129706,  1642663437.0646927, 440103049.49988014, 1607161773.8117433,
                    1520123653.1998143, 1027033461.3751863};
 
-  auto offsets = detail::make_counting_transform_iterator(0, times_three_functor<int32_t>{});
+  auto num_pairs = d_points_x.size();
 
-  auto points = make_cartesian_2d_iterator(d_points_x.begin(), d_points_y.begin());
+  auto point_parts = thrust::make_counting_iterator(0);
+  auto points      = make_cartesian_2d_iterator(d_points_x.begin(), d_points_y.begin());
+
+  auto linestring_parts = thrust::make_counting_iterator(0);
+  auto offsets = detail::make_counting_transform_iterator(0, times_three_functor<int32_t>{});
   auto linestring_points =
     make_cartesian_2d_iterator(d_linestring_points_x.begin(), d_linestring_points_y.begin());
 
   rmm::device_vector<T> got(d_points_x.size());
 
-  pairwise_point_linestring_distance(points,
-                                     points + d_points_x.size(),
-                                     offsets,
-                                     linestring_points,
-                                     linestring_points + d_linestring_points_x.size(),
-                                     got.begin());
+  auto ret = pairwise_point_linestring_distance(point_parts,
+                                                point_parts + num_pairs + 1,
+                                                points,
+                                                points + num_pairs,
+                                                linestring_parts,
+                                                offsets,
+                                                offsets + num_pairs,
+                                                linestring_points,
+                                                linestring_points + d_linestring_points_x.size(),
+                                                got.begin());
 
   thrust::host_vector<T> hgot(got);
   expect_vector_equivalent(expect, hgot);
+  EXPECT_EQ(ret, got.end());
+}
+
+TYPED_TEST(PairwisePointLinestringDistanceTest, ThreePairMultiPointMultiLinestring)
+{
+  using T       = TypeParam;
+  using CartVec = std::vector<cartesian_2d<T>>;
+
+  std::vector<int> point_part_offsets{0, 1, 3, 5};
+  CartVec points{{0, 1}, {2, 3}, {4, 5}, {6, 7}, {8, 9}};
+  std::vector<int> linestring_part_offsets{0, 2, 3, 5};
+  std::vector<int> linestring_offsets{0, 2, 4, 6, 8};
+  CartVec linestring_points{
+    {0, -1}, {-2, -3}, {-4, -5}, {-5, -6}, {7, 8}, {8, 9}, {9, 10}, {10, 11}};
+  thrust::host_vector<T> expect(std::vector<T>{2.0, 4.242640687119285, 1.4142135623730951});
+
+  rmm::device_vector<int> d_point_parts(point_part_offsets);
+  rmm::device_vector<cartesian_2d<T>> d_points(points);
+  rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
+  rmm::device_vector<int> d_offsets(linestring_offsets);
+  rmm::device_vector<cartesian_2d<T>> d_linestring_points(linestring_points);
+
+  rmm::device_vector<T> got(point_part_offsets.size() - 1);
+
+  auto ret = pairwise_point_linestring_distance(d_point_parts.begin(),
+                                                d_point_parts.end(),
+                                                d_points.begin(),
+                                                d_points.end(),
+                                                d_linestring_parts.begin(),
+                                                d_offsets.begin(),
+                                                d_offsets.end(),
+                                                d_linestring_points.begin(),
+                                                d_linestring_points.end(),
+                                                got.begin());
+
+  thrust::host_vector<T> hgot(got);
+  expect_vector_equivalent(expect, hgot);
+  EXPECT_EQ(ret, got.end());
 }
 
 }  // namespace test

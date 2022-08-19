@@ -53,14 +53,24 @@ namespace cuspatial {
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt>
-void pairwise_point_linestring_distance(Cart2dItA points_first,
-                                        Cart2dItA points_last,
-                                        OffsetIterator linestring_offsets_first,
-                                        Cart2dItB linestring_points_first,
-                                        Cart2dItB linestring_points_last,
-                                        OutputIt distances_first,
-                                        rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+template <class Cart2dItA,
+          class Cart2dItB,
+          class OffsetIteratorA,
+          class OffsetIteratorB,
+          class OffsetIteratorC,
+          class OutputIt>
+OutputIt pairwise_point_linestring_distance(
+  OffsetIteratorA point_parts_offset_first,
+  OffsetIteratorA point_parts_offset_last,
+  Cart2dItA points_first,
+  Cart2dItA points_last,
+  OffsetIteratorB linestring_parts_offset_first,
+  OffsetIteratorC linestring_offsets_first,
+  OffsetIteratorC linestring_offsets_last,
+  Cart2dItB linestring_points_first,
+  Cart2dItB linestring_points_last,
+  OutputIt distances_first,
+  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
 
