@@ -20,14 +20,22 @@
 
 namespace cuspatial {
 
-template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputItA, class OutputItB>
+template <class Cart2dItA,
+          class Cart2dItB,
+          class OffsetIteratorA,
+          class OffsetIteratorB,
+          class OffsetIteratorC,
+          class OutputIt>
 void pairwise_point_linestring_nearest_point(
+  OffsetIteratorA points_parts_offsets_first,
+  OffsetIteratorA points_parts_offsets_last,
   Cart2dItA points_first,
   Cart2dItA points_last,
-  OffsetIterator linestring_offsets_first,
+  OffsetIteratorB linestring_parts_offsets_first,
+  OffsetIteratorC linestring_offsets_first,
+  OffsetIteratorC linestring_offsets_last,
   Cart2dItB linestring_points_first,
   Cart2dItB linestring_points_last,
-  OutputItA nearest_points,
-  OutputItB nearest_point_linestring_idx,
+  OutputIt nearest_points_linestring_idx_tuple_first,
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial
