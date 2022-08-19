@@ -15,7 +15,7 @@ from shapely.geometry import (
 
 import cudf
 
-from cuspatial.geometry import pygeoarrow
+from cuspatial.core._column import pygeoarrow
 
 
 class Feature_Enum(Enum):
