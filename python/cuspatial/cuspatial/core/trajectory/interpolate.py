@@ -36,74 +36,79 @@ class CubicSpline:
     """
     Fits each column of the input Series `y` to a hermetic cubic spline.
 
-    ``cuspatial.CubicSpline`` supports basic usage identical to
-    scipy.interpolate.CubicSpline::
+    ``cuspatial.CubicSpline`` supports two usage patterns: The first is
+    identical to scipy.interpolate.CubicSpline::
 
-        curve = cuspatial.CubicSpline(x, y)
-        new_points = curve(np.linspace(x.min, x.max, 50))
+        curve = cuspatial.CubicSpline(t, y)
+        new_points = curve(np.linspace(t.min, t.max, 50))
 
-    Parameters
-    ----------
-    x : cudf.Series
-        1-D array containing values of the independent variable.
-        Values must be real, finite and in strictly increasing order.
-    y : cudf.Series
-        Array containing values of the dependent variable.
-    ids (Optional) : cudf.Series
-        ids of each spline
-    size (Optional) : cudf.Series
-        fixed size of each spline
-    offset (Optional) : cudf.Series
-        alternative to `size`, allows splines of varying
-        length. Not yet fully supported.
+    This allows API parity with scipy. This isn't recommended, as scipy
+    host based interpolation performance is likely to exceed GPU performance
+    for a single curve.
 
-    Returns
-    -------
-    CubicSpline : callable `o`
-        ``o.c`` contains the coefficients that can be used to compute new
-        points along the spline fitting the original ``t`` data. ``o(n)``
-        interpolates the spline coordinates along new input values ``n``.
-
-    Note
-    ----
-    cuSpatial will outperform scipy when many splines are
+    However, cuSpatial significantly outperforms scipy when many splines are
     fit simultaneously. Data must be arranged in a SoA format, and the
     exclusive `prefix_sum` of the separate curves must also be passed to the
-    function. See example for detail.
+    function.::
 
-    Example
-    -------
-    >>> import cudf, cuspatial
-    >>> NUM_SPLINES = 100000
-    >>> SPLINE_LENGTH = 101
-    >>> x = cudf.Series(
+        NUM_SPLINES = 100000
+        SPLINE_LENGTH = 101
+        t = cudf.Series(
             np.hstack((np.arange(SPLINE_LENGTH),) * NUM_SPLINES)
         ).astype('float32')
-    >>> y = cudf.Series(
+        y = cudf.Series(
             np.random.random(SPLINE_LENGTH*NUM_SPLINES)
         ).astype('float32')
-    >>> prefix_sum = cudf.Series(
-            np.arange(NUM_SPLINES + 1)*SPLINE_LENGTH
+        prefix_sum = cudf.Series(
+            cp.arange(NUM_SPLINES + 1)*SPLINE_LENGTH
         ).astype('int32')
-    >>> curve = cuspatial.CubicSpline(x, y, offset=prefix_sum)
-    >>> new_samples = cudf.Series(
+        curve = cuspatial.CubicSpline(t, y, prefixes=prefix_sum)
+        new_samples = cudf.Series(
             np.hstack((np.linspace(
                 0, (SPLINE_LENGTH - 1), (SPLINE_LENGTH - 1) * 2 + 1
             ),) * NUM_SPLINES)
         ).astype('float32')
-    >>> curve_ids = cudf.Series(np.repeat(
+        curve_ids = cudf.Series(np.repeat(
             np.arange(0, NUM_SPLINES), SPLINE_LENGTH * 2 - 1
         ), dtype="int32")
-    >>> new_points = curve(new_samples, curve_ids)
+        new_points = curve(new_samples, curve_ids)
+
     """
 
-    def __init__(self, x, y, ids=None, size=None, offset=None):
+    def __init__(self, t, y, ids=None, size=None, prefixes=None):
+        """
+        Computes various error preconditions on the input data, then
+        uses CUDA to compute cubic splines for each set of input
+        coordinates on the GPU in parallel.
+
+        Parameters
+        ----------
+        t : cudf.Series
+            time sample values. Must be monotonically increasing.
+        y : cudf.Series
+            columns to have curves fit to according to x
+        ids (Optional) : cudf.Series
+            ids of each spline
+        size (Optional) : cudf.Series
+            fixed size of each spline
+        prefixes (Optional) : cudf.Series
+            alternative to `size`, allows splines of varying
+            length. Not yet fully supported.
+
+        Returns
+        -------
+        CubicSpline : callable `o`
+            ``o.c`` contains the coefficients that can be used to compute new
+            points along the spline fitting the original ``t`` data. ``o(n)``
+            interpolates the spline coordinates along new input values ``n``.
+        """
+
         # error protections:
-        if len(x) < 5:
+        if len(t) < 5:
             raise ValueError(
                 "Use of GPU cubic spline requires splines of length > 4"
             )
-        if not isinstance(x, Series):
+        if not isinstance(t, Series):
             raise TypeError(
                 "Error: input independent vars must be cudf Series"
             )
@@ -111,7 +116,7 @@ class CubicSpline:
             raise TypeError(
                 "Error: input dependent vars must be cudf Series or DataFrame"
             )
-        if not len(x) == len(y):
+        if not len(t) == len(y):
             raise TypeError(
                 "Error: dependent and independent vars have different length"
             )
@@ -123,33 +128,33 @@ class CubicSpline:
             if not ids.dtype == np.int32:
                 raise TypeError("Error: int32 only supported at this time.")
             self.ids = ids
-        self.size = size if size is not None else len(x)
+        self.size = size if size is not None else len(t)
         if not isinstance(self.size, int):
             raise TypeError("Error: size must be an integer")
-        if not ((len(x) % self.size) == 0):
+        if not ((len(t) % self.size) == 0):
             raise ValueError(
                 "Error: length of input is not a multiple of size"
             )
-        if not isinstance(x, Series):
+        if not isinstance(t, Series):
             raise TypeError("cuspatial.CubicSpline requires a cudf.Series")
-        if not x.dtype == np.float32:
+        if not t.dtype == np.float32:
             raise TypeError("Error: float32 only supported at this time.")
         if not isinstance(y, Series):
             raise TypeError("cuspatial.CubicSpline requires a cudf.Series")
         if not y.dtype == np.float32:
             raise TypeError("Error: float32 only supported at this time.")
-        self.x = x
+        self.t = t
         self.y = y
-        if offset is None:
-            self.offset = Series(
-                cp.arange((len(x) / self.size) + 1) * self.size
+        if prefixes is None:
+            self.prefix = Series(
+                cp.arange((len(t) / self.size) + 1) * self.size
             ).astype("int32")
         else:
-            if not isinstance(offset, Series):
+            if not isinstance(prefixes, Series):
                 raise TypeError("cuspatial.CubicSpline requires a cudf.Series")
-            if not offset.dtype == np.int32:
+            if not prefixes.dtype == np.int32:
                 raise TypeError("Error: int32 only supported at this time.")
-            self.offset = offset
+            self.prefix = prefixes
 
         self.c = self._compute_coefficients()
 
@@ -159,13 +164,13 @@ class CubicSpline:
         """
         if isinstance(self.y, Series):
             return _cubic_spline_coefficients(
-                self.x, self.y, self.ids, self.offset
+                self.t, self.y, self.ids, self.prefix
             )
         else:
             c = {}
             for col in self.y.columns:
                 c[col] = _cubic_spline_coefficients(
-                    self.x, self.y, self.ids, self.offset
+                    self.t, self.y, self.ids, self.prefix
                 )
             return c
 
@@ -182,7 +187,7 @@ class CubicSpline:
                     cp.repeat(cp.array(0), len(coordinates))
                 ).astype("int32")
             result = _cubic_spline_fit(
-                coordinates, self.groups, self.offset, self.x, self.c
+                coordinates, self.groups, self.prefix, self.t, self.c
             )
             return Series(result)
         else:

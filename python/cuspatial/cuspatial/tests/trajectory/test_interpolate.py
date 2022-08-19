@@ -82,7 +82,7 @@ def test_cusparse():
         cudf.Series([3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3]).astype(
             "float32"
         ),
-        offset=cudf.Series([0, 5, 10, 15]).astype("int32"),
+        prefixes=cudf.Series([0, 5, 10, 15]).astype("int32"),
     )
     cudf.testing.assert_frame_equal(
         result.c,
@@ -156,7 +156,7 @@ def test_class_triple():
         "float32"
     )
     prefixes = cudf.Series([0, 5, 10, 15]).astype("int32")
-    g = cuspatial.interpolate.CubicSpline(t, x, offset=prefixes)
+    g = cuspatial.interpolate.CubicSpline(t, x, prefixes=prefixes)
     groups = cudf.Series(
         np.ravel(np.array([np.repeat(0, 5), np.repeat(1, 5), np.repeat(2, 5)]))
     )
@@ -171,7 +171,7 @@ def test_class_triple_six():
         [3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1]
     ).astype("float32")
     prefixes = cudf.Series([0, 6, 12, 18]).astype("int32")
-    g = cuspatial.interpolate.CubicSpline(t, x, offset=prefixes)
+    g = cuspatial.interpolate.CubicSpline(t, x, prefixes=prefixes)
     groups = cudf.Series(
         np.ravel(np.array([np.repeat(0, 6), np.repeat(1, 6), np.repeat(2, 6)]))
     )
@@ -186,7 +186,7 @@ def test_class_triple_six_splits():
         [3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1, 3, 2, 3, 4, 3, 1]
     ).astype("float32")
     prefixes = cudf.Series([0, 6, 12, 18]).astype("int32")
-    g = cuspatial.interpolate.CubicSpline(t, x, offset=prefixes)
+    g = cuspatial.interpolate.CubicSpline(t, x, prefixes=prefixes)
     groups = cudf.Series(
         np.ravel(
             np.array([np.repeat(0, 12), np.repeat(1, 12), np.repeat(2, 12)])
@@ -236,7 +236,7 @@ def test_class_new_interpolation():
     new_samples = cudf.Series(np.hstack((np.linspace(0, 4, 9),) * 3)).astype(
         "float32"
     )
-    curve = cuspatial.CubicSpline(t, y, offset=prefix_sum)
+    curve = cuspatial.CubicSpline(t, y, prefixes=prefix_sum)
     new_x = cudf.Series(np.repeat(np.arange(0, 3), 9)).astype("int32")
     old_x = cudf.Series(np.repeat(np.arange(0, 3), 5)).astype("int32")
     new_points = curve(new_samples, groups=new_x)
