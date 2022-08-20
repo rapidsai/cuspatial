@@ -19,33 +19,21 @@
 #include <cudf/column/column_view.hpp>
 #include <cudf/utilities/span.hpp>
 
+#include <thrust/optional.h>
+
+#include <tuple>
+
 namespace cuspatial {
 
-std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-pairwise_point_linestring_nearest_point(
-  cudf::column_view points_x,
-  cudf::column_view points_y,
+std::tuple<std::optional<std::unique_ptr<cudf::column>>,
+           std::unique_ptr<cudf::column>,
+           std::unique_ptr<cudf::column>>
+pairwise_point_linestring_nearest_point_segment_idx(
+  std::optional<cudf::device_span<cudf::size_type>> multipoint_parts_offsets,
+  cudf::column_view points_xy,
+  std::optional<cudf::device_span<cudf::size_type>> multilinestring_parts_offsets,
   cudf::device_span<cudf::size_type> linestring_offsets,
-  cudf::column_view linestring_points_x,
-  cudf::column_view linestring_points_y,
+  cudf::column_view linestring_points_xy,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
-
-std::unique_ptr<cudf::column> pairwise_point_linestring_nearest_segment_idx(
-  cudf::column_view points_x,
-  cudf::column_view points_y,
-  cudf::device_span<cudf::size_type> linestring_offsets,
-  cudf::column_view linestring_points_x,
-  cudf::column_view linestring_points_y,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
-
-std::
-  tuple<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-  pairwise_point_linestring_nearest_point_segment_idx(
-    cudf::column_view points_x,
-    cudf::column_view points_y,
-    cudf::device_span<cudf::size_type> linestring_offsets,
-    cudf::column_view linestring_points_x,
-    cudf::column_view linestring_points_y,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial
