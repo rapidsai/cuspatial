@@ -21,7 +21,7 @@ from shapely.geometry import (
 
 import cudf
 
-import cuspatial.core._column.pygeoarrow as pygeoarrow
+import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn, GeoMeta
 from cuspatial.io.geopandas_reader import Feature_Enum
 
