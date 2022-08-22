@@ -3,7 +3,7 @@
 This document serves as a guide for contributors to libcuspatial C++ code. Developers should also
 refer to these additional files for further documentation of libcudf best practices.
 
-* [Documentation Guide](DOCUMENTATION.md) for guidelines on documenting libcudf code.
+* [Documentation Guide](DOCUMENTATION.md) for guidelines on documenting libcuspatial code.
 * [Testing Guide](TESTING.md) for guidelines on writing unit tests.
 * [Benchmarking Guide](BENCHMARKING.md) for guidelines on writing unit benchmarks.
 
@@ -119,6 +119,7 @@ and we try to follow his rules: "No raw loops. No raw pointers. No raw synchroni
  * Prefer algorithms from STL and Thrust to raw loops.
  * Prefer libcudf and RMM [owning data structures and views](#libcudf-data-structures) to raw
    pointers and raw memory allocation.
+ * Prefer dispatching kernels to streams instead of explicit synchronization.
 
 Documentation is discussed in the [Documentation Guide](DOCUMENTATION.md).
 
@@ -722,7 +723,7 @@ void trivial_types_only(T t){
 Columns may contain data of a number of types. cuDF supports a variety of types that are not used
 in cuSpatial. cuSpatial functions mostly operate on numeric and timestamp data. For more information
 on libcudf data types see the
-[libcudf developer guide](https://github.com/rapidsai/cudf/blob/main/cpp/docs/DEVELOPER_GUIDE.md).
+[libcudf developer guide](https://github.com/rapidsai/cudf/blob/main/cpp/docs/DEVELOPER_GUIDE.md#data-types).
 
 # Type Dispatcher
 
