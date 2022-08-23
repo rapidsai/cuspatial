@@ -6,7 +6,7 @@ import pyarrow as pa
 import cudf
 from cudf.core.column import ColumnBase
 
-from cuspatial.geometry.geometa import GeoMeta
+from cuspatial.core._column.geometa import GeoMeta
 
 T = TypeVar("T", bound="GeoColumn")
 
