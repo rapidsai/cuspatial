@@ -15,7 +15,7 @@ from cuspatial._lib.point_linestring_distance import (
 from cuspatial._lib.spatial import haversine_distance as cpp_haversine_distance
 from cuspatial.core.geoseries import GeoSeries
 from cuspatial.utils.column_utils import (
-    contains_only_linestring,
+    contains_only_linestrings,
     contains_only_points,
     normalize_point_columns,
 )
@@ -229,7 +229,7 @@ def pairwise_point_linestring_distance(
     if not contains_only_points(points):
         raise ValueError("`points` array must contain only points")
 
-    if not contains_only_linestring(linestrings):
+    if not contains_only_linestrings(linestrings):
         raise ValueError("`linestrings` array must contain only linestrings")
 
     if len(points.points.xy) > 0 and len(points.multipoints.xy) > 0:
