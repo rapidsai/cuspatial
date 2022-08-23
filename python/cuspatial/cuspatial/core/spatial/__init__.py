@@ -1,12 +1,12 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
-from .bound import (
+from .bounding import (
     polygon_bounding_boxes,
     polyline_bounding_boxes,
 )
-from .filter import points_in_spatial_window
+from .filtering import points_in_spatial_window
 
-from .index import quadtree_on_points
+from .indexing import quadtree_on_points
 
 from .join import (
     point_in_polygon,
@@ -15,13 +15,13 @@ from .join import (
     quadtree_point_to_nearest_polyline,
 )
 
-from .measure import (
+from .distance import (
     directed_hausdorff_distance,
     haversine_distance,
     pairwise_linestring_distance,
 )
 
-from .project import (
+from .projection import (
     lonlat_to_cartesian,
 )
 
