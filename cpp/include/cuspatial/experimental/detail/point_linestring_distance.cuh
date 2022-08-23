@@ -61,21 +61,22 @@ namespace detail {
  * @tparam OutputIterator Iterator to output distances. Must meet requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  *
- * @param[in] point_parts_offset_first Iterator to the beginning of the range of the multipoint
+ * @param[in] point_geometry_offset_first Iterator to the beginning of the range of the multipoint
  * parts
- * @param[in] point_parts_offset_last Iterator to the end of the range of the multipoint parts
+ * @param[in] point_geometry_offset_last Iterator to the end of the range of the multipoint parts
  * @param[in] points_first Iterator to the beginning of the range of the points
  * @param[in] points_last  Iterator to the end of the range of the points
- * @param[in] linestring_parts_offset_first Iterator to the beginning of the range of the linestring
+ * @param[in] linestring_geometry_offset_first Iterator to the beginning of the range of the
+ * linestring parts
+ * @param[in] linestring_geometry_offset_last Iterator to the end of the range of the linestring
  * parts
- * @param[in] linestring_parts_offset_last Iterator to the end of the range of the linestring parts
- * @param[in] linestring_offsets_begin Iterator to the beginning of the range of the linestring
+ * @param[in] linestring_part_offsets_first Iterator to the beginning of the range of the linestring
  * offsets
- * @param[in] linestring_offsets_end Iterator to the beginning of the range of the linestring
+ * @param[in] linestring_part_offsets_last Iterator to the beginning of the range of the linestring
  * offsets
- * @param[in] linestring_points_begin Iterator to the beginning of the range of the linestring
+ * @param[in] linestring_points_first Iterator to the beginning of the range of the linestring
  * points
- * @param[in] linestring_points_end Iterator to the end of the range of the linestring points
+ * @param[in] linestring_points_last Iterator to the end of the range of the linestring points
  * @param[out] distances Iterator to the output range of shortest distances between pairs.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
@@ -87,14 +88,14 @@ template <class Cart2dItA,
           class OffsetIteratorB,
           class OffsetIteratorC,
           class OutputIterator>
-void __global__ pairwise_point_linestring_distance(OffsetIteratorA point_parts_offset_first,
-                                                   OffsetIteratorA point_parts_offset_last,
+void __global__ pairwise_point_linestring_distance(OffsetIteratorA point_geometry_offset_first,
+                                                   OffsetIteratorA point_geometry_offset_last,
                                                    Cart2dItA points_first,
                                                    Cart2dItA points_last,
-                                                   OffsetIteratorB linestring_parts_offset_first,
-                                                   OffsetIteratorB linestring_parts_offset_last,
-                                                   OffsetIteratorC linestring_offsets_first,
-                                                   OffsetIteratorC linestring_offsets_last,
+                                                   OffsetIteratorB linestring_geometry_offset_first,
+                                                   OffsetIteratorB linestring_geometry_offset_last,
+                                                   OffsetIteratorC linestring_part_offsets_first,
+                                                   OffsetIteratorC linestring_part_offsets_last,
                                                    Cart2dItB linestring_points_first,
                                                    Cart2dItB linestring_points_last,
                                                    OutputIterator distances)
@@ -104,31 +105,33 @@ void __global__ pairwise_point_linestring_distance(OffsetIteratorA point_parts_o
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x;
        idx < std::distance(linestring_points_first, thrust::prev(linestring_points_last));
        idx += gridDim.x * blockDim.x) {
-    auto linestring_offsets_iter =
-      thrust::upper_bound(thrust::seq, linestring_offsets_first, linestring_offsets_last, idx);
+    auto linestring_offsets_iter = thrust::upper_bound(
+      thrust::seq, linestring_part_offsets_first, linestring_part_offsets_last, idx);
 
     // Pointer to the last point in the linestring, skip iteration.
     // Note that the last point for the last linestring is guarded by the grid-stride loop.
-    if (linestring_offsets_iter != linestring_offsets_last && *linestring_offsets_iter - 1 == idx) {
+    if (linestring_offsets_iter != linestring_part_offsets_last &&
+        *linestring_offsets_iter - 1 == idx) {
       continue;
     }
 
     auto linestring_offsets_idx =
-      thrust::distance(linestring_offsets_first, thrust::prev(linestring_offsets_iter));
+      thrust::distance(linestring_part_offsets_first, thrust::prev(linestring_offsets_iter));
 
     auto part_offset_iter = thrust::upper_bound(thrust::seq,
-                                                linestring_parts_offset_first,
-                                                linestring_parts_offset_last,
+                                                linestring_geometry_offset_first,
+                                                linestring_geometry_offset_last,
                                                 linestring_offsets_idx);
-    auto part_idx = thrust::distance(linestring_parts_offset_first, thrust::prev(part_offset_iter));
+    auto part_idx =
+      thrust::distance(linestring_geometry_offset_first, thrust::prev(part_offset_iter));
 
     // Reduce the minimum distance between different parts of the multi-point.
     cartesian_2d<T> const a = linestring_points_first[idx];
     cartesian_2d<T> const b = linestring_points_first[idx + 1];
     T min_distance_squared  = std::numeric_limits<T>::max();
 
-    for (auto point_idx = point_parts_offset_first[part_idx];
-         point_idx < point_parts_offset_first[part_idx + 1];
+    for (auto point_idx = point_geometry_offset_first[part_idx];
+         point_idx < point_geometry_offset_first[part_idx + 1];
          point_idx++) {
       cartesian_2d<T> const c = points_first[point_idx];
 
@@ -149,13 +152,13 @@ template <class Cart2dItA,
           class OffsetIteratorB,
           class OffsetIteratorC,
           class OutputIt>
-OutputIt pairwise_point_linestring_distance(OffsetIteratorA point_parts_offset_first,
-                                            OffsetIteratorA point_parts_offset_last,
+OutputIt pairwise_point_linestring_distance(OffsetIteratorA point_geometry_offset_first,
+                                            OffsetIteratorA point_geometry_offset_last,
                                             Cart2dItA points_first,
                                             Cart2dItA points_last,
-                                            OffsetIteratorB linestring_parts_offset_first,
-                                            OffsetIteratorC linestring_offsets_first,
-                                            OffsetIteratorC linestring_offsets_last,
+                                            OffsetIteratorB linestring_geometry_offset_first,
+                                            OffsetIteratorC linestring_part_offsets_first,
+                                            OffsetIteratorC linestring_part_offsets_last,
                                             Cart2dItB linestring_points_first,
                                             Cart2dItB linestring_points_last,
                                             OutputIt distances_first,
@@ -171,7 +174,8 @@ OutputIt pairwise_point_linestring_distance(OffsetIteratorA point_parts_offset_f
                                 detail::iterator_value_type<Cart2dItB>>(),
                 "Inputs must be cuspatial::cartesian_2d");
 
-  auto const num_pairs = thrust::distance(point_parts_offset_first, point_parts_offset_last) - 1;
+  auto const num_pairs =
+    thrust::distance(point_geometry_offset_first, point_geometry_offset_last) - 1;
 
   if (num_pairs == 0) { return distances_first; }
 
@@ -186,14 +190,14 @@ OutputIt pairwise_point_linestring_distance(OffsetIteratorA point_parts_offset_f
     (num_linestring_points + threads_per_block - 1) / threads_per_block;
 
   detail::pairwise_point_linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
-    point_parts_offset_first,
-    point_parts_offset_last,
+    point_geometry_offset_first,
+    point_geometry_offset_last,
     points_first,
     points_last,
-    linestring_parts_offset_first,
-    linestring_parts_offset_first + num_pairs + 1,
-    linestring_offsets_first,
-    linestring_offsets_last,
+    linestring_geometry_offset_first,
+    linestring_geometry_offset_first + num_pairs + 1,
+    linestring_part_offsets_first,
+    linestring_part_offsets_last,
     linestring_points_first,
     linestring_points_last,
     distances_first);

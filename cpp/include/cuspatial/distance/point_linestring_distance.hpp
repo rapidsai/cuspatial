@@ -60,27 +60,29 @@ namespace cuspatial {
  * MultiLinestring: (9, 10) -> (10, 11)
 
  * The input of the above example is:
- * point_part_offsets: {0, 1, 3, 5}
+ * multipoint_geometry_offsets: {0, 1, 3, 5}
  * points_xy: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
- * linestring_part_offsets: {0, 2, 3, 5}
+ * multilinestring_geometry_offsets: {0, 2, 3, 5}
  * linestring_offsets: {0, 2, 4, 6, 8}
  * linestring_xy: {0, -1, -2, -3, -4, -5, -5, -6, 7, 8, 8, 9, 9, 10, 10 ,11}
  *
  * Result: {2.0, 4.24264, 1.41421}
  * ```
  *
- * @param point_parts_offsets Beginning indices to each part of the multi-point
+ * @param multipoint_geometry_offsets Beginning indices to each geometry in the multi-point
  * @param points_xy Interleaved x, y-coordinates of points
- * @param linestring_parts_offsets Beginning indices to each part of the multi-linestring
- * @param linestring_offsets Beginning and ending indices for each linestring in the `linestring_x`
+ * @param multilinestring_geometry_offsets Beginning indices to each geometry in the
+ multi-linestring
+ * @param linestring_part_offsets Beginning and ending indices for each linestring in the
+ `linestring_x`
  * and `linestring_y` arrays. Must satisfy `linestring_offsets.size() + 1 == points_xy.size()`.
  * @param linestring_points_xy Interleaved x, y-coordinates of linestring points.
  * @param mr Device memory resource used to allocate the returned column.
  * @return A column containing the distance between each pair of corresponding points and
  * linestrings.
  *
- * @note Any optional parts indices, if is null, implies the underlying geometry contains only one
- * component. Otherwise, it contains multiple components.
+ * @note Any optional geometry indices, if is nullopt, implies the underlying geometry contains only
+ one component. Otherwise, it contains multiple components.
  *
  * @throws cuspatial::logic_error if the number of points and linestrings do not match.
  * @throws cuspatial::logic_error if there is a size mismatch between the x- and y-coordinates of
@@ -88,10 +90,10 @@ namespace cuspatial {
  * @throws cuspatial::logic_error if the any of the point arrays have mismatched types.
  */
 std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
-  std::optional<cudf::device_span<cudf::size_type const>> point_parts_offsets,
+  std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
   cudf::column_view const& points_xy,
-  std::optional<cudf::device_span<cudf::size_type const>> linestring_parts_offsets,
-  cudf::device_span<cudf::size_type const> linestring_offsets,
+  std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
+  cudf::device_span<cudf::size_type const> linestring_part_offsets,
   cudf::column_view const& linestring_points_xy,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 

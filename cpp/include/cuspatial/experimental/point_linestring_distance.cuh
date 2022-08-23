@@ -30,19 +30,29 @@ namespace cuspatial {
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam Cart2dItB iterator type for point array of the linestring element of each pair. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OffsetIterator iterator type for offset array. Must meet the requirements of
+ * @tparam OffsetIteratorA iterator type for offset array. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OffsetIteratorB iterator type for offset array. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OffsetIteratorC iterator type for offset array. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt iterator type for output array. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  *
- * @param points_first beginning of the range of points making up the first element of each
+ * @param point_geometry_offset_first beginning of the range of geometries of the multipoint of each
  * pair
- * @param points_last end of the range of the points making up the first element of each pair
- * @param linestring_offsets_first beginning of the range of the offsets to the linestring element
- * of each pair
- * @param linestring_points_first beginning of the range of points of the linestring element of each
- * pair
- * @param linestring_points_last end of the range of points of the linestring element of each pair
+ * @param point_geometry_offset_last end of the range of geometries of the multipoint of each pair
+ * @param points_first beginning of the range of points
+ * @param points_last end of the range of the points
+ * @param linestring_geometry_offset_first beginning of the range of the offsets to the geometry of
+ * the multilinestring of each pair, the end range is implied by linestring_geometry_offset_first +
+ * std::distance(`point_geometry_offset_first`, `point_geometry_offset_last`)
+ * @param linestring_offsets_first beginning of the range of the offsets to the starting point
+ * of each linestring
+ * @param linestring_offsets_last end of the range of the offsets to the starting point
+ * of each linestring
+ * @param linestring_points_first beginning of the range of points of the linestring
+ * @param linestring_points_last end of the range of points of the linestring
  * @param distances_first beginning the output range of distances
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
  *
@@ -60,13 +70,13 @@ template <class Cart2dItA,
           class OffsetIteratorC,
           class OutputIt>
 OutputIt pairwise_point_linestring_distance(
-  OffsetIteratorA point_parts_offset_first,
-  OffsetIteratorA point_parts_offset_last,
+  OffsetIteratorA point_geometry_offset_first,
+  OffsetIteratorA point_geometry_offset_last,
   Cart2dItA points_first,
   Cart2dItA points_last,
-  OffsetIteratorB linestring_parts_offset_first,
-  OffsetIteratorC linestring_offsets_first,
-  OffsetIteratorC linestring_offsets_last,
+  OffsetIteratorB linestring_geometry_offset_first,
+  OffsetIteratorC linestring_part_offsets_first,
+  OffsetIteratorC linestring_part_offsets_last,
   Cart2dItB linestring_points_first,
   Cart2dItB linestring_points_last,
   OutputIt distances_first,
