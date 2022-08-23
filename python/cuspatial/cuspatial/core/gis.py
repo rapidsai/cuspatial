@@ -12,6 +12,9 @@ from cuspatial._lib.linestring_distance import (
 from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_point_in_polygon,
 )
+from cuspatial._lib.point_linestring_distance import (
+    pairwise_point_linestring_distance as c_pairwise_point_linestring_distance,
+)
 from cuspatial._lib.polygon_bounding_boxes import (
     polygon_bounding_boxes as cpp_polygon_bounding_boxes,
 )
@@ -22,8 +25,13 @@ from cuspatial._lib.spatial import (
     haversine_distance as cpp_haversine_distance,
     lonlat_to_cartesian as cpp_lonlat_to_cartesian,
 )
+from cuspatial.core.geoseries import GeoSeries
 from cuspatial.utils import gis_utils
-from cuspatial.utils.column_utils import normalize_point_columns
+from cuspatial.utils.column_utils import (
+    contains_only_linestring,
+    contains_only_points,
+    normalize_point_columns,
+)
 
 
 def directed_hausdorff_distance(xs, ys, space_offsets):
@@ -434,6 +442,44 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
         {
             None: cpp_pairwise_linestring_distance(
                 offsets1, xs1, ys1, offsets2, xs2, ys2
+            )
+        }
+    )
+
+
+def pairwise_point_linestring_distance(
+    points: GeoSeries, linestrings: GeoSeries
+):
+    if not contains_only_points(points):
+        raise ValueError("`points` array must contain only points")
+
+    if not contains_only_linestring(linestrings):
+        raise ValueError("`linestrings` array must contain only linestrings")
+
+    if len(points.points.xy) > 0 and len(points.multipoints.xy) > 0:
+        raise NotImplementedError(
+            "Mixing point and multipoint geometries is not supported"
+        )
+
+    points_xy = (
+        points.points.xy
+        if len(points.points.xy) > 0
+        else points.multipoints.xy
+    )
+    points_geometry_offset = (
+        None
+        if len(points.points.xy) > 0
+        else points.multipoints.geometry_offset._column
+    )
+
+    return Series._from_data(
+        {
+            None: c_pairwise_point_linestring_distance(
+                points_xy._column,
+                linestrings.lines.part_offset._column,
+                linestrings.lines.xy._column,
+                points_geometry_offset,
+                linestrings.lines.geometry_offset._column,
             )
         }
     )

@@ -8,6 +8,7 @@ from .core.gis import (
     polygon_bounding_boxes,
     polyline_bounding_boxes,
     pairwise_linestring_distance,
+    pairwise_point_linestring_distance,
 )
 from .core.indexing import quadtree_on_points
 from .core.interpolate import CubicSpline
