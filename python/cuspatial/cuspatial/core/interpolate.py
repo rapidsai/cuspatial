@@ -69,33 +69,35 @@ class CubicSpline:
     ----
     cuSpatial will outperform scipy when many splines are
     fit simultaneously. Data must be arranged in a structure of arrays (SoA)
-    format, and the exclusive `prefix_sum` of the separate curves must also be
-    passed to the function. See example for detail.
+    format, and the exclusive `offset` of the separate curves must also be
+    passed to the function.
 
     Example
     -------
-    >>> import cudf, cuspatial
-    >>> NUM_SPLINES = 100000
-    >>> SPLINE_LENGTH = 101
-    >>> x = cudf.Series(
-            np.hstack((np.arange(SPLINE_LENGTH),) * NUM_SPLINES)
-        ).astype('float32')
-    >>> y = cudf.Series(
-            np.random.random(SPLINE_LENGTH*NUM_SPLINES)
-        ).astype('float32')
-    >>> prefix_sum = cudf.Series(
-            np.arange(NUM_SPLINES + 1)*SPLINE_LENGTH
-        ).astype('int32')
-    >>> curve = cuspatial.CubicSpline(x, y, offset=prefix_sum)
-    >>> new_samples = cudf.Series(
-            np.hstack((np.linspace(
-                0, (SPLINE_LENGTH - 1), (SPLINE_LENGTH - 1) * 2 + 1
-            ),) * NUM_SPLINES)
-        ).astype('float32')
-    >>> curve_ids = cudf.Series(np.repeat(
-            np.arange(0, NUM_SPLINES), SPLINE_LENGTH * 2 - 1
-        ), dtype="int32")
-    >>> new_points = curve(new_samples, curve_ids)
+    # The following example only serves as demonstration purposes of
+    # cuspatial.CubicSpline API. cuSpatial does not out perform scipy when
+    # fitting a small number of curves shown in the example below.
+    >>> import cuspatial, cudf
+    >>> import numpy as np
+    >>> def f(x):
+    ...     return x**3+4*x**2-7*x+1
+    ...
+    >>> x = np.array([0, 1, 2, 3, 4] + [10, 11, 12, 13, 14])
+    >>> y = map(f, x)
+    >>> x, y = cudf.Series(x, dtype='f4'), cudf.Series(y, dtype='f4')
+    >>> offset = cudf.Series([0, 5, 10], dtype='i4')
+    >>> curve = cuspatial.CubicSpline(x, y, offset=offset)
+    UserWarning: fitting a small number of curves on device may suffer from
+    kernel launch overheads.
+    >>> x_sample1 = [*np.arange(-1, 5, 0.3)]
+    >>> x_sample2 = [*np.arange(11, 12, 0.1)]
+    >>> curve_ids = cudf.Series(
+    ...  [0]*len(x_sample1) + [1]*len(x_sample2), dtype='i4'
+    ... )
+    >>> x_sample = cudf.Series(x_sample1 + x_sample2, dtype='f4')
+    >>> y_sampled = curve(x_sample, curve_ids)
+    >>> y_sampled1 = y_sampled[0:len(x_sample1)]
+    >>> y_sampled2 = y_sampled[len(x_sample1):]
     """
 
     def __init__(self, x, y, ids=None, size=None, offset=None):
@@ -152,9 +154,9 @@ class CubicSpline:
                 raise TypeError("Error: int32 only supported at this time.")
             self.offset = offset
 
-        if self.offset.size() < 15:
+        if self.offset.size < 15:
             warnings.warn(
-                "Performance warning: fitting a small number of curves on "
+                "Fitting a small number of curves on "
                 "device may suffer from kernel launch overheads."
             )
 
