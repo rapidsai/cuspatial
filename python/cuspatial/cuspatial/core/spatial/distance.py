@@ -3,7 +3,6 @@
 from cudf import DataFrame, Series
 from cudf.core.column import as_column
 
-from cuspatial import GeoSeries
 from cuspatial._lib.hausdorff import (
     directed_hausdorff_distance as cpp_directed_hausdorff_distance,
 )
@@ -14,6 +13,7 @@ from cuspatial._lib.point_linestring_distance import (
     pairwise_point_linestring_distance as c_pairwise_point_linestring_distance,
 )
 from cuspatial._lib.spatial import haversine_distance as cpp_haversine_distance
+from cuspatial.core.geoseries import GeoSeries
 from cuspatial.utils.column_utils import (
     contains_only_linestring,
     contains_only_points,
