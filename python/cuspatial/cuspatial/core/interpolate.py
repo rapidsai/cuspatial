@@ -1,4 +1,5 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
+import warnings
 
 import cupy as cp
 import numpy as np
@@ -150,6 +151,12 @@ class CubicSpline:
             if not offset.dtype == np.int32:
                 raise TypeError("Error: int32 only supported at this time.")
             self.offset = offset
+
+        if self.offset.size() < 15:
+            warnings.warn(
+                "Performance warning: fitting a small number of curves on "
+                "device may suffer from kernel launch overheads."
+            )
 
         self.c = self._compute_coefficients()
 
