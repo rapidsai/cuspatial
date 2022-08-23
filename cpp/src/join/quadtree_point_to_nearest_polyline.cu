@@ -34,6 +34,7 @@
 
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
+#include <thrust/execution_policy.h>
 #include <thrust/fill.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
