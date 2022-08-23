@@ -154,7 +154,7 @@ The following guidelines apply to organizing `#include` lines.
 # libcuspatial Data Structures
 
 The header-only libcuspatial API is agnostic to the type of containers used by the application to
-hold its data, because the header-only API is based on iterators. The cuDF-based cuSpatial API, on 
+hold its data, because the header-only API is based on iterators (see [Iterator Requirements](#iterator-requirements)). The cuDF-based cuSpatial API, on 
 the other hand, uses cuDF Columns and Tables to store and access application data. 
 
 See the [libcudf Developer guide](https://github.com/rapidsai/cudf/blob/main/cpp/docs/DEVELOPER_GUIDE.md#libcudf-data-structures)
@@ -329,6 +329,11 @@ There are a few key points to notice.
      `haversine_distance` will not need this returned iterator.
   9. All APIs that run CUDA device code (including Thrust algorithms) or allocate memory take a CUDA
      stream on which to execute the device code and allocate memory.
+
+## Iterator requirements
+
+All input and output iterators must be device-accessible with random access. They must satisfy the
+requirements of C++ [LegacyRandomAccessIterator][LinkLRAI]. Output iterators must be mutable.
 
 ## Multiple Return Values
 
@@ -738,3 +743,5 @@ API. The `cudf::type_dispatcher` is a central utility that automates the process
 runtime type information in `data_type` to a concrete C++ type. See the
 [libcudf developer guide](https://github.com/rapidsai/cudf/blob/main/cpp/docs/DEVELOPER_GUIDE.md#type-dispatcher)
 for more information.
+
+[LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator "LegacyRandomAccessIterator"
