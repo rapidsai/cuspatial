@@ -1,7 +1,7 @@
 Spatial
 -------
 
-Functions that operates on spatial data.
+Functions that operate on spatial data.
 
 .. currentmodule:: cuspatial
 
