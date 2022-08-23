@@ -127,7 +127,7 @@ def test_groupby(gpdf):
 
 def test_type_persistence(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
-    assert type(cugpdf["geometry"]) == cuspatial.geometry.geoseries.GeoSeries
+    assert type(cugpdf["geometry"]) == cuspatial.GeoSeries
 
 
 def test_interleaved_point(gpdf, polys):

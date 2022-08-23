@@ -1,12 +1,12 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION
 
 from geopandas import GeoDataFrame as gpGeoDataFrame
+from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
 
-from cuspatial.geometry.geocolumn import GeoColumn, GeoMeta
-from cuspatial.geometry.geoseries import GeoSeries
-from cuspatial.geometry.geoutil import is_geometry_type
+from cuspatial.core._column.geocolumn import GeoColumn, GeoMeta
+from cuspatial.core.geoseries import GeoSeries
 from cuspatial.io.geopandas_reader import GeoPandasReader
 
 
@@ -131,3 +131,14 @@ class _GeoSeriesUtility:
             return GeoSeries(new_column, name=name, index=index)
         else:
             return cudf.Series(new_column, name=name, index=index)
+
+
+def is_geometry_type(obj):
+    """
+    Returns `True` if the column is a `GeoPandas` or `cuspatial.GeoSeries`
+    """
+    if isinstance(obj, (GeoSeries, GeoColumn)):
+        return True
+    if gp_is_geometry_type(obj):
+        return True
+    return False
