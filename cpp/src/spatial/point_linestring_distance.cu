@@ -35,6 +35,8 @@
 #include <memory>
 #include <type_traits>
 
+#include "../utility/multigeom_dispatch.hpp"
+
 namespace cuspatial {
 
 namespace {
@@ -116,45 +118,47 @@ struct pairwise_point_linestring_distance_functor {
 namespace detail {
 
 template <bool is_multi_point, bool is_multi_linestring>
-std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
-  std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
-  cudf::column_view const& points_xy,
-  std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
-  cudf::device_span<cudf::size_type const> linestring_part_offsets,
-  cudf::column_view const& linestring_points_xy,
-  rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource* mr)
-{
-  CUSPATIAL_EXPECTS(points_xy.size() % 2 == 0 && linestring_points_xy.size() % 2 == 0,
-                    "Points array must contain even number of coordinates.");
+struct pairwise_point_linestring_distance_f {
+  std::unique_ptr<cudf::column> operator()(
+    std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
+    cudf::column_view const& points_xy,
+    std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
+    cudf::device_span<cudf::size_type const> linestring_part_offsets,
+    cudf::column_view const& linestring_points_xy,
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
+  {
+    CUSPATIAL_EXPECTS(points_xy.size() % 2 == 0 && linestring_points_xy.size() % 2 == 0,
+                      "Points array must contain even number of coordinates.");
 
-  auto num_lhs =
-    is_multi_point ? multipoint_geometry_offsets.value().size() : (points_xy.size() / 2 + 1);
-  auto num_rhs = is_multi_linestring ? multilinestring_geometry_offsets.value().size()
-                                     : linestring_part_offsets.size();
+    auto num_lhs =
+      is_multi_point ? multipoint_geometry_offsets.value().size() : (points_xy.size() / 2 + 1);
+    auto num_rhs = is_multi_linestring ? multilinestring_geometry_offsets.value().size()
+                                       : linestring_part_offsets.size();
 
-  CUSPATIAL_EXPECTS(num_lhs == num_rhs, "Mismatch number of points and linestrings.");
+    CUSPATIAL_EXPECTS(num_lhs == num_rhs, "Mismatch number of points and linestrings.");
 
-  CUSPATIAL_EXPECTS(points_xy.type() == linestring_points_xy.type(),
-                    "Points and linestring coordinates must have the same type.");
+    CUSPATIAL_EXPECTS(points_xy.type() == linestring_points_xy.type(),
+                      "Points and linestring coordinates must have the same type.");
 
-  CUSPATIAL_EXPECTS(!(points_xy.has_nulls() || linestring_points_xy.has_nulls()),
-                    "All inputs must not have nulls.");
+    CUSPATIAL_EXPECTS(!(points_xy.has_nulls() || linestring_points_xy.has_nulls()),
+                      "All inputs must not have nulls.");
 
-  if (num_rhs - 1 == 0) return cudf::make_empty_column(points_xy.type());
+    if (num_rhs - 1 == 0) return cudf::make_empty_column(points_xy.type());
 
-  return cudf::type_dispatcher(
-    points_xy.type(),
-    pairwise_point_linestring_distance_functor<is_multi_point, is_multi_linestring>{},
-    num_lhs - 1,
-    multipoint_geometry_offsets,
-    points_xy,
-    multilinestring_geometry_offsets,
-    linestring_part_offsets,
-    linestring_points_xy,
-    stream,
-    mr);
-}
+    return cudf::type_dispatcher(
+      points_xy.type(),
+      pairwise_point_linestring_distance_functor<is_multi_point, is_multi_linestring>{},
+      num_lhs - 1,
+      multipoint_geometry_offsets,
+      points_xy,
+      multilinestring_geometry_offsets,
+      linestring_part_offsets,
+      linestring_points_xy,
+      stream,
+      mr);
+  }
+};
 
 }  // namespace detail
 
@@ -166,39 +170,16 @@ std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
   cudf::column_view const& linestring_points_xy,
   rmm::mr::device_memory_resource* mr)
 {
-  if (multipoint_geometry_offsets.has_value() && multilinestring_geometry_offsets.has_value())
-    return detail::pairwise_point_linestring_distance<true, true>(multipoint_geometry_offsets,
-                                                                  points_xy,
-                                                                  multilinestring_geometry_offsets,
-                                                                  linestring_part_offsets,
-                                                                  linestring_points_xy,
-                                                                  rmm::cuda_stream_default,
-                                                                  mr);
-  else if (multipoint_geometry_offsets.has_value() && !multilinestring_geometry_offsets.has_value())
-    return detail::pairwise_point_linestring_distance<true, false>(multipoint_geometry_offsets,
-                                                                   points_xy,
-                                                                   multilinestring_geometry_offsets,
-                                                                   linestring_part_offsets,
-                                                                   linestring_points_xy,
-                                                                   rmm::cuda_stream_default,
-                                                                   mr);
-  else if (!multipoint_geometry_offsets.has_value() && multilinestring_geometry_offsets.has_value())
-    return detail::pairwise_point_linestring_distance<false, true>(multipoint_geometry_offsets,
-                                                                   points_xy,
-                                                                   multilinestring_geometry_offsets,
-                                                                   linestring_part_offsets,
-                                                                   linestring_points_xy,
-                                                                   rmm::cuda_stream_default,
-                                                                   mr);
-  else
-    return detail::pairwise_point_linestring_distance<false, false>(
-      multipoint_geometry_offsets,
-      points_xy,
-      multilinestring_geometry_offsets,
-      linestring_part_offsets,
-      linestring_points_xy,
-      rmm::cuda_stream_default,
-      mr);
+  return multigeom_dispatch<detail::pairwise_point_linestring_distance_f>(
+    multipoint_geometry_offsets.has_value(),
+    multilinestring_geometry_offsets.has_value(),
+    multipoint_geometry_offsets,
+    points_xy,
+    multilinestring_geometry_offsets,
+    linestring_part_offsets,
+    linestring_points_xy,
+    rmm::cuda_stream_default,
+    mr);
 }
 
 }  // namespace cuspatial
