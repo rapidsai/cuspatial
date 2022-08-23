@@ -42,9 +42,51 @@ struct DeriveTrajectoriesTest : public ::testing::Test {
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(DeriveTrajectoriesTest, TestTypes);
 
-TYPED_TEST(DeriveTrajectoriesTest, OneMillionTrajectories)
+TYPED_TEST(DeriveTrajectoriesTest, OneMillionSmallTrajectories)
 {
   auto data = cuspatial::test::trajectory_test_data<TypeParam>(1'000'000, 50);
+
+  auto traj_ids    = rmm::device_vector<std::int32_t>(data.ids.size());
+  auto traj_points = rmm::device_vector<cuspatial::vec_2d<TypeParam>>(data.points.size());
+  auto traj_times  = rmm::device_vector<cuspatial::test::time_point>(data.times.size());
+
+  auto traj_offsets = cuspatial::derive_trajectories(data.ids.begin(),
+                                                     data.ids.end(),
+                                                     data.points.begin(),
+                                                     data.times.begin(),
+                                                     traj_ids.begin(),
+                                                     traj_points.begin(),
+                                                     traj_times.begin());
+
+  EXPECT_EQ(traj_ids, data.ids_sorted);
+  EXPECT_EQ(traj_points, data.points_sorted);
+  EXPECT_EQ(traj_times, data.times_sorted);
+}
+
+TYPED_TEST(DeriveTrajectoriesTest, OneHundredLargeTrajectories)
+{
+  auto data = cuspatial::test::trajectory_test_data<TypeParam>(100, 1'000'000);
+
+  auto traj_ids    = rmm::device_vector<std::int32_t>(data.ids.size());
+  auto traj_points = rmm::device_vector<cuspatial::vec_2d<TypeParam>>(data.points.size());
+  auto traj_times  = rmm::device_vector<cuspatial::test::time_point>(data.times.size());
+
+  auto traj_offsets = cuspatial::derive_trajectories(data.ids.begin(),
+                                                     data.ids.end(),
+                                                     data.points.begin(),
+                                                     data.times.begin(),
+                                                     traj_ids.begin(),
+                                                     traj_points.begin(),
+                                                     traj_times.begin());
+
+  EXPECT_EQ(traj_ids, data.ids_sorted);
+  EXPECT_EQ(traj_points, data.points_sorted);
+  EXPECT_EQ(traj_times, data.times_sorted);
+}
+
+TYPED_TEST(DeriveTrajectoriesTest, OneVeryLargeTrajectory)
+{
+  auto data = cuspatial::test::trajectory_test_data<TypeParam>(1, 100'000'000);
 
   auto traj_ids    = rmm::device_vector<std::int32_t>(data.ids.size());
   auto traj_points = rmm::device_vector<cuspatial::vec_2d<TypeParam>>(data.points.size());

@@ -65,7 +65,6 @@ TEST_F(DeriveTrajectoriesTest, SizeMismatch)
 
 TEST_F(DeriveTrajectoriesTest, TypeError)
 {
-  // auto sorted = cuspatial::test::make_test_trajectories_table<double>(1000, this->mr());
   auto const size = 1000;
 
   {
@@ -91,7 +90,6 @@ TEST_F(DeriveTrajectoriesTest, TypeError)
 
 TEST_F(DeriveTrajectoriesTest, Nulls)
 {
-  //  auto sorted = cuspatial::test::make_test_trajectories_table<double>(1000, this->mr());
   auto const size = 1000;
 
   {
