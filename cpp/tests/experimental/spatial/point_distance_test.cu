@@ -24,9 +24,12 @@
 
 #include <thrust/generate.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/random/linear_congruential_engine.h>
 #include <thrust/random/normal_distribution.h>
+#include <thrust/transform.h>
 #include <thrust/tuple.h>
 
 #include <gmock/gmock.h>
