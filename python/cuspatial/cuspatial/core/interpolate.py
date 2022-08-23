@@ -67,9 +67,9 @@ class CubicSpline:
     Note
     ----
     cuSpatial will outperform scipy when many splines are
-    fit simultaneously. Data must be arranged in a SoA format, and the
-    exclusive `prefix_sum` of the separate curves must also be passed to the
-    function. See example for detail.
+    fit simultaneously. Data must be arranged in a structure of arrays (SoA)
+    format, and the exclusive `prefix_sum` of the separate curves must also be
+    passed to the function. See example for detail.
 
     Example
     -------
