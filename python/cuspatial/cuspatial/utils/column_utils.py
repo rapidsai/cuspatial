@@ -46,15 +46,20 @@ def normalize_timestamp_column(ts, fallback_dtype="datetime64[ms]"):
     return ts if is_datetime_dtype(ts.dtype) else ts.astype(fallback_dtype)
 
 
-def is_single_type_geometry(gs: GeoSeries):
+def contain_single_type_geometry(gs: GeoSeries):
     """
     Returns true if `gs` contains only single type of geometries
 
     A geometry is considered as the same type to its multi-geometry variant.
     """
+    has_points = len(gs.points.xy) > 0
+    has_multipoints = len(gs.multipoints.xy) > 0
+    has_lines = len(gs.lines.xy) > 0
+    has_polygons = len(gs.polygons.xy) > 0
 
-    return sum(len(col.xy) > 0 for col in [gs.lines, gs.polygons]) + (
-        len(gs.points.xy) > 0 or len(gs.multipoints.xy) > 0
+    return (
+        len(gs) > 0
+        and ((has_points or has_multipoints) + has_lines + has_polygons) == 1
     )
 
 
@@ -63,22 +68,22 @@ def contains_only_points(gs: GeoSeries):
     Returns true if `gs` contains only points or multipoints
     """
 
-    return is_single_type_geometry(gs) and (
+    return contain_single_type_geometry(gs) and (
         len(gs.points.xy) > 0 or len(gs.multipoints.xy) > 0
     )
 
 
-def contains_only_linestring(gs: GeoSeries):
+def contains_only_linestrings(gs: GeoSeries):
     """
     Returns true if `gs` contains only linestring
     """
 
-    return is_single_type_geometry(gs) and len(gs.lines.xy) > 0
+    return contain_single_type_geometry(gs) and len(gs.lines.xy) > 0
 
 
-def contains_only_polygon(gs: GeoSeries):
+def contains_only_polygons(gs: GeoSeries):
     """
     Returns true if `gs` contains only polygon
     """
 
-    return is_single_type_geometry(gs) and len(gs.polygons.xy) > 0
+    return contain_single_type_geometry(gs) and len(gs.polygons.xy) > 0
