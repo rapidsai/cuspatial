@@ -25,7 +25,9 @@
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/execution_policy.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/scan.h>
 
 #include <memory>
 
@@ -77,7 +79,8 @@ std::tuple<rmm::device_vector<cartesian_2d<T>>, rmm::device_vector<int32_t>> gen
   std::vector<cartesian_2d<T>> rads(rads_iter, rads_iter + num_points);
   std::vector<cartesian_2d<T>> points(num_points);
 
-  auto random_walk_func = [segment_length](auto const& prev, auto const& rad) {
+  auto random_walk_func = [segment_length](cartesian_2d<T> const& prev,
+                                           cartesian_2d<T> const& rad) {
     return cartesian_2d<T>{prev.x + segment_length * rad.x, prev.y + segment_length * rad.y};
   };
 
