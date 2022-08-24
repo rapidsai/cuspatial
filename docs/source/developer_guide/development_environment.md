@@ -10,3 +10,6 @@ Most cuspatial developers today uses [rapids-compose](https://github.com/trxclln
 It contains helpful scripts to automatcially fetch other libraries in rapids community and builds a container image,
 which also builds from source for each RAPIDS repository.
 `rapids-compose` is the recommended way to setup environment to develop for cuspatial.
+
+For developers who would like to build from conda or from source,
+see [README.md](https://github.com/rapidsai/cuspatial/blob/main/README.md).
