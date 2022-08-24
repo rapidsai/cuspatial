@@ -228,7 +228,7 @@ following:
   - Tables:
     - `mutable_table_view&`
   - Everything else:
-    - Pass by via raw pointer
+    - Pass via raw pointer
 - Outputs
   - Outputs should be *returned*, i.e., no output parameters
   - Columns:
