@@ -15,6 +15,7 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/shapefile_reader.hpp>
 
 #include <cudf/column/column.hpp>
 #include <cudf/types.hpp>
@@ -48,17 +49,17 @@ std::tuple<std::vector<cudf::size_type>,
            std::vector<cudf::size_type>,
            std::vector<double>,
            std::vector<double>>
-read_polygon_shapefile(std::string const& filename, const bool reversed);
+read_polygon_shapefile(std::string const& filename, cuspatial::winding_order outer_ring_winding);
 
 std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
   std::string const& filename,
-  const bool reversed,
+  cuspatial::winding_order outer_ring_winding,
   rmm::cuda_stream_view stream,
   rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(not filename.empty(), "Filename cannot be empty.");
 
-  auto poly_vectors = detail::read_polygon_shapefile(filename, reversed);
+  auto poly_vectors = detail::read_polygon_shapefile(filename, outer_ring_winding);
 
   auto polygon_offsets = make_column<cudf::size_type>(std::get<0>(poly_vectors), stream, mr);
   auto ring_offsets    = make_column<cudf::size_type>(std::get<1>(poly_vectors), stream, mr);
@@ -89,9 +90,11 @@ std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
 }  // namespace detail
 
 std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
-  std::string const& filename, const bool reversed, rmm::mr::device_memory_resource* mr)
+  std::string const& filename,
+  cuspatial::winding_order outer_ring_winding,
+  rmm::mr::device_memory_resource* mr)
 {
-  return detail::read_polygon_shapefile(filename, reversed, rmm::cuda_stream_default, mr);
+  return detail::read_polygon_shapefile(filename, outer_ring_winding, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial

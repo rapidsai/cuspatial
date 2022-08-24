@@ -15,6 +15,7 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/shapefile_reader.hpp>
 
 #include <ogrsf_frmts.h>
 
@@ -26,16 +27,15 @@
 
 namespace {
 
-bool _reverse_winding = false;
-
 cudf::size_type read_ring(OGRLinearRing const& ring,
                           std::vector<double>& xs,
-                          std::vector<double>& ys)
+                          std::vector<double>& ys,
+                          const cuspatial::winding_order ring_order)
 {
   cudf::size_type num_vertices = ring.getNumPoints();
   xs.reserve(num_vertices);
   ys.reserve(num_vertices);
-  if (_reverse_winding == true) {
+  if (ring_order == cuspatial::winding_order::CLOCKWISE) {
     for (cudf::size_type i = num_vertices - 1; i >= 0; --i) {
       xs.push_back(ring.getX(i));
       ys.push_back(ring.getY(i));
@@ -53,15 +53,16 @@ cudf::size_type read_ring(OGRLinearRing const& ring,
 cudf::size_type read_polygon(OGRPolygon const& polygon,
                              std::vector<int>& ring_lengths,
                              std::vector<double>& xs,
-                             std::vector<double>& ys)
+                             std::vector<double>& ys,
+                             const cuspatial::winding_order ring_order)
 {
-  auto num_vertices = read_ring(*(polygon.getExteriorRing()), xs, ys);
+  auto num_vertices = read_ring(*(polygon.getExteriorRing()), xs, ys, ring_order);
   ring_lengths.push_back(num_vertices);
 
   cudf::size_type num_interior_rings = polygon.getNumInteriorRings();
 
   for (cudf::size_type i = 0; i < num_interior_rings; i++) {
-    auto num_vertices = read_ring(*(polygon.getInteriorRing(i)), xs, ys);
+    auto num_vertices = read_ring(*(polygon.getInteriorRing(i)), xs, ys, ring_order);
     ring_lengths.push_back(num_vertices);
   }
 
@@ -71,12 +72,13 @@ cudf::size_type read_polygon(OGRPolygon const& polygon,
 cudf::size_type read_geometry_feature(OGRGeometry const* geometry,
                                       std::vector<int>& ring_lengths,
                                       std::vector<double>& xs,
-                                      std::vector<double>& ys)
+                                      std::vector<double>& ys,
+                                      const cuspatial::winding_order ring_order)
 {
   OGRwkbGeometryType geometry_type = wkbFlatten(geometry->getGeometryType());
 
   if (geometry_type == wkbPolygon) {
-    return read_polygon(*((OGRPolygon*)geometry), ring_lengths, xs, ys);
+    return read_polygon(*((OGRPolygon*)geometry), ring_lengths, xs, ys, ring_order);
   }
 
   if (geometry_type == wkbMultiPolygon || geometry_type == wkbGeometryCollection) {
@@ -86,7 +88,7 @@ cudf::size_type read_geometry_feature(OGRGeometry const* geometry,
 
     for (int i = 0; i < geometry_collection->getNumGeometries(); i++) {
       num_rings +=
-        read_geometry_feature(geometry_collection->getGeometryRef(i), ring_lengths, xs, ys);
+        read_geometry_feature(geometry_collection->getGeometryRef(i), ring_lengths, xs, ys, ring_order);
     }
 
     return num_rings;
@@ -99,7 +101,8 @@ cudf::size_type read_layer(const OGRLayerH layer,
                            std::vector<cudf::size_type>& feature_lengths,
                            std::vector<cudf::size_type>& ring_lengths,
                            std::vector<double>& xs,
-                           std::vector<double>& ys)
+                           std::vector<double>& ys,
+                           const cuspatial::winding_order ring_order)
 {
   cudf::size_type num_features = 0;
 
@@ -112,7 +115,7 @@ cudf::size_type read_layer(const OGRLayerH layer,
 
     CUSPATIAL_EXPECTS(geometry != nullptr, "Invalid Shape");
 
-    auto num_rings = read_geometry_feature(geometry, ring_lengths, xs, ys);
+    auto num_rings = read_geometry_feature(geometry, ring_lengths, xs, ys, ring_order);
 
     feature_lengths.push_back(num_rings);
 
@@ -133,7 +136,7 @@ std::tuple<std::vector<cudf::size_type>,
            std::vector<cudf::size_type>,
            std::vector<double>,
            std::vector<double>>
-read_polygon_shapefile(std::string const& filename, const bool reversed = false)
+read_polygon_shapefile(std::string const& filename, cuspatial::winding_order outer_ring_winding)
 {
   GDALAllRegister();
 
@@ -150,9 +153,7 @@ read_polygon_shapefile(std::string const& filename, const bool reversed = false)
   std::vector<double> xs;
   std::vector<double> ys;
 
-  _reverse_winding = reversed;
-  read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys);
-
+  read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys, outer_ring_winding); 
   feature_lengths.shrink_to_fit();
   ring_lengths.shrink_to_fit();
   xs.shrink_to_fit();

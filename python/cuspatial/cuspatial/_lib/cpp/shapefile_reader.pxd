@@ -11,5 +11,8 @@ from cudf._lib.cpp.column.column cimport column
 cdef extern from "cuspatial/shapefile_reader.hpp" namespace "cuspatial" nogil:
     cdef vector[unique_ptr[column]] \
         read_polygon_shapefile(
-            const string filename, const bool reversed
+            const string filename, winding_order outer_ring_winding
     ) except +
+    ctypedef enum winding_order:
+        COUNTER_CLOCKWISE,
+        CLOCKWISE

@@ -2,6 +2,7 @@
 
 from enum import Enum
 from numbers import Integral
+from cuspatial.io.shapefile import WindingOrder
 
 import geopandas as gpd
 import numpy as np
@@ -383,7 +384,7 @@ def test_shapefile_constructor_reversed():
     ][19:]
     gs.to_file("naturalearth_lowres_polygon")
     data = cuspatial.read_polygon_shapefile(
-        "naturalearth_lowres_polygon", reversed=True
+        "naturalearth_lowres_polygon", outer_ring_order=WindingOrder.CLOCKWISE
     )
     cus = cuspatial.GeoSeries(data)
 

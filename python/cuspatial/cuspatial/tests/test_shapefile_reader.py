@@ -56,8 +56,8 @@ def test_one_polygon():
         points,
         cudf.DataFrame(
             {
-                "x": cudf.Series([-10, 5, 5, -10, -10], dtype=np.float64),
-                "y": cudf.Series([-10, -10, 5, 5, -10], dtype=np.float64),
+                "x": cudf.Series([-10, -10, 5, 5, -10], dtype=np.float64),
+                "y": cudf.Series([-10, 5, 5, -10, -10], dtype=np.float64),
             }
         ),
     )
@@ -78,10 +78,10 @@ def test_two_polygons():
         cudf.DataFrame(
             {
                 "x": cudf.Series(
-                    [-10, 5, 5, -10, -10, 0, 10, 10, 0, 0], dtype=np.float64
+                    [-10, -10, 5, 5, -10, 0, 0, 10, 10, 0], dtype=np.float64
                 ),
                 "y": cudf.Series(
-                    [-10, -10, 5, 5, -10, 0, 0, 10, 10, 0], dtype=np.float64
+                    [-10, 5, 5, -10, -10, 0, 10, 10, 0, 0], dtype=np.float64
                 ),
             }
         ),
