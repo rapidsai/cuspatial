@@ -1,0 +1,102 @@
+# How to Contribute
+
+This documentation provides high-level overview of contributing to cuspatial.
+
+`cuSpatial` is a part of the RAPIDS community.
+Developers should follow the same guidelines that applies to RAPIDS when contributing to cuspatial.
+RAPIDS [contributing section](https://docs.rapids.ai/contributing) walks through the process of identifying an issue,
+submit and merging a PR.
+
+## Directory structure and file naming
+
+Under the cuspatial package,
+several subpackages are maintained.
+
+- `core` package contains the main component of cuspatial
+- `io` maintains functions that performs I/O operations to and from cuspatial with external data objects
+- `tests` contains unit tests for cuspatial
+- `utils` contains utility functions
+- `_lib` contains cython APIs
+
+[`library_design`](library_design.md) further discusses high-level library design of `cuspatial`.
+
+### Cython code
+
+`_lib` folder contains all cython codes.
+Each feature in `libcuspatial` exposed to `cuspatial` should contain two elements:
+
+1. A `pxd` file declaring C++ APIs so that they may be used in Cython, and
+2. A `pyx` file containing Cython functions that wrap those C++ APIs so that they can be called from Python.
+
+`pyx` files are organized under the root of `_lib`. `pxd` files are under `_lib/cpp`.
+`pxd` files should mirror the file hierarchy as `cpp/include` in `libcuspatial.
+
+For more information see [our Cython layer design documentation](./library_design.md#cython-layer).
+
+## Code style
+
+cuSpatial employs a number of linters to ensure consistent style across the code base.
+We manage our linters using [`pre-commit`](https://pre-commit.com/).
+Developers are strongly recommended to set up `pre-commit` prior to any development.
+The `.pre-commit-config.yaml` file at the root of the repo is the primary source of truth linting.
+
+To install pre-commit, install via conda/pip:
+
+```bash
+# conda
+conda install -c conda-forge pre-commit
+```
+```bash
+# pip
+pip install pre-commit
+```
+
+Then run pre-commit hooks before committing code:
+```bash
+pre-commit run
+```
+
+Optionally, you may set up the pre-commit hooks to run automatically when you make a git commit. This can be done by running:
+
+```bash
+pre-commit install
+```
+
+Now code linters and formatters will be run each time you commit changes.
+
+You can skip these checks with `git commit --no-verify` or with the short version `git commit -n`.
+
+### Linter Details
+
+Specifically, cuSpatial uses the following tools:
+
+- [`flake8`](https://github.com/pycqa/flake8) checks for general code formatting compliance. 
+- [`black`](https://github.com/psf/black) is an automatic code formatter.
+- [`isort`](https://pycqa.github.io/isort/) ensures imports are sorted consistently.
+
+Linter config data is stored in a number of files.
+We generally use `pyproject.toml` over `setup.cfg` and avoid project-specific files (e.g. `setup.cfg` > `python/cudf/setup.cfg`).
+However, differences between tools and the different packages in the repo result in the following caveats:
+
+- `flake8` has no plans to support `pyproject.toml`, so it must live in `setup.cfg`.
+- `isort` must be configured per project to set which project is the "first party" project.
+
+Additionally, our use of `versioneer` means that each project must have a `setup.cfg`.
+As a result, we currently maintain both root and project-level `pyproject.toml` and `setup.cfg` files.
+
+## Writing tests
+
+Every new feature contributed to cuspatial should include a unittest.
+The unittest should be added in `tests` folder.
+In general,
+the `tests` folder should mirror the folder hierarchy of the `cuspatial` package.
+At the lowest level,
+each module expands into a folder that contains specific test files for features in the module.
+
+cuspatial uses [`pytest`](https://docs.pytest.org/) as the unittest framework.
+`conftest.py` contains useful fixtures that can be shared across different test functions.
+Reusing these fixtures can reduce redundancy in test code.
+
+cuspatial compute APIs should strive to reach result parity with its host alternative.
+For features developed in `GeoSeries` and `GeoDataFrame`,
+developers should search for corresponding functions in `geopandas` and compare results.
