@@ -80,7 +80,7 @@ std::tuple<rmm::device_vector<vec_2d<T>>, rmm::device_vector<int32_t>> generate_
   std::vector<vec_2d<T>> points(num_points);
 
   auto random_walk_func = [segment_length](vec_2d<T> const& prev, vec_2d<T> const& rad) {
-    return vec_2d<T>{prev.x + segment_length * rad.x, prev.y + segment_length * rad.y};
+    return prev + segment_length * rad;
   };
 
   thrust::exclusive_scan(
