@@ -74,9 +74,9 @@ class CubicSpline:
 
     Example
     -------
-    # The following example only serves as demonstration purposes of
+    # The following example only serves to demonstrate the
     # cuspatial.CubicSpline API. cuSpatial does not out perform scipy when
-    # fitting a small number of curves shown in the example below.
+    # fitting a small number of curves as shown.
     >>> import cuspatial, cudf
     >>> import numpy as np
     >>> def f(x):
