@@ -84,7 +84,7 @@ struct pairwise_linestring_distance_functor {
   std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
     Args&&...)
   {
-    CUSPATIAL_FAIL("Linestring distances only supports floating point coordinates.");
+    CUSPATIAL_FAIL("Linestring distance API only supports floating point coordinates.");
   }
 };
 

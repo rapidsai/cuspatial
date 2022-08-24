@@ -8,8 +8,7 @@ This page provides a list of all publicly accessible modules, methods and classe
 .. toctree::
     :maxdepth: 2
 
-    gis
-    spatial_indexing
+    spatial
     trajectory
     geopandas_compatibility
     io

@@ -23,6 +23,10 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/copy.h>
+#include <thrust/count.h>
+#include <thrust/iterator/iterator_traits.h>
+
 #include <type_traits>
 
 namespace cuspatial {
