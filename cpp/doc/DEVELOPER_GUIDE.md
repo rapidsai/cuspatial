@@ -1,7 +1,7 @@
 # libcuspatial C++ Developer Guide
 
 This document serves as a guide for contributors to libcuspatial C++ code. Developers should also
-refer to these additional files for further documentation of libcudf best practices.
+refer to these additional files for further documentation of libcuspatial best practices.
 
 * [Documentation Guide](DOCUMENTATION.md) for guidelines on documenting libcuspatial code.
 * [Testing Guide](TESTING.md) for guidelines on writing unit tests.
@@ -90,10 +90,12 @@ class utility_class
   ...
 private:
   int _rating{};
-  std::unique_ptr<cudf::column> _column{};
+  std::unique_ptr<rmm::device_uvector> _data{};
 }
 
-TYPED_TEST_SUITE(RepeatTypedTestFixture, cudf::test::FixedWidthTypes);
+using TestTypes = ::testing::Types<float, double>;
+
+TYPED_TEST_SUITE(RepeatTypedTestFixture, TestTypes);
 
 TYPED_TEST(RepeatTypedTestFixture, RepeatScalarCount)
 {
@@ -132,8 +134,8 @@ The following guidelines apply to organizing `#include` lines.
  * Separate groups by a blank line.
  * Order the groups from "nearest" to "farthest". In other words, local includes, then includes
    from other RAPIDS libraries, then includes from related libraries, like `<thrust/...>`, then
-   includes from dependencies installed with cuDF, and then standard headers (for example `<string>`,
-   `<iostream>`).
+   includes from dependencies installed with cuSpatial, and then standard library headers (for 
+   example `<string>`, `<iostream>`).
  * Use `<>` instead of `""` unless the header is in the same directory as the source file.
  * Tools like `clangd` often auto-insert includes when they can, but they usually get the grouping
    and brackets wrong.
@@ -154,11 +156,10 @@ The following guidelines apply to organizing `#include` lines.
 # libcuspatial Data Structures
 
 The header-only libcuspatial API is agnostic to the type of containers used by the application to
-hold its data, because the header-only API is based on iterators (see [Iterator Requirements](#iterator-requirements)). The cuDF-based cuSpatial API, on 
-the other hand, uses cuDF Columns and Tables to store and access application data. 
+hold its data, because the header-only API is based on iterators (see [Iterator Requirements](#iterator-requirements)). The cuDF-based cuSpatial API, on the other hand, uses cuDF Columns and
+Tables to store and access application data. 
 
-See the [libcudf Developer guide](https://github.com/rapidsai/cudf/blob/main/cpp/docs/DEVELOPER_GUIDE.md#libcudf-data-structures)
-for more information on cuDF data structures, including views.
+See the [libcudf Developer guide](https://github.com/rapidsai/cudf/blob/main/cpp/docs/DEVELOPER_GUIDE.md#libcudf-data-structures) for more information on cuDF data structures, including views.
 
 ## Views and Ownership
 
@@ -166,8 +167,8 @@ Resource ownership is an essential concept in libcudf, and therefore in the cuDF
 API. In short, an "owning" object owns a resource (such as device memory). It acquires that resource
 during construction and releases the resource in destruction 
 ([RAII](https://en.cppreference.com/w/cpp/language/raii)). A "non-owning" object does not own
-resources. Any class in libcudf with the `*_view` suffix is non-owning. For more
-detail see the [`libcudf++` presentation.](https://docs.google.com/presentation/d/1zKzAtc1AWFKfMhiUlV5yRZxSiPLwsObxMlWRWz_f5hA/edit?usp=sharing)
+resources. Any class in libcudf with the `*_view` suffix is non-owning. For more detail see the
+[`libcudf++` presentation.](https://docs.google.com/presentation/d/1zKzAtc1AWFKfMhiUlV5yRZxSiPLwsObxMlWRWz_f5hA/edit?usp=sharing)
 
 cuDF-based libcuspatial functions typically take views as input (`column_view` or `table_view`)
 and produce `unique_ptr`s to owning objects as output. For example,
@@ -179,7 +180,7 @@ std::unique_ptr<cudf::table> points_in_spatial_window(
   cudf::column_view const& y);
 ```
 
-## `rmm::device_memory_resource`
+## RMM Memory Resources (`rmm::device_memory_resource`)
 
 libcuspatial allocates all device memory via RMM memory resources (MR). See the
 [RMM documentation](https://github.com/rapidsai/rmm/blob/main/README.md) for details.
@@ -348,7 +349,7 @@ Multiple column outputs that are functionally related (e.g. x- and y-coordinates
 combined into a `table`.
 
 ```c++
-std::pair<table, table> return_two_tables(void){
+std::pair<cudf::table, cudf::table> return_two_tables(void){
   cudf::table out0;
   cudf::table out1;
   ...
@@ -360,12 +361,12 @@ std::pair<table, table> return_two_tables(void){
 
 cudf::table out0;
 cudf::table out1;
-std::tie(out0, out1) = cudf::return_two_outputs();
+std::tie(out0, out1) = return_two_outputs();
 ```
 
-Note: `std::tuple` _could_ be used if not for the fact that Cython does not support
-`std::tuple`. Therefore, libcudf APIs must use `std::pair`, and are therefore limited to return
-only two objects of different types. Multiple objects of the same type may be returned via a
+Note: `std::tuple` _could_ be used if not for the fact that Cython does not support `std::tuple`
+Therefore, libcuspatial public column-based APIs must use `std::pair`, and are therefore limited to
+return only two objects of different types. Multiple objects of the same type may be returned via a
 `std::vector<T>`.
 
 Alternatively, C++17
@@ -373,14 +374,14 @@ Alternatively, C++17
 disaggregate multiple return values:
 
 ```c++
-auto [out0, out1] = cudf::return_two_outputs();
+auto [out0, out1] = return_two_outputs();
 ```
 
-Note that the compiler might not support capturing aliases defined in a structured binding
-in a lambda. One may work around this by using a capture with an initializer instead:
+Note that the compiler might not support capturing aliases defined in a structured binding in a
+lambda. One may work around this by using a capture with an initializer instead:
 
 ```c++
-auto [out0, out1] = cudf::return_two_outputs();
+auto [out0, out1] = return_two_outputs();
 
 // Direct capture of alias from structured binding might fail with:
 // "error: structured binding cannot be captured"
@@ -392,7 +393,6 @@ auto foo = [&out0 = out0] {
   // ...
 };
 ```
-
 
 ## Streams
 
@@ -412,8 +412,8 @@ just *before* the memory resource. The public API will call the detail API and p
 `rmm::cuda_stream_default`. The implementation should be wholly contained in the `detail` API
 definition and use only asynchronous versions of CUDA APIs with the stream parameter.
 
-In order to make the `detail` API callable from other libcudf functions, it should be exposed in a
-header placed in the `cudf/cpp/include/detail/` directory.
+In order to make the `detail` API callable from other libcuspatial functions, it may be exposed in a
+header placed in the `cuspatial/cpp/include/detail/` directory.
 
 For example:
 
@@ -439,8 +439,8 @@ namespace detail{
 } // namespace detail
 
 void external_function(...){
-    CUDF_FUNC_RANGE(); // Generates an NVTX range for the lifetime of this function.
-    detail::external_function(..., cudf::default_stream_value);
+    CUSPATIAL_FUNC_RANGE(); // Generates an NVTX range for the lifetime of this function.
+    detail::external_function(..., rmm::cuda_stream_default);
 }
 ```
 
@@ -456,9 +456,9 @@ This limits the ability to do any multi-stream/multi-threaded work with libcuspa
  ### NVTX Ranges
 
 In order to aid in performance optimization and debugging, all compute intensive libcuspatial 
-functions should have a corresponding NVTX range. TODO: In libcuspatial, we have a convenience macro
-`CUDF_FUNC_RANGE()` that automatically annotates the lifetime of the enclosing function and use the
-function's name as the name of the NVTX range. For more information about NVTX, see
+functions should have a corresponding NVTX range. In libcuspatial, we have a convenience macro
+`CUSPATIAL_FUNC_RANGE()` that automatically annotates the lifetime of the enclosing function and
+uses the function's name as the name of the NVTX range. For more information about NVTX, see
 [here](https://github.com/NVIDIA/NVTX/tree/dev/cpp).
 
  ### Stream Creation
@@ -685,8 +685,8 @@ CUSPATIAL_EXPECTS(lhs.type() == rhs.type(), "Column type mismatch");
 
 The first argument is the conditional expression expected to resolve to `true` under normal
 conditions. If the conditional evaluates to `false`, then an error has occurred and an instance of
-`cuspatial::logic_error` is thrown. The second argument to `CUDF_EXPECTS` is a short description of
-the error that has occurred and is used for the exception's `what()` message.
+`cuspatial::logic_error` is thrown. The second argument to `CUSPATIAL_EXPECTS` is a short 
+description of the error that has occurred and is used for the exception's `what()` message.
 
 There are times where a particular code path, if reached, should indicate an error no matter what.
 For example, often the `default` case of a `switch` statement represents an invalid alternative.
@@ -701,7 +701,7 @@ CUSPATIAL_FAIL("This code path should not be reached.");
 ### CUDA Error Checking
 
 Use the `CUSPATIAL_CUDA_TRY` macro to check for the successful completion of CUDA runtime API 
-functions. This macro throws a `cudf::cuda_error` exception if the CUDA API return value is not
+functions. This macro throws a `cuspatial::cuda_error` exception if the CUDA API return value is not
 `cudaSuccess`. The thrown exception includes a description of the CUDA error code in its `what()`
 message.
 
