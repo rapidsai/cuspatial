@@ -48,8 +48,8 @@ There are a few key points to notice.
 
   1. The API is very similar to STL algorithms such as `std::transform`.
   2. All array inputs and outputs are iterator type templates. 
-  3. Longitude/Latitude data is passed as array of structures, using the `cuspatial::lonlat_2d`
-     type (include/cuspatial/types.hpp). This is enforced using a `static_assert` in the function
+  3. Longitude/Latitude data is passed as array of structures, using the `cuspatial::vec_2d`
+     type (include/cuspatial/vec_2d.hpp). This is enforced using a `static_assert` in the function
      body (discussed later).
   4. The `Location` type is a template that is by default equal to the `value_type` of the input
      iterators.
@@ -96,8 +96,7 @@ Following is the (Doxygen) documentation for the above `cuspatial::haversine_dis
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt Output iterator. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam Location The `value_type` of `LonLatItA` and `LonLatItB`. Must be
- * `cuspatial::lonlat_2d<T>`.
+ * @tparam Location The `value_type` of `LonLatItA` and `LonLatItB`. Must be `cuspatial::vec_2d<T>`.
  * @tparam T The underlying coordinate type. Must be a floating-point type.
  *
  * @pre `a_lonlat_first` may equal `distance_first`, but the range `[a_lonlat_first, a_lonlat_last)`
@@ -107,7 +106,7 @@ Following is the (Doxygen) documentation for the above `cuspatial::haversine_dis
  * shall not overlap the range `[distance_first, distance_first + (b_lonlat_last - b_lonlat_last))
  * otherwise. 
  * @pre All iterators must have the same `Location` type, with  the same underlying floating-point
- * coordinate type (e.g. `cuspatial::lonlat_2d<float>`).
+ * coordinate type (e.g. `cuspatial::vec_2d<float>`).
  *
  * @return Output iterator to the element past the last distance computed.
  *
@@ -132,13 +131,16 @@ This is the existing API, unchanged by refactoring. Here is the existing
 `cuspatial::haversine_distance`:
 
 ```C++
-std::unique_ptr<cudf::column> haversine_distance(
-  cudf::column_view const& a_lon,
-  cudf::column_view const& a_lat,
-  cudf::column_view const& b_lon,
-  cudf::column_view const& b_lat,
-  double const radius                 = EARTH_RADIUS_KM,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+template <class LonLatItA,
+          class LonLatItB,
+          class OutputIt,
+          class T = typename detail::iterator_vec_base_type<LonLatItA>>
+OutputIt haversine_distance(LonLatItA a_lonlat_first,
+                            LonLatItA a_lonlat_last,
+                            LonLatItB b_lonlat_first,
+                            OutputIt distance_first,
+                            T const radius               = EARTH_RADIUS_KM,
+                            rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 ```
 
 key points:
@@ -186,11 +188,7 @@ a simple matter of a few static asserts and dynamic expectation checks, followed
 `thrust::transform` with a custom transform functor.
 
 ```C++
-template <class LonLatItA,
-          class LonLatItB,
-          class OutputIt,
-          class Location = typename std::iterator_traits<LonLatItA>::value_type,
-          class T        = typename Location::value_type>
+template <class LonLatItA, class LonLatItB, class OutputIt, class T>
 OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,
@@ -198,15 +196,15 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             T const radius,
                             rmm::cuda_stream_view stream)
 {
-  using LocationB = typename std::iterator_traits<LonLatItB>::value_type;
-  static_assert(std::conjunction_v<std::is_same<lonlat_2d<T>, Location>,
-                                   std::is_same<lonlat_2d<T>, LocationB>>,
-                "Inputs must be cuspatial::lonlat_2d");
+  static_assert(detail::is_same<vec_2d<T>,
+                                detail::iterator_value_type<LonLatItA>,
+                                detail::iterator_value_type<LonLatItB>>(),
+                "Inputs must be cuspatial::vec_2d");
   static_assert(
-    std::conjunction_v<std::is_floating_point<T>,
-                       std::is_floating_point<typename LocationB::value_type>,
-                       std::is_floating_point<typename std::iterator_traits<OutputIt>::value_type>>,
-    "Haversine distance supports only floating-point coordinates.");
+    detail::is_same_floating_point<T,
+                                   typename detail::iterator_vec_base_type<LonLatItA>,
+                                   typename detail::iterator_value_type<OutputIt>>(),
+    "All iterator types and radius must have the same floating-point coordinate value type.");
 
   CUSPATIAL_EXPECTS(radius > 0, "radius must be positive.");
 
@@ -221,7 +219,7 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
 
 Note that we `static_assert` that the types of the iterator inputs match documented expectations.
 We also do a runtime check that the radius is positive. Finally we just call `thrust::transform`, 
-passing it an instance of `haversine_distance_functor`, which is a function of two `lonlat_2d`
+passing it an instance of `haversine_distance_functor`, which is a function of two `vec_2d<T>`
 inputs that implements the Haversine distance formula.
 
 ### libcudf-based API Implementation
@@ -229,7 +227,7 @@ inputs that implements the Haversine distance formula.
 The substance of the refactoring is making the libcudf-based API a wrapper around the header-only 
 API. This mostly involves replacing business logic implementation in the type-dispatched functor 
 with a call to the header-only API. We also need to convert disjoint latitude and longitude inputs 
-into `lonlat_2d<T>` structs. This is easily done using the `cuspatial::make_vec_2d_iterator` utility
+into `vec_2d<T>` structs. This is easily done using the `cuspatial::make_vec_2d_iterator` utility
 provided in `type_utils.hpp`. 
 
 So, to refactor the libcudf-based API, we remove the following code.
