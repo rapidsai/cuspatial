@@ -105,41 +105,46 @@ void __global__ pairwise_point_linestring_distance(OffsetIteratorA point_geometr
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x;
        idx < std::distance(linestring_points_first, thrust::prev(linestring_points_last));
        idx += gridDim.x * blockDim.x) {
-    auto linestring_offsets_iter = thrust::upper_bound(
+    // Search from the part offsets array to determine the part idx of current linestring point
+    auto linestring_part_offsets_iter = thrust::upper_bound(
       thrust::seq, linestring_part_offsets_first, linestring_part_offsets_last, idx);
 
     // Pointer to the last point in the linestring, skip iteration.
     // Note that the last point for the last linestring is guarded by the grid-stride loop.
-    if (linestring_offsets_iter != linestring_part_offsets_last &&
-        *linestring_offsets_iter - 1 == idx) {
+    if (linestring_part_offsets_iter != linestring_part_offsets_last &&
+        *linestring_part_offsets_iter - 1 == idx) {
       continue;
     }
 
-    auto linestring_offsets_idx =
-      thrust::distance(linestring_part_offsets_first, thrust::prev(linestring_offsets_iter));
+    auto part_offsets_idx =
+      thrust::distance(linestring_part_offsets_first, thrust::prev(linestring_part_offsets_iter));
 
-    auto part_offset_iter = thrust::upper_bound(thrust::seq,
-                                                linestring_geometry_offset_first,
-                                                linestring_geometry_offset_last,
-                                                linestring_offsets_idx);
-    auto part_idx =
-      thrust::distance(linestring_geometry_offset_first, thrust::prev(part_offset_iter));
+    // Search from the linestring geometry offsets array to determine the geometry idx of current
+    // linestring point
+    auto geometry_offsets_iter = thrust::upper_bound(thrust::seq,
+                                                     linestring_geometry_offset_first,
+                                                     linestring_geometry_offset_last,
+                                                     part_offsets_idx);
+    // geometry_idx is also the index to corresponding multipoint in the pair
+    auto geometry_idx =
+      thrust::distance(linestring_geometry_offset_first, thrust::prev(geometry_offsets_iter));
 
     // Reduce the minimum distance between different parts of the multi-point.
     cartesian_2d<T> const a = linestring_points_first[idx];
     cartesian_2d<T> const b = linestring_points_first[idx + 1];
     T min_distance_squared  = std::numeric_limits<T>::max();
 
-    for (auto point_idx = point_geometry_offset_first[part_idx];
-         point_idx < point_geometry_offset_first[part_idx + 1];
+    for (auto point_idx = point_geometry_offset_first[geometry_idx];
+         point_idx < point_geometry_offset_first[geometry_idx + 1];
          point_idx++) {
       cartesian_2d<T> const c = points_first[point_idx];
 
+      // TODO: reduce redundant computation only related to `a`, `b` in this helper.
       auto const distance_squared = point_to_segment_distance_squared(c, a, b);
       min_distance_squared        = std::min(distance_squared, min_distance_squared);
     }
 
-    atomicMin(&thrust::raw_reference_cast(*(distances + part_idx)),
+    atomicMin(&thrust::raw_reference_cast(*(distances + geometry_idx)),
               static_cast<T>(std::sqrt(min_distance_squared)));
   }
 }
