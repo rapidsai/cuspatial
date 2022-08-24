@@ -45,7 +45,7 @@ OutputIt pairwise_point_distance(Cart2dItA points1_first,
 
   static_assert(detail::is_same<vec_2d<T>,
                                 typename detail::iterator_value_type<Cart2dItA>,
-                                typename detail::iterator_value_type<Cart2dItB>>,
+                                typename detail::iterator_value_type<Cart2dItB>>(),
                 "All Input types must be cuspatial::vec_2d with the same value type");
 
   return thrust::transform(rmm::exec_policy(stream),

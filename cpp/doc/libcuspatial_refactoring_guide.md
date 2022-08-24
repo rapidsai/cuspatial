@@ -229,7 +229,7 @@ inputs that implements the Haversine distance formula.
 The substance of the refactoring is making the libcudf-based API a wrapper around the header-only 
 API. This mostly involves replacing business logic implementation in the type-dispatched functor 
 with a call to the header-only API. We also need to convert disjoint latitude and longitude inputs 
-into `lonlat_2d<T>` structs. This is easily done using the `cuspatial::make_lonlat_iterator` utility
+into `lonlat_2d<T>` structs. This is easily done using the `cuspatial::make_vec_2d_iterator` utility
 provided in `type_utils.hpp`. 
 
 So, to refactor the libcudf-based API, we remove the following code.
@@ -259,8 +259,8 @@ thrust::transform(rmm::exec_policy(stream),
 And replace it with the following code.
 
 ```C++
-auto lonlat_a = cuspatial::make_lonlat_iterator(a_lon.begin<T>(), a_lat.begin<T>());
-auto lonlat_b = cuspatial::make_lonlat_iterator(b_lon.begin<T>(), b_lat.begin<T>());
+auto lonlat_a = cuspatial::make_vec_2d_iterator(a_lon.begin<T>(), a_lat.begin<T>());
+auto lonlat_b = cuspatial::make_vec_2d_iterator(b_lon.begin<T>(), b_lat.begin<T>());
 
 cuspatial::haversine_distance(lonlat_a,
                               lonlat_a + a_lon.size(),

@@ -53,9 +53,9 @@ struct pairwise_point_linestring_distance_functor {
     auto output = cudf::make_numeric_column(
       points_xy.type(), num_pairs, cudf::mask_state::UNALLOCATED, stream, mr);
 
-    auto points_it = interleaved_iterator_to_cartesian_2d_iterator(points_xy.begin<T>());
+    auto points_it = interleaved_iterator_to_vec_2d_iterator(points_xy.begin<T>());
     auto linestring_points_it =
-      interleaved_iterator_to_cartesian_2d_iterator(linestring_points_xy.begin<T>());
+      interleaved_iterator_to_vec_2d_iterator(linestring_points_xy.begin<T>());
     auto output_begin = output->mutable_view().begin<T>();
 
     pairwise_point_linestring_distance(points_it,

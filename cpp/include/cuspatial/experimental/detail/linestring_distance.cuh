@@ -157,7 +157,7 @@ void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
 
   static_assert(detail::is_same<vec_2d<T>,
                                 typename detail::iterator_value_type<Cart2dItA>,
-                                typename detail::iterator_value_type<Cart2dItB>>,
+                                typename detail::iterator_value_type<Cart2dItB>>(),
                 "All input types must be cuspatial::vec_2d with the same value type");
 
   auto const num_linestring_pairs =

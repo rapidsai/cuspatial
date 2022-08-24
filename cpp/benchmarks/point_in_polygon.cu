@@ -41,8 +41,9 @@ auto constexpr num_rings_per_polygon = 1;  // only 1 ring for now
 template <typename T>
 vec_2d<T> random_point(vec_2d<T> minXY, vec_2d<T> maxXY)
 {
-  auto rand_point = vec_2d<T>{rand(), rand()} / static_cast<T>(RAND_MAX);
-  return minXY + (maxXY - minXY) * rand_point;
+  auto x = minXY.x + (maxXY.x - minXY.x) * rand() / static_cast<T>(RAND_MAX);
+  auto y = minXY.y + (maxXY.y - minXY.y) * rand() / static_cast<T>(RAND_MAX);
+  return vec_2d<T>{x, y};
 }
 
 /**
@@ -82,8 +83,10 @@ generate_polygon(int32_t num_sides, T radius, vec_2d<T> minXY, vec_2d<T> maxXY)
     auto center = random_point(minXY, maxXY);
     std::transform(it, it + num_sides + 1, begin, [num_sides, radius, center](int32_t j) {
       return center +
-             radius * vec_2d<T>{std::cos(2 * PI * (j % num_sides) / static_cast<T>(num_sides)),
-                                std::sin(2 * PI * (j % num_sides) / static_cast<T>(num_sides))};
+             radius *
+               vec_2d<T>{
+                 static_cast<T>(std::cos(2 * PI * (j % num_sides) / static_cast<T>(num_sides))),
+                 static_cast<T>(std::sin(2 * PI * (j % num_sides) / static_cast<T>(num_sides)))};
     });
   }
 
