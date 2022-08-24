@@ -19,24 +19,15 @@
 #include <cudf/types.hpp>
 #include <cudf/utilities/span.hpp>
 
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
-
 #include <optional>
 namespace cuspatial {
 namespace detail {
-
-template <typename UnaryFunction>
-inline auto make_counting_transform_iterator(cudf::size_type start, UnaryFunction f)
-{
-  return thrust::make_transform_iterator(thrust::make_counting_iterator(start), f);
-}
 
 template <bool has_value>
 struct get_geometry_iterator_functor;
 
 template <>
-struct get_iterator_functor<true> {
+struct get_geometry_iterator_functor<true> {
   auto operator()(std::optional<cudf::device_span<cudf::size_type const>> opt)
   {
     return opt.value().begin();
@@ -44,7 +35,7 @@ struct get_iterator_functor<true> {
 };
 
 template <>
-struct get_iterator_functor<false> {
+struct get_geometry_iterator_functor<false> {
   auto operator()(std::optional<cudf::device_span<cudf::size_type const>>)
   {
     return thrust::make_counting_iterator(0);

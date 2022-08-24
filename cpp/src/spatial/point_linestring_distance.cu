@@ -35,33 +35,17 @@
 #include <memory>
 #include <type_traits>
 
+#include "../utility/iterator.hpp"
 #include "../utility/multigeom_dispatch.hpp"
 
 namespace cuspatial {
 
+namespace detail {
+
 namespace {
 
-template <bool has_value>
-struct get_iterator_functor;
-
-template <>
-struct get_iterator_functor<true> {
-  auto operator()(std::optional<cudf::device_span<cudf::size_type const>> opt)
-  {
-    return opt.value().begin();
-  }
-};
-
-template <>
-struct get_iterator_functor<false> {
-  auto operator()(std::optional<cudf::device_span<cudf::size_type const>>)
-  {
-    return thrust::make_counting_iterator(0);
-  }
-};
-
 template <bool is_multi_point, bool is_multi_linestring>
-struct pairwise_point_linestring_distance_functor {
+struct pairwise_point_linestring_distance_impl {
   using SizeType = cudf::device_span<cudf::size_type const>::size_type;
 
   template <typename T, CUDF_ENABLE_IF(std::is_floating_point_v<T>)>
@@ -82,12 +66,12 @@ struct pairwise_point_linestring_distance_functor {
       points_xy.type(), num_pairs, cudf::mask_state::UNALLOCATED, stream, mr);
 
     auto point_parts_it_first = get_iterator_functor<is_multi_point>{}(multipoint_geometry_offsets);
-    auto points_it            = interleaved_iterator_to_cartesian_2d_iterator(points_xy.begin<T>());
+    auto points_it            = interleaved_iterator_to_vec_2d_iterator(points_xy.begin<T>());
 
     auto linestring_parts_it_first =
-      get_iterator_functor<is_multi_linestring>{}(multilinestring_geometry_offsets);
+      get_geometry_iterator_functor<is_multi_linestring>{}(multilinestring_geometry_offsets);
     auto linestring_points_it =
-      interleaved_iterator_to_cartesian_2d_iterator(linestring_points_xy.begin<T>());
+      interleaved_iterator_to_vec_2d_iterator(linestring_points_xy.begin<T>());
 
     auto output_begin = output->mutable_view().begin<T>();
 
@@ -115,10 +99,8 @@ struct pairwise_point_linestring_distance_functor {
 
 }  // namespace
 
-namespace detail {
-
 template <bool is_multi_point, bool is_multi_linestring>
-struct pairwise_point_linestring_distance_f {
+struct pairwise_point_linestring_distance_functor {
   std::unique_ptr<cudf::column> operator()(
     std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
     cudf::column_view const& points_xy,
@@ -148,7 +130,7 @@ struct pairwise_point_linestring_distance_f {
 
     return cudf::type_dispatcher(
       points_xy.type(),
-      pairwise_point_linestring_distance_functor<is_multi_point, is_multi_linestring>{},
+      pairwise_point_linestring_distance_impl<is_multi_point, is_multi_linestring>{},
       num_lhs - 1,
       multipoint_geometry_offsets,
       points_xy,
@@ -170,7 +152,7 @@ std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
   cudf::column_view const& linestring_points_xy,
   rmm::mr::device_memory_resource* mr)
 {
-  return multigeom_dispatch<detail::pairwise_point_linestring_distance_f>(
+  return multigeom_dispatch<detail::pairwise_point_linestring_distance_functor>(
     multipoint_geometry_offsets.has_value(),
     multilinestring_geometry_offsets.has_value(),
     multipoint_geometry_offsets,
