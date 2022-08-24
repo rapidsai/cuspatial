@@ -17,10 +17,12 @@
 #pragma once
 
 #include <cudf/types.hpp>
+#include <cudf/utilities/span.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <optional>
 namespace cuspatial {
 namespace detail {
 
@@ -29,5 +31,25 @@ inline auto make_counting_transform_iterator(cudf::size_type start, UnaryFunctio
 {
   return thrust::make_transform_iterator(thrust::make_counting_iterator(start), f);
 }
+
+template <bool has_value>
+struct get_iterator_functor;
+
+template <>
+struct get_iterator_functor<true> {
+  auto operator()(std::optional<cudf::device_span<cudf::size_type const>> opt)
+  {
+    return opt.value().begin();
+  }
+};
+
+template <>
+struct get_iterator_functor<false> {
+  auto operator()(std::optional<cudf::device_span<cudf::size_type const>>)
+  {
+    return thrust::make_counting_iterator(0);
+  }
+};
+
 }  // namespace detail
 }  // namespace cuspatial
