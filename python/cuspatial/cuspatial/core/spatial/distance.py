@@ -226,6 +226,86 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
 def pairwise_point_linestring_distance(
     points: GeoSeries, linestrings: GeoSeries
 ):
+    """Compute shortest distance between pairs of points and linestrings
+
+    The shortest distance between a pair of (multi)point and (multi)linestring
+    is defined as the shortest distance between every geometry in the
+    multipoint and every geometry in the multilinestring.
+
+    Parameters
+    ----------
+    points : GeoSeries
+        The points to compute the distance from.
+    linestrings : GeoSeries
+        The linestrings to compute the distance to.
+
+    Returns
+    -------
+    distance : cudf.Series
+
+    Examples
+    --------
+
+    **Compute distances between point array to linestring arrays**
+
+    >>> from shapely.geometry import (
+    ...     Point, MultiPoint, LineString, MultiLineString
+    ... )
+    >>> import geopandas as gpd, cuspatial
+    >>> pts = cuspatial.from_geopandas(gpd.GeoSeries([
+    ...     Point(0.0, 0.0), Point(1.0, 1.0), Point(2.0, 2.0)
+    ... ]))
+    >>> mlines = cuspatial.from_geopandas(gpd.GeoSeries(
+    ...     [
+    ...        LineString([Point(-1.0, 0.0),
+    ...                    Point(-0.5, -0.5),
+    ...                    Point(-1.0, -0.5),
+    ...                    Point(-0.5, -1.0)]),
+    ...        LineString([Point(8.0, 10.0),
+    ...                    Point(11.21, 9.48),
+    ...                    Point(7.1, 12.5)]),
+    ...        LineString([Point(1.0, 0.0), Point(0.0, 1.0)]),
+    ...     ]))
+    >>> cuspatial.pairwise_point_linestring_distance(pts, mlines)
+    0     0.707107
+    1    11.401754
+    2     2.121320
+    dtype: float64
+
+    **Compute distances between multipoint to multilinestring arrays**
+    >>> # 3 pairs of multi points containing 3 points each
+    >>> ptsdata = [
+    ...         [[9, 7], [0, 6], [7, 2]],
+    ...         [[5, 8], [5, 7], [6, 0]],
+    ...         [[8, 8], [6, 7], [4, 1]],
+    ...     ]
+    >>> # 3 pairs of multi linestrings containing 2 linestrings each
+    >>> linesdata = [
+    ...         [
+    ...             [[86, 47], [31, 17], [84, 16], [14, 63]],
+    ...             [[14, 36], [90, 73], [72, 66], [0, 5]],
+    ...         ],
+    ...         [
+    ...             [[36, 90], [29, 31], [91, 70], [25, 78]],
+    ...             [[61, 64], [89, 20], [94, 46], [37, 44]],
+    ...         ],
+    ...         [
+    ...             [[60, 76], [29, 60], [53, 87], [8, 18]],
+    ...             [[0, 16], [79, 14], [3, 6], [98, 89]],
+    ...         ],
+    ...     ]
+    >>> pts = cuspatial.from_geopandas(
+    ...     gpd.GeoSeries(map(MultiPoint, ptsdata))
+    ... )
+    >>> lines = cuspatial.from_geopandas(
+    ...     gpd.GeoSeries(map(MultiLineString, linesdata))
+    ... )
+    >>> cuspatial.pairwise_point_linestring_distance(pts, lines)
+    0     0.762984
+    1    33.241540
+    2     0.680451
+    dtype: float64
+    """
     if not contains_only_points(points):
         raise ValueError("`points` array must contain only points")
 
