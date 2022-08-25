@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/constants.hpp>
+#include <cuspatial/detail/utility/traits.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 
@@ -52,12 +53,10 @@ namespace cuspatial {
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt Output iterator. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
- * @tparam Location The `value_type` of `LonLatItA` and `LonLatItB`. Must be
- * `cuspatial::lonlat_2d<T>`.
  * @tparam T The underlying coordinate type. Must be a floating-point type.
  *
  * @pre All iterators must have the same `Location` type, with  the same underlying floating-point
- * coordinate type (e.g. `cuspatial::lonlat_2d<float>`).
+ * coordinate type (e.g. `cuspatial::vec_2d<float>`).
  *
  * @return Output iterator to the element past the last distance computed.
  *
@@ -67,8 +66,7 @@ namespace cuspatial {
 template <class LonLatItA,
           class LonLatItB,
           class OutputIt,
-          class Location = typename std::iterator_traits<LonLatItA>::value_type,
-          class T        = typename Location::value_type>
+          class T = typename detail::iterator_vec_base_type<LonLatItA>>
 OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,

@@ -170,10 +170,10 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
 
   static_assert(detail::is_same_floating_point<T, detail::iterator_vec_base_type<Cart2dItB>>(),
                 "Underlying type of Cart2dItA and Cart2dItB must be the same floating point type");
-  static_assert(detail::is_same<cartesian_2d<T>,
+  static_assert(detail::is_same<vec_2d<T>,
                                 detail::iterator_value_type<Cart2dItA>,
                                 detail::iterator_value_type<Cart2dItB>>(),
-                "Inputs must be cuspatial::cartesian_2d");
+                "Inputs must be cuspatial::vec_2d");
 
   static_assert(detail::is_integral<detail::iterator_value_type<OffsetIteratorA>,
                                     detail::iterator_value_type<OffsetIteratorB>>(),

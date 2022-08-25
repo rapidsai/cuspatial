@@ -46,7 +46,7 @@ namespace cuspatial {
  * @param distances_first beginning the output range of distances
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
  *
- * @pre all input iterators for coordinates must have `cuspatial::cartesian_2d` type.
+ * @pre all input iterators for coordinates must have `cuspatial::vec_2d` type.
  * @pre all scalar types must be floating point types, and must be the same type for all input
  * iterators and output iterators.
  *
