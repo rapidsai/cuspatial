@@ -42,12 +42,14 @@ C++ header file that can be included from a `.cpp` source file.
 
 Header files should use the `#pragma once` include guard.
 
-The naming of external API headers should be consistent with the name of the folder that contains
-the source files that implement the API. For example, the implementation of the APIs found in
-`cuspatial/cpp/include/cuspatial/trajectory.hpp` are located in `cuspatial/src/trajectory`. 
-Likewise, the unit tests for the APIs reside in `cuspatial/tests/trajectory/`. 
+The naming of public column-based cuSpatial API headers should be consistent with the name of the
+folder that contains the source files that implement the API. For example, the implementation of the
+APIs found in `cuspatial/cpp/include/cuspatial/trajectory.hpp` are located in
+`cuspatial/src/trajectory`. This rule obviously does not apply to the header-only API, since the 
+headers are the source files.
 
-(TODO: the above is not currently true for many modules.)
+Likewise, unit tests reside in folders corresponding to the names of the API headers, e.g. 
+trajectory.hpp tests are in `cuspatial/tests/trajectory/`. 
 
 Internal API headers containing `detail` namespace definitions that are used across translation
 units inside libcuspatial should be placed in `include/cuspatial/detail`.
@@ -119,8 +121,10 @@ recommend watching Sean Parent's [C++ Seasoning talk](https://www.youtube.com/wa
 and we try to follow his rules: "No raw loops. No raw pointers. No raw synchronization primitives."
 
  * Prefer algorithms from STL and Thrust to raw loops.
- * Prefer libcudf and RMM [owning data structures and views](#libcudf-data-structures) to raw
-   pointers and raw memory allocation.
+ * For device storage, prefer libcudf and RMM
+   [owning data structures and views](#libcuspatial-data-structures) to raw pointers and raw memory
+   allocation. When pointers are used, prefer smart pointers (e.g. `std::shared_ptr` and
+   `std::unique_ptr`) to raw pointers.
  * Prefer dispatching kernels to streams instead of explicit synchronization.
 
 Documentation is discussed in the [Documentation Guide](DOCUMENTATION.md).
@@ -210,7 +214,7 @@ and machine learning workflows.
 The preferred style for passing input to and returning output from column-based API functions is the
 following:
 
-- Inputs
+- Input parameters
   - Columns:
     - `column_view const&`
   - Tables:
@@ -222,14 +226,14 @@ following:
       - Pass by value
     - Non-trivial or expensive to copy types
       - Pass by `const&`
-- In/Outs
+- Input/Output Parameters
   - Columns:
     - `mutable_column_view&`
   - Tables:
     - `mutable_table_view&`
   - Everything else:
     - Pass by via raw pointer
-- Outputs
+- Output
   - Outputs should be *returned*, i.e., no output parameters
   - Columns:
     - `std::unique_ptr<column>`
@@ -300,8 +304,7 @@ An example function is helpful.
 template <class LonLatItA,
           class LonLatItB,
           class OutputIt,
-          class Location = typename std::iterator_traits<LonLatItA>::value_type,
-          class T        = typename Location::value_type>
+          class T        = typename detail::iterator_vec_base_type<LonLatItA>>
 OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,
@@ -314,22 +317,23 @@ There are a few key points to notice.
 
   1. The API is very similar to STL algorithms such as `std::transform`.
   2. All array inputs and outputs are iterator type templates. 
-  3. Longitude/Latitude data is passed as array of structures, using the `cuspatial::lonlat_2d`
+  3. Longitude/Latitude data is passed as array of structures, using the `cuspatial::vec_2d<T>`
      type (include/cuspatial/vec_2d.hpp). This is enforced using a `static_assert` in the function
      body.
-  4. The `Location` type is a template that is by default equal to the `value_type` of the input
-     iterators.
-  5. The floating point type is a template (`T`) that is by default equal to the `value_type` of
-     `Location`.
+  5. The floating point type is a template (`T`) that is by default equal to the base `value_type`
+     of the type iterated over by `LonLatItA`. libcuspatial provides the `iterator_vec_base_type`
+     trait helper for this.
   6. The iterator types for the two input ranges (A and B) are distinct templates. This is crucial
      to enable composition of fancy iterators that may be different types for A and B.
   7. The size of the input and output ranges in the example API are equal, so the start and end of
      only the A range is provided (`a_lonlat_first` and `a_lonlat_last`). This mirrors STL APIs.
   8. This API returns an iterator to the element past the last element written to the output. This
      is inspired by `std::transform`, even though as with `transform`, many uses of 
-     `haversine_distance` will not need this returned iterator.
+     cuSpatial APIs will not need to use this returned iterator.
   9. All APIs that run CUDA device code (including Thrust algorithms) or allocate memory take a CUDA
      stream on which to execute the device code and allocate memory.
+  10. Any API that allocate and return device data (not shown here) should also take an 
+      `rmm::device_memory_resource` to use for output memory allocation.
 
 ## Iterator requirements
 
@@ -515,7 +519,8 @@ rmm::device_buffer some_function(
 ### Memory Management
 
 libcuspatial code eschews raw pointers and direct memory allocation. Use RMM classes built to
-use `device_memory_resource`(*)s for device memory allocation with automated lifetime management.
+use [`device_memory_resource`](https://github.com/rapidsai/rmm/#device_memory_resource) for device
+memory allocation with automated lifetime management.
 
 #### `rmm::device_buffer`
 Allocates a specified number of bytes of untyped, uninitialized device memory using a
