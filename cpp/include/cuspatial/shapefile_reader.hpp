@@ -37,7 +37,7 @@ typedef enum class winding_order : bool {
  * @brief read polygon data from an ESRI Shapefile.
  *
  * @param[in] filename: ESRI Shapefile file path (usually ends in .shp)
- * @param[in] outer_ring_winding: Change the ordering of the polygons, clockwise or counter-clockwise
+ * @param[in] outer_ring_winding: the ordering of the outer ring of polygon vertices; clockwise or counter-clockwise
  * @param[in] mr:       Optional, The resource to use to allocate the returned data
  *
  * @return Vector of 4 columns representing one or more polygons:
