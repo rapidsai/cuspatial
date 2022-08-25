@@ -232,7 +232,7 @@ following:
   - Tables:
     - `mutable_table_view&`
   - Everything else:
-    - Pass by via raw pointer
+    - Pass via raw pointer
 - Output
   - Outputs should be *returned*, i.e., no output parameters
   - Columns:
@@ -465,7 +465,7 @@ functions should have a corresponding NVTX range. In libcuspatial, we have a con
 uses the function's name as the name of the NVTX range. For more information about NVTX, see
 [here](https://github.com/NVIDIA/NVTX/tree/dev/cpp).
 
- ### Stream Creation
+### Stream Creation
 
 (Note: cuSpatial has not yet had the need for internal stream creation.) The following guidance is
 copied from libcudf's documentation. There may be times in implementing libcuspatial features where
