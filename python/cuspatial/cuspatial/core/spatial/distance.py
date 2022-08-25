@@ -243,6 +243,13 @@ def pairwise_point_linestring_distance(
     -------
     distance : cudf.Series
 
+    Notes
+    -----
+    The input `GeoSeries` must contain a single type geometry.
+    For example, `points` series cannot contain both points and polygons.
+    Currently, it is unsupported that `points` contains both points and
+    multipoints.
+
     Examples
     --------
 
