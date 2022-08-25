@@ -34,12 +34,38 @@ class GeoColumn(ColumnBase):
         from_read_polygon_shapefile=False,
     ):
         if from_read_polygon_shapefile:
+            """
+            A cudf.ListSeries needs four levels of nesting to represent
+            a polygon shapefile. The rings_offsets and polygons_offsets
+            have already been computed in the `read_polygon_shapefile`
+            function. In order to convert it into an arrow list<...>
+            we need a set of offsets buffers for each point tuple, and
+            and also an offsets buffer for each individual point.
+
+            Coordinates: List of size 2 offsets
+            Points: List of length 1 offsets: No multipoints
+            Rings: List of polygon ring offsets
+            Polygons: Offset into rings of each polygon
+
+            Finally, each set of offsets must have the length of the
+            array appended to the end, as Arrow offset lists are length
+            n + 1 but our original shapefile code offset lists are only
+            length n.
+            """
             polygons_col = data[0].astype("int32")
             rings_col = data[1].astype("int32")
             coordinates = (
                 data[2].stack().astype("float64").reset_index(drop=True)
             )
             coordinate_offsets = cudf.concat(
+                """
+                Store a fixed-size offsets buffer of even numbers:
+                0   0
+                1   2
+                2   4
+                ...
+                Up to the size of the original input.
+                """
                 [
                     cudf.Series(
                         cp.arange(len(coordinates) // 2) * 2, dtype="int32"
