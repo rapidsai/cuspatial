@@ -42,26 +42,6 @@ struct alignas(2 * sizeof(T)) vec_2d {
 };
 
 /**
- * @brief A geographical Longitude/Latitude (LonLat) coordinate pair
- *
- * `x` is the longitude coordinate, `y` is the latitude coordinate.
- *
- * @tparam T the base type for the coordinates
- */
-template <typename T>
-struct alignas(2 * sizeof(T)) lonlat_2d : vec_2d<T> {
-};
-
-/**
- * @brief A Cartesian (x/y) coordinate pair.
- *
- * @tparam T the base type for the coordinates.
- */
-template <typename T>
-struct alignas(2 * sizeof(T)) cartesian_2d : vec_2d<T> {
-};
-
-/**
  * @brief Compare two 2D vectors for equality.
  */
 template <typename T>
