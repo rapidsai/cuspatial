@@ -2,7 +2,6 @@
 
 from enum import Enum
 from numbers import Integral
-from cuspatial.io.shapefile import WindingOrder
 
 import geopandas as gpd
 import numpy as np
@@ -21,6 +20,7 @@ from shapely.geometry import (
 import cudf
 
 import cuspatial
+from cuspatial.io.shapefile import WindingOrder
 
 np.random.seed(0)
 
