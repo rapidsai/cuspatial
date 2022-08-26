@@ -55,7 +55,7 @@ Then run pre-commit hooks before committing code:
 pre-commit run
 ```
 
-Optionally, you may set up the pre-commit hooks to run automatically when you make a git commit. This can be done by running:
+Optionally, you may set up the pre-commit hooks to run automatically when you make a git commit. This can be done by running the following command in cuspatial repository:
 
 ```bash
 pre-commit install

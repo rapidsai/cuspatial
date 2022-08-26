@@ -18,24 +18,33 @@ Note: the core data structure of cuSpatial shares the same name as that of `geop
 to geopandas' dataframe object as `geopandas.GeoDataFrame` and to cuspatial's dataframe object as
 `GeoDataFrame`.
 
-Under the hood,
-cuspatial can perform parallel computation on geometry data thanks to its [structure of array](https://en.wikipedia.org/wiki/Parallel_array) (SoA) format.
-Specifically,
-cuspatial adopts geoarrow format as the SoA standard.
-Geoarrow is a derived data type from the arrow list type adopting a [`Variable-size List Layout`](https://arrow.apache.org/docs/format/Columnar.html#variable-size-list-layout),
-with the inner-most layer storing the points with a `Fixed-size list layout` array with `size=2`.
-Per definition,
-each increase in geometry complexity (dimension, or multi-geometry) requires an extra level of indirection.
-Geoarrow allows a mixture of geometry types to present in the same column by adopting the [Dense Union Array Layout](https://arrow.apache.org/docs/format/Columnar.html#dense-union).
-In cusptial,
-we refer to each level of indirection from highest level to lowest by
-`geometries`, `parts`, `rings` and `coordinates`.
-The first three are integral offset arrays and the last is an floating-point interleaved xy-coordinated array.
-Read [geoarrow format documentation](https://github.com/geopandas/geo-arrow-spec/blob/main/format.md) specification for more detail.
+----------------------------------------------------------------------------------------------------
+Under the hood, cuspatial can perform parallel computation on geometry
+data thanks to its
+[structure of arrays](https://en.wikipedia.org/wiki/Parallel_array) (SoA)
+format. Specifically, cuspatial adopts geoarrow format. Geoarrow is derived
+from the Apache Arrow list type, and it adopts a
+[`Variable-size List Layout`](https://arrow.apache.org/docs/format/Columnar.html#variable-size-list-layout),
+with the inner-most layer storing the points in a `Fixed-size list layout` array
+with `size==2`. 
 
-Cuspatial implements partial arrow union array via `GeoColumn` and `GeoMeta`.
-A GeoColumn is a composition of child columns and a `GeoMeta` object.
-The `GeoMeta` owns two arrays that are similar to the types buffer and offsets buffer from dense union.
+By definition, each increase in geometry complexity (dimension, or multi-
+geometry) requires an extra level of indirection. In cuSpatial, we use the following names for the levels of indirection from
+highest level to lowest: `geometries`, `parts`, `rings` and `coordinates`. The
+first three are integral offset arrays and the last is a floating-point
+interleaved xy-coordinate array.
+
+Geoarrow also allows a mixture
+of geometry types to be present in the same column by adopting the
+[Dense Union Array Layout](https://arrow.apache.org/docs/format/Columnar.html#dense-union).
+
+Read the [geoarrow format specification](https://github.com/geopandas/geo-arrow-spec/blob/main/format.md)
+for more detail.
+
+cuSpatial implements a specialization of Arrow dense union via `GeoColumn` and
+`GeoMeta`. A `GeoColumn` is a composition of child columns and a
+`GeoMeta` object. The `GeoMeta` owns two arrays that are similar to the
+types buffer and offsets buffer from Arrow dense union.
 
 ```{note}
 Currently, `GeoColumn` only implements four concrete array types: `points`,
@@ -62,30 +71,32 @@ maintained in the `cuspatial.io` package.
 
 ### UnionArray Compliance
 
-As previously mentioned,
-cuspatial's `GeoColumn` is an specialization of arrow's `UnionArray`.
-A fundamental addition in data types should be implemented in `cudf` and `GeoColumn` should simply inherits its functionality.
-However,
-`UnionArray` stands distinctly from existing data types in libcudf and requires substantial effort to implement.
-In the interim,
-cuspatial developers should build `GeoColumn` complying to `UnionArray` standards.
-Such effort may be upstreamed to `cudf` when development is more underway.
+As previously mentioned, cuspatial's `GeoColumn` is a specialization of
+Arrow's dense `UnionArray`. A fundamental addition to cuDF data types should be
+implemented in cuDF so that `GeoColumn` can simply inherit its
+functionality. However, dense `UnionArray` stands distinct from existing data types
+in libcudf and requires substantial effort to implement. In the interim, 
+cuSpatial provides a `GeoColumn` complying to the dense `UnionArray`
+specification. This may be upstreamed to libcudf as it matures.
 
-## GIS computation APIs
+## Geospatial computation APIs
 
-Besides the data structure,
-cuspatial maintains a set of computation APIs.
-The computation APIs are organized into several modules.
-All spatial computation modules are further grouped into a `spatial` subpackage.
-Developers are encouraged to use specific names for the module of the function added in the PR.
+In addition to data structures, cuSpatial provides a set of computation APIs.
+The computation APIs are organized into several modules. All spatial
+computation modules are further grouped into a `spatial` subpackage.
+Module names should correspond to a specific computation category,
+such as `distance` or `join`. Cuspatial avoids using general category names,
+such as `generic`.
 
 ### Legacy and Modern APIs
 
-For historical reasons,
-cuspatial APIs exposes raw array inputs for users to provide raw geometry coordinate array and offsets.
-Newer APIs should accept a `GeoSeries` or `GeoDataFrame` as input.
-Developers may extract geometry offsets and coordinates via geometry accessors provided,
-such as `GeoSeries.point`, `GeoSeries.multipoint`, `GeoSeries.lines`, `GeoSeries.polygon`.
+For historical reasons, older cuSpatial APIs expose raw array inputs for
+users to provide raw geometry coordinate arrays and offsets. Newer Python
+APIs should accept a `GeoSeries` or `GeoDataFrame` as input. Developers
+may extract geometry offsets and coordinates via cuSpatial's geometry
+accessors such as `GeoSeries.points`, `GeoSeries.multipoints`,
+`GeoSeries.lines`, `GeoSeries.polygons`. Developer can then pass the geometries
+offsets and corrdinate arrays to Cython APIs.
 
 ## Cython Layer
 
