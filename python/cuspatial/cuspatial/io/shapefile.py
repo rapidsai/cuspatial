@@ -15,8 +15,7 @@ class WindingOrder(Enum):
 
 
 def read_polygon_shapefile(
-    filename,
-    outer_ring_order=WindingOrder.COUNTER_CLOCKWISE
+    filename, outer_ring_order=WindingOrder.COUNTER_CLOCKWISE
 ):
     """
     Reads polygon geometry from an ESRI shapefile into GPU memory.
