@@ -1,11 +1,9 @@
-# How to Contribute
+# How to Contribute to cuSpatial
 
-This documentation provides high-level overview of contributing to cuspatial.
-
-`cuSpatial` is a part of the RAPIDS community.
-Developers should follow the same guidelines that applies to RAPIDS when contributing to cuspatial.
-RAPIDS [contributing section](https://docs.rapids.ai/contributing) walks through the process of identifying an issue,
-submit and merging a PR.
+`cuSpatial` is a part of the RAPIDS community. When contributing to cuSpatial, developers should
+follow the RAPIDS contribution guidelines. The RAPIDS documentation
+[contributing section](https://docs.rapids.ai/contributing) walks through the process of identifying
+an issue, submitting and merging a PR.
 
 ## Directory structure and file naming
 
