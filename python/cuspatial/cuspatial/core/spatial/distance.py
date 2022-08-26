@@ -226,11 +226,15 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
 def pairwise_point_linestring_distance(
     points: GeoSeries, linestrings: GeoSeries
 ):
-    """Compute shortest distance between pairs of (multi)points and (multi)linestrings
+    """Compute distance between pairs of (multi)points and (multi)linestrings
 
-    The shortest distance between a (multi)point and a (multi)linestring
+    The distance between a (multi)point and a (multi)linestring
     is defined as the shortest distance between every point in the
     multipoint and every line segment in the multilinestring.
+
+    This algorithm computes distance pairwise. The ith row in the result is
+    the distance between the ith (multi)point in `points` and the ith
+    (multi)linestring in `linestrings`.
 
     Parameters
     ----------
