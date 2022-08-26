@@ -39,21 +39,21 @@ namespace cuspatial {
  * @tparam OutputIt iterator type for output array. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  *
- * @param point_geometry_offset_first beginning of the range of geometries of the multipoint of each
+ * @param point_geometry_offset_first beginning of the range of multipoint geometries of each
  * pair
- * @param point_geometry_offset_last end of the range of geometries of the multipoint of each pair
+ * @param point_geometry_offset_last end of the range of multipoint geometries of each pair
  * @param points_first beginning of the range of points
  * @param points_last end of the range of the points
- * @param linestring_geometry_offset_first beginning of the range of the offsets to the geometry of
- * the multilinestring of each pair, the end range is implied by linestring_geometry_offset_first +
+ * @param linestring_geometry_offset_first beginning of the range of offsets to the multilinestring geometry of
+ * each pair, the end range is implied by linestring_geometry_offset_first +
  * std::distance(`point_geometry_offset_first`, `point_geometry_offset_last`)
- * @param linestring_offsets_first beginning of the range of the offsets to the starting point
+ * @param linestring_offsets_first beginning of the range of offsets to the starting point
  * of each linestring
- * @param linestring_offsets_last end of the range of the offsets to the starting point
+ * @param linestring_offsets_last end of the range of offsets to the starting point
  * of each linestring
- * @param linestring_points_first beginning of the range of points of the linestring
- * @param linestring_points_last end of the range of points of the linestring
- * @param distances_first beginning the output range of distances
+ * @param linestring_points_first beginning of the range of linestring points
+ * @param linestring_points_last end of the range of linestring points
+ * @param distances_first beginning of the output range of distances
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
  *
  * @pre all input iterators for coordinates must have `cuspatial::cartesian_2d` type.

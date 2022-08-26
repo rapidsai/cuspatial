@@ -65,7 +65,7 @@ struct pairwise_point_linestring_distance_impl {
     auto output = cudf::make_numeric_column(
       points_xy.type(), num_pairs, cudf::mask_state::UNALLOCATED, stream, mr);
 
-    auto point_parts_it_first = get_iterator_functor<is_multi_point>{}(multipoint_geometry_offsets);
+    auto point_parts_it_first = get_geometry_iterator_functor<is_multi_point>{}(multipoint_geometry_offsets);
     auto points_it            = interleaved_iterator_to_vec_2d_iterator(points_xy.begin<T>());
 
     auto linestring_parts_it_first =
