@@ -44,8 +44,8 @@ namespace cuspatial {
  * @param point_geometry_offset_last end of the range of multipoint geometries of each pair
  * @param points_first beginning of the range of points
  * @param points_last end of the range of the points
- * @param linestring_geometry_offset_first beginning of the range of offsets to the multilinestring geometry of
- * each pair, the end range is implied by linestring_geometry_offset_first +
+ * @param linestring_geometry_offset_first beginning of the range of offsets to the multilinestring
+ * geometry of each pair, the end range is implied by linestring_geometry_offset_first +
  * std::distance(`point_geometry_offset_first`, `point_geometry_offset_last`)
  * @param linestring_offsets_first beginning of the range of offsets to the starting point
  * of each linestring
