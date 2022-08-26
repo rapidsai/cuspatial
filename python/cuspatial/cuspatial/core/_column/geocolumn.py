@@ -57,15 +57,15 @@ class GeoColumn(ColumnBase):
             coordinates = (
                 data[2].stack().astype("float64").reset_index(drop=True)
             )
+            """
+            Store a fixed-size offsets buffer of even numbers:
+            0   0
+            1   2
+            2   4
+            ...
+            Up to the size of the original input.
+            """
             coordinate_offsets = cudf.concat(
-                """
-                Store a fixed-size offsets buffer of even numbers:
-                0   0
-                1   2
-                2   4
-                ...
-                Up to the size of the original input.
-                """
                 [
                     cudf.Series(
                         cp.arange(len(coordinates) // 2) * 2, dtype="int32"
@@ -73,6 +73,9 @@ class GeoColumn(ColumnBase):
                     cudf.Series([len(coordinates) // 2 * 2], dtype="int32"),
                 ]
             ).reset_index(drop=True)
+            """
+            Store a points offset buffer: 0 - n
+            """
             point_offsets = cudf.concat(
                 [
                     cudf.Series(
