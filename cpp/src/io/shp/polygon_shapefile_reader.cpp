@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
+#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/shapefile_reader.hpp>
 
 #include <ogrsf_frmts.h>
 
 #include <cudf/types.hpp>
+
+#include <thrust/iterator/counting_iterator.h>
 
 #include <memory>
 #include <string>
@@ -32,19 +35,24 @@ cudf::size_type read_ring(OGRLinearRing const& ring,
                           std::vector<double>& ys,
                           const cuspatial::winding_order ring_order)
 {
-  cudf::size_type num_vertices = ring.getNumPoints();
-  xs.reserve(num_vertices);
-  ys.reserve(num_vertices);
-  if (ring_order == cuspatial::winding_order::CLOCKWISE) {
-    for (cudf::size_type i = num_vertices - 1; i >= 0; --i) {
-      xs.push_back(ring.getX(i));
-      ys.push_back(ring.getY(i));
-    }
+  auto num_vertices      = ring.getNumPoints();
+  auto prev_num_vertices = xs.size();
+  xs.resize(xs.size() + num_vertices);
+  ys.resize(ys.size() + num_vertices);
+
+  auto output_it = thrust::make_zip_iterator(
+    thrust::make_tuple(xs.begin() + prev_num_vertices, ys.begin() + prev_num_vertices));
+  if (ring_order == cuspatial::winding_order::COUNTER_CLOCKWISE) {
+    auto ring_it = cuspatial::detail::make_counting_transform_iterator(
+      0, [&ring](auto i) { return thrust::make_tuple(ring.getX(i), ring.getY(i)); });
+
+    thrust::copy_n(ring_it, num_vertices, output_it);
   } else {
-    for (cudf::size_type i = 0; i < num_vertices; ++i) {
-      xs.push_back(ring.getX(i));
-      ys.push_back(ring.getY(i));
-    }
+    auto ring_it =
+      cuspatial::detail::make_counting_transform_iterator(0, [&ring, &num_vertices](auto i) {
+        return thrust::make_tuple(ring.getX(num_vertices - i - 1), ring.getY(num_vertices - i - 1));
+      });
+    thrust::copy_n(ring_it, num_vertices, output_it);
   }
 
   return num_vertices;
@@ -87,8 +95,8 @@ cudf::size_type read_geometry_feature(OGRGeometry const* geometry,
     int num_rings = 0;
 
     for (int i = 0; i < geometry_collection->getNumGeometries(); i++) {
-      num_rings +=
-        read_geometry_feature(geometry_collection->getGeometryRef(i), ring_lengths, xs, ys, ring_order);
+      num_rings += read_geometry_feature(
+        geometry_collection->getGeometryRef(i), ring_lengths, xs, ys, ring_order);
     }
 
     return num_rings;
@@ -153,7 +161,7 @@ read_polygon_shapefile(std::string const& filename, cuspatial::winding_order out
   std::vector<double> xs;
   std::vector<double> ys;
 
-  read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys, outer_ring_winding); 
+  read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys, outer_ring_winding);
   feature_lengths.shrink_to_fit();
   ring_lengths.shrink_to_fit();
   xs.shrink_to_fit();
