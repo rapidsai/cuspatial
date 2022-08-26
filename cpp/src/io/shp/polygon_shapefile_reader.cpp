@@ -30,6 +30,9 @@
 
 namespace {
 
+// TODO: a better approach is to precompute the total size needed by xs and ys
+// as a preprocess and preallocate xs, ys. `read_ring` should simply accept
+// an iterator range and return the pass-the-end iterator.
 cudf::size_type read_ring(OGRLinearRing const& ring,
                           std::vector<double>& xs,
                           std::vector<double>& ys,
