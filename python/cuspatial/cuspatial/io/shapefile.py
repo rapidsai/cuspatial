@@ -1,18 +1,23 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-from cudf import DataFrame, Series
-
 from enum import Enum
+
+from cudf import DataFrame, Series
 
 from cuspatial._lib.shapefile_reader import (
     read_polygon_shapefile as cpp_read_polygon_shapefile,
 )
 
+
 class WindingOrder(Enum):
     COUNTER_CLOCKWISE = 0
     CLOCKWISE = 1
 
-def read_polygon_shapefile(filename, outer_ring_order = WindingOrder.COUNTER_CLOCKWISE):
+
+def read_polygon_shapefile(
+    filename,
+    outer_ring_order=WindingOrder.COUNTER_CLOCKWISE
+):
     """
     Reads polygon geometry from an ESRI shapefile into GPU memory.
 

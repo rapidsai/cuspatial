@@ -48,8 +48,9 @@ void test(std::string const& shapefile_name,
           std::vector<double> xs,
           std::vector<double> ys)
 {
-  auto shape_filename  = get_shapefile_path(shapefile_name);
-  auto polygon_columns = cuspatial::read_polygon_shapefile(shape_filename, cuspatial::winding_order::COUNTER_CLOCKWISE);
+  auto shape_filename = get_shapefile_path(shapefile_name);
+  auto polygon_columns =
+    cuspatial::read_polygon_shapefile(shape_filename, cuspatial::winding_order::COUNTER_CLOCKWISE);
 
   auto expected_poly_offsets  = wrapper<cudf::size_type>(poly_offsets.begin(), poly_offsets.end());
   auto expected_ring_offsets  = wrapper<cudf::size_type>(ring_offsets.begin(), ring_offsets.end());
@@ -68,8 +69,9 @@ void test_reverse(std::string const& shapefile_name,
                   std::vector<double> xs,
                   std::vector<double> ys)
 {
-  auto shape_filename  = get_shapefile_path(shapefile_name);
-  auto polygon_columns = cuspatial::read_polygon_shapefile(shape_filename, cuspatial::winding_order::CLOCKWISE);
+  auto shape_filename = get_shapefile_path(shapefile_name);
+  auto polygon_columns =
+    cuspatial::read_polygon_shapefile(shape_filename, cuspatial::winding_order::CLOCKWISE);
 
   auto expected_poly_offsets  = wrapper<cudf::size_type>(poly_offsets.begin(), poly_offsets.end());
   auto expected_ring_offsets  = wrapper<cudf::size_type>(ring_offsets.begin(), ring_offsets.end());

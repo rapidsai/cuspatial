@@ -9,7 +9,7 @@ from cudf._lib.column cimport Column, column
 
 from cuspatial._lib.cpp.shapefile_reader cimport (
     read_polygon_shapefile as cpp_read_polygon_shapefile,
-    winding_order
+    winding_order,
 )
 
 
