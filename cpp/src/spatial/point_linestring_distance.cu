@@ -153,7 +153,7 @@ std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
   cudf::column_view const& linestring_points_xy,
   rmm::mr::device_memory_resource* mr)
 {
-  return multigeom_dispatch<detail::pairwise_point_linestring_distance_functor>(
+  return double_boolean_dispatch<detail::pairwise_point_linestring_distance_functor>(
     multipoint_geometry_offsets.has_value(),
     multilinestring_geometry_offsets.has_value(),
     multipoint_geometry_offsets,
