@@ -130,14 +130,14 @@ void __global__ pairwise_point_linestring_distance(OffsetIteratorA point_geometr
       thrust::distance(linestring_geometry_offset_first, thrust::prev(geometry_offsets_iter));
 
     // Reduce the minimum distance between different parts of the multi-point.
-    cartesian_2d<T> const a = linestring_points_first[idx];
-    cartesian_2d<T> const b = linestring_points_first[idx + 1];
-    T min_distance_squared  = std::numeric_limits<T>::max();
+    vec_2d<T> const a      = linestring_points_first[idx];
+    vec_2d<T> const b      = linestring_points_first[idx + 1];
+    T min_distance_squared = std::numeric_limits<T>::max();
 
     for (auto point_idx = point_geometry_offset_first[geometry_idx];
          point_idx < point_geometry_offset_first[geometry_idx + 1];
          point_idx++) {
-      cartesian_2d<T> const c = points_first[point_idx];
+      vec_2d<T> const c = points_first[point_idx];
 
       // TODO: reduce redundant computation only related to `a`, `b` in this helper.
       auto const distance_squared = point_to_segment_distance_squared(c, a, b);
@@ -174,10 +174,10 @@ OutputIt pairwise_point_linestring_distance(OffsetIteratorA point_geometry_offse
   static_assert(detail::is_same_floating_point<T, detail::iterator_vec_base_type<Cart2dItB>>(),
                 "Inputs must have same floating point value type.");
 
-  static_assert(detail::is_same<cartesian_2d<T>,
+  static_assert(detail::is_same<vec_2d<T>,
                                 detail::iterator_value_type<Cart2dItA>,
                                 detail::iterator_value_type<Cart2dItB>>(),
-                "Inputs must be cuspatial::cartesian_2d");
+                "Inputs must be cuspatial::vec_2d");
 
   auto const num_pairs =
     thrust::distance(point_geometry_offset_first, point_geometry_offset_last) - 1;
