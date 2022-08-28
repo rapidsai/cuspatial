@@ -263,6 +263,64 @@ key points:
   5. The public API does not take a stream. There is a `detail` version of the API that takes a
      stream. This follows libcudf, and may change in the future.
 
+### Multiple Return Values
+
+Sometimes it is necessary for functions to have multiple outputs. There are a few ways this can be
+done in C++ (including creating a `struct` for the output). One convenient way to do this is
+using `std::tie`  and `std::pair`. Note that objects passed to `std::pair` will invoke
+either the copy constructor or the move constructor of the object, and it may be preferable to move
+non-trivially copyable objects (and required for types with deleted copy constructors, like
+`std::unique_ptr`).
+
+Multiple column outputs that are functionally related (e.g. x- and y-coordinates), should be 
+combined into a `table`.
+
+```c++
+std::pair<cudf::table, cudf::table> return_two_tables(void){
+  cudf::table out0;
+  cudf::table out1;
+  ...
+  // Do stuff with out0, out1
+
+  // Return a std::pair of the two outputs
+  return std::pair(std::move(out0), std::move(out1));
+}
+
+cudf::table out0;
+cudf::table out1;
+std::tie(out0, out1) = return_two_outputs();
+```
+
+Note: `std::tuple` _could_ be used if not for the fact that Cython does not support `std::tuple`
+Therefore, libcuspatial public column-based APIs must use `std::pair`, and are therefore limited to
+return only two objects of different types. Multiple objects of the same type may be returned via a
+`std::vector<T>`.
+
+Alternatively, C++17
+[structured binding](https://en.cppreference.com/w/cpp/language/structured_binding) may be used to
+disaggregate multiple return values:
+
+```c++
+auto [out0, out1] = return_two_outputs();
+```
+
+Note that the compiler might not support capturing aliases defined in a structured binding in a
+lambda. One may work around this by using a capture with an initializer instead:
+
+```c++
+auto [out0, out1] = return_two_outputs();
+
+// Direct capture of alias from structured binding might fail with:
+// "error: structured binding cannot be captured"
+// auto foo = [out0]() {...};
+
+// Use an initializing capture:
+auto foo = [&out0 = out0] {
+  // Use out0 to compute something.
+  // ...
+};
+```
+
 ## Header-only cuSpatial API<a name="header_only_api"></a>
 
 For C++ users and developers who do not also use libcudf or other RAPIDS APIS, depending on libcudf
@@ -335,68 +393,20 @@ There are a few key points to notice.
   10. Any API that allocate and return device data (not shown here) should also take an 
       `rmm::device_memory_resource` to use for output memory allocation.
 
-## Iterator requirements
+### (Multiple) Return Values
+
+Whenever possible in the header-only API, output data should be written to output iterators
+that reference data allocated by the caller of the API. In this case, multiple "return values"
+are simply written to multiple output iterators. Typically such APIs return an iterator one 
+past the end of the primary output iterator (in the style of `std::transform()`.
+
+In functions where the output size is data dependent, the API may allocate the output data and
+return it as a `rmm::device_uvector` or other data structure containing `device_uvector`s.
+
+### Iterator requirements
 
 All input and output iterators must be device-accessible with random access. They must satisfy the
 requirements of C++ [LegacyRandomAccessIterator][LinkLRAI]. Output iterators must be mutable.
-
-## Multiple Return Values
-
-Sometimes it is necessary for functions to have multiple outputs. There are a few ways this can be
-done in C++ (including creating a `struct` for the output). One convenient way to do this is
-using `std::tie`  and `std::pair`. Note that objects passed to `std::pair` will invoke
-either the copy constructor or the move constructor of the object, and it may be preferable to move
-non-trivially copyable objects (and required for types with deleted copy constructors, like
-`std::unique_ptr`).
-
-Multiple column outputs that are functionally related (e.g. x- and y-coordinates), should be 
-combined into a `table`.
-
-```c++
-std::pair<cudf::table, cudf::table> return_two_tables(void){
-  cudf::table out0;
-  cudf::table out1;
-  ...
-  // Do stuff with out0, out1
-
-  // Return a std::pair of the two outputs
-  return std::pair(std::move(out0), std::move(out1));
-}
-
-cudf::table out0;
-cudf::table out1;
-std::tie(out0, out1) = return_two_outputs();
-```
-
-Note: `std::tuple` _could_ be used if not for the fact that Cython does not support `std::tuple`
-Therefore, libcuspatial public column-based APIs must use `std::pair`, and are therefore limited to
-return only two objects of different types. Multiple objects of the same type may be returned via a
-`std::vector<T>`.
-
-Alternatively, C++17
-[structured binding](https://en.cppreference.com/w/cpp/language/structured_binding) may be used to
-disaggregate multiple return values:
-
-```c++
-auto [out0, out1] = return_two_outputs();
-```
-
-Note that the compiler might not support capturing aliases defined in a structured binding in a
-lambda. One may work around this by using a capture with an initializer instead:
-
-```c++
-auto [out0, out1] = return_two_outputs();
-
-// Direct capture of alias from structured binding might fail with:
-// "error: structured binding cannot be captured"
-// auto foo = [out0]() {...};
-
-// Use an initializing capture:
-auto foo = [&out0 = out0] {
-  // Use out0 to compute something.
-  // ...
-};
-```
 
 ## Streams
 
