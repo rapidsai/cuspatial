@@ -8,7 +8,6 @@ import pytest
 import cudf
 
 import cuspatial
-
 from cuspatial.io.shapefile import WindingOrder
 
 shapefiles_path = os.path.join(
@@ -47,7 +46,7 @@ def test_zero_polygons():
 def test_one_polygon_reversed():
     f_pos, r_pos, points = cuspatial.read_polygon_shapefile(
         os.path.join(shapefiles_path, "one_poly.shp"),
-        outer_ring_order=WindingOrder.CLOCKWISE
+        outer_ring_order=WindingOrder.CLOCKWISE,
     )
     cudf.testing.assert_series_equal(
         f_pos, cudf.Series([0], dtype=np.int32, name="f_pos")
@@ -64,6 +63,7 @@ def test_one_polygon_reversed():
             }
         ),
     )
+
 
 def test_one_polygon():
     f_pos, r_pos, points = cuspatial.read_polygon_shapefile(
@@ -89,7 +89,7 @@ def test_one_polygon():
 def test_two_polygons_reversed():
     f_pos, r_pos, points = cuspatial.read_polygon_shapefile(
         os.path.join(shapefiles_path, "two_polys.shp"),
-        outer_ring_order=WindingOrder.CLOCKWISE
+        outer_ring_order=WindingOrder.CLOCKWISE,
     )
     cudf.testing.assert_series_equal(
         f_pos, cudf.Series([0, 1], dtype=np.int32, name="f_pos")
