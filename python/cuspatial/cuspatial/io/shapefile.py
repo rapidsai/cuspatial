@@ -1,17 +1,11 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-from enum import Enum
-
 from cudf import DataFrame, Series
 
 from cuspatial._lib.shapefile_reader import (
+    WindingOrder,
     read_polygon_shapefile as cpp_read_polygon_shapefile,
 )
-
-
-class WindingOrder(Enum):
-    COUNTER_CLOCKWISE = 0
-    CLOCKWISE = 1
 
 
 def read_polygon_shapefile(
@@ -25,7 +19,7 @@ def read_polygon_shapefile(
     filename : str, pathlike
         ESRI Shapefile file path (usually ends in ``.shp``)
     winding_order : WindingOrder(Enum)
-        COUNTER_CLOCKWISE, ESRI Format or CLOCKWISE, Simple Feature
+        COUNTER_CLOCKWISE: ESRI Format, or CLOCKWISE: Simple Feature
 
     Returns
     -------
