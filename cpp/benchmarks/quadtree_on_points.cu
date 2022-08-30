@@ -80,9 +80,7 @@ std::pair<std::size_t, std::vector<vec_2d<T>>> generate_points(T const size)
     auto const br                 = std::get<2>(tuple);
     auto points_begin             = h_points.begin() + point_offset;
     auto points_end               = points_begin + num_points_in_rect;
-    thrust::transform(thrust::host, points_begin, points_end, points_begin, [&](auto&&...) {
-      return random_point<T>(tl, br);
-    });
+    std::generate(points_begin, points_end, [&]() { return random_point<T>(tl, br); });
     point_offset += num_points_in_rect;
   }
   return {total_points, h_points};
@@ -92,7 +90,9 @@ template <typename T>
 void quadtree_on_points_benchmark(nvbench::state& state, nvbench::type_list<T>)
 {
   auto const [total_points, h_points] =
-    generate_points(static_cast<T>(state.get_float64("BoundingBoxSize")));
+    generate_points(static_cast<T>(state.get_float64("Bounding box size")));
+
+  auto const max_size = static_cast<int32_t>(total_points / std::pow(4, 4));
 
   rmm::device_vector<vec_2d<T>> d_points(h_points);
   auto const vertex_1_itr = thrust::min_element(
@@ -107,13 +107,13 @@ void quadtree_on_points_benchmark(nvbench::state& state, nvbench::type_list<T>)
     });
   auto const vertex_2 = h_points[thrust::distance(d_points.begin(), vertex_2_itr)];
 
-  state.add_element_count(total_points, "NumPoints");
+  // TODO: to be replaced by nvbench fixture once it's ready
+  cuspatial::rmm_pool_raii rmm_pool;
+
+  state.add_element_count(max_size, "Split threshold");
+  state.add_element_count(total_points, "Total Points");
   state.exec(nvbench::exec_tag::sync,
-             [&d_points,
-              &vertex_1,
-              &vertex_2,
-              max_size = static_cast<int32_t>(std::floor(std::sqrt(total_points)))](
-               nvbench::launch& launch) {
+             [&d_points, &vertex_1, &vertex_2, max_size](nvbench::launch& launch) {
                quadtree_on_points(
                  d_points.begin(), d_points.end(), vertex_1, vertex_2, T{-1}, int8_t{15}, max_size);
              });
@@ -121,5 +121,5 @@ void quadtree_on_points_benchmark(nvbench::state& state, nvbench::type_list<T>)
 
 using floating_point_types = nvbench::type_list<float, double>;
 NVBENCH_BENCH_TYPES(quadtree_on_points_benchmark, NVBENCH_TYPE_AXES(floating_point_types))
-  .set_type_axes_names({"CoordsType"})
-  .add_float64_axis("BoundingBoxSize", {1'000, 10'000, 100'000});
+  .set_type_axes_names({"FP type"})
+  .add_float64_axis("Bounding box size", {1'000, 10'000, 100'000});
