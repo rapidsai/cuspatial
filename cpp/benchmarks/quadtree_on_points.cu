@@ -35,7 +35,7 @@ auto generate_rects(T const size)
 
   vec_2d<T> tl{T{0}, T{0}};
   vec_2d<T> br{size, size};
-  vec_2d<T> wh{(br - tl).x, (br - tl).y};
+  vec_2d<T> area = br - tl;
 
   std::size_t num_points = 0;
   std::vector<std::tuple<std::size_t, vec_2d<T>, vec_2d<T>>> rects{};
@@ -47,11 +47,15 @@ auto generate_rects(T const size)
       case 2: tl.x = tl.x + (br.x - tl.x) / phi; break;
       case 3: tl.y = tl.y + (br.y - tl.y) / phi; break;
     }
-    wh                      = br - tl;
-    auto num_points_in_rect = static_cast<std::size_t>(std::sqrt(dot(br, tl)) * 100);
+
+    area = br - tl;
+
+    auto num_points_in_rect = static_cast<std::size_t>(std::sqrt(area.x * area.y * 1'000'000));
+
     rects.push_back(std::make_tuple(num_points_in_rect, tl, br));
+
     num_points += num_points_in_rect;
-  } while (wh.x > 1 && wh.y > 1);
+  } while (area.x > 1 && area.y > 1);
 
   return std::make_pair(num_points, std::move(rects));
 }
@@ -74,10 +78,10 @@ std::pair<std::size_t, std::vector<vec_2d<T>>> generate_points(T const size)
 
   std::size_t point_offset{0};
   std::vector<vec_2d<T>> h_points(total_points);
-  for (auto const& tuple : rects) {
-    auto const num_points_in_rect = std::get<0>(tuple);
-    auto const tl                 = std::get<1>(tuple);
-    auto const br                 = std::get<2>(tuple);
+  for (auto const& rect : rects) {
+    auto const num_points_in_rect = std::get<0>(rect);
+    auto const tl                 = std::get<1>(rect);
+    auto const br                 = std::get<2>(rect);
     auto points_begin             = h_points.begin() + point_offset;
     auto points_end               = points_begin + num_points_in_rect;
     std::generate(points_begin, points_end, [&]() { return random_point<T>(tl, br); });
