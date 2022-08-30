@@ -48,7 +48,7 @@ struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
             const cuspatial::vec_2d<T> vertex_2,
             const T scale,
             const int8_t max_depth,
-            const int32_t min_size,
+            const int32_t max_size,
             std::vector<uint32_t> const& expected_key,
             std::vector<uint8_t> const& expected_level,
             std::vector<bool> const& expected_is_quad,
@@ -58,7 +58,7 @@ struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
     thrust::device_vector<cuspatial::vec_2d<T>> d_points{points};
 
     auto pair = cuspatial::quadtree_on_points(
-      d_points.begin(), d_points.end(), vertex_1, vertex_2, scale, max_depth, min_size, mr());
+      d_points.begin(), d_points.end(), vertex_1, vertex_2, scale, max_depth, max_size, mr());
 
     auto& point_indices = pair.first;
     EXPECT_EQ(point_indices.size(), points.size());
@@ -98,10 +98,10 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_empty)
   const cuspatial::vec_2d<T> vertex_1{0.0, 0.0};
   const cuspatial::vec_2d<T> vertex_2{1.0, 1.0};
   const int8_t max_depth = 1;
-  const int32_t min_size = 1;
+  const int32_t max_size = 1;
   const T scale          = 1.0;
 
-  this->test({}, vertex_1, vertex_2, scale, max_depth, min_size, {}, {}, {}, {}, {});
+  this->test({}, vertex_1, vertex_2, scale, max_depth, max_size, {}, {}, {}, {}, {});
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_single)
@@ -110,11 +110,11 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_single)
   const cuspatial::vec_2d<T> vertex_1{0.0, 0.0};
   const cuspatial::vec_2d<T> vertex_2{1.0, 1.0};
   const int8_t max_depth = 1;
-  const int32_t min_size = 1;
+  const int32_t max_size = 1;
   const T scale          = 1.0;
 
   this->test(
-    {{0.45, 0.45}}, vertex_1, vertex_2, scale, max_depth, min_size, {0}, {0}, {false}, {1}, {0});
+    {{0.45, 0.45}}, vertex_1, vertex_2, scale, max_depth, max_size, {0}, {0}, {false}, {1}, {0});
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_two)
@@ -123,7 +123,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_two)
   const cuspatial::vec_2d<T> vertex_1{0.0, 0.0};
   const cuspatial::vec_2d<T> vertex_2{2.0, 2.0};
   const int8_t max_depth = 1;
-  const int32_t min_size = 1;
+  const int32_t max_size = 1;
   const T scale          = 1.0;
 
   this->test({{0.45, 0.45}, {1.45, 1.45}},
@@ -131,7 +131,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_two)
              vertex_2,
              scale,
              max_depth,
-             min_size,
+             max_size,
              {0, 3},
              {0, 0},
              {false, false},
@@ -145,14 +145,14 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
   const cuspatial::vec_2d<T> vertex_1{-1000.0, -1000.0};
   const cuspatial::vec_2d<T> vertex_2{1000.0, 1000.0};
   const int8_t max_depth = 2;
-  const int32_t min_size = 1;
+  const int32_t max_size = 1;
 
   this->test({{-100.0, -100.0}, {100.0, 100.0}},
              vertex_1,
              vertex_2,
              -1,
              max_depth,
-             min_size,
+             max_size,
              {3, 12, 15},
              {0, 1, 1},
              {true, false, false},
@@ -166,7 +166,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_small)
   const cuspatial::vec_2d<T> vertex_1{0.0, 0.0};
   const cuspatial::vec_2d<T> vertex_2{8.0, 8.0};
   const int8_t max_depth = 3;
-  const int32_t min_size = 12;
+  const int32_t max_size = 12;
   const T scale          = 1.0;
 
   this->test(
@@ -212,7 +212,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_small)
     vertex_2,
     scale,
     max_depth,
-    min_size,
+    max_size,
     {0, 1, 2, 0, 1, 3, 4, 7, 5, 6, 13, 14, 28, 31},
     {0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2},
     {true, true, false, false, true, true, false, true, false, false, false, false, false, false},
