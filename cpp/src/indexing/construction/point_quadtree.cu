@@ -18,6 +18,7 @@
 #include <cuspatial/experimental/point_quadtree.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
 #include <cuspatial/point_quadtree.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/table/table.hpp>
@@ -69,20 +70,18 @@ struct dispatch_construct_quadtree {
     double y_max,
     double scale,
     int8_t max_depth,
-    cudf::size_type min_size,
+    cudf::size_type max_size,
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
     auto points = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
-    auto pair   = construct_quadtree(points,
+    auto pair   = quadtree_on_points(points,
                                    points + x.size(),
-                                   x_min,
-                                   x_max,
-                                   y_min,
-                                   y_max,
-                                   scale,
+                                   {static_cast<T>(x_min), static_cast<T>(y_min)},
+                                   {static_cast<T>(x_max), static_cast<T>(y_max)},
+                                   static_cast<T>(scale),
                                    max_depth,
-                                   min_size,
+                                   max_size,
                                    mr,
                                    stream);
 
@@ -119,7 +118,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   double y_max,
   double scale,
   int8_t max_depth,
-  cudf::size_type min_size,
+  cudf::size_type max_size,
   rmm::cuda_stream_view stream,
   rmm::mr::device_memory_resource* mr)
 {
@@ -133,7 +132,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
                                y_max,
                                scale,
                                max_depth,
-                               min_size,
+                               max_size,
                                stream,
                                mr);
 }
@@ -149,16 +148,10 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   double y_max,
   double scale,
   int8_t max_depth,
-  cudf::size_type min_size,
+  cudf::size_type max_size,
   rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(x.size() == y.size(), "x and y columns must have the same length");
-  CUSPATIAL_EXPECTS(x_min < x_max && y_min < y_max,
-                    "invalid bounding box (x_min, x_max, y_min, y_max)");
-  CUSPATIAL_EXPECTS(scale > 0, "scale must be positive");
-  CUSPATIAL_EXPECTS(max_depth >= 0 && max_depth < 16,
-                    "maximum depth must be positive and less than 16");
-  CUSPATIAL_EXPECTS(min_size > 0, "minimum number of points for a non-leaf node must be positive");
   if (x.is_empty() || y.is_empty()) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.push_back(cudf::make_empty_column(cudf::type_id::UINT32));
@@ -171,7 +164,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
                           std::make_unique<cudf::table>(std::move(cols)));
   }
   return detail::quadtree_on_points(
-    x, y, x_min, x_max, y_min, y_max, scale, max_depth, min_size, rmm::cuda_stream_default, mr);
+    x, y, x_min, x_max, y_min, y_max, scale, max_depth, max_size, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial

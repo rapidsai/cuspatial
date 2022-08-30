@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "utilities.cuh"
+#include <cuspatial/experimental/detail/indexing/construction/utilities.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -53,9 +53,7 @@ namespace cuspatial {
 namespace detail {
 
 inline rmm::device_uvector<uint32_t> compute_leaf_positions(
-  rmm::device_uvector<uint8_t> const& indicator,
-  int32_t num_valid_nodes,
-  rmm::cuda_stream_view stream)
+  rmm::device_uvector<bool> const& indicator, int32_t num_valid_nodes, rmm::cuda_stream_view stream)
 {
   rmm::device_uvector<uint32_t> leaf_pos(num_valid_nodes, stream);
   auto result = thrust::copy_if(rmm::exec_policy(stream),
@@ -73,9 +71,9 @@ inline rmm::device_uvector<uint32_t> compute_leaf_positions(
 inline rmm::device_uvector<uint32_t> flatten_point_keys(
   rmm::device_uvector<uint32_t> const& quad_keys,
   rmm::device_uvector<uint8_t> const& quad_level,
-  rmm::device_uvector<uint8_t> const& indicator,
+  rmm::device_uvector<bool> const& indicator,
   int32_t num_valid_nodes,
-  uint8_t max_depth,
+  int8_t max_depth,
   rmm::cuda_stream_view stream)
 {
   rmm::device_uvector<uint32_t> flattened_keys(num_valid_nodes, stream);
@@ -107,9 +105,9 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
   rmm::device_uvector<uint32_t> const& quad_keys,
   rmm::device_uvector<uint8_t> const& quad_level,
   rmm::device_uvector<uint32_t>& quad_point_count,
-  rmm::device_uvector<uint8_t> const& indicator,
+  rmm::device_uvector<bool> const& indicator,
   int32_t num_valid_nodes,
-  uint8_t max_depth,
+  int8_t max_depth,
   rmm::cuda_stream_view stream)
 {
   // Sort initial indices and temporary point counts by the flattened keys
@@ -224,7 +222,7 @@ inline rmm::device_uvector<uint32_t> compute_parent_positions(
 }
 
 /**
- * @brief Remove nodes with fewer than `min_size` number of points, return number of nodes left
+ * @brief Remove nodes with fewer than `max_size` number of points, return number of nodes left
  *
  * @param quad_keys
  * @param quad_point_count
@@ -232,7 +230,7 @@ inline rmm::device_uvector<uint32_t> compute_parent_positions(
  * @param quad_levels
  * @param num_parent_nodes
  * @param num_child_nodes
- * @param min_size
+ * @param max_size
  * @param level_1_size
  * @param stream
  * @return std::pair<uint32_t, uint32_t>
@@ -244,7 +242,7 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
   rmm::device_uvector<uint8_t>& quad_levels,
   int32_t num_parent_nodes,
   int32_t num_child_nodes,
-  uint32_t min_size,
+  int32_t max_size,
   int32_t level_1_size,
   rmm::cuda_stream_view stream)
 {
@@ -254,20 +252,20 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
   auto parent_point_counts =
     thrust::make_permutation_iterator(quad_point_count.begin(), parent_positions.begin());
 
-  // Count the number of nodes whose children have fewer points than `min_size`.
+  // Count the number of nodes whose children have fewer points than `max_size`.
   // Start counting nodes at level 2, since children of the root node should not
   // be discarded.
   auto num_invalid_parent_nodes =
     thrust::count_if(rmm::exec_policy(stream),
                      parent_point_counts,
                      parent_point_counts + (num_parent_nodes - level_1_size),
-                     // i.e. quad_point_count[parent_pos] <= min_size
-                     [min_size] __device__(auto const n) { return n <= min_size; });
+                     // i.e. quad_point_count[parent_pos] <= max_size
+                     [max_size] __device__(auto const n) { return n <= max_size; });
 
   // line 4 of algorithm in Fig. 5 in ref.
   // revision to line 4: copy unnecessary if using permutation_iterator stencil
 
-  // Remove quad nodes with fewer points than `min_size`.
+  // Remove quad nodes with fewer points than `max_size`.
   // Start counting nodes at level 2, since children of the root node should not
   // be discarded.
   // line 5 of algorithm in Fig. 5 in ref.
@@ -281,8 +279,8 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
                       tree,
                       tree + num_child_nodes,
                       parent_point_counts,
-                      // i.e. quad_point_count[parent_pos] <= min_size
-                      [min_size] __device__(auto const n) { return n <= min_size; });
+                      // i.e. quad_point_count[parent_pos] <= max_size
+                      [max_size] __device__(auto const n) { return n <= max_size; });
 
   // add the number of level 1 nodes back in to num_valid_nodes
   auto num_valid_nodes = thrust::distance(tree, last_valid) + level_1_size;
@@ -305,29 +303,29 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
  * @param quad_point_count
  * @param num_parent_nodes
  * @param num_valid_nodes
- * @param min_size
+ * @param max_size
  * @param mr
  * @param stream
- * @return rmm::device_uvector<uint8_t>
+ * @return rmm::device_uvector<bool>
  */
-inline rmm::device_uvector<uint8_t> construct_non_leaf_indicator(
+inline rmm::device_uvector<bool> construct_non_leaf_indicator(
   rmm::device_uvector<uint32_t>& quad_point_count,
   int32_t num_parent_nodes,
   int32_t num_valid_nodes,
-  uint32_t min_size,
+  int32_t max_size,
   rmm::mr::device_memory_resource* mr,
   rmm::cuda_stream_view stream)
 {
   //
   // Construct the indicator output column
-  rmm::device_uvector<uint8_t> is_quad(num_valid_nodes, stream, mr);
+  rmm::device_uvector<bool> is_quad(num_valid_nodes, stream, mr);
 
   // line 6 of algorithm in Fig. 5 in ref.
   thrust::transform(rmm::exec_policy(stream),
                     quad_point_count.begin(),
                     quad_point_count.begin() + num_parent_nodes,
                     is_quad.begin(),
-                    thrust::placeholders::_1 > min_size);
+                    thrust::placeholders::_1 > max_size);
 
   // line 7 of algorithm in Fig. 5 in ref.
   thrust::replace_if(rmm::exec_policy(stream),

@@ -27,9 +27,9 @@
 namespace {
 
 template <typename T>
-std::vector<T> inline device_uvector_to_host(rmm::device_uvector<T> const& uvec)
+thrust::host_vector<T> inline device_uvector_to_host(rmm::device_uvector<T> const& uvec)
 {
-  std::vector<T> hvec(uvec.size());
+  thrust::host_vector<T> hvec(uvec.size());
   cudaMemcpyAsync(hvec.data(),
                   uvec.data(),
                   uvec.size() * sizeof(T),
@@ -44,31 +44,21 @@ std::vector<T> inline device_uvector_to_host(rmm::device_uvector<T> const& uvec)
 template <typename T>
 struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
   void test(std::vector<cuspatial::vec_2d<T>> const& points,
-            const double x_min,
-            const double x_max,
-            const double y_min,
-            const double y_max,
-            const double scale,
-            const uint8_t max_depth,
-            const uint32_t min_size,
+            const cuspatial::vec_2d<T> vertex_1,
+            const cuspatial::vec_2d<T> vertex_2,
+            const T scale,
+            const int8_t max_depth,
+            const int32_t min_size,
             std::vector<uint32_t> const& expected_key,
             std::vector<uint8_t> const& expected_level,
-            std::vector<uint8_t> const& expected_is_quad,
+            std::vector<bool> const& expected_is_quad,
             std::vector<uint32_t> const& expected_length,
             std::vector<uint32_t> const& expected_offset)
   {
     thrust::device_vector<cuspatial::vec_2d<T>> d_points{points};
 
-    auto pair = cuspatial::quadtree_on_points(d_points.begin(),
-                                              d_points.end(),
-                                              x_min,
-                                              x_max,
-                                              y_min,
-                                              y_max,
-                                              scale,
-                                              max_depth,
-                                              min_size,
-                                              mr());
+    auto pair = cuspatial::quadtree_on_points(
+      d_points.begin(), d_points.end(), vertex_1, vertex_2, scale, max_depth, min_size, mr());
 
     auto& point_indices = pair.first;
     EXPECT_EQ(point_indices.size(), points.size());
@@ -88,7 +78,7 @@ struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
 
     auto key_h     = device_uvector_to_host<uint32_t>(key_d);
     auto level_h   = device_uvector_to_host<uint8_t>(level_d);
-    auto is_quad_h = device_uvector_to_host<uint8_t>(is_quad_d);
+    auto is_quad_h = device_uvector_to_host<bool>(is_quad_d);
     auto length_h  = device_uvector_to_host<uint32_t>(length_d);
     auto offset_h  = device_uvector_to_host<uint32_t>(offset_d);
 
@@ -104,102 +94,80 @@ TYPED_TEST_CASE(QuadtreeOnPointIndexingTest, cudf::test::FloatingPointTypes);
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_empty)
 {
-  const double x_min      = 0.0;
-  const double x_max      = 1.0;
-  const double y_min      = 0.0;
-  const double y_max      = 1.0;
-  const uint8_t max_depth = 1;
-  const uint32_t min_size = 1;
-  const double scale      = 1.0;
+  using T = TypeParam;
+  const cuspatial::vec_2d<T> vertex_1{0.0, 0.0};
+  const cuspatial::vec_2d<T> vertex_2{1.0, 1.0};
+  const int8_t max_depth = 1;
+  const int32_t min_size = 1;
+  const T scale          = 1.0;
 
-  this->test({}, x_min, x_max, y_min, y_max, scale, max_depth, min_size, {}, {}, {}, {}, {});
+  this->test({}, vertex_1, vertex_2, scale, max_depth, min_size, {}, {}, {}, {}, {});
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_single)
 {
-  const double x_min      = 0.0;
-  const double x_max      = 1.0;
-  const double y_min      = 0.0;
-  const double y_max      = 1.0;
-  const uint8_t max_depth = 1;
-  const uint32_t min_size = 1;
-  const double scale      = 1.0;
+  using T = TypeParam;
+  const cuspatial::vec_2d<T> vertex_1{0.0, 0.0};
+  const cuspatial::vec_2d<T> vertex_2{1.0, 1.0};
+  const int8_t max_depth = 1;
+  const int32_t min_size = 1;
+  const T scale          = 1.0;
 
-  this->test({{0.45, 0.45}},
-             x_min,
-             x_max,
-             y_min,
-             y_max,
-             scale,
-             max_depth,
-             min_size,
-             {0},
-             {0},
-             {0},
-             {1},
-             {0});
+  this->test(
+    {{0.45, 0.45}}, vertex_1, vertex_2, scale, max_depth, min_size, {0}, {0}, {false}, {1}, {0});
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_two)
 {
-  const double x_min      = 0.0;
-  const double x_max      = 2.0;
-  const double y_min      = 0.0;
-  const double y_max      = 2.0;
-  const uint8_t max_depth = 1;
-  const uint32_t min_size = 1;
-  const double scale      = 1.0;
+  using T = TypeParam;
+  const cuspatial::vec_2d<T> vertex_1{0.0, 0.0};
+  const cuspatial::vec_2d<T> vertex_2{2.0, 2.0};
+  const int8_t max_depth = 1;
+  const int32_t min_size = 1;
+  const T scale          = 1.0;
 
   this->test({{0.45, 0.45}, {1.45, 1.45}},
-             x_min,
-             x_max,
-             y_min,
-             y_max,
+             vertex_1,
+             vertex_2,
              scale,
              max_depth,
              min_size,
              {0, 3},
              {0, 0},
-             {0, 0},
+             {false, false},
              {1, 1},
              {0, 1});
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
 {
-  const double x_min      = -1000.0;
-  const double x_max      = 1000.0;
-  const double y_min      = -1000.0;
-  const double y_max      = 1000.0;
-  const uint8_t max_depth = 2;
-  const uint32_t min_size = 1;
-  const double scale =
-    std::max(x_max - x_min, y_max - y_min) / static_cast<double>((1 << max_depth) + 2);
+  using T = TypeParam;
+  const cuspatial::vec_2d<T> vertex_1{-1000.0, -1000.0};
+  const cuspatial::vec_2d<T> vertex_2{1000.0, 1000.0};
+  const int8_t max_depth = 2;
+  const int32_t min_size = 1;
 
   this->test({{-100.0, -100.0}, {100.0, 100.0}},
-             x_min,
-             x_max,
-             y_min,
-             y_max,
-             scale,
+             vertex_1,
+             vertex_2,
+             -1,
              max_depth,
              min_size,
              {3, 12, 15},
              {0, 1, 1},
-             {1, 0, 0},
+             {true, false, false},
              {2, 1, 1},
              {1, 0, 1});
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_small)
 {
-  const double x_min      = 0.0;
-  const double x_max      = 8.0;
-  const double y_min      = 0.0;
-  const double y_max      = 8.0;
-  const uint8_t max_depth = 3;
-  const uint32_t min_size = 12;
-  const double scale      = 1.0;
+  using T = TypeParam;
+  const cuspatial::vec_2d<T> vertex_1{0.0, 0.0};
+  const cuspatial::vec_2d<T> vertex_2{8.0, 8.0};
+  const int8_t max_depth = 3;
+  const int32_t min_size = 12;
+  const T scale          = 1.0;
 
   this->test(
     {
@@ -240,16 +208,14 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_small)
       {3.1162712022943757, 6.789029097334483},   {2.4264509160270813, 5.188939408363776},
       {3.154282922203257, 5.788316610960881},
     },
-    x_min,
-    x_max,
-    y_min,
-    y_max,
+    vertex_1,
+    vertex_2,
     scale,
     max_depth,
     min_size,
     {0, 1, 2, 0, 1, 3, 4, 7, 5, 6, 13, 14, 28, 31},
     {0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2},
-    {1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0},
+    {true, true, false, false, true, true, false, true, false, false, false, false, false, false},
     {3, 2, 11, 7, 2, 2, 9, 2, 9, 7, 5, 8, 8, 7},
     {3, 6, 60, 0, 8, 10, 36, 12, 7, 16, 23, 28, 45, 53});
 }

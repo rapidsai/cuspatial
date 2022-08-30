@@ -43,8 +43,8 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
                                      rmm::device_uvector<uint32_t>& quad_child_count,
                                      rmm::device_uvector<uint8_t>& levels,
                                      int32_t num_parent_nodes,
-                                     uint8_t max_depth,
-                                     uint32_t min_size,
+                                     int8_t max_depth,
+                                     int32_t max_size,
                                      int32_t level_1_size,
                                      rmm::cuda_stream_view stream,
                                      rmm::mr::device_memory_resource* mr)
@@ -65,7 +65,7 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
                                                                                  levels,
                                                                                  num_parent_nodes,
                                                                                  num_child_nodes,
-                                                                                 min_size,
+                                                                                 max_size,
                                                                                  level_1_size,
                                                                                  stream);
 
@@ -74,7 +74,7 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
   // Construct the indicator output column.
   // line 6 and 7 of algorithm in Fig. 5 in ref.
   auto is_quad = construct_non_leaf_indicator(
-    quad_point_count, num_parent_nodes, num_valid_nodes, min_size, mr, stream);
+    quad_point_count, num_parent_nodes, num_valid_nodes, max_size, mr, stream);
 
   // Construct the offsets output column
   // lines 8, 9, and 10 of algorithm in Fig. 5 in ref.
@@ -85,7 +85,6 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
     auto quad_point_pos = compute_flattened_first_point_positions(
       keys, levels, quad_point_count, is_quad, num_valid_nodes, max_depth, stream);
 
-    rmm::device_uvector<uint32_t> quad_child_pos(num_valid_nodes, stream, mr);
     // line 9 of algorithm in Fig. 5 in ref.
     thrust::replace_if(rmm::exec_policy(stream),
                        quad_child_count.begin(),
@@ -95,6 +94,7 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
                        0);
 
     // line 10 of algorithm in Fig. 5 in ref.
+    rmm::device_uvector<uint32_t> quad_child_pos(num_valid_nodes, stream, mr);
     thrust::exclusive_scan(rmm::exec_policy(stream),
                            quad_child_count.begin(),
                            quad_child_count.end(),
@@ -105,13 +105,12 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
     auto offsets_iter =
       thrust::make_zip_iterator(is_quad.begin(), quad_child_pos.begin(), quad_point_pos.begin());
 
-    // for each value in `is_quad` copy from `quad_child_pos` if true, else
-    // `quad_point_pos`
+    // copy each value in `is_quad` from `quad_child_pos` if true, else `quad_point_pos`
     thrust::transform(rmm::exec_policy(stream),
                       offsets_iter,
                       offsets_iter + num_valid_nodes,
                       offsets.begin(),
-                      // return bool ? lhs : rhs
+                      // return is_quad ? lhs : rhs
                       [] __device__(auto const& t) {
                         return thrust::get<0>(t) ? thrust::get<1>(t) : thrust::get<2>(t);
                       });
@@ -161,7 +160,7 @@ inline point_quadtree make_leaf_tree(rmm::device_uvector<uint32_t>& keys,
                                      rmm::mr::device_memory_resource* mr)
 {
   rmm::device_uvector<uint8_t> levels(num_top_quads, stream, mr);
-  rmm::device_uvector<uint8_t> is_quad(num_top_quads, stream, mr);
+  rmm::device_uvector<bool> is_quad(num_top_quads, stream, mr);
   rmm::device_uvector<uint32_t> offsets(num_top_quads, stream, mr);
 
   // only keep the front of the keys list
@@ -189,34 +188,21 @@ inline point_quadtree make_leaf_tree(rmm::device_uvector<uint32_t>& keys,
   };
 }
 
-template <class PointIt,
-          class Coord = typename std::iterator_traits<PointIt>::value_type::value_type>
+template <class PointIt, class T = typename std::iterator_traits<PointIt>::value_type::value_type>
 inline std::pair<rmm::device_uvector<uint32_t>, point_quadtree> construct_quadtree(
   PointIt points_first,
   PointIt points_last,
-  double x_min,
-  double x_max,
-  double y_min,
-  double y_max,
-  double scale,
-  uint8_t max_depth,
-  uint32_t min_size,
+  vec_2d<T> min,
+  vec_2d<T> max,
+  T scale,
+  int8_t max_depth,
+  int32_t max_size,
   rmm::mr::device_memory_resource* mr,
   rmm::cuda_stream_view stream)
 {
   // Construct the full set of non-empty subquadrants starting from the lowest level.
   // Corresponds to "Phase 1" of quadtree construction in ref.
-  auto quads = make_full_levels(points_first,
-                                points_last,
-                                static_cast<Coord>(x_min),
-                                static_cast<Coord>(x_max),
-                                static_cast<Coord>(y_min),
-                                static_cast<Coord>(y_max),
-                                static_cast<Coord>(scale),
-                                max_depth,
-                                min_size,
-                                stream,
-                                mr);
+  auto quads = make_full_levels(points_first, points_last, min, max, scale, max_depth, stream, mr);
 
   auto& point_indices    = std::get<0>(quads);
   auto& quad_keys        = std::get<1>(quads);
@@ -241,7 +227,7 @@ inline std::pair<rmm::device_uvector<uint32_t>, point_quadtree> construct_quadtr
                                        quad_levels,
                                        num_parent_nodes,
                                        max_depth,
-                                       min_size,
+                                       max_size,
                                        level_1_size,
                                        stream,
                                        mr));
@@ -249,36 +235,44 @@ inline std::pair<rmm::device_uvector<uint32_t>, point_quadtree> construct_quadtr
 
 }  // namespace detail
 
-template <class PointIt, class Coord>
+template <class PointIt, class T>
 std::pair<rmm::device_uvector<uint32_t>, point_quadtree> quadtree_on_points(
   PointIt points_first,
   PointIt points_last,
-  double x_min,
-  double x_max,
-  double y_min,
-  double y_max,
-  double scale,
-  uint8_t max_depth,
-  uint32_t min_size,
+  vec_2d<T> vertex_1,
+  vec_2d<T> vertex_2,
+  T scale,
+  int8_t max_depth,
+  int32_t max_size,
   rmm::mr::device_memory_resource* mr,
   rmm::cuda_stream_view stream)
 {
-  using T = Coord;
-  CUSPATIAL_EXPECTS(x_min < x_max && y_min < y_max,
-                    "invalid bounding box (x_min, x_max, y_min, y_max)");
-  CUSPATIAL_EXPECTS(scale > 0, "scale must be positive");
-  CUSPATIAL_EXPECTS(max_depth < 16, "maximum depth must be less than 16");
   auto num_points = thrust::distance(points_first, points_last);
   if (num_points <= 0) {
     return std::make_pair(rmm::device_uvector<uint32_t>(0, stream),
                           point_quadtree{rmm::device_uvector<uint32_t>(0, stream),
                                          rmm::device_uvector<uint8_t>(0, stream),
-                                         rmm::device_uvector<uint8_t>(0, stream),
+                                         rmm::device_uvector<bool>(0, stream),
                                          rmm::device_uvector<uint32_t>(0, stream),
                                          rmm::device_uvector<uint32_t>(0, stream)});
   }
+
+  // order vertex_1/vertex_2 to min/max
+  auto const [min, max] = [&] {
+    return std::make_pair(
+      vec_2d<T>{std::min(vertex_1.x, vertex_2.x), std::min(vertex_1.y, vertex_2.y)},
+      vec_2d<T>{std::max(vertex_1.x, vertex_2.x), std::max(vertex_1.y, vertex_2.y)});
+  }();
+
+  // clamp max_size to 1 <= max_size
+  max_size = std::max(1, max_size);
+  // clamp max_depth to 0 <= max_depth <= 15
+  max_depth = std::max(int8_t{0}, std::min(int8_t{15}, max_depth));
+  // clamp scale to minimum valid scale value based on bbox and max_depth
+  scale = std::max(scale, std::max(max.x - min.x, max.y - min.y) / ((1 << max_depth) + 2));
+
   return detail::construct_quadtree(
-    points_first, points_last, x_min, x_max, y_min, y_max, scale, max_depth, min_size, mr, stream);
+    points_first, points_last, min, max, scale, max_depth, max_size, mr, stream);
 }
 
 }  // namespace cuspatial
