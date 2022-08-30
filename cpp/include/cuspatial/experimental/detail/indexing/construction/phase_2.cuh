@@ -84,14 +84,14 @@ inline rmm::device_uvector<uint32_t> flatten_point_keys(
                     keys_and_levels + num_valid_nodes,
                     flattened_keys.begin(),
                     [last_level = max_depth - 1] __device__(auto const& val) {
-                      bool is_quad{false};
+                      bool is_parent{false};
                       uint32_t key{}, level{};
-                      thrust::tie(key, level, is_quad) = val;
+                      thrust::tie(key, level, is_parent) = val;
                       // if this is a parent node, return max_key. otherwise
                       // compute the key for one level up the tree. Leaf nodes
                       // whose keys are zero will be removed in a subsequent
                       // step
-                      return is_quad ? 0xFFFFFFFF : (key << (2 * (last_level - level)));
+                      return is_parent ? 0xFFFFFFFF : (key << (2 * (last_level - level)));
                     });
   flattened_keys.shrink_to_fit(stream);
   return flattened_keys;
@@ -298,8 +298,7 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
 }
 
 /**
- * @brief Construct the `is_quad` BOOL8 column indicating whether a quadtree entry is a node or leaf
- *
+ * @brief Construct the `is_parent_node` vector indicating if a quadrant is a parent or leaf node
  * @param quad_point_count
  * @param num_parent_nodes
  * @param num_valid_nodes
@@ -318,30 +317,31 @@ inline rmm::device_uvector<bool> construct_non_leaf_indicator(
 {
   //
   // Construct the indicator output column
-  rmm::device_uvector<bool> is_quad(num_valid_nodes, stream, mr);
+  rmm::device_uvector<bool> is_parent_node(num_valid_nodes, stream, mr);
 
   // line 6 of algorithm in Fig. 5 in ref.
   thrust::transform(rmm::exec_policy(stream),
                     quad_point_count.begin(),
                     quad_point_count.begin() + num_parent_nodes,
-                    is_quad.begin(),
+                    is_parent_node.begin(),
                     thrust::placeholders::_1 > max_size);
 
   // line 7 of algorithm in Fig. 5 in ref.
   thrust::replace_if(rmm::exec_policy(stream),
                      quad_point_count.begin(),
                      quad_point_count.begin() + num_parent_nodes,
-                     is_quad.begin(),
+                     is_parent_node.begin(),
                      thrust::placeholders::_1,
                      0);
 
   if (num_valid_nodes > num_parent_nodes) {
     // zero-fill the rest of the indicator column because
     // device_memory_resources aren't required to initialize allocations
-    thrust::fill(rmm::exec_policy(stream), is_quad.begin() + num_parent_nodes, is_quad.end(), 0);
+    thrust::fill(
+      rmm::exec_policy(stream), is_parent_node.begin() + num_parent_nodes, is_parent_node.end(), 0);
   }
 
-  return is_quad;
+  return is_parent_node;
 }
 
 }  // namespace detail

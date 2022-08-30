@@ -36,25 +36,15 @@ namespace cuspatial {
  */
 
 struct point_quadtree {
-  /**
-   * @brief UINT32 column of quad node keys
-   */
+  // uint32_t vector of quad node keys
   rmm::device_uvector<uint32_t> key;
-  /**
-   * @brief UINT8 column of quadtree levels
-   */
+  // uint8_t vector of quadtree levels
   rmm::device_uvector<uint8_t> level;
-  /**
-   * @brief BOOL8 column indicating whether the node is a quad (true) or leaf (false)
-   */
-  rmm::device_uvector<bool> is_quad;
-  /**
-   * @brief UINT32 column for the number of child nodes (if is_quad), or number of points
-   */
+  // bool vector indicating whether the node is a parent (true) or leaf (false) node
+  rmm::device_uvector<bool> is_parent_node;
+  // uint32_t vector for the number of child nodes (if is_parent_node), or number of points
   rmm::device_uvector<uint32_t> length;
-  /**
-   * @brief UINT32 column for the first child position (if is_quad), or first point position
-   */
+  // uint32_t vector for the first child position (if is_parent_node), or first point position
   rmm::device_uvector<uint32_t> offset;
 };
 

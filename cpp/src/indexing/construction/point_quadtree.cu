@@ -97,7 +97,7 @@ struct dispatch_construct_quadtree {
     cols.push_back(std::make_unique<cudf::column>(
       cudf::data_type{cudf::type_id::UINT8}, size, tree.level.release()));
     cols.push_back(std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::BOOL8}, size, tree.is_quad.release()));
+      cudf::data_type{cudf::type_id::BOOL8}, size, tree.is_parent_node.release()));
     cols.push_back(std::make_unique<cudf::column>(
       cudf::data_type{cudf::type_id::UINT32}, size, tree.length.release()));
     cols.push_back(std::make_unique<cudf::column>(

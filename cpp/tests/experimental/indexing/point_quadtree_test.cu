@@ -51,7 +51,7 @@ struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
             const int32_t max_size,
             std::vector<uint32_t> const& expected_key,
             std::vector<uint8_t> const& expected_level,
-            std::vector<bool> const& expected_is_quad,
+            std::vector<bool> const& expected_is_parent_node,
             std::vector<uint32_t> const& expected_length,
             std::vector<uint32_t> const& expected_offset)
   {
@@ -63,28 +63,28 @@ struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
     auto& point_indices = pair.first;
     EXPECT_EQ(point_indices.size(), points.size());
 
-    auto& tree      = pair.second;
-    auto& key_d     = tree.key;
-    auto& level_d   = tree.level;
-    auto& is_quad_d = tree.is_quad;
-    auto& length_d  = tree.length;
-    auto& offset_d  = tree.offset;
+    auto& tree             = pair.second;
+    auto& key_d            = tree.key;
+    auto& level_d          = tree.level;
+    auto& is_parent_node_d = tree.is_parent_node;
+    auto& length_d         = tree.length;
+    auto& offset_d         = tree.offset;
 
     EXPECT_EQ(key_d.size(), expected_key.size());
     EXPECT_EQ(level_d.size(), expected_level.size());
-    EXPECT_EQ(is_quad_d.size(), expected_is_quad.size());
+    EXPECT_EQ(is_parent_node_d.size(), expected_is_parent_node.size());
     EXPECT_EQ(length_d.size(), expected_length.size());
     EXPECT_EQ(offset_d.size(), expected_offset.size());
 
-    auto key_h     = device_uvector_to_host<uint32_t>(key_d);
-    auto level_h   = device_uvector_to_host<uint8_t>(level_d);
-    auto is_quad_h = device_uvector_to_host<bool>(is_quad_d);
-    auto length_h  = device_uvector_to_host<uint32_t>(length_d);
-    auto offset_h  = device_uvector_to_host<uint32_t>(offset_d);
+    auto key_h            = device_uvector_to_host<uint32_t>(key_d);
+    auto level_h          = device_uvector_to_host<uint8_t>(level_d);
+    auto is_parent_node_h = device_uvector_to_host<bool>(is_parent_node_d);
+    auto length_h         = device_uvector_to_host<uint32_t>(length_d);
+    auto offset_h         = device_uvector_to_host<uint32_t>(offset_d);
 
     EXPECT_THAT(key_h, ::testing::Pointwise(::testing::Eq(), expected_key));
     EXPECT_THAT(level_h, ::testing::Pointwise(::testing::Eq(), expected_level));
-    EXPECT_THAT(is_quad_h, ::testing::Pointwise(::testing::Eq(), expected_is_quad));
+    EXPECT_THAT(is_parent_node_h, ::testing::Pointwise(::testing::Eq(), expected_is_parent_node));
     EXPECT_THAT(length_h, ::testing::Pointwise(::testing::Eq(), expected_length));
     EXPECT_THAT(offset_h, ::testing::Pointwise(::testing::Eq(), expected_offset));
   }
