@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2022, NVIDIA CORPORATION.
 
 import warnings
 
@@ -6,7 +6,117 @@ from cudf import DataFrame
 from cudf.core.column import as_column
 
 from cuspatial._lib import spatial_join
+from cuspatial._lib.point_in_polygon import (
+    point_in_polygon as cpp_point_in_polygon,
+)
+from cuspatial.utils import gis_utils
 from cuspatial.utils.column_utils import normalize_point_columns
+
+
+def point_in_polygon(
+    test_points_x,
+    test_points_y,
+    poly_offsets,
+    poly_ring_offsets,
+    poly_points_x,
+    poly_points_y,
+):
+    """Compute from a set of points and a set of polygons which points fall
+    within which polygons. Note that `polygons_(x,y)` must be specified as
+    closed polygons: the first and last coordinate of each polygon must be
+    the same.
+
+    Parameters
+    ----------
+    test_points_x
+        x-coordinate of test points
+    test_points_y
+        y-coordinate of test points
+    poly_offsets
+        beginning index of the first ring in each polygon
+    poly_ring_offsets
+        beginning index of the first point in each ring
+    poly_points_x
+        x closed-coordinate of polygon points
+    poly_points_y
+        y closed-coordinate of polygon points
+
+    Examples
+    --------
+
+    Test whether 3 points fall within either of two polygons
+
+    >>> result = cuspatial.point_in_polygon(
+        [0, -8, 6.0],                             # test_points_x
+        [0, -8, 6.0],                             # test_points_y
+        cudf.Series([0, 1], index=['nyc', 'hudson river']), # poly_offsets
+        [0, 3],                                   # ring_offsets
+        [-10, 5, 5, -10, 0, 10, 10, 0],           # poly_points_x
+        [-10, -10, 5, 5, 0, 0, 10, 10],           # poly_points_y
+    )
+    # The result of point_in_polygon is a DataFrame of Boolean
+    # values indicating whether each point (rows) falls within
+    # each polygon (columns).
+    >>> print(result)
+                nyc            hudson river
+    0          True          True
+    1          True         False
+    2         False          True
+    # Point 0: (0, 0) falls in both polygons
+    # Point 1: (-8, -8) falls in the first polygon
+    # Point 2: (6.0, 6.0) falls in the second polygon
+
+    note
+    input Series x and y will not be index aligned, but computed as
+    sequential arrays.
+
+    note
+    poly_ring_offsets must contain only the rings that make up the polygons
+    indexed by poly_offsets. If there are rings in poly_ring_offsets that
+    are not part of the polygons in poly_offsets, results are likely to be
+    incorrect and behavior is undefined.
+
+    Returns
+    -------
+    result : cudf.DataFrame
+        A DataFrame of boolean values indicating whether each point falls
+        within each polygon.
+    """
+
+    if len(poly_offsets) == 0:
+        return DataFrame()
+
+    (
+        test_points_x,
+        test_points_y,
+        poly_points_x,
+        poly_points_y,
+    ) = normalize_point_columns(
+        as_column(test_points_x),
+        as_column(test_points_y),
+        as_column(poly_points_x),
+        as_column(poly_points_y),
+    )
+
+    result = cpp_point_in_polygon(
+        test_points_x,
+        test_points_y,
+        as_column(poly_offsets, dtype="int32"),
+        as_column(poly_ring_offsets, dtype="int32"),
+        poly_points_x,
+        poly_points_y,
+    )
+
+    result = gis_utils.pip_bitmap_column_to_binary_array(
+        polygon_bitmap_column=result, width=len(poly_offsets)
+    )
+    result = DataFrame(result)
+    result = DataFrame._from_data(
+        {name: col.astype("bool") for name, col in result._data.items()}
+    )
+    result.columns = [x for x in list(reversed(poly_offsets.index))]
+    result = result[list(reversed(result.columns))]
+    return result
 
 
 def join_quadtree_and_bounding_boxes(

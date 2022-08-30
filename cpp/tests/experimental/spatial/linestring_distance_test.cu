@@ -47,11 +47,11 @@ TYPED_TEST_CASE(PairwiseLinestringDistanceTest, TestTypes);
 TYPED_TEST(PairwiseLinestringDistanceTest, FromSeparateArrayInputs)
 {
   using T       = TypeParam;
-  using CartVec = std::vector<cartesian_2d<T>>;
+  using CartVec = std::vector<vec_2d<T>>;
 
-  auto a_cart2d = rmm::device_vector<cartesian_2d<T>>{
+  auto a_cart2d = rmm::device_vector<vec_2d<T>>{
     CartVec({{0.0f, 0.0f}, {1.0f, 0.0f}, {2.0f, 0.0f}, {3.0f, 0.0f}, {4.0f, 0.0f}})};
-  auto b_cart2d = rmm::device_vector<cartesian_2d<T>>{
+  auto b_cart2d = rmm::device_vector<vec_2d<T>>{
     CartVec({{0.0f, 1.0f}, {1.0f, 1.0f}, {2.0f, 1.0f}, {3.0f, 1.0f}, {4.0f, 1.0f}})};
   auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
 
@@ -73,9 +73,9 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSeparateArrayInputs)
 TYPED_TEST(PairwiseLinestringDistanceTest, FromSamePointArrayInput)
 {
   using T       = TypeParam;
-  using CartVec = std::vector<cartesian_2d<T>>;
+  using CartVec = std::vector<vec_2d<T>>;
 
-  auto cart2ds = rmm::device_vector<cartesian_2d<T>>{
+  auto cart2ds = rmm::device_vector<vec_2d<T>>{
     CartVec({{0.0f, 0.0f}, {1.0f, 0.0f}, {2.0f, 0.0f}, {3.0f, 0.0f}, {4.0f, 0.0f}})};
   auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
 
@@ -96,18 +96,18 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSamePointArrayInput)
 TYPED_TEST(PairwiseLinestringDistanceTest, FromTransformIterator)
 {
   using T       = TypeParam;
-  using CartVec = std::vector<cartesian_2d<T>>;
+  using CartVec = std::vector<vec_2d<T>>;
 
   auto a_cart2d_x = rmm::device_vector<T>{std::vector<T>{0.0, 1.0, 2.0, 3.0, 4.0}};
   auto a_cart2d_y = rmm::device_vector<T>(5, 0.0);
 
-  auto a_begin = make_cartesian_2d_iterator(a_cart2d_x.begin(), a_cart2d_y.begin());
+  auto a_begin = make_vec_2d_iterator(a_cart2d_x.begin(), a_cart2d_y.begin());
   auto a_end   = a_begin + a_cart2d_x.size();
 
   auto b_cart2d_x = rmm::device_vector<T>{std::vector<T>{0.0, 1.0, 2.0, 3.0, 4.0}};
   auto b_cart2d_y = rmm::device_vector<T>(5, 1.0);
 
-  auto b_begin = make_cartesian_2d_iterator(b_cart2d_x.begin(), b_cart2d_y.begin());
+  auto b_begin = make_vec_2d_iterator(b_cart2d_x.begin(), b_cart2d_y.begin());
   auto b_end   = b_begin + b_cart2d_x.size();
 
   auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
@@ -124,15 +124,15 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromTransformIterator)
 TYPED_TEST(PairwiseLinestringDistanceTest, FromMixedIterator)
 {
   using T       = TypeParam;
-  using CartVec = std::vector<cartesian_2d<T>>;
+  using CartVec = std::vector<vec_2d<T>>;
 
-  auto a_cart2d = rmm::device_vector<cartesian_2d<T>>{
+  auto a_cart2d = rmm::device_vector<vec_2d<T>>{
     CartVec({{0.0f, 0.0f}, {1.0f, 0.0f}, {2.0f, 0.0f}, {3.0f, 0.0f}, {4.0f, 0.0f}})};
 
   auto b_cart2d_x = rmm::device_vector<T>{std::vector<T>{0.0, 1.0, 2.0, 3.0, 4.0}};
   auto b_cart2d_y = rmm::device_vector<T>(5, 1.0);
 
-  auto b_begin = make_cartesian_2d_iterator(b_cart2d_x.begin(), b_cart2d_y.begin());
+  auto b_begin = make_vec_2d_iterator(b_cart2d_x.begin(), b_cart2d_y.begin());
   auto b_end   = b_begin + b_cart2d_x.size();
 
   auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
@@ -155,18 +155,18 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromMixedIterator)
 TYPED_TEST(PairwiseLinestringDistanceTest, FromLongInputs)
 {
   using T       = TypeParam;
-  using CartVec = std::vector<cartesian_2d<T>>;
+  using CartVec = std::vector<vec_2d<T>>;
 
   auto num_points = 1000;
 
   auto a_cart2d_x_begin = thrust::make_constant_iterator(T{0.0});
   auto a_cart2d_y_begin = thrust::make_counting_iterator(T{0.0});
-  auto a_cart2d_begin   = make_cartesian_2d_iterator(a_cart2d_x_begin, a_cart2d_y_begin);
+  auto a_cart2d_begin   = make_vec_2d_iterator(a_cart2d_x_begin, a_cart2d_y_begin);
   auto a_cart2d_end     = a_cart2d_begin + num_points;
 
   auto b_cart2d_x_begin = thrust::make_constant_iterator(T{42.0});
   auto b_cart2d_y_begin = thrust::make_counting_iterator(T{0.0});
-  auto b_cart2d_begin   = make_cartesian_2d_iterator(b_cart2d_x_begin, b_cart2d_y_begin);
+  auto b_cart2d_begin   = make_vec_2d_iterator(b_cart2d_x_begin, b_cart2d_y_begin);
   auto b_cart2d_end     = b_cart2d_begin + num_points;
 
   auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0, 100, 200, 300, 400}};

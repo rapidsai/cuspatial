@@ -9,8 +9,8 @@ This page provides a list of all publicly accessible modules, methods and classe
     :maxdepth: 2
     :caption: API Documentation
 
-    gis
-    spatial_indexing
+    spatial
     trajectory
+    interpolation
     geopandas_compatibility
     io

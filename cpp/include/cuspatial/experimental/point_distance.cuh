@@ -38,7 +38,7 @@ namespace cuspatial {
  * @param stream The CUDA stream to use for device memory operations and kernel launches
  * @return Output iterator to one past the last element in the output range
  *
- * @pre all input iterators for coordinates must have a `value_type` of `cuspatial::cartesian_2d`.
+ * @pre all input iterators for coordinates must have a `value_type` of `cuspatial::vec_2d`.
  * @pre all scalar types must be floating point types, and must be the same type for all input
  * iterators and output iterators.
  *

@@ -4,8 +4,7 @@ import pandas as pd
 from geopandas import GeoDataFrame as gpGeoDataFrame
 from geopandas.geoseries import GeoSeries as gpGeoSeries
 
-from cuspatial.geometry.geodataframe import GeoDataFrame
-from cuspatial.geometry.geoseries import GeoSeries
+from cuspatial import GeoDataFrame, GeoSeries
 
 
 def from_geopandas(gpdf):

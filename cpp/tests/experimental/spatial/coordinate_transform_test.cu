@@ -21,6 +21,8 @@
 
 #include <gtest/gtest.h>
 
+#include <thrust/iterator/transform_iterator.h>
+
 template <typename T>
 struct LonLatToCartesianTest : public ::testing::Test {
 };
@@ -32,8 +34,8 @@ TYPED_TEST_CASE(LonLatToCartesianTest, TestTypes);
 TYPED_TEST(LonLatToCartesianTest, Empty)
 {
   using T    = TypeParam;
-  using Loc  = cuspatial::lonlat_2d<T>;
-  using Cart = cuspatial::cartesian_2d<T>;
+  using Loc  = cuspatial::vec_2d<T>;
+  using Cart = cuspatial::vec_2d<T>;
 
   auto origin = Loc{-90.66511046, 42.49197018};
 
@@ -55,8 +57,8 @@ TYPED_TEST(LonLatToCartesianTest, Empty)
 TYPED_TEST(LonLatToCartesianTest, Single)
 {
   using T    = TypeParam;
-  using Loc  = cuspatial::lonlat_2d<T>;
-  using Cart = cuspatial::cartesian_2d<T>;
+  using Loc  = cuspatial::vec_2d<T>;
+  using Cart = cuspatial::vec_2d<T>;
 
   auto origin = Loc{-90.66511046, 42.49197018};
 
@@ -78,8 +80,8 @@ TYPED_TEST(LonLatToCartesianTest, Single)
 TYPED_TEST(LonLatToCartesianTest, Extremes)
 {
   using T    = TypeParam;
-  using Loc  = cuspatial::lonlat_2d<T>;
-  using Cart = cuspatial::cartesian_2d<T>;
+  using Loc  = cuspatial::vec_2d<T>;
+  using Cart = cuspatial::vec_2d<T>;
 
   auto origin = Loc{0, 0};
 
@@ -107,8 +109,8 @@ TYPED_TEST(LonLatToCartesianTest, Extremes)
 TYPED_TEST(LonLatToCartesianTest, Multiple)
 {
   using T    = TypeParam;
-  using Loc  = cuspatial::lonlat_2d<T>;
-  using Cart = cuspatial::cartesian_2d<T>;
+  using Loc  = cuspatial::vec_2d<T>;
+  using Cart = cuspatial::vec_2d<T>;
 
   auto origin = Loc{-90.66511046, 42.49197018};
 
@@ -138,8 +140,8 @@ TYPED_TEST(LonLatToCartesianTest, Multiple)
 TYPED_TEST(LonLatToCartesianTest, OriginOutOfBounds)
 {
   using T    = TypeParam;
-  using Loc  = cuspatial::lonlat_2d<T>;
-  using Cart = cuspatial::cartesian_2d<T>;
+  using Loc  = cuspatial::vec_2d<T>;
+  using Cart = cuspatial::vec_2d<T>;
 
   auto origin = Loc{-181, -91};
 
@@ -158,7 +160,7 @@ TYPED_TEST(LonLatToCartesianTest, OriginOutOfBounds)
 
 template <typename T>
 struct identity_xform {
-  using Location = cuspatial::lonlat_2d<T>;
+  using Location = cuspatial::vec_2d<T>;
   __device__ Location operator()(Location const& loc) { return loc; };
 };
 
@@ -166,8 +168,8 @@ struct identity_xform {
 TYPED_TEST(LonLatToCartesianTest, TransformIterator)
 {
   using T    = TypeParam;
-  using Loc  = cuspatial::lonlat_2d<T>;
-  using Cart = cuspatial::cartesian_2d<T>;
+  using Loc  = cuspatial::vec_2d<T>;
+  using Cart = cuspatial::vec_2d<T>;
 
   auto origin = Loc{-90.66511046, 42.49197018};
 

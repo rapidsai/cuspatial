@@ -63,12 +63,12 @@ struct lonlat_to_cartesian_functor {
     auto output_y =
       cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
 
-    auto lonlat_begin = cuspatial::make_lonlat_iterator(input_lon.begin<T>(), input_lat.begin<T>());
+    auto lonlat_begin = cuspatial::make_vec_2d_iterator(input_lon.begin<T>(), input_lat.begin<T>());
 
-    auto output_zip = cuspatial::make_zipped_cartesian_2d_output_iterator(
+    auto output_zip = cuspatial::make_zipped_vec_2d_output_iterator(
       output_x->mutable_view().begin<T>(), output_y->mutable_view().begin<T>());
 
-    auto origin = cuspatial::lonlat_2d<T>{origin_lon, origin_lat};
+    auto origin = cuspatial::vec_2d<T>{origin_lon, origin_lat};
 
     cuspatial::lonlat_to_cartesian(
       lonlat_begin, lonlat_begin + input_lon.size(), output_zip, origin, stream);
