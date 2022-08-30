@@ -77,8 +77,8 @@ struct dispatch_construct_quadtree {
     auto points = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
     auto pair   = quadtree_on_points(points,
                                    points + x.size(),
-                                   {static_cast<T>(x_min), static_cast<T>(y_min)},
-                                   {static_cast<T>(x_max), static_cast<T>(y_max)},
+                                   vec_2d<T>{static_cast<T>(x_min), static_cast<T>(y_min)},
+                                   vec_2d<T>{static_cast<T>(x_max), static_cast<T>(y_max)},
                                    static_cast<T>(scale),
                                    max_depth,
                                    max_size,
