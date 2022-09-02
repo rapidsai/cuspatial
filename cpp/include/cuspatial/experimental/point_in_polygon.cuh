@@ -82,10 +82,9 @@ namespace cuspatial {
  *        +-----------+   +------------------------+
  * ```
  *
- * @pre All point iterators must have the same `cartesian_2d` type, with  the same underlying
- * floating-point coordinate type (e.g. `cuspatial::cartesian_2d<float>`).
- * @pre All offset iterators must have the same `cartesian_2d` type, with  the same underlying
- * integeral type.
+ * @pre All point iterators must have the same `vec_2d` value type, with  the same underlying
+ * floating-point coordinate type (e.g. `cuspatial::vec_2d<float>`).
+ * @pre All offset iterators must have the same integral value type.
  * @pre Output iterator must be mutable and iterate on int32_t type.
  *
  * @throw cuspatial::logic_error if the number of polygons or rings exceeds 31.

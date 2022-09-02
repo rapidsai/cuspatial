@@ -18,6 +18,7 @@
 
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
+#include <thrust/execution_policy.h>
 
 namespace cuspatial {
 namespace detail {
