@@ -16,9 +16,6 @@
 
 #pragma once
 
-#include "cub/device/device_merge_sort.cuh"
-#include "cub/device/device_radix_sort.cuh"
-#include "cub/device/device_segmented_sort.cuh"
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/device_vector.hpp>
@@ -30,6 +27,8 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/sort.h>
+
+#include <cub/device/device_merge_sort.cuh>
 
 #include <cstdint>
 
