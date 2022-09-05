@@ -66,7 +66,7 @@ TYPED_TEST_CASE(PairwisePointDistanceTest, TestTypes);
 TYPED_TEST(PairwisePointDistanceTest, Empty)
 {
   using T         = TypeParam;
-  using Cart2D    = cartesian_2d<T>;
+  using Cart2D    = vec_2d<T>;
   using Cart2DVec = std::vector<Cart2D>;
 
   rmm::device_vector<Cart2D> points1{};
@@ -85,7 +85,7 @@ TYPED_TEST(PairwisePointDistanceTest, Empty)
 TYPED_TEST(PairwisePointDistanceTest, OnePair)
 {
   using T         = TypeParam;
-  using Cart2D    = cartesian_2d<T>;
+  using Cart2D    = vec_2d<T>;
   using Cart2DVec = std::vector<Cart2D>;
 
   rmm::device_vector<Cart2D> points1{Cart2DVec{{1.0, 1.0}}};
@@ -103,7 +103,7 @@ TYPED_TEST(PairwisePointDistanceTest, OnePair)
 
 template <typename T>
 struct RandomPointGenerator {
-  using Cart2D = cartesian_2d<T>;
+  using Cart2D = vec_2d<T>;
   thrust::minstd_rand rng{};
   thrust::random::normal_distribution<T> norm_dist{};
 
@@ -117,7 +117,7 @@ struct RandomPointGenerator {
 TYPED_TEST(PairwisePointDistanceTest, ManyRandom)
 {
   using T         = TypeParam;
-  using Cart2D    = cartesian_2d<T>;
+  using Cart2D    = vec_2d<T>;
   using Cart2DVec = std::vector<Cart2D>;
 
   std::size_t constexpr num_points = 1000;
@@ -151,7 +151,7 @@ TYPED_TEST(PairwisePointDistanceTest, ManyRandom)
 TYPED_TEST(PairwisePointDistanceTest, CompareWithShapely)
 {
   using T         = TypeParam;
-  using Cart2D    = cartesian_2d<T>;
+  using Cart2D    = vec_2d<T>;
   using Cart2DVec = std::vector<Cart2D>;
 
   std::vector<T> x1{
@@ -291,8 +291,8 @@ TYPED_TEST(PairwisePointDistanceTest, CompareWithShapely)
   rmm::device_vector<T> dx1(x1), dy1(y1), dx2(x2), dy2(y2);
   rmm::device_vector<T> got(dx1.size());
 
-  auto p1_begin = make_cartesian_2d_iterator(dx1.begin(), dy1.begin());
-  auto p2_begin = make_cartesian_2d_iterator(dx2.begin(), dy2.begin());
+  auto p1_begin = make_vec_2d_iterator(dx1.begin(), dy1.begin());
+  auto p2_begin = make_vec_2d_iterator(dx2.begin(), dy2.begin());
 
   auto ret_it = pairwise_point_distance(p1_begin, p1_begin + dx1.size(), p2_begin, got.begin());
 

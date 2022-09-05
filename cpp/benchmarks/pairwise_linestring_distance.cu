@@ -64,24 +64,23 @@ using namespace cuspatial;
  *
  */
 template <typename T>
-std::tuple<rmm::device_vector<cartesian_2d<T>>, rmm::device_vector<int32_t>> generate_linestring(
-  int32_t num_strings, int32_t num_segments_per_string, T segment_length, cartesian_2d<T> init_xy)
+std::tuple<rmm::device_vector<vec_2d<T>>, rmm::device_vector<int32_t>> generate_linestring(
+  int32_t num_strings, int32_t num_segments_per_string, T segment_length, vec_2d<T> init_xy)
 {
   int32_t num_points = num_strings * (num_segments_per_string + 1);
 
   auto offset_iter = detail::make_counting_transform_iterator(
     0, [num_segments_per_string](auto i) { return i * num_segments_per_string; });
   auto rads_iter = detail::make_counting_transform_iterator(0, [](auto i) {
-    return cartesian_2d<T>{cos(static_cast<T>(i)), sin(static_cast<T>(i))};
+    return vec_2d<T>{cos(static_cast<T>(i)), sin(static_cast<T>(i))};
   });
 
   std::vector<int32_t> offsets(offset_iter, offset_iter + num_strings);
-  std::vector<cartesian_2d<T>> rads(rads_iter, rads_iter + num_points);
-  std::vector<cartesian_2d<T>> points(num_points);
+  std::vector<vec_2d<T>> rads(rads_iter, rads_iter + num_points);
+  std::vector<vec_2d<T>> points(num_points);
 
-  auto random_walk_func = [segment_length](cartesian_2d<T> const& prev,
-                                           cartesian_2d<T> const& rad) {
-    return cartesian_2d<T>{prev.x + segment_length * rad.x, prev.y + segment_length * rad.y};
+  auto random_walk_func = [segment_length](vec_2d<T> const& prev, vec_2d<T> const& rad) {
+    return prev + segment_length * rad;
   };
 
   thrust::exclusive_scan(

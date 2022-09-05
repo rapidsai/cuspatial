@@ -39,11 +39,11 @@ auto constexpr num_rings_per_polygon = 1;  // only 1 ring for now
  * @brief Generate a random point within a window of [minXY, maxXY]
  */
 template <typename T>
-cartesian_2d<T> random_point(cartesian_2d<T> minXY, cartesian_2d<T> maxXY)
+vec_2d<T> random_point(vec_2d<T> minXY, vec_2d<T> maxXY)
 {
   auto x = minXY.x + (maxXY.x - minXY.x) * rand() / static_cast<T>(RAND_MAX);
   auto y = minXY.y + (maxXY.y - minXY.y) * rand() / static_cast<T>(RAND_MAX);
-  return cartesian_2d<T>{x, y};
+  return vec_2d<T>{x, y};
 }
 
 /**
@@ -63,14 +63,12 @@ cartesian_2d<T> random_point(cartesian_2d<T> minXY, cartesian_2d<T> maxXY)
  *
  */
 template <typename T>
-std::tuple<rmm::device_vector<int32_t>,
-           rmm::device_vector<int32_t>,
-           rmm::device_vector<cartesian_2d<T>>>
-generate_polygon(int32_t num_sides, T radius, cartesian_2d<T> minXY, cartesian_2d<T> maxXY)
+std::tuple<rmm::device_vector<int32_t>, rmm::device_vector<int32_t>, rmm::device_vector<vec_2d<T>>>
+generate_polygon(int32_t num_sides, T radius, vec_2d<T> minXY, vec_2d<T> maxXY)
 {
   std::vector<int32_t> polygon_offsets(num_polygons);
   std::vector<int32_t> ring_offsets(num_polygons * num_rings_per_polygon);
-  std::vector<cartesian_2d<T>> polygon_points(31 * (num_sides + 1));
+  std::vector<vec_2d<T>> polygon_points(31 * (num_sides + 1));
 
   std::iota(polygon_offsets.begin(), polygon_offsets.end(), 0);
   std::iota(ring_offsets.begin(), ring_offsets.end(), 0);
@@ -84,11 +82,11 @@ generate_polygon(int32_t num_sides, T radius, cartesian_2d<T> minXY, cartesian_2
     auto begin  = i * num_sides + polygon_points.begin();
     auto center = random_point(minXY, maxXY);
     std::transform(it, it + num_sides + 1, begin, [num_sides, radius, center](int32_t j) {
-      return cartesian_2d<T>{
-        static_cast<T>(radius * std::cos(2 * PI * (j % num_sides) / static_cast<T>(num_sides)) +
-                       center.x),
-        static_cast<T>(radius * std::sin(2 * PI * (j % num_sides) / static_cast<T>(num_sides)) +
-                       center.y)};
+      return center +
+             radius *
+               vec_2d<T>{
+                 static_cast<T>(std::cos(2 * PI * (j % num_sides) / static_cast<T>(num_sides))),
+                 static_cast<T>(std::sin(2 * PI * (j % num_sides) / static_cast<T>(num_sides)))};
     });
   }
 
@@ -102,11 +100,11 @@ generate_polygon(int32_t num_sides, T radius, cartesian_2d<T> minXY, cartesian_2
  * @tparam T The floating point type for the coordinates
  */
 template <typename T>
-rmm::device_vector<cartesian_2d<T>> generate_points(int32_t num_test_points,
-                                                    cartesian_2d<T> minXY,
-                                                    cartesian_2d<T> maxXY)
+rmm::device_vector<vec_2d<T>> generate_points(int32_t num_test_points,
+                                              vec_2d<T> minXY,
+                                              vec_2d<T> maxXY)
 {
-  std::vector<cartesian_2d<T>> points(num_test_points);
+  std::vector<vec_2d<T>> points(num_test_points);
   std::generate(
     points.begin(), points.end(), [minXY, maxXY]() { return random_point(minXY, maxXY); });
   // Implicitly convert to device_vector
@@ -120,8 +118,8 @@ void point_in_polygon_benchmark(nvbench::state& state, nvbench::type_list<T>)
   cuspatial::rmm_pool_raii rmm_pool;
 
   std::srand(0);  // For reproducibility
-  auto const minXY = cartesian_2d<T>{-radius * 2, -radius * 2};
-  auto const maxXY = cartesian_2d<T>{radius * 2, radius * 2};
+  auto const minXY = vec_2d<T>{-radius * 2, -radius * 2};
+  auto const maxXY = vec_2d<T>{radius * 2, radius * 2};
 
   auto const num_test_points{state.get_int64("NumTestPoints")},
     num_sides_per_ring{state.get_int64("NumSidesPerRing")};
