@@ -74,14 +74,12 @@ compute_point_keys_and_sorted_indices(PointIt points_first,
     points_last,
     keys.begin(),
     [=] __device__(vec_2d<T> const& point) {
-      // auto const& x = point.x;
-      // auto const& y = point.y;
-      if (point.y < min.x || point.y > max.x || point.y < min.y || point.y > max.y) {
+      if (point.x < min.x || point.x > max.x || point.y < min.y || point.y > max.y) {
         // If the point is outside the bbox, return a max_level key
         return static_cast<uint32_t>((1 << (2 * max_depth)) - 1);
       }
-      return cuspatial::detail::utility::z_order((point.x - min.x) / scale,
-                                                 (point.y - min.y) / scale);
+      return cuspatial::detail::utility::z_order(static_cast<uint16_t>((point.x - min.x) / scale),
+                                                 static_cast<uint16_t>((point.y - min.y) / scale));
     });
 
   rmm::device_uvector<uint32_t> indices(keys.size(), stream, mr);
