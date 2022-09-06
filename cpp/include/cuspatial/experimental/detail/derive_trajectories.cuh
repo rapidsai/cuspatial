@@ -36,6 +36,18 @@ namespace cuspatial {
 
 namespace detail {
 
+template <typename Tuple>
+struct trajectory_comparator {
+  __device__ bool operator()(Tuple const& lhs, Tuple const& rhs)
+  {
+    auto lhs_id = thrust::get<0>(lhs);
+    auto rhs_id = thrust::get<0>(rhs);
+    auto lhs_ts = thrust::get<1>(lhs);
+    auto rhs_ts = thrust::get<1>(rhs);
+    return (lhs_id < rhs_id) || ((lhs_id == rhs_id) && (lhs_ts < rhs_ts));
+  };
+};
+
 template <typename IdInputIt,
           typename PointInputIt,
           typename TimestampInputIt,
@@ -56,14 +68,6 @@ void order_trajectories(IdInputIt ids_first,
   using timestamp_type = typename std::iterator_traits<TimestampInputIt>::value_type;
   using tuple_type     = thrust::tuple<id_type, timestamp_type>;
 
-  auto key_comparator = [] __device__(tuple_type const& lhs, tuple_type const& rhs) {
-    auto lhs_id = thrust::get<0>(lhs);
-    auto rhs_id = thrust::get<0>(rhs);
-    auto lhs_ts = thrust::get<1>(lhs);
-    auto rhs_ts = thrust::get<1>(rhs);
-    return (lhs_id < rhs_id) || ((lhs_id == rhs_id) && (lhs_ts < rhs_ts));
-  };
-
   auto keys_first     = thrust::make_zip_iterator(ids_first, timestamps_first);
   auto keys_out_first = thrust::make_zip_iterator(ids_out_first, timestamps_out_first);
 
@@ -75,9 +79,9 @@ void order_trajectories(IdInputIt ids_first,
                                       keys_out_first,
                                       points_out_first,
                                       std::distance(ids_first, ids_last),
-                                      key_comparator);
+                                      trajectory_comparator<tuple_type>{},
+                                      stream);
 
-  // allocate temp storage
   auto temp_storage = rmm::device_buffer(temp_storage_bytes, stream, mr);
 
   cub::DeviceMergeSort::SortPairsCopy(temp_storage.data(),
@@ -87,7 +91,10 @@ void order_trajectories(IdInputIt ids_first,
                                       keys_out_first,
                                       points_out_first,
                                       std::distance(ids_first, ids_last),
-                                      key_comparator);
+                                      trajectory_comparator<tuple_type>{},
+                                      stream);
+
+  stream.synchronize();
 }
 
 }  // namespace detail
@@ -123,8 +130,8 @@ std::unique_ptr<rmm::device_vector<OffsetType>> derive_trajectories(
   auto const num_points = std::distance(ids_first, ids_last);
   auto lengths          = rmm::device_uvector<OffsetType>(num_points, stream);
   auto grouped          = thrust::reduce_by_key(rmm::exec_policy(stream),
-                                       ids_first,
-                                       ids_last,
+                                       ids_out_first,
+                                       ids_out_first + num_points,
                                        thrust::make_constant_iterator(1),
                                        thrust::make_discard_iterator(),
                                        lengths.begin());

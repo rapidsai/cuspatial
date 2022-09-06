@@ -45,17 +45,16 @@ struct derive_trajectories_dispatch {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
-    // disappointing that we have to make copies since derive_trajectories is in-place
     auto cols = std::vector<std::unique_ptr<cudf::column>>{};
     cols.reserve(4);
-    cols.push_back(std::make_unique<cudf::column>(object_id));
-    cols.push_back(std::make_unique<cudf::column>(x));
-    cols.push_back(std::make_unique<cudf::column>(y));
-    cols.push_back(std::make_unique<cudf::column>(timestamp));
+    cols.push_back(cudf::allocate_like(object_id, cudf::mask_allocation_policy::NEVER, mr));
+    cols.push_back(cudf::allocate_like(x, cudf::mask_allocation_policy::NEVER, mr));
+    cols.push_back(cudf::allocate_like(y, cudf::mask_allocation_policy::NEVER, mr));
+    cols.push_back(cudf::allocate_like(timestamp, cudf::mask_allocation_policy::NEVER, mr));
 
-    auto points_begin     = make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
-    auto points_out_begin = make_vec_2d_iterator<vec_2d<T>>(cols[1]->mutable_view().begin<T>(),
-                                                            cols[2]->mutable_view().begin<T>());
+    auto points_begin     = thrust::make_zip_iterator(x.begin<T>(), y.begin<T>());
+    auto points_out_begin = thrust::make_zip_iterator(cols[1]->mutable_view().begin<T>(),
+                                                      cols[2]->mutable_view().begin<T>());
 
     auto offsets = derive_trajectories(object_id.begin<std::int32_t>(),
                                        object_id.end<std::int32_t>(),
