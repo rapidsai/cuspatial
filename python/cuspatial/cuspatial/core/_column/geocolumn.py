@@ -40,9 +40,9 @@ class GeoColumn(ColumnBase):
             have already been computed in the `read_polygon_shapefile`
             function. In order to convert it into an arrow list<...>
             we need a set of offsets buffers for each point tuple, and
-            and also an offsets buffer for each individual point.
+            an offsets buffer for each individual point.
 
-            Coordinates: List of size 2 offsets
+            Coordinates: List of length 2 offsets: [0, 2, 4, ... n/2]
             Points: List of length 1 offsets: No multipoints
             Rings: List of polygon ring offsets
             Polygons: Offset into rings of each polygon

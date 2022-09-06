@@ -49,13 +49,13 @@ cudf::size_type read_ring(OGRLinearRing const& ring,
     auto ring_it = cuspatial::detail::make_counting_transform_iterator(
       0, [&ring](auto i) { return thrust::make_tuple(ring.getX(i), ring.getY(i)); });
 
-    thrust::copy_n(ring_it, num_vertices, output_it);
+    std::copy_n(ring_it, num_vertices, output_it);
   } else {
     auto ring_it =
       cuspatial::detail::make_counting_transform_iterator(0, [&ring, &num_vertices](auto i) {
         return thrust::make_tuple(ring.getX(num_vertices - i - 1), ring.getY(num_vertices - i - 1));
       });
-    thrust::copy_n(ring_it, num_vertices, output_it);
+    std::copy_n(ring_it, num_vertices, output_it);
   }
 
   return num_vertices;
@@ -89,7 +89,11 @@ cudf::size_type read_geometry_feature(OGRGeometry const* geometry,
   OGRwkbGeometryType geometry_type = wkbFlatten(geometry->getGeometryType());
 
   if (geometry_type == wkbPolygon) {
-    return read_polygon(*((OGRPolygon*)geometry), ring_lengths, xs, ys, ring_order);
+    auto polygon = dynamic_cast<const OGRPolygon*>(geometry);
+    if (polygon == nullptr) {
+      CUSPATIAL_FAIL("Can't cast `wkbPolygon` to `OGRPolygon&`");
+    }
+    return read_polygon(*polygon, ring_lengths, xs, ys, ring_order);
   }
 
   if (geometry_type == wkbMultiPolygon || geometry_type == wkbGeometryCollection) {
@@ -122,7 +126,7 @@ cudf::size_type read_layer(const OGRLayerH layer,
   OGRFeatureH feature;
 
   while ((feature = OGR_L_GetNextFeature(layer)) != nullptr) {
-    auto geometry = (OGRGeometry*)OGR_F_GetGeometryRef(feature);
+    auto geometry = static_cast<OGRGeometry*>(OGR_F_GetGeometryRef(feature));
 
     CUSPATIAL_EXPECTS(geometry != nullptr, "Invalid Shape");
 
