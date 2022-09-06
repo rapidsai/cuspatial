@@ -4,7 +4,7 @@
 [//]: <> (format and allows lining up the parenthesis on the next line for good width.)
 
 
-# cuspatial python Developer's Guide
+# cuspatial python User's Guide
 
 cuspatial lets developers take advantage of extremely high performance spatial algorithms  
 by leveraging CUDA-enabled GPUs.
@@ -52,6 +52,32 @@ GeoArrow stores heterogeneous orderings of Features, similar to the [GeoSeries](
 https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoSeries.html     ) used  
 in [GeoPandas](
 https://geopandas.org/en/stable/index.html).
+
+## Source layout
+
+The source code is layed out in a logical module structure by function.
+
+```
+cuspatial/core/
+               geodataframe.py # cudf dataframe operations
+               geoseries.py    # cudf series operations
+               interpolate.py  # cubic spline curve interpolation
+               trajectory.py   # derive, distances and speeds, and bounding boxes
+               spatial/
+                       bounding.py   # polygon and polyline bounding boxes
+                       distance.py   # hausdorff, haversine, and pairwise linestring  
+                                     # distances
+                       filtering.py  # points in spatial window 
+                       indexing.py   # quadtree generation
+                       join.py       # point in polygon (pip), pip quadtree, point to  
+                                     # nearest line segment.
+                       projection.py # lonlat to cartesian coordinates
+cuspatial/io/
+             geopandas.py        # to_geopandas and from_geopandas
+             geopandas_reader.py # convert geopandas to GeoArrow
+             pygeoarrow.py       # GeoArrow objects
+             shapefile.py        # fast shapefile reader to GeoArrow
+```
 
 ## I/O
 
@@ -241,6 +267,57 @@ gpu_dataframe = cuspatial.from_geopandas(host_dataframe)
 
 ## Trajectory fits
 
+Libraries have been developed to make trajectory analysis faster and easier.  Use  
+`cuspatial.trajectory.derive_trajectories` to group unsorted trajectory datasets and sort  
+by time.
+
+```py
+ids = cupy.random.randint(1, 4000, 10000)
+timestamps = cupy.random.random(10000)
+x = cupy.random.random(10000)
+y = cupy.random.random(10000)
+trajectories = cuspatial.trajectory.derive_trajectories(ids, x, y, timestamps)
+trajectories.head(40)
+
+```
+
+Use `trajectory_distance_and_speed` to calculate the overall distance travelled in meters  
+and the speed of a set of trajectories with the same format as the result returned by  
+`derive_trajectories`.
+
+```py
+d_and_s = cuspatial.trajectory.distances_and_speeds(
+  len(ids.unique()),
+  trajectories['ids'],
+  trajectories['xs'],
+  trajectories['ys'],
+  trajectories['timestamps']
+)
+d_and_s.head()
+
+```
+ 
+Finally, compute the bounding boxes of trajectories that follow the format of the above  
+two examples:
+
+```py
+bounding_boxes = cuspatial.trajectory.trajectory_bounding_boxes(
+  len(ids.unique()),
+  trajectories['ids'],
+  trajectories['xs'],
+  trajectories['ys']
+)
+   
+  
+
+  
+
+
+               trajectory.py   # derive, distances and speeds, and bounding boxes
+
+
 ## Spatial utilities
+
+
 
 ## GeoArrow data format
