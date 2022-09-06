@@ -41,15 +41,12 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, Empty)
 {
   using T = TypeParam;
 
-  auto x      = fixed_width_column_wrapper<T>{};
-  auto y      = fixed_width_column_wrapper<T>{};
-  auto offset = fixed_width_column_wrapper<int32_t>{};
-  auto line_x = fixed_width_column_wrapper<T>{};
-  auto line_y = fixed_width_column_wrapper<T>{};
+  auto xy      = fixed_width_column_wrapper<T>{};
+  auto offset  = fixed_width_column_wrapper<int32_t>{0};
+  auto line_xy = fixed_width_column_wrapper<T>{};
 
   auto expect = fixed_width_column_wrapper<T>{};
-
-  auto got = pairwise_point_linestring_distance(x, y, offset, line_x, line_y);
+  auto got    = pairwise_point_linestring_distance(xy, column_view(offset), line_xy);
 
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
@@ -57,73 +54,23 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, Empty)
 struct PairwisePointLinestringDistanceTestThrow : public ::testing::Test {
 };
 
-TEST_F(PairwisePointLinestringDistanceTestThrow, PointSizeMismatch)
-{
-  auto x      = fixed_width_column_wrapper<float>{1, 2, 3};
-  auto y      = fixed_width_column_wrapper<float>{};
-  auto offset = fixed_width_column_wrapper<int32_t>{0};
-  auto line_x = fixed_width_column_wrapper<float>{1, 2, 3};
-  auto line_y = fixed_width_column_wrapper<float>{1, 2, 3};
-
-  auto expect = fixed_width_column_wrapper<float>{};
-
-  EXPECT_THROW(pairwise_point_linestring_distance(x, y, offset, line_x, line_y),
-               cuspatial::logic_error);
-}
-
-TEST_F(PairwisePointLinestringDistanceTestThrow, LinestringSizeMismatch)
-{
-  auto x      = fixed_width_column_wrapper<float>{1, 2, 3};
-  auto y      = fixed_width_column_wrapper<float>{1, 2, 3};
-  auto offset = fixed_width_column_wrapper<int32_t>{0};
-  auto line_x = fixed_width_column_wrapper<float>{};
-  auto line_y = fixed_width_column_wrapper<float>{1, 2, 3};
-
-  auto expect = fixed_width_column_wrapper<float>{};
-
-  EXPECT_THROW(pairwise_point_linestring_distance(x, y, offset, line_x, line_y),
-               cuspatial::logic_error);
-}
-
 TEST_F(PairwisePointLinestringDistanceTestThrow, PointTypeMismatch)
 {
-  auto x      = fixed_width_column_wrapper<float>{1, 2, 3};
-  auto y      = fixed_width_column_wrapper<double>{1, 2, 3};
-  auto offset = fixed_width_column_wrapper<int32_t>{0};
-  auto line_x = fixed_width_column_wrapper<float>{1, 2, 3};
-  auto line_y = fixed_width_column_wrapper<float>{1, 2, 3};
+  auto xy      = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3};
+  auto offset  = fixed_width_column_wrapper<int32_t>{0, 6};
+  auto line_xy = fixed_width_column_wrapper<double>{1, 1, 2, 2, 3, 3};
 
-  auto expect = fixed_width_column_wrapper<float>{};
-
-  EXPECT_THROW(pairwise_point_linestring_distance(x, y, offset, line_x, line_y),
-               cuspatial::logic_error);
-}
-
-TEST_F(PairwisePointLinestringDistanceTestThrow, LinestringTypeMismatch)
-{
-  auto x      = fixed_width_column_wrapper<float>{1, 2, 3};
-  auto y      = fixed_width_column_wrapper<float>{1, 2, 3};
-  auto offset = fixed_width_column_wrapper<int32_t>{0};
-  auto line_x = fixed_width_column_wrapper<double>{1, 2, 3};
-  auto line_y = fixed_width_column_wrapper<float>{1, 2, 3};
-
-  auto expect = fixed_width_column_wrapper<float>{};
-
-  EXPECT_THROW(pairwise_point_linestring_distance(x, y, offset, line_x, line_y),
+  EXPECT_THROW(pairwise_point_linestring_distance(xy, column_view(offset), line_xy),
                cuspatial::logic_error);
 }
 
 TEST_F(PairwisePointLinestringDistanceTestThrow, ContainsNull)
 {
-  auto x      = fixed_width_column_wrapper<float>{{1, 2, 3}, {1, 0, 1}};
-  auto y      = fixed_width_column_wrapper<float>{1, 2, 3};
-  auto offset = fixed_width_column_wrapper<int32_t>{0};
-  auto line_x = fixed_width_column_wrapper<float>{1, 2, 3};
-  auto line_y = fixed_width_column_wrapper<float>{1, 2, 3};
+  auto xy      = fixed_width_column_wrapper<float>{{1, 1, 2, 2, 3, 3}, {1, 0, 1, 1, 1, 1}};
+  auto offset  = fixed_width_column_wrapper<int32_t>{0, 6};
+  auto line_xy = fixed_width_column_wrapper<float>{1, 2, 3, 1, 2, 3};
 
-  auto expect = fixed_width_column_wrapper<float>{};
-
-  EXPECT_THROW(pairwise_point_linestring_distance(x, y, offset, line_x, line_y),
+  EXPECT_THROW(pairwise_point_linestring_distance(xy, column_view(offset), line_xy),
                cuspatial::logic_error);
 }
 

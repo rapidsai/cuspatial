@@ -31,6 +31,7 @@
 #include <thrust/random/linear_congruential_engine.h>
 #include <thrust/random/normal_distribution.h>
 #include <thrust/random/uniform_int_distribution.h>
+#include <thrust/tabulate.h>
 
 #include <memory>
 

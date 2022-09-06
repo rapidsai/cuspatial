@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <thrust/iterator/transform_iterator.h>
@@ -31,7 +33,7 @@ namespace detail {
  * @internal
  * @brief Helper to convert a tuple of elements into a `vec_2d`
  */
-template <typename T, typename VectorType>
+template <typename T, typename VectorType = vec_2d<T>>
 struct tuple_to_vec_2d {
   __device__ VectorType operator()(thrust::tuple<T, T> const& pos)
   {
@@ -43,7 +45,7 @@ struct tuple_to_vec_2d {
  * @internal
  * @brief Helper to convert a `vec_2d` into a tuple of elements
  */
-template <typename T, typename VectorType>
+template <typename T, typename VectorType = vec_2d<T>>
 struct vec_2d_to_tuple {
   __device__ thrust::tuple<T, T> operator()(VectorType const& xy)
   {
@@ -64,7 +66,7 @@ struct vec_2d_to_tuple {
  * Interleaves x and y coordinates from separate iterators into a single iterator to x-y
  * coordinates.
  *
- * @tparam VectorType cuSpatial vector type, must be `vec_2d`, `lonlat_2d` or `cartesian_2d`
+ * @tparam VectorType cuSpatial vector type, must be `vec_2d`
  * @tparam FirstIter Iterator type to the first component of `vec_2d`. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam SecondIter Iterator type to the second component of `vec_2d`. Must meet the requirements
@@ -78,72 +80,15 @@ struct vec_2d_to_tuple {
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <typename VectorType, typename FirstIter, typename SecondIter>
+template <typename FirstIter, typename SecondIter>
 auto make_vec_2d_iterator(FirstIter first, SecondIter second)
 {
   using T = typename std::iterator_traits<FirstIter>::value_type;
-  static_assert(std::is_same_v<T, typename std::iterator_traits<SecondIter>::value_type>,
+  static_assert(detail::is_same<T, detail::iterator_value_type<SecondIter>>(),
                 "Iterator value_type mismatch");
 
   auto zipped = thrust::make_zip_iterator(thrust::make_tuple(first, second));
-  return thrust::make_transform_iterator(zipped, detail::tuple_to_vec_2d<T, VectorType>());
-}
-
-/**
- * @brief Create an iterator to `lonlat_2d` data from two input iterators.
- *
- * Interleaves longitude and latitude from separate iterators into a single iterator to lon/lat
- * coordinates.
- * @tparam FirstIter Iterator type to the first component (the longitude) of `lonlat_2d`. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam SecondIter Iterator type to the second component (the latitude) of `lonlat_2d`. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @param first Iterator to beginning of `lonlat_2d::x`
- * @param second Iterator to beginning of `lonlat_2d::y`
- * @return Iterator to `lonlat_2d`
- *
- * @pre `first` and `second` must iterate on same data type.
- *
- * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
- * "LegacyRandomAccessIterator"
- */
-template <typename FirstIter, typename SecondIter>
-auto make_vec_2d_iterator(FirstIter first, SecondIter second)
-{
-  using T = typename std::iterator_traits<FirstIter>::value_type;
-  return make_vec_2d_iterator<vec_2d<T>>(first, second);
-}
-
-template <typename FirstIter, typename SecondIter>
-auto make_lonlat_iterator(FirstIter first, SecondIter second)
-{
-  using T = typename std::iterator_traits<FirstIter>::value_type;
-  return make_vec_2d_iterator<lonlat_2d<T>>(first, second);
-}
-
-/**
- * @brief Create an iterator to `cartesian_2d` data from two input iterators.
- *
- * Interleaves x and y coordinates from separate iterators into a single iterator to x-y
- * coordinates.
- * @tparam FirstIter Iterator type to the first component of `cartesian_2d`. Must meet the
- * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam SecondIter Iterator type to the second component of `cartesian_2d`. Must meet the
- * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @param first Iterator to beginning of `cartesian_2d::x`
- * @param second Iterator to beginning of `cartesian_2d::y`
- * @return Iterator to `cartesian_2d`
- *
- * @pre `first` and `second` must iterate on same data type.
- *
- * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
- * "LegacyRandomAccessIterator"
- */
-template <typename FirstIter, typename SecondIter>
-auto make_cartesian_2d_iterator(FirstIter first, SecondIter second)
-{
-  using T = typename std::iterator_traits<FirstIter>::value_type;
-  return make_vec_2d_iterator<cartesian_2d<T>>(first, second);
+  return thrust::make_transform_iterator(zipped, detail::tuple_to_vec_2d<T>());
 }
 
 /**
@@ -153,7 +98,7 @@ auto make_cartesian_2d_iterator(FirstIter first, SecondIter second)
  * can be written interleaved x/y data. This allows using two separate arrays of
  * output data with APIs that expect an iterator to structured data.
  *
- * @tparam VectorType cuSpatial vector type, must be `vec_2d`, `lonlat_2d` or `cartesian_2d`
+ * @tparam VectorType cuSpatial vector type, must be `vec_2d`
  * @tparam FirstIter Iterator type to the first component of `vec_2d`. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
  * @tparam SecondIter Iterator type to the second component of `vec_2d`. Must meet the
@@ -167,67 +112,25 @@ auto make_cartesian_2d_iterator(FirstIter first, SecondIter second)
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <typename VectorType, typename FirstIter, typename SecondIter>
+template <typename FirstIter, typename SecondIter>
 auto make_zipped_vec_2d_output_iterator(FirstIter first, SecondIter second)
 {
   using T         = typename std::iterator_traits<FirstIter>::value_type;
   auto zipped_out = thrust::make_zip_iterator(thrust::make_tuple(first, second));
-  return thrust::make_transform_output_iterator(zipped_out,
-                                                detail::vec_2d_to_tuple<T, VectorType>());
+  return thrust::make_transform_output_iterator(zipped_out, detail::vec_2d_to_tuple<T>());
 }
 
-/**
- * @brief Create an output iterator to `lonlat_2d` from two output iterators.
- *
- * Creates an output iterator from separate iterators to longitude and latitude data
- * to which can be written interleaved longitude/latitude data. This allows using two
- * separate arrays of output data with APIs that expect an iterator to interleaved
- * data.
- *
- * @tparam FirstIter Iterator type to the first component of `lonlat_2d`. Must meet the
- * requirements of [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
- * @tparam SecondIter Iterator type to the second component of `lonlat_2d`. Must meet the
- * requirements of [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
- * @param first Iterator to beginning of longitude data.
- * @param second Iterator of beginning of latitude data.
- * @return Iterator to `lonlat_2d`
- *
- * @pre `first` and `second` must iterate on same data type.
- *
- * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
- * "LegacyRandomAccessIterator"
- */
-template <typename FirstIter, typename SecondIter>
-auto make_zipped_lonlat_output_iterator(FirstIter first, SecondIter second)
-{
-  using T = typename std::iterator_traits<FirstIter>::value_type;
-  return make_zipped_vec_2d_output_iterator<lonlat_2d<T>>(first, second);
-}
+template <typename T, typename VectorType = vec_2d<T>>
+struct interleaved_to_vec_2d {
+  T const* it;
+  __device__ VectorType operator()(std::size_t i) { return VectorType{it[2 * i], it[2 * i + 1]}; }
+};
 
-/**
- * @brief Create an output iterator to `cartesian_2d` from two output iterators.
- *
- * Creates an output iterator from separate iterators to x and y data to which
- * can be written interleaved x/y data. This allows using two separate arrays of
- * output data with APIs that expect an iterator to structured data.
- * @tparam FirstIter Iterator type to the first component of `cartesian_2d`. Must meet the
- * requirements of [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
- * @tparam SecondIter Iterator type to the second component of `cartesian_2d`. Must meet the
- * requirements of [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
- * @param first Iterator to beginning of `x` data.
- * @param second Iterator to beginning of `y` data.
- * @return Iterator to `cartesian_2d`
- *
- * @pre `first` and `second` must iterate on same data type.
- *
- * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
- * "LegacyRandomAccessIterator"
- */
-template <typename FirstIter, typename SecondIter>
-auto make_zipped_cartesian_2d_output_iterator(FirstIter first, SecondIter second)
+template <typename Iter>
+auto interleaved_iterator_to_vec_2d_iterator(Iter d_points_begin)
 {
-  using T = typename std::iterator_traits<FirstIter>::value_type;
-  return make_zipped_vec_2d_output_iterator<cartesian_2d<T>>(first, second);
+  using T = typename std::iterator_traits<Iter>::value_type;
+  return detail::make_counting_transform_iterator(0, interleaved_to_vec_2d<T>{d_points_begin});
 }
 
 template <typename T, typename VectorType = vec_2d<T>>

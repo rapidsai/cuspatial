@@ -36,21 +36,17 @@ namespace cuspatial {
  * Linestring: (0, 0) -> (1, 1) -> (2, 0) -> (3, 0) -> (3, 1)
  *
  * The input of the abbove example is:
- * points_x: {0, 1}
- * points_y: {0, 1}
- * linestring_offsets: {0, 3}
- * linestring_x: {0, 1, 2, 0, 1, 2, 3, 3}
- * linestring_y: {1, 0, 0, 0, 1, 0, 0, 1}
+ * points_xy: {0, 1, 0, 1}
+ * linestring_offsets: {0, 3, 8}
+ * linestring_xy: {0, 1, 1, 0, 2, 0, 0, 0, 1, 1, 2, 0, 3, 0, 3, 1}
  *
  * Result: {sqrt(2)/2, 0}
  * ```
  *
- * @param points_x x-coordinates of points.
- * @param points_y y-coordinates of points.
- * @param linestring_offsets Indices of the start of each linestring in the `linestring_x` and
- * `linestring_y` arrays.
- * @param linestring_points_x x-coordinates of linestring points.
- * @param linestring_points_y y-coordinates of linestring points.
+ * @param points_xy Interleaved x, y-coordinates of points
+ * @param linestring_offsets Beginning and ending indices for each linestring in the `linestring_x`
+ * and `linestring_y` arrays. Must satisfy `linestring_offsets.size() + 1 == points_xy.size()`.
+ * @param linestring_points_xy Interleaved x, y-coordinates of linestring points.
  * @param mr Device memory resource used to allocate the returned column.
  * @return A column containing the distance between each pair of corresponding points and
  * linestrings.
@@ -61,11 +57,9 @@ namespace cuspatial {
  * @throws cuspatial::logic_error if the any of the point arrays have mismatched types.
  */
 std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
-  cudf::column_view const& points_x,
-  cudf::column_view const& points_y,
-  cudf::column_view const& linestring_offsets,
-  cudf::column_view const& linestring_points_x,
-  cudf::column_view const& linestring_points_y,
+  cudf::column_view const& points_xy,
+  cudf::device_span<cudf::size_type const> linestring_offsets,
+  cudf::column_view const& linestring_points_xy,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial

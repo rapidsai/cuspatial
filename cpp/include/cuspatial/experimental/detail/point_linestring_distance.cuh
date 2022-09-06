@@ -25,7 +25,12 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/advance.h>
 #include <thrust/binary_search.h>
+#include <thrust/distance.h>
+#include <thrust/execution_policy.h>
+#include <thrust/fill.h>
+#include <thrust/memory.h>
 
 #include <iterator>
 #include <limits>
@@ -52,11 +57,13 @@ namespace detail {
  * @tparam OutputIterator Iterator to output distances. Must meet requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  *
- * @param[in] points_first Iterator to the begin of the range of the points
+ * @param[in] points_first Iterator to the beginning of the range of the points
  * @param[in] points_last  Iterator to the end of the range of the points
- * @param[in] linestring_offsets_begin Iterator to the begin of the range of the linestring offsets
+ * @param[in] linestring_offsets_begin Iterator to the beginning of the range of the linestring
+ * offsets
  * @param[in] linestring_offsets_end Iterator to the end of the range of the linestring offsets
- * @param[in] linestring_points_begin Iterator to the begin of the range of the linestring points
+ * @param[in] linestring_points_begin Iterator to the beginning of the range of the linestring
+ * points
  * @param[in] linestring_points_end Iterator to the end of the range of the linestring points
  * @param[out] distances Iterator to the output range of shortest distances between pairs.
  *
@@ -74,17 +81,18 @@ void __global__ pairwise_point_linestring_distance(Cart2dItA points_first,
   using T = iterator_vec_base_type<Cart2dItA>;
 
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x;
-       idx < std::distance(linestring_points_first, linestring_points_last);
+       idx < std::distance(linestring_points_first, thrust::prev(linestring_points_last));
        idx += gridDim.x * blockDim.x) {
     auto offsets_iter =
       thrust::upper_bound(thrust::seq, linestring_offsets_first, linestring_offsets_last, idx);
-    // Pointer to the last point in the linestring.
-    if (*offsets_iter - 1 == idx) { return; }
+    // Pointer to the last point in the linestring, skip iteration.
+    // Note that the last point for the last linestring is guarded by the grid-stride loop.
+    if (offsets_iter != linestring_offsets_last and *offsets_iter - 1 == idx) { continue; }
 
-    auto point_idx = thrust::distance(linestring_offsets_first, thrust::prev(offsets_iter));
-    cartesian_2d<T> const a = linestring_points_first[idx];
-    cartesian_2d<T> const b = linestring_points_first[idx + 1];
-    cartesian_2d<T> const c = points_first[point_idx];
+    auto point_idx    = thrust::distance(linestring_offsets_first, thrust::prev(offsets_iter));
+    vec_2d<T> const a = linestring_points_first[idx];
+    vec_2d<T> const b = linestring_points_first[idx + 1];
+    vec_2d<T> const c = points_first[point_idx];
 
     auto const distance_squared = point_to_segment_distance_squared(c, a, b);
 
@@ -106,15 +114,13 @@ void pairwise_point_linestring_distance(Cart2dItA points_first,
 {
   using T = detail::iterator_vec_base_type<Cart2dItA>;
 
-  static_assert(detail::is_same_floating_point<T,
-                                               detail::iterator_vec_base_type<Cart2dItB>,
-                                               detail::iterator_value_type<OutputIt>>(),
-                "Inputs and output must have same floating point value type.");
+  static_assert(detail::is_same_floating_point<T, detail::iterator_vec_base_type<Cart2dItB>>(),
+                "Inputs must have same floating point value type.");
 
-  static_assert(detail::is_same<cartesian_2d<T>,
+  static_assert(detail::is_same<vec_2d<T>,
                                 detail::iterator_value_type<Cart2dItA>,
                                 detail::iterator_value_type<Cart2dItB>>(),
-                "Inputs must be cuspatial::cartesian_2d");
+                "Inputs must be cuspatial::vec_2d<T>");
 
   auto const num_pairs = thrust::distance(points_first, points_last);
 
@@ -126,14 +132,14 @@ void pairwise_point_linestring_distance(Cart2dItA points_first,
   thrust::fill_n(
     rmm::exec_policy(stream), distances_first, num_pairs, std::numeric_limits<T>::max());
 
-  std::size_t constexpr threads_per_block = 64;
+  std::size_t constexpr threads_per_block = 256;
   std::size_t const num_blocks =
     (num_linestring_points + threads_per_block - 1) / threads_per_block;
 
   detail::pairwise_point_linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     points_first,
     linestring_offsets_first,
-    linestring_offsets_first + num_pairs,
+    linestring_offsets_first + num_pairs + 1,
     linestring_points_first,
     linestring_points_first + num_linestring_points,
     distances_first);

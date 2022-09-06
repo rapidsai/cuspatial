@@ -63,9 +63,9 @@ struct pairwise_linestring_distance_functor {
                                                mr);
 
     auto linestring1_coords_it =
-      make_cartesian_2d_iterator(linestring1_points_x.begin<T>(), linestring1_points_y.begin<T>());
+      make_vec_2d_iterator(linestring1_points_x.begin<T>(), linestring1_points_y.begin<T>());
     auto linestring2_coords_it =
-      make_cartesian_2d_iterator(linestring2_points_x.begin<T>(), linestring2_points_y.begin<T>());
+      make_vec_2d_iterator(linestring2_points_x.begin<T>(), linestring2_points_y.begin<T>());
 
     pairwise_linestring_distance(linestring1_offsets.begin(),
                                  linestring1_offsets.end(),

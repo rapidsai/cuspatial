@@ -25,6 +25,8 @@
 #include <rmm/device_vector.hpp>
 
 #include <thrust/host_vector.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 
 #include <type_traits>
 
@@ -42,15 +44,15 @@ TYPED_TEST_CASE(PairwisePointLinestringDistanceTest, TestTypes);
 TYPED_TEST(PairwisePointLinestringDistanceTest, Empty)
 {
   using T       = TypeParam;
-  using CartVec = std::vector<cartesian_2d<T>>;
+  using CartVec = std::vector<vec_2d<T>>;
 
   CartVec points{};
-  std::vector<int> linestring_offsets{};
+  std::vector<int> linestring_offsets{0};
   CartVec linestring_points{};
 
-  rmm::device_vector<cartesian_2d<T>> d_points(points);
+  rmm::device_vector<vec_2d<T>> d_points(points);
   rmm::device_vector<int> d_offsets(linestring_offsets);
-  rmm::device_vector<cartesian_2d<T>> d_linestring_points(linestring_points);
+  rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
   rmm::device_vector<T> got{};
 
@@ -70,16 +72,16 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, Empty)
 TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairFromVector)
 {
   using T       = TypeParam;
-  using CartVec = std::vector<cartesian_2d<T>>;
+  using CartVec = std::vector<vec_2d<T>>;
 
   CartVec points{{0, 0}};
-  std::vector<int> linestring_offsets{0};
+  std::vector<int> linestring_offsets{0, 3};
   CartVec linestring_points{{1, 1}, {2, 2}, {3, 3}};
   thrust::host_vector<T> expect(std::vector<T>{std::sqrt(T{2.0})});
 
-  rmm::device_vector<cartesian_2d<T>> d_points(points);
+  rmm::device_vector<vec_2d<T>> d_points(points);
   rmm::device_vector<int> d_offsets(linestring_offsets);
-  rmm::device_vector<cartesian_2d<T>> d_linestring_points(linestring_points);
+  rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
   rmm::device_vector<T> got(points.size());
 
@@ -97,16 +99,16 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairFromVector)
 TYPED_TEST(PairwisePointLinestringDistanceTest, TwoPairFromVector)
 {
   using T       = TypeParam;
-  using CartVec = std::vector<cartesian_2d<T>>;
+  using CartVec = std::vector<vec_2d<T>>;
 
   CartVec points{{0, 0}, {0, 0}};
-  std::vector<int> linestring_offsets{0, 3};
+  std::vector<int> linestring_offsets{0, 3, 6};
   CartVec linestring_points{{1, 1}, {2, 2}, {3, 3}, {-1, -1}, {-2, -2}, {-3, -3}};
   thrust::host_vector<T> expect(std::vector<T>{std::sqrt(T{2.0}), std::sqrt(T{2.0})});
 
-  rmm::device_vector<cartesian_2d<T>> d_points(points);
+  rmm::device_vector<vec_2d<T>> d_points(points);
   rmm::device_vector<int> d_offsets(linestring_offsets);
-  rmm::device_vector<cartesian_2d<T>> d_linestring_points(linestring_points);
+  rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
   rmm::device_vector<T> got(points.size());
 
@@ -133,16 +135,14 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, ManyPairsFromIterators)
   auto const num_pairs             = 100;
   auto const num_linestring_points = num_pairs * 3;
 
-  times_three_functor<std::size_t> f1{};
   auto linestring_points_x = thrust::make_counting_iterator(T{0.0});
   auto linestring_points_y = thrust::make_constant_iterator(T{1.0});
-  auto linestring_points   = make_cartesian_2d_iterator(linestring_points_x, linestring_points_y);
-  auto offsets             = detail::make_counting_transform_iterator(0, f1);
+  auto linestring_points   = make_vec_2d_iterator(linestring_points_x, linestring_points_y);
+  auto offsets = detail::make_counting_transform_iterator(0, times_three_functor<int32_t>{});
 
-  times_three_functor<T> f2{};
-  auto points_x = detail::make_counting_transform_iterator(T{0.0}, f2);
+  auto points_x = detail::make_counting_transform_iterator(T{0.0}, times_three_functor<T>{});
   auto points_y = thrust::make_constant_iterator(T{0.0});
-  auto points   = make_cartesian_2d_iterator(points_x, points_y);
+  auto points   = make_vec_2d_iterator(points_x, points_y);
 
   std::vector<T> expect(num_pairs, T{1.0});
   rmm::device_vector<T> got(num_pairs);
@@ -161,7 +161,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, ManyPairsFromIterators)
 TYPED_TEST(PairwisePointLinestringDistanceTest, FiftyPairsCompareWithShapely)
 {
   using T       = TypeParam;
-  using CartVec = std::vector<cartesian_2d<T>>;
+  using CartVec = std::vector<vec_2d<T>>;
 
   // All point coordinates are confined in [-1e9, 0] inverval
   auto d_points_x = rmm::device_vector<T>(std::vector<T>{
@@ -290,12 +290,11 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, FiftyPairsCompareWithShapely)
                    1424632154.129706,  1642663437.0646927, 440103049.49988014, 1607161773.8117433,
                    1520123653.1998143, 1027033461.3751863};
 
-  times_three_functor<std::size_t> f1{};
-  auto offsets = detail::make_counting_transform_iterator(0, f1);
+  auto offsets = detail::make_counting_transform_iterator(0, times_three_functor<int32_t>{});
 
-  auto points = make_cartesian_2d_iterator(d_points_x.begin(), d_points_y.begin());
+  auto points = make_vec_2d_iterator(d_points_x.begin(), d_points_y.begin());
   auto linestring_points =
-    make_cartesian_2d_iterator(d_linestring_points_x.begin(), d_linestring_points_y.begin());
+    make_vec_2d_iterator(d_linestring_points_x.begin(), d_linestring_points_y.begin());
 
   rmm::device_vector<T> got(d_points_x.size());
 
