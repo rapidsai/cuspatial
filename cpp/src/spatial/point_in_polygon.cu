@@ -65,11 +65,11 @@ struct point_in_polygon_functor {
     if (results->size() == 0) { return results; }
 
     auto points_begin =
-      cuspatial::make_cartesian_2d_iterator(test_points_x.begin<T>(), test_points_y.begin<T>());
+      cuspatial::make_vec_2d_iterator(test_points_x.begin<T>(), test_points_y.begin<T>());
     auto polygon_offsets_begin = poly_offsets.begin<cudf::size_type>();
     auto ring_offsets_begin    = poly_ring_offsets.begin<cudf::size_type>();
     auto polygon_points_begin =
-      cuspatial::make_cartesian_2d_iterator(poly_points_x.begin<T>(), poly_points_y.begin<T>());
+      cuspatial::make_vec_2d_iterator(poly_points_x.begin<T>(), poly_points_y.begin<T>());
     auto results_begin = results->mutable_view().begin<int32_t>();
 
     cuspatial::point_in_polygon(points_begin,

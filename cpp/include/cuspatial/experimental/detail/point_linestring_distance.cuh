@@ -89,10 +89,10 @@ void __global__ pairwise_point_linestring_distance(Cart2dItA points_first,
     // Note that the last point for the last linestring is guarded by the grid-stride loop.
     if (offsets_iter != linestring_offsets_last and *offsets_iter - 1 == idx) { continue; }
 
-    auto point_idx = thrust::distance(linestring_offsets_first, thrust::prev(offsets_iter));
-    cartesian_2d<T> const a = linestring_points_first[idx];
-    cartesian_2d<T> const b = linestring_points_first[idx + 1];
-    cartesian_2d<T> const c = points_first[point_idx];
+    auto point_idx    = thrust::distance(linestring_offsets_first, thrust::prev(offsets_iter));
+    vec_2d<T> const a = linestring_points_first[idx];
+    vec_2d<T> const b = linestring_points_first[idx + 1];
+    vec_2d<T> const c = points_first[point_idx];
 
     auto const distance_squared = point_to_segment_distance_squared(c, a, b);
 
@@ -117,10 +117,10 @@ void pairwise_point_linestring_distance(Cart2dItA points_first,
   static_assert(detail::is_same_floating_point<T, detail::iterator_vec_base_type<Cart2dItB>>(),
                 "Inputs must have same floating point value type.");
 
-  static_assert(detail::is_same<cartesian_2d<T>,
+  static_assert(detail::is_same<vec_2d<T>,
                                 detail::iterator_value_type<Cart2dItA>,
                                 detail::iterator_value_type<Cart2dItB>>(),
-                "Inputs must be cuspatial::cartesian_2d");
+                "Inputs must be cuspatial::vec_2d<T>");
 
   auto const num_pairs = thrust::distance(points_first, points_last);
 
