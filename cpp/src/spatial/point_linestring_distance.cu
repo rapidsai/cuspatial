@@ -35,8 +35,8 @@
 #include <memory>
 #include <type_traits>
 
+#include "../utility/double_boolean_dispatch.hpp"
 #include "../utility/iterator.hpp"
-#include "../utility/multigeom_dispatch.hpp"
 
 namespace cuspatial {
 
