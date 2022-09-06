@@ -20,6 +20,32 @@
 
 namespace cuspatial {
 
+/**
+ * @brief
+ *
+ * @tparam Cart2dItA
+ * @tparam Cart2dItB
+ * @tparam OffsetIteratorA
+ * @tparam OffsetIteratorB
+ * @tparam OffsetIteratorC
+ * @tparam OutputIt
+ * @param points_geometry_offsets_first
+ * @param points_geometry_offsets_last
+ * @param points_first
+ * @param points_last
+ * @param linestring_geometry_offsets_first
+ * @param linestring_part_offsets_first
+ * @param linestring_part_offsets_last
+ * @param linestring_points_first
+ * @param linestring_points_last
+ * @param output_first Output iterator to a 3-tuple array. The first element should be compatible
+ * with iterator_value_type<OffsetIteratorB>, stores the geometry index of the neareast linestring.
+ * The second element should be compatible with iterator_value_type<OffsetIteratorC>, stores the
+ * part index of the nearest segment. The third element should be compatible with vec_2d, stores the
+ * nearest point.
+ * @param stream
+ * @return
+ */
 template <class Cart2dItA,
           class Cart2dItB,
           class OffsetIteratorA,
@@ -27,16 +53,16 @@ template <class Cart2dItA,
           class OffsetIteratorC,
           class OutputIt>
 OutputIt pairwise_point_linestring_nearest_point(
-  OffsetIteratorA points_parts_offsets_first,
-  OffsetIteratorA points_parts_offsets_last,
+  OffsetIteratorA points_geometry_offsets_first,
+  OffsetIteratorA points_geometry_offsets_last,
   Cart2dItA points_first,
   Cart2dItA points_last,
-  OffsetIteratorB linestring_parts_offsets_first,
-  OffsetIteratorC linestring_offsets_first,
-  OffsetIteratorC linestring_offsets_last,
+  OffsetIteratorB linestring_geometry_offsets_first,
+  OffsetIteratorC linestring_part_offsets_first,
+  OffsetIteratorC linestring_part_offsets_last,
   Cart2dItB linestring_points_first,
   Cart2dItB linestring_points_last,
-  OutputIt part_idx_segment_idx_nearest_point_first,
+  OutputIt output_first,
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial
 
