@@ -23,6 +23,18 @@
 namespace cuspatial {
 namespace detail {
 
+/**
+ * @brief Returns the iterator to the offsets of the geometries
+ *
+ * The libcuspatial header only API accepts only multi-geometry types. This
+ * function returns the iterator to the offsets of the geometries for both
+ * single and multi-geometry types for the column API. If the input is a
+ * single geometry type, a counting iterator is returned to indicate that each
+ * multi-geometry input to the header only API contains only 1 geometry.
+ *
+ * @tparam has_value boolean to indicate whether the input contains a geometry
+ * offset vector.
+ */
 template <bool has_value>
 struct get_geometry_iterator_functor;
 
