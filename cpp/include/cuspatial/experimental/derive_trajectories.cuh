@@ -17,7 +17,7 @@
 #pragma once
 
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/device_vector.hpp>
+#include <rmm/device_uvector.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <iterator>
@@ -60,7 +60,7 @@ namespace cuspatial {
  * @param stream the CUDA stream on which to perform computations and allocate memory.
  * @param mr optional resource to use for output device memory allocations
  *
- * @return a unique_ptr to a device_vector containing the offset index of the first object of each
+ * @return a unique_ptr to a device_uvector containing the offset index of the first object of each
  * trajectory in the sorted output. These offsets can be used to access the sorted output data.
  *
  * @pre There must be no overlap between any of the input and output ranges.
@@ -77,7 +77,7 @@ template <typename IdInputIt,
           typename PointOutputIt,
           typename TimestampOutputIt,
           typename OffsetType = std::int32_t>
-std::unique_ptr<rmm::device_vector<OffsetType>> derive_trajectories(
+std::unique_ptr<rmm::device_uvector<OffsetType>> derive_trajectories(
   IdInputIt ids_first,
   IdInputIt ids_last,
   PointInputIt points_first,

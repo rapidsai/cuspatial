@@ -106,7 +106,7 @@ template <typename IdInputIt,
           typename PointOutputIt,
           typename TimestampOutputIt,
           typename OffsetType>
-std::unique_ptr<rmm::device_vector<OffsetType>> derive_trajectories(
+std::unique_ptr<rmm::device_uvector<OffsetType>> derive_trajectories(
   IdInputIt ids_first,
   IdInputIt ids_last,
   PointInputIt points_first,
@@ -137,8 +137,7 @@ std::unique_ptr<rmm::device_vector<OffsetType>> derive_trajectories(
                                        lengths.begin());
 
   auto const num_trajectories = std::distance(lengths.begin(), grouped.second);
-  auto offsets                = std::make_unique<rmm::device_vector<OffsetType>>(
-    num_trajectories, rmm::mr::thrust_allocator<OffsetType>(stream, mr));
+  auto offsets = std::make_unique<rmm::device_uvector<OffsetType>>(num_trajectories, stream, mr);
 
   thrust::exclusive_scan(rmm::exec_policy(stream),
                          lengths.begin(),

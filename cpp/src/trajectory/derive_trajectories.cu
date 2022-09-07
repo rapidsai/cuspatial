@@ -66,9 +66,12 @@ struct derive_trajectories_dispatch {
                                        stream,
                                        mr);
 
-    auto result_table   = std::make_unique<cudf::table>(std::move(cols));
-    auto offsets_column = std::make_unique<cudf::column>(cudf::column_view(
-      cudf::data_type(cudf::type_id::INT32), offsets->size(), offsets->data().get()));
+    auto result_table = std::make_unique<cudf::table>(std::move(cols));
+
+    auto num_trajectories = offsets->size();
+
+    auto offsets_column = std::make_unique<cudf::column>(
+      cudf::data_type{cudf::type_id::INT32}, num_trajectories, offsets->release());
 
     return {std::move(result_table), std::move(offsets_column)};
   }
