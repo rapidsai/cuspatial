@@ -308,14 +308,6 @@ bounding_boxes = cuspatial.trajectory.trajectory_bounding_boxes(
   trajectories['ys']
 )
    
-  
-
-  
-
-
-               trajectory.py   # derive, distances and speeds, and bounding boxes
-
-
 ## Spatial utilities
 
 
