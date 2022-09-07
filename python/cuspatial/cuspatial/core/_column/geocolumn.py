@@ -40,12 +40,12 @@ class GeoColumn(ColumnBase):
             have already been computed in the `read_polygon_shapefile`
             function. In order to convert it into an arrow list<...>
             we need a set of offsets buffers for each point tuple, and
-            an offsets buffer for each individual point.
+            an offsets buffer for the 1-offset multipolygons.
 
             Coordinates: List of length 2 offsets: [0, 2, 4, ... n/2]
-            Points: List of length 1 offsets: No multipoints
             Rings: List of polygon ring offsets
             Polygons: Offset into rings of each polygon
+            Multipolygons: List of length 1 offsets: No multipolygons
 
             Finally, each set of offsets must have the length of the
             array appended to the end, as Arrow offset lists are length
@@ -65,29 +65,13 @@ class GeoColumn(ColumnBase):
             ...
             Up to the size of the original input.
             """
-            coordinate_offsets = cudf.concat(
-                [
-                    cudf.Series(
-                        cp.arange(len(coordinates) // 2) * 2, dtype="int32"
-                    ),
-                    cudf.Series([len(coordinates) // 2 * 2], dtype="int32"),
-                ]
-            ).reset_index(drop=True)
-            """
-            Store a points offset buffer: 0 - n
-            """
-            point_offsets = cudf.concat(
-                [
-                    cudf.Series(
-                        cp.arange(len(coordinates) // 2), dtype="int32"
-                    ),
-                    cudf.Series([len(coordinates) // 2 - 1], dtype="int32"),
-                ]
-            ).reset_index(drop=True)
+            coordinate_offsets = cudf.Series(
+                cp.arange(len(coordinates) + 1, step=2), dtype="int32"
+            )
             rings_offsets = cudf.concat(
                 [
                     cudf.Series(rings_col),
-                    cudf.Series([len(point_offsets) - 1], dtype="int32"),
+                    cudf.Series([len(coordinate_offsets) - 1], dtype="int32"),
                 ]
             ).reset_index(drop=True)
             polygons_offsets = cudf.concat(
@@ -101,20 +85,20 @@ class GeoColumn(ColumnBase):
                 dtype=cudf.ListDtype(coordinates.dtype),
                 children=(coordinate_offsets._column, coordinates._column),
             )
-            points = cudf.core.column.ListColumn(
+            rings = cudf.core.column.ListColumn(
                 size=len(rings_offsets) - 1,
                 dtype=cudf.ListDtype(coords.dtype),
                 children=(rings_offsets._column, coords),
             )
-            rings = cudf.core.column.ListColumn(
-                size=len(polygons_offsets) - 1,
-                dtype=cudf.ListDtype(points.dtype),
-                children=(polygons_offsets._column, points),
-            )
-            parent = cudf.core.column.ListColumn(
+            polygons = cudf.core.column.ListColumn(
                 size=len(polygons_offsets) - 1,
                 dtype=cudf.ListDtype(rings.dtype),
                 children=(polygons_offsets._column, rings),
+            )
+            mpolygons = cudf.core.column.ListColumn(
+                size=len(polygons_offsets) - 1,
+                dtype=cudf.ListDtype(polygons.dtype),
+                children=(polygons_offsets._column, polygons),
             )
             self.points = cudf.Series([])
             self.points.name = "points"
@@ -122,7 +106,7 @@ class GeoColumn(ColumnBase):
             self.mpoints.name = "mpoints"
             self.lines = cudf.Series([])
             self.lines.name = "lines"
-            self.polygons = cudf.Series(parent)
+            self.polygons = cudf.Series(mpolygons)
             self.polygons.name = "polygons"
             self._meta = meta
 

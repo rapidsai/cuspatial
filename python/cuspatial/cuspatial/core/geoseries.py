@@ -122,7 +122,7 @@ class GeoSeries(cudf.Series):
             self._series = list_series
             self._col = self._series._column
 
-        def offset_column(self, index):
+        def offset_buffer(self, index):
             if index == 0:
                 return self._col.base_children[0]
             elif index == 1:

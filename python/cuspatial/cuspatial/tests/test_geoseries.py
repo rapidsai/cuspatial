@@ -370,20 +370,6 @@ def test_shapefile_constructor():
     gs.to_file("naturalearth_lowres_polygon")
     data = cuspatial.read_polygon_shapefile("naturalearth_lowres_polygon")
     cus = cuspatial.GeoSeries(data)
-    _cus = cuspatial.from_geopandas(gs)
-    print(
-        (cus.polygons.offset_column(0) == _cus.polygons.offset_column(0)).all()
-    )
-    print(
-        (cus.polygons.offset_column(1) == _cus.polygons.offset_column(1)).all()
-    )
-    print(
-        (cus.polygons.offset_column(2) == _cus.polygons.offset_column(2)).all()
-    )
-    print(
-        (cus.polygons.offset_column(3) == _cus.polygons.offset_column(3)).all()
-    )
-    breakpoint()
     assert_eq_geo(gs.reset_index(drop=True), cus.to_geopandas())
 
 
