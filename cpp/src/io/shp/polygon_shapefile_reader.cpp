@@ -90,9 +90,7 @@ cudf::size_type read_geometry_feature(OGRGeometry const* geometry,
 
   if (geometry_type == wkbPolygon) {
     auto polygon = dynamic_cast<const OGRPolygon*>(geometry);
-    if (polygon == nullptr) {
-      CUSPATIAL_FAIL("Can't cast `wkbPolygon` to `OGRPolygon&`");
-    }
+    if (polygon == nullptr) { CUSPATIAL_FAIL("Can't cast `wkbPolygon` to `OGRPolygon&`"); }
     return read_polygon(*polygon, ring_lengths, xs, ys, ring_order);
   }
 
