@@ -122,6 +122,25 @@ class GeoSeries(cudf.Series):
             self._series = list_series
             self._col = self._series._column
 
+        def offset_column(self, index):
+            if index == 0:
+                return self._col.base_children[0]
+            elif index == 1:
+                return self._col.base_children[1].base_children[0]
+            elif index == 2:
+                return (
+                    self._col.base_children[1]
+                    .base_children[1]
+                    .base_children[0]
+                )
+            elif index == 3:
+                return (
+                    self._col.base_children[1]
+                    .base_children[1]
+                    .base_children[1]
+                    .base_children[0]
+                )
+
         @property
         def x(self):
             return cudf.Series(self._col.leaves().values[0::2])
