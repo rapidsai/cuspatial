@@ -51,7 +51,7 @@ namespace cuspatial {
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-writeable.
  *
  * @param ids_first beginning of the range of input object ids
- * @param ids_first end of the range of input object ids
+ * @param ids_last end of the range of input object ids
  * @param points_first beginning of the range of input point (x,y) coordinates
  * @param timestamps_first beginning of the range of input timestamps
  * @param ids_out_first beginning of the range of output object ids

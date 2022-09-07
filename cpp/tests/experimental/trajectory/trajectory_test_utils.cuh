@@ -39,12 +39,14 @@ namespace test {
 using time_point = std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>;
 
 /* Test data generation for trajectory APIs. Generates num_trajectories trajectories of random
-   size between 1 and max_trajectory_size points. Creates both a reference (sorted) set of
+   size between 1 and max_trajectory_size samples. Creates both a reference (sorted) set of
    trajectory IDs, timestamps, and points, and a shuffled (unsorted) set of the same for test
    input. The sorted data can be input directly into `trajectory_distance_and_speed`, while
    the shuffled data can be input to `derive_trajectories`.
 
-   The times are not random, but do vary somewhat between trajectories and trajectory lenghts.
+   The times are not random, but do vary somewhat between trajectories and trajectory lengths.
+   Each trajectory has a distinct starting time point and trajectory timestamps increase
+   monotonically at each sample. The interval between samples varies within a small range.
 
    Likewise, the positions are not random, but follow a sinusoid pattern based on the time stamps.
 */
@@ -108,7 +110,7 @@ struct trajectory_test_data {
   struct point_functor {
     __device__ cuspatial::vec_2d<T> operator()(time_point const& time, std::int32_t id)
     {
-      // X is time in seconds, Y is cosine(time), offset by ID
+      // X is time in milliseconds, Y is cosine(time), offset by ID
       float duration = (time - time_point{std::chrono::milliseconds(0)}).count();
       return cuspatial::vec_2d<T>{duration / 1000, id + cos(duration)};
     }
