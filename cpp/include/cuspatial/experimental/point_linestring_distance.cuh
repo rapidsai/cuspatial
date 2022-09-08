@@ -30,8 +30,8 @@ namespace cuspatial {
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam Cart2dItB iterator type for point array of the linestring element of each pair. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OffsetIteratorA iterator type for `point_geometry_offset` array. Must meet the requirements
- * of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OffsetIteratorA iterator type for `point_geometry_offset` array. Must meet the
+ * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OffsetIteratorB iterator type for `linestring_geometry_offset` array. Must meet the
  * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OffsetIteratorC iterator type for `linestring_part_offset` array. Must meet the
