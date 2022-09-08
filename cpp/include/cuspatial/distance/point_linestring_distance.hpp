@@ -63,30 +63,30 @@ namespace cuspatial {
  * multipoint_geometry_offsets: {0, 1, 3, 5}
  * points_xy: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
  * multilinestring_geometry_offsets: {0, 2, 3, 5}
- * linestring_offsets: {0, 2, 4, 6, 8}
- * linestring_xy: {0, -1, -2, -3, -4, -5, -5, -6, 7, 8, 8, 9, 9, 10, 10 ,11}
+ * linestring_part_offsets: {0, 2, 4, 6, 8}
+ * linestring_points_xy: {0, -1, -2, -3, -4, -5, -5, -6, 7, 8, 8, 9, 9, 10, 10 ,11}
  *
  * Result: {2.0, 4.24264, 1.41421}
  * ```
  *
- * @param multipoint_geometry_offsets Beginning and ending indices to each geometry in the multi-point
+ * @param multipoint_geometry_offsets Beginning and ending indices to each geometry in the
+ * multi-point
  * @param points_xy Interleaved x, y-coordinates of points
  * @param multilinestring_geometry_offsets Beginning and ending indices to each geometry in the
- multi-linestring
- * @param linestring_part_offsets Beginning and ending indices for each linestring in the
- `linestring_x`
- * and `linestring_y` arrays. Must satisfy `linestring_offsets.size() + 1 == points_xy.size()`.
+ * multi-linestring
+ * @param linestring_part_offsets Beginning and ending indices for each linestring in the point
+ * array. Because the coordinates are interleaved, the actual starting position for the coordinate
+ * of linestring `i` is `2*linestring_part_offsets[i]`.
  * @param linestring_points_xy Interleaved x, y-coordinates of linestring points.
  * @param mr Device memory resource used to allocate the returned column.
  * @return A column containing the distance between each pair of corresponding points and
  * linestrings.
  *
- * @note Any optional geometry indices, if is nullopt, implies the underlying geometry contains only
- one component. Otherwise, it contains multiple components.
+ * @note Any optional geometry indices, if is `nullopt`, implies the underlying geometry contains
+ * only one component. Otherwise, it contains multiple components.
  *
- * @throws cuspatial::logic_error if the number of points and linestrings do not match.
- * @throws cuspatial::logic_error if there is a size mismatch between the x- and y-coordinates of
- * the points or linestring points.
+ * @throws cuspatial::logic_error if the number of (multi)points and (multi)linestrings do not
+ * match.
  * @throws cuspatial::logic_error if the any of the point arrays have mismatched types.
  */
 std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
