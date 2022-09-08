@@ -54,18 +54,18 @@ point_to_segment_distance_squared_nearest_point(vec_2d<T> const& c,
   auto ab        = b - a;
   auto ac        = c - a;
   auto l_squared = dot(ab, ab);
-  if (l_squared == 0) { return thrust::tuple(dot(ac, ac), a); }
+  if (l_squared == 0) { return thrust::make_tuple(dot(ac, ac), a); }
   auto r  = dot(ac, ab);
   auto bc = c - b;
   // If the projection of `c` is outside of segment `ab`, compute point-point distance.
   if (r <= 0 or r >= l_squared) {
     auto dac = dot(ac, ac);
     auto dbc = dot(bc, bc);
-    return dac < dbc ? thrust::tuple(dac, a) : thrust::tuple(dbc, b);
+    return dac < dbc ? thrust::make_tuple(dac, a) : thrust::make_tuple(dbc, b);
   }
   auto p  = a + (r / l_squared) * ab;
   auto pc = c - p;
-  return thrust::tuple(dot(pc, pc), p);
+  return thrust::make_tuple(dot(pc, pc), p);
 }
 
 /**
