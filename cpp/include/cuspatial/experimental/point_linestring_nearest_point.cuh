@@ -46,8 +46,8 @@ namespace cuspatial {
  * @param stream
  * @return
  */
-template <class Cart2dItA,
-          class Cart2dItB,
+template <class Vec2dItA,
+          class Vec2dItB,
           class OffsetIteratorA,
           class OffsetIteratorB,
           class OffsetIteratorC,
@@ -55,13 +55,13 @@ template <class Cart2dItA,
 OutputIt pairwise_point_linestring_nearest_point(
   OffsetIteratorA points_geometry_offsets_first,
   OffsetIteratorA points_geometry_offsets_last,
-  Cart2dItA points_first,
-  Cart2dItA points_last,
+  Vec2dItA points_first,
+  Vec2dItA points_last,
   OffsetIteratorB linestring_geometry_offsets_first,
   OffsetIteratorC linestring_part_offsets_first,
   OffsetIteratorC linestring_part_offsets_last,
-  Cart2dItB linestring_points_first,
-  Cart2dItB linestring_points_last,
+  Vec2dItB linestring_points_first,
+  Vec2dItB linestring_points_last,
   OutputIt output_first,
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial

@@ -38,8 +38,8 @@ namespace detail {
 /**
  * @internal
  */
-template <class Cart2dItA,
-          class Cart2dItB,
+template <class Vec2dItA,
+          class Vec2dItB,
           class OffsetIteratorA,
           class OffsetIteratorB,
           class OffsetIteratorC,
@@ -47,18 +47,18 @@ template <class Cart2dItA,
 void __global__
 pairwise_point_linestring_nearest_point_kernel(OffsetIteratorA points_geometry_offsets_first,
                                                OffsetIteratorA points_geometry_offsets_last,
-                                               Cart2dItA points_first,
-                                               Cart2dItA points_last,
+                                               Vec2dItA points_first,
+                                               Vec2dItA points_last,
                                                OffsetIteratorB linestring_geometry_offsets_first,
                                                OffsetIteratorB linestring_geometry_offsets_last,
                                                OffsetIteratorC linestring_part_offsets_first,
                                                OffsetIteratorC linestring_part_offsets_last,
-                                               Cart2dItB linestring_points_first,
-                                               Cart2dItB linestring_points_last,
+                                               Vec2dItB linestring_points_first,
+                                               Vec2dItB linestring_points_last,
                                                OutputIt output_first)
 {
-  using T       = iterator_vec_base_type<Cart2dItA>;
-  using Integer = iterator_value_type<OffsetIteratorA>;
+  using T        = iterator_vec_base_type<Vec2dItA>;
+  using SizeType = iterator_value_type<OffsetIteratorA>;
 
   auto num_pairs =
     thrust::distance(points_geometry_offsets_first, points_geometry_offsets_last) - 1;
@@ -66,14 +66,14 @@ pairwise_point_linestring_nearest_point_kernel(OffsetIteratorA points_geometry_o
 
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < num_pairs;
        idx += gridDim.x * blockDim.x) {
-    Integer nearest_part_idx;
-    Integer nearest_segment_idx;
+    SizeType nearest_part_idx;
+    SizeType nearest_segment_idx;
     vec_2d<T> nearest_point;
     for (auto point_idx = points_geometry_offsets_first[idx];
          point_idx < points_geometry_offsets_first[idx + 1];
          point_idx++) {
-      Integer linestring_parts_start = linestring_geometry_offsets_first[idx];
-      Integer linestring_parts_end   = linestring_geometry_offsets_first[idx + 1];
+      SizeType linestring_parts_start = linestring_geometry_offsets_first[idx];
+      SizeType linestring_parts_end   = linestring_geometry_offsets_first[idx + 1];
 
       T min_distance_squared = std::numeric_limits<T>::max();
 
@@ -98,33 +98,44 @@ pairwise_point_linestring_nearest_point_kernel(OffsetIteratorA points_geometry_o
     }
     output_first[idx] = thrust::make_tuple(nearest_part_idx, nearest_segment_idx, nearest_point);
   }
+}
 
 }  // namespace detail
 
-template <class Cart2dItA,
-          class Cart2dItB,
+template <class Vec2dItA,
+          class Vec2dItB,
           class OffsetIteratorA,
           class OffsetIteratorB,
           class OffsetIteratorC,
           class OutputIt>
 OutputIt pairwise_point_linestring_nearest_point(OffsetIteratorA points_geometry_offsets_first,
                                                  OffsetIteratorA points_geometry_offsets_last,
-                                                 Cart2dItA points_first,
-                                                 Cart2dItA points_last,
+                                                 Vec2dItA points_first,
+                                                 Vec2dItA points_last,
                                                  OffsetIteratorB linestring_geometry_offsets_first,
                                                  OffsetIteratorC linestring_part_offsets_first,
                                                  OffsetIteratorC linestring_part_offsets_last,
-                                                 Cart2dItB linestring_points_first,
-                                                 Cart2dItB linestring_points_last,
+                                                 Vec2dItB linestring_points_first,
+                                                 Vec2dItB linestring_points_last,
                                                  OutputIt output_first,
                                                  rmm::cuda_stream_view stream)
 {
-  using T = typename std::iterator_traits<Cart2dItA>::value_type::value_type;
+  using T = detail::iterator_vec_base_type<Vec2dItA>;
+
+  static_assert(detail::is_same_floating_point<T, detail::iterator_vec_base_type<Vec2dItB>>(),
+                "Coordinates must be the same floating point type.");
+
+  static_assert(detail::is_same<vec_2d<T>,
+                                detail::iterator_value_type<Vec2dItA>,
+                                detail::iterator_value_type<Vec2dItB>>(),
+                "Inputs must be cuspatial::vec_2d<T>");
 
   auto num_pairs = std::distance(points_geometry_offsets_first, points_geometry_offsets_last) - 1;
 
-  auto constexpr threads_per_block = 256;
-  auto num_blocks                  = (num_pairs + threads_per_block - 1) / threads_per_block;
+  if (num_pairs == 0) return output_first;
+
+  std::size_t constexpr threads_per_block = 256;
+  std::size_t const num_blocks            = (num_pairs + threads_per_block - 1) / threads_per_block;
 
   detail::pairwise_point_linestring_nearest_point_kernel<<<num_blocks,
                                                            threads_per_block,
