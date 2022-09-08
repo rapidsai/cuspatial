@@ -36,10 +36,10 @@ namespace cuspatial {
  * Linestring: (0, 0) -> (1, 1) -> (2, 0) -> (3, 0) -> (3, 1)
  *
  * The input of the above example is:
- * point_part_offsets: nullopt
+ * multipoint_geometry_offsets: nullopt
  * points_xy: {0, 1, 0, 1}
- * linestring_part_offsets: nullopt
- * linestring_offsets: {0, 3, 8}
+ * multilinestring_geometry_offsets: nullopt
+ * linestring_part_offsets: {0, 3, 8}
  * linestring_xy: {0, 1, 1, 0, 2, 0, 0, 0, 1, 1, 2, 0, 3, 0, 3, 1}
  *
  * Result: {sqrt(2)/2, 0}
@@ -69,9 +69,9 @@ namespace cuspatial {
  * Result: {2.0, 4.24264, 1.41421}
  * ```
  *
- * @param multipoint_geometry_offsets Beginning indices to each geometry in the multi-point
+ * @param multipoint_geometry_offsets Beginning and ending indices to each geometry in the multi-point
  * @param points_xy Interleaved x, y-coordinates of points
- * @param multilinestring_geometry_offsets Beginning indices to each geometry in the
+ * @param multilinestring_geometry_offsets Beginning and ending indices to each geometry in the
  multi-linestring
  * @param linestring_part_offsets Beginning and ending indices for each linestring in the
  `linestring_x`
