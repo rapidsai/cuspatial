@@ -78,9 +78,11 @@ pairwise_point_linestring_nearest_point_kernel(OffsetIteratorA points_geometry_o
       T min_distance_squared = std::numeric_limits<T>::max();
 
       for (auto part_idx = linestring_parts_start; part_idx < linestring_parts_end; part_idx++) {
-        for (auto segment_idx = linestring_part_offsets_first[part_idx];
-             segment_idx < linestring_part_offsets_first[part_idx + 1];
-             segment_idx++) {
+        SizeType segment_start = linestring_part_offsets_first[part_idx];
+        // The last point of the linestring does not form a segment
+        SizeType segment_end = linestring_part_offsets_first[part_idx + 1] - 1;
+
+        for (auto segment_idx = segment_start; segment_idx < segment_end; segment_idx++) {
           vec_2d<T> c = points_first[point_idx];
           vec_2d<T> a = linestring_points_first[segment_idx];
           vec_2d<T> b = linestring_points_first[segment_idx + 1];
@@ -90,8 +92,8 @@ pairwise_point_linestring_nearest_point_kernel(OffsetIteratorA points_geometry_o
           if (distance_squared < min_distance_squared) {
             min_distance_squared = distance_squared;
             nearest_point        = thrust::get<1>(distance_point_pair);
-            nearest_part_idx     = part_idx;
-            nearest_segment_idx  = segment_idx;
+            nearest_part_idx     = part_idx - linestring_parts_start;
+            nearest_segment_idx  = segment_idx - segment_start;
           }
         }
       }
