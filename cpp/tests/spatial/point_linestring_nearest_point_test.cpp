@@ -1,0 +1,160 @@
+/*
+ * Copyright (c) 2022, NVIDIA CORPORATION.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <cuspatial/error.hpp>
+#include <cuspatial/point_linestring_nearest_point.hpp>
+#include <cuspatial/vec_2d.hpp>
+
+#include <cudf_test/column_utilities.hpp>
+#include <cudf_test/column_wrapper.hpp>
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+namespace cuspatial {
+
+using namespace cudf;
+using namespace cudf::test;
+
+template <typename T>
+struct PairwisePointLinestringNearestPointTest : public ::testing::Test {
+};
+
+using TestTypes = ::testing::Types<float, double>;
+
+TYPED_TEST_CASE(PairwisePointLinestringNearestPointTest, TestTypes);
+
+TYPED_TEST(PairwisePointLinestringNearestPointTest, Empty)
+{
+  using T = TypeParam;
+
+  auto xy      = fixed_width_column_wrapper<T>{};
+  auto offset  = fixed_width_column_wrapper<size_type>{0};
+  auto line_xy = fixed_width_column_wrapper<T>{};
+
+  auto [point_idx, linestring_idx, segment_idx, nearest_points] =
+    pairwise_point_linestring_nearest_points(
+      std::nullopt, xy, std::nullopt, column_view(offset), line_xy);
+
+  auto expect_segment_idx    = fixed_width_column_wrapper<size_type>{};
+  auto expect_nearest_points = fixed_width_column_wrapper<T>{};
+
+  EXPECT_EQ(point_idx, std::nullopt);
+  EXPECT_EQ(linestring_idx, std::nullopt);
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_segment_idx, *segment_idx);
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_nearest_points, *nearest_points);
+}
+
+TYPED_TEST(PairwisePointLinestringNearestPointTest, SinglePointMultiLineString)
+{
+  using T = TypeParam;
+
+  auto xy            = fixed_width_column_wrapper<T>{0.0, 0.0};
+  auto line_geometry = fixed_width_column_wrapper<size_type>{0, 2};
+  auto line_offset   = fixed_width_column_wrapper<size_type>{0, 3, 5};
+  auto line_xy = fixed_width_column_wrapper<T>{1.0, 1.0, 2.0, 2.0, 2.5, 1.3, -1.0, -3.6, -0.8, 1.0};
+
+  auto [point_idx, linestring_idx, segment_idx, nearest_points] =
+    pairwise_point_linestring_nearest_points(
+      std::nullopt, xy, column_view(line_geometry), column_view(line_offset), line_xy);
+
+  auto expect_linestring_idx = fixed_width_column_wrapper<size_type>{1};
+  auto expect_segment_idx    = fixed_width_column_wrapper<size_type>{0};
+  auto expect_nearest_points =
+    fixed_width_column_wrapper<T>{-0.8418867924528302, 0.03660377358490541};
+
+  EXPECT_EQ(point_idx, std::nullopt);
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_linestring_idx, *(linestring_idx.value()));
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_segment_idx, *segment_idx);
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_nearest_points, *nearest_points);
+}
+
+TYPED_TEST(PairwisePointLinestringNearestPointTest, MultiPointSingleLineString)
+{
+  using T = TypeParam;
+
+  auto point_geometry = fixed_width_column_wrapper<size_type>{0, 2};
+  auto xy             = fixed_width_column_wrapper<T>{0.5, 0.5, 0.5, 0.0};
+  auto line_offset    = fixed_width_column_wrapper<size_type>{0, 4};
+  auto line_xy        = fixed_width_column_wrapper<T>{0.0, 2.0, 2.0, 0.0, 0.0, -2.0, -2.0, 0.0};
+
+  auto [point_idx, linestring_idx, segment_idx, nearest_points] =
+    pairwise_point_linestring_nearest_points(
+      column_view(point_geometry), xy, std::nullopt, column_view(line_offset), line_xy);
+
+  auto expect_point_idx      = fixed_width_column_wrapper<size_type>{0};
+  auto expect_segment_idx    = fixed_width_column_wrapper<size_type>{0};
+  auto expect_nearest_points = fixed_width_column_wrapper<T>{1.0, 1.0};
+
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_point_idx, *(point_idx.value()));
+  EXPECT_EQ(linestring_idx, std::nullopt);
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_segment_idx, *segment_idx);
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_nearest_points, *nearest_points);
+}
+
+TYPED_TEST(PairwisePointLinestringNearestPointTest, MultiPointMultiLineString)
+{
+  using T = TypeParam;
+
+  auto point_geometry = fixed_width_column_wrapper<size_type>{0, 2};
+  auto xy             = fixed_width_column_wrapper<T>{-0.5, 0.0, -0.5, 0.5};
+  auto line_geometry  = fixed_width_column_wrapper<size_type>{0, 2};
+  auto line_offset    = fixed_width_column_wrapper<size_type>{0, 3, 6};
+  auto line_xy =
+    fixed_width_column_wrapper<T>{2.0, 2.0, 0.0, 0.0, 2.0, -2.0, -2.0, 2.0, 0.0, 0.0, -2.0, -2.0};
+
+  auto [point_idx, linestring_idx, segment_idx, nearest_points] =
+    pairwise_point_linestring_nearest_points(column_view(point_geometry),
+                                             xy,
+                                             column_view(line_geometry),
+                                             column_view(line_offset),
+                                             line_xy);
+
+  auto expect_point_idx      = fixed_width_column_wrapper<size_type>{0};
+  auto expect_linestring_idx = fixed_width_column_wrapper<size_type>{1};
+  auto expect_segment_idx    = fixed_width_column_wrapper<size_type>{0};
+  auto expect_nearest_points = fixed_width_column_wrapper<T>{-0.25, 0.25};
+
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_point_idx, *(point_idx.value()));
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_linestring_idx, *(linestring_idx.value()));
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_segment_idx, *segment_idx);
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_nearest_points, *nearest_points);
+}
+
+// struct PairwisePointLinestringNearestPointThrowTest : public ::testing::Test {
+// };
+
+// TEST_F(PairwisePointLinestringNearestPointThrowTest, PointTypeMismatch)
+// {
+//   auto xy      = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3};
+//   auto offset  = fixed_width_column_wrapper<size_type>{0, 6};
+//   auto line_xy = fixed_width_column_wrapper<double>{1, 1, 2, 2, 3, 3};
+
+//   EXPECT_THROW(pairwise_point_linestring_distance(xy, column_view(offset), line_xy),
+//                cuspatial::logic_error);
+// }
+
+// TEST_F(PairwisePointLinestringNearestPointThrowTest, ContainsNull)
+// {
+//   auto xy      = fixed_width_column_wrapper<float>{{1, 1, 2, 2, 3, 3}, {1, 0, 1, 1, 1, 1}};
+//   auto offset  = fixed_width_column_wrapper<size_type>{0, 6};
+//   auto line_xy = fixed_width_column_wrapper<float>{1, 2, 3, 1, 2, 3};
+
+//   EXPECT_THROW(pairwise_point_linestring_distance(xy, column_view(offset), line_xy),
+//                cuspatial::logic_error);
+// }
+
+}  // namespace cuspatial
