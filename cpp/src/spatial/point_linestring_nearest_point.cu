@@ -80,10 +80,13 @@ struct launch_functor {
                                 stream,
                                 mr);
 
-    auto nearest_points_xy = cudf::make_numeric_column(
-      cudf::data_type{cudf::type_to_id<T>()}, num_pairs, cudf::mask_state::UNALLOCATED, stream, mr);
+    auto nearest_points_xy = cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<T>()},
+                                                       num_pairs * 2,
+                                                       cudf::mask_state::UNALLOCATED,
+                                                       stream,
+                                                       mr);
     auto nearest_points_it =
-      interleaved_iterator_to_vec_2d_iterator(nearest_points_xy->view().begin<T>());
+      vec_2d_iterator_to_output_interleaved_iterator(nearest_points_xy->mutable_view().begin<T>());
 
     if constexpr (!is_multi_point && !is_multi_linestring) {
       auto output_its = thrust::make_zip_iterator(
@@ -93,7 +96,7 @@ struct launch_functor {
                            nearest_points_it));
 
       pairwise_point_linestring_nearest_point(point_geometry_it,
-                                              point_geometry_it + num_pairs,
+                                              point_geometry_it + num_pairs + 1,
                                               points_it,
                                               points_it + num_points,
                                               linestring_geometry_it,
@@ -120,7 +123,7 @@ struct launch_functor {
                            nearest_points_it));
 
       pairwise_point_linestring_nearest_point(point_geometry_it,
-                                              point_geometry_it + num_pairs,
+                                              point_geometry_it + num_pairs + 1,
                                               points_it,
                                               points_it + num_points,
                                               linestring_geometry_it,
@@ -149,7 +152,7 @@ struct launch_functor {
                            nearest_points_it));
 
       pairwise_point_linestring_nearest_point(point_geometry_it,
-                                              point_geometry_it + num_pairs,
+                                              point_geometry_it + num_pairs + 1,
                                               points_it,
                                               points_it + num_points,
                                               linestring_geometry_it,
@@ -184,7 +187,7 @@ struct launch_functor {
                            nearest_points_it));
 
       pairwise_point_linestring_nearest_point(point_geometry_it,
-                                              point_geometry_it + num_pairs,
+                                              point_geometry_it + num_pairs + 1,
                                               points_it,
                                               points_it + num_points,
                                               linestring_geometry_it,
