@@ -55,6 +55,7 @@ namespace cuspatial {
  * @param linestring_points_last end of the range of linestring points
  * @param distances_first beginning of the output range of distances
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
+ * @return Output iterator to the element past the last tuple computed.
  *
  * @pre all input iterators for coordinates must have `cuspatial::vec_2d` type.
  * @pre all scalar types must be floating point types, and must be the same type for all input

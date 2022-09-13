@@ -36,9 +36,9 @@ namespace cuspatial {
  * has the shortest distance in all pairs of points and linestrings.
  *
  * In addition, this API returns the geometry and part ID where the nearest point locates.
- * - The point id in a multipoint indicates which point is the nearest point.
- * - The linestring id in a multilinestring indicates which linestring the nearest point locates
- * - The segment id in a linestring indicates which segment the nearest point locates. It is
+ * - The point id indicates which point in the multipoint is the nearest point.
+ * - The linestring id is the intra-offset to the linestring that nearest point locates
+ * - The segment id is the intra-offset to the segment that nearest point locates. It is
  *   the same as the id to the starting point of the segment.
  *
  * @note When the test point is not a multipoint, the nearest point id is omitted.

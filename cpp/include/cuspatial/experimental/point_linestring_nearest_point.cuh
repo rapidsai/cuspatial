@@ -21,30 +21,64 @@
 namespace cuspatial {
 
 /**
- * @brief
+ * @brief Compute the nearest points and geometry id between a pair of (multi)point and
+ * (multi)linestring
  *
- * @tparam Cart2dItA
- * @tparam Cart2dItB
- * @tparam OffsetIteratorA
- * @tparam OffsetIteratorB
- * @tparam OffsetIteratorC
- * @tparam OutputIt
- * @param points_geometry_offsets_first
- * @param points_geometry_offsets_last
- * @param points_first
- * @param points_last
- * @param linestring_geometry_offsets_first
- * @param linestring_part_offsets_first
- * @param linestring_part_offsets_last
- * @param linestring_points_first
- * @param linestring_points_last
- * @param output_first Output iterator to a 3-tuple array. The first element should be compatible
- * with iterator_value_type<OffsetIteratorB>, stores the geometry index of the neareast linestring.
- * The second element should be compatible with iterator_value_type<OffsetIteratorC>, stores the
- * part index of the nearest segment. The third element should be compatible with vec_2d, stores the
- * nearest point.
- * @param stream
- * @return
+ * The nearest point from a test point to a linestring is a point on the linestring that has
+ * the shortest distance to the test point compared to any other points on the linestring.
+ *
+ * The nearest point from a test multipoint to a multilinestring is the nearest point that
+ * has the shortest distance in all pairs of points and linestrings.
+ *
+ * In addition, this API writes these geometry and part ID where the nearest point locates to output
+ * iterators:
+ * - The point id indicates which point in the multipoint is the nearest point.
+ * - The linestring id is the intra-offset to the linestring that nearest point locates
+ * - The segment id is the intra-offset to the segment that nearest point locates. It is
+ *   the same as the id to the starting point of the segment.
+ *
+ * @tparam Cart2dItA iterator type for point array of the point element of each pair. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam Cart2dItB iterator type for point array of the linestring element of each pair. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OffsetIteratorA iterator type for `point_geometry_offset` array. Must meet the
+ * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OffsetIteratorB iterator type for `linestring_geometry_offset` array. Must meet the
+ * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OffsetIteratorC iterator type for `linestring_part_offset` array. Must meet the
+ * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OutputIt iterator type for output array. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @param point_geometry_offset_first beginning of the range of multipoint geometries of each
+ * pair
+ * @param point_geometry_offset_last end of the range of multipoint geometries of each pair
+ * @param points_first beginning of the range of point values
+ * @param points_last end of the range of the point values
+ * @param linestring_geometry_offset_first beginning of the range of offsets to the multilinestring
+ * geometry of each pair, the end range is implied by linestring_geometry_offset_first +
+ * std::distance(`point_geometry_offset_first`, `point_geometry_offset_last`)
+ * @param linestring_offsets_first beginning of the range of offsets to the starting point
+ * of each linestring
+ * @param linestring_offsets_last end of the range of offsets to the starting point
+ * of each linestring
+ * @param linestring_points_first beginning of the range of linestring points
+ * @param linestring_points_last end of the range of linestring points
+ * @param output_first A zipped-iterator of 4 outputs. The first element should be compatible
+ * with iterator_value_type<OffsetIteratorA>, stores the geometry id of the nearest point in
+ * multipoint. The second element should be compatible with iterator_value_type<OffsetIteratorB>,
+ * stores the geometry id of the nearest linestring. The third element should be compatible with
+ * iterator_value_type<OffsetIteratorC>, stores the part id to the nearest segment. The forth
+ * element should be compatible with vec_2d, stores the coordinate of the nearest point on the
+ * (multi)linestring.
+ * @param stream The CUDA stream to use for device memory operations and kernel launches.
+ * @return Output iterator to the element past the last tuple computed.
+ *
+ * @pre all input iterators for coordinates must have `cuspatial::vec_2d` type.
+ * @pre all scalar types must be floating point types, and must be the same type for all input
+ * iterators and output iterators.
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
  */
 template <class Vec2dItA,
           class Vec2dItB,
