@@ -71,13 +71,12 @@ pairwise_point_linestring_nearest_point_kernel(OffsetIteratorA points_geometry_o
     SizeType nearest_segment_idx;
     vec_2d<T> nearest_point;
 
-    SizeType point_start = points_geometry_offsets_first[idx];
-    SizeType point_end   = points_geometry_offsets_first[idx + 1];
+    T min_distance_squared = std::numeric_limits<T>::max();
+    SizeType point_start   = points_geometry_offsets_first[idx];
+    SizeType point_end     = points_geometry_offsets_first[idx + 1];
     for (auto point_idx = point_start; point_idx < point_end; point_idx++) {
       SizeType linestring_parts_start = linestring_geometry_offsets_first[idx];
       SizeType linestring_parts_end   = linestring_geometry_offsets_first[idx + 1];
-
-      T min_distance_squared = std::numeric_limits<T>::max();
 
       for (auto part_idx = linestring_parts_start; part_idx < linestring_parts_end; part_idx++) {
         SizeType segment_start = linestring_part_offsets_first[part_idx];
