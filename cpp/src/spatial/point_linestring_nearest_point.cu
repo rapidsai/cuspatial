@@ -85,7 +85,7 @@ struct launch_functor {
     auto nearest_points_it =
       interleaved_iterator_to_vec_2d_iterator(nearest_points_xy->view().begin<T>());
 
-    if (!is_multipoint && !is_multilinestring) {
+    if constexpr (!is_multipoint && !is_multilinestring) {
       auto output_its = thrust::make_zip_iterator(
         thrust::make_tuple(thrust::make_discard_iterator(),
                            thrust::make_discard_iterator(),
@@ -106,7 +106,7 @@ struct launch_functor {
 
       return std::tuple(
         std::nullopt, std::nullopt, std::move(segment_idx), std::move(nearest_points_xy));
-    } else if (is_multipoint && !is_multilinestring) {
+    } else if constexpr (is_multipoint && !is_multilinestring) {
       auto nearest_point_idx =
         cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<cudf::size_type>()},
                                   num_pairs,
@@ -135,7 +135,7 @@ struct launch_functor {
                         std::nullopt,
                         std::move(segment_idx),
                         std::move(nearest_points_xy));
-    } else if (!is_multipoint && is_multilinestring) {
+    } else if constexpr (!is_multipoint && is_multilinestring) {
       auto nearest_linestring_idx =
         cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<cudf::size_type>()},
                                   num_pairs,
