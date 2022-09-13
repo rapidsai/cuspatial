@@ -42,7 +42,7 @@ namespace detail {
 
 namespace {
 
-template <bool is_multipoint, bool is_multilinestring>
+template <bool is_multi_point, bool is_multi_linestring>
 struct launch_functor {
   using SizeType = cudf::device_span<cudf::size_type>::size_type;
 
@@ -52,6 +52,7 @@ struct launch_functor {
              std::unique_ptr<cudf::column>,
              std::unique_ptr<cudf::column>>
   operator()(
+    cudf::size_type num_pairs,
     std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
     cudf::column_view points_xy,
     std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
@@ -60,17 +61,15 @@ struct launch_functor {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
-    auto num_pairs =
-      is_multipoint ? multipoint_geometry_offsets.value().size() : points_xy.size() / 2;
     auto num_points            = static_cast<SizeType>(points_xy.size() / 2);
     auto num_linestring_points = static_cast<SizeType>(linestring_points_xy.size() / 2);
 
     auto point_geometry_it =
-      get_geometry_iterator_functor<is_multipoint>{}(multipoint_geometry_offsets);
+      get_geometry_iterator_functor<is_multi_point>{}(multipoint_geometry_offsets);
     auto points_it = interleaved_iterator_to_vec_2d_iterator(points_xy.begin<T>());
 
     auto linestring_geometry_it =
-      get_geometry_iterator_functor<is_multilinestring>{}(multilinestring_geometry_offsets);
+      get_geometry_iterator_functor<is_multi_linestring>{}(multilinestring_geometry_offsets);
     auto linestring_points_it =
       interleaved_iterator_to_vec_2d_iterator(linestring_points_xy.begin<T>());
 
@@ -86,7 +85,7 @@ struct launch_functor {
     auto nearest_points_it =
       interleaved_iterator_to_vec_2d_iterator(nearest_points_xy->view().begin<T>());
 
-    if constexpr (!is_multipoint && !is_multilinestring) {
+    if constexpr (!is_multi_point && !is_multi_linestring) {
       auto output_its = thrust::make_zip_iterator(
         thrust::make_tuple(thrust::make_discard_iterator(),
                            thrust::make_discard_iterator(),
@@ -107,7 +106,7 @@ struct launch_functor {
 
       return std::tuple(
         std::nullopt, std::nullopt, std::move(segment_idx), std::move(nearest_points_xy));
-    } else if constexpr (is_multipoint && !is_multilinestring) {
+    } else if constexpr (is_multi_point && !is_multi_linestring) {
       auto nearest_point_idx =
         cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<cudf::size_type>()},
                                   num_pairs,
@@ -136,7 +135,7 @@ struct launch_functor {
                         std::nullopt,
                         std::move(segment_idx),
                         std::move(nearest_points_xy));
-    } else if constexpr (!is_multipoint && is_multilinestring) {
+    } else if constexpr (!is_multi_point && is_multi_linestring) {
       auto nearest_linestring_idx =
         cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<cudf::size_type>()},
                                   num_pairs,
@@ -216,7 +215,7 @@ struct launch_functor {
 
 }  // namespace
 
-template <bool is_multipoint, bool is_multilinestring>
+template <bool is_multi_point, bool is_multi_linestring>
 struct pairwise_point_linestring_nearest_point_functor {
   std::tuple<std::optional<std::unique_ptr<cudf::column>>,
              std::optional<std::unique_ptr<cudf::column>>,
@@ -231,8 +230,24 @@ struct pairwise_point_linestring_nearest_point_functor {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
+    CUSPATIAL_EXPECTS(points_xy.size() % 2 == 0 && linestring_points_xy.size() % 2 == 0,
+                      "Points array must contain even number of coordinates.");
+
+    auto num_lhs =
+      is_multi_point ? multipoint_geometry_offsets.value().size() : (points_xy.size() / 2 + 1);
+    auto num_rhs = is_multi_linestring ? multilinestring_geometry_offsets.value().size()
+                                       : linestring_part_offsets.size();
+
+    CUSPATIAL_EXPECTS(num_lhs == num_rhs,
+                      "Mismatch number of (multi)points and (multi)linestrings.");
+    CUSPATIAL_EXPECTS(points_xy.type() == linestring_points_xy.type(),
+                      "Points and linestring coordinates must have the same type.");
+    CUSPATIAL_EXPECTS(!(points_xy.has_nulls() || linestring_points_xy.has_nulls()),
+                      "All inputs must not have nulls.");
+
     return cudf::type_dispatcher(points_xy.type(),
-                                 launch_functor<is_multipoint, is_multilinestring>{},
+                                 launch_functor<is_multi_point, is_multi_linestring>{},
+                                 num_rhs - 1,
                                  multipoint_geometry_offsets,
                                  points_xy,
                                  multilinestring_geometry_offsets,

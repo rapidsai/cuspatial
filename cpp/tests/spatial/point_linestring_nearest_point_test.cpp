@@ -134,27 +134,98 @@ TYPED_TEST(PairwisePointLinestringNearestPointTest, MultiPointMultiLineString)
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_nearest_points, *nearest_points);
 }
 
-// struct PairwisePointLinestringNearestPointThrowTest : public ::testing::Test {
-// };
+struct PairwisePointLinestringNearestPointThrowTest : public ::testing::Test {
+};
 
-// TEST_F(PairwisePointLinestringNearestPointThrowTest, PointTypeMismatch)
-// {
-//   auto xy      = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3};
-//   auto offset  = fixed_width_column_wrapper<size_type>{0, 6};
-//   auto line_xy = fixed_width_column_wrapper<double>{1, 1, 2, 2, 3, 3};
+TEST_F(PairwisePointLinestringNearestPointThrowTest, OddNumberOfCoordinates)
+{
+  auto xy      = fixed_width_column_wrapper<float>{1, 1, 2};
+  auto offset  = fixed_width_column_wrapper<size_type>{0, 3};
+  auto line_xy = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3};
 
-//   EXPECT_THROW(pairwise_point_linestring_distance(xy, column_view(offset), line_xy),
-//                cuspatial::logic_error);
-// }
+  EXPECT_THROW(pairwise_point_linestring_nearest_points(
+                 std::nullopt, xy, std::nullopt, column_view(offset), line_xy),
+               cuspatial::logic_error);
+}
 
-// TEST_F(PairwisePointLinestringNearestPointThrowTest, ContainsNull)
-// {
-//   auto xy      = fixed_width_column_wrapper<float>{{1, 1, 2, 2, 3, 3}, {1, 0, 1, 1, 1, 1}};
-//   auto offset  = fixed_width_column_wrapper<size_type>{0, 6};
-//   auto line_xy = fixed_width_column_wrapper<float>{1, 2, 3, 1, 2, 3};
+TEST_F(PairwisePointLinestringNearestPointThrowTest, NumPairsMismatchSinglePointSingleLinestring)
+{
+  auto xy      = fixed_width_column_wrapper<float>{1, 1, 2, 2};
+  auto offset  = fixed_width_column_wrapper<size_type>{0, 3};
+  auto line_xy = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3};
 
-//   EXPECT_THROW(pairwise_point_linestring_distance(xy, column_view(offset), line_xy),
-//                cuspatial::logic_error);
-// }
+  EXPECT_THROW(pairwise_point_linestring_nearest_points(
+                 std::nullopt, xy, std::nullopt, column_view(offset), line_xy),
+               cuspatial::logic_error);
+}
+
+TEST_F(PairwisePointLinestringNearestPointThrowTest, NumPairsMismatchSinglePointMultiLinestring)
+{
+  auto xy = fixed_width_column_wrapper<float>{1, 1, 2, 2};
+
+  auto line_geometry = fixed_width_column_wrapper<size_type>{0, 2};
+  auto offset        = fixed_width_column_wrapper<size_type>{0, 3, 5};
+  auto line_xy       = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3, 4, 4, 5, 5};
+
+  EXPECT_THROW(pairwise_point_linestring_nearest_points(
+                 std::nullopt, xy, column_view(line_geometry), column_view(offset), line_xy),
+               cuspatial::logic_error);
+}
+
+TEST_F(PairwisePointLinestringNearestPointThrowTest, NumPairsMismatchMultiPointSingleLinestring)
+{
+  auto point_geometry = fixed_width_column_wrapper<size_type>{0, 2, 4};
+  auto xy             = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3, 4, 4};
+
+  auto offset  = fixed_width_column_wrapper<size_type>{0, 3};
+  auto line_xy = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3};
+
+  EXPECT_THROW(pairwise_point_linestring_nearest_points(
+                 column_view(point_geometry), xy, std::nullopt, column_view(offset), line_xy),
+               cuspatial::logic_error);
+}
+
+TEST_F(PairwisePointLinestringNearestPointThrowTest, NumPairsMismatchMultiPointMultiLinestring)
+{
+  auto point_geometry = fixed_width_column_wrapper<size_type>{0, 2, 4};
+  auto xy             = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3, 4, 4};
+
+  auto linestring_geometry = fixed_width_column_wrapper<size_type>{0, 2, 4, 6};
+  auto offset              = fixed_width_column_wrapper<size_type>{0, 2, 4, 6, 8, 10};
+  auto line_xy =
+    fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10};
+
+  EXPECT_THROW(pairwise_point_linestring_nearest_points(
+                 column_view(point_geometry), xy, std::nullopt, column_view(offset), line_xy),
+               cuspatial::logic_error);
+}
+
+TEST_F(PairwisePointLinestringNearestPointThrowTest, MismatchType)
+{
+  auto point_geometry = fixed_width_column_wrapper<size_type>{0, 2, 4};
+  auto xy             = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3, 4, 4};
+
+  auto linestring_geometry = fixed_width_column_wrapper<size_type>{0, 2, 4};
+  auto offset              = fixed_width_column_wrapper<size_type>{0, 2, 4, 6};
+  auto line_xy             = fixed_width_column_wrapper<double>{1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6};
+
+  EXPECT_THROW(pairwise_point_linestring_nearest_points(
+                 column_view(point_geometry), xy, std::nullopt, column_view(offset), line_xy),
+               cuspatial::logic_error);
+}
+
+TEST_F(PairwisePointLinestringNearestPointThrowTest, ContainsNull)
+{
+  auto point_geometry = fixed_width_column_wrapper<size_type>{0, 2, 4};
+  auto xy = fixed_width_column_wrapper<float>{{1, 1, 2, 2, 3, 3, 4, 4}, {1, 0, 1, 1, 1, 1, 1, 1}};
+
+  auto linestring_geometry = fixed_width_column_wrapper<size_type>{0, 2, 4};
+  auto offset              = fixed_width_column_wrapper<size_type>{0, 2, 4, 6};
+  auto line_xy             = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6};
+
+  EXPECT_THROW(pairwise_point_linestring_nearest_points(
+                 column_view(point_geometry), xy, std::nullopt, column_view(offset), line_xy),
+               cuspatial::logic_error);
+}
 
 }  // namespace cuspatial
