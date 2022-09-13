@@ -4,6 +4,8 @@ import numpy as np
 
 from cudf.api.types import is_datetime_dtype
 
+from cuspatial.core.geoseries import GeoSeries
+
 
 def normalize_point_columns(*cols):
     """
@@ -42,3 +44,46 @@ def normalize_timestamp_column(ts, fallback_dtype="datetime64[ms]"):
     column : the input column
     """
     return ts if is_datetime_dtype(ts.dtype) else ts.astype(fallback_dtype)
+
+
+def contain_single_type_geometry(gs: GeoSeries):
+    """
+    Returns true if `gs` contains only single type of geometries
+
+    A geometry is considered as the same type to its multi-geometry variant.
+    """
+    has_points = len(gs.points.xy) > 0
+    has_multipoints = len(gs.multipoints.xy) > 0
+    has_lines = len(gs.lines.xy) > 0
+    has_polygons = len(gs.polygons.xy) > 0
+
+    return (
+        len(gs) > 0
+        and ((has_points or has_multipoints) + has_lines + has_polygons) == 1
+    )
+
+
+def contains_only_points(gs: GeoSeries):
+    """
+    Returns true if `gs` contains only points or multipoints
+    """
+
+    return contain_single_type_geometry(gs) and (
+        len(gs.points.xy) > 0 or len(gs.multipoints.xy) > 0
+    )
+
+
+def contains_only_linestrings(gs: GeoSeries):
+    """
+    Returns true if `gs` contains only linestrings
+    """
+
+    return contain_single_type_geometry(gs) and len(gs.lines.xy) > 0
+
+
+def contains_only_polygons(gs: GeoSeries):
+    """
+    Returns true if `gs` contains only polygons
+    """
+
+    return contain_single_type_geometry(gs) and len(gs.polygons.xy) > 0
