@@ -132,6 +132,14 @@ namespace cuspatial {
  * 3. The segment id where the nearest point in the (multi)linestring locates
  * 4. The interleaved x, y-coordinate of the nearest point on the (multi)linestring
  *
+ * @throws cuspatial::logic_error if `points_xy` or `linestring_points_xy` contains odd number of
+ * coordinates.
+ * @throws cuspatial::logic_error if `points_xy` or `linestring_points_xy` are not floating point
+ * type.
+ * @throws cuspatial::logic_error if the number of (multi)point(s) mismatch the number of
+ * (multi)linestring(s).
+ * @throws cuspatial::logic_error if the type of `point_xy` and `linestring_points_xy` mismatch.
+ * @throws cuspatial::logic_error if any of `point_xy` and `linestring_points_xy` contains null.
  */
 std::tuple<std::optional<std::unique_ptr<cudf::column>>,
            std::optional<std::unique_ptr<cudf::column>>,
