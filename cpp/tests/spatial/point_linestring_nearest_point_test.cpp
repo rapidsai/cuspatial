@@ -62,7 +62,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointTest, SinglePointMultiLineString)
 {
   using T = TypeParam;
 
-  auto xy            = fixed_width_column_wrapper<T>{0.0, 0.0};
+  auto xy            = fixed_width_column_wrapper<T>{0.0, 0.5};
   auto line_geometry = fixed_width_column_wrapper<size_type>{0, 2};
   auto line_offset   = fixed_width_column_wrapper<size_type>{0, 3, 5};
   auto line_xy = fixed_width_column_wrapper<T>{1.0, 1.0, 2.0, 2.0, 2.5, 1.3, -1.0, -3.6, -0.8, 1.0};
@@ -74,7 +74,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointTest, SinglePointMultiLineString)
   auto expect_linestring_idx = fixed_width_column_wrapper<size_type>{1};
   auto expect_segment_idx    = fixed_width_column_wrapper<size_type>{0};
   auto expect_nearest_points =
-    fixed_width_column_wrapper<T>{-0.8418867924528302, 0.03660377358490541};
+    fixed_width_column_wrapper<T>{-0.820188679245283, 0.5356603773584898};
 
   EXPECT_EQ(point_idx, std::nullopt);
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_linestring_idx, *(linestring_idx.value()));
@@ -110,7 +110,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointTest, MultiPointMultiLineString)
   using T = TypeParam;
 
   auto point_geometry = fixed_width_column_wrapper<size_type>{0, 2};
-  auto xy             = fixed_width_column_wrapper<T>{-0.5, 0.0, -0.5, 0.5};
+  auto xy             = fixed_width_column_wrapper<T>{-0.5, 0.0, 0.0, 1.0};
   auto line_geometry  = fixed_width_column_wrapper<size_type>{0, 2};
   auto line_offset    = fixed_width_column_wrapper<size_type>{0, 3, 6};
   auto line_xy =

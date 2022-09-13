@@ -203,6 +203,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointTest, OnePairMultiComponent)
                                                      linestring_points.end(),
                                                      output_it);
 
+  EXPECT_EQ(nearest_point_id, std::vector<int32_t>({1}));
   EXPECT_EQ(nearest_linestring_linestring_id, std::vector<int32_t>({0}));
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>({0}));
   auto expected_coordinate = CartVec{{1.2189892802450228, 1.8705972434915774}};
