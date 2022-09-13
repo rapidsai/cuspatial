@@ -43,7 +43,7 @@ namespace detail {
 namespace {
 
 template <bool is_multi_point, bool is_multi_linestring>
-struct launch_functor {
+struct pairwise_point_linestring_nearest_point_impl {
   using SizeType = cudf::device_span<cudf::size_type>::size_type;
 
   template <typename T, CUDF_ENABLE_IF(std::is_floating_point_v<T>)>
@@ -248,16 +248,17 @@ struct pairwise_point_linestring_nearest_point_functor {
     CUSPATIAL_EXPECTS(!(points_xy.has_nulls() || linestring_points_xy.has_nulls()),
                       "All inputs must not have nulls.");
 
-    return cudf::type_dispatcher(points_xy.type(),
-                                 launch_functor<is_multi_point, is_multi_linestring>{},
-                                 num_rhs - 1,
-                                 multipoint_geometry_offsets,
-                                 points_xy,
-                                 multilinestring_geometry_offsets,
-                                 linestring_part_offsets,
-                                 linestring_points_xy,
-                                 stream,
-                                 mr);
+    return cudf::type_dispatcher(
+      points_xy.type(),
+      pairwise_point_linestring_nearest_point_impl<is_multi_point, is_multi_linestring>{},
+      num_rhs - 1,
+      multipoint_geometry_offsets,
+      points_xy,
+      multilinestring_geometry_offsets,
+      linestring_part_offsets,
+      linestring_points_xy,
+      stream,
+      mr);
   }
 };
 
