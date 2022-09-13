@@ -66,12 +66,14 @@ pairwise_point_linestring_nearest_point_kernel(OffsetIteratorA points_geometry_o
 
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < num_pairs;
        idx += gridDim.x * blockDim.x) {
+    SizeType nearest_point_idx;
     SizeType nearest_part_idx;
     SizeType nearest_segment_idx;
     vec_2d<T> nearest_point;
-    for (auto point_idx = points_geometry_offsets_first[idx];
-         point_idx < points_geometry_offsets_first[idx + 1];
-         point_idx++) {
+
+    SizeType point_start = points_geometry_offsets_first[idx];
+    SizeType point_end   = points_geometry_offsets_first[idx + 1];
+    for (auto point_idx = point_start; point_idx < point_end; point_idx++) {
       SizeType linestring_parts_start = linestring_geometry_offsets_first[idx];
       SizeType linestring_parts_end   = linestring_geometry_offsets_first[idx + 1];
 
@@ -92,13 +94,15 @@ pairwise_point_linestring_nearest_point_kernel(OffsetIteratorA points_geometry_o
           if (distance_squared < min_distance_squared) {
             min_distance_squared = distance_squared;
             nearest_point        = thrust::get<1>(distance_point_pair);
+            nearest_point_idx    = point_idx - point_start;
             nearest_part_idx     = part_idx - linestring_parts_start;
             nearest_segment_idx  = segment_idx - segment_start;
           }
         }
       }
     }
-    output_first[idx] = thrust::make_tuple(nearest_part_idx, nearest_segment_idx, nearest_point);
+    output_first[idx] =
+      thrust::make_tuple(nearest_point_idx, nearest_part_idx, nearest_segment_idx, nearest_point);
   }
 }
 

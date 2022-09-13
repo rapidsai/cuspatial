@@ -134,13 +134,14 @@ namespace cuspatial {
  *
  */
 std::tuple<std::optional<std::unique_ptr<cudf::column>>,
+           std::optional<std::unique_ptr<cudf::column>>,
            std::unique_ptr<cudf::column>,
            std::unique_ptr<cudf::column>>
-pairwise_point_linestring_nearest_point_segment_idx(
-  std::optional<cudf::device_span<cudf::size_type>> multipoint_parts_offsets,
+pairwise_point_linestring_nearest_points(
+  std::optional<cudf::device_span<cudf::size_type>> multipoint_geometry_offsets,
   cudf::column_view points_xy,
-  std::optional<cudf::device_span<cudf::size_type>> multilinestring_parts_offsets,
-  cudf::device_span<cudf::size_type> linestring_offsets,
+  std::optional<cudf::device_span<cudf::size_type>> multilinestring_geometry_offsets,
+  cudf::device_span<cudf::size_type> linestring_part_offsets,
   cudf::column_view linestring_points_xy,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
