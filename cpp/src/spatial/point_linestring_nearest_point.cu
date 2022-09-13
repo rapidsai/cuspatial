@@ -51,13 +51,14 @@ struct launch_functor {
              std::optional<std::unique_ptr<cudf::column>>,
              std::unique_ptr<cudf::column>,
              std::unique_ptr<cudf::column>>
-  operator()(std::optional<cudf::device_span<cudf::size_type>> multipoint_geometry_offsets,
-             cudf::column_view points_xy,
-             std::optional<cudf::device_span<cudf::size_type>> multilinestring_geometry_offsets,
-             cudf::device_span<cudf::size_type> linestring_offsets,
-             cudf::column_view linestring_points_xy,
-             rmm::cuda_stream_view stream,
-             rmm::mr::device_memory_resource* mr)
+  operator()(
+    std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
+    cudf::column_view points_xy,
+    std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
+    cudf::device_span<cudf::size_type const> linestring_offsets,
+    cudf::column_view linestring_points_xy,
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     auto num_pairs =
       is_multipoint ? multipoint_geometry_offsets.value().size() : points_xy.size() / 2;
@@ -221,13 +222,14 @@ struct pairwise_point_linestring_nearest_point_functor {
              std::optional<std::unique_ptr<cudf::column>>,
              std::unique_ptr<cudf::column>,
              std::unique_ptr<cudf::column>>
-  operator()(std::optional<cudf::device_span<cudf::size_type>> multipoint_geometry_offsets,
-             cudf::column_view points_xy,
-             std::optional<cudf::device_span<cudf::size_type>> multilinestring_geometry_offsets,
-             cudf::device_span<cudf::size_type> linestring_part_offsets,
-             cudf::column_view linestring_points_xy,
-             rmm::cuda_stream_view stream,
-             rmm::mr::device_memory_resource* mr)
+  operator()(
+    std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
+    cudf::column_view points_xy,
+    std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
+    cudf::device_span<cudf::size_type const> linestring_part_offsets,
+    cudf::column_view linestring_points_xy,
+    rmm::cuda_stream_view stream,
+    rmm::mr::device_memory_resource* mr)
   {
     return cudf::type_dispatcher(points_xy.type(),
                                  launch_functor<is_multipoint, is_multilinestring>{},
@@ -248,10 +250,10 @@ std::tuple<std::optional<std::unique_ptr<cudf::column>>,
            std::unique_ptr<cudf::column>,
            std::unique_ptr<cudf::column>>
 pairwise_point_linestring_nearest_points(
-  std::optional<cudf::device_span<cudf::size_type>> multipoint_geometry_offsets,
+  std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
   cudf::column_view points_xy,
-  std::optional<cudf::device_span<cudf::size_type>> multilinestring_geometry_offsets,
-  cudf::device_span<cudf::size_type> linestring_part_offsets,
+  std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
+  cudf::device_span<cudf::size_type const> linestring_part_offsets,
   cudf::column_view linestring_points_xy,
   rmm::mr::device_memory_resource* mr)
 {
