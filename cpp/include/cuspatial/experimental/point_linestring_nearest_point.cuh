@@ -21,8 +21,8 @@
 namespace cuspatial {
 
 /**
- * @brief Compute the nearest points and geometry id between a pair of (multi)point and
- * (multi)linestring
+ * @brief Compute the nearest points and geometry id between pairs of multipoint and
+ * multilinestring
  *
  * The nearest point from a test point to a linestring is a point on the linestring that has
  * the shortest distance to the test point compared to any other points on the linestring.

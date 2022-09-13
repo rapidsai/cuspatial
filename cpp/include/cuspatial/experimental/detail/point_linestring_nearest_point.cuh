@@ -37,6 +37,14 @@ namespace detail {
 
 /**
  * @internal
+ * @brief Kernel to compute the nearest point between a multipoint and multilinestring
+ *
+ * See header only API for input parameter definitions.
+ *
+ * Each thread computes the neaerst point between a pair of multipoint and multilinestring.
+ * The minimum distance between the geometries are stored in `min_distance_squared` and updated
+ * when smaller is encountered. `linestring.cuh::point_to_segment_distance_squared_nearest_point`
+ * is resorted to compute the nearest point on the segment and the distance to the test point.
  */
 template <class Vec2dItA,
           class Vec2dItB,
