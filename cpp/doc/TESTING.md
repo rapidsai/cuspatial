@@ -79,7 +79,7 @@ TYPED_TEST(TypedTestFixture, FirstTest){
 ```
 
 In this example, all tests using the `TypedTestFixture` fixture will run once for each type in the
-list defined in `TestTypes` (`int, float, double`).
+list defined in `TestTypes` (`float, double`).
 
 ## Utilities
 
