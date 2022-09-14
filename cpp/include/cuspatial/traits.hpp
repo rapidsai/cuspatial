@@ -16,11 +16,12 @@
 
 #pragma once
 
+#include <cuspatial/vec_2d.hpp>
+
 #include <iterator>
 #include <type_traits>
 
 namespace cuspatial {
-namespace detail {
 
 /**
  * @internal
@@ -64,6 +65,16 @@ constexpr bool is_integral()
 
 /**
  * @internal
+ * @brief returns true if `T` is `vec_2d<float>` or `vec_2d<double>`
+ */
+template <typename T>
+constexpr bool is_vec_2d()
+{
+  return std::is_same_v<T, vec_2d<float>> or std::is_same_v<T, vec_2d<double>>;
+}
+
+/**
+ * @internal
  * @brief returns true if T and all types Ts... are the same floating point type.
  */
 template <typename T, typename... Ts>
@@ -89,7 +100,6 @@ using iterator_value_type = typename std::iterator_traits<Iterator>::value_type;
  * @tparam Iterator The value type to get from, must point to a cuspatial::vec_2d
  */
 template <typename Iterator>
-using iterator_vec_base_type = typename iterator_value_type<Iterator>::value_type;
+using iterator_vec_base_type = typename cuspatial::iterator_value_type<Iterator>::value_type;
 
-}  // namespace detail
 }  // namespace cuspatial

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "tests/utility/vector_equality.hpp"
+
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/linestring_distance.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
@@ -22,11 +24,6 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/device_vector.hpp>
 
-#include <cudf_test/base_fixture.hpp>
-#include <cudf_test/column_utilities.hpp>
-#include <cudf_test/column_wrapper.hpp>
-#include <cudf_test/type_lists.hpp>
-
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 
@@ -34,10 +31,9 @@ namespace cuspatial {
 namespace test {
 
 using namespace cudf;
-using namespace cudf::test;
 
 template <typename T>
-struct PairwiseLinestringDistanceTest : public BaseFixture {
+struct PairwiseLinestringDistanceTest : public ::testing::Test {
 };
 
 // float and double are logically the same but would require seperate tests due to precision.
@@ -67,7 +63,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSeparateArrayInputs)
                                           b_cart2d.end(),
                                           distance.begin());
 
-  EXPECT_EQ(distance, expected);
+  test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(offset.size() - 1, std::distance(distance.begin(), ret));
 }
 
@@ -98,7 +94,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSamePointArrayInput)
                                           b_end,
                                           distance.begin());
 
-  EXPECT_EQ(distance, expected);
+  test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(offset_a.size() - 1, std::distance(distance.begin(), ret));
 }
 
@@ -127,7 +123,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromTransformIterator)
   auto ret = pairwise_linestring_distance(
     offset.begin(), offset.end(), a_begin, a_end, offset.begin(), b_begin, b_end, distance.begin());
 
-  EXPECT_EQ(distance, expected);
+  test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(offset.size() - 1, std::distance(distance.begin(), ret));
 }
 
@@ -160,7 +156,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromMixedIterator)
                                           b_end,
                                           distance.begin());
 
-  EXPECT_EQ(distance, expected);
+  test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(offset_a.size() - 1, std::distance(distance.begin(), ret));
 }
 
@@ -196,7 +192,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromLongInputs)
                                           b_cart2d_end,
                                           distance.begin());
 
-  EXPECT_EQ(distance, expected);
+  test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(offset.size() - 1, std::distance(distance.begin(), ret));
 }
 

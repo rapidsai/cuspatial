@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "../../utility/vector_equality.hpp"
+#include "tests/utility/vector_equality.hpp"
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
@@ -73,8 +73,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, Empty)
                                                 d_linestring_points.end(),
                                                 got.begin());
 
-  thrust::host_vector<T> hgot(got);
-  expect_vector_equivalent(expect, hgot);
+  expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -109,8 +108,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairFromVectorSingleComponent
                                                 d_linestring_points.end(),
                                                 got.begin());
 
-  thrust::host_vector<T> hgot(got);
-  expect_vector_equivalent(expect, hgot);
+  expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -144,8 +142,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairFromCountingIteratorSingl
                                                 d_linestring_points.end(),
                                                 got.begin());
 
-  thrust::host_vector<T> hgot(got);
-  expect_vector_equivalent(expect, hgot);
+  expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -180,8 +177,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, TwoPairFromVectorSingleComponent
                                                 d_linestring_points.end(),
                                                 got.begin());
 
-  thrust::host_vector<T> hgot(got);
-  expect_vector_equivalent(expect, hgot);
+  expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -222,8 +218,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, ManyPairsFromIteratorsSingleComp
                                                 linestring_points + num_linestring_points,
                                                 got.begin());
 
-  thrust::host_vector<T> hgot(got);
-  expect_vector_equivalent(expect, hgot);
+  expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -382,8 +377,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePartFiftyPairsCompareWithShap
                                                 linestring_points + d_linestring_points_x.size(),
                                                 got.begin());
 
-  thrust::host_vector<T> hgot(got);
-  expect_vector_equivalent(expect, hgot);
+  expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -419,8 +413,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairMultiPointMultiLinestring
                                                 d_linestring_points.end(),
                                                 got.begin());
 
-  thrust::host_vector<T> hgot(got);
-  expect_vector_equivalent(expect, hgot);
+  expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -456,8 +449,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, ThreePairMultiPointMultiLinestri
                                                 d_linestring_points.end(),
                                                 got.begin());
 
-  thrust::host_vector<T> hgot(got);
-  expect_vector_equivalent(expect, hgot);
+  expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 

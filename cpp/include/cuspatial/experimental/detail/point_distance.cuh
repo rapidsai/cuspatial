@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -36,16 +36,16 @@ OutputIt pairwise_point_distance(Cart2dItA points1_first,
                                  OutputIt distances_first,
                                  rmm::cuda_stream_view stream)
 {
-  using T = typename detail::iterator_vec_base_type<Cart2dItA>;
+  using T = typename cuspatial::iterator_vec_base_type<Cart2dItA>;
 
-  static_assert(detail::is_same_floating_point<T,
-                                               typename detail::iterator_vec_base_type<Cart2dItB>,
-                                               typename detail::iterator_value_type<OutputIt>>(),
+  static_assert(is_same_floating_point<T,
+                                       typename cuspatial::iterator_vec_base_type<Cart2dItB>,
+                                       typename cuspatial::iterator_value_type<OutputIt>>(),
                 "Inputs and output must have the same floating point value type.");
 
-  static_assert(detail::is_same<vec_2d<T>,
-                                typename detail::iterator_value_type<Cart2dItA>,
-                                typename detail::iterator_value_type<Cart2dItB>>(),
+  static_assert(is_same<vec_2d<T>,
+                        typename cuspatial::iterator_value_type<Cart2dItA>,
+                        typename cuspatial::iterator_value_type<Cart2dItB>>(),
                 "All Input types must be cuspatial::vec_2d with the same value type");
 
   return thrust::transform(rmm::exec_policy(stream),
