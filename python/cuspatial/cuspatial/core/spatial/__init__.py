@@ -19,6 +19,7 @@ from .distance import (
     directed_hausdorff_distance,
     haversine_distance,
     pairwise_linestring_distance,
+    pairwise_point_linestring_distance,
 )
 
 from .projection import (

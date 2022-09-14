@@ -134,6 +134,33 @@ class GeoSeries(cudf.Series):
         def xy(self):
             return cudf.Series(self._col.leaves().values)
 
+    class MultiPointGeoColumnAccessor(GeoColumnAccessor):
+        @property
+        def geometry_offset(self):
+            return cudf.Series(self._col.offsets.values)
+
+    class LineStringGeoColumnAccessor(GeoColumnAccessor):
+        @property
+        def geometry_offset(self):
+            return cudf.Series(self._col.offsets.values)
+
+        @property
+        def part_offset(self):
+            return cudf.Series(self._col.elements.offsets.values)
+
+    class PolygonGeoColumnAccessor(GeoColumnAccessor):
+        @property
+        def geometry_offset(self):
+            return cudf.Series(self._col.offsets.values)
+
+        @property
+        def part_offset(self):
+            return cudf.Series(self._col.elements.offsets.values)
+
+        @property
+        def ring_offset(self):
+            return cudf.Series(self._col.elements.elements.offsets.values)
+
     @property
     def points(self):
         """
@@ -146,21 +173,21 @@ class GeoSeries(cudf.Series):
         """
         Access the `MultiPointArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.GeoColumnAccessor(self._column.mpoints)
+        return self.MultiPointGeoColumnAccessor(self._column.mpoints)
 
     @property
     def lines(self):
         """
         Access the `LineArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.GeoColumnAccessor(self._column.lines)
+        return self.LineStringGeoColumnAccessor(self._column.lines)
 
     @property
     def polygons(self):
         """
         Access the `PolygonArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.GeoColumnAccessor(self._column.polygons)
+        return self.PolygonGeoColumnAccessor(self._column.polygons)
 
     def __repr__(self):
         # TODO: Implement Iloc with slices so that we can use `Series.__repr__`

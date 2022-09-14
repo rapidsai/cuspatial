@@ -1,5 +1,5 @@
 =============
-API reference
+API Reference
 =============
 
 This page provides a list of all publicly accessible modules, methods and classes through
@@ -7,7 +7,6 @@ This page provides a list of all publicly accessible modules, methods and classe
 
 .. toctree::
     :maxdepth: 2
-    :caption: API Documentation
 
     spatial
     trajectory
