@@ -118,7 +118,7 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
 
   auto const ls2_start = *(linestring2_offsets_begin + linestring_idx);
   auto const ls2_end   = endpoint_index_of_linestring(
-      linestring_idx, linestring2_offsets_begin, num_linestrings, linestring2_num_points);
+    linestring_idx, linestring2_offsets_begin, num_linestrings, linestring2_num_points);
 
   auto const& A = thrust::raw_reference_cast(linestring1_points_begin[p1_idx]);
   auto const& B = thrust::raw_reference_cast(linestring1_points_begin[p1_idx + 1]);

@@ -60,14 +60,14 @@ namespace cuspatial {
  */
 template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt>
 OutputIt pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
-                                  OffsetIterator linestring1_offsets_last,
-                                  Cart2dItA linestring1_points_first,
-                                  Cart2dItA linestring1_points_last,
-                                  OffsetIterator linestring2_offsets_first,
-                                  Cart2dItB linestring2_points_first,
-                                  Cart2dItB linestring2_points_last,
-                                  OutputIt distances_first,
-                                  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+                                      OffsetIterator linestring1_offsets_last,
+                                      Cart2dItA linestring1_points_first,
+                                      Cart2dItA linestring1_points_last,
+                                      OffsetIterator linestring2_offsets_first,
+                                      Cart2dItB linestring2_points_first,
+                                      Cart2dItB linestring2_points_last,
+                                      OutputIt distances_first,
+                                      rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
 
