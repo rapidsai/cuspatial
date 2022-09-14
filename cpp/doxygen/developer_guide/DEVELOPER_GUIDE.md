@@ -1,4 +1,4 @@
-# libcuspatial C++ Developer Guide
+# libcuspatial C++ Developer Guide {#DEVELOPER_GUIDE}
 
 This document serves as a guide for contributors to libcuspatial C++ code. Developers should also
 refer to these additional files for further documentation of libcuspatial best practices.
