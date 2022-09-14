@@ -5,7 +5,7 @@ import cupy as cp
 import pyarrow as pa
 
 import cudf
-from cudf.core.column import ColumnBase
+from cudf.core.column import ColumnBase, as_column
 
 from cuspatial.core._column.geometa import GeoMeta
 
@@ -65,7 +65,7 @@ class GeoColumn(ColumnBase):
             ...
             Up to the size of the original input.
             """
-            coordinate_offsets = cudf.Series(
+            coordinate_offsets = as_column(
                 cp.arange(len(coordinates) + 1, step=2), dtype="int32"
             )
             rings_offsets = cudf.concat(
@@ -83,7 +83,7 @@ class GeoColumn(ColumnBase):
             coords = cudf.core.column.ListColumn(
                 size=len(coordinate_offsets) - 1,
                 dtype=cudf.ListDtype(coordinates.dtype),
-                children=(coordinate_offsets._column, coordinates._column),
+                children=(coordinate_offsets, coordinates._column),
             )
             rings = cudf.core.column.ListColumn(
                 size=len(rings_offsets) - 1,
@@ -98,7 +98,10 @@ class GeoColumn(ColumnBase):
             mpolygons = cudf.core.column.ListColumn(
                 size=len(polygons_offsets) - 1,
                 dtype=cudf.ListDtype(polygons.dtype),
-                children=(cp.arange(len(polygons) + 1), polygons),
+                children=(
+                    as_column(cp.arange(len(polygons) + 1), dtype="int32"),
+                    polygons,
+                ),
             )
             self.points = cudf.Series([])
             self.points.name = "points"
