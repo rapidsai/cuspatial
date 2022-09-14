@@ -200,7 +200,7 @@ respectively. All memory resource parameters should be defaulted to use the retu
 
 This section provides specifics about the structure and implementation of cuSpatial API functions.
 
-## Column-based cuSpatial API<a name="column_based_api"></a>
+## Column-based cuSpatial API
 
 libcuspatial's column-based API is designed to integrate seamlessly with other RAPIDS libraries,
 notably cuDF. To that end, this API uses `cudf::column` and `cudf::table` data structures as input
@@ -321,7 +321,7 @@ auto foo = [&out0 = out0] {
 };
 ```
 
-## Header-only cuSpatial API<a name="header_only_api"></a>
+## Header-only cuSpatial API
 
 For C++ users and developers who do not also use libcudf or other RAPIDS APIS, depending on libcudf
 could be a barrier to adoption of libcuspatial. libcudf is a very large library and building it
