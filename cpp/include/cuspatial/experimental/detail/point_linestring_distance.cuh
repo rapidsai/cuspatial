@@ -18,8 +18,8 @@
 
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
-#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -169,15 +169,14 @@ OutputIt pairwise_point_linestring_distance(OffsetIteratorA point_geometry_offse
                                             OutputIt distances_first,
                                             rmm::cuda_stream_view stream)
 {
-  using T = detail::iterator_vec_base_type<Cart2dItA>;
+  using T = iterator_vec_base_type<Cart2dItA>;
 
-  static_assert(detail::is_same_floating_point<T, detail::iterator_vec_base_type<Cart2dItB>>(),
+  static_assert(is_same_floating_point<T, iterator_vec_base_type<Cart2dItB>>(),
                 "Inputs must have same floating point value type.");
 
-  static_assert(detail::is_same<vec_2d<T>,
-                                detail::iterator_value_type<Cart2dItA>,
-                                detail::iterator_value_type<Cart2dItB>>(),
-                "Inputs must be cuspatial::vec_2d");
+  static_assert(
+    is_same<vec_2d<T>, iterator_value_type<Cart2dItA>, iterator_value_type<Cart2dItB>>(),
+    "Inputs must be cuspatial::vec_2d");
 
   auto const num_pairs =
     thrust::distance(point_geometry_offset_first, point_geometry_offset_last) - 1;
