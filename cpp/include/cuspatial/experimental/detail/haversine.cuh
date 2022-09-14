@@ -17,8 +17,8 @@
 #pragma once
 
 #include <cuspatial/constants.hpp>
-#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -66,14 +66,13 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             T const radius,
                             rmm::cuda_stream_view stream)
 {
-  static_assert(detail::is_same<vec_2d<T>,
-                                detail::iterator_value_type<LonLatItA>,
-                                detail::iterator_value_type<LonLatItB>>(),
-                "Inputs must be cuspatial::vec_2d");
   static_assert(
-    detail::is_same_floating_point<T,
-                                   typename detail::iterator_vec_base_type<LonLatItA>,
-                                   typename detail::iterator_value_type<OutputIt>>(),
+    is_same<vec_2d<T>, iterator_value_type<LonLatItA>, iterator_value_type<LonLatItB>>(),
+    "Inputs must be cuspatial::vec_2d");
+  static_assert(
+    is_same_floating_point<T,
+                           typename cuspatial::iterator_vec_base_type<LonLatItA>,
+                           typename cuspatial::iterator_value_type<OutputIt>>(),
     "All iterator types and radius must have the same floating-point coordinate value type.");
 
   CUSPATIAL_EXPECTS(radius > 0, "radius must be positive.");

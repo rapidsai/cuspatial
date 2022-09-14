@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "tests/utility/vector_equality.hpp"
+
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/hausdorff.cuh>
 #include <cuspatial/vec_2d.hpp>
@@ -49,7 +51,7 @@ struct HausdorffTest : public ::testing::Test {
 
     thrust::host_vector<T> h_distances(distances);
 
-    EXPECT_THAT(distances, ::testing::Pointwise(::testing::DoubleEq(), expected));
+    cuspatial::test::expect_vector_equivalent(distances, expected);
     EXPECT_EQ(num_distances, std::distance(distances.begin(), distances_end));
   }
 };
@@ -153,7 +155,7 @@ void generic_hausdorff_test()
                                                               space_offset_iter + num_spaces,
                                                               distances.begin());
 
-  EXPECT_EQ(distances, expected);
+  cuspatial::test::expect_vector_equivalent(distances, expected);
   EXPECT_EQ(num_distances, std::distance(distances.begin(), distances_end));
 }
 
