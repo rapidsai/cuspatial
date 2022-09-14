@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <cuspatial/vec_2d.hpp>
+
 #include <iterator>
 #include <type_traits>
 
@@ -59,6 +61,16 @@ template <typename... Ts>
 constexpr bool is_integral()
 {
   return std::conjunction_v<std::is_integral<Ts>...>;
+}
+
+/**
+ * @internal
+ * @brief returns true if `T` is `vec_2d<float>` or `vec_2d<double>`
+ */
+template <typename T>
+constexpr bool is_vec_2d()
+{
+  return std::is_same_v<T, vec_2d<float>> or std::is_same_v<T, vec_2d<double>>;
 }
 
 /**

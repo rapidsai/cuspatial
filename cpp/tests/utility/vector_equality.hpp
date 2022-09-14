@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_uvector.hpp>
@@ -28,17 +29,11 @@
 
 #include <type_traits>
 
-template <typename T>
-std::ostream& operator<<(std::ostream& os, cuspatial::vec_2d<T> const& vec)
-{
-  return os << "(" << vec.x << "," << vec.y << ")";
-}
-
 namespace cuspatial {
 namespace test {
 
 template <typename T>
-auto float_matcher(T val)
+auto floating_eq(T val)
 {
   if constexpr (std::is_same_v<T, float>) {
     return ::testing::FloatEq(val);
@@ -53,19 +48,25 @@ MATCHER(vec_2d_matcher,
   auto lhs = std::get<0>(arg);
   auto rhs = std::get<1>(arg);
 
-  if (::testing::Matches(float_matcher(rhs.x))(lhs.x) &&
-      ::testing::Matches(float_matcher(rhs.y))(lhs.y))
+  if (::testing::Matches(floating_eq(rhs.x))(lhs.x) &&
+      ::testing::Matches(floating_eq(rhs.y))(lhs.y))
     return true;
 
-  //*result_listener << lhs << " != " << rhs;
+  *result_listener << lhs << " != " << rhs;
 
   return false;
 }
 
-template <typename T>
-constexpr bool is_vec_2d()
+MATCHER(float_matcher, std::string(negation ? "are not" : "are") + " approximately equal floats")
 {
-  return std::is_same_v<T, vec_2d<float>> or std::is_same_v<T, vec_2d<double>>;
+  auto lhs = std::get<0>(arg);
+  auto rhs = std::get<1>(arg);
+
+  if (::testing::Matches(floating_eq(rhs))(lhs)) return true;
+
+  *result_listener << std::setprecision(18) << lhs << " != " << rhs;
+
+  return false;
 }
 
 template <typename T, typename Vector>
@@ -79,14 +80,13 @@ inline void expect_vector_equivalent(Vector1 lhs, Vector2 rhs)
 {
   using T = typename Vector1::value_type;
   static_assert(std::is_same_v<T, typename Vector2::value_type>, "Value type mismatch.");
-  static_assert(std::is_floating_point_v<T> or is_vec_2d<T>(), "Unsupported vector value type.");
 
-  if constexpr (is_vec_2d<T>()) {
+  if constexpr (cuspatial::is_vec_2d<T>()) {
     EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(vec_2d_matcher(), to_host<T>(rhs)));
-  } else if constexpr (std::is_same_v<T, float>) {
-    EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(::testing::FloatEq(), to_host<T>(rhs)));
-  } else if constexpr (std::is_same_v<T, double>) {
-    EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(::testing::DoubleEq(), to_host<T>(rhs)));
+  } else if constexpr (std::is_floating_point_v<T>) {
+    EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(float_matcher(), to_host<T>(rhs)));
+  } else {
+    EXPECT_EQ(lhs, rhs);
   }
 }
 
