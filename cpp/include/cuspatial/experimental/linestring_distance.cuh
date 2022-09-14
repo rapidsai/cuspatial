@@ -59,7 +59,7 @@ namespace cuspatial {
  * "LegacyRandomAccessIterator"
  */
 template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt>
-void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
+OutputIt pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
                                   OffsetIterator linestring1_offsets_last,
                                   Cart2dItA linestring1_points_first,
                                   Cart2dItA linestring1_points_last,

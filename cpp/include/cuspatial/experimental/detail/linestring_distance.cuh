@@ -103,11 +103,10 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
 
   if (p1_idx >= linestring1_num_points) { return; }
 
+  auto linestring_it =
+    thrust::upper_bound(thrust::seq, linestring1_offsets_begin, linestring1_offsets_end, p1_idx);
   std::size_t const linestring_idx =
-    thrust::distance(linestring1_offsets_begin,
-                     thrust::upper_bound(
-                       thrust::seq, linestring1_offsets_begin, linestring1_offsets_end, p1_idx)) -
-    1;
+    thrust::distance(linestring1_offsets_begin, thrust::prev(linestring_it));
 
   auto const ls1_end = endpoint_index_of_linestring(
     linestring_idx, linestring1_offsets_begin, num_linestrings, linestring1_num_points);
@@ -119,7 +118,7 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
 
   auto const ls2_start = *(linestring2_offsets_begin + linestring_idx);
   auto const ls2_end   = endpoint_index_of_linestring(
-    linestring_idx, linestring2_offsets_begin, num_linestrings, linestring2_num_points);
+      linestring_idx, linestring2_offsets_begin, num_linestrings, linestring2_num_points);
 
   auto const& A = thrust::raw_reference_cast(linestring1_points_begin[p1_idx]);
   auto const& B = thrust::raw_reference_cast(linestring1_points_begin[p1_idx + 1]);
@@ -138,15 +137,15 @@ void __global__ pairwise_linestring_distance_kernel(OffsetIterator linestring1_o
 }  // namespace detail
 
 template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt>
-void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
-                                  OffsetIterator linestring1_offsets_last,
-                                  Cart2dItA linestring1_points_first,
-                                  Cart2dItA linestring1_points_last,
-                                  OffsetIterator linestring2_offsets_first,
-                                  Cart2dItB linestring2_points_first,
-                                  Cart2dItB linestring2_points_last,
-                                  OutputIt distances_first,
-                                  rmm::cuda_stream_view stream)
+OutputIt pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
+                                      OffsetIterator linestring1_offsets_last,
+                                      Cart2dItA linestring1_points_first,
+                                      Cart2dItA linestring1_points_last,
+                                      OffsetIterator linestring2_offsets_first,
+                                      Cart2dItB linestring2_points_first,
+                                      Cart2dItB linestring2_points_last,
+                                      OutputIt distances_first,
+                                      rmm::cuda_stream_view stream)
 {
   using T = typename detail::iterator_vec_base_type<Cart2dItA>;
 
@@ -161,7 +160,7 @@ void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
                 "All input types must be cuspatial::vec_2d with the same value type");
 
   auto const num_linestring_pairs =
-    thrust::distance(linestring1_offsets_first, linestring1_offsets_last);
+    thrust::distance(linestring1_offsets_first, linestring1_offsets_last) - 1;
   auto const num_linestring1_points =
     thrust::distance(linestring1_points_first, linestring1_points_last);
   auto const num_linestring2_points =
@@ -187,6 +186,7 @@ void pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
     distances_first);
 
   CUSPATIAL_CUDA_TRY(cudaGetLastError());
+  return distances_first + num_linestring_pairs;
 }
 
 }  // namespace cuspatial
