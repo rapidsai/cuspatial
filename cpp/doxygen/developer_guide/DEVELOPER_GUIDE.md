@@ -558,7 +558,7 @@ custom_memory_resource *mr...;
 rmm::device_buffer custom_buff(100, mr, stream);
 ```
 
-#### `rmm::device_scalar<T>`
+#### rmm::device_scalar<T>
 Allocates a single element of the specified type initialized to the specified value. Use this for
 scalar input/outputs into device kernels, e.g., reduction results, null count, etc. This is
 effectively a convenience wrapper around a `rmm::device_vector<T>` of length 1.
@@ -576,7 +576,7 @@ kernel<<<...>>>(int_scalar.data(),...);
 int host_value = int_scalar.value();
 ```
 
-#### `rmm::device_vector<T>`
+#### rmm::device_vector<T>
 
 Allocates a specified number of elements of the specified type. If no initialization value is
 provided, all elements are default initialized (this incurs a kernel launch).
@@ -590,7 +590,7 @@ utilities enable creation of `uvector`s from host-side vectors, or creating zero
 `uvector`s, so that they are as convenient to use as `device_vector`. Avoiding `device_vector` has
 a number of benefits, as described in the following section on `rmm::device_uvector`.
 
-#### `rmm::device_uvector<T>`
+#### rmm::device_uvector<T>
 
 Similar to a `device_vector`, allocates a contiguous set of elements in device memory but with key
 differences:
@@ -632,7 +632,7 @@ group a broad set of functions, further namespaces may be used.
 Many functions are not meant for public use, so place them in either the `detail` or an *anonymous*
 namespace, depending on the situation.
 
-#### `detail` namespace
+#### detail namespace
 
 Functions or objects that will be used across *multiple* translation units (i.e., source files),
 should be exposed in an internal header file and placed in the `detail` namespace. Example:
