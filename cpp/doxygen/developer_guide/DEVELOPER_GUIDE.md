@@ -532,7 +532,7 @@ libcuspatial code eschews raw pointers and direct memory allocation. Use RMM cla
 use [`device_memory_resource`](https://github.com/rapidsai/rmm/#device_memory_resource) for device
 memory allocation with automated lifetime management.
 
-#### `rmm::device_buffer`
+#### rmm::device_buffer
 Allocates a specified number of bytes of untyped, uninitialized device memory using a
 `device_memory_resource`. If no resource is explicitly provided, uses
 `rmm::mr::get_current_device_resource()`.
