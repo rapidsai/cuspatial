@@ -197,8 +197,8 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             rmm::cuda_stream_view stream)
 {
   static_assert(is_same<vec_2d<T>,
-                                iterator_value_type<LonLatItA>,
-                                iterator_value_type<LonLatItB>>(),
+                                cuspatial::iterator_value_type<LonLatItA>,
+                                cuspatial::iterator_value_type<LonLatItB>>(),
                 "Inputs must be cuspatial::vec_2d");
   static_assert(
     is_same_floating_point<T,
