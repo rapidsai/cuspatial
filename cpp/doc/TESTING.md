@@ -41,7 +41,7 @@ includes device code, and so must only be used in `.cu` files. `rmm::device_uvec
 `rmm::device_buffer` and the various `column_wrapper` types described later can be used in `.cpp`
 files, and are therefore preferred in test code over `thrust::device_vector`.
 
-That said, testing header-only APIs requires CUDA compilation so should be done in `.cu` files.
+Testing header-only APIs requires CUDA compilation so should be done in `.cu` files.
 
 ## Base Fixture
 
