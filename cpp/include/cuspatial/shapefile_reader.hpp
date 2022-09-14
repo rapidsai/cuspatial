@@ -23,10 +23,7 @@
 
 namespace cuspatial {
 
-typedef enum class winding_order : bool {
-  CLOCKWISE,
-  COUNTER_CLOCKWISE  // or "anticlockwise" or "widdershins", if you prefer
-} winding_order;
+typedef enum class winding_order : bool { CLOCKWISE, COUNTER_CLOCKWISE } winding_order;
 
 /**
  * @addtogroup io
