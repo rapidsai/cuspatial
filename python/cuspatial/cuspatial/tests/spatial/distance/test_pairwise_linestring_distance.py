@@ -46,12 +46,11 @@ def test_zero_pair():
             "y": [],
         }
     )
-    offset1 = cudf.Series([], dtype="int32")
-    offset2 = cudf.Series([], dtype="int32")
+    offset1 = cudf.Series([0], dtype="int32")
+    offset2 = cudf.Series([0], dtype="int32")
 
     got = cuspatial.pairwise_linestring_distance(
-        data1["x"], data2["y"], offset1, data2["x"], data2["y"], offset2
-    )
+        offset1, data1["x"], data1["y"], offset2, data2["x"], data2["y"])
     expected = cudf.Series([], dtype="float64")
 
     assert_eq(got, expected)
@@ -70,8 +69,8 @@ def test_one_pair():
             "y": [2.0, 3.0],
         }
     )
-    offset1 = cudf.Series([0], dtype="int32")
-    offset2 = cudf.Series([0], dtype="int32")
+    offset1 = cudf.Series([0, 2], dtype="int32")
+    offset2 = cudf.Series([0, 2], dtype="int32")
 
     got = cuspatial.pairwise_linestring_distance(
         offset1, data1["x"], data1["y"], offset2, data2["x"], data2["y"]
@@ -99,8 +98,8 @@ def test_two_pairs():
             "y": [2.0, 3.0, -8.0, -5.0, -15.0, -6.0],
         }
     )
-    offset1 = cudf.Series([0, 3], dtype="int32")
-    offset2 = cudf.Series([0, 2], dtype="int32")
+    offset1 = cudf.Series([0, 3, 5], dtype="int32")
+    offset2 = cudf.Series([0, 2, 6], dtype="int32")
 
     got = cuspatial.pairwise_linestring_distance(
         offset1, data1["x"], data1["y"], offset2, data2["x"], data2["y"]
@@ -130,8 +129,8 @@ def test_100_randomized_input():
     num_points_1 = int(offset1[-1])
     num_points_2 = int(offset2[-1])
 
-    offset1 = cp.concatenate((cp.zeros((1,)), offset1[:-1]))
-    offset2 = cp.concatenate((cp.zeros((1,)), offset2[:-1]))
+    offset1 = cp.concatenate((cp.zeros((1,)), offset1))
+    offset2 = cp.concatenate((cp.zeros((1,)), offset2))
 
     points1_x = rng.uniform(-1, 1, (num_points_1,))
     points1_y = rng.uniform(-1, 1, (num_points_1,))
