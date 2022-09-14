@@ -17,7 +17,7 @@
 #include "../utility/double_boolean_dispatch.hpp"
 #include "../utility/iterator.hpp"
 
-#include <cuspatial/experimental/point_linestring_nearest_point.cuh>
+#include <cuspatial/experimental/point_linestring_nearest_points.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -43,7 +43,7 @@ namespace detail {
 namespace {
 
 template <bool is_multi_point, bool is_multi_linestring>
-struct pairwise_point_linestring_nearest_point_impl {
+struct pairwise_point_linestring_nearest_points_impl {
   using SizeType = cudf::device_span<cudf::size_type>::size_type;
 
   template <typename T, CUDF_ENABLE_IF(std::is_floating_point_v<T>)>
@@ -95,17 +95,17 @@ struct pairwise_point_linestring_nearest_point_impl {
                            segment_idx->mutable_view().begin<cudf::size_type>(),
                            nearest_points_it));
 
-      pairwise_point_linestring_nearest_point(point_geometry_it,
-                                              point_geometry_it + num_pairs + 1,
-                                              points_it,
-                                              points_it + num_points,
-                                              linestring_geometry_it,
-                                              linestring_offsets.begin(),
-                                              linestring_offsets.end(),
-                                              linestring_points_it,
-                                              linestring_points_it + num_linestring_points,
-                                              output_its,
-                                              stream);
+      pairwise_point_linestring_nearest_points(point_geometry_it,
+                                               point_geometry_it + num_pairs + 1,
+                                               points_it,
+                                               points_it + num_points,
+                                               linestring_geometry_it,
+                                               linestring_offsets.begin(),
+                                               linestring_offsets.end(),
+                                               linestring_points_it,
+                                               linestring_points_it + num_linestring_points,
+                                               output_its,
+                                               stream);
 
       return std::tuple(
         std::nullopt, std::nullopt, std::move(segment_idx), std::move(nearest_points_xy));
@@ -122,17 +122,17 @@ struct pairwise_point_linestring_nearest_point_impl {
                            segment_idx->mutable_view().begin<cudf::size_type>(),
                            nearest_points_it));
 
-      pairwise_point_linestring_nearest_point(point_geometry_it,
-                                              point_geometry_it + num_pairs + 1,
-                                              points_it,
-                                              points_it + num_points,
-                                              linestring_geometry_it,
-                                              linestring_offsets.begin(),
-                                              linestring_offsets.end(),
-                                              linestring_points_it,
-                                              linestring_points_it + num_linestring_points,
-                                              output_its,
-                                              stream);
+      pairwise_point_linestring_nearest_points(point_geometry_it,
+                                               point_geometry_it + num_pairs + 1,
+                                               points_it,
+                                               points_it + num_points,
+                                               linestring_geometry_it,
+                                               linestring_offsets.begin(),
+                                               linestring_offsets.end(),
+                                               linestring_points_it,
+                                               linestring_points_it + num_linestring_points,
+                                               output_its,
+                                               stream);
 
       return std::tuple(std::move(nearest_point_idx),
                         std::nullopt,
@@ -151,17 +151,17 @@ struct pairwise_point_linestring_nearest_point_impl {
                            segment_idx->mutable_view().begin<cudf::size_type>(),
                            nearest_points_it));
 
-      pairwise_point_linestring_nearest_point(point_geometry_it,
-                                              point_geometry_it + num_pairs + 1,
-                                              points_it,
-                                              points_it + num_points,
-                                              linestring_geometry_it,
-                                              linestring_offsets.begin(),
-                                              linestring_offsets.end(),
-                                              linestring_points_it,
-                                              linestring_points_it + num_linestring_points,
-                                              output_its,
-                                              stream);
+      pairwise_point_linestring_nearest_points(point_geometry_it,
+                                               point_geometry_it + num_pairs + 1,
+                                               points_it,
+                                               points_it + num_points,
+                                               linestring_geometry_it,
+                                               linestring_offsets.begin(),
+                                               linestring_offsets.end(),
+                                               linestring_points_it,
+                                               linestring_points_it + num_linestring_points,
+                                               output_its,
+                                               stream);
 
       return std::tuple(std::nullopt,
                         std::move(nearest_linestring_idx),
@@ -186,17 +186,17 @@ struct pairwise_point_linestring_nearest_point_impl {
                            segment_idx->mutable_view().begin<cudf::size_type>(),
                            nearest_points_it));
 
-      pairwise_point_linestring_nearest_point(point_geometry_it,
-                                              point_geometry_it + num_pairs + 1,
-                                              points_it,
-                                              points_it + num_points,
-                                              linestring_geometry_it,
-                                              linestring_offsets.begin(),
-                                              linestring_offsets.end(),
-                                              linestring_points_it,
-                                              linestring_points_it + num_linestring_points,
-                                              output_its,
-                                              stream);
+      pairwise_point_linestring_nearest_points(point_geometry_it,
+                                               point_geometry_it + num_pairs + 1,
+                                               points_it,
+                                               points_it + num_points,
+                                               linestring_geometry_it,
+                                               linestring_offsets.begin(),
+                                               linestring_offsets.end(),
+                                               linestring_points_it,
+                                               linestring_points_it + num_linestring_points,
+                                               output_its,
+                                               stream);
 
       return std::tuple(std::move(nearest_point_idx),
                         std::move(nearest_linestring_idx),
@@ -219,7 +219,7 @@ struct pairwise_point_linestring_nearest_point_impl {
 }  // namespace
 
 template <bool is_multi_point, bool is_multi_linestring>
-struct pairwise_point_linestring_nearest_point_functor {
+struct pairwise_point_linestring_nearest_points_functor {
   std::tuple<std::optional<std::unique_ptr<cudf::column>>,
              std::optional<std::unique_ptr<cudf::column>>,
              std::unique_ptr<cudf::column>,
@@ -250,7 +250,7 @@ struct pairwise_point_linestring_nearest_point_functor {
 
     return cudf::type_dispatcher(
       points_xy.type(),
-      pairwise_point_linestring_nearest_point_impl<is_multi_point, is_multi_linestring>{},
+      pairwise_point_linestring_nearest_points_impl<is_multi_point, is_multi_linestring>{},
       num_rhs - 1,
       multipoint_geometry_offsets,
       points_xy,
@@ -276,7 +276,7 @@ pairwise_point_linestring_nearest_points(
   cudf::column_view linestring_points_xy,
   rmm::mr::device_memory_resource* mr)
 {
-  return double_boolean_dispatch<detail::pairwise_point_linestring_nearest_point_functor>(
+  return double_boolean_dispatch<detail::pairwise_point_linestring_nearest_points_functor>(
     multipoint_geometry_offsets.has_value(),
     multilinestring_geometry_offsets.has_value(),
     multipoint_geometry_offsets,

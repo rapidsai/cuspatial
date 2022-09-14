@@ -30,14 +30,14 @@ using namespace cudf;
 using namespace cudf::test;
 
 template <typename T>
-struct PairwisePointLinestringNearestPointTest : public ::testing::Test {
+struct PairwisePointLinestringNearestPointsTest : public ::testing::Test {
 };
 
 using TestTypes = ::testing::Types<float, double>;
 
-TYPED_TEST_CASE(PairwisePointLinestringNearestPointTest, TestTypes);
+TYPED_TEST_CASE(PairwisePointLinestringNearestPointsTest, TestTypes);
 
-TYPED_TEST(PairwisePointLinestringNearestPointTest, Empty)
+TYPED_TEST(PairwisePointLinestringNearestPointsTest, Empty)
 {
   using T = TypeParam;
 
@@ -58,7 +58,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointTest, Empty)
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_nearest_points, *nearest_points);
 }
 
-TYPED_TEST(PairwisePointLinestringNearestPointTest, SinglePointMultiLineString)
+TYPED_TEST(PairwisePointLinestringNearestPointsTest, SinglePointMultiLineString)
 {
   using T = TypeParam;
 
@@ -82,7 +82,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointTest, SinglePointMultiLineString)
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_nearest_points, *nearest_points);
 }
 
-TYPED_TEST(PairwisePointLinestringNearestPointTest, MultiPointSingleLineString)
+TYPED_TEST(PairwisePointLinestringNearestPointsTest, MultiPointSingleLineString)
 {
   using T = TypeParam;
 
@@ -105,7 +105,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointTest, MultiPointSingleLineString)
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_nearest_points, *nearest_points);
 }
 
-TYPED_TEST(PairwisePointLinestringNearestPointTest, MultiPointMultiLineString)
+TYPED_TEST(PairwisePointLinestringNearestPointsTest, MultiPointMultiLineString)
 {
   using T = TypeParam;
 
@@ -134,10 +134,10 @@ TYPED_TEST(PairwisePointLinestringNearestPointTest, MultiPointMultiLineString)
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_nearest_points, *nearest_points);
 }
 
-struct PairwisePointLinestringNearestPointThrowTest : public ::testing::Test {
+struct PairwisePointLinestringNearestPointsThrowTest : public ::testing::Test {
 };
 
-TEST_F(PairwisePointLinestringNearestPointThrowTest, OddNumberOfCoordinates)
+TEST_F(PairwisePointLinestringNearestPointsThrowTest, OddNumberOfCoordinates)
 {
   auto xy      = fixed_width_column_wrapper<float>{1, 1, 2};
   auto offset  = fixed_width_column_wrapper<size_type>{0, 3};
@@ -148,7 +148,7 @@ TEST_F(PairwisePointLinestringNearestPointThrowTest, OddNumberOfCoordinates)
                cuspatial::logic_error);
 }
 
-TEST_F(PairwisePointLinestringNearestPointThrowTest, NumPairsMismatchSinglePointSingleLinestring)
+TEST_F(PairwisePointLinestringNearestPointsThrowTest, NumPairsMismatchSinglePointSingleLinestring)
 {
   auto xy      = fixed_width_column_wrapper<float>{1, 1, 2, 2};
   auto offset  = fixed_width_column_wrapper<size_type>{0, 3};
@@ -159,7 +159,7 @@ TEST_F(PairwisePointLinestringNearestPointThrowTest, NumPairsMismatchSinglePoint
                cuspatial::logic_error);
 }
 
-TEST_F(PairwisePointLinestringNearestPointThrowTest, NumPairsMismatchSinglePointMultiLinestring)
+TEST_F(PairwisePointLinestringNearestPointsThrowTest, NumPairsMismatchSinglePointMultiLinestring)
 {
   auto xy = fixed_width_column_wrapper<float>{1, 1, 2, 2};
 
@@ -172,7 +172,7 @@ TEST_F(PairwisePointLinestringNearestPointThrowTest, NumPairsMismatchSinglePoint
                cuspatial::logic_error);
 }
 
-TEST_F(PairwisePointLinestringNearestPointThrowTest, NumPairsMismatchMultiPointSingleLinestring)
+TEST_F(PairwisePointLinestringNearestPointsThrowTest, NumPairsMismatchMultiPointSingleLinestring)
 {
   auto point_geometry = fixed_width_column_wrapper<size_type>{0, 2, 4};
   auto xy             = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3, 4, 4};
@@ -185,7 +185,7 @@ TEST_F(PairwisePointLinestringNearestPointThrowTest, NumPairsMismatchMultiPointS
                cuspatial::logic_error);
 }
 
-TEST_F(PairwisePointLinestringNearestPointThrowTest, NumPairsMismatchMultiPointMultiLinestring)
+TEST_F(PairwisePointLinestringNearestPointsThrowTest, NumPairsMismatchMultiPointMultiLinestring)
 {
   auto point_geometry = fixed_width_column_wrapper<size_type>{0, 2, 4};
   auto xy             = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3, 4, 4};
@@ -200,7 +200,7 @@ TEST_F(PairwisePointLinestringNearestPointThrowTest, NumPairsMismatchMultiPointM
                cuspatial::logic_error);
 }
 
-TEST_F(PairwisePointLinestringNearestPointThrowTest, MismatchType)
+TEST_F(PairwisePointLinestringNearestPointsThrowTest, MismatchType)
 {
   auto point_geometry = fixed_width_column_wrapper<size_type>{0, 2, 4};
   auto xy             = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3, 4, 4};
@@ -214,7 +214,7 @@ TEST_F(PairwisePointLinestringNearestPointThrowTest, MismatchType)
                cuspatial::logic_error);
 }
 
-TEST_F(PairwisePointLinestringNearestPointThrowTest, ContainsNull)
+TEST_F(PairwisePointLinestringNearestPointsThrowTest, ContainsNull)
 {
   auto point_geometry = fixed_width_column_wrapper<size_type>{0, 2, 4};
   auto xy = fixed_width_column_wrapper<float>{{1, 1, 2, 2, 3, 3, 4, 4}, {1, 0, 1, 1, 1, 1, 1, 1}};

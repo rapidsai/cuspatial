@@ -53,17 +53,17 @@ template <class Vec2dItA,
           class OffsetIteratorC,
           class OutputIt>
 void __global__
-pairwise_point_linestring_nearest_point_kernel(OffsetIteratorA points_geometry_offsets_first,
-                                               OffsetIteratorA points_geometry_offsets_last,
-                                               Vec2dItA points_first,
-                                               Vec2dItA points_last,
-                                               OffsetIteratorB linestring_geometry_offsets_first,
-                                               OffsetIteratorB linestring_geometry_offsets_last,
-                                               OffsetIteratorC linestring_part_offsets_first,
-                                               OffsetIteratorC linestring_part_offsets_last,
-                                               Vec2dItB linestring_points_first,
-                                               Vec2dItB linestring_points_last,
-                                               OutputIt output_first)
+pairwise_point_linestring_nearest_points_kernel(OffsetIteratorA points_geometry_offsets_first,
+                                                OffsetIteratorA points_geometry_offsets_last,
+                                                Vec2dItA points_first,
+                                                Vec2dItA points_last,
+                                                OffsetIteratorB linestring_geometry_offsets_first,
+                                                OffsetIteratorB linestring_geometry_offsets_last,
+                                                OffsetIteratorC linestring_part_offsets_first,
+                                                OffsetIteratorC linestring_part_offsets_last,
+                                                Vec2dItB linestring_points_first,
+                                                Vec2dItB linestring_points_last,
+                                                OutputIt output_first)
 {
   using T        = iterator_vec_base_type<Vec2dItA>;
   using SizeType = iterator_value_type<OffsetIteratorA>;
@@ -121,17 +121,17 @@ template <class Vec2dItA,
           class OffsetIteratorB,
           class OffsetIteratorC,
           class OutputIt>
-OutputIt pairwise_point_linestring_nearest_point(OffsetIteratorA points_geometry_offsets_first,
-                                                 OffsetIteratorA points_geometry_offsets_last,
-                                                 Vec2dItA points_first,
-                                                 Vec2dItA points_last,
-                                                 OffsetIteratorB linestring_geometry_offsets_first,
-                                                 OffsetIteratorC linestring_part_offsets_first,
-                                                 OffsetIteratorC linestring_part_offsets_last,
-                                                 Vec2dItB linestring_points_first,
-                                                 Vec2dItB linestring_points_last,
-                                                 OutputIt output_first,
-                                                 rmm::cuda_stream_view stream)
+OutputIt pairwise_point_linestring_nearest_points(OffsetIteratorA points_geometry_offsets_first,
+                                                  OffsetIteratorA points_geometry_offsets_last,
+                                                  Vec2dItA points_first,
+                                                  Vec2dItA points_last,
+                                                  OffsetIteratorB linestring_geometry_offsets_first,
+                                                  OffsetIteratorC linestring_part_offsets_first,
+                                                  OffsetIteratorC linestring_part_offsets_last,
+                                                  Vec2dItB linestring_points_first,
+                                                  Vec2dItB linestring_points_last,
+                                                  OutputIt output_first,
+                                                  rmm::cuda_stream_view stream)
 {
   using T = detail::iterator_vec_base_type<Vec2dItA>;
 
@@ -150,10 +150,10 @@ OutputIt pairwise_point_linestring_nearest_point(OffsetIteratorA points_geometry
   std::size_t constexpr threads_per_block = 256;
   std::size_t const num_blocks            = (num_pairs + threads_per_block - 1) / threads_per_block;
 
-  detail::pairwise_point_linestring_nearest_point_kernel<<<num_blocks,
-                                                           threads_per_block,
-                                                           0,
-                                                           stream.value()>>>(
+  detail::pairwise_point_linestring_nearest_points_kernel<<<num_blocks,
+                                                            threads_per_block,
+                                                            0,
+                                                            stream.value()>>>(
     points_geometry_offsets_first,
     points_geometry_offsets_last,
     points_first,

@@ -87,7 +87,7 @@ ConfigureTest(LINESTRING_DISTANCE_TEST
     spatial/linestring_distance_test.cpp spatial/linestring_distance_test_medium.cpp)
 
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST
-    spatial/point_linestring_nearest_point_test.cpp)
+    spatial/point_linestring_nearest_points_test.cpp)
 
 ConfigureTest(SHAPEFILE_READER_TEST
     io/shp/polygon_shapefile_reader_test.cpp)
@@ -126,7 +126,7 @@ ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
     experimental/spatial/linestring_distance_test.cu)
 
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST_EXP
-    experimental/spatial/point_linestring_nearest_point_test.cu)
+    experimental/spatial/point_linestring_nearest_points_test.cu)
 
 ConfigureTest(COORDINATE_TRANSFORM_TEST_EXP
     experimental/spatial/coordinate_transform_test.cu)

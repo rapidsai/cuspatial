@@ -86,7 +86,7 @@ template <class Vec2dItA,
           class OffsetIteratorB,
           class OffsetIteratorC,
           class OutputIt>
-OutputIt pairwise_point_linestring_nearest_point(
+OutputIt pairwise_point_linestring_nearest_points(
   OffsetIteratorA points_geometry_offsets_first,
   OffsetIteratorA points_geometry_offsets_last,
   Vec2dItA points_first,
@@ -100,4 +100,4 @@ OutputIt pairwise_point_linestring_nearest_point(
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/point_linestring_nearest_point.cuh>
+#include <cuspatial/experimental/detail/point_linestring_nearest_points.cuh>
