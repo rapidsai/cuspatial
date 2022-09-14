@@ -98,7 +98,7 @@ class GeoColumn(ColumnBase):
             mpolygons = cudf.core.column.ListColumn(
                 size=len(polygons_offsets) - 1,
                 dtype=cudf.ListDtype(polygons.dtype),
-                children=(cupy.arange(len(polygons) + 1), polygons),
+                children=(cp.arange(len(polygons) + 1), polygons),
             )
             self.points = cudf.Series([])
             self.points.name = "points"
