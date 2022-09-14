@@ -15,7 +15,7 @@
  */
 
 #include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/detail/utility/traits.hpp>
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <thrust/iterator/transform_iterator.h>
@@ -84,8 +84,7 @@ template <typename FirstIter, typename SecondIter>
 auto make_vec_2d_iterator(FirstIter first, SecondIter second)
 {
   using T = typename std::iterator_traits<FirstIter>::value_type;
-  static_assert(detail::is_same<T, detail::iterator_value_type<SecondIter>>(),
-                "Iterator value_type mismatch");
+  static_assert(is_same<T, iterator_value_type<SecondIter>>(), "Iterator value_type mismatch");
 
   auto zipped = thrust::make_zip_iterator(thrust::make_tuple(first, second));
   return thrust::make_transform_iterator(zipped, detail::tuple_to_vec_2d<T>());

@@ -20,7 +20,6 @@
 #include <type_traits>
 
 namespace cuspatial {
-namespace detail {
 
 /**
  * @internal
@@ -89,7 +88,6 @@ using iterator_value_type = typename std::iterator_traits<Iterator>::value_type;
  * @tparam Iterator The value type to get from, must point to a cuspatial::vec_2d
  */
 template <typename Iterator>
-using iterator_vec_base_type = typename iterator_value_type<Iterator>::value_type;
+using iterator_vec_base_type = typename cuspatial::iterator_value_type<Iterator>::value_type;
 
-}  // namespace detail
 }  // namespace cuspatial

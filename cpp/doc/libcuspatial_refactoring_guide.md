@@ -134,7 +134,7 @@ This is the existing API, unchanged by refactoring. Here is the existing
 template <class LonLatItA,
           class LonLatItB,
           class OutputIt,
-          class T = typename detail::iterator_vec_base_type<LonLatItA>>
+          class T = typename cuspatial::iterator_vec_base_type<LonLatItA>>
 OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,
@@ -196,14 +196,14 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             T const radius,
                             rmm::cuda_stream_view stream)
 {
-  static_assert(detail::is_same<vec_2d<T>,
-                                detail::iterator_value_type<LonLatItA>,
-                                detail::iterator_value_type<LonLatItB>>(),
+  static_assert(is_same<vec_2d<T>,
+                                iterator_value_type<LonLatItA>,
+                                iterator_value_type<LonLatItB>>(),
                 "Inputs must be cuspatial::vec_2d");
   static_assert(
-    detail::is_same_floating_point<T,
-                                   typename detail::iterator_vec_base_type<LonLatItA>,
-                                   typename detail::iterator_value_type<OutputIt>>(),
+    is_same_floating_point<T,
+                                   typename cuspatial::iterator_vec_base_type<LonLatItA>,
+                                   typename cuspatial::iterator_value_type<OutputIt>>(),
     "All iterator types and radius must have the same floating-point coordinate value type.");
 
   CUSPATIAL_EXPECTS(radius > 0, "radius must be positive.");

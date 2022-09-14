@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/constants.hpp>
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -74,8 +75,8 @@ OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
                              vec_2d<T> origin,
                              rmm::cuda_stream_view stream)
 {
-  static_assert(std::is_floating_point_v<T>,
-                "lonlat_to_cartesian supports only floating-point coordinates.");
+  static_assert(is_same_floating_point<T, iterator_vec_base_type<InputIt>>(),
+                "Origin and input must have the same base floating point type.");
 
   CUSPATIAL_EXPECTS(origin.x >= -180 && origin.x <= 180 && origin.y >= -90 && origin.y <= 90,
                     "origin must have valid longitude [-180, 180] and latitude [-90, 90]");
