@@ -50,7 +50,8 @@ def test_zero_pair():
     offset2 = cudf.Series([0], dtype="int32")
 
     got = cuspatial.pairwise_linestring_distance(
-        offset1, data1["x"], data1["y"], offset2, data2["x"], data2["y"])
+        offset1, data1["x"], data1["y"], offset2, data2["x"], data2["y"]
+    )
     expected = cudf.Series([], dtype="float64")
 
     assert_eq(got, expected)
