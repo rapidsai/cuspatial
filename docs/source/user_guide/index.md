@@ -130,8 +130,8 @@ Name: r_pos, Length: 289, dtype: int32,                 x          y
 [10654 rows x 2 columns])
 ```
 
-The result of `cuspatial.read_polygon_shapefile` is a `Tuple` of GeoArrow buffers that can
-be converted into a `cuspatial.GeoSeries` or used directly with other interface methods.  
+The result of `cuspatial.read_polygon_shapefile` is a `Tuple` of GeoArrow buffers that  
+can be converted into a `cuspatial.GeoSeries` or used directly with other interface methods.   
 
 ```python
 # TODO: The above GeoSeries constructor is in-progress in the branch  
@@ -276,10 +276,15 @@ ids = cupy.random.randint(1, 4000, 10000)
 timestamps = cupy.random.random(10000)
 x = cupy.random.random(10000)
 y = cupy.random.random(10000)
-trajectories = cuspatial.trajectory.derive_trajectories(ids, x, y, timestamps)
-trajectories.head(40)
-
+trajectories = cuspatial.core.trajectory.derive_trajectories(ids, x, y, timestamps)
+print(trajectories[0].head(40))
+print(trajectories[1].head(40))
 ```
+
+derive_trajectories effectively sorts the trajectories by object_id, then timestamp, then  
+returns a tuple containing the sorted trajectory data frame in the first index position and  
+the offsets buffer defining the start and stop of each trajectory in the second index  
+position.
 
 Use `trajectory_distance_and_speed` to calculate the overall distance travelled in meters  
 and the speed of a set of trajectories with the same format as the result returned by  
@@ -310,6 +315,23 @@ bounding_boxes = cuspatial.trajectory.trajectory_bounding_boxes(
    
 ## Spatial utilities
 
+### Bounding
 
+Compute the bounding boxes of n polygons or polylines:
+
+```py
+host_dataframe = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+gpu_dataframe = cuspatial.from_geopandas(host_dataframe)
+bounding_box_polygons = gpu_dataframe.spatial.bounding.polygon_bounding_boxes()
+```
+               spatial/
+                       bounding.py   # polygon and polyline bounding boxes
+                       distance.py   # hausdorff, haversine, and pairwise linestring  
+                                     # distances
+                       filtering.py  # points in spatial window 
+                       indexing.py   # quadtree generation
+                       join.py       # point in polygon (pip), pip quadtree, point to  
+                                     # nearest line segment.
+                       projection.py # lonlat to cartesian coordinates
 
 ## GeoArrow data format
