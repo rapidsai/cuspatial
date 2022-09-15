@@ -18,6 +18,7 @@
 
 #include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/iterator_collections.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -29,12 +30,16 @@
 
 namespace cuspatial {
 
-template <class Cart2dItA, class Cart2dItB, class OutputIt>
-OutputIt pairwise_point_distance(Cart2dItA points1_first,
-                                 Cart2dItA points1_last,
-                                 Cart2dItB points2_first,
-                                 OutputIt distances_first,
-                                 rmm::cuda_stream_view stream)
+template <class OffsetIteratorA,
+          class OffsetIteratorB,
+          class Cart2dItA,
+          class Cart2dItB,
+          class OutputIt>
+OutputIt pairwise_point_distance(
+  iterator_collections::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints1,
+  iterator_collections::multipoint_array<OffsetIteratorB, Cart2dItB> multipoints2,
+  OutputIt distances_first,
+  rmm::cuda_stream_view stream)
 {
   using T = typename detail::iterator_vec_base_type<Cart2dItA>;
 
@@ -48,15 +53,29 @@ OutputIt pairwise_point_distance(Cart2dItA points1_first,
                                 typename detail::iterator_value_type<Cart2dItB>>(),
                 "All Input types must be cuspatial::vec_2d with the same value type");
 
-  return thrust::transform(rmm::exec_policy(stream),
-                           points1_first,
-                           points1_last,
-                           points2_first,
-                           distances_first,
-                           [] __device__(auto p1, auto p2) {
-                             auto v = p1 - p2;
-                             return std::sqrt(dot(v, v));
-                           });
+  return thrust::transform(
+    rmm::exec_policy(stream),
+    multipoints1.multipoint_begin(),
+    multipoints1.multipoint_end(),
+    multipoints2.multipoint_begin(),
+    distances_first,
+    [] __device__(auto& mp1, auto& mp2) {
+      T min_distance_squared;
+      thrust::for_each(thrust::seq,
+                       mp1.point_begin(),
+                       mp1.point_end(),
+                       [mp2, &min_distance_squared] __device__(auto& p1) {
+                         thrust::for_each(thrust::seq,
+                                          mp2.point_begin(),
+                                          mp2.point_end(),
+                                          [&p1, &min_distance_squared] __device__(auto& p2) {
+                                            auto v               = p1 - p2;
+                                            auto d               = dot(v, v);
+                                            min_distance_squared = min(min_distance_squared, d);
+                                          });
+                       });
+      return sqrt(min_distance_squared);
+    });
 }
 
 }  // namespace cuspatial
