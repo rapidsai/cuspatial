@@ -81,8 +81,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, Empty)
   EXPECT_EQ(nearest_point_id, std::vector<int32_t>{});
   EXPECT_EQ(nearest_linestring_parts_id, std::vector<int32_t>{});
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>{});
-  expect_vec2d_vector_equivalent(thrust::host_vector<vec_2d<T>>(neartest_point_coordinate),
-                                 std::vector<vec_2d<T>>{});
+  expect_vector_equivalent(neartest_point_coordinate, std::vector<vec_2d<T>>{});
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
@@ -121,8 +120,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, OnePairSingleComponent)
 
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>{1});
   auto expected_coordinate = CartVec{{0.5, 0.5}};
-  expect_vec2d_vector_equivalent(thrust::host_vector<vec_2d<T>>(neartest_point_coordinate),
-                                 expected_coordinate);
+  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
@@ -162,8 +160,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, TwoPairsSingleComponent)
 
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>({1, 0}));
   auto expected_coordinate = CartVec{{0.5, 0.5}, {1.5, 0.5}};
-  expect_vec2d_vector_equivalent(thrust::host_vector<vec_2d<T>>(neartest_point_coordinate),
-                                 expected_coordinate);
+  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
@@ -207,8 +204,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, OnePairMultiComponent)
   EXPECT_EQ(nearest_linestring_linestring_id, std::vector<int32_t>({0}));
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>({0}));
   auto expected_coordinate = CartVec{{1.2189892802450228, 1.8705972434915774}};
-  expect_vec2d_vector_equivalent(thrust::host_vector<vec_2d<T>>(neartest_point_coordinate),
-                                 expected_coordinate);
+  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
@@ -263,9 +259,8 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, ThreePairMultiComponent)
   EXPECT_EQ(thrust::host_vector<int32_t>(nearest_point_id), std::vector<int32_t>({1, 0, 0}));
   EXPECT_EQ(thrust::host_vector<int32_t>(nearest_linestring_id), std::vector<int32_t>({0, 1, 0}));
   EXPECT_EQ(thrust::host_vector<int32_t>(nearest_segment_id), std::vector<int32_t>({0, 0, 2}));
-  expect_vec2d_vector_equivalent(
-    thrust::host_vector<vec_2d<T>>(neartest_point_coordinate),
-    CartVec{{3.545131432802666, 2.30503517215846}, {9.9, 9.4}, {0.0, -8.7}});
+  expect_vector_equivalent(neartest_point_coordinate,
+                           CartVec{{3.545131432802666, 2.30503517215846}, {9.9, 9.4}, {0.0, -8.7}});
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
