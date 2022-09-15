@@ -17,7 +17,7 @@
 #pragma once
 
 #include <cuspatial/constants.hpp>
-#include <cuspatial/detail/utility/traits.hpp>
+#include <cuspatial/traits.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 
@@ -66,7 +66,7 @@ namespace cuspatial {
 template <class LonLatItA,
           class LonLatItB,
           class OutputIt,
-          class T = typename detail::iterator_vec_base_type<LonLatItA>>
+          class T = typename cuspatial::iterator_vec_base_type<LonLatItA>>
 OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,
