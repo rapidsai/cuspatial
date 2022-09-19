@@ -24,16 +24,25 @@
 namespace cuspatial {
 
 /**
+ * @ingroup nearest_points
+ * @struct point_linestring_nearest_points_result
  * @brief Container for the result of `pairwise_point_linestring_nearest_points`
  *
- * This container includes:
- * 1. The point id of the nearest point in multipoint (std::nullopt if input is not multipoint)
- * 2. The linestring id where the nearest point in multilinestring locates (std::nullopt if input is
- * not multlinestring)
- * 3. The segment id where the nearest point in the (multi)linestring locates
- * 4. The interleaved x, y-coordinate of the nearest point on the (multi)linestring
+ * @var point_linestring_nearest_points_result::nearest_point_geometry_id
+ * The point id indicating which point in the multipoint is the nearest point
+ * (`std::nullopt` if input is not a multipoint array)
  *
- * For exact definition of `id`, see @ref additional_returns.
+ * @var point_linestring_nearest_points_result::nearest_linestring_geometry_id
+ * The linestring id indicating which linestring in the multilinestring that
+ * the nearest point locates (`std::nullopt` if input is not a multlinestring array)
+ *
+ * @var point_linestring_nearest_points_result::nearest_segment_id
+ * The segment id indicating which segment in the linestring that nearest point locates.
+ * It is the same as the id to the starting point of the segment. Each linestring in the
+ * multilinestring is independently indexed.
+ *
+ * @var point_linestring_nearest_points_result::nearest_point_on_linestring_xy
+ * The interleaved x, y-coordinate of the nearest point on the (multi)linestring
  */
 struct point_linestring_nearest_points_result {
   std::optional<std::unique_ptr<cudf::column>> nearest_point_geometry_id;
@@ -43,7 +52,8 @@ struct point_linestring_nearest_points_result {
 };
 
 /**
- * @brief Compute the nearest points and geometry id between a pair of (multi)point and
+ * @ingroup nearest_points
+ * @brief Compute the nearest points and geometry id between pairs of (multi)point and
  * (multi)linestring
  *
  * The nearest point from a test point to a linestring is a point on the linestring that has
@@ -52,18 +62,14 @@ struct point_linestring_nearest_points_result {
  * The nearest point from a test multipoint to a multilinestring is the nearest point in
  * the multilinestring that has the shortest distance between all pairs of points and linestrings.
  *
- * @section additional_returns Additional Returns
- * This API also returns the geometry and part ID where the nearest point locates.
- * - The point id indicates which point in the multipoint is the nearest point.
- * - The linestring id is the intra-offset to the linestring that nearest point locates
- * - The segment id is the intra-offset to the segment that nearest point locates. It is
- *   the same as the id to the starting point of the segment.
- *
- * @note When the test point is not a multipoint, the nearest point id is omitted.
- * When the test linestring is not a multilinestring, the nearest linestring id is omitted.
+ * Returns a structure containing the id to the nearest point in (multi)point, the id to the
+ * linestring in the (multi)linestring, the id to the segment in the linestring and the coordinate
+ * to the nearest point on the (multi)linestring. See `point_linestring_nearest_points_result`
+ * for detail.
  *
  * The below example computes the nearest point from 2 points to 2 linestrings:
  *
+ * ```
  * The first pair:
  * Point: (0.0, 0.0)
  * Linestring: (1.0, -1.0) -> (1.0, 0.0) -> (0.0, 1.0)
@@ -84,15 +90,17 @@ struct point_linestring_nearest_points_result {
  * linestring_points_xy: {1, -1, 1, 0, 0, 1, 0, 0, 3, 1, 3.9, 4, 5.5, 1.2}
  *
  * Output:
- * std::tuple(
+ * point_linestring_nearest_points_result{
  *   std::nullopt,
  *   std::nullopt,
  *   {1, 0},
  *   {0.5, 0.5, 1.5, 0.5}
- * )
+ * }
+ * ```
  *
  * The below example computes the nearest point from 3 multipoints to 3 multilinestrings:
  *
+ * ```
  * The first pair:
  * MultiPoint: {(1.1, 3.0), (3.6, 2.4)}
  * MultiLineString: {(2.1, 3.14) -> (8.4, -0.5) -> (6.0, 1.4), (-1.0, 0.0) -> (-1.7, 0.83)}
@@ -130,12 +138,13 @@ struct point_linestring_nearest_points_result {
  * }
  *
  * Output:
- * std::tuple(
+ * point_linestring_nearest_points_result{
  *  {1, 0, 0},
  *  {0, 1, 0},
  *  {0, 0, 2},
  *  {3.545131432802666, 2.30503517215846, 9.9, 9.4, 0.0, -8.7}
- * )
+ * }
+ * ```
  *
  * @param multipoint_geometry_offsets Beginning and ending indices for each multipoint
  * @param points_xy Interleaved x, y-coordinate of points
