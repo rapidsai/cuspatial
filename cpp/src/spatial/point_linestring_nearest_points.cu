@@ -19,7 +19,7 @@
 
 #include <cuspatial/experimental/point_linestring_nearest_points.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
-#include <cuspatial/point_linestring_nearest_point.hpp>
+#include <cuspatial/point_linestring_nearest_points.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column_factories.hpp>
