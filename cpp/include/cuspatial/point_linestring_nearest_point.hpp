@@ -19,11 +19,28 @@
 #include <cudf/column/column_view.hpp>
 #include <cudf/utilities/span.hpp>
 
-#include <thrust/optional.h>
-
-#include <tuple>
+#include <optional>
 
 namespace cuspatial {
+
+/**
+ * @brief Container for the result of `pairwise_point_linestring_nearest_points`
+ *
+ * This container includes:
+ * 1. The point id of the nearest point in multipoint (std::nullopt if input is not multipoint)
+ * 2. The linestring id where the nearest point in multilinestring locates (std::nullopt if input is
+ * not multlinestring)
+ * 3. The segment id where the nearest point in the (multi)linestring locates
+ * 4. The interleaved x, y-coordinate of the nearest point on the (multi)linestring
+ *
+ * For exact definition of `id`, see @ref additional_returns.
+ */
+struct point_linestring_nearest_points_result {
+  std::optional<std::unique_ptr<cudf::column>> nearest_point_geometry_id;
+  std::optional<std::unique_ptr<cudf::column>> nearest_linestring_geometry_id;
+  std::unique_ptr<cudf::column> nearest_segment_id;
+  std::unique_ptr<cudf::column> nearest_point_on_linestring_xy;
+};
 
 /**
  * @brief Compute the nearest points and geometry id between a pair of (multi)point and
@@ -32,10 +49,11 @@ namespace cuspatial {
  * The nearest point from a test point to a linestring is a point on the linestring that has
  * the shortest distance to the test point compared to any other points on the linestring.
  *
- * The nearest point from a test multipoint to a multilinestring is the nearest point that
- * has the shortest distance in all pairs of points and linestrings.
+ * The nearest point from a test multipoint to a multilinestring is the nearest point in
+ * the multilinestring that has the shortest distance between all pairs of points and linestrings.
  *
- * In addition, this API returns the geometry and part ID where the nearest point locates.
+ * @section additional_returns Additional Returns
+ * This API also returns the geometry and part ID where the nearest point locates.
  * - The point id indicates which point in the multipoint is the nearest point.
  * - The linestring id is the intra-offset to the linestring that nearest point locates
  * - The segment id is the intra-offset to the segment that nearest point locates. It is
@@ -125,12 +143,7 @@ namespace cuspatial {
  * @param linestring_part_offsets Beginning and ending indices for each linestring
  * @param linestring_points_xy Interleaved x, y-coordinates of the linestring points
  * @param mr Device memory resource used to allocate the returned column.
- * @return A tuple containing the following:
- * 1. The point id of the nearest point in multipoint (std::nullopt if input is not multipoint)
- * 2. The linestring id where the nearest point in multilinestring locates (std::nullopt if input is
- * not multlinestring)
- * 3. The segment id where the nearest point in the (multi)linestring locates
- * 4. The interleaved x, y-coordinate of the nearest point on the (multi)linestring
+ * @return `point_linestring_nearest_points_result`
  *
  * @throws cuspatial::logic_error if `points_xy` or `linestring_points_xy` contains odd number of
  * coordinates.
@@ -141,11 +154,7 @@ namespace cuspatial {
  * @throws cuspatial::logic_error if the type of `point_xy` and `linestring_points_xy` mismatch.
  * @throws cuspatial::logic_error if any of `point_xy` and `linestring_points_xy` contains null.
  */
-std::tuple<std::optional<std::unique_ptr<cudf::column>>,
-           std::optional<std::unique_ptr<cudf::column>>,
-           std::unique_ptr<cudf::column>,
-           std::unique_ptr<cudf::column>>
-pairwise_point_linestring_nearest_points(
+point_linestring_nearest_points_result pairwise_point_linestring_nearest_points(
   std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
   cudf::column_view points_xy,
   std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
