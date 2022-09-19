@@ -15,7 +15,7 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/point_linestring_nearest_point.hpp>
+#include <cuspatial/point_linestring_nearest_points.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <cudf_test/column_utilities.hpp>
