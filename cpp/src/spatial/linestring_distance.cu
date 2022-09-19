@@ -54,7 +54,7 @@ struct pairwise_linestring_distance_functor {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
-    auto const num_string_pairs = static_cast<cudf::size_type>(linestring1_offsets.size());
+    auto const num_string_pairs = static_cast<cudf::size_type>(linestring1_offsets.size()) - 1;
 
     auto distances = cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<T>()},
                                                num_string_pairs,
@@ -110,7 +110,7 @@ std::unique_ptr<cudf::column> pairwise_linestring_distance(
                       linestring1_points_x.type() == linestring2_points_x.type(),
                     "The types of linestring coordinates arrays mismatch.");
 
-  if (linestring1_offsets.size() == 0) { return cudf::empty_like(linestring1_points_x); }
+  if (linestring1_offsets.size() - 1 == 0) { return cudf::empty_like(linestring1_points_x); }
 
   return cudf::type_dispatcher(linestring1_points_x.type(),
                                pairwise_linestring_distance_functor{},
