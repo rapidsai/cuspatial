@@ -19,6 +19,7 @@
 
 #include <cuspatial/experimental/point_linestring_nearest_points.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
+#include <cuspatial/point_linestring_nearest_point.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column_factories.hpp>
@@ -47,11 +48,7 @@ struct pairwise_point_linestring_nearest_points_impl {
   using SizeType = cudf::device_span<cudf::size_type>::size_type;
 
   template <typename T, CUDF_ENABLE_IF(std::is_floating_point_v<T>)>
-  std::tuple<std::optional<std::unique_ptr<cudf::column>>,
-             std::optional<std::unique_ptr<cudf::column>>,
-             std::unique_ptr<cudf::column>,
-             std::unique_ptr<cudf::column>>
-  operator()(
+  point_linestring_nearest_points_result operator()(
     cudf::size_type num_pairs,
     std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
     cudf::column_view points_xy,
@@ -107,8 +104,8 @@ struct pairwise_point_linestring_nearest_points_impl {
                                                output_its,
                                                stream);
 
-      return std::tuple(
-        std::nullopt, std::nullopt, std::move(segment_idx), std::move(nearest_points_xy));
+      return point_linestring_nearest_points_result{
+        std::nullopt, std::nullopt, std::move(segment_idx), std::move(nearest_points_xy)};
     } else if constexpr (is_multi_point && !is_multi_linestring) {
       auto nearest_point_idx =
         cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<cudf::size_type>()},
@@ -134,10 +131,10 @@ struct pairwise_point_linestring_nearest_points_impl {
                                                output_its,
                                                stream);
 
-      return std::tuple(std::move(nearest_point_idx),
-                        std::nullopt,
-                        std::move(segment_idx),
-                        std::move(nearest_points_xy));
+      return point_linestring_nearest_points_result{std::move(nearest_point_idx),
+                                                    std::nullopt,
+                                                    std::move(segment_idx),
+                                                    std::move(nearest_points_xy)};
     } else if constexpr (!is_multi_point && is_multi_linestring) {
       auto nearest_linestring_idx =
         cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<cudf::size_type>()},
@@ -163,10 +160,10 @@ struct pairwise_point_linestring_nearest_points_impl {
                                                output_its,
                                                stream);
 
-      return std::tuple(std::nullopt,
-                        std::move(nearest_linestring_idx),
-                        std::move(segment_idx),
-                        std::move(nearest_points_xy));
+      return point_linestring_nearest_points_result{std::nullopt,
+                                                    std::move(nearest_linestring_idx),
+                                                    std::move(segment_idx),
+                                                    std::move(nearest_points_xy)};
     } else {
       auto nearest_point_idx =
         cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<cudf::size_type>()},
@@ -198,19 +195,15 @@ struct pairwise_point_linestring_nearest_points_impl {
                                                output_its,
                                                stream);
 
-      return std::tuple(std::move(nearest_point_idx),
-                        std::move(nearest_linestring_idx),
-                        std::move(segment_idx),
-                        std::move(nearest_points_xy));
+      return point_linestring_nearest_points_result{std::move(nearest_point_idx),
+                                                    std::move(nearest_linestring_idx),
+                                                    std::move(segment_idx),
+                                                    std::move(nearest_points_xy)};
     }
   }
 
   template <typename T, CUDF_ENABLE_IF(!std::is_floating_point_v<T>), typename... Args>
-  std::tuple<std::optional<std::unique_ptr<cudf::column>>,
-             std::optional<std::unique_ptr<cudf::column>>,
-             std::unique_ptr<cudf::column>,
-             std::unique_ptr<cudf::column>>
-  operator()(Args&&...)
+  point_linestring_nearest_points_result operator()(Args&&...)
   {
     CUSPATIAL_FAIL("Input coordinates for nearest point must be floating point types.");
   }
@@ -220,11 +213,7 @@ struct pairwise_point_linestring_nearest_points_impl {
 
 template <bool is_multi_point, bool is_multi_linestring>
 struct pairwise_point_linestring_nearest_points_functor {
-  std::tuple<std::optional<std::unique_ptr<cudf::column>>,
-             std::optional<std::unique_ptr<cudf::column>>,
-             std::unique_ptr<cudf::column>,
-             std::unique_ptr<cudf::column>>
-  operator()(
+  point_linestring_nearest_points_result operator()(
     std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
     cudf::column_view points_xy,
     std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
@@ -264,11 +253,7 @@ struct pairwise_point_linestring_nearest_points_functor {
 
 }  // namespace detail
 
-std::tuple<std::optional<std::unique_ptr<cudf::column>>,
-           std::optional<std::unique_ptr<cudf::column>>,
-           std::unique_ptr<cudf::column>,
-           std::unique_ptr<cudf::column>>
-pairwise_point_linestring_nearest_points(
+point_linestring_nearest_points_result pairwise_point_linestring_nearest_points(
   std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
   cudf::column_view points_xy,
   std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
