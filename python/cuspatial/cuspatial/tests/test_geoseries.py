@@ -20,6 +20,7 @@ from shapely.geometry import (
 import cudf
 
 import cuspatial
+from cuspatial.io.shapefile import WindingOrder
 
 np.random.seed(0)
 
@@ -355,3 +356,39 @@ def test_loc(gs):
     gsslice = gs[["l", "k", "j", "i"]]
     cugsslice = cugs[["l", "k", "j", "i"]]
     assert_eq_geo(gsslice, cugsslice.to_geopandas())
+
+
+def test_shapefile_constructor():
+    host_dataframe = gpd.read_file(
+        gpd.datasets.get_path("naturalearth_lowres")
+    )
+    # Shapefile reader only works with Polygons so we drop
+    # all the MultiPolygons by slicing the first 19 out.
+    gs = host_dataframe["geometry"][
+        host_dataframe["geometry"].type == "Polygon"
+    ][19:]
+    gs.to_file("naturalearth_lowres_polygon")
+    data = cuspatial.read_polygon_shapefile("naturalearth_lowres_polygon")
+    cus = cuspatial.GeoSeries(data)
+    assert_eq_geo(gs.reset_index(drop=True), cus.to_geopandas())
+
+
+def test_shapefile_constructor_reversed():
+    host_dataframe = gpd.read_file(
+        gpd.datasets.get_path("naturalearth_lowres")
+    )
+    # Shapefile reader only works with Polygons so we drop
+    # all the MultiPolygons by slicing the first 19 out.
+    gs = host_dataframe["geometry"][
+        host_dataframe["geometry"].type == "Polygon"
+    ][19:]
+    gs.to_file("naturalearth_lowres_polygon")
+    data = cuspatial.read_polygon_shapefile(
+        "naturalearth_lowres_polygon", outer_ring_order=WindingOrder.CLOCKWISE
+    )
+    cus = cuspatial.GeoSeries(data)
+
+    from shapely.geometry import polygon
+
+    reversed_gs = gpd.GeoSeries([polygon.orient(p, 1) for p in gs])
+    assert_eq_geo(reversed_gs, cus.to_geopandas())
