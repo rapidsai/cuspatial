@@ -49,21 +49,22 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSeparateArrayInputs)
     CartVec({{0.0f, 0.0f}, {1.0f, 0.0f}, {2.0f, 0.0f}, {3.0f, 0.0f}, {4.0f, 0.0f}})};
   auto b_cart2d = rmm::device_vector<vec_2d<T>>{
     CartVec({{0.0f, 1.0f}, {1.0f, 1.0f}, {2.0f, 1.0f}, {3.0f, 1.0f}, {4.0f, 1.0f}})};
-  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
+  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0, 5}};
 
   auto distance = rmm::device_vector<T>{1};
   auto expected = rmm::device_vector<T>{std::vector<T>{1.0}};
 
-  pairwise_linestring_distance(offset.begin(),
-                               offset.end(),
-                               a_cart2d.begin(),
-                               a_cart2d.end(),
-                               offset.begin(),
-                               b_cart2d.begin(),
-                               b_cart2d.end(),
-                               distance.begin());
+  auto ret = pairwise_linestring_distance(offset.begin(),
+                                          offset.end(),
+                                          a_cart2d.begin(),
+                                          a_cart2d.end(),
+                                          offset.begin(),
+                                          b_cart2d.begin(),
+                                          b_cart2d.end(),
+                                          distance.begin());
 
   test::expect_vector_equivalent(expected, distance);
+  EXPECT_EQ(offset.size() - 1, std::distance(distance.begin(), ret));
 }
 
 TYPED_TEST(PairwiseLinestringDistanceTest, FromSamePointArrayInput)
@@ -73,7 +74,8 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSamePointArrayInput)
 
   auto cart2ds = rmm::device_vector<vec_2d<T>>{
     CartVec({{0.0f, 0.0f}, {1.0f, 0.0f}, {2.0f, 0.0f}, {3.0f, 0.0f}, {4.0f, 0.0f}})};
-  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
+  auto offset_a = rmm::device_vector<int32_t>{std::vector<int32_t>{0, 3}};
+  auto offset_b = rmm::device_vector<int32_t>{std::vector<int32_t>{0, 4}};
 
   auto a_begin = cart2ds.begin();
   auto a_end   = cart2ds.begin() + 3;
@@ -83,10 +85,17 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSamePointArrayInput)
   auto distance = rmm::device_vector<T>{1};
   auto expected = rmm::device_vector<T>{std::vector<T>{0.0}};
 
-  pairwise_linestring_distance(
-    offset.begin(), offset.end(), a_begin, a_end, offset.begin(), b_begin, b_end, distance.begin());
+  auto ret = pairwise_linestring_distance(offset_a.begin(),
+                                          offset_a.end(),
+                                          a_begin,
+                                          a_end,
+                                          offset_a.begin(),
+                                          b_begin,
+                                          b_end,
+                                          distance.begin());
 
   test::expect_vector_equivalent(expected, distance);
+  EXPECT_EQ(offset_a.size() - 1, std::distance(distance.begin(), ret));
 }
 
 TYPED_TEST(PairwiseLinestringDistanceTest, FromTransformIterator)
@@ -106,15 +115,16 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromTransformIterator)
   auto b_begin = make_vec_2d_iterator(b_cart2d_x.begin(), b_cart2d_y.begin());
   auto b_end   = b_begin + b_cart2d_x.size();
 
-  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
+  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0, 5}};
 
   auto distance = rmm::device_vector<T>{1};
   auto expected = rmm::device_vector<T>{std::vector<T>{1.0}};
 
-  pairwise_linestring_distance(
+  auto ret = pairwise_linestring_distance(
     offset.begin(), offset.end(), a_begin, a_end, offset.begin(), b_begin, b_end, distance.begin());
 
   test::expect_vector_equivalent(expected, distance);
+  EXPECT_EQ(offset.size() - 1, std::distance(distance.begin(), ret));
 }
 
 TYPED_TEST(PairwiseLinestringDistanceTest, FromMixedIterator)
@@ -131,21 +141,23 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromMixedIterator)
   auto b_begin = make_vec_2d_iterator(b_cart2d_x.begin(), b_cart2d_y.begin());
   auto b_end   = b_begin + b_cart2d_x.size();
 
-  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0}};
+  auto offset_a = rmm::device_vector<int32_t>{std::vector<int32_t>{0, 5}};
+  auto offset_b = rmm::device_vector<int32_t>{std::vector<int32_t>{0, 5}};
 
   auto distance = rmm::device_vector<T>{1};
   auto expected = rmm::device_vector<T>{std::vector<T>{1.0}};
 
-  pairwise_linestring_distance(offset.begin(),
-                               offset.end(),
-                               a_cart2d.begin(),
-                               a_cart2d.end(),
-                               offset.begin(),
-                               b_begin,
-                               b_end,
-                               distance.begin());
+  auto ret = pairwise_linestring_distance(offset_a.begin(),
+                                          offset_a.end(),
+                                          a_cart2d.begin(),
+                                          a_cart2d.end(),
+                                          offset_b.begin(),
+                                          b_begin,
+                                          b_end,
+                                          distance.begin());
 
   test::expect_vector_equivalent(expected, distance);
+  EXPECT_EQ(offset_a.size() - 1, std::distance(distance.begin(), ret));
 }
 
 TYPED_TEST(PairwiseLinestringDistanceTest, FromLongInputs)
@@ -165,21 +177,23 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromLongInputs)
   auto b_cart2d_begin   = make_vec_2d_iterator(b_cart2d_x_begin, b_cart2d_y_begin);
   auto b_cart2d_end     = b_cart2d_begin + num_points;
 
-  auto offset = rmm::device_vector<int32_t>{std::vector<int32_t>{0, 100, 200, 300, 400}};
+  auto offset =
+    rmm::device_vector<int32_t>{std::vector<int32_t>{0, 100, 200, 300, 400, num_points}};
 
   auto distance = rmm::device_vector<T>{5};
   auto expected = rmm::device_vector<T>{std::vector<T>{42.0, 42.0, 42.0, 42.0, 42.0}};
 
-  pairwise_linestring_distance(offset.begin(),
-                               offset.end(),
-                               a_cart2d_begin,
-                               a_cart2d_end,
-                               offset.begin(),
-                               b_cart2d_begin,
-                               b_cart2d_end,
-                               distance.begin());
+  auto ret = pairwise_linestring_distance(offset.begin(),
+                                          offset.end(),
+                                          a_cart2d_begin,
+                                          a_cart2d_end,
+                                          offset.begin(),
+                                          b_cart2d_begin,
+                                          b_cart2d_end,
+                                          distance.begin());
 
   test::expect_vector_equivalent(expected, distance);
+  EXPECT_EQ(offset.size() - 1, std::distance(distance.begin(), ret));
 }
 
 }  // namespace test
