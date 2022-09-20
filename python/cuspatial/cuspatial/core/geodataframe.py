@@ -1,5 +1,7 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION
+from typing import Dict, TypeVar, Union
 
+import pandas as pd
 from geopandas import GeoDataFrame as gpGeoDataFrame
 from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
@@ -9,13 +11,15 @@ from cuspatial.core._column.geocolumn import GeoColumn, GeoMeta
 from cuspatial.core.geoseries import GeoSeries
 from cuspatial.io.geopandas_reader import GeoPandasReader
 
+T = TypeVar("T", bound="GeoDataFrame")
+
 
 class GeoDataFrame(cudf.DataFrame):
     """
     A GPU GeoDataFrame object.
     """
 
-    def __init__(self, data: gpGeoDataFrame = None):
+    def __init__(self, data: Union[Dict, gpGeoDataFrame] = None):
         """
         Constructs a GPU GeoDataFrame from a GeoPandas dataframe.
 
@@ -34,6 +38,8 @@ class GeoDataFrame(cudf.DataFrame):
                     self._data[col] = column
                 else:
                     self._data[col] = data[col]
+        elif isinstance(data, dict):
+            super()._init_from_dict_like(data)
         elif data is None:
             pass
         else:
@@ -121,6 +127,52 @@ class GeoDataFrame(cudf.DataFrame):
                     self._index = cudf.Index(self._index._column)
 
         return self
+
+    def __getitem__(self, arg):
+        result = super().__getitem__(arg)
+        if isinstance(result, GeoSeries):
+            result.name = arg
+        return result
+
+    def _slice(self: T, arg: slice) -> T:
+        """
+        Overload the _slice functionality from cudf's frame members.
+        """
+        # Collect the Geometry columns and slice them separately
+        columns_mask = cudf.Series(self.columns)
+        geocolumn_mask = pd.Series(
+            [isinstance(self[col], GeoSeries) for col in self.columns]
+        )
+        geo_names = columns_mask[geocolumn_mask].to_pandas()
+        geo_columns = self[columns_mask[geocolumn_mask].to_pandas()]
+        sliced_geo_columns = GeoDataFrame(
+            {name: geo_columns[name].iloc[arg] for name in geo_names}
+        )
+        # Send the rest of the columns to `cudf` to slice.
+        data_columns = cudf.DataFrame(
+            self[
+                columns_mask[False == geocolumn_mask].values_host
+            ]  # noqa: E712 E501
+        )
+        sliced_data_columns = data_columns._slice(arg)
+        output = {}
+        for key, value in zip(columns_mask.values_host, geocolumn_mask.values):
+            if value:
+                output[key] = sliced_geo_columns[key]
+            else:
+                output[key] = sliced_data_columns[key]
+        """
+        output = {
+            key: (
+                sliced_geo_columns[key]
+                if value is True else sliced_data_columns[key]
+            )
+            for key, value in zip(
+                columns_mask.values_host, geocolumn_mask.values
+            )
+        }
+        """
+        return __class__(output)
 
 
 class _GeoSeriesUtility:

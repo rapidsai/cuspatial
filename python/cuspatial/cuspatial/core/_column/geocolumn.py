@@ -181,3 +181,8 @@ class GeoColumn(ColumnBase):
             self.data.copy(),
         )
         return result
+
+    def slice(self, start: int, stop: int, stride: int = None) -> T:
+        # A GeoColumn doesn't know how to slice itself because GeoSeries
+        # performs the reasoning.
+        print("GeoColumn BaseColumn slice")

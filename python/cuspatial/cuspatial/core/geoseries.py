@@ -100,7 +100,9 @@ class GeoSeries(cudf.Series):
                 index = data.index
         if index is None:
             index = cudf.RangeIndex(0, len(column))
-        super().__init__(column, index, dtype, name, nan_as_null)
+        super().__init__(
+            column, index, dtype=dtype, name=name, nan_as_null=nan_as_null
+        )
 
     @property
     def type(self):
@@ -116,6 +118,10 @@ class GeoSeries(cudf.Series):
             }
         )
         return result
+
+    @property
+    def dtype(self):
+        return "geometry"
 
     class GeoColumnAccessor:
         def __init__(self, list_series):
@@ -272,9 +278,11 @@ class GeoSeries(cudf.Series):
             )
 
             if isinstance(item, Integral):
-                return GeoSeries(column).to_shapely()
+                return GeoSeries(column, name=self._sr.name).to_shapely()
             else:
-                return GeoSeries(column, index=self._sr.index[indexes])
+                return GeoSeries(
+                    column, index=self._sr.index[indexes], name=self._sr.name
+                )
 
     def from_arrow(union):
         column = GeoColumn(
@@ -316,6 +324,7 @@ class GeoSeries(cudf.Series):
         return gpGeoSeries(
             final_union_slice.to_shapely(),
             index=self.index.to_pandas(),
+            name=self.name,
         )
 
     def to_pandas(self):
