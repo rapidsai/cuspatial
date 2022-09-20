@@ -151,10 +151,13 @@ class GeoDataFrame(cudf.DataFrame):
         # Send the rest of the columns to `cudf` to slice.
         data_columns = cudf.DataFrame(
             self[
-                columns_mask[False == geocolumn_mask].values_host
-            ]  # noqa: E712 E501
+                columns_mask[
+                    False == geocolumn_mask
+                ].values_host  # noqa: E712 E501
+            ]
         )
         sliced_data_columns = data_columns._slice(arg)
+        """
         output = {}
         for key, value in zip(columns_mask.values_host, geocolumn_mask.values):
             if value:
@@ -164,14 +167,12 @@ class GeoDataFrame(cudf.DataFrame):
         """
         output = {
             key: (
-                sliced_geo_columns[key]
-                if value is True else sliced_data_columns[key]
+                sliced_geo_columns[key] if value else sliced_data_columns[key]
             )
             for key, value in zip(
                 columns_mask.values_host, geocolumn_mask.values
             )
         }
-        """
         return __class__(output)
 
 
