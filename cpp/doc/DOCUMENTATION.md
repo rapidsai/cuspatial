@@ -58,6 +58,10 @@ Here are some of the custom options in the Doxyfile for libcuspatial.
 | EXTENSION_MAPPING | cu=C++ cuh=C++ | Process `cu` and `cuh` as C++ |
 | INPUT | main_page.md ../include | Embedded markdown files and source code directories to process |
 | FILE_PATTERNS | *.cpp *.hpp *.h *.c *.cu *.cuh | File extensions to process |
+| EXCLUDE_PATTERNS | */detail/* */nvtx/* | Wildcard pattern to exclude paths / filenames |
+| TAGFILES | rmm.tag=https://docs.rapids.ai/api/librmm/22.10 "libcudf.tag=https://docs.rapids.ai/api/libcudf/22.10" | Links to external documentation tagfiles. Versions are updated automatically at each release |
+| PREDEFINED | __device__= \ __host__= | Predefined macros. Helps with CUDA declaration specifiers. |
+
 
 ## Block Comments
 
