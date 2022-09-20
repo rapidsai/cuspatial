@@ -85,7 +85,9 @@ class GeoDataFrame(cudf.DataFrame):
     def __repr__(self):
         return self.to_pandas().__repr__() + "\n" + "(GPU)" + "\n"
 
-    def _copy_type_metadata(self, other, include_index: bool = True):
+    def _copy_type_metadata(
+        self, other, include_index: bool = True, override_dtypes: bool = False
+    ):
         """
         Copy type metadata from each column of `other` to the corresponding
         column of `self`.
