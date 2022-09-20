@@ -1,12 +1,13 @@
 # Copyright (c) 2021-2022 NVIDIA CORPORATION
 from typing import Tuple, TypeVar
 
+import cupy as cp
 import pyarrow as pa
 
 import cudf
 from cudf.core.column import ColumnBase
 
-from cuspatial.core._column.geometa import GeoMeta
+from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 
 T = TypeVar("T", bound="GeoColumn")
 
@@ -98,3 +99,33 @@ class GeoColumn(ColumnBase):
             self.data.copy(),
         )
         return result
+
+    @classmethod
+    def _from_points_xy(cls, points_xy: cudf.Series):
+        """
+        Create a GeoColumn of only single points from a cudf Series with
+        interleaved xy coordinates.
+        """
+
+        meta = GeoMeta(
+            {
+                "input_types": cudf.Series(
+                    cp.full(
+                        len(points_xy), Feature_Enum.POINT.value, dtype=cp.int8
+                    )
+                ),
+                "union_offsets": cudf.Series(
+                    cp.arange(len(points_xy), dtype=cp.int32)
+                ),
+            }
+        )
+
+        return cls(
+            (
+                cudf.Series(points_xy),
+                cudf.Series(),
+                cudf.Series(),
+                cudf.Series(),
+            ),
+            meta,
+        )

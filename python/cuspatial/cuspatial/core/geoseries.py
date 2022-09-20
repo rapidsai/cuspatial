@@ -22,8 +22,8 @@ from shapely.geometry import (
 import cudf
 
 import cuspatial.io.pygeoarrow as pygeoarrow
-from cuspatial.core._column.geocolumn import GeoColumn, GeoMeta
-from cuspatial.io.geopandas_reader import Feature_Enum
+from cuspatial.core._column.geocolumn import GeoColumn
+from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 
 T = TypeVar("T", bound="GeoSeries")
 
