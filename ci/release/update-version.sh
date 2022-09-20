@@ -45,3 +45,7 @@ sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cma
 for FILE in conda/environments/*.yml; do
   sed_runner "s/cudf=${CURRENT_SHORT_TAG}/cudf=${NEXT_SHORT_TAG}/g" ${FILE};
 done
+
+# Doxyfile update
+sed_runner "s|\(TAGFILES.*librmm/\).*|\1${NEXT_SHORT_TAG}|" cpp/doxygen/Doxyfile
+sed_runner "s|\(TAGFILES.*libcudf/\).*|\1${NEXT_SHORT_TAG}|" cpp/doxygen/Doxyfile
