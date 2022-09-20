@@ -44,7 +44,7 @@ namespace detail {
  * Each thread computes the nearest point between a pair of multipoint and multilinestring.
  * The minimum distance between the geometries are stored in `min_distance_squared` and updated
  * when smaller is encountered. `linestring.cuh::point_to_segment_distance_squared_nearest_point`
- * is resorted to compute the nearest point on the segment and its distance to the test point.
+ * is used to compute the nearest point on the segment and its distance to the test point.
  */
 template <class Vec2dItA,
           class Vec2dItB,
@@ -65,8 +65,8 @@ pairwise_point_linestring_nearest_points_kernel(OffsetIteratorA points_geometry_
                                                 Vec2dItB linestring_points_last,
                                                 OutputIt output_first)
 {
-  using T        = iterator_vec_base_type<Vec2dItA>;
-  using SizeType = iterator_value_type<OffsetIteratorA>;
+  using T         = iterator_vec_base_type<Vec2dItA>;
+  using IndexType = iterator_value_type<OffsetIteratorA>;
 
   auto num_pairs =
     thrust::distance(points_geometry_offsets_first, points_geometry_offsets_last) - 1;
@@ -74,33 +74,32 @@ pairwise_point_linestring_nearest_points_kernel(OffsetIteratorA points_geometry_
 
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < num_pairs;
        idx += gridDim.x * blockDim.x) {
-    SizeType nearest_point_idx;
-    SizeType nearest_part_idx;
-    SizeType nearest_segment_idx;
+    IndexType nearest_point_idx;
+    IndexType nearest_part_idx;
+    IndexType nearest_segment_idx;
     vec_2d<T> nearest_point;
 
     T min_distance_squared = std::numeric_limits<T>::max();
-    SizeType point_start   = points_geometry_offsets_first[idx];
-    SizeType point_end     = points_geometry_offsets_first[idx + 1];
+    IndexType point_start  = points_geometry_offsets_first[idx];
+    IndexType point_end    = points_geometry_offsets_first[idx + 1];
     for (auto point_idx = point_start; point_idx < point_end; point_idx++) {
-      SizeType linestring_parts_start = linestring_geometry_offsets_first[idx];
-      SizeType linestring_parts_end   = linestring_geometry_offsets_first[idx + 1];
+      IndexType linestring_parts_start = linestring_geometry_offsets_first[idx];
+      IndexType linestring_parts_end   = linestring_geometry_offsets_first[idx + 1];
 
       for (auto part_idx = linestring_parts_start; part_idx < linestring_parts_end; part_idx++) {
-        SizeType segment_start = linestring_part_offsets_first[part_idx];
+        IndexType segment_start = linestring_part_offsets_first[part_idx];
         // The last point of the linestring does not form a segment
-        SizeType segment_end = linestring_part_offsets_first[part_idx + 1] - 1;
+        IndexType segment_end = linestring_part_offsets_first[part_idx + 1] - 1;
 
         for (auto segment_idx = segment_start; segment_idx < segment_end; segment_idx++) {
           vec_2d<T> c = points_first[point_idx];
           vec_2d<T> a = linestring_points_first[segment_idx];
           vec_2d<T> b = linestring_points_first[segment_idx + 1];
 
-          auto distance_point_pair = point_to_segment_distance_squared_nearest_point(c, a, b);
-          auto distance_squared    = thrust::get<0>(distance_point_pair);
+          auto [distance_squared, nearest_point] =
+            point_to_segment_distance_squared_nearest_point(c, a, b);
           if (distance_squared < min_distance_squared) {
             min_distance_squared = distance_squared;
-            nearest_point        = thrust::get<1>(distance_point_pair);
             nearest_point_idx    = point_idx - point_start;
             nearest_part_idx     = part_idx - linestring_parts_start;
             nearest_segment_idx  = segment_idx - segment_start;
