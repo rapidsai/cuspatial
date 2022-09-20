@@ -77,8 +77,9 @@ __forceinline__ T __device__ point_to_segment_distance_squared(vec_2d<T> const& 
                                                                vec_2d<T> const& a,
                                                                vec_2d<T> const& b)
 {
-  auto tpl = point_to_segment_distance_squared_nearest_point(c, a, b);
-  return thrust::get<0>(tpl);
+  [[maybe_unused]] auto [distance_squared, _] =
+    point_to_segment_distance_squared_nearest_point(c, a, b);
+  return distance_squared;
 }
 
 /**

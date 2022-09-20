@@ -25,35 +25,28 @@ namespace cuspatial {
 
 /**
  * @ingroup nearest_points
- * @struct point_linestring_nearest_points_result
  * @brief Container for the result of `pairwise_point_linestring_nearest_points`
- *
- * @var point_linestring_nearest_points_result::nearest_point_geometry_id
- * The point id indicating which point in the multipoint is the nearest point
- * (`std::nullopt` if input is not a multipoint array)
- *
- * @var point_linestring_nearest_points_result::nearest_linestring_geometry_id
- * The linestring id indicating which linestring in the multilinestring that
- * the nearest point locates (`std::nullopt` if input is not a multlinestring array)
- *
- * @var point_linestring_nearest_points_result::nearest_segment_id
- * The segment id indicating which segment in the linestring that nearest point locates.
- * It is the same as the id to the starting point of the segment. Each linestring in the
- * multilinestring is independently indexed.
- *
- * @var point_linestring_nearest_points_result::nearest_point_on_linestring_xy
- * The interleaved x, y-coordinate of the nearest point on the (multi)linestring
  */
 struct point_linestring_nearest_points_result {
+  /// The point ID indicating which point in the multipoint is the nearest point
+  /// (`std::nullopt` if input is not a multipoint array)
   std::optional<std::unique_ptr<cudf::column>> nearest_point_geometry_id;
+  /// The linestring ID is the offset within the the multilinestring that contains the nearest
+  /// point.
+  /// (`std::nullopt` if input is not a multlinestring array)
   std::optional<std::unique_ptr<cudf::column>> nearest_linestring_geometry_id;
+  /// The segment ID is the offset within the linestring that contains the nearest point.
+  /// It is the same as the ID to the starting point of the segment. Each linestring in the
+  /// multilinestring is independently indexed.
   std::unique_ptr<cudf::column> nearest_segment_id;
+  /// The interleaved x, y-coordinate of the nearest point on the
+  /// (multi)linestring
   std::unique_ptr<cudf::column> nearest_point_on_linestring_xy;
 };
 
 /**
  * @ingroup nearest_points
- * @brief Compute the nearest points and geometry id between pairs of (multi)point and
+ * @brief Compute the nearest points and geometry ID between pairs of (multi)point and
  * (multi)linestring
  *
  * The nearest point from a test point to a linestring is a point on the linestring that has
@@ -62,10 +55,10 @@ struct point_linestring_nearest_points_result {
  * The nearest point from a test multipoint to a multilinestring is the nearest point in
  * the multilinestring that has the shortest distance between all pairs of points and linestrings.
  *
- * Returns a structure containing the id to the nearest point in (multi)point, the id to the
- * linestring in the (multi)linestring, the id to the segment in the linestring and the coordinate
- * to the nearest point on the (multi)linestring. See `point_linestring_nearest_points_result`
- * for detail.
+ * Returns a structure of columns containing (for each pair) the ID to the nearest point in
+ * (multi)point, the ID to the linestring in the (multi)linestring, the ID to the segment in the
+ * linestring and the coordinate to the nearest point on the (multi)linestring. See
+ * `point_linestring_nearest_points_result` for detail.
  *
  * The below example computes the nearest point from 2 points to 2 linestrings:
  *
@@ -73,13 +66,13 @@ struct point_linestring_nearest_points_result {
  * The first pair:
  * Point: (0.0, 0.0)
  * Linestring: (1.0, -1.0) -> (1.0, 0.0) -> (0.0, 1.0)
- * Nearest segment id in linestring: 1
+ * Nearest segment ID in linestring: 1
  * Nearest Point on LineString Coordinate: (0.5, 0.5)
  *
  * The second pair:
  * Point: (1.0, 2.0)
  * Linestring: (0.0, 0.0) -> (3.0, 1.0) -> (3.9, 4) -> (5.5, 1.2)
- * Nearest segment id in linestring: 0
+ * Nearest segment ID in linestring: 0
  * Nearest Point on LineString Coordinate: (1.5, 0.5)
  *
  * Input:
@@ -104,25 +97,25 @@ struct point_linestring_nearest_points_result {
  * The first pair:
  * MultiPoint: {(1.1, 3.0), (3.6, 2.4)}
  * MultiLineString: {(2.1, 3.14) -> (8.4, -0.5) -> (6.0, 1.4), (-1.0, 0.0) -> (-1.7, 0.83)}
- * Nearest Point id in MultiPoint: 1
- * Nearest LineString id in MultiLineString: 0
- * Nearest Segment id in LineString: 0
+ * Nearest Point ID in MultiPoint: 1
+ * Nearest LineString ID in MultiLineString: 0
+ * Nearest Segment ID in LineString: 0
  * Nearest Point on LineString Coordinate: (3.54513, 2.30503)
  *
  * The second pair:
  * MultiPoint: {(10.0, 15.0)}
  * MultiLineString: {(20.14, 13.5) -> (18.3, 14.3), (8.34, 9.1) -> (9.9, 9.4)}
- * Nearest Point id in MultiPoint: 0
- * Nearest LineString id in MultiLineString: 1
- * Nearest Segment id in LineString: 0
+ * Nearest Point ID in MultiPoint: 0
+ * Nearest LineString ID in MultiLineString: 1
+ * Nearest Segment ID in LineString: 0
  * Nearest Point in LineString Coordinate: (9.9, 9.4)
  *
  * The third pair:
  * MultiPoint: {(-5.0, -8.7), (-6.28, -7.0), (-10.0, -10.0)}
  * MultiLineString: {(-20.0, 0.0) -> (-15.0, -15.0) -> (0.0, -18.0) -> (0.0, 0.0)}
- * Nearest Point id in MultiPoint: 0
- * Nearest LineString id in MultiLineString: 0
- * Nearest Segment id in LineString: 2
+ * Nearest Point ID in MultiPoint: 0
+ * Nearest LineString ID in MultiLineString: 0
+ * Nearest Segment ID in LineString: 2
  * Nearest Point in LineString Coordinate: (0.0, -8.7)
  *
  * Input:
