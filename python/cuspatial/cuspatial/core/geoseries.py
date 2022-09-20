@@ -119,10 +119,6 @@ class GeoSeries(cudf.Series):
         )
         return result
 
-    @property
-    def dtype(self):
-        return "geometry"
-
     class GeoColumnAccessor:
         def __init__(self, list_series):
             self._series = list_series
