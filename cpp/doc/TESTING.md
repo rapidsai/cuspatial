@@ -9,6 +9,13 @@ In general we should test to make sure all code paths are covered. This is not a
 possible. But generally this means we test all supported combinations of algorithms and data types,
 and the main iterator and container types supported by algorithms.  Here are some other guidelines.
 
+ * Test public APIs. Try to ensure that public API tests result in 100% coverage of libcuspatial
+   code (including internal details and utilities).
+
+ * Test exceptional cases. For example, anything that causes the function to `throw`.
+
+ * Test boundary cases. For example points that fall exactly on lines or boundaries.
+
  * In general empty input is not an error in libcuspatial. Typically empty input results in empty
    output. Tests should verify this.
 
@@ -17,16 +24,16 @@ and the main iterator and container types supported by algorithms.  Here are som
    communicated between blocks (e.g. reductions). This is especially important for custom kernels
    but also applies to Thrust and CUB algorithm calls with lambdas / functors.
 
- * Test exceptional cases. For example, anything that causes the function to `throw`.
-
- * Test boundary cases. For example points that fall exactly on lines or boundaries.
-
 ## Header-only and Column-based API tests
 
 libcuspatial currently has two C++ APIs: the column-based API uses libcudf data structures as 
 input and output. These tests live in `cpp/tests/` and can use libcudf features for constructing
 columns and tables. The header-only API does not depend on libcudf at all and so tests of these
 APIs should not include any libcudf headers. These tests currently live in `cpp/tests/experimental`.
+
+Generally we test algorithms and business logic in the header-only API's unit tests. Column-based
+API tests should only cover specifics of the column-based API, such as type handling,
+input validation, and exceptions that are only thrown by that API.
 
 ## Directory and File Naming
 
