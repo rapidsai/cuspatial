@@ -311,8 +311,10 @@ and output.
 
 Add a [@param](http://www.doxygen.nl/manual/commands.html#cmdparam) comment line for each function
 parameter passed to this function. The name of the parameter specified after the doxygen tag must
-match the function's parameter name. Also include append `[in]`, `[out]` or `[in,out]` to the
-`@param` if it is not clear from the declaration and the parameter name itself.
+match the function's parameter name. Optionally, you may append `[in]`, `[out]` or `[in,out]` to the
+`@param` if it is not clear from the declaration and the parameter name whether the paremeter is an
+input parameter or an output parameter. This is especially helpful for the header-only API where
+it may be hard to distinguish input and output iterators.
 
 ```c++
  /**
@@ -345,7 +347,10 @@ Do not include the type of the object returned with the `@return` comment.
 #### @pre
 
 Add a [@pre](https://www.doxygen.nl/manual/commands.html#cmdpre) comment line for each precondition
-of the function. For example, assumptions about accessibility or range of iterators.
+of the function. For example, assumptions about device accessibility or range of iterators. One 
+common example is a precondition that input and output iterator ranges do not partially overlap.
+Often these are requirements that it is impossible or expensive to enforce at run time. Violations
+of preconditions often result in undefined behavior rather than exceptions.
 
 ```c++
 /**
