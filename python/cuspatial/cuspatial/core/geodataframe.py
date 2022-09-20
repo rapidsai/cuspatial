@@ -128,12 +128,6 @@ class GeoDataFrame(cudf.DataFrame):
 
         return self
 
-    def __getitem__(self, arg):
-        result = super().__getitem__(arg)
-        if isinstance(result, GeoSeries):
-            result.name = arg
-        return result
-
     def _slice(self: T, arg: slice) -> T:
         """
         Overload the _slice functionality from cudf's frame members.
@@ -150,9 +144,7 @@ class GeoDataFrame(cudf.DataFrame):
         )
         # Send the rest of the columns to `cudf` to slice.
         data_columns = cudf.DataFrame(
-            self[
-                columns_mask[False == geocolumn_mask].values_host  # noqa: E712
-            ]
+            self[columns_mask[~geocolumn_mask].values_host]
         )
         sliced_data_columns = data_columns._slice(arg)
         output = {
