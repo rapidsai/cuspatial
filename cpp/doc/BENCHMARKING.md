@@ -53,3 +53,7 @@ reaches its saturation bottleneck, whether that bottleneck is bandwidth or compu
 sets larger than this point is generally not helpful, except in specific cases where doing so
 exercises different code and can therefore uncover regressions that smaller benchmarks will not
 (this should be rare).
+
+Generally we should benchmark public APIs. Benchmarking detail functions and/or internal utilities should
+only be done if detecting regressions in them would be sufficiently difficult to do from public API
+benchmarks.
