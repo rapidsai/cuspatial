@@ -346,6 +346,36 @@ def test_size(gs, series_slice):
     assert len(gi) == len(cugs)
 
 
+def test_geometry_point_slicing(gs):
+    cugs = cuspatial.from_geopandas(gs)
+    assert (cugs[:1].points.x == cudf.Series([-1])).all()
+    assert (cugs[:1].points.y == cudf.Series([0])).all()
+    assert (cugs[3:].points.x == cudf.Series([9])).all()
+    assert (cugs[3:].points.y == cudf.Series([10])).all()
+    assert (cugs[0:4].points.x == cudf.Series([-1, 9])).all()
+    assert (cugs[0:4].points.y == cudf.Series([0, 10])).all()
+
+
+def test_geometry_multipoint_slicing(gs):
+    cugs = cuspatial.from_geopandas(gs)
+    assert (cugs[:2].multipoints.x == cudf.Series([1, 3])).all()
+    assert (cugs[:2].multipoints.y == cudf.Series([2, 4])).all()
+    assert (cugs[2:].multipoints.x == cudf.Series([5, 7])).all()
+    assert (cugs[2:].multipoints.y == cudf.Series([6, 8])).all()
+    assert (cugs[0:4].multipoints.x == cudf.Series([1, 3, 5, 7])).all()
+    assert (cugs[0:4].multipoints.y == cudf.Series([2, 4, 6, 8])).all()
+
+
+def test_geometry_linestring_slicing(gs):
+    cugs = cuspatial.from_geopandas(gs)
+    assert (cugs[:5].lines.x == cudf.Series([11, 13])).all()
+    assert (cugs[:5].lines.y == cudf.Series([12, 14])).all()
+    assert (cugs[5:].lines.x == cudf.Series([31, 33])).all()
+    assert (cugs[5:].lines.y == cudf.Series([32, 34])).all()
+    assert (cugs[0:4].lines.x == cudf.Series([11, 13, 31, 33])).all()
+    assert (cugs[0:4].lines.y == cudf.Series([12, 14, 33, 34])).all()
+
+
 def test_loc(gs):
     index = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"]
     gs.index = index
