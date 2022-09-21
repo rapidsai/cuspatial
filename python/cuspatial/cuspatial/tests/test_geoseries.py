@@ -390,12 +390,20 @@ def test_geometry_linestring_slicing(gs):
     assert (cugs[7:].lines.xy == cudf.Series([31, 32, 33, 34])).all()
     assert (cugs[6:].lines.x == cudf.Series([23, 25, 27, 29, 31, 33])).all()
     assert (cugs[6:].lines.y == cudf.Series([24, 26, 28, 30, 32, 34])).all()
+    assert (
+        cugs[6:].lines.xy
+        == cudf.Series([23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34])
+    ).all()
 
 
 def test_geometry_polygon_slicing(gs):
     cugs = cuspatial.from_geopandas(gs)
     assert (cugs[:9].polygons.x == cudf.Series([35, 37, 39, 41, 35])).all()
     assert (cugs[:9].polygons.y == cudf.Series([36, 38, 40, 42, 36])).all()
+    assert (
+        cugs[:9].polygons.xy
+        == cudf.Series([35, 36, 37, 38, 39, 40, 41, 42, 35, 36])
+    ).all()
     assert (
         cugs[:10].polygons.x
         == cudf.Series(
@@ -459,6 +467,33 @@ def test_geometry_polygon_slicing(gs):
     assert (
         cugs[11:].polygons.y
         == cudf.Series([98, 101, 103, 108, 98, 107, 109, 111, 108, 107])
+    ).all()
+    assert (
+        cugs[11:].polygons.xy
+        == cudf.Series(
+            [
+                97,
+                98,
+                99,
+                101,
+                102,
+                103,
+                101,
+                108,
+                97,
+                98,
+                106,
+                107,
+                108,
+                109,
+                110,
+                111,
+                113,
+                108,
+                106,
+                107,
+            ]
+        )
     ).all()
 
 
