@@ -350,30 +350,44 @@ def test_geometry_point_slicing(gs):
     cugs = cuspatial.from_geopandas(gs)
     assert (cugs[:1].points.x == cudf.Series([-1])).all()
     assert (cugs[:1].points.y == cudf.Series([0])).all()
+    assert (cugs[:1].points.xy == cudf.Series([-1, 0])).all()
     assert (cugs[3:].points.x == cudf.Series([9])).all()
     assert (cugs[3:].points.y == cudf.Series([10])).all()
+    assert (cugs[3:].points.xy == cudf.Series([9, 10])).all()
     assert (cugs[0:4].points.x == cudf.Series([-1, 9])).all()
     assert (cugs[0:4].points.y == cudf.Series([0, 10])).all()
+    assert (cugs[0:4].points.xy == cudf.Series([-1, 0, 9, 10])).all()
 
 
 def test_geometry_multipoint_slicing(gs):
     cugs = cuspatial.from_geopandas(gs)
     assert (cugs[:2].multipoints.x == cudf.Series([1, 3])).all()
     assert (cugs[:2].multipoints.y == cudf.Series([2, 4])).all()
+    assert (cugs[:2].multipoints.xy == cudf.Series([1, 2, 3, 4])).all()
     assert (cugs[2:].multipoints.x == cudf.Series([5, 7])).all()
     assert (cugs[2:].multipoints.y == cudf.Series([6, 8])).all()
+    assert (cugs[2:].multipoints.xy == cudf.Series([5, 6, 7, 8])).all()
     assert (cugs[0:4].multipoints.x == cudf.Series([1, 3, 5, 7])).all()
     assert (cugs[0:4].multipoints.y == cudf.Series([2, 4, 6, 8])).all()
+    assert (
+        cugs[0:4].multipoints.xy == cudf.Series([1, 2, 3, 4, 5, 6, 7, 8])
+    ).all()
 
 
 def test_geometry_linestring_slicing(gs):
     cugs = cuspatial.from_geopandas(gs)
     assert (cugs[:5].lines.x == cudf.Series([11, 13])).all()
     assert (cugs[:5].lines.y == cudf.Series([12, 14])).all()
+    assert (cugs[:5].lines.xy == cudf.Series([11, 12, 13, 14])).all()
     assert (cugs[:6].lines.x == cudf.Series([11, 13, 15, 17, 19, 21])).all()
     assert (cugs[:6].lines.y == cudf.Series([12, 14, 16, 18, 20, 22])).all()
+    assert (
+        cugs[:6].lines.xy
+        == cudf.Series([11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
+    ).all()
     assert (cugs[7:].lines.x == cudf.Series([31, 33])).all()
     assert (cugs[7:].lines.y == cudf.Series([32, 34])).all()
+    assert (cugs[7:].lines.xy == cudf.Series([31, 32, 33, 34])).all()
     assert (cugs[6:].lines.x == cudf.Series([23, 25, 27, 29, 31, 33])).all()
     assert (cugs[6:].lines.y == cudf.Series([24, 26, 28, 30, 32, 34])).all()
 

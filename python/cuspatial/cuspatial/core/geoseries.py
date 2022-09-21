@@ -144,7 +144,11 @@ class GeoSeries(cudf.Series):
 
         @property
         def xy(self):
-            return cudf.Series(self._col.leaves().values)
+            types = self._meta.input_types
+            offsets = self._meta.union_offsets
+            indices = offsets[types == self._type.value]
+            result = self._col.take(indices._column).leaves().values
+            return cudf.Series(result)
 
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
