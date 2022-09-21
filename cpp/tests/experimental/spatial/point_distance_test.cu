@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "tests/utility/vector_equality.hpp"
+
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/point_distance.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
@@ -140,11 +142,7 @@ TYPED_TEST(PairwisePointDistanceTest, ManyRandom)
     pairwise_point_distance(points1.begin(), points1.end(), points2.begin(), got.begin());
   thrust::host_vector<T> hgot(got);
 
-  if constexpr (std::is_same_v<T, float>) {
-    EXPECT_THAT(expected, ::testing::Pointwise(::testing::FloatEq(), hgot));
-  } else {
-    EXPECT_THAT(expected, ::testing::Pointwise(::testing::DoubleEq(), hgot));
-  }
+  test::expect_vector_equivalent(expected, hgot);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
@@ -298,11 +296,7 @@ TYPED_TEST(PairwisePointDistanceTest, CompareWithShapely)
 
   thrust::host_vector<T> hgot(got);
 
-  if constexpr (std::is_same_v<T, float>) {
-    EXPECT_THAT(expected, ::testing::Pointwise(::testing::FloatEq(), hgot));
-  } else {
-    EXPECT_THAT(expected, ::testing::Pointwise(::testing::DoubleEq(), hgot));
-  }
+  test::expect_vector_equivalent(expected, hgot);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 

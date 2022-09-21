@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <tests/utility/vector_equality.hpp>
+
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/haversine.cuh>
 
@@ -45,7 +47,7 @@ TYPED_TEST(HaversineTest, Empty)
   auto distance_end = cuspatial::haversine_distance(
     a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
 
-  EXPECT_EQ(distance, expected);
+  cuspatial::test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(0, std::distance(distance.begin(), distance_end));
 }
 
@@ -64,7 +66,7 @@ TYPED_TEST(HaversineTest, Zero)
   auto distance_end = cuspatial::haversine_distance(
     a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
 
-  EXPECT_EQ(expected, distance);
+  cuspatial::test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(1, std::distance(distance.begin(), distance_end));
 }
 
@@ -104,7 +106,7 @@ TYPED_TEST(HaversineTest, EquivalentPoints)
   auto distance_end = cuspatial::haversine_distance(
     a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
 
-  EXPECT_EQ(expected, distance);
+  cuspatial::test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(2, std::distance(distance.begin(), distance_end));
 }
 
@@ -137,6 +139,6 @@ TYPED_TEST(HaversineTest, TransformIterator)
   auto distance_end =
     cuspatial::haversine_distance(xform_begin, xform_end, b_lonlat.begin(), distance.begin());
 
-  EXPECT_EQ(expected, distance);
+  cuspatial::test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(2, std::distance(distance.begin(), distance_end));
 }

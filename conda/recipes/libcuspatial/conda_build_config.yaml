@@ -11,7 +11,7 @@ cmake_version:
   - ">=3.20.1"
 
 gdal_version:
-  - ">=3.4.3,<3.4.4a0"
+  - ">3.5.0"
 
 gtest_version:
   - "1.10.0"
