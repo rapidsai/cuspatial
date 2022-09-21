@@ -22,11 +22,11 @@ namespace cuspatial {
 namespace test {
 
 /**
- * @brief Base test fixture class from which all libcudf tests should inherit.
+ * @brief Base test fixture class from which all libcuspatial tests should inherit.
  *
  * Example:
  * ```
- * class MyTestFixture : public cudf::test::BaseFixture {};
+ * class MyTestFixture : public cuspatial::test::BaseFixture {};
  * ```
  */
 class BaseFixture : public ::testing::Test {
