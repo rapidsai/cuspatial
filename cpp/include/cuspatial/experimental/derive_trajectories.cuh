@@ -33,9 +33,9 @@ namespace cuspatial {
 /**
  * @brief Derive trajectories from object ids, points, and timestamps.
  *
- * Groups the input object ids to determine unique trajectories, and reorders all input data to be
- * grouped by object ID and ordered by timestamp within groups.  Returns a vector containing the
- * offset index of the first object of each trajectory in the output.
+ * Output points and timestamps are reordered to be grouped by object ID and ordered by timestamp
+ * within groups.  Returns a vector containing the offset index of the first object of each
+ * trajectory in the output.
  *
  * @tparam IdInputIt Iterator over object IDs. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
