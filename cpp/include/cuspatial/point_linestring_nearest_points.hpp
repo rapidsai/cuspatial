@@ -77,7 +77,7 @@ struct point_linestring_nearest_points_result {
  *
  * Input:
  * multipoint_parts_offsets: std::nullopt
- * points_xy: {0.0, 0.0}
+ * points_xy: {0.0, 0.0, 1.0, 2.0}
  * multilinestring_parts_offsets: std::nullopt
  * linestring_offsets:  {0, 3, 7}
  * linestring_points_xy: {1, -1, 1, 0, 0, 1, 0, 0, 3, 1, 3.9, 4, 5.5, 1.2}

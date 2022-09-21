@@ -49,6 +49,7 @@ namespace cuspatial {
  * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt iterator type for output array. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ 
  * @param point_geometry_offset_first beginning of the range of multipoint geometries of each
  * pair
  * @param point_geometry_offset_last end of the range of multipoint geometries of each pair
