@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "tests/utility/vector_equality.hpp"
+
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/points_in_range.cuh>
 #include <cuspatial/vec_2d.hpp>
@@ -50,7 +52,7 @@ struct SpatialRangeTest : public testing::Test {
     auto result_points = DeviceVecVec<T>(result_size);
     cuspatial::copy_points_in_range(v1, v2, points.begin(), points.end(), result_points.begin());
 
-    EXPECT_EQ(expected_points, result_points);
+    cuspatial::test::expect_vector_equivalent(expected_points, result_points);
   }
 };
 

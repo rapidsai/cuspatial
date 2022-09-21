@@ -30,21 +30,32 @@ namespace cuspatial {
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam Cart2dItB iterator type for point array of the linestring element of each pair. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OffsetIterator iterator type for offset array. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OffsetIteratorA iterator type for `point_geometry_offset` array. Must meet the
+ * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OffsetIteratorB iterator type for `linestring_geometry_offset` array. Must meet the
+ * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OffsetIteratorC iterator type for `linestring_part_offset` array. Must meet the
+ * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt iterator type for output array. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  *
- * @param points_first beginning of the range of points making up the first element of each
+ * @param point_geometry_offset_first beginning of the range of multipoint geometries of each
  * pair
- * @param points_last end of the range of the points making up the first element of each pair
- * @param linestring_offsets_first beginning of the range of the offsets to the linestring element
- * of each pair
- * @param linestring_points_first beginning of the range of points of the linestring element of each
- * pair
- * @param linestring_points_last end of the range of points of the linestring element of each pair
- * @param distances_first beginning the output range of distances
+ * @param point_geometry_offset_last end of the range of multipoint geometries of each pair
+ * @param points_first beginning of the range of point values
+ * @param points_last end of the range of the point values
+ * @param linestring_geometry_offset_first beginning of the range of offsets to the multilinestring
+ * geometry of each pair, the end range is implied by linestring_geometry_offset_first +
+ * std::distance(`point_geometry_offset_first`, `point_geometry_offset_last`)
+ * @param linestring_offsets_first beginning of the range of offsets to the starting point
+ * of each linestring
+ * @param linestring_offsets_last end of the range of offsets to the starting point
+ * of each linestring
+ * @param linestring_points_first beginning of the range of linestring points
+ * @param linestring_points_last end of the range of linestring points
+ * @param distances_first beginning of the output range of distances
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
+ * @return Output iterator to one past the last element in the output range
  *
  * @pre all input iterators for coordinates must have `cuspatial::vec_2d` type.
  * @pre all scalar types must be floating point types, and must be the same type for all input
@@ -53,14 +64,24 @@ namespace cuspatial {
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt>
-void pairwise_point_linestring_distance(Cart2dItA points_first,
-                                        Cart2dItA points_last,
-                                        OffsetIterator linestring_offsets_first,
-                                        Cart2dItB linestring_points_first,
-                                        Cart2dItB linestring_points_last,
-                                        OutputIt distances_first,
-                                        rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+template <class Cart2dItA,
+          class Cart2dItB,
+          class OffsetIteratorA,
+          class OffsetIteratorB,
+          class OffsetIteratorC,
+          class OutputIt>
+OutputIt pairwise_point_linestring_distance(
+  OffsetIteratorA point_geometry_offset_first,
+  OffsetIteratorA point_geometry_offset_last,
+  Cart2dItA points_first,
+  Cart2dItA points_last,
+  OffsetIteratorB linestring_geometry_offset_first,
+  OffsetIteratorC linestring_part_offsets_first,
+  OffsetIteratorC linestring_part_offsets_last,
+  Cart2dItB linestring_points_first,
+  Cart2dItB linestring_points_last,
+  OutputIt distances_first,
+  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
 

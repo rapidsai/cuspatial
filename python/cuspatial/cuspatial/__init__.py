@@ -6,6 +6,7 @@ from .core.spatial import (
     join_quadtree_and_bounding_boxes,
     lonlat_to_cartesian,
     pairwise_linestring_distance,
+    pairwise_point_linestring_distance,
     polygon_bounding_boxes,
     polyline_bounding_boxes,
     point_in_polygon,
