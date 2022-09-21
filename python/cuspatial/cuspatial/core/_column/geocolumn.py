@@ -5,7 +5,7 @@ import cupy as cp
 import pyarrow as pa
 
 import cudf
-from cudf.core.column import ColumnBase, as_column
+from cudf.core.column import ColumnBase, as_column, build_list_column 
 
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 
@@ -183,28 +183,37 @@ class GeoColumn(ColumnBase):
         return result
 
     @classmethod
-    def _from_points_xy(cls, points_xy: cudf.Series):
+    def _from_points_xy(cls, points_xy: ColumnBase):
         """
         Create a GeoColumn of only single points from a cudf Series with
         interleaved xy coordinates.
         """
+        if len(points_xy) % 2 != 0:
+            raise ValueError("points_xy must have an even number of elements")
 
+        num_points = len(points_xy) // 2
         meta = GeoMeta(
             {
-                "input_types": cudf.Series(
+                "input_types": as_column( 
                     cp.full(
-                        len(points_xy), Feature_Enum.POINT.value, dtype=cp.int8
+                        num_points, Feature_Enum.POINT.value, dtype=cp.int8
                     )
                 ),
-                "union_offsets": cudf.Series(
-                    cp.arange(len(points_xy), dtype=cp.int32)
+                "union_offsets": as_column(
+                    cp.arange(num_points, dtype=cp.int32)
                 ),
             }
         )
 
+        indices = as_column(cp.arange(0, num_points * 2 + 1, 2), dtype="int32")
+        point_col = build_list_column(
+            indices= indices,
+            elements= points_xy,
+            size=num_points
+        )
         return cls(
             (
-                cudf.Series(points_xy),
+                cudf.Series(point_col),
                 cudf.Series(),
                 cudf.Series(),
                 cudf.Series(),

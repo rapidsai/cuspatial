@@ -26,12 +26,18 @@ from .projection import (
     lonlat_to_cartesian,
 )
 
+from .nearest_points import (
+    pairwise_point_linestring_nearest_points
+)
+
 __all__ = [
     "directed_hausdorff_distance",
     "haversine_distance",
     "join_quadtree_and_bounding_boxes",
     "lonlat_to_cartesian",
     "pairwise_linestring_distance",
+    "pairwise_point_linestring_distance",
+    "pairwise_point_linestring_nearest_points",
     "polygon_bounding_boxes",
     "polyline_bounding_boxes",
     "point_in_polygon",
