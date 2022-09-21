@@ -124,6 +124,164 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, OnePairSingleComponent)
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
+TYPED_TEST(PairwisePointLinestringNearestPointsTest, NearestAtLeftEndPoint)
+{
+  using T       = TypeParam;
+  using CartVec = std::vector<vec_2d<T>>;
+
+  auto num_pairs          = 1;
+  auto points_geometry_it = thrust::make_counting_iterator(0);
+  auto points_it          = rmm::device_vector<vec_2d<T>>(CartVec{{0, 0}});
+
+  auto linestring_geometry_it  = thrust::make_counting_iterator(0);
+  auto linestring_part_offsets = rmm::device_vector<int32_t>(std::vector<int32_t>{0, 2});
+  auto linestring_points_it    = rmm::device_vector<vec_2d<T>>(CartVec{{1, 1}, {2, 2}});
+
+  auto nearest_linestring_segment_id = rmm::device_vector<int32_t>(num_pairs);
+  auto neartest_point_coordinate     = rmm::device_vector<vec_2d<T>>(num_pairs);
+
+  auto output_it =
+    thrust::make_zip_iterator(thrust::make_tuple(thrust::make_discard_iterator(),
+                                                 thrust::make_discard_iterator(),
+                                                 nearest_linestring_segment_id.begin(),
+                                                 neartest_point_coordinate.begin()));
+
+  auto ret = pairwise_point_linestring_nearest_points(points_geometry_it,
+                                                      points_geometry_it + num_pairs + 1,
+                                                      points_it.begin(),
+                                                      points_it.end(),
+                                                      linestring_geometry_it,
+                                                      linestring_part_offsets.begin(),
+                                                      linestring_part_offsets.end(),
+                                                      linestring_points_it.begin(),
+                                                      linestring_points_it.end(),
+                                                      output_it);
+
+  EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>{0});
+  auto expected_coordinate = CartVec{{1, 1}};
+  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
+  EXPECT_EQ(std::distance(output_it, ret), num_pairs);
+}
+
+TYPED_TEST(PairwisePointLinestringNearestPointsTest, NearestAtRightEndPoint)
+{
+  using T       = TypeParam;
+  using CartVec = std::vector<vec_2d<T>>;
+
+  auto num_pairs          = 1;
+  auto points_geometry_it = thrust::make_counting_iterator(0);
+  auto points_it          = rmm::device_vector<vec_2d<T>>(CartVec{{3, 3}});
+
+  auto linestring_geometry_it  = thrust::make_counting_iterator(0);
+  auto linestring_part_offsets = rmm::device_vector<int32_t>(std::vector<int32_t>{0, 2});
+  auto linestring_points_it    = rmm::device_vector<vec_2d<T>>(CartVec{{1, 1}, {2, 2}});
+
+  auto nearest_linestring_segment_id = rmm::device_vector<int32_t>(num_pairs);
+  auto neartest_point_coordinate     = rmm::device_vector<vec_2d<T>>(num_pairs);
+
+  auto output_it =
+    thrust::make_zip_iterator(thrust::make_tuple(thrust::make_discard_iterator(),
+                                                 thrust::make_discard_iterator(),
+                                                 nearest_linestring_segment_id.begin(),
+                                                 neartest_point_coordinate.begin()));
+
+  auto ret = pairwise_point_linestring_nearest_points(points_geometry_it,
+                                                      points_geometry_it + num_pairs + 1,
+                                                      points_it.begin(),
+                                                      points_it.end(),
+                                                      linestring_geometry_it,
+                                                      linestring_part_offsets.begin(),
+                                                      linestring_part_offsets.end(),
+                                                      linestring_points_it.begin(),
+                                                      linestring_points_it.end(),
+                                                      output_it);
+
+  EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>{0});
+  auto expected_coordinate = CartVec{{2, 2}};
+  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
+  EXPECT_EQ(std::distance(output_it, ret), num_pairs);
+}
+
+TYPED_TEST(PairwisePointLinestringNearestPointsTest, PointAtEndPoints)
+{
+  using T       = TypeParam;
+  using CartVec = std::vector<vec_2d<T>>;
+
+  auto num_pairs          = 3;
+  auto points_geometry_it = thrust::make_counting_iterator(0);
+  auto points_it          = rmm::device_vector<vec_2d<T>>(CartVec{{0, 0}, {1, 1}, {2, 2}});
+
+  auto linestring_geometry_it  = thrust::make_counting_iterator(0);
+  auto linestring_part_offsets = rmm::device_vector<int32_t>(std::vector<int32_t>{0, 3, 6, 9});
+  auto linestring_points_it    = rmm::device_vector<vec_2d<T>>(
+    CartVec{{0, 0}, {1, 1}, {2, 2}, {0, 0}, {1, 1}, {2, 2}, {0, 0}, {1, 1}, {2, 2}});
+
+  auto nearest_linestring_segment_id = rmm::device_vector<int32_t>(num_pairs);
+  auto neartest_point_coordinate     = rmm::device_vector<vec_2d<T>>(num_pairs);
+
+  auto output_it =
+    thrust::make_zip_iterator(thrust::make_tuple(thrust::make_discard_iterator(),
+                                                 thrust::make_discard_iterator(),
+                                                 nearest_linestring_segment_id.begin(),
+                                                 neartest_point_coordinate.begin()));
+
+  auto ret = pairwise_point_linestring_nearest_points(points_geometry_it,
+                                                      points_geometry_it + num_pairs + 1,
+                                                      points_it.begin(),
+                                                      points_it.end(),
+                                                      linestring_geometry_it,
+                                                      linestring_part_offsets.begin(),
+                                                      linestring_part_offsets.end(),
+                                                      linestring_points_it.begin(),
+                                                      linestring_points_it.end(),
+                                                      output_it);
+
+  EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>({0, 0, 1}));
+  auto expected_coordinate = CartVec{{0, 0}, {1, 1}, {2, 2}};
+  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
+  EXPECT_EQ(std::distance(output_it, ret), num_pairs);
+}
+
+TYPED_TEST(PairwisePointLinestringNearestPointsTest, PointOnLineString)
+{
+  using T       = TypeParam;
+  using CartVec = std::vector<vec_2d<T>>;
+
+  auto num_pairs          = 2;
+  auto points_geometry_it = thrust::make_counting_iterator(0);
+  auto points_it          = rmm::device_vector<vec_2d<T>>(CartVec{{0.5, 0.5}, {1.5, 1.5}});
+
+  auto linestring_geometry_it  = thrust::make_counting_iterator(0);
+  auto linestring_part_offsets = rmm::device_vector<int32_t>(std::vector<int32_t>{0, 3, 6});
+  auto linestring_points_it =
+    rmm::device_vector<vec_2d<T>>(CartVec{{0, 0}, {1, 1}, {2, 2}, {0, 0}, {1, 1}, {2, 2}});
+
+  auto nearest_linestring_segment_id = rmm::device_vector<int32_t>(num_pairs);
+  auto neartest_point_coordinate     = rmm::device_vector<vec_2d<T>>(num_pairs);
+
+  auto output_it =
+    thrust::make_zip_iterator(thrust::make_tuple(thrust::make_discard_iterator(),
+                                                 thrust::make_discard_iterator(),
+                                                 nearest_linestring_segment_id.begin(),
+                                                 neartest_point_coordinate.begin()));
+
+  auto ret = pairwise_point_linestring_nearest_points(points_geometry_it,
+                                                      points_geometry_it + num_pairs + 1,
+                                                      points_it.begin(),
+                                                      points_it.end(),
+                                                      linestring_geometry_it,
+                                                      linestring_part_offsets.begin(),
+                                                      linestring_part_offsets.end(),
+                                                      linestring_points_it.begin(),
+                                                      linestring_points_it.end(),
+                                                      output_it);
+
+  EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>({0, 1}));
+  auto expected_coordinate = CartVec{{0.5, 0.5}, {1.5, 1.5}};
+  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
+  EXPECT_EQ(std::distance(output_it, ret), num_pairs);
+}
+
 TYPED_TEST(PairwisePointLinestringNearestPointsTest, TwoPairsSingleComponent)
 {
   using T       = TypeParam;

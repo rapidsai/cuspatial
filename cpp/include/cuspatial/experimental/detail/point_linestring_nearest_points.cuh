@@ -96,13 +96,15 @@ pairwise_point_linestring_nearest_points_kernel(OffsetIteratorA points_geometry_
           vec_2d<T> a = linestring_points_first[segment_idx];
           vec_2d<T> b = linestring_points_first[segment_idx + 1];
 
-          auto [distance_squared, nearest_point] =
+          auto distance_nearest_point_pair =
             point_to_segment_distance_squared_nearest_point(c, a, b);
+          auto distance_squared = thrust::get<0>(distance_nearest_point_pair);
           if (distance_squared < min_distance_squared) {
             min_distance_squared = distance_squared;
             nearest_point_idx    = point_idx - point_start;
             nearest_part_idx     = part_idx - linestring_parts_start;
             nearest_segment_idx  = segment_idx - segment_start;
+            nearest_point        = thrust::get<1>(distance_nearest_point_pair);
           }
         }
       }
