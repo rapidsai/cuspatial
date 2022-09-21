@@ -242,6 +242,20 @@ def test_post_slice(gpdf, post_slice):
 
 
 @pytest.mark.parametrize(
+    "inline_slice",
+    [slice(0, 12)]
+    + [slice(0, 10, 1)]
+    + [slice(0, 3, 1)]
+    + [slice(3, 6, 1)]
+    + [slice(6, 9, 1)],
+)
+def test_inline_slice(gpdf, inline_slice):
+    gi = gpd.GeoDataFrame(gpdf)
+    cugpdf = cuspatial.from_geopandas(gi)
+    assert_eq_geo_df(gi[inline_slice], cugpdf[inline_slice].to_pandas())
+
+
+@pytest.mark.parametrize(
     "df_boolmask",
     [
         np.repeat(True, 12),
