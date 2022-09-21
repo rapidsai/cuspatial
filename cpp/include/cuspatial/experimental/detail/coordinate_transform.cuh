@@ -32,8 +32,6 @@ namespace cuspatial {
 
 namespace detail {
 
-constexpr double EARTH_CIRCUMFERENCE_KM_PER_DEGREE = EARTH_CIRCUMFERENCE_EQUATOR_KM / 360.0;
-
 template <typename T>
 __device__ inline T midpoint(T a, T b)
 {
