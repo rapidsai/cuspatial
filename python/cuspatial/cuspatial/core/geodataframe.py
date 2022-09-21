@@ -131,27 +131,25 @@ class GeoDataFrame(cudf.DataFrame):
         Overload the _slice functionality from cudf's frame members.
         """
         # Collect the Geometry columns and slice them separately
-        columns_mask = cudf.Series(self.columns)
+        columns_mask = pd.Series(self.columns)
         geocolumn_mask = pd.Series(
             [isinstance(self[col], GeoSeries) for col in self.columns]
         )
-        geo_names = columns_mask[geocolumn_mask].to_pandas()
-        geo_columns = self[columns_mask[geocolumn_mask].to_pandas()]
+        geo_names = columns_mask[geocolumn_mask]
+        geo_columns = self[columns_mask[geocolumn_mask]]
         sliced_geo_columns = GeoDataFrame(
             {name: geo_columns[name].iloc[arg] for name in geo_names}
         )
         # Send the rest of the columns to `cudf` to slice.
         data_columns = cudf.DataFrame(
-            self[columns_mask[~geocolumn_mask].values_host]
+            self[columns_mask[~geocolumn_mask].values]
         )
         sliced_data_columns = data_columns._slice(arg)
         output = {
             key: (
                 sliced_geo_columns[key] if value else sliced_data_columns[key]
             )
-            for key, value in zip(
-                columns_mask.values_host, geocolumn_mask.values
-            )
+            for key, value in zip(columns_mask.values, geocolumn_mask.values)
         }
         return __class__(output)
 

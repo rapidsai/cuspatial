@@ -227,11 +227,13 @@ def test_pre_slice(gpdf, pre_slice):
 
 @pytest.mark.parametrize(
     "post_slice",
-    [slice(0, 12)]
-    + [slice(0, 10, 1)]
-    + [slice(0, 3, 1)]
-    + [slice(3, 6, 1)]
-    + [slice(6, 9, 1)],
+    [
+        (slice(0, 12)),
+        (slice(0, 10, 1)),
+        (slice(0, 3, 1)),
+        (slice(3, 6, 1)),
+        (slice(6, 9, 1)),
+    ],
 )
 def test_post_slice(gpdf, post_slice):
     geometries = gpdf
@@ -243,11 +245,13 @@ def test_post_slice(gpdf, post_slice):
 
 @pytest.mark.parametrize(
     "inline_slice",
-    [slice(0, 12)]
-    + [slice(0, 10, 1)]
-    + [slice(0, 3, 1)]
-    + [slice(3, 6, 1)]
-    + [slice(6, 9, 1)],
+    [
+        (slice(0, 12)),
+        (slice(0, 10, 1)),
+        (slice(0, 3, 1)),
+        (slice(3, 6, 1)),
+        (slice(6, 9, 1)),
+    ],
 )
 def test_inline_slice(gpdf, inline_slice):
     gi = gpd.GeoDataFrame(gpdf)

@@ -201,11 +201,11 @@ def test_to_shapely_random():
     "pre_slice",
     [
         list(np.arange(10)),
-        (slice(0, 12)),
-        (slice(0, 10, 1)),
-        (slice(0, 3, 1)),
-        (slice(3, 6, 1)),
-        (slice(6, 9, 1)),
+        slice(0, 12),
+        slice(0, 10, 1),
+        slice(0, 3, 1),
+        slice(3, 6, 1),
+        slice(6, 9, 1),
     ],
 )
 def test_to_shapely(gs, pre_slice):
@@ -333,11 +333,13 @@ def test_getitem_slice_mpolygons(gs):
 
 @pytest.mark.parametrize(
     "series_slice",
-    list(np.arange(10))
-    + [slice(0, 10, 1)]
-    + [slice(0, 3, 1)]
-    + [slice(3, 6, 1)]
-    + [slice(6, 9, 1)],
+    [
+        list(np.arange(10)),
+        slice(0, 10, 1),
+        slice(0, 3, 1),
+        slice(3, 6, 1),
+        slice(6, 9, 1),
+    ],
 )
 def test_size(gs, series_slice):
     geometries = gs[series_slice]
