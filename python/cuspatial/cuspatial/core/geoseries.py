@@ -100,7 +100,9 @@ class GeoSeries(cudf.Series):
                 index = data.index
         if index is None:
             index = cudf.RangeIndex(0, len(column))
-        super().__init__(column, index, dtype, name, nan_as_null)
+        super().__init__(
+            column, index, dtype=dtype, name=name, nan_as_null=nan_as_null
+        )
 
     @property
     def type(self):
@@ -124,32 +126,12 @@ class GeoSeries(cudf.Series):
             self._meta = meta
             self._type = Feature_Enum.POINT
 
-        """ Frozen as a working version of points and multipoints
-            Linestrings and Polygons need another level of indirection
         @property
         def x(self):
             types = self._meta.input_types
             offsets = self._meta.union_offsets
             indices = offsets[types == self._type.value]
             result = self._col.take(indices._column).leaves().values
-            return cudf.Series(result[::2])
-
-        @property
-        def y(self):
-            types = self._meta.input_types
-            offsets = self._meta.union_offsets
-            indices = offsets[types == self._type.value]
-            result = self._col.take(indices._column).leaves().values
-            return cudf.Series(result[1::2])
-        """
-
-        @property
-        def x(self):
-            types = self._meta.input_types
-            offsets = self._meta.union_offsets
-            indices = offsets[types == self._type.value]
-            result = self._col.take(indices._column).leaves().values
-            breakpoint()
             return cudf.Series(result[::2])
 
         @property
@@ -320,9 +302,11 @@ class GeoSeries(cudf.Series):
             )
 
             if isinstance(item, Integral):
-                return GeoSeries(column).to_shapely()
+                return GeoSeries(column, name=self._sr.name).to_shapely()
             else:
-                return GeoSeries(column, index=self._sr.index[indexes])
+                return GeoSeries(
+                    column, index=self._sr.index[indexes], name=self._sr.name
+                )
 
     def from_arrow(union):
         column = GeoColumn(
@@ -364,6 +348,7 @@ class GeoSeries(cudf.Series):
         return gpGeoSeries(
             final_union_slice.to_shapely(),
             index=self.index.to_pandas(),
+            name=self.name,
         )
 
     def to_pandas(self):
