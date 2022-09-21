@@ -15,6 +15,7 @@
 set(cython_sources 
     hausdorff.pyx
     interpolate.pyx
+    nearest_points.pyx
     point_in_polygon.pyx
     polygon_bounding_boxes.pyx
     polyline_bounding_boxes.pyx
