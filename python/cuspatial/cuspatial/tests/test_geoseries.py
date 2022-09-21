@@ -7,6 +7,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
+from geopandas.testing import assert_geoseries_equal
 from shapely.affinity import rotate
 from shapely.geometry import (
     LineString,
@@ -355,3 +356,36 @@ def test_loc(gs):
     gsslice = gs[["l", "k", "j", "i"]]
     cugsslice = cugs[["l", "k", "j", "i"]]
     assert_eq_geo(gsslice, cugsslice.to_geopandas())
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        None,
+        [],
+        [
+            Point(1, 1),
+            MultiPoint([(2, 2), (3, 3)]),
+            Point(4, 4),
+            Polygon([(0, 0), (1, 1), (0, 1), (0, 0)]),
+        ],
+        gpd.GeoSeries(
+            [
+                MultiLineString(
+                    [[(0, 0), (1, 2), (1, 0)], [(-1, -1), (-1, 3), (0, 0)]]
+                ),
+                MultiPolygon(
+                    [
+                        Polygon([(0, 0), (1, 1), (0, 1), (0, 0)]),
+                        Polygon([(2, 2), (2, 3), (3, 3), (2, 2)]),
+                    ]
+                ),
+            ]
+        ),
+    ],
+)
+def test_construction_from_foreign_object(data):
+    cugs = cuspatial.GeoSeries(data)
+    gps = gpd.GeoSeries(data)
+
+    assert_geoseries_equal(cugs.to_geopandas(), gps)
