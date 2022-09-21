@@ -153,7 +153,7 @@ class GeoDataFrame(cudf.DataFrame):
                 columns_mask.values_host, geocolumn_mask.values
             )
         }
-        return __class__(output)
+        return self.__class__(output)
 
 
 class _GeoSeriesUtility:
