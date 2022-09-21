@@ -146,12 +146,14 @@ class GeoDataFrame(cudf.DataFrame):
         )
         sliced_data_columns = data_columns._slice(arg)
         output = {
-            key: (
-                sliced_geo_columns[key] if value else sliced_data_columns[key]
+            name: (
+                sliced_geo_columns[name] if mask else sliced_data_columns[name]
             )
-            for key, value in zip(columns_mask.values, geocolumn_mask.values)
+            for name, mask in zip(
+                columns_mask.values_host, geocolumn_mask.values
+            )
         }
-        return __class__(output)
+        return self.__class__(output)
 
 
 class _GeoSeriesUtility:
