@@ -17,7 +17,7 @@ benchmarks in `cpp/benchmarks` to understand the options.
 The naming of unit benchmark directories and source files should be consistent with the feature
 being benchmarked. For example, the benchmarks for APIs in `point_in_polygon.hpp` should live in
 `cpp/benchmarks/point_in_polygon.cu`. Each feature (or set of related features) should have its own
-benchmark source file named `<feature>.cu/cpp`. 
+benchmark source file named `<feature>{.cu,cpp}`. 
 
 In the interest of improving compile time, whenever possible, test source files should be `.cpp`
 files because `nvcc` is slower than `gcc` in compiling host code. Note that `thrust::device_vector`

@@ -221,7 +221,7 @@ The longer description is the rest of the comment text that is not tagged with a
    * @brief Short description.
    *
    * Long description.
-   *
+   */
 
 
 ### \@copydoc
