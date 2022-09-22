@@ -4,7 +4,11 @@ import cuspatial._lib.nearest_points as nearest_points
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core.geodataframe import GeoDataFrame
 from cuspatial.core.geoseries import GeoSeries
-from cuspatial.utils.column_utils import contains_only_linestrings, contains_only_points
+from cuspatial.utils.column_utils import (
+    contains_only_linestrings,
+    contains_only_points,
+)
+
 
 def pairwise_point_linestring_nearest_points(
     points: GeoSeries, linestrings: GeoSeries
@@ -23,7 +27,7 @@ def pairwise_point_linestring_nearest_points(
     Returns
     -------
     GeoDataFrame
-        A GeoDataFrame with four columns. 
+        A GeoDataFrame with four columns.
         - "point_geometry_id" contains index of the nearest point in the row.
           If `points` consists of single-points, it is always 0.
         - "linestring_geometry_id" contains the index of the linestring in the
@@ -35,17 +39,18 @@ def pairwise_point_linestring_nearest_points(
     """
 
     if len(points) != len(linestrings):
-        raise ValueError("The inputs should have the same number of geometries")
-    
+        raise ValueError(
+            "The inputs should have the same number of geometries"
+        )
+
     if len(points) == 0:
         data = {
             "point_geometry_id": [],
             "linestring_geometry_id": [],
             "segment_id": [],
-            "geometry": GeoSeries([]), 
+            "geometry": GeoSeries([]),
         }
         return GeoDataFrame._from_data(data)
-   
 
     if not contains_only_points(points):
         raise ValueError("`points` must contain only point geometries.")
@@ -69,7 +74,7 @@ def pairwise_point_linestring_nearest_points(
     points_geometry_offset = (
         None
         if len(points.points.xy) > 0
-        else points.multipoints.geometry_offset
+        else points.multipoints.geometry_offset._column
     )
 
     (
@@ -92,10 +97,10 @@ def pairwise_point_linestring_nearest_points(
         point_geometry_id = cp.zeros(len(points), dtype=cp.int32)
 
     data = {
-            "point_geometry_id": point_geometry_id,
-            "linestring_geometry_id": linestring_geometry_id,
-            "segment_id": segment_id,
-            "geometry": nearest_points_on_linestring,
-        }
+        "point_geometry_id": point_geometry_id,
+        "linestring_geometry_id": linestring_geometry_id,
+        "segment_id": segment_id,
+        "geometry": nearest_points_on_linestring,
+    }
 
     return GeoDataFrame._from_data(data)
