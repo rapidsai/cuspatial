@@ -149,9 +149,7 @@ class GeoDataFrame(cudf.DataFrame):
             name: (
                 sliced_geo_columns[name] if mask else sliced_data_columns[name]
             )
-            for name, mask in zip(
-                columns_mask.values_host, geocolumn_mask.values
-            )
+            for name, mask in zip(columns_mask.values, geocolumn_mask.values)
         }
         return self.__class__(output)
 
