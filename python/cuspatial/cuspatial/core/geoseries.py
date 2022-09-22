@@ -128,19 +128,11 @@ class GeoSeries(cudf.Series):
 
         @property
         def x(self):
-            types = self._meta.input_types
-            offsets = self._meta.union_offsets
-            indices = offsets[types == self._type.value]
-            result = self._col.take(indices._column).leaves().values
-            return cudf.Series(result[::2])
+            return self.xy[::2]
 
         @property
         def y(self):
-            types = self._meta.input_types
-            offsets = self._meta.union_offsets
-            indices = offsets[types == self._type.value]
-            result = self._col.take(indices._column).leaves().values
-            return cudf.Series(result[1::2])
+            return self.xy[1::2]
 
         @property
         def xy(self):
