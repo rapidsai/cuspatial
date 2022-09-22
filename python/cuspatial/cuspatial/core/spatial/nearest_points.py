@@ -13,8 +13,8 @@ from cuspatial.utils.column_utils import (
 def pairwise_point_linestring_nearest_points(
     points: GeoSeries, linestrings: GeoSeries
 ) -> GeoDataFrame:
-    """
-    Returns the nearest points between two GeoSeries of points and linestrings.
+    """Returns the nearest points between two GeoSeries of points and
+    linestrings.
 
     Parameters
     ----------
@@ -28,6 +28,7 @@ def pairwise_point_linestring_nearest_points(
     -------
     GeoDataFrame
         A GeoDataFrame with four columns.
+
         - "point_geometry_id" contains index of the nearest point in the row.
           If `points` consists of single-points, it is always 0.
         - "linestring_geometry_id" contains the index of the linestring in the
