@@ -5,7 +5,7 @@ import cupy as cp
 import pyarrow as pa
 
 import cudf
-from cudf.core.column import ColumnBase, as_column, build_list_column 
+from cudf.core.column import ColumnBase, as_column, build_list_column
 
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 
@@ -194,7 +194,7 @@ class GeoColumn(ColumnBase):
         num_points = len(points_xy) // 2
         meta = GeoMeta(
             {
-                "input_types": as_column( 
+                "input_types": as_column(
                     cp.full(
                         num_points, Feature_Enum.POINT.value, dtype=cp.int8
                     )
@@ -207,9 +207,7 @@ class GeoColumn(ColumnBase):
 
         indices = as_column(cp.arange(0, num_points * 2 + 1, 2), dtype="int32")
         point_col = build_list_column(
-            indices= indices,
-            elements= points_xy,
-            size=num_points
+            indices=indices, elements=points_xy, size=num_points
         )
         return cls(
             (
