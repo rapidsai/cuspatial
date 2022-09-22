@@ -79,20 +79,32 @@ class GeoDataFrame(cudf.DataFrame):
     def __repr__(self):
         return self.to_pandas().__repr__() + "\n" + "(GPU)" + "\n"
 
-    def _copy_type_metadata(self, other, include_index: bool = True):
+    def _copy_type_metadata(
+        self, other, include_index: bool = True, *, override_dtypes=None
+    ):
         """
         Copy type metadata from each column of `other` to the corresponding
         column of `self`.
         See `ColumnBase._with_type_metadata` for more information.
         """
+
+        type_copied = super()._copy_type_metadata(
+            other, include_index=include_index, override_dtypes=override_dtypes
+        )
         for name, col, other_col in zip(
-            self._data.keys(), self._data.values(), other._data.values()
+            type_copied._data.keys(),
+            type_copied._data.values(),
+            other._data.values(),
         ):
-            # libcudf APIs lose all information about GeoColumns, operating
-            # solely on the underlying base data. Therefore, our only recourse
-            # is to recreate a new GeoColumn with the same underlying data.
-            # Since there's no easy way to create a GeoColumn from a
-            # NumericalColumn, we're forced to do so manually.
+            # A GeoColumn is currently implemented as a NumericalColumn with
+            # several child columns to hold the geometry data. The native
+            # return loop of cudf cython code can only reconstruct the
+            # geocolumn as a NumericalColumn. We can't reconstruct the full
+            # GeoColumn at the column level via _with_type_metadata, because
+            # there is neither a well defined geometry type in cuspatial,
+            # nor we can reconstruct the entire geocolumn data with pure
+            # geometry type. So we need an extra pass here to copy the geometry
+            # data into the type reconstructed dataframe.
             if isinstance(other_col, GeoColumn):
                 col = GeoColumn(
                     (
@@ -104,23 +116,9 @@ class GeoDataFrame(cudf.DataFrame):
                     other_col._meta,
                     cudf.Index(col),
                 )
+                type_copied._data.set_by_label(name, col, validate=False)
 
-            self._data.set_by_label(
-                name, col._with_type_metadata(other_col.dtype), validate=False
-            )
-
-        if include_index:
-            if self._index is not None and other._index is not None:
-                self._index._copy_type_metadata(other._index)
-                # When other._index is a CategoricalIndex, there is
-                if isinstance(
-                    other._index, cudf.core.index.CategoricalIndex
-                ) and not isinstance(
-                    self._index, cudf.core.index.CategoricalIndex
-                ):
-                    self._index = cudf.Index(self._index._column)
-
-        return self
+        return type_copied
 
 
 class _GeoSeriesUtility:
