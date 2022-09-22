@@ -18,6 +18,7 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
+#include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -130,6 +131,35 @@ auto interleaved_iterator_to_vec_2d_iterator(Iter d_points_begin)
 {
   using T = typename std::iterator_traits<Iter>::value_type;
   return detail::make_counting_transform_iterator(0, interleaved_to_vec_2d<T>{d_points_begin});
+}
+
+struct strided_functor {
+  std::size_t _stride;
+  strided_functor(std::size_t stride) : _stride(stride) {}
+  auto __device__ operator()(std::size_t i) { return i * _stride; }
+};
+
+/**
+ * @brief Create an output iterator to `vec_2d` data from an iterator to an interleaved array.
+ *
+ * @tparam Iter type of iterator to interleaved data. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
+ * @param d_points_begin Iterator to beginning of interleaved data.
+ * @return Iterator to `vec_2d`
+ */
+template <typename Iter>
+auto vec_2d_iterator_to_output_interleaved_iterator(Iter d_points_begin)
+{
+  using T                     = typename std::iterator_traits<Iter>::value_type;
+  auto fixed_stride_2_functor = strided_functor(2);
+  auto even_positions         = thrust::make_permutation_iterator(
+    d_points_begin, detail::make_counting_transform_iterator(0, fixed_stride_2_functor));
+  auto odd_positions = thrust::make_permutation_iterator(
+    thrust::next(d_points_begin),
+    detail::make_counting_transform_iterator(0, fixed_stride_2_functor));
+  auto zipped_outputs =
+    thrust::make_zip_iterator(thrust::make_tuple(even_positions, odd_positions));
+  return thrust::make_transform_output_iterator(zipped_outputs, detail::vec_2d_to_tuple<T>());
 }
 
 /**
