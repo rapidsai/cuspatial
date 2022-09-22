@@ -57,13 +57,6 @@ class GeoSeries(cudf.Series):
         # Condition data
         if data is None or isinstance(data, (pd.Series, list)):
             data = gpGeoSeries(data)
-        # Condition index
-        if isinstance(data, (gpGeoSeries, GeoSeries)):
-            if index is None:
-                index = data.index
-        if index is None:
-            index = cudf.RangeIndex(0, len(data))
-
         # Create column
         if isinstance(data, GeoColumn):
             column = data
