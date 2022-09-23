@@ -69,6 +69,12 @@
  *          @file polyline_bounding_box.hpp
  *          @file spatial_window.hpp
  *      @}
+ *      @defgroup nearest_points Nearest Points
+ *      @{
+ *          @brief APIs to compute the nearest points between geometries
+ *          @file point_linestring_nearest_points.hpp
+ *          @file point_linestring_nearest_points.cuh
+ *      @}
  *      @defgroup cubic_spline Cubic Spline
  *      @{
  *          @brief APIs related to cubic splines
