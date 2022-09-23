@@ -2,7 +2,7 @@
 
 from functools import cached_property
 from numbers import Integral
-from typing import Tuple, TypeVar, Union
+from typing import Optional, Tuple, TypeVar, Union
 
 import cupy as cp
 import geopandas as gpd
@@ -46,14 +46,16 @@ class GeoSeries(cudf.Series):
 
     def __init__(
         self,
-        data: Union[gpd.GeoSeries, Tuple, T, pd.Series, GeoColumn],
+        data: Optional[
+            Union[gpd.GeoSeries, Tuple, T, pd.Series, GeoColumn, list]
+        ],
         index: Union[cudf.Index, pd.Index] = None,
         dtype=None,
         name=None,
         nan_as_null=True,
     ):
         # Condition data
-        if isinstance(data, pd.Series):
+        if data is None or isinstance(data, (pd.Series, list)):
             data = gpGeoSeries(data)
         # Create column
         if isinstance(data, GeoColumn):
@@ -128,19 +130,11 @@ class GeoSeries(cudf.Series):
 
         @property
         def x(self):
-            types = self._meta.input_types
-            offsets = self._meta.union_offsets
-            indices = offsets[types == self._type.value]
-            result = self._col.take(indices._column).leaves().values
-            return cudf.Series(result[::2])
+            return self.xy[::2].reset_index(drop=True)
 
         @property
         def y(self):
-            types = self._meta.input_types
-            offsets = self._meta.union_offsets
-            indices = offsets[types == self._type.value]
-            result = self._col.take(indices._column).leaves().values
-            return cudf.Series(result[1::2])
+            return self.xy[1::2].reset_index(drop=True)
 
         @property
         def xy(self):
