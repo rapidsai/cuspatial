@@ -347,6 +347,157 @@ def test_size(gs, series_slice):
     assert len(gi) == len(cugs)
 
 
+def test_geometry_point_slicing(gs):
+    cugs = cuspatial.from_geopandas(gs)
+    assert (cugs[:1].points.x == cudf.Series([-1])).all()
+    assert (cugs[:1].points.y == cudf.Series([0])).all()
+    assert (cugs[:1].points.xy == cudf.Series([-1, 0])).all()
+    assert (cugs[3:].points.x == cudf.Series([9])).all()
+    assert (cugs[3:].points.y == cudf.Series([10])).all()
+    assert (cugs[3:].points.xy == cudf.Series([9, 10])).all()
+    assert (cugs[0:4].points.x == cudf.Series([-1, 9])).all()
+    assert (cugs[0:4].points.y == cudf.Series([0, 10])).all()
+    assert (cugs[0:4].points.xy == cudf.Series([-1, 0, 9, 10])).all()
+
+
+def test_geometry_multipoint_slicing(gs):
+    cugs = cuspatial.from_geopandas(gs)
+    assert (cugs[:2].multipoints.x == cudf.Series([1, 3])).all()
+    assert (cugs[:2].multipoints.y == cudf.Series([2, 4])).all()
+    assert (cugs[:2].multipoints.xy == cudf.Series([1, 2, 3, 4])).all()
+    assert (cugs[2:].multipoints.x == cudf.Series([5, 7])).all()
+    assert (cugs[2:].multipoints.y == cudf.Series([6, 8])).all()
+    assert (cugs[2:].multipoints.xy == cudf.Series([5, 6, 7, 8])).all()
+    assert (cugs[0:4].multipoints.x == cudf.Series([1, 3, 5, 7])).all()
+    assert (cugs[0:4].multipoints.y == cudf.Series([2, 4, 6, 8])).all()
+    assert (
+        cugs[0:4].multipoints.xy == cudf.Series([1, 2, 3, 4, 5, 6, 7, 8])
+    ).all()
+
+
+def test_geometry_linestring_slicing(gs):
+    cugs = cuspatial.from_geopandas(gs)
+    assert (cugs[:5].lines.x == cudf.Series([11, 13])).all()
+    assert (cugs[:5].lines.y == cudf.Series([12, 14])).all()
+    assert (cugs[:5].lines.xy == cudf.Series([11, 12, 13, 14])).all()
+    assert (cugs[:6].lines.x == cudf.Series([11, 13, 15, 17, 19, 21])).all()
+    assert (cugs[:6].lines.y == cudf.Series([12, 14, 16, 18, 20, 22])).all()
+    assert (
+        cugs[:6].lines.xy
+        == cudf.Series([11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
+    ).all()
+    assert (cugs[7:].lines.x == cudf.Series([31, 33])).all()
+    assert (cugs[7:].lines.y == cudf.Series([32, 34])).all()
+    assert (cugs[7:].lines.xy == cudf.Series([31, 32, 33, 34])).all()
+    assert (cugs[6:].lines.x == cudf.Series([23, 25, 27, 29, 31, 33])).all()
+    assert (cugs[6:].lines.y == cudf.Series([24, 26, 28, 30, 32, 34])).all()
+    assert (
+        cugs[6:].lines.xy
+        == cudf.Series([23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34])
+    ).all()
+
+
+def test_geometry_polygon_slicing(gs):
+    cugs = cuspatial.from_geopandas(gs)
+    assert (cugs[:9].polygons.x == cudf.Series([35, 37, 39, 41, 35])).all()
+    assert (cugs[:9].polygons.y == cudf.Series([36, 38, 40, 42, 36])).all()
+    assert (
+        cugs[:9].polygons.xy
+        == cudf.Series([35, 36, 37, 38, 39, 40, 41, 42, 35, 36])
+    ).all()
+    assert (
+        cugs[:10].polygons.x
+        == cudf.Series(
+            [
+                35,
+                37,
+                39,
+                41,
+                35,
+                43,
+                45,
+                47,
+                43,
+                49,
+                51,
+                53,
+                49,
+                55,
+                57,
+                59,
+                55,
+                61,
+                63,
+                65,
+                61,
+            ]
+        )
+    ).all()
+    assert (
+        cugs[:10].polygons.y
+        == cudf.Series(
+            [
+                36,
+                38,
+                40,
+                42,
+                36,
+                44,
+                46,
+                48,
+                44,
+                50,
+                52,
+                54,
+                50,
+                56,
+                58,
+                60,
+                56,
+                62,
+                64,
+                66,
+                62,
+            ]
+        )
+    ).all()
+    assert (
+        cugs[11:].polygons.x
+        == cudf.Series([97, 99, 102, 101, 97, 106, 108, 110, 113, 106])
+    ).all()
+    assert (
+        cugs[11:].polygons.y
+        == cudf.Series([98, 101, 103, 108, 98, 107, 109, 111, 108, 107])
+    ).all()
+    assert (
+        cugs[11:].polygons.xy
+        == cudf.Series(
+            [
+                97,
+                98,
+                99,
+                101,
+                102,
+                103,
+                101,
+                108,
+                97,
+                98,
+                106,
+                107,
+                108,
+                109,
+                110,
+                111,
+                113,
+                108,
+                106,
+                107,
+            ]
+        )
+    ).all()
+
+
 def test_loc(gs):
     index = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"]
     gs.index = index
