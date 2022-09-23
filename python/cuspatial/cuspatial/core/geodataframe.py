@@ -1,5 +1,5 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION
-from typing import Dict, TypeVar, Union
+from typing import Dict, Tuple, TypeVar, Union
 
 import pandas as pd
 from geopandas import GeoDataFrame as gpGeoDataFrame
@@ -126,32 +126,49 @@ class GeoDataFrame(cudf.DataFrame):
 
         return type_copied
 
-    def _slice(self: T, arg: slice) -> T:
+    def _split_out_geometry_columns(self) -> Tuple:
         """
-        Overload the _slice functionality from cudf's frame members.
+        Break the geometry columns and non-geometry columns into
+        separate dataframes and return them separated.
         """
-        # Collect the Geometry columns and slice them separately
         columns_mask = pd.Series(self.columns)
         geocolumn_mask = pd.Series(
             [isinstance(self[col], GeoSeries) for col in self.columns]
         )
-        geo_names = columns_mask[geocolumn_mask]
         geo_columns = self[columns_mask[geocolumn_mask]]
-        sliced_geo_columns = GeoDataFrame(
-            {name: geo_columns[name].iloc[arg] for name in geo_names}
-        )
         # Send the rest of the columns to `cudf` to slice.
         data_columns = cudf.DataFrame(
             self[columns_mask[~geocolumn_mask].values]
         )
-        sliced_data_columns = data_columns._slice(arg)
-        output = {
-            name: (
-                sliced_geo_columns[name] if mask else sliced_data_columns[name]
-            )
+        return (geo_columns, data_columns)
+
+    def _recombine_columns(self, geo_columns, data_columns):
+        """
+        Combine a GeoDataFrame of only geometry columns with a DataFrame
+        of non-geometry columns in the same order as the columns in `self`
+        """
+        columns_mask = pd.Series(self.columns)
+        geocolumn_mask = pd.Series(
+            [isinstance(self[col], GeoSeries) for col in self.columns]
+        )
+        return {
+            name: (geo_columns[name] if mask else data_columns[name])
             for name, mask in zip(columns_mask.values, geocolumn_mask.values)
         }
-        return self.__class__(output)
+
+    def _slice(self: T, arg: slice) -> T:
+        """
+        Overload the _slice functionality from cudf's frame members.
+        """
+        geo_columns, data_columns = self._split_out_geometry_columns()
+        sliced_geo_columns = GeoDataFrame(
+            {name: geo_columns[name].iloc[arg] for name in geo_columns.columns}
+        )
+        sliced_data_columns = data_columns._slice(arg)
+        result = self._recombine_columns(
+            sliced_geo_columns, sliced_data_columns
+        )
+        return self.__class__(result)
 
 
 class _GeoSeriesUtility:

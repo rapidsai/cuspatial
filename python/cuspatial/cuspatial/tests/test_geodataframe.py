@@ -259,6 +259,50 @@ def test_inline_slice(gpdf, inline_slice):
     assert_eq_geo_df(gi[inline_slice], cugpdf[inline_slice].to_pandas())
 
 
+def test_slice_column_order(gpdf):
+    gi = gpd.GeoDataFrame(gpdf)
+    cugpdf = cuspatial.from_geopandas(gi)
+
+    slice_df = cuspatial.core.geodataframe.GeoDataFrame(
+        {
+            "geo1": cugpdf["geometry"],
+            "data1": np.arange(len(cugpdf)),
+            "geo2": cugpdf["geometry"],
+            "data2": np.arange(len(cugpdf)),
+        }
+    )
+    slice_gi = slice_df.to_pandas()
+    assert_eq_geo_df(slice_gi[0:5], slice_df[0:5].to_pandas())
+
+    slice_df = cuspatial.core.geodataframe.GeoDataFrame(
+        {
+            "data1": np.arange(len(cugpdf)),
+            "geo1": cugpdf["geometry"],
+            "geo2": cugpdf["geometry"],
+            "data2": np.arange(len(cugpdf)),
+        }
+    )
+    slice_gi = slice_df.to_pandas()
+    assert_eq_geo_df(slice_gi[5:], slice_df[5:].to_pandas())
+
+    slice_df = cuspatial.core.geodataframe.GeoDataFrame(
+        {
+            "data1": np.arange(len(cugpdf)),
+            "geo4": cugpdf["geometry"],
+            "data2": np.arange(len(cugpdf)),
+            "geo3": cugpdf["geometry"],
+            "data3": np.arange(len(cugpdf)),
+            "geo2": cugpdf["geometry"],
+            "geo1": cugpdf["geometry"],
+            "data4": np.arange(len(cugpdf)),
+            "data5": np.arange(len(cugpdf)),
+            "data6": np.arange(len(cugpdf)),
+        }
+    )
+    slice_gi = slice_df.to_pandas()
+    assert_eq_geo_df(slice_gi[5:], slice_df[5:].to_pandas())
+
+
 @pytest.mark.parametrize(
     "df_boolmask",
     [
