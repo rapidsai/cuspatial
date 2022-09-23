@@ -135,13 +135,19 @@ def test_interleaved_point(gpdf, polys):
     cugs = cugpdf["geometry"]
     gs = gpdf["geometry"]
     pd.testing.assert_series_equal(
-        cugs.points.x.to_pandas(),
+        cugs.points.x.to_pandas().reset_index(drop=True),
         gs[gs.type == "Point"].x.reset_index(drop=True),
     )
     pd.testing.assert_series_equal(
-        cugs.points.y.to_pandas(),
+        cugs.points.y.to_pandas().reset_index(drop=True),
         gs[gs.type == "Point"].y.reset_index(drop=True),
     )
+
+
+def test_interleaved_multipoint(gpdf, polys):
+    cugpdf = cuspatial.from_geopandas(gpdf)
+    cugs = cugpdf["geometry"]
+    gs = gpdf["geometry"]
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.multipoints.x.to_arrow()),
         cudf.Series(
@@ -164,6 +170,11 @@ def test_interleaved_point(gpdf, polys):
             ).flatten()
         ),
     )
+
+
+def test_interleaved_lines(gpdf, polys):
+    cugpdf = cuspatial.from_geopandas(gpdf)
+    cugs = cugpdf["geometry"]
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.lines.x.to_arrow()),
         cudf.Series(
@@ -178,6 +189,11 @@ def test_interleaved_point(gpdf, polys):
             dtype="float64",
         ),
     )
+
+
+def test_interleaved_polygons(gpdf, polys):
+    cugpdf = cuspatial.from_geopandas(gpdf)
+    cugs = cugpdf["geometry"]
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.polygons.x.to_arrow()),
         cudf.Series(polys[:, 0], dtype="float64"),
