@@ -130,11 +130,11 @@ class GeoSeries(cudf.Series):
 
         @property
         def x(self):
-            return self.xy[::2]
+            return self.xy[::2].reset_index(drop=True)
 
         @property
         def y(self):
-            return self.xy[1::2]
+            return self.xy[1::2].reset_index(drop=True)
 
         @property
         def xy(self):
