@@ -67,12 +67,11 @@ struct pairwise_point_linestring_distance_impl {
 
     auto point_parts_it_first =
       get_geometry_iterator_functor<is_multi_point>{}(multipoint_geometry_offsets);
-    auto points_it = interleaved_iterator_to_vec_2d_iterator(points_xy.begin<T>());
+    auto points_it = make_vec_2d_iterator(points_xy.begin<T>());
 
     auto linestring_parts_it_first =
       get_geometry_iterator_functor<is_multi_linestring>{}(multilinestring_geometry_offsets);
-    auto linestring_points_it =
-      interleaved_iterator_to_vec_2d_iterator(linestring_points_xy.begin<T>());
+    auto linestring_points_it = make_vec_2d_iterator(linestring_points_xy.begin<T>());
 
     auto output_begin = output->mutable_view().begin<T>();
 

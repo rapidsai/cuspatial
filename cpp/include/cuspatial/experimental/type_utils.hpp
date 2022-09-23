@@ -30,6 +30,19 @@ namespace cuspatial {
 
 namespace detail {
 
+template <typename Element>
+struct element_to_element2;
+
+template <>
+struct element_to_element2<float> {
+  using type = float2;
+};
+
+template <>
+struct element_to_element2<double> {
+  using type = double2;
+};
+
 /**
  * @internal
  * @brief Helper to convert a tuple of elements into a `vec_2d`
@@ -52,6 +65,70 @@ struct vec_2d_to_tuple {
   {
     return thrust::make_tuple(xy.x, xy.y);
   }
+};
+
+/**
+ * @internal
+ * @brief Generic to convert any iterator pointing to interleaved xy range into
+ * iterator of vec_2d.
+ *
+ * This generic version does not make use of vectorized load.
+ *
+ * @pre `Iter` has operator[] defined.
+ * @pre std::iterator_traits<Iter>::value_type is convertible to `T`.
+ */
+template <typename Iter, typename Enable = void>
+struct interleaved_to_vec_2d {
+  using T = typename std::iterator_traits<Iter>::value_type;
+  Iter it;
+  __device__ vec_2d<T> operator()(std::size_t i) { return vec_2d<T>{it[2 * i], it[2 * i + 1]}; }
+};
+
+/**
+ * @brief Specialization for raw pointers to interleaved xy range.
+ *
+ * @pre Iter is raw pointer
+ */
+template <typename Iter>
+struct interleaved_to_vec_2d<Iter, typename std::enable_if_t<std::is_pointer_v<Iter>>> {
+  using pointer_t = typename std::pointer_traits<Iter>::pointer;
+  using T         = typename std::pointer_traits<Iter>::element_type;
+  using T2        = typename element_to_element2<T>::type;
+  pointer_t ptr;
+
+  __device__ vec_2d<T> operator()(std::size_t i)
+  {
+    T2 const* f2it = reinterpret_cast<T2 const*>(ptr);
+    return vec_2d<T>{f2it[i].x, f2it[i].y};
+  }
+};
+
+/**
+ * @brief Specialization for thrust iterators conforming to `contiguous_iterator`.
+ *
+ * @pre `Iter` is a thrust iterator and conforms to `contiguous_iterator`.
+ */
+template <typename Iter>
+struct interleaved_to_vec_2d<
+  Iter,
+  typename std::enable_if_t<!std::is_pointer_v<Iter> && thrust::is_contiguous_iterator_v<Iter>>> {
+  using T  = typename std::iterator_traits<Iter>::value_type;
+  using T2 = typename element_to_element2<T>::type;
+  T* ptr;
+
+  interleaved_to_vec_2d(Iter it) { ptr = &thrust::raw_reference_cast(*it); }
+
+  __device__ vec_2d<T> operator()(std::size_t i)
+  {
+    T2 const* f2it = reinterpret_cast<T2 const*>(ptr);
+    return vec_2d<T>{f2it[i].x, f2it[i].y};
+  }
+};
+
+struct strided_functor {
+  std::size_t _stride;
+  strided_functor(std::size_t stride) : _stride(stride) {}
+  auto __device__ operator()(std::size_t i) { return i * _stride; }
 };
 
 }  // namespace detail
@@ -92,6 +169,21 @@ auto make_vec_2d_iterator(FirstIter first, SecondIter second)
 }
 
 /**
+ * @brief Create an iterator to `vec_2d` data from a single iterator.
+ *
+ * Creates a vec2d view from an interator to the starting range of interleaved x-y coordinates.
+ *
+ * @tparam
+ * @param d_points_begin
+ * @return
+ */
+template <typename Iter>
+auto make_vec_2d_iterator(Iter xy_begin)
+{
+  return detail::make_counting_transform_iterator(0, detail::interleaved_to_vec_2d<Iter>{xy_begin});
+}
+
+/**
  * @brief Create an output iterator to `vec_2d` data from two output iterators.
  *
  * Creates an output iterator from separate iterators to x and y data to which
@@ -120,25 +212,6 @@ auto make_zipped_vec_2d_output_iterator(FirstIter first, SecondIter second)
   return thrust::make_transform_output_iterator(zipped_out, detail::vec_2d_to_tuple<T>());
 }
 
-template <typename T, typename VectorType = vec_2d<T>>
-struct interleaved_to_vec_2d {
-  T const* it;
-  __device__ VectorType operator()(std::size_t i) { return VectorType{it[2 * i], it[2 * i + 1]}; }
-};
-
-template <typename Iter>
-auto interleaved_iterator_to_vec_2d_iterator(Iter d_points_begin)
-{
-  using T = typename std::iterator_traits<Iter>::value_type;
-  return detail::make_counting_transform_iterator(0, interleaved_to_vec_2d<T>{d_points_begin});
-}
-
-struct strided_functor {
-  std::size_t _stride;
-  strided_functor(std::size_t stride) : _stride(stride) {}
-  auto __device__ operator()(std::size_t i) { return i * _stride; }
-};
-
 /**
  * @brief Create an output iterator to `vec_2d` data from an iterator to an interleaved array.
  *
@@ -151,7 +224,7 @@ template <typename Iter>
 auto vec_2d_iterator_to_output_interleaved_iterator(Iter d_points_begin)
 {
   using T                     = typename std::iterator_traits<Iter>::value_type;
-  auto fixed_stride_2_functor = strided_functor(2);
+  auto fixed_stride_2_functor = detail::strided_functor(2);
   auto even_positions         = thrust::make_permutation_iterator(
     d_points_begin, detail::make_counting_transform_iterator(0, fixed_stride_2_functor));
   auto odd_positions = thrust::make_permutation_iterator(

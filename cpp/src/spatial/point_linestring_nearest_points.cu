@@ -63,12 +63,11 @@ struct pairwise_point_linestring_nearest_points_impl {
 
     auto point_geometry_it =
       get_geometry_iterator_functor<is_multi_point>{}(multipoint_geometry_offsets);
-    auto points_it = interleaved_iterator_to_vec_2d_iterator(points_xy.begin<T>());
+    auto points_it = make_vec_2d_iterator(points_xy.begin<T>());
 
     auto linestring_geometry_it =
       get_geometry_iterator_functor<is_multi_linestring>{}(multilinestring_geometry_offsets);
-    auto linestring_points_it =
-      interleaved_iterator_to_vec_2d_iterator(linestring_points_xy.begin<T>());
+    auto linestring_points_it = make_vec_2d_iterator(linestring_points_xy.begin<T>());
 
     auto segment_idx =
       cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<cudf::size_type>()},
