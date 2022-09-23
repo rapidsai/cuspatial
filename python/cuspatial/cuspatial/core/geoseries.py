@@ -2,7 +2,7 @@
 
 from functools import cached_property
 from numbers import Integral
-from typing import Tuple, TypeVar, Union
+from typing import Optional, Tuple, TypeVar, Union
 
 import cupy as cp
 import geopandas as gpd
@@ -46,14 +46,16 @@ class GeoSeries(cudf.Series):
 
     def __init__(
         self,
-        data: Union[gpd.GeoSeries, Tuple, T, pd.Series, GeoColumn],
+        data: Optional[
+            Union[gpd.GeoSeries, Tuple, T, pd.Series, GeoColumn, list]
+        ],
         index: Union[cudf.Index, pd.Index] = None,
         dtype=None,
         name=None,
         nan_as_null=True,
     ):
         # Condition data
-        if isinstance(data, pd.Series):
+        if data is None or isinstance(data, (pd.Series, list)):
             data = gpGeoSeries(data)
         # Create column
         if isinstance(data, GeoColumn):
