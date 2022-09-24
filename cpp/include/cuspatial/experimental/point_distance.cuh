@@ -40,6 +40,28 @@ OutputIt pairwise_point_distance(
   OutputIt distances_first,
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
+/**
+ * @ingroup distance
+ * @copybrief cuspatial::pairwise_point_distance
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
+ */
+template <class OffsetIteratorA,
+          class OffsetIteratorB,
+          class Cart2dItA,
+          class Cart2dItB,
+          class OutputIt>
+OutputIt pairwise_point_distance(OffsetIteratorA multipoint1_geometry_begin,
+                                 OffsetIteratorA multipoint2_geometry_end,
+                                 Cart2dItA points1_begin,
+                                 Cart2dItB points1_end,
+                                 OffsetIteratorB multipoint2_geometry_offset,
+                                 Cart2dItB points2_begin,
+                                 Cart2dItB points2_end,
+                                 OutputIt distances_first,
+                                 rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+
 }  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/point_distance.cuh>
