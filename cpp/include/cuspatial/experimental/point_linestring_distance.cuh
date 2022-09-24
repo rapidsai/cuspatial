@@ -18,6 +18,8 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
+#include <cuspatial/experimental/iterator_collections.cuh>
+
 namespace cuspatial {
 
 /**
@@ -80,6 +82,18 @@ OutputIt pairwise_point_linestring_distance(
   Cart2dItB linestring_points_first,
   Cart2dItB linestring_points_last,
   OutputIt distances_first,
+  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+
+template <class Cart2dItA,
+          class Cart2dItB,
+          class OffsetIteratorA,
+          class OffsetIteratorB,
+          class OffsetIteratorC,
+          class OutputIt>
+OutputIt pairwise_point_linestring_distance(
+  iterator_collections::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints,
+  iterator_collections::multilinestring_array<OffsetIteratorB, OffsetIteratorC, Cart2dItB>
+    multilinestrings,
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
