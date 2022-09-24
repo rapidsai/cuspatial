@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "../../utility/vector_equality.hpp"
+
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/point_distance.cuh>
 #include <cuspatial/experimental/type_utils.hpp>
@@ -38,7 +40,28 @@
 namespace cuspatial {
 
 template <typename T>
+struct RandomPointGenerator {
+  using Cart2D = vec_2d<T>;
+  thrust::minstd_rand rng{};
+  thrust::random::normal_distribution<T> norm_dist{};
+
+  Cart2D __device__ operator()(size_t const& i)
+  {
+    rng.discard(i);
+    return Cart2D{norm_dist(rng), norm_dist(rng)};
+  }
+};
+
+template <typename T>
 struct PairwisePointDistanceTest : public ::testing::Test {
+  rmm::device_vector<vec_2d<T>> generate_random_points(int32_t num_points, int32_t seed)
+  {
+    rmm::device_vector<vec_2d<T>> points;
+    auto counting_iter = thrust::make_counting_iterator(seed);
+    thrust::transform(
+      counting_iter, counting_iter + num_points, points.begin(), RandomPointGenerator<T>{});
+    return points;
+  }
 };
 
 template <typename Cart2DVec>
@@ -69,14 +92,22 @@ TYPED_TEST(PairwisePointDistanceTest, Empty)
   using Cart2D    = vec_2d<T>;
   using Cart2DVec = std::vector<Cart2D>;
 
+  rmm::device_vector<int32_t> multipoint_geom1(std::vector<int32_t>{0});
   rmm::device_vector<Cart2D> points1{};
+  rmm::device_vector<int32_t> multipoint_geom2(std::vector<int32_t>{0});
   rmm::device_vector<Cart2D> points2{};
 
   rmm::device_vector<T> expected{};
   rmm::device_vector<T> got(points1.size());
 
-  auto ret_it =
-    pairwise_point_distance(points1.begin(), points1.end(), points2.begin(), got.begin());
+  auto ret_it = pairwise_point_distance(multipoint_geom1.begin(),
+                                        multipoint_geom1.end(),
+                                        points1.begin(),
+                                        points1.end(),
+                                        multipoint_geom2.begin(),
+                                        points2.begin(),
+                                        points2.end(),
+                                        got.begin());
 
   EXPECT_EQ(expected, got);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
@@ -88,31 +119,27 @@ TYPED_TEST(PairwisePointDistanceTest, OnePair)
   using Cart2D    = vec_2d<T>;
   using Cart2DVec = std::vector<Cart2D>;
 
+  int32_t num_pairs     = 1;
+  auto multipoint_geom1 = thrust::make_counting_iterator(0);
   rmm::device_vector<Cart2D> points1{Cart2DVec{{1.0, 1.0}}};
+  auto multipoint_geom2 = thrust::make_counting_iterator(0);
   rmm::device_vector<Cart2D> points2{Cart2DVec{{0.0, 0.0}}};
 
   rmm::device_vector<T> expected{std::vector<T>{std::sqrt(T{2.0})}};
   rmm::device_vector<T> got(points1.size());
 
-  auto ret_it =
-    pairwise_point_distance(points1.begin(), points1.end(), points2.begin(), got.begin());
+  auto ret_it = pairwise_point_distance(multipoint_geom1,
+                                        multipoint_geom1 + num_pairs,
+                                        points1.begin(),
+                                        points1.end(),
+                                        multipoint_geom2,
+                                        points2.begin(),
+                                        points2.end(),
+                                        got.begin());
 
   EXPECT_EQ(expected, got);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
-
-template <typename T>
-struct RandomPointGenerator {
-  using Cart2D = vec_2d<T>;
-  thrust::minstd_rand rng{};
-  thrust::random::normal_distribution<T> norm_dist{};
-
-  Cart2D __device__ operator()(size_t const& i)
-  {
-    rng.discard(i);
-    return Cart2D{norm_dist(rng), norm_dist(rng)};
-  }
-};
 
 TYPED_TEST(PairwisePointDistanceTest, ManyRandom)
 {
@@ -122,29 +149,25 @@ TYPED_TEST(PairwisePointDistanceTest, ManyRandom)
 
   std::size_t constexpr num_points = 1000;
 
-  rmm::device_vector<Cart2D> points1(num_points);
-  rmm::device_vector<Cart2D> points2(num_points);
-
-  auto counting_iter1 = thrust::make_counting_iterator(0);
-  auto counting_iter2 = thrust::make_counting_iterator(num_points);
-
-  thrust::transform(
-    counting_iter1, counting_iter1 + num_points, points1.begin(), RandomPointGenerator<T>{});
-  thrust::transform(
-    counting_iter2, counting_iter2 + num_points, points2.begin(), RandomPointGenerator<T>{});
+  auto multipoint_geom1 = thrust::make_counting_iterator(0);
+  auto points1          = this->generate_random_points(num_points, 0);
+  auto multipoint_geom2 = thrust::make_counting_iterator(0);
+  auto points2          = this->generate_random_points(num_points, num_points);
 
   auto expected = compute_point_distance_host(points1, points2);
   rmm::device_vector<T> got(points1.size());
 
-  auto ret_it =
-    pairwise_point_distance(points1.begin(), points1.end(), points2.begin(), got.begin());
+  auto ret_it = pairwise_point_distance(multipoint_geom1,
+                                        multipoint_geom1 + num_points + 1,
+                                        points1.begin(),
+                                        points1.end(),
+                                        multipoint_geom2,
+                                        points2.begin(),
+                                        points2.end(),
+                                        got.begin());
   thrust::host_vector<T> hgot(got);
 
-  if constexpr (std::is_same_v<T, float>) {
-    EXPECT_THAT(expected, ::testing::Pointwise(::testing::FloatEq(), hgot));
-  } else {
-    EXPECT_THAT(expected, ::testing::Pointwise(::testing::DoubleEq(), hgot));
-  }
+  test::expect_vector_equivalent(hgot, expected);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
@@ -288,21 +311,26 @@ TYPED_TEST(PairwisePointDistanceTest, CompareWithShapely)
     74.53904203761351,  127.79603731531678, 115.13613538697125, 95.93013225849919,
     58.10781125509778,  44.75789949605465,  28.21929483784659,  87.40828630126103};
 
+  auto p1_geom = thrust::make_counting_iterator(0);
+  auto p2_geom = thrust::make_counting_iterator(0);
+
   rmm::device_vector<T> dx1(x1), dy1(y1), dx2(x2), dy2(y2);
   rmm::device_vector<T> got(dx1.size());
 
   auto p1_begin = make_vec_2d_iterator(dx1.begin(), dy1.begin());
   auto p2_begin = make_vec_2d_iterator(dx2.begin(), dy2.begin());
 
-  auto ret_it = pairwise_point_distance(p1_begin, p1_begin + dx1.size(), p2_begin, got.begin());
+  auto ret_it = pairwise_point_distance(p1_geom,
+                                        p1_geom + dx1.size() + 1,
+                                        p1_begin,
+                                        p1_begin + dx1.size(),
+                                        p2_geom,
+                                        p2_begin,
+                                        p2_begin + dx2.size(),
+                                        got.begin());
 
   thrust::host_vector<T> hgot(got);
-
-  if constexpr (std::is_same_v<T, float>) {
-    EXPECT_THAT(expected, ::testing::Pointwise(::testing::FloatEq(), hgot));
-  } else {
-    EXPECT_THAT(expected, ::testing::Pointwise(::testing::DoubleEq(), hgot));
-  }
+  test::expect_vector_equivalent(hgot, expected);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
