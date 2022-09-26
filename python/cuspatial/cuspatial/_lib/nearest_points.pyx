@@ -10,6 +10,7 @@ from cuspatial._lib.cpp.point_linestring_nearest_points cimport (
     pairwise_point_linestring_nearest_points as c_func,
     point_linestring_nearest_points_result,
 )
+from cuspatial._lib.utils cimport unwrap_pyoptcol
 
 
 def pairwise_point_linestring_nearest_points(
@@ -19,26 +20,10 @@ def pairwise_point_linestring_nearest_points(
     multipoint_geometry_offset=None,
     multilinestring_geometry_offset=None,
 ):
-    cdef Column multipoint_geometry_offset_column
-    cdef Column multilinestring_geometry_offset_column
-    cdef optional[column_view] c_multipoint_geometry_offset
-    cdef optional[column_view] c_multilinestring_geometry_offset
-
-    if multipoint_geometry_offset is not None:
-        multipoint_geometry_offset_column = multipoint_geometry_offset
-        c_multipoint_geometry_offset = multipoint_geometry_offset_column.view()
-    else:
-        c_multipoint_geometry_offset = nullopt
-
-    if multilinestring_geometry_offset is not None:
-        multilinestring_geometry_offset_column = (
-            multilinestring_geometry_offset
-        )
-        c_multilinestring_geometry_offset = (
-            multilinestring_geometry_offset_column.view()
-        )
-    else:
-        c_multilinestring_geometry_offset = nullopt
+    cdef optional[column_view] c_multipoint_geometry_offset = unwrap_pyoptcol(
+        multipoint_geometry_offset)
+    cdef optional[column_view] c_multilinestring_geometry_offset = (
+        unwrap_pyoptcol(multilinestring_geometry_offset))
 
     cdef column_view c_points_xy = points_xy.view()
     cdef column_view c_linestring_offsets = linestring_part_offsets.view()
@@ -54,25 +39,23 @@ def pairwise_point_linestring_nearest_points(
             c_linestring_points_xy,
         ))
 
+    multipoint_geometry_id = None
     if multipoint_geometry_offset is not None:
-        point_geometry_id = Column.from_unique_ptr(
+        multipoint_geometry_id = Column.from_unique_ptr(
             move(c_result.nearest_point_geometry_id.value()))
-    else:
-        point_geometry_id = None
 
+    multilinestring_geometry_id = None
     if multilinestring_geometry_offset is not None:
-        linestring_geometry_id = Column.from_unique_ptr(
+        multilinestring_geometry_id = Column.from_unique_ptr(
             move(c_result.nearest_linestring_geometry_id.value()))
-    else:
-        linestring_geometry_id = None
 
     segment_id = Column.from_unique_ptr(move(c_result.nearest_segment_id))
     point_on_linestring_xy = Column.from_unique_ptr(
         move(c_result.nearest_point_on_linestring_xy))
 
     return (
-        point_geometry_id,
-        linestring_geometry_id,
+        multipoint_geometry_id,
+        multilinestring_geometry_id,
         segment_id,
         point_on_linestring_xy
     )
