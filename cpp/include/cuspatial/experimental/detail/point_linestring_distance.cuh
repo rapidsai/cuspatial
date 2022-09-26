@@ -88,17 +88,18 @@ template <class Cart2dItA,
           class OffsetIteratorB,
           class OffsetIteratorC,
           class OutputIterator>
-void __global__ pairwise_point_linestring_distance(OffsetIteratorA point_geometry_offset_first,
-                                                   OffsetIteratorA point_geometry_offset_last,
-                                                   Cart2dItA points_first,
-                                                   Cart2dItA points_last,
-                                                   OffsetIteratorB linestring_geometry_offset_first,
-                                                   OffsetIteratorB linestring_geometry_offset_last,
-                                                   OffsetIteratorC linestring_part_offsets_first,
-                                                   OffsetIteratorC linestring_part_offsets_last,
-                                                   Cart2dItB linestring_points_first,
-                                                   Cart2dItB linestring_points_last,
-                                                   OutputIterator distances)
+void __global__
+pairwise_point_linestring_distance_kernel(OffsetIteratorA point_geometry_offset_first,
+                                          OffsetIteratorA point_geometry_offset_last,
+                                          Cart2dItA points_first,
+                                          Cart2dItA points_last,
+                                          OffsetIteratorB linestring_geometry_offset_first,
+                                          OffsetIteratorB linestring_geometry_offset_last,
+                                          OffsetIteratorC linestring_part_offsets_first,
+                                          OffsetIteratorC linestring_part_offsets_last,
+                                          Cart2dItB linestring_points_first,
+                                          Cart2dItB linestring_points_last,
+                                          OutputIterator distances)
 {
   using T = iterator_vec_base_type<Cart2dItA>;
 
@@ -193,18 +194,19 @@ OutputIt pairwise_point_linestring_distance(OffsetIteratorA point_geometry_offse
   std::size_t const num_blocks =
     (num_linestring_points + threads_per_block - 1) / threads_per_block;
 
-  detail::pairwise_point_linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
-    point_geometry_offset_first,
-    point_geometry_offset_last,
-    points_first,
-    points_last,
-    linestring_geometry_offset_first,
-    linestring_geometry_offset_first + num_pairs + 1,
-    linestring_part_offsets_first,
-    linestring_part_offsets_last,
-    linestring_points_first,
-    linestring_points_last,
-    distances_first);
+  detail::
+    pairwise_point_linestring_distance_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
+      point_geometry_offset_first,
+      point_geometry_offset_last,
+      points_first,
+      points_last,
+      linestring_geometry_offset_first,
+      linestring_geometry_offset_first + num_pairs + 1,
+      linestring_part_offsets_first,
+      linestring_part_offsets_last,
+      linestring_points_first,
+      linestring_points_last,
+      distances_first);
 
   CUSPATIAL_CUDA_TRY(cudaGetLastError());
 

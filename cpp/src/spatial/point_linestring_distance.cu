@@ -75,17 +75,17 @@ struct pairwise_point_linestring_distance_impl {
 
     auto output_begin = output->mutable_view().begin<T>();
 
-    pairwise_point_linestring_distance(point_parts_it_first,
-                                       point_parts_it_first + num_pairs + 1,
-                                       points_it,
-                                       points_it + num_points,
-                                       linestring_parts_it_first,
-                                       linestring_part_offsets.begin(),
-                                       linestring_part_offsets.end(),
-                                       linestring_points_it,
-                                       linestring_points_it + num_linestring_points,
-                                       output_begin,
-                                       stream);
+    cuspatial::pairwise_point_linestring_distance(point_parts_it_first,
+                                                  point_parts_it_first + num_pairs + 1,
+                                                  points_it,
+                                                  points_it + num_points,
+                                                  linestring_parts_it_first,
+                                                  linestring_part_offsets.begin(),
+                                                  linestring_part_offsets.end(),
+                                                  linestring_points_it,
+                                                  linestring_points_it + num_linestring_points,
+                                                  output_begin,
+                                                  stream);
     return output;
   }
 
