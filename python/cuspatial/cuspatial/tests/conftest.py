@@ -155,3 +155,52 @@ def gs_sorted(gs):
         ]
     )
     return result.reset_index(drop=True)
+
+
+@pytest.fixture
+def point_generator():
+    rstate = np.random.RandomState(0)
+
+    def generator(n):
+        for _ in range(n):
+            yield Point(rstate.uniform(0, 1), rstate.uniform(0, 1))
+
+    return generator
+
+
+@pytest.fixture
+def multipoint_generator(point_generator):
+    rstate = np.random.RandomState(0)
+
+    def generator(n, max_num_geometries):
+        for _ in range(n):
+            num_geometries = rstate.randint(1, max_num_geometries)
+            yield MultiPoint([*point_generator(num_geometries)])
+
+    return generator
+
+
+@pytest.fixture
+def linestring_generator(point_generator):
+    rstate = np.random.RandomState(0)
+
+    def generator(n, max_num_segments):
+        for _ in range(n):
+            num_segments = rstate.randint(1, max_num_segments)
+            yield LineString([*point_generator(num_segments + 1)])
+
+    return generator
+
+
+@pytest.fixture
+def multilinestring_generator(linestring_generator):
+    rstate = np.random.RandomState(0)
+
+    def generator(n, max_num_geometries, max_num_segments):
+        for _ in range(n):
+            num_geometries = rstate.randint(1, max_num_geometries)
+            yield MultiLineString(
+                [*linestring_generator(num_geometries, max_num_segments)]
+            )
+
+    return generator

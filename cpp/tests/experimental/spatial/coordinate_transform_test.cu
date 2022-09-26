@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "tests/utility/vector_equality.hpp"
+#include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/coordinate_transform.cuh>
 
@@ -21,8 +23,64 @@
 
 #include <gtest/gtest.h>
 
+#include <thrust/iterator/transform_iterator.h>
+
+template <typename T>
+inline T midpoint(T a, T b)
+{
+  return (a + b) / 2;
+}
+
+template <typename T>
+inline T lon_to_x(T lon, T lat)
+{
+  return lon * cuspatial::EARTH_CIRCUMFERENCE_KM_PER_DEGREE *
+         cos(lat * cuspatial::DEGREE_TO_RADIAN);
+};
+
+template <typename T>
+inline T lat_to_y(T lat)
+{
+  return lat * cuspatial::EARTH_CIRCUMFERENCE_KM_PER_DEGREE;
+};
+
+template <typename T>
+struct to_cartesian_functor {
+  using vec_2d = cuspatial::vec_2d<T>;
+
+  to_cartesian_functor(vec_2d origin) : _origin(origin) {}
+
+  vec_2d operator()(vec_2d loc)
+  {
+    return vec_2d{lon_to_x(_origin.x - loc.x, midpoint(loc.y, _origin.y)),
+                  lat_to_y(_origin.y - loc.y)};
+  }
+
+ private:
+  vec_2d _origin{};
+};
+
 template <typename T>
 struct LonLatToCartesianTest : public ::testing::Test {
+  using Vec = cuspatial::vec_2d<T>;
+
+  void run_test(std::vector<Vec> const& h_lonlats, Vec const& origin)
+  {
+    auto h_expected = std::vector<Vec>(h_lonlats.size());
+
+    std::transform(
+      h_lonlats.begin(), h_lonlats.end(), h_expected.begin(), to_cartesian_functor(origin));
+
+    auto lonlats = rmm::device_vector<Vec>{h_lonlats};
+
+    auto xy_output = rmm::device_vector<Vec>(lonlats.size(), Vec{-1, -1});
+
+    auto xy_end =
+      cuspatial::lonlat_to_cartesian(lonlats.begin(), lonlats.end(), xy_output.begin(), origin);
+
+    cuspatial::test::expect_vector_equivalent(h_expected, xy_output);
+    EXPECT_EQ(h_expected.size(), std::distance(xy_output.begin(), xy_end));
+  }
 };
 
 // float and double are logically the same but would require seperate tests due to precision.
@@ -32,83 +90,45 @@ TYPED_TEST_CASE(LonLatToCartesianTest, TestTypes);
 TYPED_TEST(LonLatToCartesianTest, Empty)
 {
   using T    = TypeParam;
-  using Loc  = cuspatial::lonlat_2d<T>;
-  using Cart = cuspatial::cartesian_2d<T>;
+  using Loc  = cuspatial::vec_2d<T>;
+  using Cart = cuspatial::vec_2d<T>;
 
   auto origin = Loc{-90.66511046, 42.49197018};
 
   auto h_point_lonlat = std::vector<Loc>{};
-  auto h_expected     = std::vector<Cart>{};
-
-  auto point_lonlat = rmm::device_vector<Loc>{};
-  auto expected     = rmm::device_vector<Cart>{};
-
-  auto xy_output = rmm::device_vector<Cart>{};
-
-  auto xy_end = cuspatial::lonlat_to_cartesian(
-    point_lonlat.begin(), point_lonlat.end(), xy_output.begin(), origin);
-
-  EXPECT_EQ(expected, xy_output);
-  EXPECT_EQ(0, std::distance(xy_output.begin(), xy_end));
+  this->run_test(h_point_lonlat, origin);
 }
 
 TYPED_TEST(LonLatToCartesianTest, Single)
 {
   using T    = TypeParam;
-  using Loc  = cuspatial::lonlat_2d<T>;
-  using Cart = cuspatial::cartesian_2d<T>;
+  using Loc  = cuspatial::vec_2d<T>;
+  using Cart = cuspatial::vec_2d<T>;
 
   auto origin = Loc{-90.66511046, 42.49197018};
 
   auto h_point_lonlat = std::vector<Loc>({{-90.664973, 42.493894}});
-  auto h_expected     = std::vector<Cart>({{-0.01126195531216838, -0.21375777777718794}});
-
-  auto point_lonlat = rmm::device_vector<Loc>{h_point_lonlat};
-  auto expected     = rmm::device_vector<Cart>{h_expected};
-
-  auto xy_output = rmm::device_vector<Cart>(1);
-
-  auto xy_end = cuspatial::lonlat_to_cartesian(
-    point_lonlat.begin(), point_lonlat.end(), xy_output.begin(), origin);
-
-  EXPECT_EQ(expected, xy_output);
-  EXPECT_EQ(1, std::distance(xy_output.begin(), xy_end));
+  this->run_test(h_point_lonlat, origin);
 }
 
 TYPED_TEST(LonLatToCartesianTest, Extremes)
 {
   using T    = TypeParam;
-  using Loc  = cuspatial::lonlat_2d<T>;
-  using Cart = cuspatial::cartesian_2d<T>;
+  using Loc  = cuspatial::vec_2d<T>;
+  using Cart = cuspatial::vec_2d<T>;
 
   auto origin = Loc{0, 0};
 
   auto h_points_lonlat = std::vector<Loc>(
     {{0.0, -90.0}, {0.0, 90.0}, {-180.0, 0.0}, {180.0, 0.0}, {45.0, 0.0}, {-180.0, -90.0}});
-  auto h_expected = std::vector<Cart>({{0.0, 10000.0},
-                                       {0.0, -10000.0},
-                                       {20000.0, 0.0},
-                                       {-20000.0, 0.0},
-                                       {-5000.0, 0.0},
-                                       {14142.13562373095192015, 10000.0}});
-
-  auto points_lonlat = rmm::device_vector<Loc>{h_points_lonlat};
-  auto expected      = rmm::device_vector<Cart>{h_expected};
-
-  auto xy_output = rmm::device_vector<Cart>(6, Cart{-1, -1});
-
-  auto xy_end = cuspatial::lonlat_to_cartesian(
-    points_lonlat.begin(), points_lonlat.end(), xy_output.begin(), origin);
-
-  EXPECT_EQ(expected, xy_output);
-  EXPECT_EQ(6, std::distance(xy_output.begin(), xy_end));
+  this->run_test(h_points_lonlat, origin);
 }
 
 TYPED_TEST(LonLatToCartesianTest, Multiple)
 {
   using T    = TypeParam;
-  using Loc  = cuspatial::lonlat_2d<T>;
-  using Cart = cuspatial::cartesian_2d<T>;
+  using Loc  = cuspatial::vec_2d<T>;
+  using Cart = cuspatial::vec_2d<T>;
 
   auto origin = Loc{-90.66511046, 42.49197018};
 
@@ -116,30 +136,14 @@ TYPED_TEST(LonLatToCartesianTest, Multiple)
                                            {-90.665393, 42.491520},
                                            {-90.664976, 42.491420},
                                            {-90.664537, 42.493823}});
-  auto h_expected      = std::vector<Cart>({
-    {-0.01126195531216838, -0.21375777777718794},
-    {0.02314864865181343, 0.05002000000015667},
-    {-0.01101638630252916, 0.06113111111163663},
-    {-0.04698301003584082, -0.20586888888847929},
-  });
-
-  auto points_lonlat = rmm::device_vector<Loc>{h_points_lonlat};
-  auto expected      = rmm::device_vector<Cart>{h_expected};
-
-  auto xy_output = rmm::device_vector<Cart>(4, Cart{-1, -1});
-
-  auto xy_end = cuspatial::lonlat_to_cartesian(
-    points_lonlat.begin(), points_lonlat.end(), xy_output.begin(), origin);
-
-  EXPECT_EQ(expected, xy_output);
-  EXPECT_EQ(4, std::distance(xy_output.begin(), xy_end));
+  this->run_test(h_points_lonlat, origin);
 }
 
 TYPED_TEST(LonLatToCartesianTest, OriginOutOfBounds)
 {
   using T    = TypeParam;
-  using Loc  = cuspatial::lonlat_2d<T>;
-  using Cart = cuspatial::cartesian_2d<T>;
+  using Loc  = cuspatial::vec_2d<T>;
+  using Cart = cuspatial::vec_2d<T>;
 
   auto origin = Loc{-181, -91};
 
@@ -158,7 +162,7 @@ TYPED_TEST(LonLatToCartesianTest, OriginOutOfBounds)
 
 template <typename T>
 struct identity_xform {
-  using Location = cuspatial::lonlat_2d<T>;
+  using Location = cuspatial::vec_2d<T>;
   __device__ Location operator()(Location const& loc) { return loc; };
 };
 
@@ -166,8 +170,8 @@ struct identity_xform {
 TYPED_TEST(LonLatToCartesianTest, TransformIterator)
 {
   using T    = TypeParam;
-  using Loc  = cuspatial::lonlat_2d<T>;
-  using Cart = cuspatial::cartesian_2d<T>;
+  using Loc  = cuspatial::vec_2d<T>;
+  using Cart = cuspatial::vec_2d<T>;
 
   auto origin = Loc{-90.66511046, 42.49197018};
 
@@ -175,12 +179,12 @@ TYPED_TEST(LonLatToCartesianTest, TransformIterator)
                                            {-90.665393, 42.491520},
                                            {-90.664976, 42.491420},
                                            {-90.664537, 42.493823}});
-  auto h_expected      = std::vector<Cart>({
-    {-0.01126195531216838, -0.21375777777718794},
-    {0.02314864865181343, 0.05002000000015667},
-    {-0.01101638630252916, 0.06113111111163663},
-    {-0.04698301003584082, -0.20586888888847929},
-  });
+  auto h_expected      = std::vector<Cart>(h_points_lonlat.size());
+
+  std::transform(h_points_lonlat.begin(),
+                 h_points_lonlat.end(),
+                 h_expected.begin(),
+                 to_cartesian_functor(origin));
 
   auto points_lonlat = rmm::device_vector<Loc>{h_points_lonlat};
   auto expected      = rmm::device_vector<Cart>{h_expected};

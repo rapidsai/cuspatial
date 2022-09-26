@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
+#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/shapefile_reader.hpp>
 
 #include <ogrsf_frmts.h>
 
 #include <cudf/types.hpp>
+
+#include <thrust/iterator/counting_iterator.h>
 
 #include <memory>
 #include <string>
@@ -26,16 +30,32 @@
 
 namespace {
 
+// TODO: a better approach is to precompute the total size needed by xs and ys
+// as a preprocess and preallocate xs, ys. `read_ring` should simply accept
+// an iterator range and return the pass-the-end iterator.
 cudf::size_type read_ring(OGRLinearRing const& ring,
                           std::vector<double>& xs,
-                          std::vector<double>& ys)
+                          std::vector<double>& ys,
+                          const cuspatial::winding_order ring_order)
 {
-  cudf::size_type num_vertices = ring.getNumPoints();
+  auto num_vertices      = ring.getNumPoints();
+  auto prev_num_vertices = xs.size();
+  xs.resize(xs.size() + num_vertices);
+  ys.resize(ys.size() + num_vertices);
 
-  // append points in reverse order
-  for (cudf::size_type i = num_vertices - 1; i >= 0; i--) {
-    xs.push_back(ring.getX(i));
-    ys.push_back(ring.getY(i));
+  auto output_it = thrust::make_zip_iterator(
+    thrust::make_tuple(xs.begin() + prev_num_vertices, ys.begin() + prev_num_vertices));
+  if (ring_order == cuspatial::winding_order::COUNTER_CLOCKWISE) {
+    auto ring_it = cuspatial::detail::make_counting_transform_iterator(
+      0, [&ring](auto i) { return thrust::make_tuple(ring.getX(i), ring.getY(i)); });
+
+    std::copy_n(ring_it, num_vertices, output_it);
+  } else {
+    auto ring_it =
+      cuspatial::detail::make_counting_transform_iterator(0, [&ring, &num_vertices](auto i) {
+        return thrust::make_tuple(ring.getX(num_vertices - i - 1), ring.getY(num_vertices - i - 1));
+      });
+    std::copy_n(ring_it, num_vertices, output_it);
   }
 
   return num_vertices;
@@ -44,15 +64,16 @@ cudf::size_type read_ring(OGRLinearRing const& ring,
 cudf::size_type read_polygon(OGRPolygon const& polygon,
                              std::vector<int>& ring_lengths,
                              std::vector<double>& xs,
-                             std::vector<double>& ys)
+                             std::vector<double>& ys,
+                             const cuspatial::winding_order ring_order)
 {
-  auto num_vertices = read_ring(*(polygon.getExteriorRing()), xs, ys);
+  auto num_vertices = read_ring(*(polygon.getExteriorRing()), xs, ys, ring_order);
   ring_lengths.push_back(num_vertices);
 
   cudf::size_type num_interior_rings = polygon.getNumInteriorRings();
 
   for (cudf::size_type i = 0; i < num_interior_rings; i++) {
-    auto num_vertices = read_ring(*(polygon.getInteriorRing(i)), xs, ys);
+    auto num_vertices = read_ring(*(polygon.getInteriorRing(i)), xs, ys, ring_order);
     ring_lengths.push_back(num_vertices);
   }
 
@@ -62,12 +83,15 @@ cudf::size_type read_polygon(OGRPolygon const& polygon,
 cudf::size_type read_geometry_feature(OGRGeometry const* geometry,
                                       std::vector<int>& ring_lengths,
                                       std::vector<double>& xs,
-                                      std::vector<double>& ys)
+                                      std::vector<double>& ys,
+                                      const cuspatial::winding_order ring_order)
 {
   OGRwkbGeometryType geometry_type = wkbFlatten(geometry->getGeometryType());
 
   if (geometry_type == wkbPolygon) {
-    return read_polygon(*((OGRPolygon*)geometry), ring_lengths, xs, ys);
+    auto polygon = dynamic_cast<const OGRPolygon*>(geometry);
+    if (polygon == nullptr) { CUSPATIAL_FAIL("Can't cast `wkbPolygon` to `OGRPolygon&`"); }
+    return read_polygon(*polygon, ring_lengths, xs, ys, ring_order);
   }
 
   if (geometry_type == wkbMultiPolygon || geometry_type == wkbGeometryCollection) {
@@ -76,8 +100,8 @@ cudf::size_type read_geometry_feature(OGRGeometry const* geometry,
     int num_rings = 0;
 
     for (int i = 0; i < geometry_collection->getNumGeometries(); i++) {
-      num_rings +=
-        read_geometry_feature(geometry_collection->getGeometryRef(i), ring_lengths, xs, ys);
+      num_rings += read_geometry_feature(
+        geometry_collection->getGeometryRef(i), ring_lengths, xs, ys, ring_order);
     }
 
     return num_rings;
@@ -90,7 +114,8 @@ cudf::size_type read_layer(const OGRLayerH layer,
                            std::vector<cudf::size_type>& feature_lengths,
                            std::vector<cudf::size_type>& ring_lengths,
                            std::vector<double>& xs,
-                           std::vector<double>& ys)
+                           std::vector<double>& ys,
+                           const cuspatial::winding_order ring_order)
 {
   cudf::size_type num_features = 0;
 
@@ -99,11 +124,11 @@ cudf::size_type read_layer(const OGRLayerH layer,
   OGRFeatureH feature;
 
   while ((feature = OGR_L_GetNextFeature(layer)) != nullptr) {
-    auto geometry = (OGRGeometry*)OGR_F_GetGeometryRef(feature);
+    auto geometry = static_cast<OGRGeometry*>(OGR_F_GetGeometryRef(feature));
 
     CUSPATIAL_EXPECTS(geometry != nullptr, "Invalid Shape");
 
-    auto num_rings = read_geometry_feature(geometry, ring_lengths, xs, ys);
+    auto num_rings = read_geometry_feature(geometry, ring_lengths, xs, ys, ring_order);
 
     feature_lengths.push_back(num_rings);
 
@@ -124,7 +149,7 @@ std::tuple<std::vector<cudf::size_type>,
            std::vector<cudf::size_type>,
            std::vector<double>,
            std::vector<double>>
-read_polygon_shapefile(std::string const& filename)
+read_polygon_shapefile(std::string const& filename, cuspatial::winding_order outer_ring_winding)
 {
   GDALAllRegister();
 
@@ -141,8 +166,7 @@ read_polygon_shapefile(std::string const& filename)
   std::vector<double> xs;
   std::vector<double> ys;
 
-  read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys);
-
+  read_layer(dataset_layer, feature_lengths, ring_lengths, xs, ys, outer_ring_winding);
   feature_lengths.shrink_to_fit();
   ring_lengths.shrink_to_fit();
   xs.shrink_to_fit();

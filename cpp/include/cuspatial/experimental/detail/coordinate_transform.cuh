@@ -17,6 +17,8 @@
 #pragma once
 
 #include <cuspatial/constants.hpp>
+#include <cuspatial/traits.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
@@ -29,8 +31,6 @@
 namespace cuspatial {
 
 namespace detail {
-
-constexpr double EARTH_CIRCUMFERENCE_KM_PER_DEGREE = EARTH_CIRCUMFERENCE_EQUATOR_KM / 360.0;
 
 template <typename T>
 __device__ inline T midpoint(T a, T b)
@@ -52,16 +52,16 @@ __device__ inline T lat_to_y(T lat)
 
 template <typename T>
 struct to_cartesian_functor {
-  to_cartesian_functor(lonlat_2d<T> origin) : _origin(origin) {}
+  to_cartesian_functor(vec_2d<T> origin) : _origin(origin) {}
 
-  cartesian_2d<T> __device__ operator()(lonlat_2d<T> loc)
+  vec_2d<T> __device__ operator()(vec_2d<T> loc)
   {
-    return cartesian_2d<T>{lon_to_x(_origin.x - loc.x, midpoint(loc.y, _origin.y)),
-                           lat_to_y(_origin.y - loc.y)};
+    return vec_2d<T>{lon_to_x(_origin.x - loc.x, midpoint(loc.y, _origin.y)),
+                     lat_to_y(_origin.y - loc.y)};
   }
 
  private:
-  lonlat_2d<T> _origin{};
+  vec_2d<T> _origin{};
 };
 
 }  // namespace detail
@@ -70,11 +70,11 @@ template <class InputIt, class OutputIt, class T>
 OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
                              InputIt lon_lat_last,
                              OutputIt xy_first,
-                             lonlat_2d<T> origin,
+                             vec_2d<T> origin,
                              rmm::cuda_stream_view stream)
 {
-  static_assert(std::is_floating_point_v<T>,
-                "lonlat_to_cartesian supports only floating-point coordinates.");
+  static_assert(is_same_floating_point<T, iterator_vec_base_type<InputIt>>(),
+                "Origin and input must have the same base floating point type.");
 
   CUSPATIAL_EXPECTS(origin.x >= -180 && origin.x <= 180 && origin.y >= -90 && origin.y <= 90,
                     "origin must have valid longitude [-180, 180] and latitude [-90, 90]");

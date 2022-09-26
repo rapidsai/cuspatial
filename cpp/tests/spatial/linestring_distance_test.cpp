@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <cuspatial/distances/linestring_distance.hpp>
+#include <cuspatial/distance/linestring_distance.hpp>
 #include <cuspatial/error.hpp>
 
 #include <cudf_test/base_fixture.hpp>
@@ -49,10 +49,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringParallel)
   using T = TypeParam;
   // Linestring 1: (0.0, 0.0), (1.0, 1.0)
   // Linestring 2: (1.0, 0.0), (2.0, 1.0)
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 2};
   wrapper<T> linestring1_points_x{0.0, 1.0};
   wrapper<T> linestring1_points_y{0.0, 1.0};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2};
   wrapper<T> linestring2_points_x{1.0, 2.0};
   wrapper<T> linestring2_points_y{0.0, 1.0};
 
@@ -72,10 +72,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringEndpointsDistance)
   using T = TypeParam;
   // Linestring 1: (0.0, 0.0), (1.0, 1.0), (2.0, 2.0)
   // Linestring 2: (2.0, 0.0), (1.0, -1.0), (0.0, -1.0)
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 3};
   wrapper<T> linestring1_points_x{0.0, 1.0, 2.0};
   wrapper<T> linestring1_points_y{0.0, 1.0, 2.0};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 3};
   wrapper<T> linestring2_points_x{2.0, 1.0, 0.0};
   wrapper<T> linestring2_points_y{0.0, -1.0, -1.0};
 
@@ -95,10 +95,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringProjectionNotOnLine)
   using T = TypeParam;
   // Linestring 1: (0.0, 0.0), (1.0, 1.0)
   // Linestring 2: (3.0, 1.5), (3.0, 2.0)
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 2};
   wrapper<T> linestring1_points_x{0.0, 1.0};
   wrapper<T> linestring1_points_y{0.0, 1.0};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2};
   wrapper<T> linestring2_points_x{3.0, 3.0};
   wrapper<T> linestring2_points_y{1.5, 2.0};
 
@@ -118,10 +118,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringPerpendicular)
   using T = TypeParam;
   // Linestring 1: (0.0, 0.0), (2.0, 0.0)
   // Linestring 2: (1.0, 1.0), (1.0, 2.0)
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 2};
   wrapper<T> linestring1_points_x{0.0, 2.0};
   wrapper<T> linestring1_points_y{0.0, 0.0};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2};
   wrapper<T> linestring2_points_x{1.0, 1.0};
   wrapper<T> linestring2_points_y{1.0, 2.0};
 
@@ -141,10 +141,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringIntersects)
   using T = TypeParam;
   // Linestring 1: (0.0, 0.0), (1.0, 1.0)
   // Linestring 2: (0.0, 1.0), (1.0, 0.0)
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 2};
   wrapper<T> linestring1_points_x{0.0, 1.0};
   wrapper<T> linestring1_points_y{0.0, 1.0};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2};
   wrapper<T> linestring2_points_x{0.0, 1.0};
   wrapper<T> linestring2_points_y{1.0, 0.0};
 
@@ -164,10 +164,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringSharedVertex)
   using T = TypeParam;
   // Linestring 1: (0.0, 0.0), (0.0, 2.0), (2.0, 2.0)
   // Linestring 2: (2.0, 2.0), (2.0, 1.0), (1.0, 1.0), (2.5, 0.0)
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 3};
   wrapper<T> linestring1_points_x{0.0, 0.0, 2.0};
   wrapper<T> linestring1_points_y{0.0, 2.0, 2.0};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 4};
   wrapper<T> linestring2_points_x{2.0, 2.0, 1.0, 2.5};
   wrapper<T> linestring2_points_y{2.0, 1.0, 1.0, 0.0};
 
@@ -187,10 +187,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringCoincide)
   using T = TypeParam;
   // Linestring 1: (0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)
   // Linestring 2: (2.0, 1.0), (1.0, 1.0), (1.0, 0.0), (2.0, 0.0), (2.0, 0.5)
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 4};
   wrapper<T> linestring1_points_x{0.0, 1.0, 1.0, 0.0};
   wrapper<T> linestring1_points_y{0.0, 0.0, 1.0, 1.0};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 5};
   wrapper<T> linestring2_points_x{2.0, 1.0, 1.0, 2.0, 2.0};
   wrapper<T> linestring2_points_y{1.0, 1.0, 0.0, 0.0, 0.5};
 
@@ -208,10 +208,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringCoincide)
 TYPED_TEST(PairwiseLinestringDistanceTest, OnePairDegenerateCollinearNoIntersect)
 {
   using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 2};
   wrapper<T> linestring1_points_x{0.0, 0.0};
   wrapper<T> linestring1_points_y{0.0, 1.0};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2};
   wrapper<T> linestring2_points_x{0.0, 0.0};
   wrapper<T> linestring2_points_y{2.0, 3.0};
 
@@ -229,10 +229,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairDegenerateCollinearNoIntersect
 TYPED_TEST(PairwiseLinestringDistanceTest, OnePairCollinearNoIntersect)
 {
   using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 2};
   wrapper<T> linestring1_points_x{0.0, 1.0};
   wrapper<T> linestring1_points_y{0.0, 1.0};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2};
   wrapper<T> linestring2_points_x{2.0, 3.0};
   wrapper<T> linestring2_points_y{2.0, 3.0};
 
@@ -250,10 +250,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairCollinearNoIntersect)
 TYPED_TEST(PairwiseLinestringDistanceTest, OnePairDegenerateCollinearIntersect)
 {
   using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 2};
   wrapper<T> linestring1_points_x{0.0, 2.0};
   wrapper<T> linestring1_points_y{0.0, 2.0};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2};
   wrapper<T> linestring2_points_x{1.0, 3.0};
   wrapper<T> linestring2_points_y{1.0, 3.0};
 
@@ -274,10 +274,10 @@ TEST_F(PairwiseLinestringDistanceTestUntyped, OnePairDeterminantDoublePrecisionD
   // Vector cd: (2e-155, 1e-155)
   // determinant of matrix [a, b] = -3e-310, a denormalized number
 
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 2};
   wrapper<double> linestring1_points_x{0.0, 1e-155};
   wrapper<double> linestring1_points_y{0.0, 2e-155};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2};
   wrapper<double> linestring2_points_x{4e-155, 6e-155};
   wrapper<double> linestring2_points_y{5e-155, 6e-155};
 
@@ -298,10 +298,10 @@ TEST_F(PairwiseLinestringDistanceTestUntyped, OnePairDeterminantSinglePrecisionD
   // Vector cd: (2e-20, 1e-20)
   // determinant of matrix [ab, cd] = -3e-40, a denormalized number
 
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 2};
   wrapper<float> linestring1_points_x{0.0, 1e-20};
   wrapper<float> linestring1_points_y{0.0, 2e-20};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2};
   wrapper<float> linestring2_points_x{4e-20, 6e-20};
   wrapper<float> linestring2_points_y{5e-20, 6e-20};
 
@@ -319,10 +319,10 @@ TEST_F(PairwiseLinestringDistanceTestUntyped, OnePairDeterminantSinglePrecisionD
 TYPED_TEST(PairwiseLinestringDistanceTest, OnePairRandom1)
 {
   using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 3};
   wrapper<T> linestring1_points_x{-22556.235212018168, -16375.655690574613, -20082.724633593425};
   wrapper<T> linestring1_points_y{41094.0501840996, 42992.319790050366, 33759.13529113619};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2};
   wrapper<T> linestring2_points_x{4365.496374409238, 1671.0269165650761};
   wrapper<T> linestring2_points_y{-59857.47177852941, -54931.9723439855};
 
@@ -341,10 +341,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairIntersectFromRealData1)
 {
   // Example extracted from a pair of trajectry in geolife dataset
   using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 5};
   wrapper<T> linestring1_points_x{39.97551667, 39.97585, 39.97598333, 39.9761, 39.97623333};
   wrapper<T> linestring1_points_y{116.33028333, 116.3304, 116.33046667, 116.3305, 116.33056667};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 55};
   wrapper<T> linestring2_points_x{
     39.97381667, 39.97341667, 39.9731,     39.97293333, 39.97233333, 39.97218333, 39.97218333,
     39.97215,    39.97168333, 39.97093333, 39.97073333, 39.9705,     39.96991667, 39.96961667,
@@ -381,10 +381,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairFromRealData)
 {
   // Example extracted from a pair of trajectry in geolife dataset
   using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0};
+  wrapper<cudf::size_type> linestring1_offsets{0, 2};
   wrapper<T> linestring1_points_x{39.9752666666667, 39.9752666666667};
   wrapper<T> linestring1_points_y{116.334316666667, 116.334533333333};
-  wrapper<cudf::size_type> linestring2_offsets{0};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2};
   wrapper<T> linestring2_points_x{39.9752666666667, 39.9752666666667};
   wrapper<T> linestring2_points_y{116.323966666667, 116.3236};
 
@@ -402,7 +402,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairFromRealData)
 TYPED_TEST(PairwiseLinestringDistanceTest, TwoPairs)
 {
   using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0, 4};
+  wrapper<cudf::size_type> linestring1_offsets{0, 4, 8};
   wrapper<T> linestring1_points_x{
     41658.902315589876,
     46600.70359801489,
@@ -421,7 +421,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, TwoPairs)
                                   -37974.45515744517,
                                   -31333.481529957502,
                                   -30181.03842467982};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2};
+  wrapper<cudf::size_type> linestring2_offsets{0, 2, 4};
   wrapper<T> linestring2_points_x{
     24046.170375947084,
     20614.007047185743,
@@ -449,10 +449,10 @@ TYPED_TEST(PairwiseLinestringDistanceTest, TwoPairs)
 TYPED_TEST(PairwiseLinestringDistanceTest, FourPairs)
 {
   using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0, 3, 5, 8};
+  wrapper<cudf::size_type> linestring1_offsets{0, 3, 5, 8, 10};
   wrapper<T> linestring1_points_x{0, 1, -1, 0, 0, 0, 2, -2, 2, -2};
   wrapper<T> linestring1_points_y{1, 0, 0, 0, 1, 0, 2, 0, 2, -2};
-  wrapper<cudf::size_type> linestring2_offsets{0, 4, 7, 9};
+  wrapper<cudf::size_type> linestring2_offsets{0, 4, 7, 9, 12};
   wrapper<T> linestring2_points_x{1, 2, 2, 3, 1, 1, 1, 2, 0, 1, 5, 10};
   wrapper<T> linestring2_points_y{1, 1, 0, 0, 0, 1, 2, 0, 2, 1, 5, 0};
 
