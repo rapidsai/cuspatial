@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
@@ -27,11 +29,11 @@
 #include <type_traits>
 
 namespace cuspatial {
-
 namespace detail {
 
 template <typename Element>
-struct element_to_element2;
+struct element_to_element2 {
+};
 
 template <>
 struct element_to_element2<float> {
@@ -39,8 +41,18 @@ struct element_to_element2<float> {
 };
 
 template <>
+struct element_to_element2<const float> {
+  using type = const double2;
+};
+
+template <>
 struct element_to_element2<double> {
   using type = double2;
+};
+
+template <>
+struct element_to_element2<const double> {
+  using type = const double2;
 };
 
 /**
@@ -92,7 +104,7 @@ struct interleaved_to_vec_2d {
 template <typename Iter>
 struct interleaved_to_vec_2d<Iter, typename std::enable_if_t<std::is_pointer_v<Iter>>> {
   using pointer_t = typename std::pointer_traits<Iter>::pointer;
-  using T         = typename std::pointer_traits<Iter>::element_type;
+  using T         = typename std::remove_const_t<typename std::pointer_traits<Iter>::element_type>;
   using T2        = typename element_to_element2<T>::type;
   pointer_t ptr;
 
@@ -141,14 +153,14 @@ struct strided_functor {
 /**
  * @brief Create an iterator to `vec_2d` data from two input iterators.
  *
- * Interleaves x and y coordinates from separate iterators into a single iterator to x-y
+ * Interleaves x and y coordinates from separate iterators into a single iterator to xy-
  * coordinates.
  *
  * @tparam VectorType cuSpatial vector type, must be `vec_2d`
- * @tparam FirstIter Iterator type to the first component of `vec_2d`. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam SecondIter Iterator type to the second component of `vec_2d`. Must meet the requirements
+ * @tparam FirstIter Iterator type to the first component of `vec_2d`. Must meet the requirements
  * of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam SecondIter Iterator type to the second component of `vec_2d`. Must meet the
+ * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @param first Iterator to beginning of `vec_2d::x`
  * @param second Iterator to beginning of `vec_2d::y`
  * @return Iterator to `vec_2d`
