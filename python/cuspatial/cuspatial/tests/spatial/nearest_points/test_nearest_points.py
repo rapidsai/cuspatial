@@ -1,5 +1,6 @@
 import geopandas as gpd
 import numpy as np
+import pytest
 import shapely
 from geopandas.testing import assert_geodataframe_equal
 from shapely.geometry import LineString, MultiLineString, MultiPoint, Point
@@ -204,3 +205,53 @@ def test_random_input_nearest_point(
         check_index_type=False,
         check_less_precise=True,
     )
+
+
+def test_input_length_unequal():
+    d_points = cuspatial.GeoSeries([Point(1, 1), Point(0, 0)])
+    d_lines = cuspatial.GeoSeries(
+        [
+            MultiLineString(
+                [
+                    [(1, 2), (3, 4)],
+                    [(1, 2), (3, 4)],
+                ]
+            )
+        ]
+    )
+
+    with pytest.raises(
+        ValueError, match="should have the same number of geometries"
+    ):
+        cuspatial.pairwise_point_linestring_nearest_points(d_points, d_lines)
+
+
+def test_contains_mixed_geometries():
+    d_point_lines = cuspatial.GeoSeries(
+        [Point(1, 1), MultiLineString([[(1, 2), (3, 4)]])]
+    )
+    d_lines = cuspatial.GeoSeries(
+        [
+            MultiLineString([[(1, 2), (3, 4)], [(1, 2), (3, 4)]]),
+            MultiLineString([[(5, 6), (7, 8)], [(5, 6), (7, 8)]]),
+        ]
+    )
+
+    with pytest.raises(ValueError, match="must contain only point geometries"):
+        cuspatial.pairwise_point_linestring_nearest_points(
+            d_point_lines, d_lines
+        )
+
+
+def test_contains_mixed_geometries2():
+    d_points = cuspatial.GeoSeries([Point(1, 1), Point(2, 2)])
+    d_lines_point = cuspatial.GeoSeries(
+        [MultiLineString([[(1, 2), (3, 4)], [(1, 2), (3, 4)]]), Point(5, 6)]
+    )
+
+    with pytest.raises(
+        ValueError, match="must contain only linestring geometries"
+    ):
+        cuspatial.pairwise_point_linestring_nearest_points(
+            d_points, d_lines_point
+        )
