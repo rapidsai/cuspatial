@@ -41,18 +41,8 @@ struct element_to_element2<float> {
 };
 
 template <>
-struct element_to_element2<const float> {
-  using type = const double2;
-};
-
-template <>
 struct element_to_element2<double> {
   using type = double2;
-};
-
-template <>
-struct element_to_element2<const double> {
-  using type = const double2;
 };
 
 /**
@@ -99,7 +89,7 @@ struct interleaved_to_vec_2d {
 /**
  * @brief Specialization for raw pointers to interleaved xy range.
  *
- * @pre Iter is raw pointer
+ * @pre `Iter` is raw pointer
  */
 template <typename Iter>
 struct interleaved_to_vec_2d<Iter, typename std::enable_if_t<std::is_pointer_v<Iter>>> {
