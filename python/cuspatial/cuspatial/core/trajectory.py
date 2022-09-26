@@ -46,20 +46,20 @@ def derive_trajectories(object_ids, xs, ys, timestamps):
     Compute sorted objects and discovered trajectories
 
     >>> objects, traj_offsets = cuspatial.derive_trajectories(
-            [0, 1, 2, 3],  # object_id
+            [0, 1, 0, 1],  # object_id
             [0, 0, 1, 1],  # x
             [0, 0, 1, 1],  # y
-            [0, 10, 0, 10] # timestamp
+            [0, 10000, 0, 10000] # timestamp
         )
     >>> print(traj_offsets)
         0  0
         1  2
     >>> print(objects)
-           object_id       x       y  timestamp
-        0          0       1       0          0
-        1          0       0       0         10
-        2          1       3       1          0
-        3          1       2       1         10
+        object_id    x    y           timestamp
+        0          0  0.0  0.0 1970-01-01 00:00:00
+        1          0  1.0  1.0 1970-01-01 00:00:10
+        2          1  0.0  0.0 1970-01-01 00:00:00
+        3          1  1.0  1.0 1970-01-01 00:00:10
     """
 
     object_ids = as_column(object_ids, dtype=np.int32)
@@ -103,7 +103,7 @@ def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
     --------
     Compute the minimum bounding boxes of derived trajectories
 
-    >>> objects, traj_offsets = trajectory.derive_trajectories(
+    >>> objects, traj_offsets = cuspatial.derive_trajectories(
             [0, 0, 1, 1],  # object_id
             [0, 1, 2, 3],  # x
             [0, 0, 1, 1],  # y
@@ -168,10 +168,10 @@ def trajectory_distances_and_speeds(
             objects['timestamp']
         )
     >>> print(dists_and_speeds)
-                       distance          speed
+                          distance       speed
         trajectory_id
-        0                1000.0  100000.000000
-        1                1000.0  111111.109375
+        0              1414.213562  141.421356
+        1              1414.213562  141.421356
     """
 
     object_ids = as_column(object_ids, dtype=np.int32)
