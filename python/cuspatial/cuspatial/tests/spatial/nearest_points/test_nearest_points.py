@@ -1,19 +1,10 @@
 import geopandas as gpd
-import numpy as np
 import pytest
 import shapely
 from geopandas.testing import assert_geodataframe_equal
 from shapely.geometry import LineString, MultiLineString, MultiPoint, Point
 
 import cuspatial
-
-
-def approximate_point_on_line(point, segment):
-    if np.allclose(point, segment[0]) or np.allclose(point, segment[1]):
-        return True
-    k0 = (point - segment[0])[0] / (point - segment[0])[1]
-    k1 = (point - segment[1])[0] / (point - segment[1])[1]
-    return np.allclose(k0, k1)
 
 
 def compute_point_linestring_nearest_point_host(gs1, gs2):
@@ -52,10 +43,7 @@ def compute_point_linestring_nearest_point_host(gs1, gs2):
             for j, segment in enumerate(
                 zip(line.coords[:-1], line.coords[1:])
             ):
-                segment = np.array(segment)
-                if approximate_point_on_line(
-                    np.array(point.coords[0]), segment
-                ):
+                if LineString(segment).intersects(point.buffer(1e-8)):
                     return [i, j]
         return [-1, -1]
 
