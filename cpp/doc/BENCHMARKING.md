@@ -19,14 +19,6 @@ being benchmarked. For example, the benchmarks for APIs in `point_in_polygon.hpp
 `cpp/benchmarks/point_in_polygon.cu`. Each feature (or set of related features) should have its own
 benchmark source file named `<feature>{.cu,cpp}`. 
 
-In the interest of improving compile time, whenever possible, test source files should be `.cpp`
-files because `nvcc` is slower than `gcc` in compiling host code. Note that `thrust::device_vector`
-includes device code, and so must only be used in `.cu` files. `rmm::device_uvector`,
-`rmm::device_buffer` and the various `column_wrapper` types described in [Testing](TESTING.md)
-can be used in `.cpp` files, and are therefore preferred in test code over `thrust::device_vector`.
-
-Testing header-only APIs requires CUDA compilation so should be done in `.cu` files.
-
 ## CUDA Asynchrony and benchmark accuracy
 
 CUDA computations and operations like copies are typically asynchronous with respect to host code,
