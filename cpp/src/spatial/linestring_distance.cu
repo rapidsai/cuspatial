@@ -54,7 +54,7 @@ struct pairwise_linestring_distance_functor {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
-    auto const num_string_pairs = static_cast<cudf::size_type>(linestring1_offsets.size());
+    auto const num_string_pairs = static_cast<cudf::size_type>(linestring1_offsets.size()) - 1;
 
     auto distances = cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<T>()},
                                                num_string_pairs,
@@ -63,9 +63,9 @@ struct pairwise_linestring_distance_functor {
                                                mr);
 
     auto linestring1_coords_it =
-      make_cartesian_2d_iterator(linestring1_points_x.begin<T>(), linestring1_points_y.begin<T>());
+      make_vec_2d_iterator(linestring1_points_x.begin<T>(), linestring1_points_y.begin<T>());
     auto linestring2_coords_it =
-      make_cartesian_2d_iterator(linestring2_points_x.begin<T>(), linestring2_points_y.begin<T>());
+      make_vec_2d_iterator(linestring2_points_x.begin<T>(), linestring2_points_y.begin<T>());
 
     pairwise_linestring_distance(linestring1_offsets.begin(),
                                  linestring1_offsets.end(),
@@ -84,7 +84,7 @@ struct pairwise_linestring_distance_functor {
   std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
     Args&&...)
   {
-    CUSPATIAL_FAIL("Linestring distances only supports floating point coordinates.");
+    CUSPATIAL_FAIL("Linestring distance API only supports floating point coordinates.");
   }
 };
 
@@ -110,7 +110,7 @@ std::unique_ptr<cudf::column> pairwise_linestring_distance(
                       linestring1_points_x.type() == linestring2_points_x.type(),
                     "The types of linestring coordinates arrays mismatch.");
 
-  if (linestring1_offsets.size() == 0) { return cudf::empty_like(linestring1_points_x); }
+  if (linestring1_offsets.size() - 1 == 0) { return cudf::empty_like(linestring1_points_x); }
 
   return cudf::type_dispatcher(linestring1_points_x.type(),
                                pairwise_linestring_distance_functor{},

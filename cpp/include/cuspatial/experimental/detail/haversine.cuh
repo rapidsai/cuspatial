@@ -18,13 +18,13 @@
 
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/transform.h>
-#include <thrust/tuple.h>
 
 #include <type_traits>
 
@@ -36,12 +36,12 @@ template <typename T>
 struct haversine_distance_functor {
   haversine_distance_functor(T radius) : radius_(radius) {}
 
-  __device__ T operator()(lonlat_2d<T> point_a, lonlat_2d<T> point_b)
+  __device__ T operator()(vec_2d<T> lonlat_a, vec_2d<T> lonlat_b)
   {
-    auto ax = point_a.x * DEGREE_TO_RADIAN;
-    auto ay = point_a.y * DEGREE_TO_RADIAN;
-    auto bx = point_b.x * DEGREE_TO_RADIAN;
-    auto by = point_b.y * DEGREE_TO_RADIAN;
+    auto ax = lonlat_a.x * DEGREE_TO_RADIAN;
+    auto ay = lonlat_a.y * DEGREE_TO_RADIAN;
+    auto bx = lonlat_b.x * DEGREE_TO_RADIAN;
+    auto by = lonlat_b.y * DEGREE_TO_RADIAN;
 
     // haversine formula
     auto x        = (bx - ax) / 2;
@@ -58,7 +58,7 @@ struct haversine_distance_functor {
 
 }  // namespace detail
 
-template <class LonLatItA, class LonLatItB, class OutputIt, class Location, class T>
+template <class LonLatItA, class LonLatItB, class OutputIt, class T>
 OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,
@@ -66,15 +66,14 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             T const radius,
                             rmm::cuda_stream_view stream)
 {
-  using LocationB = typename std::iterator_traits<LonLatItB>::value_type;
   static_assert(
-    std::conjunction_v<std::is_same<lonlat_2d<T>, Location>, std::is_same<lonlat_2d<T>, LocationB>>,
-    "Inputs must be cuspatial::lonlat_2d");
+    is_same<vec_2d<T>, iterator_value_type<LonLatItA>, iterator_value_type<LonLatItB>>(),
+    "Inputs must be cuspatial::vec_2d");
   static_assert(
-    std::conjunction_v<std::is_floating_point<T>,
-                       std::is_floating_point<typename LocationB::value_type>,
-                       std::is_floating_point<typename std::iterator_traits<OutputIt>::value_type>>,
-    "Haversine distance supports only floating-point coordinates.");
+    is_same_floating_point<T,
+                           typename cuspatial::iterator_vec_base_type<LonLatItA>,
+                           typename cuspatial::iterator_value_type<OutputIt>>(),
+    "All iterator types and radius must have the same floating-point coordinate value type.");
 
   CUSPATIAL_EXPECTS(radius > 0, "radius must be positive.");
 

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <tests/utility/vector_equality.hpp>
+
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/haversine.cuh>
 
@@ -34,7 +36,7 @@ TYPED_TEST_CASE(HaversineTest, TestTypes);
 TYPED_TEST(HaversineTest, Empty)
 {
   using T        = TypeParam;
-  using Location = cuspatial::lonlat_2d<T>;
+  using Location = cuspatial::vec_2d<T>;
 
   auto a_lonlat = rmm::device_vector<Location>{};
   auto b_lonlat = rmm::device_vector<Location>{};
@@ -45,14 +47,14 @@ TYPED_TEST(HaversineTest, Empty)
   auto distance_end = cuspatial::haversine_distance(
     a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
 
-  EXPECT_EQ(distance, expected);
+  cuspatial::test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(0, std::distance(distance.begin(), distance_end));
 }
 
 TYPED_TEST(HaversineTest, Zero)
 {
   using T        = TypeParam;
-  using Location = cuspatial::lonlat_2d<T>;
+  using Location = cuspatial::vec_2d<T>;
   using LocVec   = std::vector<Location>;
 
   auto a_lonlat = rmm::device_vector<Location>(1, Location{0, 0});
@@ -64,14 +66,14 @@ TYPED_TEST(HaversineTest, Zero)
   auto distance_end = cuspatial::haversine_distance(
     a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
 
-  EXPECT_EQ(expected, distance);
+  cuspatial::test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(1, std::distance(distance.begin(), distance_end));
 }
 
 TYPED_TEST(HaversineTest, NegativeRadius)
 {
   using T        = TypeParam;
-  using Location = cuspatial::lonlat_2d<T>;
+  using Location = cuspatial::vec_2d<T>;
   using LocVec   = std::vector<Location>;
 
   auto a_lonlat = rmm::device_vector<Location>(LocVec({Location{1, 1}, Location{0, 0}}));
@@ -88,7 +90,7 @@ TYPED_TEST(HaversineTest, NegativeRadius)
 TYPED_TEST(HaversineTest, EquivalentPoints)
 {
   using T        = TypeParam;
-  using Location = cuspatial::lonlat_2d<T>;
+  using Location = cuspatial::vec_2d<T>;
 
   auto h_a_lonlat = std::vector<Location>({{-180, 0}, {180, 30}});
   auto h_b_lonlat = std::vector<Location>({{180, 0}, {-180, 30}});
@@ -104,13 +106,13 @@ TYPED_TEST(HaversineTest, EquivalentPoints)
   auto distance_end = cuspatial::haversine_distance(
     a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
 
-  EXPECT_EQ(expected, distance);
+  cuspatial::test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(2, std::distance(distance.begin(), distance_end));
 }
 
 template <typename T>
 struct identity_xform {
-  using Location = cuspatial::lonlat_2d<T>;
+  using Location = cuspatial::vec_2d<T>;
   __device__ Location operator()(Location const& loc) { return loc; };
 };
 
@@ -118,7 +120,7 @@ struct identity_xform {
 TYPED_TEST(HaversineTest, TransformIterator)
 {
   using T        = TypeParam;
-  using Location = cuspatial::lonlat_2d<T>;
+  using Location = cuspatial::vec_2d<T>;
 
   auto h_a_lonlat = std::vector<Location>({{-180, 0}, {180, 30}});
   auto h_b_lonlat = std::vector<Location>({{180, 0}, {-180, 30}});
@@ -137,6 +139,6 @@ TYPED_TEST(HaversineTest, TransformIterator)
   auto distance_end =
     cuspatial::haversine_distance(xform_begin, xform_end, b_lonlat.begin(), distance.begin());
 
-  EXPECT_EQ(expected, distance);
+  cuspatial::test::expect_vector_equivalent(expected, distance);
   EXPECT_EQ(2, std::distance(distance.begin(), distance_end));
 }

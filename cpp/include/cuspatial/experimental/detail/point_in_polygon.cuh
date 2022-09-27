@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -161,25 +161,24 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
                           OutputIt output,
                           rmm::cuda_stream_view stream)
 {
-  using T = detail::iterator_vec_base_type<Cart2dItA>;
+  using T = iterator_vec_base_type<Cart2dItA>;
 
   auto const num_test_points = std::distance(test_points_first, test_points_last);
   auto const num_polys       = std::distance(polygon_offsets_first, polygon_offsets_last);
   auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last);
   auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
 
-  static_assert(detail::is_same_floating_point<T, detail::iterator_vec_base_type<Cart2dItB>>(),
+  static_assert(is_same_floating_point<T, iterator_vec_base_type<Cart2dItB>>(),
                 "Underlying type of Cart2dItA and Cart2dItB must be the same floating point type");
-  static_assert(detail::is_same<cartesian_2d<T>,
-                                detail::iterator_value_type<Cart2dItA>,
-                                detail::iterator_value_type<Cart2dItB>>(),
-                "Inputs must be cuspatial::cartesian_2d");
+  static_assert(
+    is_same<vec_2d<T>, iterator_value_type<Cart2dItA>, iterator_value_type<Cart2dItB>>(),
+    "Inputs must be cuspatial::vec_2d");
 
-  static_assert(detail::is_integral<detail::iterator_value_type<OffsetIteratorA>,
-                                    detail::iterator_value_type<OffsetIteratorB>>(),
+  static_assert(cuspatial::is_integral<iterator_value_type<OffsetIteratorA>,
+                                       iterator_value_type<OffsetIteratorB>>(),
                 "OffsetIterators must point to integral type.");
 
-  static_assert(std::is_same_v<detail::iterator_value_type<OutputIt>, int32_t>,
+  static_assert(std::is_same_v<iterator_value_type<OutputIt>, int32_t>,
                 "OutputIt must point to 32 bit integer type.");
 
   CUSPATIAL_EXPECTS(num_polys <= std::numeric_limits<int32_t>::digits,

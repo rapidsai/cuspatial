@@ -48,6 +48,10 @@
  *      @{
  *          @brief Distance computation APIs
  *
+ *          @file point_distance.hpp
+ *          @file point_distance.cuh
+ *          @file point_linestring_distance.hpp
+ *          @file point_linestring_distance.cuh
  *          @file linestring_distance.hpp
  *          @file linestring_distance.cuh
  *          @file hausdorff.hpp
@@ -64,6 +68,12 @@
  *          @file polygon_bounding_box.hpp
  *          @file polyline_bounding_box.hpp
  *          @file spatial_window.hpp
+ *      @}
+ *      @defgroup nearest_points Nearest Points
+ *      @{
+ *          @brief APIs to compute the nearest points between geometries
+ *          @file point_linestring_nearest_points.hpp
+ *          @file point_linestring_nearest_points.cuh
  *      @}
  *      @defgroup cubic_spline Cubic Spline
  *      @{
