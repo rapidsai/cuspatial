@@ -7,6 +7,7 @@ The cuspatial fixture is a single randomly generated GeoDataframe, containing
 column.
 """
 
+import cupy as cp
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -19,6 +20,8 @@ from shapely.geometry import (
     Point,
     Polygon,
 )
+
+import cuspatial
 
 
 @pytest_cases.fixture
@@ -117,6 +120,32 @@ def make_geopandas_dataframe_from_naturalearth_lowres(nr):
 
 
 @pytest_cases.fixture()
+def host_dataframe():
+    return gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
+
+
+@pytest_cases.fixture()
+def gpu_dataframe(host_dataframe):
+    return cuspatial.from_geopandas(host_dataframe)
+
+
+@pytest_cases.fixture()
+def polygons(host_dataframe):
+    return cuspatial.from_geopandas(
+        host_dataframe[host_dataframe["geometry"].type == "Polygon"]
+    )
+
+
+@pytest_cases.fixture()
+def sorted_trajectories():
+    ids = cp.random.randint(1, 400, 10000)
+    timestamps = cp.random.random(10000) * 10000
+    x = cp.random.random(10000)
+    y = cp.random.random(10000)
+    return cuspatial.derive_trajectories(ids, x, y, timestamps)
+
+
+@pytest_cases.fixture()
 def gpdf_100(request):
     return make_geopandas_dataframe_from_naturalearth_lowres(100)
 
@@ -129,3 +158,17 @@ def gpdf_1000(request):
 @pytest_cases.fixture()
 def gpdf_10000(request):
     return make_geopandas_dataframe_from_naturalearth_lowres(10000)
+
+
+@pytest_cases.fixture()
+def cugpdf_100(gpdf_100):
+    return cuspatial.from_geopandas(gpdf_100)
+
+
+@pytest_cases.fixture()
+def shapefile(tmp_path, gpdf_100):
+    d = tmp_path / "shp"
+    d.mkdir()
+    p = d / "read_polygon_shapefile"
+    gpdf_100.to_file(p)
+    return p
