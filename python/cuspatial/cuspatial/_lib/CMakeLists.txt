@@ -19,6 +19,7 @@ set(cython_sources
     polygon_bounding_boxes.pyx
     polyline_bounding_boxes.pyx
     linestring_distance.pyx
+    point_linestring_distance.pyx
     quadtree.pyx
     shapefile_reader.pyx
     spatial.pyx
