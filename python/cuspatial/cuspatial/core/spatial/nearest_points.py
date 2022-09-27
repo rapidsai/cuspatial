@@ -15,10 +15,10 @@ def pairwise_point_linestring_nearest_points(
 ) -> GeoDataFrame:
     """Returns the nearest points between two GeoSeries of points and
     linestrings.
- 
+
     Multipoints and Multilinestrings are also supported. With restriction that
     the `points` series must contain either only points or only multipoints.
- 
+
     Parameters
     ----------
     points : GeoSeries
