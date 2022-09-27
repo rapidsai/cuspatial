@@ -102,7 +102,7 @@ ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST
     trajectory/test_trajectory_distances_and_speeds.cu)
 
 ConfigureTest(DERIVE_TRAJECTORIES_TEST
-    trajectory/test_derive_trajectories.cu)
+    trajectory/test_derive_trajectories.cpp)
 
 ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST
     trajectory/test_trajectory_bounding_boxes.cu)
@@ -136,3 +136,6 @@ ConfigureTest(POINTS_IN_RANGE_TEST_EXP
 
 ConfigureTest(POINT_IN_POLYGON_TEST_EXP
     experimental/spatial/point_in_polygon_test.cu)
+
+ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP
+    experimental/trajectory/derive_trajectories_test.cu)
