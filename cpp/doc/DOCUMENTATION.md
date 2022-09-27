@@ -555,9 +555,8 @@ We recommend installing Doxygen using conda (`conda install doxygen`) or a Linux
 [build and install doxygen from source](http://www.doxygen.nl/manual/install.html).
 
 To build the libcuspatial HTML documentation simply run the `doxygen` command from the `cpp/doxygen`
-directory containing the `Doxyfile`. The libcuspatial documentation can also be built using 
-`make docs_cuspatial` from the cmake build directory (e.g. `cpp/build`). If you are using `ninja`
-rather than `make`, the command is `ninja docs_cuspatial`.
+directory containing the `Doxyfile`. The libcudf documentation can also be built using
+`cmake --build . --target docs_cudf` from the cmake build directory (e.g. `cpp/build/release`).
 
 Doxygen reads and processes all appropriate source files under the `cpp/include/` directory. The 
 output is generated in the `cpp/doxygen/html/` directory. You can load the local `index.html` file
