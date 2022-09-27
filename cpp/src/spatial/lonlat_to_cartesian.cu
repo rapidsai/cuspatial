@@ -16,7 +16,7 @@
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/coordinate_transform.cuh>
-#include <cuspatial/experimental/type_utils.hpp>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column.hpp>

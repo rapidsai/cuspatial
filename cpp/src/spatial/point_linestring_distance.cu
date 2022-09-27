@@ -27,8 +27,8 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_linestring_distance.cuh>
-#include <cuspatial/experimental/type_utils.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 

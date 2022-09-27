@@ -20,11 +20,13 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
+#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
+#include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <type_traits>
 
@@ -228,7 +230,7 @@ auto vec_2d_iterator_to_output_interleaved_iterator(Iter d_points_begin)
   using T                     = typename std::iterator_traits<Iter>::value_type;
   auto fixed_stride_2_functor = detail::strided_functor(2);
   auto even_positions         = thrust::make_permutation_iterator(
-    d_points_begin, detail::make_counting_transform_iterator(0, fixed_stride_2_functor));
+            d_points_begin, detail::make_counting_transform_iterator(0, fixed_stride_2_functor));
   auto odd_positions = thrust::make_permutation_iterator(
     thrust::next(d_points_begin),
     detail::make_counting_transform_iterator(0, fixed_stride_2_functor));
