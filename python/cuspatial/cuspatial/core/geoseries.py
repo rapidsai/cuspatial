@@ -37,8 +37,11 @@ class GeoSeries(cudf.Series):
     stored in the `GeoArrowBuffers` object, accessible with the `points`,
     `multipoints`, `lines`, and `polygons` accessors.
 
-    >>> cuseries.points
-        xy:
+    >>> from shapely.geometry import Point
+        import geopandas
+        import cuspatial
+        cuseries = cuspatial.GeoSeries(geopandas.GeoSeries(Point(-1, 0)))
+        cuseries.points.xy
         0   -1.0
         1    0.0
         dtype: float64
@@ -422,8 +425,64 @@ class GeoSeries(cudf.Series):
             return results
 
     def to_arrow(self):
-        # Arrow can't view an empty list, so we need to prep the buffers
-        # here.
+        """
+        Convert to a GeoArrow Array.
+
+        Returns
+        -------
+        result: GeoArrow Union containing GeoArrow Arrays
+
+        Examples
+        --------
+        >>> from shapely.geometry import MultiLineString, LineString
+        >>> cugpdf = cuspatial.from_geopandas(geopandas.GeoSeries(
+            MultiLineString(
+                [
+                    [(1, 0), (0, 1)],
+                    [(0, 0), (1, 1)]
+                ]
+            )))
+        >>> cugpdf.to_arrow()
+        <pyarrow.lib.UnionArray object at 0x7f7061c0e0a0>
+        -- is_valid: all not null
+        -- type_ids:   [
+            2
+          ]
+        -- value_offsets:   [
+            0
+          ]
+        -- child 0 type: list<item: null>
+          []
+        -- child 1 type: list<item: null>
+          []
+        -- child 2 type: list<item: list<item: list<item: double>>>
+          [
+            [
+              [
+                [
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  1
+                ]
+              ],
+              [
+                [
+                  0,
+                  0
+                ],
+                [
+                  1,
+                  1
+                ]
+              ]
+            ]
+          ]
+        -- child 3 type: list<item: null>
+          []
+        """
         points = self._column.points
         mpoints = self._column.mpoints
         lines = self._column.lines
