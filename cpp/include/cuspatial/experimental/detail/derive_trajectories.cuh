@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuspatial/detail/utility/traits.hpp>
+#include <cuspatial/traits.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -66,8 +66,8 @@ void order_trajectories(IdInputIt ids_first,
                         rmm::cuda_stream_view stream,
                         rmm::mr::device_memory_resource* mr)
 {
-  using id_type        = detail::iterator_value_type<IdInputIt>;
-  using timestamp_type = detail::iterator_value_type<TimestampInputIt>;
+  using id_type        = iterator_value_type<IdInputIt>;
+  using timestamp_type = iterator_value_type<TimestampInputIt>;
   using tuple_type     = thrust::tuple<id_type, timestamp_type>;
 
   auto keys_first     = thrust::make_zip_iterator(ids_first, timestamps_first);
