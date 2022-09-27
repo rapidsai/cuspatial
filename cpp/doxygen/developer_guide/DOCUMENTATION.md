@@ -506,6 +506,8 @@ Summary of groups tags
 | \@addtogroup | Use instead of \@ingroup for multiple declarations in the same file within a namespace declaration. Do not specify a group title. |
 | `@{ ... @}` |  Use only with \@addtogroup. |
 
+See [doxygen_groups.h](../include/doxygen_groups.h) for a list of existing groups.
+
 ## Build Doxygen Output
 
 We recommend installing Doxygen using conda (`conda install doxygen`) or a Linux package manager
