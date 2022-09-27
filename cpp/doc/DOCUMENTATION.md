@@ -48,7 +48,7 @@ There are almost 200 commands (also called tags in this document) that doxygen r
 blocks. This document provides guidance on which commands/tags to use and how to use them in the
 libcuspatial C++ source code.
 
-The doxygen process can be customized using options in the [Doxyfile](../doxygen/Doxyfile).
+Doxygen can be customized using options in the [Doxyfile](../doxygen/Doxyfile).
 
 Here are some of the custom options in the Doxyfile for libcuspatial.
 | Option | Setting | Description |
@@ -154,6 +154,8 @@ class example_class {
 
  private:
   int my_int;                ///< An example private member variable
+  /// Another example of private member variable
+  float my_float;
 };
 
 /**
