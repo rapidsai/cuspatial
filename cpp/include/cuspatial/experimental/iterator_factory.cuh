@@ -62,7 +62,7 @@ struct vec_2d_to_tuple {
  * @brief Generic to convert any iterator pointing to interleaved xy range into
  * iterator of vec_2d.
  *
- * This generic version does not make use of vectorized load.
+ * This generic version does not use of vectorized load.
  *
  * @pre `Iter` has operator[] defined.
  * @pre std::iterator_traits<Iter>::value_type is convertible to `T`.
@@ -84,6 +84,9 @@ struct interleaved_to_vec_2d {
  * @brief Specialization for thrust iterators conforming to `contiguous_iterator`. (including raw
  * pointer)
  *
+ * This iterator specific version uses vectorized load.
+ *
+ * @throw cuspatial::logic_error if `Iter` is not aligned to type `vec_2d<T>`
  * @pre `Iter` is a `contiguous_iterator` (including raw pointer).
  */
 template <typename Iter>
@@ -112,10 +115,9 @@ struct interleaved_to_vec_2d<Iter,
  * @internal
  * @brief Functor to transform an index to strided index.
  */
+template <int stride>
 struct strided_functor {
-  std::size_t _stride;
-  strided_functor(std::size_t stride) : _stride(stride) {}
-  auto __device__ operator()(std::size_t i) { return i * _stride; }
+  auto __device__ operator()(std::size_t i) { return i * stride; }
 };
 
 }  // namespace detail
@@ -211,7 +213,7 @@ template <typename Iter>
 auto vec_2d_iterator_to_output_interleaved_iterator(Iter d_points_begin)
 {
   using T                     = typename std::iterator_traits<Iter>::value_type;
-  auto fixed_stride_2_functor = detail::strided_functor(2);
+  auto fixed_stride_2_functor = detail::strided_functor<2>();
   auto even_positions         = thrust::make_permutation_iterator(
     d_points_begin, detail::make_counting_transform_iterator(0, fixed_stride_2_functor));
   auto odd_positions = thrust::make_permutation_iterator(
