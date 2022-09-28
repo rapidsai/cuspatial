@@ -14,7 +14,7 @@
 # limitations under the License.
 #=============================================================================
 
-cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.23.1 FATAL_ERROR)
 
 include(../fetch_rapids.cmake)
 include(rapids-cmake)
@@ -44,7 +44,7 @@ option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated d
 # Option to enable line info in CUDA device compilation to allow introspection when profiling / memchecking
 option(CUDA_ENABLE_LINEINFO "Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler" OFF)
 # cudart can be statically linked or dynamically linked. The python ecosystem wants dynamic linking
-option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
+option(CUDA_STATIC_RUNTIME "Statically link the CUDA toolkit runtime and libraries" OFF)
 
 message(STATUS "CUSPATIAL: Build with NVTX support: ${USE_NVTX}")
 message(STATUS "CUSPATIAL: Configure CMake to build tests: ${BUILD_TESTS}")
@@ -52,7 +52,7 @@ message(STATUS "CUSPATIAL: Configure CMake to build (google) benchmarks: ${BUILD
 message(STATUS "CUSPATIAL: Build with per-thread default stream: ${PER_THREAD_DEFAULT_STREAM}")
 message(STATUS "CUSPATIAL: Disable warnings generated from deprecated declarations: ${DISABLE_DEPRECATION_WARNING}")
 message(STATUS "CUSPATIAL: Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler: ${CUDA_ENABLE_LINEINFO}")
-message(STATUS "CUSPATIAL: Statically link the CUDA runtime: ${CUDA_STATIC_RUNTIME}")
+message(STATUS "CUSPATIAL: Statically link the CUDA toolkit runtime and libraries: ${CUDA_STATIC_RUNTIME}")
 
 # Set a default build type if none was specified
 rapids_cmake_build_type("Release")
@@ -76,6 +76,14 @@ rapids_cmake_support_conda_env(conda_env MODIFY_PREFIX_PATH)
 
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
+set(_ctk_static_suffix "")
+if(CUDA_STATIC_RUNTIME)
+  set(_ctk_static_suffix "_static")
+  # Control legacy FindCUDA.cmake behavior too
+  set(CUDA_USE_STATIC_CUDA_RUNTIME ON)
+endif()
+
+rapids_cuda_init_runtime(USE_STATIC ${CUDA_STATIC_RUNTIME})
 
 rapids_find_package(
   CUDAToolkit REQUIRED
@@ -124,6 +132,7 @@ add_library(cuspatial
     src/spatial/linestring_distance.cu
     src/spatial/point_distance.cu
     src/spatial/point_linestring_distance.cu
+    src/spatial/point_linestring_nearest_points.cu
     src/spatial/lonlat_to_cartesian.cu
     src/trajectory/derive_trajectories.cu
     src/trajectory/trajectory_bounding_boxes.cu
@@ -185,7 +194,7 @@ endif()
 target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
 # Specify the target module library dependencies
-target_link_libraries(cuspatial PUBLIC GDAL::GDAL cudf::cudf CUDA::cusparse)
+target_link_libraries(cuspatial PUBLIC GDAL::GDAL cudf::cudf CUDA::cusparse${_ctk_static_suffix})
 
 add_library(cuspatial::cuspatial ALIAS cuspatial)
 
@@ -268,3 +277,27 @@ rapids_export(
   NAMESPACE cuspatial::
   DOCUMENTATION doc_string
 )
+
+
+# ##################################################################################################
+# * build documentation ----------------------------------------------------------------------------
+
+find_package(Doxygen)
+if(Doxygen_FOUND)
+
+# doc targets for cuDF
+add_custom_command(
+  OUTPUT CUSPATIAL_DOXYGEN
+  WORKING_DIRECTORY ${CUSPATIAL_SOURCE_DIR}/doxygen
+  COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
+  VERBATIM
+  COMMENT "Custom command for building cuspatial doxygen docs."
+)
+
+add_custom_target(
+  docs_cuspatial
+  DEPENDS CUSPATIAL_DOXYGEN
+  COMMENT "Custom command for building cuspatial doxygen docs."
+)
+
+endif()

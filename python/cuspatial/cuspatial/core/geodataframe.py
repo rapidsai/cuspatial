@@ -1,5 +1,7 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION
+from typing import Dict, Tuple, TypeVar, Union
 
+import pandas as pd
 from geopandas import GeoDataFrame as gpGeoDataFrame
 from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
@@ -9,13 +11,15 @@ from cuspatial.core._column.geocolumn import GeoColumn, GeoMeta
 from cuspatial.core.geoseries import GeoSeries
 from cuspatial.io.geopandas_reader import GeoPandasReader
 
+T = TypeVar("T", bound="GeoDataFrame")
+
 
 class GeoDataFrame(cudf.DataFrame):
     """
     A GPU GeoDataFrame object.
     """
 
-    def __init__(self, data: gpGeoDataFrame = None):
+    def __init__(self, data: Union[Dict, gpGeoDataFrame] = None):
         """
         Constructs a GPU GeoDataFrame from a GeoPandas dataframe.
 
@@ -34,6 +38,8 @@ class GeoDataFrame(cudf.DataFrame):
                     self._data[col] = column
                 else:
                     self._data[col] = data[col]
+        elif isinstance(data, dict):
+            super()._init_from_dict_like(data)
         elif data is None:
             pass
         else:
@@ -79,20 +85,32 @@ class GeoDataFrame(cudf.DataFrame):
     def __repr__(self):
         return self.to_pandas().__repr__() + "\n" + "(GPU)" + "\n"
 
-    def _copy_type_metadata(self, other, include_index: bool = True):
+    def _copy_type_metadata(
+        self, other, include_index: bool = True, *, override_dtypes=None
+    ):
         """
         Copy type metadata from each column of `other` to the corresponding
         column of `self`.
         See `ColumnBase._with_type_metadata` for more information.
         """
+
+        type_copied = super()._copy_type_metadata(
+            other, include_index=include_index, override_dtypes=override_dtypes
+        )
         for name, col, other_col in zip(
-            self._data.keys(), self._data.values(), other._data.values()
+            type_copied._data.keys(),
+            type_copied._data.values(),
+            other._data.values(),
         ):
-            # libcudf APIs lose all information about GeoColumns, operating
-            # solely on the underlying base data. Therefore, our only recourse
-            # is to recreate a new GeoColumn with the same underlying data.
-            # Since there's no easy way to create a GeoColumn from a
-            # NumericalColumn, we're forced to do so manually.
+            # A GeoColumn is currently implemented as a NumericalColumn with
+            # several child columns to hold the geometry data. The native
+            # return loop of cudf cython code can only reconstruct the
+            # geocolumn as a NumericalColumn. We can't reconstruct the full
+            # GeoColumn at the column level via _with_type_metadata, because
+            # there is neither a well defined geometry type in cuspatial,
+            # nor we can reconstruct the entire geocolumn data with pure
+            # geometry type. So we need an extra pass here to copy the geometry
+            # data into the type reconstructed dataframe.
             if isinstance(other_col, GeoColumn):
                 col = GeoColumn(
                     (
@@ -104,23 +122,54 @@ class GeoDataFrame(cudf.DataFrame):
                     other_col._meta,
                     cudf.Index(col),
                 )
+                type_copied._data.set_by_label(name, col, validate=False)
 
-            self._data.set_by_label(
-                name, col._with_type_metadata(other_col.dtype), validate=False
-            )
+        return type_copied
 
-        if include_index:
-            if self._index is not None and other._index is not None:
-                self._index._copy_type_metadata(other._index)
-                # When other._index is a CategoricalIndex, there is
-                if isinstance(
-                    other._index, cudf.core.index.CategoricalIndex
-                ) and not isinstance(
-                    self._index, cudf.core.index.CategoricalIndex
-                ):
-                    self._index = cudf.Index(self._index._column)
+    def _split_out_geometry_columns(self) -> Tuple:
+        """
+        Break the geometry columns and non-geometry columns into
+        separate dataframes and return them separated.
+        """
+        columns_mask = pd.Series(self.columns)
+        geocolumn_mask = pd.Series(
+            [isinstance(self[col], GeoSeries) for col in self.columns],
+            dtype="bool",
+        )
+        geo_columns = self[columns_mask[geocolumn_mask]]
+        # Send the rest of the columns to `cudf` to slice.
+        data_columns = cudf.DataFrame(
+            self[columns_mask[~geocolumn_mask].values]
+        )
+        return (geo_columns, data_columns)
 
-        return self
+    def _recombine_columns(self, geo_columns, data_columns):
+        """
+        Combine a GeoDataFrame of only geometry columns with a DataFrame
+        of non-geometry columns in the same order as the columns in `self`
+        """
+        columns_mask = pd.Series(self.columns)
+        geocolumn_mask = pd.Series(
+            [isinstance(self[col], GeoSeries) for col in self.columns]
+        )
+        return {
+            name: (geo_columns[name] if mask else data_columns[name])
+            for name, mask in zip(columns_mask.values, geocolumn_mask.values)
+        }
+
+    def _slice(self: T, arg: slice) -> T:
+        """
+        Overload the _slice functionality from cudf's frame members.
+        """
+        geo_columns, data_columns = self._split_out_geometry_columns()
+        sliced_geo_columns = GeoDataFrame(
+            {name: geo_columns[name].iloc[arg] for name in geo_columns.columns}
+        )
+        sliced_data_columns = data_columns._slice(arg)
+        result = self._recombine_columns(
+            sliced_geo_columns, sliced_data_columns
+        )
+        return self.__class__(result)
 
 
 class _GeoSeriesUtility:

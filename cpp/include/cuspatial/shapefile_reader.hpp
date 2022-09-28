@@ -23,6 +23,8 @@
 
 namespace cuspatial {
 
+typedef enum class winding_order : bool { CLOCKWISE, COUNTER_CLOCKWISE } winding_order;
+
 /**
  * @addtogroup io
  * @{
@@ -32,6 +34,8 @@ namespace cuspatial {
  * @brief read polygon data from an ESRI Shapefile.
  *
  * @param[in] filename: ESRI Shapefile file path (usually ends in .shp)
+ * @param[in] outer_ring_winding: the ordering of the outer ring of polygon vertices; clockwise or
+ * counter-clockwise
  * @param[in] mr:       Optional, The resource to use to allocate the returned data
  *
  * @return Vector of 4 columns representing one or more polygons:
@@ -45,7 +49,8 @@ namespace cuspatial {
  **/
 std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
   std::string const& filename,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+  const winding_order outer_ring_winding = winding_order::COUNTER_CLOCKWISE,
+  rmm::mr::device_memory_resource* mr    = rmm::mr::get_current_device_resource());
 
 /**
  * @} // end of doxygen group
