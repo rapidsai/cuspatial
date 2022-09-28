@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/error.hpp>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -32,25 +33,6 @@
 
 namespace cuspatial {
 namespace detail {
-
-/**
- * @brief Get corresponding 2-element vector type from `Element` type.
- * Only for floating point types.
- */
-template <typename Element>
-struct element_to_element2 {
-};
-
-template <>
-struct element_to_element2<float> {
-  using type = float2;
-};
-
-template <>
-struct element_to_element2<double> {
-  using type = double2;
-};
-
 /**
  * @internal
  * @brief Helper to convert a tuple of elements into a `vec_2d`
@@ -87,49 +69,42 @@ struct vec_2d_to_tuple {
  */
 template <typename Iter, typename Enable = void>
 struct interleaved_to_vec_2d {
-  using T = typename std::iterator_traits<Iter>::value_type;
+  using element_t  = typename std::iterator_traits<Iter>::value_type;
+  using value_type = vec_2d<element_t>;
   Iter it;
-  __device__ vec_2d<T> operator()(std::size_t i) { return vec_2d<T>{it[2 * i], it[2 * i + 1]}; }
-};
+  constexpr interleaved_to_vec_2d(Iter it) : it{it} {}
 
-/**
- * @brief Specialization for raw pointers to interleaved xy range.
- *
- * @pre `Iter` is raw pointer
- */
-template <typename Iter>
-struct interleaved_to_vec_2d<Iter, typename std::enable_if_t<std::is_pointer_v<Iter>>> {
-  using pointer_t = typename std::pointer_traits<Iter>::pointer;
-  using T         = typename std::remove_const_t<typename std::pointer_traits<Iter>::element_type>;
-  using T2        = typename element_to_element2<T>::type;
-  pointer_t ptr;
-
-  __device__ vec_2d<T> operator()(std::size_t i)
+  CUSPATIAL_HOST_DEVICE value_type operator()(std::size_t i)
   {
-    T2 const* f2it = reinterpret_cast<T2 const*>(ptr);
-    return vec_2d<T>{f2it[i].x, f2it[i].y};
+    return vec_2d<element_t>{it[2 * i], it[2 * i + 1]};
   }
 };
 
 /**
- * @brief Specialization for thrust iterators conforming to `contiguous_iterator`.
+ * @brief Specialization for thrust iterators conforming to `contiguous_iterator`. (including raw
+ * pointer)
  *
- * @pre `Iter` is a thrust iterator and conforms to `contiguous_iterator`.
+ * @pre `Iter` is a `contiguous_iterator` (including raw pointer).
  */
 template <typename Iter>
-struct interleaved_to_vec_2d<
-  Iter,
-  typename std::enable_if_t<!std::is_pointer_v<Iter> && thrust::is_contiguous_iterator_v<Iter>>> {
-  using T  = typename std::iterator_traits<Iter>::value_type;
-  using T2 = typename element_to_element2<T>::type;
-  T* ptr;
+struct interleaved_to_vec_2d<Iter,
+                             typename std::enable_if_t<thrust::is_contiguous_iterator_v<Iter>>> {
+  using element_t  = typename std::iterator_traits<Iter>::value_type;
+  using value_type = vec_2d<element_t>;
 
-  interleaved_to_vec_2d(Iter it) { ptr = &thrust::raw_reference_cast(*it); }
+  element_t const* ptr;
 
-  __device__ vec_2d<T> operator()(std::size_t i)
+  constexpr interleaved_to_vec_2d(Iter it) : ptr{&thrust::raw_reference_cast(*it)}
   {
-    T2 const* f2it = reinterpret_cast<T2 const*>(ptr);
-    return vec_2d<T>{f2it[i].x, f2it[i].y};
+    CUSPATIAL_EXPECTS(!((intptr_t)ptr % alignof(vec_2d<element_t>)),
+                      "Misaligned interleaved data.");
+  }
+
+  CUSPATIAL_HOST_DEVICE value_type operator()(std::size_t i)
+  {
+    auto const aligned =
+      static_cast<element_t const*>(__builtin_assume_aligned(ptr + 2 * i, 2 * sizeof(element_t)));
+    return vec_2d<element_t>{aligned[0], aligned[1]};
   }
 };
 
