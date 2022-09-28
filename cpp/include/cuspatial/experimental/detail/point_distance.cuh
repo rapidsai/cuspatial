@@ -60,11 +60,12 @@ OutputIt pairwise_point_distance(
                            distances_first,
                            [] __device__(auto& mp1, auto& mp2) {
                              T min_distance_squared;
-                             for (vec_2d<T> const& p1 : mp1)
+                             for (vec_2d<T> const& p1 : mp1) {
                                for (vec_2d<T> const& p2 : mp2) {
                                  auto v               = p1 - p2;
                                  min_distance_squared = min(min_distance_squared, dot(v, v));
                                }
+                             }
                              return sqrt(min_distance_squared);
                            });
 }

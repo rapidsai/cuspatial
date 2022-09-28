@@ -70,7 +70,6 @@ void __global__ pairwise_point_linestring_distance(
     // Reduce the minimum distance between different parts of the multi-point.
     auto [a, b]            = multilinestrings.segment(idx);
     T min_distance_squared = std::numeric_limits<T>::max();
-    auto multipoint        = multipoints.element(geometry_idx);
 
     for (vec_2d<T> const& c : multipoints.element(geometry_idx)) {
       // TODO: reduce redundant computation only related to `a`, `b` in this helper.
