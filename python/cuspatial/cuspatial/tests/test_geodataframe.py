@@ -335,3 +335,13 @@ def test_boolmask(gpdf, df_boolmask):
     cugpdf = cuspatial.from_geopandas(gi)
     cugpdf_back = cugpdf.to_geopandas()
     assert_eq_geo_df(gi[df_boolmask], cugpdf_back[df_boolmask])
+
+
+def test_from_dict():
+    p1 = Point([0, 1])
+    p2 = Point([2, 3])
+    p3 = Point([4, 5])
+    p4 = MultiPoint([[6, 7], [8, 9]])
+    gi = gpd.GeoDataFrame({"a": [p1, p2, p3, p4]})
+    cu = cuspatial.GeoDataFrame({"a": [p1, p2, p3, p4]})
+    assert_eq_geo_df(gi, cu.to_geopandas())
