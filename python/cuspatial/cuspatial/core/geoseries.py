@@ -224,8 +224,6 @@ class GeoSeries(cudf.Series):
     class GeoSeriesLocIndexer:
         """
         Map the index to an integer Series and use that.
-
-        Warning! This only supports single values as input at this time.
         """
 
         def __init__(self, _sr):
@@ -275,8 +273,8 @@ class GeoSeries(cudf.Series):
         def __getitem__(self, item):
             # Use the reordering _column._data if it is set
             indexes = (
-                self._sr._column._data[item].to_pandas()
-                if self._sr._column._data is not None
+                self._sr._column._gather_map[item]
+                if self._sr._column._gather_map is not None
                 else item
             )
 
@@ -459,17 +457,3 @@ class GeoSeries(cudf.Series):
                 arrow_polygons,
             ],
         )
-
-    def memory_usage(self):
-        """
-        Outputs how much memory is used by the underlying geometries.
-        """
-        final_size = self._column._meta.input_types.memory_usage()
-        final_size = (
-            final_size + self._column._meta.union_offsets.memory_usage()
-        )
-        final_size = final_size + self.points._col.memory_usage
-        final_size = final_size + self.multipoints._col.memory_usage
-        final_size = final_size + self.lines._col.memory_usage
-        final_size = final_size + self.polygons._col.memory_usage
-        return final_size

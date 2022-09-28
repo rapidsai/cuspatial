@@ -580,7 +580,3 @@ def test_shapefile_constructor_reversed():
 
     reversed_gs = gpd.GeoSeries([polygon.orient(p, 1) for p in gs])
     assert_eq_geo(reversed_gs, cus.to_geopandas())
-
-
-def test_memory_usage(gs):
-    assert gs.memory_usage() == 224
