@@ -82,7 +82,7 @@ struct pairwise_point_linestring_nearest_points_impl {
                                                        stream,
                                                        mr);
     auto nearest_points_it =
-      vec_2d_iterator_to_output_interleaved_iterator(nearest_points_xy->mutable_view().begin<T>());
+      make_vec_2d_output_iterator(nearest_points_xy->mutable_view().begin<T>());
 
     if constexpr (!is_multi_point && !is_multi_linestring) {
       auto output_its = thrust::make_zip_iterator(

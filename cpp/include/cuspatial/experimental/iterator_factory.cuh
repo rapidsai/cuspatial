@@ -194,7 +194,7 @@ auto make_vec_2d_iterator(Iter xy_begin)
  * "LegacyRandomAccessIterator"
  */
 template <typename FirstIter, typename SecondIter>
-auto make_zipped_vec_2d_output_iterator(FirstIter first, SecondIter second)
+auto make_vec_2d_output_iterator(FirstIter first, SecondIter second)
 {
   using T         = typename std::iterator_traits<FirstIter>::value_type;
   auto zipped_out = thrust::make_zip_iterator(thrust::make_tuple(first, second));
@@ -210,7 +210,7 @@ auto make_zipped_vec_2d_output_iterator(FirstIter first, SecondIter second)
  * @return Iterator to `vec_2d`
  */
 template <typename Iter>
-auto vec_2d_iterator_to_output_interleaved_iterator(Iter d_points_begin)
+auto make_vec_2d_output_iterator(Iter d_points_begin)
 {
   using T                     = typename std::iterator_traits<Iter>::value_type;
   auto fixed_stride_2_functor = detail::strided_functor<2>();

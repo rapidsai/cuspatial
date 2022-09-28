@@ -63,8 +63,8 @@ struct spatial_window_dispatch {
     auto& output_x = cols[0];
     auto& output_y = cols[1];
 
-    auto output_zip = cuspatial::make_zipped_vec_2d_output_iterator(
-      output_x->mutable_view().begin<T>(), output_y->mutable_view().begin<T>());
+    auto output_zip = cuspatial::make_vec_2d_output_iterator(output_x->mutable_view().begin<T>(),
+                                                             output_y->mutable_view().begin<T>());
 
     cuspatial::copy_points_in_range(
       window_min, window_max, points_begin, points_begin + x.size(), output_zip, stream);

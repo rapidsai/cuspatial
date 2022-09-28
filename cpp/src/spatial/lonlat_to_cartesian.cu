@@ -65,8 +65,8 @@ struct lonlat_to_cartesian_functor {
 
     auto lonlat_begin = cuspatial::make_vec_2d_iterator(input_lon.begin<T>(), input_lat.begin<T>());
 
-    auto output_zip = cuspatial::make_zipped_vec_2d_output_iterator(
-      output_x->mutable_view().begin<T>(), output_y->mutable_view().begin<T>());
+    auto output_zip = cuspatial::make_vec_2d_output_iterator(output_x->mutable_view().begin<T>(),
+                                                             output_y->mutable_view().begin<T>());
 
     auto origin = cuspatial::vec_2d<T>{origin_lon, origin_lat};
 
