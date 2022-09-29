@@ -97,7 +97,7 @@ they should also assume as little as possible about the nature of the data.
 
 ## Comparing to geopandas
 
-An important aspect of benchmarking cuDF is comparing it to geopandas.
+An important aspect of benchmarking cuSpatial is comparing it to geopandas.
 We often want to generate quantitative comparisons, so we need to make that as easy as possible.
 Our benchmarks support this by setting the environment variable `CUSPATIAL_BENCHMARKS_USE_GEOPANDAS`.
 When this variable is detected, all benchmarks will automatically be run using geopandas instead of cuspatial.
