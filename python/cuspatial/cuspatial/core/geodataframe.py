@@ -135,15 +135,6 @@ class GeoDataFrame(cudf.DataFrame):
 
         return type_copied
 
-    def _init_from_dict_like(self, data, index):
-        for col in data.keys():
-            if is_geometry_type(data[col]):
-                self.index = data[col].index
-                self._data[col] = data[col]
-            else:
-                self.index = data[col].index
-                self._data[col] = cudf.core.column.as_column(data[col])
-
     def _slice(self: T, arg: slice) -> T:
         """
         Overload the _slice functionality from cudf's frame members.
