@@ -27,8 +27,8 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_linestring_distance.cuh>
-#include <cuspatial/experimental/type_utils.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 
@@ -67,26 +67,25 @@ struct pairwise_point_linestring_distance_impl {
 
     auto point_parts_it_first =
       get_geometry_iterator_functor<is_multi_point>{}(multipoint_geometry_offsets);
-    auto points_it = interleaved_iterator_to_vec_2d_iterator(points_xy.begin<T>());
+    auto points_it = make_vec_2d_iterator(points_xy.begin<T>());
 
     auto linestring_parts_it_first =
       get_geometry_iterator_functor<is_multi_linestring>{}(multilinestring_geometry_offsets);
-    auto linestring_points_it =
-      interleaved_iterator_to_vec_2d_iterator(linestring_points_xy.begin<T>());
+    auto linestring_points_it = make_vec_2d_iterator(linestring_points_xy.begin<T>());
 
     auto output_begin = output->mutable_view().begin<T>();
 
-    pairwise_point_linestring_distance(point_parts_it_first,
-                                       point_parts_it_first + num_pairs + 1,
-                                       points_it,
-                                       points_it + num_points,
-                                       linestring_parts_it_first,
-                                       linestring_part_offsets.begin(),
-                                       linestring_part_offsets.end(),
-                                       linestring_points_it,
-                                       linestring_points_it + num_linestring_points,
-                                       output_begin,
-                                       stream);
+    cuspatial::pairwise_point_linestring_distance(point_parts_it_first,
+                                                  point_parts_it_first + num_pairs + 1,
+                                                  points_it,
+                                                  points_it + num_points,
+                                                  linestring_parts_it_first,
+                                                  linestring_part_offsets.begin(),
+                                                  linestring_part_offsets.end(),
+                                                  linestring_points_it,
+                                                  linestring_points_it + num_linestring_points,
+                                                  output_begin,
+                                                  stream);
     return output;
   }
 

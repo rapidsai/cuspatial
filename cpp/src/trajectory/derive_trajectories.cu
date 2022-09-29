@@ -17,7 +17,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/derive_trajectories.cuh>
-#include <cuspatial/experimental/type_utils.hpp>
+#include <cuspatial/experimental/iterator_factory.cuh>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/copying.hpp>

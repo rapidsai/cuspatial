@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_distance.cuh>
-#include <cuspatial/experimental/type_utils.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column_factories.hpp>
@@ -51,11 +51,11 @@ struct pairwise_point_distance_functor {
     auto points1_it = make_vec_2d_iterator(points1_x.begin<T>(), points1_y.begin<T>());
     auto points2_it = make_vec_2d_iterator(points2_x.begin<T>(), points2_y.begin<T>());
 
-    pairwise_point_distance(points1_it,
-                            points1_it + points1_x.size(),
-                            points2_it,
-                            distances->mutable_view().begin<T>(),
-                            stream);
+    cuspatial::pairwise_point_distance(points1_it,
+                                       points1_it + points1_x.size(),
+                                       points2_it,
+                                       distances->mutable_view().begin<T>(),
+                                       stream);
 
     return distances;
   }
