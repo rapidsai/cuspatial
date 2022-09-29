@@ -26,10 +26,10 @@ to geopandas' dataframe object as `geopandas.GeoDataFrame` and to cuspatial's da
 Under the hood, cuspatial can perform parallel computation on geometry
 data thanks to its
 [structure of arrays](https://en.wikipedia.org/wiki/Parallel_array) (SoA)
-format. Specifically, cuspatial adopts geoarrow format. Geoarrow is an extension
-to arrow format. It adopts arrow's 
+format. Specifically, cuspatial adopts GeoArrow format, which is an extension
+to Apache Arrow format that uses Arrow's 
 [`Variable-size List Layout`](https://arrow.apache.org/docs/format/Columnar.html#variable-size-list-layout)
-to provide support to geometry arrays.
+to support geometry arrays.
 
 By definition, each increase in geometry complexity (dimension, or multi-
 geometry) requires an extra level of indirection. In cuSpatial, we use the following names for the levels of indirection from
