@@ -11,31 +11,20 @@ from cuspatial._lib.cpp.distance.point_linestring_distance cimport (
     pairwise_point_linestring_distance as c_pairwise_point_linestring_distance,
 )
 from cuspatial._lib.cpp.optional cimport nullopt, optional
+from cuspatial._lib.utils cimport unwrap_pyoptcol
 
 
 def pairwise_point_linestring_distance(
     Column points_xy,
     Column linestring_part_offsets,
     Column linestring_points_xy,
-    optional_multipoint_geometry_offset=None,
-    optional_multilinestring_geometry_offset=None,
+    multipoint_geometry_offset=None,
+    multilinestring_geometry_offset=None,
 ):
-    cdef Column multipoint_parts_offset
-    cdef Column multilinestring_parts_offset
-    cdef optional[column_view] c_multipoint_parts_offset
-    cdef optional[column_view] c_multilinestring_parts_offset
-
-    if optional_multipoint_geometry_offset is not None:
-        multipoint_parts_offset = optional_multipoint_geometry_offset
-        c_multipoint_parts_offset = multipoint_parts_offset.view()
-    else:
-        c_multipoint_parts_offset = nullopt
-
-    if optional_multilinestring_geometry_offset is not None:
-        multilinestring_parts_offset = optional_multilinestring_geometry_offset
-        c_multilinestring_parts_offset = multilinestring_parts_offset.view()
-    else:
-        c_multilinestring_parts_offset = nullopt
+    cdef optional[column_view] c_multipoint_parts_offset = unwrap_pyoptcol(
+        multipoint_geometry_offset)
+    cdef optional[column_view] c_multilinestring_parts_offset = (
+        unwrap_pyoptcol(multilinestring_geometry_offset))
 
     cdef column_view c_points_xy = points_xy.view()
     cdef column_view c_linestring_offsets = linestring_part_offsets.view()

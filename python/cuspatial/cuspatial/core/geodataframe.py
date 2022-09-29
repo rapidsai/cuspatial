@@ -133,7 +133,8 @@ class GeoDataFrame(cudf.DataFrame):
         """
         columns_mask = pd.Series(self.columns)
         geocolumn_mask = pd.Series(
-            [isinstance(self[col], GeoSeries) for col in self.columns]
+            [isinstance(self[col], GeoSeries) for col in self.columns],
+            dtype="bool",
         )
         geo_columns = self[columns_mask[geocolumn_mask]]
         # Send the rest of the columns to `cudf` to slice.

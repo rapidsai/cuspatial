@@ -19,8 +19,8 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_linestring_nearest_points.cuh>
-#include <cuspatial/experimental/type_utils.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>

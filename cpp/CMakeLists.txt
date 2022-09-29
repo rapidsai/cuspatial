@@ -277,3 +277,27 @@ rapids_export(
   NAMESPACE cuspatial::
   DOCUMENTATION doc_string
 )
+
+
+# ##################################################################################################
+# * build documentation ----------------------------------------------------------------------------
+
+find_package(Doxygen)
+if(Doxygen_FOUND)
+
+# doc targets for cuDF
+add_custom_command(
+  OUTPUT CUSPATIAL_DOXYGEN
+  WORKING_DIRECTORY ${CUSPATIAL_SOURCE_DIR}/doxygen
+  COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
+  VERBATIM
+  COMMENT "Custom command for building cuspatial doxygen docs."
+)
+
+add_custom_target(
+  docs_cuspatial
+  DEPENDS CUSPATIAL_DOXYGEN
+  COMMENT "Custom command for building cuspatial doxygen docs."
+)
+
+endif()
