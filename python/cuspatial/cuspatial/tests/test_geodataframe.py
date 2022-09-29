@@ -351,6 +351,31 @@ def test_from_dict():
     p2 = Point([2, 3])
     p3 = Point([4, 5])
     p4 = MultiPoint([[6, 7], [8, 9]])
-    gi = gpd.GeoDataFrame({"a": [p1, p2, p3, p4]})
+    gi = gpd.GeoDataFrame({"a": gpd.GeoSeries([p1, p2, p3, p4])})
     cu = cuspatial.GeoDataFrame({"a": [p1, p2, p3, p4]})
     assert_eq_geo_df(gi, cu.to_geopandas())
+
+
+# Randomly collects 5 of 6 gpdf columns, slices them, and tries
+# to create a new DataFrame from a dict based on those columns.
+@pytest.mark.parametrize(
+    "dict_slice",
+    [
+        (slice(0, 12)),
+        (slice(0, 10, 1)),
+        (slice(0, 3, 1)),
+        (slice(3, 6, 1)),
+        (slice(6, 9, 1)),
+    ],
+)
+def test_from_dict_slices(gpdf, dict_slice):
+    sliced = gpdf[dict_slice]
+    sliced_dict = {
+        char: sliced[col]
+        for char, col in zip(
+            np.array([*"abcdef"])[np.random.randint(0, 5, 5)], sliced.columns
+        )
+    }
+    gpdf = gpd.GeoDataFrame(sliced_dict)
+    cugpdf = cuspatial.GeoDataFrame(sliced_dict)
+    assert_eq_geo_df(gpdf, cugpdf.to_geopandas())

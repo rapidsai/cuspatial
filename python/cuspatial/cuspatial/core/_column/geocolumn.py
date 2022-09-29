@@ -113,7 +113,6 @@ class GeoColumn(ColumnBase):
             self.polygons = cudf.Series(mpolygons)
             self.polygons.name = "polygons"
             self._meta = meta
-
         elif (
             isinstance(data[0], cudf.Series)
             and isinstance(data[1], cudf.Series)
