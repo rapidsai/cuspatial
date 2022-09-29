@@ -72,7 +72,7 @@ def directed_hausdorff_distance(xs, ys, space_offsets):
     >>> result = cuspatial.directed_hausdorff_distance(
             [0, 1, 0, 0], # xs
             [0, 0, 1, 2], # ys
-            [0, 2, 4],    # space_offsets
+            [0, 2],    # space_offsets
         )
     >>> print(result)
              0         1
