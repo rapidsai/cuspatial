@@ -135,23 +135,6 @@ class GeoDataFrame(cudf.DataFrame):
 
         return type_copied
 
-    def _slice(self: T, arg: slice) -> T:
-        """
-        Overload the _slice functionality from cudf's frame members.
-        """
-        geo_columns, data_columns = self._split_out_geometry_columns()
-        sliced_geo_columns = GeoDataFrame(
-            {
-                name: GeoSeries(geo_columns[name]).iloc[arg]
-                for name in geo_columns.keys()
-            }
-        )
-        sliced_data_columns = cudf.DataFrame(data_columns)._slice(arg)
-        result = self._recombine_geo_and_cudf_dfs(
-            sliced_geo_columns, sliced_data_columns
-        )
-        return result
-
     def _split_out_geometry_columns(self) -> Tuple:
         """
         Break the geometry columns and non-geometry columns into
@@ -191,6 +174,23 @@ class GeoDataFrame(cudf.DataFrame):
                     column_names.values, geocolumn_mask.values
                 )
             },
+        )
+        return result
+
+    def _slice(self: T, arg: slice) -> T:
+        """
+        Overload the _slice functionality from cudf's frame members.
+        """
+        geo_columns, data_columns = self._split_out_geometry_columns()
+        sliced_geo_columns = GeoDataFrame(
+            {
+                name: GeoSeries(geo_columns[name]).iloc[arg]
+                for name in geo_columns.keys()
+            }
+        )
+        sliced_data_columns = cudf.DataFrame(data_columns)._slice(arg)
+        result = self._recombine_geo_and_cudf_dfs(
+            sliced_geo_columns, sliced_data_columns
         )
         return result
 
