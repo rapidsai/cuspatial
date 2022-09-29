@@ -21,11 +21,13 @@ class GeoDataFrame(cudf.DataFrame):
 
     def __init__(self, data: Union[Dict, gpGeoDataFrame] = None):
         """
-        Constructs a GPU GeoDataFrame from a GeoPandas dataframe.
+        Constructs a GPU GeoDataFrame.
 
         Parameters
         ----------
-        data : A geopandas.GeoDataFrame object
+        data : A geopandas.GeoDataFrame object or a dictionary with column
+               names as keys and of GeoSeries or lists of shapely objects as
+               values.
         """
         super().__init__()
         if isinstance(data, gpGeoDataFrame):
