@@ -57,6 +57,10 @@ Here are some of the custom options in the Doxyfile for libcuspatial.
 | EXTENSION_MAPPING | cu=C++ cuh=C++ | Process `cu` and `cuh` as C++ |
 | INPUT | main_page.md ../include | Embedded markdown files and source code directories to process |
 | FILE_PATTERNS | *.cpp *.hpp *.h *.c *.cu *.cuh | File extensions to process |
+| EXCLUDE_PATTERNS | */detail/* */nvtx/* | Wildcard pattern to exclude paths / filenames |
+| TAGFILES | rmm.tag=https://docs.rapids.ai/api/librmm/22.10 "libcudf.tag=https://docs.rapids.ai/api/libcudf/22.10" | Links to external documentation tagfiles. Versions are updated automatically at each release |
+| PREDEFINED | __device__= \ __host__= | Predefined macros. Helps with CUDA declaration specifiers. |
+
 
 ## Block Comments
 
@@ -516,13 +520,13 @@ We recommend installing Doxygen using conda (`conda install doxygen`) or a Linux
 
 To build the libcuspatial HTML documentation simply run the `doxygen` command from the `cpp/doxygen`
 directory containing the `Doxyfile`. The libcuspatial documentation can also be built using
-`make docs_cuspatial` from the cmake build directory (e.g. `cpp/build`). Doxygen reads and processes
-all appropriate source files under the `cpp/include/` directory. The output is generated in the
-`cpp/doxygen/html/` directory. You can load the local `index.html` file generated there into any web
-browser to view the result.
+`cmake --build . --target docs_cudf` from the cmake build directory (e.g. `cpp/build/release`).
+
+Doxygen reads and processes all appropriate source files under the `cpp/include/` directory. The output is generated in the `cpp/doxygen/html/` directory. You can load the local
+`index.html` file generated there into any web browser to view the result.
 
 To view docs built on a remote server, you can run a simple HTTP server using Python:
-`cd html && python -m http.server`. Then open `<IP address>:8000` in your local web browser,
+`cd html && python -m http.server`. Then open `http://<IP address>:8000` in your local web browser,
 inserting the IP address of the machine on which you ran the HTTP server.
 
 The doxygen output is intended for building documentation only for the public APIs and classes. For

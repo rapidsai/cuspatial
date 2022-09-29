@@ -19,22 +19,14 @@ being benchmarked. For example, the benchmarks for APIs in `point_in_polygon.hpp
 `cpp/benchmarks/point_in_polygon.cu`. Each feature (or set of related features) should have its own
 benchmark source file named `<feature>{.cu,cpp}`. 
 
-In the interest of improving compile time, whenever possible, test source files should be `.cpp`
-files because `nvcc` is slower than `gcc` in compiling host code. Note that `thrust::device_vector`
-includes device code, and so must only be used in `.cu` files. `rmm::device_uvector`,
-`rmm::device_buffer` and the various `column_wrapper` types described in [Testing](TESTING.md)
-can be used in `.cpp` files, and are therefore preferred in test code over `thrust::device_vector`.
-
-Testing header-only APIs requires CUDA compilation so should be done in `.cu` files.
-
 ## CUDA Asynchrony and benchmark accuracy
 
 CUDA computations and operations like copies are typically asynchronous with respect to host code,
 so it is important to carefully synchronize in order to ensure the benchmark timing is not stopped
 before the feature you are benchmarking has completed. An RAII helper class `cuda_event_timer` is
 provided in `cpp/benchmarks/synchronization/synchronization.hpp` to help with this. This class
-can also optionally clear the GPU L2 cache in order to ensure cache hits do not artificially inflate
-performance in repeated iterations.
+can also optionally clear the GPU L2 cache in order to ensure cache hits do not artificially
+inflate performance in repeated iterations.
 
 ## Data generation
 
@@ -53,3 +45,8 @@ reaches its saturation bottleneck, whether that bottleneck is bandwidth or compu
 sets larger than this point is generally not helpful, except in specific cases where doing so
 exercises different code and can therefore uncover regressions that smaller benchmarks will not
 (this should be rare).
+
+
+Generally we should benchmark public APIs. Benchmarking detail functions and/or internal utilities
+should only be done if detecting regressions in them would be sufficiently difficult to do from
+public API benchmarks.
