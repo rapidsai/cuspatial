@@ -3,7 +3,8 @@
 cuSpatial has two main components: the cuSpatial Python package and the `libcuspatial` C++ library,
 referred to as `cuspatial` and `libcuspatial` respectively in this documentation. This page
 discusses the design of `cuspatial`. For information on `libcuspatial`, see the [libcuspatial
-developer guide](TODO link) and [C++ API reference](TODO link).
+developer guide](https://github.com/rapidsai/cuspatial/blob/branch-22.10/cpp/doc/DEVELOPER_GUIDE.md)
+and [C++ API reference](https://docs.rapids.ai/api/libcuspatial/stable/).
 
 ## Overview
 
@@ -12,21 +13,23 @@ At a high level, `cuspatial` has three parts:
 - A set of computation APIs
 - A Cython API layer
 
-## GPU Accelerated `GeoDataFrame` and `GeoSeries`
+## Core Data Structures 
 
+```{note}
 Note: the core data structure of cuSpatial shares the same name as that of `geopandas`, so we refer
 to geopandas' dataframe object as `geopandas.GeoDataFrame` and to cuspatial's dataframe object as
 `GeoDataFrame`.
+```
 
-----------------------------------------------------------------------------------------------------
+### Introduction to GeoArrow Format
+
 Under the hood, cuspatial can perform parallel computation on geometry
 data thanks to its
 [structure of arrays](https://en.wikipedia.org/wiki/Parallel_array) (SoA)
-format. Specifically, cuspatial adopts geoarrow format. Geoarrow is derived
-from the Apache Arrow list type, and it adopts a
-[`Variable-size List Layout`](https://arrow.apache.org/docs/format/Columnar.html#variable-size-list-layout),
-with the inner-most layer storing the points in a `Fixed-size list layout` array
-with `size==2`. 
+format. Specifically, cuspatial adopts GeoArrow format, which is an extension
+to Apache Arrow format that uses Arrow's 
+[`Variable-size List Layout`](https://arrow.apache.org/docs/format/Columnar.html#variable-size-list-layout)
+to support geometry arrays.
 
 By definition, each increase in geometry complexity (dimension, or multi-
 geometry) requires an extra level of indirection. In cuSpatial, we use the following names for the levels of indirection from
@@ -41,16 +44,18 @@ of geometry types to be present in the same column by adopting the
 Read the [geoarrow format specification](https://github.com/geopandas/geo-arrow-spec/blob/main/format.md)
 for more detail.
 
+### GeoColumn
+
 cuSpatial implements a specialization of Arrow dense union via `GeoColumn` and
 `GeoMeta`. A `GeoColumn` is a composition of child columns and a
 `GeoMeta` object. The `GeoMeta` owns two arrays that are similar to the
 types buffer and offsets buffer from Arrow dense union.
 
 ```{note}
-Currently, `GeoColumn` only implements four concrete array types: `points`,
-`multipoints`, multilinestrings (called `lines`) and multipolygons (called
-`polygons`). Linestrings and multilinestrings are stored uniformly as
-multilinestrings in the `multilinestrings` array. Polygons and multipolygons are
+Currently, `GeoColumn` implements four concrete array types: `points`,
+`multipoints`, multilinestrings and multipolygons. Linestrings and
+multilinestrings are stored uniformly as multilinestrings in the
+`multilinestrings` array. Polygons and multipolygons are
 stored uniformly as multipolygons in the `multipolygons` array.
 
 Points and multipoints are stored separately in different arrays, because
@@ -58,6 +63,7 @@ storing points in a multipoints array requires 50% more storage overhead.
 While this may also be true for linestrings and polygons, many uses of
 cuSpatial involve more complex linestrings and polygons, where the 
 storage overhead of multigeometry indirection is lower compared to points.
+```
 
 `GeoSeries` and `GeoDataFrame` inherit from `cudf.Series` and
 `cudf.DataFrame` respectively. `Series` and `DataFrame` are both generic

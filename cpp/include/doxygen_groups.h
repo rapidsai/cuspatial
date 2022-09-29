@@ -108,7 +108,7 @@
  *          CuSpatial functions inside `experimental` folder are header-only and only accepts
  *          input/output iterators on coordinates. These factory functions are convenient ways
  *          to create iterators from data in various format.
- *          @file type_utils.hpp
+ *          @file iterator_factory.hpp
  *      @}
  * @}
  * @defgroup io I/O
