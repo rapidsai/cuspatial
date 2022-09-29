@@ -24,6 +24,11 @@ Measurement Functions
 .. autofunction:: cuspatial.haversine_distance
 .. autofunction:: cuspatial.pairwise_linestring_distance
 
+Nearest Points Function
++++++++++++++++++++++++
+
+.. autofunction:: cuspatial.pairwise_point_linestring_nearest_points
+
 Bounding Boxes
 ++++++++++++++
 
