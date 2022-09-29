@@ -85,7 +85,7 @@ To satisfy these requirements, one must follow these rules when writing benchmar
        import cuspatial  # Not this
    ```
    This enables swapping out for `geopandas`.
-2. Avoid hard-coding benchmark dataset sizes, and instead use the sizes advertised by `config.py`.
+2. Avoid hard-coding benchmark dataset sizes, and instead use the sizes advertised by `config.py`. Use the predefined fixtures in `conftest.py`, for now.
    This enables running the benchmarks in "test" mode on small datasets, which will be much faster.
 
 
