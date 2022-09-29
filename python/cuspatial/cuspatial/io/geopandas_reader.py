@@ -1,7 +1,5 @@
 # Copyright (c) 2020-2022 NVIDIA CORPORATION.
 
-from enum import Enum
-
 from geopandas import GeoSeries as gpGeoSeries
 from shapely.geometry import (
     LineString,
@@ -15,21 +13,8 @@ from shapely.geometry import (
 
 import cudf
 
+from cuspatial.core._column.geometa import Feature_Enum
 from cuspatial.io import pygeoarrow
-
-
-class Feature_Enum(Enum):
-    POINT = 0
-    MULTIPOINT = 1
-    LINESTRING = 2
-    POLYGON = 3
-
-
-class Field_Enum(Enum):
-    POINTS_FIELD = 0
-    MPOINTS_FIELD = 1
-    LINES_FIELD = 2
-    POLYGONS_FIELD = 3
 
 
 def parse_geometries(geoseries: gpGeoSeries) -> tuple:
@@ -110,16 +95,16 @@ class GeoPandasReader:
         points, mpoints, lines, and polygons
         """
         points = cudf.Series.from_arrow(
-            self.buffers.field(Field_Enum.POINTS_FIELD.value)
+            self.buffers.field(Feature_Enum.POINT.value)
         )
         mpoints = cudf.Series.from_arrow(
-            self.buffers.field(Field_Enum.MPOINTS_FIELD.value)
+            self.buffers.field(Feature_Enum.MULTIPOINT.value)
         )
         lines = cudf.Series.from_arrow(
-            self.buffers.field(Field_Enum.LINES_FIELD.value)
+            self.buffers.field(Feature_Enum.LINESTRING.value)
         )
         polygons = cudf.Series.from_arrow(
-            self.buffers.field(Field_Enum.POLYGONS_FIELD.value)
+            self.buffers.field(Feature_Enum.POLYGON.value)
         )
         return (
             points,
