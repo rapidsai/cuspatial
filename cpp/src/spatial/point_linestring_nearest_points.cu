@@ -17,8 +17,8 @@
 #include "../utility/double_boolean_dispatch.hpp"
 #include "../utility/iterator.hpp"
 
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_linestring_nearest_points.cuh>
-#include <cuspatial/experimental/type_utils.hpp>
 #include <cuspatial/point_linestring_nearest_points.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -63,12 +63,11 @@ struct pairwise_point_linestring_nearest_points_impl {
 
     auto point_geometry_it =
       get_geometry_iterator_functor<is_multi_point>{}(multipoint_geometry_offsets);
-    auto points_it = interleaved_iterator_to_vec_2d_iterator(points_xy.begin<T>());
+    auto points_it = make_vec_2d_iterator(points_xy.begin<T>());
 
     auto linestring_geometry_it =
       get_geometry_iterator_functor<is_multi_linestring>{}(multilinestring_geometry_offsets);
-    auto linestring_points_it =
-      interleaved_iterator_to_vec_2d_iterator(linestring_points_xy.begin<T>());
+    auto linestring_points_it = make_vec_2d_iterator(linestring_points_xy.begin<T>());
 
     auto segment_idx =
       cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<cudf::size_type>()},
@@ -83,7 +82,7 @@ struct pairwise_point_linestring_nearest_points_impl {
                                                        stream,
                                                        mr);
     auto nearest_points_it =
-      vec_2d_iterator_to_output_interleaved_iterator(nearest_points_xy->mutable_view().begin<T>());
+      make_vec_2d_output_iterator(nearest_points_xy->mutable_view().begin<T>());
 
     if constexpr (!is_multi_point && !is_multi_linestring) {
       auto output_its = thrust::make_zip_iterator(
