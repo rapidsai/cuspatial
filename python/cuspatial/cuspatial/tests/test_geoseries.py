@@ -272,12 +272,12 @@ def test_getitem_slice_points_loc():
     p2 = Point([5, 6])
     gps = gpd.GeoSeries([p0, p1, p2])
     cus = cuspatial.from_geopandas(gps)
-    assert_eq_point(cus[0:1][0].to_shapely(), gps[0:1][0])
-    assert_eq_point(cus[0:2][0].to_shapely(), gps[0:2][0])
-    assert_eq_point(cus[1:2][1].to_shapely(), gps[1:2][1])
-    assert_eq_point(cus[0:3][0].to_shapely(), gps[0:3][0])
-    assert_eq_point(cus[1:3][1].to_shapely(), gps[1:3][1])
-    assert_eq_point(cus[2:3][2].to_shapely(), gps[2:3][2])
+    assert_eq_point(cus[0:1][0], gps[0:1][0])
+    assert_eq_point(cus[0:2][0], gps[0:2][0])
+    assert_eq_point(cus[1:2][1], gps[1:2][1])
+    assert_eq_point(cus[0:3][0], gps[0:3][0])
+    assert_eq_point(cus[1:3][1], gps[1:3][1])
+    assert_eq_point(cus[2:3][2], gps[2:3][2])
 
 
 def test_getitem_slice_points():
