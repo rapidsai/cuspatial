@@ -356,6 +356,34 @@ def test_from_dict():
     assert_eq_geo_df(gi, cu.to_geopandas())
 
 
+def test_from_dict2():
+    points = {
+        "a": [Point(0, 1), Point(2, 3)],
+        "b": [MultiPoint([(4, 5), (6, 7)]), Point(8, 9)],
+    }
+    gpu_points_df = cuspatial.GeoDataFrame(points)
+    assert (gpu_points_df["a"].points.xy == cudf.Series([0, 1, 2, 3])).all()
+    assert (gpu_points_df["b"].points.xy == cudf.Series([8, 9])).all()
+    assert (
+        gpu_points_df["b"].multipoints.xy == cudf.Series([4, 5, 6, 7])
+    ).all()
+
+
+def test_from_gp_geoseries_dict():
+    gp_geo_series = {
+        "gpa": gpd.GeoSeries([Point(0, 1)]),
+        "gpb": gpd.GeoSeries([MultiPoint([(2, 3), (4, 5)])]),
+    }
+    gp_df = gpd.GeoDataFrame(gp_geo_series)
+    gpu_gp_df = cuspatial.GeoDataFrame(gp_geo_series)
+    assert_eq_geo_df(gp_df, gpu_gp_df.to_geopandas())
+    gp_df2 = gpd.GeoDataFrame({"gpdfa": gp_df["gpb"], "gpdfb": gp_df["gpa"]})
+    gpdf = cuspatial.GeoDataFrame(
+        {"gpdfa": gpu_gp_df["gpb"], "gpdfb": gpu_gp_df["gpa"]}
+    )
+    assert_eq_geo_df(gp_df2, gpdf.to_geopandas())
+
+
 # Randomly collects 5 of 6 gpdf columns, slices them, and tries
 # to create a new DataFrame from a dict based on those columns.
 @pytest.mark.parametrize(

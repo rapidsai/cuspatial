@@ -580,3 +580,9 @@ def test_shapefile_constructor_reversed():
 
     reversed_gs = gpd.GeoSeries([polygon.orient(p, 1) for p in gs])
     assert_eq_geo(reversed_gs, cus.to_geopandas())
+
+
+def test_empty():
+    gps = gpd.GeoSeries([])
+    cugps = cuspatial.GeoSeries([])
+    assert_eq_geo(gps, cugps.to_geopandas())
