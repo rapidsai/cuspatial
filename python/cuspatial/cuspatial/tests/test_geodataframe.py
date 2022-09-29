@@ -337,6 +337,15 @@ def test_boolmask(gpdf, df_boolmask):
     assert_eq_geo_df(gi[df_boolmask], cugpdf_back[df_boolmask])
 
 
+def test_memory_usage(gs):
+    assert gs.memory_usage() == 224
+    host_dataframe = gpd.read_file(
+        gpd.datasets.get_path("naturalearth_lowres")
+    )
+    gpu_dataframe = cuspatial.from_geopandas(host_dataframe)
+    assert gpu_dataframe.memory_usage().sum() == 225173
+
+
 def test_from_dict():
     p1 = Point([0, 1])
     p2 = Point([2, 3])

@@ -126,50 +126,87 @@ class GeoDataFrame(cudf.DataFrame):
 
         return type_copied
 
-    def _split_out_geometry_columns(self) -> Tuple:
-        """
-        Break the geometry columns and non-geometry columns into
-        separate dataframes and return them separated.
-        """
-        columns_mask = pd.Series(self.columns)
-        geocolumn_mask = pd.Series(
-            [isinstance(self[col], GeoSeries) for col in self.columns],
-            dtype="bool",
-        )
-        geo_columns = self[columns_mask[geocolumn_mask]]
-        # Send the rest of the columns to `cudf` to slice.
-        data_columns = cudf.DataFrame(
-            self[columns_mask[~geocolumn_mask].values]
-        )
-        return (geo_columns, data_columns)
-
-    def _recombine_columns(self, geo_columns, data_columns):
-        """
-        Combine a GeoDataFrame of only geometry columns with a DataFrame
-        of non-geometry columns in the same order as the columns in `self`
-        """
-        columns_mask = pd.Series(self.columns)
-        geocolumn_mask = pd.Series(
-            [isinstance(self[col], GeoSeries) for col in self.columns]
-        )
-        return {
-            name: (geo_columns[name] if mask else data_columns[name])
-            for name, mask in zip(columns_mask.values, geocolumn_mask.values)
-        }
-
     def _slice(self: T, arg: slice) -> T:
         """
         Overload the _slice functionality from cudf's frame members.
         """
         geo_columns, data_columns = self._split_out_geometry_columns()
         sliced_geo_columns = GeoDataFrame(
-            {name: geo_columns[name].iloc[arg] for name in geo_columns.columns}
+            {
+                name: GeoSeries(geo_columns[name]).iloc[arg]
+                for name in geo_columns.keys()
+            }
         )
-        sliced_data_columns = data_columns._slice(arg)
+        sliced_data_columns = cudf.DataFrame(data_columns)._slice(arg)
         result = self._recombine_columns(
             sliced_geo_columns, sliced_data_columns
         )
-        return self.__class__(result)
+        return result
+
+    def _split_out_geometry_columns(self) -> Tuple:
+        """
+        Break the geometry columns and non-geometry columns into
+        separate dataframes and return them separated.
+        """
+        columns_mask = pd.Series(self._data.names)
+        geocolumn_mask = pd.Series(
+            [
+                isinstance(self._data.get(col), GeoColumn)
+                for col in self._data.names
+            ]
+        )
+        geo_data = {
+            col: self._data.get(col) for col in columns_mask[geocolumn_mask]
+        }
+
+        # Send the rest of the columns to `cudf` to slice.
+        cudf_data = {
+            col: self._data.get(col)
+            for col in columns_mask[~geocolumn_mask].values
+        }
+        return (geo_data, cudf_data)
+
+    def _recombine_columns(self, geo_columns, data_columns):
+        """
+        Combine a GeoDataFrame of only geometry columns with a DataFrame
+        of non-geometry columns in the same order as the columns in `self`
+        """
+        columns_mask = pd.Series(self._data.names)
+        geocolumn_mask = pd.Series(
+            [isinstance(self[col], GeoSeries) for col in self._data.names]
+        )
+        return GeoDataFrame(
+            {
+                name: (geo_columns[name] if mask else data_columns[name])
+                for name, mask in zip(
+                    columns_mask.values, geocolumn_mask.values
+                )
+            }
+        )
+
+    def _gather(
+        self, gather_map, keep_index=True, nullify=False, check_bounds=True
+    ):
+        geo_data, cudf_data = self._split_out_geometry_columns()
+        # gather cudf columns
+        df = cudf.DataFrame._from_data(data=cudf_data, index=self.index)
+        cudf_sorted = cudf.DataFrame._gather(
+            df, gather_map, keep_index, nullify, check_bounds
+        )
+        # combine
+        result = self._recombine_columns(geo_data, cudf_sorted)
+        # gather GeoColumns
+        [geo_data[geo]._set_gather_map(gather_map) for geo in geo_data.keys()]
+        # return
+        return result
+
+    def _get_sorted_inds(self, by=None, ascending=True, na_position="last"):
+        geo_data, cudf_data = self._split_out_geometry_columns()
+        df = cudf.DataFrame._from_data(data=cudf_data, index=self.index)
+        result = df._get_sorted_inds(
+            ascending=ascending, na_position=na_position
+        )
+        return result
 
 
 class _GeoSeriesUtility:

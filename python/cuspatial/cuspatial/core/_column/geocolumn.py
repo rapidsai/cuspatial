@@ -1,4 +1,5 @@
 # Copyright (c) 2021-2022 NVIDIA CORPORATION
+from functools import cached_property
 from typing import Tuple, TypeVar
 
 import cupy as cp
@@ -130,10 +131,11 @@ class GeoColumn(ColumnBase):
             self.polygons.name = "polygons"
         else:
             raise TypeError("All four Tuple arguments must be cudf.ListSeries")
-        base = cudf.core.column.column.arange(0, len(self), dtype="int32").data
-        super().__init__(base, size=len(self), dtype="int32")
+        super().__init__(None, size=len(self), dtype="geometry")
         if shuffle_order is not None:
-            self._data = shuffle_order
+            self._gather_map = shuffle_order
+        else:
+            self._gather_map = cudf.Series(cp.arange(len(self)))
 
     def to_arrow(self):
         return pa.UnionArray.from_dense(
@@ -152,6 +154,9 @@ class GeoColumn(ColumnBase):
         Returns the number of unique geometries stored in this GeoColumn.
         """
         return len(self._meta.input_types)
+
+    def _set_gather_map(self, gather_map):
+        self._gather_map = cudf.Series(gather_map)
 
     def _dump(self):
         return (
@@ -181,3 +186,16 @@ class GeoColumn(ColumnBase):
             self.data.copy(),
         )
         return result
+
+    @cached_property
+    def memory_usage(self) -> int:
+        """
+        Outputs how much memory is used by the underlying geometries.
+        """
+        final_size = self._meta.input_types.memory_usage()
+        final_size = final_size + self._meta.union_offsets.memory_usage()
+        final_size = final_size + self.points._column.memory_usage
+        final_size = final_size + self.mpoints._column.memory_usage
+        final_size = final_size + self.lines._column.memory_usage
+        final_size = final_size + self.polygons._column.memory_usage
+        return final_size
