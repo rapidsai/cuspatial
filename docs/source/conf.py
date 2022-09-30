@@ -45,6 +45,11 @@ extensions = [
     "myst_parser"
 ]
 
+jupyter_execute_notebooks = "force"
+execution_timeout = 300
+
+copybutton_prompt_text = ">>> "
+autosummary_generate = True
 ipython_mplbackend = "str"
 
 # Add any paths that contain templates here, relative to this directory.
