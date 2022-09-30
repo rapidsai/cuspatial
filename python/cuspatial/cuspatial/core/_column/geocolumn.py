@@ -153,9 +153,6 @@ class GeoColumn(ColumnBase):
         """
         return len(self._meta.input_types)
 
-    def _set_gather_map(self, gather_map):
-        self._data = cudf.Series(gather_map)
-
     def _dump(self):
         return (
             f"POINTS\n"
