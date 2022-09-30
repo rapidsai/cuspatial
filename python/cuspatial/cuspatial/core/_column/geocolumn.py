@@ -129,7 +129,8 @@ class GeoColumn(ColumnBase):
             self.polygons.name = "polygons"
         else:
             raise TypeError("All four Tuple arguments must be cudf.ListSeries")
-        super().__init__(None, size=len(self), dtype="geometry")
+        base = cudf.core.column.column.arange(0, len(self), dtype="int32").data
+        super().__init__(base, size=len(self), dtype="int32")
         if shuffle_order is not None:
             self._data = shuffle_order
 

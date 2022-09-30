@@ -21,13 +21,11 @@ class GeoDataFrame(cudf.DataFrame):
 
     def __init__(self, data: Union[Dict, gpGeoDataFrame] = None):
         """
-        Constructs a GPU GeoDataFrame.
+        Constructs a GPU GeoDataFrame from a GeoPandas dataframe.
 
         Parameters
         ----------
-        data : A geopandas.GeoDataFrame object or a dictionary with column
-               names as keys and of GeoSeries or lists of shapely objects as
-               values.
+        data : A geopandas.GeoDataFrame object
         """
         super().__init__()
         if isinstance(data, gpGeoDataFrame):
@@ -140,42 +138,31 @@ class GeoDataFrame(cudf.DataFrame):
         Break the geometry columns and non-geometry columns into
         separate dataframes and return them separated.
         """
-        columns_mask = pd.Series(self._data.names)
+        columns_mask = pd.Series(self.columns)
         geocolumn_mask = pd.Series(
-            [
-                isinstance(self._data.get(col), GeoColumn)
-                for col in self._data.names
-            ]
+            [isinstance(self[col], GeoSeries) for col in self.columns],
+            dtype="bool",
         )
-        geo_data = {
-            col: self._data.get(col) for col in columns_mask[geocolumn_mask]
-        }
-
+        geo_columns = self[columns_mask[geocolumn_mask]]
         # Send the rest of the columns to `cudf` to slice.
-        cudf_data = {
-            col: self._data.get(col)
-            for col in columns_mask[~geocolumn_mask].values
-        }
-        return (geo_data, cudf_data)
+        data_columns = cudf.DataFrame(
+            self[columns_mask[~geocolumn_mask].values]
+        )
+        return (geo_columns, data_columns)
 
-    def _recombine_geo_and_cudf_dfs(self, geo_columns, data_columns):
+    def _recombine_columns(self, geo_columns, data_columns):
         """
         Combine a GeoDataFrame of only geometry columns with a DataFrame
         of non-geometry columns in the same order as the columns in `self`
         """
-        column_names = pd.Series(self._data.names)
+        columns_mask = pd.Series(self.columns)
         geocolumn_mask = pd.Series(
-            [isinstance(self[col], GeoSeries) for col in self._data.names]
+            [isinstance(self[col], GeoSeries) for col in self.columns]
         )
-        result = GeoDataFrame(
-            {
-                name: (geo_columns[name] if mask else data_columns[name])
-                for name, mask in zip(
-                    column_names.values, geocolumn_mask.values
-                )
-            },
-        )
-        return result
+        return {
+            name: (geo_columns[name] if mask else data_columns[name])
+            for name, mask in zip(columns_mask.values, geocolumn_mask.values)
+        }
 
     def _slice(self: T, arg: slice) -> T:
         """
@@ -183,44 +170,13 @@ class GeoDataFrame(cudf.DataFrame):
         """
         geo_columns, data_columns = self._split_out_geometry_columns()
         sliced_geo_columns = GeoDataFrame(
-            {
-                name: GeoSeries(geo_columns[name]).iloc[arg]
-                for name in geo_columns.keys()
-            }
+            {name: geo_columns[name].iloc[arg] for name in geo_columns.columns}
         )
-        sliced_data_columns = cudf.DataFrame(data_columns)._slice(arg)
-        result = self._recombine_geo_and_cudf_dfs(
+        sliced_data_columns = data_columns._slice(arg)
+        result = self._recombine_columns(
             sliced_geo_columns, sliced_data_columns
         )
-        return result
-
-    def _gather(
-        self, gather_map, keep_index=True, nullify=False, check_bounds=True
-    ):
-        geo_data, cudf_data = self._split_out_geometry_columns()
-        # gather cudf columns
-        df = cudf.DataFrame._from_data(data=cudf_data, index=self.index)
-        cudf_gathered = cudf.DataFrame._gather(
-            df, gather_map, keep_index, nullify, check_bounds
-        )
-
-        # gather GeoColumns
-        [geo_data[geo]._set_gather_map(gather_map) for geo in geo_data.keys()]
-        geo_gathered = GeoDataFrame(geo_data)
-        geo_gathered.index = cudf_gathered.index
-
-        # combine
-        result = self._recombine_geo_and_cudf_dfs(geo_gathered, cudf_gathered)
-        # return
-        return result
-
-    def _get_sorted_inds(self, by=None, ascending=True, na_position="last"):
-        geo_data, cudf_data = self._split_out_geometry_columns()
-        df = cudf.DataFrame._from_data(data=cudf_data, index=self.index)
-        result = df._get_sorted_inds(
-            ascending=ascending, na_position=na_position
-        )
-        return result
+        return self.__class__(result)
 
 
 class _GeoSeriesUtility:
