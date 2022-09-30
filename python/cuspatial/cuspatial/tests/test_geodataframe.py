@@ -342,8 +342,8 @@ def test_from_dict():
     p2 = Point([2, 3])
     p3 = Point([4, 5])
     p4 = MultiPoint([[6, 7], [8, 9]])
-    gi = gpd.GeoDataFrame({"a": gpd.GeoSeries([p1, p2, p3, p4])})
-    cu = cuspatial.GeoDataFrame({"a": [p1, p2, p3, p4]})
+    gi = gpd.GeoDataFrame({"geometry": [p1, p2, p3, p4]})
+    cu = cuspatial.GeoDataFrame({"geometry": [p1, p2, p3, p4]})
     assert_eq_geo_df(gi, cu.to_geopandas())
 
 
@@ -398,3 +398,20 @@ def test_from_dict_slices(gpdf, dict_slice):
     gpdf = gpd.GeoDataFrame(sliced_dict)
     cugpdf = cuspatial.GeoDataFrame(sliced_dict)
     assert_eq_geo_df(gpdf, cugpdf.to_geopandas())
+
+
+def test_from_dict_with_list():
+    dict_with_lists = {
+        "a": [1, 2, 3, 4],
+        "geometry": [
+            Point(0, 1),
+            Point(2, 3),
+            MultiPoint([(4, 5), (6, 7)]),
+            Point(8, 9),
+        ],
+        "c": [*"abcd"],
+    }
+    assert_eq_geo_df(
+        gpd.GeoDataFrame(dict_with_lists),
+        cuspatial.GeoDataFrame(dict_with_lists).to_geopandas(),
+    )
