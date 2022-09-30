@@ -1,4 +1,5 @@
 # Copyright (c) 2021-2022 NVIDIA CORPORATION
+from functools import cached_property
 from typing import Tuple, TypeVar
 
 import cupy as cp
@@ -218,3 +219,16 @@ class GeoColumn(ColumnBase):
             ),
             meta,
         )
+
+    @cached_property
+    def memory_usage(self) -> int:
+        """
+        Outputs how much memory is used by the underlying geometries.
+        """
+        final_size = self._meta.input_types.memory_usage()
+        final_size = final_size + self._meta.union_offsets.memory_usage()
+        final_size = final_size + self.points._column.memory_usage
+        final_size = final_size + self.mpoints._column.memory_usage
+        final_size = final_size + self.lines._column.memory_usage
+        final_size = final_size + self.polygons._column.memory_usage
+        return final_size
