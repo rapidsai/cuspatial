@@ -518,3 +518,7 @@ class GeoSeries(cudf.Series):
                 arrow_polygons,
             ],
         )
+
+
+def memory_usage(self):
+    return self._column.memory_usage
