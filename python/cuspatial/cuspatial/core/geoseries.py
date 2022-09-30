@@ -483,6 +483,7 @@ class GeoSeries(cudf.Series):
         -- child 3 type: list<item: null>
           []
         """
+
         points = self._column.points
         mpoints = self._column.mpoints
         lines = self._column.lines
@@ -518,7 +519,3 @@ class GeoSeries(cudf.Series):
                 arrow_polygons,
             ],
         )
-
-
-def memory_usage(self):
-    return self._column.memory_usage
