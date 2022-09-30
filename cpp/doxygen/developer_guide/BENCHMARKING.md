@@ -25,8 +25,8 @@ CUDA computations and operations like copies are typically asynchronous with res
 so it is important to carefully synchronize in order to ensure the benchmark timing is not stopped
 before the feature you are benchmarking has completed. An RAII helper class `cuda_event_timer` is
 provided in `cpp/benchmarks/synchronization/synchronization.hpp` to help with this. This class
-can also optionally clear the GPU L2 cache in order to ensure cache hits do not artificially inflate
-performance in repeated iterations.
+can also optionally clear the GPU L2 cache in order to ensure cache hits do not artificially
+inflate performance in repeated iterations.
 
 ## Data generation
 
@@ -46,6 +46,7 @@ sets larger than this point is generally not helpful, except in specific cases w
 exercises different code and can therefore uncover regressions that smaller benchmarks will not
 (this should be rare).
 
-Generally we should benchmark public APIs. Benchmarking detail functions and/or internal utilities should
-only be done if detecting regressions in them would be sufficiently difficult to do from public API
-benchmarks.
+
+Generally we should benchmark public APIs. Benchmarking detail functions and/or internal utilities
+should only be done if detecting regressions in them would be sufficiently difficult to do from
+public API benchmarks.

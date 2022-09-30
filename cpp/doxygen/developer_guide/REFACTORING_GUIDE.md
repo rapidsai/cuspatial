@@ -30,7 +30,7 @@ only libcuspatial API, we can avoid problem 1 and problem 2 for users of the leg
 Following is an example iterator-based API for `cuspatial::haversine_distance`. (See below for 
 discussion of API documentation.)
 
-```C++
+```c++
 template <class LonLatItA,
           class LonLatItB,
           class OutputIt,
@@ -69,51 +69,49 @@ There are a few key points to notice.
 
 Following is the (Doxygen) documentation for the above `cuspatial::haversine_distance`.
 
-```C++
-/**
- * @brief Compute haversine distances between points in set A to the corresponding points in set B.
- *
- * Computes N haversine distances, where N is `std::distance(a_lonlat_first, a_lonlat_last)`.
- * The distance for each `a_lonlat[i]` and `b_lonlat[i]` point pair is assigned to
- * `distance_first[i]`. `distance_first` must be an iterator to output storage allocated for N
- * distances.
- *
- * Computed distances will have the same units as `radius`.
- *
- * https://en.wikipedia.org/wiki/Haversine_formula
- *
- * @param[in]  a_lonlat_first: beginning of range of (longitude, latitude) locations in set A
- * @param[in]  a_lonlat_last: end of range of (longitude, latitude) locations in set A
- * @param[in]  b_lonlat_first: beginning of range of (longitude, latitude) locations in set B
- * @param[out] distance_first: beginning of output range of haversine distances
- * @param[in]  radius: radius of the sphere on which the points reside. default: 6371.0
- *            (approximate radius of Earth in km)
- * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
- *
- * @tparam LonLatItA Iterator to input location set A. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam LonLatItB Iterator to input location set B. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OutputIt Output iterator. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam Location The `value_type` of `LonLatItA` and `LonLatItB`. Must be `cuspatial::vec_2d<T>`.
- * @tparam T The underlying coordinate type. Must be a floating-point type.
- *
- * @pre `a_lonlat_first` may equal `distance_first`, but the range `[a_lonlat_first, a_lonlat_last)`
- * shall not overlap the range `[distance_first, distance_first + (a_lonlat_last - a_lonlat_last))
- * otherwise.
- * @pre `b_lonlat_first` may equal `distance_first`, but the range `[b_lonlat_first, b_lonlat_last)`
- * shall not overlap the range `[distance_first, distance_first + (b_lonlat_last - b_lonlat_last))
- * otherwise. 
- * @pre All iterators must have the same `Location` type, with  the same underlying floating-point
- * coordinate type (e.g. `cuspatial::vec_2d<float>`).
- *
- * @return Output iterator to the element past the last distance computed.
- *
- * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
- * "LegacyRandomAccessIterator"
- */
-```
+    /**
+     * @brief Compute haversine distances between points in set A to the corresponding points in set B.
+     *
+     * Computes N haversine distances, where N is `std::distance(a_lonlat_first, a_lonlat_last)`.
+     * The distance for each `a_lonlat[i]` and `b_lonlat[i]` point pair is assigned to
+     * `distance_first[i]`. `distance_first` must be an iterator to output storage allocated for N
+     * distances.
+     *
+     * Computed distances will have the same units as `radius`.
+     *
+     * https://en.wikipedia.org/wiki/Haversine_formula
+     *
+     * @param[in]  a_lonlat_first: beginning of range of (longitude, latitude) locations in set A
+     * @param[in]  a_lonlat_last: end of range of (longitude, latitude) locations in set A
+     * @param[in]  b_lonlat_first: beginning of range of (longitude, latitude) locations in set B
+     * @param[out] distance_first: beginning of output range of haversine distances
+     * @param[in]  radius: radius of the sphere on which the points reside. default: 6371.0
+     *            (approximate radius of Earth in km)
+     * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
+     *
+     * @tparam LonLatItA Iterator to input location set A. Must meet the requirements of
+     * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+     * @tparam LonLatItB Iterator to input location set B. Must meet the requirements of
+     * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+     * @tparam OutputIt Output iterator. Must meet the requirements of
+     * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+     * @tparam Location The `value_type` of `LonLatItA` and `LonLatItB`. Must be `cuspatial::vec_2d<T>`.
+     * @tparam T The underlying coordinate type. Must be a floating-point type.
+     *
+     * @pre `a_lonlat_first` may equal `distance_first`, but the range `[a_lonlat_first, a_lonlat_last)`
+     * shall not overlap the range `[distance_first, distance_first + (a_lonlat_last - a_lonlat_last))
+     * otherwise.
+     * @pre `b_lonlat_first` may equal `distance_first`, but the range `[b_lonlat_first, b_lonlat_last)`
+     * shall not overlap the range `[distance_first, distance_first + (b_lonlat_last - b_lonlat_last))
+     * otherwise. 
+     * @pre All iterators must have the same `Location` type, with  the same underlying floating-point
+     * coordinate type (e.g. `cuspatial::vec_2d<float>`).
+     *
+     * @return Output iterator to the element past the last distance computed.
+     *
+     * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+     * "LegacyRandomAccessIterator"
+     */
 
 Key points:
 
@@ -130,7 +128,7 @@ Key points:
 This is the existing API, unchanged by refactoring. Here is the existing 
 `cuspatial::haversine_distance`:
 
-```C++
+```c++
 template <class LonLatItA,
           class LonLatItB,
           class OutputIt,
@@ -163,7 +161,7 @@ The implementation must also be in a header, but should be in the `cuspatial/exp
 directory.  The implementation should be included from the API definition file, at the end of the 
 file. Example:
 
-```C++
+```c++
 ... // declaration of API above this point
 #include <cuspatial/experimental/detail/haversine.hpp>
 ```
@@ -187,7 +185,7 @@ libcudf-based API, which requires run-time type dispatching. In the case of `hav
 a simple matter of a few static asserts and dynamic expectation checks, followed by a call to
 `thrust::transform` with a custom transform functor.
 
-```C++
+```c++
 template <class LonLatItA, class LonLatItB, class OutputIt, class T>
 OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
@@ -232,7 +230,7 @@ provided in `type_utils.hpp`.
 
 So, to refactor the libcudf-based API, we remove the following code.
 
-```C++
+```c++
 auto input_tuple = thrust::make_tuple(thrust::make_constant_iterator(static_cast<T>(radius)),
                                       a_lon.begin<T>(),
                                       a_lat.begin<T>(),
@@ -256,7 +254,7 @@ thrust::transform(rmm::exec_policy(stream),
 
 And replace it with the following code.
 
-```C++
+```c++
 auto lonlat_a = cuspatial::make_vec_2d_iterator(a_lon.begin<T>(), a_lat.begin<T>());
 auto lonlat_b = cuspatial::make_vec_2d_iterator(b_lon.begin<T>(), b_lat.begin<T>());
 
