@@ -82,7 +82,6 @@ def bench_lonlat_to_cartesian(benchmark, gpu_dataframe):
     afghanistan = gpu_dataframe["geometry"][
         gpu_dataframe["name"] == "Afghanistan"
     ]
-    breakpoint()
     benchmark(
         cuspatial.lonlat_to_cartesian,
         afghanistan.polygons.y.mean(),
