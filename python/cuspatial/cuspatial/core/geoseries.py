@@ -278,8 +278,8 @@ class GeoSeries(cudf.Series):
         def __getitem__(self, item):
             # Use the reordering _column._data if it is set
             indexes = (
-                self._sr._column._gather_map[item]
-                if self._sr._column._gather_map is not None
+                self._sr._column._data[item].to_pandas()
+                if self._sr._column._data is not None
                 else item
             )
 

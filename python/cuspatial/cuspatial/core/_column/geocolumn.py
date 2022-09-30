@@ -131,9 +131,7 @@ class GeoColumn(ColumnBase):
             raise TypeError("All four Tuple arguments must be cudf.ListSeries")
         super().__init__(None, size=len(self), dtype="geometry")
         if shuffle_order is not None:
-            self._gather_map = shuffle_order
-        else:
-            self._gather_map = cudf.Series(cp.arange(len(self)))
+            self._data = shuffle_order
 
     def to_arrow(self):
         return pa.UnionArray.from_dense(
@@ -154,7 +152,7 @@ class GeoColumn(ColumnBase):
         return len(self._meta.input_types)
 
     def _set_gather_map(self, gather_map):
-        self._gather_map = cudf.Series(gather_map)
+        self._data = cudf.Series(gather_map)
 
     def _dump(self):
         return (
