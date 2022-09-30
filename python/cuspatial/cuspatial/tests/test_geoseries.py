@@ -592,4 +592,5 @@ def test_memory_usage_large():
         gpd.datasets.get_path("naturalearth_lowres")
     )
     geometry = cuspatial.from_geopandas(host_dataframe)["geometry"]
+    # the geometry column from naturalearth_lowres is 217kb of coordinates
     assert geometry.memory_usage() == 217021
