@@ -60,8 +60,6 @@ class GeoSeries(cudf.Series):
         # Condition data
         if data is None or isinstance(data, (pd.Series, list)):
             data = gpGeoSeries(data)
-        elif len(data) == 0:
-            data = gpGeoSeries([])
         # Create column
         if isinstance(data, GeoColumn):
             column = data
