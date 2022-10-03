@@ -335,3 +335,83 @@ def test_boolmask(gpdf, df_boolmask):
     cugpdf = cuspatial.from_geopandas(gi)
     cugpdf_back = cugpdf.to_geopandas()
     assert_eq_geo_df(gi[df_boolmask], cugpdf_back[df_boolmask])
+
+
+def test_from_dict():
+    p1 = Point([0, 1])
+    p2 = Point([2, 3])
+    p3 = Point([4, 5])
+    p4 = MultiPoint([[6, 7], [8, 9]])
+    gi = gpd.GeoDataFrame({"geometry": [p1, p2, p3, p4]})
+    cu = cuspatial.GeoDataFrame({"geometry": [p1, p2, p3, p4]})
+    assert_eq_geo_df(gi, cu.to_geopandas())
+
+
+def test_from_dict2():
+    points = {
+        "a": [Point(0, 1), Point(2, 3)],
+        "b": [MultiPoint([(4, 5), (6, 7)]), Point(8, 9)],
+    }
+    gpu_points_df = cuspatial.GeoDataFrame(points)
+    assert (gpu_points_df["a"].points.xy == cudf.Series([0, 1, 2, 3])).all()
+    assert (gpu_points_df["b"].points.xy == cudf.Series([8, 9])).all()
+    assert (
+        gpu_points_df["b"].multipoints.xy == cudf.Series([4, 5, 6, 7])
+    ).all()
+
+
+def test_from_gp_geoseries_dict():
+    gp_geo_series = {
+        "gpa": gpd.GeoSeries([Point(0, 1)]),
+        "gpb": gpd.GeoSeries([MultiPoint([(2, 3), (4, 5)])]),
+    }
+    gp_df = gpd.GeoDataFrame(gp_geo_series)
+    gpu_gp_df = cuspatial.GeoDataFrame(gp_geo_series)
+    assert_eq_geo_df(gp_df, gpu_gp_df.to_geopandas())
+    gp_df2 = gpd.GeoDataFrame({"gpdfa": gp_df["gpb"], "gpdfb": gp_df["gpa"]})
+    gpdf = cuspatial.GeoDataFrame(
+        {"gpdfa": gpu_gp_df["gpb"], "gpdfb": gpu_gp_df["gpa"]}
+    )
+    assert_eq_geo_df(gp_df2, gpdf.to_geopandas())
+
+
+# Randomly collects 5 of 6 gpdf columns, slices them, and tries
+# to create a new DataFrame from a dict based on those columns.
+@pytest.mark.parametrize(
+    "dict_slice",
+    [
+        (slice(0, 12)),
+        (slice(0, 10, 1)),
+        (slice(0, 3, 1)),
+        (slice(3, 6, 1)),
+        (slice(6, 9, 1)),
+    ],
+)
+def test_from_dict_slices(gpdf, dict_slice):
+    sliced = gpdf[dict_slice]
+    sliced_dict = {
+        char: sliced[col]
+        for char, col in zip(
+            np.array([*"abcdef"])[np.random.randint(0, 5, 5)], sliced.columns
+        )
+    }
+    gpdf = gpd.GeoDataFrame(sliced_dict)
+    cugpdf = cuspatial.GeoDataFrame(sliced_dict)
+    assert_eq_geo_df(gpdf, cugpdf.to_geopandas())
+
+
+def test_from_dict_with_list():
+    dict_with_lists = {
+        "a": [1, 2, 3, 4],
+        "geometry": [
+            Point(0, 1),
+            Point(2, 3),
+            MultiPoint([(4, 5), (6, 7)]),
+            Point(8, 9),
+        ],
+        "c": [*"abcd"],
+    }
+    assert_eq_geo_df(
+        gpd.GeoDataFrame(dict_with_lists),
+        cuspatial.GeoDataFrame(dict_with_lists).to_geopandas(),
+    )

@@ -39,7 +39,14 @@ class GeoDataFrame(cudf.DataFrame):
                 else:
                     self._data[col] = data[col]
         elif isinstance(data, dict):
-            super()._init_from_dict_like(data)
+            for key in data.keys():
+                try:
+                    data[key] = GeoSeries(data[key])
+                except TypeError:
+                    pass
+            super()._init_from_dict_like(
+                data, index=self.index if len(self.index) > 0 else None
+            )
         elif data is None:
             pass
         else:
