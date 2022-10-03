@@ -580,3 +580,17 @@ def test_shapefile_constructor_reversed():
 
     reversed_gs = gpd.GeoSeries([polygon.orient(p, 1) for p in gs])
     assert_eq_geo(reversed_gs, cus.to_geopandas())
+
+
+def test_memory_usage_simple(gs):
+    cugs = cuspatial.from_geopandas(gs)
+    assert cugs.memory_usage() == 1616
+
+
+def test_memory_usage_large():
+    host_dataframe = gpd.read_file(
+        gpd.datasets.get_path("naturalearth_lowres")
+    )
+    geometry = cuspatial.from_geopandas(host_dataframe)["geometry"]
+    # the geometry column from naturalearth_lowres is 217kb of coordinates
+    assert geometry.memory_usage() == 217021

@@ -481,6 +481,7 @@ class GeoSeries(cudf.Series):
         -- child 3 type: list<item: null>
           []
         """
+
         points = self._column.points
         mpoints = self._column.mpoints
         lines = self._column.lines
