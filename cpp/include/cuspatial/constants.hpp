@@ -27,9 +27,12 @@ namespace cuspatial {
 
 constexpr double DEGREE_TO_RADIAN = M_PI / 180.0;
 constexpr double RADIAN_TO_DEGREE = 180.0 / M_PI;
+constexpr double CIRCLE_DEGREES   = 360.0;
 
 constexpr double EARTH_RADIUS_KM                = 6371.0;
 constexpr double EARTH_CIRCUMFERENCE_EQUATOR_KM = 40000.0;
+constexpr double EARTH_CIRCUMFERENCE_KM_PER_DEGREE =
+  EARTH_CIRCUMFERENCE_EQUATOR_KM / CIRCLE_DEGREES;
 
 }  // namespace cuspatial
 

@@ -3,4 +3,7 @@
 ```{toctree}
 :maxdepth: 2
 
-internals
+development_environment
+contributing_guide
+library_design
+benchmarking

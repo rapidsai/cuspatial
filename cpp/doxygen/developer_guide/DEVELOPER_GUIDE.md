@@ -1,4 +1,4 @@
-# libcuspatial C++ Developer Guide
+# libcuspatial C++ Developer Guide {#DEVELOPER_GUIDE}
 
 This document serves as a guide for contributors to libcuspatial C++ code. Developers should also
 refer to these additional files for further documentation of libcuspatial best practices.
@@ -6,6 +6,8 @@ refer to these additional files for further documentation of libcuspatial best p
 * [Documentation Guide](DOCUMENTATION.md) for guidelines on documenting libcuspatial code.
 * [Testing Guide](TESTING.md) for guidelines on writing unit tests.
 * [Benchmarking Guide](BENCHMARKING.md) for guidelines on writing unit benchmarks.
+* [Refactoring Guide](REFACTORING_GUIDE.md) for guidelines on refactoring legacy column-based APIs into 
+                                            header-only APIs.
 
 # Overview
 
@@ -200,7 +202,7 @@ respectively. All memory resource parameters should be defaulted to use the retu
 
 This section provides specifics about the structure and implementation of cuSpatial API functions.
 
-## Column-based cuSpatial API<a name="column_based_api"></a>
+## Column-based cuSpatial API
 
 libcuspatial's column-based API is designed to integrate seamlessly with other RAPIDS libraries,
 notably cuDF. To that end, this API uses `cudf::column` and `cudf::table` data structures as input
@@ -321,7 +323,7 @@ auto foo = [&out0 = out0] {
 };
 ```
 
-## Header-only cuSpatial API<a name="header_only_api"></a>
+## Header-only cuSpatial API
 
 For C++ users and developers who do not also use libcudf or other RAPIDS APIS, depending on libcudf
 could be a barrier to adoption of libcuspatial. libcudf is a very large library and building it
@@ -362,7 +364,7 @@ An example function is helpful.
 template <class LonLatItA,
           class LonLatItB,
           class OutputIt,
-          class T        = typename detail::iterator_vec_base_type<LonLatItA>>
+          class T        = typename cuspatial::iterator_vec_base_type<LonLatItA>>
 OutputIt haversine_distance(LonLatItA a_lonlat_first,
                             LonLatItA a_lonlat_last,
                             LonLatItB b_lonlat_first,
@@ -532,7 +534,7 @@ libcuspatial code eschews raw pointers and direct memory allocation. Use RMM cla
 use [`device_memory_resource`](https://github.com/rapidsai/rmm/#device_memory_resource) for device
 memory allocation with automated lifetime management.
 
-#### `rmm::device_buffer`
+#### rmm::device_buffer
 Allocates a specified number of bytes of untyped, uninitialized device memory using a
 `device_memory_resource`. If no resource is explicitly provided, uses
 `rmm::mr::get_current_device_resource()`.
@@ -558,7 +560,7 @@ custom_memory_resource *mr...;
 rmm::device_buffer custom_buff(100, mr, stream);
 ```
 
-#### `rmm::device_scalar<T>`
+#### rmm::device_scalar<T>
 Allocates a single element of the specified type initialized to the specified value. Use this for
 scalar input/outputs into device kernels, e.g., reduction results, null count, etc. This is
 effectively a convenience wrapper around a `rmm::device_vector<T>` of length 1.
@@ -576,7 +578,7 @@ kernel<<<...>>>(int_scalar.data(),...);
 int host_value = int_scalar.value();
 ```
 
-#### `rmm::device_vector<T>`
+#### rmm::device_vector<T>
 
 Allocates a specified number of elements of the specified type. If no initialization value is
 provided, all elements are default initialized (this incurs a kernel launch).
@@ -590,7 +592,7 @@ utilities enable creation of `uvector`s from host-side vectors, or creating zero
 `uvector`s, so that they are as convenient to use as `device_vector`. Avoiding `device_vector` has
 a number of benefits, as described in the following section on `rmm::device_uvector`.
 
-#### `rmm::device_uvector<T>`
+#### rmm::device_uvector<T>
 
 Similar to a `device_vector`, allocates a contiguous set of elements in device memory but with key
 differences:
@@ -632,7 +634,7 @@ group a broad set of functions, further namespaces may be used.
 Many functions are not meant for public use, so place them in either the `detail` or an *anonymous*
 namespace, depending on the situation.
 
-#### `detail` namespace
+#### detail namespace
 
 Functions or objects that will be used across *multiple* translation units (i.e., source files),
 should be exposed in an internal header file and placed in the `detail` namespace. Example:

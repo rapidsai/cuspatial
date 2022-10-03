@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -63,7 +63,7 @@ typename thrust::iterator_traits<InputIt>::difference_type count_points_in_range
 {
   using Point = typename std::iterator_traits<InputIt>::value_type;
 
-  static_assert(detail::is_convertible_to<cuspatial::vec_2d<T>, Point>(),
+  static_assert(cuspatial::is_convertible_to<cuspatial::vec_2d<T>, Point>(),
                 "Input points must be convertible to cuspatial::vec_2d");
 
   return thrust::count_if(
@@ -80,10 +80,10 @@ OutputIt copy_points_in_range(vec_2d<T> vertex_1,
 {
   using Point = typename std::iterator_traits<InputIt>::value_type;
 
-  static_assert(detail::is_convertible_to<cuspatial::vec_2d<T>, Point>(),
+  static_assert(cuspatial::is_convertible_to<cuspatial::vec_2d<T>, Point>(),
                 "Input points must be convertible to cuspatial::vec_2d");
 
-  static_assert(detail::is_same_floating_point<T, typename Point::value_type>(),
+  static_assert(is_same_floating_point<T, typename Point::value_type>(),
                 "Inputs and Range coordinates must have the same value type.");
 
   return thrust::copy_if(rmm::exec_policy(stream),

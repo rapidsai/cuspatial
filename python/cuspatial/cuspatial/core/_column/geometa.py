@@ -3,9 +3,17 @@
 # This allows GeoMeta as its own init type
 from __future__ import annotations
 
+from enum import Enum
 from typing import Union
 
 import cudf
+
+
+class Feature_Enum(Enum):
+    POINT = 0
+    MULTIPOINT = 1
+    LINESTRING = 2
+    POLYGON = 3
 
 
 class GeoMeta:

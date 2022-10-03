@@ -3,11 +3,14 @@
 from cudf import DataFrame, Series
 
 from cuspatial._lib.shapefile_reader import (
+    WindingOrder,
     read_polygon_shapefile as cpp_read_polygon_shapefile,
 )
 
 
-def read_polygon_shapefile(filename):
+def read_polygon_shapefile(
+    filename, outer_ring_order=WindingOrder.COUNTER_CLOCKWISE
+):
     """
     Reads polygon geometry from an ESRI shapefile into GPU memory.
 
@@ -15,6 +18,8 @@ def read_polygon_shapefile(filename):
     ----------
     filename : str, pathlike
         ESRI Shapefile file path (usually ends in ``.shp``)
+    winding_order : WindingOrder(Enum)
+        COUNTER_CLOCKWISE: ESRI Format, or CLOCKWISE: Simple Feature
 
     Returns
     -------
@@ -30,7 +35,7 @@ def read_polygon_shapefile(filename):
             y : cudf.Series(dtype=np.float64)
                 y-components of each polygon's points
     """
-    result = cpp_read_polygon_shapefile(filename)
+    result = cpp_read_polygon_shapefile(filename, outer_ring_order)
     f_pos = Series(result[0], name="f_pos")
     r_pos = Series(result[1], name="r_pos")
     return (f_pos, r_pos, DataFrame({"x": result[2], "y": result[3]}))
