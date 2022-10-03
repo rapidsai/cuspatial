@@ -425,4 +425,3 @@ def test_from_dict_with_list():
         gpd.GeoDataFrame(dict_with_lists),
         cuspatial.GeoDataFrame(dict_with_lists).to_geopandas(),
     )
-
