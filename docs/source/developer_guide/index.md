@@ -6,3 +6,4 @@
 development_environment
 contributing_guide
 library_design
+benchmarking
