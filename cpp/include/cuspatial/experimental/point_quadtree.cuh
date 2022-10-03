@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuspatial/detail/utility/traits.hpp>
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -79,7 +79,7 @@ struct point_quadtree {
  *
  * @return Pair of UINT32 column of sorted keys to point indices and a point_quadtree
  */
-template <class PointIt, class T = typename detail::iterator_vec_base_type<PointIt>>
+template <class PointIt, class T = typename cuspatial::iterator_value_type<PointIt>>
 std::pair<rmm::device_uvector<uint32_t>, point_quadtree> quadtree_on_points(
   PointIt points_first,
   PointIt points_last,

@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/detail/utility/z_order.cuh>
 #include <cuspatial/experimental/detail/indexing/construction/utilities.cuh>
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -102,7 +102,7 @@ template <typename KeyInputIterator,
           typename KeyOutputIterator,
           typename ValueOutputIterator,
           typename BinaryOp,
-          typename IndexT = typename detail::iterator_value_type<KeyInputIterator>>
+          typename IndexT = typename cuspatial::iterator_value_type<KeyInputIterator>>
 inline IndexT build_tree_level(KeyInputIterator keys_begin,
                                KeyInputIterator keys_end,
                                ValueInputIterator vals_in,
@@ -128,7 +128,7 @@ inline IndexT build_tree_level(KeyInputIterator keys_begin,
  */
 template <typename KeyInputIterator,
           typename ValueInputIterator,
-          typename IndexT = typename detail::iterator_value_type<KeyInputIterator>>
+          typename IndexT = typename cuspatial::iterator_value_type<KeyInputIterator>>
 inline std::tuple<IndexT, IndexT, std::vector<IndexT>, std::vector<IndexT>> build_tree_levels(
   KeyInputIterator keys_begin,
   ValueInputIterator quad_point_count_begin,
