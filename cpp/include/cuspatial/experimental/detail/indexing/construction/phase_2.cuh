@@ -111,7 +111,7 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
   rmm::cuda_stream_view stream)
 {
   // Sort initial indices and temporary point counts by the flattened keys
-  auto sorted_order_and_point_counts = [&]() {
+  auto [initial_sort_indices, quad_point_count_tmp] = [&]() {
     auto flattened_keys =
       flatten_point_keys(quad_keys, quad_level, indicator, num_valid_nodes, max_depth, stream);
 
@@ -143,9 +143,6 @@ inline rmm::device_uvector<uint32_t> compute_flattened_first_point_positions(
 
     return std::make_pair(std::move(initial_sort_indices), std::move(quad_point_count_tmp));
   }();
-
-  auto& initial_sort_indices = std::get<0>(sorted_order_and_point_counts);
-  auto& quad_point_count_tmp = std::get<1>(sorted_order_and_point_counts);
 
   auto leaf_offsets = compute_leaf_positions(indicator, num_valid_nodes, stream);
 

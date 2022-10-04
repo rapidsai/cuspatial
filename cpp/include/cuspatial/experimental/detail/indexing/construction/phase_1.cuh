@@ -263,11 +263,8 @@ inline auto make_full_levels(PointIt points_first,
   // (i.e. quads at level `max_depth - 1`)
 
   // Compute Morton code (z-order) keys for each point
-  auto keys_and_indices = compute_point_keys_and_sorted_indices(
+  auto [point_keys, point_indices] = compute_point_keys_and_sorted_indices(
     points_first, points_last, min, max, scale, max_depth, stream, mr);
-
-  auto& point_keys    = keys_and_indices.first;
-  auto& point_indices = keys_and_indices.second;
 
   rmm::device_uvector<uint32_t> quad_keys(num_points, stream);
   rmm::device_uvector<uint32_t> quad_point_count(num_points, stream);

@@ -54,20 +54,17 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
                                         quad_child_count.begin(),
                                         quad_child_count.begin() + num_parent_nodes);
 
-  int32_t num_valid_nodes{0};
-  int32_t num_invalid_parent_nodes{0};
-
   // prune quadrants with fewer points than required
   // lines 1, 2, 3, 4, and 5 of algorithm in Fig. 5 in ref.
-  std::tie(num_invalid_parent_nodes, num_valid_nodes) = remove_unqualified_quads(keys,
-                                                                                 quad_point_count,
-                                                                                 quad_child_count,
-                                                                                 levels,
-                                                                                 num_parent_nodes,
-                                                                                 num_child_nodes,
-                                                                                 max_size,
-                                                                                 level_1_size,
-                                                                                 stream);
+  auto [num_invalid_parent_nodes, num_valid_nodes] = remove_unqualified_quads(keys,
+                                                                              quad_point_count,
+                                                                              quad_child_count,
+                                                                              levels,
+                                                                              num_parent_nodes,
+                                                                              num_child_nodes,
+                                                                              max_size,
+                                                                              level_1_size,
+                                                                              stream);
 
   num_parent_nodes -= num_invalid_parent_nodes;
 
@@ -78,7 +75,7 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
 
   // Construct the offsets output column
   // lines 8, 9, and 10 of algorithm in Fig. 5 in ref.
-  auto offsets = [&]() {
+  auto offsets = [&, num_valid_nodes = num_valid_nodes]() {
     // line 8 of algorithm in Fig. 5 in ref.
     // revision to line 8: adjust quad_point_pos based on last-level z-order
     // code
@@ -258,11 +255,8 @@ std::pair<rmm::device_uvector<uint32_t>, point_quadtree> quadtree_on_points(
   }
 
   // order vertex_1/vertex_2 to min/max
-  auto const [min, max] = [&] {
-    return std::make_pair(
-      vec_2d<T>{std::min(vertex_1.x, vertex_2.x), std::min(vertex_1.y, vertex_2.y)},
-      vec_2d<T>{std::max(vertex_1.x, vertex_2.x), std::max(vertex_1.y, vertex_2.y)});
-  }();
+  vec_2d<T> const min{std::min(vertex_1.x, vertex_2.x), std::min(vertex_1.y, vertex_2.y)};
+  vec_2d<T> const max{std::max(vertex_1.x, vertex_2.x), std::max(vertex_1.y, vertex_2.y)};
 
   // clamp max_size to 1 <= max_size
   max_size = std::max(1, max_size);

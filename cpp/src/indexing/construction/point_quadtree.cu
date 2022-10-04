@@ -75,21 +75,18 @@ struct dispatch_construct_quadtree {
     rmm::mr::device_memory_resource* mr)
   {
     auto points = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
-    auto pair   = quadtree_on_points(points,
-                                   points + x.size(),
-                                   vec_2d<T>{static_cast<T>(x_min), static_cast<T>(y_min)},
-                                   vec_2d<T>{static_cast<T>(x_max), static_cast<T>(y_max)},
-                                   static_cast<T>(scale),
-                                   max_depth,
-                                   max_size,
-                                   mr,
-                                   stream);
+    auto [point_indices, tree] =
+      quadtree_on_points(points,
+                         points + x.size(),
+                         vec_2d<T>{static_cast<T>(x_min), static_cast<T>(y_min)},
+                         vec_2d<T>{static_cast<T>(x_max), static_cast<T>(y_max)},
+                         static_cast<T>(scale),
+                         max_depth,
+                         max_size,
+                         mr,
+                         stream);
 
-    auto point_indices = std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::UINT32}, x.size(), pair.first.release());
-
-    auto& tree = pair.second;
-    auto size  = static_cast<cudf::size_type>(tree.key.size());
+    auto size = static_cast<cudf::size_type>(tree.key.size());
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.push_back(std::make_unique<cudf::column>(
@@ -103,7 +100,10 @@ struct dispatch_construct_quadtree {
     cols.push_back(std::make_unique<cudf::column>(
       cudf::data_type{cudf::type_id::UINT32}, size, tree.offset.release()));
 
-    return std::make_pair(std::move(point_indices), std::make_unique<cudf::table>(std::move(cols)));
+    return std::make_pair(
+      std::make_unique<cudf::column>(
+        cudf::data_type{cudf::type_id::UINT32}, x.size(), point_indices.release()),
+      std::make_unique<cudf::table>(std::move(cols)));
   }
 };
 
