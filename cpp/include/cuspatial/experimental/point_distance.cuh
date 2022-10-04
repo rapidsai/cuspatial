@@ -18,37 +18,46 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
+#include <cuspatial/experimental/array/multipoint_array.cuh>
+
 namespace cuspatial {
 
 /**
  * @ingroup distance
  * @copybrief cuspatial::pairwise_point_distance
  *
- * @tparam Cart2dItA iterator type for point array of the first point of each pair. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam Cart2dItB iterator type for point array of the second point of each pair. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OutputIt iterator type for output array. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
- *
- * @param points1_first beginning of range of the first point of each pair
- * @param points1_last end of range of the first point of each pair
- * @param points2_first beginning of range of the second point of each pair
- * @param distances_first beginning iterator to output
- * @param stream The CUDA stream to use for device memory operations and kernel launches
- * @return Output iterator to one past the last element in the output range
- *
- * @pre all input iterators for coordinates must have a `value_type` of `cuspatial::vec_2d`.
- * @pre all scalar types must be floating point types, and must be the same type for all input
- * iterators and output iterators.
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
+ */
+template <class OffsetIteratorA,
+          class OffsetIteratorB,
+          class Cart2dItA,
+          class Cart2dItB,
+          class OutputIt>
+OutputIt pairwise_point_distance(array::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints1,
+                                 array::multipoint_array<OffsetIteratorB, Cart2dItB> multipoints2,
+                                 OutputIt distances_first,
+                                 rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+
+/**
+ * @ingroup distance
+ * @copybrief cuspatial::pairwise_point_distance
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <class Cart2dItA, class Cart2dItB, class OutputIt>
-OutputIt pairwise_point_distance(Cart2dItA points1_first,
-                                 Cart2dItA points1_last,
-                                 Cart2dItB points2_first,
+template <class OffsetIteratorA,
+          class OffsetIteratorB,
+          class Cart2dItA,
+          class Cart2dItB,
+          class OutputIt>
+OutputIt pairwise_point_distance(OffsetIteratorA multipoint1_geometry_begin,
+                                 OffsetIteratorA multipoint2_geometry_end,
+                                 Cart2dItA points1_begin,
+                                 Cart2dItB points1_end,
+                                 OffsetIteratorB multipoint2_geometry_offset,
+                                 Cart2dItB points2_begin,
+                                 Cart2dItB points2_end,
                                  OutputIt distances_first,
                                  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 

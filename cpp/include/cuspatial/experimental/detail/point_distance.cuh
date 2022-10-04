@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/array/multipoint_array.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -29,34 +30,69 @@
 
 namespace cuspatial {
 
-template <class Cart2dItA, class Cart2dItB, class OutputIt>
-OutputIt pairwise_point_distance(Cart2dItA points1_first,
-                                 Cart2dItA points1_last,
-                                 Cart2dItB points2_first,
+template <class OffsetIteratorA,
+          class OffsetIteratorB,
+          class Cart2dItA,
+          class Cart2dItB,
+          class OutputIt>
+OutputIt pairwise_point_distance(array::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints1,
+                                 array::multipoint_array<OffsetIteratorB, Cart2dItB> multipoints2,
                                  OutputIt distances_first,
                                  rmm::cuda_stream_view stream)
 {
-  using T = typename cuspatial::iterator_vec_base_type<Cart2dItA>;
+  using T = iterator_vec_base_type<Cart2dItA>;
 
-  static_assert(is_same_floating_point<T,
-                                       typename cuspatial::iterator_vec_base_type<Cart2dItB>,
-                                       typename cuspatial::iterator_value_type<OutputIt>>(),
-                "Inputs and output must have the same floating point value type.");
+  static_assert(
+    is_same_floating_point<T, iterator_vec_base_type<Cart2dItB>, iterator_value_type<OutputIt>>(),
+    "Inputs and output must have the same floating point value type.");
 
-  static_assert(is_same<vec_2d<T>,
-                        typename cuspatial::iterator_value_type<Cart2dItA>,
-                        typename cuspatial::iterator_value_type<Cart2dItB>>(),
-                "All Input types must be cuspatial::vec_2d with the same value type");
+  static_assert(
+    is_same<vec_2d<T>, iterator_value_type<Cart2dItA>, iterator_value_type<Cart2dItB>>(),
+    "All Input types must be cuspatial::vec_2d with the same value type");
+
+  CUSPATIAL_EXPECTS(multipoints1.size() == multipoints2.size(),
+                    "Inputs should have the same number of multipoints.");
 
   return thrust::transform(rmm::exec_policy(stream),
-                           points1_first,
-                           points1_last,
-                           points2_first,
+                           multipoints1.multipoint_begin(),
+                           multipoints1.multipoint_end(),
+                           multipoints2.multipoint_begin(),
                            distances_first,
-                           [] __device__(auto p1, auto p2) {
-                             auto v = p1 - p2;
-                             return std::sqrt(dot(v, v));
+                           [] __device__(auto& mp1, auto& mp2) {
+                             T min_distance_squared = std::numeric_limits<T>::max();
+                             for (vec_2d<T> const& p1 : mp1) {
+                               for (vec_2d<T> const& p2 : mp2) {
+                                 auto v               = p1 - p2;
+                                 min_distance_squared = min(min_distance_squared, dot(v, v));
+                               }
+                             }
+                             return sqrt(min_distance_squared);
                            });
+}
+
+template <class OffsetIteratorA,
+          class OffsetIteratorB,
+          class Cart2dItA,
+          class Cart2dItB,
+          class OutputIt>
+OutputIt pairwise_point_distance(OffsetIteratorA multipoint1_geometry_begin,
+                                 OffsetIteratorA multipoint1_geometry_end,
+                                 Cart2dItA points1_begin,
+                                 Cart2dItB points1_end,
+                                 OffsetIteratorB multipoint2_geometry_begin,
+                                 Cart2dItB points2_begin,
+                                 Cart2dItB points2_end,
+                                 OutputIt distances_first,
+                                 rmm::cuda_stream_view stream)
+{
+  auto d = thrust::distance(multipoint1_geometry_begin, multipoint1_geometry_end);
+  return pairwise_point_distance(
+    array::multipoint_array{
+      multipoint1_geometry_begin, multipoint1_geometry_end, points1_begin, points1_end},
+    array::multipoint_array{
+      multipoint2_geometry_begin, multipoint2_geometry_begin + d, points2_begin, points2_end},
+    distances_first,
+    stream);
 }
 
 }  // namespace cuspatial
