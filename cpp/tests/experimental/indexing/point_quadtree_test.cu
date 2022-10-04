@@ -14,35 +14,13 @@
  * limitations under the License.
  */
 
+#include "tests/utility/vector_equality.hpp"
+
 #include <cuspatial/experimental/point_quadtree.cuh>
 #include <cuspatial/vec_2d.hpp>
 
-#include <cudf_test/base_fixture.hpp>
-#include <cudf_test/type_lists.hpp>
-
-#include <thrust/copy.h>
-#include <thrust/device_vector.h>
-#include <thrust/fill.h>
-
-namespace {
-
 template <typename T>
-thrust::host_vector<T> inline device_uvector_to_host(rmm::device_uvector<T> const& uvec)
-{
-  thrust::host_vector<T> hvec(uvec.size());
-  cudaMemcpyAsync(hvec.data(),
-                  uvec.data(),
-                  uvec.size() * sizeof(T),
-                  cudaMemcpyKind::cudaMemcpyDeviceToHost,
-                  uvec.stream());
-  uvec.stream().synchronize();
-  return hvec;
-}
-
-}  // namespace
-
-template <typename T>
-struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
+struct QuadtreeOnPointIndexingTest : public ::testing::Test {
   void test(std::vector<cuspatial::vec_2d<T>> const& points,
             const cuspatial::vec_2d<T> vertex_1,
             const cuspatial::vec_2d<T> vertex_2,
@@ -57,13 +35,11 @@ struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
   {
     thrust::device_vector<cuspatial::vec_2d<T>> d_points{points};
 
-    auto pair = cuspatial::quadtree_on_points(
-      d_points.begin(), d_points.end(), vertex_1, vertex_2, scale, max_depth, max_size, mr());
+    auto [point_indices, tree] = cuspatial::quadtree_on_points(
+      d_points.begin(), d_points.end(), vertex_1, vertex_2, scale, max_depth, max_size);
 
-    auto& point_indices = pair.first;
     EXPECT_EQ(point_indices.size(), points.size());
 
-    auto& tree             = pair.second;
     auto& key_d            = tree.key;
     auto& level_d          = tree.level;
     auto& is_parent_node_d = tree.is_parent_node;
@@ -76,21 +52,18 @@ struct QuadtreeOnPointIndexingTest : public cudf::test::BaseFixture {
     EXPECT_EQ(length_d.size(), expected_length.size());
     EXPECT_EQ(offset_d.size(), expected_offset.size());
 
-    auto key_h            = device_uvector_to_host<uint32_t>(key_d);
-    auto level_h          = device_uvector_to_host<uint8_t>(level_d);
-    auto is_parent_node_h = device_uvector_to_host<bool>(is_parent_node_d);
-    auto length_h         = device_uvector_to_host<uint32_t>(length_d);
-    auto offset_h         = device_uvector_to_host<uint32_t>(offset_d);
+    using namespace cuspatial::test;
 
-    EXPECT_THAT(key_h, ::testing::Pointwise(::testing::Eq(), expected_key));
-    EXPECT_THAT(level_h, ::testing::Pointwise(::testing::Eq(), expected_level));
-    EXPECT_THAT(is_parent_node_h, ::testing::Pointwise(::testing::Eq(), expected_is_parent_node));
-    EXPECT_THAT(length_h, ::testing::Pointwise(::testing::Eq(), expected_length));
-    EXPECT_THAT(offset_h, ::testing::Pointwise(::testing::Eq(), expected_offset));
+    expect_vector_equivalent(expected_key, key_d);
+    expect_vector_equivalent(expected_level, level_d);
+    expect_vector_equivalent(expected_is_parent_node, is_parent_node_d);
+    expect_vector_equivalent(expected_length, length_d);
+    expect_vector_equivalent(expected_offset, offset_d);
   }
 };
 
-TYPED_TEST_CASE(QuadtreeOnPointIndexingTest, cudf::test::FloatingPointTypes);
+using TestTypes = ::testing::Types<float, double>;
+TYPED_TEST_CASE(QuadtreeOnPointIndexingTest, TestTypes);
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_empty)
 {
