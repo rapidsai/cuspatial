@@ -121,7 +121,7 @@ __global__ void kernel_hausdorff(
       auto const distance_squared = magnitude_squared(rhs_p.x - lhs_p.x, rhs_p.y - lhs_p.y);
 
       // remember only smallest distance from this LHS point to any RHS point.
-      min_distance_squared = min(min_distance_squared, distance_squared);
+      min_distance_squared = ::min(min_distance_squared, distance_squared);
     }
 
     // determine the output offset for this pair of spaces (LHS, RHS)
