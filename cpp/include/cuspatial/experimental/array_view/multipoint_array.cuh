@@ -22,10 +22,24 @@
 #include <cuspatial/traits.hpp>
 
 namespace cuspatial {
-namespace array {
+namespace array_view {
 
 using namespace cuspatial::geometry_collection;
 
+/**
+ * @brief Device view object of a multipoint array
+ *
+ * Conforms to GeoArrow's specification of multipoint:
+ * https://github.com/geopandas/geo-arrow-spec/blob/main/format.md
+ *
+ * @tparam GeometryIterator iterator type for offset array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam VecIterator iterator type for the point array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
+ */
 template <typename GeometryIterator, typename VecIterator>
 class multipoint_array {
  public:
@@ -85,7 +99,7 @@ class multipoint_array {
   VecIterator _points_end;
 };
 
-}  // namespace array
+}  // namespace array_view
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/array/multipoint_array.cuh>
+#include <cuspatial/experimental/detail/array_view/multipoint_array.cuh>

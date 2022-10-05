@@ -28,7 +28,7 @@
 #include <cuspatial/vec_2d.hpp>
 
 namespace cuspatial {
-namespace array {
+namespace array_view {
 
 using namespace cuspatial::geometry_collection;
 using namespace cuspatial::detail;
@@ -105,5 +105,5 @@ CUSPATIAL_HOST_DEVICE auto multipoint_array<GeometryIterator, VecIterator>::elem
   return multipoint{_points_begin + _geometry_begin[idx], _points_begin + _geometry_begin[idx + 1]};
 }
 
-}  // namespace array
+}  // namespace array_view
 }  // namespace cuspatial
