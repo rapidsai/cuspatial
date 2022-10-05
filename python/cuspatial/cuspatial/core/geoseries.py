@@ -227,8 +227,6 @@ class GeoSeries(cudf.Series):
     class GeoSeriesLocIndexer:
         """
         Map the index to an integer Series and use that.
-
-        Warning! This only supports single values as input at this time.
         """
 
         def __init__(self, _sr):
@@ -483,6 +481,7 @@ class GeoSeries(cudf.Series):
         -- child 3 type: list<item: null>
           []
         """
+
         points = self._column.points
         mpoints = self._column.mpoints
         lines = self._column.lines

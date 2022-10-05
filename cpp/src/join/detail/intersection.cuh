@@ -17,7 +17,8 @@
 #pragma once
 
 #include <indexing/construction/detail/utilities.cuh>
-#include <utility/z_order.cuh>
+
+#include <cuspatial/detail/utility/z_order.cuh>
 
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/table/table_view.hpp>
@@ -122,8 +123,8 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
                       auto poly_x_max = poly_x_maxs.element<T>(poly);
                       auto poly_y_max = poly_y_maxs.element<T>(poly);
 
-                      T key_x       = cuspatial::utility::z_order_x(key);
-                      T key_y       = cuspatial::utility::z_order_y(key);
+                      T key_x       = utility::z_order_x(key);
+                      T key_y       = utility::z_order_y(key);
                       T level_scale = scale * (1 << (max_depth - 1 - level));
                       T node_x_min  = x_min + (key_x + 0) * level_scale;
                       T node_y_min  = y_min + (key_y + 0) * level_scale;

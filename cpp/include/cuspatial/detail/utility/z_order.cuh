@@ -17,6 +17,7 @@
 #pragma once
 
 namespace cuspatial {
+namespace detail {
 namespace utility {
 
 namespace {
@@ -93,4 +94,5 @@ __device__ inline uint16_t z_order_y(uint32_t const index)
 }
 
 }  // namespace utility
+}  // namespace detail
 }  // namespace cuspatial

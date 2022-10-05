@@ -90,3 +90,6 @@ ConfigureNVBench(POINTS_IN_RANGE_BENCH
 
 ConfigureNVBench(POINT_IN_POLYGON_BENCH
     point_in_polygon.cu)
+
+ConfigureNVBench(QUADTREE_ON_POINTS_BENCH
+    quadtree_on_points.cu)
