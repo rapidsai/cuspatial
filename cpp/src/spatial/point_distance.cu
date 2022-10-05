@@ -18,7 +18,7 @@
 #include "../utility/iterator.hpp"
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/array/multipoint_array.cuh>
+#include <cuspatial/experimental/array_view/multipoint_array.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_distance.cuh>
 #include <cuspatial/vec_2d.hpp>
@@ -59,14 +59,14 @@ struct pairwise_point_distance_impl {
     auto points1_it = make_vec_2d_iterator(points1_xy.begin<T>());
     auto points2_it = make_vec_2d_iterator(points2_xy.begin<T>());
 
-    auto multipoint1_its = array::multipoint_array(multipoint1_offset_it,
-                                                   multipoint1_offset_it + num_pairs,
-                                                   points1_it,
-                                                   points1_it + points1_xy.size() / 2);
-    auto multipoint2_its = array::multipoint_array(multipoint2_offset_it,
-                                                   multipoint2_offset_it + num_pairs,
-                                                   points2_it,
-                                                   points2_it + points2_xy.size() / 2);
+    auto multipoint1_its = array_view::multipoint_array(multipoint1_offset_it,
+                                                        multipoint1_offset_it + num_pairs,
+                                                        points1_it,
+                                                        points1_it + points1_xy.size() / 2);
+    auto multipoint2_its = array_view::multipoint_array(multipoint2_offset_it,
+                                                        multipoint2_offset_it + num_pairs,
+                                                        points2_it,
+                                                        points2_it + points2_xy.size() / 2);
 
     pairwise_point_distance(
       multipoint1_its, multipoint2_its, distances->mutable_view().begin<T>(), stream);

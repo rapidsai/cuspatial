@@ -18,7 +18,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
-#include <cuspatial/experimental/array/multipoint_array.cuh>
+#include <cuspatial/experimental/array_view/multipoint_array.cuh>
 
 namespace cuspatial {
 
@@ -26,41 +26,22 @@ namespace cuspatial {
  * @ingroup distance
  * @copybrief cuspatial::pairwise_point_distance
  *
- * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
- * "LegacyRandomAccessIterator"
+ * @param multipoints1 Array view object constructed from the iterators of the first multipoint in
+ * the pair.
+ * @param multipoints2 Array view object constructed from the iterators of the second multipoint in
+ * the pair.
+ * @return Iterator past the last distance computed
  */
 template <class OffsetIteratorA,
           class OffsetIteratorB,
           class Cart2dItA,
           class Cart2dItB,
           class OutputIt>
-OutputIt pairwise_point_distance(array::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints1,
-                                 array::multipoint_array<OffsetIteratorB, Cart2dItB> multipoints2,
-                                 OutputIt distances_first,
-                                 rmm::cuda_stream_view stream = rmm::cuda_stream_default);
-
-/**
- * @ingroup distance
- * @copybrief cuspatial::pairwise_point_distance
- *
- * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
- * "LegacyRandomAccessIterator"
- */
-template <class OffsetIteratorA,
-          class OffsetIteratorB,
-          class Cart2dItA,
-          class Cart2dItB,
-          class OutputIt>
-OutputIt pairwise_point_distance(OffsetIteratorA multipoint1_geometry_begin,
-                                 OffsetIteratorA multipoint2_geometry_end,
-                                 Cart2dItA points1_begin,
-                                 Cart2dItB points1_end,
-                                 OffsetIteratorB multipoint2_geometry_offset,
-                                 Cart2dItB points2_begin,
-                                 Cart2dItB points2_end,
-                                 OutputIt distances_first,
-                                 rmm::cuda_stream_view stream = rmm::cuda_stream_default);
-
+OutputIt pairwise_point_distance(
+  array_view::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints1,
+  array_view::multipoint_array<OffsetIteratorB, Cart2dItB> multipoints2,
+  OutputIt distances_first,
+  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/point_distance.cuh>

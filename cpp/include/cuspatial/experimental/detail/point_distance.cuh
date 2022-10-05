@@ -17,7 +17,7 @@
 #pragma once
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/array/multipoint_array.cuh>
+#include <cuspatial/experimental/array_view/multipoint_array.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -35,10 +35,11 @@ template <class OffsetIteratorA,
           class Cart2dItA,
           class Cart2dItB,
           class OutputIt>
-OutputIt pairwise_point_distance(array::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints1,
-                                 array::multipoint_array<OffsetIteratorB, Cart2dItB> multipoints2,
-                                 OutputIt distances_first,
-                                 rmm::cuda_stream_view stream)
+OutputIt pairwise_point_distance(
+  array_view::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints1,
+  array_view::multipoint_array<OffsetIteratorB, Cart2dItB> multipoints2,
+  OutputIt distances_first,
+  rmm::cuda_stream_view stream)
 {
   using T = iterator_vec_base_type<Cart2dItA>;
 
@@ -68,31 +69,6 @@ OutputIt pairwise_point_distance(array::multipoint_array<OffsetIteratorA, Cart2d
                              }
                              return sqrt(min_distance_squared);
                            });
-}
-
-template <class OffsetIteratorA,
-          class OffsetIteratorB,
-          class Cart2dItA,
-          class Cart2dItB,
-          class OutputIt>
-OutputIt pairwise_point_distance(OffsetIteratorA multipoint1_geometry_begin,
-                                 OffsetIteratorA multipoint1_geometry_end,
-                                 Cart2dItA points1_begin,
-                                 Cart2dItB points1_end,
-                                 OffsetIteratorB multipoint2_geometry_begin,
-                                 Cart2dItB points2_begin,
-                                 Cart2dItB points2_end,
-                                 OutputIt distances_first,
-                                 rmm::cuda_stream_view stream)
-{
-  auto d = thrust::distance(multipoint1_geometry_begin, multipoint1_geometry_end);
-  return pairwise_point_distance(
-    array::multipoint_array{
-      multipoint1_geometry_begin, multipoint1_geometry_end, points1_begin, points1_end},
-    array::multipoint_array{
-      multipoint2_geometry_begin, multipoint2_geometry_begin + d, points2_begin, points2_end},
-    distances_first,
-    stream);
 }
 
 }  // namespace cuspatial

@@ -17,8 +17,9 @@
 #include "../../utility/vector_equality.hpp"
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/array_view/multipoint_array.cuh>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_distance.cuh>
-#include <cuspatial/experimental/type_utils.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -41,13 +42,15 @@
 
 namespace cuspatial {
 
+using namespace array_view;
+
 template <typename T>
 struct RandomPointGenerator {
   using Cart2D = vec_2d<T>;
   thrust::minstd_rand rng{};
   thrust::random::normal_distribution<T> norm_dist{};
 
-  Cart2D __device__ operator()(size_t const& i)
+  Cart2D __device__ operator()(std::size_t const& i)
   {
     rng.discard(i);
     return Cart2D{norm_dist(rng), norm_dist(rng)};
@@ -106,14 +109,12 @@ TYPED_TEST(PairwisePointDistanceTest, Empty)
   rmm::device_vector<T> expected{};
   rmm::device_vector<T> got(points1.size());
 
-  auto ret_it = pairwise_point_distance(multipoint_geom1.begin(),
-                                        multipoint_geom1.end(),
-                                        points1.begin(),
-                                        points1.end(),
-                                        multipoint_geom2.begin(),
-                                        points2.begin(),
-                                        points2.end(),
-                                        got.begin());
+  auto multipoint_1 = multipoint_array{
+    multipoint_geom1.begin(), multipoint_geom1.end(), points1.begin(), points1.end()};
+  auto multipoint_2 = multipoint_array{
+    multipoint_geom2.begin(), multipoint_geom2.end(), points2.begin(), points2.end()};
+
+  auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
 
   test::expect_vector_equivalent(expected, got);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
@@ -134,20 +135,18 @@ TYPED_TEST(PairwisePointDistanceTest, OnePairSingleComponent)
   rmm::device_vector<T> expected{std::vector<T>{std::sqrt(T{2.0})}};
   rmm::device_vector<T> got(points1.size());
 
-  auto ret_it = pairwise_point_distance(multipoint_geom1,
-                                        multipoint_geom1 + num_pairs + 1,
-                                        points1.begin(),
-                                        points1.end(),
-                                        multipoint_geom2,
-                                        points2.begin(),
-                                        points2.end(),
-                                        got.begin());
+  auto multipoint_1 = multipoint_array{
+    multipoint_geom1, multipoint_geom1 + num_pairs, points1.begin(), points1.end()};
+  auto multipoint_2 = multipoint_array{
+    multipoint_geom2, multipoint_geom2 + num_pairs, points2.begin(), points2.end()};
+
+  auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
 
   test::expect_vector_equivalent(expected, got);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
-TYPED_TEST(PairwisePointDistanceTest, ManyRandom)
+TYPED_TEST(PairwisePointDistanceTest, SingleComponentManyRandom)
 {
   using T         = TypeParam;
   using Cart2D    = vec_2d<T>;
@@ -163,21 +162,19 @@ TYPED_TEST(PairwisePointDistanceTest, ManyRandom)
   auto expected = compute_point_distance_host(points1, points2);
   rmm::device_vector<T> got(points1.size());
 
-  auto ret_it = pairwise_point_distance(multipoint_geom1,
-                                        multipoint_geom1 + num_points + 1,
-                                        points1.begin(),
-                                        points1.end(),
-                                        multipoint_geom2,
-                                        points2.begin(),
-                                        points2.end(),
-                                        got.begin());
+  auto multipoint_1 = multipoint_array{
+    multipoint_geom1, multipoint_geom1 + num_points, points1.begin(), points1.end()};
+  auto multipoint_2 = multipoint_array{
+    multipoint_geom2, multipoint_geom2 + num_points, points2.begin(), points2.end()};
+
+  auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
   thrust::host_vector<T> hgot(got);
 
   test::expect_vector_equivalent(hgot, expected);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
-TYPED_TEST(PairwisePointDistanceTest, CompareWithShapely)
+TYPED_TEST(PairwisePointDistanceTest, SingleComponentCompareWithShapely)
 {
   using T         = TypeParam;
   using Cart2D    = vec_2d<T>;
@@ -326,14 +323,12 @@ TYPED_TEST(PairwisePointDistanceTest, CompareWithShapely)
   auto p1_begin = make_vec_2d_iterator(dx1.begin(), dy1.begin());
   auto p2_begin = make_vec_2d_iterator(dx2.begin(), dy2.begin());
 
-  auto ret_it = pairwise_point_distance(p1_geom,
-                                        p1_geom + dx1.size() + 1,
-                                        p1_begin,
-                                        p1_begin + dx1.size(),
-                                        p2_geom,
-                                        p2_begin,
-                                        p2_begin + dx2.size(),
-                                        got.begin());
+  auto multipoints_1 =
+    multipoint_array{p1_geom, p1_geom + dx1.size() + 1, p1_begin, p1_begin + dx1.size()};
+  auto multipoints_2 =
+    multipoint_array{p2_geom, p2_geom + dx1.size() + 1, p2_begin, p2_begin + dx2.size()};
+
+  auto ret_it = pairwise_point_distance(multipoints_1, multipoints_2, got.begin());
 
   thrust::host_vector<T> hgot(got);
   test::expect_vector_equivalent(hgot, expected);
