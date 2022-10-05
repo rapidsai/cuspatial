@@ -118,7 +118,7 @@ ConfigureTest(POINT_DISTANCE_TEST_EXP
 
 ConfigureTest(POINT_LINESTRING_DISTANCE_TEST_EXP
     experimental/spatial/point_linestring_distance_test.cu)
-    
+
 ConfigureTest(HAUSDORFF_TEST_EXP
     experimental/spatial/hausdorff_test.cu)
 
@@ -139,3 +139,6 @@ ConfigureTest(POINT_IN_POLYGON_TEST_EXP
 
 ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP
     experimental/trajectory/derive_trajectories_test.cu)
+
+ConfigureTest(POINT_QUADTREE_TEST_EXP
+    experimental/indexing/point_quadtree_test.cu)
