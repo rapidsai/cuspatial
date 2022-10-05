@@ -19,6 +19,8 @@ cuSpatial supports the following operations on spatial and trajectory data:
 8. Quadtree-based indexing for large-scale point data
 9. Quadtree-based point-in-polygon spatial join
 10. Quadtree-based point-to-polyline nearest neighbor distance
+11. Distance computation (point-point, point-linestring, linestring-linestring)
+12. Finding nearest points between point and linestring
 
 Future support is planned for the following operations:
 
@@ -39,31 +41,36 @@ conda install -c conda-forge -c rapidsai-nightly cuspatial
 
 To build and install cuSpatial from source:
 
+### Pre-requisite
+
+- gcc >= 7.5
+- cmake >= 3.23
+- miniconda
+
+### Fetch cuSpatial repository
+
+```shell
+export `CUSPATIAL_HOME=$(pwd)/cuspatial` && \
+git clone --recurse-submodules https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
+```
 ### Install dependencies
 
-Currently, building cuSpatial requires a source installation of cuDF. Install
-cuDF by following the [instructions](https://github.com/rapidsai/cudf/blob/branch-0.11/CONTRIBUTING.md#script-to-build-cudf-from-source)
+Install all dependencies required from conda recipe:
 
-The rest of steps assume the environment variable `CUDF_HOME` points to the 
-root directory of your clone of the cuDF repo, and that the `cudf_dev` Anaconda
-environment created in step 3 is active.
+```shell
+conda env update --file conda/environments/cuspatial_dev_cuda11.5.yml
+```
 
 ### Clone, build and install cuSpatial
 
-1. export `CUSPATIAL_HOME=$(pwd)/cuspatial`
-2. clone the cuSpatial repo
-
+1. Compile and install
    ```shell
-   git clone --recurse-submodules https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
+   cd $CUSPATIAL_HOME && \
+   chmod +x ./build.sh && \
+   ./build.sh
    ```
 
-3. Compile and install
-
-   Similar to cuDF (version 0.20), simply run `build.sh` diectly under `$CUSPATIAL_HOME`.
-
-   Note that a "build" dir is created automatically under `$CUSPATIAL_HOME/cpp`.
-
-4. Run C++/Python test code
+2. Run C++/Python test code
 
    Some tests using inline data can be run directly, e.g.:
 
@@ -74,10 +81,10 @@ environment created in step 3 is active.
    python python/cuspatial/cuspatial/tests/test_pip.py
    ```
 
-   Some other tests involve I/O from data files under $CUSPATIAL_HOME/test_fixtures.
-   For example, $CUSPATIAL_HOME/cpp/build/gtests/SHAPEFILE_READER_TEST requires three
+   Some other tests involve I/O from data files under `$CUSPATIAL_HOME/test_fixtures`.
+   For example, `$CUSPATIAL_HOME/cpp/build/gtests/SHAPEFILE_READER_TEST` requires three
    pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. They are available at 
-   $CUSPATIAL_HOME/test_fixtures/shapefiles <br>
+   `$CUSPATIAL_HOME/test_fixtures/shapefiles` <br>
 
 **NOTE:** Currently, cuSpatial supports reading point/polyine/polygon data using
 Structure of Array (SoA) format and a [shapefile reader](./cpp/src/io/shp)
@@ -85,4 +92,4 @@ to read polygon data from a shapefile.
 Alternatively, python users can read any point/polyine/polygon data using
 existing python packages, e.g., [Shapely](https://pypi.org/project/Shapely/) 
 and [Fiona](https://github.com/Toblerity/Fiona),to generate numpy arrays and feed them to
-[cuSpatial python APIs](python/cuspatial/cuspatial).
+[cuSpatial python APIs](https://docs.rapids.ai/api/cuspatial/stable/).
