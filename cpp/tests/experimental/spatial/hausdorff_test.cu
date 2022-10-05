@@ -30,6 +30,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <iterator>
+
 template <typename T>
 struct HausdorffTest : public ::testing::Test {
   template <typename Point, typename Index>

@@ -70,13 +70,24 @@ MATCHER(float_matcher, std::string(negation ? "are not" : "are") + " approximate
 }
 
 template <typename T, typename Vector>
-thrust::host_vector<T> to_host(Vector vec)
+thrust::host_vector<T> to_host(Vector const& dvec)
 {
-  return thrust::host_vector<T>(vec);
+  if constexpr (std::is_same_v<Vector, rmm::device_uvector<T>>) {
+    thrust::host_vector<T> hvec(dvec.size());
+    cudaMemcpyAsync(hvec.data(),
+                    dvec.data(),
+                    dvec.size() * sizeof(T),
+                    cudaMemcpyKind::cudaMemcpyDeviceToHost,
+                    dvec.stream());
+    dvec.stream().synchronize();
+    return hvec;
+  } else {
+    return thrust::host_vector<T>(dvec);
+  }
 }
 
 template <typename Vector1, typename Vector2>
-inline void expect_vector_equivalent(Vector1 lhs, Vector2 rhs)
+inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs)
 {
   using T = typename Vector1::value_type;
   static_assert(std::is_same_v<T, typename Vector2::value_type>, "Value type mismatch.");
@@ -85,6 +96,8 @@ inline void expect_vector_equivalent(Vector1 lhs, Vector2 rhs)
     EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(vec_2d_matcher(), to_host<T>(rhs)));
   } else if constexpr (std::is_floating_point_v<T>) {
     EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(float_matcher(), to_host<T>(rhs)));
+  } else if constexpr (std::is_integral_v<T>) {
+    EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(::testing::Eq(), to_host<T>(rhs)));
   } else {
     EXPECT_EQ(lhs, rhs);
   }
