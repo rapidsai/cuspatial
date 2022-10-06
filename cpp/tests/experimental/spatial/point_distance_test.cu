@@ -15,6 +15,8 @@
  */
 
 #include "../../utility/vector_equality.hpp"
+#include "cuspatial/detail/iterator.hpp"
+#include "cuspatial/experimental/geometry_collection/multipoint.cuh"
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/array_view/multipoint_array.cuh>
@@ -40,10 +42,15 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <numeric>
+
 namespace cuspatial {
 
 using namespace array_view;
 
+/**
+ * @brief Helper function to generate a random point
+ */
 template <typename T>
 struct RandomPointGenerator {
   using Cart2D = vec_2d<T>;
@@ -57,10 +64,15 @@ struct RandomPointGenerator {
   }
 };
 
+/**
+ * @brief Generate `num_points` points on device
+ */
 template <typename T>
 struct PairwisePointDistanceTest : public ::testing::Test {
   rmm::device_vector<vec_2d<T>> generate_random_points(
-    int32_t num_points, int32_t seed, rmm::cuda_stream_view stream = rmm::cuda_stream_default)
+    std::size_t num_points,
+    std::size_t seed,
+    rmm::cuda_stream_view stream = rmm::cuda_stream_default)
   {
     rmm::device_vector<vec_2d<T>> points(num_points);
     auto counting_iter = thrust::make_counting_iterator(seed);
@@ -71,8 +83,32 @@ struct PairwisePointDistanceTest : public ::testing::Test {
                       RandomPointGenerator<T>{});
     return points;
   }
+
+  /**
+   * @brief Generate `num_multipoints` multipoint, returns offset and point vectors on device
+   */
+  std::pair<rmm::device_vector<std::size_t>, rmm::device_vector<vec_2d<T>>>
+  generate_random_multipoints(std::size_t num_multipoints,
+                              std::size_t max_points_per_multipoint,
+                              std::size_t seed,
+                              rmm::cuda_stream_view stream = rmm::cuda_stream_default)
+  {
+    std::vector<std::size_t> offset(num_multipoints + 1, 0);
+    std::generate_n(offset.begin() + 1, num_multipoints, [max_points_per_multipoint]() {
+      return std::rand() % max_points_per_multipoint;
+    });
+    std::inclusive_scan(offset.begin(), offset.end(), offset.begin());
+    std::size_t num_points = offset.back();
+    auto points            = generate_random_points(num_points, seed, stream);
+    return {offset, points};
+  }
 };
 
+/**
+ * @brief Computes point distnaces on host
+ *
+ * @note Implicitly copies input vectors to host
+ */
 template <typename Cart2DVec>
 auto compute_point_distance_host(Cart2DVec const& point1, Cart2DVec const& point2)
 {
@@ -89,6 +125,52 @@ auto compute_point_distance_host(Cart2DVec const& point1, Cart2DVec const& point
   });
 
   return thrust::host_vector<T>(result_iter, result_iter + point1.size());
+}
+
+/**
+ * @brief Computes multipoint distances on host.
+ *
+ * @note Implicitly copies input vectors to host.
+ * @note this function also tests the compatibility of `multipoint_array` on host.
+ */
+template <typename OffsetVec, typename Cart2DVec>
+auto compute_multipoint_distance_host(OffsetVec const& lhs_offset,
+                                      Cart2DVec const& lhs_points,
+                                      OffsetVec const& rhs_offset,
+                                      Cart2DVec const& rhs_points)
+{
+  using Cart2D    = typename Cart2DVec::value_type;
+  using IndexType = typename OffsetVec::value_type;
+  using T         = typename Cart2D::value_type;
+
+  auto num_results = lhs_offset.size() - 1;
+  thrust::host_vector<IndexType> h_offset1(lhs_offset);
+  thrust::host_vector<Cart2D> h_point1(lhs_points);
+  thrust::host_vector<IndexType> h_offset2(rhs_offset);
+  thrust::host_vector<Cart2D> h_point2(rhs_points);
+
+  auto h_multipoint_array1 = array_view::multipoint_array{
+    h_offset1.begin(), h_offset1.end(), h_point1.begin(), h_point1.end()};
+  auto h_multipoint_array2 = array_view::multipoint_array{
+    h_offset2.begin(), h_offset2.end(), h_point2.begin(), h_point2.end()};
+
+  std::vector<T> result(num_results, 0);
+
+  std::transform(h_multipoint_array1.multipoint_begin(),
+                 h_multipoint_array1.multipoint_end(),
+                 h_multipoint_array2.multipoint_begin(),
+                 result.begin(),
+                 [](auto const& mp1, auto const& mp2) {
+                   T min_distance_squared = std::numeric_limits<T>::max();
+                   for (vec_2d<T> const& p1 : mp1)
+                     for (vec_2d<T> const& p2 : mp2) {
+                       T distance_squared   = dot((p1 - p2), (p1 - p2));
+                       min_distance_squared = min(min_distance_squared, distance_squared);
+                     }
+
+                   return std::sqrt(min_distance_squared);
+                 });
+  return result;
 }
 
 using TestTypes = ::testing::Types<float, double>;
@@ -330,6 +412,58 @@ TYPED_TEST(PairwisePointDistanceTest, SingleComponentCompareWithShapely)
 
   thrust::host_vector<T> hgot(got);
   test::expect_vector_equivalent(hgot, expected);
+  EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
+}
+
+TYPED_TEST(PairwisePointDistanceTest, MultiComponentSinglePair)
+{
+  using T         = TypeParam;
+  using Cart2D    = vec_2d<T>;
+  using Cart2DVec = std::vector<Cart2D>;
+
+  rmm::device_vector<int32_t> multipoint_geom1(std::vector<int32_t>{0, 3});
+  rmm::device_vector<Cart2D> points1(Cart2DVec{{1.0, 1.0}, {2.5, 1.5}, {-0.1, -0.7}});
+  rmm::device_vector<int32_t> multipoint_geom2(std::vector<int32_t>{0, 2});
+  rmm::device_vector<Cart2D> points2(Cart2DVec{{1.8, 1.3}, {0.3, 0.6}});
+
+  rmm::device_vector<T> expected{std::vector<T>{T{0.7280109889280517}}};
+  rmm::device_vector<T> got(multipoint_geom1.size() - 1);
+
+  auto multipoint_1 = multipoint_array{
+    multipoint_geom1.begin(), multipoint_geom1.end(), points1.begin(), points1.end()};
+  auto multipoint_2 = multipoint_array{
+    multipoint_geom2.begin(), multipoint_geom2.end(), points2.begin(), points2.end()};
+
+  auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
+
+  test::expect_vector_equivalent(expected, got);
+  EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
+}
+
+TYPED_TEST(PairwisePointDistanceTest, MultiComponentRandom)
+{
+  using T         = TypeParam;
+  using Cart2D    = vec_2d<T>;
+  using Cart2DVec = std::vector<Cart2D>;
+
+  std::size_t constexpr num_pairs                 = 1000;
+  std::size_t constexpr max_points_per_multipoint = 10;
+  auto [mp0_offset, mp0_points] =
+    this->generate_random_multipoints(num_pairs, max_points_per_multipoint, 0);
+  auto [mp1_offset, mp1_points] =
+    this->generate_random_multipoints(num_pairs, max_points_per_multipoint, num_pairs);
+
+  auto expected = compute_multipoint_distance_host(mp0_offset, mp0_points, mp1_offset, mp1_points);
+  auto got      = rmm::device_vector<T>(num_pairs);
+
+  auto multipoint_1 =
+    multipoint_array{mp0_offset.begin(), mp0_offset.end(), mp0_points.begin(), mp0_points.end()};
+  auto multipoint_2 =
+    multipoint_array{mp1_offset.begin(), mp1_offset.end(), mp1_points.begin(), mp1_points.end()};
+
+  auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
+
+  test::expect_vector_equivalent(expected, got);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 

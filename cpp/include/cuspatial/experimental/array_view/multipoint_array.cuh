@@ -27,15 +27,18 @@ namespace array_view {
 using namespace cuspatial::geometry_collection;
 
 /**
- * @brief Device view object of a multipoint array
+ * @brief Host-Device view object of a multipoint array
  *
  * Conforms to GeoArrow's specification of multipoint:
  * https://github.com/geopandas/geo-arrow-spec/blob/main/format.md
  *
  * @tparam GeometryIterator iterator type for offset array. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
  * @tparam VecIterator iterator type for the point array. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ *
+ * @note Though this object is host/device compatible,
+ * The underlying iterator should be devie accessible if used in device kernel.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
