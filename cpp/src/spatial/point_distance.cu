@@ -59,14 +59,10 @@ struct pairwise_point_distance_impl {
     auto points1_it = make_vec_2d_iterator(points1_xy.begin<T>());
     auto points2_it = make_vec_2d_iterator(points2_xy.begin<T>());
 
-    auto multipoint1_its = array_view::multipoint_array(multipoint1_offset_it,
-                                                        multipoint1_offset_it + num_pairs,
-                                                        points1_it,
-                                                        points1_it + points1_xy.size() / 2);
-    auto multipoint2_its = array_view::multipoint_array(multipoint2_offset_it,
-                                                        multipoint2_offset_it + num_pairs,
-                                                        points2_it,
-                                                        points2_it + points2_xy.size() / 2);
+    auto multipoint1_its = array_view::make_multipoint_array(
+      num_pairs, multipoint1_offset_it, points1_xy.size() / 2, points1_it);
+    auto multipoint2_its = array_view::make_multipoint_array(
+      num_pairs, multipoint2_offset_it, points2_xy.size() / 2, points2_it);
 
     pairwise_point_distance(
       multipoint1_its, multipoint2_its, distances->mutable_view().begin<T>(), stream);

@@ -99,6 +99,35 @@ class multipoint_array {
   VecIterator _points_end;
 };
 
+/**
+ * @brief Create a view of multipoint array from array size and start iterators
+ *
+ * @tparam IndexType1 Index type of the size of the geometry array
+ * @tparam IndexType2 Index type of the size of the point array
+ * @tparam GeometryIterator iterator type for offset array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam VecIterator iterator type for the point array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ *
+ * @param num_multipoints Number of multipoints in the array
+ * @param geometry_begin Iterator to the start of the geometry offset array
+ * @param num_points Number of underlying points in the multipoint array
+ * @param point_begin Iterator to the start of the points array
+ * @return View object to multipoint array
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
+ */
+template <typename IndexType1, typename IndexType2, typename GeometryIterator, typename VecIterator>
+multipoint_array<GeometryIterator, VecIterator> make_multipoint_array(
+  IndexType1 num_multipoints,
+  GeometryIterator geometry_begin,
+  IndexType2 num_points,
+  VecIterator point_begin)
+{
+  return multipoint_array<GeometryIterator, VecIterator>{
+    geometry_begin, geometry_begin + num_multipoints + 1, point_begin, point_begin + num_points};
+}
+
 }  // namespace array_view
 }  // namespace cuspatial
 

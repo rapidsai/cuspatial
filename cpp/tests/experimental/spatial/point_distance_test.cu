@@ -126,8 +126,8 @@ TYPED_TEST(PairwisePointDistanceTest, OnePairSingleComponent)
   using Cart2D    = vec_2d<T>;
   using Cart2DVec = std::vector<Cart2D>;
 
-  int32_t num_pairs     = 1;
-  auto multipoint_geom1 = thrust::make_counting_iterator(0);
+  std::size_t constexpr num_pairs = 1;
+  auto multipoint_geom1           = thrust::make_counting_iterator(0);
   rmm::device_vector<Cart2D> points1{Cart2DVec{{1.0, 1.0}}};
   auto multipoint_geom2 = thrust::make_counting_iterator(0);
   rmm::device_vector<Cart2D> points2{Cart2DVec{{0.0, 0.0}}};
@@ -136,9 +136,9 @@ TYPED_TEST(PairwisePointDistanceTest, OnePairSingleComponent)
   rmm::device_vector<T> got(points1.size());
 
   auto multipoint_1 = multipoint_array{
-    multipoint_geom1, multipoint_geom1 + num_pairs, points1.begin(), points1.end()};
+    multipoint_geom1, multipoint_geom1 + num_pairs + 1, points1.begin(), points1.end()};
   auto multipoint_2 = multipoint_array{
-    multipoint_geom2, multipoint_geom2 + num_pairs, points2.begin(), points2.end()};
+    multipoint_geom2, multipoint_geom2 + num_pairs + 1, points2.begin(), points2.end()};
 
   auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
 
@@ -152,20 +152,20 @@ TYPED_TEST(PairwisePointDistanceTest, SingleComponentManyRandom)
   using Cart2D    = vec_2d<T>;
   using Cart2DVec = std::vector<Cart2D>;
 
-  std::size_t constexpr num_points = 1000;
+  std::size_t constexpr num_pairs = 1000;
 
   auto multipoint_geom1 = thrust::make_counting_iterator(0);
-  auto points1          = this->generate_random_points(num_points, 0);
+  auto points1          = this->generate_random_points(num_pairs, 0);
   auto multipoint_geom2 = thrust::make_counting_iterator(0);
-  auto points2          = this->generate_random_points(num_points, num_points);
+  auto points2          = this->generate_random_points(num_pairs, num_pairs);
 
   auto expected = compute_point_distance_host(points1, points2);
   rmm::device_vector<T> got(points1.size());
 
-  auto multipoint_1 = multipoint_array{
-    multipoint_geom1, multipoint_geom1 + num_points, points1.begin(), points1.end()};
-  auto multipoint_2 = multipoint_array{
-    multipoint_geom2, multipoint_geom2 + num_points, points2.begin(), points2.end()};
+  auto multipoint_1 =
+    make_multipoint_array(num_pairs, multipoint_geom1, points1.size(), points1.begin());
+  auto multipoint_2 =
+    make_multipoint_array(num_pairs, multipoint_geom2, points2.size(), points2.begin());
 
   auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
   thrust::host_vector<T> hgot(got);
@@ -323,10 +323,8 @@ TYPED_TEST(PairwisePointDistanceTest, SingleComponentCompareWithShapely)
   auto p1_begin = make_vec_2d_iterator(dx1.begin(), dy1.begin());
   auto p2_begin = make_vec_2d_iterator(dx2.begin(), dy2.begin());
 
-  auto multipoints_1 =
-    multipoint_array{p1_geom, p1_geom + dx1.size() + 1, p1_begin, p1_begin + dx1.size()};
-  auto multipoints_2 =
-    multipoint_array{p2_geom, p2_geom + dx1.size() + 1, p2_begin, p2_begin + dx2.size()};
+  auto multipoints_1 = make_multipoint_array(dx1.size(), p1_geom, dx1.size(), p1_begin);
+  auto multipoints_2 = make_multipoint_array(dx2.size(), p2_geom, dx2.size(), p2_begin);
 
   auto ret_it = pairwise_point_distance(multipoints_1, multipoints_2, got.begin());
 
