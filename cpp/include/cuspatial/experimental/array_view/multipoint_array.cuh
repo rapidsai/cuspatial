@@ -38,7 +38,7 @@ using namespace cuspatial::geometry_collection;
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
  *
  * @note Though this object is host/device compatible,
- * The underlying iterator should be devie accessible if used in device kernel.
+ * The underlying iterator should be device accessible if used in device kernel.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
@@ -46,7 +46,10 @@ using namespace cuspatial::geometry_collection;
 template <typename GeometryIterator, typename VecIterator>
 class multipoint_array {
  public:
-  using element_t = iterator_vec_base_type<VecIterator>;
+  using geometry_it_t = GeometryIterator;
+  using point_it_t    = VecIterator;
+  using point_t       = iterator_value_type<point_it_t>;
+  using element_t     = iterator_vec_base_type<point_it_t>;
 
   /**
    * @brief Construct a new multipoint array object
