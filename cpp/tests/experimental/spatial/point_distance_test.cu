@@ -105,7 +105,7 @@ struct PairwisePointDistanceTest : public ::testing::Test {
 };
 
 /**
- * @brief Computes point distnaces on host
+ * @brief Computes point distances on host
  *
  * @note Implicitly copies input vectors to host
  */
@@ -131,7 +131,7 @@ auto compute_point_distance_host(Cart2DVec const& point1, Cart2DVec const& point
  * @brief Computes multipoint distances on host.
  *
  * @note Implicitly copies input vectors to host.
- * @note this function also tests the compatibility of `multipoint_array` on host.
+ * @note This function also tests the compatibility of `multipoint_array` on host.
  */
 template <typename OffsetVec, typename Cart2DVec>
 auto compute_multipoint_distance_host(OffsetVec const& lhs_offset,
