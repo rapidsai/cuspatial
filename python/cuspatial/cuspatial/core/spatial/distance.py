@@ -1,8 +1,14 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
+from typing import Tuple
+
+import cudf
 from cudf import DataFrame, Series
 from cudf.core.column import as_column
 
+from cuspatial._lib.distance import (
+    pairwise_point_distance as cpp_pairwise_point_distance,
+)
 from cuspatial._lib.hausdorff import (
     directed_hausdorff_distance as cpp_directed_hausdorff_distance,
 )
@@ -122,6 +128,87 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
         as_column(p2_lat),
     )
     return cpp_haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat)
+
+
+def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
+    """Compute shortest distance between pairs of points and multipoints
+
+    Parameters
+    ----------
+    points1 : GeoSeries
+        lhs of points or multipoints
+    points2 : GeoSeries
+        A GeoSeries of points or multipoints
+
+    Returns
+    -------
+    distance : cudf.Series
+        the distance between each pair of points
+
+    Examples
+    --------
+    >>> import geopandas as gpd
+    >>> cities = gpd.read_file(gpd.datasets.get_path('naturalearth_cities'))
+    >>> cities
+                name                     geometry
+    0    Vatican City    POINT (12.45339 41.90328)
+    1      San Marino    POINT (12.44177 43.93610)
+    2           Vaduz     POINT (9.51667 47.13372)
+    3      Luxembourg     POINT (6.13000 49.61166)
+    4         Palikir    POINT (158.14997 6.91664)
+    ..            ...                          ...
+    197         Cairo    POINT (31.24802 30.05191)
+    198         Tokyo   POINT (139.74946 35.68696)
+    199         Paris     POINT (2.33139 48.86864)
+    200      Santiago  POINT (-70.66899 -33.44807)
+    201     Singapore    POINT (103.85387 1.29498)
+
+    [202 rows x 2 columns]
+    >>> cities0 = cuspatial.from_geopandas(cities.geometry[0:10])
+    >>> cities1 = cuspatial.from_geopandas(cities.geometry[10:20])
+    >>> cuspatial.pairwise_point_distance(cities0, cities1)
+    0     61.818996
+    1     11.019265
+    2     79.854261
+    3     56.844978
+    4    131.292340
+    5    139.818452
+    6    173.507174
+    7    124.346079
+    8     47.829125
+    9    159.156985
+    dtype: float64
+    """
+
+    if not len(points1) == len(points2):
+        raise ValueError("`points1` and `points2` must have the same length")
+
+    if len(points1) == 0:
+        return cudf.Series(dtype="float64")
+
+    if not contains_only_points(points1):
+        raise ValueError("`points1` array must contain only points")
+    if not contains_only_points(points2):
+        raise ValueError("`points2` array must contain only points")
+    if (len(points1.points.xy) > 0 and len(points1.multipoints.xy) > 0) or (
+        len(points2.points.xy) > 0 and len(points2.multipoints.xy) > 0
+    ):
+        raise NotImplementedError(
+            "Mixing point and multipoint geometries is not supported"
+        )
+
+    points1_xy, points1_geometry_offsets = _flatten_point_series(points1)
+    points2_xy, points2_geometry_offsets = _flatten_point_series(points2)
+    return Series._from_data(
+        {
+            None: cpp_pairwise_point_distance(
+                points1_xy,
+                points2_xy,
+                points1_geometry_offsets,
+                points2_geometry_offsets,
+            )
+        }
+    )
 
 
 def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
@@ -349,4 +436,17 @@ def pairwise_point_linestring_distance(
                 linestrings.lines.geometry_offset._column,
             )
         }
+    )
+
+
+def _flatten_point_series(
+    points: GeoSeries,
+) -> Tuple[
+    cudf.core.column.column.ColumnBase, cudf.core.column.column.ColumnBase
+]:
+    if len(points.points.xy) > 0:
+        return points.points.xy._column, None
+    return (
+        points.multipoints.xy._column,
+        points.multipoints.geometry_offset._column,
     )

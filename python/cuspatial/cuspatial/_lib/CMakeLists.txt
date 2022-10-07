@@ -13,6 +13,7 @@
 # =============================================================================
 
 set(cython_sources 
+    distance.pyx
     hausdorff.pyx
     interpolate.pyx
     nearest_points.pyx
