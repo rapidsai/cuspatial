@@ -26,22 +26,20 @@ namespace cuspatial {
  * @ingroup distance
  * @copybrief cuspatial::pairwise_point_distance
  *
+ * @tparam MultiPointArrayViewA An instance of template type `array_view::multipoint_array`
+ * @tparam MultiPointArrayViewB An instance of template type `array_view::multipoint_array`
+ *
  * @param multipoints1 Array view object constructed from the iterators of the first multipoint in
  * the pair.
  * @param multipoints2 Array view object constructed from the iterators of the second multipoint in
  * the pair.
  * @return Iterator past the last distance computed
  */
-template <class OffsetIteratorA,
-          class OffsetIteratorB,
-          class Cart2dItA,
-          class Cart2dItB,
-          class OutputIt>
-OutputIt pairwise_point_distance(
-  array_view::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints1,
-  array_view::multipoint_array<OffsetIteratorB, Cart2dItB> multipoints2,
-  OutputIt distances_first,
-  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+template <class MultiPointArrayViewA, class MultiPointArrayViewB, class OutputIt>
+OutputIt pairwise_point_distance(MultiPointArrayViewA multipoints1,
+                                 MultiPointArrayViewB multipoints2,
+                                 OutputIt distances_first,
+                                 rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/point_distance.cuh>
