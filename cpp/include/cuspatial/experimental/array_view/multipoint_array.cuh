@@ -28,11 +28,12 @@ using namespace cuspatial::geometry_collection;
 
 /**
  * @brief Host-Device view object of a multipoint array
+ * @ingroup array_view
  *
  * Conforms to GeoArrow's specification of multipoint:
  * https://github.com/geopandas/geo-arrow-spec/blob/main/format.md
  *
- * @tparam GeometryIterator iterator type for offset array. Must meet
+ * @tparam GeometryIterator iterator type for the offset array. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
  * @tparam VecIterator iterator type for the point array. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
@@ -107,13 +108,17 @@ class multipoint_array {
 
 /**
  * @brief Create a view of multipoint array from array size and start iterators
+ * @ingroup array_view
  *
  * @tparam IndexType1 Index type of the size of the geometry array
  * @tparam IndexType2 Index type of the size of the point array
  * @tparam GeometryIterator iterator type for offset array. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
  * @tparam VecIterator iterator type for the point array. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ *
+ * @note Iterators should be device-accessible if the view is intended to be
+ * used on device.
  *
  * @param num_multipoints Number of multipoints in the array
  * @param geometry_begin Iterator to the start of the geometry offset array
