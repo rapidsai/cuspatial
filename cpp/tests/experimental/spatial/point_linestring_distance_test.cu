@@ -18,6 +18,8 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/array_view/multilinestring_array.cuh>
+#include <cuspatial/experimental/array_view/multipoint_array.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_linestring_distance.cuh>
 #include <cuspatial/vec_2d.hpp>
@@ -33,6 +35,8 @@
 namespace cuspatial {
 namespace test {
 
+using namespace cuspatial::array_view;
+
 template <typename T>
 struct PairwisePointLinestringDistanceTest : public ::testing::Test {
 };
@@ -46,32 +50,32 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, Empty)
   using T       = TypeParam;
   using CartVec = std::vector<vec_2d<T>>;
 
-  std::vector<int> point_part_offsets{0};
+  std::vector<int> point_geometry_offsets{0};
   CartVec points{};
+  std::vector<int> linestring_geometry_offsets{0};
   std::vector<int> linestring_part_offsets{0};
-  std::vector<int> linestring_offsets{0};
   CartVec linestring_points{};
 
-  rmm::device_vector<int> d_point_parts(point_part_offsets);
+  rmm::device_vector<int> d_point_geometries(point_geometry_offsets);
   rmm::device_vector<vec_2d<T>> d_points(points);
+  rmm::device_vector<int> d_linestring_geometries(linestring_geometry_offsets);
   rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
-  rmm::device_vector<int> d_linestrings(linestring_offsets);
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
-  rmm::device_vector<T> got{};
+  auto multipoints = make_multipoint_array(
+    d_point_geometries.size() - 1, d_point_geometries.begin(), d_points.size(), d_points.begin());
 
+  auto multilinestrings = make_multilinestring_array(d_linestring_geometries.size() - 1,
+                                                     d_linestring_geometries.begin(),
+                                                     d_linestring_parts.size() - 1,
+                                                     d_linestring_parts.begin(),
+                                                     d_linestring_points.size(),
+                                                     d_linestring_points.begin());
+
+  rmm::device_vector<T> got{};
   thrust::host_vector<T> expect{};
 
-  auto ret = pairwise_point_linestring_distance(d_point_parts.begin(),
-                                                d_point_parts.end(),
-                                                d_points.begin(),
-                                                d_points.end(),
-                                                d_linestring_parts.begin(),
-                                                d_linestrings.begin(),
-                                                d_linestrings.end(),
-                                                d_linestring_points.begin(),
-                                                d_linestring_points.end(),
-                                                got.begin());
+  auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
   expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
@@ -82,31 +86,32 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairFromVectorSingleComponent
   using T       = TypeParam;
   using CartVec = std::vector<vec_2d<T>>;
 
-  std::vector<int> point_part_offsets{0, 1};
+  std::vector<int> point_geometry_offsets{0, 1};
   CartVec points{{0, 0}};
-  std::vector<int> linestring_part_offsets{0, 1};
-  std::vector<int> linestring_offsets{0, 3};
+  std::vector<int> linestring_geometry_offsets{0, 1};
+  std::vector<int> linestring_part_offsets{0, 3};
   CartVec linestring_points{{1, 1}, {2, 2}, {3, 3}};
   thrust::host_vector<T> expect(std::vector<T>{std::sqrt(T{2.0})});
 
-  rmm::device_vector<int> d_point_parts(point_part_offsets);
+  rmm::device_vector<int> d_point_geometries(point_geometry_offsets);
   rmm::device_vector<vec_2d<T>> d_points(points);
-  rmm::device_vector<int> d_linestring_parts(linestring_offsets);
-  rmm::device_vector<int> d_offsets(linestring_offsets);
+  rmm::device_vector<int> d_linestring_geometries(linestring_geometry_offsets);
+  rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
+
+  auto multipoints = make_multipoint_array(
+    d_point_geometries.size() - 1, d_point_geometries.begin(), d_points.size(), d_points.begin());
+
+  auto multilinestrings = make_multilinestring_array(d_linestring_geometries.size() - 1,
+                                                     d_linestring_geometries.begin(),
+                                                     d_linestring_parts.size() - 1,
+                                                     d_linestring_parts.begin(),
+                                                     d_linestring_points.size(),
+                                                     d_linestring_points.begin());
 
   rmm::device_vector<T> got(points.size());
 
-  auto ret = pairwise_point_linestring_distance(d_point_parts.begin(),
-                                                d_point_parts.end(),
-                                                d_points.begin(),
-                                                d_points.end(),
-                                                d_linestring_parts.begin(),
-                                                d_offsets.begin(),
-                                                d_offsets.end(),
-                                                d_linestring_points.begin(),
-                                                d_linestring_points.end(),
-                                                got.begin());
+  auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
   expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
@@ -117,30 +122,32 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairFromCountingIteratorSingl
   using T       = TypeParam;
   using CartVec = std::vector<vec_2d<T>>;
 
+  std::size_t constexpr num_pairs = 1;
+
   CartVec points{{0, 0}};
-  std::vector<int> linestring_offsets{0, 2};
+  std::vector<int> linestring_part_offsets{0, 2};
   CartVec linestring_points{{1.0, 0.0}, {0.0, 1.0}};
   thrust::host_vector<T> expect(std::vector<T>{std::sqrt(T{2.0}) / 2});
 
-  // rmm::device_vector<int> d_point_parts(point_part_offsets);
-  auto d_point_parts = thrust::make_counting_iterator(0);
+  auto d_point_geometries = thrust::make_counting_iterator(0);
   rmm::device_vector<vec_2d<T>> d_points(points);
-  auto d_linestring_parts = thrust::make_counting_iterator(0);
-  rmm::device_vector<int> d_offsets(linestring_offsets);
+  auto d_linestring_geometries = thrust::make_counting_iterator(0);
+  rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
-  rmm::device_vector<T> got(points.size());
+  auto multipoints =
+    make_multipoint_array(num_pairs, d_point_geometries, d_points.size(), d_points.begin());
 
-  auto ret = pairwise_point_linestring_distance(d_point_parts,
-                                                d_point_parts + d_points.size() + 1,
-                                                d_points.begin(),
-                                                d_points.end(),
-                                                d_linestring_parts,
-                                                d_offsets.begin(),
-                                                d_offsets.end(),
-                                                d_linestring_points.begin(),
-                                                d_linestring_points.end(),
-                                                got.begin());
+  auto multilinestrings = make_multilinestring_array(num_pairs,
+                                                     d_linestring_geometries,
+                                                     d_linestring_parts.size() - 1,
+                                                     d_linestring_parts.begin(),
+                                                     d_linestring_points.size(),
+                                                     d_linestring_points.begin());
+
+  rmm::device_vector<T> got(num_pairs);
+
+  auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
   expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
@@ -151,31 +158,32 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, TwoPairFromVectorSingleComponent
   using T       = TypeParam;
   using CartVec = std::vector<vec_2d<T>>;
 
-  std::vector<int> point_part_offsets{0, 1, 2};
+  std::vector<int> point_geometry_offsets{0, 1, 2};
   CartVec points{{0, 0}, {0, 0}};
-  std::vector<int> linestring_part_offsets{0, 1, 2};
-  std::vector<int> linestring_offsets{0, 3, 6};
+  std::vector<int> linestring_geometry_offsets{0, 1, 2};
+  std::vector<int> linestring_part_offsets{0, 3, 6};
   CartVec linestring_points{{1, 1}, {2, 2}, {3, 3}, {-1, -1}, {-2, -2}, {-3, -3}};
   thrust::host_vector<T> expect(std::vector<T>{std::sqrt(T{2.0}), std::sqrt(T{2.0})});
 
-  rmm::device_vector<int> d_point_parts(point_part_offsets);
+  rmm::device_vector<int> d_point_geometries(point_geometry_offsets);
   rmm::device_vector<vec_2d<T>> d_points(points);
+  rmm::device_vector<int> d_linestring_geometries(linestring_geometry_offsets);
   rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
-  rmm::device_vector<int> d_offsets(linestring_offsets);
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
+
+  auto multipoints = make_multipoint_array(
+    d_point_geometries.size() - 1, d_point_geometries.begin(), d_points.size(), d_points.begin());
+
+  auto multilinestrings = make_multilinestring_array(d_linestring_geometries.size() - 1,
+                                                     d_linestring_geometries.begin(),
+                                                     d_linestring_parts.size() - 1,
+                                                     d_linestring_parts.begin(),
+                                                     d_linestring_points.size(),
+                                                     d_linestring_points.begin());
 
   rmm::device_vector<T> got(points.size());
 
-  auto ret = pairwise_point_linestring_distance(d_point_parts.begin(),
-                                                d_point_parts.end(),
-                                                d_points.begin(),
-                                                d_points.end(),
-                                                d_linestring_parts.begin(),
-                                                d_offsets.begin(),
-                                                d_offsets.end(),
-                                                d_linestring_points.begin(),
-                                                d_linestring_points.end(),
-                                                got.begin());
+  auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
   expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
@@ -196,27 +204,25 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, ManyPairsFromIteratorsSingleComp
   auto linestring_points_x = thrust::make_counting_iterator(T{0.0});
   auto linestring_points_y = thrust::make_constant_iterator(T{1.0});
   auto linestring_points   = make_vec_2d_iterator(linestring_points_x, linestring_points_y);
-  auto offsets = detail::make_counting_transform_iterator(0, times_three_functor<int32_t>{});
-  auto linestring_parts = thrust::make_counting_iterator(0);
+  auto offsets =
+    cuspatial::detail::make_counting_transform_iterator(0, times_three_functor<int32_t>{});
+  auto linestring_geometries = thrust::make_counting_iterator(0);
 
-  auto points_x    = detail::make_counting_transform_iterator(T{0.0}, times_three_functor<T>{});
-  auto points_y    = thrust::make_constant_iterator(T{0.0});
-  auto points      = make_vec_2d_iterator(points_x, points_y);
-  auto point_parts = thrust::make_counting_iterator(0);
+  auto points_x =
+    cuspatial::detail::make_counting_transform_iterator(T{0.0}, times_three_functor<T>{});
+  auto points_y         = thrust::make_constant_iterator(T{0.0});
+  auto points           = make_vec_2d_iterator(points_x, points_y);
+  auto point_geometries = thrust::make_counting_iterator(0);
+
+  auto multipoints = make_multipoint_array(num_pairs, point_geometries, num_pairs, points);
+
+  auto multilinestrings = make_multilinestring_array(
+    num_pairs, linestring_geometries, num_pairs, offsets, num_linestring_points, linestring_points);
 
   std::vector<T> expect(num_pairs, T{1.0});
   rmm::device_vector<T> got(num_pairs);
 
-  auto ret = pairwise_point_linestring_distance(point_parts,
-                                                point_parts + num_pairs + 1,
-                                                points,
-                                                points + num_pairs,
-                                                linestring_parts,
-                                                offsets,
-                                                offsets + num_pairs,
-                                                linestring_points,
-                                                linestring_points + num_linestring_points,
-                                                got.begin());
+  auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
   expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
@@ -354,28 +360,30 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePartFiftyPairsCompareWithShap
                    1424632154.129706,  1642663437.0646927, 440103049.49988014, 1607161773.8117433,
                    1520123653.1998143, 1027033461.3751863};
 
-  auto num_pairs = d_points_x.size();
+  auto num_pairs             = d_points_x.size();
+  auto num_linestring_points = d_linestring_points_x.size();
 
-  auto point_parts = thrust::make_counting_iterator(0);
-  auto points      = make_vec_2d_iterator(d_points_x.begin(), d_points_y.begin());
+  auto point_geometries = thrust::make_counting_iterator(0);
+  auto points           = make_vec_2d_iterator(d_points_x.begin(), d_points_y.begin());
 
-  auto linestring_parts = thrust::make_counting_iterator(0);
-  auto offsets = detail::make_counting_transform_iterator(0, times_three_functor<int32_t>{});
+  auto linestring_geometries = thrust::make_counting_iterator(0);
+  auto linestring_parts =
+    cuspatial::detail::make_counting_transform_iterator(0, times_three_functor<int32_t>{});
   auto linestring_points =
     make_vec_2d_iterator(d_linestring_points_x.begin(), d_linestring_points_y.begin());
 
+  auto multipoints = make_multipoint_array(num_pairs, point_geometries, num_pairs, points);
+
+  auto multilinestrings = make_multilinestring_array(num_pairs,
+                                                     linestring_geometries,
+                                                     num_pairs,
+                                                     linestring_parts,
+                                                     num_linestring_points,
+                                                     linestring_points);
+
   rmm::device_vector<T> got(d_points_x.size());
 
-  auto ret = pairwise_point_linestring_distance(point_parts,
-                                                point_parts + num_pairs + 1,
-                                                points,
-                                                points + num_pairs,
-                                                linestring_parts,
-                                                offsets,
-                                                offsets + num_pairs,
-                                                linestring_points,
-                                                linestring_points + d_linestring_points_x.size(),
-                                                got.begin());
+  auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
   expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
@@ -386,32 +394,33 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairMultiPointMultiLinestring
   using T       = TypeParam;
   using CartVec = std::vector<vec_2d<T>>;
 
-  std::vector<int> point_part_offsets{0, 3};
+  std::vector<int> point_geometry_offsets{0, 3};
   CartVec points{{0, 1}, {2, 3}, {4, 5}};
-  std::vector<int> linestring_part_offsets{0, 3};
-  std::vector<int> linestring_offsets{0, 3, 6, 8};
+  std::vector<int> linestring_geometry_offsets{0, 3};
+  std::vector<int> linestring_part_offsets{0, 3, 6, 8};
   CartVec linestring_points{
     {0, -1}, {-2, -3}, {-4, -5}, {-5, -6}, {7, 8}, {8, 9}, {9, 10}, {10, 11}};
   thrust::host_vector<T> expect(std::vector<T>{0.32539568672798425});
 
-  rmm::device_vector<int> d_point_parts(point_part_offsets);
+  rmm::device_vector<int> d_point_geometries(point_geometry_offsets);
   rmm::device_vector<vec_2d<T>> d_points(points);
+  rmm::device_vector<int> d_linestring_geometries(linestring_geometry_offsets);
   rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
-  rmm::device_vector<int> d_offsets(linestring_offsets);
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
-  rmm::device_vector<T> got(point_part_offsets.size() - 1);
+  auto multipoints = make_multipoint_array(
+    d_point_geometries.size() - 1, d_point_geometries.begin(), d_points.size(), d_points.begin());
 
-  auto ret = pairwise_point_linestring_distance(d_point_parts.begin(),
-                                                d_point_parts.end(),
-                                                d_points.begin(),
-                                                d_points.end(),
-                                                d_linestring_parts.begin(),
-                                                d_offsets.begin(),
-                                                d_offsets.end(),
-                                                d_linestring_points.begin(),
-                                                d_linestring_points.end(),
-                                                got.begin());
+  auto multilinestrings = make_multilinestring_array(d_linestring_geometries.size() - 1,
+                                                     d_linestring_geometries.begin(),
+                                                     d_linestring_parts.size() - 1,
+                                                     d_linestring_parts.begin(),
+                                                     d_linestring_points.size(),
+                                                     d_linestring_points.begin());
+
+  rmm::device_vector<T> got(point_geometry_offsets.size() - 1);
+
+  auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
   expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());
@@ -422,32 +431,33 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, ThreePairMultiPointMultiLinestri
   using T       = TypeParam;
   using CartVec = std::vector<vec_2d<T>>;
 
-  std::vector<int> point_part_offsets{0, 1, 3, 5};
+  std::vector<int> point_geometry_offsets{0, 1, 3, 5};
   CartVec points{{0, 1}, {2, 3}, {4, 5}, {6, 7}, {8, 9}};
-  std::vector<int> linestring_part_offsets{0, 2, 3, 5};
-  std::vector<int> linestring_offsets{0, 2, 4, 6, 8};
+  std::vector<int> linestring_geometry_offsets{0, 2, 3, 5};
+  std::vector<int> linestring_part_offsets{0, 2, 4, 6, 8};
   CartVec linestring_points{
     {0, -1}, {-2, -3}, {-4, -5}, {-5, -6}, {7, 8}, {8, 9}, {9, 10}, {10, 11}};
   thrust::host_vector<T> expect(std::vector<T>{2.0, 4.242640687119285, 1.4142135623730951});
 
-  rmm::device_vector<int> d_point_parts(point_part_offsets);
+  rmm::device_vector<int> d_point_geometries(point_geometry_offsets);
   rmm::device_vector<vec_2d<T>> d_points(points);
+  rmm::device_vector<int> d_linestring_geometries(linestring_geometry_offsets);
   rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
-  rmm::device_vector<int> d_offsets(linestring_offsets);
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
-  rmm::device_vector<T> got(point_part_offsets.size() - 1);
+  auto multipoints = make_multipoint_array(
+    d_point_geometries.size() - 1, d_point_geometries.begin(), d_points.size(), d_points.begin());
 
-  auto ret = pairwise_point_linestring_distance(d_point_parts.begin(),
-                                                d_point_parts.end(),
-                                                d_points.begin(),
-                                                d_points.end(),
-                                                d_linestring_parts.begin(),
-                                                d_offsets.begin(),
-                                                d_offsets.end(),
-                                                d_linestring_points.begin(),
-                                                d_linestring_points.end(),
-                                                got.begin());
+  auto multilinestrings = make_multilinestring_array(d_linestring_geometries.size() - 1,
+                                                     d_linestring_geometries.begin(),
+                                                     d_linestring_parts.size() - 1,
+                                                     d_linestring_parts.begin(),
+                                                     d_linestring_points.size(),
+                                                     d_linestring_points.begin());
+
+  rmm::device_vector<T> got(point_geometry_offsets.size() - 1);
+
+  auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
   expect_vector_equivalent(expect, got);
   EXPECT_EQ(ret, got.end());

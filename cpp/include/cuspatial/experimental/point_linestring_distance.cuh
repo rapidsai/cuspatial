@@ -18,51 +18,18 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
+#include <cuspatial/experimental/array_view/multilinestring_array.cuh>
+#include <cuspatial/experimental/array_view/multipoint_array.cuh>
+
 namespace cuspatial {
 
 /**
- * @ingroup distance
- * @copybrief cuspatial::pairwise_point_linestring_distance
+ * @brief Compute pairwise multipoint to multilinestring distance
  *
- * The number of distances computed is `std::distance(points_first, points_last)`.
- *
- * @tparam Cart2dItA iterator type for point array of the point element of each pair. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam Cart2dItB iterator type for point array of the linestring element of each pair. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OffsetIteratorA iterator type for `point_geometry_offset` array. Must meet the
- * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OffsetIteratorB iterator type for `linestring_geometry_offset` array. Must meet the
- * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OffsetIteratorC iterator type for `linestring_part_offset` array. Must meet the
- * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OutputIt iterator type for output array. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- *
- * @param point_geometry_offset_first beginning of the range of multipoint geometries of each
- * pair
- * @param point_geometry_offset_last end of the range of multipoint geometries of each pair
- * @param points_first beginning of the range of point values
- * @param points_last end of the range of the point values
- * @param linestring_geometry_offset_first beginning of the range of offsets to the multilinestring
- * geometry of each pair, the end range is implied by linestring_geometry_offset_first +
- * std::distance(`point_geometry_offset_first`, `point_geometry_offset_last`)
- * @param linestring_offsets_first beginning of the range of offsets to the starting point
- * of each linestring
- * @param linestring_offsets_last end of the range of offsets to the starting point
- * of each linestring
- * @param linestring_points_first beginning of the range of linestring points
- * @param linestring_points_last end of the range of linestring points
- * @param distances_first beginning of the output range of distances
+ * @param multipoints Array view object of a multipoint array
+ * @param multilinestrings Array view object of a multilinestring array
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
- * @return Output iterator to one past the last element in the output range
- *
- * @pre all input iterators for coordinates must have `cuspatial::vec_2d` type.
- * @pre all scalar types must be floating point types, and must be the same type for all input
- * iterators and output iterators.
- *
- * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
- * "LegacyRandomAccessIterator"
+ * @return Output iterator to the element past the last tuple computed.
  */
 template <class Cart2dItA,
           class Cart2dItB,
@@ -71,15 +38,8 @@ template <class Cart2dItA,
           class OffsetIteratorC,
           class OutputIt>
 OutputIt pairwise_point_linestring_distance(
-  OffsetIteratorA point_geometry_offset_first,
-  OffsetIteratorA point_geometry_offset_last,
-  Cart2dItA points_first,
-  Cart2dItA points_last,
-  OffsetIteratorB linestring_geometry_offset_first,
-  OffsetIteratorC linestring_part_offsets_first,
-  OffsetIteratorC linestring_part_offsets_last,
-  Cart2dItB linestring_points_first,
-  Cart2dItB linestring_points_last,
+  array_view::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints,
+  array_view::multilinestring_array<OffsetIteratorB, OffsetIteratorC, Cart2dItB> multilinestrings,
   OutputIt distances_first,
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
