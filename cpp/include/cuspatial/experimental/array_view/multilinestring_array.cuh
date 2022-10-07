@@ -27,9 +27,13 @@ namespace array_view {
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 class multilinestring_array {
-  using element_t = iterator_vec_base_type<VecIterator>;
-
  public:
+  using geometry_it_t = GeometryIterator;
+  using part_it_t     = PartIterator;
+  using point_it_t    = VecIterator;
+  using point_t       = iterator_value_type<VecIterator>;
+  using element_t     = iterator_vec_base_type<VecIterator>;
+
   multilinestring_array(GeometryIterator geometry_begin,
                         GeometryIterator geometry_end,
                         PartIterator part_begin,

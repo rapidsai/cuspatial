@@ -42,18 +42,12 @@
 namespace cuspatial {
 namespace detail {
 
-template <class Cart2dItA,
-          class Cart2dItB,
-          class OffsetIteratorA,
-          class OffsetIteratorB,
-          class OffsetIteratorC,
-          class OutputIterator>
-void __global__ pairwise_point_linestring_distance_kernel(
-  array_view::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints,
-  array_view::multilinestring_array<OffsetIteratorB, OffsetIteratorC, Cart2dItB> multilinestrings,
-  OutputIterator distances)
+template <class MultiPointArrayView, class MultiLinestringArrayView, class OutputIterator>
+void __global__ pairwise_point_linestring_distance_kernel(MultiPointArrayView multipoints,
+                                                          MultiLinestringArrayView multilinestrings,
+                                                          OutputIterator distances)
 {
-  using T = iterator_vec_base_type<Cart2dItA>;
+  using T = typename MultiPointArrayView::element_t;
 
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multilinestrings.num_points();
        idx += gridDim.x * blockDim.x) {
@@ -82,27 +76,21 @@ void __global__ pairwise_point_linestring_distance_kernel(
 }
 
 }  // namespace detail
-
-template <class Cart2dItA,
-          class Cart2dItB,
-          class OffsetIteratorA,
-          class OffsetIteratorB,
-          class OffsetIteratorC,
-          class OutputIt>
-OutputIt pairwise_point_linestring_distance(
-  array_view::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints,
-  array_view::multilinestring_array<OffsetIteratorB, OffsetIteratorC, Cart2dItB> multilinestrings,
-  OutputIt distances_first,
-  rmm::cuda_stream_view stream)
+template <class MultiPointArrayView, class MultiLinestringArrayView, class OutputIt>
+OutputIt pairwise_point_linestring_distance(MultiPointArrayView multipoints,
+                                            MultiLinestringArrayView multilinestrings,
+                                            OutputIt distances_first,
+                                            rmm::cuda_stream_view stream)
 {
-  using T = iterator_vec_base_type<Cart2dItA>;
+  using T = typename MultiPointArrayView::element_t;
 
-  static_assert(is_same_floating_point<T, iterator_vec_base_type<Cart2dItB>>(),
+  static_assert(is_same_floating_point<T, typename MultiLinestringArrayView::element_t>(),
                 "Inputs must have same floating point value type.");
 
-  static_assert(
-    is_same<vec_2d<T>, iterator_value_type<Cart2dItA>, iterator_value_type<Cart2dItB>>(),
-    "Inputs must be cuspatial::vec_2d");
+  static_assert(is_same<vec_2d<T>,
+                        typename MultiPointArrayView::point_t,
+                        typename MultiLinestringArrayView::point_t>(),
+                "Inputs must be cuspatial::vec_2d");
 
   CUSPATIAL_EXPECTS(multilinestrings.size() == multipoints.size(),
                     "Input must have the same number of rows.");
