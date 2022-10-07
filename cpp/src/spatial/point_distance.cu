@@ -104,7 +104,7 @@ struct pairwise_point_distance_functor {
 
     return cudf::type_dispatcher(points1_xy.type(),
                                  pairwise_point_distance_impl<is_multipoint1, is_multipoint2>{},
-                                 num_lhs - 1,
+                                 num_lhs,
                                  multipoints1_offset,
                                  points1_xy,
                                  multipoints2_offset,
