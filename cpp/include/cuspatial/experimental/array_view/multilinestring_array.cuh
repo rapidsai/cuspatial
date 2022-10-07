@@ -25,6 +25,26 @@
 namespace cuspatial {
 namespace array_view {
 
+/**
+ * @brief Host-Device view object of a multilinestring array
+ * @ingroup array_view
+ *
+ * Conforms to GeoArrow's specification of multilinestring:
+ * https://github.com/geopandas/geo-arrow-spec/blob/main/format.md
+ *
+ * @tparam GeometryIterator iterator type for the geometry offset array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ * @tparam PartIterator iterator type for the part offset array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ * @tparam VecIterator iterator type for the point array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ *
+ * @note Though this object is host/device compatible,
+ * The underlying iterator should be device accessible if used in device kernel.
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
+ */
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 class multilinestring_array {
  public:
@@ -105,6 +125,34 @@ class multilinestring_array {
   VecIterator points_end;
 };
 
+/**
+ * @brief Create a view of multilinestring array from array size and start iterators
+ * @ingroup array_view
+ *
+ * @tparam IndexType1 Index type of the size of the geometry array
+ * @tparam IndexType2 Index type of the size of the part array
+ * @tparam IndexType3 Index type of the size of the point array
+ * @tparam GeometryIterator iterator type for offset array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ * @tparam PartIterator iterator type for the part offset array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ * @tparam VecIterator iterator type for the point array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ *
+ * @note Iterators should be device-accessible if the view is intended to be
+ * used on device.
+ *
+ * @param num_multilinestrings Number of multilinestrings in the array.
+ * @param geometry_begin Iterator to the start of the geometry array.
+ * @param num_linestrings Number of linestrings in the underlying parts array.
+ * @param part_begin Iterator to the start of the part array.
+ * @param num_points Number of points in the underlying points array.
+ * @param point_begin Iterator to the start of the point array.
+ * @return View object to the multilinestring array.
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
+ */
 template <typename IndexType1,
           typename IndexType2,
           typename IndexType3,

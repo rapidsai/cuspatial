@@ -117,7 +117,8 @@
  *          Cuspatial header only APIs accepts view objects that are composed of flattened view of
  *          offsets and coordinates. View objects are device and host compatible. Various accessors
  *          are provided for flexible access to the data.
- *          @file multipoint_array.hpp
+ *          @file multipoint_array.cuh
+ *          @file multilinestring_array.cuh
  *      @}
  * @defgroup io I/O
  * @{
