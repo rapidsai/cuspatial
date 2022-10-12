@@ -17,7 +17,7 @@
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/haversine.cuh>
-#include <cuspatial/experimental/type_utils.hpp>
+#include <cuspatial/experimental/iterator_factory.cuh>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_view.hpp>
@@ -56,8 +56,8 @@ struct haversine_functor {
     auto mask_policy = cudf::mask_allocation_policy::NEVER;
     auto result      = cudf::allocate_like(a_lon, a_lon.size(), mask_policy, mr);
 
-    auto lonlat_a = cuspatial::make_lonlat_iterator(a_lon.begin<T>(), a_lat.begin<T>());
-    auto lonlat_b = cuspatial::make_lonlat_iterator(b_lon.begin<T>(), b_lat.begin<T>());
+    auto lonlat_a = cuspatial::make_vec_2d_iterator(a_lon.begin<T>(), a_lat.begin<T>());
+    auto lonlat_b = cuspatial::make_vec_2d_iterator(b_lon.begin<T>(), b_lat.begin<T>());
 
     cuspatial::haversine_distance(lonlat_a,
                                   lonlat_a + a_lon.size(),

@@ -16,12 +16,14 @@
 
 #pragma once
 
-#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
+
+#include <thrust/transform.h>
 
 #include <type_traits>
 
@@ -34,21 +36,17 @@ OutputIt pairwise_point_distance(Cart2dItA points1_first,
                                  OutputIt distances_first,
                                  rmm::cuda_stream_view stream)
 {
-  using T = typename std::iterator_traits<Cart2dItA>::value_type::value_type;
+  using T = typename cuspatial::iterator_vec_base_type<Cart2dItA>;
 
-  static_assert(
-    detail::is_floating_point<T,
-                              typename std::iterator_traits<Cart2dItB>::value_type::value_type,
-                              typename std::iterator_traits<OutputIt>::value_type>(),
-    "Inputs and output must be floating point types.");
+  static_assert(is_same_floating_point<T,
+                                       typename cuspatial::iterator_vec_base_type<Cart2dItB>,
+                                       typename cuspatial::iterator_value_type<OutputIt>>(),
+                "Inputs and output must have the same floating point value type.");
 
-  static_assert(detail::is_same<T, typename std::iterator_traits<OutputIt>::value_type>(),
-                "Inputs and output must be the same types.");
-
-  static_assert(detail::is_same<cartesian_2d<T>,
-                                typename std::iterator_traits<Cart2dItA>::value_type,
-                                typename std::iterator_traits<Cart2dItB>::value_type>(),
-                "All Input types must be cuspatial::cartesian_2d with the same value type");
+  static_assert(is_same<vec_2d<T>,
+                        typename cuspatial::iterator_value_type<Cart2dItA>,
+                        typename cuspatial::iterator_value_type<Cart2dItB>>(),
+                "All Input types must be cuspatial::vec_2d with the same value type");
 
   return thrust::transform(rmm::exec_policy(stream),
                            points1_first,

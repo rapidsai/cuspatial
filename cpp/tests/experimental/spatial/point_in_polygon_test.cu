@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_in_polygon.cuh>
-#include <cuspatial/experimental/type_utils.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
@@ -32,9 +32,9 @@ using namespace cuspatial;
 template <typename T>
 struct PointInPolygonTest : public ::testing::Test {
  public:
-  rmm::device_vector<cartesian_2d<T>> make_device_points(std::initializer_list<cartesian_2d<T>> pts)
+  rmm::device_vector<vec_2d<T>> make_device_points(std::initializer_list<vec_2d<T>> pts)
   {
-    return rmm::device_vector<cartesian_2d<T>>(pts.begin(), pts.end());
+    return rmm::device_vector<vec_2d<T>>(pts.begin(), pts.end());
   }
 
   rmm::device_vector<std::size_t> make_device_offsets(std::initializer_list<std::size_t> pts)
@@ -271,7 +271,7 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
     thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorA<T>{});
   auto poly_point_ys_iter =
     thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorB<T>{});
-  auto poly_point_iter = make_cartesian_2d_iterator(poly_point_xs_iter, poly_point_ys_iter);
+  auto poly_point_iter = make_vec_2d_iterator(poly_point_xs_iter, poly_point_ys_iter);
 
   auto expected =
     std::vector<int32_t>({0b1111111111111111111111111111111, 0b0000000000000000000000000000000});

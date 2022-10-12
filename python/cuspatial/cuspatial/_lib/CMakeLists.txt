@@ -15,16 +15,19 @@
 set(cython_sources 
     hausdorff.pyx
     interpolate.pyx
+    nearest_points.pyx
     point_in_polygon.pyx
     polygon_bounding_boxes.pyx
     polyline_bounding_boxes.pyx
     linestring_distance.pyx
+    point_linestring_distance.pyx
     quadtree.pyx
     shapefile_reader.pyx
     spatial.pyx
     spatial_join.pyx
     spatial_window.pyx
     trajectory.pyx
+    utils.pyx
     )
 set(linked_libraries cuspatial::cuspatial)
 

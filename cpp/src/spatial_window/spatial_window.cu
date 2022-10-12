@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/points_in_range.cuh>
-#include <cuspatial/experimental/type_utils.hpp>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_view.hpp>
@@ -44,7 +44,7 @@ struct spatial_window_dispatch {
                                           rmm::cuda_stream_view stream,
                                           rmm::mr::device_memory_resource* mr)
   {
-    auto points_begin = cuspatial::make_cartesian_2d_iterator(x.begin<T>(), y.begin<T>());
+    auto points_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
 
     auto window_min =
       cuspatial::vec_2d<T>{static_cast<T>(window_min_x), static_cast<T>(window_min_y)};
@@ -63,8 +63,8 @@ struct spatial_window_dispatch {
     auto& output_x = cols[0];
     auto& output_y = cols[1];
 
-    auto output_zip = cuspatial::make_zipped_cartesian_2d_output_iterator(
-      output_x->mutable_view().begin<T>(), output_y->mutable_view().begin<T>());
+    auto output_zip = cuspatial::make_vec_2d_output_iterator(output_x->mutable_view().begin<T>(),
+                                                             output_y->mutable_view().begin<T>());
 
     cuspatial::copy_points_in_range(
       window_min, window_max, points_begin, points_begin + x.size(), output_zip, stream);

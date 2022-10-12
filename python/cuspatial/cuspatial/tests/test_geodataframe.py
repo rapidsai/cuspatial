@@ -127,7 +127,7 @@ def test_groupby(gpdf):
 
 def test_type_persistence(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
-    assert type(cugpdf["geometry"]) == cuspatial.geometry.geoseries.GeoSeries
+    assert type(cugpdf["geometry"]) == cuspatial.GeoSeries
 
 
 def test_interleaved_point(gpdf, polys):
@@ -135,13 +135,19 @@ def test_interleaved_point(gpdf, polys):
     cugs = cugpdf["geometry"]
     gs = gpdf["geometry"]
     pd.testing.assert_series_equal(
-        cugs.points.x.to_pandas(),
+        cugs.points.x.to_pandas().reset_index(drop=True),
         gs[gs.type == "Point"].x.reset_index(drop=True),
     )
     pd.testing.assert_series_equal(
-        cugs.points.y.to_pandas(),
+        cugs.points.y.to_pandas().reset_index(drop=True),
         gs[gs.type == "Point"].y.reset_index(drop=True),
     )
+
+
+def test_interleaved_multipoint(gpdf, polys):
+    cugpdf = cuspatial.from_geopandas(gpdf)
+    cugs = cugpdf["geometry"]
+    gs = gpdf["geometry"]
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.multipoints.x.to_arrow()),
         cudf.Series(
@@ -164,6 +170,11 @@ def test_interleaved_point(gpdf, polys):
             ).flatten()
         ),
     )
+
+
+def test_interleaved_lines(gpdf, polys):
+    cugpdf = cuspatial.from_geopandas(gpdf)
+    cugs = cugpdf["geometry"]
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.lines.x.to_arrow()),
         cudf.Series(
@@ -178,6 +189,11 @@ def test_interleaved_point(gpdf, polys):
             dtype="float64",
         ),
     )
+
+
+def test_interleaved_polygons(gpdf, polys):
+    cugpdf = cuspatial.from_geopandas(gpdf)
+    cugs = cugpdf["geometry"]
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.polygons.x.to_arrow()),
         cudf.Series(polys[:, 0], dtype="float64"),
@@ -227,11 +243,13 @@ def test_pre_slice(gpdf, pre_slice):
 
 @pytest.mark.parametrize(
     "post_slice",
-    [slice(0, 12)]
-    + [slice(0, 10, 1)]
-    + [slice(0, 3, 1)]
-    + [slice(3, 6, 1)]
-    + [slice(6, 9, 1)],
+    [
+        (slice(0, 12)),
+        (slice(0, 10, 1)),
+        (slice(0, 3, 1)),
+        (slice(3, 6, 1)),
+        (slice(6, 9, 1)),
+    ],
 )
 def test_post_slice(gpdf, post_slice):
     geometries = gpdf
@@ -239,6 +257,66 @@ def test_post_slice(gpdf, post_slice):
     cugpdf = cuspatial.from_geopandas(gi)
     cugpdf_back = cugpdf.to_geopandas()
     assert_eq_geo_df(gi[post_slice], cugpdf_back[post_slice])
+
+
+@pytest.mark.parametrize(
+    "inline_slice",
+    [
+        (slice(0, 12)),
+        (slice(0, 10, 1)),
+        (slice(0, 3, 1)),
+        (slice(3, 6, 1)),
+        (slice(6, 9, 1)),
+    ],
+)
+def test_inline_slice(gpdf, inline_slice):
+    gi = gpd.GeoDataFrame(gpdf)
+    cugpdf = cuspatial.from_geopandas(gi)
+    assert_eq_geo_df(gi[inline_slice], cugpdf[inline_slice].to_pandas())
+
+
+def test_slice_column_order(gpdf):
+    gi = gpd.GeoDataFrame(gpdf)
+    cugpdf = cuspatial.from_geopandas(gi)
+
+    slice_df = cuspatial.core.geodataframe.GeoDataFrame(
+        {
+            "geo1": cugpdf["geometry"],
+            "data1": np.arange(len(cugpdf)),
+            "geo2": cugpdf["geometry"],
+            "data2": np.arange(len(cugpdf)),
+        }
+    )
+    slice_gi = slice_df.to_pandas()
+    assert_eq_geo_df(slice_gi[0:5], slice_df[0:5].to_pandas())
+
+    slice_df = cuspatial.core.geodataframe.GeoDataFrame(
+        {
+            "data1": np.arange(len(cugpdf)),
+            "geo1": cugpdf["geometry"],
+            "geo2": cugpdf["geometry"],
+            "data2": np.arange(len(cugpdf)),
+        }
+    )
+    slice_gi = slice_df.to_pandas()
+    assert_eq_geo_df(slice_gi[5:], slice_df[5:].to_pandas())
+
+    slice_df = cuspatial.core.geodataframe.GeoDataFrame(
+        {
+            "data1": np.arange(len(cugpdf)),
+            "geo4": cugpdf["geometry"],
+            "data2": np.arange(len(cugpdf)),
+            "geo3": cugpdf["geometry"],
+            "data3": np.arange(len(cugpdf)),
+            "geo2": cugpdf["geometry"],
+            "geo1": cugpdf["geometry"],
+            "data4": np.arange(len(cugpdf)),
+            "data5": np.arange(len(cugpdf)),
+            "data6": np.arange(len(cugpdf)),
+        }
+    )
+    slice_gi = slice_df.to_pandas()
+    assert_eq_geo_df(slice_gi[5:], slice_df[5:].to_pandas())
 
 
 @pytest.mark.parametrize(
@@ -257,3 +335,93 @@ def test_boolmask(gpdf, df_boolmask):
     cugpdf = cuspatial.from_geopandas(gi)
     cugpdf_back = cugpdf.to_geopandas()
     assert_eq_geo_df(gi[df_boolmask], cugpdf_back[df_boolmask])
+
+
+def test_memory_usage(gs):
+    assert gs.memory_usage() == 224
+    host_dataframe = gpd.read_file(
+        gpd.datasets.get_path("naturalearth_lowres")
+    )
+    gpu_dataframe = cuspatial.from_geopandas(host_dataframe)
+    # The df size is 8kb of cudf rows and 217kb of the geometry column
+    assert gpu_dataframe.memory_usage().sum() == 225173
+
+
+def test_from_dict():
+    p1 = Point([0, 1])
+    p2 = Point([2, 3])
+    p3 = Point([4, 5])
+    p4 = MultiPoint([[6, 7], [8, 9]])
+    gi = gpd.GeoDataFrame({"geometry": [p1, p2, p3, p4]})
+    cu = cuspatial.GeoDataFrame({"geometry": [p1, p2, p3, p4]})
+    assert_eq_geo_df(gi, cu.to_geopandas())
+
+
+def test_from_dict2():
+    points = {
+        "a": [Point(0, 1), Point(2, 3)],
+        "b": [MultiPoint([(4, 5), (6, 7)]), Point(8, 9)],
+    }
+    gpu_points_df = cuspatial.GeoDataFrame(points)
+    assert (gpu_points_df["a"].points.xy == cudf.Series([0, 1, 2, 3])).all()
+    assert (gpu_points_df["b"].points.xy == cudf.Series([8, 9])).all()
+    assert (
+        gpu_points_df["b"].multipoints.xy == cudf.Series([4, 5, 6, 7])
+    ).all()
+
+
+def test_from_gp_geoseries_dict():
+    gp_geo_series = {
+        "gpa": gpd.GeoSeries([Point(0, 1)]),
+        "gpb": gpd.GeoSeries([MultiPoint([(2, 3), (4, 5)])]),
+    }
+    gp_df = gpd.GeoDataFrame(gp_geo_series)
+    gpu_gp_df = cuspatial.GeoDataFrame(gp_geo_series)
+    assert_eq_geo_df(gp_df, gpu_gp_df.to_geopandas())
+    gp_df2 = gpd.GeoDataFrame({"gpdfa": gp_df["gpb"], "gpdfb": gp_df["gpa"]})
+    gpdf = cuspatial.GeoDataFrame(
+        {"gpdfa": gpu_gp_df["gpb"], "gpdfb": gpu_gp_df["gpa"]}
+    )
+    assert_eq_geo_df(gp_df2, gpdf.to_geopandas())
+
+
+# Randomly collects 5 of 6 gpdf columns, slices them, and tries
+# to create a new DataFrame from a dict based on those columns.
+@pytest.mark.parametrize(
+    "dict_slice",
+    [
+        (slice(0, 12)),
+        (slice(0, 10, 1)),
+        (slice(0, 3, 1)),
+        (slice(3, 6, 1)),
+        (slice(6, 9, 1)),
+    ],
+)
+def test_from_dict_slices(gpdf, dict_slice):
+    sliced = gpdf[dict_slice]
+    sliced_dict = {
+        char: sliced[col]
+        for char, col in zip(
+            np.array([*"abcdef"])[np.random.randint(0, 5, 5)], sliced.columns
+        )
+    }
+    gpdf = gpd.GeoDataFrame(sliced_dict)
+    cugpdf = cuspatial.GeoDataFrame(sliced_dict)
+    assert_eq_geo_df(gpdf, cugpdf.to_geopandas())
+
+
+def test_from_dict_with_list():
+    dict_with_lists = {
+        "a": [1, 2, 3, 4],
+        "geometry": [
+            Point(0, 1),
+            Point(2, 3),
+            MultiPoint([(4, 5), (6, 7)]),
+            Point(8, 9),
+        ],
+        "c": [*"abcd"],
+    }
+    assert_eq_geo_df(
+        gpd.GeoDataFrame(dict_with_lists),
+        cuspatial.GeoDataFrame(dict_with_lists).to_geopandas(),
+    )

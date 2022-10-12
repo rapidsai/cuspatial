@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+#include "tests/utility/vector_equality.hpp"
+
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_distance.cuh>
-#include <cuspatial/experimental/type_utils.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_uvector.hpp>
@@ -24,9 +26,12 @@
 
 #include <thrust/generate.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/random/linear_congruential_engine.h>
 #include <thrust/random/normal_distribution.h>
+#include <thrust/transform.h>
 #include <thrust/tuple.h>
 
 #include <gmock/gmock.h>
@@ -63,7 +68,7 @@ TYPED_TEST_CASE(PairwisePointDistanceTest, TestTypes);
 TYPED_TEST(PairwisePointDistanceTest, Empty)
 {
   using T         = TypeParam;
-  using Cart2D    = cartesian_2d<T>;
+  using Cart2D    = vec_2d<T>;
   using Cart2DVec = std::vector<Cart2D>;
 
   rmm::device_vector<Cart2D> points1{};
@@ -82,7 +87,7 @@ TYPED_TEST(PairwisePointDistanceTest, Empty)
 TYPED_TEST(PairwisePointDistanceTest, OnePair)
 {
   using T         = TypeParam;
-  using Cart2D    = cartesian_2d<T>;
+  using Cart2D    = vec_2d<T>;
   using Cart2DVec = std::vector<Cart2D>;
 
   rmm::device_vector<Cart2D> points1{Cart2DVec{{1.0, 1.0}}};
@@ -100,7 +105,7 @@ TYPED_TEST(PairwisePointDistanceTest, OnePair)
 
 template <typename T>
 struct RandomPointGenerator {
-  using Cart2D = cartesian_2d<T>;
+  using Cart2D = vec_2d<T>;
   thrust::minstd_rand rng{};
   thrust::random::normal_distribution<T> norm_dist{};
 
@@ -114,7 +119,7 @@ struct RandomPointGenerator {
 TYPED_TEST(PairwisePointDistanceTest, ManyRandom)
 {
   using T         = TypeParam;
-  using Cart2D    = cartesian_2d<T>;
+  using Cart2D    = vec_2d<T>;
   using Cart2DVec = std::vector<Cart2D>;
 
   std::size_t constexpr num_points = 1000;
@@ -137,18 +142,14 @@ TYPED_TEST(PairwisePointDistanceTest, ManyRandom)
     pairwise_point_distance(points1.begin(), points1.end(), points2.begin(), got.begin());
   thrust::host_vector<T> hgot(got);
 
-  if constexpr (std::is_same_v<T, float>) {
-    EXPECT_THAT(expected, ::testing::Pointwise(::testing::FloatEq(), hgot));
-  } else {
-    EXPECT_THAT(expected, ::testing::Pointwise(::testing::DoubleEq(), hgot));
-  }
+  test::expect_vector_equivalent(expected, hgot);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
 TYPED_TEST(PairwisePointDistanceTest, CompareWithShapely)
 {
   using T         = TypeParam;
-  using Cart2D    = cartesian_2d<T>;
+  using Cart2D    = vec_2d<T>;
   using Cart2DVec = std::vector<Cart2D>;
 
   std::vector<T> x1{
@@ -288,18 +289,14 @@ TYPED_TEST(PairwisePointDistanceTest, CompareWithShapely)
   rmm::device_vector<T> dx1(x1), dy1(y1), dx2(x2), dy2(y2);
   rmm::device_vector<T> got(dx1.size());
 
-  auto p1_begin = make_cartesian_2d_iterator(dx1.begin(), dy1.begin());
-  auto p2_begin = make_cartesian_2d_iterator(dx2.begin(), dy2.begin());
+  auto p1_begin = make_vec_2d_iterator(dx1.begin(), dy1.begin());
+  auto p2_begin = make_vec_2d_iterator(dx2.begin(), dy2.begin());
 
   auto ret_it = pairwise_point_distance(p1_begin, p1_begin + dx1.size(), p2_begin, got.begin());
 
   thrust::host_vector<T> hgot(got);
 
-  if constexpr (std::is_same_v<T, float>) {
-    EXPECT_THAT(expected, ::testing::Pointwise(::testing::FloatEq(), hgot));
-  } else {
-    EXPECT_THAT(expected, ::testing::Pointwise(::testing::DoubleEq(), hgot));
-  }
+  test::expect_vector_equivalent(expected, hgot);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
