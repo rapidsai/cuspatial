@@ -41,10 +41,10 @@ struct pairwise_point_distance_impl {
   template <typename T>
   std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
     cudf::size_type num_pairs,
-    std::optional<cudf::device_span<cudf::size_type const>> multipoints1_offset,
     cudf::column_view const& points1_xy,
-    std::optional<cudf::device_span<cudf::size_type const>> multipoints2_offset,
+    std::optional<cudf::device_span<cudf::size_type const>> multipoints1_offset,
     cudf::column_view const& points2_xy,
+    std::optional<cudf::device_span<cudf::size_type const>> multipoints2_offset,
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
@@ -81,10 +81,10 @@ struct pairwise_point_distance_impl {
 template <bool is_multipoint1, bool is_multipoint2>
 struct pairwise_point_distance_functor {
   std::unique_ptr<cudf::column> operator()(
-    std::optional<cudf::device_span<cudf::size_type const>> multipoints1_offset,
     cudf::column_view const& points1_xy,
-    std::optional<cudf::device_span<cudf::size_type const>> multipoints2_offset,
+    std::optional<cudf::device_span<cudf::size_type const>> multipoints1_offset,
     cudf::column_view const& points2_xy,
+    std::optional<cudf::device_span<cudf::size_type const>> multipoints2_offset,
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
@@ -105,10 +105,10 @@ struct pairwise_point_distance_functor {
     return cudf::type_dispatcher(points1_xy.type(),
                                  pairwise_point_distance_impl<is_multipoint1, is_multipoint2>{},
                                  num_lhs,
-                                 multipoints1_offset,
                                  points1_xy,
-                                 multipoints2_offset,
+                                 multipoints1_offset,
                                  points2_xy,
+                                 multipoints2_offset,
                                  stream,
                                  mr);
   }
@@ -117,19 +117,19 @@ struct pairwise_point_distance_functor {
 }  // namespace detail
 
 std::unique_ptr<cudf::column> pairwise_point_distance(
-  std::optional<cudf::device_span<cudf::size_type const>> multipoints1_offset,
   cudf::column_view const& points1_xy,
-  std::optional<cudf::device_span<cudf::size_type const>> multipoints2_offset,
+  std::optional<cudf::device_span<cudf::size_type const>> multipoints1_offset,
   cudf::column_view const& points2_xy,
+  std::optional<cudf::device_span<cudf::size_type const>> multipoints2_offset,
   rmm::mr::device_memory_resource* mr)
 {
   return double_boolean_dispatch<detail::pairwise_point_distance_functor>(
     multipoints1_offset.has_value(),
     multipoints2_offset.has_value(),
-    multipoints1_offset,
     points1_xy,
-    multipoints2_offset,
+    multipoints1_offset,
     points2_xy,
+    multipoints2_offset,
     rmm::cuda_stream_default,
     mr);
 }
