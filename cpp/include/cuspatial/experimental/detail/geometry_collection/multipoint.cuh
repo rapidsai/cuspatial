@@ -37,17 +37,5 @@ CUSPATIAL_HOST_DEVICE auto multipoint<VecIterator>::point_end() const
   return points_end;
 }
 
-template <typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto multipoint<VecIterator>::begin() const
-{
-  return point_begin();
-}
-
-template <typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto multipoint<VecIterator>::end() const
-{
-  return point_end();
-}
-
 }  // namespace geometry_collection
 }  // namespace cuspatial

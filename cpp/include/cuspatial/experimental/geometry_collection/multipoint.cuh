@@ -35,9 +35,9 @@ class multipoint {
   CUSPATIAL_HOST_DEVICE auto point_end() const;
 
   /// Return iterator to the starting point of the multipoint.
-  CUSPATIAL_HOST_DEVICE auto begin() const;
+  CUSPATIAL_HOST_DEVICE auto begin() const { return point_begin(); }
   /// Return iterator the the one-past the last point of the multipoint.
-  CUSPATIAL_HOST_DEVICE auto end() const;
+  CUSPATIAL_HOST_DEVICE auto end() const { return point_end(); }
 
  protected:
   VecIterator points_begin;

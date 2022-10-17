@@ -37,19 +37,19 @@ namespace detail {
 template <typename GeometryIterator, typename VecIterator>
 struct to_multipoint_functor {
   using difference_type = typename thrust::iterator_difference<GeometryIterator>::type;
-  GeometryIterator _geometry_begin;
+  GeometryIterator _offset_iter;
   VecIterator _points_begin;
 
-  to_multipoint_functor(GeometryIterator geometry_begin, VecIterator points_begin)
-    : _geometry_begin(geometry_begin), _points_begin(points_begin)
+  to_multipoint_functor(GeometryIterator offset_iter, VecIterator points_begin)
+    : _offset_iter(offset_iter), _points_begin(points_begin)
   {
   }
 
   CUSPATIAL_HOST_DEVICE
   auto operator()(difference_type const& i)
   {
-    return multipoint<VecIterator>{_points_begin + _geometry_begin[i],
-                                   _points_begin + _geometry_begin[i + 1]};
+    return multipoint<VecIterator>{_points_begin + _offset_iter[i],
+                                   _points_begin + _offset_iter[i + 1]};
   }
 };
 
@@ -100,9 +100,10 @@ auto multipoint_array<GeometryIterator, VecIterator>::point_end()
 
 template <typename GeometryIterator, typename VecIterator>
 template <typename IndexType>
-CUSPATIAL_HOST_DEVICE auto multipoint_array<GeometryIterator, VecIterator>::element(IndexType idx)
+CUSPATIAL_HOST_DEVICE auto multipoint_array<GeometryIterator, VecIterator>::operator[](
+  IndexType idx)
 {
-  return multipoint{_points_begin + _geometry_begin[idx], _points_begin + _geometry_begin[idx + 1]};
+  return multipoint_begin()[idx];
 }
 
 }  // namespace array_view

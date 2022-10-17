@@ -24,8 +24,6 @@
 namespace cuspatial {
 namespace array_view {
 
-using namespace cuspatial::geometry_collection;
-
 /**
  * @brief Host-Device view object of a multipoint array
  * @ingroup array_view
@@ -39,7 +37,7 @@ using namespace cuspatial::geometry_collection;
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
  *
  * @note Though this object is host/device compatible,
- * The underlying iterator should be device accessible if used in device kernel.
+ * The underlying iterator should be device-accessible if used in a device kernel.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
@@ -66,14 +64,24 @@ class multipoint_array {
   auto size();
 
   /**
-   * @brief Returns the iterator to the start of the multipoint array.
+   * @brief Returns the iterator to the first multipoint in the multipoint array.
    */
   auto multipoint_begin();
 
   /**
-   * @brief Returns the iterator to the end of the multipoint array.
+   * @brief Returns the iterator past the last multipoint in the multipoint array.
    */
   auto multipoint_end();
+
+  /**
+   * @brief Returns the iterator to the start of the multipoint array.
+   */
+  auto begin() { return multipoint_begin(); }
+
+  /**
+   * @brief Returns the iterator past the last multipoint in the multipoint array.
+   */
+  auto end() { return multipoint_end(); }
 
   /**
    * @brief Returns the iterator to the start of the underlying point array.
@@ -93,7 +101,7 @@ class multipoint_array {
    * @return a multipoint object
    */
   template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto element(IndexType idx);
+  CUSPATIAL_HOST_DEVICE auto operator[](IndexType idx);
 
  protected:
   /// Iterator to the start of the index array of start positions to each multipoint.
