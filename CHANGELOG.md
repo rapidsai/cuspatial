@@ -1,3 +1,7 @@
+# cuSpatial 22.12.00 (Date TBD)
+
+Please see https://github.com/rapidsai/cuspatial/releases/tag/v22.12.00a for the latest changes to this development branch.
+
 # cuSpatial 22.10.00 (12 Oct 2022)
 
 ## 🚨 Breaking Changes
