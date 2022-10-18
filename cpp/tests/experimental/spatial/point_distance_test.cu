@@ -16,6 +16,8 @@
 
 #include "../../utility/vector_equality.hpp"
 
+#include <cuspatial_test/random.cuh>
+
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
@@ -26,8 +28,8 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/device_vector.hpp>
-
 #include <rmm/exec_policy.hpp>
+
 #include <thrust/generate.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -46,22 +48,6 @@
 namespace cuspatial {
 
 /**
- * @brief Helper function to generate a random point
- */
-template <typename T>
-struct RandomPointGenerator {
-  using Cart2D = vec_2d<T>;
-  thrust::minstd_rand rng{};
-  thrust::random::normal_distribution<T> norm_dist{};
-
-  Cart2D __device__ operator()(std::size_t const& i)
-  {
-    rng.discard(i);
-    return Cart2D{norm_dist(rng), norm_dist(rng)};
-  }
-};
-
-/**
  * @brief Generate `num_points` points on device
  */
 template <typename T>
@@ -71,13 +57,13 @@ struct PairwisePointDistanceTest : public ::testing::Test {
     std::size_t seed,
     rmm::cuda_stream_view stream = rmm::cuda_stream_default)
   {
+    auto engine  = deterministic_engine(0);
+    auto uniform = make_normal_dist<T>(0.0, 1.0);
+    auto pgen    = point_generator(T{0.0}, T{1.0}, engine, uniform);
     rmm::device_vector<vec_2d<T>> points(num_points);
     auto counting_iter = thrust::make_counting_iterator(seed);
-    thrust::transform(rmm::exec_policy(stream),
-                      counting_iter,
-                      counting_iter + num_points,
-                      points.begin(),
-                      RandomPointGenerator<T>{});
+    thrust::transform(
+      rmm::exec_policy(stream), counting_iter, counting_iter + num_points, points.begin(), pgen);
     return points;
   }
 
