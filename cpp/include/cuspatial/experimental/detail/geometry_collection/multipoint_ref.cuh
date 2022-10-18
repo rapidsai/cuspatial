@@ -22,20 +22,20 @@ namespace geometry_collection {
 template <typename VecIterator>
 CUSPATIAL_HOST_DEVICE multipoint_ref<VecIterator>::multipoint_ref(VecIterator begin,
                                                                   VecIterator end)
-  : points_begin(begin), points_end(end)
+  : _points_begin(begin), _points_end(end)
 {
 }
 
 template <typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::point_begin() const
 {
-  return points_begin;
+  return _points_begin;
 }
 
 template <typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::point_end() const
 {
-  return points_end;
+  return _points_end;
 }
 
 }  // namespace geometry_collection

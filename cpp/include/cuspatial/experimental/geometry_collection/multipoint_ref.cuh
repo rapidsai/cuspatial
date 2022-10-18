@@ -40,8 +40,8 @@ class multipoint_ref {
   CUSPATIAL_HOST_DEVICE auto end() const { return point_end(); }
 
  protected:
-  VecIterator points_begin;
-  VecIterator points_end;
+  VecIterator _points_begin;
+  VecIterator _points_end;
 };
 }  // namespace geometry_collection
 }  // namespace cuspatial
