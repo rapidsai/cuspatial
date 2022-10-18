@@ -15,9 +15,8 @@
  */
 
 #include "../../utility/vector_equality.hpp"
-#include "cuspatial/detail/iterator.hpp"
-#include "cuspatial/experimental/geometry_collection/multipoint.cuh"
 
+#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_distance.cuh>

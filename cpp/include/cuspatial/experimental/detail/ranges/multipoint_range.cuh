@@ -23,7 +23,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/experimental/geometry_collection/multipoint.cuh>
+#include <cuspatial/experimental/geometry_collection/multipoint_ref.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -46,8 +46,8 @@ struct to_multipoint_functor {
   CUSPATIAL_HOST_DEVICE
   auto operator()(difference_type const& i)
   {
-    return geometry_collection::multipoint<VecIterator>{_points_begin + _offset_iter[i],
-                                                        _points_begin + _offset_iter[i + 1]};
+    return geometry_collection::multipoint_ref<VecIterator>{_points_begin + _offset_iter[i],
+                                                            _points_begin + _offset_iter[i + 1]};
   }
 };
 

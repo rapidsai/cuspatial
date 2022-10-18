@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <cuspatial/experimental/geometry_collection/multipoint.cuh>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/traits.hpp>
 

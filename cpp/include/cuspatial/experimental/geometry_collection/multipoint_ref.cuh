@@ -25,9 +25,9 @@ namespace geometry_collection {
  * @tparam VecIterator type of iterator to the underlying point array.
  */
 template <typename VecIterator>
-class multipoint {
+class multipoint_ref {
  public:
-  CUSPATIAL_HOST_DEVICE multipoint(VecIterator begin, VecIterator end);
+  CUSPATIAL_HOST_DEVICE multipoint_ref(VecIterator begin, VecIterator end);
 
   /// Return iterator to the starting point of the multipoint.
   CUSPATIAL_HOST_DEVICE auto point_begin() const;
@@ -46,4 +46,4 @@ class multipoint {
 }  // namespace geometry_collection
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/geometry_collection/multipoint.cuh>
+#include <cuspatial/experimental/detail/geometry_collection/multipoint_ref.cuh>
