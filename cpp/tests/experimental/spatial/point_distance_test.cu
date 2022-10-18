@@ -19,9 +19,9 @@
 #include "cuspatial/experimental/geometry_collection/multipoint.cuh"
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/array_view/multipoint_array.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_distance.cuh>
+#include <cuspatial/experimental/ranges/multipoint_range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -45,8 +45,6 @@
 #include <numeric>
 
 namespace cuspatial {
-
-using namespace array_view;
 
 /**
  * @brief Helper function to generate a random point
@@ -131,7 +129,7 @@ auto compute_point_distance_host(Cart2DVec const& point1, Cart2DVec const& point
  * @brief Computes multipoint distances on host.
  *
  * @note Implicitly copies input vectors to host.
- * @note This function also tests the compatibility of `multipoint_array` on host.
+ * @note This function also tests the compatibility of `multipoint_range` on host.
  */
 template <typename OffsetVec, typename Cart2DVec>
 auto compute_multipoint_distance_host(OffsetVec const& lhs_offset,
@@ -149,10 +147,10 @@ auto compute_multipoint_distance_host(OffsetVec const& lhs_offset,
   thrust::host_vector<IndexType> h_offset2(rhs_offset);
   thrust::host_vector<Cart2D> h_point2(rhs_points);
 
-  auto h_multipoint_array1 = array_view::multipoint_array{
-    h_offset1.begin(), h_offset1.end(), h_point1.begin(), h_point1.end()};
-  auto h_multipoint_array2 = array_view::multipoint_array{
-    h_offset2.begin(), h_offset2.end(), h_point2.begin(), h_point2.end()};
+  auto h_multipoint_array1 =
+    multipoint_range{h_offset1.begin(), h_offset1.end(), h_point1.begin(), h_point1.end()};
+  auto h_multipoint_array2 =
+    multipoint_range{h_offset2.begin(), h_offset2.end(), h_point2.begin(), h_point2.end()};
 
   std::vector<T> result(num_results, 0);
 
@@ -191,9 +189,9 @@ TYPED_TEST(PairwisePointDistanceTest, Empty)
   rmm::device_vector<T> expected{};
   rmm::device_vector<T> got(points1.size());
 
-  auto multipoint_1 = multipoint_array{
+  auto multipoint_1 = multipoint_range{
     multipoint_geom1.begin(), multipoint_geom1.end(), points1.begin(), points1.end()};
-  auto multipoint_2 = multipoint_array{
+  auto multipoint_2 = multipoint_range{
     multipoint_geom2.begin(), multipoint_geom2.end(), points2.begin(), points2.end()};
 
   auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
@@ -217,9 +215,9 @@ TYPED_TEST(PairwisePointDistanceTest, OnePairSingleComponent)
   rmm::device_vector<T> expected{std::vector<T>{std::sqrt(T{2.0})}};
   rmm::device_vector<T> got(points1.size());
 
-  auto multipoint_1 = multipoint_array{
+  auto multipoint_1 = multipoint_range{
     multipoint_geom1, multipoint_geom1 + num_pairs + 1, points1.begin(), points1.end()};
-  auto multipoint_2 = multipoint_array{
+  auto multipoint_2 = multipoint_range{
     multipoint_geom2, multipoint_geom2 + num_pairs + 1, points2.begin(), points2.end()};
 
   auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
@@ -245,9 +243,9 @@ TYPED_TEST(PairwisePointDistanceTest, SingleComponentManyRandom)
   rmm::device_vector<T> got(points1.size());
 
   auto multipoint_1 =
-    make_multipoint_array(num_pairs, multipoint_geom1, points1.size(), points1.begin());
+    make_multipoint_range(num_pairs, multipoint_geom1, points1.size(), points1.begin());
   auto multipoint_2 =
-    make_multipoint_array(num_pairs, multipoint_geom2, points2.size(), points2.begin());
+    make_multipoint_range(num_pairs, multipoint_geom2, points2.size(), points2.begin());
 
   auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
   thrust::host_vector<T> hgot(got);
@@ -405,8 +403,8 @@ TYPED_TEST(PairwisePointDistanceTest, SingleComponentCompareWithShapely)
   auto p1_begin = make_vec_2d_iterator(dx1.begin(), dy1.begin());
   auto p2_begin = make_vec_2d_iterator(dx2.begin(), dy2.begin());
 
-  auto multipoints_1 = make_multipoint_array(dx1.size(), p1_geom, dx1.size(), p1_begin);
-  auto multipoints_2 = make_multipoint_array(dx2.size(), p2_geom, dx2.size(), p2_begin);
+  auto multipoints_1 = make_multipoint_range(dx1.size(), p1_geom, dx1.size(), p1_begin);
+  auto multipoints_2 = make_multipoint_range(dx2.size(), p2_geom, dx2.size(), p2_begin);
 
   auto ret_it = pairwise_point_distance(multipoints_1, multipoints_2, got.begin());
 
@@ -429,9 +427,9 @@ TYPED_TEST(PairwisePointDistanceTest, MultiComponentSinglePair)
   rmm::device_vector<T> expected{std::vector<T>{T{0.7280109889280517}}};
   rmm::device_vector<T> got(multipoint_geom1.size() - 1);
 
-  auto multipoint_1 = multipoint_array{
+  auto multipoint_1 = multipoint_range{
     multipoint_geom1.begin(), multipoint_geom1.end(), points1.begin(), points1.end()};
-  auto multipoint_2 = multipoint_array{
+  auto multipoint_2 = multipoint_range{
     multipoint_geom2.begin(), multipoint_geom2.end(), points2.begin(), points2.end()};
 
   auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
@@ -457,9 +455,9 @@ TYPED_TEST(PairwisePointDistanceTest, MultiComponentRandom)
   auto got      = rmm::device_vector<T>(num_pairs);
 
   auto multipoint_1 =
-    multipoint_array{mp0_offset.begin(), mp0_offset.end(), mp0_points.begin(), mp0_points.end()};
+    multipoint_range{mp0_offset.begin(), mp0_offset.end(), mp0_points.begin(), mp0_points.end()};
   auto multipoint_2 =
-    multipoint_array{mp1_offset.begin(), mp1_offset.end(), mp1_points.begin(), mp1_points.end()};
+    multipoint_range{mp1_offset.begin(), mp1_offset.end(), mp1_points.begin(), mp1_points.end()};
 
   auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
 

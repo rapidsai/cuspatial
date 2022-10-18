@@ -22,7 +22,6 @@
 #include <cuspatial/traits.hpp>
 
 namespace cuspatial {
-namespace array_view {
 
 /**
  * @brief Host-Device view object of a multipoint array
@@ -43,7 +42,7 @@ namespace array_view {
  * "LegacyRandomAccessIterator"
  */
 template <typename GeometryIterator, typename VecIterator>
-class multipoint_array {
+class multipoint_range {
  public:
   using geometry_it_t = GeometryIterator;
   using point_it_t    = VecIterator;
@@ -53,7 +52,7 @@ class multipoint_array {
   /**
    * @brief Construct a new multipoint array object
    */
-  multipoint_array(GeometryIterator geometry_begin,
+  multipoint_range(GeometryIterator geometry_begin,
                    GeometryIterator geometry_end,
                    VecIterator points_begin,
                    VecIterator points_end);
@@ -137,17 +136,16 @@ class multipoint_array {
  * "LegacyRandomAccessIterator"
  */
 template <typename IndexType1, typename IndexType2, typename GeometryIterator, typename VecIterator>
-multipoint_array<GeometryIterator, VecIterator> make_multipoint_array(
+multipoint_range<GeometryIterator, VecIterator> make_multipoint_range(
   IndexType1 num_multipoints,
   GeometryIterator geometry_begin,
   IndexType2 num_points,
   VecIterator point_begin)
 {
-  return multipoint_array<GeometryIterator, VecIterator>{
+  return multipoint_range<GeometryIterator, VecIterator>{
     geometry_begin, geometry_begin + num_multipoints + 1, point_begin, point_begin + num_points};
 }
 
-}  // namespace array_view
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/array_view/multipoint_array.cuh>
+#include <cuspatial/experimental/detail/ranges/multipoint_range.cuh>

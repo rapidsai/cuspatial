@@ -18,8 +18,6 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
-#include <cuspatial/experimental/array_view/multipoint_array.cuh>
-
 namespace cuspatial {
 
 /**

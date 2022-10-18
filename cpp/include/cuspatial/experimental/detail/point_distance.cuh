@@ -17,7 +17,6 @@
 #pragma once
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/array_view/multipoint_array.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
