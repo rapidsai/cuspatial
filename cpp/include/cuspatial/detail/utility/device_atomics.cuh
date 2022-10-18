@@ -29,7 +29,7 @@ namespace detail {
 template <typename T>
 const T __device__ min_(const T a, const T b)
 {
-  return min(a, b);
+  return ::min(a, b);
 }
 
 /**
@@ -40,7 +40,7 @@ const T __device__ min_(const T a, const T b)
 template <typename T>
 const T __device__ max_(const T a, const T b)
 {
-  return max(a, b);
+  return ::max(a, b);
 }
 
 /**

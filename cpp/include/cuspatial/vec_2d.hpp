@@ -19,6 +19,7 @@
 #include <cuspatial/cuda_utils.hpp>
 
 #include <algorithm>
+#include <ostream>
 
 namespace cuspatial {
 
@@ -42,6 +43,15 @@ struct alignas(2 * sizeof(T)) vec_2d {
   value_type x;
   value_type y;
 };
+
+/**
+ * @brief Output stream operator for `vec_2d<T>` for human-readable formatting
+ */
+template <typename T>
+std::ostream& operator<<(std::ostream& os, cuspatial::vec_2d<T> const& vec)
+{
+  return os << "(" << vec.x << "," << vec.y << ")";
+}
 
 /**
  * @brief Compare two 2D vectors for equality.

@@ -17,8 +17,8 @@
 #pragma once
 
 #include <cuspatial/detail/utility/device_atomics.cuh>
-#include <cuspatial/detail/utility/traits.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -150,7 +150,7 @@ OutputIt directed_hausdorff_distance(PointIt points_first,
 
   static_assert(std::is_convertible_v<Point, cuspatial::vec_2d<T>>,
                 "Input points must be convertible to cuspatial::vec_2d");
-  static_assert(detail::is_floating_point<T, OutputT>(),
+  static_assert(is_floating_point<T, OutputT>(),
                 "Hausdorff supports only floating-point coordinates.");
   static_assert(std::is_integral_v<Index>, "Indices must be integral");
 

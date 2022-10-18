@@ -69,6 +69,12 @@
  *          @file polyline_bounding_box.hpp
  *          @file spatial_window.hpp
  *      @}
+ *      @defgroup nearest_points Nearest Points
+ *      @{
+ *          @brief APIs to compute the nearest points between geometries
+ *          @file point_linestring_nearest_points.hpp
+ *          @file point_linestring_nearest_points.cuh
+ *      @}
  *      @defgroup cubic_spline Cubic Spline
  *      @{
  *          @brief APIs related to cubic splines
@@ -102,7 +108,7 @@
  *          CuSpatial functions inside `experimental` folder are header-only and only accepts
  *          input/output iterators on coordinates. These factory functions are convenient ways
  *          to create iterators from data in various format.
- *          @file type_utils.hpp
+ *          @file iterator_factory.hpp
  *      @}
  * @}
  * @defgroup io I/O
