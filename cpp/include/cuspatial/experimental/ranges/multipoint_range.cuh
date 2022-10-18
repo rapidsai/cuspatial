@@ -23,9 +23,9 @@ namespace cuspatial {
 
 /**
  * @brief Host-Device view object of a multipoint array
- * @ingroup array_view
+ * @ingroup ranges
  *
- * Conforms to GeoArrow's specification of multipoint:
+ * Conforms to GeoArrow's specification of multipoint array:
  * https://github.com/geopandas/geo-arrow-spec/blob/main/format.md
  *
  * @tparam GeometryIterator iterator type for the offset array. Must meet
@@ -112,8 +112,8 @@ class multipoint_range {
 };
 
 /**
- * @brief Create a view of multipoint array from array size and start iterators
- * @ingroup array_view
+ * @brief Create a range of multipoint array from array size and start iterators
+ * @ingroup ranges
  *
  * @tparam IndexType1 Index type of the size of the geometry array
  * @tparam IndexType2 Index type of the size of the point array
@@ -129,7 +129,7 @@ class multipoint_range {
  * @param geometry_begin Iterator to the start of the geometry offset array
  * @param num_points Number of underlying points in the multipoint array
  * @param point_begin Iterator to the start of the points array
- * @return View object to multipoint array
+ * @return Range to multipoint array
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */

@@ -110,14 +110,13 @@
  *          to create iterators from data in various format.
  *          @file iterator_factory.hpp
  *      @}
- *      @defgroup array_view Array View
+ *      @defgroup ranges Ranges
  *      @{
- *          @brief Host-device compatible view of geometry arrays
+ *          @brief Non owning object of geometry arrays
  *
- *          Cuspatial header only APIs accepts view objects that are composed of flattened view of
- *          offsets and coordinates. View objects are device and host compatible. Various accessors
- *          are provided for flexible access to the data.
- *          @file multipoint_array.hpp
+ *          Cuspatial header only APIs accepts ranges that are composed of flattened view of
+ *          offsets and coordinates. Various accessors are provided for flexible access to the data.
+ *          @file multipoint_range.hpp
  *      @}
  * @defgroup io I/O
  * @{
