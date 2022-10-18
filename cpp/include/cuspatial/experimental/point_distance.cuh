@@ -27,10 +27,8 @@ namespace cuspatial {
  * @tparam MultiPointArrayViewA An instance of template type `array_view::multipoint_array`
  * @tparam MultiPointArrayViewB An instance of template type `array_view::multipoint_array`
  *
- * @param multipoints1 Array view object constructed from the iterators of the first multipoint in
- * the pair.
- * @param multipoints2 Array view object constructed from the iterators of the second multipoint in
- * the pair.
+ * @param multipoints1 Range of first multipoint in each distance pair.
+ * @param multipoints2 Range of second multipoint in each distance pair.
  * @return Iterator past the last distance computed
  */
 template <class MultiPointArrayViewA, class MultiPointArrayViewB, class OutputIt>
