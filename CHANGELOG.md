@@ -2,9 +2,68 @@
 
 Please see https://github.com/rapidsai/cuspatial/releases/tag/v22.12.00a for the latest changes to this development branch.
 
-# cuSpatial 22.10.00 (Date TBD)
+# cuSpatial 22.10.00 (12 Oct 2022)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v22.10.00a for the latest changes to this development branch.
+## 🚨 Breaking Changes
+
+- Remove lonlat_2d and cartesian_2d types ([#662](https://github.com/rapidsai/cuspatial/pull/662)) [@harrism](https://github.com/harrism)
+- Add Multi-Geometry support to `point_linestring_distance` and build python bindings ([#660](https://github.com/rapidsai/cuspatial/pull/660)) [@isVoid](https://github.com/isVoid)
+- Decouple `interpolate` functions from trajectory ([#645](https://github.com/rapidsai/cuspatial/pull/645)) [@isVoid](https://github.com/isVoid)
+
+## 🐛 Bug Fixes
+
+- Fix error in users.ipynb ([#726](https://github.com/rapidsai/cuspatial/pull/726)) [@thomcom](https://github.com/thomcom)
+- `unwrap_pyoptcol` is missing `except` keyword that causes exceptions ignored, fixes function bug ([#719](https://github.com/rapidsai/cuspatial/pull/719)) [@isVoid](https://github.com/isVoid)
+- Fix all unexecutable code examples I can find. ([#693](https://github.com/rapidsai/cuspatial/pull/693)) [@thomcom](https://github.com/thomcom)
+- Add Union-style indexing to `.points`, `.multipoints`, `.lines`, and `.polygons` `GeoSeries` accessors ([#685](https://github.com/rapidsai/cuspatial/pull/685)) [@thomcom](https://github.com/thomcom)
+- Rewrite `copy_type_metadata` to reuse the inherited method and handle geocolumns specifically. ([#684](https://github.com/rapidsai/cuspatial/pull/684)) [@isVoid](https://github.com/isVoid)
+- Fix `GeoDataframe` slicing issue by adding `_slice_` method. ([#680](https://github.com/rapidsai/cuspatial/pull/680)) [@thomcom](https://github.com/thomcom)
+- Fix and tidy coordinate_transform_test ([#671](https://github.com/rapidsai/cuspatial/pull/671)) [@harrism](https://github.com/harrism)
+- `linestring_distance` Header Only API Returns Past-the-End iterator ([#670](https://github.com/rapidsai/cuspatial/pull/670)) [@isVoid](https://github.com/isVoid)
+
+## 📖 Documentation
+
+- Update link to c++ developer guide ([#718](https://github.com/rapidsai/cuspatial/pull/718)) [@isVoid](https://github.com/isVoid)
+- Add C++ doc links to `library_design.md` and minor documentation fixes ([#700](https://github.com/rapidsai/cuspatial/pull/700)) [@isVoid](https://github.com/isVoid)
+- Document that minimum required CMake version is now 3.23.1 ([#689](https://github.com/rapidsai/cuspatial/pull/689)) [@robertmaynard](https://github.com/robertmaynard)
+- Publish Developer Guide ([#673](https://github.com/rapidsai/cuspatial/pull/673)) [@harrism](https://github.com/harrism)
+- Add TESTING.md and BENCHMARKING.md ([#672](https://github.com/rapidsai/cuspatial/pull/672)) [@harrism](https://github.com/harrism)
+- Add DOCUMENTATION.md ([#667](https://github.com/rapidsai/cuspatial/pull/667)) [@harrism](https://github.com/harrism)
+- Branch 22.10 merge 22.08 ([#654](https://github.com/rapidsai/cuspatial/pull/654)) [@harrism](https://github.com/harrism)
+- Add Developer Guides, replace internal.md, CONTRIBUTING.md ([#625](https://github.com/rapidsai/cuspatial/pull/625)) [@isVoid](https://github.com/isVoid)
+- Add Markdown Parser to Sphinx ([#621](https://github.com/rapidsai/cuspatial/pull/621)) [@isVoid](https://github.com/isVoid)
+- Simplify PR template ([#617](https://github.com/rapidsai/cuspatial/pull/617)) [@harrism](https://github.com/harrism)
+- Add libcuspatial C++ developer guide. ([#606](https://github.com/rapidsai/cuspatial/pull/606)) [@harrism](https://github.com/harrism)
+
+## 🚀 New Features
+
+- Initialize a `GeoDataFrame` with `dict`. ([#712](https://github.com/rapidsai/cuspatial/pull/712)) [@thomcom](https://github.com/thomcom)
+- Vectorized Load, refactors `type_utils.hpp` into `iterator_factory.cuh` ([#692](https://github.com/rapidsai/cuspatial/pull/692)) [@isVoid](https://github.com/isVoid)
+- Accept `None` and python list in `GeoSeries` constructor ([#686](https://github.com/rapidsai/cuspatial/pull/686)) [@isVoid](https://github.com/isVoid)
+- Python API for point-linestring nearest points ([#681](https://github.com/rapidsai/cuspatial/pull/681)) [@isVoid](https://github.com/isVoid)
+- cuSpatial Python User Guide ([#666](https://github.com/rapidsai/cuspatial/pull/666)) [@thomcom](https://github.com/thomcom)
+- Add Multi-Geometry support to `point_linestring_distance` and build python bindings ([#660](https://github.com/rapidsai/cuspatial/pull/660)) [@isVoid](https://github.com/isVoid)
+- Add C++ API for `point_linestring_nearest_points` ([#658](https://github.com/rapidsai/cuspatial/pull/658)) [@isVoid](https://github.com/isVoid)
+- Auto-add new Issues and PRs to cuspatial&#39;s project ([#618](https://github.com/rapidsai/cuspatial/pull/618)) [@jarmak-nv](https://github.com/jarmak-nv)
+- Integrate `GeoSeries` with `read_polygon_shapefile` ([#609](https://github.com/rapidsai/cuspatial/pull/609)) [@thomcom](https://github.com/thomcom)
+- Memory_usage method for GeoSeries/GeoDataFrame and `GeoDataFrame` refactor. ([#604](https://github.com/rapidsai/cuspatial/pull/604)) [@thomcom](https://github.com/thomcom)
+- Add Point Linestring Distance ([#573](https://github.com/rapidsai/cuspatial/pull/573)) [@isVoid](https://github.com/isVoid)
+
+## 🛠️ Improvements
+
+- Update to the latest version 3 of GDAL. ([#675](https://github.com/rapidsai/cuspatial/pull/675)) [@thomcom](https://github.com/thomcom)
+- Expand expect_vector_equivalent to handle std::vector of vec_2d&lt;T&gt; and move traits out of detail ([#669](https://github.com/rapidsai/cuspatial/pull/669)) [@harrism](https://github.com/harrism)
+- Statically link all CUDA toolkit libraries ([#665](https://github.com/rapidsai/cuspatial/pull/665)) [@trxcllnt](https://github.com/trxcllnt)
+- Remove lonlat_2d and cartesian_2d types ([#662](https://github.com/rapidsai/cuspatial/pull/662)) [@harrism](https://github.com/harrism)
+- Rename Test Folders to Align with Module Names ([#661](https://github.com/rapidsai/cuspatial/pull/661)) [@isVoid](https://github.com/isVoid)
+- Move `GeoSeries` `GeoDataframe` into `core` package and hide column implementation in internal `_column` package ([#657](https://github.com/rapidsai/cuspatial/pull/657)) [@isVoid](https://github.com/isVoid)
+- Refactor spatial related functions under `spatial` package ([#656](https://github.com/rapidsai/cuspatial/pull/656)) [@isVoid](https://github.com/isVoid)
+- Add Missing Thrust Headers for Thrust 1.17 ([#655](https://github.com/rapidsai/cuspatial/pull/655)) [@isVoid](https://github.com/isVoid)
+- Decouple `interpolate` functions from trajectory ([#645](https://github.com/rapidsai/cuspatial/pull/645)) [@isVoid](https://github.com/isVoid)
+- Add header only `cuspatial::quadtree_on_points` ([#639](https://github.com/rapidsai/cuspatial/pull/639)) [@trxcllnt](https://github.com/trxcllnt)
+- Header-only refactoring of derive_trajectories ([#628](https://github.com/rapidsai/cuspatial/pull/628)) [@harrism](https://github.com/harrism)
+- Add python benchmarks. ([#600](https://github.com/rapidsai/cuspatial/pull/600)) [@thomcom](https://github.com/thomcom)
+- Fix compile error in distance benchmark ([#596](https://github.com/rapidsai/cuspatial/pull/596)) [@trxcllnt](https://github.com/trxcllnt)
 
 # cuSpatial 22.08.00 (17 Aug 2022)
 
