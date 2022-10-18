@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "thrust/iterator/discard_iterator.h"
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
@@ -52,6 +53,8 @@ using time_point = std::chrono::time_point<std::chrono::system_clock, std::chron
 */
 template <typename T>
 struct trajectory_test_data {
+  std::size_t num_trajectories;
+
   rmm::device_vector<std::int32_t> offsets;
 
   rmm::device_vector<std::int32_t> ids;
@@ -63,8 +66,59 @@ struct trajectory_test_data {
   rmm::device_vector<cuspatial::vec_2d<T>> points_sorted;
 
   trajectory_test_data(std::size_t num_trajectories, std::size_t max_trajectory_size)
+    : num_trajectories(num_trajectories)
   {
-    make_data(num_trajectories, max_trajectory_size);
+    thrust::minstd_rand gen;
+    thrust::uniform_int_distribution<std::int32_t> size_rand(1, max_trajectory_size);
+
+    // random trajectory sizes
+    rmm::device_vector<std::int32_t> sizes(num_trajectories);
+    thrust::tabulate(
+      rmm::exec_policy(), sizes.begin(), sizes.end(), size_rand_functor(gen, size_rand));
+
+    // offset to each trajectory
+    offsets.resize(num_trajectories);
+    thrust::exclusive_scan(rmm::exec_policy(), sizes.begin(), sizes.end(), offsets.begin(), 0);
+    auto total_points = sizes[num_trajectories - 1] + offsets[num_trajectories - 1];
+
+    ids.resize(total_points);
+    ids_sorted.resize(total_points);
+    times.resize(total_points);
+    times_sorted.resize(total_points);
+    points.resize(total_points);
+    points_sorted.resize(total_points);
+
+    using namespace std::chrono_literals;
+
+    thrust::tabulate(rmm::exec_policy(),
+                     ids_sorted.begin(),
+                     ids_sorted.end(),
+                     id_functor(offsets.data().get(), offsets.data().get() + offsets.size()));
+
+    thrust::transform(
+      rmm::exec_policy(),
+      thrust::make_counting_iterator(0),
+      thrust::make_counting_iterator(total_points),
+      ids_sorted.begin(),
+      times_sorted.begin(),
+      timestamp_functor(offsets.data().get(), offsets.data().get() + offsets.size()));
+
+    thrust::transform(rmm::exec_policy(),
+                      times_sorted.begin(),
+                      times_sorted.end(),
+                      ids_sorted.begin(),
+                      points_sorted.begin(),
+                      point_functor());
+
+    // shuffle input data to create randomized order
+    rmm::device_vector<std::int32_t> map(total_points);
+    thrust::sequence(rmm::exec_policy(), map.begin(), map.end(), 0);
+    thrust::shuffle(rmm::exec_policy(), map.begin(), map.end(), gen);
+
+    thrust::gather(rmm::exec_policy(), map.begin(), map.end(), ids_sorted.begin(), ids.begin());
+    thrust::gather(rmm::exec_policy(), map.begin(), map.end(), times_sorted.begin(), times.begin());
+    thrust::gather(
+      rmm::exec_policy(), map.begin(), map.end(), points_sorted.begin(), points.begin());
   }
 
   struct id_functor {
@@ -132,59 +186,34 @@ struct trajectory_test_data {
     }
   };
 
-  void make_data(std::size_t num_trajectories, std::size_t max_trajectory_size)
+  struct box_minmax {
+    using point_tuple = thrust::tuple<cuspatial::vec_2d<T>, cuspatial::vec_2d<T>>;
+    __host__ __device__ point_tuple operator()(point_tuple const& a, point_tuple const& b)
+    {
+      vec_2d<T> p1, p2, p3, p4;
+      thrust::tie(p1, p2) = a;
+      thrust::tie(p3, p4) = b;
+      using cuspatial::min;
+      return {min(min(p1, p2), p3), max(max(p1, p2), p4)};
+    }
+  };
+
+  auto extrema()
   {
-    thrust::minstd_rand gen;
-    thrust::uniform_int_distribution<std::int32_t> size_rand(1, max_trajectory_size);
+    auto minima = rmm::device_vector<cuspatial::vec_2d<T>>(num_trajectories);
+    auto maxima = rmm::device_vector<cuspatial::vec_2d<T>>(num_trajectories);
 
-    // random trajectory sizes
-    rmm::device_vector<std::int32_t> sizes(num_trajectories);
-    thrust::tabulate(
-      rmm::exec_policy(), sizes.begin(), sizes.end(), size_rand_functor(gen, size_rand));
+    auto point_tuples = thrust::make_zip_iterator(points_sorted.begin(), points_sorted.begin());
 
-    // offset to each trajectory
-    offsets.resize(num_trajectories);
-    thrust::exclusive_scan(rmm::exec_policy(), sizes.begin(), sizes.end(), offsets.begin(), 0);
-    auto total_points = sizes[num_trajectories - 1] + offsets[num_trajectories - 1];
+    thrust::reduce_by_key(ids_sorted.begin(),
+                          ids_sorted.end(),
+                          point_tuples,
+                          thrust::discard_iterator{},
+                          thrust::make_zip_iterator(minima.begin(), maxima.begin()),
+                          thrust::equal_to<std::int32_t>(),
+                          box_minmax{});
 
-    ids.resize(total_points);
-    ids_sorted.resize(total_points);
-    times.resize(total_points);
-    times_sorted.resize(total_points);
-    points.resize(total_points);
-    points_sorted.resize(total_points);
-
-    using namespace std::chrono_literals;
-
-    thrust::tabulate(rmm::exec_policy(),
-                     ids_sorted.begin(),
-                     ids_sorted.end(),
-                     id_functor(offsets.data().get(), offsets.data().get() + offsets.size()));
-
-    thrust::transform(
-      rmm::exec_policy(),
-      thrust::make_counting_iterator(0),
-      thrust::make_counting_iterator(total_points),
-      ids_sorted.begin(),
-      times_sorted.begin(),
-      timestamp_functor(offsets.data().get(), offsets.data().get() + offsets.size()));
-
-    thrust::transform(rmm::exec_policy(),
-                      times_sorted.begin(),
-                      times_sorted.end(),
-                      ids_sorted.begin(),
-                      points_sorted.begin(),
-                      point_functor());
-
-    // shuffle input data to create randomized order
-    rmm::device_vector<std::int32_t> map(total_points);
-    thrust::sequence(rmm::exec_policy(), map.begin(), map.end(), 0);
-    thrust::shuffle(rmm::exec_policy(), map.begin(), map.end(), gen);
-
-    thrust::gather(rmm::exec_policy(), map.begin(), map.end(), ids_sorted.begin(), ids.begin());
-    thrust::gather(rmm::exec_policy(), map.begin(), map.end(), times_sorted.begin(), times.begin());
-    thrust::gather(
-      rmm::exec_policy(), map.begin(), map.end(), points_sorted.begin(), points.begin());
+    return std::pair{minima, maxima};
   }
 };
 
