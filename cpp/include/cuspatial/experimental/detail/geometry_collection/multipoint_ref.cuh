@@ -17,7 +17,6 @@
 #include <cuspatial/cuda_utils.hpp>
 
 namespace cuspatial {
-namespace geometry_collection {
 
 template <typename VecIterator>
 CUSPATIAL_HOST_DEVICE multipoint_ref<VecIterator>::multipoint_ref(VecIterator begin,
@@ -38,5 +37,4 @@ CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::point_end() const
   return _points_end;
 }
 
-}  // namespace geometry_collection
 }  // namespace cuspatial

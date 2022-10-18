@@ -17,7 +17,6 @@
 #include <cuspatial/cuda_utils.hpp>
 
 namespace cuspatial {
-namespace geometry_collection {
 
 /**
  * @brief Represent a multipoint stored in structure of array on memory.
@@ -43,7 +42,7 @@ class multipoint_ref {
   VecIterator _points_begin;
   VecIterator _points_end;
 };
-}  // namespace geometry_collection
+
 }  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/geometry_collection/multipoint_ref.cuh>

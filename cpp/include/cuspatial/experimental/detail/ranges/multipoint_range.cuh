@@ -46,8 +46,8 @@ struct to_multipoint_functor {
   CUSPATIAL_HOST_DEVICE
   auto operator()(difference_type const& i)
   {
-    return geometry_collection::multipoint_ref<VecIterator>{_points_begin + _offset_iter[i],
-                                                            _points_begin + _offset_iter[i + 1]};
+    return multipoint_ref<VecIterator>{_points_begin + _offset_iter[i],
+                                       _points_begin + _offset_iter[i + 1]};
   }
 };
 
