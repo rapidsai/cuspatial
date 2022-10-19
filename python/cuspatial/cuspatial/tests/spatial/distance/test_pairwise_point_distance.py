@@ -70,10 +70,10 @@ def test_mismatched_input_size():
 def test_mismatched_input_type():
     gs1 = cuspatial.GeoSeries([Point(0, 0)])
     gs2 = cuspatial.GeoSeries([LineString([(0, 0), (1, 1)])])
-    with pytest.raises(TypeError, match="must contain only points"):
+    with pytest.raises(ValueError, match="must contain only points"):
         cuspatial.pairwise_point_distance(gs1, gs2)
 
     gs3 = cuspatial.GeoSeries([LineString([(0, 0), (1, 1)])])
     gs4 = cuspatial.GeoSeries([Point(0, 0)])
-    with pytest.raises(TypeError, match="must contain only points"):
+    with pytest.raises(ValueError, match="must contain only points"):
         cuspatial.pairwise_point_distance(gs3, gs4)
