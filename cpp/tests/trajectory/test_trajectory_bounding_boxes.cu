@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-#include "trajectory_utilities.cuh"
+#include "../base_fixture.hpp"
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/trajectory.hpp>
 
-#include <cudf/utilities/traits.hpp>
-
-#include <cudf_test/column_utilities.hpp>
-#include <cudf_test/type_lists.hpp>
-
-struct TrajectoryBoundingBoxesTest : public cudf::test::BaseFixture {
+struct TrajectoryBoundingBoxesTest : public cuspatial::test::BaseFixture {
 };
 
 TEST_F(TrajectoryBoundingBoxesTest, SizeMismatch)
