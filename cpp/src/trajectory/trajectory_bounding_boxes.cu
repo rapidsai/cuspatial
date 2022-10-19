@@ -71,8 +71,8 @@ struct dispatch_element {
     auto bbox_maxes = cuspatial::make_vec_2d_output_iterator(cols.at(2)->mutable_view().begin<T>(),
                                                              cols.at(3)->mutable_view().begin<T>());
 
-    trajectory_bounding_boxes(object_id.begin<std::int32_t>(),
-                              object_id.end<std::int32_t>(),
+    trajectory_bounding_boxes(object_id.begin<cudf::size_type>(),
+                              object_id.end<cudf::size_type>(),
                               points_begin,
                               thrust::make_zip_iterator(bbox_mins, bbox_maxes),
                               stream);
@@ -113,7 +113,8 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(cudf::size_type num_traje
 {
   CUSPATIAL_EXPECTS(object_id.size() == x.size() && x.size() == y.size(), "Data size mismatch");
   CUSPATIAL_EXPECTS(x.type().id() == y.type().id(), "Data type mismatch");
-  CUSPATIAL_EXPECTS(object_id.type().id() == cudf::type_id::INT32, "Invalid object_id type");
+  CUSPATIAL_EXPECTS(object_id.type().id() == cudf::type_to_id<cudf::size_type>(),
+                    "Invalid object_id type");
   CUSPATIAL_EXPECTS(!(x.has_nulls() || y.has_nulls() || object_id.has_nulls()),
                     "NULL support unimplemented");
 
