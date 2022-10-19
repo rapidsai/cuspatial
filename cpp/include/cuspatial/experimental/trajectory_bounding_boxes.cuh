@@ -46,6 +46,9 @@ namespace cuspatial {
  *
  * @return A `std::pair` of iterators to the ends of the ranges of output minimum and maximum
  *         bounding box coordinates.
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
  */
 template <typename IdInputIt, typename PointInputIt, typename PointOutputIt>
 std::pair<PointOutputIt, PointOutputIt> trajectory_bounding_boxes(
