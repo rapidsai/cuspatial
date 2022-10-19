@@ -17,37 +17,24 @@
 #include <cuspatial/cuda_utils.hpp>
 
 namespace cuspatial {
-namespace geometry_collection {
 
 template <typename VecIterator>
-CUSPATIAL_HOST_DEVICE multipoint<VecIterator>::multipoint(VecIterator begin, VecIterator end)
-  : points_begin(begin), points_end(end)
+CUSPATIAL_HOST_DEVICE multipoint_ref<VecIterator>::multipoint_ref(VecIterator begin,
+                                                                  VecIterator end)
+  : _points_begin(begin), _points_end(end)
 {
 }
 
 template <typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto multipoint<VecIterator>::point_begin() const
+CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::point_begin() const
 {
-  return points_begin;
+  return _points_begin;
 }
 
 template <typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto multipoint<VecIterator>::point_end() const
+CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::point_end() const
 {
-  return points_end;
+  return _points_end;
 }
 
-template <typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto multipoint<VecIterator>::begin() const
-{
-  return point_begin();
-}
-
-template <typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto multipoint<VecIterator>::end() const
-{
-  return point_end();
-}
-
-}  // namespace geometry_collection
 }  // namespace cuspatial

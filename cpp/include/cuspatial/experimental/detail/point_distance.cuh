@@ -17,7 +17,6 @@
 #pragma once
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/array_view/multipoint_array.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -30,26 +29,22 @@
 
 namespace cuspatial {
 
-template <class OffsetIteratorA,
-          class OffsetIteratorB,
-          class Cart2dItA,
-          class Cart2dItB,
-          class OutputIt>
-OutputIt pairwise_point_distance(
-  array_view::multipoint_array<OffsetIteratorA, Cart2dItA> multipoints1,
-  array_view::multipoint_array<OffsetIteratorB, Cart2dItB> multipoints2,
-  OutputIt distances_first,
-  rmm::cuda_stream_view stream)
+template <class MultiPointArrayViewA, class MultiPointArrayViewB, class OutputIt>
+OutputIt pairwise_point_distance(MultiPointArrayViewA multipoints1,
+                                 MultiPointArrayViewB multipoints2,
+                                 OutputIt distances_first,
+                                 rmm::cuda_stream_view stream)
 {
-  using T = iterator_vec_base_type<Cart2dItA>;
+  using T = iterator_vec_base_type<typename MultiPointArrayViewA::point_it_t>;
 
   static_assert(
-    is_same_floating_point<T, iterator_vec_base_type<Cart2dItB>, iterator_value_type<OutputIt>>(),
-    "Inputs and output must have the same floating point value type.");
+    is_same_floating_point<T, iterator_vec_base_type<typename MultiPointArrayViewB::point_it_t>>(),
+    "Inputs must have the same floating point value type.");
 
-  static_assert(
-    is_same<vec_2d<T>, iterator_value_type<Cart2dItA>, iterator_value_type<Cart2dItB>>(),
-    "All Input types must be cuspatial::vec_2d with the same value type");
+  static_assert(is_same<vec_2d<T>,
+                        typename MultiPointArrayViewA::point_t,
+                        typename MultiPointArrayViewB::point_t>(),
+                "All Input types must be cuspatial::vec_2d with the same value type");
 
   CUSPATIAL_EXPECTS(multipoints1.size() == multipoints2.size(),
                     "Inputs should have the same number of multipoints.");
