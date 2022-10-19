@@ -21,6 +21,11 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup trajectory_api
+ * @{
+ */
+
+/**
  * @brief Compute the spatial bounding boxes of trajectories.
  *
  * Computes a tight bounding box around all points within each trajectory (points with the same ID).
@@ -55,6 +60,10 @@ BoundingBoxOutputIt trajectory_bounding_boxes(
   PointInputIt points_first,
   BoundingBoxOutputIt bounding_boxes_first,
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial
 
