@@ -37,70 +37,32 @@
 
 template <typename T>
 struct DeriveTrajectoriesTest : public ::testing::Test {
+  void run_test(int num_trajectories, int points_per_trajectory)
+  {
+    auto data = cuspatial::test::trajectory_test_data<T>(num_trajectories, points_per_trajectory);
+
+    auto minima = rmm::device_vector<cuspatial::vec_2d<T>>(data.num_trajectories);
+    auto maxima = rmm::device_vector<cuspatial::vec_2d<T>>(data.num_trajectories);
+
+    auto extrema = thrust::make_zip_iterator(minima.begin(), maxima.begin());
+
+    auto extrema_end = cuspatial::trajectory_bounding_boxes(
+      data.ids_sorted.begin(), data.ids_sorted.end(), data.points_sorted.begin(), extrema);
+
+    auto [expected_minima, expected_maxima] = data.extrema();
+
+    EXPECT_EQ(std::distance(extrema, extrema_end), data.num_trajectories);
+
+    EXPECT_EQ(minima, expected_minima);
+    EXPECT_EQ(maxima, expected_maxima);
+  }
 };
 
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(DeriveTrajectoriesTest, TestTypes);
 
-TYPED_TEST(DeriveTrajectoriesTest, OneMillionSmallTrajectories)
-{
-  using T   = TypeParam;
-  auto data = cuspatial::test::trajectory_test_data<T>(1'000'000, 50);
+TYPED_TEST(DeriveTrajectoriesTest, OneMillionSmallTrajectories) { this->run_test(1'000'000, 50); }
 
-  auto minima = rmm::device_vector<cuspatial::vec_2d<T>>(data.num_trajectories);
-  auto maxima = rmm::device_vector<cuspatial::vec_2d<T>>(data.num_trajectories);
+TYPED_TEST(DeriveTrajectoriesTest, OneHundredLargeTrajectories) { this->run_test(100, 1'000'000); }
 
-  auto extrema = thrust::make_zip_iterator(minima.begin(), maxima.begin());
-
-  auto extrema_end = cuspatial::trajectory_bounding_boxes(
-    data.ids_sorted.begin(), data.ids_sorted.end(), data.points_sorted.begin(), extrema);
-
-  auto [expected_minima, expected_maxima] = data.extrema();
-
-  EXPECT_EQ(std::distance(extrema, extrema_end), data.num_trajectories);
-
-  EXPECT_EQ(minima, expected_minima);
-  EXPECT_EQ(maxima, expected_maxima);
-}
-
-TYPED_TEST(DeriveTrajectoriesTest, OneHundredLargeTrajectories)
-{
-  using T   = TypeParam;
-  auto data = cuspatial::test::trajectory_test_data<T>(100, 1'000'000);
-
-  auto minima = rmm::device_vector<cuspatial::vec_2d<T>>(data.num_trajectories);
-  auto maxima = rmm::device_vector<cuspatial::vec_2d<T>>(data.num_trajectories);
-
-  auto extrema = thrust::make_zip_iterator(minima.begin(), maxima.begin());
-
-  auto extrema_end = cuspatial::trajectory_bounding_boxes(
-    data.ids_sorted.begin(), data.ids_sorted.end(), data.points_sorted.begin(), extrema);
-
-  auto [expected_minima, expected_maxima] = data.extrema();
-
-  EXPECT_EQ(std::distance(extrema, extrema_end), data.num_trajectories);
-
-  EXPECT_EQ(minima, expected_minima);
-  EXPECT_EQ(maxima, expected_maxima);
-}
-
-TYPED_TEST(DeriveTrajectoriesTest, OneVeryLargeTrajectory)
-{
-  using T   = TypeParam;
-  auto data = cuspatial::test::trajectory_test_data<T>(1, 100'000'000);
-
-  auto minima = rmm::device_vector<cuspatial::vec_2d<T>>(data.num_trajectories);
-  auto maxima = rmm::device_vector<cuspatial::vec_2d<T>>(data.num_trajectories);
-
-  auto extrema = thrust::make_zip_iterator(minima.begin(), maxima.begin());
-
-  auto extrema_end = cuspatial::trajectory_bounding_boxes(
-    data.ids_sorted.begin(), data.ids_sorted.end(), data.points_sorted.begin(), extrema);
-
-  auto [expected_minima, expected_maxima] = data.extrema();
-
-  EXPECT_EQ(std::distance(extrema, extrema_end), data.num_trajectories);
-
-  EXPECT_EQ(minima, expected_minima);
-  EXPECT_EQ(maxima, expected_maxima);
-}
+TYPED_TEST(DeriveTrajectoriesTest, OneVeryLargeTrajectory) { this->run_test(1, 100'000'000); }
