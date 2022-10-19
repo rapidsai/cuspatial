@@ -16,84 +16,75 @@
 
 #include "trajectory_utilities.cuh"
 
+#include <cuspatial/error.hpp>
+#include <cuspatial/trajectory.hpp>
+
 #include <cudf/utilities/traits.hpp>
 
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/type_lists.hpp>
 
-template <typename T>
 struct TrajectoryBoundingBoxesTest : public cudf::test::BaseFixture {
 };
 
-TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, cudf::test::FloatingPointTypes);
-
-constexpr cudf::size_type size{1000};
-
-TYPED_TEST(TrajectoryBoundingBoxesTest, ComputeBoundingBoxesForThreeTrajectories)
+TEST_F(TrajectoryBoundingBoxesTest, SizeMismatch)
 {
-  using T = TypeParam;
+  auto const size = 1000;
 
-  auto test_data = cuspatial::test::make_test_trajectories_table<T>(size, this->mr());
+  {
+    auto id = cudf::column(rmm::device_uvector<cudf::size_type>(size, rmm::cuda_stream_default));
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size / 2, rmm::cuda_stream_default));
 
-  std::unique_ptr<cudf::column> offsets;
-  std::unique_ptr<cudf::table> sorted;
+    EXPECT_THROW(cuspatial::trajectory_bounding_boxes(1, id, xs, ys, this->mr()),
+                 cuspatial::logic_error);
+  }
+  {
+    auto id = cudf::column(rmm::device_uvector<int>(size / 2, rmm::cuda_stream_default));
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    EXPECT_THROW(cuspatial::trajectory_bounding_boxes(1, id, xs, ys, this->mr()),
+                 cuspatial::logic_error);
+  }
+}
 
-  std::tie(sorted, offsets) = cuspatial::derive_trajectories(test_data->get_column(0),
-                                                             test_data->get_column(1),
-                                                             test_data->get_column(2),
-                                                             test_data->get_column(3),
-                                                             this->mr());
+TEST_F(TrajectoryBoundingBoxesTest, TypeError)
+{
+  auto const size = 1000;
 
-  auto id = sorted->get_column(0);
-  auto xs = sorted->get_column(1);
-  auto ys = sorted->get_column(2);
-
-  auto bounding_boxes =
-    cuspatial::trajectory_bounding_boxes(offsets->size(), id, xs, ys, this->mr());
-
-  auto h_xs      = cudf::test::to_host<T>(xs).first;
-  auto h_ys      = cudf::test::to_host<T>(ys).first;
-  auto h_offsets = cudf::test::to_host<int32_t>(*offsets).first;
-
-  std::vector<T> bbox_x1(h_offsets.size());
-  std::vector<T> bbox_y1(h_offsets.size());
-  std::vector<T> bbox_x2(h_offsets.size());
-  std::vector<T> bbox_y2(h_offsets.size());
-
-  // compute expected bounding boxes
-  for (size_t tid = 0; tid < h_offsets.size(); ++tid) {
-    auto idx = h_offsets[tid];
-    auto end = tid == h_offsets.size() - 1 ? h_xs.size() : h_offsets[tid + 1];
-
-    auto x1 = h_xs[idx];
-    auto y1 = h_ys[idx];
-    auto x2 = h_xs[idx];
-    auto y2 = h_ys[idx];
-
-    for (size_t i = idx; ++i < end;) {
-      x1 = std::min(x1, h_xs[i]);
-      y1 = std::min(y1, h_ys[i]);
-      x2 = std::max(x2, h_xs[i]);
-      y2 = std::max(y2, h_ys[i]);
-    }
-
-    bbox_x1[tid] = x1;
-    bbox_y1[tid] = y1;
-    bbox_x2[tid] = x2;
-    bbox_y2[tid] = y2;
+  {
+    auto id =
+      cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));  // not integer
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    EXPECT_THROW(cuspatial::trajectory_bounding_boxes(1, id, xs, ys, this->mr()),
+                 cuspatial::logic_error);
   }
 
-  auto x1_actual = bounding_boxes->get_column(0);
-  auto y1_actual = bounding_boxes->get_column(1);
-  auto x2_actual = bounding_boxes->get_column(2);
-  auto y2_actual = bounding_boxes->get_column(3);
-  cudf::test::fixed_width_column_wrapper<T> x1_expected(bbox_x1.begin(), bbox_x1.end());
-  cudf::test::fixed_width_column_wrapper<T> y1_expected(bbox_y1.begin(), bbox_y1.end());
-  cudf::test::fixed_width_column_wrapper<T> x2_expected(bbox_x2.begin(), bbox_x2.end());
-  cudf::test::fixed_width_column_wrapper<T> y2_expected(bbox_y2.begin(), bbox_y2.end());
+  {
+    // x-y type mismatch
+    auto id = cudf::column(rmm::device_uvector<cudf::size_type>(size, rmm::cuda_stream_default));
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<double>(size, rmm::cuda_stream_default));
+    EXPECT_THROW(cuspatial::trajectory_bounding_boxes(1, id, xs, ys, this->mr()),
+                 cuspatial::logic_error);
+  }
+}
 
-  cudf::test::expect_columns_equivalent(x1_actual, x1_expected);
-  cudf::test::expect_columns_equivalent(y1_actual, y1_expected);
-  cudf::test::expect_columns_equivalent(x2_actual, x2_expected);
-  cudf::test::expect_columns_equivalent(y2_actual, y2_expected);
+TEST_F(TrajectoryBoundingBoxesTest, Nulls)
+{
+  auto const size = 1000;
+
+  {
+    auto id = cudf::column(rmm::device_uvector<cudf::size_type>(size, rmm::cuda_stream_default));
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+
+    auto nulls = rmm::device_uvector<int>(1000, rmm::cuda_stream_default);
+    cudaMemsetAsync(nulls.data(), 0xcccc, nulls.size(), rmm::cuda_stream_default.value());
+    auto nulls_buffer = nulls.release();
+    id.set_null_mask(nulls_buffer);
+    EXPECT_THROW(cuspatial::trajectory_bounding_boxes(1, id, xs, ys, this->mr()),
+                 cuspatial::logic_error);
+  }
 }
