@@ -415,21 +415,12 @@ def pairwise_point_linestring_distance(
             "Mixing point and multipoint geometries is not supported"
         )
 
-    points_xy = (
-        points.points.xy
-        if len(points.points.xy) > 0
-        else points.multipoints.xy
-    )
-    points_geometry_offset = (
-        None
-        if len(points.points.xy) > 0
-        else points.multipoints.geometry_offset._column
-    )
+    point_xy_col, points_geometry_offset = _flatten_point_series(points)
 
     return Series._from_data(
         {
             None: c_pairwise_point_linestring_distance(
-                points_xy._column,
+                point_xy_col,
                 linestrings.lines.part_offset._column,
                 linestrings.lines.xy._column,
                 points_geometry_offset,
@@ -444,6 +435,7 @@ def _flatten_point_series(
 ) -> Tuple[
     cudf.core.column.column.ColumnBase, cudf.core.column.column.ColumnBase
 ]:
+    """Given a geoseries of (multi)points, extract the offset and x/y column"""
     if len(points.points.xy) > 0:
         return points.points.xy._column, None
     return (
