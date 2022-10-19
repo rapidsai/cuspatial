@@ -74,8 +74,7 @@ struct dispatch_element {
     trajectory_bounding_boxes(object_id.begin<std::int32_t>(),
                               object_id.end<std::int32_t>(),
                               points_begin,
-                              bbox_mins,
-                              bbox_maxes,
+                              thrust::make_zip_iterator(bbox_mins, bbox_maxes),
                               stream);
     // check for errors
     CUSPATIAL_CHECK_CUDA(stream.value());

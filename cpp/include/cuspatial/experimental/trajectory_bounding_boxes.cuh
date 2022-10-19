@@ -32,31 +32,28 @@ namespace cuspatial {
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
  * @tparam PointInputIt Iterator over points. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
- * @tparam PointOutputIt Iterator over output bounding box points. Must meet the requirements of
+ * @tparam BoundingBoxOutputIt Iterator over output bounding boxes. Each element is a tuple of two
+ * points representing corners of the axis-aligned bounding box. The type of the points is the same
+ * as the `value_type` of PointInputIt. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-writeable.
  *
  * @param ids_first beginning of the range of input object ids
  * @param ids_last end of the range of input object ids
  * @param points_first beginning of the range of input point (x,y) coordinates
- * @param bounding_box_minima_first beginning of the range of output minimum bounding box
- *                                  coordinates, one per trajectory
- * @param bounding_box_maxima_first beginning of the range of output maximum bounding box
- *                                  coordinates, one per trajectory
+ * @param bounding_boxes_first beginning of the range of output bounding boxes, one per trajectory
  * @param stream the CUDA stream on which to perform computations.
  *
- * @return A `std::pair` of iterators to the ends of the ranges of output minimum and maximum
- *         bounding box coordinates.
+ * @return An iterator to the end of the range of output bounding boxes.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <typename IdInputIt, typename PointInputIt, typename PointOutputIt>
-std::pair<PointOutputIt, PointOutputIt> trajectory_bounding_boxes(
+template <typename IdInputIt, typename PointInputIt, typename BoundingBoxOutputIt>
+BoundingBoxOutputIt trajectory_bounding_boxes(
   IdInputIt ids_first,
   IdInputIt ids_last,
   PointInputIt points_first,
-  PointOutputIt bounding_box_minima_first,
-  PointOutputIt bounding_box_maxima_first,
+  BoundingBoxOutputIt bounding_boxes_first,
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial

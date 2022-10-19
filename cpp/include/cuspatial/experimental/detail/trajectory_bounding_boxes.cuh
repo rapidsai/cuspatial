@@ -47,35 +47,29 @@ struct box_minmax {
 
 }  // namespace detail
 
-template <typename IdInputIt, typename PointInputIt, typename PointOutputIt>
-std::pair<PointOutputIt, PointOutputIt> trajectory_bounding_boxes(
-  IdInputIt ids_first,
-  IdInputIt ids_last,
-  PointInputIt points_first,
-  PointOutputIt bounding_box_minima_first,
-  PointOutputIt bounding_box_maxima_first,
-  rmm::cuda_stream_view stream)
+template <typename IdInputIt, typename PointInputIt, typename BoundingBoxOutputIt>
+BoundingBoxOutputIt trajectory_bounding_boxes(IdInputIt ids_first,
+                                              IdInputIt ids_last,
+                                              PointInputIt points_first,
+                                              BoundingBoxOutputIt bounding_boxes_first,
+                                              rmm::cuda_stream_view stream)
 {
   using T      = iterator_vec_base_type<PointInputIt>;
   using IdType = iterator_value_type<IdInputIt>;
 
   auto points_zipped_first = thrust::make_zip_iterator(points_first, points_first);
 
-  auto extrema_first =
-    thrust::make_zip_iterator(bounding_box_minima_first, bounding_box_maxima_first);
+  [[maybe_unused]] auto [_, bounding_boxes_last] =
+    thrust::reduce_by_key(rmm::exec_policy(stream),
+                          ids_first,
+                          ids_last,
+                          points_zipped_first,
+                          thrust::make_discard_iterator(),
+                          bounding_boxes_first,
+                          thrust::equal_to<IdType>(),
+                          detail::box_minmax<T>{});
 
-  [[maybe_unused]] auto [_, extrema_last] = thrust::reduce_by_key(rmm::exec_policy(stream),
-                                                                  ids_first,
-                                                                  ids_last,
-                                                                  points_zipped_first,
-                                                                  thrust::make_discard_iterator(),
-                                                                  extrema_first,
-                                                                  thrust::equal_to<IdType>(),
-                                                                  detail::box_minmax<T>{});
-
-  auto num_trajectories = std::distance(extrema_first, extrema_last);
-  return {bounding_box_minima_first + num_trajectories,
-          bounding_box_maxima_first + num_trajectories};
+  return bounding_boxes_last;
 }
 
 }  // namespace cuspatial
