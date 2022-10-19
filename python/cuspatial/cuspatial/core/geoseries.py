@@ -24,6 +24,8 @@ import cudf
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
+from cuspatial.core.spatial.join import point_in_polygon
+from cuspatial.utils.column_utils import contains_only_polygons
 
 T = TypeVar("T", bound="GeoSeries")
 
@@ -517,3 +519,32 @@ class GeoSeries(cudf.Series):
                 arrow_polygons,
             ],
         )
+
+    def contains(self, other, align=True):
+        if contains_only_polygons(self) is False:
+            raise TypeError("left series contains non-polygons.")
+        # RHS conditioning:
+        # point in polygon
+        # mpoint in polygon
+        # linestring in polygon
+        # polygon in polygon
+
+        # call pip on the three subtypes on the right:
+        point_result = point_in_polygon(
+            other.points.x,
+            other.points.y,
+            self.polygons.ring_offset[:-1],
+            self.polygons.part_offset[:-1],
+            self.polygons.x,
+            self.polygons.y,
+        )
+        return point_result
+        """
+            # Apply binpreds rules on results:
+            # point in polygon = true for row
+                # reverse index, points indices refer back to row
+                # indices
+            # mpoint in polygon for all points = true
+            # linestring in polygon for all points = true
+            # polygon in polygon for all points = true
+        """
