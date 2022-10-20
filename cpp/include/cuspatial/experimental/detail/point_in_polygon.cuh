@@ -57,8 +57,11 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
                                            Cart2dItDiffType const& num_poly_points)
 {
   using T = iterator_vec_base_type<Cart2dIt>;
+  const T EPSILON = 0.00000001;
+
 
   bool point_is_within = false;
+  bool is_colinear = false;
   // for each ring
   for (auto ring_idx = poly_begin; ring_idx < poly_end; ring_idx++) {
     int32_t ring_idx_next = ring_idx + 1;
@@ -80,14 +83,19 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
 
         // Transform the following inequality to avoid division
         //  test_point.x < (run / rise) * rise_to_point + a.x
-        auto lhs = (test_point.x - a.x) * rise;
+        auto lhs = (test_point.x - a.x) * rise + EPSILON;
         auto rhs = run * rise_to_point;
         if ((rise > 0 && lhs < rhs) || (rise < 0 && lhs > rhs))
           point_is_within = not point_is_within;
+        
+        // colinearity test
+        is_colinear = run * rise_to_point - rise * (test_point.x - a.x) == 0;
       }
       b       = a;
       y0_flag = y1_flag;
     }
+    if(is_colinear)
+      point_is_within = false;
   }
 
   return point_is_within;
