@@ -193,8 +193,7 @@ struct trajectory_test_data {
       vec_2d<T> p1, p2, p3, p4;
       thrust::tie(p1, p2) = a;
       thrust::tie(p3, p4) = b;
-      using cuspatial::min;
-      return {min(min(p1, p2), p3), max(max(p1, p2), p4)};
+      return {box_min(box_min(p1, p2), p3), box_max(box_max(p1, p2), p4)};
     }
   };
 

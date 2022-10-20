@@ -120,7 +120,7 @@ T CUSPATIAL_HOST_DEVICE det(vec_2d<T> const& a, vec_2d<T> const& b)
  * @brief Return a new vec_2d made up of the minimum x- and y-components of two input vec_2d values.
  */
 template <typename T>
-vec_2d<T> CUSPATIAL_HOST_DEVICE min(vec_2d<T> const& a, vec_2d<T> const& b)
+vec_2d<T> CUSPATIAL_HOST_DEVICE box_min(vec_2d<T> const& a, vec_2d<T> const& b)
 {
 #ifdef __CUDA_ARCH__
   return vec_2d<T>{::min(a.x, b.x), ::min(a.y, b.y)};
@@ -133,7 +133,7 @@ vec_2d<T> CUSPATIAL_HOST_DEVICE min(vec_2d<T> const& a, vec_2d<T> const& b)
  * @brief Return a new vec_2d made up of the minimum x- and y-components of two input vec_2d values.
  */
 template <typename T>
-vec_2d<T> CUSPATIAL_HOST_DEVICE max(vec_2d<T> const& a, vec_2d<T> const& b)
+vec_2d<T> CUSPATIAL_HOST_DEVICE box_max(vec_2d<T> const& a, vec_2d<T> const& b)
 {
 #ifdef __CUDA_ARCH__
   return vec_2d<T>{::max(a.x, b.x), ::max(a.y, b.y)};
