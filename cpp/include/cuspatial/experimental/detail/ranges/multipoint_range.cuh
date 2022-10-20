@@ -23,40 +23,38 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/experimental/geometry_collection/multipoint.cuh>
+#include <cuspatial/experimental/geometry_collection/multipoint_ref.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 namespace cuspatial {
-namespace array_view {
 
-using namespace cuspatial::geometry_collection;
 using namespace cuspatial::detail;
 
 namespace detail {
 template <typename GeometryIterator, typename VecIterator>
 struct to_multipoint_functor {
   using difference_type = typename thrust::iterator_difference<GeometryIterator>::type;
-  GeometryIterator _geometry_begin;
+  GeometryIterator _offset_iter;
   VecIterator _points_begin;
 
-  to_multipoint_functor(GeometryIterator geometry_begin, VecIterator points_begin)
-    : _geometry_begin(geometry_begin), _points_begin(points_begin)
+  to_multipoint_functor(GeometryIterator offset_iter, VecIterator points_begin)
+    : _offset_iter(offset_iter), _points_begin(points_begin)
   {
   }
 
   CUSPATIAL_HOST_DEVICE
   auto operator()(difference_type const& i)
   {
-    return multipoint<VecIterator>{_points_begin + _geometry_begin[i],
-                                   _points_begin + _geometry_begin[i + 1]};
+    return multipoint_ref<VecIterator>{_points_begin + _offset_iter[i],
+                                       _points_begin + _offset_iter[i + 1]};
   }
 };
 
 }  // namespace detail
 
 template <typename GeometryIterator, typename VecIterator>
-multipoint_array<GeometryIterator, VecIterator>::multipoint_array(GeometryIterator geometry_begin,
+multipoint_range<GeometryIterator, VecIterator>::multipoint_range(GeometryIterator geometry_begin,
                                                                   GeometryIterator geometry_end,
                                                                   VecIterator points_begin,
                                                                   VecIterator points_end)
@@ -68,42 +66,42 @@ multipoint_array<GeometryIterator, VecIterator>::multipoint_array(GeometryIterat
 }
 
 template <typename GeometryIterator, typename VecIterator>
-auto multipoint_array<GeometryIterator, VecIterator>::size()
+auto multipoint_range<GeometryIterator, VecIterator>::size()
 {
   return thrust::distance(_geometry_begin, _geometry_end) - 1;
 }
 
 template <typename GeometryIterator, typename VecIterator>
-auto multipoint_array<GeometryIterator, VecIterator>::multipoint_begin()
+auto multipoint_range<GeometryIterator, VecIterator>::multipoint_begin()
 {
   return cuspatial::detail::make_counting_transform_iterator(
     0, detail::to_multipoint_functor(_geometry_begin, _points_begin));
 }
 
 template <typename GeometryIterator, typename VecIterator>
-auto multipoint_array<GeometryIterator, VecIterator>::multipoint_end()
+auto multipoint_range<GeometryIterator, VecIterator>::multipoint_end()
 {
   return multipoint_begin() + size();
 }
 
 template <typename GeometryIterator, typename VecIterator>
-auto multipoint_array<GeometryIterator, VecIterator>::point_begin()
+auto multipoint_range<GeometryIterator, VecIterator>::point_begin()
 {
   return _points_begin;
 }
 
 template <typename GeometryIterator, typename VecIterator>
-auto multipoint_array<GeometryIterator, VecIterator>::point_end()
+auto multipoint_range<GeometryIterator, VecIterator>::point_end()
 {
   return _points_end;
 }
 
 template <typename GeometryIterator, typename VecIterator>
 template <typename IndexType>
-CUSPATIAL_HOST_DEVICE auto multipoint_array<GeometryIterator, VecIterator>::element(IndexType idx)
+CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::operator[](
+  IndexType idx)
 {
-  return multipoint{_points_begin + _geometry_begin[idx], _points_begin + _geometry_begin[idx + 1]};
+  return multipoint_begin()[idx];
 }
 
-}  // namespace array_view
 }  // namespace cuspatial

@@ -16,21 +16,16 @@
 
 #pragma once
 
-#include <cuspatial/experimental/geometry_collection/multipoint.cuh>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/traits.hpp>
 
 namespace cuspatial {
-namespace array_view {
-
-using namespace cuspatial::geometry_collection;
 
 /**
  * @brief Host-Device view object of a multipoint array
- * @ingroup array_view
+ * @ingroup ranges
  *
- * Conforms to GeoArrow's specification of multipoint:
+ * Conforms to GeoArrow's specification of multipoint array:
  * https://github.com/geopandas/geo-arrow-spec/blob/main/format.md
  *
  * @tparam GeometryIterator iterator type for the offset array. Must meet
@@ -39,13 +34,13 @@ using namespace cuspatial::geometry_collection;
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
  *
  * @note Though this object is host/device compatible,
- * The underlying iterator should be device accessible if used in device kernel.
+ * The underlying iterator should be device-accessible if used in a device kernel.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
 template <typename GeometryIterator, typename VecIterator>
-class multipoint_array {
+class multipoint_range {
  public:
   using geometry_it_t = GeometryIterator;
   using point_it_t    = VecIterator;
@@ -55,7 +50,7 @@ class multipoint_array {
   /**
    * @brief Construct a new multipoint array object
    */
-  multipoint_array(GeometryIterator geometry_begin,
+  multipoint_range(GeometryIterator geometry_begin,
                    GeometryIterator geometry_end,
                    VecIterator points_begin,
                    VecIterator points_end);
@@ -66,14 +61,24 @@ class multipoint_array {
   auto size();
 
   /**
-   * @brief Returns the iterator to the start of the multipoint array.
+   * @brief Returns the iterator to the first multipoint in the multipoint array.
    */
   auto multipoint_begin();
 
   /**
-   * @brief Returns the iterator to the end of the multipoint array.
+   * @brief Returns the iterator past the last multipoint in the multipoint array.
    */
   auto multipoint_end();
+
+  /**
+   * @brief Returns the iterator to the start of the multipoint array.
+   */
+  auto begin() { return multipoint_begin(); }
+
+  /**
+   * @brief Returns the iterator past the last multipoint in the multipoint array.
+   */
+  auto end() { return multipoint_end(); }
 
   /**
    * @brief Returns the iterator to the start of the underlying point array.
@@ -93,7 +98,7 @@ class multipoint_array {
    * @return a multipoint object
    */
   template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto element(IndexType idx);
+  CUSPATIAL_HOST_DEVICE auto operator[](IndexType idx);
 
  protected:
   /// Iterator to the start of the index array of start positions to each multipoint.
@@ -107,8 +112,8 @@ class multipoint_array {
 };
 
 /**
- * @brief Create a view of multipoint array from array size and start iterators
- * @ingroup array_view
+ * @brief Create a range of multipoint array from array size and start iterators
+ * @ingroup ranges
  *
  * @tparam IndexType1 Index type of the size of the geometry array
  * @tparam IndexType2 Index type of the size of the point array
@@ -124,22 +129,21 @@ class multipoint_array {
  * @param geometry_begin Iterator to the start of the geometry offset array
  * @param num_points Number of underlying points in the multipoint array
  * @param point_begin Iterator to the start of the points array
- * @return View object to multipoint array
+ * @return Range to multipoint array
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
 template <typename IndexType1, typename IndexType2, typename GeometryIterator, typename VecIterator>
-multipoint_array<GeometryIterator, VecIterator> make_multipoint_array(
+multipoint_range<GeometryIterator, VecIterator> make_multipoint_range(
   IndexType1 num_multipoints,
   GeometryIterator geometry_begin,
   IndexType2 num_points,
   VecIterator point_begin)
 {
-  return multipoint_array<GeometryIterator, VecIterator>{
+  return multipoint_range<GeometryIterator, VecIterator>{
     geometry_begin, geometry_begin + num_multipoints + 1, point_begin, point_begin + num_points};
 }
 
-}  // namespace array_view
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/array_view/multipoint_array.cuh>
+#include <cuspatial/experimental/detail/ranges/multipoint_range.cuh>
