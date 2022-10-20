@@ -25,7 +25,7 @@
 namespace cuspatial {
 
 /**
- * @brief Host-Device view object of a multilinestring array
+ * @brief Non-owning object of a multilinestring array
  * @ingroup ranges
  *
  * Conforms to GeoArrow's specification of multilinestring:
@@ -39,7 +39,7 @@ namespace cuspatial {
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
  *
  * @note Though this object is host/device compatible,
- * The underlying iterator should be device accessible if used in device kernel.
+ * The underlying iterator must be device accessible if used in device kernel.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
@@ -125,7 +125,7 @@ class multilinestring_range {
 };
 
 /**
- * @brief Create a view of multilinestring array from array size and start iterators
+ * @brief Create a range object of multilinestring array from array size and start iterators
  * @ingroup ranges
  *
  * @tparam IndexType1 Index type of the size of the geometry array
@@ -138,7 +138,7 @@ class multilinestring_range {
  * @tparam VecIterator iterator type for the point array. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
  *
- * @note Iterators should be device-accessible if the view is intended to be
+ * @note Iterators must be device-accessible if the view is intended to be
  * used on device.
  *
  * @param num_multilinestrings Number of multilinestrings in the array.
@@ -147,7 +147,7 @@ class multilinestring_range {
  * @param part_begin Iterator to the start of the part array.
  * @param num_points Number of points in the underlying points array.
  * @param point_begin Iterator to the start of the point array.
- * @return View object to the multilinestring array.
+ * @return A `multilinestring_range` object
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"

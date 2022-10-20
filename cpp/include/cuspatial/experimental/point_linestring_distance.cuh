@@ -23,13 +23,13 @@ namespace cuspatial {
 /**
  * @brief Compute pairwise multipoint to multilinestring distance
  *
- * @tparam MultiPointArrayView an instance of template type `array_view::multipoint_array`
- * @tparam MultiLinestringArrayView an instance of template type `array_view::multilinestring_array`
+ * @tparam MultiPointArrayView an instance of template type `multipoint_range`
+ * @tparam MultiLinestringArrayView an instance of template type `multilinestring_range`
  *
- * @param multipoints Array view object of a multipoint array
- * @param multilinestrings Array view object of a multilinestring array
+ * @param multipoints Range object of a multipoint array
+ * @param multilinestrings Range object of a multilinestring array
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
- * @return Output iterator to the element past the last tuple computed.
+ * @return Output iterator to the element past the last distance computed.
  */
 template <class MultiPointArrayView, class MultiLinestringArrayView, class OutputIt>
 OutputIt pairwise_point_linestring_distance(

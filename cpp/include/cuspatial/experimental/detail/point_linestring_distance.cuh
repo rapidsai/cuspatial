@@ -40,6 +40,12 @@
 namespace cuspatial {
 namespace detail {
 
+/**
+ * @brief Kernel to compute the distance between pairs of point and linestring.
+ *
+ * The kernel is launched on one linestring point per thread. Each thread iterates on all points in
+ * the multipoint operand and use atomics to aggregate the shortest distance.
+ */
 template <class MultiPointArrayView, class MultiLinestringArrayView, class OutputIterator>
 void __global__ pairwise_point_linestring_distance_kernel(MultiPointArrayView multipoints,
                                                           MultiLinestringArrayView multilinestrings,
@@ -66,10 +72,10 @@ void __global__ pairwise_point_linestring_distance_kernel(MultiPointArrayView mu
     for (vec_2d<T> const& c : multipoints[geometry_idx]) {
       // TODO: reduce redundant computation only related to `a`, `b` in this helper.
       auto const distance_squared = point_to_segment_distance_squared(c, a, b);
-      min_distance_squared        = std::min(distance_squared, min_distance_squared);
+      min_distance_squared        = min(distance_squared, min_distance_squared);
     }
     atomicMin(&thrust::raw_reference_cast(*(distances + geometry_idx)),
-              static_cast<T>(std::sqrt(min_distance_squared)));
+              static_cast<T>(sqrt(min_distance_squared)));
   }
 }
 
