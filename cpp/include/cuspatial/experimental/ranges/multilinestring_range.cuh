@@ -23,11 +23,10 @@
 #include <cuspatial/vec_2d.hpp>
 
 namespace cuspatial {
-namespace array_view {
 
 /**
  * @brief Host-Device view object of a multilinestring array
- * @ingroup array_view
+ * @ingroup ranges
  *
  * Conforms to GeoArrow's specification of multilinestring:
  * https://github.com/geopandas/geo-arrow-spec/blob/main/format.md
@@ -46,7 +45,7 @@ namespace array_view {
  * "LegacyRandomAccessIterator"
  */
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-class multilinestring_array {
+class multilinestring_range {
  public:
   using geometry_it_t = GeometryIterator;
   using part_it_t     = PartIterator;
@@ -54,7 +53,7 @@ class multilinestring_array {
   using point_t       = iterator_value_type<VecIterator>;
   using element_t     = iterator_vec_base_type<VecIterator>;
 
-  multilinestring_array(GeometryIterator geometry_begin,
+  multilinestring_range(GeometryIterator geometry_begin,
                         GeometryIterator geometry_end,
                         PartIterator part_begin,
                         PartIterator part_end,
@@ -127,7 +126,7 @@ class multilinestring_array {
 
 /**
  * @brief Create a view of multilinestring array from array size and start iterators
- * @ingroup array_view
+ * @ingroup ranges
  *
  * @tparam IndexType1 Index type of the size of the geometry array
  * @tparam IndexType2 Index type of the size of the part array
@@ -159,14 +158,14 @@ template <typename IndexType1,
           typename GeometryIterator,
           typename PartIterator,
           typename VecIterator>
-auto make_multilinestring_array(IndexType1 num_multilinestrings,
+auto make_multilinestring_range(IndexType1 num_multilinestrings,
                                 GeometryIterator geometry_begin,
                                 IndexType2 num_linestrings,
                                 PartIterator part_begin,
                                 IndexType3 num_points,
                                 VecIterator point_begin)
 {
-  return multilinestring_array{geometry_begin,
+  return multilinestring_range{geometry_begin,
                                geometry_begin + num_multilinestrings + 1,
                                part_begin,
                                part_begin + num_linestrings + 1,
@@ -174,7 +173,6 @@ auto make_multilinestring_array(IndexType1 num_multilinestrings,
                                point_begin + num_points};
 }
 
-}  // namespace array_view
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/array_view/multilinestring_array.cuh>
+#include <cuspatial/experimental/detail/ranges/multilinestring_range.cuh>

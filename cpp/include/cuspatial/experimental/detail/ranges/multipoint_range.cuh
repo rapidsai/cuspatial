@@ -101,7 +101,8 @@ template <typename IndexType>
 CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::operator[](
   IndexType idx)
 {
-  return multipoint_begin()[idx];
+  return multipoint_ref<VecIterator>{_points_begin + _geometry_begin[idx],
+                                     _points_begin + _geometry_begin[idx + 1]};
 }
 
 }  // namespace cuspatial

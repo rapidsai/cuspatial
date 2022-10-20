@@ -23,23 +23,21 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/experimental/geometry_collection/multipoint.cuh>
+#include <cuspatial/experimental/geometry_collection/multipoint_ref.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <iterator>
 
 namespace cuspatial {
-namespace array_view {
 
-using namespace cuspatial::geometry_collection;
 using namespace cuspatial::detail;
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-class multilinestring_array;
+class multilinestring_range;
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-multilinestring_array<GeometryIterator, PartIterator, VecIterator>::multilinestring_array(
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::multilinestring_range(
   GeometryIterator geometry_begin,
   GeometryIterator geometry_end,
   PartIterator part_begin,
@@ -57,28 +55,28 @@ multilinestring_array<GeometryIterator, PartIterator, VecIterator>::multilinestr
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multilinestring_array<GeometryIterator, PartIterator, VecIterator>::size()
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::size()
 {
   return num_multilinestrings();
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multilinestring_array<GeometryIterator, PartIterator, VecIterator>::num_multilinestrings()
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_multilinestrings()
 {
   return thrust::distance(geometry_begin, geometry_end) - 1;
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multilinestring_array<GeometryIterator, PartIterator, VecIterator>::num_linestrings()
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_linestrings()
 {
   return thrust::distance(part_begin, part_end) - 1;
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multilinestring_array<GeometryIterator, PartIterator, VecIterator>::num_points()
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_points()
 {
   return thrust::distance(points_begin, points_end);
 }
@@ -86,7 +84,7 @@ multilinestring_array<GeometryIterator, PartIterator, VecIterator>::num_points()
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 template <typename IndexType>
 CUSPATIAL_HOST_DEVICE auto
-multilinestring_array<GeometryIterator, PartIterator, VecIterator>::part_idx_from_point_idx(
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::part_idx_from_point_idx(
   IndexType point_idx)
 {
   auto part_it = thrust::upper_bound(thrust::seq, part_begin, part_end, point_idx);
@@ -96,7 +94,7 @@ multilinestring_array<GeometryIterator, PartIterator, VecIterator>::part_idx_fro
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 template <typename IndexType>
 CUSPATIAL_HOST_DEVICE auto
-multilinestring_array<GeometryIterator, PartIterator, VecIterator>::geometry_idx_from_part_idx(
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::geometry_idx_from_part_idx(
   IndexType part_idx)
 {
   auto geom_it = thrust::upper_bound(thrust::seq, geometry_begin, geometry_end, part_idx);
@@ -106,7 +104,7 @@ multilinestring_array<GeometryIterator, PartIterator, VecIterator>::geometry_idx
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 template <typename IndexType>
 CUSPATIAL_HOST_DEVICE auto
-multilinestring_array<GeometryIterator, PartIterator, VecIterator>::geometry_idx_from_point_idx(
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::geometry_idx_from_point_idx(
   IndexType point_idx)
 {
   return geometry_idx_from_part_idx(part_idx_from_point_idx(point_idx));
@@ -115,7 +113,7 @@ multilinestring_array<GeometryIterator, PartIterator, VecIterator>::geometry_idx
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 template <typename IndexType1, typename IndexType2>
 CUSPATIAL_HOST_DEVICE bool
-multilinestring_array<GeometryIterator, PartIterator, VecIterator>::is_valid_segment_id(
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::is_valid_segment_id(
   IndexType1 segment_idx, IndexType2 part_idx)
 {
   return segment_idx != num_points() && segment_idx != (part_begin[part_idx + 1] - 1);
@@ -124,12 +122,11 @@ multilinestring_array<GeometryIterator, PartIterator, VecIterator>::is_valid_seg
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 template <typename IndexType>
 CUSPATIAL_HOST_DEVICE thrust::pair<
-  vec_2d<typename multilinestring_array<GeometryIterator, PartIterator, VecIterator>::element_t>,
-  vec_2d<typename multilinestring_array<GeometryIterator, PartIterator, VecIterator>::element_t>>
-multilinestring_array<GeometryIterator, PartIterator, VecIterator>::segment(IndexType segment_idx)
+  vec_2d<typename multilinestring_range<GeometryIterator, PartIterator, VecIterator>::element_t>,
+  vec_2d<typename multilinestring_range<GeometryIterator, PartIterator, VecIterator>::element_t>>
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment(IndexType segment_idx)
 {
   return thrust::make_pair(points_begin[segment_idx], points_begin[segment_idx + 1]);
 }
 
-}  // namespace array_view
 }  // namespace cuspatial

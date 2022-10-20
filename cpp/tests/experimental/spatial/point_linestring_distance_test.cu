@@ -18,10 +18,10 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/array_view/multilinestring_array.cuh>
-#include <cuspatial/experimental/array_view/multipoint_array.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_linestring_distance.cuh>
+#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
+#include <cuspatial/experimental/ranges/multipoint_range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
@@ -34,8 +34,6 @@
 
 namespace cuspatial {
 namespace test {
-
-using namespace cuspatial::array_view;
 
 template <typename T>
 struct PairwisePointLinestringDistanceTest : public ::testing::Test {
@@ -62,10 +60,10 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, Empty)
   rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
-  auto multipoints = make_multipoint_array(
+  auto multipoints = make_multipoint_range(
     d_point_geometries.size() - 1, d_point_geometries.begin(), d_points.size(), d_points.begin());
 
-  auto multilinestrings = make_multilinestring_array(d_linestring_geometries.size() - 1,
+  auto multilinestrings = make_multilinestring_range(d_linestring_geometries.size() - 1,
                                                      d_linestring_geometries.begin(),
                                                      d_linestring_parts.size() - 1,
                                                      d_linestring_parts.begin(),
@@ -99,10 +97,10 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairFromVectorSingleComponent
   rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
-  auto multipoints = make_multipoint_array(
+  auto multipoints = make_multipoint_range(
     d_point_geometries.size() - 1, d_point_geometries.begin(), d_points.size(), d_points.begin());
 
-  auto multilinestrings = make_multilinestring_array(d_linestring_geometries.size() - 1,
+  auto multilinestrings = make_multilinestring_range(d_linestring_geometries.size() - 1,
                                                      d_linestring_geometries.begin(),
                                                      d_linestring_parts.size() - 1,
                                                      d_linestring_parts.begin(),
@@ -136,9 +134,9 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairFromCountingIteratorSingl
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
   auto multipoints =
-    make_multipoint_array(num_pairs, d_point_geometries, d_points.size(), d_points.begin());
+    make_multipoint_range(num_pairs, d_point_geometries, d_points.size(), d_points.begin());
 
-  auto multilinestrings = make_multilinestring_array(num_pairs,
+  auto multilinestrings = make_multilinestring_range(num_pairs,
                                                      d_linestring_geometries,
                                                      d_linestring_parts.size() - 1,
                                                      d_linestring_parts.begin(),
@@ -171,10 +169,10 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, TwoPairFromVectorSingleComponent
   rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
-  auto multipoints = make_multipoint_array(
+  auto multipoints = make_multipoint_range(
     d_point_geometries.size() - 1, d_point_geometries.begin(), d_points.size(), d_points.begin());
 
-  auto multilinestrings = make_multilinestring_array(d_linestring_geometries.size() - 1,
+  auto multilinestrings = make_multilinestring_range(d_linestring_geometries.size() - 1,
                                                      d_linestring_geometries.begin(),
                                                      d_linestring_parts.size() - 1,
                                                      d_linestring_parts.begin(),
@@ -214,9 +212,9 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, ManyPairsFromIteratorsSingleComp
   auto points           = make_vec_2d_iterator(points_x, points_y);
   auto point_geometries = thrust::make_counting_iterator(0);
 
-  auto multipoints = make_multipoint_array(num_pairs, point_geometries, num_pairs, points);
+  auto multipoints = make_multipoint_range(num_pairs, point_geometries, num_pairs, points);
 
-  auto multilinestrings = make_multilinestring_array(
+  auto multilinestrings = make_multilinestring_range(
     num_pairs, linestring_geometries, num_pairs, offsets, num_linestring_points, linestring_points);
 
   std::vector<T> expect(num_pairs, T{1.0});
@@ -372,9 +370,9 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePartFiftyPairsCompareWithShap
   auto linestring_points =
     make_vec_2d_iterator(d_linestring_points_x.begin(), d_linestring_points_y.begin());
 
-  auto multipoints = make_multipoint_array(num_pairs, point_geometries, num_pairs, points);
+  auto multipoints = make_multipoint_range(num_pairs, point_geometries, num_pairs, points);
 
-  auto multilinestrings = make_multilinestring_array(num_pairs,
+  auto multilinestrings = make_multilinestring_range(num_pairs,
                                                      linestring_geometries,
                                                      num_pairs,
                                                      linestring_parts,
@@ -408,10 +406,10 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairMultiPointMultiLinestring
   rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
-  auto multipoints = make_multipoint_array(
+  auto multipoints = make_multipoint_range(
     d_point_geometries.size() - 1, d_point_geometries.begin(), d_points.size(), d_points.begin());
 
-  auto multilinestrings = make_multilinestring_array(d_linestring_geometries.size() - 1,
+  auto multilinestrings = make_multilinestring_range(d_linestring_geometries.size() - 1,
                                                      d_linestring_geometries.begin(),
                                                      d_linestring_parts.size() - 1,
                                                      d_linestring_parts.begin(),
@@ -445,10 +443,10 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, ThreePairMultiPointMultiLinestri
   rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
-  auto multipoints = make_multipoint_array(
+  auto multipoints = make_multipoint_range(
     d_point_geometries.size() - 1, d_point_geometries.begin(), d_points.size(), d_points.begin());
 
-  auto multilinestrings = make_multilinestring_array(d_linestring_geometries.size() - 1,
+  auto multilinestrings = make_multilinestring_range(d_linestring_geometries.size() - 1,
                                                      d_linestring_geometries.begin(),
                                                      d_linestring_parts.size() - 1,
                                                      d_linestring_parts.begin(),

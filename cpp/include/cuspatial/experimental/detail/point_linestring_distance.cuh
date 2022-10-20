@@ -19,8 +19,6 @@
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/array_view/multilinestring_array.cuh>
-#include <cuspatial/experimental/array_view/multipoint_array.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -65,7 +63,7 @@ void __global__ pairwise_point_linestring_distance_kernel(MultiPointArrayView mu
     auto [a, b]            = multilinestrings.segment(idx);
     T min_distance_squared = std::numeric_limits<T>::max();
 
-    for (vec_2d<T> const& c : multipoints.element(geometry_idx)) {
+    for (vec_2d<T> const& c : multipoints[geometry_idx]) {
       // TODO: reduce redundant computation only related to `a`, `b` in this helper.
       auto const distance_squared = point_to_segment_distance_squared(c, a, b);
       min_distance_squared        = std::min(distance_squared, min_distance_squared);
