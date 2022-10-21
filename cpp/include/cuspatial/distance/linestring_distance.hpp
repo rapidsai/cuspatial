@@ -106,12 +106,12 @@ namespace cuspatial {
  *
  */
 std::unique_ptr<cudf::column> pairwise_linestring_distance(
-  cudf::device_span<cudf::size_type const> linestring1_offsets,
-  cudf::column_view const& linestring1_points_x,
-  cudf::column_view const& linestring1_points_y,
-  cudf::device_span<cudf::size_type const> linestring2_offsets,
-  cudf::column_view const& linestring2_points_x,
-  cudf::column_view const& linestring2_points_y,
+  std::optional<cudf::device_span<cudf::size_type const>> multilinestring1_geometry_offsets,
+  cudf::device_span<cudf::size_type const> linestring1_part_offsets,
+  cudf::column_view const& linestring1_points_xy,
+  std::optional<cudf::device_span<cudf::size_type const>> multilinestring2_geometry_offsets,
+  cudf::device_span<cudf::size_type const> linestring2_part_offsets,
+  cudf::column_view const& linestring2_points_xy,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**

@@ -22,9 +22,9 @@
 #include <cudf_test/column_wrapper.hpp>
 #include <cudf_test/type_lists.hpp>
 
-namespace cuspatial {
-namespace test {
+#include <optional>
 
+using namespace cuspatial;
 using namespace cudf;
 using namespace cudf::test;
 
@@ -58,7 +58,8 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringParallel)
 
   wrapper<T> expected{0.7071067811865476};
 
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
+  auto got = pairwise_linestring_distance(std::nullopt,
+                                          column_view(linestring1_offsets),
                                           linestring1_points_x,
                                           linestring1_points_y,
                                           column_view(linestring2_offsets),
@@ -466,6 +467,3 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FourPairs)
                                           linestring2_points_y);
   expect_columns_equivalent(expected, *got, verbosity);
 }
-
-}  // namespace test
-}  // namespace cuspatial

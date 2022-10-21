@@ -15,8 +15,7 @@
  */
 
 #pragma once
-
-#include <cudf/types.hpp>
+#include <cuspatial/cuda_utils.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -24,8 +23,8 @@
 namespace cuspatial {
 namespace detail {
 
-template <typename UnaryFunction>
-inline auto make_counting_transform_iterator(cudf::size_type start, UnaryFunction f)
+template <typename IndexType, typename UnaryFunction>
+inline CUSPATIAL_HOST_DEVICE auto make_counting_transform_iterator(IndexType start, UnaryFunction f)
 {
   return thrust::make_transform_iterator(thrust::make_counting_iterator(start), f);
 }
