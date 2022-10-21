@@ -152,7 +152,7 @@ template <class MultiLinestringRange1, class MultiLinestringRange2, class Output
 OutputIt pairwise_linestring_distance(MultiLinestringRange1 multilinestrings1,
                                       MultiLinestringRange2 multilinestrings2,
                                       OutputIt distances_first,
-                                      rmm::cuda_stream_view stream = rmm::cuda_stream_default)
+                                      rmm::cuda_stream_view stream)
 {
   using T = typename MultiLinestringRange1::element_t;
 
