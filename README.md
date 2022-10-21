@@ -48,13 +48,13 @@ The rest of steps assume the environment variable `CUDF_HOME` points to the
 root directory of your clone of the cuDF repo, and that the `cudf_dev` Anaconda
 environment created in step 3 is active.
 
-### Clone, build and install cuSpatial
+### Build and install cuSpatial
 
 1. export `CUSPATIAL_HOME=$(pwd)/cuspatial`
 2. clone the cuSpatial repo
 
    ```shell
-   git clone --recurse-submodules https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
+   git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
    ```
 
 3. Compile and install
