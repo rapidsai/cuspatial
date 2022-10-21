@@ -71,16 +71,16 @@ struct pairwise_point_in_polygon_functor {
       cuspatial::make_vec_2d_iterator(poly_points_x.begin<T>(), poly_points_y.begin<T>());
     auto results_begin = results->mutable_view().begin<int32_t>();
 
-    cuspatial::point_in_polygon(points_begin,
-                                points_begin + test_points_x.size(),
-                                polygon_offsets_begin,
-                                polygon_offsets_begin + poly_offsets.size(),
-                                ring_offsets_begin,
-                                ring_offsets_begin + poly_ring_offsets.size(),
-                                polygon_points_begin,
-                                polygon_points_begin + poly_points_x.size(),
-                                results_begin,
-                                stream);
+    cuspatial::pairwise_point_in_polygon(points_begin,
+                                         points_begin + test_points_x.size(),
+                                         polygon_offsets_begin,
+                                         polygon_offsets_begin + poly_offsets.size(),
+                                         ring_offsets_begin,
+                                         ring_offsets_begin + poly_ring_offsets.size(),
+                                         polygon_points_begin,
+                                         polygon_points_begin + poly_points_x.size(),
+                                         results_begin,
+                                         stream);
 
     return results;
   }

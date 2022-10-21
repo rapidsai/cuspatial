@@ -1,12 +1,9 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
-import cupy as cp
-
 from cudf import Series
 from cudf.core.column import as_column
 
 from cuspatial._lib.contains import contains as cpp_contains
-from cuspatial.utils import gis_utils
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
@@ -86,12 +83,5 @@ def contains(
         poly_points_y,
     )
 
-    # TODO: Should be able to make these changes at the C++ level instead
-    # of here.
-    to_bool = gis_utils.pip_bitmap_column_to_binary_array(
-        polygon_bitmap_column=contains_bitmap, width=len(poly_offsets)
-    )
-    flattened = (to_bool[::-1] * cp.identity(len(poly_offsets))).diagonal()
-    result = Series(flattened, dtype="bool")
-    breakpoint()
+    result = Series(contains_bitmap, dtype="bool")
     return result
