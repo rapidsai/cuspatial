@@ -25,8 +25,6 @@ import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.core.spatial.binops import contains
-
-# from cuspatial.core.spatial.join import point_in_polygon
 from cuspatial.utils.column_utils import contains_only_polygons
 
 T = TypeVar("T", bound="GeoSeries")
@@ -53,7 +51,9 @@ class GeoSeries(cudf.Series):
 
     def __init__(
         self,
-        data: Optional[Union[gpd.GeoSeries, Tuple, T, pd.Series, GeoColumn, list]],
+        data: Optional[
+            Union[gpd.GeoSeries, Tuple, T, pd.Series, GeoColumn, list]
+        ],
         index: Union[cudf.Index, pd.Index] = None,
         dtype=None,
         name=None,
@@ -84,10 +84,14 @@ class GeoSeries(cudf.Series):
                 GeoMeta(
                     {
                         "input_types": cp.repeat(
-                            cp.array([Feature_Enum.POLYGON.value], dtype="int8"),
+                            cp.array(
+                                [Feature_Enum.POLYGON.value], dtype="int8"
+                            ),
                             len(data[0]),
                         ),
-                        "union_offsets": cp.arange(len(data[0]), dtype="int32"),
+                        "union_offsets": cp.arange(
+                            len(data[0]), dtype="int32"
+                        ),
                     }
                 ),
                 from_read_polygon_shapefile=True,
@@ -103,7 +107,9 @@ class GeoSeries(cudf.Series):
                 index = data.index
         if index is None:
             index = cudf.RangeIndex(0, len(column))
-        super().__init__(column, index, dtype=dtype, name=name, nan_as_null=nan_as_null)
+        super().__init__(
+            column, index, dtype=dtype, name=name, nan_as_null=nan_as_null
+        )
 
     @property
     def type(self):
@@ -203,14 +209,18 @@ class GeoSeries(cudf.Series):
         """
         Access the `LineArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.LineStringGeoColumnAccessor(self._column.lines, self._column._meta)
+        return self.LineStringGeoColumnAccessor(
+            self._column.lines, self._column._meta
+        )
 
     @property
     def polygons(self):
         """
         Access the `PolygonArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.PolygonGeoColumnAccessor(self._column.polygons, self._column._meta)
+        return self.PolygonGeoColumnAccessor(
+            self._column.polygons, self._column._meta
+        )
 
     def __repr__(self):
         # TODO: Implement Iloc with slices so that we can use `Series.__repr__`
@@ -356,7 +366,9 @@ class GeoSeries(cudf.Series):
         else:
             linestrings = []
             for linestring in geom:
-                linestrings.append(LineString([tuple(child) for child in linestring]))
+                linestrings.append(
+                    LineString([tuple(child) for child in linestring])
+                )
             return MultiLineString(linestrings)
 
     def _polygon_to_shapely(self, geom):
@@ -390,7 +402,8 @@ class GeoSeries(cudf.Series):
 
         # Get the shapely serialization methods we'll use here.
         shapely_fns = [
-            self._arrow_to_shapely[Feature_Enum(x)] for x in result_types.to_numpy()
+            self._arrow_to_shapely[Feature_Enum(x)]
+            for x in result_types.to_numpy()
         ]
 
         union = self.to_arrow()
@@ -400,7 +413,9 @@ class GeoSeries(cudf.Series):
         for (result_index, shapely_serialization_fn) in zip(
             range(0, len(self)), shapely_fns
         ):
-            results.append(shapely_serialization_fn(union[result_index].as_py()))
+            results.append(
+                shapely_serialization_fn(union[result_index].as_py())
+            )
 
         # Finally, a slice determines that we return a list, otherwise
         # an object.
