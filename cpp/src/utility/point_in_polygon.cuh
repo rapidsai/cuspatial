@@ -56,7 +56,15 @@ inline __device__ bool is_point_in_polygon(T const x,
       T rise               = y1 - y0;
       T rise_to_point      = y - y0;
 
-      if (y_in_bounds && x < (run / rise) * rise_to_point + x0) { in_polygon = not in_polygon; }
+      // colinearity test
+      T d           = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
+      T d1          = (x - x0) * (x - x1) + (y - y0) * (y - y1);
+      T d2          = (x1 - x) * (x1 - x) + (y1 - y) * (y1 - y);
+      bool colinear = d1 + d2 == d;
+
+      if (!colinear && y_in_bounds && x < (run / rise) * rise_to_point + x0) {
+        in_polygon = not in_polygon;
+      }
     }
   }
 

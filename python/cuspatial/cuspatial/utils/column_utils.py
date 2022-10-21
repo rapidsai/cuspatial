@@ -1,10 +1,12 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+from typing import TypeVar
+
 import numpy as np
 
 from cudf.api.types import is_datetime_dtype
 
-from cuspatial.core.geoseries import GeoSeries
+GeoSeries = TypeVar("GeoSeries", bound="GeoSeries")
 
 
 def normalize_point_columns(*cols):
