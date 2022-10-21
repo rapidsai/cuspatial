@@ -71,15 +71,18 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
     bool y1_flag;
     // for each line segment, including the segment between the last and first vertex
     for (auto point_idx = ring_begin + 1; point_idx < ring_end; point_idx++) {
-      Cart2d const a  = poly_points_first[point_idx];
-      y1_flag         = a.y > test_point.y;
-      T run           = b.x - a.x;
-      T rise          = b.y - a.y;
+      Cart2d const a = poly_points_first[point_idx];
+      y1_flag        = a.y > test_point.y;
+      T run          = b.x - a.x;
+      T rise         = b.y - a.y;
+
+      // colinerity test
       T rise_to_point = test_point.y - a.y;
       T run_to_point  = test_point.x - a.x;
       is_colinear     = is_colinear || (run * rise_to_point - run_to_point * rise) *
                                        (run * rise_to_point - run_to_point * rise) ==
                                      0;
+      if (is_colinear) { break; }
 
       if (y1_flag != y0_flag) {
         // Transform the following inequality to avoid division
@@ -92,7 +95,10 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
       b       = a;
       y0_flag = y1_flag;
     }
-    if (is_colinear) point_is_within = false;
+    if (is_colinear) {
+      point_is_within = false;
+      break;
+    }
   }
 
   return point_is_within;
