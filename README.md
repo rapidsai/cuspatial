@@ -51,7 +51,7 @@ To build and install cuSpatial from source:
 
 ```shell
 export `CUSPATIAL_HOME=$(pwd)/cuspatial` && \
-git clone --recurse-submodules https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
+git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
 ```
 ### Install dependencies
 
