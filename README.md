@@ -55,13 +55,14 @@ git clone --recurse-submodules https://github.com/rapidsai/cuspatial.git $CUSPAT
 ```
 ### Install dependencies
 
-Install all dependencies required from conda recipe:
+1. `export CUSPATIAL_HOME=$(pwd)/cuspatial`
+2. clone the cuSpatial repo
 
 ```shell
 conda env update --file conda/environments/cuspatial_dev_cuda11.5.yml
 ```
 
-### Clone, build and install cuSpatial
+### Build and install cuSpatial
 
 1. Compile and install
    ```shell
