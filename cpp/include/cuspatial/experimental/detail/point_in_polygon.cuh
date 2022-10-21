@@ -62,6 +62,7 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
 
   bool point_is_within = false;
   bool is_colinear = false;
+  bool is_same = false;
   // for each ring
   for (auto ring_idx = poly_begin; ring_idx < poly_end; ring_idx++) {
     int32_t ring_idx_next = ring_idx + 1;
@@ -80,6 +81,7 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
         T run           = b.x - a.x;
         T rise          = b.y - a.y;
         T rise_to_point = test_point.y - a.y;
+        T run_to_point  = test_point.x - a.x;
 
         // Transform the following inequality to avoid division
         //  test_point.x < (run / rise) * rise_to_point + a.x
@@ -89,12 +91,13 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
           point_is_within = not point_is_within;
         
         // colinearity test
-        is_colinear = run * rise_to_point - rise * (test_point.x - a.x) == 0;
+        is_colinear = (run * rise_to_point - run_to_point * rise) *
+                      (run * rise_to_point - run_to_point * rise) <= EPSILON;
       }
       b       = a;
       y0_flag = y1_flag;
     }
-    if(is_colinear)
+    if(is_colinear || is_same)
       point_is_within = false;
   }
 
