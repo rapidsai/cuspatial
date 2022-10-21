@@ -17,6 +17,7 @@ set(cython_sources
     interpolate.pyx
     nearest_points.pyx
     point_in_polygon.pyx
+    contains.pyx
     polygon_bounding_boxes.pyx
     polyline_bounding_boxes.pyx
     linestring_distance.pyx

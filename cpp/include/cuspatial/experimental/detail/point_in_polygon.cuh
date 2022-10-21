@@ -29,6 +29,7 @@
 
 namespace cuspatial {
 namespace detail {
+
 /**
  * @brief Kernel to test if a point is inside a polygon.
  *
@@ -71,19 +72,17 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
     bool y1_flag;
     // for each line segment, including the segment between the last and first vertex
     for (auto point_idx = ring_begin + 1; point_idx < ring_end; point_idx++) {
-      Cart2d const a = poly_points_first[point_idx];
-      y1_flag        = a.y > test_point.y;
-      T run          = b.x - a.x;
-      T rise         = b.y - a.y;
-
-      // colinerity test
+      Cart2d const a  = poly_points_first[point_idx];
+      T run           = b.x - a.x;
+      T rise          = b.y - a.y;
       T rise_to_point = test_point.y - a.y;
-      T run_to_point  = test_point.x - a.x;
-      is_colinear     = is_colinear || (run * rise_to_point - run_to_point * rise) *
-                                       (run * rise_to_point - run_to_point * rise) ==
-                                     0;
+
+      // colinearity test
+      T run_to_point = test_point.x - a.x;
+      is_colinear    = (run * rise_to_point - run_to_point * rise) == 0;
       if (is_colinear) { break; }
 
+      y1_flag = a.y > test_point.y;
       if (y1_flag != y0_flag) {
         // Transform the following inequality to avoid division
         //  test_point.x < (run / rise) * rise_to_point + a.x
@@ -102,50 +101,6 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
   }
 
   return point_is_within;
-}
-/**
- * @brief Kernel to test if a point colinear with a polygon
- */
-template <class Cart2d,
-          class OffsetType,
-          class OffsetIterator,
-          class Cart2dIt,
-          class OffsetItDiffType = typename std::iterator_traits<OffsetIterator>::difference_type,
-          class Cart2dItDiffType = typename std::iterator_traits<Cart2dIt>::difference_type>
-__device__ inline bool is_point_colinear_with_polygon(Cart2d const& test_point,
-                                                      OffsetType poly_begin,
-                                                      OffsetType poly_end,
-                                                      OffsetIterator ring_offsets_first,
-                                                      OffsetItDiffType const& num_rings,
-                                                      Cart2dIt poly_points_first,
-                                                      Cart2dItDiffType const& num_poly_points)
-{
-  using T = iterator_vec_base_type<Cart2dIt>;
-
-  bool point_is_within = false;
-  bool is_colinear     = false;
-  // for each ring
-  for (auto ring_idx = poly_begin; ring_idx < poly_end; ring_idx++) {
-    int32_t ring_idx_next = ring_idx + 1;
-    int32_t ring_begin    = ring_offsets_first[ring_idx];
-    int32_t ring_end =
-      (ring_idx_next < num_rings) ? ring_offsets_first[ring_idx_next] : num_poly_points;
-
-    Cart2d b = poly_points_first[ring_begin];
-    // for each line segment, including the segment between the last and first vertex
-    for (auto point_idx = ring_begin + 1; point_idx < ring_end; point_idx++) {
-      Cart2d const a  = poly_points_first[point_idx];
-      T run           = b.x - a.x;
-      T rise          = b.y - a.y;
-      T rise_to_point = test_point.y - a.y;
-      T run_to_point  = test_point.x - a.x;
-      is_colinear =
-        (run * rise_to_point - run_to_point * rise) * (run * rise_to_point - run_to_point * rise) ==
-        0;
-      if (is_colinear) break;
-    }
-  }
-  return is_colinear;
 }
 
 template <class Cart2dItA,
