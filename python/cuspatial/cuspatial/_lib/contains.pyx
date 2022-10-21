@@ -6,7 +6,7 @@ from libcpp.utility cimport move
 from cudf._lib.column cimport Column, column, column_view
 
 from cuspatial._lib.cpp.contains cimport (
-    point_in_polygon_one_to_one as cpp_point_in_polygon_one_to_one,
+    pairwise_point_in_polygon as cpp_pairwise_point_in_polygon,
 )
 
 
@@ -29,7 +29,7 @@ def contains(
 
     with nogil:
         result = move(
-            cpp_point_in_polygon_one_to_one(
+            cpp_pairwise_point_in_polygon(
                 c_test_points_x,
                 c_test_points_y,
                 c_poly_offsets,

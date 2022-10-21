@@ -96,16 +96,16 @@ template <class Cart2dItA,
           class OffsetIteratorA,
           class OffsetIteratorB,
           class OutputIt>
-OutputIt point_in_polygon_one_to_one(Cart2dItA test_points_first,
-                                     Cart2dItA test_points_last,
-                                     OffsetIteratorA polygon_offsets_first,
-                                     OffsetIteratorA polygon_offsets_last,
-                                     OffsetIteratorB poly_ring_offsets_first,
-                                     OffsetIteratorB poly_ring_offsets_last,
-                                     Cart2dItB polygon_points_first,
-                                     Cart2dItB polygon_points_last,
-                                     OutputIt output,
-                                     rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+OutputIt pairwise_point_in_polygon(Cart2dItA test_points_first,
+                                   Cart2dItA test_points_last,
+                                   OffsetIteratorA polygon_offsets_first,
+                                   OffsetIteratorA polygon_offsets_last,
+                                   OffsetIteratorB poly_ring_offsets_first,
+                                   OffsetIteratorB poly_ring_offsets_last,
+                                   Cart2dItB polygon_points_first,
+                                   Cart2dItB polygon_points_last,
+                                   OutputIt output,
+                                   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
 

@@ -40,15 +40,15 @@ template <class Cart2dItA,
           class Cart2dItBDiffType = typename std::iterator_traits<Cart2dItB>::difference_type,
           class OffsetItADiffType = typename std::iterator_traits<OffsetIteratorA>::difference_type,
           class OffsetItBDiffType = typename std::iterator_traits<OffsetIteratorB>::difference_type>
-__global__ void point_in_polygon_one_to_one_kernel(Cart2dItA test_points_first,
-                                                   Cart2dItADiffType const num_test_points,
-                                                   OffsetIteratorA poly_offsets_first,
-                                                   OffsetItADiffType const num_polys,
-                                                   OffsetIteratorB ring_offsets_first,
-                                                   OffsetItBDiffType const num_rings,
-                                                   Cart2dItB poly_points_first,
-                                                   Cart2dItBDiffType const num_poly_points,
-                                                   OutputIt result)
+__global__ void pairwise_point_in_polygon_kernel(Cart2dItA test_points_first,
+                                                 Cart2dItADiffType const num_test_points,
+                                                 OffsetIteratorA poly_offsets_first,
+                                                 OffsetItADiffType const num_polys,
+                                                 OffsetIteratorB ring_offsets_first,
+                                                 OffsetItBDiffType const num_rings,
+                                                 Cart2dItB poly_points_first,
+                                                 Cart2dItBDiffType const num_poly_points,
+                                                 OutputIt result)
 {
   using Cart2d     = iterator_value_type<Cart2dItA>;
   using OffsetType = iterator_value_type<OffsetIteratorA>;
@@ -78,16 +78,16 @@ template <class Cart2dItA,
           class OffsetIteratorA,
           class OffsetIteratorB,
           class OutputIt>
-OutputIt point_in_polygon_one_to_one(Cart2dItA test_points_first,
-                                     Cart2dItA test_points_last,
-                                     OffsetIteratorA polygon_offsets_first,
-                                     OffsetIteratorA polygon_offsets_last,
-                                     OffsetIteratorB poly_ring_offsets_first,
-                                     OffsetIteratorB poly_ring_offsets_last,
-                                     Cart2dItB polygon_points_first,
-                                     Cart2dItB polygon_points_last,
-                                     OutputIt output,
-                                     rmm::cuda_stream_view stream)
+OutputIt pairwise_point_in_polygon(Cart2dItA test_points_first,
+                                   Cart2dItA test_points_last,
+                                   OffsetIteratorA polygon_offsets_first,
+                                   OffsetIteratorA polygon_offsets_last,
+                                   OffsetIteratorB poly_ring_offsets_first,
+                                   OffsetIteratorB poly_ring_offsets_last,
+                                   Cart2dItB polygon_points_first,
+                                   Cart2dItB polygon_points_last,
+                                   OutputIt output,
+                                   rmm::cuda_stream_view stream)
 {
   using T = iterator_vec_base_type<Cart2dItA>;
 
@@ -118,7 +118,7 @@ OutputIt point_in_polygon_one_to_one(Cart2dItA test_points_first,
   auto constexpr block_size = 256;
   auto const num_blocks     = (num_test_points + block_size - 1) / block_size;
 
-  detail::point_in_polygon_one_to_one_kernel<<<num_blocks, block_size, 0, stream.value()>>>(
+  detail::pairwise_point_in_polygon_kernel<<<num_blocks, block_size, 0, stream.value()>>>(
     test_points_first,
     num_test_points,
     polygon_offsets_first,

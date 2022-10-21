@@ -16,7 +16,7 @@
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/point_in_polygon_one_to_one.cuh>
+#include <cuspatial/experimental/pairwise_point_in_polygon.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column.hpp>
@@ -32,7 +32,7 @@
 
 namespace {
 
-struct point_in_polygon_one_to_one_functor {
+struct pairwise_point_in_polygon_functor {
   template <typename T>
   static constexpr bool is_supported()
   {
@@ -91,18 +91,17 @@ namespace cuspatial {
 
 namespace detail {
 
-std::unique_ptr<cudf::column> point_in_polygon_one_to_one(
-  cudf::column_view const& test_points_x,
-  cudf::column_view const& test_points_y,
-  cudf::column_view const& poly_offsets,
-  cudf::column_view const& poly_ring_offsets,
-  cudf::column_view const& poly_points_x,
-  cudf::column_view const& poly_points_y,
-  rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource* mr)
+std::unique_ptr<cudf::column> pairwise_point_in_polygon(cudf::column_view const& test_points_x,
+                                                        cudf::column_view const& test_points_y,
+                                                        cudf::column_view const& poly_offsets,
+                                                        cudf::column_view const& poly_ring_offsets,
+                                                        cudf::column_view const& poly_points_x,
+                                                        cudf::column_view const& poly_points_y,
+                                                        rmm::cuda_stream_view stream,
+                                                        rmm::mr::device_memory_resource* mr)
 {
   return cudf::type_dispatcher(test_points_x.type(),
-                               point_in_polygon_one_to_one_functor(),
+                               pairwise_point_in_polygon_functor(),
                                test_points_x,
                                test_points_y,
                                poly_offsets,
@@ -115,14 +114,13 @@ std::unique_ptr<cudf::column> point_in_polygon_one_to_one(
 
 }  // namespace detail
 
-std::unique_ptr<cudf::column> point_in_polygon_one_to_one(
-  cudf::column_view const& test_points_x,
-  cudf::column_view const& test_points_y,
-  cudf::column_view const& poly_offsets,
-  cudf::column_view const& poly_ring_offsets,
-  cudf::column_view const& poly_points_x,
-  cudf::column_view const& poly_points_y,
-  rmm::mr::device_memory_resource* mr)
+std::unique_ptr<cudf::column> pairwise_point_in_polygon(cudf::column_view const& test_points_x,
+                                                        cudf::column_view const& test_points_y,
+                                                        cudf::column_view const& poly_offsets,
+                                                        cudf::column_view const& poly_ring_offsets,
+                                                        cudf::column_view const& poly_points_x,
+                                                        cudf::column_view const& poly_points_y,
+                                                        rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(
     test_points_x.size() == test_points_y.size() and poly_points_x.size() == poly_points_y.size(),
@@ -145,14 +143,14 @@ std::unique_ptr<cudf::column> point_in_polygon_one_to_one(
   CUSPATIAL_EXPECTS(poly_points_x.size() >= poly_offsets.size() * 4,
                     "Each ring must have at least four vertices");
 
-  return cuspatial::detail::point_in_polygon_one_to_one(test_points_x,
-                                                        test_points_y,
-                                                        poly_offsets,
-                                                        poly_ring_offsets,
-                                                        poly_points_x,
-                                                        poly_points_y,
-                                                        rmm::cuda_stream_default,
-                                                        mr);
+  return cuspatial::detail::pairwise_point_in_polygon(test_points_x,
+                                                      test_points_y,
+                                                      poly_offsets,
+                                                      poly_ring_offsets,
+                                                      poly_points_x,
+                                                      poly_points_y,
+                                                      rmm::cuda_stream_default,
+                                                      mr);
 }
 
 }  // namespace cuspatial

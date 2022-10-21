@@ -126,7 +126,7 @@ add_library(cuspatial
     src/spatial/polygon_bounding_box.cu
     src/spatial/polyline_bounding_box.cu
     src/spatial/point_in_polygon.cu
-    src/spatial/point_in_polygon_one_to_one.cu
+    src/spatial/pairwise_point_in_polygon.cu
     src/spatial_window/spatial_window.cu
     src/spatial/haversine.cu
     src/spatial/hausdorff.cu

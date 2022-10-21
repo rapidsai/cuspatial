@@ -71,7 +71,7 @@ namespace cuspatial {
  *        +-----------+   +------------------------+
  * ```
  */
-std::unique_ptr<cudf::column> point_in_polygon_one_to_one(
+std::unique_ptr<cudf::column> pairwise_point_in_polygon(
   cudf::column_view const& test_points_x,
   cudf::column_view const& test_points_y,
   cudf::column_view const& poly_offsets,
