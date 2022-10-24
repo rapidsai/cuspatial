@@ -67,7 +67,7 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
       T run          = b.x - a.x;
       T rise         = b.y - a.y;
 
-      // points on the line segment are the same, so intersection is impossible.
+      // Points on the line segment are the same, so intersection is impossible.
       // This is possible because we allow closed or unclosed polygons.
       if (run == 0.0 && rise == 0.0) continue;
 
