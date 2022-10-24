@@ -32,10 +32,11 @@ namespace cuspatial {
  */
 
 /**
- * @brief Tests whether the specified points are inside any of the specified polygons.
+ * @brief Tests whether the specified points are inside each of their corresponding polygons.
  *
- * Tests whether points are inside at most 31 polygons. Polygons are a collection of one or more
- * rings. Rings are a collection of three or more vertices.
+ * Tests that each point is or is not inside of the polygon in the corresponding index.
+ * Polygons are a collection of one or more * rings. Rings are a collection of three or more
+ * vertices.
  *
  * @param[in] test_points_x:     x-coordinates of points to test
  * @param[in] test_points_y:     y-coordinates of points to test
@@ -44,12 +45,10 @@ namespace cuspatial {
  * @param[in] poly_points_x:     x-coordinates of polygon points
  * @param[in] poly_points_y:     y-coordinates of polygon points
  *
- * @returns A column of INT32 containing one element per input point. Each bit (except the sign bit)
- * represents a hit or miss for each of the input polygons in least-significant-bit order. i.e.
- * `output[3] & 0b0010` indicates a hit or miss for the 3rd point against the 2nd polygon.
+ * @returns A column of booleans for each point/polygon pair.
  *
- * @note Limit 31 polygons per call. Polygons may contain multiple rings.
  * @note Direction of rings does not matter.
+ * @note Supports open or closed polygon formats.
  * @note This algorithm supports the ESRI shapefile format, but assumes all polygons are "clean" (as
  * defined by the format), and does _not_ verify whether the input adheres to the shapefile format.
  * @note Overlapping rings negate each other. This behavior is not limited to a single negation,
