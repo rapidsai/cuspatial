@@ -16,16 +16,7 @@
 
 #pragma once
 
-#include <cuspatial/error.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
-
-#include <rmm/cuda_stream_view.hpp>
-
-#include <thrust/memory.h>
-
-#include <iterator>
-#include <type_traits>
 
 namespace cuspatial {
 namespace detail {
