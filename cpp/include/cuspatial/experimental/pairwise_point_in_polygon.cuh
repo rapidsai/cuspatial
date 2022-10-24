@@ -25,7 +25,7 @@ namespace cuspatial {
  *
  * @brief Tests whether the specified points are inside their corresponding polygon.
  *
- * Tests whether points are inside a corresponding polygon.  Polygons are a collection of one or
+ * Tests whether each point is inside a corresponding polygon.  Polygons are a collection of one or
  * more rings. Rings are a collection of three or more vertices.
  *
  * Each input point will map to one `int32_t` element in the output. Each bit (except the sign bit)

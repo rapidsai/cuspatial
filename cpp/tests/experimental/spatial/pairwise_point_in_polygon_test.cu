@@ -49,14 +49,15 @@ TYPED_TEST_CASE(PairwisePointInPolygonTest, TestTypes);
 
 TYPED_TEST(PairwisePointInPolygonTest, OnePolygonOneRing)
 {
-  auto point_list        = std::vector<std::vector<float>>{{-2.0, 0.0},
-                                                    {2.0, 0.0},
-                                                    {0.0, -2.0},
-                                                    {0.0, 2.0},
-                                                    {-0.5, 0.0},
-                                                    {0.5, 0.0},
-                                                    {0.0, -0.5},
-                                                    {0.0, 0.5}};
+  using T                = TypeParam;
+  auto point_list        = std::vector<std::vector<T>>{{-2.0, 0.0},
+                                                {2.0, 0.0},
+                                                {0.0, -2.0},
+                                                {0.0, 2.0},
+                                                {-0.5, 0.0},
+                                                {0.5, 0.0},
+                                                {0.0, -0.5},
+                                                {0.0, 0.5}};
   auto poly_offsets      = this->make_device_offsets({0});
   auto poly_ring_offsets = this->make_device_offsets({0});
   auto poly_point =
@@ -83,14 +84,15 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonOneRing)
 
 TYPED_TEST(PairwisePointInPolygonTest, TwoPolygonsOneRingEach)
 {
-  auto point_list = std::vector<std::vector<float>>{{-2.0, 0.0},
-                                                    {2.0, 0.0},
-                                                    {0.0, -2.0},
-                                                    {0.0, 2.0},
-                                                    {-0.5, 0.0},
-                                                    {0.5, 0.0},
-                                                    {0.0, -0.5},
-                                                    {0.0, 0.5}};
+  using T         = TypeParam;
+  auto point_list = std::vector<std::vector<T>>{{-2.0, 0.0},
+                                                {2.0, 0.0},
+                                                {0.0, -2.0},
+                                                {0.0, 2.0},
+                                                {-0.5, 0.0},
+                                                {0.5, 0.0},
+                                                {0.0, -0.5},
+                                                {0.0, 0.5}};
 
   auto poly_offsets      = this->make_device_offsets({0, 1});
   auto poly_ring_offsets = this->make_device_offsets({0, 5});
@@ -128,8 +130,9 @@ TYPED_TEST(PairwisePointInPolygonTest, TwoPolygonsOneRingEach)
 
 TYPED_TEST(PairwisePointInPolygonTest, OnePolygonTwoRings)
 {
+  using T = TypeParam;
   auto point_list =
-    std::vector<std::vector<float>>{{0.0, 0.0}, {-0.4, 0.0}, {-0.6, 0.0}, {0.0, 0.4}, {0.0, -0.6}};
+    std::vector<std::vector<T>>{{0.0, 0.0}, {-0.4, 0.0}, {-0.6, 0.0}, {0.0, 0.4}, {0.0, -0.6}};
   auto poly_offsets      = this->make_device_offsets({0});
   auto poly_ring_offsets = this->make_device_offsets({0, 5});
   auto poly_point        = this->make_device_points({{-1.0, -1.0},
@@ -329,7 +332,7 @@ TEST_F(PairwisePointInPolygonErrorTest, MismatchPolyPointXYLength)
 TYPED_TEST(PairwisePointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
 {
   using T                = TypeParam;
-  auto point_list        = std::vector<std::vector<float>>{{-2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}};
+  auto point_list        = std::vector<std::vector<T>>{{-2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}};
   auto poly_offsets      = this->make_device_offsets({0});
   auto poly_ring_offsets = this->make_device_offsets({0});
   // "left" edge missing
@@ -357,7 +360,7 @@ TYPED_TEST(PairwisePointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
 TYPED_TEST(PairwisePointInPolygonTest, SelfClosingLoopRightEdgeMissing)
 {
   using T                = TypeParam;
-  auto point_list        = std::vector<std::vector<float>>{{-2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}};
+  auto point_list        = std::vector<std::vector<T>>{{-2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}};
   auto poly_offsets      = this->make_device_offsets({0});
   auto poly_ring_offsets = this->make_device_offsets({0});
   // "right" edge missing
