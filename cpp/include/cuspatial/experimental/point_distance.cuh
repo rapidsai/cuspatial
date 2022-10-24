@@ -24,34 +24,18 @@ namespace cuspatial {
  * @ingroup distance
  * @copybrief cuspatial::pairwise_point_distance
  *
- * @tparam Cart2dItA iterator type for point array of the first point of each pair. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam Cart2dItB iterator type for point array of the second point of each pair. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OutputIt iterator type for output array. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI], be mutable and be device-accessible.
+ * @tparam MultiPointArrayViewA An instance of template type `array_view::multipoint_array`
+ * @tparam MultiPointArrayViewB An instance of template type `array_view::multipoint_array`
  *
- * @param points1_first beginning of range of the first point of each pair
- * @param points1_last end of range of the first point of each pair
- * @param points2_first beginning of range of the second point of each pair
- * @param distances_first beginning iterator to output
- * @param stream The CUDA stream to use for device memory operations and kernel launches
- * @return Output iterator to one past the last element in the output range
- *
- * @pre all input iterators for coordinates must have a `value_type` of `cuspatial::vec_2d`.
- * @pre all scalar types must be floating point types, and must be the same type for all input
- * iterators and output iterators.
- *
- * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
- * "LegacyRandomAccessIterator"
+ * @param multipoints1 Range of first multipoint in each distance pair.
+ * @param multipoints2 Range of second multipoint in each distance pair.
+ * @return Iterator past the last distance computed
  */
-template <class Cart2dItA, class Cart2dItB, class OutputIt>
-OutputIt pairwise_point_distance(Cart2dItA points1_first,
-                                 Cart2dItA points1_last,
-                                 Cart2dItB points2_first,
+template <class MultiPointArrayViewA, class MultiPointArrayViewB, class OutputIt>
+OutputIt pairwise_point_distance(MultiPointArrayViewA multipoints1,
+                                 MultiPointArrayViewB multipoints2,
                                  OutputIt distances_first,
                                  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
-
 }  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/point_distance.cuh>

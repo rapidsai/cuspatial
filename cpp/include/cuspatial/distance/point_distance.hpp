@@ -22,20 +22,23 @@ namespace cuspatial {
 
 /**
  * @ingroup distance
- * @brief Compute pairwise point-to-point Cartesian distance
+ * @brief Compute pairwise (multi)point-to-(multi)point Cartesian distance
  *
- * @param points1_x Column of x-coordinates of the first point in each pair
- * @param points1_y Column of y-coordinates of the first point in each pair
- * @param points2_x Column of x-coordinates of the second point in each pair
- * @param points2_y Column of y-coordinates of the second point in each pair
- * @param stream The CUDA stream to use for device memory operations and kernel launches
+ * Computes the cartesian distance between each pair of the multipoints. If input is
+ * a single point column, the offset of the column should be std::nullopt.
+ *
+ * @param points1_xy Column of xy-coordinates of the first point in each pair
+ * @param multipoints1_offset Index to the first point of each multipoint in points1_xy
+ * @param points2_xy Column of xy-coordinates of the second point in each pair
+ * @param multipoints2_offset Index to the second point of each multipoint in points2_xy
  * @return Column of distances between each pair of input points
  */
+
 std::unique_ptr<cudf::column> pairwise_point_distance(
-  cudf::column_view const& points1_x,
-  cudf::column_view const& points1_y,
-  cudf::column_view const& points2_x,
-  cudf::column_view const& points2_y,
+  cudf::column_view const& points1_xy,
+  std::optional<cudf::device_span<cudf::size_type const>> multipoints1_offset,
+  cudf::column_view const& points2_xy,
+  std::optional<cudf::device_span<cudf::size_type const>> multipoints2_offset,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial

@@ -18,6 +18,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_uvector.hpp>
 
@@ -144,6 +145,19 @@ struct value_generator {
   T upper_bound;
   thrust::minstd_rand engine;
   Generator dist;
+};
+
+template <typename T, typename Generator>
+struct point_generator {
+  using Cart2D = cuspatial::vec_2d<T>;
+  value_generator<T, Generator> vgen;
+
+  point_generator(T lower_bound, T upper_bound, thrust::minstd_rand& engine, Generator gen)
+    : vgen(lower_bound, upper_bound, engine, gen)
+  {
+  }
+
+  __device__ Cart2D operator()(size_t n) { return {vgen(n), vgen(n)}; }
 };
 
 /**
