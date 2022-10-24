@@ -58,14 +58,19 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
     int32_t ring_end =
       (ring_idx_next < num_rings) ? ring_offsets_first[ring_idx_next] : num_poly_points;
 
-    Cart2d b     = poly_points_first[ring_begin];
+    Cart2d b     = poly_points_first[ring_end - 1];
     bool y0_flag = b.y > test_point.y;
     bool y1_flag;
     // for each line segment, including the segment between the last and first vertex
-    for (auto point_idx = ring_begin + 1; point_idx < ring_end; point_idx++) {
-      Cart2d const a  = poly_points_first[point_idx];
-      T run           = b.x - a.x;
-      T rise          = b.y - a.y;
+    for (auto point_idx = ring_begin; point_idx < ring_end; point_idx++) {
+      Cart2d const a = poly_points_first[point_idx];
+      T run          = b.x - a.x;
+      T rise         = b.y - a.y;
+
+      // points on the line segment are the same, so intersection is impossible.
+      // This is possible because we allow closed or unclosed polygons.
+      if (run == 0.0 && rise == 0.0) continue;
+
       T rise_to_point = test_point.y - a.y;
 
       // colinearity test
