@@ -17,7 +17,7 @@
 #pragma once
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/detail/point_in_polygon.cuh>
+#include <cuspatial/experimental/detail/is_point_in_polygon_kernel.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -55,7 +55,6 @@ __global__ void pairwise_point_in_polygon_kernel(Cart2dItA test_points_first,
   auto idx         = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx >= num_test_points) { return; }
 
-  int32_t hit_mask        = 0;
   Cart2d const test_point = test_points_first[idx];
   // for the matching polygon
   OffsetType poly_begin      = poly_offsets_first[idx];
@@ -67,8 +66,7 @@ __global__ void pairwise_point_in_polygon_kernel(Cart2dItA test_points_first,
                                                    num_rings,
                                                    poly_points_first,
                                                    num_poly_points);
-  hit_mask |= point_is_within << idx;
-  result[idx] = hit_mask;
+  result[idx]                = point_is_within;
 }
 
 }  // namespace detail
