@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "thrust/adjacent_difference.h"
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
@@ -185,6 +186,18 @@ struct trajectory_test_data {
     thrust::gather(rmm::exec_policy(), map.begin(), map.end(), times_sorted.begin(), times.begin());
     thrust::gather(
       rmm::exec_policy(), map.begin(), map.end(), points_sorted.begin(), points.begin());
+  }
+
+  auto distances()
+  {
+    auto distances = rmm::device_vector<T>{points.size()};
+
+    using Rep = typename time_point::rep;
+
+    rmm::device_vector<Rep> durations(points.size() + 1);
+
+    thrust::adjacent_difference(
+      rmm::exec_policy(), InputIterator first, InputIterator last, OutputIterator result)
   }
 };
 

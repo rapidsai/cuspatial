@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <thrust/detail/raw_reference_cast.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
@@ -29,6 +29,7 @@
 #include <thrust/tuple.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cstdint>
 #include <type_traits>
 
 namespace cuspatial {
@@ -128,6 +129,21 @@ struct strided_functor {
  */
 
 /**
+ * @brief Creates a transform iterator indexed by a count starting at @p start.
+ *
+ * @tparam Incrementable The type of the counter.
+ * @tparam UnaryFunction The type of the unary function to apply to the indices.
+ * @param start The starting value of the counter.
+ * @param f The unary tranform function.
+ * @return A transform iterator.
+ */
+template <typename UnaryFunction>
+inline auto make_counting_transform_iterator(std::int32_t start, UnaryFunction f)
+{
+  return thrust::make_transform_iterator(thrust::make_counting_iterator(start), f);
+}
+
+/**
  * @brief Create an iterator to `vec_2d` data from two input iterators.
  *
  * Interleaves x and y coordinates from separate iterators into a single iterator to xy-
@@ -213,15 +229,40 @@ template <typename Iter>
 auto make_vec_2d_output_iterator(Iter d_points_begin)
 {
   using T                     = typename std::iterator_traits<Iter>::value_type;
-  auto fixed_stride_2_functor = detail::strided_functor<2>();
+  auto fixed_stride_2_functor = detail::strided_functor<2>{};
   auto even_positions         = thrust::make_permutation_iterator(
-    d_points_begin, detail::make_counting_transform_iterator(0, fixed_stride_2_functor));
+    d_points_begin, make_counting_transform_iterator(0, fixed_stride_2_functor));
   auto odd_positions = thrust::make_permutation_iterator(
-    thrust::next(d_points_begin),
-    detail::make_counting_transform_iterator(0, fixed_stride_2_functor));
+    thrust::next(d_points_begin), make_counting_transform_iterator(0, fixed_stride_2_functor));
   auto zipped_outputs =
     thrust::make_zip_iterator(thrust::make_tuple(even_positions, odd_positions));
   return thrust::make_transform_output_iterator(zipped_outputs, detail::vec_2d_to_tuple<T>());
+}
+
+namespace detail {
+
+// functor to duplicate the first element given an index
+template <typename Iter>
+struct duplicate_first_element_func {
+  Iter first;
+
+  __device__ inline auto operator()(std::int64_t i) { return i > -1 ? first : first + i; }
+};
+
+}  // namespace detail
+
+/**
+ * @brief Adapts an iterator to repeat its first element once when incremented.
+ *
+ * @tparam IndexType The
+ * @tparam Iter
+ * @param first
+ * @return
+ */
+template <typename Iter>
+auto make_duplicate_first_element_iterator(Iter first)
+{
+  return make_counting_transform_iterator(-1, detail::duplicate_first_element_func<Iter>{first});
 }
 
 /**
