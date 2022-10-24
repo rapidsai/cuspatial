@@ -44,18 +44,48 @@ clockwiseSquare = Polygon(
     ],
 )
 def test_point_in_polygon(point, polygon, expects):
-    point_series = cuspatial.from_geopandas(gpd.GeoSeries(point))
-    polygon_series = cuspatial.from_geopandas(gpd.GeoSeries(polygon))
-    result = cuspatial.point_in_polygon(
-        point_series.points.x,
-        point_series.points.y,
-        polygon_series.polygons.part_offset[:-1],
-        polygon_series.polygons.ring_offset[:-1],
-        polygon_series.polygons.x,
-        polygon_series.polygons.y,
+    gpdpoint = gpd.GeoSeries(point)
+    gpdpolygon = gpd.GeoSeries(polygon)
+    point = cuspatial.from_geopandas(gpdpoint)
+    polygon = cuspatial.from_geopandas(gpdpolygon)
+    result = polygon.contains(point)
+    assert gpdpolygon.contains(gpdpoint).values == result.values_host
+    assert result.values_host[0] == expects
+
+
+def test_two_points_one_polygon():
+    gpdpoint = gpd.GeoSeries([Point(0, 0), Point(0, 0)])
+    gpdpolygon = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
+    point = cuspatial.from_geopandas(gpdpoint)
+    polygon = cuspatial.from_geopandas(gpdpolygon)
+    assert (
+        gpdpolygon.contains(gpdpoint).values
+        == polygon.contains(point).values_host
+    ).all()
+
+
+def test_one_point_two_polygons():
+    gpdpoint = gpd.GeoSeries([Point(0, 0)])
+    gpdpolygon = gpd.GeoSeries(
+        [
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+        ]
     )
-    result[0].name = None
-    gpdpoint = point_series.to_pandas()
-    gpdpolygon = polygon_series.to_pandas()
-    assert gpdpolygon.contains(gpdpoint).values == result[0].values_host
-    assert result[0].values_host[0] == expects
+    point = cuspatial.from_geopandas(gpdpoint)
+    polygon = cuspatial.from_geopandas(gpdpolygon)
+    assert (
+        gpdpolygon.contains(gpdpoint).values
+        == polygon.contains(point).values_host
+    ).all()
+
+
+def test_ten_pairs():
+    gpdpoints = gpd.GeoSeries([*point_generator(10)])
+    gpdpolygons = gpd.GeoSeries([*polygon_generator(10)])
+    points = cuspatial.from_geopandas(gpdpoints)
+    polygons = cuspatial.from_geopandas(gpdpolygons)
+    assert (
+        gpdpolygons.contains(gpdpoints).values
+        == polygons.contains(points).values_host
+    ).all()

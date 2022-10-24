@@ -21,10 +21,10 @@ from shapely.geometry import (
 
 import cudf
 
+import cuspatial.core.spatial.binops as binops
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.spatial.binops import contains
 from cuspatial.utils.column_utils import contains_only_polygons
 
 T = TypeVar("T", bound="GeoSeries")
@@ -529,14 +529,7 @@ class GeoSeries(cudf.Series):
         # linestring in polygon
         # polygon in polygon
 
-        if len(self) != len(other) and len(other) != 1:
-            raise ValueError(
-                """.contains method is either one to one or many to
-                    one. Number of polygons must equal number of rhs rows, or
-                    rhs must have length 1."""
-            )
-        # call pip on the three subtypes on the right:
-        point_result = contains(
+        return binops.contains(
             other.points.x,
             other.points.y,
             self.polygons.part_offset[:-1],
@@ -544,10 +537,6 @@ class GeoSeries(cudf.Series):
             self.polygons.x,
             self.polygons.y,
         )
-        # flatten our "all to all" into its diagonal
-
-        # Apply diag mask to point_result data
-        return point_result
         """
             # Apply binpreds rules on results:
             # point in polygon = true for row

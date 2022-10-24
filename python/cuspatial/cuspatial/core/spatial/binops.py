@@ -3,7 +3,12 @@
 from cudf import Series
 from cudf.core.column import as_column
 
-from cuspatial._lib.contains import contains as cpp_contains
+from cuspatial._lib.pairwise_point_in_polygon import (
+    pairwise_point_in_polygon as cpp_pairwise_point_in_polygon,
+)
+from cuspatial._lib.point_in_polygon import (
+    point_in_polygon as cpp_point_in_polygon,
+)
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
@@ -61,7 +66,6 @@ def contains(
 
     if len(poly_offsets) == 0:
         return Series()
-
     (
         test_points_x,
         test_points_y,
@@ -74,14 +78,24 @@ def contains(
         as_column(poly_points_y),
     )
 
-    contains_bitmap = cpp_contains(
-        test_points_x,
-        test_points_y,
-        as_column(poly_offsets, dtype="int32"),
-        as_column(poly_ring_offsets, dtype="int32"),
-        poly_points_x,
-        poly_points_y,
-    )
+    if len(test_points_x) == 1 or len(poly_offsets) == 1:
+        pip_result = cpp_point_in_polygon(
+            test_points_x,
+            test_points_y,
+            as_column(poly_offsets, dtype="int32"),
+            as_column(poly_ring_offsets, dtype="int32"),
+            poly_points_x,
+            poly_points_y,
+        )
+    elif len(test_points_x) == len(poly_offsets):
+        pip_result = cpp_pairwise_point_in_polygon(
+            test_points_x,
+            test_points_y,
+            as_column(poly_offsets, dtype="int32"),
+            as_column(poly_ring_offsets, dtype="int32"),
+            poly_points_x,
+            poly_points_y,
+        )
 
-    result = Series(contains_bitmap, dtype="bool")
+    result = Series(pip_result, dtype="bool")
     return result
