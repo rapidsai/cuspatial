@@ -4,6 +4,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
+from shapely.affinity import rotate
 from shapely.geometry import (
     LineString,
     MultiLineString,
@@ -202,5 +203,36 @@ def multilinestring_generator(linestring_generator):
             yield MultiLineString(
                 [*linestring_generator(num_geometries, max_num_segments)]
             )
+
+    return generator
+
+
+@pytest.fixture
+def polygon_generator():
+    rstate = np.random.RandomState(0)
+
+    def generator(n, distance_from_origin):
+        for _ in range(n):
+            outer = Point(distance_from_origin * 2, 0).buffer(1)
+            inners = []
+            for i in range(rstate.randint(1, 4)):
+                inner = Point(distance_from_origin + i * 0.1, 0).buffer(0.01)
+                inners.append(inner)
+            together = Polygon(outer, inners)
+            yield rotate(
+                together, rstate.random() * 2 * np.pi, use_radians=True
+            )
+
+    return generator
+
+
+@pytest.fixture
+def multipolygon_generator():
+    rstate = np.random.RandomState(0)
+
+    def generator(n, max_per_multi):
+        for _ in range(n):
+            num_polygons = rstate.randint(1, max_per_multi)
+            yield MultiPolygon([*polygon_generator(0, num_polygons)])
 
     return generator

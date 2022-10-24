@@ -80,9 +80,9 @@ def test_one_point_two_polygons():
     ).all()
 
 
-def test_ten_pairs():
+def test_ten_pairs(point_generator, polygon_generator):
     gpdpoints = gpd.GeoSeries([*point_generator(10)])
-    gpdpolygons = gpd.GeoSeries([*polygon_generator(10)])
+    gpdpolygons = gpd.GeoSeries([*polygon_generator(10, 0)])
     points = cuspatial.from_geopandas(gpdpoints)
     polygons = cuspatial.from_geopandas(gpdpolygons)
     assert (
