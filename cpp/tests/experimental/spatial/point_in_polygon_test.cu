@@ -201,8 +201,6 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
      {0.0, 1.0},   {-1.0, 0.0}, {-1.0, 0.0}, {0.0, -1.0}, {0.0, 0.0},   {1.0, 0.0},  {1.0, -1.0},
      {0.0, -1.0},  {0.0, 0.0},  {0.0, 1.0},  {1.0, 1.0},  {1.0, 0.0},   {0.0, 0.0}});
 
-  // point is only included on the max x max y corner.
-  // this behavior is inconsistent, and not necessarily intentional.
   auto expected = std::vector<int32_t>{0b0000};
   auto got      = rmm::device_vector<int32_t>(test_point.size());
 
