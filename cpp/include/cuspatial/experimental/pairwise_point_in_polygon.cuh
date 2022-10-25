@@ -25,12 +25,12 @@ namespace cuspatial {
  *
  * @brief Tests whether the specified points are inside their corresponding polygon.
  *
- * Tests whether each point is inside a corresponding polygon.  Polygons are a collection of one or
- * more rings. Rings are a collection of three or more vertices.
+ * Tests whether each point is inside a corresponding polygon.  Points on the edges of the
+ * polygon are not considered to be inside. Floating point precision limitations mean that
+ * some arithmetically excluded boundary points will not be excluded, and vice-versa.
+ * Polygons are a collection of one or more rings. Rings are a collection of three or more vertices.
  *
- * Each input point will map to one `int32_t` element in the output. Each bit (except the sign bit)
- * represents a hit or miss for each of the input polygons in least-significant-bit order. i.e.
- * `output[3] & 0b0010` indicates a hit or miss for the 3rd point against the 2nd polygon.
+ * Each input point will map to one `int32_t` element in the output.
  *
  *
  * @tparam Cart2dItA iterator type for point array. Must meet

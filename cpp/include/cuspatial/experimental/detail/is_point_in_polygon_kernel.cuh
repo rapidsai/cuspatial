@@ -74,19 +74,29 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
       T rise_to_point = test_point.y - a.y;
 
       // colinearity test
-      const T EPSILON = 0.000000001;
+      const T EPSILON = 0.0000000000000000000000000000001;
       T run_to_point  = test_point.x - a.x;
-      is_colinear     = (run * rise_to_point - run_to_point * rise) < EPSILON;
+      T colinearity   = (run * rise_to_point - run_to_point * rise);
+      is_colinear     = colinearity * colinearity < EPSILON;
+      printf("Colinearity: %.60lf\n", colinearity * colinearity);
+      printf("Is colinear? : %s\n", is_colinear ? "True" : "False");
       if (is_colinear) { break; }
 
       y1_flag = a.y > test_point.y;
+      printf("Can intersect? : %s\n", y1_flag != y0_flag ? "True" : "False");
       if (y1_flag != y0_flag) {
         // Transform the following inequality to avoid division
         //  test_point.x < (run / rise) * rise_to_point + a.x
-        auto lhs = (test_point.x - a.x) * rise;
-        auto rhs = run * rise_to_point;
-        if ((rise > 0 && lhs < rhs) || (rise < 0 && lhs > rhs))
+        auto lhs                  = (test_point.x - a.x) * rise;
+        auto rhs                  = run * rise_to_point;
+        const T INTERSECT_EPSILON = 0.00000000000001;
+        printf("lhs - rhs: %.60lf\n", lhs - rhs);
+        if (lhs - INTERSECT_EPSILON < rhs != y1_flag) {
+          printf("lhs: %.60lf\n", lhs - INTERSECT_EPSILON);
+          printf("rhs: %.60lf\n", rhs);
+          printf("Does intersect\n");
           point_is_within = not point_is_within;
+        }
       }
       b       = a;
       y0_flag = y1_flag;
