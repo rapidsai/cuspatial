@@ -87,7 +87,7 @@ def contains(
             poly_points_x,
             poly_points_y,
         )
-    elif len(test_points_x) == len(poly_offsets):
+    else:
         pip_result = cpp_pairwise_point_in_polygon(
             test_points_x,
             test_points_y,

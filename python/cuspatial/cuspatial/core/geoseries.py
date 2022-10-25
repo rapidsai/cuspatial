@@ -21,11 +21,15 @@ from shapely.geometry import (
 
 import cudf
 
-import cuspatial.core.spatial.binops as binops
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.utils.column_utils import contains_only_polygons
+from cuspatial.core.spatial.binops import contains
+from cuspatial.utils.column_utils import (
+    contains_only_linestrings,
+    contains_only_points,
+    contains_only_polygons,
+)
 
 T = TypeVar("T", bound="GeoSeries")
 
@@ -523,13 +527,22 @@ class GeoSeries(cudf.Series):
     def contains(self, other, align=True):
         if contains_only_polygons(self) is False:
             raise TypeError("left series contains non-polygons.")
+
         # RHS conditioning:
+        mode = "POINTS"
         # point in polygon
+        if contains_only_points(other) is True:
+            # no conditioning is required
+            pass
         # mpoint in polygon
         # linestring in polygon
+        if contains_only_linestrings(other) is True:
+            # condition for linestrings
+            mode = "LINESTRINGS"
         # polygon in polygon
 
-        return binops.contains(
+        # call pip on the three subtypes on the right:
+        point_result = contains(
             other.points.x,
             other.points.y,
             self.polygons.part_offset[:-1],
@@ -537,6 +550,7 @@ class GeoSeries(cudf.Series):
             self.polygons.x,
             self.polygons.y,
         )
+
         """
             # Apply binpreds rules on results:
             # point in polygon = true for row
@@ -546,3 +560,7 @@ class GeoSeries(cudf.Series):
             # linestring in polygon for all points = true
             # polygon in polygon for all points = true
         """
+        if mode == "LINESTRINGS":
+            # process for completed linestrings
+            pass
+        return point_result
