@@ -103,5 +103,11 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs)
   }
 }
 
+#define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs...) \
+  do {                                                   \
+    SCOPED_TRACE(" <--  line of failure\n");             \
+    expect_vector_equivalent(lhs, rhs);                  \
+  } while (0)
+
 }  // namespace test
 }  // namespace cuspatial
