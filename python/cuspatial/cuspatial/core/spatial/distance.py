@@ -192,7 +192,9 @@ def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
     )
 
 
-def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
+def pairwise_linestring_distance(
+    multilinestrings1: GeoSeries, multilinestrings2: GeoSeries
+):
     """Compute shortest distance between pairs of linestrings (a.k.a. polylines)
 
     The shortest distance between two linestrings is defined as the shortest
@@ -201,18 +203,10 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
 
     Parameters
     ----------
-    offsets1
-        Indices of the first point of the first linestring of each pair.
-    xs1
-        x-components of points in the first linestring of each pair.
-    ys1
-        y-component of points in the first linestring of each pair.
-    offsets2
-        Indices of the first point of the second linestring of each pair.
-    xs2
-        x-component of points in the second linestring of each pair.
-    ys2
-        y-component of points in the second linestring of each pair.
+    multilinestrings1 : GeoSeries
+        A GeoSeries of (multi)linestrings
+    multilinestrings2 : GeoSeries
+        A GeoSeries of (multi)linestrings
 
     Returns
     -------
@@ -221,71 +215,45 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
 
     Examples
     --------
-    The following example contains 4 pairs of linestrings.
-
-    First pair::
-
-        (0, 1) -> (1, 0) -> (-1, 0)
-        (1, 1) -> (2, 1) -> (2, 0) -> (3, 0)
-
-            |
-            *   #####
-            | *     #
-        ----O---*---#####
-            | *
-            *
-            |
-
-    The shortest distance between the two linestrings is the distance
-    from point ``(1, 1)`` to segment ``(0, 1) -> (1, 0)``, which is
-    ``sqrt(2)/2``.
-
-    Second pair::
-
-        (0, 0) -> (0, 1)
-        (1, 0) -> (1, 1) -> (1, 2)
-
-
-    These linestrings are parallel. Their distance is 1 (point
-    ``(0, 0)`` to point ``(1, 0)``).
-
-    Third pair::
-
-        (0, 0) -> (2, 2) -> (-2, 0)
-        (2, 0) -> (0, 2)
-
-
-    These linestrings intersect, so their distance is 0.
-
-    Forth pair::
-
-        (2, 2) -> (-2, -2)
-        (1, 1) -> (5, 5) -> (10, 0)
-
-
-    These linestrings contain colinear and overlapping sections, so
-    their distance is 0.
-
-    The input of above example is::
-
-        linestring1_offsets:  {0, 3, 5, 8}
-        linestring1_points_x: {0, 1, -1, 0, 0, 0, 2, -2, 2, -2}
-        linestring1_points_y: {1, 0, 0, 0, 1, 0, 2, 0, 2, -2}
-        linestring2_offsets:  {0, 4, 7, 9}
-        linestring2_points_x: {1, 2, 2, 3, 1, 1, 1, 2, 0, 1, 5, 10}
-        linestring2_points_y: {1, 1, 0, 0, 0, 1, 2, 0, 2, 1, 5, 0}
-
-        Result: {sqrt(2.0)/2, 1, 0, 0}
+    >>> from shapely.geometry import LineString, MultiLineString
+    >>> ls1 = cuspatial.GeoSeries([
+    ...     LineString([(0, 0), (1, 1)]),
+    ...     LineString([(1, 0), (2, 1)])
+    ... ])
+    >>> ls2 = cuspatial.GeoSeries([
+    ...     MultiLineString([
+    ...         LineString([(-1, 0), (-2, -1)]),
+    ...         LineString([(-2, -1), (-3, -2)])
+    ...     ]),
+    ...     MultiLineString([
+    ...         LineString([(0, -1), (0, -2), (0, -3)]),
+    ...         LineString([(0, -3), (-1, -3), (-2, -3)])
+    ...     ])
+    ... ])
+    >>> cuspatial.pairwise_linestring_distance(ls1, ls2)
+    0    1.000000
+    1    1.414214
+    dtype: float64
     """
-    xs1, ys1, xs2, ys2 = normalize_point_columns(
-        as_column(xs1), as_column(ys1), as_column(xs2), as_column(ys2)
-    )
-    offsets1 = as_column(offsets1, dtype="int32")
-    offsets2 = as_column(offsets2, dtype="int32")
+
+    if not len(multilinestrings1) == len(multilinestrings2):
+        raise ValueError(
+            "`multilinestrings1` and `multilinestrings2` must have the same "
+            "length"
+        )
+
+    if len(multilinestrings1) == 0:
+        return cudf.Series(dtype="float64")
+
     return Series._from_data(
         {
             None: cpp_pairwise_linestring_distance(
-                offsets1, xs1, ys1, offsets2, xs2, ys2
+                multilinestrings1.lines.part_offset._column,
+                multilinestrings1.lines.xy._column,
+                multilinestrings2.lines.part_offset._column,
+                multilinestrings2.lines.xy._column,
+                multilinestrings1.lines.geometry_offset._column,
+                multilinestrings2.lines.geometry_offset._column,
             )
         }
     )
