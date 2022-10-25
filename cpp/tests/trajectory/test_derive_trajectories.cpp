@@ -71,7 +71,7 @@ TEST_F(DeriveTrajectoriesTest, TypeError)
     auto id =
       cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));  // not integer
     auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ys = cudf::column(rmm::device_uvector<float>(size / 2, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
     auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default));
     EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
@@ -80,7 +80,7 @@ TEST_F(DeriveTrajectoriesTest, TypeError)
   {
     auto id = cudf::column(rmm::device_uvector<int>(size, rmm::cuda_stream_default));
     auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ys = cudf::column(rmm::device_uvector<float>(size / 2, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
     auto ts =
       cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));  // not timestamp
     EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),

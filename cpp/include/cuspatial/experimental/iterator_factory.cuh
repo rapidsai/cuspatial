@@ -198,7 +198,7 @@ auto make_vec_2d_output_iterator(FirstIter first, SecondIter second)
 {
   using T         = typename std::iterator_traits<FirstIter>::value_type;
   auto zipped_out = thrust::make_zip_iterator(thrust::make_tuple(first, second));
-  return thrust::make_transform_output_iterator(zipped_out, detail::vec_2d_to_tuple<T>());
+  return thrust::transform_output_iterator(zipped_out, detail::vec_2d_to_tuple<T>());
 }
 
 /**

@@ -18,6 +18,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 
+#include <algorithm>
 #include <ostream>
 
 namespace cuspatial {
@@ -113,6 +114,32 @@ template <typename T>
 T CUSPATIAL_HOST_DEVICE det(vec_2d<T> const& a, vec_2d<T> const& b)
 {
   return a.x * b.y - a.y * b.x;
+}
+
+/**
+ * @brief Return a new vec_2d made up of the minimum x- and y-components of two input vec_2d values.
+ */
+template <typename T>
+vec_2d<T> CUSPATIAL_HOST_DEVICE box_min(vec_2d<T> const& a, vec_2d<T> const& b)
+{
+#ifdef __CUDA_ARCH__
+  return vec_2d<T>{::min(a.x, b.x), ::min(a.y, b.y)};
+#else
+  return vec_2d<T>{std::min(a.x, b.x), std::min(a.y, b.y)};
+#endif
+}
+
+/**
+ * @brief Return a new vec_2d made up of the minimum x- and y-components of two input vec_2d values.
+ */
+template <typename T>
+vec_2d<T> CUSPATIAL_HOST_DEVICE box_max(vec_2d<T> const& a, vec_2d<T> const& b)
+{
+#ifdef __CUDA_ARCH__
+  return vec_2d<T>{::max(a.x, b.x), ::max(a.y, b.y)};
+#else
+  return vec_2d<T>{std::max(a.x, b.x), std::max(a.y, b.y)};
+#endif
 }
 
 /**
