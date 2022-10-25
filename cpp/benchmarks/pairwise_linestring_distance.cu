@@ -20,6 +20,7 @@
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/linestring_distance.cuh>
+#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
@@ -104,13 +105,21 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
   auto [ls2, ls2_offset] =
     generate_linestring<T>(num_string_pairs, num_segments_per_string, 1, {100, 100});
 
-  auto ls1_offset_begin = ls1_offset.begin();
-  auto ls2_offset_begin = ls2_offset.begin();
-  auto ls1_points_begin = ls1.begin();
-  auto ls2_points_begin = ls2.begin();
-  auto distances        = rmm::device_vector<T>(ls1.size());
-  auto out_it           = distances.begin();
+  auto distances = rmm::device_vector<T>(ls1.size());
+  auto out_it    = distances.begin();
 
+  auto multilinestrings1  = make_multilinestring_range(1,
+                                                      thrust::make_counting_iterator(0),
+                                                      num_string_pairs,
+                                                      ls1_offset.begin(),
+                                                      ls1.size(),
+                                                      ls1.begin());
+  auto multilinestrings2  = make_multilinestring_range(1,
+                                                      thrust::make_counting_iterator(0),
+                                                      num_string_pairs,
+                                                      ls2_offset.begin(),
+                                                      ls2.size(),
+                                                      ls2.begin());
   auto const total_points = ls1.size() + ls2.size();
 
   state.add_element_count(num_string_pairs, "LineStringPairs");
@@ -120,22 +129,8 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
   state.add_global_memory_writes<T>(num_string_pairs);
 
   state.exec(nvbench::exec_tag::sync,
-             [&ls1_offset_begin,
-              &num_string_pairs,
-              &ls1_points_begin,
-              ls1_size = ls1.size(),
-              &ls2_offset_begin,
-              &ls2_points_begin,
-              ls2_size = ls2.size(),
-              &out_it](nvbench::launch& launch) {
-               pairwise_linestring_distance(ls1_offset_begin,
-                                            ls1_offset_begin + num_string_pairs,
-                                            ls1_points_begin,
-                                            ls1_points_begin + ls1_size,
-                                            ls2_offset_begin,
-                                            ls2_points_begin,
-                                            ls2_points_begin + ls2_size,
-                                            out_it);
+             [&multilinestrings1, &multilinestrings2, &out_it](nvbench::launch& launch) {
+               pairwise_linestring_distance(multilinestrings1, multilinestrings2, out_it);
              });
 }
 
