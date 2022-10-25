@@ -46,29 +46,31 @@ def pairwise_point_distance(
 
 
 def pairwise_linestring_distance(
-    Column linestring1_offsets,
-    Column linestring1_points_x,
-    Column linestring1_points_y,
-    Column linestring2_offsets,
-    Column linestring2_points_x,
-    Column linestring2_points_y
+    Column linestring1_part_offsets,
+    Column linestring1_points_xy,
+    Column linestring2_part_offsets,
+    Column linestring2_points_xy,
+    multilinestring1_geometry_offsets=None,
+    multilinestring2_geometry_offsets=None
 ):
-    cdef column_view linestring1_offsets_view = linestring1_offsets.view()
-    cdef column_view linestring1_points_x_view = linestring1_points_x.view()
-    cdef column_view linestring1_points_y_view = linestring1_points_y.view()
-    cdef column_view linestring2_offsets_view = linestring2_offsets.view()
-    cdef column_view linestring2_points_x_view = linestring2_points_x.view()
-    cdef column_view linestring2_points_y_view = linestring2_points_y.view()
+    cdef optional[column_view] c_mls1_geometry_offsets = unwrap_pyoptcol(
+        multilinestring1_geometry_offsets)
+    cdef optional[column_view] c_mls2_geometry_offsets = unwrap_pyoptcol(
+        multilinestring2_geometry_offsets)
+    cdef column_view linestring1_offsets_view = linestring1_part_offsets.view()
+    cdef column_view linestring1_points_xy_view = linestring1_points_xy.view()
+    cdef column_view linestring2_offsets_view = linestring2_part_offsets.view()
+    cdef column_view linestring2_points_xy_view = linestring2_points_xy.view()
 
     cdef unique_ptr[column] c_result
     with nogil:
         c_result = move(c_pairwise_linestring_distance(
+            c_mls1_geometry_offsets,
             linestring1_offsets_view,
-            linestring1_points_x_view,
-            linestring1_points_y_view,
+            linestring1_points_xy_view,
+            c_mls2_geometry_offsets,
             linestring2_offsets_view,
-            linestring2_points_x_view,
-            linestring2_points_y_view
+            linestring2_points_xy_view,
         ))
 
     return Column.from_unique_ptr(move(c_result))
