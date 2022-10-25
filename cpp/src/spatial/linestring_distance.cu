@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "../utility/double_boolean_dispatch.hpp"
+#include "../utility/iterator.hpp"
+
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/linestring_distance.cuh>
@@ -22,26 +26,14 @@
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cudf/copying.hpp>
-#include <cudf/detail/iterator.cuh>
 #include <cudf/detail/utilities/device_atomics.cuh>
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/exec_policy.hpp>
-
-#include <thrust/binary_search.h>
-#include <thrust/distance.h>
-#include <thrust/execution_policy.h>
-#include <thrust/fill.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 
 #include <limits>
 #include <memory>
 #include <type_traits>
-
-#include "../utility/double_boolean_dispatch.hpp"
-#include "../utility/iterator.hpp"
 namespace cuspatial {
 namespace detail {
 
@@ -78,7 +70,7 @@ struct pairwise_linestring_distance_launch {
 
     auto multilinestrings1 = make_multilinestring_range(
       num_pairs,
-      get_geometry_iterator_functor<first_is_multilinestring>(multilinestring1_geometry_offsets),
+      get_geometry_iterator_functor<first_is_multilinestring>{}(multilinestring1_geometry_offsets),
       num_multilinestring1_parts,
       linestring1_part_offsets.begin(),
       num_multilinestring1_points,
@@ -86,7 +78,7 @@ struct pairwise_linestring_distance_launch {
 
     auto multilinestrings2 = make_multilinestring_range(
       num_pairs,
-      get_geometry_iterator_functor<second_is_multilinestring>(multilinestring2_geometry_offsets),
+      get_geometry_iterator_functor<second_is_multilinestring>{}(multilinestring2_geometry_offsets),
       num_multilinestring2_parts,
       linestring2_part_offsets.begin(),
       num_multilinestring2_points,
@@ -169,7 +161,9 @@ std::unique_ptr<cudf::column> pairwise_linestring_distance(
     linestring1_points_xy,
     multilinestring2_geometry_offsets,
     linestring2_part_offsets,
-    linestring2_points_xy);
+    linestring2_points_xy,
+    rmm::cuda_stream_default,
+    mr);
 }
 
 }  // namespace cuspatial
