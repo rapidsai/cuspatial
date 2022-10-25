@@ -145,8 +145,6 @@ std::unique_ptr<cudf::column> pairwise_point_in_polygon(cudf::column_view const&
 
   CUSPATIAL_EXPECTS(test_points_x.size() == poly_offsets.size(),
                     "Must pass in the same number of points as polygons.");
-  std::cout << "Test points size: " << test_points_x.size() << std::endl;
-  std::cout << "Poly offsets size: " << poly_offsets.size() << std::endl;
 
   return cuspatial::detail::pairwise_point_in_polygon(test_points_x,
                                                       test_points_y,
