@@ -49,7 +49,7 @@ TYPED_TEST(PairwisePointDistanceTest, SingleToSingleEmpty)
 
   auto expect = fixed_width_column_wrapper<T>{};
 
-  auto got = pairwise_point_distance(xy1, offset1, xy2, offset2);
+  auto got = pairwise_point_distance(offset1, xy1, offset2, xy2);
 
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
@@ -66,7 +66,7 @@ TYPED_TEST(PairwisePointDistanceTest, SingleToMultiEmpty)
 
   auto expect = fixed_width_column_wrapper<T>{};
 
-  auto got = pairwise_point_distance(xy1, offset1, xy2, offset2);
+  auto got = pairwise_point_distance(offset1, xy1, offset2, xy2);
 
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
@@ -83,7 +83,7 @@ TYPED_TEST(PairwisePointDistanceTest, MultiToSingleEmpty)
 
   auto expect = fixed_width_column_wrapper<T>{};
 
-  auto got = pairwise_point_distance(xy1, offset1, xy2, offset2);
+  auto got = pairwise_point_distance(offset1, xy1, offset2, xy2);
 
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
@@ -100,7 +100,7 @@ TYPED_TEST(PairwisePointDistanceTest, MultiToMultiEmpty)
 
   auto expect = fixed_width_column_wrapper<T>{};
 
-  auto got = pairwise_point_distance(xy1, offset1, xy2, offset2);
+  auto got = pairwise_point_distance(offset1, xy1, offset2, xy2);
 
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
@@ -116,7 +116,7 @@ TEST_F(PairwisePointDistanceTestThrow, SizeMismatch)
   auto xy1 = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3};
   auto xy2 = fixed_width_column_wrapper<float>{};
 
-  EXPECT_THROW(pairwise_point_distance(xy1, offset1, xy2, offset2), cuspatial::logic_error);
+  EXPECT_THROW(pairwise_point_distance(offset1, xy1, offset2, xy2), cuspatial::logic_error);
 }
 
 TEST_F(PairwisePointDistanceTestThrow, SizeMismatch2)
@@ -127,7 +127,7 @@ TEST_F(PairwisePointDistanceTestThrow, SizeMismatch2)
   auto xy1 = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3};
   auto xy2 = fixed_width_column_wrapper<float>{};
 
-  EXPECT_THROW(pairwise_point_distance(xy1, offset1, xy2, offset2), cuspatial::logic_error);
+  EXPECT_THROW(pairwise_point_distance(offset1, xy1, offset2, xy2), cuspatial::logic_error);
 }
 
 TEST_F(PairwisePointDistanceTestThrow, TypeMismatch)
@@ -137,6 +137,6 @@ TEST_F(PairwisePointDistanceTestThrow, TypeMismatch)
   auto xy1     = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3};
   auto xy2     = fixed_width_column_wrapper<double>{1, 1, 2, 2, 3, 3};
 
-  EXPECT_THROW(pairwise_point_distance(xy1, offset1, xy2, offset2), cuspatial::logic_error);
+  EXPECT_THROW(pairwise_point_distance(offset1, xy1, offset2, xy2), cuspatial::logic_error);
 }
 }  // namespace cuspatial

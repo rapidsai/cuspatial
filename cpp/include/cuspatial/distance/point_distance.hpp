@@ -35,10 +35,10 @@ namespace cuspatial {
  */
 
 std::unique_ptr<cudf::column> pairwise_point_distance(
-  cudf::column_view const& points1_xy,
   std::optional<cudf::device_span<cudf::size_type const>> multipoints1_offset,
-  cudf::column_view const& points2_xy,
+  cudf::column_view const& points1_xy,
   std::optional<cudf::device_span<cudf::size_type const>> multipoints2_offset,
+  cudf::column_view const& points2_xy,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial
