@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <cudf/utilities/type_dispatcher.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/derive_trajectories.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
@@ -22,6 +21,7 @@
 #include <cudf/column/column_factories.hpp>
 #include <cudf/copying.hpp>
 #include <cudf/table/table.hpp>
+#include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
