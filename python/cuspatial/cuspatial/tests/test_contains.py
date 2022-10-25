@@ -4,6 +4,29 @@ from shapely.geometry import Point, Polygon
 
 import cuspatial
 
+
+@pytest.mark.parametrize(
+    "point, polygon, expects",
+    [
+        # unique failure cases identified by @mharris
+        [
+            Point([0.6, 0.06]),
+            Polygon([[0, 0], [10, 1], [1, 1], [0, 0]]),
+            False,
+        ],
+        [Point([3.3, 1.1]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), False],
+    ],
+)
+def test_float_precision_limits(point, polygon, expects):
+    gpdpoint = gpd.GeoSeries(point)
+    gpdpolygon = gpd.GeoSeries(polygon)
+    point = cuspatial.from_geopandas(gpdpoint)
+    polygon = cuspatial.from_geopandas(gpdpolygon)
+    result = polygon.contains(point)
+    assert gpdpolygon.contains(gpdpoint).values == result.values_host
+    assert result.values_host[0] == expects
+
+
 clockwiseTriangle = Polygon([[0, 0], [0, 1], [1, 1], [0, 0]])
 clockwiseSquare = Polygon(
     [[-0.5, -0.5], [-0.5, 0.5], [0.5, 0.5], [0.5, -0.5], [-0.5, -0.5]]
