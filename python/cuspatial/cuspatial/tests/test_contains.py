@@ -14,7 +14,23 @@ import cuspatial
             Polygon([[0, 0], [10, 1], [1, 1], [0, 0]]),
             False,
         ],
-        [Point([3.3, 1.1]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), False],
+        [
+            Point([0.66, 0.006]),
+            Polygon([[0, 0], [10, 1], [1, 1], [0, 0]]),
+            False,
+        ],
+        [
+            Point([0.666, 0.0006]),
+            Polygon([[0, 0], [10, 1], [1, 1], [0, 0]]),
+            False,
+        ],
+        [Point([3.3, 1.1]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
+        [Point([3.33, 1.11]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
+        [
+            Point([3.333, 1.111]),
+            Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]),
+            True,
+        ],
     ],
 )
 def test_float_precision_limits(point, polygon, expects):
