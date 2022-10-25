@@ -23,18 +23,22 @@ namespace cuspatial {
 /**
  * @brief Compute pairwise multipoint to multilinestring distance
  *
- * @tparam MultiPointArrayView an instance of template type `multipoint_range`
- * @tparam MultiLinestringArrayView an instance of template type `multilinestring_range`
+ * @tparam MultiPointRange an instance of template type `multipoint_range`
+ * @tparam MultiLinestringRange an instance of template type `multilinestring_range`
+ * @tparam OutputIt iterator type for output array. Must meet the requirements of [LRAI](LinkLRAI).
  *
  * @param multipoints Range object of a multipoint array
  * @param multilinestrings Range object of a multilinestring array
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
  * @return Output iterator to the element past the last distance computed.
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
  */
-template <class MultiPointArrayView, class MultiLinestringArrayView, class OutputIt>
+template <class MultiPointRange, class MultiLinestringRange, class OutputIt>
 OutputIt pairwise_point_linestring_distance(
-  MultiPointArrayView multipoints,
-  MultiLinestringArrayView multilinestrings,
+  MultiPointRange multipoints,
+  MultiLinestringRange multilinestrings,
   OutputIt distances_first,
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 

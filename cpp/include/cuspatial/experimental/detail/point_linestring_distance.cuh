@@ -46,12 +46,12 @@ namespace detail {
  * The kernel is launched on one linestring point per thread. Each thread iterates on all points in
  * the multipoint operand and use atomics to aggregate the shortest distance.
  */
-template <class MultiPointArrayView, class MultiLinestringArrayView, class OutputIterator>
-void __global__ pairwise_point_linestring_distance_kernel(MultiPointArrayView multipoints,
-                                                          MultiLinestringArrayView multilinestrings,
+template <class MultiPointRange, class MultiLinestringRange, class OutputIterator>
+void __global__ pairwise_point_linestring_distance_kernel(MultiPointRange multipoints,
+                                                          MultiLinestringRange multilinestrings,
                                                           OutputIterator distances)
 {
-  using T = typename MultiPointArrayView::element_t;
+  using T = typename MultiPointRange::element_t;
 
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multilinestrings.num_points();
        idx += gridDim.x * blockDim.x) {
@@ -80,21 +80,20 @@ void __global__ pairwise_point_linestring_distance_kernel(MultiPointArrayView mu
 }
 
 }  // namespace detail
-template <class MultiPointArrayView, class MultiLinestringArrayView, class OutputIt>
-OutputIt pairwise_point_linestring_distance(MultiPointArrayView multipoints,
-                                            MultiLinestringArrayView multilinestrings,
+template <class MultiPointRange, class MultiLinestringRange, class OutputIt>
+OutputIt pairwise_point_linestring_distance(MultiPointRange multipoints,
+                                            MultiLinestringRange multilinestrings,
                                             OutputIt distances_first,
                                             rmm::cuda_stream_view stream)
 {
-  using T = typename MultiPointArrayView::element_t;
+  using T = typename MultiPointRange::element_t;
 
-  static_assert(is_same_floating_point<T, typename MultiLinestringArrayView::element_t>(),
+  static_assert(is_same_floating_point<T, typename MultiLinestringRange::element_t>(),
                 "Inputs must have same floating point value type.");
 
-  static_assert(is_same<vec_2d<T>,
-                        typename MultiPointArrayView::point_t,
-                        typename MultiLinestringArrayView::point_t>(),
-                "Inputs must be cuspatial::vec_2d");
+  static_assert(
+    is_same<vec_2d<T>, typename MultiPointRange::point_t, typename MultiLinestringRange::point_t>(),
+    "Inputs must be cuspatial::vec_2d");
 
   CUSPATIAL_EXPECTS(multilinestrings.size() == multipoints.size(),
                     "Input must have the same number of rows.");
