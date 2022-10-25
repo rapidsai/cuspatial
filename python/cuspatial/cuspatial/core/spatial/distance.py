@@ -129,17 +129,21 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
 def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
     """Compute shortest distance between pairs of points and multipoints
 
+    Currently `points1` and `points2` must contain either only points or
+    multipoints. Mixing points and multipoints in the same series is
+    unsupported.
+
     Parameters
     ----------
     points1 : GeoSeries
-        lhs of points or multipoints
+        A GeoSeries of (multi)points
     points2 : GeoSeries
-        A GeoSeries of points or multipoints
+        A GeoSeries of (multi)points
 
     Returns
     -------
     distance : cudf.Series
-        the distance between each pair of points
+        the distance between each pair of (multi)points
 
     Examples
     --------
