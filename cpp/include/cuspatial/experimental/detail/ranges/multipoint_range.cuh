@@ -47,7 +47,7 @@ struct to_multipoint_functor {
   auto operator()(difference_type const& i)
   {
     return multipoint_ref<VecIterator>{_points_begin + _offset_iter[i],
-                                       _points_begin + _offset_iter[i + 1]};
+                                       thrust::next(_points_begin + _offset_iter[i + 1])};
   }
 };
 

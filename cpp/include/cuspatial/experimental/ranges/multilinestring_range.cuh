@@ -80,6 +80,14 @@ class multilinestring_range {
    */
   CUSPATIAL_HOST_DEVICE auto num_points();
 
+  CUSPATIAL_HOST_DEVICE auto multilinestring_begin();
+
+  CUSPATIAL_HOST_DEVICE auto multilinestring_end();
+
+  CUSPATIAL_HOST_DEVICE auto begin() { return multilinestring_begin(); }
+
+  CUSPATIAL_HOST_DEVICE auto end() { return multilinestring_end(); }
+
   /**
    * @brief Given the index of a point, return the part (linestring) index where the point locates.
    */
@@ -115,13 +123,16 @@ class multilinestring_range {
   CUSPATIAL_HOST_DEVICE thrust::pair<vec_2d<element_t>, vec_2d<element_t>> segment(
     IndexType segment_idx);
 
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto operator[](IndexType multilinestring_idx);
+
  protected:
-  GeometryIterator geometry_begin;
-  GeometryIterator geometry_end;
-  PartIterator part_begin;
-  PartIterator part_end;
-  VecIterator points_begin;
-  VecIterator points_end;
+  GeometryIterator _geometry_begin;
+  GeometryIterator _geometry_end;
+  PartIterator _part_begin;
+  PartIterator _part_end;
+  VecIterator _point_begin;
+  VecIterator _point_end;
 };
 
 /**

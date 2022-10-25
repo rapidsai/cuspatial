@@ -38,11 +38,11 @@ class linestring_ref {
   /// Return iterator to the starting point of the multipoint.
   CUSPATIAL_HOST_DEVICE auto begin() const { return segment_begin(); }
   /// Return iterator the the one-past the last point of the multipoint.
-  CUSPATIAL_HOST_DEVICE auto end() const { return segment_begin(); }
+  CUSPATIAL_HOST_DEVICE auto end() const { return segment_end(); }
 
- protected:
-  VecIterator _points_begin;
-  VecIterator _points_end;
+  VecIterator _point_begin;
+  VecIterator _point_end;
 };
 
+}  // namespace cuspatial
 #include <cuspatial/experimental/detail/geometry/linestring_ref.cuh>

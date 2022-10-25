@@ -15,34 +15,55 @@
  */
 #pragma once
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/traits.hpp>
 
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
 
+namespace cuspatial {
+
 template <typename VecIterator>
-class linestring_ref;
+struct to_segment_functor {
+  using element_t       = iterator_vec_base_type<VecIterator>;
+  using difference_type = typename thrust::iterator_difference<VecIterator>::type;
+  VecIterator _point_begin;
+
+  CUSPATIAL_HOST_DEVICE
+  to_segment_functor(VecIterator point_begin) : _point_begin(point_begin) {}
+
+  CUSPATIAL_HOST_DEVICE
+  thrust::pair<vec_2d<element_t>, vec_2d<element_t>> operator()(difference_type i)
+  {
+    return {_point_begin[i], _point_begin[i + 1]};
+  }
+};
 
 template <typename VecIterator>
 CUSPATIAL_HOST_DEVICE linestring_ref<VecIterator>::linestring_ref(VecIterator begin,
                                                                   VecIterator end)
-  : _points_begin(begin), _points_end(end)
+  : _point_begin(begin), _point_end(end)
 {
+  using T = iterator_vec_base_type<VecIterator>;
+  static_assert(is_same<vec_2d<T>, iterator_value_type<VecIterator>>(), "must be vec2d type");
 }
 
 template <typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto linestring_ref<VecIterator>::num_segments()
+CUSPATIAL_HOST_DEVICE auto linestring_ref<VecIterator>::num_segments() const
 {
-  return thrust::distance(_points_begin, _points_end) - 2;
+  return thrust::distance(_point_begin, _point_end) - 2;
 }
 
 template <typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto linestring_ref<VecIterator>::segment_begin()
+CUSPATIAL_HOST_DEVICE auto linestring_ref<VecIterator>::segment_begin() const
 {
-  return thrust::zip_iterator(_points_begin, thrust::next(_points_begin))
+  return detail::make_counting_transform_iterator(0, to_segment_functor{_point_begin});
 }
 
 template <typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto linestring_ref<VecIterator>::segment_end()
+CUSPATIAL_HOST_DEVICE auto linestring_ref<VecIterator>::segment_end() const
 {
   return segment_begin() + num_segments();
 }
+
+}  // namespace cuspatial

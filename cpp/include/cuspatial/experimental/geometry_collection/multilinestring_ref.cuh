@@ -32,7 +32,7 @@ class multilinestring_ref {
                                             VecIterator point_end);
 
   CUSPATIAL_HOST_DEVICE auto num_linestrings() const;
-  CUSPATIAL_HOST_DEVICE auto size() { return num_linestrings(); }
+  CUSPATIAL_HOST_DEVICE auto size() const { return num_linestrings(); }
 
   /// Return iterator to the starting linestring.
   CUSPATIAL_HOST_DEVICE auto part_begin() const;
@@ -52,8 +52,8 @@ class multilinestring_ref {
  protected:
   PartIterator _part_begin;
   PartIterator _part_end;
-  VecIterator _points_begin;
-  VecIterator _points_end;
+  VecIterator _point_begin;
+  VecIterator _point_end;
 };
 
 }  // namespace cuspatial

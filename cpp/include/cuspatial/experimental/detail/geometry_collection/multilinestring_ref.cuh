@@ -1,3 +1,6 @@
+#pragma once
+
+#include "cuspatial/cuda_utils.hpp"
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/geometry/linestring_ref.cuh>
 
@@ -7,13 +10,20 @@ namespace cuspatial {
 
 template <typename PartIterator, typename VecIterator>
 struct to_linestring_functor {
+  using difference_type = typename thrust::iterator_difference<PartIterator>::type;
   PartIterator part_begin;
   VecIterator point_begin;
 
-  template <typename IndexType>
-  auto operator()(IndexType i)
+  CUSPATIAL_HOST_DEVICE
+  to_linestring_functor(PartIterator part_begin, VecIterator point_begin)
+    : part_begin(part_begin), point_begin(point_begin)
   {
-    return linestring_ref{point_begin + part_begin[i], point_begin + part_begin[i + 1]};
+  }
+
+  CUSPATIAL_HOST_DEVICE auto operator()(difference_type i)
+  {
+    return linestring_ref{point_begin + part_begin[i],
+                          thrust::next(point_begin + part_begin[i + 1])};
   }
 };
 
@@ -21,14 +31,14 @@ template <typename PartIterator, typename VecIterator>
 class multilinestring_ref;
 
 template <typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE multilinestring_ref<PartIterator, VecIterator>::multipoint_ref(
+CUSPATIAL_HOST_DEVICE multilinestring_ref<PartIterator, VecIterator>::multilinestring_ref(
   PartIterator part_begin, PartIterator part_end, VecIterator point_begin, VecIterator point_end)
-  : _part_begin(part_begin), _part_end(part_end), _points_begin(point_begin), _points_end(point_end)
+  : _part_begin(part_begin), _part_end(part_end), _point_begin(point_begin), _point_end(point_end)
 {
 }
 
 template <typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE multilinestring_ref<PartIterator, VecIterator>::num_linestrings()
+CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::num_linestrings() const
 {
   return thrust::distance(_part_begin, _part_end) - 1;
 }
@@ -43,18 +53,19 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::part_
 template <typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::part_end() const
 {
-  return part_begin() + size();
-}
-template <typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::point_begin() const
-{
-  return _points_begin;
+  return part_begin() + num_linestrings();
 }
 
-template <typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::point_end() const
+template <typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::point_begin() const
 {
-  return _points_end;
+  return _point_begin;
+}
+
+template <typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::point_end() const
+{
+  return _point_end;
 }
 
 }  // namespace cuspatial
