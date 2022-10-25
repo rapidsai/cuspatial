@@ -143,36 +143,17 @@ def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
 
     Examples
     --------
-    >>> import geopandas as gpd
-    >>> cities = gpd.read_file(gpd.datasets.get_path('naturalearth_cities'))
-    >>> cities
-                name                     geometry
-    0    Vatican City    POINT (12.45339 41.90328)
-    1      San Marino    POINT (12.44177 43.93610)
-    2           Vaduz     POINT (9.51667 47.13372)
-    3      Luxembourg     POINT (6.13000 49.61166)
-    4         Palikir    POINT (158.14997 6.91664)
-    ..            ...                          ...
-    197         Cairo    POINT (31.24802 30.05191)
-    198         Tokyo   POINT (139.74946 35.68696)
-    199         Paris     POINT (2.33139 48.86864)
-    200      Santiago  POINT (-70.66899 -33.44807)
-    201     Singapore    POINT (103.85387 1.29498)
-
-    [202 rows x 2 columns]
-    >>> cities0 = cuspatial.from_geopandas(cities.geometry[0:10])
-    >>> cities1 = cuspatial.from_geopandas(cities.geometry[10:20])
-    >>> cuspatial.pairwise_point_distance(cities0, cities1)
-    0     61.818996
-    1     11.019265
-    2     79.854261
-    3     56.844978
-    4    131.292340
-    5    139.818452
-    6    173.507174
-    7    124.346079
-    8     47.829125
-    9    159.156985
+    >>> from shapely.geometry import Point, MultiPoint
+    >>> p1 = cuspatial.GeoSeries([
+    ...     MultiPoint([(0.0, 0.0), (1.0, 0.0)]),
+    ...     MultiPoint([(0.0, 1.0), (1.0, 0.0)])
+    ... ])
+    >>> p2 = cuspatial.GeoSeries([
+    ...     Point(2.0, 2.0), Point(0.0, 0.5)
+    ... ])
+    >>> cuspatial.pairwise_point_distance(p1, p2)
+    0    2.236068
+    1    0.500000
     dtype: float64
     """
 
