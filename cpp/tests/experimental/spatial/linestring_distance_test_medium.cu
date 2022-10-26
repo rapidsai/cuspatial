@@ -27,6 +27,8 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 
+#include <type_traits>
+
 using namespace cuspatial;
 using namespace cuspatial::test;
 
@@ -37,8 +39,7 @@ auto make_device_vector(std::initializer_list<T> inl)
 }
 
 template <typename T>
-struct PairwiseLinestringDistanceTestMedium : public ::testing::Test {
-};
+struct PairwiseLinestringDistanceTestMedium : public ::testing::Test {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;
@@ -1315,6 +1316,12 @@ TYPED_TEST(PairwiseLinestringDistanceTestMedium, RandomDataset100)
 
   auto ret = pairwise_linestring_distance(mlinestrings1, mlinestrings2, got.begin());
 
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(got, expected);
+  if constexpr (std::is_same_v<T, double>)
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(got, expected);
+  else
+    // allow error up to machine epsilon scaled by the max range of input coordinates
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(
+      got, expected, 65536.0f * 2 * std::numeric_limits<float>::epsilon());
+
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret));
 }

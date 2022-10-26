@@ -29,10 +29,6 @@
 
 #include <initializer_list>
 
-#include <cudf/column/column_view.hpp>
-#include <cudf/utilities/span.hpp>
-#include <cudf_test/column_utilities.hpp>
-
 namespace cuspatial {
 namespace test {
 
@@ -43,11 +39,9 @@ auto make_device_vector(std::initializer_list<T> inl)
 }
 
 template <typename T>
-struct PairwiseLinestringDistanceTest : public ::testing::Test {
-};
+struct PairwiseLinestringDistanceTest : public ::testing::Test {};
 
-struct PairwiseLinestringDistanceTestUntyped : public ::testing::Test {
-};
+struct PairwiseLinestringDistanceTestUntyped : public ::testing::Test {};
 
 // float and double are logically the same but would require seperate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;
@@ -664,48 +658,44 @@ TEST_F(PairwiseLinestringDistanceTestUntyped, OnePairDeterminantDoublePrecisionD
   EXPECT_EQ(num_pairs, std::distance(got.begin(), ret));
 }
 
-// Disabled until decide on solution on comparing very small floating point numbers
-// TEST_F(PairwiseLinestringDistanceTestUntyped, OnePairDeterminantSinglePrecisionDenormalized)
-// {
-//   // Vector ab: (1e-20, 2e-20)
-//   // Vector cd: (2e-20, 1e-20)
-//   // determinant of matrix [ab, cd] = -3e-40, a denormalized number
+TEST_F(PairwiseLinestringDistanceTestUntyped, OnePairDeterminantSinglePrecisionDenormalized)
+{
+  // Vector ab: (1e-20, 2e-20)
+  // Vector cd: (2e-20, 1e-20)
+  // determinant of matrix [ab, cd] = -3e-40, a denormalized number
 
-//   auto constexpr num_pairs = 1;
+  auto constexpr num_pairs = 1;
 
-//   auto linestring1_offsets   = make_device_vector<int32_t>({0, 2});
-//   auto linestring1_points_xy = make_device_vector<float>({0.0, 0.0, 1e-20, 2e-20});
-//   auto linestring2_offsets   = make_device_vector<int32_t>({0, 2});
-//   auto linestring2_points_xy = make_device_vector<float>({4e-20, 5e-20, 6e-20, 6e-20});
+  auto linestring1_offsets   = make_device_vector<int32_t>({0, 2});
+  auto linestring1_points_xy = make_device_vector<float>({0.0, 0.0, 1e-20, 2e-20});
+  auto linestring2_offsets   = make_device_vector<int32_t>({0, 2});
+  auto linestring2_points_xy = make_device_vector<float>({4e-20, 5e-20, 6e-20, 6e-20});
 
-//   auto linestring1_points_it = make_vec_2d_iterator(linestring1_points_xy.begin());
-//   auto linestring2_points_it = make_vec_2d_iterator(linestring2_points_xy.begin());
+  auto linestring1_points_it = make_vec_2d_iterator(linestring1_points_xy.begin());
+  auto linestring2_points_it = make_vec_2d_iterator(linestring2_points_xy.begin());
 
-//   auto expected = make_device_vector<float>({4.2426405524813e-20});
-//   auto got      = rmm::device_vector<float>(expected.size());
+  auto expected = make_device_vector<float>({4.2426405524813e-20});
+  auto got      = rmm::device_vector<float>(expected.size());
 
-//   auto mlinestrings1 = make_multilinestring_range(num_pairs,
-//                                                   thrust::make_counting_iterator(0),
-//                                                   linestring1_offsets.size() - 1,
-//                                                   linestring1_offsets.begin(),
-//                                                   linestring1_points_xy.size() / 2,
-//                                                   linestring1_points_it);
-//   auto mlinestrings2 = make_multilinestring_range(num_pairs,
-//                                                   thrust::make_counting_iterator(0),
-//                                                   linestring2_offsets.size() - 1,
-//                                                   linestring2_offsets.begin(),
-//                                                   linestring2_points_xy.size() / 2,
-//                                                   linestring2_points_it);
+  auto mlinestrings1 = make_multilinestring_range(num_pairs,
+                                                  thrust::make_counting_iterator(0),
+                                                  linestring1_offsets.size() - 1,
+                                                  linestring1_offsets.begin(),
+                                                  linestring1_points_xy.size() / 2,
+                                                  linestring1_points_it);
+  auto mlinestrings2 = make_multilinestring_range(num_pairs,
+                                                  thrust::make_counting_iterator(0),
+                                                  linestring2_offsets.size() - 1,
+                                                  linestring2_offsets.begin(),
+                                                  linestring2_points_xy.size() / 2,
+                                                  linestring2_points_it);
 
-//   auto ret = pairwise_linestring_distance(mlinestrings1, mlinestrings2, got.begin());
+  auto ret = pairwise_linestring_distance(mlinestrings1, mlinestrings2, got.begin());
 
-//   // auto expected_col = cudf::column_view(cudf::device_span<const float>(expected));
-//   // auto got_col      = cudf::column_view(cudf::device_span<const float>(got));
-
-//   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, got);
-//   // CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expected_col, got_col);
-//   EXPECT_EQ(num_pairs, std::distance(got.begin(), ret));
-// }
+  // Expect a slightly greater floating point error compared to 4 ULP
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, got, 1e-25f);
+  EXPECT_EQ(num_pairs, std::distance(got.begin(), ret));
+}
 
 TYPED_TEST(PairwiseLinestringDistanceTest, OnePairRandom1)
 {
