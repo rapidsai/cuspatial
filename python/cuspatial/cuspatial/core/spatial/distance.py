@@ -192,6 +192,72 @@ def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
     )
 
 
+def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
+    """Compute shortest distance between pairs of linestrings (a.k.a. polylines)
+
+    Currently `points1` and `points2` must contain either only points or
+    multipoints. Mixing points and multipoints in the same series is
+    unsupported.
+
+    Parameters
+    ----------
+    points1 : GeoSeries
+        A GeoSeries of (multi)points
+    points2 : GeoSeries
+        A GeoSeries of (multi)points
+
+    Returns
+    -------
+    distance : cudf.Series
+        the distance between each pair of (multi)points
+
+    Examples
+    --------
+    >>> from shapely.geometry import Point, MultiPoint
+    >>> p1 = cuspatial.GeoSeries([
+    ...     MultiPoint([(0.0, 0.0), (1.0, 0.0)]),
+    ...     MultiPoint([(0.0, 1.0), (1.0, 0.0)])
+    ... ])
+    >>> p2 = cuspatial.GeoSeries([
+    ...     Point(2.0, 2.0), Point(0.0, 0.5)
+    ... ])
+    >>> cuspatial.pairwise_point_distance(p1, p2)
+    0    2.236068
+    1    0.500000
+    dtype: float64
+    """
+
+    if not len(points1) == len(points2):
+        raise ValueError("`points1` and `points2` must have the same length")
+
+    if len(points1) == 0:
+        return cudf.Series(dtype="float64")
+
+    if not contains_only_points(points1):
+        raise ValueError("`points1` array must contain only points")
+    if not contains_only_points(points2):
+        raise ValueError("`points2` array must contain only points")
+    if (len(points1.points.xy) > 0 and len(points1.multipoints.xy) > 0) or (
+        len(points2.points.xy) > 0 and len(points2.multipoints.xy) > 0
+    ):
+        raise NotImplementedError(
+            "Mixing point and multipoint geometries is not supported"
+        )
+
+    points1_xy, points1_geometry_offsets = _flatten_point_series(points1)
+    points2_xy, points2_geometry_offsets = _flatten_point_series(points2)
+    return Series._from_data(
+        {
+            None: cpp_pairwise_point_distance(
+                points1_xy,
+                points2_xy,
+                points1_geometry_offsets,
+                points2_geometry_offsets,
+            )
+        }
+    )
+
+
 def pairwise_linestring_distance(
     multilinestrings1: GeoSeries, multilinestrings2: GeoSeries
 ):
