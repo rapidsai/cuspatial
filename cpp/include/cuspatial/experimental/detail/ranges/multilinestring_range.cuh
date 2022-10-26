@@ -55,7 +55,6 @@ struct to_multilinestring_functor {
 
   CUSPATIAL_HOST_DEVICE auto operator()(difference_type i)
   {
-    // printf("%d %d\n", _geometry_begin[i], _geometry_begin[i + 1]);
     return multilinestring_ref{_part_begin + _geometry_begin[i],
                                thrust::next(_part_begin + _geometry_begin[i + 1]),
                                _point_begin,
