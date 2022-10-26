@@ -179,9 +179,6 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
   // static_assert(cuspatial::is_integral<iterator_value_type<OutputIt>>(),
   //             "OutputIt must point to integral type.");
 
-  CUSPATIAL_EXPECTS(num_polys <= std::numeric_limits<int32_t>::digits,
-                    "Number of polygons cannot exceed 31");
-
   CUSPATIAL_EXPECTS(num_rings >= num_polys, "Each polygon must have at least one ring");
   CUSPATIAL_EXPECTS(num_poly_points >= num_polys * 4, "Each ring must have at least four vertices");
 

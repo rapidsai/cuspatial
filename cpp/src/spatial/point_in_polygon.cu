@@ -65,7 +65,7 @@ struct point_in_polygon_functor {
     auto results =
       cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
 
-    if (results->size() == 0) { return std::pair(empty_like(test_points_x), cudf::table_view()); }
+    if (results->size() == 0) { return std::pair(empty_like(results->view()), cudf::table_view()); }
 
     auto points_begin =
       cuspatial::make_vec_2d_iterator(test_points_x.begin<T>(), test_points_y.begin<T>());
@@ -89,8 +89,11 @@ struct point_in_polygon_functor {
     auto one_iter    = thrust::make_counting_iterator<cudf::size_type>(1);
     auto splits_iter = thrust::make_transform_iterator(
       one_iter, [width = test_points_x.size()](cudf::size_type idx) { return idx * width; });
-    auto splits = std::vector<cudf::size_type>(splits_iter, splits_iter + test_points_x.size() - 1);
+    auto splits = std::vector<cudf::size_type>(splits_iter, splits_iter + poly_offsets.size() - 1);
     auto result_column_views = cudf::split(results->view(), splits);
+    for (size_t i = 0; i < result_column_views.size(); ++i) {
+      std::cout << "Column length: " << result_column_views[i].size() << std::endl;
+    }
 
     return std::pair(std::move(results), cudf::table_view(result_column_views));
   }

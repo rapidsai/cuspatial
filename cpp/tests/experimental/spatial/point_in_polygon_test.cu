@@ -311,6 +311,45 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
   EXPECT_EQ(ret, got.end());
 }
 
+TYPED_TEST(PointInPolygonTest, 32PolygonSupport)
+{
+  using T = TypeParam;
+
+  auto constexpr num_polys       = 32;
+  auto constexpr num_poly_points = num_polys * 5;
+
+  auto test_point   = this->make_device_points({{0.0, 0.0}, {2.0, 0.0}});
+  auto offsets_iter = thrust::make_counting_iterator<std::size_t>(0);
+  auto poly_ring_offsets_iter =
+    thrust::make_transform_iterator(offsets_iter, OffsetIteratorFunctor{});
+  auto poly_point_xs_iter =
+    thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorA<T>{});
+  auto poly_point_ys_iter =
+    thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorB<T>{});
+  auto poly_point_iter = make_vec_2d_iterator(poly_point_xs_iter, poly_point_ys_iter);
+
+  auto expected = std::vector<bool>{
+    true,  false, true,  false, true,  false, true,  false, true,  false, true,  false, true,
+    false, true,  false, true,  false, true,  false, true,  false, true,  false, true,  false,
+    true,  false, true,  false, true,  false, true,  false, true,  false, true,  false, true,
+    false, true,  false, true,  false, true,  false, true,  false, true,  false, true,  false,
+    true,  false, true,  false, true,  false, true,  false, true,  false, true,  false};
+  auto got = rmm::device_vector<bool>(test_point.size() * num_polys);
+
+  auto ret = point_in_polygon(test_point.begin(),
+                              test_point.end(),
+                              offsets_iter,
+                              offsets_iter + num_polys,
+                              poly_ring_offsets_iter,
+                              poly_ring_offsets_iter + num_polys,
+                              poly_point_iter,
+                              poly_point_iter + num_poly_points,
+                              got.begin());
+
+  EXPECT_EQ(got, expected);
+  EXPECT_EQ(ret, got.end());
+}
+
 struct PointInPolygonErrorTest : public PointInPolygonTest<double> {
 };
 
