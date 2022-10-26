@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cmath>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
