@@ -91,9 +91,6 @@ struct point_in_polygon_functor {
       one_iter, [width = test_points_x.size()](cudf::size_type idx) { return idx * width; });
     auto splits = std::vector<cudf::size_type>(splits_iter, splits_iter + poly_offsets.size() - 1);
     auto result_column_views = cudf::split(results->view(), splits);
-    for (size_t i = 0; i < result_column_views.size(); ++i) {
-      std::cout << "Column length: " << result_column_views[i].size() << std::endl;
-    }
 
     return std::pair(std::move(results), cudf::table_view(result_column_views));
   }
