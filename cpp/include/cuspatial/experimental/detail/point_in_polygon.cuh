@@ -136,7 +136,7 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
                                                      poly_points_first,
                                                      num_poly_points);
 
-    result->begin()[poly_idx][idx] = static_cast<int32_t>(point_is_within);
+    result[num_test_points * poly_idx + idx] = point_is_within;
   }
 }
 
