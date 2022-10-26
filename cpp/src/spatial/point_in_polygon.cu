@@ -92,7 +92,7 @@ struct point_in_polygon_functor {
     auto splits = std::vector<cudf::size_type>(splits_iter, splits_iter + test_points_x.size() - 1);
     auto result_column_views = cudf::split(results->view(), splits);
 
-    return std::pair(std::move(results), std::move(cudf::table_view(result_column_views)));
+    return std::pair(std::move(results), cudf::table_view(result_column_views));
   }
 };
 }  // anonymous namespace
