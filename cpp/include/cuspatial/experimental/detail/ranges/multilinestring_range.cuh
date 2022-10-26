@@ -116,7 +116,7 @@ CUSPATIAL_HOST_DEVICE bool
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::is_valid_segment_id(
   IndexType1 segment_idx, IndexType2 part_idx)
 {
-  return segment_idx != num_points() && segment_idx != (part_begin[part_idx + 1] - 1);
+  return segment_idx >= 0 && segment_idx < (part_begin[part_idx + 1] - 1);
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>

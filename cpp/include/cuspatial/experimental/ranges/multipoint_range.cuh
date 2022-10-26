@@ -22,8 +22,11 @@
 namespace cuspatial {
 
 /**
- * @brief Host-Device view object of a multipoint array
+ * @brief Non-owning range-based interface to multipoint data
  * @ingroup ranges
+ *
+ * Provides a range-based interface to contiguous storage of multipoint data, to make it easier
+ * to access and iterate over multipoints and points.
  *
  * Conforms to GeoArrow's specification of multipoint array:
  * https://github.com/geopandas/geo-arrow-spec/blob/main/format.md
