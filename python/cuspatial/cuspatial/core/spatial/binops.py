@@ -78,8 +78,8 @@ def contains(
         as_column(poly_points_y),
     )
 
-    if len(test_points_x) == 1 or len(poly_offsets) == 1:
-        pip_result = cpp_point_in_polygon(
+    if len(test_points_x) == len(poly_offsets):
+        pip_result = cpp_pairwise_point_in_polygon(
             test_points_x,
             test_points_y,
             as_column(poly_offsets, dtype="int32"),
@@ -88,7 +88,7 @@ def contains(
             poly_points_y,
         )
     else:
-        pip_result = cpp_pairwise_point_in_polygon(
+        pip_result = cpp_point_in_polygon(
             test_points_x,
             test_points_y,
             as_column(poly_offsets, dtype="int32"),

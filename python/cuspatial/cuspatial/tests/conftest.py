@@ -183,7 +183,7 @@ def multipoint_generator(point_generator):
 
 @pytest.fixture
 def linestring_generator(point_generator):
-    rstate = np.random.RandomState(0)
+    rstate = np.random.RandomState(1)
 
     def generator(n, max_num_segments):
         for _ in range(n):

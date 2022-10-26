@@ -1,19 +1,27 @@
 import geopandas as gpd
 import pytest
-from shapely.geometry import Point, Polygon
+from shapely.geometry import LineString, Point, Polygon
 
 import cuspatial
+
+"""
+[
+    Point([0.6, 0.06]),
+    Polygon([[0, 0], [10, 1], [1, 1], [0, 0]]),
+    False,
+],
+[
+    Point([3.333, 1.111]),
+    Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]),
+    True,
+],
+"""
 
 
 @pytest.mark.parametrize(
     "point, polygon, expects",
     [
         # unique failure cases identified by @mharris
-        [
-            Point([0.6, 0.06]),
-            Polygon([[0, 0], [10, 1], [1, 1], [0, 0]]),
-            False,
-        ],
         [
             Point([0.66, 0.006]),
             Polygon([[0, 0], [10, 1], [1, 1], [0, 0]]),
@@ -26,11 +34,6 @@ import cuspatial
         ],
         [Point([3.3, 1.1]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
         [Point([3.33, 1.11]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
-        [
-            Point([3.333, 1.111]),
-            Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]),
-            True,
-        ],
     ],
 )
 def test_float_precision_limits(point, polygon, expects):
@@ -131,8 +134,10 @@ def test_ten_pair_points(point_generator, polygon_generator):
 
 
 def test_one_polygon_one_linestring(linestring_generator):
-    gpdlinestring = gpd.GeoSeries([*linestring_generator(1, 3)])
-    gpdpolygon = gpd.GeoSeries(Polygon([[0, 0], [0, 1], [1, 1], [0, 0]]))
+    gpdlinestring = gpd.GeoSeries([*linestring_generator(1, 4)])
+    gpdpolygon = gpd.GeoSeries(
+        Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]])
+    )
     linestring = cuspatial.from_geopandas(gpdlinestring)
     polygons = cuspatial.from_geopandas(gpdpolygon)
     assert (
@@ -141,17 +146,36 @@ def test_one_polygon_one_linestring(linestring_generator):
     ).all()
 
 
-"""
-def test_onehundred_polygons_one_linestring(
-    linestring_generator,
-    polygon_generator
-):
-    gpdlinestring = gpd.GeoSeries([*linestring_generator(1, 3)])
-    gpdpolygons = gpd.GeoSeries([*polygon_generator(100, 0)])
+def test_four_polygons_four_linestrings(linestring_generator):
+    gpdlinestring = gpd.GeoSeries(
+        [
+            LineString([[0.35, 0.35], [0.35, 0.65]]),
+            LineString([[0.25, 0.25], [0.25, 0.75]]),
+            LineString([[0.15, 0.15], [0.15, 0.85]]),
+            LineString([[0.05, 0.05], [0.05, 0.95]]),
+        ]
+    )
+    gpdpolygon = gpd.GeoSeries(
+        [
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]),
+        ]
+    )
     linestring = cuspatial.from_geopandas(gpdlinestring)
-    polygons = cuspatial.from_geopandas(gpdpolygons)
+    polygons = cuspatial.from_geopandas(gpdpolygon)
     assert (
-        gpdpolygons.contains(gpdlinestring).values
+        gpdpolygon.contains(gpdlinestring).values
         == polygons.contains(linestring).values_host
     ).all()
-"""
+
+
+def test_max_polygons_max_linestrings(linestring_generator, polygon_generator):
+    gpdlinestring = gpd.GeoSeries([*linestring_generator(31, 3)])
+    gpdpolygons = gpd.GeoSeries([*polygon_generator(31, 0)])
+    linestring = cuspatial.from_geopandas(gpdlinestring)
+    polygons = cuspatial.from_geopandas(gpdpolygons)
+    gpdresult = gpdpolygons.contains(gpdlinestring)
+    result = polygons.contains(linestring)
+    assert (gpdresult.values == result.values_host).all()

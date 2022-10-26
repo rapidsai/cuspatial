@@ -175,6 +175,14 @@ class GeoSeries(cudf.Series):
         def part_offset(self):
             return cudf.Series(self._col.elements.offsets.values)
 
+        def as_points(self):
+            return GeoSeries(self._col.elements.elements.elements)
+
+        def point_indices(self):
+            offsets = cp.array(self.part_offset)
+            linestring_sizes = offsets[1:] - offsets[:-1]
+            return cp.repeat(self._series.index, linestring_sizes)
+
     class PolygonGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
             super().__init__(list_series, meta)
@@ -533,18 +541,23 @@ class GeoSeries(cudf.Series):
         # point in polygon
         if contains_only_points(other) is True:
             # no conditioning is required
-            pass
+            points = other.points
         # mpoint in polygon
         # linestring in polygon
         if contains_only_linestrings(other) is True:
             # condition for linestrings
             mode = "LINESTRINGS"
+            linestring_points = other.lines.xy
+            point_indices = other.lines.point_indices()
+            points = GeoSeries(
+                GeoColumn._from_points_xy(linestring_points._column)
+            ).points
         # polygon in polygon
 
         # call pip on the three subtypes on the right:
         point_result = contains(
-            other.points.x,
-            other.points.y,
+            points.x,
+            points.y,
             self.polygons.part_offset[:-1],
             self.polygons.ring_offset[:-1],
             self.polygons.x,
@@ -562,5 +575,14 @@ class GeoSeries(cudf.Series):
         """
         if mode == "LINESTRINGS":
             # process for completed linestrings
-            pass
+            result = cudf.DataFrame(
+                {"idx": point_indices, "pip": point_result}
+            )
+            df_result = (
+                result.groupby("idx").sum() == result.groupby("idx").count()
+            ).sort_index()
+            point_result = cudf.Series(
+                df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
+            )
+            point_result.name = None
         return point_result
