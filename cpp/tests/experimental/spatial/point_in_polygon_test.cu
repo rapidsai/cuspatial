@@ -293,7 +293,7 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
     false, true,  false, true,  false, true,  false, true,  false, true,  false, true,  false,
     true,  false, true,  false, true,  false, true,  false, true,  false, true,  false, true,
     false, true,  false, true,  false, true,  false, true,  false, true,  false, true,  false,
-    true,  false, true,  false, true,  false, true,  false, true,  false, true,  false,
+    true,  false, true,  false, true,  false, true,  false, true,  false,
   };
   auto got = rmm::device_vector<bool>(test_point.size() * num_polys);
 
