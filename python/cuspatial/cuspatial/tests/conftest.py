@@ -211,12 +211,14 @@ def multilinestring_generator(linestring_generator):
 def polygon_generator():
     rstate = np.random.RandomState(0)
 
-    def generator(n, distance_from_origin):
+    def generator(n, distance_from_origin, radius=1.0):
         for _ in range(n):
-            outer = Point(distance_from_origin * 2, 0).buffer(1)
+            outer = Point(distance_from_origin * 2, 0).buffer(radius)
             inners = []
             for i in range(rstate.randint(1, 4)):
-                inner = Point(distance_from_origin + i * 0.1, 0).buffer(0.01)
+                inner = Point(distance_from_origin + i * 0.1, 0).buffer(
+                    0.01 * radius
+                )
                 inners.append(inner)
             together = Polygon(outer, inners)
             yield rotate(

@@ -179,3 +179,29 @@ def test_max_polygons_max_linestrings(linestring_generator, polygon_generator):
     gpdresult = gpdpolygons.contains(gpdlinestring)
     result = polygons.contains(linestring)
     assert (gpdresult.values == result.values_host).all()
+
+
+def test_one_polygon_one_polygon(polygon_generator):
+    gpdlhs = gpd.GeoSeries(Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]))
+    gpdrhs = gpd.GeoSeries([*polygon_generator(1, 0)])
+    rhs = cuspatial.from_geopandas(gpdrhs)
+    lhs = cuspatial.from_geopandas(gpdlhs)
+    assert (
+        gpdlhs.contains(gpdrhs).values == lhs.contains(rhs).values_host
+    ).all()
+    assert (
+        gpdrhs.contains(gpdlhs).values == rhs.contains(lhs).values_host
+    ).all()
+
+
+def test_max_polygons_max_polygons(polygon_generator):
+    gpdlhs = gpd.GeoSeries([*polygon_generator(31, 0, 10)])
+    gpdrhs = gpd.GeoSeries([*polygon_generator(31, 0, 1)])
+    rhs = cuspatial.from_geopandas(gpdrhs)
+    lhs = cuspatial.from_geopandas(gpdlhs)
+    assert (
+        gpdlhs.contains(gpdrhs).values == lhs.contains(rhs).values_host
+    ).all()
+    assert (
+        gpdrhs.contains(gpdlhs).values == rhs.contains(lhs).values_host
+    ).all()

@@ -180,8 +180,8 @@ class GeoSeries(cudf.Series):
 
         def point_indices(self):
             offsets = cp.array(self.part_offset)
-            linestring_sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._series.index, linestring_sizes)
+            sizes = offsets[1:] - offsets[:-1]
+            return cp.repeat(self._series.index, sizes)
 
     class PolygonGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -199,6 +199,11 @@ class GeoSeries(cudf.Series):
         @property
         def ring_offset(self):
             return cudf.Series(self._col.elements.elements.offsets.values)
+
+        def point_indices(self):
+            offsets = cp.array(self.ring_offset)
+            sizes = offsets[1:] - offsets[:-1]
+            return cp.repeat(self._series.index, sizes)
 
     @property
     def points(self):
@@ -544,15 +549,20 @@ class GeoSeries(cudf.Series):
             points = other.points
         # mpoint in polygon
         # linestring in polygon
-        if contains_only_linestrings(other) is True:
-            # condition for linestrings
-            mode = "LINESTRINGS"
-            linestring_points = other.lines.xy
-            point_indices = other.lines.point_indices()
+        else:
+            if contains_only_linestrings(other) is True:
+                # condition for linestrings
+                mode = "LINESTRINGS"
+                xy = other.lines
+            elif contains_only_polygons(other) is True:
+                # polygon in polygon
+                mode = "POLYGONS"
+                xy = other.polygons
+            xy_points = xy.xy
+            point_indices = xy.point_indices()
             points = GeoSeries(
-                GeoColumn._from_points_xy(linestring_points._column)
+                GeoColumn._from_points_xy(xy_points._column)
             ).points
-        # polygon in polygon
 
         # call pip on the three subtypes on the right:
         point_result = contains(
@@ -563,7 +573,6 @@ class GeoSeries(cudf.Series):
             self.polygons.x,
             self.polygons.y,
         )
-
         """
             # Apply binpreds rules on results:
             # point in polygon = true for row
@@ -573,7 +582,7 @@ class GeoSeries(cudf.Series):
             # linestring in polygon for all points = true
             # polygon in polygon for all points = true
         """
-        if mode == "LINESTRINGS":
+        if mode == "LINESTRINGS" or mode == "POLYGONS":
             # process for completed linestrings
             result = cudf.DataFrame(
                 {"idx": point_indices, "pip": point_result}
