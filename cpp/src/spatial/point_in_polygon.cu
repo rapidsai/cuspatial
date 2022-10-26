@@ -68,12 +68,6 @@ struct point_in_polygon_functor {
         cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr));
     }
 
-    auto make_table = [](auto&& col) {
-      auto columns = std::vector<std::unique_ptr<cudf::column>>();
-      columns.push_back(std::move(col));
-      return cudf::table{std::move(columns)};
-    };
-
     if (results.size() == 0) {
       return std::make_unique<cudf::table>(cudf::table(std::move(results)));
     }
