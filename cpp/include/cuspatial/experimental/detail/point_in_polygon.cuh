@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/detail/is_point_in_polygon_kernel.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -29,69 +30,6 @@
 
 namespace cuspatial {
 namespace detail {
-
-/**
- * @brief Kernel to test if a point is inside a polygon.
- *
- * Implemented based on Eric Haines's crossings-multiply algorithm:
- * See "Crossings test" section of http://erich.realtimerendering.com/ptinpoly/
- * The improvement in addenda is also addopted to remove divisions in this kernel.
- *
- * TODO: the ultimate goal of refactoring this as independent function is to remove
- * src/utility/point_in_polygon.cuh and its usage in quadtree_point_in_polygon.cu. It isn't
- * possible today without further work to refactor quadtree_point_in_polygon into header only
- * API.
- */
-template <class Cart2d,
-          class OffsetType,
-          class OffsetIterator,
-          class Cart2dIt,
-          class OffsetItDiffType = typename std::iterator_traits<OffsetIterator>::difference_type,
-          class Cart2dItDiffType = typename std::iterator_traits<Cart2dIt>::difference_type>
-__device__ inline bool is_point_in_polygon(Cart2d const& test_point,
-                                           OffsetType poly_begin,
-                                           OffsetType poly_end,
-                                           OffsetIterator ring_offsets_first,
-                                           OffsetItDiffType const& num_rings,
-                                           Cart2dIt poly_points_first,
-                                           Cart2dItDiffType const& num_poly_points)
-{
-  using T = iterator_vec_base_type<Cart2dIt>;
-
-  bool point_is_within = false;
-  // for each ring
-  for (auto ring_idx = poly_begin; ring_idx < poly_end; ring_idx++) {
-    int32_t ring_idx_next = ring_idx + 1;
-    int32_t ring_begin    = ring_offsets_first[ring_idx];
-    int32_t ring_end =
-      (ring_idx_next < num_rings) ? ring_offsets_first[ring_idx_next] : num_poly_points;
-
-    Cart2d b     = poly_points_first[ring_end - 1];
-    bool y0_flag = b.y > test_point.y;
-    bool y1_flag;
-    // for each line segment, including the segment between the last and first vertex
-    for (auto point_idx = ring_begin; point_idx < ring_end; point_idx++) {
-      Cart2d const a = poly_points_first[point_idx];
-      y1_flag        = a.y > test_point.y;
-      if (y1_flag != y0_flag) {
-        T run           = b.x - a.x;
-        T rise          = b.y - a.y;
-        T rise_to_point = test_point.y - a.y;
-
-        // Transform the following inequality to avoid division
-        //  test_point.x < (run / rise) * rise_to_point + a.x
-        auto lhs = (test_point.x - a.x) * rise;
-        auto rhs = run * rise_to_point;
-        if ((rise > 0 && lhs < rhs) || (rise < 0 && lhs > rhs))
-          point_is_within = not point_is_within;
-      }
-      b       = a;
-      y0_flag = y1_flag;
-    }
-  }
-
-  return point_is_within;
-}
 
 template <class Cart2dItA,
           class Cart2dItB,
@@ -119,8 +57,6 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
 
   if (idx >= num_test_points) { return; }
 
-  int32_t hit_mask = 0;
-
   Cart2d const test_point = test_points_first[idx];
 
   // for each polygon
@@ -138,9 +74,8 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
                                                      poly_points_first,
                                                      num_poly_points);
 
-    hit_mask |= point_is_within << poly_idx;
+    result->begin()[poly_idx][idx] = static_cast<int32_t>(point_is_within);
   }
-  result[idx] = hit_mask;
 }
 
 }  // namespace detail
@@ -178,8 +113,9 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
                                        iterator_value_type<OffsetIteratorB>>(),
                 "OffsetIterators must point to integral type.");
 
-  static_assert(std::is_same_v<iterator_value_type<OutputIt>, int32_t>,
-                "OutputIt must point to 32 bit integer type.");
+  // TODO Assert it points to a column, is that an OffsetIterator?
+  // static_assert(cuspatial::is_integral<iterator_value_type<OutputIt>>(),
+  //             "OutputIt must point to integral type.");
 
   CUSPATIAL_EXPECTS(num_polys <= std::numeric_limits<int32_t>::digits,
                     "Number of polygons cannot exceed 31");

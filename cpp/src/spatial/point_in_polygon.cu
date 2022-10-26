@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cudf/table/table.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_in_polygon.cuh>
@@ -40,28 +41,42 @@ struct point_in_polygon_functor {
   }
 
   template <typename T, std::enable_if_t<!is_supported<T>()>* = nullptr, typename... Args>
-  std::unique_ptr<cudf::column> operator()(Args&&...)
+  std::unique_ptr<cudf::table> operator()(Args&&...)
   {
     CUSPATIAL_FAIL("Non-floating point operation is not supported");
   }
 
   template <typename T, std::enable_if_t<is_supported<T>()>* = nullptr>
-  std::unique_ptr<cudf::column> operator()(cudf::column_view const& test_points_x,
-                                           cudf::column_view const& test_points_y,
-                                           cudf::column_view const& poly_offsets,
-                                           cudf::column_view const& poly_ring_offsets,
-                                           cudf::column_view const& poly_points_x,
-                                           cudf::column_view const& poly_points_y,
-                                           rmm::cuda_stream_view stream,
-                                           rmm::mr::device_memory_resource* mr)
+  std::unique_ptr<cudf::table> operator()(cudf::column_view const& test_points_x,
+                                          cudf::column_view const& test_points_y,
+                                          cudf::column_view const& poly_offsets,
+                                          cudf::column_view const& poly_ring_offsets,
+                                          cudf::column_view const& poly_points_x,
+                                          cudf::column_view const& poly_points_y,
+                                          rmm::cuda_stream_view stream,
+                                          rmm::mr::device_memory_resource* mr)
   {
     auto size = test_points_x.size();
     auto tid  = cudf::type_to_id<int32_t>();
     auto type = cudf::data_type{tid};
-    auto results =
+    auto old_results =
       cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
 
-    if (results->size() == 0) { return results; }
+    auto results = std::vector<std::unique_ptr<cudf::column>>(size);
+    for (size_t i = 0; i < poly_offsets.size(); ++i) {
+      results.push_back(
+        cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr));
+    }
+
+    auto make_table = [](auto&& col) {
+      auto columns = std::vector<std::unique_ptr<cudf::column>>();
+      columns.push_back(std::move(col));
+      return cudf::table{std::move(columns)};
+    };
+
+    if (results.size() == 0) {
+      return std::make_unique<cudf::table>(cudf::table(std::move(results)));
+    }
 
     auto points_begin =
       cuspatial::make_vec_2d_iterator(test_points_x.begin<T>(), test_points_y.begin<T>());
@@ -69,7 +84,7 @@ struct point_in_polygon_functor {
     auto ring_offsets_begin    = poly_ring_offsets.begin<cudf::size_type>();
     auto polygon_points_begin =
       cuspatial::make_vec_2d_iterator(poly_points_x.begin<T>(), poly_points_y.begin<T>());
-    auto results_begin = results->mutable_view().begin<int32_t>();
+    auto results_begin = rmm::device_vector<size_t>(results.begin(), results.end());
 
     cuspatial::point_in_polygon(points_begin,
                                 points_begin + test_points_x.size(),
@@ -79,10 +94,10 @@ struct point_in_polygon_functor {
                                 ring_offsets_begin + poly_ring_offsets.size(),
                                 polygon_points_begin,
                                 polygon_points_begin + poly_points_x.size(),
-                                results_begin,
+                                results_begin.begin(),
                                 stream);
 
-    return results;
+    return std::make_unique<cudf::table>(cudf::table(std::move(results)));
   }
 };
 }  // anonymous namespace
@@ -91,14 +106,14 @@ namespace cuspatial {
 
 namespace detail {
 
-std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_points_x,
-                                               cudf::column_view const& test_points_y,
-                                               cudf::column_view const& poly_offsets,
-                                               cudf::column_view const& poly_ring_offsets,
-                                               cudf::column_view const& poly_points_x,
-                                               cudf::column_view const& poly_points_y,
-                                               rmm::cuda_stream_view stream,
-                                               rmm::mr::device_memory_resource* mr)
+std::unique_ptr<cudf::table> point_in_polygon(cudf::column_view const& test_points_x,
+                                              cudf::column_view const& test_points_y,
+                                              cudf::column_view const& poly_offsets,
+                                              cudf::column_view const& poly_ring_offsets,
+                                              cudf::column_view const& poly_points_x,
+                                              cudf::column_view const& poly_points_y,
+                                              rmm::cuda_stream_view stream,
+                                              rmm::mr::device_memory_resource* mr)
 {
   return cudf::type_dispatcher(test_points_x.type(),
                                point_in_polygon_functor(),
@@ -114,13 +129,13 @@ std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_poi
 
 }  // namespace detail
 
-std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_points_x,
-                                               cudf::column_view const& test_points_y,
-                                               cudf::column_view const& poly_offsets,
-                                               cudf::column_view const& poly_ring_offsets,
-                                               cudf::column_view const& poly_points_x,
-                                               cudf::column_view const& poly_points_y,
-                                               rmm::mr::device_memory_resource* mr)
+std::unique_ptr<cudf::table> point_in_polygon(cudf::column_view const& test_points_x,
+                                              cudf::column_view const& test_points_y,
+                                              cudf::column_view const& poly_offsets,
+                                              cudf::column_view const& poly_ring_offsets,
+                                              cudf::column_view const& poly_points_x,
+                                              cudf::column_view const& poly_points_y,
+                                              rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(
     test_points_x.size() == test_points_y.size() and poly_points_x.size() == poly_points_y.size(),
