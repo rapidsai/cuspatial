@@ -4,7 +4,7 @@ from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 
 from cudf._lib.column cimport column, column_view
-from cudf._lib.table cimport table_view
+from cudf._lib.cpp.table.table_view cimport table_view
 
 
 cdef extern from "cuspatial/point_in_polygon.hpp" namespace "cuspatial" nogil:

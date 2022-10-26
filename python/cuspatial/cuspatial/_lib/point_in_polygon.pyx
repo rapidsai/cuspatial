@@ -1,16 +1,17 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
-from libcpp.utility cimport move
 from libcpp.pair cimport pair
+from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column, column, column_view
-from cudf._lib.table cimport table_view
+from cudf._lib.cpp.table.table_view cimport table_view
+from cudf._lib.utils cimport columns_from_table_view
 
 from cuspatial._lib.cpp.point_in_polygon cimport (
     point_in_polygon as cpp_point_in_polygon,
 )
-from cudf._lib.utils cimport columns_from_table_view
+
 
 def point_in_polygon(
     Column test_points_x,
@@ -43,4 +44,4 @@ def point_in_polygon(
 
     result_owner = Column.from_unique_ptr(move(result.first))
     return columns_from_table_view(
-        result.second, owners=[result_owner] * result.second.num_columns()) 
+        result.second, owners=[result_owner] * result.second.num_columns())

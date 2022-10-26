@@ -203,7 +203,7 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
     output);
   CUSPATIAL_CUDA_TRY(cudaGetLastError());
 
-  return output + num_test_points;
+  return output + num_test_points * num_polys;
 }
 
 }  // namespace cuspatial
