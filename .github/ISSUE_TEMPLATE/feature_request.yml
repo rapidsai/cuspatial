@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Feature Request Form
+name: Feature Request
 description: Request new or improved functionality or changes to existing cuSpatial functionality
 title: "[FEA]: "
 labels: ["feature request", "? - Needs Triage"]
@@ -50,8 +50,8 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: Please provide a clear description of problem this feature solves
-      description: Real usage examples are especially helpful, non-code.
+      label: Please provide a clear description of problem you would like to solve.
+      description: Real usage examples are especially helpful. If there is an existing function you use in a different library, please also provide a link.
       placeholder: I want cuSpatial to do _____, because I need to _____.
     validations:
       required: true

@@ -40,7 +40,7 @@ body:
     id: correction_location
     attributes:
       label: Please provide a link or source to the relevant docs
-      placeholder: "ex: https://docs.rapids.ai/api/cuspatial/stable/user_guide/users.html#Input-/-Output"
+      placeholder: "Example: https://docs.rapids.ai/api/cuspatial/stable/user_guide/users.html#Input-/-Output"
     validations:
       required: true
 
@@ -48,7 +48,7 @@ body:
     id: problem
     attributes:
       label: Describe the problems in the documentation
-      placeholder: The documents say to use foo.func(args) however an AttributeError is thrown
+      placeholder: "Example: The documents say to use foo.func(args) however an AttributeError is thrown"
     validations:
       required: true
 
@@ -56,7 +56,7 @@ body:
     id: correction
     attributes:
       label: (Optional) Propose a correction
-      placeholder: foo.func() was deprecated, replace documentation with foo.new_func()
+      placeholder: "Example: foo.func() was deprecated, replace documentation with foo.new_func()"
 
   - type: checkboxes
     id: terms

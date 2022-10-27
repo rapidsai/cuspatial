@@ -36,7 +36,7 @@ body:
   - type: dropdown
     id: installation-method
     attributes:
-      label: Which installation method(s) does this occur on?
+      label: On which installation method(s) does this occur?
       multiple: true
       options:
         - Docker
@@ -47,7 +47,7 @@ body:
     id: description
     attributes:
       label: Describe the bug.
-      description: Also tell us, what did you expect to happen?
+      description: Please provide a complete and succinct description of the problem, including what you expected to happen.
       placeholder: XYZ occured, I expected QRS results
     validations:
       required: true
@@ -56,7 +56,7 @@ body:
     id: mvr
     attributes:
       label: Minimum reproducible example
-      description: Please supply a [minimum reproducible code example](https://matthewrocklin.com/blog/work/2018/02/28/minimal-bug-reports) here
+      description: Please supply a [minimum reproducible code example](https://matthewrocklin.com/blog/work/2018/02/28/minimal-bug-reports) here.
       render: shell
 
   - type: textarea
