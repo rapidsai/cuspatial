@@ -52,7 +52,6 @@ body:
     attributes:
       label: Please provide a clear description of problem you would like to solve.
       description: Real usage examples are especially helpful. If there is an existing function you use in a different library, please also provide a link.
-      placeholder: I want cuSpatial to do _____, because I need to _____.
     validations:
       required: true
 
