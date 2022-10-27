@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+#include <cudf/detail/null_mask.hpp>
 #include <cudf/table/table.hpp>
+#include <cudf/types.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_in_polygon.cuh>
@@ -62,10 +64,10 @@ struct point_in_polygon_functor {
     auto tid  = cudf::type_to_id<bool>();
     auto type = cudf::data_type{tid};
 
-    auto results =
-      cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
+    auto results = rmm::device_uvector<bool>(cudf::size_of(type) * size, stream, mr);
+    // cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
 
-    if (results->size() == 0) { return std::pair(empty_like(results->view()), cudf::table_view()); }
+    if (results.size() == 0) { return std::pair(make_empty_column(type), cudf::table_view()); }
 
     auto points_begin =
       cuspatial::make_vec_2d_iterator(test_points_x.begin<T>(), test_points_y.begin<T>());
@@ -73,7 +75,7 @@ struct point_in_polygon_functor {
     auto ring_offsets_begin    = poly_ring_offsets.begin<cudf::size_type>();
     auto polygon_points_begin =
       cuspatial::make_vec_2d_iterator(poly_points_x.begin<T>(), poly_points_y.begin<T>());
-    auto result_begin = results->mutable_view().begin<bool>();
+    auto result_begin = results.begin();
 
     cuspatial::point_in_polygon(points_begin,
                                 points_begin + test_points_x.size(),
@@ -90,9 +92,16 @@ struct point_in_polygon_functor {
     auto splits_iter = thrust::make_transform_iterator(
       one_iter, [width = test_points_x.size()](cudf::size_type idx) { return idx * width; });
     auto splits = std::vector<cudf::size_type>(splits_iter, splits_iter + poly_offsets.size() - 1);
-    auto result_column_views = cudf::split(results->view(), splits);
+    auto column = std::make_unique<cudf::column>(
+      type,
+      size,
+      results.release(),
+      cudf::detail::create_null_mask(size, cudf::mask_state::UNALLOCATED, stream, mr),
+      state_null_count(cudf::mask_state::ALL_VALID, size),
+      std::vector<std::unique_ptr<cudf::column>>{});
+    auto result_column_views = cudf::split(column->view(), splits);
 
-    return std::pair(std::move(results), cudf::table_view(result_column_views));
+    return std::pair(std::move(column), cudf::table_view(result_column_views));
   }
 };
 }  // anonymous namespace
