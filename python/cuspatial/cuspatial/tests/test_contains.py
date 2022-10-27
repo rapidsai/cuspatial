@@ -133,6 +133,71 @@ def test_ten_pair_points(point_generator, polygon_generator):
     ).all()
 
 
+@pytest.mark.xfail(
+    reason="We don't support intersection yet to check for crossings."
+)
+def test_one_polygon_with_hole_one_linestring_crossing_it(
+    linestring_generator,
+):
+    gpdlinestring = gpd.GeoSeries(LineString([[0.5, 2.0], [3.5, 2.0]]))
+    gpdpolygon = gpd.GeoSeries(
+        Polygon(
+            (
+                [0, 0],
+                [0, 4],
+                [4, 4],
+                [4, 0],
+                [0, 0],
+            ),
+            [
+                (
+                    [1, 1],
+                    [1, 3],
+                    [3, 3],
+                    [3, 1],
+                    [1, 1],
+                )
+            ],
+        )
+    )
+    linestring = cuspatial.from_geopandas(gpdlinestring)
+    polygons = cuspatial.from_geopandas(gpdpolygon)
+    assert (
+        gpdpolygon.contains(gpdlinestring).values
+        == polygons.contains(linestring).values_host
+    ).all()
+
+
+def test_one_polygon_with_hole_one_linestring_inside_it(linestring_generator):
+    gpdlinestring = gpd.GeoSeries(LineString([[1.5, 2.0], [2.5, 2.0]]))
+    gpdpolygon = gpd.GeoSeries(
+        Polygon(
+            (
+                [0, 0],
+                [0, 4],
+                [4, 4],
+                [4, 0],
+                [0, 0],
+            ),
+            [
+                (
+                    [1, 1],
+                    [1, 3],
+                    [3, 3],
+                    [3, 1],
+                    [1, 1],
+                )
+            ],
+        )
+    )
+    linestring = cuspatial.from_geopandas(gpdlinestring)
+    polygons = cuspatial.from_geopandas(gpdpolygon)
+    assert (
+        gpdpolygon.contains(gpdlinestring).values
+        == polygons.contains(linestring).values_host
+    ).all()
+
+
 def test_one_polygon_one_linestring(linestring_generator):
     gpdlinestring = gpd.GeoSeries([*linestring_generator(1, 4)])
     gpdpolygon = gpd.GeoSeries(
