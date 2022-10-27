@@ -74,8 +74,7 @@ void __global__ pairwise_point_linestring_distance_kernel(MultiPointRange multip
       auto const distance_squared = point_to_segment_distance_squared(c, a, b);
       min_distance_squared        = min(distance_squared, min_distance_squared);
     }
-    atomicMin(&thrust::raw_reference_cast(*(distances + geometry_idx)),
-              static_cast<T>(sqrt(min_distance_squared)));
+    atomicMin(&distances[geometry_idx], static_cast<T>(sqrt(min_distance_squared)));
   }
 }
 
