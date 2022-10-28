@@ -16,7 +16,7 @@
 name: Submit Question
 description: Ask a question about cuSpatial
 title: "[QST]: "
-labels: ["question"]
+labels: ["question", "? - Needs Triage"]
 
 body:
   - type: markdown
