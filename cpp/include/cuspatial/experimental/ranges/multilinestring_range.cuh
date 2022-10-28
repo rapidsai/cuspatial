@@ -131,9 +131,9 @@ class multilinestring_range {
  * @brief Create a multilinestring_range object from size and start iterators
  * @ingroup ranges
  *
- * @tparam IndexType1 Index type of the size of the geometry array
- * @tparam IndexType2 Index type of the size of the part array
- * @tparam IndexType3 Index type of the size of the point array
+ * @tparam GeometryIteratorDiffType Index type of the size of the geometry array
+ * @tparam PartIteratorDiffType Index type of the size of the part array
+ * @tparam VecIteratorDiffType Index type of the size of the point array
  * @tparam GeometryIterator iterator type for offset array. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
  * @tparam PartIterator iterator type for the part offset array. Must meet
