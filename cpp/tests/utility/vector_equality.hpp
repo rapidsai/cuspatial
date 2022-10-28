@@ -32,8 +32,14 @@
 namespace cuspatial {
 namespace test {
 
+/**
+ * @brief Compare two floats are close within N ULPs
+ *
+ * N is predefined by GoogleTest
+ * https://google.github.io/googletest/reference/assertions.html#EXPECT_FLOAT_EQ
+ */
 template <typename T>
-auto floating_eq(T val)
+auto floating_eq_by_ulp(T val)
 {
   if constexpr (std::is_same_v<T, float>) {
     return ::testing::FloatEq(val);
@@ -42,8 +48,11 @@ auto floating_eq(T val)
   }
 }
 
+/**
+ * @brief Compare two floats are close within `abs_error`
+ */
 template <typename T>
-auto floating_near(T val, T abs_error)
+auto floating_eq_by_abs_error(T val, T abs_error)
 {
   if constexpr (std::is_same_v<T, float>) {
     return ::testing::FloatNear(val, abs_error);
@@ -58,8 +67,8 @@ MATCHER(vec_2d_matcher,
   auto lhs = std::get<0>(arg);
   auto rhs = std::get<1>(arg);
 
-  if (::testing::Matches(floating_eq(rhs.x))(lhs.x) &&
-      ::testing::Matches(floating_eq(rhs.y))(lhs.y))
+  if (::testing::Matches(floating_eq_by_ulp(rhs.x))(lhs.x) &&
+      ::testing::Matches(floating_eq_by_ulp(rhs.y))(lhs.y))
     return true;
 
   *result_listener << lhs << " != " << rhs;
@@ -74,8 +83,8 @@ MATCHER_P(vec_2d_near_matcher,
   auto lhs = std::get<0>(arg);
   auto rhs = std::get<1>(arg);
 
-  if (::testing::Matches(floating_near(rhs.x, abs_error))(lhs.x) &&
-      ::testing::Matches(floating_near(rhs.y, abs_error))(lhs.y))
+  if (::testing::Matches(floating_eq_by_abs_error(rhs.x, abs_error))(lhs.x) &&
+      ::testing::Matches(floating_eq_by_abs_error(rhs.y, abs_error))(lhs.y))
     return true;
 
   *result_listener << lhs << " != " << rhs;
@@ -88,7 +97,7 @@ MATCHER(float_matcher, std::string(negation ? "are not" : "are") + " approximate
   auto lhs = std::get<0>(arg);
   auto rhs = std::get<1>(arg);
 
-  if (::testing::Matches(floating_eq(rhs))(lhs)) return true;
+  if (::testing::Matches(floating_eq_by_ulp(rhs))(lhs)) return true;
 
   *result_listener << std::setprecision(18) << lhs << " != " << rhs;
 
@@ -102,7 +111,7 @@ MATCHER_P(float_near_matcher,
   auto lhs = std::get<0>(arg);
   auto rhs = std::get<1>(arg);
 
-  if (::testing::Matches(floating_near(rhs, abs_error))(lhs)) return true;
+  if (::testing::Matches(floating_eq_by_abs_error(rhs, abs_error))(lhs)) return true;
 
   *result_listener << std::setprecision(18) << lhs << " != " << rhs;
 
