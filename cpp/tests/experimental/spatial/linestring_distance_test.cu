@@ -39,9 +39,11 @@ auto make_device_vector(std::initializer_list<T> inl)
 }
 
 template <typename T>
-struct PairwiseLinestringDistanceTest : public ::testing::Test {};
+struct PairwiseLinestringDistanceTest : public ::testing::Test {
+};
 
-struct PairwiseLinestringDistanceTestUntyped : public ::testing::Test {};
+struct PairwiseLinestringDistanceTestUntyped : public ::testing::Test {
+};
 
 // float and double are logically the same but would require seperate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;
