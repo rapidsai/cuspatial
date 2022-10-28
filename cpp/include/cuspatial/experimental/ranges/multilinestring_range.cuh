@@ -25,7 +25,7 @@
 namespace cuspatial {
 
 /**
- * @brief Non-owning range-based interface to a multilinestring data
+ * @brief Non-owning range-based interface to multilinestring data
  * @ingroup ranges
  *
  * Provides a range-based interface to contiguous storage of multilinestring data, to make it easier
