@@ -60,15 +60,9 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, Empty)
   rmm::device_vector<int> d_linestring_parts(linestring_part_offsets);
   rmm::device_vector<vec_2d<T>> d_linestring_points(linestring_points);
 
-  auto multipoints = make_multipoint_range(
-    d_point_geometries.size() - 1, d_point_geometries.begin(), d_points.size(), d_points.begin());
-
-  auto multilinestrings = make_multilinestring_range(d_linestring_geometries.size() - 1,
-                                                     d_linestring_geometries.begin(),
-                                                     d_linestring_parts.size() - 1,
-                                                     d_linestring_parts.begin(),
-                                                     d_linestring_points.size(),
-                                                     d_linestring_points.begin());
+  auto multipoints = make_multipoint_range(d_point_geometries, d_points);
+  auto multilinestrings =
+    make_multilinestring_range(d_linestring_geometries, d_linestring_parts, d_linestring_points);
 
   rmm::device_vector<T> got{};
   thrust::host_vector<T> expect{};

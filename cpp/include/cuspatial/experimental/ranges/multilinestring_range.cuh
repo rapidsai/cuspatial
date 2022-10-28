@@ -25,8 +25,11 @@
 namespace cuspatial {
 
 /**
- * @brief Non-owning object of a multilinestring array
+ * @brief Non-owning range-based interface to multilinestring data
  * @ingroup ranges
+ *
+ * Provides a range-based interface to contiguous storage of multilinestring data, to make it easier
+ * to access and iterate over multilinestrings, linestrings and points.
  *
  * Conforms to GeoArrow's specification of multilinestring:
  * https://github.com/geopandas/geo-arrow-spec/blob/main/format.md
@@ -63,7 +66,7 @@ class multilinestring_range {
   /**
    * @brief Return the number of multilinestrings in the array.
    */
-  CUSPATIAL_HOST_DEVICE auto size();
+  CUSPATIAL_HOST_DEVICE auto size() { return num_multilinestrings(); }
 
   /**
    * @brief Return the number of multilinestrings in the array.
@@ -102,7 +105,7 @@ class multilinestring_range {
   CUSPATIAL_HOST_DEVICE auto geometry_idx_from_part_idx(IndexType part_idx);
 
   /**
-   * @brief Given the index of the point, return the geometry (multilinestring) index where the
+   * @brief Given the index of a point, return the geometry (multilinestring) index where the
    * point locates.
    */
   template <typename IndexType>
@@ -111,7 +114,7 @@ class multilinestring_range {
   /**
    * @brief Given an index of a segment, returns true if the index is valid.
    * The index of a segment is the same as the index to the starting point of the segment.
-   * Thus, the index to the last point of a linestring is an invalid index for segment.
+   * Thus, the index to the last point of a linestring is an invalid segment index.
    */
   template <typename IndexType1, typename IndexType2>
   CUSPATIAL_HOST_DEVICE bool is_valid_segment_id(IndexType1 segment_idx, IndexType2 part_idx);
@@ -136,12 +139,12 @@ class multilinestring_range {
 };
 
 /**
- * @brief Create a range object of multilinestring array from array size and start iterators
+ * @brief Create a multilinestring_range object from size and start iterators
  * @ingroup ranges
  *
- * @tparam IndexType1 Index type of the size of the geometry array
- * @tparam IndexType2 Index type of the size of the part array
- * @tparam IndexType3 Index type of the size of the point array
+ * @tparam GeometryIteratorDiffType Index type of the size of the geometry array
+ * @tparam PartIteratorDiffType Index type of the size of the part array
+ * @tparam VecIteratorDiffType Index type of the size of the point array
  * @tparam GeometryIterator iterator type for offset array. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
  * @tparam PartIterator iterator type for the part offset array. Must meet
@@ -163,17 +166,17 @@ class multilinestring_range {
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <typename IndexType1,
-          typename IndexType2,
-          typename IndexType3,
+template <typename GeometryIteratorDiffType,
+          typename PartIteratorDiffType,
+          typename VecIteratorDiffType,
           typename GeometryIterator,
           typename PartIterator,
           typename VecIterator>
-auto make_multilinestring_range(IndexType1 num_multilinestrings,
+auto make_multilinestring_range(GeometryIteratorDiffType num_multilinestrings,
                                 GeometryIterator geometry_begin,
-                                IndexType2 num_linestrings,
+                                PartIteratorDiffType num_linestrings,
                                 PartIterator part_begin,
-                                IndexType3 num_points,
+                                VecIteratorDiffType num_points,
                                 VecIterator point_begin)
 {
   return multilinestring_range{geometry_begin,
@@ -182,6 +185,32 @@ auto make_multilinestring_range(IndexType1 num_multilinestrings,
                                part_begin + num_linestrings + 1,
                                point_begin,
                                point_begin + num_points};
+}
+
+/**
+ * @brief Create a range object of multilinestring data from offset and point ranges
+ * @ingroup ranges
+ *
+ * @tparam IntegerRange1 Range to integers
+ * @tparam IntegerRange2 Range to integers
+ * @tparam PointRange Range to points
+ *
+ * @param geometry_offsets Range to multilinestring geometry offsets
+ * @param part_offsets Range to linestring part offsets
+ * @param points Range to underlying points
+ * @return A multilinestring_range object
+ */
+template <typename IntegerRange1, typename IntegerRange2, typename PointRange>
+auto make_multilinestring_range(IntegerRange1 geometry_offsets,
+                                IntegerRange2 part_offsets,
+                                PointRange points)
+{
+  return multilinestring_range(geometry_offsets.begin(),
+                               geometry_offsets.end(),
+                               part_offsets.begin(),
+                               part_offsets.end(),
+                               points.begin(),
+                               points.end());
 }
 
 }  // namespace cuspatial

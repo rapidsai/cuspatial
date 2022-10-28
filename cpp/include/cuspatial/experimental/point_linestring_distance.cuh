@@ -27,8 +27,8 @@ namespace cuspatial {
  * @tparam MultiLinestringRange an instance of template type `multilinestring_range`
  * @tparam OutputIt iterator type for output array. Must meet the requirements of [LRAI](LinkLRAI).
  *
- * @param multipoints Range object of a multipoint array
- * @param multilinestrings Range object of a multilinestring array
+ * @param multipoints The range of multipoints, one per computed distance pair
+ * @param multilinestrings The range of multilinestrings, one per computed distance pair
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
  * @return Output iterator to the element past the last distance computed.
  *

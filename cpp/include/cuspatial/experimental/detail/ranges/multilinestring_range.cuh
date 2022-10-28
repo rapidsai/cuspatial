@@ -84,13 +84,6 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::multilinestr
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::size()
-{
-  return num_multilinestrings();
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_multilinestrings()
 {
   return thrust::distance(_geometry_begin, _geometry_end) - 1;
@@ -160,7 +153,10 @@ CUSPATIAL_HOST_DEVICE bool
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::is_valid_segment_id(
   IndexType1 segment_idx, IndexType2 part_idx)
 {
-  return segment_idx != num_points() && segment_idx != (_part_begin[part_idx + 1] - 1);
+  if constexpr (std::is_signed_v<IndexType1>)
+    return segment_idx >= 0 && segment_idx < (_part_begin[part_idx + 1] - 1);
+  else
+    return segment_idx < (_part_begin[part_idx + 1] - 1);
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
