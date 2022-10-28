@@ -8,7 +8,7 @@ dependencies:
   - clang=11.1.0
   - clang-tools=11.1.0
   - cudf=22.12.*
-  - cudatoolkit=11.0
+  - cudatoolkit=11.5
   - gdal>=3.0.2
   - geopandas>=0.11.0
   - cmake>=3.23.1

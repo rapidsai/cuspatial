@@ -5,6 +5,7 @@ from .core.spatial import (
     haversine_distance,
     join_quadtree_and_bounding_boxes,
     lonlat_to_cartesian,
+    pairwise_point_distance,
     pairwise_linestring_distance,
     pairwise_point_linestring_distance,
     pairwise_point_linestring_nearest_points,
