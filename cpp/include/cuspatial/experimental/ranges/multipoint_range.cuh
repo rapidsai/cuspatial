@@ -115,7 +115,7 @@ class multipoint_range {
 };
 
 /**
- * @brief Create a range of multipoint array from array size and start iterators
+ * @brief Create a multilinestring_range object of from size and start iterators
  * @ingroup ranges
  *
  * @tparam IndexType1 Index type of the size of the geometry array
@@ -145,6 +145,23 @@ multipoint_range<GeometryIterator, VecIterator> make_multipoint_range(
 {
   return multipoint_range<GeometryIterator, VecIterator>{
     geometry_begin, geometry_begin + num_multipoints + 1, point_begin, point_begin + num_points};
+}
+
+/**
+ * @brief Create multilinestring_range object from offset and point ranges
+ *
+ * @tparam IntegerRange Range to integers
+ * @tparam PointRange Range to points
+ *
+ * @param geometry_offsets Range to multipoints geometry offsets
+ * @param points Range to underlying parts
+ * @return A multipoint_range object
+ */
+template <typename IntegerRange, typename PointRange>
+auto make_multipoint_range(IntegerRange geometry_offsets, PointRange points)
+{
+  return multipoint_range(
+    geometry_offsets.begin(), geometry_offsets.end(), points.begin(), points.end());
 }
 
 }  // namespace cuspatial

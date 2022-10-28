@@ -128,7 +128,7 @@ class multilinestring_range {
 };
 
 /**
- * @brief Create a range object of multilinestring array from array size and start iterators
+ * @brief Create a multilinestring_range object from size and start iterators
  * @ingroup ranges
  *
  * @tparam IndexType1 Index type of the size of the geometry array
@@ -155,17 +155,17 @@ class multilinestring_range {
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <typename IndexType1,
-          typename IndexType2,
-          typename IndexType3,
+template <typename GeometryIteratorDiffType,
+          typename PartIteratorDiffType,
+          typename VecIteratorDiffType,
           typename GeometryIterator,
           typename PartIterator,
           typename VecIterator>
-auto make_multilinestring_range(IndexType1 num_multilinestrings,
+auto make_multilinestring_range(GeometryIteratorDiffType num_multilinestrings,
                                 GeometryIterator geometry_begin,
-                                IndexType2 num_linestrings,
+                                PartIteratorDiffType num_linestrings,
                                 PartIterator part_begin,
-                                IndexType3 num_points,
+                                VecIteratorDiffType num_points,
                                 VecIterator point_begin)
 {
   return multilinestring_range{geometry_begin,
@@ -174,6 +174,32 @@ auto make_multilinestring_range(IndexType1 num_multilinestrings,
                                part_begin + num_linestrings + 1,
                                point_begin,
                                point_begin + num_points};
+}
+
+/**
+ * @brief Create a range object of multilinestring data from offset and point ranges
+ * @ingroup ranges
+ *
+ * @tparam IntegerRange1 Range to integers
+ * @tparam IntegerRange2 Range to integers
+ * @tparam PointRange Range to points
+ *
+ * @param geometry_offsets Range to multilinestring geometry offsets
+ * @param part_offsets Range to linestring part offsets
+ * @param points Range to underlying points
+ * @return A multilinestring_range object
+ */
+template <typename IntegerRange1, typename IntegerRange2, typename PointRange>
+auto make_multilinestring_range(IntegerRange1 geometry_offsets,
+                                IntegerRange2 part_offsets,
+                                PointRange points)
+{
+  return multilinestring_range(geometry_offsets.begin(),
+                               geometry_offsets.end(),
+                               part_offsets.begin(),
+                               part_offsets.end(),
+                               points.begin(),
+                               points.end());
 }
 
 }  // namespace cuspatial
