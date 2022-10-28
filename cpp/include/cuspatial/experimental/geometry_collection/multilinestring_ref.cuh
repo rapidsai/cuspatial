@@ -19,14 +19,25 @@
 namespace cuspatial {
 
 /**
- * @brief Represent a reference to multipoint stored in structure of array on memory.
+ * @brief Represent a multilinestring stored in structure of array on memory.
  *
  * @tparam VecIterator type of iterator to the underlying point array.
  */
-template <typename VecIterator>
-class multipoint_ref {
+template <typename PartIterator, typename VecIterator>
+class multilinestring_ref {
  public:
-  CUSPATIAL_HOST_DEVICE multipoint_ref(VecIterator begin, VecIterator end);
+  CUSPATIAL_HOST_DEVICE multilinestring_ref(PartIterator part_begin,
+                                            PartIterator part_end,
+                                            VecIterator point_begin,
+                                            VecIterator point_end);
+
+  CUSPATIAL_HOST_DEVICE auto num_linestrings() const;
+  CUSPATIAL_HOST_DEVICE auto size() const { return num_linestrings(); }
+
+  /// Return iterator to the starting linestring.
+  CUSPATIAL_HOST_DEVICE auto part_begin() const;
+  /// Return iterator to one-past the last linestring.
+  CUSPATIAL_HOST_DEVICE auto part_end() const;
 
   /// Return iterator to the starting point of the multipoint.
   CUSPATIAL_HOST_DEVICE auto point_begin() const;
@@ -34,15 +45,17 @@ class multipoint_ref {
   CUSPATIAL_HOST_DEVICE auto point_end() const;
 
   /// Return iterator to the starting point of the multipoint.
-  CUSPATIAL_HOST_DEVICE auto begin() const { return point_begin(); }
+  CUSPATIAL_HOST_DEVICE auto begin() const { return part_begin(); }
   /// Return iterator the the one-past the last point of the multipoint.
-  CUSPATIAL_HOST_DEVICE auto end() const { return point_end(); }
+  CUSPATIAL_HOST_DEVICE auto end() const { return part_end(); }
 
  protected:
-  VecIterator _points_begin;
-  VecIterator _points_end;
+  PartIterator _part_begin;
+  PartIterator _part_end;
+  VecIterator _point_begin;
+  VecIterator _point_end;
 };
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/geometry_collection/multipoint_ref.cuh>
+#include <cuspatial/experimental/detail/geometry_collection/multilinestring_ref.cuh>
