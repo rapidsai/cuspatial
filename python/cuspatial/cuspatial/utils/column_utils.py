@@ -75,6 +75,14 @@ def contains_only_points(gs: GeoSeries):
     )
 
 
+def contains_only_multipoints(gs: GeoSeries):
+    """
+    Returns true if `gs` contains only multipoints
+    """
+
+    return contain_single_type_geometry(gs) and (len(gs.multipoints.xy) > 0)
+
+
 def contains_only_linestrings(gs: GeoSeries):
     """
     Returns true if `gs` contains only linestrings

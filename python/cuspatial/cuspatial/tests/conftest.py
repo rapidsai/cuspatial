@@ -208,6 +208,20 @@ def multilinestring_generator(linestring_generator):
 
 
 @pytest.fixture
+def simple_polygon_generator():
+    np.random.seed(0)
+    rstate = np.random.RandomState(0)
+
+    def generator(n, distance_from_origin, radius=1.0):
+        for _ in range(n):
+            outer = Point(distance_from_origin * 2, 0).buffer(radius)
+            circle = Polygon(outer)
+            yield rotate(circle, rstate.random() * 2 * np.pi, use_radians=True)
+
+    return generator
+
+
+@pytest.fixture
 def polygon_generator():
     rstate = np.random.RandomState(0)
 

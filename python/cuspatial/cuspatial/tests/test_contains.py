@@ -211,6 +211,20 @@ def test_one_polygon_one_linestring(linestring_generator):
     ).all()
 
 
+@pytest.mark.xfail(reason="The boundaries share points, so pip is impossible.")
+def test_one_polygon_one_linestring_crosses_the_diagonal(linestring_generator):
+    gpdlinestring = gpd.GeoSeries(LineString([[0, 0], [1, 1]]))
+    gpdpolygon = gpd.GeoSeries(
+        Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]])
+    )
+    linestring = cuspatial.from_geopandas(gpdlinestring)
+    polygons = cuspatial.from_geopandas(gpdpolygon)
+    assert (
+        gpdpolygon.contains(gpdlinestring).values
+        == polygons.contains(linestring).values_host
+    ).all()
+
+
 def test_four_polygons_four_linestrings(linestring_generator):
     gpdlinestring = gpd.GeoSeries(
         [
@@ -259,9 +273,21 @@ def test_one_polygon_one_polygon(polygon_generator):
     ).all()
 
 
-def test_max_polygons_max_polygons(polygon_generator):
-    gpdlhs = gpd.GeoSeries([*polygon_generator(31, 0, 10)])
-    gpdrhs = gpd.GeoSeries([*polygon_generator(31, 0, 1)])
+@pytest.mark.xfail(
+    reason="The polygons share numerous boundaries, so pip is impossible."
+)
+def test_manual_polygons():
+    gpdlhs = gpd.GeoSeries([Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8))) * 6])
+    gpdrhs = gpd.GeoSeries(
+        [
+            Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8))),
+            Polygon(((-2, -2), (-2, 2), (2, 2), (2, -2))),
+            Polygon(((-10, -2), (-10, 2), (-6, 2), (-6, -2))),
+            Polygon(((-2, 8), (-2, 12), (2, 12), (2, 8))),
+            Polygon(((6, 0), (8, 2), (10, 0), (8, -2))),
+            Polygon(((-2, -8), (-2, -4), (2, -4), (2, -8))),
+        ]
+    )
     rhs = cuspatial.from_geopandas(gpdrhs)
     lhs = cuspatial.from_geopandas(gpdlhs)
     assert (
@@ -269,4 +295,35 @@ def test_max_polygons_max_polygons(polygon_generator):
     ).all()
     assert (
         gpdrhs.contains(gpdlhs).values == rhs.contains(lhs).values_host
+    ).all()
+
+
+def test_max_polygons_max_polygons(simple_polygon_generator):
+    gpdlhs = gpd.GeoSeries([*simple_polygon_generator(31, 1, 3)])
+    gpdrhs = gpd.GeoSeries([*simple_polygon_generator(31, 1.49, 2)])
+    rhs = cuspatial.from_geopandas(gpdrhs)
+    lhs = cuspatial.from_geopandas(gpdlhs)
+    assert (
+        gpdlhs.contains(gpdrhs).values == lhs.contains(rhs).values_host
+    ).all()
+    assert (
+        gpdrhs.contains(gpdlhs).values == rhs.contains(lhs).values_host
+    ).all()
+
+
+def test_one_polygon_one_multipoint(multipoint_generator, polygon_generator):
+    gpdlhs = gpd.GeoSeries([*polygon_generator(1, 0)])
+    gpdrhs = gpd.GeoSeries([*multipoint_generator(1, 5)])
+    rhs = cuspatial.from_geopandas(gpdrhs)
+    lhs = cuspatial.from_geopandas(gpdlhs)
+    assert gpdlhs.contains(gpdrhs).values == lhs.contains(rhs).values_host
+
+
+def test_max_polygons_max_multipoints(multipoint_generator, polygon_generator):
+    gpdlhs = gpd.GeoSeries([*polygon_generator(31, 0, 1)])
+    gpdrhs = gpd.GeoSeries([*multipoint_generator(31, 10)])
+    rhs = cuspatial.from_geopandas(gpdrhs)
+    lhs = cuspatial.from_geopandas(gpdlhs)
+    assert (
+        gpdlhs.contains(gpdrhs).values == lhs.contains(rhs).values_host
     ).all()
