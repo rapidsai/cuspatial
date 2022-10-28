@@ -822,7 +822,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, OnePairFromRealData)
   // Steps to reproduce:
   // Create a float32/float64 numpy array with the literal inputs as above.
   // Construct a shapely.geometry.LineString object and compute the result.
-  // Cast the result to np.float32/np.float64 and print the result.
+  // Cast the result to np.float32/np.float64.
   auto expected =
     make_device_vector<T>({std::is_same_v<T, float> ? 0.010353088f : 0.010349999999988313});
   auto got = rmm::device_vector<T>(expected.size());
