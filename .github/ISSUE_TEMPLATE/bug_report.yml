@@ -46,7 +46,7 @@ body:
   - type: textarea
     id: description
     attributes:
-      label: Describe the bug.
+      label: Describe the issue
       description: Please provide a complete and succinct description of the problem, including what you expected to happen.
       placeholder: XYZ occured, I expected QRS results
     validations:
