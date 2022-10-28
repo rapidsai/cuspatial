@@ -118,8 +118,8 @@ class multipoint_range {
  * @brief Create a multilinestring_range object of from size and start iterators
  * @ingroup ranges
  *
- * @tparam IndexType1 Index type of the size of the geometry array
- * @tparam IndexType2 Index type of the size of the point array
+ * @tparam GeometryIteratorDiffType Index type of the size of the geometry array
+ * @tparam VecIteratorDiffType Index type of the size of the point array
  * @tparam GeometryIterator iterator type for offset array. Must meet
  * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
  * @tparam VecIterator iterator type for the point array. Must meet
@@ -136,11 +136,14 @@ class multipoint_range {
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <typename IndexType1, typename IndexType2, typename GeometryIterator, typename VecIterator>
+template <typename GeometryIteratorDiffType,
+          typename VecIteratorDiffType,
+          typename GeometryIterator,
+          typename VecIterator>
 multipoint_range<GeometryIterator, VecIterator> make_multipoint_range(
-  IndexType1 num_multipoints,
+  GeometryIteratorDiffType num_multipoints,
   GeometryIterator geometry_begin,
-  IndexType2 num_points,
+  VecIteratorDiffType num_points,
   VecIterator point_begin)
 {
   return multipoint_range<GeometryIterator, VecIterator>{
