@@ -286,8 +286,6 @@ class GeoSeries(cudf.Series):
             union_offsets = self._sr._column._meta.union_offsets.iloc[indexes]
             union_types = self._sr._column._meta.input_types.iloc[indexes]
 
-            # Arrow can't view an empty list, so we need to prep the buffers
-            # here.
             points = self._sr._column.points
             mpoints = self._sr._column.mpoints
             lines = self._sr._column.lines
@@ -412,7 +410,6 @@ class GeoSeries(cudf.Series):
         for (result_index, shapely_serialization_fn) in zip(
             range(0, len(self)), shapely_fns
         ):
-            breakpoint()
             results.append(
                 shapely_serialization_fn(union[result_index].as_py())
             )
@@ -541,12 +538,24 @@ class GeoSeries(cudf.Series):
         aligned_input_types[
             aligned_input_types.isna()
         ] = Feature_Enum.NONE.value
-        self._column._meta.union_offsets = aligned_union_offsets.astype("int")
-        self._column._meta.input_types = aligned_input_types.astype("uint8")
-        breakpoint()
-        print(self)
-        return self
+        self._column._meta.union_offsets = aligned_union_offsets.astype(
+            "int32"
+        )
+        self._column._meta.input_types = aligned_input_types.astype("int8")
+        column = GeoColumn(
+            (
+                self._column.points,
+                self._column.mpoints,
+                self._column.lines,
+                self._column.polygons,
+            ),
+            {
+                "input_types": aligned_input_types.astype("int8"),
+                "union_offsets": aligned_union_offsets.astype("int32"),
+            },
+        )
+        return GeoSeries(column)
 
     def align(self, other):
-        aligned = self._align_to_index(other.index)
+        aligned = (self._align_to_index(other.index), other)
         return aligned
