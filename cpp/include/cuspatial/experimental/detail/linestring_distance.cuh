@@ -64,8 +64,7 @@ __global__ void pairwise_linestring_distance_kernel(MultiLinestringRange1 multil
         min_distance_squared = min(min_distance_squared, squared_segment_distance(a, b, c, d));
       }
     }
-    atomicMin(&thrust::raw_reference_cast(*(distances_first + geometry_idx)),
-              static_cast<T>(sqrt(min_distance_squared)));
+    atomicMin(&distances_first[geometry_idx], static_cast<T>(sqrt(min_distance_squared)));
   }
 }
 
