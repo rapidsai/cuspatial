@@ -20,6 +20,7 @@ from shapely.geometry import (
 )
 
 import cudf
+from cudf._typing import ColumnLike
 
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
@@ -387,6 +388,7 @@ class GeoSeries(cudf.Series):
     @cached_property
     def _arrow_to_shapely(self):
         type_map = {
+            Feature_Enum.NONE: lambda x: None,
             Feature_Enum.POINT: Point,
             Feature_Enum.MULTIPOINT: MultiPoint,
             Feature_Enum.LINESTRING: self._linestring_to_shapely,
@@ -403,7 +405,6 @@ class GeoSeries(cudf.Series):
             self._arrow_to_shapely[Feature_Enum(x)]
             for x in result_types.to_numpy()
         ]
-
         union = self.to_arrow()
 
         # Serialize to Shapely!
@@ -411,6 +412,7 @@ class GeoSeries(cudf.Series):
         for (result_index, shapely_serialization_fn) in zip(
             range(0, len(self)), shapely_fns
         ):
+            breakpoint()
             results.append(
                 shapely_serialization_fn(union[result_index].as_py())
             )
@@ -517,3 +519,34 @@ class GeoSeries(cudf.Series):
                 arrow_polygons,
             ],
         )
+
+    def _align_to_index(
+        self: T,
+        index: ColumnLike,
+        how: str = "outer",
+        sort: bool = True,
+        allow_non_unique: bool = False,
+    ) -> T:
+        aligned_union_offsets = (
+            self._column._meta.union_offsets._align_to_index(
+                index, how, sort, allow_non_unique
+            )
+        )
+        aligned_input_types = self._column._meta.input_types._align_to_index(
+            index, how, sort, allow_non_unique
+        )
+        aligned_union_offsets[
+            aligned_union_offsets.isna()
+        ] = Feature_Enum.NONE.value
+        aligned_input_types[
+            aligned_input_types.isna()
+        ] = Feature_Enum.NONE.value
+        self._column._meta.union_offsets = aligned_union_offsets.astype("int")
+        self._column._meta.input_types = aligned_input_types.astype("uint8")
+        breakpoint()
+        print(self)
+        return self
+
+    def align(self, other):
+        aligned = self._align_to_index(other.index)
+        return aligned

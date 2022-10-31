@@ -30,6 +30,10 @@ def parse_geometries(geoseries: gpGeoSeries) -> tuple:
     polygon_offsets = [0]
 
     for geom in geoseries:
+        if geom is None:
+            all_offsets.append(-1)
+            type_buffer.append(Feature_Enum.NONE.value)
+            continue
         coords = mapping(geom)["coordinates"]
         if isinstance(geom, Point):
             point_coords.append(coords)

@@ -9,7 +9,10 @@ from typing import Union
 import cudf
 
 
+# This causes arrow to encode NONE as =255, which I'll accept now
+# in order to keep the rest of the enums the same.
 class Feature_Enum(Enum):
+    NONE = -1
     POINT = 0
     MULTIPOINT = 1
     LINESTRING = 2
