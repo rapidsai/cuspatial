@@ -247,7 +247,7 @@ class GeoSeries(cudf.Series):
                 }
             )
             index_df = cudf.DataFrame({"map": item})
-            new_index = index_df.merge(map_df, how="left", sort=True)["idx"]
+            new_index = index_df.merge(map_df, how="left")["idx"]
             if isinstance(item, Integral):
                 return self._sr.iloc[new_index[0]]
             else:
@@ -557,7 +557,19 @@ class GeoSeries(cudf.Series):
         aligned_left = self._align_to_index(index)
         aligned_right = other._align_to_index(index)
         aligned_right.index = index
+        aligned_right = aligned_right.sort_index()
+        aligned_left.index = (
+            self.index
+            if len(self.index) == len(aligned_left)
+            else aligned_right.index
+        )
+        aligned_left = aligned_left.sort_index()
         return (
             aligned_left,
             aligned_right.loc[aligned_left.index],
         )
+
+    def _gather(
+        self, gather_map, keep_index=True, nullify=False, check_bounds=True
+    ):
+        return self.iloc[gather_map]
