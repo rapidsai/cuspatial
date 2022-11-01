@@ -114,7 +114,8 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
 {
   using Cart2d     = iterator_value_type<Cart2dItA>;
   using OffsetType = iterator_value_type<OffsetIteratorA>;
-  auto idx         = blockIdx.x * blockDim.x + threadIdx.x;
+
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (idx >= num_test_points) { return; }
 
