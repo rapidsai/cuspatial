@@ -17,7 +17,7 @@
 #pragma once
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/detail/is_point_in_polygon_kernel.cuh>
+#include <cuspatial/experimental/detail/is_point_in_polygon.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
