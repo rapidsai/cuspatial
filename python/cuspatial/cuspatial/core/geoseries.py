@@ -274,10 +274,7 @@ class GeoSeries(cudf.Series):
                 Feature_Enum.POLYGON: self._sr.polygons,
             }
 
-        def __getitem__(self, item):
-            # Use the reordering _column._data if it is set
-            indexes = item
-
+        def __getitem__(self, indexes):
             # Slice the types and offsets
             union_offsets = self._sr._column._meta.union_offsets.iloc[indexes]
             union_types = self._sr._column._meta.input_types.iloc[indexes]
@@ -295,7 +292,7 @@ class GeoSeries(cudf.Series):
                 },
             )
 
-            if isinstance(item, Integral):
+            if isinstance(indexes, Integral):
                 return GeoSeries(column, name=self._sr.name).to_shapely()
             else:
                 return GeoSeries(
