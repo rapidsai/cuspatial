@@ -1,3 +1,5 @@
+# Copyright (c) 2022 NVIDIA CORPORATION.
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
