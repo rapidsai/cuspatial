@@ -247,7 +247,7 @@ class GeoSeries(cudf.Series):
                 }
             )
             index_df = cudf.DataFrame({"map": item})
-            new_index = index_df.merge(map_df, how="left")["idx"]
+            new_index = index_df.merge(map_df, how="left", sort=True)["idx"]
             if isinstance(item, Integral):
                 return self._sr.iloc[new_index[0]]
             else:
@@ -528,20 +528,16 @@ class GeoSeries(cudf.Series):
             self._column._meta.union_offsets._align_to_index(
                 index, how, sort, allow_non_unique
             )
-        )
-        aligned_input_types = self._column._meta.input_types._align_to_index(
-            index, how, sort, allow_non_unique
-        )
+        ).astype("int32")
         aligned_union_offsets[
             aligned_union_offsets.isna()
         ] = Feature_Enum.NONE.value
+        aligned_input_types = self._column._meta.input_types._align_to_index(
+            index, how, sort, allow_non_unique
+        ).astype("int8")
         aligned_input_types[
             aligned_input_types.isna()
         ] = Feature_Enum.NONE.value
-        self._column._meta.union_offsets = aligned_union_offsets.astype(
-            "int32"
-        )
-        self._column._meta.input_types = aligned_input_types.astype("int8")
         column = GeoColumn(
             (
                 self._column.points,
@@ -550,12 +546,21 @@ class GeoSeries(cudf.Series):
                 self._column.polygons,
             ),
             {
-                "input_types": aligned_input_types.astype("int8"),
-                "union_offsets": aligned_union_offsets.astype("int32"),
+                "input_types": aligned_input_types,
+                "union_offsets": aligned_union_offsets,
             },
         )
+        print(aligned_input_types)
+        print(aligned_union_offsets)
         return GeoSeries(column)
 
     def align(self, other):
-        aligned = (self._align_to_index(other.index), other)
-        return aligned
+        index = other.index
+        aligned_left = self._align_to_index(index)
+        aligned_right = other._align_to_index(index)
+        aligned_right.index = index
+        breakpoint()
+        return (
+            aligned_left,
+            aligned_right.loc[aligned_left.index],
+        )
