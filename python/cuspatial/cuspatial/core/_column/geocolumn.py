@@ -132,8 +132,6 @@ class GeoColumn(ColumnBase):
         else:
             raise TypeError("All four Tuple arguments must be cudf.ListSeries")
         super().__init__(None, size=len(self), dtype="geometry")
-        if shuffle_order is not None:
-            self._data = shuffle_order
 
     def to_arrow(self):
         return pa.UnionArray.from_dense(

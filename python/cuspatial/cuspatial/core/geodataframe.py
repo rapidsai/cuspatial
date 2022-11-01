@@ -178,6 +178,55 @@ class GeoDataFrame(cudf.DataFrame):
         )
         return self.__class__(result)
 
+    def _recombine_geo_and_cudf_dfs(self, geo_columns, data_columns):
+        """
+        Combine a GeoDataFrame of only geometry columns with a DataFrame
+        of non-geometry columns in the same order as the columns in `self`
+        """
+        column_names = pd.Series(self._data.names)
+        geocolumn_mask = pd.Series(
+            [isinstance(self[col], GeoSeries) for col in self._data.names]
+        )
+        result = GeoDataFrame(
+            {
+                name: (geo_columns[name] if mask else data_columns[name])
+                for name, mask in zip(
+                    column_names.values, geocolumn_mask.values
+                )
+            },
+        )
+        return result
+
+    def _gather(
+        self, gather_map, keep_index=True, nullify=False, check_bounds=True
+    ):
+        geo_data, cudf_data = self._split_out_geometry_columns()
+        # gather cudf columns
+        df = cudf.DataFrame._from_data(data=cudf_data, index=self.index)
+        cudf_gathered = cudf.DataFrame._gather(
+            df, gather_map, keep_index, nullify, check_bounds
+        )
+
+        # gather GeoColumns
+        gathered = {
+            geo: geo_data[geo].iloc[gather_map] for geo in geo_data.keys()
+        }
+        geo_gathered = GeoDataFrame(gathered)
+        geo_gathered.index = cudf_gathered.index
+
+        # combine
+        result = self._recombine_geo_and_cudf_dfs(geo_gathered, cudf_gathered)
+        # return
+        return result
+
+    def _get_sorted_inds(self, by=None, ascending=True, na_position="last"):
+        geo_data, cudf_data = self._split_out_geometry_columns()
+        df = cudf.DataFrame._from_data(data=cudf_data, index=self.index)
+        result = df._get_sorted_inds(
+            ascending=ascending, na_position=na_position
+        )
+        return result
+
 
 class _GeoSeriesUtility:
     @classmethod

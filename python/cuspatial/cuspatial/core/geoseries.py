@@ -276,11 +276,7 @@ class GeoSeries(cudf.Series):
 
         def __getitem__(self, item):
             # Use the reordering _column._data if it is set
-            indexes = (
-                self._sr._column._data[item].to_pandas()
-                if self._sr._column._data is not None
-                else item
-            )
+            indexes = item
 
             # Slice the types and offsets
             union_offsets = self._sr._column._meta.union_offsets.iloc[indexes]
