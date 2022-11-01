@@ -550,8 +550,6 @@ class GeoSeries(cudf.Series):
                 "union_offsets": aligned_union_offsets,
             },
         )
-        print(aligned_input_types)
-        print(aligned_union_offsets)
         return GeoSeries(column)
 
     def align(self, other):
@@ -559,7 +557,6 @@ class GeoSeries(cudf.Series):
         aligned_left = self._align_to_index(index)
         aligned_right = other._align_to_index(index)
         aligned_right.index = index
-        breakpoint()
         return (
             aligned_left,
             aligned_right.loc[aligned_left.index],
