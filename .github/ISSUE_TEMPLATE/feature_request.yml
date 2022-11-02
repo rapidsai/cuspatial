@@ -43,7 +43,6 @@ body:
       label: How would you describe the priority of this feature request
       options:
         - Critical (currently preventing usage)
-        - High
         - Medium
         - Low (would be nice)
     validations:

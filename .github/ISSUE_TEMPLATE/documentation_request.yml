@@ -32,7 +32,6 @@ body:
       label: How would you describe the priority of this documentation request
       options:
         - Critical (currently preventing usage)
-        - High
         - Medium
         - Low (would be nice)
     validations:
