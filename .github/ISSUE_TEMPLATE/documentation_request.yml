@@ -52,7 +52,7 @@ body:
     id: problem
     attributes:
       label: Describe the incorrect/future/missing documentation
-      placeholder: Example: A code snippet mentions function foo(args) but I cannot find any documentation on it.
+      placeholder: "Example: A code snippet mentions function foo(args) but I cannot find any documentation on it."
     validations:
       required: true
 
