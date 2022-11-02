@@ -75,7 +75,7 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
 
       // colinearity test
       T run_to_point = test_point.x - a.x;
-      is_colinear    = run * rise_to_point == run_to_point * rise;
+      is_colinear    = (run * rise_to_point - run_to_point * rise) == 0;
       if (is_colinear) { break; }
 
       y1_flag = a.y > test_point.y;
