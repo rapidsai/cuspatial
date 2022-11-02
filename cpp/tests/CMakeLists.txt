@@ -143,5 +143,8 @@ ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP
 ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST_EXP
     experimental/trajectory/trajectory_bounding_boxes_test.cu)
 
+ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_EXP
+    experimental/trajectory/trajectory_distances_and_speeds_test.cu)
+
 ConfigureTest(POINT_QUADTREE_TEST_EXP
     experimental/indexing/point_quadtree_test.cu)
