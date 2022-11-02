@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include <cudf/detail/null_mask.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/types.hpp>
@@ -157,9 +156,6 @@ std::pair<std::unique_ptr<cudf::column>, cudf::table_view> point_in_polygon(
 
   CUSPATIAL_EXPECTS(not poly_points_x.has_nulls() && not poly_points_y.has_nulls(),
                     "Polygon points must not contain nulls");
-
-  CUSPATIAL_EXPECTS(poly_offsets.size() <= std::numeric_limits<int32_t>::digits,
-                    "Number of polygons cannot exceed 31");
 
   CUSPATIAL_EXPECTS(poly_ring_offsets.size() >= poly_offsets.size(),
                     "Each polygon must have at least one ring");
