@@ -17,21 +17,28 @@
 
 #pragma once
 
-#include "thrust/iterator/discard_iterator.h"
+#include "thrust/iterator/transform_iterator.h"
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/vec_2d.hpp>
+
+#include <cuspatial_test/test_util.cuh>
 
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/adjacent_difference.h>
 #include <thrust/binary_search.h>
 #include <thrust/gather.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
 #include <thrust/random.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 #include <thrust/transform.h>
 
-#include <chrono>
+#include <cuda/std/chrono>
+
 #include <cstdint>
 
 namespace cuspatial {
@@ -213,6 +220,129 @@ struct trajectory_test_data {
                           box_minmax{});
 
     return std::pair{minima, maxima};
+  }
+
+  struct duration_functor {
+    using id_and_timestamp = thrust::tuple<std::int32_t, time_point>;
+
+    __host__ __device__ time_point::rep operator()(id_and_timestamp const& p0,
+                                                   id_and_timestamp const& p1)
+    {
+      auto const id0 = thrust::get<0>(p0);
+      auto const id1 = thrust::get<0>(p1);
+      auto const t0  = thrust::get<1>(p0);
+      auto const t1  = thrust::get<1>(p1);
+
+      // printf("%d: %d %s %d\n", threadIdx.x, id0, (id0 == id1 ? "==" : "!="), id1);
+      if (id0 == id1) {
+        /*printf("%ld - %ld = %ld\n",
+               t1.time_since_epoch().count(),
+               t0.time_since_epoch().count(),
+               (t1 - t0).count());*/
+        return (t1 - t0).count();
+      }
+      return 0;
+    }
+  };
+
+  struct distance_functor {
+    using id_and_position = thrust::tuple<std::int32_t, cuspatial::vec_2d<T>>;
+    __host__ __device__ T operator()(id_and_position const& p0, id_and_position const& p1)
+    {
+      auto const id0 = thrust::get<0>(p0);
+      auto const id1 = thrust::get<0>(p1);
+      if (id0 == id1) {
+        auto const pos0 = thrust::get<1>(p0);
+        auto const pos1 = thrust::get<1>(p1);
+        return hypot(pos1.x - pos0.x, pos1.y - pos0.y);
+      }
+      return 0;
+    }
+  };
+
+  struct average_distance_speed_functor {
+    using duration_distance = thrust::tuple<time_point::rep, T, T, T>;
+    using Sec               = typename cuda::std::chrono::seconds;
+    using Period =
+      typename cuda::std::ratio_divide<typename time_point::period, typename Sec::period>::type;
+
+    __host__ __device__ duration_distance operator()(duration_distance const& a,
+                                                     duration_distance const& b)
+    {
+      auto time_d =
+        time_point::duration(thrust::get<0>(a)) + time_point::duration(thrust::get<0>(b));
+      auto time_s = static_cast<double>(time_d.count()) * static_cast<double>(Period::num) /
+                    static_cast<double>(Period::den);
+      double dist_km   = thrust::get<1>(a) + thrust::get<1>(b);
+      double dist_m    = dist_km * T{1000.0};  // km to m
+      double speed_m_s = dist_m / time_s;      // m/ms to m/s
+      return {time_d.count(), dist_km, dist_m, speed_m_s};
+    }
+  };
+
+  std::pair<rmm::device_vector<T>, rmm::device_vector<T>> distance_and_speed()
+  {
+    using Rep = typename time_point::rep;
+
+    /*cuspatial::test::print_device(ids_sorted.begin(), ids_sorted.end());
+    auto time_print_begin = thrust::make_transform_iterator(
+      times_sorted.begin(), [] __device__(auto const& t) { return t.time_since_epoch().count(); });
+    cuspatial::test::print_device(time_print_begin, time_print_begin + times_sorted.size());
+    cuspatial::test::print_device(points_sorted.begin(), points_sorted.end());*/
+
+    auto id_and_timestamp = thrust::make_zip_iterator(ids_sorted.begin(), times_sorted.begin());
+
+    auto duration_per_step = rmm::device_vector<Rep>(points.size());
+
+    thrust::transform(rmm::exec_policy(),
+                      id_and_timestamp,
+                      id_and_timestamp + points.size() - 1,
+                      id_and_timestamp + 1,
+                      duration_per_step.begin() + 1,
+                      duration_functor{});
+
+    // cuspatial::test::print_device(duration_per_step.begin(), duration_per_step.end());
+
+    auto id_and_position = thrust::make_zip_iterator(ids_sorted.begin(), points_sorted.begin());
+
+    auto distance_per_step = rmm::device_vector<T>{points.size()};
+
+    thrust::transform(rmm::exec_policy(),
+                      id_and_position,
+                      id_and_position + points.size() - 1,
+                      id_and_position + 1,
+                      distance_per_step.begin() + 1,
+                      distance_functor{});
+
+    // cuspatial::test::print_device(distance_per_step.begin(), distance_per_step.end());
+
+    rmm::device_vector<Rep> durations_tmp(offsets.size());
+    rmm::device_vector<T> distances_tmp(offsets.size());
+
+    rmm::device_vector<T> distances(offsets.size());
+    rmm::device_vector<T> speeds(offsets.size());
+
+    auto duration_distance_and_speed = thrust::make_zip_iterator(
+      durations_tmp.begin(), distances_tmp.begin(), distances.begin(), speeds.begin());
+
+    auto duration_and_distance_init =
+      thrust::make_zip_iterator(duration_per_step.begin(),
+                                distance_per_step.begin(),
+                                thrust::make_constant_iterator<T>(0),
+                                thrust::make_constant_iterator<T>(0));
+
+    thrust::reduce_by_key(rmm::exec_policy(),
+                          ids_sorted.begin(),
+                          ids_sorted.end(),
+                          duration_and_distance_init,
+                          thrust::discard_iterator{},
+                          duration_distance_and_speed,
+                          thrust::equal_to<int32_t>(),        // binary_pred
+                          average_distance_speed_functor{});  // binary_op
+
+    CUSPATIAL_CHECK_CUDA(rmm::cuda_stream_default);
+
+    return std::pair{distances, speeds};
   }
 };
 
