@@ -13,6 +13,7 @@
 # =============================================================================
 
 set(cython_sources 
+    distance.pyx
     hausdorff.pyx
     interpolate.pyx
     nearest_points.pyx
@@ -20,8 +21,6 @@ set(cython_sources
     pairwise_point_in_polygon.pyx
     polygon_bounding_boxes.pyx
     polyline_bounding_boxes.pyx
-    linestring_distance.pyx
-    point_linestring_distance.pyx
     quadtree.pyx
     shapefile_reader.pyx
     spatial.pyx

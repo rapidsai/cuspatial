@@ -146,5 +146,8 @@ ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST_EXP
 ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP
     experimental/trajectory/derive_trajectories_test.cu)
 
+ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST_EXP
+    experimental/trajectory/trajectory_bounding_boxes_test.cu)
+
 ConfigureTest(POINT_QUADTREE_TEST_EXP
     experimental/indexing/point_quadtree_test.cu)

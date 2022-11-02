@@ -29,6 +29,8 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_linestring_distance.cuh>
+#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
+#include <cuspatial/experimental/ranges/multipoint_range.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
 
@@ -61,31 +63,34 @@ struct pairwise_point_linestring_distance_impl {
   {
     auto const num_points            = static_cast<SizeType>(points_xy.size() / 2);
     auto const num_linestring_points = static_cast<SizeType>(linestring_points_xy.size() / 2);
+    auto const num_linestring_parts  = static_cast<SizeType>(linestring_part_offsets.size() - 1);
 
     auto output = cudf::make_numeric_column(
       points_xy.type(), num_pairs, cudf::mask_state::UNALLOCATED, stream, mr);
 
-    auto point_parts_it_first =
+    auto point_geometry_it_first =
       get_geometry_iterator_functor<is_multi_point>{}(multipoint_geometry_offsets);
     auto points_it = make_vec_2d_iterator(points_xy.begin<T>());
 
-    auto linestring_parts_it_first =
+    auto linestring_geometry_it_first =
       get_geometry_iterator_functor<is_multi_linestring>{}(multilinestring_geometry_offsets);
     auto linestring_points_it = make_vec_2d_iterator(linestring_points_xy.begin<T>());
 
     auto output_begin = output->mutable_view().begin<T>();
 
-    cuspatial::pairwise_point_linestring_distance(point_parts_it_first,
-                                                  point_parts_it_first + num_pairs + 1,
-                                                  points_it,
-                                                  points_it + num_points,
-                                                  linestring_parts_it_first,
-                                                  linestring_part_offsets.begin(),
-                                                  linestring_part_offsets.end(),
-                                                  linestring_points_it,
-                                                  linestring_points_it + num_linestring_points,
-                                                  output_begin,
-                                                  stream);
+    auto multipoints =
+      make_multipoint_range(num_pairs, point_geometry_it_first, num_points, points_it);
+
+    auto multilinestrings = make_multilinestring_range(num_pairs,
+                                                       linestring_geometry_it_first,
+                                                       num_linestring_parts,
+                                                       linestring_part_offsets.begin(),
+                                                       num_linestring_points,
+                                                       linestring_points_it);
+
+    cuspatial::pairwise_point_linestring_distance(
+      multipoints, multilinestrings, output_begin, stream);
+
     return output;
   }
 
