@@ -517,6 +517,8 @@ class GeoSeries(cudf.Series):
         sort: bool = True,
         allow_non_unique: bool = False,
     ) -> T:
+        # The values in the newly aligned columns will not change,
+        # only their positions in the union offsets.
         aligned_union_offsets = (
             self._column._meta.union_offsets._align_to_index(
                 index, how, sort, allow_non_unique
@@ -546,6 +548,44 @@ class GeoSeries(cudf.Series):
         return GeoSeries(column)
 
     def align(self, other):
+        """
+        Align the rows of two GeoSeries using outer join.
+
+        Parameters
+        ----------
+        other: GeoSeries
+
+        Returns
+        -------
+        (left, right) : GeoSeries
+            Pair of aligned GeoSeries
+
+        Examples
+        --------
+        >>> polygons = gpd.GeoSeries([
+            Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8))),
+            Polygon(((-2, -2), (-2, 2), (2, 2), (2, -2))),
+        ])
+        >>> polygon = gpd.GeoSeries(polygons[0])
+        >>> polygon.align(polygons)
+        (0    POINT (-8.00000 -8.00000)
+        1                         None
+        dtype: geometry, 0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        dtype: geometry)
+
+        >>> polygons_right = gpd.GeoSeries([
+            Point((-2, -2)),
+            Point((-8, -8)),
+        ], index=[1,0])
+        >>> polygons.align(polygons_right)
+
+        (0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        dtype: geometry, 0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        dtype: geometry)
+        """
         index = other.index
         aligned_left = self._align_to_index(index)
         aligned_right = other._align_to_index(index)
