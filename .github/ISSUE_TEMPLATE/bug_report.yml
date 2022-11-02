@@ -42,6 +42,7 @@ body:
         - Docker
         - Conda
         - Source
+        - Rapids-Compose
 
   - type: textarea
     id: description
