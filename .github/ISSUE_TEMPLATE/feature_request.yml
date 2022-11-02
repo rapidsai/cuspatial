@@ -58,20 +58,6 @@ body:
       required: true
 
   - type: textarea
-    id: solution
-    attributes:
-      label: Describe your ideal solution
-      description: Please describe the functionality you would like added.
-      placeholder: >
-        A new function that takes in the information in this form, and triages the issue
-
-        def feature_request(form_info):
-            parse(form_info)
-            return triage_outcome
-    validations:
-      required: true
-
-  - type: textarea
     id: alternatives
     attributes:
       label: Describe any alternatives you have considered
