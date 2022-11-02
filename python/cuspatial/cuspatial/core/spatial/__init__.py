@@ -18,6 +18,7 @@ from .join import (
 from .distance import (
     directed_hausdorff_distance,
     haversine_distance,
+    pairwise_point_distance,
     pairwise_linestring_distance,
     pairwise_point_linestring_distance,
 )
@@ -33,6 +34,7 @@ __all__ = [
     "haversine_distance",
     "join_quadtree_and_bounding_boxes",
     "lonlat_to_cartesian",
+    "pairwise_point_distance",
     "pairwise_linestring_distance",
     "pairwise_point_linestring_distance",
     "pairwise_point_linestring_nearest_points",

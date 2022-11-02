@@ -116,7 +116,8 @@
  *
  *          Cuspatial header only APIs accepts ranges that are composed of flattened view of
  *          offsets and coordinates. Various accessors are provided for flexible access to the data.
- *          @file multipoint_range.hpp
+ *          @file multipoint_range.cuh
+ *          @file multilinestring_range.cuh
  *      @}
  * @defgroup io I/O
  * @{
