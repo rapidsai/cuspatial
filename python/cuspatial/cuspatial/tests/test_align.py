@@ -18,10 +18,10 @@ def test_align():
     gpdshort = gpdpdf.iloc[0:1]
     pdf = cuspatial.from_geopandas(gpdpdf)
     short = cuspatial.from_geopandas(gpdshort)
-    gpdaligned = gpdshort.align(gpdpdf)
-    shortaligned = short.align(pdf)
-    pd.testing.assert_series_equal(gpdaligned[0], shortaligned[0].to_pandas())
-    pd.testing.assert_series_equal(gpdaligned[1], shortaligned[1].to_pandas())
+    expected = gpdshort.align(gpdpdf)
+    got = short.align(pdf)
+    pd.testing.assert_series_equal(expected[0], got[0].to_pandas())
+    pd.testing.assert_series_equal(expected[1], got[1].to_pandas())
 
 
 def test_align_reorder():
@@ -41,11 +41,11 @@ def test_align_reorder():
     gpdreordered = gpdalign.iloc[np.random.permutation(len(gpdalign))]
     align = cuspatial.from_geopandas(gpdalign)
     reordered = cuspatial.from_geopandas(gpdreordered)
-    gpdaligned = gpdalign.align(gpdreordered)
-    aligned = align.align(reordered)
-    pd.testing.assert_series_equal(gpdaligned[0], aligned[0].to_pandas())
-    pd.testing.assert_series_equal(gpdaligned[1], aligned[1].to_pandas())
-    gpdaligned = gpdreordered.align(gpdalign)
-    aligned = reordered.align(align)
-    pd.testing.assert_series_equal(gpdaligned[0], aligned[0].to_pandas())
-    pd.testing.assert_series_equal(gpdaligned[1], aligned[1].to_pandas())
+    expected = gpdalign.align(gpdreordered)
+    got = align.align(reordered)
+    pd.testing.assert_series_equal(expected[0], got[0].to_pandas())
+    pd.testing.assert_series_equal(expected[1], got[1].to_pandas())
+    expected = gpdreordered.align(gpdalign)
+    got = reordered.align(align)
+    pd.testing.assert_series_equal(expected[0], got[0].to_pandas())
+    pd.testing.assert_series_equal(expected[1], got[1].to_pandas())
