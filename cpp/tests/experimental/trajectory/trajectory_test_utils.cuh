@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include "thrust/iterator/transform_iterator.h"
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/vec_2d.hpp>
 
@@ -26,11 +25,11 @@
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 
-#include <thrust/adjacent_difference.h>
 #include <thrust/binary_search.h>
 #include <thrust/gather.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+//#include <thrust/iterator/transform_iterator.h>
 #include <thrust/random.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
