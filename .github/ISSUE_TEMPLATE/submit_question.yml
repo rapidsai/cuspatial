@@ -23,6 +23,8 @@ body:
     attributes:
       value: |
         Thanks for taking the time to ask us a question!
+        - By submitting this issue, you agree to follow our [Code of Conduct](https://docs.rapids.ai/resources/conduct/)
+        - You also confirm that you have searched the [open questions](https://github.com/rapidsai/cuspatial/issues?q=is%3Aopen+is%3Aissue+label%3Aquestion) and have found no duplicate questions
 
   - type: textarea
     id: question
@@ -32,14 +34,4 @@ body:
       placeholder: Does cuSpatial integrate with XYZ software?
     validations:
       required: true
-      
-  - type: checkboxes
-    id: terms
-    attributes:
-      label: Code of Conduct
-      description: By submitting this issue, you agree to follow our [Code of Conduct](https://docs.rapids.ai/resources/conduct/)
-      options:
-        - label: I agree to follow cuSpatial's Code of Conduct
-          required: true
-        - label: I have searched the [open issues](https://github.com/rapidsai/cuspatial/issues) and have found no duplicates for this question
-          required: true
+
