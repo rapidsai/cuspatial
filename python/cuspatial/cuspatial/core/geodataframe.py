@@ -202,14 +202,6 @@ class GeoDataFrame(cudf.DataFrame):
         # return
         return result
 
-    def _get_sorted_inds(self, by=None, ascending=True, na_position="last"):
-        geo_data, cudf_data = self._split_out_geometry_columns()
-        df = cudf.DataFrame._from_data(data=cudf_data, index=self.index)
-        result = df._get_sorted_inds(
-            ascending=ascending, na_position=na_position
-        )
-        return result
-
 
 class _GeoSeriesUtility:
     @classmethod
