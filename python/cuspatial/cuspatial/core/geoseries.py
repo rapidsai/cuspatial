@@ -24,6 +24,12 @@ import cudf
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
+from cuspatial.core.spatial.binops import contains
+from cuspatial.utils.column_utils import (
+    contains_only_linestrings,
+    contains_only_multipoints,
+    contains_only_polygons,
+)
 
 T = TypeVar("T", bound="GeoSeries")
 
@@ -147,6 +153,12 @@ class GeoSeries(cudf.Series):
             result = self._col.take(indices._column).leaves().values
             return cudf.Series(result)
 
+        def point_indices(self):
+            # Points only case
+            offsets = cp.arange(0, len(self.x) * 2 + 1, 2)
+            sizes = offsets[1:] - offsets[:-1]
+            return cp.repeat(self._series.index, sizes)
+
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
             super().__init__(list_series, meta)
@@ -155,6 +167,11 @@ class GeoSeries(cudf.Series):
         @property
         def geometry_offset(self):
             return cudf.Series(self._col.offsets.values)
+
+        def point_indices(self):
+            offsets = cp.array(self.geometry_offset)
+            sizes = offsets[1:] - offsets[:-1]
+            return cp.repeat(self._series.index, sizes)
 
     class LineStringGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -168,6 +185,11 @@ class GeoSeries(cudf.Series):
         @property
         def part_offset(self):
             return cudf.Series(self._col.elements.offsets.values)
+
+        def point_indices(self):
+            offsets = cp.array(self.part_offset)
+            sizes = offsets[1:] - offsets[:-1]
+            return cp.repeat(self._series.index, sizes)
 
     class PolygonGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -185,6 +207,11 @@ class GeoSeries(cudf.Series):
         @property
         def ring_offset(self):
             return cudf.Series(self._col.elements.elements.offsets.values)
+
+        def point_indices(self):
+            offsets = cp.array(self.ring_offset)
+            sizes = offsets[1:] - offsets[:-1]
+            return cp.repeat(self._series.index, sizes)
 
     @property
     def points(self):
@@ -517,3 +544,67 @@ class GeoSeries(cudf.Series):
                 arrow_polygons,
             ],
         )
+
+    def contains(self, other, align=True):
+        if contains_only_polygons(self) is False:
+            raise TypeError("left series contains non-polygons.")
+
+        # RHS conditioning:
+        mode = "POINTS"
+        # point in polygon
+        if contains_only_linestrings(other) is True:
+            # condition for linestrings
+            mode = "LINESTRINGS"
+            xy = other.lines
+        elif contains_only_polygons(other) is True:
+            # polygon in polygon
+            mode = "POLYGONS"
+            xy = other.polygons
+        elif contains_only_multipoints(other) is True:
+            # mpoint in polygon
+            mode = "MULTIPOINTS"
+            xy = other.multipoints
+        else:
+            # no conditioning is required
+            xy = other.points
+            # mpoint in polygon
+            # linestring in polygon
+        xy_points = xy.xy
+        point_indices = xy.point_indices()
+        points = GeoSeries(GeoColumn._from_points_xy(xy_points._column)).points
+
+        # call pip on the three subtypes on the right:
+        point_result = contains(
+            points.x,
+            points.y,
+            self.polygons.part_offset[:-1],
+            self.polygons.ring_offset[:-1],
+            self.polygons.x,
+            self.polygons.y,
+        )
+        """
+            # Apply binpreds rules on results:
+            # point in polygon = true for row
+                # reverse index, points indices refer back to row
+                # indices
+            # mpoint in polygon for all points = true
+            # linestring in polygon for all points = true
+            # polygon in polygon for all points = true
+        """
+        if (
+            mode == "LINESTRINGS"
+            or mode == "POLYGONS"
+            or mode == "MULTIPOINTS"
+        ):
+            # process for completed linestrings
+            result = cudf.DataFrame(
+                {"idx": point_indices, "pip": point_result}
+            )
+            df_result = (
+                result.groupby("idx").sum() == result.groupby("idx").count()
+            ).sort_index()
+            point_result = cudf.Series(
+                df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
+            )
+            point_result.name = None
+        return point_result
