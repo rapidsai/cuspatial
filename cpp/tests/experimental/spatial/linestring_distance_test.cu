@@ -30,8 +30,6 @@
 namespace cuspatial {
 namespace test {
 
-using namespace cudf;
-
 template <typename T>
 struct PairwiseLinestringDistanceTest : public ::testing::Test {
 };
