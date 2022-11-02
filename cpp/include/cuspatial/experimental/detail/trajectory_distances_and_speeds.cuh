@@ -17,6 +17,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/traits.hpp>
 
+#include <new>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
@@ -27,28 +28,11 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
+#include <thrust/transform.h>
 
 #include <cuda/std/chrono>
 
 namespace cuspatial {
-
-namespace detail {
-
-template <typename IndexType, typename Iter>
-struct duplicate_first_element_func {
-  Iter first;
-
-  __device__ inline auto operator()(IndexType i) { return i > -1 ? first : first + i; }
-};
-
-template <typename IndexType, typename Iter>
-auto make_duplicate_first_element_iterator(Iter first)
-{
-  return thrust::make_transform_iterator(thrust::make_counting_iterator<IndexType>(-1),
-                                         duplicate_first_element_func<IndexType, Iter>{first});
-}
-
-}  // namespace detail
 
 template <typename IdInputIt,
           typename PointInputIt,
@@ -74,49 +58,43 @@ OutputIt trajectory_distances_and_speeds(IndexT num_trajectories,
 
   auto num_points = std::distance(ids_first, ids_last);
 
-  rmm::device_uvector<Rep> durations(num_points + 1);
-  rmm::device_uvector<T> distances(num_points + 1);
+  // compute the per-point distance and duration using a 2-input thrust::transform
+  // input: two copies of a zip iterator containing ids, points, and timestamps
+  // second copy is offset by 1.  Only compute n - 1 outputs
+  // output: zip iterator of durations and distances
 
-  auto timestamp_point_and_id = thrust::make_zip_iterator(
-    detail::make_duplicate_first_element_iterator<Rep>(timestamps_first, stream),
-    thrust::make_constant_iterator<T>(0.0),
-    detail::make_duplicate_first_element_iterator<Point>(points_first, stream),
-    detail::make_duplicate_first_element_iterator<Id>(ids_first, stream));
+  auto id_point_timestamp = thrust::make_zip_iterator(ids_first, points_first, timestamps_first);
 
-  auto duration_and_distance_1 = thrust::make_zip_iterator(durations.begin(),
-                                                           distances.begin(),
-                                                           thrust::make_discard_iterator(),
-                                                           thrust::make_discard_iterator(),
-                                                           thrust::make_discard_iterator());
+  rmm::device_uvector<Rep> durations(num_points, stream);
+  rmm::device_uvector<T> distances(num_points, stream);
 
-  // Compute duration and distance difference between adjacent elements that
-  // share the same object id
-  thrust::adjacent_difference(rmm::exec_policy(stream),
-                              timestamp_point_and_id,                     // first
-                              timestamp_point_and_id + durations.size(),  // last
-                              duration_and_distance_1,                    // result
-                              [] __device__(auto next, auto curr) {       // binary_op
-                                int32_t id0 = thrust::get<4>(curr);
-                                int32_t id1 = thrust::get<4>(next);
-                                if (id0 == id1) {
-                                  Timestamp t0 = Timestamp{Dur{thrust::get<0>(curr)}};
-                                  Timestamp t1 = Timestamp{Dur{thrust::get<0>(next)}};
-                                  auto x0      = static_cast<T>(thrust::get<2>(curr));
-                                  auto x1      = static_cast<T>(thrust::get<2>(next));
-                                  auto y0      = static_cast<T>(thrust::get<3>(curr));
-                                  auto y1      = static_cast<T>(thrust::get<3>(next));
-                                  return thrust::make_tuple((t1 - t0).count(),
-                                                            hypot(x1 - x0, y1 - y0),  //
-                                                            Point{},
-                                                            Id{});
-                                }
-                                return thrust::make_tuple(Rep{}, T{}, Point{}, Id{});
-                              });
+  // initialize just the first elements since we will skip them
+  durations.set_element_to_zero_async(0, stream);
+  distances.set_element_to_zero_async(0, stream);
 
-  auto duration_and_distance_2 = thrust::make_zip_iterator(durations.begin(),
-                                                           distances.begin(),
-                                                           thrust::make_constant_iterator<T>(0),
-                                                           thrust::make_constant_iterator<T>(0));
+  auto duration_and_distance = thrust::make_zip_iterator(durations.begin(), distances.begin());
+
+  thrust::transform(rmm::exec_policy(stream),
+                    id_point_timestamp,
+                    id_point_timestamp + num_points - 1,
+                    id_point_timestamp + 1,
+                    duration_and_distance + 1,
+                    [] __device__(auto const& p0, auto const& p1) {
+                      if (thrust::get<0>(p0) == thrust::get<0>(p1)) {  // ids are the same
+                        Point pos0   = thrust::get<1>(p0);
+                        Point pos1   = thrust::get<1>(p1);
+                        Timestamp t0 = thrust::get<2>(p0);
+                        Timestamp t1 = thrust::get<2>(p1);
+                        return thrust::make_tuple((t1 - t0).count(),
+                                                  hypot(pos1.x - pos0.x, pos1.y - pos0.y));
+                      }
+                      return thrust::make_tuple(Rep{}, T{});
+                    });
+
+  auto duration_and_distance_tmp = thrust::make_zip_iterator(durations.begin(),
+                                                             distances.begin(),
+                                                             thrust::make_constant_iterator<T>(0),
+                                                             thrust::make_constant_iterator<T>(0));
 
   rmm::device_uvector<Rep> durations_tmp(num_trajectories, stream);
   rmm::device_uvector<T> distances_tmp(num_trajectories, stream);
@@ -128,32 +106,31 @@ OutputIt trajectory_distances_and_speeds(IndexT num_trajectories,
     durations_tmp.begin(), distances_tmp.begin(), distances_begin, speeds_begin);
 
   using Period =
-    typename cuda::std::ratio_divide<typename Timestamp::period, typename Seconds::period>::type;
+    typename cuda::std::ratio_divide<typename Timestamp::period, typename Sec::period>::type;
 
   // Reduce the intermediate durations and kilometer distances into meter
   // distances and speeds in meters/second
   thrust::reduce_by_key(rmm::exec_policy(stream),
                         ids_first,  // keys
                         ids_last,
-                        duration_and_distance_2 + 1,      // values
-                        thrust::make_discard_iterator(),  // keys_output
-                        duration_distances_and_speed,     // values_output
-                        thrust::equal_to<int32_t>(),      // binary_pred
-                        [] __device__(auto a, auto b) {   // binary_op
+                        duration_and_distance_tmp,       // values
+                        thrust::discard_iterator(),      // keys_output
+                        duration_distances_and_speed,    // values_output
+                        thrust::equal_to<Id>(),          // binary_pred
+                        [] __device__(auto a, auto b) {  // binary_op
                           auto time_d = Dur(thrust::get<0>(a)) + Dur(thrust::get<0>(b));
-                          auto time_s = static_cast<double>(time_d.count()) *
-                                        static_cast<double>(Period::num) /
-                                        static_cast<double>(Period::den);
-                          double dist_km   = thrust::get<1>(a) + thrust::get<1>(b);
-                          double dist_m    = dist_km * T{1000.0};  // km to m
-                          double speed_m_s = dist_m / time_s;      // m/ms to m/s
+                          auto time_s = static_cast<T>(time_d.count()) *
+                                        static_cast<T>(Period::num) / static_cast<T>(Period::den);
+                          T dist_km   = thrust::get<1>(a) + thrust::get<1>(b);
+                          T dist_m    = dist_km * T{1000.0};  // km to m
+                          T speed_m_s = dist_m / time_s;      // m/ms to m/s
                           return thrust::make_tuple(time_d.count(), dist_km, dist_m, speed_m_s);
                         });
 
   // check for errors
   CUSPATIAL_CHECK_CUDA(stream.value());
 
-  return std::next(distances_and_speeds_first, num_points);
+  return std::next(distances_and_speeds_first, num_trajectories);
 }
 
 }  // namespace cuspatial
