@@ -14,29 +14,20 @@
  * limitations under the License.
  */
 
-#include "tests/utility/vector_equality.hpp"
+#include <tests/utility/vector_equality.hpp>
+
+#include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/linestring_distance.cuh>
 #include <cuspatial/experimental/ranges/multilinestring_range.cuh>
 #include <cuspatial/vec_2d.hpp>
-
-#include <rmm/device_vector.hpp>
-
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 
-#include <initializer_list>
-
 namespace cuspatial {
 namespace test {
-
-template <typename T>
-auto make_device_vector(std::initializer_list<T> inl)
-{
-  return rmm::device_vector<T>(inl.begin(), inl.end());
-}
 
 template <typename T>
 struct PairwiseLinestringDistanceTest : public ::testing::Test {
