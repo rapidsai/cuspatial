@@ -141,11 +141,9 @@ class GeoSeries(cudf.Series):
 
         @property
         def xy(self):
-            types = self._meta.input_types
-            offsets = self._meta.union_offsets
-            indices = offsets[types == self._type.value]
-            result = self._col.take(indices._column).leaves().values
-            return cudf.Series(result)
+            return cudf.Series(
+                self._get_current_features(self._type).leaves().values
+            )
 
         def _get_current_features(self, type):
             # Resample the existing features so that the offsets returned
