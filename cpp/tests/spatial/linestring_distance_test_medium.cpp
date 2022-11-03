@@ -22,8 +22,7 @@
 #include <cudf_test/column_wrapper.hpp>
 #include <cudf_test/type_lists.hpp>
 
-namespace cuspatial {
-namespace test {
+using namespace cuspatial;
 
 using namespace cudf;
 using namespace cudf::test;
@@ -1051,6 +1050,3 @@ TYPED_TEST(PairwiseLinestringDistanceTest, RandomDataset100)
                                           linestring2_points_y);
   expect_columns_equivalent(expected, *got, verbosity);
 }
-
-}  // namespace test
-}  // namespace cuspatial
