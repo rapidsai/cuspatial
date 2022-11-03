@@ -23,18 +23,14 @@
 #include <cuspatial/trajectory.hpp>
 #include <cuspatial/vec_2d.hpp>
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
-#include <rmm/mr/device/per_device_resource.hpp>
 
-#include <thrust/binary_search.h>
-#include <thrust/gather.h>
-#include <thrust/random.h>
-#include <thrust/random/uniform_int_distribution.h>
-#include <thrust/scan.h>
-#include <thrust/shuffle.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/reduce.h>
 
 #include <gtest/gtest.h>
+
+#include <limits>
 
 template <typename T>
 struct TrajectoryDistancesAndSpeedsTest : public ::testing::Test {
@@ -55,13 +51,36 @@ struct TrajectoryDistancesAndSpeedsTest : public ::testing::Test {
                                                  data.times_sorted.begin(),
                                                  distance_and_speed_begin);
 
-    auto [expected_distances, expected_speeds] = data.distance_and_speed();
-
     EXPECT_EQ(std::distance(distance_and_speed_begin, distance_and_speed_end),
               data.num_trajectories);
 
-    cuspatial::test::expect_vector_equivalent(distances, expected_distances);
-    cuspatial::test::expect_vector_equivalent(speeds, expected_speeds);
+    auto [expected_distances, expected_speeds] = data.distance_and_speed();
+
+    T max_expected_distance = thrust::reduce(expected_distances.begin(),
+                                             expected_distances.end(),
+                                             std::numeric_limits<T>::lowest(),
+                                             thrust::maximum<T>{});
+
+    T max_expected_speed =
+      thrust::reduce(expected_speeds.begin(),
+                     expected_speeds.end(),
+                     std::numeric_limits<T>::lowest(),
+                     [] __device__(T const& a, T const& b) { return max(abs(a), abs(b)); });
+
+    // We expect the floating point error (in ulps) due to be proportional to the  number of
+    // operations to compute the relevant quantity. For distance, this is computation is
+    // m_per_km * sqrt(dot(vec, vec)), where vec = (p1 - p0).
+    // For speed, there is an additional division. There is also accumulated error in the reductions
+    // and we find k_ulps == 10 reliably results in the expected computation matching the actual
+    // computation for large trajectories with disparate positions and increasing timestamps.
+    // This value and the magnitude of the values involed (e.g. max distance) are used to scale
+    // the machine epsilon to come up with an absolute error tolerance.
+
+    int k_ulps           = 10;
+    T abs_error_distance = k_ulps * std::numeric_limits<T>::epsilon() * max_expected_distance;
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(distances, expected_distances, abs_error_distance);
+    T abs_error_speed = k_ulps * std::numeric_limits<T>::epsilon() * max_expected_speed;
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(speeds, expected_speeds, abs_error_speed);
   }
 };
 

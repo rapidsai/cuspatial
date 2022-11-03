@@ -85,8 +85,9 @@ OutputIt trajectory_distances_and_speeds(IndexT num_trajectories,
                         Point pos1   = thrust::get<1>(p1);
                         Timestamp t0 = thrust::get<2>(p0);
                         Timestamp t1 = thrust::get<2>(p1);
-                        return thrust::make_tuple((t1 - t0).count(),
-                                                  hypot(pos1.x - pos0.x, pos1.y - pos0.y));
+                        Point vec    = pos1 - pos0;
+
+                        return thrust::make_tuple((t1 - t0).count(), sqrt(dot(vec, vec)));
                       }
                       return thrust::make_tuple(Rep{}, T{});
                     });
