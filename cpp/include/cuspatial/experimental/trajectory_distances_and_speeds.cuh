@@ -26,29 +26,33 @@ namespace cuspatial {
  */
 
 /**
- * @brief Compute the distance and speed of objects in trajectories. Groups the
- * timestamp, x, and y, columns by object id to determine unique trajectories,
- * then computes the average distance and speed for all routes in each
- * trajectory.
+ * @brief Compute the total distance (in meters) and average speed (in m/s) of objects in
+ * trajectories.
  *
  * @note Assumes object_id, timestamp, x, y presorted by (object_id, timestamp).
  *
+ * @tparam IdInputIt Iterator over object IDs. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
+ * @tparam PointInputIt Iterator over points. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
+ * @tparam TimestampInputIt Iterator over timestamps. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
+ * @tparam OutputIt Iterator over output (distance, speed) pairs. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-writeable.
+ * @tparam IndexT The type of the object IDs.
+ *
  * @param num_trajectories number of trajectories (unique object ids)
- * @param object_id column of object (e.g., vehicle) ids
- * @param x coordinates (in kilometers)
- * @param y coordinates (in kilometers)
- * @param timestamp column of timestamps in any resolution
- * @param mr The optional resource to use for output device memory allocations
+ * @param ids_first beginning of the range of input object ids
+ * @param ids_last end of the range of input object ids
+ * @param points_first beginning of the range of input point (x,y) coordinates
+ * @param timestamps_first beginning of the range of input timestamps
+ * @param distances_and_speeds beginning of the range of output (distance, speed) pairs
+ * @param stream the CUDA stream on which to perform computations and allocate memory.
  *
- * @throw cuspatial::logic_error If object_id isn't cudf::type_id::INT32
- * @throw cuspatial::logic_error If x and y are different types
- * @throw cuspatial::logic_error If timestamp isn't a cudf::TIMESTAMP type
- * @throw cuspatial::logic_error If object_id, x, y, or timestamp contain nulls
- * @throw cuspatial::logic_error If object_id, x, y, and timestamp are different
- * sizes
+ * @return An iterator to the end of the range of output (distance, speed) pairs.
  *
- * @return a cuDF table of distances (meters) and speeds (meters/second) whose
- * length is `num_trajectories`, sorted by object_id.
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
  */
 template <typename IdInputIt,
           typename PointInputIt,
