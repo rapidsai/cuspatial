@@ -19,35 +19,55 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
+#include <iomanip>
+#include <rmm/device_uvector.hpp>
+
+#include <string_view>
 #include <thrust/for_each.h>
+#include <thrust/host_vector.h>
 
 #include <cstdio>
 
-namespace cuspatial::test {
+namespace cuspatial {
 
-template <typename Iter>
-void print_device(Iter begin, Iter end)
+namespace test {
+
+template <typename T, typename Vector>
+thrust::host_vector<T> to_host(Vector const& dvec)
 {
-  using value_type = iterator_value_type<Iter>;
-  thrust::for_each(begin, end, [] __device__(auto const& x) {
-    static_assert(is_vec_2d<value_type>() || std::is_integral<value_type>() ||
-                    std::is_floating_point<value_type>(),
-                  "Only vec_2d, integral and floating point types suppored");
-
-    if constexpr (is_vec_2d<value_type>()) { print(x); }
-    if constexpr (std::is_integral<value_type>()) {
-      if constexpr (sizeof(value_type) > 4)
-        printf("%ld ", x);
-      else
-        printf("%d ", x);
-    } else if constexpr (std::is_floating_point<value_type>()) {
-      if constexpr (sizeof(value_type) > 4)
-        printf("%lf ", x);
-      else
-        printf("%f ", x);
-    }
-  });
-  printf("\n");
+  if constexpr (std::is_same_v<Vector, rmm::device_uvector<T>>) {
+    thrust::host_vector<T> hvec(dvec.size());
+    cudaMemcpyAsync(hvec.data(),
+                    dvec.data(),
+                    dvec.size() * sizeof(T),
+                    cudaMemcpyKind::cudaMemcpyDeviceToHost,
+                    dvec.stream());
+    dvec.stream().synchronize();
+    return hvec;
+  } else {
+    return thrust::host_vector<T>(dvec);
+  }
 }
 
-}  // namespace cuspatial::test
+template <typename Iter, typename T = cuspatial::iterator_value_type<Iter>>
+thrust::host_vector<T> to_host(Iter begin, Iter end)
+{
+  return thrust::host_vector<T>(begin, end);
+}
+
+template <typename Iter>
+void print_device_range(Iter begin,
+                        Iter end,
+                        std::string_view pre  = "",
+                        std::string_view post = "\n",
+                        int precision         = std::cout.precision())
+{
+  auto hvec = to_host(begin, end);
+
+  std::cout << std::setprecision(precision) << pre;
+  std::for_each(hvec.begin(), hvec.end(), [](auto const& x) { std::cout << x << " "; });
+  std::cout << post;
+}
+
+}  // namespace test
+}  // namespace cuspatial
