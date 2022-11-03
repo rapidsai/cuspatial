@@ -148,6 +148,9 @@ class GeoSeries(cudf.Series):
             return cudf.Series(result)
 
         def _get_current_features(self, type):
+            # Resample the existing features so that the offsets returned
+            # by `_offset` methods reflect previous slicing, and match
+            # the values returned by .xy.
             existing_indices = self._meta.union_offsets[
                 self._meta.input_types == type.value
             ]
