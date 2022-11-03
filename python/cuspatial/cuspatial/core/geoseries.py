@@ -147,6 +147,13 @@ class GeoSeries(cudf.Series):
             result = self._col.take(indices._column).leaves().values
             return cudf.Series(result)
 
+        def _get_current_features(self, type):
+            existing_indices = self._meta.union_offsets[
+                self._meta.input_types == type.value
+            ]
+            existing_features = self._col.take(existing_indices._column)
+            return existing_features
+
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
             super().__init__(list_series, meta)
@@ -154,7 +161,7 @@ class GeoSeries(cudf.Series):
 
         @property
         def geometry_offset(self):
-            return cudf.Series(self._col.offsets.values)
+            return self._get_current_features(self._type).offsets.values
 
     class LineStringGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -163,36 +170,34 @@ class GeoSeries(cudf.Series):
 
         @property
         def geometry_offset(self):
-            return cudf.Series(self._col.offsets.values)
+            return self._get_current_features(self._type).offsets.values
 
         @property
         def part_offset(self):
-            return cudf.Series(self._col.elements.offsets.values)
+            return self._get_current_features(
+                self._type
+            ).elements.offsets.values
 
     class PolygonGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
             super().__init__(list_series, meta)
             self._type = Feature_Enum.POLYGON
 
-        def _get_current_features(self):
-            existing_indices = self._meta.union_offsets[
-                self._meta.input_types == Feature_Enum.POLYGON.value
-            ]
-            existing_features = self._col.take(existing_indices._column)
-            return existing_features
-
         @property
         def geometry_offset(self):
-            sliced_features = self._get_current_features()
-            return sliced_features.offsets.values
+            return self._get_current_features(self._type).offsets.values
 
         @property
         def part_offset(self):
-            return cudf.Series(self._col.elements.offsets.values)
+            return self._get_current_features(
+                self._type
+            ).elements.offsets.values
 
         @property
         def ring_offset(self):
-            return cudf.Series(self._col.elements.elements.offsets.values)
+            return self._get_current_features(
+                self._type
+            ).elements.elements.offsets.values
 
     @property
     def points(self):
