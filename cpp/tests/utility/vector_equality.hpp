@@ -19,6 +19,8 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
+#include <cuspatial_test/test_util.cuh>
+
 #include <rmm/device_uvector.hpp>
 #include <rmm/device_vector.hpp>
 
@@ -57,7 +59,7 @@ auto floating_eq_by_abs_error(T val, T abs_error)
   if constexpr (std::is_same_v<T, float>) {
     return ::testing::FloatNear(val, abs_error);
   } else {
-    return ::testing::FloatNear(val, abs_error);
+    return ::testing::DoubleNear(val, abs_error);
   }
 }
 
@@ -118,23 +120,6 @@ MATCHER_P(float_near_matcher,
   return false;
 }
 
-template <typename T, typename Vector>
-thrust::host_vector<T> to_host(Vector const& dvec)
-{
-  if constexpr (std::is_same_v<Vector, rmm::device_uvector<T>>) {
-    thrust::host_vector<T> hvec(dvec.size());
-    cudaMemcpyAsync(hvec.data(),
-                    dvec.data(),
-                    dvec.size() * sizeof(T),
-                    cudaMemcpyKind::cudaMemcpyDeviceToHost,
-                    dvec.stream());
-    dvec.stream().synchronize();
-    return hvec;
-  } else {
-    return thrust::host_vector<T>(dvec);
-  }
-}
-
 template <typename Vector1, typename Vector2>
 inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs)
 {
@@ -169,10 +154,10 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, T a
   }
 }
 
-#define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs, ...) \
-  do {                                                     \
-    SCOPED_TRACE(" <--  line of failure\n");               \
-    expect_vector_equivalent(lhs, rhs, ##__VA_ARGS__);     \
+#define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs, ...)              \
+  do {                                                                  \
+    SCOPED_TRACE(" <--  line of failure\n");                            \
+    cuspatial::test::expect_vector_equivalent(lhs, rhs, ##__VA_ARGS__); \
   } while (0)
 
 }  // namespace test
