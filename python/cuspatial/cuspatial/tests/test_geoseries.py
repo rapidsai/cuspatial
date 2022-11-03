@@ -3,7 +3,6 @@
 from enum import Enum
 from numbers import Integral
 
-import cupy as cp
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -595,13 +594,3 @@ def test_memory_usage_large():
     geometry = cuspatial.from_geopandas(host_dataframe)["geometry"]
     # the geometry column from naturalearth_lowres is 217kb of coordinates
     assert geometry.memory_usage() == 217021
-
-
-def test_GeoColumnAccessor_polygon_offset():
-    geoseries = cuspatial.from_geopandas(
-        gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
-    )
-    shorter = geoseries[0:3]["geometry"]
-    expected = cp.array([0, 3, 4, 5])
-    got = shorter.polygons.geometry_offset
-    assert cp.array_equal(expected, got)
