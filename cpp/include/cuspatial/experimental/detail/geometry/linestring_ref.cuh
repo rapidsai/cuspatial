@@ -51,7 +51,9 @@ CUSPATIAL_HOST_DEVICE linestring_ref<VecIterator>::linestring_ref(VecIterator be
 template <typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto linestring_ref<VecIterator>::num_segments() const
 {
-  return thrust::distance(_point_begin, _point_end) - 2;
+  // The number of segment equals the number of points minus 1. And the number of points
+  // is thrust::distance(_point_begin, _point_end) - 1.
+  return thrust::distance(_point_begin, _point_end) - 1;
 }
 
 template <typename VecIterator>

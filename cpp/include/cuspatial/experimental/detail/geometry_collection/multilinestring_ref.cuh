@@ -22,8 +22,7 @@ struct to_linestring_functor {
 
   CUSPATIAL_HOST_DEVICE auto operator()(difference_type i)
   {
-    return linestring_ref{point_begin + part_begin[i],
-                          thrust::next(point_begin + part_begin[i + 1])};
+    return linestring_ref{point_begin + part_begin[i], point_begin + part_begin[i + 1]};
   }
 };
 

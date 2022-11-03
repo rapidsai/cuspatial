@@ -29,7 +29,8 @@ namespace cuspatial {
  * the distance is 0.
  *
  * @tparam MultiLinestringRange an instance of template type `multilinestring_range`
- * @tparam OutputIt iterator type for output array. Must meet the requirements of [LRAI](LinkLRAI).
+ * @tparam OutputIt iterator type for output array. Must meet the requirements of [LRAI](LinkLRAI)
+ * and be device writable.
  *
  * @param multilinestrings1 Range object of the lhs multilinestring array
  * @param multilinestrings2 Range object of the rhs multilinestring array

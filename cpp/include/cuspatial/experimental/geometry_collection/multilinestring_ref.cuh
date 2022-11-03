@@ -19,8 +19,9 @@
 namespace cuspatial {
 
 /**
- * @brief Represent a multilinestring stored in structure of array on memory.
+ * @brief Represent a reference to a multilinestring stored in a structure of arrays.
  *
+ * @tparam PartIterator type of iterator to the part offset array.
  * @tparam VecIterator type of iterator to the underlying point array.
  */
 template <typename PartIterator, typename VecIterator>
@@ -30,23 +31,24 @@ class multilinestring_ref {
                                             PartIterator part_end,
                                             VecIterator point_begin,
                                             VecIterator point_end);
-
+  /// Return the number of linestrings in the multilinestring.
   CUSPATIAL_HOST_DEVICE auto num_linestrings() const;
+  /// Return the number of linestrings in the multilinestring.
   CUSPATIAL_HOST_DEVICE auto size() const { return num_linestrings(); }
 
-  /// Return iterator to the starting linestring.
+  /// Return iterator to the first linestring.
   CUSPATIAL_HOST_DEVICE auto part_begin() const;
-  /// Return iterator to one-past the last linestring.
+  /// Return iterator to one past the last linestring.
   CUSPATIAL_HOST_DEVICE auto part_end() const;
 
-  /// Return iterator to the starting point of the multipoint.
+  /// Return iterator to the first point of the multilinestring.
   CUSPATIAL_HOST_DEVICE auto point_begin() const;
-  /// Return iterator to one-past the last point of the multipoint.
+  /// Return iterator to one past the last point of the multilinestring.
   CUSPATIAL_HOST_DEVICE auto point_end() const;
 
-  /// Return iterator to the starting point of the multipoint.
+  /// Return iterator to the first linestring of the multilinestring.
   CUSPATIAL_HOST_DEVICE auto begin() const { return part_begin(); }
-  /// Return iterator the the one-past the last point of the multipoint.
+  /// Return iterator to one past the last linestring of the multilinestring.
   CUSPATIAL_HOST_DEVICE auto end() const { return part_end(); }
 
  protected:

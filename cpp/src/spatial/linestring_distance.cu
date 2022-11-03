@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "thrust/iterator/counting_iterator.h"
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/linestring_distance.cuh>
@@ -27,6 +26,8 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+
+#include <thrust/iterator/counting_iterator.h>
 
 #include <limits>
 #include <memory>

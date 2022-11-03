@@ -19,7 +19,7 @@
 namespace cuspatial {
 
 /**
- * @brief Represent a reference to multipoint stored in structure of array on memory.
+ * @brief Represent a reference to multipoint stored in a structure of arrays.
  *
  * @tparam VecIterator type of iterator to the underlying point array.
  */

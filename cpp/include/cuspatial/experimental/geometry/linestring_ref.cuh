@@ -19,7 +19,7 @@
 namespace cuspatial {
 
 /**
- * @brief Represent a linestring stored in structure of array on memory.
+ * @brief Represent a reference to a linestring stored in a structure of arrays.
  *
  * @tparam VecIterator type of iterator to the underlying point array.
  */
@@ -30,16 +30,17 @@ class linestring_ref {
 
   CUSPATIAL_HOST_DEVICE auto num_segments() const;
 
-  /// Return iterator to the starting point of the multilinestring.
+  /// Return iterator to the first segment of the linestring
   CUSPATIAL_HOST_DEVICE auto segment_begin() const;
-  /// Return iterator to one-past the last point of the multilinestring.
+  /// Return iterator to one past the last segment
   CUSPATIAL_HOST_DEVICE auto segment_end() const;
 
-  /// Return iterator to the starting point of the multipoint.
+  /// Return iterator to the first segment of the linestring
   CUSPATIAL_HOST_DEVICE auto begin() const { return segment_begin(); }
-  /// Return iterator the the one-past the last point of the multipoint.
+  /// Return iterator to one past the last segment
   CUSPATIAL_HOST_DEVICE auto end() const { return segment_end(); }
 
+ protected:
   VecIterator _point_begin;
   VecIterator _point_end;
 };
