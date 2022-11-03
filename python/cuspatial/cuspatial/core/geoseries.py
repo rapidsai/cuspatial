@@ -174,16 +174,17 @@ class GeoSeries(cudf.Series):
             super().__init__(list_series, meta)
             self._type = Feature_Enum.POLYGON
 
-        def _get_sliced_offset(self):
+        def _get_current_features(self):
             existing_indices = self._meta.union_offsets[
                 self._meta.input_types == Feature_Enum.POLYGON.value
             ]
-            existing_members = self._col.take(existing_indices._column)
-            return existing_members.offsets.values
+            existing_features = self._col.take(existing_indices._column)
+            return existing_features
 
         @property
         def geometry_offset(self):
-            return self._get_sliced_offset()
+            sliced_features = self._get_current_features()
+            return sliced_features.offsets.values
 
         @property
         def part_offset(self):
