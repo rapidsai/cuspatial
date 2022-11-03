@@ -218,9 +218,9 @@ def test_multipolygons_part_offset(range, expected):
     [
         [[0, 2], [0, 4, 8, 12]],
         [[0, 1, 2], [0, 4, 8, 12, 16]],
-        [[2, 4], [0, 4, 8, 14, 18]],
-        [[4, 5], [0, 6, 10, 14]],
-        [[4, 3, 2], [0, 6, 10, 14, 18, 22]],
+        [[2, 4], [0, 4, 8, 13, 17]],
+        [[4, 5], [0, 5, 9, 13]],
+        [[4, 3, 2], [0, 5, 9, 13, 17, 21]],
     ],
 )
 def test_multipolygons_ring_offset(range, expected):
@@ -238,7 +238,7 @@ def test_multipolygons_ring_offset(range, expected):
                 Polygon([(0, 9), (0, 10), (0, 22), (0, 9)]),
                 MultiPolygon(
                     [
-                        Polygon([(0, 11), (0, 12), (0, 13), (0, 22), (0, 12)]),
+                        Polygon([(0, 11), (0, 12), (0, 13), (0, 22), (0, 11)]),
                         Polygon([(0, 14), (0, 15), (0, 23), (0, 14)]),
                     ]
                 ),
