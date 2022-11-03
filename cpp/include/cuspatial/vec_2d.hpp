@@ -81,6 +81,15 @@ vec_2d<T> CUSPATIAL_HOST_DEVICE operator-(vec_2d<T> const& a, vec_2d<T> const& b
 }
 
 /**
+ * @brief Inverse the 2D vector.
+ */
+template <typename T>
+vec_2d<T> CUSPATIAL_HOST_DEVICE operator-(vec_2d<T> const& a)
+{
+  return vec_2d<T>{-a.x, -a.y};
+}
+
+/**
  * @brief Scale a 2D vector by a factor @p r.
  */
 template <typename T>

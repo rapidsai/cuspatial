@@ -18,7 +18,10 @@
 
 #include <cuspatial/vec_2d.hpp>
 
+#include <thrust/optional.h>
+
 #include <iterator>
+#include <optional>
 #include <type_traits>
 
 namespace cuspatial {
@@ -83,6 +86,18 @@ constexpr bool is_same_floating_point()
   return std::conjunction_v<std::is_same<T, Ts>...> and
          std::conjunction_v<std::is_floating_point<Ts>...>;
 }
+
+template <typename T, typename Enable = void>
+struct is_optional : std::false_type {
+};
+
+template <typename T>
+struct is_optional<std::optional<T>> : std::true_type {
+};
+
+template <typename T>
+struct is_optional<thrust::optional<T>> : std::true_type {
+};
 
 /**
  * @internal

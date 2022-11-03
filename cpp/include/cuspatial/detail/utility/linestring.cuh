@@ -16,12 +16,24 @@
 
 #pragma once
 
-#include <thrust/tuple.h>
-
 #include <cuspatial/vec_2d.hpp>
+
+#include <thrust/optional.h>
+#include <thrust/pair.h>
+#include <thrust/tuple.h>
 
 namespace cuspatial {
 namespace detail {
+
+template <typename T>
+using segment = thrust::pair<vec_2d<T>, vec_2d<T>>;
+
+template <typename T>
+T __device__ clamp(T val, T lo, T hi)
+{
+  return min(max(lo, val), hi);
+}
+
 /**
  * @internal
  * @brief Get the index that is one-past the end point of linestring at @p linestring_idx
@@ -128,6 +140,63 @@ __forceinline__ T __device__ squared_segment_distance(vec_2d<T> const& a,
   auto s                = det(ac, ab) * denom_reciprocal;
   if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return 0.0; }
   return segment_distance_no_intersect_or_colinear(a, b, c, d);
+}
+
+template <typename T>
+__forceinline__ thrust::optional<segment<T>> __device__ collinear_or_parallel_overlapping_segments(
+  vec_2d<T> const& a, vec_2d<T> const& b, vec_2d<T> const& c, vec_2d<T> const& d)
+{
+  auto ab = b - a;
+  auto ac = c - a;
+  auto ad = d - a;
+
+  auto det1 = det(ab, ac);
+  auto det2 = det(ab, ad);
+
+  // Parallel
+  if (det1 != det2) return thrust::nullopt;
+
+  auto bc = c - b;
+  auto bd = d - b;
+  auto ba = -ab;
+
+  auto det3 = det(-ab, bc);
+  auto det4 = det(-ab, bd);
+
+  // Parallel
+  if (det3 != det4) return thrust::nullopt;
+
+  if ((ac.x > ab.x && ad.x > ab.x) || (bc.x > ba.x && bd.x > bd.x)) return thrust::nullopt;
+
+  auto r = clamp(ac.x / ab.x, T{0.0}, T{1.0});
+  auto t = clamp(ad.x / ab.x, T{0.0}, T{1.0});
+
+  return thrust::pair(a + r * ab, a + t * ab);
+}
+
+template <typename T>
+__forceinline__ thrust::pair<thrust::optional<vec_2d<T>>, thrust::optional<segment<T>>> __device__
+segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
+{
+  auto [a, b] = segment1;
+  auto [c, d] = segment2;
+
+  auto ab    = b - a;
+  auto cd    = d - c;
+  auto denom = det(ab, cd);
+
+  if (denom == 0) {
+    // Segments parallel or collinear
+    return {thrust::nullopt, collinear_or_parallel_overlapping_segments(a, b, c, d)};
+  }
+
+  auto ac               = c - a;
+  auto r_numer          = det(ac, cd);
+  auto denom_reciprocal = 1 / denom;
+  auto r                = r_numer * denom_reciprocal;
+  auto s                = det(ac, ab) * denom_reciprocal;
+  if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return {a + r * ab, thrust::nullopt}; }
+  return {thrust::nullopt, thrust::nullopt};
 }
 
 }  // namespace detail
