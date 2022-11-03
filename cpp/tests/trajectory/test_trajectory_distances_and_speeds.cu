@@ -70,7 +70,15 @@ TEST_F(TrajectoryDistanceSpeedErrorTest, TypeError)
     EXPECT_THROW(cuspatial::trajectory_distances_and_speeds(1, id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
-
+  {
+    auto id = cudf::column(rmm::device_uvector<int>(size, rmm::cuda_stream_default));
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ts =
+      cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));  // not timestamp
+    EXPECT_THROW(cuspatial::trajectory_distances_and_speeds(1, id, xs, ys, ts, this->mr()),
+                 cuspatial::logic_error);
+  }
   {
     // x-y type mismatch
     auto id = cudf::column(rmm::device_uvector<cudf::size_type>(size, rmm::cuda_stream_default));
