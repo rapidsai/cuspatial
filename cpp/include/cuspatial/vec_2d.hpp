@@ -53,6 +53,9 @@ std::ostream& operator<<(std::ostream& os, cuspatial::vec_2d<T> const& vec)
   return os << "(" << vec.x << "," << vec.y << ")";
 }
 
+/**
+ * @brief Print function usable in host or device code.
+ */
 template <typename T>
 void CUSPATIAL_HOST_DEVICE print(cuspatial::vec_2d<T> const& vec)
 {
