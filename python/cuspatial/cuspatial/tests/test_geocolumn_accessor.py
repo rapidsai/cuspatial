@@ -3,7 +3,13 @@
 import cupy as cp
 import geopandas as gpd
 import pytest
-from shapely.geometry import LineString, MultiLineString, MultiPoint
+from shapely.geometry import (
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Polygon,
+)
 
 import cuspatial
 
@@ -125,5 +131,122 @@ def test_multilines_part_offset(range, expected):
     )
     t1 = gs[range]
     got = t1.lines.part_offset
+    expected = cp.array(expected)
+    assert cp.array_equal(got, expected)
+
+
+@pytest.mark.parametrize(
+    "range, expected",
+    [
+        [[0, 2], [0, 1, 3]],
+        [[0, 1, 2], [0, 1, 2, 4]],
+        [[2, 4], [0, 2, 4]],
+        [[4, 5], [0, 2, 3]],
+        [[4, 3, 2], [0, 2, 3, 5]],
+    ],
+)
+def test_multipolygons_geometry_offset(range, expected):
+    gs = cuspatial.from_geopandas(
+        gpd.GeoSeries(
+            [
+                Polygon([(0, 1), (0, 2), (0, 18)]),
+                Polygon([(0, 3), (0, 4), (0, 19)]),
+                MultiPolygon(
+                    [
+                        Polygon([(0, 5), (0, 6), (0, 20)]),
+                        Polygon([(0, 7), (0, 8), (0, 21)]),
+                    ]
+                ),
+                Polygon([(0, 9), (0, 10), (0, 22)]),
+                MultiPolygon(
+                    [
+                        Polygon([(0, 11), (0, 12), (0, 13), (0, 22)]),
+                        Polygon([(0, 14), (0, 15), (0, 23)]),
+                    ]
+                ),
+                Polygon([(0, 16), (0, 17), (0, 24)]),
+            ]
+        )
+    )
+    t1 = gs[range]
+    got = t1.polygons.geometry_offset
+    expected = cp.array(expected)
+    assert cp.array_equal(got, expected)
+
+
+@pytest.mark.parametrize(
+    "range, expected",
+    [
+        [[0, 2], [0, 1, 2, 3]],
+        [[0, 1, 2], [0, 1, 2, 3, 4]],
+        [[2, 4], [0, 1, 2, 3, 4]],
+        [[4, 5], [0, 1, 2, 3]],
+        [[4, 3, 2], [0, 1, 2, 3, 4, 5]],
+    ],
+)
+def test_multipolygons_part_offset(range, expected):
+    gs = cuspatial.from_geopandas(
+        gpd.GeoSeries(
+            [
+                Polygon([(0, 1), (0, 2), (0, 18)]),
+                Polygon([(0, 3), (0, 4), (0, 19)]),
+                MultiPolygon(
+                    [
+                        Polygon([(0, 5), (0, 6), (0, 20)]),
+                        Polygon([(0, 7), (0, 8), (0, 21)]),
+                    ]
+                ),
+                Polygon([(0, 9), (0, 10), (0, 22)]),
+                MultiPolygon(
+                    [
+                        Polygon([(0, 11), (0, 12), (0, 13), (0, 22)]),
+                        Polygon([(0, 14), (0, 15), (0, 23)]),
+                    ]
+                ),
+                Polygon([(0, 16), (0, 17), (0, 24)]),
+            ]
+        )
+    )
+    t1 = gs[range]
+    got = t1.polygons.part_offset
+    expected = cp.array(expected)
+    assert cp.array_equal(got, expected)
+
+
+@pytest.mark.parametrize(
+    "range, expected",
+    [
+        [[0, 2], [0, 4, 8, 12]],
+        [[0, 1, 2], [0, 4, 8, 12, 16]],
+        [[2, 4], [0, 4, 8, 14, 18]],
+        [[4, 5], [0, 6, 10, 14]],
+        [[4, 3, 2], [0, 6, 10, 14, 18, 22]],
+    ],
+)
+def test_multipolygons_ring_offset(range, expected):
+    gs = cuspatial.from_geopandas(
+        gpd.GeoSeries(
+            [
+                Polygon([(0, 1), (0, 2), (0, 18), (0, 1)]),
+                Polygon([(0, 3), (0, 4), (0, 19), (0, 3)]),
+                MultiPolygon(
+                    [
+                        Polygon([(0, 5), (0, 6), (0, 20), (0, 5)]),
+                        Polygon([(0, 7), (0, 8), (0, 21), (0, 7)]),
+                    ]
+                ),
+                Polygon([(0, 9), (0, 10), (0, 22), (0, 9)]),
+                MultiPolygon(
+                    [
+                        Polygon([(0, 11), (0, 12), (0, 13), (0, 22), (0, 12)]),
+                        Polygon([(0, 14), (0, 15), (0, 23), (0, 14)]),
+                    ]
+                ),
+                Polygon([(0, 16), (0, 17), (0, 24), (0, 16)]),
+            ]
+        )
+    )
+    t1 = gs[range]
+    got = t1.polygons.ring_offset
     expected = cp.array(expected)
     assert cp.array_equal(got, expected)
