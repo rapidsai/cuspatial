@@ -249,3 +249,39 @@ def test_multipoint_multilinestring_sliced_many(
     got.index = cudf.RangeIndex(pslice.start, pslice.stop)
 
     cudf.testing.assert_series_equal(got, cudf.Series(expected))
+
+
+def test_multipoint_multilinestring_sliced_noncontiguous(
+    multipoint_generator, multilinestring_generator
+):
+    num_pairs = 20
+    max_num_linestring_per_multilinestring = 5
+    max_num_segments_per_linestring = 5
+    max_num_points_per_multipoint = 5
+
+    hpts = gpd.GeoSeries(
+        [*multipoint_generator(num_pairs, max_num_points_per_multipoint)]
+    )
+    hlines = gpd.GeoSeries(
+        [
+            *multilinestring_generator(
+                num_pairs,
+                max_num_linestring_per_multilinestring,
+                max_num_segments_per_linestring,
+            )
+        ]
+    )
+
+    gpts = from_geopandas(hpts)
+    glines = from_geopandas(hlines)
+
+    pslice = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+    hslicepts = hpts[pslice]
+    hslicelines = hlines[pslice]
+    slicegpts = gpts[pslice]
+    sliceglines = glines[pslice]
+    got = pairwise_point_linestring_distance(slicegpts, sliceglines)
+    expected = hslicepts.distance(hslicelines)
+    got.index = pslice
+
+    cudf.testing.assert_series_equal(got, cudf.Series(expected))
