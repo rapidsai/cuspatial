@@ -517,8 +517,10 @@ class GeoSeries(cudf.Series):
         sort: bool = True,
         allow_non_unique: bool = False,
     ) -> T:
-        # The values in the newly aligned columns will not change,
-        # only their positions in the union offsets.
+        """
+        The values in the newly aligned columns will not change,
+        only positions in the union offsets and type codes.
+        """
         aligned_union_offsets = (
             self._column._meta.union_offsets._align_to_index(
                 index, how, sort, allow_non_unique
