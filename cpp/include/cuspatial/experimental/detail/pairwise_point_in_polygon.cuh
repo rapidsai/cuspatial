@@ -52,21 +52,22 @@ __global__ void pairwise_point_in_polygon_kernel(Cart2dItA test_points_first,
 {
   using Cart2d     = iterator_value_type<Cart2dItA>;
   using OffsetType = iterator_value_type<OffsetIteratorA>;
-  auto idx         = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx >= num_test_points) { return; }
-
-  Cart2d const test_point = test_points_first[idx];
-  // for the matching polygon
-  OffsetType poly_begin      = poly_offsets_first[idx];
-  OffsetType poly_end        = (idx + 1 < num_polys) ? poly_offsets_first[idx + 1] : num_rings;
-  bool const point_is_within = is_point_in_polygon(test_point,
-                                                   poly_begin,
-                                                   poly_end,
-                                                   ring_offsets_first,
-                                                   num_rings,
-                                                   poly_points_first,
-                                                   num_poly_points);
-  result[idx]                = point_is_within;
+  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x;
+       idx < std::distance(test_points_first, thrust::prev(test_points_first + num_test_points));
+       idx += gridDim.x * blockDim.x) {
+    Cart2d const test_point = test_points_first[idx];
+    // for the matching polygon
+    OffsetType poly_begin      = poly_offsets_first[idx];
+    OffsetType poly_end        = (idx + 1 < num_polys) ? poly_offsets_first[idx + 1] : num_rings;
+    bool const point_is_within = is_point_in_polygon(test_point,
+                                                     poly_begin,
+                                                     poly_end,
+                                                     ring_offsets_first,
+                                                     num_rings,
+                                                     poly_points_first,
+                                                     num_poly_points);
+    result[idx]                = point_is_within;
+  }
 }
 
 }  // namespace detail
