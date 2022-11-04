@@ -124,8 +124,8 @@ MATCHER_P(optional_matcher, m, std::string(negation ? "are not" : "are") + " equ
   auto rhs = std::get<1>(arg);
 
   if (lhs.has_value() != rhs.has_value()) {
-    *result_listener << "lhs.has_value() " << lhs.has_value() << " != rhs.has_value() "
-                     << rhs.has_value();
+    *result_listener << "lhs " << (lhs.has_value() ? "" : "does not ") << "has value, while rhs "
+                     << (rhs.has_value() ? "" : "does not ") << "has value.";
     return false;
   } else if (!lhs.has_value() && !rhs.has_value()) {
     return true;
