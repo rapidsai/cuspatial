@@ -546,6 +546,11 @@ class GeoSeries(cudf.Series):
         )
 
     def contains(self, other, align=True):
+        """
+        Returns a `GeoSeries` of bools with value `True` for each
+        aligned geometry that contains _other_.
+        """
+
         if contains_only_polygons(self) is False:
             raise TypeError("left series contains non-polygons.")
 
