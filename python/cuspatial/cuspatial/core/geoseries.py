@@ -246,11 +246,17 @@ class GeoSeries(cudf.Series):
                 }
             )
             index_df = cudf.DataFrame({"map": item})
-            new_index = index_df.merge(map_df, how="left")["idx"]
+            new_index = index_df.merge(map_df, how="left", sort=False)
+            new_index.index = new_index.map
+            final_index = (
+                new_index._align_to_index(index_df["map"])
+                .dropna()
+                .reset_index(drop=True)
+            )
             if isinstance(item, Integral):
-                return self._sr.iloc[new_index[0]]
+                return self._sr.iloc[final_index["idx"][0]]
             else:
-                result = self._sr.iloc[new_index]
+                result = self._sr.iloc[final_index["idx"]]
                 result.index = item
                 return result
 
