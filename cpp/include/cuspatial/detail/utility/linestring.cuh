@@ -20,6 +20,7 @@
 
 #include <thrust/optional.h>
 #include <thrust/pair.h>
+#include <thrust/swap.h>
 #include <thrust/tuple.h>
 
 namespace cuspatial {
@@ -27,12 +28,6 @@ namespace detail {
 
 template <typename T>
 using segment = thrust::pair<vec_2d<T>, vec_2d<T>>;
-
-template <typename T>
-T __device__ clamp(T val, T lo, T hi)
-{
-  return min(max(lo, val), hi);
-}
 
 /**
  * @internal
@@ -142,38 +137,41 @@ __forceinline__ T __device__ squared_segment_distance(vec_2d<T> const& a,
   return segment_distance_no_intersect_or_colinear(a, b, c, d);
 }
 
+/**
+ * @internal
+ * @brief Given two collinear or parallel segments, return their potential overlapping segment
+ *
+ * @return optional end points of overlapping segment
+ */
 template <typename T>
 __forceinline__ thrust::optional<segment<T>> __device__ collinear_or_parallel_overlapping_segments(
   vec_2d<T> const& a, vec_2d<T> const& b, vec_2d<T> const& c, vec_2d<T> const& d)
 {
   auto ab = b - a;
   auto ac = c - a;
-  auto ad = d - a;
-
-  auto det1 = det(ab, ac);
-  auto det2 = det(ab, ad);
 
   // Parallel
-  if (det1 != det2) return thrust::nullopt;
+  if (det(ab, ac) != 0) return thrust::nullopt;
 
-  auto bc = c - b;
-  auto bd = d - b;
-  auto ba = -ab;
+  // Must be on the same line, test if intersect
+  if ((a < c && c < b) || (a < d && d < b)) {
+    // Compute smallest interval between the segments
+    auto a_ = a, b_ = b, c_ = c, d_ = d;
+    if (d_ < c_) thrust::swap(c_, d_);
+    if (b_ < a_) thrust::swap(a_, b_);
+    return segment<T>{a_ > c_ ? a_ : c_, b_ < d_ ? b_ : d_};
+  }
 
-  auto det3 = det(-ab, bc);
-  auto det4 = det(-ab, bd);
-
-  // Parallel
-  if (det3 != det4) return thrust::nullopt;
-
-  if ((ac.x > ab.x && ad.x > ab.x) || (bc.x > ba.x && bd.x > bd.x)) return thrust::nullopt;
-
-  auto r = clamp(ac.x / ab.x, T{0.0}, T{1.0});
-  auto t = clamp(ad.x / ab.x, T{0.0}, T{1.0});
-
-  return thrust::pair(a + r * ab, a + t * ab);
+  return thrust::nullopt;
 }
 
+/**
+ * @internal
+ * @brief Primitive to compute intersections between two segments
+ * Two segments can intersect at a point, overlap at a segment, or does not have common set.
+ *
+ * @return A pair of optional intersecting point and optional overlapping segment
+ */
 template <typename T>
 __forceinline__ thrust::pair<thrust::optional<vec_2d<T>>, thrust::optional<segment<T>>> __device__
 segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
@@ -181,8 +179,9 @@ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
   auto [a, b] = segment1;
   auto [c, d] = segment2;
 
-  auto ab    = b - a;
-  auto cd    = d - c;
+  auto ab = b - a;
+  auto cd = d - c;
+
   auto denom = det(ab, cd);
 
   if (denom == 0) {

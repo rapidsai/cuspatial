@@ -199,9 +199,6 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, T a
     } else if constexpr (std::is_floating_point_v<typename T::value_type>) {
       EXPECT_THAT(to_host<T>(lhs),
                   ::testing::Pointwise(optional_matcher(float_matcher()), to_host<T>(rhs)));
-    } else if constexpr (std::is_integral_v<typename T::value_type>) {
-      EXPECT_THAT(to_host<T>(lhs),
-                  ::testing::Pointwise(optional_matcher(::testing::Eq()), to_host<T>(rhs)));
     } else {
       EXPECT_EQ(lhs, rhs);
     }

@@ -108,6 +108,35 @@ vec_2d<T> CUSPATIAL_HOST_DEVICE operator*(T const& r, vec_2d<T> vec)
 }
 
 /**
+ * @brief Total order two points on plane
+ */
+template <typename T>
+bool CUSPATIAL_HOST_DEVICE operator<(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+{
+  if (lhs.x < rhs.x)
+    return true;
+  else if (lhs.x == rhs.x)
+    return lhs.y < rhs.y;
+  return false;
+}
+
+template <typename T>
+bool CUSPATIAL_HOST_DEVICE operator>(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+{
+  return rhs < lhs;
+}
+template <typename T>
+bool CUSPATIAL_HOST_DEVICE operator<=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+{
+  return !(lhs > rhs);
+}
+template <typename T>
+bool CUSPATIAL_HOST_DEVICE operator>=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+{
+  return !(lhs < rhs);
+}
+
+/**
  * @brief Compute dot product of two 2D vectors.
  */
 template <typename T>
