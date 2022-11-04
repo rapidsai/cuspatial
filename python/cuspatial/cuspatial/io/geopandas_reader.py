@@ -31,7 +31,7 @@ def parse_geometries(geoseries: gpGeoSeries) -> tuple:
 
     for geom in geoseries:
         if geom is None:
-            all_offsets.append(-1)
+            all_offsets.append(Feature_Enum.NONE.value)
             type_buffer.append(Feature_Enum.NONE.value)
             continue
         coords = mapping(geom)["coordinates"]
