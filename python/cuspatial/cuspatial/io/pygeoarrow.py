@@ -34,6 +34,7 @@ def from_pyarrow_lists(
     mpoint_coords: pa.ListArray,
     line_coords: pa.ListArray,
     polygon_coords: pa.ListArray,
+    null_buffer: pa.ListArray,
 ) -> pa.lib.UnionArray:
     type_buffer = type_buffer
     all_offsets = all_offsets
@@ -42,13 +43,14 @@ def from_pyarrow_lists(
         mpoint_coords,
         line_coords,
         polygon_coords,
+        null_buffer,
     ]
 
     return pa.UnionArray.from_dense(
         type_buffer,
         all_offsets,
         children,
-        ["points", "mpoints", "lines", "polygons"],
+        ["points", "mpoints", "lines", "polygons", "null"],
     )
 
 
@@ -59,6 +61,7 @@ def from_lists(
     mpoint_coords: List,
     line_coords: List,
     polygon_coords: List,
+    null_buffer: List,
 ) -> pa.lib.UnionArray:
     return from_pyarrow_lists(
         pa.array(type_buffer).cast(pa.int8()),
@@ -67,4 +70,5 @@ def from_lists(
         pa.array(mpoint_coords, type=ArrowMultiPointsType),
         pa.array(line_coords, type=ArrowLinestringsType),
         pa.array(polygon_coords, type=ArrowPolygonsType),
+        pa.array(null_buffer, type=pa.null()),
     )

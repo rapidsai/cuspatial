@@ -129,6 +129,7 @@ class GeoColumn(ColumnBase):
             self.lines.name = "lines"
             self.polygons = data[3]
             self.polygons.name = "polygons"
+            self.null = data[4]
         else:
             raise TypeError("All four Tuple arguments must be cudf.ListSeries")
         super().__init__(None, size=len(self), dtype="geometry")
@@ -142,6 +143,7 @@ class GeoColumn(ColumnBase):
                 self.mpoints.to_arrow(),
                 self.lines.to_arrow(),
                 self.polygons.to_arrow(),
+                self.null.to_arrow(),
             ],
         )
 
@@ -174,6 +176,7 @@ class GeoColumn(ColumnBase):
                 self.mpoints.copy(deep),
                 self.lines.copy(deep),
                 self.polygons.copy(deep),
+                self.null,
             ),
             self._meta.copy(),
         )

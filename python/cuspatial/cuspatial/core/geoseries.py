@@ -283,9 +283,10 @@ class GeoSeries(cudf.Series):
             mpoints = self._sr._column.mpoints
             lines = self._sr._column.lines
             polygons = self._sr._column.polygons
+            nulls = self._sr._column.null
 
             column = GeoColumn(
-                (points, mpoints, lines, polygons),
+                (points, mpoints, lines, polygons, nulls),
                 {
                     "input_types": union_types,
                     "union_offsets": union_offsets,
@@ -379,11 +380,11 @@ class GeoSeries(cudf.Series):
     @cached_property
     def _arrow_to_shapely(self):
         type_map = {
-            Feature_Enum.NONE: lambda x: None,
             Feature_Enum.POINT: Point,
             Feature_Enum.MULTIPOINT: MultiPoint,
             Feature_Enum.LINESTRING: self._linestring_to_shapely,
             Feature_Enum.POLYGON: self._polygon_to_shapely,
+            Feature_Enum.NONE: lambda x: None,
         }
         return type_map
 
@@ -524,21 +525,21 @@ class GeoSeries(cudf.Series):
                 index, how, sort, allow_non_unique
             )
         ).astype("int32")
-        aligned_union_offsets[
-            aligned_union_offsets.isna()
-        ] = Feature_Enum.NONE.value
+        aligned_union_offsets[aligned_union_offsets.isna()] = 0
         aligned_input_types = self._column._meta.input_types._align_to_index(
             index, how, sort, allow_non_unique
         ).astype("int8")
         aligned_input_types[
             aligned_input_types.isna()
         ] = Feature_Enum.NONE.value
+        self._column.null = cudf.Series(np.nan)
         column = GeoColumn(
             (
                 self._column.points,
                 self._column.mpoints,
                 self._column.lines,
                 self._column.polygons,
+                self._column.null,
             ),
             {
                 "input_types": aligned_input_types,

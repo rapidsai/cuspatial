@@ -1,5 +1,6 @@
 # Copyright (c) 2020-2022 NVIDIA CORPORATION.
 
+import numpy as np
 from geopandas import GeoSeries as gpGeoSeries
 from shapely.geometry import (
     LineString,
@@ -28,10 +29,12 @@ def parse_geometries(geoseries: gpGeoSeries) -> tuple:
     mpoint_offsets = [0]
     line_offsets = [0]
     polygon_offsets = [0]
+    null_buffer = []
 
     for geom in geoseries:
         if geom is None:
-            all_offsets.append(-1)
+            all_offsets.append(0)
+            null_buffer.append(np.nan())
             type_buffer.append(Feature_Enum.NONE.value)
             continue
         coords = mapping(geom)["coordinates"]
@@ -74,6 +77,7 @@ def parse_geometries(geoseries: gpGeoSeries) -> tuple:
         mpoint_coords,
         line_coords,
         polygon_coords,
+        null_buffer,
     )
 
 
@@ -90,6 +94,7 @@ class GeoPandasReader:
         ----------
         geoseries : A GeoPandas GeoSeries
         """
+        print(geoseries)
         self.buffers = pygeoarrow.from_lists(*parse_geometries(geoseries))
 
     def _get_geotuple(self) -> cudf.Series:
@@ -110,11 +115,15 @@ class GeoPandasReader:
         polygons = cudf.Series.from_arrow(
             self.buffers.field(Feature_Enum.POLYGON.value)
         )
+        null = cudf.Series.from_arrow(
+            self.buffers.field(Feature_Enum.NONE.value)
+        )
         return (
             points,
             mpoints,
             lines,
             polygons,
+            null,
         )
 
     def get_geopandas_meta(self) -> dict:
