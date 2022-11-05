@@ -31,16 +31,16 @@ template <typename T>
 using wrapper = fixed_width_column_wrapper<T>;
 
 template <typename T>
-struct PairwiseLinestringDistanceTest : public BaseFixture {
+struct PairwiseLinestringDistanceTestMedium : public BaseFixture {
 };
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = FloatingPointTypes;
-TYPED_TEST_CASE(PairwiseLinestringDistanceTest, TestTypes);
+TYPED_TEST_CASE(PairwiseLinestringDistanceTestMedium, TestTypes);
 
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
 
-TYPED_TEST(PairwiseLinestringDistanceTest, RandomDataset100)
+TYPED_TEST(PairwiseLinestringDistanceTestMedium, RandomDataset100)
 {
   using T = TypeParam;
   wrapper<cudf::size_type> linestring1_offsets{
