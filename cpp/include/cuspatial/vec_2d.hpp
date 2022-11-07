@@ -54,18 +54,6 @@ std::ostream& operator<<(std::ostream& os, cuspatial::vec_2d<T> const& vec)
 }
 
 /**
- * @brief Print function usable in host or device code.
- */
-template <typename T>
-void CUSPATIAL_HOST_DEVICE print(cuspatial::vec_2d<T> const& vec)
-{
-  if constexpr (std::is_same_v<float, T>)
-    printf("(%f, %f)", vec.x, vec.y);
-  else
-    printf("(%lf, %lf)", vec.x, vec.y);
-}
-
-/**
  * @brief Compare two 2D vectors for equality.
  */
 template <typename T>
