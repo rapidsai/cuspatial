@@ -17,7 +17,6 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/traits.hpp>
 
-#include <new>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
