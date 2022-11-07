@@ -17,24 +17,17 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/linestring_distance.cuh>
+#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cudf/copying.hpp>
-#include <cudf/detail/iterator.cuh>
-#include <cudf/detail/utilities/device_atomics.cuh>
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/exec_policy.hpp>
 
-#include <thrust/binary_search.h>
-#include <thrust/distance.h>
-#include <thrust/execution_policy.h>
-#include <thrust/fill.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 
 #include <limits>
 #include <memory>
@@ -67,15 +60,22 @@ struct pairwise_linestring_distance_functor {
     auto linestring2_coords_it =
       make_vec_2d_iterator(linestring2_points_x.begin<T>(), linestring2_points_y.begin<T>());
 
-    pairwise_linestring_distance(linestring1_offsets.begin(),
-                                 linestring1_offsets.end(),
-                                 linestring1_coords_it,
-                                 linestring1_coords_it + linestring1_points_x.size(),
-                                 linestring2_offsets.begin(),
-                                 linestring2_coords_it,
-                                 linestring2_coords_it + linestring2_points_x.size(),
-                                 distances->mutable_view().begin<T>(),
-                                 stream);
+    auto multilinestrings1 = make_multilinestring_range(num_string_pairs,
+                                                        thrust::make_counting_iterator(0),
+                                                        num_string_pairs,
+                                                        linestring1_offsets.begin(),
+                                                        linestring1_points_x.size(),
+                                                        linestring1_coords_it);
+
+    auto multilinestrings2 = make_multilinestring_range(num_string_pairs,
+                                                        thrust::make_counting_iterator(0),
+                                                        num_string_pairs,
+                                                        linestring2_offsets.begin(),
+                                                        linestring2_points_x.size(),
+                                                        linestring2_coords_it);
+
+    pairwise_linestring_distance(
+      multilinestrings1, multilinestrings2, distances->mutable_view().begin<T>());
 
     return distances;
   }
