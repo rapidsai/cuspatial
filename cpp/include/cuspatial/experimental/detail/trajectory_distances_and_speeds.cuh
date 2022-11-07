@@ -86,7 +86,7 @@ OutputIt trajectory_distances_and_speeds(IndexT num_trajectories,
                         Timestamp t0 = thrust::get<2>(p0);
                         Timestamp t1 = thrust::get<2>(p1);
                         Point vec    = pos1 - pos0;
-
+                        // duration and distance
                         return thrust::make_tuple((t1 - t0).count(), sqrt(dot(vec, vec)));
                       }
                       return thrust::make_tuple(Rep{}, T{});
@@ -112,13 +112,13 @@ OutputIt trajectory_distances_and_speeds(IndexT num_trajectories,
   // Reduce the intermediate durations and kilometer distances into meter
   // distances and speeds in meters/second
   thrust::reduce_by_key(rmm::exec_policy(stream),
-                        ids_first,  // keys
+                        ids_first,
                         ids_last,
-                        duration_and_distance_tmp,       // values
-                        thrust::discard_iterator(),      // keys_output
-                        duration_distances_and_speed,    // values_output
-                        thrust::equal_to<Id>(),          // binary_pred
-                        [] __device__(auto a, auto b) {  // binary_op
+                        duration_and_distance_tmp,
+                        thrust::discard_iterator(),
+                        duration_distances_and_speed,
+                        thrust::equal_to<Id>(),
+                        [] __device__(auto a, auto b) {
                           auto time_d = Dur(thrust::get<0>(a)) + Dur(thrust::get<0>(b));
                           auto time_s = static_cast<T>(time_d.count()) *
                                         static_cast<T>(Period::num) / static_cast<T>(Period::den);
