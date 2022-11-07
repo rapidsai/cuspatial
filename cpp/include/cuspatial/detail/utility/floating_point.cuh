@@ -101,16 +101,16 @@ signmagnitude_to_biased(Bits const& sam)
 }
 
 /**
- * @brief ULP (Unit in the last place) based equivalence comparator for floating points.
+ * @brief Floating-point equivalence comparator based on ULP (Unit in the last place).
  *
  * @tparam T Type of floating point
  * @tparam max_ulp Maximum tolerable unit in the last place
  * @param lhs First floating point to compare
  * @param rhs Second floating point to compare
- * @return `true` if two floating points differ by less than `ulp`.
+ * @return `true` if two floating points differ by less or equal to `ulp`.
  */
 template <typename T, unsigned max_ulp = default_max_ulp>
-bool CUSPATIAL_HOST_DEVICE float_eq_by_ulp(T const& flhs, T const& frhs)
+bool CUSPATIAL_HOST_DEVICE float_equal(T const& flhs, T const& frhs)
 {
   FloatingPointBits<T> lhs{flhs};
   FloatingPointBits<T> rhs{frhs};
@@ -118,20 +118,24 @@ bool CUSPATIAL_HOST_DEVICE float_eq_by_ulp(T const& flhs, T const& frhs)
   auto lhsbiased = signmagnitude_to_biased(lhs._b);
   auto rhsbiased = signmagnitude_to_biased(rhs._b);
 
-  if (lhsbiased >= rhsbiased)
-    printf("%d, %d\n", static_cast<int>(lhsbiased - rhsbiased), (lhsbiased - rhsbiased) <= max_ulp);
-  else
-    printf("%d, %d\n", static_cast<int>(rhsbiased - lhsbiased), (rhsbiased - lhsbiased) <= max_ulp);
-
   return lhsbiased >= rhsbiased ? (lhsbiased - rhsbiased) <= max_ulp
                                 : (rhsbiased - lhsbiased) <= max_ulp;
 }
 
+/**
+ * @brief Floating-point non equivalence comparator based on ULP (Unit in the last place).
+ *
+ * @tparam T Type of floating point
+ * @tparam max_ulp Maximum tolerable unit in the last place
+ * @param lhs First floating point to compare
+ * @param rhs Second floating point to compare
+ * @return `true` if two floating points differ by greater `ulp`.
+ */
 template <typename T, unsigned max_ulp = default_max_ulp>
-bool CUSPATIAL_HOST_DEVICE float_neq_by_ulp(FloatingPointBits<T> const& lhs,
-                                            FloatingPointBits<T> const& rhs)
+bool CUSPATIAL_HOST_DEVICE not_float_equal(FloatingPointBits<T> const& lhs,
+                                           FloatingPointBits<T> const& rhs)
 {
-  return !float_eq_by_ulp(lhs, rhs);
+  return !float_equal(lhs, rhs);
 }
 
 }  // namespace detail

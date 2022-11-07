@@ -17,21 +17,21 @@ TYPED_TEST_CASE(ULPFloatingPointEquivalenceTest, TestTypes);
 
 template <typename Float>
 struct float_eq_comp {
-  bool __device__ operator()(Float lhs, Float rhs) { return detail::float_eq_by_ulp(lhs, rhs); }
+  bool __device__ operator()(Float lhs, Float rhs) { return detail::float_equal(lhs, rhs); }
 };
 
 template <typename T>
 T increment(T f, unsigned step)
 {
   if (!step) return f;
-  return increment(nextafter(f, std::numeric_limits<T>::max()), step - 1);
+  return increment(std::nextafter(f, std::numeric_limits<T>::max()), step - 1);
 }
 
 template <typename T>
 T decrement(T f, unsigned step)
 {
   if (!step) return f;
-  return decrement(nextafter(f, std::numeric_limits<T>::min()), step - 1);
+  return decrement(std::nextafter(f, std::numeric_limits<T>::min()), step - 1);
 }
 
 template <typename T>

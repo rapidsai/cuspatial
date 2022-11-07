@@ -64,7 +64,7 @@ struct eq_comp {
   bool __device__ operator()(Float lhs, Float rhs)
   {
     // return lhs == rhs;
-    return detail::float_eq_by_ulp(lhs, rhs);
+    return detail::float_equal(lhs, rhs);
   }
 };
 
