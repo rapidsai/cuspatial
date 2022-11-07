@@ -46,7 +46,7 @@ namespace cuspatial {
  * @param ids_last end of the range of input object ids
  * @param points_first beginning of the range of input point (x,y) coordinates
  * @param timestamps_first beginning of the range of input timestamps
- * @param distances_and_speeds beginning of the range of output (distance, speed) pairs
+ * @param distances_and_speeds_first beginning of the range of output (distance, speed) pairs
  * @param stream the CUDA stream on which to perform computations and allocate memory.
  *
  * @return An iterator to the end of the range of output (distance, speed) pairs.
