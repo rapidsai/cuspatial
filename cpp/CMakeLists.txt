@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2019-2022, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -121,10 +121,10 @@ add_library(cuspatial
     src/io/shp/polygon_shapefile_reader.cpp
     src/io/shp/polygon_shapefile_reader.cu
     src/join/quadtree_point_in_polygon.cu
-    src/join/quadtree_point_to_nearest_polyline.cu
+    src/join/quadtree_point_to_nearest_linestring.cu
     src/join/quadtree_poly_filtering.cu
     src/spatial/polygon_bounding_box.cu
-    src/spatial/polyline_bounding_box.cu
+    src/spatial/linestring_bounding_box.cu
     src/spatial/point_in_polygon.cu
     src/spatial_window/spatial_window.cu
     src/spatial/haversine.cu

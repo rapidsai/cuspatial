@@ -25,14 +25,14 @@
 namespace cuspatial {
 
 /**
- * @brief Compute minimum bounding boxes of a set of polylines and an expansion radius.
+ * @brief Compute minimum bounding boxes of a set of linestrings and an expansion radius.
  *
  * @ingroup spatial_relationship
  *
- * @param poly_offsets Begin indices of the first point in each polyline (i.e. prefix-sum)
- * @param x Polyline point x-coordinates
- * @param y Polyline point y-coordinates
- * @param expansion_radius Radius of each polyline point
+ * @param linestring_offsets Begin indices of the first point in each linestring (i.e. prefix-sum)
+ * @param x Linestring point x-coordinates
+ * @param y Linestring point y-coordinates
+ * @param expansion_radius Radius of each linestring point
  *
  * @return a cudf table of bounding boxes as four columns of the same type as `x` and `y`:
  * x_min - the minimum x-coordinate of each bounding box
@@ -41,8 +41,8 @@ namespace cuspatial {
  * y_max - the maximum y-coordinate of each bounding box
  */
 
-std::unique_ptr<cudf::table> polyline_bounding_boxes(
-  cudf::column_view const& poly_offsets,
+std::unique_ptr<cudf::table> linestring_bounding_boxes(
+  cudf::column_view const& linestring_offsets,
   cudf::column_view const& x,
   cudf::column_view const& y,
   double expansion_radius,

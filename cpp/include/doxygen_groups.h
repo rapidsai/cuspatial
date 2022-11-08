@@ -66,7 +66,7 @@
  *          @file point_in_polygon.hpp
  *          @file point_in_polygon.cuh
  *          @file polygon_bounding_box.hpp
- *          @file polyline_bounding_box.hpp
+ *          @file linestring_bounding_box.hpp
  *          @file spatial_window.hpp
  *      @}
  *      @defgroup nearest_points Nearest Points

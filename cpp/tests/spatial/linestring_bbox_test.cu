@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/polyline_bounding_box.hpp>
+#include <cuspatial/linestring_bounding_box.hpp>
 
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
@@ -30,43 +30,43 @@
 #include <cudf_test/type_lists.hpp>
 
 template <typename T>
-struct BoundingBoxTest : public cudf::test::BaseFixture {
+struct LinestringBoundingBoxTest : public cudf::test::BaseFixture {
 };
 
-TYPED_TEST_CASE(BoundingBoxTest, cudf::test::FloatingPointTypes);
+TYPED_TEST_CASE(LinestringBoundingBoxTest, cudf::test::FloatingPointTypes);
 
-TYPED_TEST(BoundingBoxTest, test_empty)
+TYPED_TEST(LinestringBoundingBoxTest, test_empty)
 {
   using T = TypeParam;
   using namespace cudf::test;
 
   double const expansion_radius{0};
-  fixed_width_column_wrapper<int32_t> poly_offsets({});
+  fixed_width_column_wrapper<int32_t> linestring_offsets({});
   fixed_width_column_wrapper<T> x({});
   fixed_width_column_wrapper<T> y({});
 
   auto bboxes =
-    cuspatial::polyline_bounding_boxes(poly_offsets, x, y, expansion_radius, this->mr());
+    cuspatial::linestring_bounding_boxes(linestring_offsets, x, y, expansion_radius, this->mr());
 
   CUSPATIAL_EXPECTS(bboxes->num_rows() == 0, "must return 0 bounding boxes on empty input");
 }
 
-TYPED_TEST(BoundingBoxTest, test_one)
+TYPED_TEST(LinestringBoundingBoxTest, test_one)
 {
   using T = TypeParam;
   using namespace cudf::test;
 
   double const expansion_radius{0};
-  fixed_width_column_wrapper<int32_t> poly_offsets({0});
+  fixed_width_column_wrapper<int32_t> linestring_offsets({0});
   fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720});
   fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599});
 
   auto bboxes =
-    cuspatial::polyline_bounding_boxes(poly_offsets, x, y, expansion_radius, this->mr());
+    cuspatial::linestring_bounding_boxes(linestring_offsets, x, y, expansion_radius, this->mr());
 
   CUSPATIAL_EXPECTS(bboxes->view().num_columns() == 4, "bbox table must have 4 columns");
   CUSPATIAL_EXPECTS(bboxes->num_rows() == 1,
-                    "resutling #of bounding boxes must be the same as # of polygons");
+                    "resulting # of bounding boxes must be the same as # of linestrings");
 
   expect_tables_equivalent(
     *bboxes,
@@ -76,13 +76,13 @@ TYPED_TEST(BoundingBoxTest, test_one)
                       fixed_width_column_wrapper<T>({5.856625 + expansion_radius})}});
 }
 
-TYPED_TEST(BoundingBoxTest, test_small)
+TYPED_TEST(LinestringBoundingBoxTest, test_small)
 {
   using T = TypeParam;
   using namespace cudf::test;
 
   double const expansion_radius{0.5};
-  fixed_width_column_wrapper<int32_t> poly_offsets({0, 3, 8, 12});
+  fixed_width_column_wrapper<int32_t> linestring_offsets({0, 3, 8, 12});
   fixed_width_column_wrapper<T> x({// ring 1
                                    2.488450,
                                    1.333584,
@@ -127,11 +127,11 @@ TYPED_TEST(BoundingBoxTest, test_small)
                                    4.541529});
 
   auto bboxes =
-    cuspatial::polyline_bounding_boxes(poly_offsets, x, y, expansion_radius, this->mr());
+    cuspatial::linestring_bounding_boxes(linestring_offsets, x, y, expansion_radius, this->mr());
 
   CUSPATIAL_EXPECTS(bboxes->view().num_columns() == 4, "bbox table must have 4 columns");
   CUSPATIAL_EXPECTS(bboxes->num_rows() == 4,
-                    "resutling #of bounding boxes must be the same as # of polygons");
+                    "resulting # of bounding boxes must be the same as # of linestrings");
 
   expect_tables_equivalent(
     *bboxes,
