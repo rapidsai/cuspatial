@@ -138,23 +138,6 @@ MATCHER_P(optional_matcher, m, std::string(negation ? "are not" : "are") + " equ
     return ExplainMatchResult(m, std::tuple(lhs.value(), rhs.value()), result_listener);
 }
 
-template <typename T, typename Vector>
-thrust::host_vector<T> to_host(Vector const& dvec)
-{
-  if constexpr (std::is_same_v<Vector, rmm::device_uvector<T>>) {
-    thrust::host_vector<T> hvec(dvec.size());
-    cudaMemcpyAsync(hvec.data(),
-                    dvec.data(),
-                    dvec.size() * sizeof(T),
-                    cudaMemcpyKind::cudaMemcpyDeviceToHost,
-                    dvec.stream());
-    dvec.stream().synchronize();
-    return hvec;
-  } else {
-    return thrust::host_vector<T>(dvec);
-  }
-}
-
 template <typename Vector1, typename Vector2>
 inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs)
 {

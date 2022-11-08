@@ -92,7 +92,7 @@ constexpr bool is_optional_impl = false;
 template <typename T>
 constexpr bool is_optional_impl<std::optional<T>> = true;
 template <typename T>
-constexpr bool is_optional = is_optional_impl<std::remove_cvref_t<T>>;
+constexpr bool is_optional = is_optional_impl<std::remove_cv_t<std::remove_reference_t<T>>>;
 
 /**
  * @internal
