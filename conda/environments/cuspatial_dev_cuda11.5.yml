@@ -1,9 +1,9 @@
 name: cuspatial_dev
 channels:
   - rapidsai
+  - nvidia
   - rapidsai-nightly
   - conda-forge
-  - nvidia
 dependencies:
   - clang=11.1.0
   - clang-tools=11.1.0
