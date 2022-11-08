@@ -245,12 +245,14 @@ class GeoSeries(cudf.Series):
                     else 0,
                 }
             )
-            index_df = cudf.DataFrame({"map": item})
-            new_index = index_df.merge(map_df, how="left")["idx"]
+            index_df = cudf.DataFrame({"map": item}).reset_index()
+            new_index = index_df.merge(
+                map_df, how="left", sort=False
+            ).sort_values("index")
             if isinstance(item, Integral):
-                return self._sr.iloc[new_index[0]]
+                return self._sr.iloc[new_index["idx"][0]]
             else:
-                result = self._sr.iloc[new_index]
+                result = self._sr.iloc[new_index["idx"]]
                 result.index = item
                 return result
 
