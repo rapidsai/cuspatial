@@ -193,7 +193,7 @@ def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
 
 
 def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
-    """Compute shortest distance between pairs of linestrings (a.k.a. polylines)
+    """Compute shortest distance between pairs of linestrings
 
     The shortest distance between two linestrings is defined as the shortest
     distance between all pairs of segments of the two linestrings. If any of
