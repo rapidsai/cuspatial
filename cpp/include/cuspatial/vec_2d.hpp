@@ -108,9 +108,9 @@ vec_2d<T> CUSPATIAL_HOST_DEVICE operator*(T const& r, vec_2d<T> vec)
 }
 
 /**
- * @brief Less than operator for two points on plane
+ * @brief Less than operator for two 2D points.
  *
- * Ordered two points first by x, then by y.
+ * Orders two points first by x, then by y.
  */
 template <typename T>
 bool CUSPATIAL_HOST_DEVICE operator<(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
@@ -123,7 +123,7 @@ bool CUSPATIAL_HOST_DEVICE operator<(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
 }
 
 /**
- * @brief Greater than operator for two points on plane
+ * @brief Greater than operator for two 2D points.
  */
 template <typename T>
 bool CUSPATIAL_HOST_DEVICE operator>(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
@@ -132,7 +132,7 @@ bool CUSPATIAL_HOST_DEVICE operator>(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
 }
 
 /**
- * @brief Less than or equal to operator for two points on plane
+ * @brief Less than or equal to operator for two 2D points.
  */
 template <typename T>
 bool CUSPATIAL_HOST_DEVICE operator<=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
@@ -141,7 +141,7 @@ bool CUSPATIAL_HOST_DEVICE operator<=(vec_2d<T> const& lhs, vec_2d<T> const& rhs
 }
 
 /**
- * @brief Greater than or equal to operator for two points on a plan
+ * @brief Greater than or equal to operator for two 2D points.
  */
 template <typename T>
 bool CUSPATIAL_HOST_DEVICE operator>=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
