@@ -18,7 +18,7 @@ cuSpatial supports the following operations on spatial and trajectory data:
 7. Computing spatial bounding boxes of trajectories
 8. Quadtree-based indexing for large-scale point data
 9. Quadtree-based point-in-polygon spatial join
-10. Quadtree-based point-to-polyline nearest neighbor distance
+10. Quadtree-based point-to-linestring nearest neighbor distance
 11. Distance computation (point-point, point-linestring, linestring-linestring)
 12. Finding nearest points between point and linestring
 
@@ -84,13 +84,13 @@ conda env update --file conda/environments/cuspatial_dev_cuda11.5.yml
 
    Some other tests involve I/O from data files under `$CUSPATIAL_HOME/test_fixtures`.
    For example, `$CUSPATIAL_HOME/cpp/build/gtests/SHAPEFILE_READER_TEST` requires three
-   pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. They are available at 
+   pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. They are available at
    `$CUSPATIAL_HOME/test_fixtures/shapefiles` <br>
 
 **NOTE:** Currently, cuSpatial supports reading point/polyine/polygon data using
 Structure of Array (SoA) format and a [shapefile reader](./cpp/src/io/shp)
 to read polygon data from a shapefile.
 Alternatively, python users can read any point/polyine/polygon data using
-existing python packages, e.g., [Shapely](https://pypi.org/project/Shapely/) 
+existing python packages, e.g., [Shapely](https://pypi.org/project/Shapely/)
 and [Fiona](https://github.com/Toblerity/Fiona),to generate numpy arrays and feed them to
 [cuSpatial python APIs](https://docs.rapids.ai/api/cuspatial/stable/).
