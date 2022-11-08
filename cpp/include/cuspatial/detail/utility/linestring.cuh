@@ -168,7 +168,7 @@ __forceinline__ thrust::optional<segment<T>> __device__ collinear_or_parallel_ov
 /**
  * @internal
  * @brief Primitive to compute intersections between two segments
- * Two segments can intersect at a point, overlap at a segment, or does not have common set.
+ * Two segments can intersect at a point, overlap at a segment, or be disjoint.
  *
  * @return A pair of optional intersecting point and optional overlapping segment
  */

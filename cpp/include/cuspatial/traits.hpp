@@ -87,17 +87,12 @@ constexpr bool is_same_floating_point()
          std::conjunction_v<std::is_floating_point<Ts>...>;
 }
 
-template <typename T, typename Enable = void>
-struct is_optional : std::false_type {
-};
-
+template <typename>
+constexpr bool is_optional_impl = false;
 template <typename T>
-struct is_optional<std::optional<T>> : std::true_type {
-};
-
+constexpr bool is_optional_impl<std::optional<T>> = true;
 template <typename T>
-struct is_optional<thrust::optional<T>> : std::true_type {
-};
+constexpr bool is_optional = is_optional_impl<std::remove_cvref_t<T>>;
 
 /**
  * @internal

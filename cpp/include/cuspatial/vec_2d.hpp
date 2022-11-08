@@ -81,7 +81,7 @@ vec_2d<T> CUSPATIAL_HOST_DEVICE operator-(vec_2d<T> const& a, vec_2d<T> const& b
 }
 
 /**
- * @brief Inverse the 2D vector.
+ * @brief Invert a 2D vector.
  */
 template <typename T>
 vec_2d<T> CUSPATIAL_HOST_DEVICE operator-(vec_2d<T> const& a)
@@ -108,7 +108,9 @@ vec_2d<T> CUSPATIAL_HOST_DEVICE operator*(T const& r, vec_2d<T> vec)
 }
 
 /**
- * @brief Total order two points on plane
+ * @brief Less than operator for two points on plane
+ *
+ * Ordered two points first by x, then by y.
  */
 template <typename T>
 bool CUSPATIAL_HOST_DEVICE operator<(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
@@ -120,16 +122,27 @@ bool CUSPATIAL_HOST_DEVICE operator<(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
   return false;
 }
 
+/**
+ * @brief Greater than operator for two points on plane
+ */
 template <typename T>
 bool CUSPATIAL_HOST_DEVICE operator>(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
 {
   return rhs < lhs;
 }
+
+/**
+ * @brief Less than or equal to operator for two points on plane
+ */
 template <typename T>
 bool CUSPATIAL_HOST_DEVICE operator<=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
 {
   return !(lhs > rhs);
 }
+
+/**
+ * @brief Greater than or equal to operator for two points on a plan
+ */
 template <typename T>
 bool CUSPATIAL_HOST_DEVICE operator>=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
 {
