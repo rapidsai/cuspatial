@@ -122,7 +122,7 @@ add_library(cuspatial
     src/io/shp/polygon_shapefile_reader.cu
     src/join/quadtree_point_in_polygon.cu
     src/join/quadtree_point_to_nearest_linestring.cu
-    src/join/quadtree_poly_filtering.cu
+    src/join/quadtree_bbox_filtering.cu
     src/spatial/polygon_bounding_box.cu
     src/spatial/linestring_bounding_box.cu
     src/spatial/point_in_polygon.cu
