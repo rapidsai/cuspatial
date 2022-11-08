@@ -19,6 +19,8 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
+#include <cuspatial_test/test_util.cuh>
+
 #include <rmm/device_uvector.hpp>
 #include <rmm/device_vector.hpp>
 
@@ -119,23 +121,6 @@ MATCHER_P(float_near_matcher,
                    << " != " << rhs;
 
   return false;
-}
-
-template <typename T, typename Vector>
-thrust::host_vector<T> to_host(Vector const& dvec)
-{
-  if constexpr (std::is_same_v<Vector, rmm::device_uvector<T>>) {
-    thrust::host_vector<T> hvec(dvec.size());
-    cudaMemcpyAsync(hvec.data(),
-                    dvec.data(),
-                    dvec.size() * sizeof(T),
-                    cudaMemcpyKind::cudaMemcpyDeviceToHost,
-                    dvec.stream());
-    dvec.stream().synchronize();
-    return hvec;
-  } else {
-    return thrust::host_vector<T>(dvec);
-  }
 }
 
 template <typename Vector1, typename Vector2>
