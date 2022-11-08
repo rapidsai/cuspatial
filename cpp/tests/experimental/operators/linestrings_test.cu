@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <cuspatial_tests/vector_equality.hpp>
+#include <cuspatial_test/vector_equality.hpp>
 #include <tests/base_fixture.hpp>
 
 #include <cuspatial/cuda_utils.hpp>
@@ -42,8 +42,7 @@ template <typename T>
 using optional_vec2d = thrust::optional<vec_2d<T>>;
 
 template <typename T>
-struct SegmentIntersectionTest : public BaseFixture {
-};
+struct SegmentIntersectionTest : public BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(SegmentIntersectionTest, TestTypes);
