@@ -36,7 +36,7 @@
 #include <cstdint>
 
 template <typename T>
-struct DeriveTrajectoriesTest : public ::testing::Test {
+struct TrajectoryBoundingBoxesTest : public ::testing::Test {
   void run_test(int num_trajectories, int points_per_trajectory)
   {
     auto data = cuspatial::test::trajectory_test_data<T>(num_trajectories, points_per_trajectory);
@@ -59,10 +59,16 @@ struct DeriveTrajectoriesTest : public ::testing::Test {
 };
 
 using TestTypes = ::testing::Types<float, double>;
-TYPED_TEST_CASE(DeriveTrajectoriesTest, TestTypes);
+TYPED_TEST_CASE(TrajectoryBoundingBoxesTest, TestTypes);
 
-TYPED_TEST(DeriveTrajectoriesTest, OneMillionSmallTrajectories) { this->run_test(1'000'000, 50); }
+TYPED_TEST(TrajectoryBoundingBoxesTest, OneMillionSmallTrajectories)
+{
+  this->run_test(1'000'000, 50);
+}
 
-TYPED_TEST(DeriveTrajectoriesTest, OneHundredLargeTrajectories) { this->run_test(100, 1'000'000); }
+TYPED_TEST(TrajectoryBoundingBoxesTest, OneHundredLargeTrajectories)
+{
+  this->run_test(100, 1'000'000);
+}
 
-TYPED_TEST(DeriveTrajectoriesTest, OneVeryLargeTrajectory) { this->run_test(1, 100'000'000); }
+TYPED_TEST(TrajectoryBoundingBoxesTest, OneVeryLargeTrajectory) { this->run_test(1, 100'000'000); }

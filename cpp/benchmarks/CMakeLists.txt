@@ -93,3 +93,6 @@ ConfigureNVBench(POINT_IN_POLYGON_BENCH
 
 ConfigureNVBench(QUADTREE_ON_POINTS_BENCH
     quadtree_on_points.cu)
+
+ConfigureNVBench(FLOATING_POINT_EQUALITY_BENCH
+    floating_point_equality.cu)

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "tests/utility/vector_equality.hpp"
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/coordinate_transform.cuh>
+#include <cuspatial_test/vector_equality.hpp>
 
 #include <rmm/device_vector.hpp>
 

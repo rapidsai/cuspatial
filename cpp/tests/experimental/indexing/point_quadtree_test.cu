@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "tests/utility/vector_equality.hpp"
+#include <cuspatial_test/vector_equality.hpp>
 
 #include <cuspatial/experimental/point_quadtree.cuh>
 #include <cuspatial/vec_2d.hpp>

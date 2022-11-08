@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-#pragma once
-#include <cuspatial/cuda_utils.hpp>
+#include <rmm/device_vector.hpp>
 
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
+#include <initializer_list>
 
-namespace cuspatial {
-namespace detail {
-
-template <typename IndexType, typename UnaryFunction>
-inline CUSPATIAL_HOST_DEVICE auto make_counting_transform_iterator(IndexType start, UnaryFunction f)
+template <typename T>
+auto make_device_vector(std::initializer_list<T> inl)
 {
-  return thrust::make_transform_iterator(thrust::make_counting_iterator(start), f);
+  return rmm::device_vector<T>(inl.begin(), inl.end());
 }
-}  // namespace detail
-}  // namespace cuspatial

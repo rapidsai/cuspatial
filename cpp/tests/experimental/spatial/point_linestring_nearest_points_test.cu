@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#include "../../utility/vector_equality.hpp"
-#include "cuspatial/experimental/point_distance.cuh"
+#include <cuspatial_test/vector_equality.hpp>
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
@@ -32,8 +31,8 @@
 
 #include <type_traits>
 
-namespace cuspatial {
-namespace test {
+using namespace cuspatial;
+using namespace cuspatial::test;
 
 template <typename T>
 struct PairwisePointLinestringNearestPointsTest : public ::testing::Test {
@@ -421,6 +420,3 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, ThreePairMultiComponent)
                            CartVec{{3.545131432802666, 2.30503517215846}, {9.9, 9.4}, {0.0, -8.7}});
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
-
-}  // namespace test
-}  // namespace cuspatial
