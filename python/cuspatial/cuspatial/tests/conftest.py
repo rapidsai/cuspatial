@@ -204,3 +204,14 @@ def multilinestring_generator(linestring_generator):
             )
 
     return generator
+
+
+@pytest.fixture
+def slice_twenty():
+    return [
+        slice(0, 4),
+        slice(4, 8),
+        slice(8, 12),
+        slice(12, 16),
+        slice(16, 20),
+    ]

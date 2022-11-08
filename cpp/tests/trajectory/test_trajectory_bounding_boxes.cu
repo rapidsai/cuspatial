@@ -19,10 +19,10 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/trajectory.hpp>
 
-struct TrajectoryBoundingBoxesTest : public cuspatial::test::BaseFixture {
+struct TrajectoryBoundingBoxesErrorTest : public cuspatial::test::BaseFixture {
 };
 
-TEST_F(TrajectoryBoundingBoxesTest, SizeMismatch)
+TEST_F(TrajectoryBoundingBoxesErrorTest, SizeMismatch)
 {
   auto const size = 1000;
 
@@ -43,7 +43,7 @@ TEST_F(TrajectoryBoundingBoxesTest, SizeMismatch)
   }
 }
 
-TEST_F(TrajectoryBoundingBoxesTest, TypeError)
+TEST_F(TrajectoryBoundingBoxesErrorTest, TypeError)
 {
   auto const size = 1000;
 
@@ -66,7 +66,7 @@ TEST_F(TrajectoryBoundingBoxesTest, TypeError)
   }
 }
 
-TEST_F(TrajectoryBoundingBoxesTest, Nulls)
+TEST_F(TrajectoryBoundingBoxesErrorTest, Nulls)
 {
   auto const size = 1000;
 

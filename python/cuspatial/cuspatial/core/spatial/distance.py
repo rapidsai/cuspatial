@@ -402,10 +402,10 @@ def pairwise_point_linestring_distance(
         {
             None: c_pairwise_point_linestring_distance(
                 point_xy_col,
-                linestrings.lines.part_offset._column,
+                as_column(linestrings.lines.part_offset),
                 linestrings.lines.xy._column,
                 points_geometry_offset,
-                linestrings.lines.geometry_offset._column,
+                as_column(linestrings.lines.geometry_offset),
             )
         }
     )
@@ -421,5 +421,5 @@ def _flatten_point_series(
         return points.points.xy._column, None
     return (
         points.multipoints.xy._column,
-        points.multipoints.geometry_offset._column,
+        as_column(points.multipoints.geometry_offset),
     )

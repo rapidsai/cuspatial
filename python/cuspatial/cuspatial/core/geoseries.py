@@ -141,11 +141,19 @@ class GeoSeries(cudf.Series):
 
         @property
         def xy(self):
-            types = self._meta.input_types
-            offsets = self._meta.union_offsets
-            indices = offsets[types == self._type.value]
-            result = self._col.take(indices._column).leaves().values
-            return cudf.Series(result)
+            return cudf.Series(
+                self._get_current_features(self._type).leaves().values
+            )
+
+        def _get_current_features(self, type):
+            # Resample the existing features so that the offsets returned
+            # by `_offset` methods reflect previous slicing, and match
+            # the values returned by .xy.
+            existing_indices = self._meta.union_offsets[
+                self._meta.input_types == type.value
+            ]
+            existing_features = self._col.take(existing_indices._column)
+            return existing_features
 
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -154,7 +162,7 @@ class GeoSeries(cudf.Series):
 
         @property
         def geometry_offset(self):
-            return cudf.Series(self._col.offsets.values)
+            return self._get_current_features(self._type).offsets.values
 
     class LineStringGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -163,11 +171,13 @@ class GeoSeries(cudf.Series):
 
         @property
         def geometry_offset(self):
-            return cudf.Series(self._col.offsets.values)
+            return self._get_current_features(self._type).offsets.values
 
         @property
         def part_offset(self):
-            return cudf.Series(self._col.elements.offsets.values)
+            return self._get_current_features(
+                self._type
+            ).elements.offsets.values
 
     class PolygonGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -176,15 +186,19 @@ class GeoSeries(cudf.Series):
 
         @property
         def geometry_offset(self):
-            return cudf.Series(self._col.offsets.values)
+            return self._get_current_features(self._type).offsets.values
 
         @property
         def part_offset(self):
-            return cudf.Series(self._col.elements.offsets.values)
+            return self._get_current_features(
+                self._type
+            ).elements.offsets.values
 
         @property
         def ring_offset(self):
-            return cudf.Series(self._col.elements.elements.offsets.values)
+            return self._get_current_features(
+                self._type
+            ).elements.elements.offsets.values
 
     @property
     def points(self):
@@ -245,12 +259,14 @@ class GeoSeries(cudf.Series):
                     else 0,
                 }
             )
-            index_df = cudf.DataFrame({"map": item})
-            new_index = index_df.merge(map_df, how="left")["idx"]
+            index_df = cudf.DataFrame({"map": item}).reset_index()
+            new_index = index_df.merge(
+                map_df, how="left", sort=False
+            ).sort_values("index")
             if isinstance(item, Integral):
-                return self._sr.iloc[new_index[0]]
+                return self._sr.iloc[new_index["idx"][0]]
             else:
-                result = self._sr.iloc[new_index]
+                result = self._sr.iloc[new_index["idx"]]
                 result.index = item
                 return result
 
