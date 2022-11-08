@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <tests/utility/vector_equality.hpp>
+#include <cuspatial_test/vector_equality.hpp>
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/haversine.cuh>

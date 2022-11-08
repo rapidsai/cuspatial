@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#include <tests/utility/vector_equality.hpp>
-
+#include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/error.hpp>
@@ -26,8 +25,8 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 
-namespace cuspatial {
-namespace test {
+using namespace cuspatial;
+using namespace cuspatial::test;
 
 template <typename T>
 struct PairwiseLinestringDistanceTest : public ::testing::Test {
@@ -949,6 +948,3 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FourPairsSingleLineString)
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, got);
   EXPECT_EQ(num_pairs, std::distance(got.begin(), ret));
 }
-
-}  // namespace test
-}  // namespace cuspatial
