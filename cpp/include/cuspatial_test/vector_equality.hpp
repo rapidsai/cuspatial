@@ -29,6 +29,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <type_traits>
 
 namespace cuspatial {
@@ -101,7 +102,8 @@ MATCHER(float_matcher, std::string(negation ? "are not" : "are") + " approximate
 
   if (::testing::Matches(floating_eq_by_ulp(rhs))(lhs)) return true;
 
-  *result_listener << std::setprecision(18) << lhs << " != " << rhs;
+  *result_listener << std::setprecision(std::numeric_limits<decltype(lhs)>::max_digits10) << lhs
+                   << " != " << rhs;
 
   return false;
 }
@@ -115,7 +117,8 @@ MATCHER_P(float_near_matcher,
 
   if (::testing::Matches(floating_eq_by_abs_error(rhs, abs_error))(lhs)) return true;
 
-  *result_listener << std::setprecision(18) << lhs << " != " << rhs;
+  *result_listener << std::setprecision(std::numeric_limits<decltype(lhs)>::max_digits10) << lhs
+                   << " != " << rhs;
 
   return false;
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "../../utility/vector_equality.hpp"
+#include <cuspatial_test/vector_equality.hpp>
 
 #include <cuspatial_test/random.cuh>
 

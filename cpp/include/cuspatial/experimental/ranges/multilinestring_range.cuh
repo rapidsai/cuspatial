@@ -63,68 +63,66 @@ class multilinestring_range {
                         VecIterator points_begin,
                         VecIterator points_end);
 
-  /**
-   * @brief Return the number of multilinestrings in the array.
-   */
+  /// Return the number of multilinestrings in the array.
   CUSPATIAL_HOST_DEVICE auto size() { return num_multilinestrings(); }
 
-  /**
-   * @brief Return the number of multilinestrings in the array.
-   */
+  /// Return the number of multilinestrings in the array.
   CUSPATIAL_HOST_DEVICE auto num_multilinestrings();
 
-  /**
-   * @brief Return the total number of linestrings in the array.
-   */
+  /// Return the total number of linestrings in the array.
   CUSPATIAL_HOST_DEVICE auto num_linestrings();
 
-  /**
-   * @brief Return the total number of points in the array.
-   */
+  /// Return the total number of points in the array.
   CUSPATIAL_HOST_DEVICE auto num_points();
 
-  /**
-   * @brief Given the index of a point, return the part (linestring) index where the point locates.
-   */
+  /// Return the iterator to the first multilinestring in the range.
+  CUSPATIAL_HOST_DEVICE auto multilinestring_begin();
+
+  /// Return the iterator to the one past the last multilinestring in the range.
+  CUSPATIAL_HOST_DEVICE auto multilinestring_end();
+
+  /// Return the iterator to the first multilinestring in the range.
+  CUSPATIAL_HOST_DEVICE auto begin() { return multilinestring_begin(); }
+
+  /// Return the iterator to the one past the last multilinestring in the range.
+  CUSPATIAL_HOST_DEVICE auto end() { return multilinestring_end(); }
+
+  /// Given the index of a point, return the part (linestring) index where the point locates.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto part_idx_from_point_idx(IndexType point_idx);
 
-  /**
-   * @brief Given the index of a part (linestring), return the geometry (multilinestring) index
-   * where the linestring locates.
-   */
+  /// Given the index of a part (linestring), return the geometry (multilinestring) index
+  /// where the linestring locates.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto geometry_idx_from_part_idx(IndexType part_idx);
 
-  /**
-   * @brief Given the index of a point, return the geometry (multilinestring) index where the
-   * point locates.
-   */
+  /// Given the index of a point, return the geometry (multilinestring) index where the
+  /// point locates.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto geometry_idx_from_point_idx(IndexType point_idx);
 
-  /**
-   * @brief Given an index of a segment, returns true if the index is valid.
-   * The index of a segment is the same as the index to the starting point of the segment.
-   * Thus, the index to the last point of a linestring is an invalid segment index.
-   */
+  /// Given an index of a segment, returns true if the index is valid.
+  /// The index of a segment is the same as the index to the starting point of the segment.
+  /// Thus, the index to the last point of a linestring is an invalid segment index.
   template <typename IndexType1, typename IndexType2>
   CUSPATIAL_HOST_DEVICE bool is_valid_segment_id(IndexType1 segment_idx, IndexType2 part_idx);
 
-  /**
-   * @brief Returns the segment given a segment index.
-   */
+  /// Returns the segment given a segment index.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE thrust::pair<vec_2d<element_t>, vec_2d<element_t>> segment(
     IndexType segment_idx);
 
+  /// Returns the `multilinestring_idx`th multilinestring in the range.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto operator[](IndexType multilinestring_idx);
+
  protected:
-  GeometryIterator geometry_begin;
-  GeometryIterator geometry_end;
-  PartIterator part_begin;
-  PartIterator part_end;
-  VecIterator points_begin;
-  VecIterator points_end;
+  GeometryIterator _geometry_begin;
+  GeometryIterator _geometry_end;
+  PartIterator _part_begin;
+  PartIterator _part_end;
+  VecIterator _point_begin;
+  VecIterator _point_end;
 };
 
 /**
