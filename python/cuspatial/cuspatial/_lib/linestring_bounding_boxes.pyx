@@ -17,8 +17,8 @@ from cuspatial._lib.cpp.linestring_bounding_box cimport (
 
 
 cpdef linestring_bounding_boxes(Column poly_offsets,
-                              Column x, Column y,
-                              double R):
+                                Column x, Column y,
+                                double R):
     cdef column_view c_poly_offsets = poly_offsets.view()
     cdef column_view c_x = x.view()
     cdef column_view c_y = y.view()
