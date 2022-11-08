@@ -3,11 +3,11 @@
 from cudf import DataFrame
 from cudf.core.column import as_column
 
-from cuspatial._lib.polygon_bounding_boxes import (
-    polygon_bounding_boxes as cpp_polygon_bounding_boxes,
-)
 from cuspatial._lib.linestring_bounding_boxes import (
     linestring_bounding_boxes as cpp_linestring_bounding_boxes,
+)
+from cuspatial._lib.polygon_bounding_boxes import (
+    polygon_bounding_boxes as cpp_polygon_bounding_boxes,
 )
 from cuspatial.utils.column_utils import normalize_point_columns
 
@@ -79,5 +79,6 @@ def linestring_bounding_boxes(linestring_offsets, xs, ys, expansion_radius):
     linestring_offsets = as_column(linestring_offsets, dtype="int32")
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     return DataFrame._from_data(
-        *cpp_linestring_bounding_boxes(linestring_offsets, xs, ys, expansion_radius)
+        *cpp_linestring_bounding_boxes(linestring_offsets, xs, ys,
+                                       expansion_radius)
     )

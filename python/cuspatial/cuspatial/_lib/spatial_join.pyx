@@ -82,13 +82,13 @@ cpdef quadtree_point_in_polygon(object poly_quad_pairs,
 
 
 cpdef quadtree_point_to_nearest_linestring(object linestring_quad_pairs,
-                                         object quadtree,
-                                         Column point_indices,
-                                         Column points_x,
-                                         Column points_y,
-                                         Column linestring_offsets,
-                                         Column linestring_points_x,
-                                         Column linestring_points_y):
+                                           object quadtree,
+                                           Column point_indices,
+                                           Column points_x,
+                                           Column points_y,
+                                           Column linestring_offsets,
+                                           Column linestring_points_x,
+                                           Column linestring_points_y):
     cdef table_view c_linestring_quad_pairs = table_view_from_table(
         linestring_quad_pairs, ignore_index=True)
     cdef table_view c_quadtree = table_view_from_table(
