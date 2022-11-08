@@ -68,7 +68,7 @@ struct TrajectoryDistancesAndSpeedsTest : public ::testing::Test {
                      [] __device__(T const& a, T const& b) { return max(abs(a), abs(b)); });
 
     // We expect the floating point error (in ulps) due to be proportional to the  number of
-    // operations to compute the relevant quantity. For distance, this is computation is
+    // operations to compute the relevant quantity. For distance, this computation is
     // m_per_km * sqrt(dot(vec, vec)), where vec = (p1 - p0).
     // For speed, there is an additional division. There is also accumulated error in the reductions
     // and we find k_ulps == 10 reliably results in the expected computation matching the actual
@@ -100,4 +100,60 @@ TYPED_TEST(TrajectoryDistancesAndSpeedsTest, OneHundredLargeTrajectories)
 TYPED_TEST(TrajectoryDistancesAndSpeedsTest, OneVeryLargeTrajectory)
 {
   this->run_test(1, 100'000'000);
+}
+
+struct time_point_generator {
+  using time_point = cuspatial::test::time_point;
+  int init;
+
+  time_point __device__ operator()(int const i)
+  {
+    return time_point{time_point::duration{i + init}};
+  }
+};
+
+// Simple standalone test with hard-coded results
+TYPED_TEST(TrajectoryDistancesAndSpeedsTest, ComputeDistanceAndSpeed3Simple)
+{
+  using T          = TypeParam;
+  using time_point = cuspatial::test::time_point;
+
+  std::int32_t num_trajectories = 3;
+
+  auto offsets = rmm::device_vector<int32_t>{std::vector<std::int32_t>{0, 5, 9}};
+  auto id =
+    rmm::device_vector<int32_t>{std::vector<std::int32_t>{0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2}};
+  auto points =
+    rmm::device_vector<cuspatial::vec_2d<T>>(std::vector<cuspatial::vec_2d<T>>{{1.0, 0.0},
+                                                                               {2.0, 1.0},
+                                                                               {3.0, 2.0},
+                                                                               {5.0, 3.0},
+                                                                               {7.0, 1.0},
+                                                                               {1.0, 3.0},
+                                                                               {2.0, 5.0},
+                                                                               {3.0, 6.0},
+                                                                               {6.0, 5.0},
+                                                                               {0.0, 4.0},
+                                                                               {3.0, 7.0},
+                                                                               {6.0, 4.0}});
+
+  auto ts = rmm::device_vector<time_point>{12};
+  thrust::tabulate(ts.begin(), ts.end(), time_point_generator{1});  // 1 through 12
+
+  auto distances = rmm::device_vector<T>(num_trajectories);
+  auto speeds    = rmm::device_vector<T>(num_trajectories);
+
+  auto distance_and_speed_begin = thrust::make_zip_iterator(distances.begin(), speeds.begin());
+
+  auto distance_and_speed_end = cuspatial::trajectory_distances_and_speeds(
+    3, id.begin(), id.end(), points.begin(), ts.begin(), distance_and_speed_begin);
+
+  ASSERT_EQ(std::distance(distance_and_speed_begin, distance_and_speed_end), num_trajectories);
+
+  // expected distance and speed
+  std::vector<T> speeds_expected({1973230.5567480423, 2270853.0666804211, 4242640.6871192846});
+  std::vector<T> distances_expected({7892.9222269921693, 6812.5592000412635, 8485.2813742385697});
+
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(distances, distances_expected);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(speeds, speeds_expected);
 }
