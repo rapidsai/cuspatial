@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-#include "tests/utility/vector_equality.hpp"
 #include "trajectory_test_utils.cuh"
+
+#include <cuspatial_test/vector_equality.hpp>
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/trajectory_distances_and_speeds.cuh>
