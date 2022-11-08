@@ -79,6 +79,7 @@ def linestring_bounding_boxes(linestring_offsets, xs, ys, expansion_radius):
     linestring_offsets = as_column(linestring_offsets, dtype="int32")
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     return DataFrame._from_data(
-        *cpp_linestring_bounding_boxes(linestring_offsets, xs, ys,
-                                       expansion_radius)
+        *cpp_linestring_bounding_boxes(
+            linestring_offsets, xs, ys, expansion_radius
+        )
     )
