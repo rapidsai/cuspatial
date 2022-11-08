@@ -28,48 +28,23 @@ namespace cuspatial {
  * between all pairs of segments of the two linestrings. If any of the segments intersect,
  * the distance is 0.
  *
- * @tparam Cart2dItA iterator type for point array of the first linestring of each pair. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam Cart2dItB iterator type for point array of the second linestring of each pair. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OffsetIterator iterator type for offset array. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OutputIt iterator type for output array. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam MultiLinestringRange an instance of template type `multilinestring_range`
+ * @tparam OutputIt iterator type for output array. Must meet the requirements of [LRAI](LinkLRAI)
+ * and be device writable.
  *
- * @param linestring1_offsets_first beginning of range of the offsets to the first linestring of
- * each pair
- * @param linestring1_offsets_last end of range of the offsets to the first linestring of each pair
- * @param linestring1_points_first beginning of range of the point of the first linestring of each
- * pair
- * @param linestring1_points_last end of range of the point of the first linestring of each pair
- * @param linestring2_offsets_first beginning of range of the offsets to the second linestring of
- * each pair
- * @param linestring2_points_first beginning of range of the point of the second linestring of each
- * pair
- * @param linestring2_points_last end of range of the point of the second linestring of each pair
- * @param distances_first beginning iterator to output
+ * @param multilinestrings1 Range object of the lhs multilinestring array
+ * @param multilinestrings2 Range object of the rhs multilinestring array
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
- * @return Output iterator to one past the last element in the output range
- *
- * @pre all input iterators for coordinates must have `cuspatial::vec_2d` type.
- * @pre all scalar types must be floating point types, and must be the same type for all input
- * iterators and output iterators.
+ * @return Output iterator to the element past the last distance computed.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <class Cart2dItA, class Cart2dItB, class OffsetIterator, class OutputIt>
-OutputIt pairwise_linestring_distance(OffsetIterator linestring1_offsets_first,
-                                      OffsetIterator linestring1_offsets_last,
-                                      Cart2dItA linestring1_points_first,
-                                      Cart2dItA linestring1_points_last,
-                                      OffsetIterator linestring2_offsets_first,
-                                      Cart2dItB linestring2_points_first,
-                                      Cart2dItB linestring2_points_last,
+template <class MultiLinestringRange1, class MultiLinstringRange2, class OutputIt>
+OutputIt pairwise_linestring_distance(MultiLinestringRange1 multilinestrings1,
+                                      MultiLinstringRange2 multilinestrings2,
                                       OutputIt distances_first,
                                       rmm::cuda_stream_view stream = rmm::cuda_stream_default);
-
 }  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/linestring_distance.cuh>

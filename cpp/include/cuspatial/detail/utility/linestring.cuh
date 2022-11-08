@@ -92,10 +92,9 @@ __forceinline__ T __device__ segment_distance_no_intersect_or_colinear(vec_2d<T>
                                                                        vec_2d<T> const& c,
                                                                        vec_2d<T> const& d)
 {
-  auto dist_sqr = std::min(std::min(point_to_segment_distance_squared(a, c, d),
-                                    point_to_segment_distance_squared(b, c, d)),
-                           std::min(point_to_segment_distance_squared(c, a, b),
-                                    point_to_segment_distance_squared(d, a, b)));
+  auto dist_sqr = min(
+    min(point_to_segment_distance_squared(a, c, d), point_to_segment_distance_squared(b, c, d)),
+    min(point_to_segment_distance_squared(c, a, b), point_to_segment_distance_squared(d, a, b)));
   return dist_sqr;
 }
 
