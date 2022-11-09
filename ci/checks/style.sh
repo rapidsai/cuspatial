@@ -19,7 +19,7 @@ ISORT=`isort --check-only python/cuspatial --settings-path=python/cuspatial/setu
 ISORT_RETVAL=$?
 
 # Run black and get results/return code
-BLACK=`black --check python`
+BLACK=`black --config pyproject.toml --check --diff python`
 BLACK_RETVAL=$?
 
 # Run flake8 and get results/return code
