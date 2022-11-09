@@ -10,12 +10,12 @@ from .core.spatial import (
     pairwise_point_linestring_distance,
     pairwise_point_linestring_nearest_points,
     polygon_bounding_boxes,
-    polyline_bounding_boxes,
+    linestring_bounding_boxes,
     point_in_polygon,
     points_in_spatial_window,
     quadtree_on_points,
     quadtree_point_in_polygon,
-    quadtree_point_to_nearest_polyline,
+    quadtree_point_to_nearest_linestring,
 )
 from .core.interpolate import CubicSpline
 from .core.trajectory import (

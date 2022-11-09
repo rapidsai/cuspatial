@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,25 +23,26 @@ namespace cuspatial {
 namespace detail {
 
 template <typename T>
-inline __device__ T point_to_poly_line_distance(T const px,
-                                                T const py,
-                                                cudf::size_type const ring_idx,
-                                                cudf::column_device_view const& ring_offsets,
-                                                cudf::column_device_view const& poly_points_x,
-                                                cudf::column_device_view const& poly_points_y)
+inline __device__ T
+point_to_linestring_distance(T const px,
+                             T const py,
+                             cudf::size_type const ring_idx,
+                             cudf::column_device_view const& ring_offsets,
+                             cudf::column_device_view const& linestring_points_x,
+                             cudf::column_device_view const& linestring_points_y)
 {
   T distance_squared = std::numeric_limits<T>::max();
   auto ring_begin    = ring_offsets.element<uint32_t>(ring_idx);
   auto ring_end = ring_idx < ring_offsets.size() - 1 ? ring_offsets.element<uint32_t>(ring_idx + 1)
-                                                     : poly_points_x.size();
+                                                     : linestring_points_x.size();
   auto ring_len = ring_end - ring_begin;
   for (auto point_idx = 0u; point_idx < ring_len; ++point_idx) {
     auto const i0    = ring_begin + ((point_idx + 0) % ring_len);
     auto const i1    = ring_begin + ((point_idx + 1) % ring_len);
-    auto const x0    = poly_points_x.element<T>(i0);
-    auto const y0    = poly_points_y.element<T>(i0);
-    auto const x1    = poly_points_x.element<T>(i1);
-    auto const y1    = poly_points_y.element<T>(i1);
+    auto const x0    = linestring_points_x.element<T>(i0);
+    auto const y0    = linestring_points_y.element<T>(i0);
+    auto const x1    = linestring_points_x.element<T>(i1);
+    auto const y1    = linestring_points_y.element<T>(i1);
     auto const dx0   = px - x0;
     auto const dy0   = py - y0;
     auto const dx1   = px - x1;

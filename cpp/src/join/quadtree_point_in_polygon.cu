@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "detail/point.cuh"
+#include "detail/get_quad_and_local_point_indices.cuh"
 
 #include <indexing/construction/detail/utilities.cuh>
 #include <utility/point_in_polygon.cuh>
@@ -61,7 +61,7 @@ struct compute_poly_and_point_indices {
   {
     // uint32_t quad_poly_index, local_point_index;
     auto const [quad_poly_index, local_point_index] =
-      get_quad_poly_and_local_point_indices(global_index, point_offsets, point_offsets_end);
+      get_quad_and_local_point_indices(global_index, point_offsets, point_offsets_end);
     uint32_t const point_idx = quad_point_offsets[quad_poly_index] + local_point_index;
     uint32_t const poly_idx  = poly_indices.element<uint32_t>(quad_poly_index);
     return thrust::make_tuple(poly_idx, point_idx);
