@@ -46,6 +46,7 @@ struct point_bounding_box {
 template <typename T>
 struct box_minmax {
   using point_tuple = thrust::tuple<cuspatial::vec_2d<T>, cuspatial::vec_2d<T>>;
+
   inline __host__ __device__ point_tuple operator()(point_tuple const& a, point_tuple const& b)
   {
     // structured binding doesn't seem to work with thrust::tuple
@@ -56,18 +57,17 @@ struct box_minmax {
   }
 };
 
-template <typename IdInputIt,
-          typename PointInputIt,
-          typename BoundingBoxOutputIt,
-          typename T = iterator_vec_base_type<PointInputIt>>
+}  // namespace detail
+
+template <typename IdInputIt, typename PointInputIt, typename BoundingBoxOutputIt>
 BoundingBoxOutputIt point_bounding_boxes(IdInputIt ids_first,
                                          IdInputIt ids_last,
                                          PointInputIt points_first,
                                          BoundingBoxOutputIt bounding_boxes_first,
-                                         float expansion_radius       = 0,
-                                         rmm::cuda_stream_view stream = rmm::cuda_stream_default)
+                                         float expansion_radius,
+                                         rmm::cuda_stream_view stream)
 {
-  // using T      = iterator_vec_base_type<PointInputIt>;
+  using T      = iterator_vec_base_type<PointInputIt>;
   using IdType = iterator_value_type<IdInputIt>;
 
   auto point_bboxes_first =
@@ -85,7 +85,5 @@ BoundingBoxOutputIt point_bounding_boxes(IdInputIt ids_first,
 
   return bounding_boxes_last;
 }
-
-}  // namespace detail
 
 }  // namespace cuspatial
