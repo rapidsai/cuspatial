@@ -15,6 +15,7 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/detail/bounding_boxes.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/trajectory_bounding_boxes.cuh>
 
@@ -71,6 +72,12 @@ struct dispatch_element {
     auto bbox_maxes = cuspatial::make_vec_2d_output_iterator(cols.at(2)->mutable_view().begin<T>(),
                                                              cols.at(3)->mutable_view().begin<T>());
 
+    /*return detail::point_bounding_boxes(object_id.begin<cudf::size_type>(),
+                                        object_id.end<cudf::size_type>(),
+                                        points_begin,
+                                        thrust::make_zip_iterator(bbox_mins, bbox_maxes),
+                                        0,
+                                        stream);*/
     trajectory_bounding_boxes(object_id.begin<cudf::size_type>(),
                               object_id.end<cudf::size_type>(),
                               points_begin,
