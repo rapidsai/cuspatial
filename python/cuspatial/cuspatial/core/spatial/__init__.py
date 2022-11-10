@@ -24,7 +24,8 @@ from .distance import (
 )
 
 from .projection import (
-    lonlat_to_cartesian,
+   sinusoidal_projection,
+   lonlat_to_cartesian
 )
 
 from .nearest_points import pairwise_point_linestring_nearest_points
@@ -33,6 +34,7 @@ __all__ = [
     "directed_hausdorff_distance",
     "haversine_distance",
     "join_quadtree_and_bounding_boxes",
+    "sinusoidal_projection",
     "lonlat_to_cartesian",
     "pairwise_point_distance",
     "pairwise_linestring_distance",

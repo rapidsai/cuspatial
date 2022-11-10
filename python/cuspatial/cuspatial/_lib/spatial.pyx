@@ -10,8 +10,8 @@ from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column cimport column
 from cudf._lib.cpp.column.column_view cimport column_view
 
-from cuspatial._lib.cpp.coordinate_transform cimport (
-    lonlat_to_cartesian as cpp_lonlat_to_cartesian,
+from cuspatial._lib.cpp.projection cimport (
+    sinusoidal_projection as cpp_sinusoidal_projection,
 )
 from cuspatial._lib.cpp.distance.haversine cimport (
     haversine_distance as cpp_haversine_distance,
@@ -32,7 +32,7 @@ cpdef haversine_distance(Column x1, Column y1, Column x2, Column y2):
     return Column.from_unique_ptr(move(c_result))
 
 
-def lonlat_to_cartesian(
+def sinusoidal_projection(
     double origin_lon,
     double origin_lat,
     Column input_lon,
@@ -45,7 +45,7 @@ def lonlat_to_cartesian(
 
     with nogil:
         result = move(
-            cpp_lonlat_to_cartesian(
+            cpp_sinusoidal_projection(
                 origin_lon,
                 origin_lat,
                 c_input_lon,
