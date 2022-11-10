@@ -15,7 +15,7 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/bounding_boxes.cuh>
+#include <cuspatial/experimental/bounding_box.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 
 #include <cudf/column/column_factories.hpp>

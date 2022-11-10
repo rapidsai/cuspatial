@@ -23,7 +23,7 @@
 namespace cuspatial {
 
 /**
- * @addtogroup todo_what_group
+ * @addtogroup spatial_relationship
  * @{
  */
 
@@ -78,4 +78,4 @@ BoundingBoxOutputIt point_bounding_boxes(IdInputIt ids_first,
 
 }  // namespace cuspatial
 
-#include "detail/bounding_boxes.cuh"
+#include "detail/bounding_box.cuh"

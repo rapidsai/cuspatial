@@ -17,7 +17,7 @@
 #include "../trajectory/trajectory_test_utils.cuh"
 
 #include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/experimental/bounding_boxes.cuh>
+#include <cuspatial/experimental/bounding_box.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -37,7 +37,7 @@
 
 template <typename T>
 struct PointBoundingBoxesTest : public ::testing::Test {
-  void run_test(int num_trajectories, int points_per_trajectory)
+  void run_test(int num_trajectories, int points_per_trajectory, T expansion_radius = T{})
   {
     auto data = cuspatial::test::trajectory_test_data<T>(num_trajectories, points_per_trajectory);
 
@@ -66,3 +66,8 @@ TYPED_TEST(PointBoundingBoxesTest, OneMillionSmallTrajectories) { this->run_test
 TYPED_TEST(PointBoundingBoxesTest, OneHundredLargeTrajectories) { this->run_test(100, 1'000'000); }
 
 TYPED_TEST(PointBoundingBoxesTest, OneVeryLargeTrajectory) { this->run_test(1, 100'000'000); }
+
+TYPED_TEST(PointBoundingBoxesTest, TrajectoriesWithExpansion)
+{
+  this->run_test(1'000'000, 50, TypeParam{0.5});
+}
