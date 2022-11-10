@@ -25,7 +25,7 @@
 namespace cuspatial {
 
 /**
- * @addtogroup coordinate_transform
+ * @addtogroup projection
  * @{
  */
 
