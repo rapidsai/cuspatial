@@ -47,12 +47,13 @@ namespace cuspatial {
  *
  * @returns a pair of columns containing cartesian coordinates in kilometers
  */
-[[deprecated]] std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-lonlat_to_cartesian(double origin_lon,
-                    double origin_lat,
-                    cudf::column_view const& input_lon,
-                    cudf::column_view const& input_lat,
-                    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+[[deprecated("Use sinusoidal_projection in cuspatial/projection.hpp")]] std::
+  pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
+  lonlat_to_cartesian(double origin_lon,
+                      double origin_lat,
+                      cudf::column_view const& input_lon,
+                      cudf::column_view const& input_lat,
+                      rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
  * @} // end of doxygen group
