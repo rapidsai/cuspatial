@@ -43,6 +43,11 @@ wheels/
 *.egg
 pip-log.txt
 pip-delete-this-directory.txt
+naturalearth_lowres_polygon.cpg
+naturalearth_lowres_polygon.dbf
+naturalearth_lowres_polygon.prj
+naturalearth_lowres_polygon.shp
+naturalearth_lowres_polygon.shx
 
 # Unit test / coverage reports
 htmlcov/
