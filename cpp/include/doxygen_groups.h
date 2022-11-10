@@ -42,7 +42,7 @@
  *
  *          This module contains APIs that transforms cartesian and geodesic coordinates.
  *          @file coordinate_transform.hpp
-            @file coordinate_transform.cuh
+            @file sinusoidal_projection.cuh
  *      @}
  *      @defgroup distance Distance
  *      @{

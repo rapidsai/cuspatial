@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/coordinate_transform.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/experimental/sinusoidal_projection.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column.hpp>
@@ -70,7 +70,7 @@ struct lonlat_to_cartesian_functor {
 
     auto origin = cuspatial::vec_2d<T>{origin_lon, origin_lat};
 
-    cuspatial::lonlat_to_cartesian(
+    cuspatial::sinusoidal_projection(
       lonlat_begin, lonlat_begin + input_lon.size(), output_zip, origin, stream);
 
     return std::make_pair(std::move(output_x), std::move(output_y));
