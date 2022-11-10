@@ -47,8 +47,8 @@ endfunction(ConfigureTest)
 ConfigureTest(CUBIC_SPLINE_TEST
     interpolate/cubic_spline_test.cpp)
 
-ConfigureTest(COORDINATE_TRANSFORM_TEST
-    spatial/coordinate_transform_test.cu)
+ConfigureTest(SINUSOIDAL_PROJECTION_TEST
+    spatial/sinusoidal_projection_test.cu)
 
 ConfigureTest(HAVERSINE_TEST
     spatial/haversine_test.cpp)

@@ -41,8 +41,9 @@
  *          @brief APIs to project coordinates between coordinate reference systems.
  *
  *          This module contains APIs that transforms cartesian and geodesic coordinates.
+ *          @file projection.hpp
  *          @file coordinate_transform.hpp
-            @file sinusoidal_projection.cuh
+ *          @file sinusoidal_projection.cuh
  *      @}
  *      @defgroup distance Distance
  *      @{

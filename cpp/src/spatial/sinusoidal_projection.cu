@@ -39,7 +39,7 @@ namespace {
 
 using pair_of_columns = std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>;
 
-struct lonlat_to_cartesian_functor {
+struct dispatch_sinusoidal_projection {
   template <typename T, typename... Args>
   std::enable_if_t<not std::is_floating_point<T>::value, pair_of_columns> operator()(Args&&...)
   {
@@ -82,12 +82,12 @@ struct lonlat_to_cartesian_functor {
 namespace cuspatial {
 namespace detail {
 
-pair_of_columns lonlat_to_cartesian(double origin_lon,
-                                    double origin_lat,
-                                    cudf::column_view const& input_lon,
-                                    cudf::column_view const& input_lat,
-                                    rmm::cuda_stream_view stream,
-                                    rmm::mr::device_memory_resource* mr)
+pair_of_columns sinusoidal_projection(double origin_lon,
+                                      double origin_lat,
+                                      cudf::column_view const& input_lon,
+                                      cudf::column_view const& input_lat,
+                                      rmm::cuda_stream_view stream,
+                                      rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(
     origin_lon >= -180 && origin_lon <= 180 && origin_lat >= -90 && origin_lat <= 90,
@@ -101,7 +101,7 @@ pair_of_columns lonlat_to_cartesian(double origin_lon,
                     "input cannot contain nulls");
 
   return cudf::type_dispatcher(input_lon.type(),
-                               lonlat_to_cartesian_functor(),
+                               dispatch_sinusoidal_projection(),
                                origin_lon,
                                origin_lat,
                                input_lon,
@@ -112,14 +112,24 @@ pair_of_columns lonlat_to_cartesian(double origin_lon,
 
 }  // namespace detail
 
+pair_of_columns sinusoidal_projection(double origin_lon,
+                                      double origin_lat,
+                                      cudf::column_view const& input_lon,
+                                      cudf::column_view const& input_lat,
+                                      rmm::mr::device_memory_resource* mr)
+{
+  return detail::sinusoidal_projection(
+    origin_lon, origin_lat, input_lon, input_lat, rmm::cuda_stream_default, mr);
+}
+
+// deprecated
 pair_of_columns lonlat_to_cartesian(double origin_lon,
                                     double origin_lat,
                                     cudf::column_view const& input_lon,
                                     cudf::column_view const& input_lat,
                                     rmm::mr::device_memory_resource* mr)
 {
-  return detail::lonlat_to_cartesian(
-    origin_lon, origin_lat, input_lon, input_lat, rmm::cuda_stream_default, mr);
+  return sinusoidal_projection(origin_lon, origin_lat, input_lon, input_lat, mr);
 }
 
 }  // namespace cuspatial
