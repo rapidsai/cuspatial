@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <cuspatial/traits.hpp>
+
 #include <rmm/cuda_stream_view.hpp>
 
 namespace cuspatial {
@@ -59,12 +61,15 @@ namespace cuspatial {
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <typename IdInputIt, typename PointInputIt, typename BoundingBoxOutputIt>
+template <typename IdInputIt,
+          typename PointInputIt,
+          typename BoundingBoxOutputIt,
+          typename T = iterator_vec_base_type<PointInputIt>>
 BoundingBoxOutputIt point_bounding_boxes(IdInputIt ids_first,
                                          IdInputIt ids_last,
                                          PointInputIt points_first,
                                          BoundingBoxOutputIt bounding_boxes_first,
-                                         float expansion_radius       = 0.0f,
+                                         T expansion_radius           = T{0},
                                          rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 /**

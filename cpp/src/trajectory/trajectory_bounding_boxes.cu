@@ -75,7 +75,7 @@ struct dispatch_element {
                          object_id.end<cudf::size_type>(),
                          points_begin,
                          thrust::make_zip_iterator(bbox_mins, bbox_maxes),
-                         0.0,
+                         T{0},
                          stream);
 
     // check for errors

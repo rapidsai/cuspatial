@@ -25,6 +25,7 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
+#include <type_traits>
 
 namespace cuspatial {
 
@@ -59,19 +60,22 @@ struct box_minmax {
 
 }  // namespace detail
 
-template <typename IdInputIt, typename PointInputIt, typename BoundingBoxOutputIt>
+template <typename IdInputIt, typename PointInputIt, typename BoundingBoxOutputIt, typename T>
 BoundingBoxOutputIt point_bounding_boxes(IdInputIt ids_first,
                                          IdInputIt ids_last,
                                          PointInputIt points_first,
                                          BoundingBoxOutputIt bounding_boxes_first,
-                                         float expansion_radius,
+                                         T expansion_radius,
                                          rmm::cuda_stream_view stream)
 {
-  using T      = iterator_vec_base_type<PointInputIt>;
-  using IdType = iterator_value_type<IdInputIt>;
+  static_assert(std::is_floating_point_v<T>, "expansion_radius must be a floating-point type");
 
-  auto point_bboxes_first =
-    thrust::make_transform_iterator(points_first, detail::point_bounding_box<T>{expansion_radius});
+  using CoordinateType = iterator_vec_base_type<PointInputIt>;
+  using IdType         = iterator_value_type<IdInputIt>;
+
+  auto point_bboxes_first = thrust::make_transform_iterator(
+    points_first,
+    detail::point_bounding_box<CoordinateType>{static_cast<CoordinateType>(expansion_radius)});
 
   [[maybe_unused]] auto [_, bounding_boxes_last] =
     thrust::reduce_by_key(rmm::exec_policy(stream),
@@ -81,7 +85,7 @@ BoundingBoxOutputIt point_bounding_boxes(IdInputIt ids_first,
                           thrust::make_discard_iterator(),
                           bounding_boxes_first,
                           thrust::equal_to<IdType>(),
-                          detail::box_minmax<T>{});
+                          detail::box_minmax<CoordinateType>{});
 
   return bounding_boxes_last;
 }
