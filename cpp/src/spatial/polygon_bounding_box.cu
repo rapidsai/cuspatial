@@ -15,7 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/polygon_bounding_box.hpp>
+#include <cuspatial/experimental/bounding_boxes.cuh>
+#include <cuspatial/experimental/iterator_factory.cuh>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
@@ -62,6 +63,7 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
                                                             cudf::column_view const& ring_offsets,
                                                             cudf::column_view const& x,
                                                             cudf::column_view const& y,
+                                                            T expansion_radius,
                                                             rmm::cuda_stream_view stream,
                                                             rmm::mr::device_memory_resource* mr)
 {
@@ -106,33 +108,19 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
   cols.push_back(
     cudf::make_numeric_column(type, num_polygons, cudf::mask_state::UNALLOCATED, stream, mr));
 
-  auto bboxes_iter =
-    thrust::make_zip_iterator(thrust::make_tuple(cols.at(0)->mutable_view().begin<T>(),  // bbox_x1
-                                                 cols.at(1)->mutable_view().begin<T>(),  // bbox_y1
-                                                 cols.at(2)->mutable_view().begin<T>(),  // bbox_x2
-                                                 cols.at(3)->mutable_view().begin<T>())  // bbox_y2
-    );
+  auto points_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
 
-  auto points_iter = thrust::make_zip_iterator(thrust::make_tuple(x.begin<T>(), y.begin<T>()));
-  auto points_squared_iter = thrust::make_transform_iterator(points_iter, point_to_square<T>{});
+  auto bbox_mins  = cuspatial::make_vec_2d_output_iterator(cols.at(0)->mutable_view().begin<T>(),
+                                                          cols.at(1)->mutable_view().begin<T>());
+  auto bbox_maxes = cuspatial::make_vec_2d_output_iterator(cols.at(2)->mutable_view().begin<T>(),
+                                                           cols.at(3)->mutable_view().begin<T>());
 
-  thrust::reduce_by_key(rmm::exec_policy(stream),
-                        point_ids.begin(),
-                        point_ids.end(),
-                        points_squared_iter,
-                        thrust::make_discard_iterator(),
-                        bboxes_iter,
-                        thrust::equal_to<int32_t>(),
-                        [] __device__(auto const& a, auto const& b) {
-                          T min_x_a, min_y_a, max_x_a, max_y_a;
-                          T min_x_b, min_y_b, max_x_b, max_y_b;
-                          thrust::tie(min_x_a, min_y_a, max_x_a, max_y_a) = a;
-                          thrust::tie(min_x_b, min_y_b, max_x_b, max_y_b) = b;
-                          return thrust::make_tuple(min(min_x_a, min_x_b),   // min_x
-                                                    min(min_y_a, min_y_b),   // min_y
-                                                    max(max_x_a, max_x_b),   // max_x
-                                                    max(max_y_a, max_y_b));  // max_y
-                        });
+  point_bounding_boxes(point_ids.begin(),
+                       point_ids.end(),
+                       points_begin,
+                       thrust::make_zip_iterator(bbox_mins, bbox_maxes),
+                       expansion_radius,
+                       stream);
 
   return std::make_unique<cudf::table>(std::move(cols));
 }
@@ -151,10 +139,12 @@ struct dispatch_compute_polygon_bounding_boxes {
              cudf::column_view const& ring_offsets,
              cudf::column_view const& x,
              cudf::column_view const& y,
+             T expansion_radius,
              rmm::cuda_stream_view stream,
              rmm::mr::device_memory_resource* mr)
   {
-    return compute_polygon_bounding_boxes<T>(poly_offsets, ring_offsets, x, y, stream, mr);
+    return compute_polygon_bounding_boxes<T>(
+      poly_offsets, ring_offsets, x, y, expansion_radius, stream, mr);
   }
 };
 
@@ -166,6 +156,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& pol
                                                     cudf::column_view const& ring_offsets,
                                                     cudf::column_view const& x,
                                                     cudf::column_view const& y,
+                                                    double expansion_radius,
                                                     rmm::cuda_stream_view stream,
                                                     rmm::mr::device_memory_resource* mr)
 {
@@ -175,6 +166,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& pol
                                ring_offsets,
                                x,
                                y,
+                               expansion_radius,
                                stream,
                                mr);
 }
@@ -185,6 +177,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& pol
                                                     cudf::column_view const& ring_offsets,
                                                     cudf::column_view const& x,
                                                     cudf::column_view const& y,
+                                                    double expansion_radius,
                                                     rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(ring_offsets.size() >= poly_offsets.size(),
@@ -206,7 +199,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& pol
   }
 
   return detail::polygon_bounding_boxes(
-    poly_offsets, ring_offsets, x, y, rmm::cuda_stream_default, mr);
+    poly_offsets, ring_offsets, x, y, expansion_radius, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial
