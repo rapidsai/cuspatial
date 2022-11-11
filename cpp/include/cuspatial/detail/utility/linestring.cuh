@@ -140,11 +140,18 @@ __forceinline__ T __device__ squared_segment_distance(vec_2d<T> const& a,
  * @internal
  * @brief Given two collinear or parallel segments, return their potential overlapping segment
  *
+ * @p a, @p b, @p c, @p d refer to end points of segment ab and cd.
+ * @p center is the geometric center of the segments, used to decondition the coordinates.
+ *
  * @return optional end points of overlapping segment
  */
 template <typename T>
-__forceinline__ thrust::optional<segment<T>> __device__ collinear_or_parallel_overlapping_segments(
-  vec_2d<T> const& a, vec_2d<T> const& b, vec_2d<T> const& c, vec_2d<T> const& d)
+__forceinline__ thrust::optional<segment<T>> __device__
+collinear_or_parallel_overlapping_segments(vec_2d<T> const& a,
+                                           vec_2d<T> const& b,
+                                           vec_2d<T> const& c,
+                                           vec_2d<T> const& d,
+                                           vec_2d<T> const& center = vec_2d<T>{})
 {
   auto ab = b - a;
   auto ac = c - a;
@@ -158,7 +165,9 @@ __forceinline__ thrust::optional<segment<T>> __device__ collinear_or_parallel_ov
     auto a_ = a, b_ = b, c_ = c, d_ = d;
     if (d_ < c_) thrust::swap(c_, d_);
     if (b_ < a_) thrust::swap(a_, b_);
-    return segment<T>{a_ > c_ ? a_ : c_, b_ < d_ ? b_ : d_};
+    auto e0 = a_ > c_ ? a_ : c_;
+    auto e1 = b_ < d_ ? b_ : d_;
+    return segment<T>{e0 + center, e1 + center};
   }
 
   return thrust::nullopt;
@@ -178,6 +187,13 @@ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
   auto [a, b] = segment1;
   auto [c, d] = segment2;
 
+  // Condition the coordinates to avoid large floating point error
+  auto center = midpoint(midpoint(a, b), midpoint(c, d));
+  a -= center;
+  b -= center;
+  c -= center;
+  d -= center;
+
   auto ab = b - a;
   auto cd = d - c;
 
@@ -185,7 +201,7 @@ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
 
   if (denom == 0) {
     // Segments parallel or collinear
-    return {thrust::nullopt, collinear_or_parallel_overlapping_segments(a, b, c, d)};
+    return {thrust::nullopt, collinear_or_parallel_overlapping_segments(a, b, c, d, center)};
   }
 
   auto ac               = c - a;
@@ -193,7 +209,11 @@ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
   auto denom_reciprocal = 1 / denom;
   auto r                = r_numer * denom_reciprocal;
   auto s                = det(ac, ab) * denom_reciprocal;
-  if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return {a + r * ab, thrust::nullopt}; }
+  if (r >= 0 and r <= 1 and s >= 0 and s <= 1) {
+    auto p = a + r * ab;
+    // Decondition the coordinates
+    return {p + center, thrust::nullopt};
+  }
   return {thrust::nullopt, thrust::nullopt};
 }
 

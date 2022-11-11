@@ -369,3 +369,29 @@ TYPED_TEST(SegmentIntersectionTest, Overlap6)
 
   run_single_intersection_test(ab, cd, points_expected, segments_expected);
 }
+
+TYPED_TEST(SegmentIntersectionTest, Overlap7)
+{
+  using T = TypeParam;
+
+  segment<T> ab{{0.0, 0.0}, {0.0, 1.0}};
+  segment<T> cd{{0.0, 0.0}, {0.0, 0.5}};
+
+  std::vector<thrust::optional<vec_2d<T>>> points_expected{thrust::nullopt};
+  std::vector<thrust::optional<segment<T>>> segments_expected{segment<T>{{0.0, 0.0}, {0.0, 0.5}}};
+
+  run_single_intersection_test(ab, cd, points_expected, segments_expected);
+}
+
+TYPED_TEST(SegmentIntersectionTest, Overlap8)
+{
+  using T = TypeParam;
+
+  segment<T> ab{{0.0, 0.0}, {0.0, 1.0}};
+  segment<T> cd{{0.0, 0.5}, {0.0, 1.0}};
+
+  std::vector<thrust::optional<vec_2d<T>>> points_expected{thrust::nullopt};
+  std::vector<thrust::optional<segment<T>>> segments_expected{segment<T>{{0.0, 0.5}, {0.0, 1.0}}};
+
+  run_single_intersection_test(ab, cd, points_expected, segments_expected);
+}

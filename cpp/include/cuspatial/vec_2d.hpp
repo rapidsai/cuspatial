@@ -108,6 +108,26 @@ vec_2d<T> CUSPATIAL_HOST_DEVICE operator*(T const& r, vec_2d<T> vec)
 }
 
 /**
+ * @brief Translate a 2D point
+ */
+template <typename T>
+vec_2d<T>& CUSPATIAL_HOST_DEVICE operator+=(vec_2d<T>& a, vec_2d<T> const& b)
+{
+  a.x += b.x;
+  a.y += b.y;
+  return a;
+}
+
+/**
+ * @brief Translate a 2D point
+ */
+template <typename T>
+vec_2d<T>& CUSPATIAL_HOST_DEVICE operator-=(vec_2d<T>& a, vec_2d<T> const& b)
+{
+  return a += -b;
+}
+
+/**
  * @brief Less than operator for two 2D points.
  *
  * Orders two points first by x, then by y.
@@ -191,6 +211,15 @@ vec_2d<T> CUSPATIAL_HOST_DEVICE box_max(vec_2d<T> const& a, vec_2d<T> const& b)
 #else
   return vec_2d<T>{std::max(a.x, b.x), std::max(a.y, b.y)};
 #endif
+}
+
+/**
+ * @brief Compute the midpoint of `first` and `second`.
+ */
+template <typename T>
+vec_2d<T> CUSPATIAL_HOST_DEVICE midpoint(vec_2d<T> const& first, vec_2d<T> const& second)
+{
+  return (first + second) * T{0.5};
 }
 
 /**
