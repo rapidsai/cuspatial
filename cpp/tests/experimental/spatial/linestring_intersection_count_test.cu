@@ -322,37 +322,3 @@ TYPED_TEST(LinestringIntersectionCountTest, SingleToSingleIntersectOverlapSameVe
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(num_intersecting_points, expected_intersecting_points_count);
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(num_overlapping_segments, expected_overlapping_segment_count);
 }
-
-// TYPED_TEST(LinestringIntersectionCountTest, SingleToSingleExample)
-// {
-//   using T                = TypeParam;
-//   using P                = vec_2d<T>;
-//   auto multilinestrings1 = make_multilinestring_array(
-//     {0, 1, 2, 3, 4, 5, 6, 7},
-//     {0, 2, 4, 6, 8, 10, 12, 14},
-//     {P{0, 0}, P{1, 1}, P{0, 0}, P{1, 1}, P{0, 0}, P{1, 1}, P{0, 0}, P{1, 1}, P{0, 0}, P{1, 1},
-//      P{0, 0}, P{1, 1}, P{0, 0}, P{1, 1}, P{0, 0}, P{1, 1}, P{0, 0}, P{1, 1}, P{0, 0}, P{1, 1},
-//      P{0, 0}, P{1, 1}, P{0, 0}, P{1, 1}, P{0, 0}, P{1, 1}, P{0, 0}, P{1, 1}});
-
-//   auto multilinestrings2 = make_multilinestring_array(
-//     {0, 1, 2, 3, 4, 5, 6, 7},
-//     {0, 2, 5, 7, 12, 16, 18, 20},
-//     {P{1, 0},       P{0, 1},     P{0.5, 0},    P{0, 0.5},     P{1, 0.5},
-//      P{0.5, 0.5},   P{1.5, 1.5}, P{-1, -1},    P{0.25, 0.25}, P{0.25, 0.0},
-//      P{0.75, 0.75}, P{1.5, 1.5}, P{0.25, 0.0}, P{0.25, 0.5},  P{0.75, 0.75},
-//      P{1.5, 1.5},   P{2, 2},     P{3, 3},      P{1, 0},       P{2, 0}});
-
-//   rmm::device_vector<unsigned> num_intersecting_points(multilinestrings1.size());
-//   rmm::device_vector<unsigned> num_overlapping_segments(multilinestrings1.size());
-
-//   std::vector<unsigned> expected_intersecting_points_count{1, 2, 0, 0, 1, 0, 0};
-//   std::vector<unsigned> expected_overlapping_segment_count{0, 0, 1, 2, 1, 0, 0};
-
-//   pairwise_linestring_intersection_upper_bound_count(
-//     multilinestrings1.range(), multilinestrings2.range(), num_intersecting_points.begin(),
-//     num_overlapping_segments.begin());
-
-//   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(num_intersecting_points,
-//   expected_intersecting_points_count);
-//   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(num_overlapping_segments,
-// }
