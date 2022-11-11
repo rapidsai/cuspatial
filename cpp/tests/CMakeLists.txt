@@ -62,8 +62,8 @@ ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST
 ConfigureTest(JOIN_POINT_IN_POLYGON_LARGE_TEST
     join/point_in_polygon_test_large.cpp)
 
-ConfigureTest(JOIN_POINT_TO_POLYLINE_SMALL_TEST
-    join/point_to_nearest_polyline_test_small.cpp)
+ConfigureTest(JOIN_POINT_TO_LINESTRING_SMALL_TEST
+    join/point_to_nearest_linestring_test_small.cpp)
 
 ConfigureTest(POINT_IN_POLYGON_TEST
     spatial/point_in_polygon_test.cpp)
@@ -71,8 +71,8 @@ ConfigureTest(POINT_IN_POLYGON_TEST
 ConfigureTest(POINT_QUADTREE_TEST
     indexing/point_quadtree_test.cu)
 
-ConfigureTest(POLYLINE_BBOX_TEST
-    spatial/polyline_bbox_test.cu)
+ConfigureTest(LINESTRING_BBOX_TEST
+    spatial/linestring_bbox_test.cu)
 
 ConfigureTest(POLYGON_BBOX_TEST
     spatial/polygon_bbox_test.cu)
@@ -95,8 +95,8 @@ ConfigureTest(SHAPEFILE_READER_TEST
 ConfigureTest(QUADTREE_POLYGON_FILTERING_TEST
     join/quadtree_polygon_filtering_test.cu)
 
-ConfigureTest(QUADTREE_POLYLINE_FILTERING_TEST
-    join/quadtree_polyline_filtering_test.cu)
+ConfigureTest(QUADTREE_LINESTRING_FILTERING_TEST
+    join/quadtree_linestring_filtering_test.cu)
 
 ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST
     trajectory/test_trajectory_distances_and_speeds.cu)
@@ -143,6 +143,9 @@ ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP
 
 ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST_EXP
     experimental/trajectory/trajectory_bounding_boxes_test.cu)
+
+ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_EXP
+    experimental/trajectory/trajectory_distances_and_speeds_test.cu)
 
 ConfigureTest(POINT_QUADTREE_TEST_EXP
     experimental/indexing/point_quadtree_test.cu)

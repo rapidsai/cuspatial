@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/linestring_bounding_box.hpp>
 #include <cuspatial/point_quadtree.hpp>
-#include <cuspatial/polyline_bounding_box.hpp>
 #include <cuspatial/spatial_join.hpp>
 
 #include <cudf/copying.hpp>
@@ -103,77 +103,77 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto& point_indices = std::get<0>(quadtree_pair);
 
   double const expansion_radius{2.0};
-  fixed_width_column_wrapper<int32_t> poly_offsets({0, 4, 10, 14});
-  fixed_width_column_wrapper<T> poly_x({// ring 1
-                                        2.488450,
-                                        1.333584,
-                                        3.460720,
-                                        2.488450,
-                                        // ring 2
-                                        5.039823,
-                                        5.561707,
-                                        7.103516,
-                                        7.190674,
-                                        5.998939,
-                                        5.039823,
-                                        // ring 3
-                                        5.998939,
-                                        5.573720,
-                                        6.703534,
-                                        5.998939,
-                                        // ring 4
-                                        2.088115,
-                                        1.034892,
-                                        2.415080,
-                                        3.208660,
-                                        2.088115});
-  fixed_width_column_wrapper<T> poly_y({// ring 1
-                                        5.856625,
-                                        5.008840,
-                                        4.586599,
-                                        5.856625,
-                                        // ring 2
-                                        4.229242,
-                                        1.825073,
-                                        1.503906,
-                                        4.025879,
-                                        5.653384,
-                                        4.229242,
-                                        // ring 3
-                                        1.235638,
-                                        0.197808,
-                                        0.086693,
-                                        1.235638,
-                                        // ring 4
-                                        4.541529,
-                                        3.530299,
-                                        2.896937,
-                                        3.745936,
-                                        4.541529});
+  fixed_width_column_wrapper<int32_t> linestring_offsets({0, 4, 10, 14});
+  fixed_width_column_wrapper<T> linestring_x({// ring 1
+                                              2.488450,
+                                              1.333584,
+                                              3.460720,
+                                              2.488450,
+                                              // ring 2
+                                              5.039823,
+                                              5.561707,
+                                              7.103516,
+                                              7.190674,
+                                              5.998939,
+                                              5.039823,
+                                              // ring 3
+                                              5.998939,
+                                              5.573720,
+                                              6.703534,
+                                              5.998939,
+                                              // ring 4
+                                              2.088115,
+                                              1.034892,
+                                              2.415080,
+                                              3.208660,
+                                              2.088115});
+  fixed_width_column_wrapper<T> linestring_y({// ring 1
+                                              5.856625,
+                                              5.008840,
+                                              4.586599,
+                                              5.856625,
+                                              // ring 2
+                                              4.229242,
+                                              1.825073,
+                                              1.503906,
+                                              4.025879,
+                                              5.653384,
+                                              4.229242,
+                                              // ring 3
+                                              1.235638,
+                                              0.197808,
+                                              0.086693,
+                                              1.235638,
+                                              // ring 4
+                                              4.541529,
+                                              3.530299,
+                                              2.896937,
+                                              3.745936,
+                                              4.541529});
 
-  auto polyline_bboxes =
-    cuspatial::polyline_bounding_boxes(poly_offsets, poly_x, poly_y, expansion_radius, this->mr());
+  auto linestring_bboxes = cuspatial::linestring_bounding_boxes(
+    linestring_offsets, linestring_x, linestring_y, expansion_radius, this->mr());
 
   auto polygon_quadrant_pairs = cuspatial::join_quadtree_and_bounding_boxes(
-    *quadtree, *polyline_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
+    *quadtree, *linestring_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
-  auto point_to_polyline_distances =
-    cuspatial::quadtree_point_to_nearest_polyline(*polygon_quadrant_pairs,
-                                                  *quadtree,
-                                                  *point_indices,
-                                                  x,
-                                                  y,
-                                                  poly_offsets,
-                                                  poly_x,
-                                                  poly_y,
-                                                  this->mr());
+  auto point_to_linestring_distances =
+    cuspatial::quadtree_point_to_nearest_linestring(*polygon_quadrant_pairs,
+                                                    *quadtree,
+                                                    *point_indices,
+                                                    x,
+                                                    y,
+                                                    linestring_offsets,
+                                                    linestring_x,
+                                                    linestring_y,
+                                                    this->mr());
 
-  CUSPATIAL_EXPECTS(point_to_polyline_distances->num_columns() == 3,
-                    "a point-to-polyline distance table must have 3 columns");
+  CUSPATIAL_EXPECTS(point_to_linestring_distances->num_columns() == 3,
+                    "a point-to-linestring distance table must have 3 columns");
 
   CUSPATIAL_EXPECTS(
-    point_to_polyline_distances->num_rows() == point_indices->size(),
-    "number of point-to-polyline distance pairs should be the same as number of points");
+    point_to_linestring_distances->num_rows() == point_indices->size(),
+    "number of point-to-linestring distance pairs should be the same as number of points");
 
   auto expected_distances_column = []() {
     if (std::is_same<T, float>()) {
@@ -223,5 +223,5 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
                          3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1,
                          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}),
                       expected_distances_column()}},
-    *point_to_polyline_distances);
+    *point_to_linestring_distances);
 }

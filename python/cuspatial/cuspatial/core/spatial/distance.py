@@ -195,7 +195,7 @@ def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
 def pairwise_linestring_distance(
     multilinestrings1: GeoSeries, multilinestrings2: GeoSeries
 ):
-    """Compute shortest distance between pairs of linestrings (a.k.a. polylines)
+    """Compute shortest distance between pairs of linestrings
 
     The shortest distance between two linestrings is defined as the shortest
     distance between all pairs of segments of the two linestrings. If any of
@@ -370,10 +370,10 @@ def pairwise_point_linestring_distance(
         {
             None: c_pairwise_point_linestring_distance(
                 point_xy_col,
-                linestrings.lines.part_offset._column,
+                as_column(linestrings.lines.part_offset),
                 linestrings.lines.xy._column,
                 points_geometry_offset,
-                linestrings.lines.geometry_offset._column,
+                as_column(linestrings.lines.geometry_offset),
             )
         }
     )
@@ -389,5 +389,5 @@ def _flatten_point_series(
         return points.points.xy._column, None
     return (
         points.multipoints.xy._column,
-        points.multipoints.geometry_offset._column,
+        as_column(points.multipoints.geometry_offset),
     )

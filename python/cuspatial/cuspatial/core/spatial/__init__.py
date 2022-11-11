@@ -2,7 +2,7 @@
 
 from .bounding import (
     polygon_bounding_boxes,
-    polyline_bounding_boxes,
+    linestring_bounding_boxes,
 )
 from .filtering import points_in_spatial_window
 
@@ -12,7 +12,7 @@ from .join import (
     point_in_polygon,
     join_quadtree_and_bounding_boxes,
     quadtree_point_in_polygon,
-    quadtree_point_to_nearest_polyline,
+    quadtree_point_to_nearest_linestring,
 )
 
 from .distance import (
@@ -39,10 +39,10 @@ __all__ = [
     "pairwise_point_linestring_distance",
     "pairwise_point_linestring_nearest_points",
     "polygon_bounding_boxes",
-    "polyline_bounding_boxes",
+    "linestring_bounding_boxes",
     "point_in_polygon",
     "points_in_spatial_window",
     "quadtree_on_points",
     "quadtree_point_in_polygon",
-    "quadtree_point_to_nearest_polyline",
+    "quadtree_point_to_nearest_linestring",
 ]

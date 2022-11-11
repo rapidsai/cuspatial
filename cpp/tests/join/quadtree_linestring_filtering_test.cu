@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/linestring_bounding_box.hpp>
 #include <cuspatial/point_quadtree.hpp>
-#include <cuspatial/polyline_bounding_box.hpp>
 #include <cuspatial/spatial_join.hpp>
 
 #include <cudf/table/table.hpp>
@@ -29,12 +29,12 @@
 #include <cudf_test/type_lists.hpp>
 
 template <typename T>
-struct QuadtreePolylineBoundingBoxJoinTest : public cudf::test::BaseFixture {
+struct QuadtreeLinestringBoundingBoxJoinTest : public cudf::test::BaseFixture {
 };
 
-TYPED_TEST_CASE(QuadtreePolylineBoundingBoxJoinTest, cudf::test::FloatingPointTypes);
+TYPED_TEST_CASE(QuadtreeLinestringBoundingBoxJoinTest, cudf::test::FloatingPointTypes);
 
-TYPED_TEST(QuadtreePolylineBoundingBoxJoinTest, test_small)
+TYPED_TEST(QuadtreeLinestringBoundingBoxJoinTest, test_small)
 {
   using T = TypeParam;
   using namespace cudf::test;
@@ -93,7 +93,7 @@ TYPED_TEST(QuadtreePolylineBoundingBoxJoinTest, test_small)
   auto& quadtree = std::get<1>(pair);
 
   double const expansion_radius{2.0};
-  fixed_width_column_wrapper<int32_t> poly_offsets({0, 3, 8, 12});
+  fixed_width_column_wrapper<int32_t> linestring_offsets({0, 3, 8, 12});
   fixed_width_column_wrapper<T> poly_x({// ring 1
                                         2.488450,
                                         1.333584,
@@ -115,42 +115,42 @@ TYPED_TEST(QuadtreePolylineBoundingBoxJoinTest, test_small)
                                         2.415080,
                                         3.208660,
                                         2.088115});
-  fixed_width_column_wrapper<T> poly_y({// ring 1
-                                        5.856625,
-                                        5.008840,
-                                        4.586599,
-                                        // ring 2
-                                        4.229242,
-                                        1.825073,
-                                        1.503906,
-                                        4.025879,
-                                        5.653384,
-                                        // ring 3
-                                        1.235638,
-                                        0.197808,
-                                        0.086693,
-                                        1.235638,
-                                        // ring 4
-                                        4.541529,
-                                        3.530299,
-                                        2.896937,
-                                        3.745936,
-                                        4.541529});
+  fixed_width_column_wrapper<T> linestring_y({// ring 1
+                                              5.856625,
+                                              5.008840,
+                                              4.586599,
+                                              // ring 2
+                                              4.229242,
+                                              1.825073,
+                                              1.503906,
+                                              4.025879,
+                                              5.653384,
+                                              // ring 3
+                                              1.235638,
+                                              0.197808,
+                                              0.086693,
+                                              1.235638,
+                                              // ring 4
+                                              4.541529,
+                                              3.530299,
+                                              2.896937,
+                                              3.745936,
+                                              4.541529});
 
-  auto polyline_bboxes =
-    cuspatial::polyline_bounding_boxes(poly_offsets, poly_x, poly_y, expansion_radius, this->mr());
+  auto linestring_bboxes = cuspatial::linestring_bounding_boxes(
+    linestring_offsets, poly_x, linestring_y, expansion_radius, this->mr());
 
-  auto polyline_quadrant_pairs = cuspatial::join_quadtree_and_bounding_boxes(
-    *quadtree, *polyline_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
+  auto linestring_quadrant_pairs = cuspatial::join_quadtree_and_bounding_boxes(
+    *quadtree, *linestring_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
   CUSPATIAL_EXPECTS(
-    polyline_quadrant_pairs->num_columns() == 2,
-    "a polyline-quadrant pair table must have 2 columns (polyline_index, quadrant_index)");
+    linestring_quadrant_pairs->num_columns() == 2,
+    "a linestring-quadrant pair table must have 2 columns (linestring_index, quadrant_index)");
 
   expect_tables_equal(
     cudf::table_view{{fixed_width_column_wrapper<uint32_t>(
                         {3, 1, 2, 3, 3, 0, 1, 2, 3, 0, 3, 1, 2, 3, 1, 2, 1, 2, 0, 1, 3}),
                       fixed_width_column_wrapper<uint32_t>({3, 8, 8, 8,  9,  10, 10, 10, 10, 11, 11,
                                                             6, 6, 6, 12, 12, 13, 13, 2,  2,  2})}},
-    *polyline_quadrant_pairs);
+    *linestring_quadrant_pairs);
 }

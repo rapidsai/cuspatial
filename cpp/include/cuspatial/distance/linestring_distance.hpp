@@ -26,8 +26,7 @@
 namespace cuspatial {
 
 /**
- * @brief Compute shortest distance between pairs of (multi)linestrings (a.k.a. (multi)polylines)
- *
+ * @brief Compute shortest distance between pairs of linestrings
  * @ingroup distance
  *
  * The shortest distance between two linestrings is defined as the shortest distance
