@@ -16,8 +16,11 @@
 
 #pragma once
 
+#include "thrust/detail/raw_reference_cast.h"
+#include "thrust/device_reference.h"
 #include <thrust/device_ptr.h>
 
+#include <cuda/atomic>
 #include <type_traits>
 
 namespace cuspatial {
@@ -258,6 +261,25 @@ __device__ inline double atomicMax(thrust::device_ptr<double> ptr, double val)
 __device__ inline float atomicMax(thrust::device_ptr<float> ptr, float val)
 {
   return atomicMax(thrust::raw_pointer_cast(ptr), val);
+}
+
+/**
+ * @brief Factory method to create atomic_ref from a thrust::device_reference
+ */
+template <typename T>
+auto __device__ make_atomic_ref(thrust::device_reference<T> ref)
+{
+  T& raw_ref = thrust::raw_reference_cast(ref);
+  return cuda::atomic_ref<T>{raw_ref};
+}
+
+/**
+ * @brief Factory method to create atomic_ref from raw reference
+ */
+template <typename T>
+auto __device__ make_atomic_ref(T& ref)
+{
+  return cuda::atomic_ref<T>{ref};
 }
 
 }  // namespace detail

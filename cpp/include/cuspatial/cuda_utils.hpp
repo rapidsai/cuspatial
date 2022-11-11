@@ -15,9 +15,16 @@
  */
 
 #pragma once
+#include <utility>
 
 #ifdef __CUDACC__
 #define CUSPATIAL_HOST_DEVICE __host__ __device__
 #else
 #define CUSPATIAL_HOST_DEVICE
 #endif
+
+template <std::size_t threads_per_block = 256>
+std::pair<std::size_t, std::size_t> constexpr grid_1d(std::size_t const n)
+{
+  return {threads_per_block, (n + threads_per_block - 1) / threads_per_block};
+}

@@ -128,6 +128,9 @@ ConfigureTest(HAUSDORFF_TEST_EXP
 ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
     experimental/spatial/linestring_distance_test.cu)
 
+ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP
+    experimental/spatial/linestring_intersection_count_test.cu)
+
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST_EXP
     experimental/spatial/point_linestring_nearest_points_test.cu)
 
