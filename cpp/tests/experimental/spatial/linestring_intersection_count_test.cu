@@ -20,7 +20,6 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/linestring_intersection_count.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 

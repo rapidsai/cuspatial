@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-#include <rmm/device_vector.hpp>
-
+#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
 #include <cuspatial/vec_2d.hpp>
+
+#include <rmm/device_vector.hpp>
 
 #include <initializer_list>
 #include <vector>
