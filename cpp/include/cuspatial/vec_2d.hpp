@@ -38,137 +38,122 @@ namespace cuspatial {
  * @tparam T the base type for the coordinates
  */
 template <typename T>
-struct alignas(2 * sizeof(T)) vec_2d {
+class alignas(2 * sizeof(T)) vec_2d {
+ public:
   using value_type = T;
   value_type x;
   value_type y;
+
+ private:
+  /**
+   * @brief Output stream operator for `vec_2d<T>` for human-readable formatting
+   */
+  friend std::ostream& operator<<(std::ostream& os, cuspatial::vec_2d<T> const& vec)
+  {
+    return os << "(" << vec.x << "," << vec.y << ")";
+  }
+
+  /**
+   * @brief Compare two 2D vectors for equality.
+   */
+  friend bool operator==(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+  {
+    return (lhs.x == rhs.x) && (lhs.y == rhs.y);
+  }
+
+  /**
+   * @brief Element-wise addition of two 2D vectors.
+   */
+  friend vec_2d<T> CUSPATIAL_HOST_DEVICE operator+(vec_2d<T> const& a, vec_2d<T> const& b)
+  {
+    return vec_2d<T>{a.x + b.x, a.y + b.y};
+  }
+
+  /**
+   * @brief Element-wise subtraction of two 2D vectors.
+   */
+  friend vec_2d<T> CUSPATIAL_HOST_DEVICE operator-(vec_2d<T> const& a, vec_2d<T> const& b)
+  {
+    return vec_2d<T>{a.x - b.x, a.y - b.y};
+  }
+
+  /**
+   * @brief Invert a 2D vector.
+   */
+  friend vec_2d<T> CUSPATIAL_HOST_DEVICE operator-(vec_2d<T> const& a)
+  {
+    return vec_2d<T>{-a.x, -a.y};
+  }
+
+  /**
+   * @brief Scale a 2D vector by a factor @p r.
+   */
+  friend vec_2d<T> CUSPATIAL_HOST_DEVICE operator*(vec_2d<T> vec, T const& r)
+  {
+    return vec_2d<T>{vec.x * r, vec.y * r};
+  }
+
+  /**
+   * @brief Scale a 2d vector by ratio @p r.
+   */
+  friend vec_2d<T> CUSPATIAL_HOST_DEVICE operator*(T const& r, vec_2d<T> vec) { return vec * r; }
+
+  /**
+   * @brief Translate a 2D point
+   */
+  friend vec_2d<T>& CUSPATIAL_HOST_DEVICE operator+=(vec_2d<T>& a, vec_2d<T> const& b)
+  {
+    a.x += b.x;
+    a.y += b.y;
+    return a;
+  }
+
+  /**
+   * @brief Translate a 2D point
+   */
+  friend vec_2d<T>& CUSPATIAL_HOST_DEVICE operator-=(vec_2d<T>& a, vec_2d<T> const& b)
+  {
+    return a += -b;
+  }
+
+  /**
+   * @brief Less than operator for two 2D points.
+   *
+   * Orders two points first by x, then by y.
+   */
+  friend bool CUSPATIAL_HOST_DEVICE operator<(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+  {
+    if (lhs.x < rhs.x)
+      return true;
+    else if (lhs.x == rhs.x)
+      return lhs.y < rhs.y;
+    return false;
+  }
+
+  /**
+   * @brief Greater than operator for two 2D points.
+   */
+  friend bool CUSPATIAL_HOST_DEVICE operator>(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+  {
+    return rhs < lhs;
+  }
+
+  /**
+   * @brief Less than or equal to operator for two 2D points.
+   */
+  friend bool CUSPATIAL_HOST_DEVICE operator<=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+  {
+    return !(lhs > rhs);
+  }
+
+  /**
+   * @brief Greater than or equal to operator for two 2D points.
+   */
+  friend bool CUSPATIAL_HOST_DEVICE operator>=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+  {
+    return !(lhs < rhs);
+  }
 };
-
-/**
- * @brief Output stream operator for `vec_2d<T>` for human-readable formatting
- */
-template <typename T>
-std::ostream& operator<<(std::ostream& os, cuspatial::vec_2d<T> const& vec)
-{
-  return os << "(" << vec.x << "," << vec.y << ")";
-}
-
-/**
- * @brief Compare two 2D vectors for equality.
- */
-template <typename T>
-bool operator==(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
-{
-  return (lhs.x == rhs.x) && (lhs.y == rhs.y);
-}
-
-/**
- * @brief Element-wise addition of two 2D vectors.
- */
-template <typename T>
-vec_2d<T> CUSPATIAL_HOST_DEVICE operator+(vec_2d<T> const& a, vec_2d<T> const& b)
-{
-  return vec_2d<T>{a.x + b.x, a.y + b.y};
-}
-
-/**
- * @brief Element-wise subtraction of two 2D vectors.
- */
-template <typename T>
-vec_2d<T> CUSPATIAL_HOST_DEVICE operator-(vec_2d<T> const& a, vec_2d<T> const& b)
-{
-  return vec_2d<T>{a.x - b.x, a.y - b.y};
-}
-
-/**
- * @brief Invert a 2D vector.
- */
-template <typename T>
-vec_2d<T> CUSPATIAL_HOST_DEVICE operator-(vec_2d<T> const& a)
-{
-  return vec_2d<T>{-a.x, -a.y};
-}
-
-/**
- * @brief Scale a 2D vector by a factor @p r.
- */
-template <typename T>
-vec_2d<T> CUSPATIAL_HOST_DEVICE operator*(vec_2d<T> vec, T const& r)
-{
-  return vec_2d<T>{vec.x * r, vec.y * r};
-}
-
-/**
- * @brief Scale a 2d vector by ratio @p r.
- */
-template <typename T>
-vec_2d<T> CUSPATIAL_HOST_DEVICE operator*(T const& r, vec_2d<T> vec)
-{
-  return vec * r;
-}
-
-/**
- * @brief Translate a 2D point
- */
-template <typename T>
-vec_2d<T>& CUSPATIAL_HOST_DEVICE operator+=(vec_2d<T>& a, vec_2d<T> const& b)
-{
-  a.x += b.x;
-  a.y += b.y;
-  return a;
-}
-
-/**
- * @brief Translate a 2D point
- */
-template <typename T>
-vec_2d<T>& CUSPATIAL_HOST_DEVICE operator-=(vec_2d<T>& a, vec_2d<T> const& b)
-{
-  return a += -b;
-}
-
-/**
- * @brief Less than operator for two 2D points.
- *
- * Orders two points first by x, then by y.
- */
-template <typename T>
-bool CUSPATIAL_HOST_DEVICE operator<(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
-{
-  if (lhs.x < rhs.x)
-    return true;
-  else if (lhs.x == rhs.x)
-    return lhs.y < rhs.y;
-  return false;
-}
-
-/**
- * @brief Greater than operator for two 2D points.
- */
-template <typename T>
-bool CUSPATIAL_HOST_DEVICE operator>(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
-{
-  return rhs < lhs;
-}
-
-/**
- * @brief Less than or equal to operator for two 2D points.
- */
-template <typename T>
-bool CUSPATIAL_HOST_DEVICE operator<=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
-{
-  return !(lhs > rhs);
-}
-
-/**
- * @brief Greater than or equal to operator for two 2D points.
- */
-template <typename T>
-bool CUSPATIAL_HOST_DEVICE operator>=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
-{
-  return !(lhs < rhs);
-}
-
 /**
  * @brief Compute dot product of two 2D vectors.
  */
