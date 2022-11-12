@@ -146,12 +146,8 @@ __forceinline__ T __device__ squared_segment_distance(vec_2d<T> const& a,
  * @return optional end points of overlapping segment
  */
 template <typename T>
-__forceinline__ thrust::optional<segment<T>> __device__
-collinear_or_parallel_overlapping_segments(vec_2d<T> const& a,
-                                           vec_2d<T> const& b,
-                                           vec_2d<T> const& c,
-                                           vec_2d<T> const& d,
-                                           vec_2d<T> const& center = vec_2d<T>{})
+__forceinline__ thrust::optional<segment<T>> __device__ collinear_or_parallel_overlapping_segments(
+  vec_2d<T> a, vec_2d<T> b, vec_2d<T> c, vec_2d<T> d, vec_2d<T> center = vec_2d<T>{})
 {
   auto ab = b - a;
   auto ac = c - a;
@@ -162,11 +158,12 @@ collinear_or_parallel_overlapping_segments(vec_2d<T> const& a,
   // Must be on the same line, test if intersect
   if ((a < c && c < b) || (a < d && d < b)) {
     // Compute smallest interval between the segments
-    auto a_ = a, b_ = b, c_ = c, d_ = d;
-    if (d_ < c_) thrust::swap(c_, d_);
-    if (b_ < a_) thrust::swap(a_, b_);
-    auto e0 = a_ > c_ ? a_ : c_;
-    auto e1 = b_ < d_ ? b_ : d_;
+    if (b < a) thrust::swap(a, b);
+    if (d < c) thrust::swap(c, d);
+    auto e0 = a > c ? a : c;
+    auto e1 = b < d ? b : d;
+
+    // Decondition the coordinates
     return segment<T>{e0 + center, e1 + center};
   }
 
