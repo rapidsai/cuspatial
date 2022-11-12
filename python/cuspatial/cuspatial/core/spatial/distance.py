@@ -248,12 +248,12 @@ def pairwise_linestring_distance(
     return Series._from_data(
         {
             None: cpp_pairwise_linestring_distance(
-                multilinestrings1.lines.part_offset._column,
-                multilinestrings1.lines.xy._column,
-                multilinestrings2.lines.part_offset._column,
-                multilinestrings2.lines.xy._column,
-                multilinestrings1.lines.geometry_offset._column,
-                multilinestrings2.lines.geometry_offset._column,
+                as_column(multilinestrings1.lines.part_offset),
+                as_column(multilinestrings1.lines.xy),
+                as_column(multilinestrings2.lines.part_offset),
+                as_column(multilinestrings2.lines.xy),
+                as_column(multilinestrings1.lines.geometry_offset),
+                as_column(multilinestrings2.lines.geometry_offset),
             )
         }
     )
