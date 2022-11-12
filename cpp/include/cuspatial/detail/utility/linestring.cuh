@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuspatial/detail/utility/floating_point.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <thrust/optional.h>
@@ -61,7 +62,7 @@ point_to_segment_distance_squared_nearest_point(vec_2d<T> const& c,
   auto ab        = b - a;
   auto ac        = c - a;
   auto l_squared = dot(ab, ab);
-  if (l_squared == 0) { return thrust::make_tuple(dot(ac, ac), a); }
+  if (float_equal(l_squared, T{0})) { return thrust::make_tuple(dot(ac, ac), a); }
   auto r  = dot(ac, ab);
   auto bc = c - b;
   // If the projection of `c` is outside of segment `ab`, compute point-point distance.
@@ -122,7 +123,7 @@ __forceinline__ T __device__ squared_segment_distance(vec_2d<T> const& a,
   auto cd    = d - c;
   auto denom = det(ab, cd);
 
-  if (denom == 0) {
+  if (float_equal(denom, T{0})) {
     // Segments parallel or collinear
     return segment_distance_no_intersect_or_colinear(a, b, c, d);
   }
@@ -153,7 +154,7 @@ __forceinline__ thrust::optional<segment<T>> __device__ collinear_or_parallel_ov
   auto ac = c - a;
 
   // Parallel
-  if (det(ab, ac) != 0) return thrust::nullopt;
+  if (not_float_equal(det(ab, ac), T{0})) return thrust::nullopt;
 
   // Must be on the same line, test if intersect
   if ((a < c && c < b) || (a < d && d < b)) {
@@ -196,7 +197,7 @@ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
 
   auto denom = det(ab, cd);
 
-  if (denom == 0) {
+  if (float_equal(denom, T{0})) {
     // Segments parallel or collinear
     return {thrust::nullopt, collinear_or_parallel_overlapping_segments(a, b, c, d, center)};
   }
