@@ -22,7 +22,7 @@ def quadtree_on_points(
     max_depth,
     max_size,
     # Deprecated, renamed to `max_size`
-    min_size,
+    min_size=None,
 ):
     """Construct a quadtree from a set of points for a given area-of-interest
     bounding box.
