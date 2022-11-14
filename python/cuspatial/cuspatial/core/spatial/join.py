@@ -66,12 +66,13 @@ def point_in_polygon(
     # Point 1: (-8, -8) falls in the first polygon
     # Point 2: (6.0, 6.0) falls in the second polygon
 
-    note
-    input Series x and y will not be index aligned, but computed as
+    Notes
+    -----
+
+    * input Series x and y will not be index aligned, but computed as
     sequential arrays.
 
-    note
-    poly_ring_offsets must contain only the rings that make up the polygons
+    * poly_ring_offsets must contain only the rings that make up the polygons
     indexed by poly_offsets. If there are rings in poly_ring_offsets that
     are not part of the polygons in poly_offsets, results are likely to be
     incorrect and behavior is undefined.
@@ -238,7 +239,8 @@ def quadtree_point_in_polygon(
         polygon_index : cudf.Series
             Indices of each polygon with which a point intersected.
         point_index : cudf.Series
-            Indices of each point that intersects with a polygon.
+            Indices of each point (in ``point_indices``) that intersects with a
+            polygon.
     """
 
     (
@@ -311,7 +313,8 @@ def quadtree_point_to_nearest_linestring(
         between the two.
 
         point_index : cudf.Series
-            Indices of each point that intersects with a linestring.
+            Indices of each point (in ``point_indices``) that intersects with
+            a linestring.
         linestring_index : cudf.Series
             Indices of each linestring with which a point intersected.
         distance : cudf.Series
