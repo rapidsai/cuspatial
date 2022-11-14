@@ -53,8 +53,8 @@ struct point_quadtree {
  *
  * @see http://www.adms-conf.org/2019-camera-ready/zhang_adms19.pdf for details.
  *
- * @note `scale` is applied to (x - min.x) and (y - min.y) to convert coordinates into a Morton code
- * in 2D space.
+ * @note 2D coordinates are converted into a 1D Morton code by dividing each x/y by the `scale`:
+ * (`(x - min_x) / scale` and `(y - min_y) / scale`).
  * @note `max_depth` should be less than 16, since Morton codes are represented as `uint32_t`. The
  * eventual number of levels may be less than `max_depth` if the number of points is small or
  * `max_size` is large.
