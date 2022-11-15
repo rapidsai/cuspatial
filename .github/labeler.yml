@@ -6,7 +6,7 @@ Python:
   - 'python/**'
   - 'notebooks/**'
   
-cpp:
+c++:
   - 'cpp/**'
 
 CMake:
@@ -18,7 +18,3 @@ gpuCI:
 
 conda:
     - 'conda/**'
-  
-Java:
-  - 'java/**'
-  
