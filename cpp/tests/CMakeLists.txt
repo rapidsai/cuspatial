@@ -84,7 +84,7 @@ ConfigureTest(POINT_LINESTRING_DISTANCE_TEST
     spatial/point_linestring_distance_test.cpp)
 
 ConfigureTest(LINESTRING_DISTANCE_TEST
-    spatial/linestring_distance_test.cpp spatial/linestring_distance_test_medium.cpp)
+    spatial/linestring_distance_test.cpp)
 
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST
     spatial/point_linestring_nearest_points_test.cpp)
@@ -110,9 +110,6 @@ ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST
 ConfigureTest(SPATIAL_WINDOW_POINT_TEST
     spatial_window/spatial_window_test.cpp)
 
-ConfigureTest(FLOAT_EQUIVALENT_UTILITY_TEST
-    utility_test/test_float_equivalent.cu)
-
 # Experimental API
 ConfigureTest(HAVERSINE_TEST_EXP
     experimental/spatial/haversine_test.cu)
@@ -126,7 +123,8 @@ ConfigureTest(HAUSDORFF_TEST_EXP
     experimental/spatial/hausdorff_test.cu)
 
 ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
-    experimental/spatial/linestring_distance_test.cu)
+    experimental/spatial/linestring_distance_test.cu
+    experimental/spatial/linestring_distance_test_medium.cu)
 
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST_EXP
     experimental/spatial/point_linestring_nearest_points_test.cu)
