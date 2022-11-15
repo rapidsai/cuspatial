@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/detail/utility/floating_point.cuh>
+#include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <thrust/optional.h>
@@ -26,9 +27,6 @@
 
 namespace cuspatial {
 namespace detail {
-
-template <typename T>
-using segment = thrust::pair<vec_2d<T>, vec_2d<T>>;
 
 /**
  * @internal

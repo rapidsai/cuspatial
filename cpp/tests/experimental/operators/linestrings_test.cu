@@ -33,17 +33,14 @@
 #include <optional>
 
 using namespace cuspatial;
+using namespace cuspatial::detail;
 using namespace cuspatial::test;
-
-template <typename T>
-using segment = thrust::pair<vec_2d<T>, vec_2d<T>>;
 
 template <typename T>
 using optional_vec2d = thrust::optional<vec_2d<T>>;
 
 template <typename T>
-struct SegmentIntersectionTest : public BaseFixture {
-};
+struct SegmentIntersectionTest : public BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(SegmentIntersectionTest, TestTypes);
