@@ -1,5 +1,7 @@
+# Copyright (c) 2019-2022, NVIDIA CORPORATION.
+
 repos:
-      - repo: https://github.com/pycqa/isort
+      - repo: https://github.com/PyCQA/isort
         rev: 5.10.1
         hooks:
               - id: isort
@@ -8,19 +10,19 @@ repos:
                 exclude: __init__.py$
                 types: [text]
                 types_or: [python, cython]
-      - repo: https://github.com/ambv/black
+      - repo: https://github.com/psf/black
         rev: 22.3.0
         hooks:
               - id: black
                 files: python/cuspatial/.*
               # Explicitly specify the pyproject.toml at the repo root, not per-project.
                 args: ["--config", "pyproject.toml"]
-      - repo: https://gitlab.com/pycqa/flake8
+      - repo: https://github.com/PyCQA/flake8
         rev: 3.7.7
         hooks:
               - id: flake8
                 files: python/cuspatial/.*\.py
-      - repo: https://gitlab.com/pycqa/flake8
+      - repo: https://github.com/PyCQA/flake8
         rev: 3.7.7
         hooks:
               - id: flake8
