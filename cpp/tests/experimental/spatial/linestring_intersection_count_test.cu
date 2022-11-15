@@ -374,7 +374,7 @@ TYPED_TEST(LinestringIntersectionCountTest, SingleToSingleExample)
   rmm::device_vector<unsigned> num_intersecting_points(multilinestrings1.size(), 0);
   rmm::device_vector<unsigned> num_overlapping_segments(multilinestrings1.size(), 0);
 
-  std::vector<unsigned> expected_intersecting_points_count{1, 2, 0, 0, 1, 0, 0};
+  std::vector<unsigned> expected_intersecting_points_count{1, 2, 0, 2, 2, 0, 0};
   std::vector<unsigned> expected_overlapping_segment_count{0, 0, 1, 2, 1, 0, 0};
 
   pairwise_linestring_intersection_upper_bound_count(multilinestrings1.range(),
