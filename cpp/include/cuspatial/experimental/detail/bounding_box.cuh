@@ -35,11 +35,15 @@ template <typename T>
 struct point_bounding_box {
   using point_tuple = thrust::tuple<cuspatial::vec_2d<T>, cuspatial::vec_2d<T>>;
 
-  T expansion_radius{0};
+  vec_2d<T> box_offset{};
+
+  CUSPATIAL_HOST_DEVICE point_bounding_box(T expansion_radius = T{0})
+    : box_offset{expansion_radius, expansion_radius}
+  {
+  }
 
   inline __host__ __device__ point_tuple operator()(vec_2d<T> const& point)
   {
-    auto box_offset = vec_2d<T>{expansion_radius, expansion_radius};
     return point_tuple{point - box_offset, point + box_offset};
   }
 };
