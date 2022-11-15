@@ -103,10 +103,15 @@ signmagnitude_to_biased(Bits const& sam)
 /**
  * @brief Floating-point equivalence comparator based on ULP (Unit in the last place).
  *
+ * @note to compare if two floating points `flhs` and `frhs` are equivalent,
+ * use float_equal(flhs, frhs), instead of `float_equal(flhs-frhs, 0)`.
+ * See "Infernal Zero" section of
+ * https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+ *
  * @tparam T Type of floating point
  * @tparam max_ulp Maximum tolerable unit in the last place
- * @param lhs First floating point to compare
- * @param rhs Second floating point to compare
+ * @param flhs First floating point to compare
+ * @param frhs Second floating point to compare
  * @return `true` if two floating points differ by less or equal to `ulp`.
  */
 template <typename T, unsigned max_ulp = default_max_ulp>
@@ -125,17 +130,21 @@ bool CUSPATIAL_HOST_DEVICE float_equal(T const& flhs, T const& frhs)
 /**
  * @brief Floating-point non equivalence comparator based on ULP (Unit in the last place).
  *
+ * @note to compare if two floating points `flhs` and `frhs` are not equivalent,
+ * use not_float_equal(flhs, frhs), instead of `not_float_equal(flhs-frhs, 0)`.
+ * See "Infernal Zero" section of
+ * https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+ *
  * @tparam T Type of floating point
  * @tparam max_ulp Maximum tolerable unit in the last place
- * @param lhs First floating point to compare
- * @param rhs Second floating point to compare
+ * @param flhs First floating point to compare
+ * @param frhs Second floating point to compare
  * @return `true` if two floating points differ by greater `ulp`.
  */
 template <typename T, unsigned max_ulp = default_max_ulp>
-bool CUSPATIAL_HOST_DEVICE not_float_equal(FloatingPointBits<T> const& lhs,
-                                           FloatingPointBits<T> const& rhs)
+bool CUSPATIAL_HOST_DEVICE not_float_equal(T const& flhs, T const& frhs)
 {
-  return !float_equal(lhs, rhs);
+  return !float_equal(flhs, frhs);
 }
 
 }  // namespace detail

@@ -151,3 +151,6 @@ ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_EXP
 
 ConfigureTest(POINT_QUADTREE_TEST_EXP
     experimental/indexing/point_quadtree_test.cu)
+
+ConfigureTest(OPERATOR_TEST_EXP
+    experimental/operators/linestrings_test.cu)

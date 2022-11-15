@@ -123,6 +123,21 @@ MATCHER_P(float_near_matcher,
   return false;
 }
 
+MATCHER_P(optional_matcher, m, std::string(negation ? "are not" : "are") + " equal optionals")
+{
+  auto lhs = std::get<0>(arg);
+  auto rhs = std::get<1>(arg);
+
+  if (lhs.has_value() != rhs.has_value()) {
+    *result_listener << "lhs " << (lhs.has_value() ? "" : "does not ") << "has value, while rhs "
+                     << (rhs.has_value() ? "" : "does not ") << "has value.";
+    return false;
+  } else if (!lhs.has_value() && !rhs.has_value()) {
+    return true;
+  } else
+    return ExplainMatchResult(m, std::tuple(lhs.value(), rhs.value()), result_listener);
+}
+
 template <typename Vector1, typename Vector2>
 inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs)
 {
@@ -135,6 +150,19 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs)
     EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(float_matcher(), to_host<T>(rhs)));
   } else if constexpr (std::is_integral_v<T>) {
     EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(::testing::Eq(), to_host<T>(rhs)));
+  } else if constexpr (cuspatial::is_optional<T>) {
+    if constexpr (cuspatial::is_vec_2d<typename T::value_type>()) {
+      EXPECT_THAT(to_host<T>(lhs),
+                  ::testing::Pointwise(optional_matcher(vec_2d_matcher()), to_host<T>(rhs)));
+    } else if constexpr (std::is_floating_point_v<typename T::value_type>) {
+      EXPECT_THAT(to_host<T>(lhs),
+                  ::testing::Pointwise(optional_matcher(float_matcher()), to_host<T>(rhs)));
+    } else if constexpr (std::is_integral_v<typename T::value_type>) {
+      EXPECT_THAT(to_host<T>(lhs),
+                  ::testing::Pointwise(optional_matcher(::testing::Eq()), to_host<T>(rhs)));
+    } else {
+      EXPECT_EQ(lhs, rhs);
+    }
   } else {
     EXPECT_EQ(lhs, rhs);
   }
@@ -152,6 +180,16 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, T a
   } else if constexpr (std::is_floating_point_v<T>) {
     EXPECT_THAT(to_host<T>(lhs),
                 ::testing::Pointwise(float_near_matcher(abs_error), to_host<T>(rhs)));
+  } else if constexpr (cuspatial::is_optional<T>) {
+    if constexpr (cuspatial::is_vec_2d<typename T::value_type>()) {
+      EXPECT_THAT(to_host<T>(lhs),
+                  ::testing::Pointwise(optional_matcher(vec_2d_matcher()), to_host<T>(rhs)));
+    } else if constexpr (std::is_floating_point_v<typename T::value_type>) {
+      EXPECT_THAT(to_host<T>(lhs),
+                  ::testing::Pointwise(optional_matcher(float_matcher()), to_host<T>(rhs)));
+    } else {
+      EXPECT_EQ(lhs, rhs);
+    }
   } else {
     EXPECT_EQ(lhs, rhs);
   }
