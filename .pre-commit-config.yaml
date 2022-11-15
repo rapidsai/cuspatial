@@ -5,11 +5,11 @@ repos:
         rev: 5.10.1
         hooks:
               - id: isort
-                args: ["--settings-path=python/cuspatial/setup.cfg"]
-                files: python/cuspatial/.*
-                exclude: __init__.py$
-                types: [text]
-                types_or: [python, cython]
+                # Use the config file specific to each subproject so that each
+                # project can specify its own first/third-party packages.
+                args: ["--config-root=python/", "--resolve-all-configs"]
+                files: python/.*
+                types_or: [python, cython, pyi]
       - repo: https://github.com/psf/black
         rev: 22.3.0
         hooks:
