@@ -81,10 +81,10 @@ def lonlat_to_cartesian(origin_lon, origin_lat, input_lon, input_lat):
             kilometers.
     """
     warnings.warn(
-           "lonlat_to_cartesian is deprecated. "
-           "Please use sinusoidal_projection.",
-           FutureWarning,
-        )
+        "lonlat_to_cartesian is deprecated. "
+        "Please use sinusoidal_projection.",
+        FutureWarning,
+    )
     result = cpp_sinusoidal_projection(
         origin_lon, origin_lat, input_lon._column, input_lat._column
     )

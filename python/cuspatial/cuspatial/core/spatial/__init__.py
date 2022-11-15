@@ -23,10 +23,7 @@ from .distance import (
     pairwise_point_linestring_distance,
 )
 
-from .projection import (
-   sinusoidal_projection,
-   lonlat_to_cartesian
-)
+from .projection import sinusoidal_projection, lonlat_to_cartesian
 
 from .nearest_points import pairwise_point_linestring_nearest_points
 
