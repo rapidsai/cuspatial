@@ -6,7 +6,7 @@ Python:
   - 'python/**'
   - 'notebooks/**'
   
-c++:
+libcuspatial:
   - 'cpp/**'
 
 CMake:
@@ -18,3 +18,6 @@ gpuCI:
 
 conda:
     - 'conda/**'
+    
+Java:
+  - 'java/**'
