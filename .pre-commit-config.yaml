@@ -26,19 +26,11 @@ repos:
                 types: [file]
                 types_or: [python, cython]
                 additional_dependencies: ["flake8-force"]
-      - repo: local
+      - repo: https://github.com/pre-commit/mirrors-clang-format
+        rev: v11.1.0
         hooks:
               - id: clang-format
-                # Using the pre-commit stage to simplify invocation of all
-                # other hooks simultaneously (via any other hook stage).  This
-                # can be removed if we also move to running clang-format
-                # entirely through pre-commit.
-                stages: [commit]
-                name: clang-format
-                description: Format files with ClangFormat.
-                entry: clang-format -i
-                language: system
-                files: \.(cu|cuh|h|hpp|cpp|inl)$
-                args: ['-fallback-style=none']
+                types_or: [c, c++, cuda]
+                args: ["-fallback-style=none", "-style=file", "-i"]
 default_language_version:
       python: python3
