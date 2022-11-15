@@ -18,18 +18,14 @@ repos:
               # Explicitly specify the pyproject.toml at the repo root, not per-project.
                 args: ["--config", "pyproject.toml"]
       - repo: https://github.com/PyCQA/flake8
-        rev: 3.7.7
+        rev: 5.0.4
         hooks:
               - id: flake8
-                files: python/cuspatial/.*\.py
-      - repo: https://github.com/PyCQA/flake8
-        rev: 3.7.7
-        hooks:
-              - id: flake8
-                alias: flake8-cython
-                name: flake8-cython
-                args: ["--config=python/cuspatial/.flake8.cython"]
-                types: [cython]
+                args: ["--config=setup.cfg"]
+                files: python/.*$
+                types: [file]
+                types_or: [python, cython]
+                additional_dependencies: ["flake8-force"]
       - repo: local
         hooks:
               - id: clang-format
