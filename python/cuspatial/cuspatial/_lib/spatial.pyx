@@ -10,11 +10,11 @@ from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column cimport column
 from cudf._lib.cpp.column.column_view cimport column_view
 
-from cuspatial._lib.cpp.projection cimport (
-    sinusoidal_projection as cpp_sinusoidal_projection,
-)
 from cuspatial._lib.cpp.distance.haversine cimport (
     haversine_distance as cpp_haversine_distance,
+)
+from cuspatial._lib.cpp.projection cimport (
+    sinusoidal_projection as cpp_sinusoidal_projection,
 )
 
 
