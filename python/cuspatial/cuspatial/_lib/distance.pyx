@@ -1,5 +1,3 @@
-from typing import Optional
-
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
@@ -16,7 +14,7 @@ from cuspatial._lib.cpp.distance.point_distance cimport (
 from cuspatial._lib.cpp.distance.point_linestring_distance cimport (
     pairwise_point_linestring_distance as c_pairwise_point_linestring_distance,
 )
-from cuspatial._lib.cpp.optional cimport nullopt, optional
+from cuspatial._lib.cpp.optional cimport optional
 from cuspatial._lib.utils cimport unwrap_pyoptcol
 
 
