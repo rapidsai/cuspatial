@@ -16,11 +16,12 @@
 
 #pragma once
 
-#include "thrust/detail/raw_reference_cast.h"
-#include "thrust/device_reference.h"
+#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/device_ptr.h>
+#include <thrust/device_reference.h>
 
 #include <cuda/atomic>
+
 #include <type_traits>
 
 namespace cuspatial {
