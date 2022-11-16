@@ -59,7 +59,7 @@ git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
 2. clone the cuSpatial repo
 
 ```shell
-conda env update --file conda/environments/cuspatial_dev_cuda11.5.yml
+conda env update --file conda/environments/all_cuda-115_arch-x86_64.yaml 
 ```
 
 ### Build and install cuSpatial
