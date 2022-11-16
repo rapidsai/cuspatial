@@ -2,7 +2,6 @@
 
 from enum import IntEnum
 
-from libcpp cimport bool
 from libcpp.memory cimport unique_ptr
 from libcpp.string cimport string
 from libcpp.utility cimport move

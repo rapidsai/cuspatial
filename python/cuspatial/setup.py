@@ -1,8 +1,7 @@
 # Copyright (c) 2018-2022, NVIDIA CORPORATION.
+import versioneer
 from setuptools import find_packages
 from skbuild import setup
-
-import versioneer
 
 setup(
     name="cuspatial",
