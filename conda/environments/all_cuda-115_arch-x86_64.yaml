@@ -6,17 +6,13 @@ channels:
 - conda-forge
 - nvidia
 dependencies:
-- clang-tools=11.1.0
-- clang=11.1.0
 - cmake>=3.23.1
 - cudatoolkit=11.5
 - cudf=22.12.*
 - cython>=0.29,<0.30
-- gdal>=3.0.2
+- gdal>3.5.0,<3.6.0
 - geopandas>=0.11.0
 - myst-parser
-- numba>=0.49
-- numpy>=1.19
 - pre-commit
 - pydata-sphinx-theme
 - pytest
