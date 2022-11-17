@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include <atomic>
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
+#include <cuspatial/experimental/geometry/segment.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 
@@ -49,10 +51,10 @@ __global__ void count_intersection_and_overlaps_simple(MultiLinestringRange1 mul
         auto [point_opt, segment_opt] = segment_intersection(segment<T>{a, b}, segment<T>{c, d});
         if (point_opt.has_value()) {
           auto r = make_atomic_ref(*(point_count_it + geometry_idx));
-          r.fetch_add(1);
+          r.fetch_add(1, cuda::memory_order_relaxed);
         } else if (segment_opt.has_value()) {
           auto r = make_atomic_ref(*(segment_count_it + geometry_idx));
-          r.fetch_add(1);
+          r.fetch_add(1, cuda::memory_order_relaxed);
         }
       }
     }
