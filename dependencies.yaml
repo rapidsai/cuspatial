@@ -88,7 +88,7 @@ dependencies:
           - numpy>=1.19
   test_cpp:
     common:
-      - output_types: [conda]
+      - output_types: conda
         packages:
           - gtest=1.10.0
           - gmock=1.10.0
