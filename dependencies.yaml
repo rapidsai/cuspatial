@@ -87,13 +87,13 @@ dependencies:
           - matrix:
               arch: x86_64
             packages:
-              - &gcc_amd64 gcc_linux-64=9.*
-              - &sysroot_amd64 sysroot_linux-64==2.17
+              - *gcc_amd64
+              - *sysroot_amd64
           - matrix:
               arch: aarch64
             packages:
-              - &gcc_aarch64 gcc_linux-aarch64=9.*
-              - &sysroot_aarch64 sysroot_linux-aarch64==2.17
+              - *gcc_aarch64
+              - *sysroot_aarch64
   cudatoolkit:
     specific:
       - output_types: conda
