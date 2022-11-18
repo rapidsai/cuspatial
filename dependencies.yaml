@@ -22,7 +22,7 @@ files:
     output: none
     includes:
       - cudatoolkit
-      - test_cpp 
+      - test_cpp
   checks:
     output: none
     includes:
@@ -49,6 +49,14 @@ dependencies:
       - output_types: conda
         matrices:
           - matrix:
+              cuda: "11.2"
+            packages:
+              - cudatoolkit=11.2
+          - matrix:
+              cuda: "11.4"
+            packages:
+              - cudatoolkit=11.4
+          - matrix:
               cuda: "11.5"
             packages:
               - cudatoolkit=11.5
@@ -56,7 +64,7 @@ dependencies:
     common:
       - output_types: [conda, requirements]
         packages:
-          - pre-commit 
+          - pre-commit
   doc:
     common:
       - output_types: [conda, requirements]
