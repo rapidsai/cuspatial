@@ -2,12 +2,10 @@
 
 from libc.stdint cimport int8_t
 from libcpp.memory cimport unique_ptr
-from libcpp.pair cimport pair
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column, column, column_view
+from cudf._lib.column cimport Column, column_view
 from cudf._lib.cpp.table.table cimport table, table_view
-from cudf._lib.cpp.types cimport size_type
 from cudf._lib.utils cimport data_from_unique_ptr, table_view_from_table
 
 from cuspatial._lib.cpp.spatial_join cimport (
