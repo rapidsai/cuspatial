@@ -78,9 +78,10 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - *cmake_ver
-          - cudf=22.12.*
+          - &cudf_ver cudf=22.12.*
           - cython>=0.29,<0.30
           - scikit-build>=0.13.1
+          - setuptools
     specific:
       - output_types: conda
         matrices:
@@ -140,7 +141,7 @@ dependencies:
     common:
       - output_types: [conda, requirements]
         packages:
-          - cudf=22.12.*
+          - *cudf_ver
           - geopandas>=0.11.0
           - rmm=22.12.*
   test_cpp:
