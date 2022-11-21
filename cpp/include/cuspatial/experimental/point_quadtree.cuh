@@ -41,10 +41,10 @@ struct point_quadtree {
   // uint8_t vector of quadtree levels
   rmm::device_uvector<uint8_t> level;
   // bool vector indicating whether the node is a parent (true) or leaf (false) node
-  rmm::device_uvector<bool> is_parent_node;
-  // uint32_t vector for the number of child nodes (if is_parent_node), or number of points
+  rmm::device_uvector<bool> is_internal_node;
+  // uint32_t vector for the number of child nodes (if is_internal_node), or number of points
   rmm::device_uvector<uint32_t> length;
-  // uint32_t vector for the first child position (if is_parent_node), or first point position
+  // uint32_t vector for the first child position (if is_internal_node), or first point position
   rmm::device_uvector<uint32_t> offset;
 };
 
