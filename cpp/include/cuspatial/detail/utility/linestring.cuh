@@ -16,12 +16,18 @@
 
 #pragma once
 
-#include <thrust/tuple.h>
-
+#include <cuspatial/detail/utility/floating_point.cuh>
+#include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/vec_2d.hpp>
+
+#include <thrust/optional.h>
+#include <thrust/pair.h>
+#include <thrust/swap.h>
+#include <thrust/tuple.h>
 
 namespace cuspatial {
 namespace detail {
+
 /**
  * @internal
  * @brief Get the index that is one-past the end point of linestring at @p linestring_idx
@@ -54,7 +60,7 @@ point_to_segment_distance_squared_nearest_point(vec_2d<T> const& c,
   auto ab        = b - a;
   auto ac        = c - a;
   auto l_squared = dot(ab, ab);
-  if (l_squared == 0) { return thrust::make_tuple(dot(ac, ac), a); }
+  if (float_equal(l_squared, T{0})) { return thrust::make_tuple(dot(ac, ac), a); }
   auto r  = dot(ac, ab);
   auto bc = c - b;
   // If the projection of `c` is outside of segment `ab`, compute point-point distance.
@@ -115,7 +121,7 @@ __forceinline__ T __device__ squared_segment_distance(vec_2d<T> const& a,
   auto cd    = d - c;
   auto denom = det(ab, cd);
 
-  if (denom == 0) {
+  if (float_equal(denom, T{0})) {
     // Segments parallel or collinear
     return segment_distance_no_intersect_or_colinear(a, b, c, d);
   }
@@ -127,6 +133,84 @@ __forceinline__ T __device__ squared_segment_distance(vec_2d<T> const& a,
   auto s                = det(ac, ab) * denom_reciprocal;
   if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return 0.0; }
   return segment_distance_no_intersect_or_colinear(a, b, c, d);
+}
+
+/**
+ * @internal
+ * @brief Given two collinear or parallel segments, return their potential overlapping segment
+ *
+ * @p a, @p b, @p c, @p d refer to end points of segment ab and cd.
+ * @p center is the geometric center of the segments, used to decondition the coordinates.
+ *
+ * @return optional end points of overlapping segment
+ */
+template <typename T>
+__forceinline__ thrust::optional<segment<T>> __device__ collinear_or_parallel_overlapping_segments(
+  vec_2d<T> a, vec_2d<T> b, vec_2d<T> c, vec_2d<T> d, vec_2d<T> center = vec_2d<T>{})
+{
+  auto ab = b - a;
+  auto ac = c - a;
+
+  // Parallel
+  if (not_float_equal(det(ab, ac), T{0})) return thrust::nullopt;
+
+  // Must be on the same line, sort the endpoints
+  if (b < a) thrust::swap(a, b);
+  if (d < c) thrust::swap(c, d);
+
+  // Test if not overlap
+  if (b < c || d < a) return thrust::nullopt;
+
+  // Compute smallest interval between the segments
+  auto e0 = a > c ? a : c;
+  auto e1 = b < d ? b : d;
+
+  // Decondition the coordinates
+  return segment<T>{e0 + center, e1 + center};
+}
+
+/**
+ * @internal
+ * @brief Primitive to compute intersections between two segments
+ * Two segments can intersect at a point, overlap at a segment, or be disjoint.
+ *
+ * @return A pair of optional intersecting point and optional overlapping segment
+ */
+template <typename T>
+__forceinline__ thrust::pair<thrust::optional<vec_2d<T>>, thrust::optional<segment<T>>> __device__
+segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
+{
+  auto [a, b] = segment1;
+  auto [c, d] = segment2;
+
+  // Condition the coordinates to avoid large floating point error
+  auto center = midpoint(midpoint(a, b), midpoint(c, d));
+  a -= center;
+  b -= center;
+  c -= center;
+  d -= center;
+
+  auto ab = b - a;
+  auto cd = d - c;
+
+  auto denom = det(ab, cd);
+
+  if (float_equal(denom, T{0})) {
+    // Segments parallel or collinear
+    return {thrust::nullopt, collinear_or_parallel_overlapping_segments(a, b, c, d, center)};
+  }
+
+  auto ac               = c - a;
+  auto r_numer          = det(ac, cd);
+  auto denom_reciprocal = 1 / denom;
+  auto r                = r_numer * denom_reciprocal;
+  auto s                = det(ac, ab) * denom_reciprocal;
+  if (r >= 0 and r <= 1 and s >= 0 and s <= 1) {
+    auto p = a + r * ab;
+    // Decondition the coordinates
+    return {p + center, thrust::nullopt};
+  }
+  return {thrust::nullopt, thrust::nullopt};
 }
 
 }  // namespace detail

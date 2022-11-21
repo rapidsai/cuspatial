@@ -1,7 +1,5 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-from cudf import Series
-
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 from libcpp.utility cimport move
