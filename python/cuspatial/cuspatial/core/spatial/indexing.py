@@ -61,20 +61,19 @@ def quadtree_on_points(
                 An int32 column of quadrant keys
             level       : cudf.Series(dtype=np.int8)
                 An int8 column of quadtree levels
-            is_quad     : cudf.Series(dtype=np.bool_)
-                A boolean column indicating whether the node is a parent (true)
-                or leaf (false) node
+            is_internal_node : cudf.Series(dtype=np.bool_)
+                A boolean column indicating whether the node is a quad or leaf
             length      : cudf.Series(dtype=np.int32)
-                If this is a non-leaf quadrant (i.e. ``is_quad`` is ``True``),
-                this column's value is the number of children in the non-leaf
-                quadrant.
+                If this is a non-leaf quadrant (i.e. ``is_internal_node`` is
+                ``True``), this column's value is the number of children in
+                the non-leaf quadrant.
 
                 Otherwise this column's value is the number of points
                 contained in the leaf quadrant.
             offset      : cudf.Series(dtype=np.int32)
-                If this is a non-leaf quadrant (i.e. ``is_quad`` is ``True``),
-                this column's value is the position of the non-leaf quadrant's
-                first child.
+                If this is a non-leaf quadrant (i.e. ``is_internal_node`` is
+                ``True``), this column's value is the position of the non-leaf
+                quadrant's first child.
 
                 Otherwise this column's value is the position of the leaf
                 quadrant's first point.
@@ -143,19 +142,19 @@ def quadtree_on_points(
             )
 
         >>> print(quadtree)
-            key  level  is_quad  length  offset
-        0     0      0    False      15       0
-        1     1      0    False      27      15
-        2     2      0    False      12      42
-        3     3      0     True       4       8
-        4     4      0    False       5     106
-        5     6      0    False       6     111
-        6     9      0    False       2     117
-        7    12      0    False       1     119
-        8    12      1    False      22      54
-        9    13      1    False      18      76
-        10   14      1    False       9      94
-        11   15      1    False       3     103
+            key  level  is_internal_node  length  offset
+        0     0      0             False      15       0
+        1     1      0             False      27      15
+        2     2      0             False      12      42
+        3     3      0              True       4       8
+        4     4      0             False       5     106
+        5     6      0             False       6     111
+        6     9      0             False       2     117
+        7    12      0             False       1     119
+        8    12      1             False      22      54
+        9    13      1             False      18      76
+        10   14      1             False       9      94
+        11   15      1             False       3     103
 
         >>> print(key_to_point)
         0       63

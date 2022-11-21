@@ -59,9 +59,10 @@ namespace cuspatial {
  * columns for a complete quadtree:
  *     key - UINT32 column of quad node keys
  *   level - UINT8 column of quadtree levels
- * is_quad - BOOL8 column indicating whether the node is a quad (true) or leaf (false)
- *  length - UINT32 column for the number of child nodes (if is_quad), or number of points
- *  offset - UINT32 column for the first child position (if is_quad), or first point position
+ * is_internal_node - BOOL8 column indicating whether the node is a quad (true) or leaf (false)
+ *  length - UINT32 column for the number of child nodes (if is_internal_node), or number of points
+ *  offset - UINT32 column for the first child position (if is_internal_node), or first point
+ *           position
  */
 std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_on_points(
   cudf::column_view const& x,
