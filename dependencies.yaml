@@ -148,8 +148,8 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - gtest
-          - gmock
+          - gtest=1.10.0
+          - gmock=1.10.0
   test_python:
     common:
       - output_types: [conda, requirements]
