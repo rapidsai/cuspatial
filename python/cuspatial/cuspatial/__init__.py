@@ -9,7 +9,6 @@ from .core.spatial import (
     join_quadtree_and_bounding_boxes,
     linestring_bounding_boxes,
     lonlat_to_cartesian,
-    sinusoidal_projection,
     pairwise_linestring_distance,
     pairwise_point_distance,
     pairwise_point_linestring_distance,
@@ -20,6 +19,7 @@ from .core.spatial import (
     quadtree_on_points,
     quadtree_point_in_polygon,
     quadtree_point_to_nearest_linestring,
+    sinusoidal_projection,
 )
 from .core.trajectory import (
     derive_trajectories,

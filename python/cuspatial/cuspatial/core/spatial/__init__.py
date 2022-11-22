@@ -17,7 +17,7 @@ from .join import (
     quadtree_point_to_nearest_linestring,
 )
 from .nearest_points import pairwise_point_linestring_nearest_points
-from .projection import sinusoidal_projection, lonlat_to_cartesian
+from .projection import lonlat_to_cartesian, sinusoidal_projection
 
 __all__ = [
     "directed_hausdorff_distance",
