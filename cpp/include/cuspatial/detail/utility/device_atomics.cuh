@@ -265,7 +265,7 @@ __device__ inline float atomicMax(thrust::device_ptr<float> ptr, float val)
 }
 
 /**
- * @brief Factory method to create atomic_ref from a thrust::device_reference
+ * @brief Factory function to create atomic_ref from a thrust::device_reference
  */
 template <typename T, cuda::thread_scope Scope = cuda::thread_scope_device>
 auto __device__ make_atomic_ref(thrust::device_reference<T> ref)
@@ -275,7 +275,7 @@ auto __device__ make_atomic_ref(thrust::device_reference<T> ref)
 }
 
 /**
- * @brief Factory method to create atomic_ref from raw reference
+ * @brief Factory function to create atomic_ref from raw reference
  */
 template <typename T, cuda::thread_scope Scope = cuda::thread_scope_device>
 auto __device__ make_atomic_ref(T& ref)
