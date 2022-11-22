@@ -106,12 +106,12 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, Example)
 
   auto expected_points_offsets   = make_device_vector<index_t>({0, 1, 3, 3, 5, 7, 7, 7});
   auto expected_points_coords    = make_device_vector<P>({P{0.5, 0.5},
-                                                          P{0.25, 0.25},
-                                                          P{0.5, 0.5},
-                                                          P{0.25, 0.25},
-                                                          P{0.75, 0.75},
-                                                          P{0.25, 0.25},
-                                                          P{0.75, 0.75}});
+                                                       P{0.25, 0.25},
+                                                       P{0.5, 0.5},
+                                                       P{0.25, 0.25},
+                                                       P{0.75, 0.75},
+                                                       P{0.25, 0.25},
+                                                       P{0.75, 0.75}});
   auto expected_segments_offsets = make_device_vector<index_t>({0, 0, 0, 1, 3, 4, 4, 4});
   auto expected_segments_coords =
     make_device_vector<segment<T>>({segment<T>{P{0.5, 0.5}, P{1, 1}},
@@ -191,12 +191,12 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, ExampleReversed)
 
   auto expected_points_offsets   = make_device_vector<index_t>({0, 1, 3, 3, 5, 7, 7, 7});
   auto expected_points_coords    = make_device_vector<P>({P{0.5, 0.5},
-                                                          P{0.25, 0.25},
-                                                          P{0.5, 0.5},
-                                                          P{0.25, 0.25},
-                                                          P{0.75, 0.75},
-                                                          P{0.25, 0.25},
-                                                          P{0.75, 0.75}});
+                                                       P{0.25, 0.25},
+                                                       P{0.5, 0.5},
+                                                       P{0.25, 0.25},
+                                                       P{0.75, 0.75},
+                                                       P{0.25, 0.25},
+                                                       P{0.75, 0.75}});
   auto expected_segments_offsets = make_device_vector<index_t>({0, 0, 0, 1, 3, 4, 4, 4});
   auto expected_segments_coords =
     make_device_vector<segment<T>>({segment<T>{P{0.5, 0.5}, P{1, 1}},
