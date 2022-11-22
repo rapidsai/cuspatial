@@ -32,11 +32,14 @@ namespace cuspatial {
 /**
  * @brief Search a quadtree for polygon or linestring bounding box intersections.
  *
- * @note `scale` is applied to (x - x_min) and (y - y_min) to convert coordinates into a Morton code
- * in 2D space.
- * @note `max_depth` should be less than 16, since Morton codes are represented as `uint32_t`.
+ * @note 2D coordinates are converted into a 1D Morton code by dividing each x/y by the `scale`:
+ * (`(x - min_x) / scale` and `(y - min_y) / scale`).
+ * @note `max_depth` should be less than 16, since Morton codes are represented as `uint32_t`. The
+ * eventual number of levels may be less than `max_depth` if the number of points is small or
+ * `max_size` is large.
  *
- * @param quadtree: cudf table representing a quadtree (key, level, is_quad, length, offset).
+ * @param quadtree: cudf table representing a quadtree (key, level, is_internal_node, length,
+ * offset).
  * @param bbox: cudf table of bounding boxes as four columns (x_min, y_min, x_max, y_max).
  * @param x_min The lower-left x-coordinate of the area of interest bounding box.
  * @param x_max The upper-right x-coordinate of the area of interest bounding box.
@@ -83,7 +86,8 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(
  *
  * @param poly_quad_pairs cudf table of (polygon, quadrant) index pairs returned by
  * `cuspatial::join_quadtree_and_bounding_boxes`
- * @param quadtree cudf table representing a quadtree (key, level, is_quad, length, offset).
+ * @param quadtree cudf table representing a quadtree (key, level, is_internal_node, length,
+ * offset).
  * @param point_indices Sorted point indices returned by `cuspatial::quadtree_on_points`
  * @param point_x x-coordinates of points to test
  * @param point_y y-coordinates of points to test
@@ -104,8 +108,8 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(
  * polygon_offset - UINT32 column of polygon indices
  *   point_offset - UINT32 column of point indices
  *
- * @note The returned polygon and point indices are offsets into the poly_quad_pairs inputs and
- * (point_x, point_y), respectively.
+ * @note The returned polygon and point indices are offsets into the `poly_quad_pairs` inputs and
+ * `point_indices`, respectively.
  *
  **/
 std::unique_ptr<cudf::table> quadtree_point_in_polygon(
@@ -130,7 +134,8 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(
  *
  * @param linestring_quad_pairs cudf table of (linestring, quadrant) index pairs returned by
  * `cuspatial::join_quadtree_and_bounding_boxes`
- * @param quadtree cudf table representing a quadtree (key, level, is_quad, length, offset).
+ * @param quadtree cudf table representing a quadtree (key, level, is_internal_node, length,
+ * offset).
  * @param point_indices Sorted point indices returned by `cuspatial::quadtree_on_points`
  * @param point_x x-coordinates of points to test
  * @param point_y y-coordinates of points to test
@@ -153,8 +158,8 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(
  *   distance          - FLOAT or DOUBLE column (based on input point data type) of distances
  *                       between each point and linestring
  *
- * @note The returned point and linestring indices are offsets into the (point_x, point_y) and
- * linestring_quad_pairs inputs, respectively.
+ * @note The returned point and linestring indices are offsets into the `point_indices` and
+ * `linestring_quad_pairs` inputs, respectively.
  *
  **/
 std::unique_ptr<cudf::table> quadtree_point_to_nearest_linestring(
