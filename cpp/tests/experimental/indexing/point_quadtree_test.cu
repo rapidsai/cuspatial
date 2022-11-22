@@ -29,7 +29,7 @@ struct QuadtreeOnPointIndexingTest : public ::testing::Test {
             const int32_t max_size,
             std::vector<uint32_t> const& expected_key,
             std::vector<uint8_t> const& expected_level,
-            std::vector<bool> const& expected_is_parent_node,
+            std::vector<bool> const& expected_is_internal_node,
             std::vector<uint32_t> const& expected_length,
             std::vector<uint32_t> const& expected_offset)
   {
@@ -40,15 +40,15 @@ struct QuadtreeOnPointIndexingTest : public ::testing::Test {
 
     EXPECT_EQ(point_indices.size(), points.size());
 
-    auto& key_d            = tree.key;
-    auto& level_d          = tree.level;
-    auto& is_parent_node_d = tree.is_parent_node;
-    auto& length_d         = tree.length;
-    auto& offset_d         = tree.offset;
+    auto& key_d              = tree.key;
+    auto& level_d            = tree.level;
+    auto& is_internal_node_d = tree.is_internal_node;
+    auto& length_d           = tree.length;
+    auto& offset_d           = tree.offset;
 
     EXPECT_EQ(key_d.size(), expected_key.size());
     EXPECT_EQ(level_d.size(), expected_level.size());
-    EXPECT_EQ(is_parent_node_d.size(), expected_is_parent_node.size());
+    EXPECT_EQ(is_internal_node_d.size(), expected_is_internal_node.size());
     EXPECT_EQ(length_d.size(), expected_length.size());
     EXPECT_EQ(offset_d.size(), expected_offset.size());
 
@@ -56,7 +56,7 @@ struct QuadtreeOnPointIndexingTest : public ::testing::Test {
 
     expect_vector_equivalent(expected_key, key_d);
     expect_vector_equivalent(expected_level, level_d);
-    expect_vector_equivalent(expected_is_parent_node, is_parent_node_d);
+    expect_vector_equivalent(expected_is_internal_node, is_internal_node_d);
     expect_vector_equivalent(expected_length, length_d);
     expect_vector_equivalent(expected_offset, offset_d);
   }
