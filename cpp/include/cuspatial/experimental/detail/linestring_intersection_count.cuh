@@ -50,10 +50,11 @@ __global__ void count_intersection_and_overlaps_simple(MultiLinestringRange1 mul
       for (auto [c, d] : linestring2) {
         auto [point_opt, segment_opt] = segment_intersection(segment<T>{a, b}, segment<T>{c, d});
         if (point_opt.has_value()) {
-          auto r = make_atomic_ref(*(point_count_it + geometry_idx));
+          auto r = make_atomic_ref<T, cuda::thread_scope_device>(*(point_count_it + geometry_idx));
           r.fetch_add(1, cuda::memory_order_relaxed);
         } else if (segment_opt.has_value()) {
-          auto r = make_atomic_ref(*(segment_count_it + geometry_idx));
+          auto r =
+            make_atomic_ref<T, cuda::thread_scope_device>(*(segment_count_it + geometry_idx));
           r.fetch_add(1, cuda::memory_order_relaxed);
         }
       }
