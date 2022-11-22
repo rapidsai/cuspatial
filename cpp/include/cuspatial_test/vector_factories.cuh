@@ -22,7 +22,9 @@
 #include <rmm/device_vector.hpp>
 
 #include <initializer_list>
+#include <numeric>
 #include <vector>
+
 namespace cuspatial {
 namespace test {
 
@@ -153,7 +155,8 @@ auto make_multipoints_array(std::initializer_list<std::initializer_list<vec_2d<T
       return init;
     });
 
-  return multipoint_array{std::move(offsets), std::move(coordinates)};
+  return multipoint_array{rmm::device_vector<std::size_t>(offsets),
+                          rmm::device_vector<vec_2d<T>>(coordinates)};
 }
 
 }  // namespace test
