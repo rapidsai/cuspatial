@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <cuspatial_test/test_util.cuh>
-
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/experimental/detail/linestring_intersection_count.cuh>
@@ -28,12 +26,6 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <thrust/binary_search.h>
-#include <thrust/distance.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/zip_iterator.h>
-#include <thrust/reduce.h>
-#include <thrust/remove.h>
 #include <thrust/scan.h>
 #include <thrust/tuple.h>
 #include <thrust/uninitialized_fill.h>
