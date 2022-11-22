@@ -31,7 +31,8 @@ namespace cuspatial {
  * @brief Compute the spatial bounding boxes of sequences of points.
  *
  * Computes a bounding box around all points within each group (consecutive points with the same
- * ID). This function can be applied to trajectory data, polygon vertices, linestring vertices, or any grouped point data.
+ * ID). This function can be applied to trajectory data, polygon vertices, linestring vertices, or
+ * any grouped point data.
  *
  * Before merging bounding boxes, each point may be expanded into a bounding box using an
  * optional @p expansion_radius. The point is expanded to a box with coordinates
