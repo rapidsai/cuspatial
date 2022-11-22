@@ -101,6 +101,14 @@ class multilinestring_range {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto geometry_idx_from_point_idx(IndexType point_idx);
 
+  // Given index to a linestring, return the index of the linestring inside its multilinestring.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto intra_part_idx(IndexType global_part_idx);
+
+  // Given index to a point, return the index of the point inside its linestring.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto intra_point_idx(IndexType global_point_idx);
+
   /// Given an index of a segment, returns true if the index is valid.
   /// The index of a segment is the same as the index to the starting point of the segment.
   /// Thus, the index to the last point of a linestring is an invalid segment index.
@@ -123,6 +131,16 @@ class multilinestring_range {
   PartIterator _part_end;
   VecIterator _point_begin;
   VecIterator _point_end;
+
+ private:
+  /// @internal
+  /// Return the iterator to the part index where the point locates.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto _part_iter_from_point_idx(IndexType point_idx);
+  /// @internal
+  /// Return the iterator to the geometry index where the part locates.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto _geometry_iter_from_part_idx(IndexType part_idx);
 };
 
 /**

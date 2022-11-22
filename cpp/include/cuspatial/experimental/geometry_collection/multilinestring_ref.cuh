@@ -51,6 +51,10 @@ class multilinestring_ref {
   /// Return iterator to one past the last linestring of the multilinestring.
   CUSPATIAL_HOST_DEVICE auto end() const { return part_end(); }
 
+  /// Return `linestring_idx`th linestring in the multilinestring.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto operator[](IndexType linestring_idx) const;
+
  protected:
   PartIterator _part_begin;
   PartIterator _part_end;

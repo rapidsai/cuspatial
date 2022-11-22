@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "cuspatial/traits.hpp"
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/traits.hpp>
 
 #include <thrust/distance.h>
 
