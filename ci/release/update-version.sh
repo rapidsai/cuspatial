@@ -42,8 +42,11 @@ sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cma
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' python/cuspatial/CMakeLists.txt
 
 # bump cudf
-for FILE in conda/environments/*.yml; do
+for FILE in dependencies.yaml conda/environments/*.yaml; do
   sed_runner "s/cudf=${CURRENT_SHORT_TAG}/cudf=${NEXT_SHORT_TAG}/g" ${FILE};
+  sed_runner "s/rmm=${CURRENT_SHORT_TAG}/rmm=${NEXT_SHORT_TAG}/g" ${FILE};
+  sed_runner "s/libcudf=${CURRENT_SHORT_TAG}/libcudf=${NEXT_SHORT_TAG}/g" ${FILE};
+  sed_runner "s/librmm=${CURRENT_SHORT_TAG}/librmm=${NEXT_SHORT_TAG}/g" ${FILE};
 done
 
 # Doxyfile update
