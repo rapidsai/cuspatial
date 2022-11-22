@@ -47,6 +47,7 @@ class multipoint_range {
  public:
   using geometry_it_t = GeometryIterator;
   using point_it_t    = VecIterator;
+  using index_t       = iterator_value_type<geometry_it_t>;
   using point_t       = iterator_value_type<point_it_t>;
   using element_t     = iterator_vec_base_type<point_it_t>;
 
@@ -57,11 +58,20 @@ class multipoint_range {
                    GeometryIterator geometry_end,
                    VecIterator points_begin,
                    VecIterator points_end);
+  /**
+   * @brief Returns the number of multipoints in the array.
+   */
+  CUSPATIAL_HOST_DEVICE auto num_multipoints();
+
+  /**
+   * @brief Returns the number of points in the array.
+   */
+  CUSPATIAL_HOST_DEVICE auto num_points();
 
   /**
    * @brief Returns the number of multipoints in the array.
    */
-  auto size();
+  CUSPATIAL_HOST_DEVICE auto size() { return num_multipoints(); }
 
   /**
    * @brief Returns the iterator to the first multipoint in the multipoint array.
@@ -86,12 +96,28 @@ class multipoint_range {
   /**
    * @brief Returns the iterator to the start of the underlying point array.
    */
-  auto point_begin();
+  CUSPATIAL_HOST_DEVICE auto point_begin();
 
   /**
    * @brief Returns the iterator to the end of the underlying point array.
    */
-  auto point_end();
+  CUSPATIAL_HOST_DEVICE auto point_end();
+
+  /**
+   * @brief Returns the iterator to the start of the underlying offsets array.
+   */
+  CUSPATIAL_HOST_DEVICE auto offsets_begin();
+
+  /**
+   * @brief Returns the iterator to the end of the underlying offsets array.
+   */
+  CUSPATIAL_HOST_DEVICE auto offsets_end();
+
+  /**
+   * @brief Returns the geometry index of the given point index.
+   */
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto geometry_idx_from_point_idx(IndexType point_idx) const;
 
   /**
    * @brief Returns the `idx`th multipoint in the array.
