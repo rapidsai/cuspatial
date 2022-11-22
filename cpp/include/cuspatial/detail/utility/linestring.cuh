@@ -154,19 +154,19 @@ __forceinline__ thrust::optional<segment<T>> __device__ collinear_or_parallel_ov
   // Parallel
   if (not_float_equal(det(ab, ac), T{0})) return thrust::nullopt;
 
-  // Must be on the same line, test if intersect
-  if ((a < c && c < b) || (a < d && d < b)) {
-    // Compute smallest interval between the segments
-    if (b < a) thrust::swap(a, b);
-    if (d < c) thrust::swap(c, d);
-    auto e0 = a > c ? a : c;
-    auto e1 = b < d ? b : d;
+  // Must be on the same line, sort the endpoints
+  if (b < a) thrust::swap(a, b);
+  if (d < c) thrust::swap(c, d);
 
-    // Decondition the coordinates
-    return segment<T>{e0 + center, e1 + center};
-  }
+  // Test if not overlap
+  if (b < c || d < a) return thrust::nullopt;
 
-  return thrust::nullopt;
+  // Compute smallest interval between the segments
+  auto e0 = a > c ? a : c;
+  auto e1 = b < d ? b : d;
+
+  // Decondition the coordinates
+  return segment<T>{e0 + center, e1 + center};
 }
 
 /**
