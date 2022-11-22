@@ -110,6 +110,10 @@ ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST
 ConfigureTest(SPATIAL_WINDOW_POINT_TEST
     spatial_window/spatial_window_test.cpp)
 
+ConfigureTest(UTILITY_TEST
+    utility_test/test_float_equivalent.cu
+)
+
 # Experimental API
 ConfigureTest(HAVERSINE_TEST_EXP
     experimental/spatial/haversine_test.cu)
