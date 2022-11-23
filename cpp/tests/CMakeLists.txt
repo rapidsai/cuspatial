@@ -112,6 +112,7 @@ ConfigureTest(SPATIAL_WINDOW_POINT_TEST
 
 ConfigureTest(UTILITY_TEST
     utility_test/test_float_equivalent.cu
+    utility_test/test_multipoint_factory.cu
 )
 
 # Experimental API
@@ -159,3 +160,6 @@ ConfigureTest(POINT_QUADTREE_TEST_EXP
 
 ConfigureTest(OPERATOR_TEST_EXP
     experimental/operators/linestrings_test.cu)
+
+ConfigureTest(FIND_TEST_EXP
+    experimental/find/find_duplicate_points_test.cu)
