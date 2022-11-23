@@ -213,5 +213,21 @@ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
   return {thrust::nullopt, thrust::nullopt};
 }
 
+/**
+ * @brief Given a point and a segment, returns true if point is on the segment.
+ */
+template <typename T>
+bool __device__ point_on_segment(segment<T> const& segment, vec_2d<T> const& c)
+{
+  auto [a, b] = segment;
+  auto ab     = b - a;
+  auto ac     = c - a;
+
+  if (not_float_equal(det(ab, ac), T{0})) return false;
+
+  if (b < a) thrust::swap(a, b);
+  return a <= c && c <= b;
+}
+
 }  // namespace detail
 }  // namespace cuspatial

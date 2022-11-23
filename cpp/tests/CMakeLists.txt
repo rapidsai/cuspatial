@@ -159,3 +159,6 @@ ConfigureTest(POINT_QUADTREE_TEST_EXP
 
 ConfigureTest(OPERATOR_TEST_EXP
     experimental/operators/linestrings_test.cu)
+
+ConfigureTest(FIND_TEST_EXP
+    experimental/find/find_point_on_segments_test.cu)
