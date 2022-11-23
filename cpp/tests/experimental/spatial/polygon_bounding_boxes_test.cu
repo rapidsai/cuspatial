@@ -39,7 +39,7 @@ TYPED_TEST(PolygonBoundingBoxTest, test_empty)
 
   auto poly_offsets = make_device_vector<int32_t>({});
   auto ring_offsets = make_device_vector<int32_t>({});
-  auto points       = make_device_vector<vec_2d<T>>({});
+  auto vertices     = make_device_vector<vec_2d<T>>({});
 
   auto bbox_min = rmm::device_vector<cuspatial::vec_2d<T>>(poly_offsets.size());
   auto bbox_max = rmm::device_vector<cuspatial::vec_2d<T>>(poly_offsets.size());
@@ -50,8 +50,8 @@ TYPED_TEST(PolygonBoundingBoxTest, test_empty)
                                                       poly_offsets.end(),
                                                       ring_offsets.begin(),
                                                       ring_offsets.end(),
-                                                      points.begin(),
-                                                      points.end(),
+                                                      vertices.begin(),
+                                                      vertices.end(),
                                                       bboxes_begin);
 
   EXPECT_EQ(std::distance(bboxes_begin, bboxes_end), 0);
@@ -63,8 +63,8 @@ TYPED_TEST(PolygonBoundingBoxTest, test_one)
 
   auto poly_offsets = make_device_vector<int32_t>({0});
   auto ring_offsets = make_device_vector<int32_t>({0});
-  auto points       = make_device_vector<vec_2d<T>>(
-    {{2.488450, 5.856625}, {1.333584, 5.008840}, {3.460720, 4.586599}});
+  auto vertices     = make_device_vector<vec_2d<T>>(
+    {{2.488450, 5.856625}, {1.333584, 5.008840}, {3.460720, 4.586599}, {2.488450, 5.856625}});
 
   auto bbox_min = rmm::device_vector<cuspatial::vec_2d<T>>(poly_offsets.size());
   auto bbox_max = rmm::device_vector<cuspatial::vec_2d<T>>(poly_offsets.size());
@@ -75,13 +75,13 @@ TYPED_TEST(PolygonBoundingBoxTest, test_one)
                                                       poly_offsets.end(),
                                                       ring_offsets.begin(),
                                                       ring_offsets.end(),
-                                                      points.begin(),
-                                                      points.end(),
+                                                      vertices.begin(),
+                                                      vertices.end(),
                                                       bboxes_begin);
 
   EXPECT_EQ(std::distance(bboxes_begin, bboxes_end), 1);
 
-  auto bbox_min_expected = make_device_vector<vec_2d<T>>({{1.333584, .586599}});
+  auto bbox_min_expected = make_device_vector<vec_2d<T>>({{1.333584, 4.586599}});
   auto bbox_max_expected = make_device_vector<vec_2d<T>>({{3.460720, 5.856625}});
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(bbox_min, bbox_min_expected);
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(bbox_max, bbox_max_expected);
@@ -92,28 +92,32 @@ TYPED_TEST(PolygonBoundingBoxTest, test_small)
   using T = TypeParam;
 
   auto poly_offsets = make_device_vector<int32_t>({0, 1, 2, 3});
-  auto ring_offsets = make_device_vector<int32_t>({0, 3, 8, 12});
-  auto points       = make_device_vector<vec_2d<T>>({// ring 1
-                                               {2.488450, 5.856625},
-                                               {1.333584, 5.008840},
-                                               {3.460720, 4.586599},
-                                               // ring 2
-                                               {5.039823, 4.229242},
-                                               {5.561707, 1.825073},
-                                               {7.103516, 1.503906},
-                                               {7.190674, 4.025879},
-                                               {5.998939, 5.653384},
-                                               // ring 3
-                                               {5.998939, 1.235638},
-                                               {5.573720, 0.197808},
-                                               {6.703534, 0.086693},
-                                               {5.998939, 1.235638},
-                                               // ring 4
-                                               {2.088115, 4.541529},
-                                               {1.034892, 3.530299},
-                                               {2.415080, 2.896937},
-                                               {3.208660, 3.745936},
-                                               {2.088115, 4.54152}});
+  auto ring_offsets = make_device_vector<int32_t>({0, 4, 10, 15});
+  auto vertices     = make_device_vector<vec_2d<T>>({// ring 1
+                                                 {2.488450, 5.856625},
+                                                 {1.333584, 5.008840},
+                                                 {3.460720, 4.586599},
+                                                 {2.488450, 5.856625},
+                                                 // ring 2
+                                                 {5.039823, 4.229242},
+                                                 {5.561707, 1.825073},
+                                                 {7.103516, 1.503906},
+                                                 {7.190674, 4.025879},
+                                                 {5.998939, 5.653384},
+                                                 {5.039823, 4.229242},
+                                                 // ring 3
+                                                 {5.998939, 1.235638},
+                                                 {5.573720, 0.197808},
+                                                 {6.703534, 0.086693},
+                                                 {5.998939, 1.235638},
+                                                 {5.998939, 1.235638},
+                                                 // ring 4
+                                                 {2.088115, 4.541529},
+                                                 {1.034892, 3.530299},
+                                                 {2.415080, 2.896937},
+                                                 {3.208660, 3.745936},
+                                                 {2.088115, 4.54152},
+                                                 {2.088115, 4.541529}});
 
   auto bbox_min = rmm::device_vector<cuspatial::vec_2d<T>>(poly_offsets.size());
   auto bbox_max = rmm::device_vector<cuspatial::vec_2d<T>>(poly_offsets.size());
@@ -124,8 +128,8 @@ TYPED_TEST(PolygonBoundingBoxTest, test_small)
                                                       poly_offsets.end(),
                                                       ring_offsets.begin(),
                                                       ring_offsets.end(),
-                                                      points.begin(),
-                                                      points.end(),
+                                                      vertices.begin(),
+                                                      vertices.end(),
                                                       bboxes_begin);
 
   EXPECT_EQ(std::distance(bboxes_begin, bboxes_end), 4);

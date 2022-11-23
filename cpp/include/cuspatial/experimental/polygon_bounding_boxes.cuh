@@ -22,15 +22,15 @@ namespace cuspatial {
 
 template <class OffsetIteratorA,
           class OffsetIteratorB,
-          class PointIterator,
+          class VertexIterator,
           class BoundingBoxIterator>
 BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first,
                                            OffsetIteratorA polygon_offsets_last,
                                            OffsetIteratorB polygon_ring_offsets_first,
                                            OffsetIteratorB polygon_ring_offsets_last,
-                                           PointIterator polygon_points_first,
-                                           PointIterator polygon_points_last,
-                                           BoundingBoxIterator output_first,
+                                           VertexIterator polygon_vertices_first,
+                                           VertexIterator polygon_vertices_last,
+                                           BoundingBoxIterator bounding_boxes_first,
                                            rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }
 
