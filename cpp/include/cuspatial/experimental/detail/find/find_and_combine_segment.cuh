@@ -31,19 +31,19 @@ namespace detail {
  * @brief Kernel to merge segments, naive n^2 algorithm.
  */
 template <typename OffsetRange, typename SegmentRange, typename OutputIt>
-void __global__ simple_combine_segments_kernel(OffsetRange offsets,
-                                               SegmentRange segments,
-                                               OutputIt stencils)
+void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
+                                                        SegmentRange segments,
+                                                        OutputIt merged_flag)
 {
   for (auto pair_idx = threadIdx.x + blockIdx.x * blockDim.x; pair_idx < offsets.size() - 1;
        pair_idx += gridDim.x * blockDim.x) {
-    for (auto i = offsets[pair_idx]; i < offsets[pair_idx + 1] && stencils[i] != 1; i++) {
+    for (auto i = offsets[pair_idx]; i < offsets[pair_idx + 1] && merged_flag[i] != 1; i++) {
       for (auto j = i + 1; j < offsets[pair_idx + 1]; j++) {
         auto res = maybe_merge_segments(segments[i], segments[j]);
         if (res.has_value()) {
           // segments[i] can be merged from segments[j]
-          segments[i] = res.value();
-          stencils[j] = 1;
+          segments[i]    = res.value();
+          merged_flag[j] = 1;
         }
       }
     }
@@ -53,18 +53,18 @@ void __global__ simple_combine_segments_kernel(OffsetRange offsets,
 /**
  * @internal
  * @brief For each pair of mergeable segment, overwrites the first segment with merged result,
- * set the stencil for the second segment in the output stencil.
+ * sets the flag for the second segment as 1.
  */
 template <typename OffsetRange, typename SegmentRange, typename OutputIt>
-void combine_segments(OffsetRange offsets,
-                      SegmentRange segments,
-                      OutputIt stencils_output,
-                      rmm::cuda_stream_view stream)
+void find_and_combine_segment(OffsetRange offsets,
+                              SegmentRange segments,
+                              OutputIt merged_flag,
+                              rmm::cuda_stream_view stream)
 {
   auto [threads_per_block, num_blocks] = grid_1d(segments.size());
-  thrust::uninitialized_fill_n(rmm::exec_policy(stream), stencils_output, segments.size(), 0);
-  simple_combine_segments_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
-    offsets, segments, stencils_output);
+  thrust::uninitialized_fill_n(rmm::exec_policy(stream), merged_flag, segments.size(), 0);
+  simple_find_and_combine_segments_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
+    offsets, segments, merged_flag);
 }
 
 }  // namespace detail

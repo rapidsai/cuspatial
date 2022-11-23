@@ -117,6 +117,7 @@ ConfigureTest(UTILITY_TEST
 # Experimental API
 ConfigureTest(HAVERSINE_TEST_EXP
     experimental/spatial/haversine_test.cu)
+
 ConfigureTest(POINT_DISTANCE_TEST_EXP
     experimental/spatial/point_distance_test.cu)
 
@@ -160,5 +161,5 @@ ConfigureTest(POINT_QUADTREE_TEST_EXP
 ConfigureTest(OPERATOR_TEST_EXP
     experimental/operators/linestrings_test.cu)
 
-ConfigureTest(COMBINE_TEST_EXP
-    experimental/combine/combine_segments_test.cu)
+ConfigureTest(FIND_TEST_EXP
+    experimental/find/find_and_combine_segments_test.cu)
