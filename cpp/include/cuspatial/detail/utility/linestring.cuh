@@ -213,5 +213,45 @@ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
   return {thrust::nullopt, thrust::nullopt};
 }
 
+/**
+ * @brief Given two segments, if they are mergable, return the merged result. Otherwise return
+ * nullopt.
+ */
+template <typename T>
+thrust::optional<segment<T>> __device__ maybe_merge_segments(segment<T> const& segment1,
+                                                             segment<T> const& segment2)
+{
+  auto [a, b] = segment1;
+  auto [c, d] = segment2;
+
+  // Condition the coordinates to avoid large floating point error
+  auto center = midpoint(midpoint(a, b), midpoint(c, d));
+  a -= center;
+  b -= center;
+  c -= center;
+  d -= center;
+
+  auto ab = b - a;
+  auto cd = d - c;
+
+  if (not_float_equal(det(ab, cd), T{0})) return thrust::nullopt;
+  auto ac = c - a;
+  if (not_float_equal(det(ab, ac), T{0})) return thrust::nullopt;
+
+  // Must be on the same line, sort the endpoints
+  if (b < a) thrust::swap(a, b);
+  if (d < c) thrust::swap(c, d);
+
+  // Test if not overlap
+  if (b < c || d < a) return thrust::nullopt;
+
+  // Compute largest interval between the segments
+  auto e0 = a < c ? a : c;
+  auto e1 = b > d ? b : d;
+
+  // Decondition the coordinates
+  return segment<T>{e0 + center, e1 + center};
+}
+
 }  // namespace detail
 }  // namespace cuspatial
