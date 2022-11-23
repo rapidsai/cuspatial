@@ -19,6 +19,7 @@ from .core.spatial import (
     quadtree_on_points,
     quadtree_point_in_polygon,
     quadtree_point_to_nearest_linestring,
+    sinusoidal_projection,
 )
 from .core.trajectory import (
     derive_trajectories,

@@ -47,8 +47,8 @@ endfunction(ConfigureTest)
 ConfigureTest(CUBIC_SPLINE_TEST
     interpolate/cubic_spline_test.cpp)
 
-ConfigureTest(COORDINATE_TRANSFORM_TEST
-    spatial/coordinate_transform_test.cu)
+ConfigureTest(SINUSOIDAL_PROJECTION_TEST
+    spatial/sinusoidal_projection_test.cu)
 
 ConfigureTest(HAVERSINE_TEST
     spatial/haversine_test.cpp)
@@ -136,8 +136,8 @@ ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST_EXP
     experimental/spatial/point_linestring_nearest_points_test.cu)
 
-ConfigureTest(COORDINATE_TRANSFORM_TEST_EXP
-    experimental/spatial/coordinate_transform_test.cu)
+ConfigureTest(SINUSOIDAL_PROJECTION_TEST_EXP
+    experimental/spatial/sinusoidal_projection_test.cu)
 
 ConfigureTest(POINTS_IN_RANGE_TEST_EXP
     experimental/spatial/points_in_range_test.cu)

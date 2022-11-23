@@ -36,13 +36,14 @@
  * @}
  * @defgroup spatial_api Spatial APIs
  * @{
- *      @defgroup coordinate_transform Coordinate Transform
+ *      @defgroup projection Projections
  *      @{
- *          @brief APIs to transform coordinates
+ *          @brief APIs to project coordinates between coordinate reference systems.
  *
  *          This module contains APIs that transforms cartesian and geodesic coordinates.
+ *          @file projection.hpp
  *          @file coordinate_transform.hpp
-            @file coordinate_transform.cuh
+ *          @file sinusoidal_projection.cuh
  *      @}
  *      @defgroup distance Distance
  *      @{
