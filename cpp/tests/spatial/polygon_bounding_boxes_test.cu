@@ -44,7 +44,7 @@ TYPED_TEST(PolygonBoundingBoxTest, test_empty)
 
   auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, this->mr());
 
-  CUSPATIAL_EXPECTS(bboxes->num_rows() == 0, "must return 0 bounding boxes on empty input");
+  EXPECT_EQ(bboxes->num_rows(), 0);
 }
 
 TYPED_TEST(PolygonBoundingBoxTest, test_one)
@@ -54,14 +54,13 @@ TYPED_TEST(PolygonBoundingBoxTest, test_one)
 
   fixed_width_column_wrapper<int32_t> poly_offsets({0});
   fixed_width_column_wrapper<int32_t> ring_offsets({0});
-  fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720});
-  fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599});
+  fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
+  fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599, 5.856625});
 
   auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, this->mr());
 
-  CUSPATIAL_EXPECTS(bboxes->view().num_columns() == 4, "bbox table must have 4 columns");
-  CUSPATIAL_EXPECTS(bboxes->num_rows() == 1,
-                    "resutling #of bounding boxes must be the same as # of polygons");
+  EXPECT_EQ(bboxes->view().num_columns(), 4);
+  EXPECT_EQ(bboxes->num_rows(), 1);
 
   expect_tables_equivalent(*bboxes,
                            cudf::table_view{{fixed_width_column_wrapper<T>({1.333584}),
@@ -76,17 +75,19 @@ TYPED_TEST(PolygonBoundingBoxTest, test_small)
   using namespace cudf::test;
 
   fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0, 3, 8, 12});
+  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14});
   fixed_width_column_wrapper<T> x({// ring 1
                                    2.488450,
                                    1.333584,
                                    3.460720,
+                                   2.488450,
                                    // ring 2
                                    5.039823,
                                    5.561707,
                                    7.103516,
                                    7.190674,
                                    5.998939,
+                                   5.039823,
                                    // ring 3
                                    5.998939,
                                    5.573720,
@@ -102,12 +103,14 @@ TYPED_TEST(PolygonBoundingBoxTest, test_small)
                                    5.856625,
                                    5.008840,
                                    4.586599,
+                                   5.856625,
                                    // ring 2
                                    4.229242,
                                    1.825073,
                                    1.503906,
                                    4.025879,
                                    5.653384,
+                                   4.229242,
                                    // ring 3
                                    1.235638,
                                    0.197808,
@@ -122,9 +125,8 @@ TYPED_TEST(PolygonBoundingBoxTest, test_small)
 
   auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, this->mr());
 
-  CUSPATIAL_EXPECTS(bboxes->view().num_columns() == 4, "bbox table must have 4 columns");
-  CUSPATIAL_EXPECTS(bboxes->num_rows() == 4,
-                    "resutling #of bounding boxes must be the same as # of polygons");
+  EXPECT_EQ(bboxes->view().num_columns(), 4);
+  EXPECT_EQ(bboxes->num_rows(), 4);
 
   expect_tables_equivalent(
     *bboxes,

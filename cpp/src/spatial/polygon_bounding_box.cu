@@ -15,6 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/experimental/polygon_bounding_boxes.cuh>
 #include <cuspatial/polygon_bounding_box.hpp>
 
 #include <cudf/column/column_factories.hpp>
@@ -27,17 +29,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
-#include <thrust/functional.h>
-#include <thrust/gather.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/reduce.h>
-#include <thrust/scan.h>
-#include <thrust/scatter.h>
-#include <thrust/tuple.h>
 
 #include <memory>
 #include <vector>
@@ -45,17 +37,6 @@
 namespace cuspatial {
 
 namespace {
-
-template <typename T>
-struct point_to_square {
-  inline __device__ thrust::tuple<T, T, T, T> operator()(thrust::tuple<T, T> const& point)
-  {
-    return thrust::make_tuple(thrust::get<0>(point),   // x
-                              thrust::get<1>(point),   // y
-                              thrust::get<0>(point),   // x
-                              thrust::get<1>(point));  // y
-  }
-};
 
 template <typename T>
 std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view const& poly_offsets,
@@ -66,33 +47,6 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
                                                             rmm::mr::device_memory_resource* mr)
 {
   auto num_polygons = poly_offsets.size();
-  // Wrapped in an IEFE so `first_ring_offsets` is freed on return
-  auto point_ids = [&]() {
-    rmm::device_vector<int32_t> point_ids(x.size());
-    rmm::device_vector<int32_t> first_ring_offsets(num_polygons);
-
-    // Gather the first ring offset for each polygon
-    thrust::gather(rmm::exec_policy(stream),
-                   poly_offsets.begin<int32_t>(),
-                   poly_offsets.end<int32_t>(),
-                   ring_offsets.begin<int32_t>(),
-                   first_ring_offsets.begin());
-
-    // Scatter the first ring offset into a list of point_ids for reduction
-    thrust::scatter(rmm::exec_policy(stream),
-                    thrust::make_counting_iterator(0),
-                    thrust::make_counting_iterator(0) + num_polygons,
-                    first_ring_offsets.begin(),
-                    point_ids.begin());
-
-    thrust::inclusive_scan(rmm::exec_policy(stream),
-                           point_ids.begin(),
-                           point_ids.end(),
-                           point_ids.begin(),
-                           thrust::maximum<int32_t>());
-
-    return point_ids;
-  }();
 
   auto type = cudf::data_type{cudf::type_to_id<T>()};
   std::vector<std::unique_ptr<cudf::column>> cols{};
@@ -106,33 +60,23 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
   cols.push_back(
     cudf::make_numeric_column(type, num_polygons, cudf::mask_state::UNALLOCATED, stream, mr));
 
-  auto bboxes_iter =
-    thrust::make_zip_iterator(thrust::make_tuple(cols.at(0)->mutable_view().begin<T>(),  // bbox_x1
-                                                 cols.at(1)->mutable_view().begin<T>(),  // bbox_y1
-                                                 cols.at(2)->mutable_view().begin<T>(),  // bbox_x2
-                                                 cols.at(3)->mutable_view().begin<T>())  // bbox_y2
-    );
+  auto bbox_mins_begin  = cuspatial::make_vec_2d_iterator(cols.at(0)->mutable_view().begin<T>(),
+                                                         cols.at(1)->mutable_view().begin<T>());
+  auto bbox_maxes_begin = cuspatial::make_vec_2d_iterator(cols.at(2)->mutable_view().begin<T>(),
+                                                          cols.at(3)->mutable_view().begin<T>());
 
-  auto points_iter = thrust::make_zip_iterator(thrust::make_tuple(x.begin<T>(), y.begin<T>()));
-  auto points_squared_iter = thrust::make_transform_iterator(points_iter, point_to_square<T>{});
+  auto bboxes_iter = thrust::make_zip_iterator(bbox_mins_begin, bbox_maxes_begin);
 
-  thrust::reduce_by_key(rmm::exec_policy(stream),
-                        point_ids.begin(),
-                        point_ids.end(),
-                        points_squared_iter,
-                        thrust::make_discard_iterator(),
-                        bboxes_iter,
-                        thrust::equal_to<int32_t>(),
-                        [] __device__(auto const& a, auto const& b) {
-                          T min_x_a, min_y_a, max_x_a, max_y_a;
-                          T min_x_b, min_y_b, max_x_b, max_y_b;
-                          thrust::tie(min_x_a, min_y_a, max_x_a, max_y_a) = a;
-                          thrust::tie(min_x_b, min_y_b, max_x_b, max_y_b) = b;
-                          return thrust::make_tuple(min(min_x_a, min_x_b),   // min_x
-                                                    min(min_y_a, min_y_b),   // min_y
-                                                    max(max_x_a, max_x_b),   // max_x
-                                                    max(max_y_a, max_y_b));  // max_y
-                        });
+  auto vertices_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
+
+  cuspatial::polygon_bounding_boxes(poly_offsets.begin<cudf::size_type>(),
+                                    poly_offsets.end<cudf::size_type>(),
+                                    ring_offsets.begin<cudf::size_type>(),
+                                    ring_offsets.end<cudf::size_type>(),
+                                    vertices_begin,
+                                    vertices_begin + x.size(),
+                                    bboxes_iter,
+                                    stream);
 
   return std::make_unique<cudf::table>(std::move(cols));
 }
@@ -193,7 +137,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& pol
   CUSPATIAL_EXPECTS(poly_offsets.type().id() == cudf::type_id::INT32, "Invalid poly_offsets type");
   CUSPATIAL_EXPECTS(ring_offsets.type().id() == cudf::type_id::INT32, "Invalid ring_offsets type");
   CUSPATIAL_EXPECTS(x.size() == y.size(), "x and y must be the same size");
-  CUSPATIAL_EXPECTS(x.size() >= 3 * ring_offsets.size(), "all rings must have at least 3 points");
+  CUSPATIAL_EXPECTS(x.size() >= 4 * ring_offsets.size(), "all rings must have at least 4 points");
 
   if (poly_offsets.is_empty() || ring_offsets.is_empty() || x.is_empty() || y.is_empty()) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
