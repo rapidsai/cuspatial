@@ -68,9 +68,9 @@ def bench_polygon_bounding_boxes(benchmark, polygons):
     )
 
 
-def bench_polyline_bounding_boxes(benchmark, sorted_trajectories):
+def bench_linestring_bounding_boxes(benchmark, sorted_trajectories):
     benchmark(
-        cuspatial.polyline_bounding_boxes,
+        cuspatial.linestring_bounding_boxes,
         sorted_trajectories[1],
         sorted_trajectories[0]["x"],
         sorted_trajectories[0]["y"],
@@ -208,7 +208,7 @@ def bench_quadtree_point_in_polygon(benchmark, polygons):
     )
 
 
-def bench_quadtree_point_to_nearest_polyline(benchmark):
+def bench_quadtree_point_to_nearest_linestring(benchmark):
     SCALE = 3
     MAX_DEPTH = 7
     MIN_SIZE = 125
@@ -236,12 +236,12 @@ def bench_quadtree_point_to_nearest_polyline(benchmark):
         MAX_DEPTH,
         MIN_SIZE,
     )
-    poly_bboxes = cuspatial.polyline_bounding_boxes(
+    linestring_bboxes = cuspatial.linestring_bounding_boxes(
         polygons.ring_offset, polygons.x, polygons.y, 2.0
     )
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree,
-        poly_bboxes,
+        linestring_bboxes,
         polygons.x.min(),
         polygons.x.max(),
         polygons.y.min(),
@@ -250,7 +250,7 @@ def bench_quadtree_point_to_nearest_polyline(benchmark):
         MAX_DEPTH,
     )
     benchmark(
-        cuspatial.quadtree_point_to_nearest_polyline,
+        cuspatial.quadtree_point_to_nearest_linestring,
         intersections,
         quadtree,
         point_indices,

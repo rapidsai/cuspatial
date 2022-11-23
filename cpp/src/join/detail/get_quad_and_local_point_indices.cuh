@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 namespace cuspatial {
 namespace detail {
 
-inline __device__ std::pair<uint32_t, uint32_t> get_quad_poly_and_local_point_indices(
+inline __device__ std::pair<uint32_t, uint32_t> get_quad_and_local_point_indices(
   uint32_t const global_index, uint32_t const* point_offsets, uint32_t const* point_offsets_end)
 {
   // Calculate the position in "point_offsets" that `global_index` falls between.

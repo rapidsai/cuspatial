@@ -5,16 +5,17 @@ from libcpp.memory cimport unique_ptr
 from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column cimport column
 from cudf._lib.cpp.column.column_view cimport column_view
-from cudf._lib.cpp.types cimport size_type
+
+from cuspatial._lib.cpp.optional cimport optional
 
 
 cdef extern from "cuspatial/distance/linestring_distance.hpp" \
         namespace "cuspatial" nogil:
     cdef unique_ptr[column] pairwise_linestring_distance(
-        const column_view linestring1_offsets,
-        const column_view linestring1_points_x,
-        const column_view linestring1_points_y,
-        const column_view linestring2_offsets,
-        const column_view linestring2_points_x,
-        const column_view linestring2_points_y
+        const optional[column_view] multilinestring1_geometry_offsets,
+        const column_view linestring1_part_offsets,
+        const column_view linestring1_points_xy,
+        const optional[column_view] multilinestring2_geometry_offsets,
+        const column_view linestring2_part_offsets,
+        const column_view linestring2_points_xy
     ) except +

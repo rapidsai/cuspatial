@@ -37,6 +37,9 @@ class GeoSeries(cudf.Series):
     stored in the `GeoArrowBuffers` object, accessible with the `points`,
     `multipoints`, `lines`, and `polygons` accessors.
 
+    Examples
+    --------
+
     >>> from shapely.geometry import Point
         import geopandas
         import cuspatial
