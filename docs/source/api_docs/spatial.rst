@@ -22,7 +22,9 @@ Measurement Functions
 
 .. autofunction:: cuspatial.directed_hausdorff_distance
 .. autofunction:: cuspatial.haversine_distance
+.. autofunction:: cuspatial.pairwise_point_distance
 .. autofunction:: cuspatial.pairwise_linestring_distance
+.. autofunction:: cuspatial.pairwise_point_linestring_distance
 
 Nearest Points Function
 +++++++++++++++++++++++

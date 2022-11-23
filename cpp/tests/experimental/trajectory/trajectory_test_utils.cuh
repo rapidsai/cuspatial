@@ -202,12 +202,23 @@ struct trajectory_test_data {
     }
   };
 
-  auto extrema()
+  struct point_bbox_functor {
+    T expansion_radius{};
+    using point_tuple = thrust::tuple<cuspatial::vec_2d<T>, cuspatial::vec_2d<T>>;
+    __host__ __device__ point_tuple operator()(cuspatial::vec_2d<T> const& p)
+    {
+      auto expansion = cuspatial::vec_2d<T>{expansion_radius, expansion_radius};
+      return point_tuple{p - expansion, p + expansion};
+    }
+  };
+
+  auto extrema(T expansion_radius = T{})
   {
     auto minima = rmm::device_vector<cuspatial::vec_2d<T>>(num_trajectories);
     auto maxima = rmm::device_vector<cuspatial::vec_2d<T>>(num_trajectories);
 
-    auto point_tuples = thrust::make_zip_iterator(points_sorted.begin(), points_sorted.begin());
+    auto point_tuples =
+      thrust::make_transform_iterator(points_sorted.begin(), point_bbox_functor{expansion_radius});
 
     thrust::reduce_by_key(ids_sorted.begin(),
                           ids_sorted.end(),

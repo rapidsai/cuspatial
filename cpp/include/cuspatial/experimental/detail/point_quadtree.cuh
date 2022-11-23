@@ -70,7 +70,7 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
 
   // Construct the indicator output column.
   // line 6 and 7 of algorithm in Fig. 5 in ref.
-  auto is_parent_node = construct_non_leaf_indicator(
+  auto is_internal_node = construct_non_leaf_indicator(
     quad_point_count, num_parent_nodes, num_valid_nodes, max_size, mr, stream);
 
   // Construct the offsets output column
@@ -80,13 +80,13 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
     // revision to line 8: adjust quad_point_pos based on last-level z-order
     // code
     auto quad_point_pos = compute_flattened_first_point_positions(
-      keys, levels, quad_point_count, is_parent_node, num_valid_nodes, max_depth, stream);
+      keys, levels, quad_point_count, is_internal_node, num_valid_nodes, max_depth, stream);
 
     // line 9 of algorithm in Fig. 5 in ref.
     thrust::replace_if(rmm::exec_policy(stream),
                        quad_child_count.begin(),
                        quad_child_count.begin() + num_valid_nodes,
-                       is_parent_node.begin(),
+                       is_internal_node.begin(),
                        !thrust::placeholders::_1,
                        0);
 
@@ -100,14 +100,14 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
 
     auto& offsets     = quad_child_pos;
     auto offsets_iter = thrust::make_zip_iterator(
-      is_parent_node.begin(), quad_child_pos.begin(), quad_point_pos.begin());
+      is_internal_node.begin(), quad_child_pos.begin(), quad_point_pos.begin());
 
-    // copy each value in `is_parent_node` from `quad_child_pos` if true, else `quad_point_pos`
+    // copy each value in `is_internal_node` from `quad_child_pos` if true, else `quad_point_pos`
     thrust::transform(rmm::exec_policy(stream),
                       offsets_iter,
                       offsets_iter + num_valid_nodes,
                       offsets.begin(),
-                      // return is_parent_node ? lhs : rhs
+                      // return is_internal_node ? lhs : rhs
                       [] __device__(auto const& t) {
                         return thrust::get<0>(t) ? thrust::get<1>(t) : thrust::get<2>(t);
                       });
@@ -117,8 +117,8 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
 
   // Construct the lengths output column
   rmm::device_uvector<uint32_t> lengths(num_valid_nodes, stream, mr);
-  // copy `quad_child_count` if `is_parent_node` is true, otherwise `quad_point_count`
-  auto lengths_iter = thrust::make_zip_iterator(is_parent_node.begin(),  //
+  // copy `quad_child_count` if `is_internal_node` is true, otherwise `quad_point_count`
+  auto lengths_iter = thrust::make_zip_iterator(is_internal_node.begin(),  //
                                                 quad_child_count.begin(),
                                                 quad_point_count.begin());
   thrust::transform(rmm::exec_policy(stream),
@@ -141,7 +141,7 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
   return {
     std::move(keys),
     std::move(levels),
-    std::move(is_parent_node),
+    std::move(is_internal_node),
     std::move(lengths),
     std::move(offsets),
   };
@@ -157,7 +157,7 @@ inline point_quadtree make_leaf_tree(rmm::device_uvector<uint32_t>& keys,
                                      rmm::mr::device_memory_resource* mr)
 {
   rmm::device_uvector<uint8_t> levels(num_top_quads, stream, mr);
-  rmm::device_uvector<bool> is_parent_node(num_top_quads, stream, mr);
+  rmm::device_uvector<bool> is_internal_node(num_top_quads, stream, mr);
   rmm::device_uvector<uint32_t> offsets(num_top_quads, stream, mr);
 
   // only keep the front of the keys list
@@ -171,7 +171,7 @@ inline point_quadtree make_leaf_tree(rmm::device_uvector<uint32_t>& keys,
   thrust::fill(rmm::exec_policy(stream), levels.begin(), levels.end(), 0);
 
   // Quad node indicators are false for leaf nodes
-  thrust::fill(rmm::exec_policy(stream), is_parent_node.begin(), is_parent_node.end(), false);
+  thrust::fill(rmm::exec_policy(stream), is_internal_node.begin(), is_internal_node.end(), false);
 
   // compute offsets from lengths
   thrust::exclusive_scan(rmm::exec_policy(stream), lengths.begin(), lengths.end(), offsets.begin());
@@ -179,7 +179,7 @@ inline point_quadtree make_leaf_tree(rmm::device_uvector<uint32_t>& keys,
   return {
     std::move(keys),
     std::move(levels),
-    std::move(is_parent_node),
+    std::move(is_internal_node),
     std::move(lengths),
     std::move(offsets),
   };

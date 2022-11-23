@@ -16,6 +16,8 @@
 #pragma once
 #include <cuspatial/cuda_utils.hpp>
 
+#include <thrust/distance.h>
+
 namespace cuspatial {
 
 template <typename VecIterator>
@@ -35,6 +37,19 @@ template <typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::point_end() const
 {
   return _points_end;
+}
+
+template <typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::num_points() const
+{
+  return thrust::distance(_points_begin, _points_end);
+}
+
+template <typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::operator[](IndexType i)
+{
+  return point_begin()[i];
 }
 
 }  // namespace cuspatial

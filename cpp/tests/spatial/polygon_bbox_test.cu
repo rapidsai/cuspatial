@@ -42,7 +42,8 @@ TYPED_TEST(PolygonBoundingBoxTest, test_empty)
   fixed_width_column_wrapper<T> x({});
   fixed_width_column_wrapper<T> y({});
 
-  auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, this->mr());
+  auto bboxes =
+    cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0, this->mr());
 
   CUSPATIAL_EXPECTS(bboxes->num_rows() == 0, "must return 0 bounding boxes on empty input");
 }
@@ -57,7 +58,8 @@ TYPED_TEST(PolygonBoundingBoxTest, test_one)
   fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720});
   fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599});
 
-  auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, this->mr());
+  auto bboxes =
+    cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0, this->mr());
 
   CUSPATIAL_EXPECTS(bboxes->view().num_columns() == 4, "bbox table must have 4 columns");
   CUSPATIAL_EXPECTS(bboxes->num_rows() == 1,
@@ -120,7 +122,8 @@ TYPED_TEST(PolygonBoundingBoxTest, test_small)
                                    3.745936,
                                    4.541529});
 
-  auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, this->mr());
+  auto bboxes =
+    cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0, this->mr());
 
   CUSPATIAL_EXPECTS(bboxes->view().num_columns() == 4, "bbox table must have 4 columns");
   CUSPATIAL_EXPECTS(bboxes->num_rows() == 4,
