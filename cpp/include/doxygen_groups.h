@@ -64,6 +64,7 @@
  *      @{
  *          @brief APIs related to spatial relationship
  *
+            @file bounding_box.hpp
  *          @file point_in_polygon.hpp
  *          @file point_in_polygon.cuh
  *          @file polygon_bounding_box.hpp

@@ -148,8 +148,8 @@ ConfigureTest(POINT_IN_POLYGON_TEST_EXP
 ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP
     experimental/trajectory/derive_trajectories_test.cu)
 
-ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST_EXP
-    experimental/trajectory/trajectory_bounding_boxes_test.cu)
+ConfigureTest(POINT_BOUNDING_BOXES_TEST_EXP
+    experimental/spatial/point_bounding_boxes_test.cu)
 
 ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_EXP
     experimental/trajectory/trajectory_distances_and_speeds_test.cu)
