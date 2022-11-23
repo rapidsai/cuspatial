@@ -31,8 +31,7 @@ namespace detail {
  * @brief Kernel to compute duplicate points in each multipoint. Naive N^2 algorithm.
  */
 template <typename MultiPointRange, typename OutputIt>
-void __global__ combine_duplicate_points_kernel_simple(MultiPointRange multipoints,
-                                                       OutputIt stencils)
+void __global__ find_duplicate_points_kernel_simple(MultiPointRange multipoints, OutputIt stencils)
 {
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multipoints.num_points();
        idx += gridDim.x * blockDim.x) {
@@ -47,12 +46,15 @@ void __global__ combine_duplicate_points_kernel_simple(MultiPointRange multipoin
 
 /**
  * @internal
- * @brief For each multipoint, computes duplicate points and stores as stencil.
+ * @brief For each multipoint, find the duplicate points.
+ *
+ * If a point has duplicates, all but one flags for the duplicates will be set to 1.
+ * There is no gaurentee which of the duplicates will not be set.
  */
 template <typename MultiPointRange, typename OutputIt>
-void combine_duplicate_points(MultiPointRange multipoints,
-                              OutputIt output_stencils,
-                              rmm::cuda_stream_view stream)
+void find_duplicate_points(MultiPointRange multipoints,
+                           OutputIt duplicate_flags,
+                           rmm::cuda_stream_view stream)
 {
   if (multipoints.size() == 0) return;
 
@@ -60,7 +62,7 @@ void combine_duplicate_points(MultiPointRange multipoints,
     rmm::exec_policy(stream), output_stencils, multipoints.num_points(), 0);
 
   auto [threads_per_block, num_blocks] = grid_1d(multipoints.size());
-  combine_duplicate_points_kernel_simple<<<num_blocks, threads_per_block, 0, stream.value()>>>(
+  find_duplicate_points_kernel_simple<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     multipoints, output_stencils);
 }
 

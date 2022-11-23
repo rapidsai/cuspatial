@@ -162,4 +162,4 @@ ConfigureTest(OPERATOR_TEST_EXP
     experimental/operators/linestrings_test.cu)
 
 ConfigureTest(COMBINE_TEST_EXP
-    experimental/combine/combine_points_test.cu)
+    experimental/find/find_duplicate_points_test.cu)

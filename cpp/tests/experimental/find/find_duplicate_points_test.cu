@@ -29,14 +29,14 @@ using namespace cuspatial::detail;
 using namespace cuspatial::test;
 
 template <typename T>
-struct CombinePointsTest : public BaseFixture {
+struct FindDuplicatePointsTest : public BaseFixture {
   rmm::cuda_stream_view stream() { return rmm::cuda_stream_default; }
 };
 
 using TestTypes = ::testing::Types<float, double>;
-TYPED_TEST_CASE(CombinePointsTest, TestTypes);
+TYPED_TEST_CASE(FindDuplicatePointsTest, TestTypes);
 
-TYPED_TEST(CombinePointsTest, simple)
+TYPED_TEST(FindDuplicatePointsTest, simple)
 {
   using T = TypeParam;
   using P = vec_2d<T>;
@@ -46,12 +46,12 @@ TYPED_TEST(CombinePointsTest, simple)
   rmm::device_vector<uint8_t> stencil(multipoints.range().num_points());
   std::vector<uint8_t> expected_stencil{0, 0, 1};
 
-  combine_duplicate_points(multipoints.range(), stencil.begin(), this->stream());
+  find_duplicate_points(multipoints.range(), stencil.begin(), this->stream());
 
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(stencil, expected_stencil);
 }
 
-TYPED_TEST(CombinePointsTest, empty)
+TYPED_TEST(FindDuplicatePointsTest, empty)
 {
   using T = TypeParam;
   using P = vec_2d<T>;
@@ -61,12 +61,12 @@ TYPED_TEST(CombinePointsTest, empty)
   rmm::device_vector<uint8_t> stencil(multipoints.range().num_points());
   std::vector<uint8_t> expected_stencil{};
 
-  combine_duplicate_points(multipoints.range(), stencil.begin(), this->stream());
+  find_duplicate_points(multipoints.range(), stencil.begin(), this->stream());
 
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(stencil, expected_stencil);
 }
 
-TYPED_TEST(CombinePointsTest, multi)
+TYPED_TEST(FindDuplicatePointsTest, multi)
 {
   using T = TypeParam;
   using P = vec_2d<T>;
@@ -79,7 +79,7 @@ TYPED_TEST(CombinePointsTest, multi)
   rmm::device_vector<uint8_t> stencil(multipoints.range().num_points());
   std::vector<uint8_t> expected_stencil{0, 0, 1, 1, 1, 0, 0, 1, 0};
 
-  combine_duplicate_points(multipoints.range(), stencil.begin(), this->stream());
+  find_duplicate_points(multipoints.range(), stencil.begin(), this->stream());
 
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(stencil, expected_stencil);
 }
