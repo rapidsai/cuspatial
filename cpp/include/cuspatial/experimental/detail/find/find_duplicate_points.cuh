@@ -31,15 +31,16 @@ namespace detail {
  * @brief Kernel to compute duplicate points in each multipoint. Naive N^2 algorithm.
  */
 template <typename MultiPointRange, typename OutputIt>
-void __global__ find_duplicate_points_kernel_simple(MultiPointRange multipoints, OutputIt stencils)
+void __global__ find_duplicate_points_kernel_simple(MultiPointRange multipoints,
+                                                    OutputIt duplicate_flags)
 {
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multipoints.num_points();
        idx += gridDim.x * blockDim.x) {
     auto multipoint    = multipoints[idx];
     auto global_offset = multipoints.offsets_begin()[idx];
-    for (auto i = 0; i < multipoint.size() && stencils[i] != 1; ++i)
+    for (auto i = 0; i < multipoint.size() && duplicate_flags[i] != 1; ++i)
       for (auto j = i + 1; j < multipoint.size(); ++j) {
-        if (multipoint[i] == multipoint[j]) stencils[j + global_offset] = 1;
+        if (multipoint[i] == multipoint[j]) duplicate_flags[j + global_offset] = 1;
       }
   }
 }
@@ -59,11 +60,11 @@ void find_duplicate_points(MultiPointRange multipoints,
   if (multipoints.size() == 0) return;
 
   thrust::uninitialized_fill_n(
-    rmm::exec_policy(stream), output_stencils, multipoints.num_points(), 0);
+    rmm::exec_policy(stream), duplicate_flags, multipoints.num_points(), 0);
 
   auto [threads_per_block, num_blocks] = grid_1d(multipoints.size());
   find_duplicate_points_kernel_simple<<<num_blocks, threads_per_block, 0, stream.value()>>>(
-    multipoints, output_stencils);
+    multipoints, duplicate_flags);
 }
 
 }  // namespace detail

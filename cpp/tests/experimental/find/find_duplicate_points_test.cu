@@ -21,7 +21,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_vector.hpp>
 
-#include <cuspatial/experimental/detail/combine/combine_points.cuh>
+#include <cuspatial/experimental/detail/find/find_duplicate_points.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 using namespace cuspatial;
@@ -43,12 +43,12 @@ TYPED_TEST(FindDuplicatePointsTest, simple)
 
   auto multipoints = make_multipoints_array({{P{0.0, 0.0}, P{1.0, 0.0}, P{0.0, 0.0}}});
 
-  rmm::device_vector<uint8_t> stencil(multipoints.range().num_points());
-  std::vector<uint8_t> expected_stencil{0, 0, 1};
+  rmm::device_vector<uint8_t> flags(multipoints.range().num_points());
+  std::vector<uint8_t> expected_flags{0, 0, 1};
 
-  find_duplicate_points(multipoints.range(), stencil.begin(), this->stream());
+  find_duplicate_points(multipoints.range(), flags.begin(), this->stream());
 
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(stencil, expected_stencil);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(flags, expected_flags);
 }
 
 TYPED_TEST(FindDuplicatePointsTest, empty)
@@ -58,12 +58,12 @@ TYPED_TEST(FindDuplicatePointsTest, empty)
 
   auto multipoints = make_multipoints_array<T>({});
 
-  rmm::device_vector<uint8_t> stencil(multipoints.range().num_points());
-  std::vector<uint8_t> expected_stencil{};
+  rmm::device_vector<uint8_t> flags(multipoints.range().num_points());
+  std::vector<uint8_t> expected_flags{};
 
-  find_duplicate_points(multipoints.range(), stencil.begin(), this->stream());
+  find_duplicate_points(multipoints.range(), flags.begin(), this->stream());
 
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(stencil, expected_stencil);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(flags, expected_flags);
 }
 
 TYPED_TEST(FindDuplicatePointsTest, multi)
@@ -76,10 +76,10 @@ TYPED_TEST(FindDuplicatePointsTest, multi)
      {P{5.0, 5.0}, P{5.0, 5.0}},
      {P{0.0, 0.0}}});
 
-  rmm::device_vector<uint8_t> stencil(multipoints.range().num_points());
-  std::vector<uint8_t> expected_stencil{0, 0, 1, 1, 1, 0, 0, 1, 0};
+  rmm::device_vector<uint8_t> flags(multipoints.range().num_points());
+  std::vector<uint8_t> expected_flags{0, 0, 1, 1, 1, 0, 0, 1, 0};
 
-  find_duplicate_points(multipoints.range(), stencil.begin(), this->stream());
+  find_duplicate_points(multipoints.range(), flags.begin(), this->stream());
 
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(stencil, expected_stencil);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(flags, expected_flags);
 }
