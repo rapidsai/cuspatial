@@ -28,6 +28,7 @@ struct PolygonBoundingBoxTest : public ::testing::Test {
 };
 
 using cuspatial::vec_2d;
+using cuspatial::test::make_device_vector;
 
 using TestTypes = ::testing::Types<float, double>;
 

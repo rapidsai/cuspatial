@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <cuspatial/traits.hpp>
+
 #include <rmm/cuda_stream_view.hpp>
 
 namespace cuspatial {
@@ -23,7 +25,8 @@ namespace cuspatial {
 template <class OffsetIteratorA,
           class OffsetIteratorB,
           class VertexIterator,
-          class BoundingBoxIterator>
+          class BoundingBoxIterator,
+          class T = iterator_vec_base_type<VertexIterator>>
 BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first,
                                            OffsetIteratorA polygon_offsets_last,
                                            OffsetIteratorB polygon_ring_offsets_first,
@@ -31,7 +34,9 @@ BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first
                                            VertexIterator polygon_vertices_first,
                                            VertexIterator polygon_vertices_last,
                                            BoundingBoxIterator bounding_boxes_first,
+                                           T expansion_radius           = T{0},
                                            rmm::cuda_stream_view stream = rmm::cuda_stream_default);
-}
+
+}  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/polygon_bounding_boxes.cuh>

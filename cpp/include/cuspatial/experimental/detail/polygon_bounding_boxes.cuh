@@ -31,7 +31,8 @@ namespace cuspatial {
 
 namespace detail {
 
-template <class OffsetIteratorA,
+template <class T,
+          class OffsetIteratorA,
           class OffsetIteratorB,
           class VertexIterator,
           class BoundingBoxIterator>
@@ -42,15 +43,14 @@ BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first
                                            VertexIterator polygon_vertices_first,
                                            VertexIterator polygon_vertices_last,
                                            BoundingBoxIterator bounding_boxes_first,
+                                           T expansion_radius,
                                            rmm::cuda_stream_view stream)
 {
-  using T = iterator_vec_base_type<VertexIterator>;
-
   auto const num_polygons = std::distance(polygon_offsets_first, polygon_offsets_last);
   auto const num_rings    = std::distance(polygon_ring_offsets_first, polygon_ring_offsets_last);
   auto const num_poly_vertices = std::distance(polygon_vertices_first, polygon_vertices_last);
 
-  // Wrapped in an IEFE so `first_ring_offsets` is freed on return
+  // Wrapped in an IIFE so `first_ring_offsets` is freed on return
   auto vertex_ids = [&]() {
     // TODO: use device_uvector
     rmm::device_vector<int32_t> vertex_ids(num_poly_vertices);
@@ -83,7 +83,7 @@ BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first
                               vertex_ids.end(),
                               polygon_vertices_first,
                               bounding_boxes_first,
-                              T{0},
+                              expansion_radius,
                               stream);
 }
 
@@ -92,7 +92,8 @@ BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first
 template <class OffsetIteratorA,
           class OffsetIteratorB,
           class VertexIterator,
-          class BoundingBoxIterator>
+          class BoundingBoxIterator,
+          class T>
 BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first,
                                            OffsetIteratorA polygon_offsets_last,
                                            OffsetIteratorB polygon_ring_offsets_first,
@@ -100,10 +101,9 @@ BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first
                                            VertexIterator polygon_vertices_first,
                                            VertexIterator polygon_vertices_last,
                                            BoundingBoxIterator bounding_boxes_first,
+                                           T expansion_radius,
                                            rmm::cuda_stream_view stream)
 {
-  using T = iterator_vec_base_type<VertexIterator>;
-
   static_assert(is_floating_point<T>(), "Only floating point polygon vertices supported");
 
   static_assert(is_same<vec_2d<T>, iterator_value_type<VertexIterator>>(),
@@ -125,13 +125,14 @@ BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first
   // if (num_polys == 0 || num_rings == 0 || num_poly_vertices == 0) { return bounding_boxes_first;
   // }
 
-  return detail::polygon_bounding_boxes(polygon_offsets_first,
-                                        polygon_offsets_last,
-                                        polygon_ring_offsets_first,
-                                        polygon_ring_offsets_last,
-                                        polygon_vertices_first,
-                                        polygon_vertices_last,
-                                        bounding_boxes_first,
-                                        stream);
+  return detail::polygon_bounding_boxes<T>(polygon_offsets_first,
+                                           polygon_offsets_last,
+                                           polygon_ring_offsets_first,
+                                           polygon_ring_offsets_last,
+                                           polygon_vertices_first,
+                                           polygon_vertices_last,
+                                           bounding_boxes_first,
+                                           expansion_radius,
+                                           stream);
 }
 }  // namespace cuspatial
