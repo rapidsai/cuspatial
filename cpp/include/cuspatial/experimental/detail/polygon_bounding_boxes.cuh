@@ -119,8 +119,8 @@ BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first
 
   CUSPATIAL_EXPECTS(num_rings >= num_polys, "Each polygon must have at least one ring");
 
-  CUSPATIAL_EXPECTS(num_poly_vertices >= num_polys * 4,
-                    "Each ring must have at least four vertices");
+  CUSPATIAL_EXPECTS(num_poly_vertices >= num_polys * 3,
+                    "Each ring must have at least three vertices");
 
   if (num_polys == 0 || num_rings == 0 || num_poly_vertices == 0) { return bounding_boxes_first; }
 

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include <cuspatial_test/base_fixture.hpp>
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
-#include <tests/base_fixture.hpp>
 
 using namespace cuspatial;
 using namespace cuspatial::detail;

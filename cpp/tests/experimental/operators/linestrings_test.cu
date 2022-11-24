@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+#include <cuspatial_test/base_fixture.hpp>
 #include <cuspatial_test/vector_equality.hpp>
-#include <tests/base_fixture.hpp>
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/linestring.cuh>
