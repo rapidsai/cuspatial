@@ -23,18 +23,36 @@
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/iterator/discard_iterator.h>
-#include <thrust/iterator/zip_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
-#include <thrust/zip_function.h>
+#include <type_traits>
 
 namespace cuspatial {
 
 namespace detail {
 
 template <typename T>
+struct point_bounding_box {
+  using point_tuple = thrust::tuple<cuspatial::vec_2d<T>, cuspatial::vec_2d<T>>;
+
+  vec_2d<T> box_offset{};
+
+  CUSPATIAL_HOST_DEVICE point_bounding_box(T expansion_radius = T{0})
+    : box_offset{expansion_radius, expansion_radius}
+  {
+  }
+
+  inline __host__ __device__ point_tuple operator()(vec_2d<T> const& point)
+  {
+    return point_tuple{point - box_offset, point + box_offset};
+  }
+};
+
+template <typename T>
 struct box_minmax {
   using point_tuple = thrust::tuple<cuspatial::vec_2d<T>, cuspatial::vec_2d<T>>;
-  __host__ __device__ point_tuple operator()(point_tuple const& a, point_tuple const& b)
+
+  inline __host__ __device__ point_tuple operator()(point_tuple const& a, point_tuple const& b)
   {
     // structured binding doesn't seem to work with thrust::tuple
     vec_2d<T> p1, p2, p3, p4;
@@ -46,27 +64,32 @@ struct box_minmax {
 
 }  // namespace detail
 
-template <typename IdInputIt, typename PointInputIt, typename BoundingBoxOutputIt>
-BoundingBoxOutputIt trajectory_bounding_boxes(IdInputIt ids_first,
-                                              IdInputIt ids_last,
-                                              PointInputIt points_first,
-                                              BoundingBoxOutputIt bounding_boxes_first,
-                                              rmm::cuda_stream_view stream)
+template <typename IdInputIt, typename PointInputIt, typename BoundingBoxOutputIt, typename T>
+BoundingBoxOutputIt point_bounding_boxes(IdInputIt ids_first,
+                                         IdInputIt ids_last,
+                                         PointInputIt points_first,
+                                         BoundingBoxOutputIt bounding_boxes_first,
+                                         T expansion_radius,
+                                         rmm::cuda_stream_view stream)
 {
-  using T      = iterator_vec_base_type<PointInputIt>;
-  using IdType = iterator_value_type<IdInputIt>;
+  static_assert(std::is_floating_point_v<T>, "expansion_radius must be a floating-point type");
 
-  auto points_zipped_first = thrust::make_zip_iterator(points_first, points_first);
+  using CoordinateType = iterator_vec_base_type<PointInputIt>;
+  using IdType         = iterator_value_type<IdInputIt>;
+
+  auto point_bboxes_first = thrust::make_transform_iterator(
+    points_first,
+    detail::point_bounding_box<CoordinateType>{static_cast<CoordinateType>(expansion_radius)});
 
   [[maybe_unused]] auto [_, bounding_boxes_last] =
     thrust::reduce_by_key(rmm::exec_policy(stream),
                           ids_first,
                           ids_last,
-                          points_zipped_first,
+                          point_bboxes_first,
                           thrust::make_discard_iterator(),
                           bounding_boxes_first,
                           thrust::equal_to<IdType>(),
-                          detail::box_minmax<T>{});
+                          detail::box_minmax<CoordinateType>{});
 
   return bounding_boxes_last;
 }

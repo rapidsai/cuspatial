@@ -91,13 +91,13 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
   int8_t max_depth,
   rmm::cuda_stream_view stream)
 {
-  auto d_keys       = cudf::column_device_view::create(quadtree.column(0), stream);
-  auto d_levels     = cudf::column_device_view::create(quadtree.column(1), stream);
-  auto d_is_quad    = cudf::column_device_view::create(quadtree.column(2), stream);
-  auto d_poly_x_min = cudf::column_device_view::create(poly_bbox.column(0), stream);
-  auto d_poly_y_min = cudf::column_device_view::create(poly_bbox.column(1), stream);
-  auto d_poly_x_max = cudf::column_device_view::create(poly_bbox.column(2), stream);
-  auto d_poly_y_max = cudf::column_device_view::create(poly_bbox.column(3), stream);
+  auto d_keys             = cudf::column_device_view::create(quadtree.column(0), stream);
+  auto d_levels           = cudf::column_device_view::create(quadtree.column(1), stream);
+  auto d_is_internal_node = cudf::column_device_view::create(quadtree.column(2), stream);
+  auto d_poly_x_min       = cudf::column_device_view::create(poly_bbox.column(0), stream);
+  auto d_poly_y_min       = cudf::column_device_view::create(poly_bbox.column(1), stream);
+  auto d_poly_x_max       = cudf::column_device_view::create(poly_bbox.column(2), stream);
+  auto d_poly_y_max       = cudf::column_device_view::create(poly_bbox.column(3), stream);
 
   thrust::transform(rmm::exec_policy(stream),
                     thrust::make_zip_iterator(node_indices, poly_indices),
@@ -107,13 +107,13 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
                      y_min,
                      scale,
                      max_depth,
-                     keys        = *d_keys,
-                     levels      = *d_levels,
-                     is_quad     = *d_is_quad,
-                     poly_x_mins = *d_poly_x_min,
-                     poly_y_mins = *d_poly_y_min,
-                     poly_x_maxs = *d_poly_x_max,
-                     poly_y_maxs = *d_poly_y_max] __device__(auto const& node_and_poly) {
+                     keys             = *d_keys,
+                     levels           = *d_levels,
+                     is_internal_node = *d_is_internal_node,
+                     poly_x_mins      = *d_poly_x_min,
+                     poly_y_mins      = *d_poly_y_min,
+                     poly_x_maxs      = *d_poly_x_max,
+                     poly_y_maxs      = *d_poly_y_max] __device__(auto const& node_and_poly) {
                       auto& node      = thrust::get<0>(node_and_poly);
                       auto& poly      = thrust::get<1>(node_and_poly);
                       auto key        = keys.element<uint32_t>(node);
@@ -137,7 +137,8 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
                         return thrust::make_tuple(none_indicator, level, node, poly);
                       }
                       // otherwise return type = leaf_indicator (0) or quad_indicator (1)
-                      return thrust::make_tuple(is_quad.element<uint8_t>(node), level, node, poly);
+                      return thrust::make_tuple(
+                        is_internal_node.element<uint8_t>(node), level, node, poly);
                     });
 
   auto num_leaves = copy_leaf_intersections(node_pairs, node_pairs + num_pairs, leaf_pairs, stream);

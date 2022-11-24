@@ -1,7 +1,7 @@
 # libcuspatial C++ Documentation Guide
 
 These guidelines apply to documenting all libcuspatial C++ source files using doxygen style
-formatting although only public APIs and classes are actually 
+formatting although only public APIs and classes are actually
 [published](https://docs.rapids.ai/api/libcuspatial/stable/index.html).
 
 ## Copyright License
@@ -215,7 +215,7 @@ possible.
 
 ### \@brief
 
-The [\@brief](https://www.doxygen.nl/manual/commands.html#cmdbrief) text should be a short, one 
+The [\@brief](https://www.doxygen.nl/manual/commands.html#cmdbrief) text should be a short, one
 sentence description. Doxygen does not provide much space to show this text in the output pages.
 Always follow the \@brief line with a blank comment line.
 
@@ -448,7 +448,7 @@ The doxygen output includes a _Modules_ page that organizes items into groups sp
 common functions across header files, source files, and even namespaces. Groups can also be nested
 by defining new groups within existing groups.
 
-For libcuspatial, all the group hierarchy is defined in the 
+For libcuspatial, all the group hierarchy is defined in the
 [doxygen_groups.h](../include/doxygen_groups.h) header file. The `doxygen_groups.h` file does not
 need to be included in any other source file, because the definitions in this file are used only by
 the doxygen tool to generate groups in the _Modules_ page. Modify this file only to add or update
@@ -480,7 +480,7 @@ blocks as part of a group.
 
     namespace cuspatial {
     /**
-     * @addtogroup coordinate_transform
+     * @addtogroup distance
      * @{
      */
 

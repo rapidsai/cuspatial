@@ -42,7 +42,8 @@ TYPED_TEST(PolygonBoundingBoxTest, test_empty)
   fixed_width_column_wrapper<T> x({});
   fixed_width_column_wrapper<T> y({});
 
-  auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, this->mr());
+  auto bboxes =
+    cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0, this->mr());
 
   EXPECT_EQ(bboxes->num_rows(), 0);
 }
@@ -57,7 +58,8 @@ TYPED_TEST(PolygonBoundingBoxTest, test_one)
   fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
   fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599, 5.856625});
 
-  auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, this->mr());
+  auto bboxes =
+    cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0, this->mr());
 
   EXPECT_EQ(bboxes->view().num_columns(), 4);
   EXPECT_EQ(bboxes->num_rows(), 1);
@@ -123,7 +125,8 @@ TYPED_TEST(PolygonBoundingBoxTest, test_small)
                                    3.745936,
                                    4.541529});
 
-  auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, this->mr());
+  auto bboxes =
+    cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0, this->mr());
 
   EXPECT_EQ(bboxes->view().num_columns(), 4);
   EXPECT_EQ(bboxes->num_rows(), 4);

@@ -15,9 +15,9 @@
  */
 
 #include <cuspatial/error.hpp>
+
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/polygon_bounding_boxes.cuh>
-#include <cuspatial/polygon_bounding_box.hpp>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
@@ -35,7 +35,6 @@
 #include <vector>
 
 namespace cuspatial {
-
 namespace {
 
 template <typename T>
@@ -43,6 +42,7 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
                                                             cudf::column_view const& ring_offsets,
                                                             cudf::column_view const& x,
                                                             cudf::column_view const& y,
+                                                            T expansion_radius,
                                                             rmm::cuda_stream_view stream,
                                                             rmm::mr::device_memory_resource* mr)
 {
@@ -60,14 +60,12 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
   cols.push_back(
     cudf::make_numeric_column(type, num_polygons, cudf::mask_state::UNALLOCATED, stream, mr));
 
-  auto bbox_mins_begin  = cuspatial::make_vec_2d_iterator(cols.at(0)->mutable_view().begin<T>(),
-                                                         cols.at(1)->mutable_view().begin<T>());
-  auto bbox_maxes_begin = cuspatial::make_vec_2d_iterator(cols.at(2)->mutable_view().begin<T>(),
-                                                          cols.at(3)->mutable_view().begin<T>());
-
-  auto bboxes_iter = thrust::make_zip_iterator(bbox_mins_begin, bbox_maxes_begin);
-
   auto vertices_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
+
+  auto bbox_mins  = cuspatial::make_vec_2d_output_iterator(cols.at(0)->mutable_view().begin<T>(),
+                                                          cols.at(1)->mutable_view().begin<T>());
+  auto bbox_maxes = cuspatial::make_vec_2d_output_iterator(cols.at(2)->mutable_view().begin<T>(),
+                                                           cols.at(3)->mutable_view().begin<T>());
 
   cuspatial::polygon_bounding_boxes(poly_offsets.begin<cudf::size_type>(),
                                     poly_offsets.end<cudf::size_type>(),
@@ -75,7 +73,8 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
                                     ring_offsets.end<cudf::size_type>(),
                                     vertices_begin,
                                     vertices_begin + x.size(),
-                                    bboxes_iter,
+                                    thrust::make_zip_iterator(bbox_mins, bbox_maxes),
+                                    expansion_radius,
                                     stream);
 
   return std::make_unique<cudf::table>(std::move(cols));
@@ -95,10 +94,12 @@ struct dispatch_compute_polygon_bounding_boxes {
              cudf::column_view const& ring_offsets,
              cudf::column_view const& x,
              cudf::column_view const& y,
+             T expansion_radius,
              rmm::cuda_stream_view stream,
              rmm::mr::device_memory_resource* mr)
   {
-    return compute_polygon_bounding_boxes<T>(poly_offsets, ring_offsets, x, y, stream, mr);
+    return compute_polygon_bounding_boxes<T>(
+      poly_offsets, ring_offsets, x, y, expansion_radius, stream, mr);
   }
 };
 
@@ -110,6 +111,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& pol
                                                     cudf::column_view const& ring_offsets,
                                                     cudf::column_view const& x,
                                                     cudf::column_view const& y,
+                                                    double expansion_radius,
                                                     rmm::cuda_stream_view stream,
                                                     rmm::mr::device_memory_resource* mr)
 {
@@ -119,6 +121,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& pol
                                ring_offsets,
                                x,
                                y,
+                               expansion_radius,
                                stream,
                                mr);
 }
@@ -129,6 +132,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& pol
                                                     cudf::column_view const& ring_offsets,
                                                     cudf::column_view const& x,
                                                     cudf::column_view const& y,
+                                                    double expansion_radius,
                                                     rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(ring_offsets.size() >= poly_offsets.size(),
@@ -150,7 +154,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& pol
   }
 
   return detail::polygon_bounding_boxes(
-    poly_offsets, ring_offsets, x, y, rmm::cuda_stream_default, mr);
+    poly_offsets, ring_offsets, x, y, expansion_radius, rmm::cuda_stream_default, mr);
 }
 
 }  // namespace cuspatial

@@ -295,7 +295,7 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
 }
 
 /**
- * @brief Construct the `is_parent_node` vector indicating if a quadrant is a parent or leaf node
+ * @brief Construct the `is_internal_node` vector indicating if a quadrant is a parent or leaf node
  * @param quad_point_count
  * @param num_parent_nodes
  * @param num_valid_nodes
@@ -314,31 +314,33 @@ inline rmm::device_uvector<bool> construct_non_leaf_indicator(
 {
   //
   // Construct the indicator output column
-  rmm::device_uvector<bool> is_parent_node(num_valid_nodes, stream, mr);
+  rmm::device_uvector<bool> is_internal_node(num_valid_nodes, stream, mr);
 
   // line 6 of algorithm in Fig. 5 in ref.
   thrust::transform(rmm::exec_policy(stream),
                     quad_point_count.begin(),
                     quad_point_count.begin() + num_parent_nodes,
-                    is_parent_node.begin(),
+                    is_internal_node.begin(),
                     thrust::placeholders::_1 > max_size);
 
   // line 7 of algorithm in Fig. 5 in ref.
   thrust::replace_if(rmm::exec_policy(stream),
                      quad_point_count.begin(),
                      quad_point_count.begin() + num_parent_nodes,
-                     is_parent_node.begin(),
+                     is_internal_node.begin(),
                      thrust::placeholders::_1,
                      0);
 
   if (num_valid_nodes > num_parent_nodes) {
     // zero-fill the rest of the indicator column because
     // device_memory_resources aren't required to initialize allocations
-    thrust::fill(
-      rmm::exec_policy(stream), is_parent_node.begin() + num_parent_nodes, is_parent_node.end(), 0);
+    thrust::fill(rmm::exec_policy(stream),
+                 is_internal_node.begin() + num_parent_nodes,
+                 is_internal_node.end(),
+                 0);
   }
 
-  return is_parent_node;
+  return is_internal_node;
 }
 
 }  // namespace detail
