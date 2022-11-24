@@ -122,8 +122,7 @@ BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first
   CUSPATIAL_EXPECTS(num_poly_vertices >= num_polys * 4,
                     "Each ring must have at least four vertices");
 
-  // if (num_polys == 0 || num_rings == 0 || num_poly_vertices == 0) { return bounding_boxes_first;
-  // }
+  if (num_polys == 0 || num_rings == 0 || num_poly_vertices == 0) { return bounding_boxes_first; }
 
   return detail::polygon_bounding_boxes<T>(polygon_offsets_first,
                                            polygon_offsets_last,
