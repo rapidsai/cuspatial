@@ -1,4 +1,4 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2022, NVIDIA CORPORATION.
 
 import pytest
 
@@ -9,28 +9,28 @@ import cuspatial
 
 def test_camera_oob_0():
     with pytest.raises(RuntimeError):
-        result = cuspatial.lonlat_to_cartesian(  # noqa: F841
+        result = cuspatial.sinusoidal_projection(  # noqa: F841
             -200, 0, cudf.Series([0]), cudf.Series([0])
         )
 
 
 def test_camera_oob_1():
     with pytest.raises(RuntimeError):
-        result = cuspatial.lonlat_to_cartesian(  # noqa: F841
+        result = cuspatial.sinusoidal_projection(  # noqa: F841
             200, 0, cudf.Series([0]), cudf.Series([0])
         )
 
 
 def test_camera_oob_2():
     with pytest.raises(RuntimeError):
-        result = cuspatial.lonlat_to_cartesian(  # noqa: F841
+        result = cuspatial.sinusoidal_projection(  # noqa: F841
             0, -100, cudf.Series([0]), cudf.Series([0])
         )
 
 
 def test_camera_oob_3():
     with pytest.raises(RuntimeError):
-        result = cuspatial.lonlat_to_cartesian(  # noqa: F841
+        result = cuspatial.sinusoidal_projection(  # noqa: F841
             0, 100, cudf.Series([0]), cudf.Series([0])
         )
 
@@ -39,7 +39,7 @@ def test_camera_oob_3():
 def test_camera_corners(corner):
     x = [-180.0, 180.0, -180.0, 180.0]
     y = [-90.0, 90.0, 90.0, -90.0]
-    result = cuspatial.lonlat_to_cartesian(
+    result = cuspatial.sinusoidal_projection(
         x[corner], y[corner], cudf.Series(x[corner]), cudf.Series(y[corner])
     )
     cudf.testing.assert_frame_equal(
@@ -48,7 +48,7 @@ def test_camera_corners(corner):
 
 
 def test_longest_distance():
-    result = cuspatial.lonlat_to_cartesian(
+    result = cuspatial.sinusoidal_projection(
         -180, -90, cudf.Series([180.0]), cudf.Series([90.0])
     )
     cudf.testing.assert_frame_equal(
@@ -57,7 +57,7 @@ def test_longest_distance():
 
 
 def test_half_distance():
-    result = cuspatial.lonlat_to_cartesian(
+    result = cuspatial.sinusoidal_projection(
         -180.0, -90.0, cudf.Series([0.0]), cudf.Series([0.0])
     )
     cudf.testing.assert_frame_equal(
@@ -67,13 +67,13 @@ def test_half_distance():
 
 def test_missing_coords():
     with pytest.raises(RuntimeError):
-        result = cuspatial.lonlat_to_cartesian(  # noqa: F841
+        result = cuspatial.sinusoidal_projection(  # noqa: F841
             -180.0, -90.0, cudf.Series(), cudf.Series([0.0])
         )
 
 
 def test_zeros():
-    result = cuspatial.lonlat_to_cartesian(
+    result = cuspatial.sinusoidal_projection(
         0.0, 0.0, cudf.Series([0.0]), cudf.Series([0.0])
     )
     cudf.testing.assert_frame_equal(
@@ -89,7 +89,7 @@ def test_values():
     py_lat = cudf.Series([42.49207437, 42.49202408, 42.49266787])
 
     # note: x/y coordinates in killometers -km
-    result = cuspatial.lonlat_to_cartesian(cam_lon, cam_lat, py_lon, py_lat)
+    result = cuspatial.sinusoidal_projection(cam_lon, cam_lat, py_lon, py_lat)
     cudf.testing.assert_frame_equal(
         result,
         cudf.DataFrame(

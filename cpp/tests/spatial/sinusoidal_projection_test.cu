@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <cuspatial/coordinate_transform.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/projection.hpp>
 
 #include <cudf_test/base_fixture.hpp>
 #include <cudf_test/column_utilities.hpp>
@@ -30,14 +30,14 @@ using namespace cudf::test;
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
 
 template <typename T>
-struct LonLatToCartesianTest : public BaseFixture {
+struct SinusoidalProjectionTest : public BaseFixture {
 };
 
 // float and double are logically the same but would require seperate tests due to precision.
 using TestTypes = Types<double>;
-TYPED_TEST_CASE(LonLatToCartesianTest, TestTypes);
+TYPED_TEST_CASE(SinusoidalProjectionTest, TestTypes);
 
-TYPED_TEST(LonLatToCartesianTest, Single)
+TYPED_TEST(SinusoidalProjectionTest, Single)
 {
   using T         = TypeParam;
   auto camera_lon = -90.66511046;
@@ -45,7 +45,7 @@ TYPED_TEST(LonLatToCartesianTest, Single)
   auto point_lon  = fixed_width_column_wrapper<T>({-90.664973});
   auto point_lat  = fixed_width_column_wrapper<T>({42.493894});
 
-  auto res_pair = cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat);
+  auto res_pair = cuspatial::sinusoidal_projection(camera_lon, camera_lat, point_lon, point_lat);
 
   auto expected_lon = fixed_width_column_wrapper<T>({-0.01126195531216838});
   auto expected_lat = fixed_width_column_wrapper<T>({-0.21375777777718794});
@@ -54,7 +54,7 @@ TYPED_TEST(LonLatToCartesianTest, Single)
   expect_columns_equivalent(expected_lat, res_pair.second->view(), verbosity);
 }
 
-TYPED_TEST(LonLatToCartesianTest, Extremes)
+TYPED_TEST(SinusoidalProjectionTest, Extremes)
 {
   using T         = TypeParam;
   auto camera_lon = 0;
@@ -62,7 +62,7 @@ TYPED_TEST(LonLatToCartesianTest, Extremes)
   auto point_lon  = fixed_width_column_wrapper<T>({0.0, 0.0, -180.0, 180.0, 45.0, -180.0});
   auto point_lat  = fixed_width_column_wrapper<T>({-90.0, 90.0, 0.0, 0.0, 0.0, -90.0});
 
-  auto res_pair = cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat);
+  auto res_pair = cuspatial::sinusoidal_projection(camera_lon, camera_lat, point_lon, point_lat);
 
   auto expected_lon =
     fixed_width_column_wrapper<T>({0.0, 0.0, 20000.0, -20000.0, -5000.0, 14142.13562373095192015});
@@ -72,7 +72,7 @@ TYPED_TEST(LonLatToCartesianTest, Extremes)
   expect_columns_equivalent(expected_lat, res_pair.second->view(), verbosity);
 }
 
-TYPED_TEST(LonLatToCartesianTest, Multiple)
+TYPED_TEST(SinusoidalProjectionTest, Multiple)
 {
   using T         = TypeParam;
   auto camera_lon = -90.66511046;
@@ -80,7 +80,7 @@ TYPED_TEST(LonLatToCartesianTest, Multiple)
   auto point_lon  = fixed_width_column_wrapper<T>({-90.664973, -90.665393, -90.664976, -90.664537});
   auto point_lat  = fixed_width_column_wrapper<T>({42.493894, 42.491520, 42.491420, 42.493823});
 
-  auto res_pair = cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat);
+  auto res_pair = cuspatial::sinusoidal_projection(camera_lon, camera_lat, point_lon, point_lat);
 
   auto expected_lon = fixed_width_column_wrapper<T>(
     {-0.01126195531216838, 0.02314864865181343, -0.01101638630252916, -0.04698301003584082});
@@ -91,7 +91,7 @@ TYPED_TEST(LonLatToCartesianTest, Multiple)
   expect_columns_equivalent(expected_lat, res_pair.second->view(), verbosity);
 }
 
-TYPED_TEST(LonLatToCartesianTest, Empty)
+TYPED_TEST(SinusoidalProjectionTest, Empty)
 {
   using T         = TypeParam;
   auto camera_lon = -90.66511046;
@@ -99,7 +99,7 @@ TYPED_TEST(LonLatToCartesianTest, Empty)
   auto point_lon  = fixed_width_column_wrapper<T>({});
   auto point_lat  = fixed_width_column_wrapper<T>({});
 
-  auto res_pair = cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat);
+  auto res_pair = cuspatial::sinusoidal_projection(camera_lon, camera_lat, point_lon, point_lat);
 
   auto expected_lon = fixed_width_column_wrapper<T>({});
   auto expected_lat = fixed_width_column_wrapper<T>({});
@@ -108,7 +108,7 @@ TYPED_TEST(LonLatToCartesianTest, Empty)
   expect_columns_equivalent(expected_lat, res_pair.second->view(), verbosity);
 }
 
-TYPED_TEST(LonLatToCartesianTest, NullableNoNulls)
+TYPED_TEST(SinusoidalProjectionTest, NullableNoNulls)
 {
   using T         = TypeParam;
   auto camera_lon = -90.66511046;
@@ -116,7 +116,7 @@ TYPED_TEST(LonLatToCartesianTest, NullableNoNulls)
   auto point_lon  = fixed_width_column_wrapper<T>({-90.664973}, {1});
   auto point_lat  = fixed_width_column_wrapper<T>({42.493894}, {1});
 
-  auto res_pair = cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat);
+  auto res_pair = cuspatial::sinusoidal_projection(camera_lon, camera_lat, point_lon, point_lat);
 
   auto expected_lon = fixed_width_column_wrapper<T>({-0.01126195531216838});
   auto expected_lat = fixed_width_column_wrapper<T>({-0.21375777777718794});
@@ -125,7 +125,7 @@ TYPED_TEST(LonLatToCartesianTest, NullableNoNulls)
   expect_columns_equivalent(expected_lat, res_pair.second->view(), verbosity);
 }
 
-TYPED_TEST(LonLatToCartesianTest, NullabilityMixedNoNulls)
+TYPED_TEST(SinusoidalProjectionTest, NullabilityMixedNoNulls)
 {
   using T         = TypeParam;
   auto camera_lon = -90.66511046;
@@ -133,7 +133,7 @@ TYPED_TEST(LonLatToCartesianTest, NullabilityMixedNoNulls)
   auto point_lon  = fixed_width_column_wrapper<T>({-90.664973});
   auto point_lat  = fixed_width_column_wrapper<T>({42.493894}, {1});
 
-  auto res_pair = cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat);
+  auto res_pair = cuspatial::sinusoidal_projection(camera_lon, camera_lat, point_lon, point_lat);
 
   auto expected_lon = fixed_width_column_wrapper<T>({-0.01126195531216838});
   auto expected_lat = fixed_width_column_wrapper<T>({-0.21375777777718794});
@@ -142,7 +142,7 @@ TYPED_TEST(LonLatToCartesianTest, NullabilityMixedNoNulls)
   expect_columns_equivalent(expected_lat, res_pair.second->view(), verbosity);
 }
 
-TYPED_TEST(LonLatToCartesianTest, NullableWithNulls)
+TYPED_TEST(SinusoidalProjectionTest, NullableWithNulls)
 {
   using T         = TypeParam;
   auto camera_lon = 0;
@@ -150,11 +150,11 @@ TYPED_TEST(LonLatToCartesianTest, NullableWithNulls)
   auto point_lon  = fixed_width_column_wrapper<T>({0}, {0});
   auto point_lat  = fixed_width_column_wrapper<T>({0}, {1});
 
-  EXPECT_THROW(cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat),
+  EXPECT_THROW(cuspatial::sinusoidal_projection(camera_lon, camera_lat, point_lon, point_lat),
                cuspatial::logic_error);
 }
 
-TYPED_TEST(LonLatToCartesianTest, OriginOutOfBounds)
+TYPED_TEST(SinusoidalProjectionTest, OriginOutOfBounds)
 {
   using T         = TypeParam;
   auto camera_lon = -181;
@@ -162,22 +162,22 @@ TYPED_TEST(LonLatToCartesianTest, OriginOutOfBounds)
   auto point_lon  = fixed_width_column_wrapper<T>({0});
   auto point_lat  = fixed_width_column_wrapper<T>({0});
 
-  EXPECT_THROW(cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat),
+  EXPECT_THROW(cuspatial::sinusoidal_projection(camera_lon, camera_lat, point_lon, point_lat),
                cuspatial::logic_error);
 }
 
-TYPED_TEST(LonLatToCartesianTest, MismatchType)
+TYPED_TEST(SinusoidalProjectionTest, MismatchType)
 {
   auto camera_lon = 0;
   auto camera_lat = 0;
   auto point_lon  = fixed_width_column_wrapper<double>({0});
   auto point_lat  = fixed_width_column_wrapper<float>({0});
 
-  EXPECT_THROW(cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat),
+  EXPECT_THROW(cuspatial::sinusoidal_projection(camera_lon, camera_lat, point_lon, point_lat),
                cuspatial::logic_error);
 }
 
-TYPED_TEST(LonLatToCartesianTest, MismatchSize)
+TYPED_TEST(SinusoidalProjectionTest, MismatchSize)
 {
   using T         = TypeParam;
   auto camera_lon = 0;
@@ -185,7 +185,7 @@ TYPED_TEST(LonLatToCartesianTest, MismatchSize)
   auto point_lon  = fixed_width_column_wrapper<T>({0, 0});
   auto point_lat  = fixed_width_column_wrapper<T>({0});
 
-  EXPECT_THROW(cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat),
+  EXPECT_THROW(cuspatial::sinusoidal_projection(camera_lon, camera_lat, point_lon, point_lat),
                cuspatial::logic_error);
 }
 
@@ -204,7 +204,7 @@ TYPED_TEST(LatLonToCartesianUnsupportedTypesTest, MismatchSize)
   auto point_lon  = fixed_width_column_wrapper<T>({0});
   auto point_lat  = fixed_width_column_wrapper<T>({0});
 
-  EXPECT_THROW(cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat),
+  EXPECT_THROW(cuspatial::sinusoidal_projection(camera_lon, camera_lat, point_lon, point_lat),
                cuspatial::logic_error);
 }
 
@@ -223,6 +223,6 @@ TYPED_TEST(LatLonToCartesianUnsupportedChronoTypesTest, MismatchSize)
   auto point_lon  = fixed_width_column_wrapper<T, R>({R{0}});
   auto point_lat  = fixed_width_column_wrapper<T, R>({R{0}});
 
-  EXPECT_THROW(cuspatial::lonlat_to_cartesian(camera_lon, camera_lat, point_lon, point_lat),
+  EXPECT_THROW(cuspatial::sinusoidal_projection(camera_lon, camera_lat, point_lon, point_lat),
                cuspatial::logic_error);
 }

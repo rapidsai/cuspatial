@@ -16,22 +16,30 @@
 
 #pragma once
 
+#include <cuspatial/traits.hpp>
+
 #include <rmm/cuda_stream_view.hpp>
 
 namespace cuspatial {
 
 /**
- * @addtogroup trajectory_api
+ * @addtogroup spatial_relationship
  * @{
  */
 
 /**
- * @brief Compute the spatial bounding boxes of trajectories.
+ * @brief Compute the spatial bounding boxes of sequences of points.
  *
- * Computes a tight bounding box around all points within each trajectory (points with the same ID).
+ * Computes a bounding box around all points within each group (consecutive points with the same
+ * ID). This function can be applied to trajectory data, polygon vertices, linestring vertices, or
+ * any grouped point data.
  *
- * @note Assumes Object IDs and points are presorted by ID. This can be done using
- * cuspatial::derive_trajectories.
+ * Before merging bounding boxes, each point may be expanded into a bounding box using an
+ * optional @p expansion_radius. The point is expanded to a box with coordinates
+ * `(point.x - expansion_radius, point.y - expansion_radius)` and
+ * `(point.x + expansion_radius, point.y + expansion_radius)`.
+ *
+ * @note Assumes Object IDs and points are presorted by ID.
  *
  * @tparam IdInputIt Iterator over object IDs. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
@@ -46,6 +54,7 @@ namespace cuspatial {
  * @param ids_last end of the range of input object ids
  * @param points_first beginning of the range of input point (x,y) coordinates
  * @param bounding_boxes_first beginning of the range of output bounding boxes, one per trajectory
+ * @param expansion_radius radius to add to each point when computing its bounding box.
  * @param stream the CUDA stream on which to perform computations.
  *
  * @return An iterator to the end of the range of output bounding boxes.
@@ -53,13 +62,16 @@ namespace cuspatial {
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <typename IdInputIt, typename PointInputIt, typename BoundingBoxOutputIt>
-BoundingBoxOutputIt trajectory_bounding_boxes(
-  IdInputIt ids_first,
-  IdInputIt ids_last,
-  PointInputIt points_first,
-  BoundingBoxOutputIt bounding_boxes_first,
-  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+template <typename IdInputIt,
+          typename PointInputIt,
+          typename BoundingBoxOutputIt,
+          typename T = iterator_vec_base_type<PointInputIt>>
+BoundingBoxOutputIt point_bounding_boxes(IdInputIt ids_first,
+                                         IdInputIt ids_last,
+                                         PointInputIt points_first,
+                                         BoundingBoxOutputIt bounding_boxes_first,
+                                         T expansion_radius           = T{0},
+                                         rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 /**
  * @} // end of doxygen group
@@ -67,4 +79,4 @@ BoundingBoxOutputIt trajectory_bounding_boxes(
 
 }  // namespace cuspatial
 
-#include "detail/trajectory_bounding_boxes.cuh"
+#include "detail/bounding_box.cuh"

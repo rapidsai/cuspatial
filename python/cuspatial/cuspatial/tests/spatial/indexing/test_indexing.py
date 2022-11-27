@@ -26,7 +26,7 @@ def test_empty():
             {
                 "key": cudf.Series([], dtype=np.uint32),
                 "level": cudf.Series([], dtype=np.uint8),
-                "is_quad": cudf.Series([], dtype=np.bool_),
+                "is_internal_node": cudf.Series([], dtype=np.bool_),
                 "length": cudf.Series([], dtype=np.uint32),
                 "offset": cudf.Series([], dtype=np.uint32),
             }
@@ -50,7 +50,7 @@ def test_one_point(dtype):
             {
                 "key": cudf.Series([0], dtype=np.uint32),
                 "level": cudf.Series([0], dtype=np.uint8),
-                "is_quad": cudf.Series([0], dtype=np.bool_),
+                "is_internal_node": cudf.Series([0], dtype=np.bool_),
                 "length": cudf.Series([1], dtype=np.uint32),
                 "offset": cudf.Series([0], dtype=np.uint32),
             }
@@ -74,7 +74,7 @@ def test_two_points(dtype):
             {
                 "key": cudf.Series([0, 3], dtype=np.uint32),
                 "level": cudf.Series([0, 0], dtype=np.uint8),
-                "is_quad": cudf.Series([0, 0], dtype=np.bool_),
+                "is_internal_node": cudf.Series([0, 0], dtype=np.bool_),
                 "length": cudf.Series([1, 1], dtype=np.uint32),
                 "offset": cudf.Series([0, 1], dtype=np.uint32),
             }
@@ -258,7 +258,7 @@ def test_small_number_of_points(dtype):
                 "level": cudf.Series(
                     [0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2], dtype=np.uint8
                 ),
-                "is_quad": cudf.Series(
+                "is_internal_node": cudf.Series(
                     [1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.bool_
                 ),
                 "length": cudf.Series(

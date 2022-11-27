@@ -16,7 +16,7 @@
 
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/coordinate_transform.cuh>
+#include <cuspatial/experimental/sinusoidal_projection.cuh>
 #include <cuspatial_test/vector_equality.hpp>
 
 #include <rmm/device_vector.hpp>
@@ -45,10 +45,10 @@ inline T lat_to_y(T lat)
 };
 
 template <typename T>
-struct to_cartesian_functor {
+struct sinusoidal_projection_functor {
   using vec_2d = cuspatial::vec_2d<T>;
 
-  to_cartesian_functor(vec_2d origin) : _origin(origin) {}
+  sinusoidal_projection_functor(vec_2d origin) : _origin(origin) {}
 
   vec_2d operator()(vec_2d loc)
   {
@@ -61,22 +61,24 @@ struct to_cartesian_functor {
 };
 
 template <typename T>
-struct LonLatToCartesianTest : public ::testing::Test {
+struct SinusoidalProjectionTest : public ::testing::Test {
   using Vec = cuspatial::vec_2d<T>;
 
   void run_test(std::vector<Vec> const& h_lonlats, Vec const& origin)
   {
     auto h_expected = std::vector<Vec>(h_lonlats.size());
 
-    std::transform(
-      h_lonlats.begin(), h_lonlats.end(), h_expected.begin(), to_cartesian_functor(origin));
+    std::transform(h_lonlats.begin(),
+                   h_lonlats.end(),
+                   h_expected.begin(),
+                   sinusoidal_projection_functor(origin));
 
     auto lonlats = rmm::device_vector<Vec>{h_lonlats};
 
     auto xy_output = rmm::device_vector<Vec>(lonlats.size(), Vec{-1, -1});
 
     auto xy_end =
-      cuspatial::lonlat_to_cartesian(lonlats.begin(), lonlats.end(), xy_output.begin(), origin);
+      cuspatial::sinusoidal_projection(lonlats.begin(), lonlats.end(), xy_output.begin(), origin);
 
     cuspatial::test::expect_vector_equivalent(h_expected, xy_output);
     EXPECT_EQ(h_expected.size(), std::distance(xy_output.begin(), xy_end));
@@ -85,9 +87,9 @@ struct LonLatToCartesianTest : public ::testing::Test {
 
 // float and double are logically the same but would require seperate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;
-TYPED_TEST_CASE(LonLatToCartesianTest, TestTypes);
+TYPED_TEST_CASE(SinusoidalProjectionTest, TestTypes);
 
-TYPED_TEST(LonLatToCartesianTest, Empty)
+TYPED_TEST(SinusoidalProjectionTest, Empty)
 {
   using T    = TypeParam;
   using Loc  = cuspatial::vec_2d<T>;
@@ -99,7 +101,7 @@ TYPED_TEST(LonLatToCartesianTest, Empty)
   this->run_test(h_point_lonlat, origin);
 }
 
-TYPED_TEST(LonLatToCartesianTest, Single)
+TYPED_TEST(SinusoidalProjectionTest, Single)
 {
   using T    = TypeParam;
   using Loc  = cuspatial::vec_2d<T>;
@@ -111,7 +113,7 @@ TYPED_TEST(LonLatToCartesianTest, Single)
   this->run_test(h_point_lonlat, origin);
 }
 
-TYPED_TEST(LonLatToCartesianTest, Extremes)
+TYPED_TEST(SinusoidalProjectionTest, Extremes)
 {
   using T    = TypeParam;
   using Loc  = cuspatial::vec_2d<T>;
@@ -124,7 +126,7 @@ TYPED_TEST(LonLatToCartesianTest, Extremes)
   this->run_test(h_points_lonlat, origin);
 }
 
-TYPED_TEST(LonLatToCartesianTest, Multiple)
+TYPED_TEST(SinusoidalProjectionTest, Multiple)
 {
   using T    = TypeParam;
   using Loc  = cuspatial::vec_2d<T>;
@@ -139,7 +141,7 @@ TYPED_TEST(LonLatToCartesianTest, Multiple)
   this->run_test(h_points_lonlat, origin);
 }
 
-TYPED_TEST(LonLatToCartesianTest, OriginOutOfBounds)
+TYPED_TEST(SinusoidalProjectionTest, OriginOutOfBounds)
 {
   using T    = TypeParam;
   using Loc  = cuspatial::vec_2d<T>;
@@ -155,7 +157,7 @@ TYPED_TEST(LonLatToCartesianTest, OriginOutOfBounds)
 
   auto xy_output = rmm::device_vector<Cart>{};
 
-  EXPECT_THROW(cuspatial::lonlat_to_cartesian(
+  EXPECT_THROW(cuspatial::sinusoidal_projection(
                  point_lonlat.begin(), point_lonlat.end(), xy_output.begin(), origin),
                cuspatial::logic_error);
 }
@@ -167,7 +169,7 @@ struct identity_xform {
 };
 
 // This test verifies that fancy iterators can be passed by using a pass-through transform_iterator
-TYPED_TEST(LonLatToCartesianTest, TransformIterator)
+TYPED_TEST(SinusoidalProjectionTest, TransformIterator)
 {
   using T    = TypeParam;
   using Loc  = cuspatial::vec_2d<T>;
@@ -184,7 +186,7 @@ TYPED_TEST(LonLatToCartesianTest, TransformIterator)
   std::transform(h_points_lonlat.begin(),
                  h_points_lonlat.end(),
                  h_expected.begin(),
-                 to_cartesian_functor(origin));
+                 sinusoidal_projection_functor(origin));
 
   auto points_lonlat = rmm::device_vector<Loc>{h_points_lonlat};
   auto expected      = rmm::device_vector<Cart>{h_expected};
@@ -194,7 +196,7 @@ TYPED_TEST(LonLatToCartesianTest, TransformIterator)
   auto xform_begin = thrust::make_transform_iterator(points_lonlat.begin(), identity_xform<T>{});
   auto xform_end   = thrust::make_transform_iterator(points_lonlat.end(), identity_xform<T>{});
 
-  auto xy_end = cuspatial::lonlat_to_cartesian(xform_begin, xform_end, xy_output.begin(), origin);
+  auto xy_end = cuspatial::sinusoidal_projection(xform_begin, xform_end, xy_output.begin(), origin);
 
   EXPECT_EQ(expected, xy_output);
   EXPECT_EQ(4, std::distance(xy_output.begin(), xy_end));
