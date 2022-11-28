@@ -592,30 +592,47 @@ class GeoSeries(cudf.Series):
 
         Examples
         --------
-        >>> polygons = gpd.GeoSeries([
-            Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8))),
-            Polygon(((-2, -2), (-2, 2), (2, 2), (2, -2))),
+        >>> points = gpd.GeoSeries([
+            Point((-8, -8)),
+            Point((-2, -2)),
         ])
-        >>> polygon = gpd.GeoSeries(polygons[0])
-        >>> polygon.align(polygons)
+        >>> point = gpd.GeoSeries(points[0])
+        >>> print(points.align(point))
 
-        (0    POLYGON ((-8.00000 -8.00000, -8.00000 8.00000,...
-         1                                                 None
-         dtype: geometry, 0    POLYGON ((-8.00000 -8.00000, -8.00000 8.00000,..
-         1    POLYGON ((-2.00000 -2.00000, -2.00000 2.00000,...
-         dtype: geometry)
+        (0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        dtype: geometry, 0    POINT (-8.00000 -8.00000)
+        1                         None
+        dtype: geometry)
 
         >>> points_right = gpd.GeoSeries([
             Point((-2, -2)),
             Point((-8, -8)),
         ], index=[1,0])
-        >>> polygons.align(points_right)
+        >>> print(points.align(points_right))
 
-        (0    POLYGON ((-8.00000 -8.00000, -8.00000 8.00000,...
-         1    POLYGON ((-2.00000 -2.00000, -2.00000 2.00000,...
-         dtype: geometry, 0    POINT (-8.00000 -8.00000)
-         1    POINT (-2.00000 -2.00000)
-         dtype: geometry)
+        (0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        dtype: geometry, 0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        dtype: geometry)
+
+        >>> points_alpha = gpd.GeoSeries([
+            Point((-1, 1)),
+            Point((1, -1)),
+        ], index=['a', 'b'])
+        >>> print(points.align(points_alpha))
+
+        (0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        a                         None
+        b                         None
+        dtype: geometry, 0                        None
+        1                        None
+        a    POINT (-1.00000 1.00000)
+        b    POINT (1.00000 -1.00000)
+        dtype: geometry)
+
         """
         index = other.index
         aligned_left = self._align_to_index(index)
