@@ -47,8 +47,8 @@ endfunction(ConfigureTest)
 ConfigureTest(CUBIC_SPLINE_TEST
     interpolate/cubic_spline_test.cpp)
 
-ConfigureTest(COORDINATE_TRANSFORM_TEST
-    spatial/coordinate_transform_test.cu)
+ConfigureTest(SINUSOIDAL_PROJECTION_TEST
+    spatial/sinusoidal_projection_test.cu)
 
 ConfigureTest(HAVERSINE_TEST
     spatial/haversine_test.cpp)
@@ -112,6 +112,7 @@ ConfigureTest(SPATIAL_WINDOW_POINT_TEST
 
 ConfigureTest(UTILITY_TEST
     utility_test/test_float_equivalent.cu
+    utility_test/test_multipoint_factory.cu
 )
 
 # Experimental API
@@ -136,8 +137,8 @@ ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST_EXP
     experimental/spatial/point_linestring_nearest_points_test.cu)
 
-ConfigureTest(COORDINATE_TRANSFORM_TEST_EXP
-    experimental/spatial/coordinate_transform_test.cu)
+ConfigureTest(SINUSOIDAL_PROJECTION_TEST_EXP
+    experimental/spatial/sinusoidal_projection_test.cu)
 
 ConfigureTest(POINTS_IN_RANGE_TEST_EXP
     experimental/spatial/points_in_range_test.cu)
@@ -148,8 +149,8 @@ ConfigureTest(POINT_IN_POLYGON_TEST_EXP
 ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP
     experimental/trajectory/derive_trajectories_test.cu)
 
-ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST_EXP
-    experimental/trajectory/trajectory_bounding_boxes_test.cu)
+ConfigureTest(POINT_BOUNDING_BOXES_TEST_EXP
+    experimental/spatial/point_bounding_boxes_test.cu)
 
 ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_EXP
     experimental/trajectory/trajectory_distances_and_speeds_test.cu)
@@ -161,4 +162,5 @@ ConfigureTest(OPERATOR_TEST_EXP
     experimental/operators/linestrings_test.cu)
 
 ConfigureTest(FIND_TEST_EXP
-    experimental/find/find_point_on_segments_test.cu)
+    experimental/find/find_point_on_segments_test.cu
+    experimental/find/find_duplicate_points_test.cu)

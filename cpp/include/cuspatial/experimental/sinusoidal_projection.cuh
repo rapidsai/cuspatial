@@ -25,17 +25,22 @@
 namespace cuspatial {
 
 /**
- * @brief Translate longitude/latitude relative to origin to cartesian (x/y) coordinates in km.
+ * @brief Sinusoidal projection of longitude/latitude relative to origin to Cartesian (x/y)
+ * coordinates in km.
+ *
+ * Can be used to approximately convert longitude/latitude coordinates to Cartesian coordinates
+ * given that all points are near the origin. Error increases with distance from the origin.
+ * See [Sinusoidal Projection](https://en.wikipedia.org/wiki/Sinusoidal_projection) for more detail.
+ *
+ * @note All input iterators must have a `value_type` of `cuspatial::vec_2d<T>` (Lat/Lon
+ * coordinates), and the output iterator must be able to accept for storage values of type
+ * `cuspatial::vec_2d<T>` (Cartesian coordinates).
  *
  * @param[in]  lon_lat_first beginning of range of input longitude/latitude coordinates.
  * @param[in]  lon_lat_last end of range of input longitude/latitude coordinates.
  * @param[in]  origin: longitude and latitude of origin.
  * @param[out] xy_first: beginning of range of output x/y coordinates.
  * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
- *
- * All input iterators must have a `value_type` of `cuspatial::vec_2d<T>` (Lat/Lon coordinates),
- * and the output iterator must be able to accept for storage values of type `cuspatial::vec_2d<T>`
- * (Cartesian coordinates).
  *
  * @tparam InputIt Iterator over longitude/latitude locations. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
@@ -53,12 +58,12 @@ namespace cuspatial {
  * "LegacyRandomAccessIterator"
  */
 template <class InputIt, class OutputIt, class T>
-OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
-                             InputIt lon_lat_last,
-                             OutputIt xy_first,
-                             vec_2d<T> origin,
-                             rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+OutputIt sinusoidal_projection(InputIt lon_lat_first,
+                               InputIt lon_lat_last,
+                               OutputIt xy_first,
+                               vec_2d<T> origin,
+                               rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/coordinate_transform.cuh>
+#include <cuspatial/experimental/detail/sinusoidal_projection.cuh>

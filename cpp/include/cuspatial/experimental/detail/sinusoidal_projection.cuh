@@ -51,8 +51,8 @@ __device__ inline T lat_to_y(T lat)
 };
 
 template <typename T>
-struct to_cartesian_functor {
-  to_cartesian_functor(vec_2d<T> origin) : _origin(origin) {}
+struct sinusoidal_projection_functor {
+  sinusoidal_projection_functor(vec_2d<T> origin) : _origin(origin) {}
 
   vec_2d<T> __device__ operator()(vec_2d<T> loc)
   {
@@ -67,11 +67,11 @@ struct to_cartesian_functor {
 }  // namespace detail
 
 template <class InputIt, class OutputIt, class T>
-OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
-                             InputIt lon_lat_last,
-                             OutputIt xy_first,
-                             vec_2d<T> origin,
-                             rmm::cuda_stream_view stream)
+OutputIt sinusoidal_projection(InputIt lon_lat_first,
+                               InputIt lon_lat_last,
+                               OutputIt xy_first,
+                               vec_2d<T> origin,
+                               rmm::cuda_stream_view stream)
 {
   static_assert(is_same_floating_point<T, iterator_vec_base_type<InputIt>>(),
                 "Origin and input must have the same base floating point type.");
@@ -83,7 +83,7 @@ OutputIt lonlat_to_cartesian(InputIt lon_lat_first,
                            lon_lat_first,
                            lon_lat_last,
                            xy_first,
-                           detail::to_cartesian_functor{origin});
+                           detail::sinusoidal_projection_functor{origin});
 }
 
 }  // namespace cuspatial

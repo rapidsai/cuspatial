@@ -7,9 +7,9 @@ from cudf._lib.cpp.column.column cimport column
 from cudf._lib.cpp.column.column_view cimport column_view
 
 
-cdef extern from "cuspatial/coordinate_transform.hpp" namespace "cuspatial" \
+cdef extern from "cuspatial/projection.hpp" namespace "cuspatial" \
         nogil:
-    cdef pair[unique_ptr[column], unique_ptr[column]] lonlat_to_cartesian(
+    cdef pair[unique_ptr[column], unique_ptr[column]] sinusoidal_projection(
         const double origin_lon,
         const double origin_lat,
         const column_view& input_lon,
