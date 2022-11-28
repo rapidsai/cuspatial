@@ -32,7 +32,8 @@ namespace cuspatial {
  */
 
 /**
- * @brief Given (point, polygon pairs), tests whether the point of each pair is inside the polygon of the pair.
+ * @brief Given (point, polygon pairs), tests whether the point of each pair is inside the polygon
+ * of the pair.
  *
  * Tests that each point is or is not inside of the polygon in the corresponding index.
  * Polygons are a collection of one or more * rings. Rings are a collection of three or more

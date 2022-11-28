@@ -23,7 +23,8 @@ namespace cuspatial {
 /**
  * @ingroup spatial_relationship
  *
- * @brief Given (point, polygon) pairs, tests whether the point of each pair is inside the polygon of the pair.
+ * @brief Given (point, polygon) pairs, tests whether the point of each pair is inside the polygon
+ * of the pair.
  *
  * Tests whether each point is inside a corresponding polygon.  Points on the edges of the
  * polygon are not considered to be inside.
