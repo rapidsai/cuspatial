@@ -20,6 +20,7 @@ from shapely.geometry import (
 )
 
 import cudf
+from cudf._typing import ColumnLike
 
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
@@ -292,20 +293,11 @@ class GeoSeries(cudf.Series):
                 Feature_Enum.POLYGON: self._sr.polygons,
             }
 
-        def __getitem__(self, item):
-            # Use the reordering _column._data if it is set
-            indexes = (
-                self._sr._column._data[item].to_pandas()
-                if self._sr._column._data is not None
-                else item
-            )
-
+        def __getitem__(self, indexes):
             # Slice the types and offsets
             union_offsets = self._sr._column._meta.union_offsets.iloc[indexes]
             union_types = self._sr._column._meta.input_types.iloc[indexes]
 
-            # Arrow can't view an empty list, so we need to prep the buffers
-            # here.
             points = self._sr._column.points
             mpoints = self._sr._column.mpoints
             lines = self._sr._column.lines
@@ -319,7 +311,7 @@ class GeoSeries(cudf.Series):
                 },
             )
 
-            if isinstance(item, Integral):
+            if isinstance(indexes, Integral):
                 return GeoSeries(column, name=self._sr.name).to_shapely()
             else:
                 return GeoSeries(
@@ -406,6 +398,7 @@ class GeoSeries(cudf.Series):
     @cached_property
     def _arrow_to_shapely(self):
         type_map = {
+            Feature_Enum.NONE: lambda x: None,
             Feature_Enum.POINT: Point,
             Feature_Enum.MULTIPOINT: MultiPoint,
             Feature_Enum.LINESTRING: self._linestring_to_shapely,
@@ -422,7 +415,6 @@ class GeoSeries(cudf.Series):
             self._arrow_to_shapely[Feature_Enum(x)]
             for x in result_types.to_numpy()
         ]
-
         union = self.to_arrow()
 
         # Serialize to Shapely!
@@ -536,3 +528,129 @@ class GeoSeries(cudf.Series):
                 arrow_polygons,
             ],
         )
+
+    def _align_to_index(
+        self: T,
+        index: ColumnLike,
+        how: str = "outer",
+        sort: bool = True,
+        allow_non_unique: bool = False,
+    ) -> T:
+        """
+        The values in the newly aligned columns will not change,
+        only positions in the union offsets and type codes.
+        """
+        aligned_union_offsets = (
+            self._column._meta.union_offsets._align_to_index(
+                index, how, sort, allow_non_unique
+            )
+        ).astype("int32")
+        aligned_union_offsets[
+            aligned_union_offsets.isna()
+        ] = Feature_Enum.NONE.value
+        aligned_input_types = self._column._meta.input_types._align_to_index(
+            index, how, sort, allow_non_unique
+        ).astype("int8")
+        aligned_input_types[
+            aligned_input_types.isna()
+        ] = Feature_Enum.NONE.value
+        column = GeoColumn(
+            (
+                self._column.points,
+                self._column.mpoints,
+                self._column.lines,
+                self._column.polygons,
+            ),
+            {
+                "input_types": aligned_input_types,
+                "union_offsets": aligned_union_offsets,
+            },
+        )
+        return GeoSeries(column)
+
+    def align(self, other):
+        """
+        Align the rows of two GeoSeries using outer join.
+
+        `align` rearranges two GeoSeries so that their indices match.
+        If one GeoSeries is longer than the other, the shorter GeoSeries
+        will be increased in length and missing index values will be added,
+        inserting `None` when an empty row is created.
+
+        Alignment involves matching the length of the indices, sorting them,
+        and inserting into the right GeoSeries extra index values that are
+        present in the left GeoSeries.
+
+        Parameters
+        ----------
+        other: GeoSeries
+
+        Returns
+        -------
+        (left, right) : GeoSeries
+            Pair of aligned GeoSeries
+
+        Examples
+        --------
+        >>> points = gpd.GeoSeries([
+            Point((-8, -8)),
+            Point((-2, -2)),
+        ])
+        >>> point = gpd.GeoSeries(points[0])
+        >>> print(points.align(point))
+
+        (0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        dtype: geometry, 0    POINT (-8.00000 -8.00000)
+        1                         None
+        dtype: geometry)
+
+        >>> points_right = gpd.GeoSeries([
+            Point((-2, -2)),
+            Point((-8, -8)),
+        ], index=[1,0])
+        >>> print(points.align(points_right))
+
+        (0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        dtype: geometry, 0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        dtype: geometry)
+
+        >>> points_alpha = gpd.GeoSeries([
+            Point((-1, 1)),
+            Point((1, -1)),
+        ], index=['a', 'b'])
+        >>> print(points.align(points_alpha))
+
+        (0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        a                         None
+        b                         None
+        dtype: geometry, 0                        None
+        1                        None
+        a    POINT (-1.00000 1.00000)
+        b    POINT (1.00000 -1.00000)
+        dtype: geometry)
+
+        """
+        index = other.index
+        aligned_left = self._align_to_index(index)
+        aligned_right = other._align_to_index(index)
+        aligned_right.index = index
+        aligned_right = aligned_right.sort_index()
+        aligned_left.index = (
+            self.index
+            if len(self.index) == len(aligned_left)
+            else aligned_right.index
+        )
+        aligned_left = aligned_left.sort_index()
+        return (
+            aligned_left,
+            aligned_right.loc[aligned_left.index],
+        )
+
+    def _gather(
+        self, gather_map, keep_index=True, nullify=False, check_bounds=True
+    ):
+        return self.iloc[gather_map]
