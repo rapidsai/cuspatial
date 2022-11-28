@@ -553,6 +553,15 @@ class GeoSeries(cudf.Series):
         """
         Align the rows of two GeoSeries using outer join.
 
+        `align` rearranges two GeoSeries so that their indices match.
+        If one GeoSeries is longer than the other, the shorter GeoSeries
+        will be increased in length and missing index values will be added,
+        inserting `None` when an empty row is created.
+
+        Alignment involves matching the length of the indices, sorting them,
+        and inserting into the right GeoSeries extra index values that are
+        present in the left GeoSeries.
+
         Parameters
         ----------
         other: GeoSeries
@@ -570,23 +579,24 @@ class GeoSeries(cudf.Series):
         ])
         >>> polygon = gpd.GeoSeries(polygons[0])
         >>> polygon.align(polygons)
-        (0    POINT (-8.00000 -8.00000)
-        1                         None
-        dtype: geometry, 0    POINT (-8.00000 -8.00000)
-        1    POINT (-2.00000 -2.00000)
-        dtype: geometry)
 
-        >>> polygons_right = gpd.GeoSeries([
+        (0    POLYGON ((-8.00000 -8.00000, -8.00000 8.00000,...
+         1                                                 None
+         dtype: geometry, 0    POLYGON ((-8.00000 -8.00000, -8.00000 8.00000,..
+         1    POLYGON ((-2.00000 -2.00000, -2.00000 2.00000,...
+         dtype: geometry)
+
+        >>> points_right = gpd.GeoSeries([
             Point((-2, -2)),
             Point((-8, -8)),
         ], index=[1,0])
-        >>> polygons.align(polygons_right)
+        >>> polygons.align(points_right)
 
-        (0    POINT (-8.00000 -8.00000)
-        1    POINT (-2.00000 -2.00000)
-        dtype: geometry, 0    POINT (-8.00000 -8.00000)
-        1    POINT (-2.00000 -2.00000)
-        dtype: geometry)
+        (0    POLYGON ((-8.00000 -8.00000, -8.00000 8.00000,...
+         1    POLYGON ((-2.00000 -2.00000, -2.00000 2.00000,...
+         dtype: geometry, 0    POINT (-8.00000 -8.00000)
+         1    POINT (-2.00000 -2.00000)
+         dtype: geometry)
         """
         index = other.index
         aligned_left = self._align_to_index(index)
