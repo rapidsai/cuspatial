@@ -18,6 +18,8 @@
 
 #include <cuspatial/traits.hpp>
 
+#include <cuspatial/detail/utility/floating_point.cuh>
+
 namespace cuspatial {
 namespace detail {
 
@@ -69,14 +71,14 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
 
       // Points on the line segment are the same, so intersection is impossible.
       // This is possible because we allow closed or unclosed polygons.
-      if (run == 0.0 && rise == 0.0) continue;
+      T zero = 0.0;
+      if (float_equal(run, zero) && float_equal(rise, zero)) continue;
 
       T rise_to_point = test_point.y - a.y;
 
       // colinearity test
       T run_to_point = test_point.x - a.x;
-      T colinearity  = (run * rise_to_point - run_to_point * rise);
-      is_colinear    = abs(colinearity) < std::numeric_limits<T>::epsilon();
+      is_colinear    = float_equal(run * rise_to_point, run_to_point * rise);
       if (is_colinear) { break; }
 
       y1_flag = a.y > test_point.y;

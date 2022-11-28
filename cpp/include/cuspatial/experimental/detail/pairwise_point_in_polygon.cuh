@@ -53,7 +53,8 @@ __global__ void pairwise_point_in_polygon_kernel(Cart2dItA test_points_first,
   using Cart2d     = iterator_value_type<Cart2dItA>;
   using OffsetType = iterator_value_type<OffsetIteratorA>;
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x;
-       idx < std::distance(test_points_first, thrust::prev(test_points_first + num_test_points));
+       idx <
+       std::distance(test_points_first, thrust::prev(test_points_first + num_test_points + 1));
        idx += gridDim.x * blockDim.x) {
     Cart2d const test_point = test_points_first[idx];
     // for the matching polygon
