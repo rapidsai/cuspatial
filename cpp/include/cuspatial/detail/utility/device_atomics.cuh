@@ -16,6 +16,12 @@
 
 #pragma once
 
+#include <thrust/detail/raw_reference_cast.h>
+#include <thrust/device_ptr.h>
+#include <thrust/device_reference.h>
+
+#include <cuda/atomic>
+
 #include <type_traits>
 
 namespace cuspatial {
@@ -29,7 +35,7 @@ namespace detail {
 template <typename T>
 const T __device__ min_(const T a, const T b)
 {
-  return min(a, b);
+  return ::min(a, b);
 }
 
 /**
@@ -40,7 +46,7 @@ const T __device__ min_(const T a, const T b)
 template <typename T>
 const T __device__ max_(const T a, const T b)
 {
-  return max(a, b);
+  return ::max(a, b);
 }
 
 /**
@@ -148,6 +154,44 @@ __device__ inline float atomicMin(float* addr, float val)
 
 /**
  * @internal
+ * @brief CUDA device atomic minimum for double
+ *
+ * Atomically computes the min of the value stored in `ptr` and `val` and stores it in `ptr`,
+ * returning the previous value of `*ptr`.
+ *
+ * @note based on https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
+ *
+ * @param ptr The thrust device pointer to the address to atomically compare and update with the
+ * minimum.
+ * @param val The value to compare
+ * @return The old value stored in `addr`.
+ */
+__device__ inline double atomicMin(thrust::device_ptr<double> ptr, double val)
+{
+  return atomicMin(thrust::raw_pointer_cast(ptr), val);
+}
+
+/**
+ * @internal
+ * @brief CUDA device atomic minimum for float
+ *
+ * Atomically computes the min of the value stored in `ptr` and `val` and stores it in `ptr`,
+ * returning the previous value of `*ptr`.
+ *
+ * @note based on https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
+ *
+ * @param ptr The thrust device pointer to address to atomically compare and update with the
+ * minimum.
+ * @param val The value to compare
+ * @return The old value stored in `addr`.
+ */
+__device__ inline float atomicMin(thrust::device_ptr<float> ptr, float val)
+{
+  return atomicMin(thrust::raw_pointer_cast(ptr), val);
+}
+
+/**
+ * @internal
  * @brief CUDA device atomic maximum for double
  *
  * Atomically computes the max of the value stored in `addr` and `val` and stores it in `addr`,
@@ -180,6 +224,63 @@ __device__ inline double atomicMax(double* addr, double val)
 __device__ inline float atomicMax(float* addr, float val)
 {
   return atomicOp<float>(addr, val, max_<float>);
+}
+
+/**
+ * @internal
+ * @brief CUDA device atomic maximum for double
+ *
+ * Atomically computes the max of the value stored in `addr` and `val` and stores it in `ptr`,
+ * returning the previous value of `*ptr`.
+ *
+ * @note based on https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
+ *
+ * @param ptr The thrust device pointer to the address atomically compare and update with the
+ * maximum.
+ * @param val The value to compare
+ * @return The old value stored in `addr`.
+ */
+__device__ inline double atomicMax(thrust::device_ptr<double> ptr, double val)
+{
+  return atomicMax(thrust::raw_pointer_cast(ptr), val);
+}
+
+/**
+ * @internal
+ * @brief CUDA device atomic maximum for float
+ *
+ * Atomically computes the max of the value stored in `addr` and `val` and stores it in `addr`,
+ * returning the previous value of `*addr`.
+ *
+ * @note based on https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
+ *
+ * @param addr The thrust device pointer to the address to atomically compare and update with the
+ * maximum.
+ * @param val The value to compare
+ * @return The old value stored in `addr`.
+ */
+__device__ inline float atomicMax(thrust::device_ptr<float> ptr, float val)
+{
+  return atomicMax(thrust::raw_pointer_cast(ptr), val);
+}
+
+/**
+ * @brief Factory function to create atomic_ref from a thrust::device_reference
+ */
+template <cuda::thread_scope Scope, typename T>
+auto __device__ make_atomic_ref(thrust::device_reference<T> ref)
+{
+  T& raw_ref = thrust::raw_reference_cast(ref);
+  return cuda::atomic_ref<T, Scope>{raw_ref};
+}
+
+/**
+ * @brief Factory function to create atomic_ref from raw reference
+ */
+template <cuda::thread_scope Scope, typename T>
+auto __device__ make_atomic_ref(T& ref)
+{
+  return cuda::atomic_ref<T, Scope>{ref};
 }
 
 }  // namespace detail

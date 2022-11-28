@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2019-2022, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -121,10 +121,10 @@ add_library(cuspatial
     src/io/shp/polygon_shapefile_reader.cpp
     src/io/shp/polygon_shapefile_reader.cu
     src/join/quadtree_point_in_polygon.cu
-    src/join/quadtree_point_to_nearest_polyline.cu
-    src/join/quadtree_poly_filtering.cu
+    src/join/quadtree_point_to_nearest_linestring.cu
+    src/join/quadtree_bbox_filtering.cu
     src/spatial/polygon_bounding_box.cu
-    src/spatial/polyline_bounding_box.cu
+    src/spatial/linestring_bounding_box.cu
     src/spatial/point_in_polygon.cu
     src/spatial/pairwise_point_in_polygon.cu
     src/spatial_window/spatial_window.cu
@@ -134,7 +134,7 @@ add_library(cuspatial
     src/spatial/point_distance.cu
     src/spatial/point_linestring_distance.cu
     src/spatial/point_linestring_nearest_points.cu
-    src/spatial/lonlat_to_cartesian.cu
+    src/spatial/sinusoidal_projection.cu
     src/trajectory/derive_trajectories.cu
     src/trajectory/trajectory_bounding_boxes.cu
     src/trajectory/trajectory_distances_and_speeds.cu
@@ -221,7 +221,10 @@ if(CUSPATIAL_BUILD_BENCHMARKS)
         OPTIONS         "BENCHMARK_ENABLE_TESTING OFF"
                         "BENCHMARK_ENABLE_INSTALL OFF")
 
-    # Find or install NVBench
+    # Find or install NVBench Temporarily force downloading of fmt because current versions of nvbench
+    # do not support the latest version of fmt, which is automatically pulled into our conda
+    # environments by mamba.
+    set(CPM_DOWNLOAD_fmt TRUE)
     include(${rapids-cmake-dir}/cpm/nvbench.cmake)
     rapids_cpm_nvbench()
     add_subdirectory(benchmarks)

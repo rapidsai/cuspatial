@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <cudf/utilities/type_dispatcher.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/derive_trajectories.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
@@ -22,6 +21,7 @@
 #include <cudf/column/column_factories.hpp>
 #include <cudf/copying.hpp>
 #include <cudf/table/table.hpp>
+#include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
@@ -116,11 +116,14 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
   CUSPATIAL_EXPECTS(
     x.size() == y.size() && x.size() == object_id.size() && x.size() == timestamp.size(),
     "Data size mismatch");
-  CUSPATIAL_EXPECTS(object_id.type().id() == cudf::type_id::INT32, "Invalid object_id datatype");
+  CUSPATIAL_EXPECTS(x.type().id() == y.type().id(), "Data type mismatch");
+  CUSPATIAL_EXPECTS(object_id.type().id() == cudf::type_to_id<cudf::size_type>(),
+                    "Invalid object_id type");
   CUSPATIAL_EXPECTS(cudf::is_timestamp(timestamp.type()), "Invalid timestamp datatype");
   CUSPATIAL_EXPECTS(
     !(x.has_nulls() || y.has_nulls() || object_id.has_nulls() || timestamp.has_nulls()),
     "NULL support unimplemented");
+
   if (object_id.is_empty() || x.is_empty() || y.is_empty() || timestamp.is_empty()) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(4);

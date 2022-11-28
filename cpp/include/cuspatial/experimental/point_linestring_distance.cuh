@@ -21,65 +21,24 @@
 namespace cuspatial {
 
 /**
- * @ingroup distance
- * @copybrief cuspatial::pairwise_point_linestring_distance
+ * @brief Compute pairwise multipoint to multilinestring distance
  *
- * The number of distances computed is `std::distance(points_first, points_last)`.
+ * @tparam MultiPointRange an instance of template type `multipoint_range`
+ * @tparam MultiLinestringRange an instance of template type `multilinestring_range`
+ * @tparam OutputIt iterator type for output array. Must meet the requirements of [LRAI](LinkLRAI).
  *
- * @tparam Cart2dItA iterator type for point array of the point element of each pair. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam Cart2dItB iterator type for point array of the linestring element of each pair. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OffsetIteratorA iterator type for `point_geometry_offset` array. Must meet the
- * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OffsetIteratorB iterator type for `linestring_geometry_offset` array. Must meet the
- * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OffsetIteratorC iterator type for `linestring_part_offset` array. Must meet the
- * requirements of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OutputIt iterator type for output array. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- *
- * @param point_geometry_offset_first beginning of the range of multipoint geometries of each
- * pair
- * @param point_geometry_offset_last end of the range of multipoint geometries of each pair
- * @param points_first beginning of the range of point values
- * @param points_last end of the range of the point values
- * @param linestring_geometry_offset_first beginning of the range of offsets to the multilinestring
- * geometry of each pair, the end range is implied by linestring_geometry_offset_first +
- * std::distance(`point_geometry_offset_first`, `point_geometry_offset_last`)
- * @param linestring_offsets_first beginning of the range of offsets to the starting point
- * of each linestring
- * @param linestring_offsets_last end of the range of offsets to the starting point
- * of each linestring
- * @param linestring_points_first beginning of the range of linestring points
- * @param linestring_points_last end of the range of linestring points
- * @param distances_first beginning of the output range of distances
+ * @param multipoints The range of multipoints, one per computed distance pair
+ * @param multilinestrings The range of multilinestrings, one per computed distance pair
  * @param stream The CUDA stream to use for device memory operations and kernel launches.
- * @return Output iterator to one past the last element in the output range
- *
- * @pre all input iterators for coordinates must have `cuspatial::vec_2d` type.
- * @pre all scalar types must be floating point types, and must be the same type for all input
- * iterators and output iterators.
+ * @return Output iterator to the element past the last distance computed.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <class Cart2dItA,
-          class Cart2dItB,
-          class OffsetIteratorA,
-          class OffsetIteratorB,
-          class OffsetIteratorC,
-          class OutputIt>
+template <class MultiPointRange, class MultiLinestringRange, class OutputIt>
 OutputIt pairwise_point_linestring_distance(
-  OffsetIteratorA point_geometry_offset_first,
-  OffsetIteratorA point_geometry_offset_last,
-  Cart2dItA points_first,
-  Cart2dItA points_last,
-  OffsetIteratorB linestring_geometry_offset_first,
-  OffsetIteratorC linestring_part_offsets_first,
-  OffsetIteratorC linestring_part_offsets_last,
-  Cart2dItB linestring_points_first,
-  Cart2dItB linestring_points_last,
+  MultiPointRange multipoints,
+  MultiLinestringRange multilinestrings,
   OutputIt distances_first,
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
