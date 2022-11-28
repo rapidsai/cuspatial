@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2019-2022, NVIDIA CORPORATION.
  *
@@ -32,8 +31,7 @@ namespace cuspatial {
 
 /**
  * @brief Sinusoidal projection of longitude/latitude relative to origin to Cartesian (x/y)
- * coordinates in km. This function is deprecated and will be removed. Use
- * cuspatial::sinusoidal_projection().
+ * coordinates in km.
  *
  * Can be used to approximately convert longitude/latitude coordinates to Cartesian coordinates
  * given that all points are near the origin. Error increases with distance from the origin.
@@ -47,13 +45,12 @@ namespace cuspatial {
  *
  * @returns a pair of columns containing cartesian coordinates in kilometers
  */
-[[deprecated("Use sinusoidal_projection in cuspatial/projection.hpp")]] std::
-  pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
-  lonlat_to_cartesian(double origin_lon,
-                      double origin_lat,
-                      cudf::column_view const& input_lon,
-                      cudf::column_view const& input_lat,
-                      rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> sinusoidal_projection(
+  double origin_lon,
+  double origin_lat,
+  cudf::column_view const& input_lon,
+  cudf::column_view const& input_lat,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
  * @} // end of doxygen group
