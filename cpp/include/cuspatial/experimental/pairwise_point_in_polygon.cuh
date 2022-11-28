@@ -26,8 +26,7 @@ namespace cuspatial {
  * @brief Given (point, polygon) pairs, tests whether the point of each pair is inside the polygon of the pair.
  *
  * Tests whether each point is inside a corresponding polygon.  Points on the edges of the
- * polygon are not considered to be inside. Floating point precision limitations mean that
- * some arithmetically excluded boundary points will not be excluded, and vice-versa.
+ * polygon are not considered to be inside.
  * Polygons are a collection of one or more rings. Rings are a collection of three or more vertices.
  *
  * Each input point will map to one `int32_t` element in the output.
