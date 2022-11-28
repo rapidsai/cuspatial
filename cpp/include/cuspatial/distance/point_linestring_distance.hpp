@@ -19,7 +19,7 @@
 namespace cuspatial {
 
 /**
- * @brief Compute distance between pairs of points and linestrings (a.k.a. polylines)
+ * @brief Compute distance between pairs of points and linestrings
  *
  * The distance between a point and a linestring is defined as the minimum distance
  * between the point and any segment of the linestring. For each input point, this

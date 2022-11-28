@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cudf/types.hpp>
 #include <cuspatial/distance/linestring_distance.hpp>
 #include <cuspatial/error.hpp>
 
@@ -22,9 +23,10 @@
 #include <cudf_test/column_wrapper.hpp>
 #include <cudf_test/type_lists.hpp>
 
-namespace cuspatial {
-namespace test {
+#include <gtest/gtest.h>
+#include <optional>
 
+using namespace cuspatial;
 using namespace cudf;
 using namespace cudf::test;
 
@@ -44,428 +46,222 @@ TYPED_TEST_CASE(PairwiseLinestringDistanceTest, TestTypes);
 
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringParallel)
+TYPED_TEST(PairwiseLinestringDistanceTest, EmptyInput)
 {
   using T = TypeParam;
-  // Linestring 1: (0.0, 0.0), (1.0, 1.0)
-  // Linestring 2: (1.0, 0.0), (2.0, 1.0)
-  wrapper<cudf::size_type> linestring1_offsets{0, 2};
-  wrapper<T> linestring1_points_x{0.0, 1.0};
-  wrapper<T> linestring1_points_y{0.0, 1.0};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2};
-  wrapper<T> linestring2_points_x{1.0, 2.0};
-  wrapper<T> linestring2_points_y{0.0, 1.0};
+  wrapper<cudf::size_type> l1offsets{0};
+  wrapper<T> xy1{};
+  wrapper<cudf::size_type> l2offsets{0};
+  wrapper<T> xy2{};
 
-  wrapper<T> expected{0.7071067811865476};
+  wrapper<T> expected{};
 
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
+  auto result = cuspatial::pairwise_linestring_distance(
+    std::nullopt, column_view(l1offsets), xy1, std::nullopt, column_view(l2offsets), xy2);
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expected, result->view(), verbosity);
 }
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringEndpointsDistance)
+TYPED_TEST(PairwiseLinestringDistanceTest, FourPairSingleToMultiLineString)
 {
   using T = TypeParam;
-  // Linestring 1: (0.0, 0.0), (1.0, 1.0), (2.0, 2.0)
-  // Linestring 2: (2.0, 0.0), (1.0, -1.0), (0.0, -1.0)
-  wrapper<cudf::size_type> linestring1_offsets{0, 3};
-  wrapper<T> linestring1_points_x{0.0, 1.0, 2.0};
-  wrapper<T> linestring1_points_y{0.0, 1.0, 2.0};
-  wrapper<cudf::size_type> linestring2_offsets{0, 3};
-  wrapper<T> linestring2_points_x{2.0, 1.0, 0.0};
-  wrapper<T> linestring2_points_y{0.0, -1.0, -1.0};
 
-  wrapper<T> expected{1.0};
+  wrapper<cudf::size_type> l1part_offset{0, 3, 5, 8, 10};
+  wrapper<T> l1_xy{0, 1, 1, 0, -1, 0, 0, 0, 0, 1, 0, 0, 2, 2, -2, 0, 2, 2, -2, -2};
+  wrapper<cudf::size_type> l2geom_offset{0, 1, 3, 5, 7};
+  wrapper<cudf::size_type> l2part_offset{0, 4, 7, 10, 12, 14, 17, 20};
+  wrapper<T> l2_xy{1, 1, 2, 1, 2, 0, 3,  0, 1, 0, 1, 1, 1,  2, 1,  -1, 1,  -2, 1,   -3,
+                   2, 0, 0, 2, 0, 2, -2, 0, 1, 1, 5, 5, 10, 0, -1, -1, -5, -5, -10, 0};
 
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
+  wrapper<T> expected{std::sqrt(2.0) / 2, 1.0, 0.0, 0.0};
+
+  auto result = cuspatial::pairwise_linestring_distance(std::nullopt,
+                                                        column_view(l1part_offset),
+                                                        l1_xy,
+                                                        column_view(l2geom_offset),
+                                                        column_view(l2part_offset),
+                                                        l2_xy);
+
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expected, result->view(), verbosity);
 }
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringProjectionNotOnLine)
+TYPED_TEST(PairwiseLinestringDistanceTest, FourPairSingleToSingleLineString)
 {
   using T = TypeParam;
-  // Linestring 1: (0.0, 0.0), (1.0, 1.0)
-  // Linestring 2: (3.0, 1.5), (3.0, 2.0)
-  wrapper<cudf::size_type> linestring1_offsets{0, 2};
-  wrapper<T> linestring1_points_x{0.0, 1.0};
-  wrapper<T> linestring1_points_y{0.0, 1.0};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2};
-  wrapper<T> linestring2_points_x{3.0, 3.0};
-  wrapper<T> linestring2_points_y{1.5, 2.0};
 
-  wrapper<T> expected{2.0615528128088303};
+  wrapper<cudf::size_type> l1part_offset{0, 3, 5, 8, 10};
+  wrapper<T> l1_xy{0, 1, 1, 0, -1, 0, 0, 0, 0, 1, 0, 0, 2, 2, -2, 0, 2, 2, -2, -2};
+  wrapper<cudf::size_type> l2part_offset{0, 4, 7, 9, 11};
+  wrapper<T> l2_xy{1, 1, 2, 1, 2, 0, 3, 0, 1, 0, 1, 1, 1, 2, 2, 0, 0, 2, 1, 1, 5, 5, 10, 0};
 
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
+  wrapper<T> expected{std::sqrt(2.0) / 2, 1.0, 0.0, 0.0};
+
+  auto result = cuspatial::pairwise_linestring_distance(std::nullopt,
+                                                        column_view(l1part_offset),
+                                                        l1_xy,
+                                                        std::nullopt,
+                                                        column_view(l2part_offset),
+                                                        l2_xy);
+
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expected, result->view(), verbosity);
 }
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringPerpendicular)
+TYPED_TEST(PairwiseLinestringDistanceTest, TwoPairMultiToSingleLineString)
 {
   using T = TypeParam;
-  // Linestring 1: (0.0, 0.0), (2.0, 0.0)
-  // Linestring 2: (1.0, 1.0), (1.0, 2.0)
-  wrapper<cudf::size_type> linestring1_offsets{0, 2};
-  wrapper<T> linestring1_points_x{0.0, 2.0};
-  wrapper<T> linestring1_points_y{0.0, 0.0};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2};
-  wrapper<T> linestring2_points_x{1.0, 1.0};
-  wrapper<T> linestring2_points_y{1.0, 2.0};
 
-  wrapper<T> expected{1.0};
+  wrapper<cudf::size_type> l1geom_offset{0, 1, 3};
+  wrapper<cudf::size_type> l1part_offset{0, 3, 6, 8};
+  wrapper<T> l1_xy{0, 0, 0, 1, 0, 2, 0, 1, 1, 1, 2, 1, 2, 1, 2, 0};
+  wrapper<cudf::size_type> l2part_offset{0, 2, 4};
+  wrapper<T> l2_xy{1, 0, 1, 1, 0, 0, 1, 0};
 
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
+  wrapper<T> expected{1.0, 1.0};
+
+  auto result = cuspatial::pairwise_linestring_distance(column_view(l1geom_offset),
+                                                        column_view(l1part_offset),
+                                                        l1_xy,
+                                                        std::nullopt,
+                                                        column_view(l2part_offset),
+                                                        l2_xy);
+
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expected, result->view(), verbosity);
 }
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringIntersects)
+TYPED_TEST(PairwiseLinestringDistanceTest, OnePairMultiToMultiLineString)
 {
   using T = TypeParam;
-  // Linestring 1: (0.0, 0.0), (1.0, 1.0)
-  // Linestring 2: (0.0, 1.0), (1.0, 0.0)
-  wrapper<cudf::size_type> linestring1_offsets{0, 2};
-  wrapper<T> linestring1_points_x{0.0, 1.0};
-  wrapper<T> linestring1_points_y{0.0, 1.0};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2};
-  wrapper<T> linestring2_points_x{0.0, 1.0};
-  wrapper<T> linestring2_points_y{1.0, 0.0};
+
+  wrapper<cudf::size_type> l1geom_offset{0, 3};
+  wrapper<cudf::size_type> l1part_offset{0, 3, 6, 8};
+  wrapper<T> l1_xy{0, 0, 0, 1, 0, 2, 0, 1, 1, 1, 2, 1, 2, 1, 2, 0};
+  wrapper<cudf::size_type> l2geom_offset{0, 3};
+  wrapper<cudf::size_type> l2part_offset{0, 2, 4, 6};
+  wrapper<T> l2_xy{0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3};
 
   wrapper<T> expected{0.0};
 
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
+  auto result = cuspatial::pairwise_linestring_distance(column_view(l1geom_offset),
+                                                        column_view(l1part_offset),
+                                                        l1_xy,
+                                                        column_view(l2geom_offset),
+                                                        column_view(l2part_offset),
+                                                        l2_xy);
+
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expected, result->view(), verbosity);
 }
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringSharedVertex)
+TEST_F(PairwiseLinestringDistanceTestUntyped, InputSizeMismatchSingletoSingle)
 {
-  using T = TypeParam;
-  // Linestring 1: (0.0, 0.0), (0.0, 2.0), (2.0, 2.0)
-  // Linestring 2: (2.0, 2.0), (2.0, 1.0), (1.0, 1.0), (2.5, 0.0)
-  wrapper<cudf::size_type> linestring1_offsets{0, 3};
-  wrapper<T> linestring1_points_x{0.0, 0.0, 2.0};
-  wrapper<T> linestring1_points_y{0.0, 2.0, 2.0};
-  wrapper<cudf::size_type> linestring2_offsets{0, 4};
-  wrapper<T> linestring2_points_x{2.0, 2.0, 1.0, 2.5};
-  wrapper<T> linestring2_points_y{2.0, 1.0, 1.0, 0.0};
+  wrapper<cudf::size_type> l1part_offset{0, 2};
+  wrapper<float> l1_xy{0, 0, 1, 1};
+  wrapper<cudf::size_type> l2part_offset{0, 2, 4};
+  wrapper<float> l2_xy{0, 0, 1, 1, 2, 2, 3, 3};
 
-  wrapper<T> expected{0.0};
-
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
+  EXPECT_THROW(cuspatial::pairwise_linestring_distance(std::nullopt,
+                                                       column_view(l1part_offset),
+                                                       l1_xy,
+                                                       std::nullopt,
+                                                       column_view(l2part_offset),
+                                                       l2_xy),
+               cuspatial::logic_error);
 }
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairLinestringCoincide)
+TEST_F(PairwiseLinestringDistanceTestUntyped, InputSizeMismatchSingletoMulti)
 {
-  using T = TypeParam;
-  // Linestring 1: (0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)
-  // Linestring 2: (2.0, 1.0), (1.0, 1.0), (1.0, 0.0), (2.0, 0.0), (2.0, 0.5)
-  wrapper<cudf::size_type> linestring1_offsets{0, 4};
-  wrapper<T> linestring1_points_x{0.0, 1.0, 1.0, 0.0};
-  wrapper<T> linestring1_points_y{0.0, 0.0, 1.0, 1.0};
-  wrapper<cudf::size_type> linestring2_offsets{0, 5};
-  wrapper<T> linestring2_points_x{2.0, 1.0, 1.0, 2.0, 2.0};
-  wrapper<T> linestring2_points_y{1.0, 1.0, 0.0, 0.0, 0.5};
+  wrapper<cudf::size_type> l1part_offset{0, 2};
+  wrapper<float> l1_xy{0, 0, 1, 1};
+  wrapper<cudf::size_type> l2geom_offset{0, 1, 3};
+  wrapper<cudf::size_type> l2part_offset{0, 2, 4, 6};
+  wrapper<float> l2_xy{0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5};
 
-  wrapper<T> expected{0.0};
-
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
+  EXPECT_THROW(cuspatial::pairwise_linestring_distance(std::nullopt,
+                                                       column_view(l1part_offset),
+                                                       l1_xy,
+                                                       column_view(l2geom_offset),
+                                                       column_view(l2part_offset),
+                                                       l2_xy),
+               cuspatial::logic_error);
 }
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairDegenerateCollinearNoIntersect)
+TEST_F(PairwiseLinestringDistanceTestUntyped, InputSizeMismatchMultitoSingle)
 {
-  using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0, 2};
-  wrapper<T> linestring1_points_x{0.0, 0.0};
-  wrapper<T> linestring1_points_y{0.0, 1.0};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2};
-  wrapper<T> linestring2_points_x{0.0, 0.0};
-  wrapper<T> linestring2_points_y{2.0, 3.0};
+  wrapper<cudf::size_type> l1geom_offset{0, 1, 3};
+  wrapper<cudf::size_type> l1part_offset{0, 2, 4, 6};
+  wrapper<float> l1_xy{0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5};
+  wrapper<cudf::size_type> l2part_offset{0, 2};
+  wrapper<float> l2_xy{0, 0, 1, 1};
 
-  wrapper<T> expected{1.0};
-
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
+  EXPECT_THROW(cuspatial::pairwise_linestring_distance(column_view(l1geom_offset),
+                                                       column_view(l1part_offset),
+                                                       l1_xy,
+                                                       std::nullopt,
+                                                       column_view(l2part_offset),
+                                                       l2_xy),
+               cuspatial::logic_error);
 }
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairCollinearNoIntersect)
+TEST_F(PairwiseLinestringDistanceTestUntyped, InputSizeMismatchMultitoMulti)
 {
-  using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0, 2};
-  wrapper<T> linestring1_points_x{0.0, 1.0};
-  wrapper<T> linestring1_points_y{0.0, 1.0};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2};
-  wrapper<T> linestring2_points_x{2.0, 3.0};
-  wrapper<T> linestring2_points_y{2.0, 3.0};
+  wrapper<cudf::size_type> l1geom_offset{0, 1, 3};
+  wrapper<cudf::size_type> l1part_offset{0, 2, 4, 6};
+  wrapper<float> l1_xy{0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5};
+  wrapper<cudf::size_type> l2geom_offset{0, 2};
+  wrapper<cudf::size_type> l2part_offset{0, 2, 4};
+  wrapper<float> l2_xy{0, 0, 1, 1, 2, 2, 3, 3};
 
-  wrapper<T> expected{1.4142135623730951};
-
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
+  EXPECT_THROW(cuspatial::pairwise_linestring_distance(column_view(l1geom_offset),
+                                                       column_view(l1part_offset),
+                                                       l1_xy,
+                                                       column_view(l2geom_offset),
+                                                       column_view(l2part_offset),
+                                                       l2_xy),
+               cuspatial::logic_error);
 }
 
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairDegenerateCollinearIntersect)
+TEST_F(PairwiseLinestringDistanceTestUntyped, CoordinatesNotEven)
 {
-  using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0, 2};
-  wrapper<T> linestring1_points_x{0.0, 2.0};
-  wrapper<T> linestring1_points_y{0.0, 2.0};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2};
-  wrapper<T> linestring2_points_x{1.0, 3.0};
-  wrapper<T> linestring2_points_y{1.0, 3.0};
+  wrapper<cudf::size_type> l1_part_offset{0, 2};
+  wrapper<float> l1_xy{0, 0, 1, 1, 2, 2, 3};
+  wrapper<cudf::size_type> l2_part_offset{0, 2};
+  wrapper<float> l2_xy{0, 0, 1, 1, 2, 2, 3, 3};
 
-  wrapper<T> expected{0.0};
-
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
+  EXPECT_THROW(cuspatial::pairwise_linestring_distance(std::nullopt,
+                                                       column_view(l1_part_offset),
+                                                       l1_xy,
+                                                       std::nullopt,
+                                                       column_view(l2_part_offset),
+                                                       l2_xy),
+               cuspatial::logic_error);
 }
 
-TEST_F(PairwiseLinestringDistanceTestUntyped, OnePairDeterminantDoublePrecisionDenormalized)
+TEST_F(PairwiseLinestringDistanceTestUntyped, TypeMismatch)
 {
-  // Vector ab: (1e-155, 2e-155)
-  // Vector cd: (2e-155, 1e-155)
-  // determinant of matrix [a, b] = -3e-310, a denormalized number
+  wrapper<cudf::size_type> l1_part_offset{0, 2};
+  wrapper<float> l1_xy{0, 0, 1, 1};
+  wrapper<cudf::size_type> l2_part_offset{0, 2};
+  wrapper<double> l2_xy{0, 0, 1, 1};
 
-  wrapper<cudf::size_type> linestring1_offsets{0, 2};
-  wrapper<double> linestring1_points_x{0.0, 1e-155};
-  wrapper<double> linestring1_points_y{0.0, 2e-155};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2};
-  wrapper<double> linestring2_points_x{4e-155, 6e-155};
-  wrapper<double> linestring2_points_y{5e-155, 6e-155};
-
-  wrapper<double> expected{4.24264068711929e-155};
-
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
+  EXPECT_THROW(cuspatial::pairwise_linestring_distance(std::nullopt,
+                                                       column_view(l1_part_offset),
+                                                       l1_xy,
+                                                       std::nullopt,
+                                                       column_view(l2_part_offset),
+                                                       l2_xy),
+               cuspatial::logic_error);
 }
 
-TEST_F(PairwiseLinestringDistanceTestUntyped, OnePairDeterminantSinglePrecisionDenormalized)
+TEST_F(PairwiseLinestringDistanceTestUntyped, ContainsNull)
 {
-  // Vector ab: (1e-20, 2e-20)
-  // Vector cd: (2e-20, 1e-20)
-  // determinant of matrix [ab, cd] = -3e-40, a denormalized number
+  wrapper<cudf::size_type> l1_part_offset{0, 2};
+  wrapper<float> l1_xy{{0, 0, 1, 1}, {1, 0, 1, 1}};
+  wrapper<cudf::size_type> l2_part_offset{0, 2};
+  wrapper<float> l2_xy{0, 0, 1, 1};
 
-  wrapper<cudf::size_type> linestring1_offsets{0, 2};
-  wrapper<float> linestring1_points_x{0.0, 1e-20};
-  wrapper<float> linestring1_points_y{0.0, 2e-20};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2};
-  wrapper<float> linestring2_points_x{4e-20, 6e-20};
-  wrapper<float> linestring2_points_y{5e-20, 6e-20};
-
-  wrapper<float> expected{4.2426405524813e-20};
-
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
+  EXPECT_THROW(cuspatial::pairwise_linestring_distance(std::nullopt,
+                                                       column_view(l1_part_offset),
+                                                       l1_xy,
+                                                       std::nullopt,
+                                                       column_view(l2_part_offset),
+                                                       l2_xy),
+               cuspatial::logic_error);
 }
-
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairRandom1)
-{
-  using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0, 3};
-  wrapper<T> linestring1_points_x{-22556.235212018168, -16375.655690574613, -20082.724633593425};
-  wrapper<T> linestring1_points_y{41094.0501840996, 42992.319790050366, 33759.13529113619};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2};
-  wrapper<T> linestring2_points_x{4365.496374409238, 1671.0269165650761};
-  wrapper<T> linestring2_points_y{-59857.47177852941, -54931.9723439855};
-
-  wrapper<T> expected{91319.97744223749};
-
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
-}
-
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairIntersectFromRealData1)
-{
-  // Example extracted from a pair of trajectry in geolife dataset
-  using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0, 5};
-  wrapper<T> linestring1_points_x{39.97551667, 39.97585, 39.97598333, 39.9761, 39.97623333};
-  wrapper<T> linestring1_points_y{116.33028333, 116.3304, 116.33046667, 116.3305, 116.33056667};
-  wrapper<cudf::size_type> linestring2_offsets{0, 55};
-  wrapper<T> linestring2_points_x{
-    39.97381667, 39.97341667, 39.9731,     39.97293333, 39.97233333, 39.97218333, 39.97218333,
-    39.97215,    39.97168333, 39.97093333, 39.97073333, 39.9705,     39.96991667, 39.96961667,
-    39.96918333, 39.96891667, 39.97531667, 39.97533333, 39.97535,    39.97515,    39.97506667,
-    39.97508333, 39.9751,     39.97513333, 39.97511667, 39.97503333, 39.97513333, 39.97523333,
-    39.97521667, 39.97503333, 39.97463333, 39.97443333, 39.96838333, 39.96808333, 39.96771667,
-    39.96745,    39.96735,    39.9673,     39.96718333, 39.96751667, 39.9678,     39.9676,
-    39.96741667, 39.9672,     39.97646667, 39.9764,     39.97625,    39.9762,     39.97603333,
-    39.97581667, 39.9757,     39.97551667, 39.97535,    39.97543333, 39.97538333};
-  wrapper<T> linestring2_points_y{
-    116.34211667, 116.34215,    116.34218333, 116.34221667, 116.34225,    116.34243333,
-    116.34296667, 116.34478333, 116.34486667, 116.34485,    116.34468333, 116.34461667,
-    116.34465,    116.34465,    116.34466667, 116.34465,    116.33036667, 116.32961667,
-    116.3292,     116.32903333, 116.32985,    116.33128333, 116.33195,    116.33618333,
-    116.33668333, 116.33818333, 116.34,       116.34045,    116.34183333, 116.342,
-    116.34203333, 116.3422,     116.3445,     116.34451667, 116.3445,     116.34453333,
-    116.34493333, 116.34506667, 116.3451,     116.34483333, 116.3448,     116.3449,
-    116.345,      116.34506667, 116.33006667, 116.33015,    116.33026667, 116.33038333,
-    116.33036667, 116.3303,     116.33033333, 116.33035,    116.3304,     116.33078333,
-    116.33066667};
-
-  wrapper<T> expected{0.0};
-
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
-}
-
-TYPED_TEST(PairwiseLinestringDistanceTest, OnePairFromRealData)
-{
-  // Example extracted from a pair of trajectry in geolife dataset
-  using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0, 2};
-  wrapper<T> linestring1_points_x{39.9752666666667, 39.9752666666667};
-  wrapper<T> linestring1_points_y{116.334316666667, 116.334533333333};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2};
-  wrapper<T> linestring2_points_x{39.9752666666667, 39.9752666666667};
-  wrapper<T> linestring2_points_y{116.323966666667, 116.3236};
-
-  wrapper<T> expected =
-    std::is_same_v<T, float> ? wrapper<T>{0.01035308837890625} : wrapper<T>{0.010349999999988313};
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
-}
-
-TYPED_TEST(PairwiseLinestringDistanceTest, TwoPairs)
-{
-  using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0, 4, 8};
-  wrapper<T> linestring1_points_x{
-    41658.902315589876,
-    46600.70359801489,
-    47079.510547637154,
-    51498.48049880379,
-    -27429.917796286478,
-    -21764.269974046114,
-    -14460.71813363161,
-    -18226.13032712476,
-  };
-  wrapper<T> linestring1_points_y{14694.11814724456,
-                                  8771.431887804214,
-                                  10199.68027155776,
-                                  17049.62665643919,
-                                  -33240.8339287343,
-                                  -37974.45515744517,
-                                  -31333.481529957502,
-                                  -30181.03842467982};
-  wrapper<cudf::size_type> linestring2_offsets{0, 2, 4};
-  wrapper<T> linestring2_points_x{
-    24046.170375947084,
-    20614.007047185743,
-    48381.39607717942,
-    53346.77764665915,
-  };
-  wrapper<T> linestring2_points_y{
-    27878.56737867571,
-    26489.74880629428,
-    -8366.313156569413,
-    -2066.3869793077383,
-  };
-
-  wrapper<T> expected{22000.86425379464, 66907.56415814416};
-
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
-}
-
-TYPED_TEST(PairwiseLinestringDistanceTest, FourPairs)
-{
-  using T = TypeParam;
-  wrapper<cudf::size_type> linestring1_offsets{0, 3, 5, 8, 10};
-  wrapper<T> linestring1_points_x{0, 1, -1, 0, 0, 0, 2, -2, 2, -2};
-  wrapper<T> linestring1_points_y{1, 0, 0, 0, 1, 0, 2, 0, 2, -2};
-  wrapper<cudf::size_type> linestring2_offsets{0, 4, 7, 9, 12};
-  wrapper<T> linestring2_points_x{1, 2, 2, 3, 1, 1, 1, 2, 0, 1, 5, 10};
-  wrapper<T> linestring2_points_y{1, 1, 0, 0, 0, 1, 2, 0, 2, 1, 5, 0};
-
-  wrapper<T> expected{std::sqrt(2.0) * 0.5, 1.0, 0.0, 0.0};
-
-  auto got = pairwise_linestring_distance(column_view(linestring1_offsets),
-                                          linestring1_points_x,
-                                          linestring1_points_y,
-                                          column_view(linestring2_offsets),
-                                          linestring2_points_x,
-                                          linestring2_points_y);
-  expect_columns_equivalent(expected, *got, verbosity);
-}
-
-}  // namespace test
-}  // namespace cuspatial

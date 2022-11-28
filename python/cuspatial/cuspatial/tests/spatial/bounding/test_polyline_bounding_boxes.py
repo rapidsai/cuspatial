@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2022, NVIDIA CORPORATION.
 
 import numpy as np
 import pytest
@@ -9,8 +9,8 @@ import cuspatial
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_polyline_bounding_boxes_empty(dtype):
-    result = cuspatial.polyline_bounding_boxes(
+def test_linestring_bounding_boxes_empty(dtype):
+    result = cuspatial.linestring_bounding_boxes(
         cudf.Series(),
         cudf.Series([], dtype=dtype),
         cudf.Series([], dtype=dtype),
@@ -30,8 +30,8 @@ def test_polyline_bounding_boxes_empty(dtype):
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_polyline_bounding_boxes_one(dtype):
-    result = cuspatial.polyline_bounding_boxes(
+def test_linestring_bounding_boxes_one(dtype):
+    result = cuspatial.linestring_bounding_boxes(
         cudf.Series([0]),
         cudf.Series([2.488450, 1.333584, 3.460720], dtype=dtype),
         cudf.Series([5.856625, 5.008840, 4.586599], dtype=dtype),
@@ -51,8 +51,8 @@ def test_polyline_bounding_boxes_one(dtype):
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_polyline_bounding_boxes_small(dtype):
-    result = cuspatial.polyline_bounding_boxes(
+def test_linestring_bounding_boxes_small(dtype):
+    result = cuspatial.linestring_bounding_boxes(
         cudf.Series([0, 3, 8, 12]),
         cudf.Series(
             [

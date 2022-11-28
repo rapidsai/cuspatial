@@ -28,10 +28,10 @@
 
 #include <gtest/gtest.h>
 
-struct DeriveTrajectoriesTest : public cuspatial::test::BaseFixture {
+struct DeriveTrajectoriesErrorTest : public cuspatial::test::BaseFixture {
 };
 
-TEST_F(DeriveTrajectoriesTest, SizeMismatch)
+TEST_F(DeriveTrajectoriesErrorTest, SizeMismatch)
 {
   auto const size = 1000;
 
@@ -63,7 +63,7 @@ TEST_F(DeriveTrajectoriesTest, SizeMismatch)
   }
 }
 
-TEST_F(DeriveTrajectoriesTest, TypeError)
+TEST_F(DeriveTrajectoriesErrorTest, TypeError)
 {
   auto const size = 1000;
 
@@ -76,7 +76,6 @@ TEST_F(DeriveTrajectoriesTest, TypeError)
     EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
-
   {
     auto id = cudf::column(rmm::device_uvector<int>(size, rmm::cuda_stream_default));
     auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
@@ -86,9 +85,18 @@ TEST_F(DeriveTrajectoriesTest, TypeError)
     EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
+  {
+    // x-y type mismatch
+    auto id = cudf::column(rmm::device_uvector<cudf::size_type>(size, rmm::cuda_stream_default));
+    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto ys = cudf::column(rmm::device_uvector<double>(size, rmm::cuda_stream_default));
+    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default));
+    EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),
+                 cuspatial::logic_error);
+  }
 }
 
-TEST_F(DeriveTrajectoriesTest, Nulls)
+TEST_F(DeriveTrajectoriesErrorTest, Nulls)
 {
   auto const size = 1000;
 

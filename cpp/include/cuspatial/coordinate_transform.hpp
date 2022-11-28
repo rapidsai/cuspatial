@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2019-2022, NVIDIA CORPORATION.
  *
@@ -25,27 +26,34 @@
 namespace cuspatial {
 
 /**
- * @addtogroup coordinate_transform
+ * @addtogroup projection
  * @{
  */
 
 /**
- * @brief Translates lon/lat relative to origin and converts to cartesian (x/y) coordinates.
+ * @brief Sinusoidal projection of longitude/latitude relative to origin to Cartesian (x/y)
+ * coordinates in km. This function is deprecated and will be removed. Use
+ * cuspatial::sinusoidal_projection().
  *
- * @param[in] origin_lon: longitude of origin
- * @param[in] origin_lat: latitude of origin
- * @param[in] input_lon: longitudes to transform
- * @param[in] input_lat: latitudes to transform
+ * Can be used to approximately convert longitude/latitude coordinates to Cartesian coordinates
+ * given that all points are near the origin. Error increases with distance from the origin.
+ * See [Sinusoidal Projection](https://en.wikipedia.org/wiki/Sinusoidal_projection) for more detail.
+ *
+ * @param origin_lon: longitude of origin
+ * @param origin_lat: latitude of origin
+ * @param input_lon: longitudes to transform
+ * @param input_lat: latitudes to transform
+ * @param mr The optional resource to use for output device memory allocations.
  *
  * @returns a pair of columns containing cartesian coordinates in kilometers
  */
-
-std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> lonlat_to_cartesian(
-  double origin_lon,
-  double origin_lat,
-  cudf::column_view const& input_lon,
-  cudf::column_view const& input_lat,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+[[deprecated("Use sinusoidal_projection in cuspatial/projection.hpp")]] std::
+  pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>>
+  lonlat_to_cartesian(double origin_lon,
+                      double origin_lat,
+                      cudf::column_view const& input_lon,
+                      cudf::column_view const& input_lat,
+                      rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
  * @} // end of doxygen group
