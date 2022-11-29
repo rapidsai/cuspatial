@@ -24,7 +24,7 @@ import cudf
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.spatial.binops import contains
+from cuspatial.core.binops.contains import contains
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
