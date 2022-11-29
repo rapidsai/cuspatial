@@ -160,6 +160,7 @@ def gs_sorted(gs):
 
 @pytest.fixture
 def point_generator():
+    """Generator for n points. Usage: p=generator(n)"""
     rstate = np.random.RandomState(0)
 
     def generator(n):
@@ -214,7 +215,9 @@ def multilinestring_generator(linestring_generator):
 
 @pytest.fixture
 def simple_polygon_generator():
-    np.random.seed(0)
+    """Generator for polygons with no interior ring.
+    Usage: poly=generator(n, distance_from_origin, radius)
+    """
     rstate = np.random.RandomState(0)
 
     def generator(n, distance_from_origin, radius=1.0):
@@ -228,6 +231,12 @@ def simple_polygon_generator():
 
 @pytest.fixture
 def polygon_generator():
+    """Generator for complex polygons. Each polygon will
+    have 1-4 randomly rotated interior polygons. Each polygon
+    is a circle, with very small inner ring polygons located in
+    a spiral around its center.
+    Usage: poly=generator(n, distance_from_origin, radius)
+    """
     rstate = np.random.RandomState(0)
 
     def generator(n, distance_from_origin, radius=1.0):
@@ -249,6 +258,9 @@ def polygon_generator():
 
 @pytest.fixture
 def multipolygon_generator():
+    """Generator for multi complex polygons.
+    Usage: mpoly=generator(n, max_per_multi)
+    """
     rstate = np.random.RandomState(0)
 
     def generator(n, max_per_multi):
