@@ -668,7 +668,9 @@ class GeoSeries(cudf.Series):
         dtype: geometry)
 
         """
-        index = other.index
+        index = (
+            other.index if len(other.index) >= len(self.index) else self.index
+        )
         aligned_left = self._align_to_index(index)
         aligned_right = other._align_to_index(index)
         aligned_right.index = index
