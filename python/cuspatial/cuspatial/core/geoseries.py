@@ -645,7 +645,7 @@ class GeoSeries(cudf.Series):
 
     def contains(self, other, align=True):
         """Compute from a set of points and a set of polygons which points fall
-        within each polygon. Note that `polygons_(x,y)` must be specified as
+        strictly inside each polygon. Points on polygon edges and vertices are not contained in the polygon. Note that `polygons_(x,y)` must be specified as
         closed polygons: the first and last coordinate of each polygon must be
         the same.
 
