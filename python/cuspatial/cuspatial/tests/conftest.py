@@ -171,6 +171,7 @@ def point_generator():
 
 @pytest.fixture
 def multipoint_generator(point_generator):
+    """Generator for n multipoints. Usage: mp=generator(n, max_num_points)"""
     rstate = np.random.RandomState(0)
 
     def generator(n, max_num_geometries):
@@ -183,7 +184,8 @@ def multipoint_generator(point_generator):
 
 @pytest.fixture
 def linestring_generator(point_generator):
-    rstate = np.random.RandomState(1)
+    """Generator for n linestrings. Usage: ls=generator(n, max_num_segments)"""
+    rstate = np.random.RandomState(0)
 
     def generator(n, max_num_segments):
         for _ in range(n):
@@ -195,6 +197,9 @@ def linestring_generator(point_generator):
 
 @pytest.fixture
 def multilinestring_generator(linestring_generator):
+    """Generator for n multilinestrings.
+    Usage: mls=generator(n, max_num_lines, max_num_segments)
+    """
     rstate = np.random.RandomState(0)
 
     def generator(n, max_num_geometries, max_num_segments):
