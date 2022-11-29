@@ -263,10 +263,16 @@ def multipolygon_generator():
     """
     rstate = np.random.RandomState(0)
 
-    def generator(n, max_per_multi):
+    def generator(n, max_per_multi, distance_from_origin, radius):
         for _ in range(n):
             num_polygons = rstate.randint(1, max_per_multi)
-            yield MultiPolygon([*polygon_generator(0, num_polygons)])
+            yield MultiPolygon(
+                [
+                    *polygon_generator(
+                        num_polygons, distance_from_origin, radius
+                    )
+                ]
+            )
 
     return generator
 

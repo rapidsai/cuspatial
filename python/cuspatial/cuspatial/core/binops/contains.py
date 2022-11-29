@@ -20,6 +20,37 @@ def contains(
     poly_points_x,
     poly_points_y,
 ):
+    """Compute from a series of points and a series of polygons which points
+    fall within each polygon. Note that polygons must be closed: the first and
+    last coordinate of each polygon must be the same.
+
+    This implements `.contains_properly`, which shares a large
+    space of correct cases with `GeoPandas.contains` but they do not
+    produce identical results. In the future we will use intersection
+    testing to match .contains behavior.
+
+    Parameters
+    ----------
+    test_points_x
+        x-coordinate of test points
+    test_points_y
+        y-coordinate of test points
+    poly_offsets
+        beginning index of the first ring in each polygon
+    poly_ring_offsets
+        beginning index of the first point in each ring
+    poly_points_x
+        x closed-coordinate of polygon points
+    poly_points_y
+        y closed-coordinate of polygon points
+
+    Returns
+    -------
+    result : cudf.Series
+        A Series of boolean values indicating whether each point falls
+        within each polygon.
+    """
+
     if len(poly_offsets) == 0:
         return Series()
     (
@@ -33,10 +64,10 @@ def contains(
         as_column(poly_points_x),
         as_column(poly_points_y),
     )
-    poly_offsets_column = (as_column(poly_offsets, dtype="int32"),)
-    poly_ring_offsets_column = (as_column(poly_ring_offsets, dtype="int32"),)
+    poly_offsets_column = as_column(poly_offsets, dtype="int32")
+    poly_ring_offsets_column = as_column(poly_ring_offsets, dtype="int32")
 
-    if len(test_points_x) == len(poly_offsets) - 1:
+    if len(test_points_x) == len(poly_offsets):
         pip_result = cpp_pairwise_point_in_polygon(
             test_points_x,
             test_points_y,

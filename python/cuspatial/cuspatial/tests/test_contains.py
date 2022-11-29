@@ -5,11 +5,7 @@ from shapely.geometry import LineString, Point, Polygon
 import cuspatial
 
 
-@pytest.mark.xfail(
-    reason="""The polygons share numerous boundaries. See
-    https://docs.google.com/document/d/1akxcRcUVK-qv5puK-mSTiKDKUS6UlR6Ccnr9_bJ4fi8/edit?pli=1#
-    for examples of each case."""
-)
+@pytest.mark.xfail(reason="The polygons share numerous boundaries.")
 def test_manual_polygons():
     gpdlhs = gpd.GeoSeries([Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8))) * 6])
     gpdrhs = gpd.GeoSeries(
@@ -33,10 +29,7 @@ def test_manual_polygons():
 
 
 @pytest.mark.xfail(
-    reason="""The linestring is colinear with one of the polygon
-    edges. It is excluded from `.contains_properly`. See
-    https://docs.google.com/document/d/1akxcRcUVK-qv5puK-mSTiKDKUS6UlR6Ccnr9_bJ4fi8/edit?pli=1#
-    for detailed examples."""
+    reason="The linestring is colinear with one of the polygon edges."
 )
 def test_one_polygon_one_linestring_crosses_the_diagonal(linestring_generator):
     gpdlinestring = gpd.GeoSeries(LineString([[0, 0], [1, 1]]))
@@ -52,9 +45,7 @@ def test_one_polygon_one_linestring_crosses_the_diagonal(linestring_generator):
 
 @pytest.mark.xfail(
     reason="""The linestring has boundaries inside of the polygon, and crosses
-    over a single inner ring.  See
-    https://docs.google.com/document/d/1akxcRcUVK-qv5puK-mSTiKDKUS6UlR6Ccnr9_bJ4fi8/edit?pli=1#
-    for detailed examples."""
+    over a single inner ring."""
 )
 def test_one_polygon_with_hole_one_linestring_crossing_it(
     linestring_generator,
@@ -94,9 +85,7 @@ def test_one_polygon_with_hole_one_linestring_crossing_it(
     geometry engine. It is possible that implementing `.contains_properly`
     would correct this error. These boundary cases conflict with GeoPandas
     results because they implement `contains` and we implement
-    `contains_properly`. Detailed documentation of this in
-    https://docs.google.com/document/d/1akxcRcUVK-qv5puK-mSTiKDKUS6UlR6Ccnr9_bJ4fi8/edit?pli=1#
-    hasn't been completed yet.
+    `contains_properly`.
 
     The below test_float_precision_limits pairs with this test and shows
     the inconsistency.
@@ -146,8 +135,9 @@ def test_float_precision_limits_failures(point, polygon, expects):
     ],
 )
 def test_float_precision_limits(point, polygon, expects):
-    """Corner case to test point on edges with floating point precision limits."""
-    """Unique success cases identified by @mharris. These go in a pair
+    """Corner case to test point on edges with floating point precision
+    limits.
+    Unique success cases identified by @mharris. These go in a pair
     with test_float_precision_limits_failures because these are
     inconsistent results, where 0.6 fails above (as True, within the
     polygon) and 0.66 below succeeds, though they are colinear.

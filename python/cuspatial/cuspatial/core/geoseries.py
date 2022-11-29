@@ -166,7 +166,8 @@ class GeoSeries(cudf.Series):
             return existing_features
 
         def point_indices(self):
-            # Points only case
+            # Return a cupy.ndarray containing the index values that each
+            # point belongs to.
             offsets = cp.arange(0, len(self.xy) + 1, 2)
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
@@ -181,6 +182,8 @@ class GeoSeries(cudf.Series):
             return self._get_current_features(self._type).offsets.values
 
         def point_indices(self):
+            # Return a cupy.ndarray containing the index values from the
+            # MultiPoint GeoSeries that each individual point is member of.
             offsets = cp.array(self.geometry_offset)
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
@@ -201,6 +204,8 @@ class GeoSeries(cudf.Series):
             ).elements.offsets.values
 
         def point_indices(self):
+            # Return a cupy.ndarray containing the index values from the
+            # LineString GeoSeries that each individual point is member of.
             offsets = cp.array(self.part_offset)
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
@@ -227,6 +232,8 @@ class GeoSeries(cudf.Series):
             ).elements.elements.offsets.values
 
         def point_indices(self):
+            # Return a cupy.ndarray containing the index values from the
+            # Polygon GeoSeries that each individual point is member of.
             offsets = cp.array(self.ring_offset)
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
@@ -644,10 +651,9 @@ class GeoSeries(cudf.Series):
         return self.iloc[gather_map]
 
     def contains(self, other, align=True):
-        """Compute from a set of points and a set of polygons which points fall
-        within each polygon. Note that `polygons_(x,y)` must be specified as
-        closed polygons: the first and last coordinate of each polygon must be
-        the same.
+        """Compute from a series of points and a series of polygons which
+        points fall within each polygon. Note that polygons must be closed:
+        the first and last coordinate of each polygon must be the same.
 
         This implements `.contains_properly`, which shares a large
         space of correct cases with `GeoPandas.contains` but they do not
@@ -656,18 +662,12 @@ class GeoSeries(cudf.Series):
 
         Parameters
         ----------
-        test_points_x
-            x-coordinate of test points
-        test_points_y
-            y-coordinate of test points
-        poly_offsets
-            beginning index of the first ring in each polygon
-        poly_ring_offsets
-            beginning index of the first point in each ring
-        poly_points_x
-            x closed-coordinate of polygon points
-        poly_points_y
-            y closed-coordinate of polygon points
+        other
+            a cuspatial.GeoSeries
+        align=True
+            to align the indices before computing .contains or not. If the
+            indices are not aligned, they will be compared based on their
+            implicit row order.
 
         Examples
         --------
@@ -732,8 +732,8 @@ class GeoSeries(cudf.Series):
 
         Returns
         -------
-        result : cudf.DataFrame
-            A DataFrame of boolean values indicating whether each point falls
+        result : cudf.Series
+            A Series of boolean values indicating whether each point falls
             within each polygon.
         """
         if contains_only_polygons(self) is False:
