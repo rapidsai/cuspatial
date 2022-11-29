@@ -118,12 +118,8 @@ def bench_pairwise_linestring_distance(benchmark, gpu_dataframe):
     geometry = gpu_dataframe["geometry"]
     benchmark(
         cuspatial.pairwise_linestring_distance,
-        geometry.polygons.ring_offset,
-        geometry.polygons.x,
-        geometry.polygons.y,
-        geometry.polygons.ring_offset,
-        geometry.polygons.x,
-        geometry.polygons.y,
+        geometry,
+        geometry,
     )
 
 
