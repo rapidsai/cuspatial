@@ -17,21 +17,26 @@
 
 #pragma once
 
-#include "thrust/iterator/discard_iterator.h"
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/vec_2d.hpp>
+
+#include <cuspatial_test/test_util.cuh>
 
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/gather.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
 #include <thrust/random.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 #include <thrust/transform.h>
 
-#include <chrono>
+#include <cuda/std/chrono>
+
 #include <cstdint>
 
 namespace cuspatial {
@@ -68,11 +73,11 @@ struct trajectory_test_data {
   trajectory_test_data(std::size_t num_trajectories, std::size_t max_trajectory_size)
     : num_trajectories(num_trajectories)
   {
-    thrust::minstd_rand gen;
+    thrust::minstd_rand gen{0};
     thrust::uniform_int_distribution<std::int32_t> size_rand(1, max_trajectory_size);
 
     // random trajectory sizes
-    rmm::device_vector<std::int32_t> sizes(num_trajectories);
+    rmm::device_vector<std::int32_t> sizes(num_trajectories, max_trajectory_size);
     thrust::tabulate(
       rmm::exec_policy(), sizes.begin(), sizes.end(), size_rand_functor(gen, size_rand));
 
@@ -164,8 +169,8 @@ struct trajectory_test_data {
   struct point_functor {
     __device__ cuspatial::vec_2d<T> operator()(time_point const& time, std::int32_t id)
     {
-      // X is time in milliseconds, Y is cosine(time), offset by ID
-      float duration = (time - time_point{std::chrono::milliseconds(0)}).count();
+      // X is time in seconds, Y is cosine(time), offset by ID
+      T duration = (time - time_point{std::chrono::milliseconds(0)}).count();
       return cuspatial::vec_2d<T>{duration / 1000, id + cos(duration)};
     }
   };
@@ -197,12 +202,23 @@ struct trajectory_test_data {
     }
   };
 
-  auto extrema()
+  struct point_bbox_functor {
+    T expansion_radius{};
+    using point_tuple = thrust::tuple<cuspatial::vec_2d<T>, cuspatial::vec_2d<T>>;
+    __host__ __device__ point_tuple operator()(cuspatial::vec_2d<T> const& p)
+    {
+      auto expansion = cuspatial::vec_2d<T>{expansion_radius, expansion_radius};
+      return point_tuple{p - expansion, p + expansion};
+    }
+  };
+
+  auto extrema(T expansion_radius = T{})
   {
     auto minima = rmm::device_vector<cuspatial::vec_2d<T>>(num_trajectories);
     auto maxima = rmm::device_vector<cuspatial::vec_2d<T>>(num_trajectories);
 
-    auto point_tuples = thrust::make_zip_iterator(points_sorted.begin(), points_sorted.begin());
+    auto point_tuples =
+      thrust::make_transform_iterator(points_sorted.begin(), point_bbox_functor{expansion_radius});
 
     thrust::reduce_by_key(ids_sorted.begin(),
                           ids_sorted.end(),
@@ -213,6 +229,113 @@ struct trajectory_test_data {
                           box_minmax{});
 
     return std::pair{minima, maxima};
+  }
+
+  struct duration_functor {
+    using id_and_timestamp = thrust::tuple<std::int32_t, time_point>;
+
+    __host__ __device__ time_point::rep operator()(id_and_timestamp const& p0,
+                                                   id_and_timestamp const& p1)
+    {
+      auto const id0 = thrust::get<0>(p0);
+      auto const id1 = thrust::get<0>(p1);
+      auto const t0  = thrust::get<1>(p0);
+      auto const t1  = thrust::get<1>(p1);
+
+      if (id0 == id1) { return (t1 - t0).count(); }
+      return 0;
+    }
+  };
+
+  struct distance_functor {
+    using id_and_position = thrust::tuple<std::int32_t, cuspatial::vec_2d<T>>;
+    __host__ __device__ T operator()(id_and_position const& p0, id_and_position const& p1)
+    {
+      auto const id0 = thrust::get<0>(p0);
+      auto const id1 = thrust::get<0>(p1);
+      if (id0 == id1) {
+        auto const pos0 = thrust::get<1>(p0);
+        auto const pos1 = thrust::get<1>(p1);
+        auto const vec  = pos1 - pos0;
+        return sqrt(dot(vec, vec));
+      }
+      return 0;
+    }
+  };
+
+  struct average_distance_speed_functor {
+    using duration_distance = thrust::tuple<time_point::rep, T, T, T>;
+    using Sec               = typename cuda::std::chrono::seconds;
+    using Period =
+      typename cuda::std::ratio_divide<typename time_point::period, typename Sec::period>::type;
+
+    __host__ __device__ duration_distance operator()(duration_distance const& a,
+                                                     duration_distance const& b)
+    {
+      auto time_d =
+        time_point::duration(thrust::get<0>(a)) + time_point::duration(thrust::get<0>(b));
+      auto time_s =
+        static_cast<T>(time_d.count()) * static_cast<T>(Period::num) / static_cast<T>(Period::den);
+      T dist_km   = thrust::get<1>(a) + thrust::get<1>(b);
+      T dist_m    = dist_km * T{1000.0};  // km to m
+      T speed_m_s = dist_m / time_s;      // m/ms to m/s
+      return {time_d.count(), dist_km, dist_m, speed_m_s};
+    }
+  };
+
+  std::pair<rmm::device_vector<T>, rmm::device_vector<T>> distance_and_speed()
+  {
+    using Rep = typename time_point::rep;
+
+    auto id_and_timestamp = thrust::make_zip_iterator(ids_sorted.begin(), times_sorted.begin());
+
+    auto duration_per_step = rmm::device_vector<Rep>(points.size());
+
+    thrust::transform(rmm::exec_policy(),
+                      id_and_timestamp,
+                      id_and_timestamp + points.size() - 1,
+                      id_and_timestamp + 1,
+                      duration_per_step.begin() + 1,
+                      duration_functor{});
+
+    auto id_and_position = thrust::make_zip_iterator(ids_sorted.begin(), points_sorted.begin());
+
+    auto distance_per_step = rmm::device_vector<T>{points.size()};
+
+    thrust::transform(rmm::exec_policy(),
+                      id_and_position,
+                      id_and_position + points.size() - 1,
+                      id_and_position + 1,
+                      distance_per_step.begin() + 1,
+                      distance_functor{});
+
+    rmm::device_vector<Rep> durations_tmp(offsets.size());
+    rmm::device_vector<T> distances_tmp(offsets.size());
+
+    rmm::device_vector<T> distances(offsets.size());
+    rmm::device_vector<T> speeds(offsets.size());
+
+    auto duration_distance_and_speed = thrust::make_zip_iterator(
+      durations_tmp.begin(), distances_tmp.begin(), distances.begin(), speeds.begin());
+
+    auto duration_and_distance_init =
+      thrust::make_zip_iterator(duration_per_step.begin(),
+                                distance_per_step.begin(),
+                                thrust::make_constant_iterator<T>(0),
+                                thrust::make_constant_iterator<T>(0));
+
+    thrust::reduce_by_key(rmm::exec_policy(),
+                          ids_sorted.begin(),
+                          ids_sorted.end(),
+                          duration_and_distance_init,
+                          thrust::discard_iterator{},
+                          duration_distance_and_speed,
+                          thrust::equal_to<int32_t>(),        // binary_pred
+                          average_distance_speed_functor{});  // binary_op
+
+    CUSPATIAL_CHECK_CUDA(rmm::cuda_stream_default);
+
+    return std::pair{distances, speeds};
   }
 };
 

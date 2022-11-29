@@ -64,7 +64,7 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonOneRing)
     this->make_device_points({{-1.0, -1.0}, {1.0, -1.0}, {1.0, 1.0}, {-1.0, 1.0}, {-1.0, -1.0}});
 
   auto got      = rmm::device_vector<int32_t>(1);
-  auto expected = std::vector<int32_t>{false, false, false, false, true, true, true, true};
+  auto expected = std::vector<int>{false, false, false, false, true, true, true, true};
 
   for (size_t i = 0; i < point_list.size(); ++i) {
     auto point = this->make_device_points({{point_list[i][0], point_list[i][1]}});
@@ -77,7 +77,7 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonOneRing)
                                          poly_point.begin(),
                                          poly_point.end(),
                                          got.begin());
-    EXPECT_EQ(got, std::vector<int32_t>({expected[i]}));
+    EXPECT_EQ(got, std::vector<int>({expected[i]}));
     EXPECT_EQ(ret, got.end());
   }
 }
@@ -108,7 +108,7 @@ TYPED_TEST(PairwisePointInPolygonTest, TwoPolygonsOneRingEach)
                                               {0.0, 1.0}});
 
   auto got      = rmm::device_vector<int32_t>(2);
-  auto expected = std::vector<int32_t>({0b00, 0b00, 0b00, 0b00, 0b11, 0b11, 0b11, 0b11});
+  auto expected = std::vector<int>({false, false, false, false, true, true, true, true});
 
   for (size_t i = 0; i < point_list.size() / 2; i = i + 2) {
     auto points = this->make_device_points(
@@ -123,7 +123,7 @@ TYPED_TEST(PairwisePointInPolygonTest, TwoPolygonsOneRingEach)
                                          poly_point.end(),
                                          got.begin());
 
-    EXPECT_EQ(got, std::vector<int32_t>({expected[i], expected[i + 1]}));
+    EXPECT_EQ(got, std::vector<int>({expected[i], expected[i + 1]}));
     EXPECT_EQ(ret, got.end());
   }
 }
@@ -147,7 +147,7 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonTwoRings)
                                               {-0.5, -0.5}});
 
   auto got      = rmm::device_vector<int32_t>(1);
-  auto expected = std::vector<int32_t>{0b0, 0b0, 0b1, 0b0, 0b1};
+  auto expected = std::vector<int>{0b0, 0b0, 0b1, 0b0, 0b1};
 
   for (size_t i = 0; i < point_list.size(); ++i) {
     auto point = this->make_device_points({{point_list[i][0], point_list[i][1]}});
@@ -161,7 +161,7 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonTwoRings)
                                          poly_point.end(),
                                          got.begin());
 
-    EXPECT_EQ(got, std::vector<int32_t>{expected[i]});
+    EXPECT_EQ(got, std::vector<int>{expected[i]});
     EXPECT_EQ(ret, got.end());
   }
 }
@@ -181,7 +181,7 @@ TYPED_TEST(PairwisePointInPolygonTest, EdgesOfSquare)
      {1.0, 1.0},   {0.0, 1.0},  {0.0, -1.0}, {-1.0, -1.0}, {-1.0, 0.0},  {1.0, 0.0},  {1.0, -1.0},
      {-1.0, 1.0},  {-1.0, 0.0}, {-1.0, 1.0}, {1.0, 1.0},   {1.0, 0.0},   {-1.0, 0.0}});
 
-  auto expected = std::vector<int32_t>{0b0, 0b0, 0b0, 0b0};
+  auto expected = std::vector<int>{0b0, 0b0, 0b0, 0b0};
   auto got      = rmm::device_vector<int32_t>(test_point.size());
 
   auto ret = pairwise_point_in_polygon(test_point.begin(),
@@ -213,7 +213,7 @@ TYPED_TEST(PairwisePointInPolygonTest, CornersOfSquare)
      {0.0, 1.0},   {-1.0, 0.0}, {-1.0, 0.0}, {0.0, -1.0}, {0.0, 0.0},   {1.0, 0.0},  {1.0, -1.0},
      {0.0, -1.0},  {0.0, 0.0},  {0.0, 1.0},  {1.0, 1.0},  {1.0, 0.0},   {0.0, 0.0}});
 
-  auto expected = std::vector<int32_t>{0b0, 0b0, 0b0, 0b0};
+  auto expected = std::vector<int>{0b0, 0b0, 0b0, 0b0};
   auto got      = rmm::device_vector<int32_t>(test_point.size());
 
   auto ret = pairwise_point_in_polygon(test_point.begin(),
@@ -286,8 +286,8 @@ TYPED_TEST(PairwisePointInPolygonTest, 32PolygonSupport)
     thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorB<T>{});
   auto poly_point_iter = make_vec_2d_iterator(poly_point_xs_iter, poly_point_ys_iter);
 
-  auto expected = std::vector<int32_t>({1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-                                        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0});
+  auto expected = std::vector<int>({1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+                                    1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0});
   auto got      = rmm::device_vector<int32_t>(test_point.size());
 
   auto ret = pairwise_point_in_polygon(test_point.begin(),
@@ -337,7 +337,7 @@ TYPED_TEST(PairwisePointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
   auto poly_ring_offsets = this->make_device_offsets({0});
   // "left" edge missing
   auto poly_point = this->make_device_points({{-1, 1}, {1, 1}, {1, -1}, {-1, -1}});
-  auto expected   = std::vector<int32_t>{0b0, 0b1, 0b0};
+  auto expected   = std::vector<int>{0b0, 0b1, 0b0};
   auto got        = rmm::device_vector<int32_t>(1);
 
   for (size_t i = 0; i < point_list.size(); ++i) {
@@ -352,7 +352,7 @@ TYPED_TEST(PairwisePointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
                                          poly_point.end(),
                                          got.begin());
 
-    EXPECT_EQ(std::vector<int32_t>{expected[i]}, got);
+    EXPECT_EQ(std::vector<int>{expected[i]}, got);
     EXPECT_EQ(got.end(), ret);
   }
 }
@@ -365,7 +365,7 @@ TYPED_TEST(PairwisePointInPolygonTest, SelfClosingLoopRightEdgeMissing)
   auto poly_ring_offsets = this->make_device_offsets({0});
   // "right" edge missing
   auto poly_point = this->make_device_points({{1, -1}, {-1, -1}, {-1, 1}, {1, 1}});
-  auto expected   = std::vector<int32_t>{0b0, 0b1, 0b0};
+  auto expected   = std::vector<int>{0b0, 0b1, 0b0};
   auto got        = rmm::device_vector<int32_t>(1);
   for (size_t i = 0; i < point_list.size(); ++i) {
     auto point = this->make_device_points({{point_list[i][0], point_list[i][1]}});
@@ -379,7 +379,7 @@ TYPED_TEST(PairwisePointInPolygonTest, SelfClosingLoopRightEdgeMissing)
                                          poly_point.end(),
                                          got.begin());
 
-    EXPECT_EQ(std::vector<int32_t>{expected[i]}, got);
+    EXPECT_EQ(std::vector<int>{expected[i]}, got);
     EXPECT_EQ(got.end(), ret);
   }
 }

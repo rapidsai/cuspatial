@@ -15,16 +15,19 @@
  */
 #pragma once
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/traits.hpp>
 
 namespace cuspatial {
 
 /**
- * @brief Represent a multipoint stored in structure of array on memory.
+ * @brief Represent a reference to multipoint stored in a structure of arrays.
  *
  * @tparam VecIterator type of iterator to the underlying point array.
  */
 template <typename VecIterator>
 class multipoint_ref {
+  using point_t = iterator_value_type<VecIterator>;
+
  public:
   CUSPATIAL_HOST_DEVICE multipoint_ref(VecIterator begin, VecIterator end);
 
@@ -37,6 +40,14 @@ class multipoint_ref {
   CUSPATIAL_HOST_DEVICE auto begin() const { return point_begin(); }
   /// Return iterator the the one-past the last point of the multipoint.
   CUSPATIAL_HOST_DEVICE auto end() const { return point_end(); }
+
+  /// Return the number of points in multipoint.
+  CUSPATIAL_HOST_DEVICE auto num_points() const;
+  /// Return the number of points in multipoint.
+  CUSPATIAL_HOST_DEVICE auto size() const { return num_points(); }
+
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto operator[](IndexType point_idx);
 
  protected:
   VecIterator _points_begin;

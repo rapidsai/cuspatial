@@ -14,7 +14,7 @@ Spatial Join Functions
 
 .. autofunction:: cuspatial.point_in_polygon
 .. autofunction:: cuspatial.quadtree_point_in_polygon
-.. autofunction:: cuspatial.quadtree_point_to_nearest_polyline
+.. autofunction:: cuspatial.quadtree_point_to_nearest_linestring
 .. autofunction:: cuspatial.join_quadtree_and_bounding_boxes
 
 Measurement Functions
@@ -22,7 +22,9 @@ Measurement Functions
 
 .. autofunction:: cuspatial.directed_hausdorff_distance
 .. autofunction:: cuspatial.haversine_distance
+.. autofunction:: cuspatial.pairwise_point_distance
 .. autofunction:: cuspatial.pairwise_linestring_distance
+.. autofunction:: cuspatial.pairwise_point_linestring_distance
 
 Nearest Points Function
 +++++++++++++++++++++++
@@ -33,7 +35,7 @@ Bounding Boxes
 ++++++++++++++
 
 .. autofunction:: cuspatial.polygon_bounding_boxes
-.. autofunction:: cuspatial.polyline_bounding_boxes
+.. autofunction:: cuspatial.linestring_bounding_boxes
 
 Projection Functions
 ++++++++++++++++++++

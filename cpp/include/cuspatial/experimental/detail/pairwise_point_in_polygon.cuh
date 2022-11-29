@@ -16,8 +16,9 @@
 
 #pragma once
 
+#include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/detail/is_point_in_polygon_kernel.cuh>
+#include <cuspatial/experimental/detail/is_point_in_polygon.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -52,21 +53,21 @@ __global__ void pairwise_point_in_polygon_kernel(Cart2dItA test_points_first,
 {
   using Cart2d     = iterator_value_type<Cart2dItA>;
   using OffsetType = iterator_value_type<OffsetIteratorA>;
-  auto idx         = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx >= num_test_points) { return; }
-
-  Cart2d const test_point = test_points_first[idx];
-  // for the matching polygon
-  OffsetType poly_begin      = poly_offsets_first[idx];
-  OffsetType poly_end        = (idx + 1 < num_polys) ? poly_offsets_first[idx + 1] : num_rings;
-  bool const point_is_within = is_point_in_polygon(test_point,
-                                                   poly_begin,
-                                                   poly_end,
-                                                   ring_offsets_first,
-                                                   num_rings,
-                                                   poly_points_first,
-                                                   num_poly_points);
-  result[idx]                = point_is_within;
+  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < num_test_points;
+       idx += gridDim.x * blockDim.x) {
+    Cart2d const test_point = test_points_first[idx];
+    // for the matching polygon
+    OffsetType poly_begin      = poly_offsets_first[idx];
+    OffsetType poly_end        = (idx + 1 < num_polys) ? poly_offsets_first[idx + 1] : num_rings;
+    bool const point_is_within = is_point_in_polygon(test_point,
+                                                     poly_begin,
+                                                     poly_end,
+                                                     ring_offsets_first,
+                                                     num_rings,
+                                                     poly_points_first,
+                                                     num_poly_points);
+    result[idx]                = point_is_within;
+  }
 }
 
 }  // namespace detail
@@ -116,10 +117,8 @@ OutputIt pairwise_point_in_polygon(Cart2dItA test_points_first,
   // TODO: introduce a validation function that checks the rings of the polygon are
   // actually closed. (i.e. the first and last vertices are the same)
 
-  auto constexpr block_size = 256;
-  auto const num_blocks     = (num_test_points + block_size - 1) / block_size;
-
-  detail::pairwise_point_in_polygon_kernel<<<num_blocks, block_size, 0, stream.value()>>>(
+  auto [threads_per_block, num_blocks] = grid_1d(num_test_points);
+  detail::pairwise_point_in_polygon_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     test_points_first,
     num_test_points,
     polygon_offsets_first,

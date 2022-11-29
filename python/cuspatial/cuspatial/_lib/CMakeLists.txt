@@ -12,7 +12,7 @@
 # the License.
 # =============================================================================
 
-set(cython_sources 
+set(cython_sources
     distance.pyx
     hausdorff.pyx
     interpolate.pyx
@@ -20,7 +20,7 @@ set(cython_sources
     point_in_polygon.pyx
     pairwise_point_in_polygon.pyx
     polygon_bounding_boxes.pyx
-    polyline_bounding_boxes.pyx
+    linestring_bounding_boxes.pyx
     quadtree.pyx
     shapefile_reader.pyx
     spatial.pyx

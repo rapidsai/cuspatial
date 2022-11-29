@@ -66,12 +66,13 @@ def point_in_polygon(
     # Point 1: (-8, -8) falls in the first polygon
     # Point 2: (6.0, 6.0) falls in the second polygon
 
-    note
-    input Series x and y will not be index aligned, but computed as
+    Notes
+    -----
+
+    * input Series x and y will not be index aligned, but computed as
     sequential arrays.
 
-    note
-    poly_ring_offsets must contain only the rings that make up the polygons
+    * poly_ring_offsets must contain only the rings that make up the polygons
     indexed by poly_offsets. If there are rings in poly_ring_offsets that
     are not part of the polygons in poly_offsets, results are likely to be
     incorrect and behavior is undefined.
@@ -120,16 +121,16 @@ def point_in_polygon(
 
 
 def join_quadtree_and_bounding_boxes(
-    quadtree, poly_bounding_boxes, x_min, x_max, y_min, y_max, scale, max_depth
+    quadtree, bounding_boxes, x_min, x_max, y_min, y_max, scale, max_depth
 ):
-    """Search a quadtree for polygon or polyline bounding box intersections.
+    """Search a quadtree for polygon or linestring bounding box intersections.
 
     Parameters
     ----------
     quadtree : cudf.DataFrame
         A complete quadtree for a given area-of-interest bounding box.
-    poly_bounding_boxes : cudf.DataFrame
-        Minimum bounding boxes for a set of polygons or polylines
+    bounding_boxes : cudf.DataFrame
+        Minimum bounding boxes for a set of polygons or linestrings
     x_min
         The lower-left x-coordinate of the area of interest bounding box
     x_max
@@ -148,8 +149,8 @@ def join_quadtree_and_bounding_boxes(
     result : cudf.DataFrame
         Indices for each intersecting bounding box and leaf quadrant.
 
-        poly_offset : cudf.Series
-            Indices for each poly bbox that intersects with the quadtree.
+        bbox_offset : cudf.Series
+            Indices for each bbox that intersects with the quadtree.
         quad_offset : cudf.Series
             Indices for each leaf quadrant intersecting with a poly bbox.
 
@@ -175,7 +176,7 @@ def join_quadtree_and_bounding_boxes(
     return DataFrame._from_data(
         *spatial_join.join_quadtree_and_bounding_boxes(
             quadtree,
-            poly_bounding_boxes,
+            bounding_boxes,
             x_min,
             x_max,
             y_min,
@@ -236,9 +237,10 @@ def quadtree_point_in_polygon(
         Indices for each intersecting point and polygon pair.
 
         polygon_index : cudf.Series
-            Indices of each polygon with which a point intersected.
+            Index of containing polygon.
         point_index : cudf.Series
-            Indices of each point that intersects with a polygon.
+            Index of contained point. This index refers to ``point_indices``,
+            so it is an index to an index.
     """
 
     (
@@ -267,27 +269,27 @@ def quadtree_point_in_polygon(
     )
 
 
-def quadtree_point_to_nearest_polyline(
-    poly_quad_pairs,
+def quadtree_point_to_nearest_linestring(
+    linestring_quad_pairs,
     quadtree,
     point_indices,
     points_x,
     points_y,
-    poly_offsets,
-    poly_points_x,
-    poly_points_y,
+    linestring_offsets,
+    linestring_points_x,
+    linestring_points_y,
 ):
-    """Finds the nearest polyline to each point in a quadrant, and computes
-    the distances between each point and polyline.
+    """Finds the nearest linestring to each point in a quadrant, and computes
+    the distances between each point and linestring.
 
-    Uses the table of (polyline, quadrant) pairs returned by
+    Uses the table of (linestring, quadrant) pairs returned by
     ``cuspatial.join_quadtree_and_bounding_boxes`` to ensure distances are
-    computed only for the points in the same quadrant as each polyline.
+    computed only for the points in the same quadrant as each linestring.
 
     Parameters
     ----------
-    poly_quad_pairs: cudf.DataFrame
-        Table of (polyline, quadrant) index pairs returned by
+    linestring_quad_pairs: cudf.DataFrame
+        Table of (linestring, quadrant) index pairs returned by
         ``cuspatial.join_quadtree_and_bounding_boxes``.
     quadtree : cudf.DataFrame
         A complete quadtree for a given area-of-interest bounding box.
@@ -297,46 +299,47 @@ def quadtree_point_to_nearest_polyline(
         x-coordinates of points used to construct the quadtree.
     points_y : cudf.Series
         y-coordinates of points used to construct the quadtree.
-    poly_offsets : cudf.Series
-        Begin index of the first point in each polyline.
+    linestring_offsets : cudf.Series
+        Begin index of the first point in each linestring.
     poly_points_x : cudf.Series
-        Polyline point x-coodinates.
+        Linestring point x-coordinates.
     poly_points_y : cudf.Series
-        Polyline point y-coodinates.
+        Linestring point y-coordinates.
 
     Returns
     -------
     result : cudf.DataFrame
-        Indices for each point and its nearest polyline, and the distance
+        Indices for each point and its nearest linestring, and the distance
         between the two.
 
         point_index : cudf.Series
-            Indices of each point that intersects with a polyline.
-        polyline_index : cudf.Series
-            Indices of each polyline with which a point intersected.
+            Index of point. This index refers to ``point_indices``, so it is
+            an index to an index.
+        linestring_index : cudf.Series
+            Index of the nearest linestring to the point.
         distance : cudf.Series
-            Distances between each point and its nearest polyline.
+            Distance between point and its nearest linestring.
     """
     (
         points_x,
         points_y,
-        poly_points_x,
-        poly_points_y,
+        linestring_points_x,
+        linestring_points_y,
     ) = normalize_point_columns(
         as_column(points_x),
         as_column(points_y),
-        as_column(poly_points_x),
-        as_column(poly_points_y),
+        as_column(linestring_points_x),
+        as_column(linestring_points_y),
     )
     return DataFrame._from_data(
-        *spatial_join.quadtree_point_to_nearest_polyline(
-            poly_quad_pairs,
+        *spatial_join.quadtree_point_to_nearest_linestring(
+            linestring_quad_pairs,
             quadtree,
             as_column(point_indices, dtype="uint32"),
             points_x,
             points_y,
-            as_column(poly_offsets, dtype="uint32"),
-            poly_points_x,
-            poly_points_y,
+            as_column(linestring_offsets, dtype="uint32"),
+            linestring_points_x,
+            linestring_points_y,
         )
     )
