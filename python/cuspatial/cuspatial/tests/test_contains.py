@@ -96,7 +96,11 @@ def test_one_polygon_with_hole_one_linestring_crossing_it(
     results because they implement `contains` and we implement
     `contains_properly`. Detailed documentation of this in
     https://docs.google.com/document/d/1akxcRcUVK-qv5puK-mSTiKDKUS6UlR6Ccnr9_bJ4fi8/edit?pli=1#
-    hasn't been completed yet."""
+    hasn't been completed yet.
+
+    The below test_float_precision_limits pairs with this test and shows
+    the inconsistency.
+    """
 )
 @pytest.mark.parametrize(
     "point, polygon, expects",
@@ -128,8 +132,11 @@ def test_float_precision_limits_failures(point, polygon, expects):
 @pytest.mark.parametrize(
     "point, polygon, expects",
     [
-        # unique failure cases identified by @mharris
-        [
+        """Unique success cases identified by @mharris. These go in a pair
+        with test_float_precision_limits_failures because these are
+        inconsistent results, where 0.6 fails above (as True, within the
+        polygon) and 0.66 below succeeds, though they are colinear.
+        """[
             Point([0.66, 0.006]),
             Polygon([[0, 0], [10, 1], [1, 1], [0, 0]]),
             False,
