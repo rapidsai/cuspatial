@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/is_point_in_polygon.cuh>
 #include <cuspatial/traits.hpp>
@@ -52,9 +53,7 @@ __global__ void pairwise_point_in_polygon_kernel(Cart2dItA test_points_first,
 {
   using Cart2d     = iterator_value_type<Cart2dItA>;
   using OffsetType = iterator_value_type<OffsetIteratorA>;
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x;
-       idx <
-       std::distance(test_points_first, thrust::prev(test_points_first + num_test_points + 1));
+  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < num_test_points;
        idx += gridDim.x * blockDim.x) {
     Cart2d const test_point = test_points_first[idx];
     // for the matching polygon
@@ -118,10 +117,8 @@ OutputIt pairwise_point_in_polygon(Cart2dItA test_points_first,
   // TODO: introduce a validation function that checks the rings of the polygon are
   // actually closed. (i.e. the first and last vertices are the same)
 
-  auto constexpr block_size = 256;
-  auto const num_blocks     = (num_test_points + block_size - 1) / block_size;
-
-  detail::pairwise_point_in_polygon_kernel<<<num_blocks, block_size, 0, stream.value()>>>(
+  auto [threads_per_block, num_blocks] = grid_1d(num_test_points);
+  detail::pairwise_point_in_polygon_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     test_points_first,
     num_test_points,
     polygon_offsets_first,
