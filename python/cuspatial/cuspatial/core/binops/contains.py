@@ -34,7 +34,7 @@ def contains(
         as_column(poly_points_y),
     )
 
-    if len(test_points_x) == len(poly_offsets):
+    if len(test_points_x) == len(poly_offsets)-1:
         pip_result = cpp_pairwise_point_in_polygon(
             test_points_x,
             test_points_y,
