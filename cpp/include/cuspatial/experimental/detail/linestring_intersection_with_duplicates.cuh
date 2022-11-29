@@ -192,7 +192,7 @@ void __global__ pairwise_linestring_intersection_simple(MultiLinestringRange1 mu
         // Writes geometry and origin IDs to output. Note that for each pair, intersecting
         // points always precedes overlapping segments (arbitrarily).
         if (point_opt.has_value()) {
-          auto r              = cuda::atomic_ref<count_t>{*(n_points_stored + geometry_idx)};
+          auto r              = cuda::atomic_ref<count_t>{n_points_stored[geometry_idx]};
           auto next_point_idx = r.fetch_add(1);
           points_first[num_points_offsets_first[geometry_idx] + next_point_idx] = point_opt.value();
           auto union_column_idx = geometry_collection_offset + next_point_idx;
@@ -203,7 +203,7 @@ void __global__ pairwise_linestring_intersection_simple(MultiLinestringRange1 mu
                               rhs_linestring_idx,
                               rhs_segment_idx);
         } else if (segment_opt.has_value()) {
-          auto r                = cuda::atomic_ref<count_t>{*(n_segments_stored + geometry_idx)};
+          auto r                = cuda::atomic_ref<count_t>{n_segments_stored[geometry_idx]};
           auto next_segment_idx = r.fetch_add(1);
           segments_first[num_segments_offsets_first[geometry_idx] + next_segment_idx] =
             segment_opt.value();
