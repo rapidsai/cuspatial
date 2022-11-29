@@ -586,8 +586,6 @@ class GeoSeries(cudf.Series):
         else:
             # no conditioning is required
             xy = other.points
-            # mpoint in polygon
-            # linestring in polygon
         xy_points = xy.xy
         point_indices = xy.point_indices()
         points = GeoSeries(GeoColumn._from_points_xy(xy_points._column)).points
