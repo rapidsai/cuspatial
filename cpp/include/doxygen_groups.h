@@ -114,10 +114,12 @@
  *      @}
  *      @defgroup ranges Ranges
  *      @{
- *          @brief Non owning object of geometry arrays
+ *          @brief Abstract Data Type that Represents any containers represented by a start and end
+ *          iterator
  *
  *          Cuspatial header only APIs accepts ranges that are composed of flattened view of
  *          offsets and coordinates. Various accessors are provided for flexible access to the data.
+ *          @file range.cuh
  *          @file multipoint_range.cuh
  *          @file multilinestring_range.cuh
  *      @}

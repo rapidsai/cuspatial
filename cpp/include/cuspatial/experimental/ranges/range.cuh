@@ -23,6 +23,21 @@
 
 namespace cuspatial {
 
+/**
+ * @brief Abstract Data Type (ADT) for any containers representable with a start and end iterator.
+ *
+ * This is similar to a span, except that the iterators can be composed of generators.
+ *
+ * @note Although this structure can be used on device and host code, this structure does not
+ * provide implicit device-host transfer. It is up to developer's prudence not to access device
+ * memory from host.
+ *
+ * @tparam Type of both start and end iterator. IteratorType must statisfy
+ * LegacyRandomAccessIterator[LinkLRAI].
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
+ */
 template <typename IteratorType>
 class range {
  public:
