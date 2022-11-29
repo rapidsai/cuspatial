@@ -649,10 +649,6 @@ class GeoSeries(cudf.Series):
         closed polygons: the first and last coordinate of each polygon must be
         the same.
 
-        This implements `.contains_properly`, which shares a large
-        space of correct cases with `GeoPandas.contains` but they do not
-        produce identical results. In the future we will use intersection
-        testing to match .contains behavior.
 
         Parameters
         ----------
