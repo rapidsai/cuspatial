@@ -33,13 +33,15 @@ def contains(
         as_column(poly_points_x),
         as_column(poly_points_y),
     )
+    poly_offsets_column = (as_column(poly_offsets, dtype="int32"),)
+    poly_ring_offsets_column = (as_column(poly_ring_offsets, dtype="int32"),)
 
-    if len(test_points_x) == len(poly_offsets)-1:
+    if len(test_points_x) == len(poly_offsets) - 1:
         pip_result = cpp_pairwise_point_in_polygon(
             test_points_x,
             test_points_y,
-            as_column(poly_offsets, dtype="int32"),
-            as_column(poly_ring_offsets, dtype="int32"),
+            poly_offsets_column,
+            poly_ring_offsets_column,
             poly_points_x,
             poly_points_y,
         )
@@ -47,8 +49,8 @@ def contains(
         pip_result = cpp_point_in_polygon(
             test_points_x,
             test_points_y,
-            as_column(poly_offsets, dtype="int32"),
-            as_column(poly_ring_offsets, dtype="int32"),
+            poly_offsets_column,
+            poly_ring_offsets_column,
             poly_points_x,
             poly_points_y,
         )
