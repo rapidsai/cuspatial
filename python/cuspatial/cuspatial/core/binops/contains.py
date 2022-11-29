@@ -25,6 +25,13 @@ def contains(
     closed polygons: the first and last coordinate of each polygon must be
     the same.
 
+    This function is pairwise, or many-to-one.
+
+    This implements `.contains_properly`, which shares a large
+    space of correct cases with `GeoPandas.contains` but they do not produce
+    identical results. In the future we will use intersection testing to
+    match .contains behavior.
+
     Parameters
     ----------
     test_points_x
@@ -43,9 +50,53 @@ def contains(
     Examples
     --------
 
+    Test if a polygon is inside another polygon:
+
+    >>> gpdpoint = gpd.GeoSeries(
+        [Point(0.5, 0.5)],
+        )
+    >>> gpdpolygon = gpd.GeoSeries(
+        [
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+        ]
+    )
+    >>> point = cuspatial.from_geopandas(gpdpoint)
+    >>> polygon = cuspatial.from_geopandas(gpdpolygon)
+    >>> print(polygon.contains(point))
+    0    False
+    dtype: bool
+
+
     Test whether 3 points fall within either of two polygons
 
-    # TODO: Examples
+    >>> gpdpoint = gpd.GeoSeries(
+        [Point(0, 0)],
+        [Point(0, 0)],
+        [Point(0, 0)],
+        [Point(-1, 1)],
+        [Point(-1, 1)],
+        [Point(-1, 1)],
+        )
+    >>> gpdpolygon = gpd.GeoSeries(
+        [
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+            Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+            Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+        ]
+    )
+    >>> point = cuspatial.from_geopandas(gpdpoint)
+    >>> polygon = cuspatial.from_geopandas(gpdpolygon)
+    >>> print(polygon.contains(point))
+    0    False
+    1    False
+    2    False
+    3     True
+    4     True
+    5     True
+    dtype: bool
 
     note
     input Series x and y will not be index aligned, but computed as
