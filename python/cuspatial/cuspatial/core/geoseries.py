@@ -702,7 +702,8 @@ class GeoSeries(cudf.Series):
                 {"idx": point_indices, "pip": point_result}
             )
             df_result = (
-                result.groupby("idx").sum() == result.groupby("idx").count()
+                result.groupby("idx").sum().sort_index()
+                == result.groupby("idx").count().sort_index()
             ).sort_index()
             point_result = cudf.Series(
                 df_result["pip"], index=cudf.RangeIndex(0, len(df_result))

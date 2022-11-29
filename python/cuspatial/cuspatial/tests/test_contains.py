@@ -132,11 +132,7 @@ def test_float_precision_limits_failures(point, polygon, expects):
 @pytest.mark.parametrize(
     "point, polygon, expects",
     [
-        """Unique success cases identified by @mharris. These go in a pair
-        with test_float_precision_limits_failures because these are
-        inconsistent results, where 0.6 fails above (as True, within the
-        polygon) and 0.66 below succeeds, though they are colinear.
-        """[
+        [
             Point([0.66, 0.006]),
             Polygon([[0, 0], [10, 1], [1, 1], [0, 0]]),
             False,
@@ -150,6 +146,11 @@ def test_float_precision_limits_failures(point, polygon, expects):
     ],
 )
 def test_float_precision_limits(point, polygon, expects):
+    """Unique success cases identified by @mharris. These go in a pair
+    with test_float_precision_limits_failures because these are
+    inconsistent results, where 0.6 fails above (as True, within the
+    polygon) and 0.66 below succeeds, though they are colinear.
+    """
     gpdpoint = gpd.GeoSeries(point)
     gpdpolygon = gpd.GeoSeries(polygon)
     point = cuspatial.from_geopandas(gpdpoint)
