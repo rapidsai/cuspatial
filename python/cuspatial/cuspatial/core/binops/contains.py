@@ -48,7 +48,7 @@ def contains_properly(
     -------
     result : cudf.Series
         A Series of boolean values indicating whether each point falls
-        within each polygon.
+        within its corresponding polygon.
     """
 
     if len(poly_offsets) == 0:
