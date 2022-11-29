@@ -4,18 +4,108 @@ from shapely.geometry import LineString, Point, Polygon
 
 import cuspatial
 
-"""
-[
-    Point([0.6, 0.06]),
-    Polygon([[0, 0], [10, 1], [1, 1], [0, 0]]),
-    False,
-],
-[
-    Point([3.333, 1.111]),
-    Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]),
-    True,
-],
-"""
+
+@pytest.mark.xfail(
+    reason="The polygons share numerous boundaries, so pip is impossible."
+)
+def test_manual_polygons():
+    gpdlhs = gpd.GeoSeries([Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8))) * 6])
+    gpdrhs = gpd.GeoSeries(
+        [
+            Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8))),
+            Polygon(((-2, -2), (-2, 2), (2, 2), (2, -2))),
+            Polygon(((-10, -2), (-10, 2), (-6, 2), (-6, -2))),
+            Polygon(((-2, 8), (-2, 12), (2, 12), (2, 8))),
+            Polygon(((6, 0), (8, 2), (10, 0), (8, -2))),
+            Polygon(((-2, -8), (-2, -4), (2, -4), (2, -8))),
+        ]
+    )
+    rhs = cuspatial.from_geopandas(gpdrhs)
+    lhs = cuspatial.from_geopandas(gpdlhs)
+    expected = gpdlhs.contains(gpdrhs).values
+    got = lhs.contains(rhs).values_host
+    assert (got == expected).all()
+    expected = gpdrhs.contains(gpdlhs).values
+    got = rhs.contains(lhs).values_host
+    assert (got == expected).all()
+
+
+@pytest.mark.xfail(reason="The boundaries share points, so pip is impossible.")
+def test_one_polygon_one_linestring_crosses_the_diagonal(linestring_generator):
+    gpdlinestring = gpd.GeoSeries(LineString([[0, 0], [1, 1]]))
+    gpdpolygon = gpd.GeoSeries(
+        Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]])
+    )
+    linestring = cuspatial.from_geopandas(gpdlinestring)
+    polygons = cuspatial.from_geopandas(gpdpolygon)
+    expected = gpdpolygon.contains(gpdlinestring).values
+    got = polygons.contains(linestring).values_host
+    assert (got == expected).all()
+
+
+@pytest.mark.xfail(
+    reason="We don't support intersection yet to check for crossings."
+)
+def test_one_polygon_with_hole_one_linestring_crossing_it(
+    linestring_generator,
+):
+    gpdlinestring = gpd.GeoSeries(LineString([[0.5, 2.0], [3.5, 2.0]]))
+    gpdpolygon = gpd.GeoSeries(
+        Polygon(
+            (
+                [0, 0],
+                [0, 4],
+                [4, 4],
+                [4, 0],
+                [0, 0],
+            ),
+            [
+                (
+                    [1, 1],
+                    [1, 3],
+                    [3, 3],
+                    [3, 1],
+                    [1, 1],
+                )
+            ],
+        )
+    )
+    linestring = cuspatial.from_geopandas(gpdlinestring)
+    polygons = cuspatial.from_geopandas(gpdpolygon)
+    expected = gpdpolygon.contains(gpdlinestring).values
+    got = polygons.contains(linestring).values_host
+    assert (got == expected).all()
+
+
+@pytest.mark.xfail(
+    reason="""These boundary cases conflict with Pandas results because they
+    implement `contains` and we implement `contains_properly`."""
+)
+@pytest.mark.parametrize(
+    "point, polygon, expects",
+    [
+        [
+            Point([0.6, 0.06]),
+            Polygon([[0, 0], [10, 1], [1, 1], [0, 0]]),
+            False,
+        ],
+        [
+            Point([3.333, 1.111]),
+            Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]),
+            True,
+        ],
+        [Point([3.33, 1.11]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
+    ],
+)
+def test_float_precision_limits_failures(point, polygon, expects):
+    gpdpoint = gpd.GeoSeries(point)
+    gpdpolygon = gpd.GeoSeries(polygon)
+    point = cuspatial.from_geopandas(gpdpoint)
+    polygon = cuspatial.from_geopandas(gpdpolygon)
+    expected = gpdpolygon.contains(gpdpoint).values
+    got = polygon.contains(point).values_host
+    assert got == expected
+    assert got.values_host[0] == expects
 
 
 @pytest.mark.parametrize(
@@ -33,7 +123,6 @@ import cuspatial
             False,
         ],
         [Point([3.3, 1.1]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
-        [Point([3.33, 1.11]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
     ],
 )
 def test_float_precision_limits(point, polygon, expects):
@@ -41,9 +130,10 @@ def test_float_precision_limits(point, polygon, expects):
     gpdpolygon = gpd.GeoSeries(polygon)
     point = cuspatial.from_geopandas(gpdpoint)
     polygon = cuspatial.from_geopandas(gpdpolygon)
-    result = polygon.contains(point)
-    assert gpdpolygon.contains(gpdpoint).values == result.values_host
-    assert result.values_host[0] == expects
+    got = polygon.contains(point).values_host
+    expected = gpdpolygon.contains(gpdpoint).values
+    assert got == expected
+    assert got[0] == expects
 
 
 clockwiseTriangle = Polygon([[0, 0], [0, 1], [1, 1], [0, 0]])
@@ -90,9 +180,10 @@ def test_point_in_polygon(point, polygon, expects):
     gpdpolygon = gpd.GeoSeries(polygon)
     point = cuspatial.from_geopandas(gpdpoint)
     polygon = cuspatial.from_geopandas(gpdpolygon)
-    result = polygon.contains(point)
-    assert gpdpolygon.contains(gpdpoint).values == result.values_host
-    assert result.values_host[0] == expects
+    got = polygon.contains(point).values_host
+    expected = gpdpolygon.contains(gpdpoint).values
+    assert got == expected
+    assert got[0] == expects
 
 
 def test_two_points_one_polygon():
@@ -100,10 +191,9 @@ def test_two_points_one_polygon():
     gpdpolygon = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
     point = cuspatial.from_geopandas(gpdpoint)
     polygon = cuspatial.from_geopandas(gpdpolygon)
-    assert (
-        gpdpolygon.contains(gpdpoint).values
-        == polygon.contains(point).values_host
-    ).all()
+    got = polygon.contains(point).values_host
+    expected = gpdpolygon.contains(gpdpoint).values
+    assert (got == expected).all()
 
 
 def test_one_point_two_polygons():
@@ -116,10 +206,9 @@ def test_one_point_two_polygons():
     )
     point = cuspatial.from_geopandas(gpdpoint)
     polygon = cuspatial.from_geopandas(gpdpolygon)
-    assert (
-        gpdpolygon.contains(gpdpoint).values
-        == polygon.contains(point).values_host
-    ).all()
+    got = polygon.contains(point).values_host
+    expected = gpdpolygon.contains(gpdpoint).values
+    assert (got == expected).all()
 
 
 def test_ten_pair_points(point_generator, polygon_generator):
@@ -127,45 +216,9 @@ def test_ten_pair_points(point_generator, polygon_generator):
     gpdpolygons = gpd.GeoSeries([*polygon_generator(10, 0)])
     points = cuspatial.from_geopandas(gpdpoints)
     polygons = cuspatial.from_geopandas(gpdpolygons)
-    assert (
-        gpdpolygons.contains(gpdpoints).values
-        == polygons.contains(points).values_host
-    ).all()
-
-
-@pytest.mark.xfail(
-    reason="We don't support intersection yet to check for crossings."
-)
-def test_one_polygon_with_hole_one_linestring_crossing_it(
-    linestring_generator,
-):
-    gpdlinestring = gpd.GeoSeries(LineString([[0.5, 2.0], [3.5, 2.0]]))
-    gpdpolygon = gpd.GeoSeries(
-        Polygon(
-            (
-                [0, 0],
-                [0, 4],
-                [4, 4],
-                [4, 0],
-                [0, 0],
-            ),
-            [
-                (
-                    [1, 1],
-                    [1, 3],
-                    [3, 3],
-                    [3, 1],
-                    [1, 1],
-                )
-            ],
-        )
-    )
-    linestring = cuspatial.from_geopandas(gpdlinestring)
-    polygons = cuspatial.from_geopandas(gpdpolygon)
-    assert (
-        gpdpolygon.contains(gpdlinestring).values
-        == polygons.contains(linestring).values_host
-    ).all()
+    got = polygons.contains(points).values_host
+    expected = gpdpolygons.contains(gpdpoints).values
+    assert (got == expected).all()
 
 
 def test_one_polygon_with_hole_one_linestring_inside_it(linestring_generator):
@@ -192,10 +245,9 @@ def test_one_polygon_with_hole_one_linestring_inside_it(linestring_generator):
     )
     linestring = cuspatial.from_geopandas(gpdlinestring)
     polygons = cuspatial.from_geopandas(gpdpolygon)
-    assert (
-        gpdpolygon.contains(gpdlinestring).values
-        == polygons.contains(linestring).values_host
-    ).all()
+    got = polygons.contains(linestring).values_host
+    expected = gpdpolygon.contains(gpdlinestring).values
+    assert (got == expected).all()
 
 
 def test_one_polygon_one_linestring(linestring_generator):
@@ -205,24 +257,9 @@ def test_one_polygon_one_linestring(linestring_generator):
     )
     linestring = cuspatial.from_geopandas(gpdlinestring)
     polygons = cuspatial.from_geopandas(gpdpolygon)
-    assert (
-        gpdpolygon.contains(gpdlinestring).values
-        == polygons.contains(linestring).values_host
-    ).all()
-
-
-@pytest.mark.xfail(reason="The boundaries share points, so pip is impossible.")
-def test_one_polygon_one_linestring_crosses_the_diagonal(linestring_generator):
-    gpdlinestring = gpd.GeoSeries(LineString([[0, 0], [1, 1]]))
-    gpdpolygon = gpd.GeoSeries(
-        Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]])
-    )
-    linestring = cuspatial.from_geopandas(gpdlinestring)
-    polygons = cuspatial.from_geopandas(gpdpolygon)
-    assert (
-        gpdpolygon.contains(gpdlinestring).values
-        == polygons.contains(linestring).values_host
-    ).all()
+    got = polygons.contains(linestring).values_host
+    expected = gpdpolygon.contains(gpdlinestring).values
+    assert (got == expected).all()
 
 
 def test_four_polygons_four_linestrings(linestring_generator):
@@ -244,10 +281,9 @@ def test_four_polygons_four_linestrings(linestring_generator):
     )
     linestring = cuspatial.from_geopandas(gpdlinestring)
     polygons = cuspatial.from_geopandas(gpdpolygon)
-    assert (
-        gpdpolygon.contains(gpdlinestring).values
-        == polygons.contains(linestring).values_host
-    ).all()
+    got = polygons.contains(linestring).values_host
+    expected = gpdpolygon.contains(gpdlinestring).values
+    assert (got == expected).all()
 
 
 def test_max_polygons_max_linestrings(linestring_generator, polygon_generator):
@@ -255,9 +291,9 @@ def test_max_polygons_max_linestrings(linestring_generator, polygon_generator):
     gpdpolygons = gpd.GeoSeries([*polygon_generator(31, 0)])
     linestring = cuspatial.from_geopandas(gpdlinestring)
     polygons = cuspatial.from_geopandas(gpdpolygons)
-    gpdresult = gpdpolygons.contains(gpdlinestring)
-    result = polygons.contains(linestring)
-    assert (gpdresult.values == result.values_host).all()
+    got = polygons.contains(linestring).values_host
+    expected = gpdpolygons.contains(gpdlinestring).values
+    assert (got == expected).all()
 
 
 def test_one_polygon_one_polygon(polygon_generator):
@@ -265,37 +301,12 @@ def test_one_polygon_one_polygon(polygon_generator):
     gpdrhs = gpd.GeoSeries([*polygon_generator(1, 0)])
     rhs = cuspatial.from_geopandas(gpdrhs)
     lhs = cuspatial.from_geopandas(gpdlhs)
-    assert (
-        gpdlhs.contains(gpdrhs).values == lhs.contains(rhs).values_host
-    ).all()
-    assert (
-        gpdrhs.contains(gpdlhs).values == rhs.contains(lhs).values_host
-    ).all()
-
-
-@pytest.mark.xfail(
-    reason="The polygons share numerous boundaries, so pip is impossible."
-)
-def test_manual_polygons():
-    gpdlhs = gpd.GeoSeries([Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8))) * 6])
-    gpdrhs = gpd.GeoSeries(
-        [
-            Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8))),
-            Polygon(((-2, -2), (-2, 2), (2, 2), (2, -2))),
-            Polygon(((-10, -2), (-10, 2), (-6, 2), (-6, -2))),
-            Polygon(((-2, 8), (-2, 12), (2, 12), (2, 8))),
-            Polygon(((6, 0), (8, 2), (10, 0), (8, -2))),
-            Polygon(((-2, -8), (-2, -4), (2, -4), (2, -8))),
-        ]
-    )
-    rhs = cuspatial.from_geopandas(gpdrhs)
-    lhs = cuspatial.from_geopandas(gpdlhs)
-    assert (
-        gpdlhs.contains(gpdrhs).values == lhs.contains(rhs).values_host
-    ).all()
-    assert (
-        gpdrhs.contains(gpdlhs).values == rhs.contains(lhs).values_host
-    ).all()
+    expected = gpdlhs.contains(gpdrhs).values
+    got = lhs.contains(rhs).values_host
+    assert (expected == got).all()
+    expected = gpdrhs.contains(gpdlhs).values
+    got = rhs.contains(lhs).values_host
+    assert (got == expected).all()
 
 
 def test_max_polygons_max_polygons(simple_polygon_generator):
@@ -303,12 +314,12 @@ def test_max_polygons_max_polygons(simple_polygon_generator):
     gpdrhs = gpd.GeoSeries([*simple_polygon_generator(31, 1.49, 2)])
     rhs = cuspatial.from_geopandas(gpdrhs)
     lhs = cuspatial.from_geopandas(gpdlhs)
-    assert (
-        gpdlhs.contains(gpdrhs).values == lhs.contains(rhs).values_host
-    ).all()
-    assert (
-        gpdrhs.contains(gpdlhs).values == rhs.contains(lhs).values_host
-    ).all()
+    expected = gpdlhs.contains(gpdrhs).values
+    got = lhs.contains(rhs).values_host
+    assert (expected == got).all()
+    expected = gpdrhs.contains(gpdlhs).values
+    got = rhs.contains(lhs).values_host
+    assert (got == expected).all()
 
 
 def test_one_polygon_one_multipoint(multipoint_generator, polygon_generator):
@@ -316,7 +327,9 @@ def test_one_polygon_one_multipoint(multipoint_generator, polygon_generator):
     gpdrhs = gpd.GeoSeries([*multipoint_generator(1, 5)])
     rhs = cuspatial.from_geopandas(gpdrhs)
     lhs = cuspatial.from_geopandas(gpdlhs)
-    assert gpdlhs.contains(gpdrhs).values == lhs.contains(rhs).values_host
+    expected = gpdlhs.contains(gpdrhs).values
+    got = lhs.contains(rhs).values_host
+    assert (got == expected).all()
 
 
 def test_max_polygons_max_multipoints(multipoint_generator, polygon_generator):
@@ -324,6 +337,6 @@ def test_max_polygons_max_multipoints(multipoint_generator, polygon_generator):
     gpdrhs = gpd.GeoSeries([*multipoint_generator(31, 10)])
     rhs = cuspatial.from_geopandas(gpdrhs)
     lhs = cuspatial.from_geopandas(gpdlhs)
-    assert (
-        gpdlhs.contains(gpdrhs).values == lhs.contains(rhs).values_host
-    ).all()
+    expected = gpdlhs.contains(gpdrhs).values
+    got = lhs.contains(rhs).values_host
+    assert (got == expected).all()
