@@ -24,11 +24,11 @@ def test_manual_polygons():
     )
     rhs = cuspatial.from_geopandas(gpdrhs)
     lhs = cuspatial.from_geopandas(gpdlhs)
-    expected = gpdlhs.contains(gpdrhs).values
     got = lhs.contains(rhs).values_host
+    expected = gpdlhs.contains(gpdrhs).values
     assert (got == expected).all()
-    expected = gpdrhs.contains(gpdlhs).values
     got = rhs.contains(lhs).values_host
+    expected = gpdrhs.contains(gpdlhs).values
     assert (got == expected).all()
 
 
@@ -45,8 +45,8 @@ def test_one_polygon_one_linestring_crosses_the_diagonal(linestring_generator):
     )
     linestring = cuspatial.from_geopandas(gpdlinestring)
     polygons = cuspatial.from_geopandas(gpdpolygon)
-    expected = gpdpolygon.contains(gpdlinestring).values
     got = polygons.contains(linestring).values_host
+    expected = gpdpolygon.contains(gpdlinestring).values
     assert (got == expected).all()
 
 
@@ -82,8 +82,8 @@ def test_one_polygon_with_hole_one_linestring_crossing_it(
     )
     linestring = cuspatial.from_geopandas(gpdlinestring)
     polygons = cuspatial.from_geopandas(gpdpolygon)
-    expected = gpdpolygon.contains(gpdlinestring).values
     got = polygons.contains(linestring).values_host
+    expected = gpdpolygon.contains(gpdlinestring).values
     assert (got == expected).all()
 
 
@@ -119,8 +119,8 @@ def test_float_precision_limits_failures(point, polygon, expects):
     gpdpolygon = gpd.GeoSeries(polygon)
     point = cuspatial.from_geopandas(gpdpoint)
     polygon = cuspatial.from_geopandas(gpdpolygon)
-    expected = gpdpolygon.contains(gpdpoint).values
     got = polygon.contains(point).values_host
+    expected = gpdpolygon.contains(gpdpoint).values
     assert got == expected
     assert got.values_host[0] == expects
 
