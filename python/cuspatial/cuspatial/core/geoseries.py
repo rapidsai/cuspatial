@@ -604,7 +604,8 @@ class GeoSeries(cudf.Series):
             or mode == "POLYGONS"
             or mode == "MULTIPOINTS"
         ):
-            # process for completed linestrings
+            # process for completed linestrings, polygons, and multipoints.
+            # Not necessary for points.
             result = cudf.DataFrame(
                 {"idx": point_indices, "pip": point_result}
             )
