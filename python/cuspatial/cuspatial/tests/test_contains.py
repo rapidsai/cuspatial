@@ -146,6 +146,7 @@ def test_float_precision_limits_failures(point, polygon, expects):
     ],
 )
 def test_float_precision_limits(point, polygon, expects):
+    """Corner case to test point on edges with floating point precision limits."""
     """Unique success cases identified by @mharris. These go in a pair
     with test_float_precision_limits_failures because these are
     inconsistent results, where 0.6 fails above (as True, within the

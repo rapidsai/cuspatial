@@ -166,7 +166,7 @@ class GeoSeries(cudf.Series):
 
         def point_indices(self):
             # Points only case
-            offsets = cp.arange(0, len(self.x) * 2 + 1, 2)
+            offsets = cp.arange(0, len(self.xy) + 1, 2)
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
 

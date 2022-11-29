@@ -216,7 +216,7 @@ def multilinestring_generator(linestring_generator):
 @pytest.fixture
 def simple_polygon_generator():
     """Generator for polygons with no interior ring.
-    Usage: poly=generator(n, distance_from_origin, radius)
+    Usage: polygon_generator(n, distance_from_origin, radius)
     """
     rstate = np.random.RandomState(0)
 
@@ -259,7 +259,7 @@ def polygon_generator():
 @pytest.fixture
 def multipolygon_generator():
     """Generator for multi complex polygons.
-    Usage: mpoly=generator(n, max_per_multi)
+    Usage: multipolygon_generator(n, max_per_multi)
     """
     rstate = np.random.RandomState(0)
 
