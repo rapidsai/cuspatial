@@ -32,17 +32,17 @@ def contains_properly(
     Parameters
     ----------
     test_points_x
-        x-coordinate of test points
+        x-coordinate of points to test for containment
     test_points_y
-        y-coordinate of test points
+        y-coordinate of points to test for containment
     poly_offsets
         beginning index of the first ring in each polygon
     poly_ring_offsets
         beginning index of the first point in each ring
     poly_points_x
-        x closed-coordinate of polygon points
+        x-coordinates of polygon vertices
     poly_points_y
-        y closed-coordinate of polygon points
+        y-coordinates of polygon vertices
 
     Returns
     -------

@@ -232,8 +232,8 @@ def simple_polygon_generator():
 @pytest.fixture
 def polygon_generator():
     """Generator for complex polygons. Each polygon will
-    have 1-4 randomly rotated interior polygons. Each polygon
-    is a circle, with very small inner ring polygons located in
+    have 1-4 randomly rotated interior rings. Each polygon
+    is a circle, with very small inner rings located in
     a spiral around its center.
     Usage: poly=generator(n, distance_from_origin, radius)
     """

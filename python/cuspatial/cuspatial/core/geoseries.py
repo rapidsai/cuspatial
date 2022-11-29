@@ -563,6 +563,45 @@ class GeoSeries(cudf.Series):
             ],
         )
 
+    def _align_to_index(
+        self: T,
+        index: ColumnLike,
+        how: str = "outer",
+        sort: bool = True,
+        allow_non_unique: bool = False,
+    ) -> T:
+        """
+        The values in the newly aligned columns will not change,
+        only positions in the union offsets and type codes.
+        """
+        aligned_union_offsets = (
+            self._column._meta.union_offsets._align_to_index(
+                index, how, sort, allow_non_unique
+            )
+        ).astype("int32")
+        aligned_union_offsets[
+            aligned_union_offsets.isna()
+        ] = Feature_Enum.NONE.value
+        aligned_input_types = self._column._meta.input_types._align_to_index(
+            index, how, sort, allow_non_unique
+        ).astype("int8")
+        aligned_input_types[
+            aligned_input_types.isna()
+        ] = Feature_Enum.NONE.value
+        column = GeoColumn(
+            (
+                self._column.points,
+                self._column.mpoints,
+                self._column.lines,
+                self._column.polygons,
+            ),
+            {
+                "input_types": aligned_input_types,
+                "union_offsets": aligned_union_offsets,
+            },
+        )
+        return GeoSeries(column)
+
     def align(self, other):
         """
         Align the rows of two GeoSeries using outer join.
@@ -651,7 +690,7 @@ class GeoSeries(cudf.Series):
         return self.iloc[gather_map]
 
     def contains_properly(self, other, align=True):
-        """Compute from a series of points and a series of polygons which
+        """Compute from a GeoSeries of points and a GeoSeries of polygons which
         points fall within each polygon. Note that polygons must be closed:
         the first and last coordinate of each polygon must be the same.
 
@@ -691,11 +730,11 @@ class GeoSeries(cudf.Series):
         Test whether 3 points fall within either of two polygons
         >>> gpdpoint = gpd.GeoSeries(
             [Point(0, 0)],
-            [Point(0, 0)],
-            [Point(0, 0)],
+            [Point(-1, 0)],
+            [Point(-2, 0)],
+            [Point(0, 1)],
             [Point(-1, 1)],
-            [Point(-1, 1)],
-            [Point(-1, 1)],
+            [Point(-2, 1)],
             )
         >>> gpdpolygon = gpd.GeoSeries(
             [
@@ -715,7 +754,7 @@ class GeoSeries(cudf.Series):
         2    False
         3     True
         4     True
-        5     True
+        5    False
         dtype: bool
 
         Note
@@ -734,29 +773,31 @@ class GeoSeries(cudf.Series):
         -------
         result : cudf.Series
             A Series of boolean values indicating whether each point falls
-            within each polygon.
+            within the corresponding polygon in the input.
         """
         if contains_only_polygons(self) is False:
             raise TypeError("left series contains non-polygons.")
 
+        (lhs, rhs) = self.align(other) if align else (self, other)
+
         # RHS conditioning:
         mode = "POINTS"
         # point in polygon
-        if contains_only_linestrings(other) is True:
+        if contains_only_linestrings(rhs) is True:
             # condition for linestrings
             mode = "LINESTRINGS"
-            xy = other.lines
-        elif contains_only_polygons(other) is True:
+            xy = rhs.lines
+        elif contains_only_polygons(rhs) is True:
             # polygon in polygon
             mode = "POLYGONS"
-            xy = other.polygons
-        elif contains_only_multipoints(other) is True:
+            xy = rhs.polygons
+        elif contains_only_multipoints(rhs) is True:
             # mpoint in polygon
             mode = "MULTIPOINTS"
-            xy = other.multipoints
+            xy = rhs.multipoints
         else:
             # no conditioning is required
-            xy = other.points
+            xy = rhs.points
         xy_points = xy.xy
         point_indices = xy.point_indices()
         points = GeoSeries(GeoColumn._from_points_xy(xy_points._column)).points
@@ -765,10 +806,10 @@ class GeoSeries(cudf.Series):
         point_result = contains_properly(
             points.x,
             points.y,
-            self.polygons.part_offset[:-1],
-            self.polygons.ring_offset[:-1],
-            self.polygons.x,
-            self.polygons.y,
+            lhs.polygons.part_offset[:-1],
+            lhs.polygons.ring_offset[:-1],
+            lhs.polygons.x,
+            lhs.polygons.y,
         )
         if (
             mode == "LINESTRINGS"
@@ -789,42 +830,3 @@ class GeoSeries(cudf.Series):
             )
             point_result.name = None
         return point_result
-
-    def _align_to_index(
-        self: T,
-        index: ColumnLike,
-        how: str = "outer",
-        sort: bool = True,
-        allow_non_unique: bool = False,
-    ) -> T:
-        """
-        The values in the newly aligned columns will not change,
-        only positions in the union offsets and type codes.
-        """
-        aligned_union_offsets = (
-            self._column._meta.union_offsets._align_to_index(
-                index, how, sort, allow_non_unique
-            )
-        ).astype("int32")
-        aligned_union_offsets[
-            aligned_union_offsets.isna()
-        ] = Feature_Enum.NONE.value
-        aligned_input_types = self._column._meta.input_types._align_to_index(
-            index, how, sort, allow_non_unique
-        ).astype("int8")
-        aligned_input_types[
-            aligned_input_types.isna()
-        ] = Feature_Enum.NONE.value
-        column = GeoColumn(
-            (
-                self._column.points,
-                self._column.mpoints,
-                self._column.lines,
-                self._column.polygons,
-            ),
-            {
-                "input_types": aligned_input_types,
-                "union_offsets": aligned_union_offsets,
-            },
-        )
-        return GeoSeries(column)
