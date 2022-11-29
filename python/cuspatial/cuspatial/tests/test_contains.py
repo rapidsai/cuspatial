@@ -6,7 +6,9 @@ import cuspatial
 
 
 @pytest.mark.xfail(
-    reason="The polygons share numerous boundaries, so pip is impossible."
+    reason="""The polygons share numerous boundaries. See
+    https://docs.google.com/document/d/1akxcRcUVK-qv5puK-mSTiKDKUS6UlR6Ccnr9_bJ4fi8/edit?pli=1#
+    for examples of each case."""
 )
 def test_manual_polygons():
     gpdlhs = gpd.GeoSeries([Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8))) * 6])
@@ -30,7 +32,12 @@ def test_manual_polygons():
     assert (got == expected).all()
 
 
-@pytest.mark.xfail(reason="The boundaries share points, so pip is impossible.")
+@pytest.mark.xfail(
+    reason="""The linestring is colinear with one of the polygon
+    edges. It is excluded from `.contains_properly`. See
+    https://docs.google.com/document/d/1akxcRcUVK-qv5puK-mSTiKDKUS6UlR6Ccnr9_bJ4fi8/edit?pli=1#
+    for detailed examples."""
+)
 def test_one_polygon_one_linestring_crosses_the_diagonal(linestring_generator):
     gpdlinestring = gpd.GeoSeries(LineString([[0, 0], [1, 1]]))
     gpdpolygon = gpd.GeoSeries(
@@ -44,7 +51,10 @@ def test_one_polygon_one_linestring_crosses_the_diagonal(linestring_generator):
 
 
 @pytest.mark.xfail(
-    reason="We don't support intersection yet to check for crossings."
+    reason="""The linestring has boundaries inside of the polygon, and crosses
+    over a single inner ring.  See
+    https://docs.google.com/document/d/1akxcRcUVK-qv5puK-mSTiKDKUS6UlR6Ccnr9_bJ4fi8/edit?pli=1#
+    for detailed examples."""
 )
 def test_one_polygon_with_hole_one_linestring_crossing_it(
     linestring_generator,
@@ -78,8 +88,15 @@ def test_one_polygon_with_hole_one_linestring_crossing_it(
 
 
 @pytest.mark.xfail(
-    reason="""These boundary cases conflict with Pandas results because they
-    implement `contains` and we implement `contains_properly`."""
+    reason="""These points are on edges of their corresponding polygons.
+    Because of floating point error, they can have inconsistent results with
+    GeoPandas. In this case, GeoPandas results are incorrect due to their
+    geometry engine. It is possible that implementing `.contains_properly`
+    would correct this error. These boundary cases conflict with GeoPandas
+    results because they implement `contains` and we implement
+    `contains_properly`. Detailed documentation of this in
+    https://docs.google.com/document/d/1akxcRcUVK-qv5puK-mSTiKDKUS6UlR6Ccnr9_bJ4fi8/edit?pli=1#
+    hasn't been completed yet."""
 )
 @pytest.mark.parametrize(
     "point, polygon, expects",
