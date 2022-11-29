@@ -263,11 +263,12 @@ def bench_point_in_polygon(benchmark, gpu_dataframe):
     y_points = (cupy.random.random(50000000) - 0.5) * 180
     short_dataframe = gpu_dataframe.iloc[0:32]
     geometry = short_dataframe["geometry"]
+    polygon_offset = cudf.Series(geometry.polygons.geometry_offset[0:31])
     benchmark(
         cuspatial.point_in_polygon,
         x_points,
         y_points,
-        geometry.polygons.geometry_offset[0:31],
+        polygon_offset,
         geometry.polygons.ring_offset,
         geometry.polygons.x,
         geometry.polygons.y,
