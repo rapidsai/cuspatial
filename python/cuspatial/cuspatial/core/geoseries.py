@@ -599,15 +599,6 @@ class GeoSeries(cudf.Series):
             self.polygons.x,
             self.polygons.y,
         )
-        """
-            # Apply binpreds rules on results:
-            # point in polygon = true for row
-                # reverse index, points indices refer back to row
-                # indices
-            # mpoint in polygon for all points = true
-            # linestring in polygon for all points = true
-            # polygon in polygon for all points = true
-        """
         if (
             mode == "LINESTRINGS"
             or mode == "POLYGONS"
