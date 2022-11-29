@@ -12,7 +12,7 @@ from cuspatial._lib.point_in_polygon import (
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
-def contains(
+def contains_properly(
     test_points_x,
     test_points_y,
     poly_offsets,

@@ -25,7 +25,7 @@ from cudf._typing import ColumnLike
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.binops.contains import contains
+from cuspatial.core.binops.contains import contains_properly
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
@@ -650,7 +650,7 @@ class GeoSeries(cudf.Series):
     ):
         return self.iloc[gather_map]
 
-    def contains(self, other, align=True):
+    def contains_properly(self, other, align=True):
         """Compute from a series of points and a series of polygons which
         points fall within each polygon. Note that polygons must be closed:
         the first and last coordinate of each polygon must be the same.
@@ -762,7 +762,7 @@ class GeoSeries(cudf.Series):
         points = GeoSeries(GeoColumn._from_points_xy(xy_points._column)).points
 
         # call pip on the three subtypes on the right:
-        point_result = contains(
+        point_result = contains_properly(
             points.x,
             points.y,
             self.polygons.part_offset[:-1],
