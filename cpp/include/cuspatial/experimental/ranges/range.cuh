@@ -44,10 +44,14 @@ class range {
   using value_type = iterator_value_type<IteratorType>;
   range(IteratorType begin, IteratorType end) : _begin(begin), _end(end) {}
 
+  /// Return the start iterator to the range
   auto CUSPATIAL_HOST_DEVICE begin() { return _begin; }
+  /// Return the end iterator to the range
   auto CUSPATIAL_HOST_DEVICE end() { return _end; }
+  /// Return the size of the range
   auto CUSPATIAL_HOST_DEVICE size() { return thrust::distance(_begin, _end); }
 
+  /// Access the `i`th element in the range
   template <typename IndexType>
   auto& CUSPATIAL_HOST_DEVICE operator[](IndexType i)
   {
