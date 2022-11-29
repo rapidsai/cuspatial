@@ -262,17 +262,21 @@ def test_one_polygon_one_linestring(linestring_generator):
     assert (got == expected).all()
 
 
-def test_four_polygons_four_linestrings(linestring_generator):
+def test_six_polygons_six_linestrings(linestring_generator):
     gpdlinestring = gpd.GeoSeries(
         [
+            LineString([[1.35, 0.35], [0.35, 0.65]]),
             LineString([[0.35, 0.35], [0.35, 0.65]]),
             LineString([[0.25, 0.25], [0.25, 0.75]]),
             LineString([[0.15, 0.15], [0.15, 0.85]]),
             LineString([[0.05, 0.05], [0.05, 0.95]]),
+            LineString([[0.05, 0.05], [1.05, 0.95]]),
         ]
     )
     gpdpolygon = gpd.GeoSeries(
         [
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]),
             Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]),
             Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]),
             Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]),
