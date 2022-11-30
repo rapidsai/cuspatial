@@ -709,23 +709,21 @@ class GeoSeries(cudf.Series):
         --------
 
         Test if a polygon is inside another polygon:
-        >>> gpdpoint = gpd.GeoSeries(
+        >>> point = cuspatial.GeoSeries(
             [Point(0.5, 0.5)],
             )
-        >>> gpdpolygon = gpd.GeoSeries(
+        >>> polygon = cuspatial.GeoSeries(
             [
                 Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
             ]
         )
-        >>> point = cuspatial.from_geopandas(gpdpoint)
-        >>> polygon = cuspatial.from_geopandas(gpdpolygon)
         >>> print(polygon.contains(point))
         0    False
         dtype: bool
 
 
         Test whether 3 points fall within either of two polygons
-        >>> gpdpoint = gpd.GeoSeries(
+        >>> point = cuspatial.GeoSeries(
             [Point(0, 0)],
             [Point(-1, 0)],
             [Point(-2, 0)],
@@ -733,7 +731,7 @@ class GeoSeries(cudf.Series):
             [Point(-1, 0)],
             [Point(-2, 0)],
             )
-        >>> gpdpolygon = gpd.GeoSeries(
+        >>> polygon = cuspatial.GeoSeries(
             [
                 Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
                 Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
@@ -743,21 +741,14 @@ class GeoSeries(cudf.Series):
                 Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
             ]
         )
-        >>> point = cuspatial.from_geopandas(gpdpoint)
-        >>> polygon = cuspatial.from_geopandas(gpdpolygon)
         >>> print(polygon.contains(point))
         0    False
         1    False
         2    False
-        3     True
-        4     True
-        5    False
+        3    False
+        4    False
+        5     True
         dtype: bool
-
-        Note
-        ----
-        input Series x and y will not be index aligned, but computed as
-        sequential arrays.
 
         Note
         ----
@@ -772,7 +763,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input.
         """
-        if contains_only_polygons(self) is False:
+        if not contains_only_polygons(self):
             raise TypeError("left series contains non-polygons.")
 
         (lhs, rhs) = self.align(other) if align else (self, other)
@@ -783,20 +774,20 @@ class GeoSeries(cudf.Series):
         if contains_only_linestrings(rhs) is True:
             # condition for linestrings
             mode = "LINESTRINGS"
-            xy = rhs.lines
+            geom = rhs.lines
         elif contains_only_polygons(rhs) is True:
             # polygon in polygon
             mode = "POLYGONS"
-            xy = rhs.polygons
+            geom = rhs.polygons
         elif contains_only_multipoints(rhs) is True:
             # mpoint in polygon
             mode = "MULTIPOINTS"
-            xy = rhs.multipoints
+            geom = rhs.multipoints
         else:
             # no conditioning is required
-            xy = rhs.points
-        xy_points = xy.xy
-        point_indices = xy.point_indices()
+            geom = rhs.points
+        xy_points = geom.xy
+        point_indices = geom.point_indices()
         points = GeoSeries(GeoColumn._from_points_xy(xy_points._column)).points
 
         # call pip on the three subtypes on the right:
@@ -818,10 +809,13 @@ class GeoSeries(cudf.Series):
             result = cudf.DataFrame(
                 {"idx": point_indices, "pip": point_result}
             )
+            # if the number of points in the polygon is equal to the number of
+            # points, then the requirements for `.contains_properly` are met
+            # for this geometry type.
             df_result = (
                 result.groupby("idx").sum().sort_index()
                 == result.groupby("idx").count().sort_index()
-            ).sort_index()
+            )
             point_result = cudf.Series(
                 df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
             )
