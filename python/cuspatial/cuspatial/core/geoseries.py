@@ -25,6 +25,12 @@ from cudf._typing import ColumnLike
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
+from cuspatial.core.binops.contains import contains_properly
+from cuspatial.utils.column_utils import (
+    contains_only_linestrings,
+    contains_only_multipoints,
+    contains_only_polygons,
+)
 
 T = TypeVar("T", bound="GeoSeries")
 
@@ -159,6 +165,13 @@ class GeoSeries(cudf.Series):
             existing_features = self._col.take(existing_indices._column)
             return existing_features
 
+        def point_indices(self):
+            # Return a cupy.ndarray containing the index values that each
+            # point belongs to.
+            offsets = cp.arange(0, len(self.xy) + 1, 2)
+            sizes = offsets[1:] - offsets[:-1]
+            return cp.repeat(self._series.index, sizes)
+
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
             super().__init__(list_series, meta)
@@ -167,6 +180,13 @@ class GeoSeries(cudf.Series):
         @property
         def geometry_offset(self):
             return self._get_current_features(self._type).offsets.values
+
+        def point_indices(self):
+            # Return a cupy.ndarray containing the index values from the
+            # MultiPoint GeoSeries that each individual point is member of.
+            offsets = cp.array(self.geometry_offset)
+            sizes = offsets[1:] - offsets[:-1]
+            return cp.repeat(self._series.index, sizes)
 
     class LineStringGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -182,6 +202,13 @@ class GeoSeries(cudf.Series):
             return self._get_current_features(
                 self._type
             ).elements.offsets.values
+
+        def point_indices(self):
+            # Return a cupy.ndarray containing the index values from the
+            # LineString GeoSeries that each individual point is member of.
+            offsets = cp.array(self.part_offset)
+            sizes = offsets[1:] - offsets[:-1]
+            return cp.repeat(self._series.index, sizes)
 
     class PolygonGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -203,6 +230,13 @@ class GeoSeries(cudf.Series):
             return self._get_current_features(
                 self._type
             ).elements.elements.offsets.values
+
+        def point_indices(self):
+            # Return a cupy.ndarray containing the index values from the
+            # Polygon GeoSeries that each individual point is member of.
+            offsets = cp.array(self.ring_offset)
+            sizes = offsets[1:] - offsets[:-1]
+            return cp.repeat(self._series.index, sizes)
 
     @property
     def points(self):
@@ -634,7 +668,9 @@ class GeoSeries(cudf.Series):
         dtype: geometry)
 
         """
-        index = other.index
+        index = (
+            other.index if len(other.index) >= len(self.index) else self.index
+        )
         aligned_left = self._align_to_index(index)
         aligned_right = other._align_to_index(index)
         aligned_right.index = index
@@ -654,3 +690,141 @@ class GeoSeries(cudf.Series):
         self, gather_map, keep_index=True, nullify=False, check_bounds=True
     ):
         return self.iloc[gather_map]
+
+    def contains_properly(self, other, align=True):
+        """Compute from a GeoSeries of points and a GeoSeries of polygons which
+        points are properly contained within the corresponding polygon. Polygon
+        A contains Point B properly if B intersects the interior of A but not
+        the boundary (or exterior).
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            to align the indices before computing .contains or not. If the
+            indices are not aligned, they will be compared based on their
+            implicit row order.
+
+        Examples
+        --------
+
+        Test if a polygon is inside another polygon:
+        >>> point = cuspatial.GeoSeries(
+            [Point(0.5, 0.5)],
+            )
+        >>> polygon = cuspatial.GeoSeries(
+            [
+                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            ]
+        )
+        >>> print(polygon.contains(point))
+        0    False
+        dtype: bool
+
+
+        Test whether three points fall within either of two polygons
+        >>> point = cuspatial.GeoSeries(
+            [Point(0, 0)],
+            [Point(-1, 0)],
+            [Point(-2, 0)],
+            [Point(0, 0)],
+            [Point(-1, 0)],
+            [Point(-2, 0)],
+            )
+        >>> polygon = cuspatial.GeoSeries(
+            [
+                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+                Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+                Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+                Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+            ]
+        )
+        >>> print(polygon.contains(point))
+        0    False
+        1    False
+        2    False
+        3    False
+        4    False
+        5     True
+        dtype: bool
+
+        Note
+        ----
+        poly_ring_offsets must contain only the rings that make up the polygons
+        indexed by poly_offsets. If there are rings in poly_ring_offsets that
+        are not part of the polygons in poly_offsets, results are likely to be
+        incorrect and behavior is undefined.
+        Note
+        ----
+        Polygons must be closed: the first and last coordinate of each polygon
+        must be the same.
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each point falls
+            within the corresponding polygon in the input.
+        """
+        if not contains_only_polygons(self):
+            raise TypeError(
+                "`.contains` can only be called with polygon series."
+            )
+
+        (lhs, rhs) = self.align(other) if align else (self, other)
+
+        # RHS conditioning:
+        mode = "POINTS"
+        # point in polygon
+        if contains_only_linestrings(rhs):
+            # condition for linestrings
+            mode = "LINESTRINGS"
+            geom = rhs.lines
+        elif contains_only_polygons(rhs) is True:
+            # polygon in polygon
+            mode = "POLYGONS"
+            geom = rhs.polygons
+        elif contains_only_multipoints(rhs) is True:
+            # mpoint in polygon
+            mode = "MULTIPOINTS"
+            geom = rhs.multipoints
+        else:
+            # no conditioning is required
+            geom = rhs.points
+        xy_points = geom.xy
+        point_indices = geom.point_indices()
+        points = GeoSeries(GeoColumn._from_points_xy(xy_points._column)).points
+
+        # call pip on the three subtypes on the right:
+        point_result = contains_properly(
+            points.x,
+            points.y,
+            lhs.polygons.part_offset[:-1],
+            lhs.polygons.ring_offset[:-1],
+            lhs.polygons.x,
+            lhs.polygons.y,
+        )
+        if (
+            mode == "LINESTRINGS"
+            or mode == "POLYGONS"
+            or mode == "MULTIPOINTS"
+        ):
+            # process for completed linestrings, polygons, and multipoints.
+            # Not necessary for points.
+            result = cudf.DataFrame(
+                {"idx": point_indices, "pip": point_result}
+            )
+            # if the number of points in the polygon is equal to the number of
+            # points, then the requirements for `.contains_properly` are met
+            # for this geometry type.
+            df_result = (
+                result.groupby("idx").sum().sort_index()
+                == result.groupby("idx").count().sort_index()
+            )
+            point_result = cudf.Series(
+                df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
+            )
+            point_result.name = None
+        return point_result
