@@ -21,13 +21,11 @@ def contains_properly(
     poly_points_y,
 ):
     """Compute from a series of points and a series of polygons which points
-    fall within each polygon. Note that polygons must be closed: the first and
-    last coordinate of each polygon must be the same.
-
-    This implements `.contains_properly`, which shares a large
-    space of correct cases with `GeoPandas.contains` but they do not
-    produce identical results. In the future we will use intersection
-    testing to match .contains behavior.
+    are properly contained within the corresponding polygon. Polygon A contains Point B 
+    properly if B intersects the interior of A but not the boundary (or exterior). 
+    
+    Note that polygons must be closed: the first and last vertex of each
+    polygon must be the same.
 
     Parameters
     ----------

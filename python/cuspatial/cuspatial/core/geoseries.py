@@ -693,8 +693,9 @@ class GeoSeries(cudf.Series):
 
     def contains_properly(self, other, align=True):
         """Compute from a GeoSeries of points and a GeoSeries of polygons which
-        points fall within each polygon. Note that polygons must be closed:
-        the first and last coordinate of each polygon must be the same.
+        points are properly contained within the corresponding polygon. Polygon
+        A contains Point B properly if B intersects the interior of A but not
+        the boundary (or exterior).
 
         Parameters
         ----------
@@ -756,6 +757,10 @@ class GeoSeries(cudf.Series):
         indexed by poly_offsets. If there are rings in poly_ring_offsets that
         are not part of the polygons in poly_offsets, results are likely to be
         incorrect and behavior is undefined.
+        Note
+        ----
+        Polygons must be closed: the first and last coordinate of each polygon
+        must be the same.
 
         Returns
         -------
@@ -764,14 +769,16 @@ class GeoSeries(cudf.Series):
             within the corresponding polygon in the input.
         """
         if not contains_only_polygons(self):
-            raise TypeError("left series contains non-polygons.")
+            raise TypeError(
+                "`.contains` can only be called with polygon series."
+            )
 
         (lhs, rhs) = self.align(other) if align else (self, other)
 
         # RHS conditioning:
         mode = "POINTS"
         # point in polygon
-        if contains_only_linestrings(rhs) is True:
+        if contains_only_linestrings(rhs):
             # condition for linestrings
             mode = "LINESTRINGS"
             geom = rhs.lines
