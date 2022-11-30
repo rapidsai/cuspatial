@@ -21,9 +21,10 @@ def contains_properly(
     poly_points_y,
 ):
     """Compute from a series of points and a series of polygons which points
-    are properly contained within the corresponding polygon. Polygon A contains Point B 
-    properly if B intersects the interior of A but not the boundary (or exterior). 
-    
+    are properly contained within the corresponding polygon. Polygon A contains
+    Point B properly if B intersects the interior of A but not the boundary (or
+    exterior).
+
     Note that polygons must be closed: the first and last vertex of each
     polygon must be the same.
 
