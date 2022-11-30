@@ -772,7 +772,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input.
         """
-        if contains_only_polygons(self) is False:
+        if not contains_only_polygons(self):
             raise TypeError("`.contains` can only be called with polygon series.")
 
         (lhs, rhs) = self.align(other) if align else (self, other)
