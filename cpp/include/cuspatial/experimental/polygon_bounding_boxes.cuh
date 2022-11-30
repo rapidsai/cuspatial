@@ -29,7 +29,7 @@ namespace cuspatial {
  *
  * @tparam PolygonOffsetIterator Iterator type to polygon offsets. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
- * @tparam OffsetIteratorB Iterator type to polygon ring offsets. Must meet the requirements of
+ * @tparam RingOffsetIterator Iterator type to polygon ring offsets. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
  * @tparam VertexIterator Iterator type to polygon vertices. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
