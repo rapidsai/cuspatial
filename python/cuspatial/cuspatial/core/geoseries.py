@@ -773,7 +773,7 @@ class GeoSeries(cudf.Series):
             within the corresponding polygon in the input.
         """
         if contains_only_polygons(self) is False:
-            raise TypeError("left series contains non-polygons.")
+            raise TypeError("`.contains` can only be called with polygon series.")
 
         (lhs, rhs) = self.align(other) if align else (self, other)
 
