@@ -17,6 +17,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/bounding_box.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/experimental/linestring_bounding_boxes.cuh>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
@@ -27,17 +28,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
-#include <thrust/functional.h>
-#include <thrust/gather.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/reduce.h>
-#include <thrust/scan.h>
-#include <thrust/scatter.h>
-#include <thrust/tuple.h>
 
 #include <memory>
 #include <utility>
@@ -56,20 +47,6 @@ std::unique_ptr<cudf::table> compute_linestring_bounding_boxes(
   rmm::mr::device_memory_resource* mr)
 {
   auto num_linestrings = linestring_offsets.size();
-  rmm::device_vector<int32_t> point_ids(x.size());
-
-  // Scatter the linestring offsets into a list of point_ids for reduction
-  thrust::scatter(rmm::exec_policy(stream),
-                  thrust::make_counting_iterator(0),
-                  thrust::make_counting_iterator(0) + num_linestrings,
-                  linestring_offsets.begin<int32_t>(),
-                  point_ids.begin());
-
-  thrust::inclusive_scan(rmm::exec_policy(stream),
-                         point_ids.begin(),
-                         point_ids.end(),
-                         point_ids.begin(),
-                         thrust::maximum<int32_t>());
 
   auto type = cudf::data_type{cudf::type_to_id<T>()};
   std::vector<std::unique_ptr<cudf::column>> cols{};
@@ -83,7 +60,7 @@ std::unique_ptr<cudf::table> compute_linestring_bounding_boxes(
   cols.push_back(
     cudf::make_numeric_column(type, num_linestrings, cudf::mask_state::UNALLOCATED, stream, mr));
 
-  auto points_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
+  auto vertices_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
 
   auto bounding_boxes_begin =
     cuspatial::make_box_output_iterator(cols.at(0)->mutable_view().begin<T>(),
@@ -91,12 +68,13 @@ std::unique_ptr<cudf::table> compute_linestring_bounding_boxes(
                                         cols.at(2)->mutable_view().begin<T>(),
                                         cols.at(3)->mutable_view().begin<T>());
 
-  point_bounding_boxes(point_ids.begin(),
-                       point_ids.end(),
-                       points_begin,
-                       bounding_boxes_begin,
-                       expansion_radius,
-                       stream);
+  linestring_bounding_boxes(linestring_offsets.begin<cudf::size_type>(),
+                            linestring_offsets.end<cudf::size_type>(),
+                            vertices_begin,
+                            vertices_begin + x.size(),
+                            bounding_boxes_begin,
+                            expansion_radius,
+                            stream);
 
   return std::make_unique<cudf::table>(std::move(cols));
 }

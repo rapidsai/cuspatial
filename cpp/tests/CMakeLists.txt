@@ -71,8 +71,8 @@ ConfigureTest(POINT_IN_POLYGON_TEST
 ConfigureTest(POINT_QUADTREE_TEST
     indexing/point_quadtree_test.cu)
 
-ConfigureTest(LINESTRING_BBOX_TEST
-    spatial/linestring_bbox_test.cu)
+ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST
+    spatial/linestring_bounding_boxes_test.cu)
 
 ConfigureTest(POLYGON_BOUNDING_BOXES_TEST
     spatial/polygon_bounding_boxes_test.cu)
@@ -121,6 +121,9 @@ ConfigureTest(HAVERSINE_TEST_EXP
 
 ConfigureTest(POLYGON_BOUNDING_BOXES_TEST_EXP
     experimental/spatial/polygon_bounding_boxes_test.cu)
+
+ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST_EXP
+    experimental/spatial/linestring_bounding_boxes_test.cu)
 
 ConfigureTest(POINT_DISTANCE_TEST_EXP
     experimental/spatial/point_distance_test.cu)
