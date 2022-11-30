@@ -22,16 +22,48 @@
 
 namespace cuspatial {
 
-template <class OffsetIteratorA,
-          class OffsetIteratorB,
+/**
+ * @brief Compute minimum bounding box for each polygon.
+ *
+ * @ingroup spatial_relationship
+ *
+ * @tparam PolygonOffsetIterator Iterator type to polygon offsets. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
+ * @tparam OffsetIteratorB Iterator type to polygon ring offsets. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
+ * @tparam VertexIterator Iterator type to polygon vertices. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-readable.
+ * @tparam BoundingBoxIterator Iterator type to bounding boxes. Must be writable using data of type
+ * `cuspatial::box<T>`. Must meet the requirements of [LegacyRandomAccessIterator][LinkLRAI] and be
+ * device-writeable.
+ * @tparam T The coordinate data value type.
+ * @tparam IndexT  The offset data value type.
+ * @param polygon_offsets_first Iterator to beginning of the range of input polygon offsets.
+ * @param polygon_offsets_last Iterator to end of the range of input polygon offsets.
+ * @param polygon_ring_offsets_first Iterator to beginning of the range of input polygon ring
+ *                                   offsets.
+ * @param polygon_ring_offsets_last Iterator to end of the range of input polygon ring offsets.
+ * @param polygon_vertices_first Iterator to beginning of the range of input polygon vertices.
+ * @param polygon_vertices_last Iterator to end of the range of input polygon vertices.
+ * @param bounding_boxes_first Iterator to beginning of the range of output bounding boxes.
+ * @param expansion_radius Optional radius to expand each vertex of the output bounding boxes.
+ * @param stream the CUDA stream on which to perform computations and allocate memory.
+ *
+ * @return An iterator to the end of the range of output bounding boxes.
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
+ */
+template <class PolygonOffsetIterator,
+          class RingOffsetIterator,
           class VertexIterator,
           class BoundingBoxIterator,
           class T      = iterator_vec_base_type<VertexIterator>,
-          class IndexT = iterator_value_type<OffsetIteratorA>>
-BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first,
-                                           OffsetIteratorA polygon_offsets_last,
-                                           OffsetIteratorB polygon_ring_offsets_first,
-                                           OffsetIteratorB polygon_ring_offsets_last,
+          class IndexT = iterator_value_type<PolygonOffsetIterator>>
+BoundingBoxIterator polygon_bounding_boxes(PolygonOffsetIterator polygon_offsets_first,
+                                           PolygonOffsetIterator polygon_offsets_last,
+                                           RingOffsetIterator polygon_ring_offsets_first,
+                                           RingOffsetIterator polygon_ring_offsets_last,
                                            VertexIterator polygon_vertices_first,
                                            VertexIterator polygon_vertices_last,
                                            BoundingBoxIterator bounding_boxes_first,

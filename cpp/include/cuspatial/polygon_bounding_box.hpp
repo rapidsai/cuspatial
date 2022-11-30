@@ -41,7 +41,6 @@ namespace cuspatial {
  * x_max - the maximum x-coordinate of each bounding box
  * y_max - the maximum y-coordinate of each bounding box
  */
-
 std::unique_ptr<cudf::table> polygon_bounding_boxes(
   cudf::column_view const& poly_offsets,
   cudf::column_view const& ring_offsets,
