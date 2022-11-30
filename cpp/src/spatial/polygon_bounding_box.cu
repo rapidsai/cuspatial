@@ -62,10 +62,11 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
 
   auto vertices_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
 
-  auto bbox_mins  = cuspatial::make_vec_2d_output_iterator(cols.at(0)->mutable_view().begin<T>(),
-                                                          cols.at(1)->mutable_view().begin<T>());
-  auto bbox_maxes = cuspatial::make_vec_2d_output_iterator(cols.at(2)->mutable_view().begin<T>(),
-                                                           cols.at(3)->mutable_view().begin<T>());
+  auto bounding_boxes_begin =
+    cuspatial::make_box_output_iterator(cols.at(0)->mutable_view().begin<T>(),
+                                        cols.at(1)->mutable_view().begin<T>(),
+                                        cols.at(2)->mutable_view().begin<T>(),
+                                        cols.at(3)->mutable_view().begin<T>());
 
   cuspatial::polygon_bounding_boxes(poly_offsets.begin<cudf::size_type>(),
                                     poly_offsets.end<cudf::size_type>(),
@@ -73,7 +74,7 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
                                     ring_offsets.end<cudf::size_type>(),
                                     vertices_begin,
                                     vertices_begin + x.size(),
-                                    thrust::make_zip_iterator(bbox_mins, bbox_maxes),
+                                    bounding_boxes_begin,
                                     expansion_radius,
                                     stream);
 

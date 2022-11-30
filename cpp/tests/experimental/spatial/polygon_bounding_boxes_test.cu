@@ -18,6 +18,7 @@
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/geometry/box.hpp>
 #include <cuspatial/experimental/polygon_bounding_boxes.cuh>
 #include <cuspatial/vec_2d.hpp>
 
@@ -42,10 +43,7 @@ TYPED_TEST(PolygonBoundingBoxTest, test_empty)
   auto ring_offsets = make_device_vector<int32_t>({});
   auto vertices     = make_device_vector<vec_2d<T>>({});
 
-  auto bbox_min = rmm::device_vector<cuspatial::vec_2d<T>>(poly_offsets.size());
-  auto bbox_max = rmm::device_vector<cuspatial::vec_2d<T>>(poly_offsets.size());
-
-  auto bboxes_begin = thrust::make_zip_iterator(bbox_min.begin(), bbox_max.begin());
+  auto bboxes = rmm::device_vector<cuspatial::box<T>>(poly_offsets.size());
 
   auto bboxes_end = cuspatial::polygon_bounding_boxes(poly_offsets.begin(),
                                                       poly_offsets.end(),
@@ -53,9 +51,9 @@ TYPED_TEST(PolygonBoundingBoxTest, test_empty)
                                                       ring_offsets.end(),
                                                       vertices.begin(),
                                                       vertices.end(),
-                                                      bboxes_begin);
+                                                      bboxes.begin());
 
-  EXPECT_EQ(std::distance(bboxes_begin, bboxes_end), 0);
+  EXPECT_EQ(std::distance(bboxes.begin(), bboxes_end), 0);
 }
 
 TYPED_TEST(PolygonBoundingBoxTest, test_one)
@@ -67,10 +65,7 @@ TYPED_TEST(PolygonBoundingBoxTest, test_one)
   auto vertices     = make_device_vector<vec_2d<T>>(
     {{2.488450, 5.856625}, {1.333584, 5.008840}, {3.460720, 4.586599}, {2.488450, 5.856625}});
 
-  auto bbox_min = rmm::device_vector<cuspatial::vec_2d<T>>(poly_offsets.size());
-  auto bbox_max = rmm::device_vector<cuspatial::vec_2d<T>>(poly_offsets.size());
-
-  auto bboxes_begin = thrust::make_zip_iterator(bbox_min.begin(), bbox_max.begin());
+  auto bboxes = rmm::device_vector<cuspatial::box<T>>(poly_offsets.size());
 
   auto bboxes_end = cuspatial::polygon_bounding_boxes(poly_offsets.begin(),
                                                       poly_offsets.end(),
@@ -78,14 +73,14 @@ TYPED_TEST(PolygonBoundingBoxTest, test_one)
                                                       ring_offsets.end(),
                                                       vertices.begin(),
                                                       vertices.end(),
-                                                      bboxes_begin);
+                                                      bboxes.begin());
 
-  EXPECT_EQ(std::distance(bboxes_begin, bboxes_end), 1);
+  EXPECT_EQ(std::distance(bboxes.begin(), bboxes_end), 1);
 
-  auto bbox_min_expected = make_device_vector<vec_2d<T>>({{1.333584, 4.586599}});
-  auto bbox_max_expected = make_device_vector<vec_2d<T>>({{3.460720, 5.856625}});
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(bbox_min, bbox_min_expected);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(bbox_max, bbox_max_expected);
+  auto bboxes_expected =
+    make_device_vector<cuspatial::box<T>>({{{1.333584, 4.586599}, {3.460720, 5.856625}}});
+
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(bboxes, bboxes_expected);
 }
 
 TYPED_TEST(PolygonBoundingBoxTest, test_small)
@@ -116,10 +111,7 @@ TYPED_TEST(PolygonBoundingBoxTest, test_small)
                                                  {2.415080, 2.896937},
                                                  {3.208660, 3.745936}});
 
-  auto bbox_min = rmm::device_vector<cuspatial::vec_2d<T>>(poly_offsets.size());
-  auto bbox_max = rmm::device_vector<cuspatial::vec_2d<T>>(poly_offsets.size());
-
-  auto bboxes_begin = thrust::make_zip_iterator(bbox_min.begin(), bbox_max.begin());
+  auto bboxes = rmm::device_vector<cuspatial::box<T>>(poly_offsets.size());
 
   auto bboxes_end = cuspatial::polygon_bounding_boxes(poly_offsets.begin(),
                                                       poly_offsets.end(),
@@ -127,20 +119,15 @@ TYPED_TEST(PolygonBoundingBoxTest, test_small)
                                                       ring_offsets.end(),
                                                       vertices.begin(),
                                                       vertices.end(),
-                                                      bboxes_begin);
+                                                      bboxes.begin());
 
-  EXPECT_EQ(std::distance(bboxes_begin, bboxes_end), 4);
+  EXPECT_EQ(std::distance(bboxes.begin(), bboxes_end), 4);
 
-  auto bbox_min_expected =
-    make_device_vector<vec_2d<T>>({{1.3335840000000001, 4.5865989999999996},
-                                   {5.0398230000000002, 1.503906},
-                                   {5.5737199999999998, 0.086693000000000006},
-                                   {1.0348919999999999, 2.8969369999999999}});
-  auto bbox_max_expected =
-    make_device_vector<vec_2d<T>>({{3.4607199999999998, 5.8566250000000002},
-                                   {7.1906739999999996, 5.653384},
-                                   {6.7035340000000003, 1.235638},
-                                   {3.2086600000000001, 4.5415289999999997}});
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(bbox_min, bbox_min_expected);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(bbox_max, bbox_max_expected);
+  auto bboxes_expected = make_device_vector<cuspatial::box<T>>(
+    {{{1.3335840000000001, 4.5865989999999996}, {3.4607199999999998, 5.8566250000000002}},
+     {{5.0398230000000002, 1.503906}, {7.1906739999999996, 5.653384}},
+     {{5.5737199999999998, 0.086693000000000006}, {6.7035340000000003, 1.235638}},
+     {{1.0348919999999999, 2.8969369999999999}, {3.2086600000000001, 4.5415289999999997}}});
+
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(bboxes, bboxes);
 }

@@ -85,15 +85,16 @@ std::unique_ptr<cudf::table> compute_linestring_bounding_boxes(
 
   auto points_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
 
-  auto bbox_mins  = cuspatial::make_vec_2d_output_iterator(cols.at(0)->mutable_view().begin<T>(),
-                                                          cols.at(1)->mutable_view().begin<T>());
-  auto bbox_maxes = cuspatial::make_vec_2d_output_iterator(cols.at(2)->mutable_view().begin<T>(),
-                                                           cols.at(3)->mutable_view().begin<T>());
+  auto bounding_boxes_begin =
+    cuspatial::make_box_output_iterator(cols.at(0)->mutable_view().begin<T>(),
+                                        cols.at(1)->mutable_view().begin<T>(),
+                                        cols.at(2)->mutable_view().begin<T>(),
+                                        cols.at(3)->mutable_view().begin<T>());
 
   point_bounding_boxes(point_ids.begin(),
                        point_ids.end(),
                        points_begin,
-                       thrust::make_zip_iterator(bbox_mins, bbox_maxes),
+                       bounding_boxes_begin,
                        expansion_radius,
                        stream);
 

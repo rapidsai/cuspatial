@@ -192,30 +192,24 @@ struct trajectory_test_data {
   };
 
   struct box_minmax {
-    using point_tuple = thrust::tuple<cuspatial::vec_2d<T>, cuspatial::vec_2d<T>>;
-    __host__ __device__ point_tuple operator()(point_tuple const& a, point_tuple const& b)
+    __host__ __device__ box<T> operator()(box<T> const& a, box<T> const& b)
     {
-      vec_2d<T> p1, p2, p3, p4;
-      thrust::tie(p1, p2) = a;
-      thrust::tie(p3, p4) = b;
-      return {box_min(box_min(p1, p2), p3), box_max(box_max(p1, p2), p4)};
+      return {box_min(box_min(a.v1, a.v2), b.v1), box_max(box_max(a.v1, a.v2), b.v2)};
     }
   };
 
   struct point_bbox_functor {
     T expansion_radius{};
-    using point_tuple = thrust::tuple<cuspatial::vec_2d<T>, cuspatial::vec_2d<T>>;
-    __host__ __device__ point_tuple operator()(cuspatial::vec_2d<T> const& p)
+    __host__ __device__ box<T> operator()(cuspatial::vec_2d<T> const& p)
     {
       auto expansion = cuspatial::vec_2d<T>{expansion_radius, expansion_radius};
-      return point_tuple{p - expansion, p + expansion};
+      return {p - expansion, p + expansion};
     }
   };
 
-  auto extrema(T expansion_radius = T{})
+  auto bounding_boxes(T expansion_radius = T{})
   {
-    auto minima = rmm::device_vector<cuspatial::vec_2d<T>>(num_trajectories);
-    auto maxima = rmm::device_vector<cuspatial::vec_2d<T>>(num_trajectories);
+    auto bounding_boxes = rmm::device_vector<box<T>>(num_trajectories);
 
     auto point_tuples =
       thrust::make_transform_iterator(points_sorted.begin(), point_bbox_functor{expansion_radius});
@@ -224,11 +218,11 @@ struct trajectory_test_data {
                           ids_sorted.end(),
                           point_tuples,
                           thrust::discard_iterator{},
-                          thrust::make_zip_iterator(minima.begin(), maxima.begin()),
+                          bounding_boxes.begin(),
                           thrust::equal_to<std::int32_t>(),
                           box_minmax{});
 
-    return std::pair{minima, maxima};
+    return bounding_boxes;
   }
 
   struct duration_functor {
