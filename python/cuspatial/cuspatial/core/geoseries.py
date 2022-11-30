@@ -729,9 +729,9 @@ class GeoSeries(cudf.Series):
             [Point(0, 0)],
             [Point(-1, 0)],
             [Point(-2, 0)],
-            [Point(0, 1)],
-            [Point(-1, 1)],
-            [Point(-2, 1)],
+            [Point(0, 0)],
+            [Point(-1, 0)],
+            [Point(-2, 0)],
             )
         >>> gpdpolygon = gpd.GeoSeries(
             [
