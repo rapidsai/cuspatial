@@ -692,9 +692,10 @@ class GeoSeries(cudf.Series):
         return self.iloc[gather_map]
 
     def contains_properly(self, other, align=True):
-        """Compute from a GeoSeries of points and a GeoSeries of polygons which
-        points fall within each polygon. Note that polygons must be closed:
-        the first and last coordinate of each polygon must be the same.
+        """Compute from a GeoSeries of points and a GeoSeries of polygons which 
+        points are properly contained within the corresponding polygon. Polygon A
+        contains Point B properly if B intersects the interior of A but not the
+        boundary (or exterior). 
 
         Parameters
         ----------
@@ -765,7 +766,9 @@ class GeoSeries(cudf.Series):
         indexed by poly_offsets. If there are rings in poly_ring_offsets that
         are not part of the polygons in poly_offsets, results are likely to be
         incorrect and behavior is undefined.
-
+Note
+----
+Polygons must be closed: the first and last coordinate of each polygon must be the same.
         Returns
         -------
         result : cudf.Series
