@@ -30,16 +30,16 @@
 
 namespace cuspatial {
 
-template <class OffsetIteratorA,
-          class OffsetIteratorB,
+template <class PolygonOffsetIterator,
+          class RingOffsetIterator,
           class VertexIterator,
           class BoundingBoxIterator,
           class T,
           class IndexT>
-BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first,
-                                           OffsetIteratorA polygon_offsets_last,
-                                           OffsetIteratorB polygon_ring_offsets_first,
-                                           OffsetIteratorB polygon_ring_offsets_last,
+BoundingBoxIterator polygon_bounding_boxes(PolygonOffsetIterator polygon_offsets_first,
+                                           PolygonOffsetIterator polygon_offsets_last,
+                                           RingOffsetIterator polygon_ring_offsets_first,
+                                           RingOffsetIterator polygon_ring_offsets_last,
                                            VertexIterator polygon_vertices_first,
                                            VertexIterator polygon_vertices_last,
                                            BoundingBoxIterator bounding_boxes_first,
@@ -51,8 +51,8 @@ BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first
   static_assert(is_same<vec_2d<T>, iterator_value_type<VertexIterator>>(),
                 "Input vertices must be cuspatial::vec_2d");
 
-  static_assert(cuspatial::is_integral<iterator_value_type<OffsetIteratorA>,
-                                       iterator_value_type<OffsetIteratorB>>(),
+  static_assert(cuspatial::is_integral<iterator_value_type<PolygonOffsetIterator>,
+                                       iterator_value_type<RingOffsetIterator>>(),
                 "OffsetIterators must have integral value type.");
 
   auto const num_polys = std::distance(polygon_offsets_first, polygon_offsets_last);
