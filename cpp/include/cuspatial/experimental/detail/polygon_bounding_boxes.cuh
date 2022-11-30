@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/experimental/bounding_box.cuh>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -29,71 +30,12 @@
 
 namespace cuspatial {
 
-namespace detail {
-
-template <class T,
-          class OffsetIteratorA,
-          class OffsetIteratorB,
-          class VertexIterator,
-          class BoundingBoxIterator>
-BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first,
-                                           OffsetIteratorA polygon_offsets_last,
-                                           OffsetIteratorB polygon_ring_offsets_first,
-                                           OffsetIteratorB polygon_ring_offsets_last,
-                                           VertexIterator polygon_vertices_first,
-                                           VertexIterator polygon_vertices_last,
-                                           BoundingBoxIterator bounding_boxes_first,
-                                           T expansion_radius,
-                                           rmm::cuda_stream_view stream)
-{
-  auto const num_polygons = std::distance(polygon_offsets_first, polygon_offsets_last);
-  auto const num_rings    = std::distance(polygon_ring_offsets_first, polygon_ring_offsets_last);
-  auto const num_poly_vertices = std::distance(polygon_vertices_first, polygon_vertices_last);
-
-  // Wrapped in an IIFE so `first_ring_offsets` is freed on return
-  auto vertex_ids = [&]() {
-    // TODO: use device_uvector
-    rmm::device_vector<int32_t> vertex_ids(num_poly_vertices);
-    rmm::device_vector<int32_t> first_ring_offsets(num_polygons);
-
-    // Gather the first ring offset for each polygon
-    thrust::gather(rmm::exec_policy(stream),
-                   polygon_offsets_first,
-                   polygon_offsets_last,
-                   polygon_ring_offsets_first,
-                   first_ring_offsets.begin());
-
-    // Scatter the first ring offset into a list of vertex_ids for reduction
-    thrust::scatter(rmm::exec_policy(stream),
-                    thrust::make_counting_iterator(0),
-                    thrust::make_counting_iterator(0) + num_polygons,
-                    first_ring_offsets.begin(),
-                    vertex_ids.begin());
-
-    thrust::inclusive_scan(rmm::exec_policy(stream),
-                           vertex_ids.begin(),
-                           vertex_ids.end(),
-                           vertex_ids.begin(),
-                           thrust::maximum<int32_t>());
-
-    return vertex_ids;
-  }();
-
-  return point_bounding_boxes(vertex_ids.begin(),
-                              vertex_ids.end(),
-                              polygon_vertices_first,
-                              bounding_boxes_first,
-                              expansion_radius,
-                              stream);
-}
-
-}  // namespace detail
-
 template <class OffsetIteratorA,
           class OffsetIteratorB,
           class VertexIterator,
           class BoundingBoxIterator,
-          class T>
+          class T,
+          class IndexT>
 BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first,
                                            OffsetIteratorA polygon_offsets_last,
                                            OffsetIteratorB polygon_ring_offsets_first,
@@ -124,14 +66,14 @@ BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first
 
   if (num_polys == 0 || num_rings == 0 || num_poly_vertices == 0) { return bounding_boxes_first; }
 
-  return detail::polygon_bounding_boxes<T>(polygon_offsets_first,
-                                           polygon_offsets_last,
-                                           polygon_ring_offsets_first,
-                                           polygon_ring_offsets_last,
-                                           polygon_vertices_first,
-                                           polygon_vertices_last,
-                                           bounding_boxes_first,
-                                           expansion_radius,
-                                           stream);
+  auto vertex_ids_iter = make_geometry_id_iterator<IndexT>(
+    polygon_offsets_first, polygon_offsets_last, polygon_ring_offsets_first);
+
+  return point_bounding_boxes(vertex_ids_iter,
+                              vertex_ids_iter + num_poly_vertices,
+                              polygon_vertices_first,
+                              bounding_boxes_first,
+                              expansion_radius,
+                              stream);
 }
 }  // namespace cuspatial

@@ -26,7 +26,8 @@ template <class OffsetIteratorA,
           class OffsetIteratorB,
           class VertexIterator,
           class BoundingBoxIterator,
-          class T = iterator_vec_base_type<VertexIterator>>
+          class T      = iterator_vec_base_type<VertexIterator>,
+          class IndexT = iterator_value_type<OffsetIteratorA>>
 BoundingBoxIterator polygon_bounding_boxes(OffsetIteratorA polygon_offsets_first,
                                            OffsetIteratorA polygon_offsets_last,
                                            OffsetIteratorB polygon_ring_offsets_first,
