@@ -723,7 +723,7 @@ class GeoSeries(cudf.Series):
         dtype: bool
 
 
-        Test whether 3 points fall within either of two polygons
+        Test whether three points fall within either of two polygons
         >>> point = cuspatial.GeoSeries(
             [Point(0, 0)],
             [Point(-1, 0)],
