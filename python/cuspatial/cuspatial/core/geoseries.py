@@ -780,7 +780,7 @@ class GeoSeries(cudf.Series):
         # RHS conditioning:
         mode = "POINTS"
         # point in polygon
-        if contains_only_linestrings(rhs) is True:
+        if contains_only_linestrings(rhs):
             # condition for linestrings
             mode = "LINESTRINGS"
             xy = rhs.lines
