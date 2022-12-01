@@ -767,7 +767,7 @@ class GeoSeries(cudf.Series):
 
     def covers(self, other, align=True):
         """A covers B if no points of B are in the exterior of A."""
-        return _binop.covers(self, other, align)
+        return _binop("covers", self, other, align)()
 
     def intersects(self, other, align=True):
         """Compute from a GeoSeries of points and a GeoSeries of polygons which
@@ -786,7 +786,7 @@ class GeoSeries(cudf.Series):
         """An object is said to be within other if at least one of its points
         is located in the interior and no points are located in the exterior
         of the other."""
-        return _binop.within(self, other, align=align)
+        return _binop("within", self, other, align=align)()
 
     def crosses(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
@@ -798,7 +798,7 @@ class GeoSeries(cudf.Series):
         # Crosses requires the use of point_in_polygon but only requires that
         # 1 or more points are within the polygon. This differs from
         # `.contains` which requires all of them.
-        return _binop.crosses(self, other, align=align)
+        return _binop("crosses", self, other, align=align)()
 
     def overlaps(self, other, align=True):
         """Returns True for all aligned geometries that overlap other, else
@@ -809,4 +809,4 @@ class GeoSeries(cudf.Series):
         interiors of the geometries has the same dimension as the geometries
         themselves."""
         # Overlaps has the same requirement as crosses.
-        return _binop.overlaps(self, other, align=align)
+        return _binop("overlaps", self, other, align=align)()
