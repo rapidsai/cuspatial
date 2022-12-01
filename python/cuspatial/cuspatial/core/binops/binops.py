@@ -11,31 +11,111 @@ from cuspatial.utils.column_utils import (
 )
 
 
+class _binopPreprocessor:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+
 class _binop:
     def __init__(self, op, lhs, rhs, align=True):
+        """Compute the binary operation `op` on `lhs` and `rhs`.
+
+        There are ten binary operations supported by cuspatial:
+        - `.equals`
+        - `.disjoint`
+        - `.touches`
+        - `.contains`
+        - `.contains_properly`
+        - `.covers`
+        - `.intersects`
+        - `.within`
+        - `.crosses`
+        - `.overlaps`
+
+        There are twenty-five ordering combinations of `lhs` and `rhs`:
+        - point     point
+        - point     multipoint
+        - point     linestring
+        - point     multilinestring
+        - point     polygon
+        - point     multipolygon
+        - multipoint point
+        - multipoint multipoint
+        - multipoint linestring
+        - multipoint multilinestring
+        - multipoint polygon
+        - multipoint multipolygon
+        - linestring point
+        - linestring multipoint
+        - linestring linestring
+        - linestring multilinestring
+        - linestring polygon
+        - linestring multipolygon
+        - multilinestring point
+        - multilinestring multipoint
+        - multilinestring linestring
+        - multilinestring multilinestring
+        - multilinestring polygon
+        - multilinestring multipolygon
+        - polygon point
+        - polygon multipoint
+        - polygon linestring
+        - polygon multilinestring
+        - polygon polygon
+        - polygon multipolygon
+        - multipolygon point
+        - multipolygon multipoint
+        - multipolygon linestring
+        - multipolygon multilinestring
+        - multipolygon polygon
+        - multipolygon multipolygon
+
+        Parameters
+        ----------
+        op : str
+            The binary operation to perform.
+        lhs : GeoSeries
+            The left-hand-side of the binary operation.
+        rhs : GeoSeries
+            The right-hand-side of the binary operation.
+        align : bool
+            If True, align the indices of `lhs` and `rhs` before performing
+            the binary operation. If False, `lhs` and `rhs` must have the
+            same index.
+
+        Returns
+        -------
+        GeoSeries
+            A GeoSeries containing the result of the binary operation.
+        """
         (self.lhs, self.rhs) = lhs.align(rhs) if align else (lhs, rhs)
         self.align = align
 
         # Type disambiguation
+        # Type disambiguation has a large effect on the decisions of the
+        # algorithm.
+        (self.lhs, self.rhs) = self.preprocess(op, self.lhs, self.rhs)
+        breakpoint()
         # Type determines discrete math recombination outcome
         # RHS conditioning:
         mode = "POINTS"
         # point in polygon
-        if contains_only_linestrings(rhs):
+        if contains_only_linestrings(self.rhs):
             # condition for linestrings
             mode = "LINESTRINGS"
-            geom = rhs.lines
-        elif contains_only_polygons(rhs) is True:
+            geom = self.rhs.lines
+        elif contains_only_polygons(self.rhs) is True:
             # polygon in polygon
             mode = "POLYGONS"
-            geom = rhs.polygons
-        elif contains_only_multipoints(rhs) is True:
+            geom = self.rhs.polygons
+        elif contains_only_multipoints(self.rhs) is True:
             # mpoint in polygon
             mode = "MULTIPOINTS"
-            geom = rhs.multipoints
+            geom = self.rhs.multipoints
         else:
             # no conditioning is required
-            geom = rhs.points
+            geom = self.rhs.points
         xy_points = geom.xy
 
         # Arrange into shape for calling pip, intersection, or equals
@@ -46,7 +126,7 @@ class _binop:
 
         # Binop call
         _binop = getattr(self, op)
-        point_result = _binop(lhs, points)
+        point_result = _binop(self.lhs, points)
 
         # Discrete math recombination
         if (
@@ -76,15 +156,31 @@ class _binop:
     def __call__(self) -> cudf.Series:
         return self.op_result
 
-    def preprocess(self, lhs, rhs, align=True):
-        # If point.intersects(polygon) is used, reverse lhs and rhs
-        def intersects(lhs, rhs, align=True):
-            # Preprocessing for intersects called via getattr
-            return rhs, lhs
+    def preprocess(self, op, lhs, rhs):
+        """Preprocess the input data for the binary operation.
 
-        def contains_properly(lhs, rhs, align=True):
-            # Preprocessing for contains_properly called via getattr
-            return lhs, rhs
+        Parameters
+        ----------
+        op : str
+            The binary operation to perform.
+        lhs : GeoSeries
+            The left-hand-side of the GeoSeries-level binary operation.
+        rhs : GeoSeries
+            The right-hand-side of the GeoSeries-level binary operation.
+
+        Returns
+        -------
+        GeoSeries
+            The left-hand-side of the internal binary operation.
+        GeoSeries
+            The right-hand-side of the internal binary operation.
+        """
+        if op == "contains" or op == "contains_properly":
+            return (lhs, rhs)
+        elif op == "intersects":
+            breakpoint()
+            if contains_only_polygons(rhs):
+                return (rhs, lhs)
 
     def contains_properly(self, lhs, points):
         if not contains_only_polygons(lhs):
