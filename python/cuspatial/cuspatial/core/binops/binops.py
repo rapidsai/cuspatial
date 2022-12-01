@@ -96,7 +96,6 @@ class _binop:
         # Type disambiguation has a large effect on the decisions of the
         # algorithm.
         (self.lhs, self.rhs) = self.preprocess(op, self.lhs, self.rhs)
-        breakpoint()
         # Type determines discrete math recombination outcome
         # RHS conditioning:
         mode = "POINTS"
@@ -175,12 +174,10 @@ class _binop:
         GeoSeries
             The right-hand-side of the internal binary operation.
         """
-        if op == "contains" or op == "contains_properly":
-            return (lhs, rhs)
-        elif op == "intersects":
-            breakpoint()
+        if op == "intersects" or op == "within":
             if contains_only_polygons(rhs):
                 return (rhs, lhs)
+        return (lhs, rhs)
 
     def contains_properly(self, lhs, points):
         if not contains_only_polygons(lhs):
@@ -216,13 +213,13 @@ class _binop:
         # TODO: If rhs is polygon and lhs is point, use contains_properly
         return self.contains_properly(lhs, rhs)
 
-    def within(lhs, rhs, align=True):
+    def within(self, lhs, rhs, align=True):
         """An object is said to be within rhs if at least one of its points
         is located in the interior and no points are located in the exterior
         of the rhs."""
-        return rhs.contains_properly(lhs, align=align)
+        return self.contains_properly(lhs, rhs)
 
-    def crosses(lhs, rhs, align=True):
+    def crosses(self, lhs, rhs, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that crosses rhs.
 
@@ -232,9 +229,9 @@ class _binop:
         # Crosses requires the use of point_in_polygon but only requires that
         # 1 or more points are within the polygon. This differs from
         # `.contains` which requires all of them.
-        return lhs.contains_properly(rhs, align=align)
+        return self.contains_properly(lhs, rhs)
 
-    def overlaps(lhs, rhs, align=True):
+    def overlaps(self, lhs, rhs, align=True):
         """Returns True for all aligned geometries that overlap rhs, else
         False.
 
@@ -243,4 +240,4 @@ class _binop:
         interiors of the geometries has the same dimension as the geometries
         themselves."""
         # Overlaps has the same requirement as crosses.
-        return lhs.contains_properly(rhs, align=align)
+        return self.contains_properly(lhs, rhs)
