@@ -12,12 +12,6 @@ from cuspatial.utils.column_utils import (
 )
 
 
-class _binopPreprocessor:
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-
-
 class _binop:
     def __init__(self, op, lhs, rhs, align=True):
         """Compute the binary operation `op` on `lhs` and `rhs`.
