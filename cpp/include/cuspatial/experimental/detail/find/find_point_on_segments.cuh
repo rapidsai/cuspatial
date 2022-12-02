@@ -83,6 +83,8 @@ void find_point_on_segments(MultiPointRange multipoints,
   CUSPATIAL_EXPECTS(multipoints.size() == num_segments,
                     "Input should contain the same number of pairs.");
 
+  if (num_segments == 0) return;
+
   thrust::tabulate(rmm::exec_policy(stream),
                    mergeable_flag,
                    mergeable_flag + multipoints.num_points(),
