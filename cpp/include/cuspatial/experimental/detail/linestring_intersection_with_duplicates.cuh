@@ -90,54 +90,55 @@ struct id_ranges {
 template <typename GeomType, typename index_t>
 struct linestring_intersection_intermediates {
   /// Offset array to geometries, temporary.
-  rmm::device_uvector<index_t> offsets;
+  std::unique_ptr<rmm::device_uvector<index_t>> offsets;
   /// Array to store the resulting geometry, non-temporary.
-  rmm::device_uvector<GeomType> geoms;
+  std::unique_ptr<rmm::device_uvector<GeomType>> geoms;
   /// Look-back ids for the resulting geometry, temporary.
-  rmm::device_uvector<index_t> lhs_linestring_ids;
+  std::unique_ptr<rmm::device_uvector<index_t>> lhs_linestring_ids;
   /// Look-back ids for the resulting geometry, temporary.
-  rmm::device_uvector<index_t> lhs_segment_ids;
+  std::unique_ptr<rmm::device_uvector<index_t>> lhs_segment_ids;
   /// Look-back ids for the resulting geometry, temporary.
-  rmm::device_uvector<index_t> rhs_linestring_ids;
+  std::unique_ptr<rmm::device_uvector<index_t>> rhs_linestring_ids;
   /// Look-back ids for the resulting geometry, temporary.
-  rmm::device_uvector<index_t> rhs_segment_ids;
+  std::unique_ptr<rmm::device_uvector<index_t>> rhs_segment_ids;
+
   linestring_intersection_intermediates(std::size_t num_pairs,
                                         std::size_t num_geoms,
                                         rmm::device_uvector<index_t> const& num_geoms_per_pair,
                                         rmm::cuda_stream_view stream,
                                         rmm::mr::device_memory_resource* mr)
-    : offsets(rmm::device_uvector<index_t>(num_pairs + 1, stream)),
-      geoms(rmm::device_uvector<GeomType>(num_geoms, stream, mr)),
-      lhs_linestring_ids(rmm::device_uvector<index_t>(num_geoms, stream)),
-      lhs_segment_ids(rmm::device_uvector<index_t>(num_geoms, stream)),
-      rhs_linestring_ids(rmm::device_uvector<index_t>(num_geoms, stream)),
-      rhs_segment_ids(rmm::device_uvector<index_t>(num_geoms, stream))
+    : offsets(std::make_unique<rmm::device_uvector<index_t>>(num_pairs + 1, stream)),
+      geoms(std::make_unique<rmm::device_uvector<GeomType>>(num_geoms, stream, mr)),
+      lhs_linestring_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream)),
+      lhs_segment_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream)),
+      rhs_linestring_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream)),
+      rhs_segment_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream))
   {
     // compute offsets from num_geoms_per_pair
-    thrust::uninitialized_fill_n(rmm::exec_policy(stream), offsets.begin(), offsets.size(), 0);
+    thrust::uninitialized_fill_n(rmm::exec_policy(stream), offsets->begin(), offsets->size(), 0);
     thrust::inclusive_scan(rmm::exec_policy(stream),
                            num_geoms_per_pair.begin(),
                            num_geoms_per_pair.end(),
-                           thrust::next(offsets.begin()));
+                           thrust::next(offsets->begin()));
   }
 
   /// Return range to offset array
-  auto offset_range() { return range{offsets.begin(), offsets.end()}; }
+  auto offset_range() { return range{offsets->begin(), offsets->end()}; }
 
   /// Return range to geometry array
-  auto geom_range() { return range{geoms.begin(), geoms.end()}; }
+  auto geom_range() { return range{geoms->begin(), geoms->end()}; }
 
   /// Return id_range structure to id arrays
   auto get_id_ranges()
   {
-    return id_ranges{range(lhs_linestring_ids.begin(), lhs_linestring_ids.end()),
-                     range(lhs_segment_ids.begin(), lhs_segment_ids.end()),
-                     range(rhs_linestring_ids.begin(), rhs_linestring_ids.end()),
-                     range(rhs_segment_ids.begin(), rhs_segment_ids.end())};
+    return id_ranges{range(lhs_linestring_ids->begin(), lhs_linestring_ids->end()),
+                     range(lhs_segment_ids->begin(), lhs_segment_ids->end()),
+                     range(rhs_linestring_ids->begin(), rhs_linestring_ids->end()),
+                     range(rhs_segment_ids->begin(), rhs_segment_ids->end())};
   }
 
   /// Return the number of pairs in the intermediates
-  auto size() { return offsets.size() - 1; }
+  auto size() { return offsets->size() - 1; }
 };
 
 /**
@@ -237,6 +238,9 @@ pairwise_linestring_intersection_with_duplicate(MultiLinestringRange1 multilines
                                                 rmm::mr::device_memory_resource* mr,
                                                 rmm::cuda_stream_view stream)
 {
+  static_assert(std::is_integral_v<index_t>, "Index type must be integral.");
+  static_assert(std::is_floating_point_v<T>, "Coordinate type must be floating point.");
+
   auto const num_pairs = multilinestrings1.size();
   // Compute the upper bound of spaces required to store intersection results.
   rmm::device_uvector<index_t> num_points_per_pair(num_pairs, stream);
@@ -282,13 +286,13 @@ pairwise_linestring_intersection_with_duplicate(MultiLinestringRange1 multilines
       multilinestrings2,
       num_points_stored_temp.begin(),
       num_segments_stored_temp.begin(),
-      points.offsets.begin(),
-      segments.offsets.begin(),
+      points.offsets->begin(),
+      segments.offsets->begin(),
       num_points_per_pair.begin(),
       points.get_id_ranges(),
       segments.get_id_ranges(),
-      points.geoms.begin(),
-      segments.geoms.begin());
+      points.geoms->begin(),
+      segments.geoms->begin());
 
   return {std::move(points), std::move(segments)};
 }
