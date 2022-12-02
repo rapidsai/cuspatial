@@ -249,11 +249,6 @@ class _binop:
         """Compute from a GeoSeries of points and a GeoSeries of polygons which
         points are contained within the corresponding polygon. Polygon A
         contains Point B if B intersects the interior or boundary of A.
-
-        Parameters
-        ----------
-        rhs
-            a cuspatial.GeoSeries
         """
         # TODO: If rhs is polygon and lhs is point, use contains_properly
         return self.contains_properly(lhs, rhs)
