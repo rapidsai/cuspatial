@@ -29,8 +29,8 @@ files:
   checks:
     output: none
     includes:
-      - build
       - develop
+      - py_version
 channels:
   - rapidsai
   - rapidsai-nightly
@@ -156,3 +156,4 @@ dependencies:
         packages:
           - pytest
           - pytest-cov
+          - pytest-xdist

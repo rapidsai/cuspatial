@@ -26,6 +26,7 @@ dependencies:
 - pydata-sphinx-theme
 - pytest
 - pytest-cov
+- pytest-xdist
 - python>=3.8,<3.10
 - rmm=22.12.*
 - scikit-build>=0.13.1
