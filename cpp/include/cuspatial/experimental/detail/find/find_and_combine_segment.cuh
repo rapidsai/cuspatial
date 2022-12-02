@@ -61,8 +61,12 @@ void find_and_combine_segment(OffsetRange offsets,
                               OutputIt merged_flag,
                               rmm::cuda_stream_view stream)
 {
-  auto [threads_per_block, num_blocks] = grid_1d(segments.size());
+  auto num_spaces = offsets.size() - 1;
+  if (num_spaces == 0) return;
+
   thrust::uninitialized_fill_n(rmm::exec_policy(stream), merged_flag, segments.size(), 0);
+
+  auto [threads_per_block, num_blocks] = grid_1d(num_spaces);
   simple_find_and_combine_segments_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     offsets, segments, merged_flag);
 }
