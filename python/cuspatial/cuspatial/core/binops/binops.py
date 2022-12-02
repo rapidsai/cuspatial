@@ -127,30 +127,11 @@ class _binop:
         _binop = getattr(self, op)
         point_result = _binop(self.lhs, points)
 
-        # Discrete math recombination
-        if (
-            mode == "LINESTRINGS"
-            or mode == "POLYGONS"
-            or mode == "MULTIPOINTS"
-        ):
-            # process for completed linestrings, polygons, and multipoints.
-            # Not necessary for points.
-            result = cudf.DataFrame(
-                {"idx": point_indices, "pip": point_result}
-            )
-            # if the number of points in the polygon is equal to the number of
-            # points, then the requirements for `.contains_properly` are met
-            # for this geometry type.
-            df_result = (
-                result.groupby("idx").sum().sort_index()
-                == result.groupby("idx").count().sort_index()
-            )
-            point_result = cudf.Series(
-                df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
-            )
-            point_result.name = None
+        # Postprocess: Apply discrete math rules to identify relationships.
+        final_result = self.postprocess(op, point_indices, point_result, mode)
+
         # Return
-        self.op_result = point_result
+        self.op_result = final_result
 
     def __call__(self) -> cudf.Series:
         return self.op_result
@@ -179,7 +160,63 @@ class _binop:
                 return (rhs, lhs)
         return (lhs, rhs)
 
+    def postprocess(self, op, point_indices, point_result, mode):
+        """Postprocess the output data for the binary operation.
+
+        Parameters
+        ----------
+        op : str
+            The binary operation to post process. Determines for example the
+            set operation to use for computing the result.
+        processed : cudf.Series
+            The data after applying the fundamental binary operation.
+
+        Returns
+        -------
+        cudf.Series
+            The output of the post processing, True/False results for
+            the specified binary op.
+        """
+        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
+        df_result = result
+        # Discrete math recombination
+        if (
+            mode == "LINESTRINGS"
+            or mode == "POLYGONS"
+            or mode == "MULTIPOINTS"
+        ):
+            # process for completed linestrings, polygons, and multipoints.
+            # Not necessary for points.
+            if op == "contains" or op == "contains_properly" or op == "within":
+                df_result = (
+                    result.groupby("idx").sum().sort_index()
+                    == result.groupby("idx").count().sort_index()
+                )
+            if op == "overlaps":
+                if mode == "LINESTRINGS":
+                    df_result = (
+                        result.groupby("idx").sum().sort_index()
+                        == result.groupby("idx").count().sort_index()
+                    )
+                else:
+                    df_result = result.groupby("idx").sum().sort_index() > 0
+        else:
+            # Points only
+            if op == "overlaps":
+                df_result = result.groupby("idx").sum().sort_index() > 1
+            elif op == "crosses":
+                df_result = ~result
+        point_result = cudf.Series(
+            df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
+        )
+        point_result.name = None
+        return point_result
+
     def contains_properly(self, lhs, points):
+        """Compute the contains_properly relationship between two GeoSeries.
+        A feature A contains another feature B if no points of B lie in the
+        exterior of A, and at least one point of the interior of B lies in the
+        interior of A. This is the inverse of `within`."""
         if not contains_only_polygons(lhs):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
