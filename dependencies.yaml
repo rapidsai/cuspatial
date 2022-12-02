@@ -13,13 +13,11 @@ files:
       - doc
       - py_version
       - run_python
-      - test_cpp
       - test_python
   test_cpp:
     output: none
     includes:
       - cudatoolkit
-      - test_cpp
   test_python:
     output: none
     includes:
@@ -45,6 +43,8 @@ dependencies:
           - c-compiler
           - cxx-compiler
           - gdal>3.5.0,<3.6.0
+          - gmock=1.10.0
+          - gtest=1.10.0
           - libcudf=22.12.*
           - librmm=22.12.*
           - ninja
@@ -144,12 +144,6 @@ dependencies:
           - *cudf_ver
           - geopandas>=0.11.0
           - rmm=22.12.*
-  test_cpp:
-    common:
-      - output_types: conda
-        packages:
-          - gtest=1.10.0
-          - gmock=1.10.0
   test_python:
     common:
       - output_types: [conda, requirements]

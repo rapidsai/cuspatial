@@ -82,6 +82,8 @@ outputs:
     requirements:
       build:
         - cmake {{ cmake_version }}
+        - gmock {{ gtest_version }}
+        - gtest {{ gtest_version }}
       run:
         - cudatoolkit {{ cuda_spec }}
         - gmock {{ gtest_version }}
