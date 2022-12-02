@@ -8,6 +8,7 @@ from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
     contains_only_polygons,
+    has_same_dimension,
 )
 
 
@@ -89,6 +90,10 @@ class _binop:
         GeoSeries
             A GeoSeries containing the result of the binary operation.
         """
+        if self.is_invalid_combination(op, lhs, rhs):
+            self.op_result = cudf.Series([False] * len(lhs))
+            return
+
         (self.lhs, self.rhs) = lhs.align(rhs) if align else (lhs, rhs)
         self.align = align
 
@@ -135,6 +140,15 @@ class _binop:
 
     def __call__(self) -> cudf.Series:
         return self.op_result
+
+    def is_invalid_combination(self, op, lhs, rhs):
+        """Many operations return false if the input is not valid.
+        Binary operations that depend on a particular dimensionality are the
+        first case implemented here."""
+        if op == "overlaps":
+            if not has_same_dimension(lhs, rhs):
+                return True
+        return False
 
     def preprocess(self, op, lhs, rhs):
         """Preprocess the input data for the binary operation.

@@ -769,18 +769,40 @@ class GeoSeries(cudf.Series):
         return _binop("contains_properly", self, other, align)()
 
     def covers(self, other, align=True):
-        """A covers B if no points of B are in the exterior of A."""
-        return _binop("covers", self, other, align)()
-
-    def intersects(self, other, align=True):
-        """Compute from a GeoSeries of points and a GeoSeries of polygons which
-        points are contained within the corresponding polygon. Polygon A
-        contains Point B if B intersects the interior or boundary of A.
+        """Compute if a GeoSeries of features A covers a second GeoSeries of
+        features B. A covers B if no points on B lie in the exterior of A.
 
         Parameters
         ----------
         other
             a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binop
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each feature in the
+            input GeoSeries covers the corresponding feature in the other
+            GeoSeries.
+        """
+        return _binop("covers", self, other, align)()
+
+    def intersects(self, other, align=True):
+        """Compute the intersections of two GeoSeries.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binop
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether the geometries of
+            each row intersect.
         """
         # TODO: If other is polygon and self is point, use contains_properly
         return _binop("intersects", self, other, align)()
@@ -788,7 +810,21 @@ class GeoSeries(cudf.Series):
     def within(self, other, align=True):
         """An object is said to be within other if at least one of its points
         is located in the interior and no points are located in the exterior
-        of the other."""
+        of the other.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binop
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each feature falls
+            within the corresponding polygon in the input.
+        """
         return _binop("within", self, other, align=align)()
 
     def crosses(self, other, align=True):
@@ -797,7 +833,20 @@ class GeoSeries(cudf.Series):
 
         An object is said to cross other if its interior intersects the
         interior of the other but does not contain it, and the dimension of
-        the intersection is less than either."""
+        the intersection is less than either.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binop
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each geometry
+            crosses the corresponding geometry in the input."""
         # Crosses requires the use of point_in_polygon but only requires that
         # 1 or more points are within the polygon. This differs from
         # `.contains` which requires all of them.
@@ -810,6 +859,19 @@ class GeoSeries(cudf.Series):
         Geometries overlap if they have more than one but not all points in
         common, have the same dimension, and the intersection of the
         interiors of the geometries has the same dimension as the geometries
-        themselves."""
+        themselves.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binop
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each geometry
+            overlaps the corresponding geometry in the input."""
         # Overlaps has the same requirement as crosses.
         return _binop("overlaps", self, other, align=align)()
