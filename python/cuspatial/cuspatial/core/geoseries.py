@@ -768,6 +768,104 @@ class GeoSeries(cudf.Series):
         """
         return _binop("contains_properly", self, other, align)()
 
+    def equals(self, other, align=True):
+        """Compute if a GeoSeries of features A is equal to a GeoSeries of
+        features B. Features are equal if their coordinates are equal.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            to align the indices before computing .contains or not. If the
+            indices are not aligned, they will be compared based on their
+            implicit row order.
+
+        Examples
+        --------
+        Test if two points are equal:
+        >>> point = cuspatial.GeoSeries(
+            [Point(0, 0)],
+            )
+        >>> point2 = cuspatial.GeoSeries(
+            [Point(0, 0)],
+            )
+        >>> print(point.equals(point2))
+        0    True
+        dtype: bool
+
+        Test if two polygons are equal:
+        >>> polygon = cuspatial.GeoSeries(
+            [
+                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            ]
+        )
+        >>> polygon2 = cuspatial.GeoSeries(
+            [
+                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            ]
+        )
+        >>> print(polygon.equals(polygon2))
+        0    True
+        dtype: bool
+
+        Returns
+        -------
+
+        result : cudf.Series
+            A Series of boolean values indicating whether each feature in A
+            is equal to the corresponding feature in B.
+        """
+        return _binop("equals", self, other, align)()
+
+    def touches(self, other, align=True):
+        """Compute if a GeoSeries of features A touches a GeoSeries of features
+        B. Features A touches features B if they share a boundary but do not
+        overlap.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            to align the indices before computing .contains or not. If the
+            indices are not aligned, they will be compared based on their
+            implicit row order.
+
+        Examples
+        --------
+        Test if a point touches a polygon:
+        >>> point = cuspatial.GeoSeries(
+            [Point(0, 0)],
+            )
+        >>> polygon = cuspatial.GeoSeries(
+            [
+                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            ]
+        )
+        >>> print(polygon.touches(point))
+        0    True
+        dtype: bool
+
+        Test if a point touches a point:
+        >>> point = cuspatial.GeoSeries(
+            [Point(0, 0)],
+            )
+        >>> point2 = cuspatial.GeoSeries(
+            [Point(0, 0)],
+            )
+        >>> print(point.touches(point2))
+        0    False
+        dtype: bool
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each feature in A
+            touches the corresponding feature in B.
+        """
+        return _binop("touches", self, other, align)()
+
     def covers(self, other, align=True):
         """Compute if a GeoSeries of features A covers a second GeoSeries of
         features B. A covers B if no points on B lie in the exterior of A.

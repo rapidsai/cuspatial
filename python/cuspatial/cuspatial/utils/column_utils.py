@@ -101,7 +101,7 @@ def contains_only_polygons(gs: GeoSeries):
 
 def has_same_dimension(lhs: GeoSeries, rhs: GeoSeries):
     """
-    Returns true if `gs` contains only geometries of the same dimension
+    Returns true if `lhs` and `rhs` have only features of the same dimension.
     """
 
     if contains_only_points(lhs) and contains_only_points(rhs):

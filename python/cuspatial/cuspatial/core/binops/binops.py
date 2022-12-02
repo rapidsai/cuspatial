@@ -1,5 +1,7 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
+from abc import ABC, abstractmethod
+
 import cudf
 
 from cuspatial.core._column.geocolumn import GeoColumn
@@ -7,6 +9,7 @@ from cuspatial.core.binops.contains import contains_properly
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
+    contains_only_points,
     contains_only_polygons,
     has_same_dimension,
 )
@@ -98,33 +101,40 @@ class _binop:
         # Type determines discrete math recombination outcome
         # RHS conditioning:
         mode = "POINTS"
+        point_indices = None
         # point in polygon
-        if contains_only_linestrings(self.rhs):
-            # condition for linestrings
-            mode = "LINESTRINGS"
-            geom = self.rhs.lines
-        elif contains_only_polygons(self.rhs) is True:
-            # polygon in polygon
-            mode = "POLYGONS"
-            geom = self.rhs.polygons
-        elif contains_only_multipoints(self.rhs) is True:
-            # mpoint in polygon
-            mode = "MULTIPOINTS"
-            geom = self.rhs.multipoints
+        if op == "contains" or op == "contains_properly":
+            if contains_only_linestrings(self.rhs):
+                # condition for linestrings
+                mode = "LINESTRINGS"
+                geom = self.rhs.lines
+            elif contains_only_polygons(self.rhs) is True:
+                # polygon in polygon
+                mode = "POLYGONS"
+                geom = self.rhs.polygons
+            elif contains_only_multipoints(self.rhs) is True:
+                # mpoint in polygon
+                mode = "MULTIPOINTS"
+                geom = self.rhs.multipoints
+            else:
+                # no conditioning is required
+                geom = self.rhs.points
+            xy_points = geom.xy
+
+            # Arrange into shape for calling pip, intersection, or equals
+            point_indices = geom.point_indices()
+            from cuspatial.core.geoseries import GeoSeries
+
+            final_rhs = GeoSeries(
+                GeoColumn._from_points_xy(xy_points._column)
+            ).points
         else:
-            # no conditioning is required
-            geom = self.rhs.points
-        xy_points = geom.xy
-
-        # Arrange into shape for calling pip, intersection, or equals
-        point_indices = geom.point_indices()
-        from cuspatial.core.geoseries import GeoSeries
-
-        points = GeoSeries(GeoColumn._from_points_xy(xy_points._column)).points
+            final_rhs = rhs
+            point_indices = rhs.points.point_indices()
 
         # Binop call
         _binop = getattr(self, op)
-        point_result = _binop(self.lhs, points)
+        point_result = _binop(self.lhs, final_rhs)
 
         # Postprocess: Apply discrete math rules to identify relationships.
         final_result = self.postprocess(op, point_indices, point_result, mode)
@@ -218,13 +228,32 @@ class _binop:
             df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
         )
         point_result.name = None
+        if op == "equals":
+            if len(point_result) == 1:
+                return point_result[0]
         return point_result
+
+    class ContainsProperlyBinop(ABC):
+        @abstractmethod
+        def preprocess(self, lhs, rhs):
+            pass
+
+        @abstractmethod
+        def postprocess(self, lhs, rhs):
+            pass
+
+        def __call__(self, lhs, rhs):
+            (lhs, rhs) = self.preprocess(lhs, rhs)
+            result = lhs.contains(rhs)
+            return self.postprocess(lhs, rhs, result)
 
     def contains_properly(self, lhs, points):
         """Compute the contains_properly relationship between two GeoSeries.
         A feature A contains another feature B if no points of B lie in the
         exterior of A, and at least one point of the interior of B lies in the
         interior of A. This is the inverse of `within`."""
+        if contains_only_points(lhs) and contains_only_points(points):
+            return self.equals(lhs, points)
         if not contains_only_polygons(lhs):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
@@ -241,11 +270,30 @@ class _binop:
         )
         return point_result
 
-    def covers(self, lhs, rhs, align=True):
-        """A covers B if no points of B are in the exterior of A."""
-        return self.contains_properly(lhs, rhs, align=align)
+    def equals(self, lhs, rhs):
+        """Compute the equals relationship between two GeoSeries."""
+        result = cudf.Series([False] * len(lhs))
+        if contains_only_points(lhs):
+            result = lhs.points.xy.equals(rhs.points.xy)
+        elif contains_only_linestrings(lhs):
+            result = lhs.lines.xy.equals(rhs.lines.xy)
+        elif contains_only_polygons(lhs):
+            result = lhs.polygons.xy.equals(rhs.polygons.xy)
+        elif contains_only_multipoints(lhs):
+            result = lhs.multipoints.xy.equals(rhs.multipoints.xy)
+        return result
 
-    def intersects(self, lhs, rhs, align=True):
+    def touches(self, lhs, rhs):
+        """Compute the touches relationship between two GeoSeries:
+        Two objects touch if they share at least one point in common, but their
+        interiors do not intersect."""
+        return self.equals(lhs, rhs)
+
+    def covers(self, lhs, rhs):
+        """A covers B if no points of B are in the exterior of A."""
+        return self.contains_properly(lhs, rhs)
+
+    def intersects(self, lhs, rhs):
         """Compute from a GeoSeries of points and a GeoSeries of polygons which
         points are contained within the corresponding polygon. Polygon A
         contains Point B if B intersects the interior or boundary of A.
@@ -253,13 +301,13 @@ class _binop:
         # TODO: If rhs is polygon and lhs is point, use contains_properly
         return self.contains_properly(lhs, rhs)
 
-    def within(self, lhs, rhs, align=True):
+    def within(self, lhs, rhs):
         """An object is said to be within rhs if at least one of its points
         is located in the interior and no points are located in the exterior
         of the rhs."""
         return self.contains_properly(lhs, rhs)
 
-    def crosses(self, lhs, rhs, align=True):
+    def crosses(self, lhs, rhs):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that crosses rhs.
 
