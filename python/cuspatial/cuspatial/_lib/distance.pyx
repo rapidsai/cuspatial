@@ -1,3 +1,5 @@
+# Copyright (c) 2022, NVIDIA CORPORATION.
+
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
