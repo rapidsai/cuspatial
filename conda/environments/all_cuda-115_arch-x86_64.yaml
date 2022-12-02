@@ -18,6 +18,8 @@ dependencies:
 - gmock=1.10.0
 - gtest=1.10.0
 - libcudf=22.12.*
+- libcusparse-dev=11.7.0.107
+- libcusparse=11.7.0.107
 - librmm=22.12.*
 - myst-parser
 - ninja
