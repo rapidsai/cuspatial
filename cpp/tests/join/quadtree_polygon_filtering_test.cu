@@ -116,9 +116,11 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_empty)
   auto polygon_quadrant_pairs = cuspatial::join_quadtree_and_bounding_boxes(
     quadtree, bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
 
-  expect_tables_equal(cudf::table_view{{fixed_width_column_wrapper<uint32_t>({}),
-                                        fixed_width_column_wrapper<uint32_t>({})}},
-                      *polygon_quadrant_pairs);
+  auto expect_first  = fixed_width_column_wrapper<uint32_t>({});
+  auto expect_second = fixed_width_column_wrapper<uint32_t>({});
+  auto expect        = cudf::table_view{{expect_first, expect_second}};
+
+  CUDF_TEST_EXPECT_TABLES_EQUAL(expect, *polygon_quadrant_pairs);
 }
 
 TYPED_TEST(QuadtreePolygonFilteringTest, test_small)
@@ -234,8 +236,9 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_small)
     polygon_quadrant_pairs->num_columns() == 2,
     "a polygon-quadrant pair table must have 2 columns (polygon-index, quadrant-index)");
 
-  expect_tables_equal(
-    cudf::table_view{{fixed_width_column_wrapper<uint32_t>({3, 3, 1, 2, 1, 1, 0, 3}),
-                      fixed_width_column_wrapper<uint32_t>({10, 11, 6, 6, 12, 13, 2, 2})}},
-    *polygon_quadrant_pairs);
+  fixed_width_column_wrapper<uint32_t> expected1({3, 3, 1, 2, 1, 1, 0, 3});
+  fixed_width_column_wrapper<uint32_t> expected2({10, 11, 6, 6, 12, 13, 2, 2});
+  auto expected = cudf::table_view{{expected1, expected2}};
+
+  CUDF_TEST_EXPECT_TABLES_EQUAL(expected, *polygon_quadrant_pairs);
 }

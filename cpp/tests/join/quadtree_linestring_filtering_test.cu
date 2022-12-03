@@ -147,10 +147,11 @@ TYPED_TEST(QuadtreeLinestringBoundingBoxJoinTest, test_small)
     linestring_quadrant_pairs->num_columns() == 2,
     "a linestring-quadrant pair table must have 2 columns (linestring_index, quadrant_index)");
 
-  expect_tables_equal(
-    cudf::table_view{{fixed_width_column_wrapper<uint32_t>(
-                        {3, 1, 2, 3, 3, 0, 1, 2, 3, 0, 3, 1, 2, 3, 1, 2, 1, 2, 0, 1, 3}),
-                      fixed_width_column_wrapper<uint32_t>({3, 8, 8, 8,  9,  10, 10, 10, 10, 11, 11,
-                                                            6, 6, 6, 12, 12, 13, 13, 2,  2,  2})}},
-    *linestring_quadrant_pairs);
+  auto expect_first = fixed_width_column_wrapper<uint32_t>(
+    {3, 1, 2, 3, 3, 0, 1, 2, 3, 0, 3, 1, 2, 3, 1, 2, 1, 2, 0, 1, 3});
+  auto expect_second = fixed_width_column_wrapper<uint32_t>(
+    {3, 8, 8, 8, 9, 10, 10, 10, 10, 11, 11, 6, 6, 6, 12, 12, 13, 13, 2, 2, 2});
+  auto expect = cudf::table_view{{expect_first, expect_second}};
+
+  CUDF_TEST_EXPECT_TABLES_EQUAL(expect, *linestring_quadrant_pairs);
 }
