@@ -101,7 +101,7 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, Example)
      P{0.75, 0.75}, P{1.5, 1.5}, P{0.25, 0.0}, P{0.25, 0.5},  P{0.75, 0.75},
      P{1.5, 1.5},   P{2, 2},     P{3, 3},      P{1, 0},       P{2, 0}});
 
-  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicate<index_t, T>(
+  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicates<index_t, T>(
     multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
 
   auto expected_points_offsets   = make_device_vector<index_t>({0, 1, 3, 3, 5, 7, 7, 7});
@@ -186,7 +186,7 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, ExampleReversed)
      P{0.75, 0.75}, P{1.5, 1.5}, P{0.25, 0.0}, P{0.25, 0.5},  P{0.75, 0.75},
      P{1.5, 1.5},   P{2, 2},     P{3, 3},      P{1, 0},       P{2, 0}});
 
-  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicate<index_t, T>(
+  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicates<index_t, T>(
     multilinestrings2.range(), multilinestrings1.range(), this->mr(), this->stream());
 
   auto expected_points_offsets   = make_device_vector<index_t>({0, 1, 3, 3, 5, 7, 7, 7});
@@ -253,7 +253,7 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, MultilinestringsIntersectionWit
   auto multilinestrings2 =
     make_multilinestring_array({0, 1, 2}, {0, 2, 4}, {P{0, 1}, P{2, 0}, P{0, 2.5}, P{1, 2.5}});
 
-  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicate<index_t, T>(
+  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicates<index_t, T>(
     multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
 
   auto expected_points_offsets = make_device_vector<index_t>({0, 2, 4});
@@ -312,7 +312,7 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, MultilinestringsIntersectionWit
   auto multilinestrings2 =
     make_multilinestring_array({0, 1, 2}, {0, 2, 4}, {P{0, 1}, P{2, 0}, P{0, 2.5}, P{1, 2.5}});
 
-  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicate<index_t, T>(
+  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicates<index_t, T>(
     multilinestrings2.range(), multilinestrings1.range(), this->mr(), this->stream());
 
   auto expected_points_offsets = make_device_vector<index_t>({0, 2, 4});
@@ -367,7 +367,7 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, Empty)
 
   auto multilinestrings2 = make_multilinestring_array({0}, {0}, std::initializer_list<P>{});
 
-  auto [points, segments] = pairwise_linestring_intersection_with_duplicate<index_t, T>(
+  auto [points, segments] = pairwise_linestring_intersection_with_duplicates<index_t, T>(
     multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
 
   auto expected_points_offsets = make_device_vector<index_t>({0});

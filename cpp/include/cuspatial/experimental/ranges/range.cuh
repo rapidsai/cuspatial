@@ -30,7 +30,7 @@ namespace cuspatial {
  *
  * @note Although this structure can be used on device and host code, this structure does not
  * provide implicit device-host transfer. It is up to developer's prudence not to access device
- * memory from host.
+ * memory from host or the reverse.
  *
  * @tparam Type of both start and end iterator. IteratorType must statisfy
  * LegacyRandomAccessIterator[LinkLRAI].

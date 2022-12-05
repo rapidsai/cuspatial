@@ -225,7 +225,8 @@ void __global__ pairwise_linestring_intersection_simple(MultiLinestringRange1 mu
 }
 
 /**
- * @brief Compute intersections between multilnestrings with duplicates.
+ * @brief Compute intersection results between pairs of multilinestrings. The result may contain
+ * duplicate points, mergeable segments and mergeable point on segments.
  */
 template <typename index_t,
           typename T,
@@ -233,10 +234,10 @@ template <typename index_t,
           typename MultiLinestringRange2>
 std::pair<linestring_intersection_intermediates<vec_2d<T>, index_t>,
           linestring_intersection_intermediates<segment<T>, index_t>>
-pairwise_linestring_intersection_with_duplicate(MultiLinestringRange1 multilinestrings1,
-                                                MultiLinestringRange2 multilinestrings2,
-                                                rmm::mr::device_memory_resource* mr,
-                                                rmm::cuda_stream_view stream)
+pairwise_linestring_intersection_with_duplicates(MultiLinestringRange1 multilinestrings1,
+                                                 MultiLinestringRange2 multilinestrings2,
+                                                 rmm::mr::device_memory_resource* mr,
+                                                 rmm::cuda_stream_view stream)
 {
   static_assert(std::is_integral_v<index_t>, "Index type must be integral.");
   static_assert(std::is_floating_point_v<T>, "Coordinate type must be floating point.");
