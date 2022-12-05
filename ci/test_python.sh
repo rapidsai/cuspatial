@@ -27,6 +27,9 @@ RAPIDS_COVERAGE_DIR=${RAPIDS_COVERAGE_DIR:-"${PWD}/coverage-results"}
 mkdir -p "${RAPIDS_TESTS_DIR}" "${RAPIDS_COVERAGE_DIR}"
 SUITEERROR=0
 
+# CUSPATIAL_HOME is used to find test files
+export CUSPATIAL_HOME="${PWD}"
+
 rapids-print-env
 
 rapids-mamba-retry install \

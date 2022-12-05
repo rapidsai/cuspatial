@@ -23,6 +23,9 @@ RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}/
 mkdir -p "${RAPIDS_TESTS_DIR}"
 SUITEERROR=0
 
+# CUSPATIAL_HOME is used to find test files
+export CUSPATIAL_HOME="${PWD}"
+
 rapids-print-env
 
 rapids-mamba-retry install \
