@@ -15,7 +15,61 @@ from cuspatial.utils.column_utils import (
 )
 
 
-class _binop:
+class _binop(ABC):
+    @abstractmethod
+    def preprocess(self, op, lhs, rhs):
+        """Preprocess the input data for the binary operation. This method
+        should be implemented by subclasses. Preprocess and postprocess are
+        used to implement the discrete math rules of the binary operations.
+
+        Notes
+        -----
+        Should only be called once.
+
+        Parameters
+        ----------
+        op : str
+            The binary operation to perform.
+        lhs : GeoSeries
+            The left-hand-side of the GeoSeries-level binary operation.
+        rhs : GeoSeries
+            The right-hand-side of the GeoSeries-level binary operation.
+
+        Returns
+        -------
+        GeoSeries
+            The left-hand-side of the internal binary operation, may be
+            reordered.
+        GeoSeries
+            The right-hand-side of the internal binary operation, may be
+            reordered.
+        """
+        pass
+
+    @abstractmethod
+    def postprocess(self, op, point_indices, point_result):
+        """Postprocess the output data for the binary operation. This method
+        should be implemented by subclasses.
+
+        Postprocess converts the raw results of the binary operation into
+        the final result. This is where the discrete math rules are applied.
+
+        Parameters
+        ----------
+        op : str
+            The binary operation to post process. Determines for example the
+            set operation to use for computing the result.
+        processed : cudf.Series
+            The data after applying the fundamental binary operation.
+
+        Returns
+        -------
+        cudf.Series
+            The output of the post processing, True/False results for
+            the specified binary op.
+        """
+        pass
+
     def __init__(self, op, lhs, rhs, align=True):
         """Compute the binary operation `op` on `lhs` and `rhs`.
 
@@ -87,165 +141,27 @@ class _binop:
         GeoSeries
             A GeoSeries containing the result of the binary operation.
         """
-        if self.is_invalid_combination(op, lhs, rhs):
-            self.op_result = cudf.Series([False] * len(lhs))
-            return
-
         (self.lhs, self.rhs) = lhs.align(rhs) if align else (lhs, rhs)
         self.align = align
 
         # Type disambiguation
         # Type disambiguation has a large effect on the decisions of the
         # algorithm.
-        (self.lhs, self.rhs) = self.preprocess(op, self.lhs, self.rhs)
-        # Type determines discrete math recombination outcome
-        # RHS conditioning:
-        mode = "POINTS"
-        point_indices = None
-        # point in polygon
-        if op == "contains" or op == "contains_properly":
-            if contains_only_linestrings(self.rhs):
-                # condition for linestrings
-                mode = "LINESTRINGS"
-                geom = self.rhs.lines
-            elif contains_only_polygons(self.rhs) is True:
-                # polygon in polygon
-                mode = "POLYGONS"
-                geom = self.rhs.polygons
-            elif contains_only_multipoints(self.rhs) is True:
-                # mpoint in polygon
-                mode = "MULTIPOINTS"
-                geom = self.rhs.multipoints
-            else:
-                # no conditioning is required
-                geom = self.rhs.points
-            xy_points = geom.xy
-
-            # Arrange into shape for calling pip, intersection, or equals
-            point_indices = geom.point_indices()
-            from cuspatial.core.geoseries import GeoSeries
-
-            final_rhs = GeoSeries(
-                GeoColumn._from_points_xy(xy_points._column)
-            ).points
-        else:
-            final_rhs = rhs
-            point_indices = rhs.points.point_indices()
+        (lhs, rhs, indices) = self.preprocess(op, self.lhs, self.rhs)
 
         # Binop call
         _binop = getattr(self, op)
-        point_result = _binop(self.lhs, final_rhs)
+        point_result = _binop(lhs, rhs)
 
         # Postprocess: Apply discrete math rules to identify relationships.
-        final_result = self.postprocess(op, point_indices, point_result, mode)
+        final_result = self.postprocess(op, indices, point_result)
 
         # Return
         self.op_result = final_result
 
     def __call__(self) -> cudf.Series:
+        """Return the result of the binary operation."""
         return self.op_result
-
-    def is_invalid_combination(self, op, lhs, rhs):
-        """Many operations return false if the input is not valid.
-        Binary operations that depend on a particular dimensionality are the
-        first case implemented here."""
-        if op == "overlaps":
-            if not has_same_dimension(lhs, rhs):
-                return True
-        return False
-
-    def preprocess(self, op, lhs, rhs):
-        """Preprocess the input data for the binary operation.
-
-        Parameters
-        ----------
-        op : str
-            The binary operation to perform.
-        lhs : GeoSeries
-            The left-hand-side of the GeoSeries-level binary operation.
-        rhs : GeoSeries
-            The right-hand-side of the GeoSeries-level binary operation.
-
-        Returns
-        -------
-        GeoSeries
-            The left-hand-side of the internal binary operation.
-        GeoSeries
-            The right-hand-side of the internal binary operation.
-        """
-        if op == "intersects" or op == "within":
-            if contains_only_polygons(rhs):
-                return (rhs, lhs)
-        return (lhs, rhs)
-
-    def postprocess(self, op, point_indices, point_result, mode):
-        """Postprocess the output data for the binary operation.
-
-        Parameters
-        ----------
-        op : str
-            The binary operation to post process. Determines for example the
-            set operation to use for computing the result.
-        processed : cudf.Series
-            The data after applying the fundamental binary operation.
-
-        Returns
-        -------
-        cudf.Series
-            The output of the post processing, True/False results for
-            the specified binary op.
-        """
-        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
-        df_result = result
-        # Discrete math recombination
-        if (
-            mode == "LINESTRINGS"
-            or mode == "POLYGONS"
-            or mode == "MULTIPOINTS"
-        ):
-            # process for completed linestrings, polygons, and multipoints.
-            # Not necessary for points.
-            if op == "contains" or op == "contains_properly" or op == "within":
-                df_result = (
-                    result.groupby("idx").sum().sort_index()
-                    == result.groupby("idx").count().sort_index()
-                )
-            if op == "overlaps":
-                if mode == "LINESTRINGS":
-                    df_result = (
-                        result.groupby("idx").sum().sort_index()
-                        == result.groupby("idx").count().sort_index()
-                    )
-                else:
-                    df_result = result.groupby("idx").sum().sort_index() > 0
-        else:
-            # Points only
-            if op == "overlaps":
-                df_result = result.groupby("idx").sum().sort_index() > 1
-            elif op == "crosses":
-                df_result = ~result
-        point_result = cudf.Series(
-            df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
-        )
-        point_result.name = None
-        if op == "equals":
-            if len(point_result) == 1:
-                return point_result[0]
-        return point_result
-
-    class ContainsProperlyBinop(ABC):
-        @abstractmethod
-        def preprocess(self, lhs, rhs):
-            pass
-
-        @abstractmethod
-        def postprocess(self, lhs, rhs):
-            pass
-
-        def __call__(self, lhs, rhs):
-            (lhs, rhs) = self.preprocess(lhs, rhs)
-            result = lhs.contains(rhs)
-            return self.postprocess(lhs, rhs, result)
 
     def contains_properly(self, lhs, points):
         """Compute the contains_properly relationship between two GeoSeries.
@@ -272,7 +188,6 @@ class _binop:
 
     def equals(self, lhs, rhs):
         """Compute the equals relationship between two GeoSeries."""
-        result = cudf.Series([False] * len(lhs))
         if contains_only_points(lhs):
             result = lhs.points.xy.equals(rhs.points.xy)
         elif contains_only_linestrings(lhs):
@@ -329,3 +244,166 @@ class _binop:
         themselves."""
         # Overlaps has the same requirement as crosses.
         return self.contains_properly(lhs, rhs)
+
+
+class ContainsProperlyBinop(_binop):
+    def preprocess(self, op, lhs, rhs):
+        """Preprocess the input GeoSeries to ensure that they are of the
+        correct type for the operation."""
+        # Type determines discrete math recombination outcome
+        if contains_only_points(lhs) and contains_only_points(rhs):
+            return (lhs, rhs, rhs.points.point_indices())
+        # RHS conditioning:
+        point_indices = None
+        # point in polygon
+        if contains_only_linestrings(rhs):
+            # condition for linestrings
+            geom = rhs.lines
+        elif contains_only_polygons(rhs) is True:
+            # polygon in polygon
+            geom = rhs.polygons
+        elif contains_only_multipoints(rhs) is True:
+            # mpoint in polygon
+            geom = rhs.multipoints
+        else:
+            # no conditioning is required
+            geom = rhs.points
+        xy_points = geom.xy
+
+        # Arrange into shape for calling pip, intersection, or equals
+        point_indices = geom.point_indices()
+        from cuspatial.core.geoseries import GeoSeries
+
+        final_rhs = GeoSeries(
+            GeoColumn._from_points_xy(xy_points._column)
+        ).points
+        return (lhs, final_rhs, point_indices)
+
+    def postprocess(self, op, point_indices, point_result):
+        """Postprocess the output GeoSeries to ensure that they are of the
+        correct type for the operation."""
+        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
+        df_result = result
+        # Discrete math recombination
+        if (
+            contains_only_linestrings(self.rhs)
+            or contains_only_polygons(self.rhs)
+            or contains_only_multipoints(self.rhs)
+        ):
+            # process for completed linestrings, polygons, and multipoints.
+            # Not necessary for points.
+            df_result = (
+                result.groupby("idx").sum().sort_index()
+                == result.groupby("idx").count().sort_index()
+            )
+        point_result = cudf.Series(
+            df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
+        )
+        point_result.name = None
+        return point_result
+
+
+class OverlapsBinop(ContainsProperlyBinop):
+    def preprocess(self, op, lhs, rhs):
+        return super().preprocess(op, lhs, rhs)
+
+    def postprocess(self, op, point_indices, point_result):
+        # Same as contains_properly, but we need to check that the
+        # dimensions are the same.
+        # TODO: Maybe change this to intersection
+        if not has_same_dimension(self.lhs, self.rhs):
+            return cudf.Series([False] * len(self.lhs))
+        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
+        df_result = result
+        # Discrete math recombination
+        if contains_only_linestrings(self.rhs):
+            df_result = (
+                result.groupby("idx").sum().sort_index()
+                == result.groupby("idx").count().sort_index()
+            )
+        elif contains_only_polygons(self.rhs) or contains_only_multipoints(
+            self.rhs
+        ):
+            df_result = result.groupby("idx").sum().sort_index() > 0
+        else:
+            df_result = result.groupby("idx").sum().sort_index() > 1
+        point_result = cudf.Series(
+            df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
+        )
+        point_result.name = None
+        return point_result
+
+
+class IntersectsBinop(ContainsProperlyBinop):
+    def preprocess(self, op, lhs, rhs):
+        if contains_only_polygons(rhs):
+            (lhs, rhs) = (rhs, lhs)
+        return super().preprocess(op, lhs, rhs)
+
+    def postprocess(self, op, point_indices, point_result):
+        """Postprocess the output GeoSeries to ensure that they are of the
+        correct type for the operation."""
+        return super().postprocess(op, point_indices, point_result)
+
+
+class WithinBinop(ContainsProperlyBinop):
+    def preprocess(self, op, lhs, rhs):
+        if contains_only_polygons(rhs):
+            (lhs, rhs) = (rhs, lhs)
+        return super().preprocess(op, lhs, rhs)
+
+    def postprocess(self, op, point_indices, point_result):
+        """Postprocess the output GeoSeries to ensure that they are of the
+        correct type for the operation."""
+        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
+        df_result = result
+        # Discrete math recombination
+        if (
+            contains_only_linestrings(self.rhs)
+            or contains_only_polygons(self.rhs)
+            or contains_only_multipoints(self.rhs)
+        ):
+            # process for completed linestrings, polygons, and multipoints.
+            # Not necessary for points.
+            df_result = (
+                result.groupby("idx").sum().sort_index()
+                == result.groupby("idx").count().sort_index()
+            )
+        point_result = cudf.Series(
+            df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
+        )
+        point_result.name = None
+        if op == "equals":
+            if len(point_result) == 1:
+                return point_result[0]
+        return point_result
+
+
+class CrossesBinop(_binop):
+    def preprocess(self, op, lhs, rhs):
+        return super().preprocess(op, lhs, rhs)
+
+    def postprocess(self, op, point_indices, point_result):
+        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
+        df_result = result
+        # Discrete math recombination
+        if (
+            contains_only_linestrings(self.rhs)
+            or contains_only_polygons(self.rhs)
+            or contains_only_multipoints(self.rhs)
+        ):
+            df_result = ~result
+        point_result = cudf.Series(
+            df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
+        )
+        point_result.name = None
+        return point_result
+
+
+class EqualsBinop(_binop):
+    def preprocess(self, op, lhs, rhs):
+        return super().preprocess(op, lhs, rhs)
+
+    def postprocess(self, op, point_indices, point_result):
+        if len(point_result) == 1:
+            return point_result[0]

@@ -25,7 +25,14 @@ from cudf._typing import ColumnLike
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.binops.binops import _binop
+from cuspatial.core.binops.binops import (
+    ContainsProperlyBinop,
+    CrossesBinop,
+    IntersectsBinop,
+    OverlapsBinop,
+    WithinBinop,
+    _binop,
+)
 
 T = TypeVar("T", bound="GeoSeries")
 
@@ -766,7 +773,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input.
         """
-        return _binop("contains_properly", self, other, align)()
+        return ContainsProperlyBinop("contains_properly", self, other, align)()
 
     def equals(self, other, align=True):
         """Compute if a GeoSeries of features A is equal to a GeoSeries of
@@ -902,8 +909,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether the geometries of
             each row intersect.
         """
-        # TODO: If other is polygon and self is point, use contains_properly
-        return _binop("intersects", self, other, align)()
+        return IntersectsBinop("intersects", self, other, align)()
 
     def within(self, other, align=True):
         """An object is said to be within other if at least one of its points
@@ -923,7 +929,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature falls
             within the corresponding polygon in the input.
         """
-        return _binop("within", self, other, align=align)()
+        return WithinBinop("within", self, other, align)()
 
     def crosses(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
@@ -948,7 +954,7 @@ class GeoSeries(cudf.Series):
         # Crosses requires the use of point_in_polygon but only requires that
         # 1 or more points are within the polygon. This differs from
         # `.contains` which requires all of them.
-        return _binop("crosses", self, other, align=align)()
+        return CrossesBinop("crosses", self, other, align)()
 
     def overlaps(self, other, align=True):
         """Returns True for all aligned geometries that overlap other, else
@@ -972,4 +978,4 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each geometry
             overlaps the corresponding geometry in the input."""
         # Overlaps has the same requirement as crosses.
-        return _binop("overlaps", self, other, align=align)()
+        return OverlapsBinop("overlaps", self, other, align=align)()
