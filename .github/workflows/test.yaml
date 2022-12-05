@@ -32,4 +32,3 @@ jobs:
       branch: ${{ inputs.branch }}
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
-      test_script: "ci/test_python.sh"
