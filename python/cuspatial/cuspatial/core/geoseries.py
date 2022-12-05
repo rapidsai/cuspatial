@@ -27,7 +27,9 @@ from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.core.binops.binops import (
     ContainsProperlyBinop,
+    CoversBinop,
     CrossesBinop,
+    EqualsBinop,
     IntersectsBinop,
     OverlapsBinop,
     WithinBinop,
@@ -823,7 +825,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature in A
             is equal to the corresponding feature in B.
         """
-        return _binop("equals", self, other, align)()
+        return EqualsBinop("equals", self, other, align)()
 
     def touches(self, other, align=True):
         """Compute if a GeoSeries of features A touches a GeoSeries of features
@@ -891,7 +893,7 @@ class GeoSeries(cudf.Series):
             input GeoSeries covers the corresponding feature in the other
             GeoSeries.
         """
-        return _binop("covers", self, other, align)()
+        return CoversBinop("covers", self, other, align)()
 
     def intersects(self, other, align=True):
         """Compute the intersections of two GeoSeries.

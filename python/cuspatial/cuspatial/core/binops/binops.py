@@ -1,6 +1,6 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 import cudf
 
@@ -15,8 +15,7 @@ from cuspatial.utils.column_utils import (
 )
 
 
-class _binop(ABC):
-    @abstractmethod
+class _binop:
     def preprocess(self, op, lhs, rhs):
         """Preprocess the input data for the binary operation. This method
         should be implemented by subclasses. Preprocess and postprocess are
@@ -44,7 +43,7 @@ class _binop(ABC):
             The right-hand-side of the internal binary operation, may be
             reordered.
         """
-        pass
+        return (lhs, rhs, cudf.RangeIndex(len(rhs)))
 
     @abstractmethod
     def postprocess(self, op, point_indices, point_result):
@@ -152,7 +151,6 @@ class _binop(ABC):
         # Binop call
         _binop = getattr(self, op)
         point_result = _binop(lhs, rhs)
-
         # Postprocess: Apply discrete math rules to identify relationships.
         final_result = self.postprocess(op, indices, point_result)
 
@@ -380,10 +378,11 @@ class WithinBinop(ContainsProperlyBinop):
 
 
 class CrossesBinop(_binop):
-    def preprocess(self, op, lhs, rhs):
-        return super().preprocess(op, lhs, rhs)
-
     def postprocess(self, op, point_indices, point_result):
+        if has_same_dimension(self.lhs, self.rhs) and contains_only_points(
+            self.lhs
+        ):
+            return cudf.Series([False] * len(self.lhs))
         result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
         df_result = result
         # Discrete math recombination
@@ -401,9 +400,13 @@ class CrossesBinop(_binop):
 
 
 class EqualsBinop(_binop):
-    def preprocess(self, op, lhs, rhs):
-        return super().preprocess(op, lhs, rhs)
-
     def postprocess(self, op, point_indices, point_result):
-        if len(point_result) == 1:
+        if isinstance(point_result, bool):
+            return point_result
+        elif len(point_result) == 1:
             return point_result[0]
+
+
+class CoversBinop(_binop):
+    def postprocess(self, op, point_indices, point_result):
+        return cudf.Series(point_result, index=point_indices)
