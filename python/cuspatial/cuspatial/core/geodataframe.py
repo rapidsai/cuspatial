@@ -178,6 +178,30 @@ class GeoDataFrame(cudf.DataFrame):
         )
         return self.__class__(result)
 
+    def _gather(
+        self, gather_map, keep_index=True, nullify=False, check_bounds=True
+    ):
+        geo_data, cudf_data = self._split_out_geometry_columns()
+        # gather cudf columns
+        df = cudf.DataFrame._from_data(data=cudf_data, index=self.index)
+        cudf_gathered = cudf.DataFrame._gather(
+            df, gather_map, keep_index, nullify, check_bounds
+        )
+
+        # gather GeoColumns
+        gathered = {
+            geo: geo_data[geo].iloc[gather_map] for geo in geo_data.keys()
+        }
+        geo_gathered = GeoDataFrame(gathered)
+
+        # combine
+        result = GeoDataFrame._from_data(
+            self._recombine_columns(geo_gathered, cudf_gathered)
+        )
+        result.index = geo_gathered.index
+        # return
+        return result
+
 
 class _GeoSeriesUtility:
     @classmethod

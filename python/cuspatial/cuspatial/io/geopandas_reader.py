@@ -16,6 +16,8 @@ import cudf
 from cuspatial.core._column.geometa import Feature_Enum
 from cuspatial.io import pygeoarrow
 
+NONE_OFFSET = -1
+
 
 def parse_geometries(geoseries: gpGeoSeries) -> tuple:
     point_coords = []
@@ -30,6 +32,10 @@ def parse_geometries(geoseries: gpGeoSeries) -> tuple:
     polygon_offsets = [0]
 
     for geom in geoseries:
+        if geom is None:
+            all_offsets.append(NONE_OFFSET)
+            type_buffer.append(Feature_Enum.NONE.value)
+            continue
         coords = mapping(geom)["coordinates"]
         if isinstance(geom, Point):
             point_coords.append(coords)

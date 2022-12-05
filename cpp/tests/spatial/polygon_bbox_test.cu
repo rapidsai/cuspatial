@@ -65,11 +65,13 @@ TYPED_TEST(PolygonBoundingBoxTest, test_one)
   CUSPATIAL_EXPECTS(bboxes->num_rows() == 1,
                     "resutling #of bounding boxes must be the same as # of polygons");
 
-  expect_tables_equivalent(*bboxes,
-                           cudf::table_view{{fixed_width_column_wrapper<T>({1.333584}),
-                                             fixed_width_column_wrapper<T>({4.586599}),
-                                             fixed_width_column_wrapper<T>({3.460720}),
-                                             fixed_width_column_wrapper<T>({5.856625})}});
+  fixed_width_column_wrapper<T> expected1({1.333584});
+  fixed_width_column_wrapper<T> expected2({4.586599});
+  fixed_width_column_wrapper<T> expected3({3.460720});
+  fixed_width_column_wrapper<T> expected4({5.856625});
+  auto expected = cudf::table_view{{expected1, expected2, expected3, expected4}};
+
+  CUDF_TEST_EXPECT_TABLES_EQUIVALENT(*bboxes, expected);
 }
 
 TYPED_TEST(PolygonBoundingBoxTest, test_small)
@@ -128,16 +130,16 @@ TYPED_TEST(PolygonBoundingBoxTest, test_small)
   CUSPATIAL_EXPECTS(bboxes->view().num_columns() == 4, "bbox table must have 4 columns");
   CUSPATIAL_EXPECTS(bboxes->num_rows() == 4,
                     "resutling #of bounding boxes must be the same as # of polygons");
+  fixed_width_column_wrapper<T> expected1(
+    {1.3335840000000001, 5.0398230000000002, 5.5737199999999998, 1.0348919999999999});
+  fixed_width_column_wrapper<T> expected2(
+    {4.5865989999999996, 1.503906, 0.086693000000000006, 2.8969369999999999});
+  fixed_width_column_wrapper<T> expected3(
+    {3.4607199999999998, 7.1906739999999996, 6.7035340000000003, 3.2086600000000001});
+  fixed_width_column_wrapper<T> expected4(
+    {5.8566250000000002, 5.653384, 1.235638, 4.5415289999999997});
 
-  expect_tables_equivalent(
-    *bboxes,
-    cudf::table_view{
-      {fixed_width_column_wrapper<T>(
-         {1.3335840000000001, 5.0398230000000002, 5.5737199999999998, 1.0348919999999999}),
-       fixed_width_column_wrapper<T>(
-         {4.5865989999999996, 1.503906, 0.086693000000000006, 2.8969369999999999}),
-       fixed_width_column_wrapper<T>(
-         {3.4607199999999998, 7.1906739999999996, 6.7035340000000003, 3.2086600000000001}),
-       fixed_width_column_wrapper<T>(
-         {5.8566250000000002, 5.653384, 1.235638, 4.5415289999999997})}});
+  auto expected = cudf::table_view{{expected1, expected2, expected3, expected4}};
+
+  CUDF_TEST_EXPECT_TABLES_EQUIVALENT(*bboxes, expected);
 }

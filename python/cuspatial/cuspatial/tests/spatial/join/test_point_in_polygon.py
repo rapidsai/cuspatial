@@ -236,7 +236,7 @@ def test_three_points_two_features():
     )
     expected = cudf.DataFrame()
     expected[0] = [True, True, False]
-    expected[1] = [True, False, True]
+    expected[1] = [False, False, True]
     cudf.testing.assert_frame_equal(expected, result)
 
 

@@ -68,6 +68,9 @@ ConfigureTest(JOIN_POINT_TO_LINESTRING_SMALL_TEST
 ConfigureTest(POINT_IN_POLYGON_TEST
     spatial/point_in_polygon_test.cpp)
 
+ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST
+    spatial/pairwise_point_in_polygon_test.cpp)
+
 ConfigureTest(POINT_QUADTREE_TEST
     indexing/point_quadtree_test.cu)
 
@@ -146,6 +149,9 @@ ConfigureTest(POINTS_IN_RANGE_TEST_EXP
 
 ConfigureTest(POINT_IN_POLYGON_TEST_EXP
     experimental/spatial/point_in_polygon_test.cu)
+
+ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST_EXP
+    experimental/spatial/pairwise_point_in_polygon_test.cu)
 
 ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP
     experimental/trajectory/derive_trajectories_test.cu)
