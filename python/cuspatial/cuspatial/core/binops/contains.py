@@ -1,15 +1,8 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
 from cudf import Series
-from cudf.core.column import as_column
 
-from cuspatial._lib.pairwise_point_in_polygon import (
-    pairwise_point_in_polygon as cpp_pairwise_point_in_polygon,
-)
-from cuspatial._lib.point_in_polygon import (
-    point_in_polygon as cpp_point_in_polygon,
-)
-from cuspatial.utils.column_utils import normalize_point_columns
+import cuspatial
 
 
 def contains_properly(
@@ -49,41 +42,44 @@ def contains_properly(
         A Series of boolean values indicating whether each point falls
         within its corresponding polygon.
     """
-
     if len(poly_offsets) == 0:
         return Series()
-    (
+
+    scale = 5
+    max_depth = 7
+    min_size = 125
+    x_max = poly_points_x.max()
+    x_min = poly_points_x.min()
+    y_max = poly_points_y.max()
+    y_min = poly_points_y.min()
+    point_indices, quadtree = cuspatial.quadtree_on_points(
         test_points_x,
         test_points_y,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        scale,
+        max_depth,
+        min_size,
+    )
+    poly_bboxes = cuspatial.polygon_bounding_boxes(
+        poly_offsets, poly_ring_offsets, poly_points_x, poly_points_y
+    )
+    intersections = cuspatial.join_quadtree_and_bounding_boxes(
+        quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth
+    )
+    polygons_and_points = cuspatial.quadtree_point_in_polygon(
+        intersections,
+        quadtree,
+        point_indices,
+        test_points_x,
+        test_points_y,
+        poly_offsets,
+        poly_ring_offsets,
         poly_points_x,
         poly_points_y,
-    ) = normalize_point_columns(
-        as_column(test_points_x),
-        as_column(test_points_y),
-        as_column(poly_points_x),
-        as_column(poly_points_y),
     )
-    poly_offsets_column = as_column(poly_offsets, dtype="int32")
-    poly_ring_offsets_column = as_column(poly_ring_offsets, dtype="int32")
-
-    if len(test_points_x) == len(poly_offsets):
-        pip_result = cpp_pairwise_point_in_polygon(
-            test_points_x,
-            test_points_y,
-            poly_offsets_column,
-            poly_ring_offsets_column,
-            poly_points_x,
-            poly_points_y,
-        )
-    else:
-        pip_result = cpp_point_in_polygon(
-            test_points_x,
-            test_points_y,
-            poly_offsets_column,
-            poly_ring_offsets_column,
-            poly_points_x,
-            poly_points_y,
-        )
-
-    result = Series(pip_result, dtype="bool")
+    result = Series([False] * len(test_points_x))
+    result[point_indices[polygons_and_points["point_index"]]] = True
     return result
