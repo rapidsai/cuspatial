@@ -52,7 +52,7 @@ TYPED_TEST(HaversineTest, Empty)
 
   auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
 
-  expect_columns_equal(expected, actual->view(), verbosity);
+  CUDF_TEST_EXPECT_COLUMNS_EQUAL(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(HaversineTest, Zero)
@@ -68,7 +68,7 @@ TYPED_TEST(HaversineTest, Zero)
 
   auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
 
-  expect_columns_equal(expected, actual->view(), verbosity);
+  CUDF_TEST_EXPECT_COLUMNS_EQUAL(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(HaversineTest, EquivalentPoints)
@@ -84,7 +84,7 @@ TYPED_TEST(HaversineTest, EquivalentPoints)
 
   auto actual = cuspatial::haversine_distance(a_lon, a_lat, b_lon, b_lat);
 
-  expect_columns_equal(expected, actual->view(), verbosity);
+  CUDF_TEST_EXPECT_COLUMNS_EQUAL(expected, actual->view(), verbosity);
 }
 
 TYPED_TEST(HaversineTest, MismatchSize)

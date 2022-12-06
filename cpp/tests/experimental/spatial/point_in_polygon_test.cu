@@ -169,9 +169,7 @@ TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
      {1.0, 1.0},   {0.0, 1.0},  {0.0, -1.0}, {-1.0, -1.0}, {-1.0, 0.0},  {1.0, 0.0},  {1.0, -1.0},
      {-1.0, 1.0},  {-1.0, 0.0}, {-1.0, 1.0}, {1.0, 1.0},   {1.0, 0.0},   {-1.0, 0.0}});
 
-  // point is included in rects on min x and y sides, but not on max x or y sides.
-  // this behavior is inconsistent, and not necessarily intentional.
-  auto expected = std::vector<int32_t>{0b1010};
+  auto expected = std::vector<int32_t>{0b0000};
   auto got      = rmm::device_vector<int32_t>(test_point.size());
 
   auto ret = point_in_polygon(test_point.begin(),
@@ -203,9 +201,7 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
      {0.0, 1.0},   {-1.0, 0.0}, {-1.0, 0.0}, {0.0, -1.0}, {0.0, 0.0},   {1.0, 0.0},  {1.0, -1.0},
      {0.0, -1.0},  {0.0, 0.0},  {0.0, 1.0},  {1.0, 1.0},  {1.0, 0.0},   {0.0, 0.0}});
 
-  // point is only included on the max x max y corner.
-  // this behavior is inconsistent, and not necessarily intentional.
-  auto expected = std::vector<int32_t>{0b1000};
+  auto expected = std::vector<int32_t>{0b0000};
   auto got      = rmm::device_vector<int32_t>(test_point.size());
 
   auto ret = point_in_polygon(test_point.begin(),
