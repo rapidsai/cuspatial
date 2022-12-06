@@ -1,7 +1,5 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
-import warnings
-
 from cudf import DataFrame
 
 from cuspatial._lib.spatial import (
