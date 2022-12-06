@@ -122,14 +122,4 @@ pair_of_columns sinusoidal_projection(double origin_lon,
     origin_lon, origin_lat, input_lon, input_lat, rmm::cuda_stream_default, mr);
 }
 
-// deprecated
-pair_of_columns lonlat_to_cartesian(double origin_lon,
-                                    double origin_lat,
-                                    cudf::column_view const& input_lon,
-                                    cudf::column_view const& input_lat,
-                                    rmm::mr::device_memory_resource* mr)
-{
-  return sinusoidal_projection(origin_lon, origin_lat, input_lon, input_lat, mr);
-}
-
 }  // namespace cuspatial

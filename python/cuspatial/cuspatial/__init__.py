@@ -8,7 +8,6 @@ from .core.spatial import (
     haversine_distance,
     join_quadtree_and_bounding_boxes,
     linestring_bounding_boxes,
-    lonlat_to_cartesian,
     pairwise_linestring_distance,
     pairwise_point_distance,
     pairwise_point_linestring_distance,
