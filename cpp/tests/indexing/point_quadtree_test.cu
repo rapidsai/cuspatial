@@ -82,12 +82,13 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_single)
                     "the resulting quadtree must have a single quadrant");
 
   // the top level quadtree node is expected to have a value of (0,0,0,1,0)
-  expect_tables_equal(*quadtree,
-                      cudf::table_view{{fixed_width_column_wrapper<uint32_t>({0}),
-                                        fixed_width_column_wrapper<uint8_t>({0}),
-                                        fixed_width_column_wrapper<bool>({0}),
-                                        fixed_width_column_wrapper<uint32_t>({1}),
-                                        fixed_width_column_wrapper<uint32_t>({0})}});
+  fixed_width_column_wrapper<uint32_t> expected1({0});
+  fixed_width_column_wrapper<uint8_t> expected2({0});
+  fixed_width_column_wrapper<bool> expected3({0});
+  fixed_width_column_wrapper<uint32_t> expected4({1});
+  fixed_width_column_wrapper<uint32_t> expected5({0});
+  auto expected = cudf::table_view{{expected1, expected2, expected3, expected4, expected5}};
+  CUDF_TEST_EXPECT_TABLES_EQUAL(*quadtree, expected);
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_two)
@@ -116,12 +117,14 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_two)
 
   // the top level quadtree node is expected to have a value of
   // ([0, 3], [0, 0], [0, 0], [1, 1], [0, 1])
-  expect_tables_equal(*quadtree,
-                      cudf::table_view{{fixed_width_column_wrapper<uint32_t>({0, 3}),
-                                        fixed_width_column_wrapper<uint8_t>({0, 0}),
-                                        fixed_width_column_wrapper<bool>({0, 0}),
-                                        fixed_width_column_wrapper<uint32_t>({1, 1}),
-                                        fixed_width_column_wrapper<uint32_t>({0, 1})}});
+  fixed_width_column_wrapper<uint32_t> expected1({0, 3});
+  fixed_width_column_wrapper<uint8_t> expected2({0, 0});
+  fixed_width_column_wrapper<bool> expected3({0, 0});
+  fixed_width_column_wrapper<uint32_t> expected4({1, 1});
+  fixed_width_column_wrapper<uint32_t> expected5({0, 1});
+
+  auto expected = cudf::table_view{{expected1, expected2, expected3, expected4, expected5}};
+  CUDF_TEST_EXPECT_TABLES_EQUAL(*quadtree, expected);
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_small)
@@ -182,14 +185,16 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_small)
     quadtree->num_columns() == 5,
     "a quadtree table must have 5 columns (keys, levels, is_node, lengths, offsets)");
 
-  expect_tables_equal(
-    *quadtree,
-    cudf::table_view{
-      {fixed_width_column_wrapper<uint32_t>({0, 1, 2, 0, 1, 3, 4, 7, 5, 6, 13, 14, 28, 31}),
-       fixed_width_column_wrapper<uint8_t>({0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2}),
-       fixed_width_column_wrapper<bool>({1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0}),
-       fixed_width_column_wrapper<uint32_t>({3, 2, 11, 7, 2, 2, 9, 2, 9, 7, 5, 8, 8, 7}),
-       fixed_width_column_wrapper<uint32_t>({3, 6, 60, 0, 8, 10, 36, 12, 7, 16, 23, 28, 45, 53})}});
+  fixed_width_column_wrapper<uint32_t> expected1({0, 1, 2, 0, 1, 3, 4, 7, 5, 6, 13, 14, 28, 31});
+  fixed_width_column_wrapper<uint8_t> expected2({0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2});
+  fixed_width_column_wrapper<bool> expected3({1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0});
+  fixed_width_column_wrapper<uint32_t> expected4({3, 2, 11, 7, 2, 2, 9, 2, 9, 7, 5, 8, 8, 7});
+  fixed_width_column_wrapper<uint32_t> expected5(
+    {3, 6, 60, 0, 8, 10, 36, 12, 7, 16, 23, 28, 45, 53});
+
+  auto expected = cudf::table_view{{expected1, expected2, expected3, expected4, expected5}};
+
+  CUDF_TEST_EXPECT_TABLES_EQUAL(*quadtree, expected);
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
@@ -221,10 +226,14 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
 
   // the top level quadtree node is expected to have a value of
   // ([3, 12, 15], [0, 1, 1], [1, 0, 0], [2, 1, 1], [1, 0, 1])
-  expect_tables_equal(*quadtree,
-                      cudf::table_view{{fixed_width_column_wrapper<uint32_t>({3, 12, 15}),
-                                        fixed_width_column_wrapper<uint8_t>({0, 1, 1}),
-                                        fixed_width_column_wrapper<bool>({1, 0, 0}),
-                                        fixed_width_column_wrapper<uint32_t>({2, 1, 1}),
-                                        fixed_width_column_wrapper<uint32_t>({1, 0, 1})}});
+
+  fixed_width_column_wrapper<uint32_t> expected1({3, 12, 15});
+  fixed_width_column_wrapper<uint8_t> expected2({0, 1, 1});
+  fixed_width_column_wrapper<bool> expected3({1, 0, 0});
+  fixed_width_column_wrapper<uint32_t> expected4({2, 1, 1});
+  fixed_width_column_wrapper<uint32_t> expected5({1, 0, 1});
+
+  auto expected = cudf::table_view{{expected1, expected2, expected3, expected4, expected5}};
+
+  CUDF_TEST_EXPECT_TABLES_EQUAL(*quadtree, expected);
 }

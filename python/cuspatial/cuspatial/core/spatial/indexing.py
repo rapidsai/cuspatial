@@ -12,17 +12,7 @@ from cuspatial.utils.column_utils import normalize_point_columns
 
 
 def quadtree_on_points(
-    xs,
-    ys,
-    x_min,
-    x_max,
-    y_min,
-    y_max,
-    scale,
-    max_depth,
-    max_size,
-    # Deprecated, renamed to `max_size`
-    min_size=None,
+    xs, ys, x_min, x_max, y_min, y_max, scale, max_depth, max_size
 ):
     """Construct a quadtree from a set of points for a given area-of-interest
     bounding box.
@@ -170,15 +160,6 @@ def quadtree_on_points(
         119     24
         Length: 120, dtype: int32
     """
-
-    if min_size is not None and max_size is None:
-        max_size = min_size
-        min_size = None
-        warnings.warn(
-            "Deprecation warning: `min_size` argument has been renamed to "
-            "`max_size`. Support for the old name will be removed in the "
-            "next version."
-        )
 
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     x_min, x_max, y_min, y_max = (
