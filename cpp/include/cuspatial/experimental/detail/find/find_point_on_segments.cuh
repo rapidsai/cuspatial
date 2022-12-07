@@ -78,12 +78,11 @@ void find_point_on_segments(MultiPointRange multipoints,
                             OutputIt1 mergeable_flag,
                             rmm::cuda_stream_view stream)
 {
-  using index_t     = typename MultiPointRange::index_t;
-  auto num_segments = segment_offsets.size() - 1;
-  CUSPATIAL_EXPECTS(multipoints.size() == num_segments,
+  using index_t = typename MultiPointRange::index_t;
+  CUSPATIAL_EXPECTS(multipoints.size() == segments.size(),
                     "Input should contain the same number of pairs.");
 
-  if (num_segments == 0) return;
+  if (segments.size() == 0) return;
 
   thrust::tabulate(rmm::exec_policy(stream),
                    mergeable_flag,
