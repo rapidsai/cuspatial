@@ -41,11 +41,14 @@ class alignas(sizeof(Vertex)) box {
   /**
    * @brief Compare two bounding boxes for equality.
    */
-  friend bool CUSPATIAL_HOST_DEVICE operator==(box<T> const& lhs, box<T> const& rhs)
+  friend CUSPATIAL_HOST_DEVICE bool operator==(box<T> const& lhs, box<T> const& rhs)
   {
     return (lhs.v1 == rhs.v1);
   }
 };
+
+template <typename T>
+box(vec_2d<T> a, vec_2d<T> b) -> box<T, vec_2d<T>>;
 
 /**
  * @} // end of doxygen group
