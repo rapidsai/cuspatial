@@ -290,8 +290,8 @@ JNIEXPORT jlongArray JNICALL Java_ai_rapids_cuspatial_CuSpatial_lonlatToCartesia
     column_view *input_lon_column_view = reinterpret_cast<column_view *>(input_lon_view_handle);
     column_view *input_lat_column_view = reinterpret_cast<column_view *>(input_lat_view_handle);
     std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> result =
-        cuspatial::lonlat_to_cartesian(origin_lon, origin_lat, *input_lon_column_view,
-                                       *input_lat_column_view);
+        cuspatial::sinusoidal_projection(origin_lon, origin_lat, *input_lon_column_view,
+                                         *input_lat_column_view);
 
     std::vector<std::unique_ptr<cudf::column>> columns;
     columns.emplace_back(std::move(result.first));
