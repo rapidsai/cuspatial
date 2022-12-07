@@ -152,7 +152,7 @@ __forceinline__ thrust::optional<segment<T>> __device__ collinear_or_parallel_ov
   auto ac = c - a;
 
   // Parallel
-  if (not_float_equal(det(ab, ac), T{0})) return thrust::nullopt;
+  if (not float_equal(det(ab, ac), T{0})) return thrust::nullopt;
 
   // Must be on the same line, sort the endpoints
   if (b < a) thrust::swap(a, b);
@@ -217,13 +217,13 @@ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
  * @brief Given a point and a segment, returns true if point is on the segment.
  */
 template <typename T>
-bool __device__ point_on_segment(segment<T> const& segment, vec_2d<T> const& c)
+bool __device__ is_point_on_segment(segment<T> const& segment, vec_2d<T> const& c)
 {
   auto [a, b] = segment;
   auto ab     = b - a;
   auto ac     = c - a;
 
-  if (not_float_equal(det(ab, ac), T{0})) return false;
+  if (not float_equal(det(ab, ac), T{0})) return false;
 
   if (b < a) thrust::swap(a, b);
   return a <= c && c <= b;

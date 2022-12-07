@@ -58,9 +58,9 @@ struct find_point_on_segment_functor {
          segment_idx < segment_offsets[geometry_idx + 1];
          segment_idx++) {
       auto const& segment = thrust::raw_reference_cast(segments[segment_idx]);
-      if (point_on_segment(segment, point)) return 1;
+      if (is_point_on_segment(segment, point)) return true;
     }
-    return 0;
+    return false;
   }
 };
 
