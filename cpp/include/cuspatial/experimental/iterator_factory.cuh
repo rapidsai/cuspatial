@@ -150,7 +150,9 @@ struct index_to_geometry_id {
 
   CUSPATIAL_HOST_DEVICE auto operator()(IndexT idx)
   {
-    return thrust::prev(thrust::upper_bound(thrust::seq, geometry_begin, geometry_end, idx));
+    return thrust::distance(
+      geometry_begin,
+      thrust::prev(thrust::upper_bound(thrust::seq, geometry_begin, geometry_end, idx)));
   }
 };
 
@@ -294,18 +296,18 @@ auto make_box_output_iterator(MinXIter min_x, MinYIter min_y, MaxXIter max_x, Ma
 }
 
 /**
- * @brief Create an input iterator that generates sequential geometry IDs for each element based
- * on the input offset range.
+ * @brief Create an input iterator that generates zero-based sequential geometry IDs for each
+ * element based on the input offset range.
  *
  * This can be used for any single-level geometry offsets, e.g. multipoints, multilinestrings,
  * (multi)trajectories. And using custom iterators it can be used for nested types.
  *
  * Example:
  * @code
- * auto offsets = std::vector<int>({0, 3, 5, 9});
- * auto iter = make_geometry_id_iterator(offsets.begin(), offsets.end());
+ * auto offsets    = std::vector<int>({0, 3, 5, 9});
+ * auto iter_first = make_geometry_id_iterator<int>(offsets.begin(), offsets.end());
  * auto ids = std::vector<int>(10);
- * std::copy_n(iter, 10, ids.begin()); // ids now contains [0, 0, 0, 3, 3, 5, 5, 5, 5, 9]
+ * std::copy_n(iter_first, 10, ids.begin());  // ids now contains [0, 0, 0, 1, 1, 2, 2, 2, 2, 3]
  * @endcode
  *
  * @tparam GeometryIter The offset iterator type. Must meet the requirements
@@ -325,21 +327,20 @@ auto make_geometry_id_iterator(GeometryIter offsets_begin, GeometryIter offsets_
 }
 
 /**
- * @brief Create an input iterator that generates sequential geometry IDs for each element of a
- * nested geometry based on the input geometry and part offset ranges.
+ * @brief Create an input iterator that generates zero-based sequential geometry IDs for each
+ * element of a nested geometry based on the input geometry and part offset ranges.
  *
  * This can be used for any two-level nested multigeometry offsets, e.g. multipolygons.
  *
  * Example:
  * @code
- * auto poly_offsets = std::vector<int>({0, 1, 3}); // poly 1 has 2 rings
+ * auto poly_offsets = std::vector<int>({0, 1, 3});  // poly 1 has 2 rings
  * auto ring_offsets = std::vector<int>({0, 4, 7, 10});
- * auto iter = make_geometry_id_iterator(poly_offsets.begin(),
- *                                       poly_offsets.end(),
- *                                       ring_offsets.begin());
+ * auto iter =
+ *   make_geometry_id_iterator<int>(poly_offsets.begin(), poly_offsets.end(), ring_offsets.begin());
  * auto ids = std::vector<int>(13);
  * std::copy_n(iter, 13, ids.begin());
- * // ids now contains [0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 10, 10, 10]
+ * // ids now contains [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2]
  * @endcode
  *
  * @tparam GeometryIter The offset iterator type. Must meet the requirements
