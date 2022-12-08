@@ -3,33 +3,7 @@ from shapely.geometry import LineString, Point, Polygon
 
 import cuspatial
 
-"""
-# Needs intersection
-def test_polygon_crosses_point():
-    gpdpolygon = gpd.GeoSeries(
-        Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]])
-    )
-    gpdpoint = gpd.GeoSeries([Point(0.5, 0.5)])
-    polygon = cuspatial.from_geopandas(gpdpolygon)
-    point = cuspatial.from_geopandas(gpdpoint)
-    got = polygon.crosses(point).values_host
-    expected = gpdpolygon.crosses(gpdpoint).values
-    assert (got == expected).all()
 
-
-# Edge case - point intersects polygon boundary
-def test_point_intersects_polygon():
-    gpdpoint = gpd.GeoSeries([Point(0, 0)])
-    gpdpolygon = gpd.GeoSeries(Polygon([[0, 0], [0, 1], [1, 1], [0, 0]]))
-    point = cuspatial.from_geopandas(gpdpoint)
-    polygon = cuspatial.from_geopandas(gpdpolygon)
-    got = point.intersects(polygon).values_host
-    expected = gpdpoint.intersects(gpdpolygon).values
-    assert (got == expected).all()
-"""
-
-
-# Needs any instead of all.
 def test_polygon_overlaps_point():
     gpdpolygon = gpd.GeoSeries(
         Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]])

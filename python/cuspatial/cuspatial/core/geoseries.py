@@ -26,11 +26,13 @@ import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.core.binpreds.binpreds import (
-    BinaryPredicate,
     ContainsProperlyBinpred,
+    CoversBinpred,
     CrossesBinpred,
+    EqualsBinpred,
     IntersectsBinpred,
     OverlapsBinpred,
+    TouchesBinpred,
     WithinBinpred,
 )
 
@@ -825,7 +827,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature in A
             is equal to the corresponding feature in B.
         """
-        return BinaryPredicate("equals", self, other, align)()
+        return EqualsBinpred("equals", self, other, align)()
 
     def touches(self, other, align=True):
         """Compute if a GeoSeries of features A touches a GeoSeries of features
@@ -873,7 +875,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature in A
             touches the corresponding feature in B.
         """
-        return BinaryPredicate("touches", self, other, align)()
+        return TouchesBinpred("touches", self, other, align)()
 
     def covers(self, other, align=True):
         """Compute if a GeoSeries of features A covers a second GeoSeries of
@@ -893,7 +895,7 @@ class GeoSeries(cudf.Series):
             input GeoSeries covers the corresponding feature in the other
             GeoSeries.
         """
-        return BinaryPredicate("covers", self, other, align)()
+        return CoversBinpred("covers", self, other, align)()
 
     def intersects(self, other, align=True):
         """Compute the intersections of two GeoSeries.

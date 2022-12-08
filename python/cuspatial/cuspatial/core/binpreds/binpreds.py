@@ -85,43 +85,12 @@ class BinaryPredicate(ABC):
         - `.crosses`
         - `.overlaps`
 
-        There are twenty-five ordering combinations of `lhs` and `rhs`:
-        - point     point
-        - point     multipoint
-        - point     linestring
-        - point     multilinestring
-        - point     polygon
-        - point     multipolygon
-        - multipoint point
-        - multipoint multipoint
-        - multipoint linestring
-        - multipoint multilinestring
-        - multipoint polygon
-        - multipoint multipolygon
-        - linestring point
-        - linestring multipoint
-        - linestring linestring
-        - linestring multilinestring
-        - linestring polygon
-        - linestring multipolygon
-        - multilinestring point
-        - multilinestring multipoint
-        - multilinestring linestring
-        - multilinestring multilinestring
-        - multilinestring polygon
-        - multilinestring multipolygon
-        - polygon point
-        - polygon multipoint
-        - polygon linestring
-        - polygon multilinestring
-        - polygon polygon
-        - polygon multipolygon
-        - multipolygon point
-        - multipolygon multipoint
-        - multipolygon linestring
-        - multipolygon multilinestring
-        - multipolygon polygon
-        - multipolygon multipolygon
+        There are thirty-six ordering combinations of `lhs` and `rhs`, the
+        unordered pairs of each `point`, `multipoint`, `linestring`,
+        `multilinestring`, `polygon`, and `multipolygon`. The ordering of
+        `lhs` and `rhs` is important because the result of the binary
+        operation is not symmetric. For example, `A.contains(B)` is not
+        necessarily the same as `B.within(A)`.
 
         Parameters
         ----------
@@ -188,6 +157,7 @@ class BinaryPredicate(ABC):
 
     def equals(self, lhs, rhs):
         """Compute the equals relationship between two GeoSeries."""
+        result = False
         if contains_only_points(lhs):
             result = lhs.points.xy.equals(rhs.points.xy)
         elif contains_only_linestrings(lhs):
@@ -304,9 +274,6 @@ class ContainsProperlyBinpred(BinaryPredicate):
 
 
 class OverlapsBinpred(ContainsProperlyBinpred):
-    def preprocess(self, op, lhs, rhs):
-        return super().preprocess(op, lhs, rhs)
-
     def postprocess(self, op, point_indices, point_result):
         # Same as contains_properly, but we need to check that the
         # dimensions are the same.
@@ -380,9 +347,6 @@ class WithinBinpred(ContainsProperlyBinpred):
 
 
 class CrossesBinpred(BinaryPredicate):
-    def preprocess(self, op, lhs, rhs):
-        return super().preprocess(op, lhs, rhs)
-
     def postprocess(self, op, point_indices, point_result):
         result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
         df_result = result
@@ -400,10 +364,16 @@ class CrossesBinpred(BinaryPredicate):
         return point_result
 
 
-class EqualsBinpred(BinaryPredicate):
-    def preprocess(self, op, lhs, rhs):
-        return super().preprocess(op, lhs, rhs)
-
+class EqualsBinpred(ContainsProperlyBinpred):
     def postprocess(self, op, point_indices, point_result):
         if len(point_result) == 1:
             return point_result[0]
+        return point_result
+
+
+class CoversBinpred(ContainsProperlyBinpred):
+    pass
+
+
+class TouchesBinpred(ContainsProperlyBinpred):
+    pass
