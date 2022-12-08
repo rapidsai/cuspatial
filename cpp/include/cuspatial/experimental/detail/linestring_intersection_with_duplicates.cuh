@@ -172,52 +172,56 @@ void __global__ pairwise_linestring_intersection_simple(MultiLinestringRange1 mu
   using T       = typename MultiLinestringRange1::element_t;
   using types_t = uint8_t;
   using count_t = iterator_value_type<Offsets1>;
+
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multilinestrings1.num_points();
        idx += gridDim.x * blockDim.x) {
-    auto const part_idx = multilinestrings1.part_idx_from_point_idx(idx);
-    if (!multilinestrings1.is_valid_segment_id(idx, part_idx)) continue;
-    auto const lhs_linestring_idx = multilinestrings1.intra_part_idx(part_idx);
-    auto const lhs_segment_idx    = multilinestrings1.intra_point_idx(idx);
-    auto [a, b]                   = multilinestrings1.segment(idx);
-    auto const geometry_idx       = multilinestrings1.geometry_idx_from_part_idx(part_idx);
-    auto const multilinestring2   = multilinestrings2[geometry_idx];
-    auto const geometry_collection_offset =
-      num_points_offsets_first[geometry_idx] + num_segments_offsets_first[geometry_idx];
+    if (auto const part_idx_opt = multilinestrings1.part_idx_from_segment_idx(idx);
+        part_idx_opt.has_value()) {
+      auto const part_idx           = part_idx_opt.value();
+      auto const lhs_linestring_idx = multilinestrings1.intra_part_idx(part_idx);
+      auto const lhs_segment_idx    = multilinestrings1.intra_point_idx(idx);
+      auto [a, b]                   = multilinestrings1.segment(idx);
+      auto const geometry_idx       = multilinestrings1.geometry_idx_from_part_idx(part_idx);
+      auto const multilinestring2   = multilinestrings2[geometry_idx];
+      auto const geometry_collection_offset =
+        num_points_offsets_first[geometry_idx] + num_segments_offsets_first[geometry_idx];
 
-    for (auto rhs_linestring_idx = 0; rhs_linestring_idx < multilinestring2.size();
-         ++rhs_linestring_idx) {
-      auto const linestring2 = multilinestring2[rhs_linestring_idx];
-      for (auto rhs_segment_idx = 0; rhs_segment_idx < linestring2.num_segments();
-           ++rhs_segment_idx) {
-        auto [c, d]                   = linestring2.segment(rhs_segment_idx);
-        auto [point_opt, segment_opt] = segment_intersection(segment<T>{a, b}, segment<T>{c, d});
+      for (auto rhs_linestring_idx = 0; rhs_linestring_idx < multilinestring2.size();
+           ++rhs_linestring_idx) {
+        auto const linestring2 = multilinestring2[rhs_linestring_idx];
+        for (auto rhs_segment_idx = 0; rhs_segment_idx < linestring2.num_segments();
+             ++rhs_segment_idx) {
+          auto [c, d]                   = linestring2.segment(rhs_segment_idx);
+          auto [point_opt, segment_opt] = segment_intersection(segment<T>{a, b}, segment<T>{c, d});
 
-        // Writes geometry and origin IDs to output. Note that for each pair, intersecting
-        // points always precedes overlapping segments (arbitrarily).
-        if (point_opt.has_value()) {
-          auto r              = cuda::atomic_ref<count_t>{n_points_stored[geometry_idx]};
-          auto next_point_idx = r.fetch_add(1);
-          points_first[num_points_offsets_first[geometry_idx] + next_point_idx] = point_opt.value();
-          auto union_column_idx = geometry_collection_offset + next_point_idx;
-          auto point_column_idx = num_points_offsets_first[geometry_idx] + next_point_idx;
-          point_ids_range.set(point_column_idx,
-                              lhs_linestring_idx,
-                              lhs_segment_idx,
-                              rhs_linestring_idx,
-                              rhs_segment_idx);
-        } else if (segment_opt.has_value()) {
-          auto r                = cuda::atomic_ref<count_t>{n_segments_stored[geometry_idx]};
-          auto next_segment_idx = r.fetch_add(1);
-          segments_first[num_segments_offsets_first[geometry_idx] + next_segment_idx] =
-            segment_opt.value();
-          auto union_column_idx =
-            geometry_collection_offset + num_points_per_pair_first[geometry_idx] + next_segment_idx;
-          auto segment_column_idx = num_segments_offsets_first[geometry_idx] + next_segment_idx;
-          segment_ids_range.set(segment_column_idx,
+          // Writes geometry and origin IDs to output. Note that for each pair, intersecting
+          // points always precedes overlapping segments (arbitrarily).
+          if (point_opt.has_value()) {
+            auto next_point_idx =
+              cuda::atomic_ref<count_t>{n_points_stored[geometry_idx]}.fetch_add(1);
+            points_first[num_points_offsets_first[geometry_idx] + next_point_idx] =
+              point_opt.value();
+            auto union_column_idx = geometry_collection_offset + next_point_idx;
+            auto point_column_idx = num_points_offsets_first[geometry_idx] + next_point_idx;
+            point_ids_range.set(point_column_idx,
                                 lhs_linestring_idx,
                                 lhs_segment_idx,
                                 rhs_linestring_idx,
                                 rhs_segment_idx);
+          } else if (segment_opt.has_value()) {
+            auto next_segment_idx =
+              cuda::atomic_ref<count_t>{n_segments_stored[geometry_idx]}.fetch_add(1);
+            segments_first[num_segments_offsets_first[geometry_idx] + next_segment_idx] =
+              segment_opt.value();
+            auto union_column_idx = geometry_collection_offset +
+                                    num_points_per_pair_first[geometry_idx] + next_segment_idx;
+            auto segment_column_idx = num_segments_offsets_first[geometry_idx] + next_segment_idx;
+            segment_ids_range.set(segment_column_idx,
+                                  lhs_linestring_idx,
+                                  lhs_segment_idx,
+                                  rhs_linestring_idx,
+                                  rhs_segment_idx);
+          }
         }
       }
     }

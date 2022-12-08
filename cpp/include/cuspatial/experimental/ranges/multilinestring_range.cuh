@@ -91,6 +91,13 @@ class multilinestring_range {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto part_idx_from_point_idx(IndexType point_idx);
 
+  /// Given the index of a segment, return the part (linestring) index where the segment locates.
+  /// If the segment id is invalid, returns nullopt.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE
+    thrust::optional<typename thrust::iterator_traits<PartIterator>::difference_type>
+    part_idx_from_segment_idx(IndexType point_idx);
+
   /// Given the index of a part (linestring), return the geometry (multilinestring) index
   /// where the linestring locates.
   template <typename IndexType>
