@@ -35,20 +35,6 @@ auto make_device_vector(std::initializer_list<T> inl)
   return rmm::device_vector<T>(inl.begin(), inl.end());
 }
 
-template <typename OffsetArray, typename CoordinateArray>
-class segment_array {
- public:
-  auto offset_range() { return range(_offsets.begin(), _offsets.end()); }
-  auto _coordinates_range() { return range(_coordinates.begin(), _coordinates.end()); }
-
- protected:
-  OffsetArray _offsets;
-  CoordinateArray _coordinates;
-};
-
-template <typename OffsetArray, typename CoordinateArray>
-segment_array(OffsetArray, CoordinateArray) -> segment_array<OffsetArray, CoordinateArray>;
-
 /**
  * @brief Owning object of a multilinestring array following geoarrow layout.
  *
