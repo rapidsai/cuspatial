@@ -266,3 +266,5 @@ TYPED_TEST(FindAndCombineSegmentsTest, nooverlap3)
   RUN_SINGLE_FIND_AND_COMBINE_TEST(
     segments, {0, 0}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
 }
+
+#undef RUN_SINGLE_FIND_AND_COMBINE_TEST
