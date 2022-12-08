@@ -104,19 +104,16 @@ dependencies:
             packages:
               - cudatoolkit=11.2
               - libcusparse-dev=11.6.0.43  # belongs to cuda-11.4.0 but it's the oldest available
-              - libcusparse=11.6.0.43      # belongs to cuda-11.4.0 but it's the oldest available
           - matrix:
               cuda: "11.4"
             packages:
               - cudatoolkit=11.4
               - libcusparse-dev=11.6.0.120
-              - libcusparse=11.6.0.120
           - matrix:
               cuda: "11.5"
             packages:
               - cudatoolkit=11.5
               - libcusparse-dev=11.7.0.107
-              - libcusparse=11.7.0.107
   develop:
     common:
       - output_types: [conda, requirements]
