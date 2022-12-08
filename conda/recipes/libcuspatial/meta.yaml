@@ -40,7 +40,6 @@ requirements:
     - libcudf {{ minor_version }}.*
     - librmm {{ minor_version }}.*
     - libcusparse-dev=11.7.0.107 # This version corresponds to CUDA 11.5
-    - libcusparse=11.7.0.107     # This version corresponds to CUDA 11.5
     - cudatoolkit {{ cuda_version }}.*
     - gdal {{ gdal_version }}
 
