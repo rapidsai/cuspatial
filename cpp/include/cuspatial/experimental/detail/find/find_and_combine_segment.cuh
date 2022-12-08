@@ -37,6 +37,11 @@ void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
 {
   for (auto pair_idx = threadIdx.x + blockIdx.x * blockDim.x; pair_idx < offsets.size() - 1;
        pair_idx += gridDim.x * blockDim.x) {
+    // Zero-initialize flags for all segments in current space.
+    for (auto i = offsets[pair_idx]; i < offsets[pair_idx + 1]; i++) {
+      merged_flag[i] = 0;
+    }
+
     for (auto i = offsets[pair_idx]; i < offsets[pair_idx + 1] && merged_flag[i] != 1; i++) {
       for (auto j = i + 1; j < offsets[pair_idx + 1]; j++) {
         auto res = maybe_merge_segments(segments[i], segments[j]);
@@ -63,8 +68,6 @@ void find_and_combine_segment(OffsetRange offsets,
 {
   auto num_spaces = offsets.size() - 1;
   if (num_spaces == 0) return;
-
-  thrust::uninitialized_fill_n(rmm::exec_policy(stream), merged_flag, segments.size(), 0);
 
   auto [threads_per_block, num_blocks] = grid_1d(num_spaces);
   simple_find_and_combine_segments_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
