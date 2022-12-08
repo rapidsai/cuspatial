@@ -3,6 +3,8 @@ from shapely.geometry import LineString, Point, Polygon
 
 import cuspatial
 
+"""Overlaps, Within, and Intersects"""
+
 
 def test_polygon_overlaps_point():
     gpdpolygon = gpd.GeoSeries(
@@ -26,7 +28,6 @@ def test_max_polygons_overlaps_max_points(polygon_generator, point_generator):
     assert (got == expected).all()
 
 
-# Needs any instead of all.
 def test_polygon_overlaps_polygon():
     gpdpolygon1 = gpd.GeoSeries(
         Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]])
@@ -51,7 +52,6 @@ def test_max_polygon_overlaps_max_points(polygon_generator, point_generator):
     assert (got == expected).all()
 
 
-# Interior case - point intersects polygon interior
 def test_point_intersects_polygon_interior():
     gpdpoint = gpd.GeoSeries([Point(0.5, 0.5)])
     gpdpolygon = gpd.GeoSeries(

@@ -137,8 +137,6 @@ class BinaryPredicate(ABC):
         A feature A contains another feature B if no points of B lie in the
         exterior of A, and at least one point of the interior of B lies in the
         interior of A. This is the inverse of `within`."""
-        if contains_only_points(lhs) and contains_only_points(points):
-            return self.equals(lhs, points)
         if not contains_only_polygons(lhs):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
@@ -155,29 +153,6 @@ class BinaryPredicate(ABC):
         )
         return point_result
 
-    def equals(self, lhs, rhs):
-        """Compute the equals relationship between two GeoSeries."""
-        result = False
-        if contains_only_points(lhs):
-            result = lhs.points.xy.equals(rhs.points.xy)
-        elif contains_only_linestrings(lhs):
-            result = lhs.lines.xy.equals(rhs.lines.xy)
-        elif contains_only_polygons(lhs):
-            result = lhs.polygons.xy.equals(rhs.polygons.xy)
-        elif contains_only_multipoints(lhs):
-            result = lhs.multipoints.xy.equals(rhs.multipoints.xy)
-        return result
-
-    def touches(self, lhs, rhs):
-        """Compute the touches relationship between two GeoSeries:
-        Two objects touch if they share at least one point in common, but their
-        interiors do not intersect."""
-        return self.equals(lhs, rhs)
-
-    def covers(self, lhs, rhs):
-        """A covers B if no points of B are in the exterior of A."""
-        return self.contains_properly(lhs, rhs)
-
     def intersects(self, lhs, rhs):
         """Compute from a GeoSeries of points and a GeoSeries of polygons which
         points are contained within the corresponding polygon. Polygon A
@@ -190,18 +165,6 @@ class BinaryPredicate(ABC):
         """An object is said to be within rhs if at least one of its points
         is located in the interior and no points are located in the exterior
         of the rhs."""
-        return self.contains_properly(lhs, rhs)
-
-    def crosses(self, lhs, rhs):
-        """Returns a `Series` of `dtype('bool')` with value `True` for each
-        aligned geometry that crosses rhs.
-
-        An object is said to cross rhs if its interior intersects the
-        interior of the rhs but does not contain it, and the dimension of
-        the intersection is less than either."""
-        # Crosses requires the use of point_in_polygon but only requires that
-        # 1 or more points are within the polygon. This differs from
-        # `.contains` which requires all of them.
         return self.contains_properly(lhs, rhs)
 
     def overlaps(self, lhs, rhs, align=True):
@@ -344,36 +307,3 @@ class WithinBinpred(ContainsProperlyBinpred):
             if len(point_result) == 1:
                 return point_result[0]
         return point_result
-
-
-class CrossesBinpred(BinaryPredicate):
-    def postprocess(self, op, point_indices, point_result):
-        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
-        df_result = result
-        # Discrete math recombination
-        if (
-            contains_only_linestrings(self.rhs)
-            or contains_only_polygons(self.rhs)
-            or contains_only_multipoints(self.rhs)
-        ):
-            df_result = ~result
-        point_result = cudf.Series(
-            df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
-        )
-        point_result.name = None
-        return point_result
-
-
-class EqualsBinpred(ContainsProperlyBinpred):
-    def postprocess(self, op, point_indices, point_result):
-        if len(point_result) == 1:
-            return point_result[0]
-        return point_result
-
-
-class CoversBinpred(ContainsProperlyBinpred):
-    pass
-
-
-class TouchesBinpred(ContainsProperlyBinpred):
-    pass

@@ -27,12 +27,8 @@ from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.core.binpreds.binpreds import (
     ContainsProperlyBinpred,
-    CoversBinpred,
-    CrossesBinpred,
-    EqualsBinpred,
     IntersectsBinpred,
     OverlapsBinpred,
-    TouchesBinpred,
     WithinBinpred,
 )
 
@@ -779,124 +775,6 @@ class GeoSeries(cudf.Series):
             "contains_properly", self, other, align
         )()
 
-    def equals(self, other, align=True):
-        """Compute if a GeoSeries of features A is equal to a GeoSeries of
-        features B. Features are equal if their coordinates are equal.
-
-        Parameters
-        ----------
-        other
-            a cuspatial.GeoSeries
-        align=True
-            to align the indices before computing .contains or not. If the
-            indices are not aligned, they will be compared based on their
-            implicit row order.
-
-        Examples
-        --------
-        Test if two points are equal:
-        >>> point = cuspatial.GeoSeries(
-            [Point(0, 0)],
-            )
-        >>> point2 = cuspatial.GeoSeries(
-            [Point(0, 0)],
-            )
-        >>> print(point.equals(point2))
-        0    True
-        dtype: bool
-
-        Test if two polygons are equal:
-        >>> polygon = cuspatial.GeoSeries(
-            [
-                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-            ]
-        )
-        >>> polygon2 = cuspatial.GeoSeries(
-            [
-                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-            ]
-        )
-        >>> print(polygon.equals(polygon2))
-        0    True
-        dtype: bool
-
-        Returns
-        -------
-
-        result : cudf.Series
-            A Series of boolean values indicating whether each feature in A
-            is equal to the corresponding feature in B.
-        """
-        return EqualsBinpred("equals", self, other, align)()
-
-    def touches(self, other, align=True):
-        """Compute if a GeoSeries of features A touches a GeoSeries of features
-        B. Features A touches features B if they share a boundary but do not
-        overlap.
-
-        Parameters
-        ----------
-        other
-            a cuspatial.GeoSeries
-        align=True
-            to align the indices before computing .contains or not. If the
-            indices are not aligned, they will be compared based on their
-            implicit row order.
-
-        Examples
-        --------
-        Test if a point touches a polygon:
-        >>> point = cuspatial.GeoSeries(
-            [Point(0, 0)],
-            )
-        >>> polygon = cuspatial.GeoSeries(
-            [
-                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-            ]
-        )
-        >>> print(polygon.touches(point))
-        0    True
-        dtype: bool
-
-        Test if a point touches a point:
-        >>> point = cuspatial.GeoSeries(
-            [Point(0, 0)],
-            )
-        >>> point2 = cuspatial.GeoSeries(
-            [Point(0, 0)],
-            )
-        >>> print(point.touches(point2))
-        0    False
-        dtype: bool
-
-        Returns
-        -------
-        result : cudf.Series
-            A Series of boolean values indicating whether each feature in A
-            touches the corresponding feature in B.
-        """
-        return TouchesBinpred("touches", self, other, align)()
-
-    def covers(self, other, align=True):
-        """Compute if a GeoSeries of features A covers a second GeoSeries of
-        features B. A covers B if no points on B lie in the exterior of A.
-
-        Parameters
-        ----------
-        other
-            a cuspatial.GeoSeries
-        align=True
-            align the GeoSeries indexes before calling the binpred
-
-        Returns
-        -------
-        result : cudf.Series
-            A Series of boolean values indicating whether each feature in the
-            input GeoSeries covers the corresponding feature in the other
-            GeoSeries.
-        """
-        return CoversBinpred("covers", self, other, align)()
-
     def intersects(self, other, align=True):
         """Compute the intersections of two GeoSeries.
 
@@ -934,31 +812,6 @@ class GeoSeries(cudf.Series):
             within the corresponding polygon in the input.
         """
         return WithinBinpred("within", self, other, align)()
-
-    def crosses(self, other, align=True):
-        """Returns a `Series` of `dtype('bool')` with value `True` for each
-        aligned geometry that crosses other.
-
-        An object is said to cross other if its interior intersects the
-        interior of the other but does not contain it, and the dimension of
-        the intersection is less than either.
-
-        Parameters
-        ----------
-        other
-            a cuspatial.GeoSeries
-        align=True
-            align the GeoSeries indexes before calling the binpred
-
-        Returns
-        -------
-        result : cudf.Series
-            A Series of boolean values indicating whether each geometry
-            crosses the corresponding geometry in the input."""
-        # Crosses requires the use of point_in_polygon but only requires that
-        # 1 or more points are within the polygon. This differs from
-        # `.contains` which requires all of them.
-        return CrossesBinpred("crosses", self, other, align)()
 
     def overlaps(self, other, align=True):
         """Returns True for all aligned geometries that overlap other, else
