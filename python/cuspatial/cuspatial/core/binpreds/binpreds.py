@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 import cudf
 
 from cuspatial.core._column.geocolumn import GeoColumn
-from cuspatial.core.binops.contains import contains_properly
+from cuspatial.core.binpreds.contains import contains_properly
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
@@ -15,7 +15,7 @@ from cuspatial.utils.column_utils import (
 )
 
 
-class _binop(ABC):
+class BinaryPredicate(ABC):
     @abstractmethod
     def preprocess(self, op, lhs, rhs):
         """Preprocess the input data for the binary operation. This method
@@ -149,9 +149,9 @@ class _binop(ABC):
         # algorithm.
         (lhs, rhs, indices) = self.preprocess(op, self.lhs, self.rhs)
 
-        # Binop call
-        _binop = getattr(self, op)
-        point_result = _binop(lhs, rhs)
+        # Binpred call
+        _binpred = getattr(self, op)
+        point_result = _binpred(lhs, rhs)
 
         # Postprocess: Apply discrete math rules to identify relationships.
         final_result = self.postprocess(op, indices, point_result)
@@ -246,7 +246,7 @@ class _binop(ABC):
         return self.contains_properly(lhs, rhs)
 
 
-class ContainsProperlyBinop(_binop):
+class ContainsProperlyBinpred(BinaryPredicate):
     def preprocess(self, op, lhs, rhs):
         """Preprocess the input GeoSeries to ensure that they are of the
         correct type for the operation."""
@@ -303,7 +303,7 @@ class ContainsProperlyBinop(_binop):
         return point_result
 
 
-class OverlapsBinop(ContainsProperlyBinop):
+class OverlapsBinpred(ContainsProperlyBinpred):
     def preprocess(self, op, lhs, rhs):
         return super().preprocess(op, lhs, rhs)
 
@@ -334,7 +334,7 @@ class OverlapsBinop(ContainsProperlyBinop):
         return point_result
 
 
-class IntersectsBinop(ContainsProperlyBinop):
+class IntersectsBinpred(ContainsProperlyBinpred):
     def preprocess(self, op, lhs, rhs):
         if contains_only_polygons(rhs):
             (lhs, rhs) = (rhs, lhs)
@@ -346,7 +346,7 @@ class IntersectsBinop(ContainsProperlyBinop):
         return super().postprocess(op, point_indices, point_result)
 
 
-class WithinBinop(ContainsProperlyBinop):
+class WithinBinpred(ContainsProperlyBinpred):
     def preprocess(self, op, lhs, rhs):
         if contains_only_polygons(rhs):
             (lhs, rhs) = (rhs, lhs)
@@ -379,7 +379,7 @@ class WithinBinop(ContainsProperlyBinop):
         return point_result
 
 
-class CrossesBinop(_binop):
+class CrossesBinpred(BinaryPredicate):
     def preprocess(self, op, lhs, rhs):
         return super().preprocess(op, lhs, rhs)
 
@@ -400,7 +400,7 @@ class CrossesBinop(_binop):
         return point_result
 
 
-class EqualsBinop(_binop):
+class EqualsBinpred(BinaryPredicate):
     def preprocess(self, op, lhs, rhs):
         return super().preprocess(op, lhs, rhs)
 
