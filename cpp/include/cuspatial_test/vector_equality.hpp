@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -193,6 +194,28 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, T a
   } else {
     EXPECT_EQ(lhs, rhs);
   }
+}
+
+template <typename SegmentVector, typename T = typename SegmentVector::value_type::value_type>
+std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_segment_vector(
+  SegmentVector const& segments)
+{
+  rmm::device_vector<vec_2d<T>> first(segments.size()), second(segments.size());
+  auto zipped_output = thrust::make_zip_iterator(first.begin(), second.begin());
+  thrust::transform(
+    segments.begin(), segments.end(), zipped_output, [] __device__(segment<T> const& segment) {
+      return thrust::make_tuple(segment.first, segment.second);
+    });
+  return {std::move(first), std::move(second)};
+}
+
+template <typename SegmentVector1, typename SegmentVector2>
+void expect_segment_equivalent(SegmentVector1 expected, SegmentVector2 got)
+{
+  auto [expected_first, expected_second] = unpack_segment_vector(expected);
+  auto [got_first, got_second]           = unpack_segment_vector(got);
+  expect_vector_equivalent(expected_first, got_first);
+  expect_vector_equivalent(expected_second, got_second);
 }
 
 #define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs, ...)              \

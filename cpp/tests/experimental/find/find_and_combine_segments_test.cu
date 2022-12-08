@@ -30,32 +30,63 @@ using namespace cuspatial;
 using namespace cuspatial::detail;
 using namespace cuspatial::test;
 
-template <typename SegmentVector, typename T = typename SegmentVector::value_type::value_type>
-std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_segment_vector(
-  SegmentVector const& segments)
-{
-  rmm::device_vector<vec_2d<T>> first(segments.size()), second(segments.size());
-  auto zipped_output = thrust::make_zip_iterator(first.begin(), second.begin());
-  thrust::transform(
-    segments.begin(), segments.end(), zipped_output, [] __device__(segment<T> const& segment) {
-      return thrust::make_tuple(segment.first, segment.second);
-    });
-  return {std::move(first), std::move(second)};
-}
+template <typename OffsetArray, typename CoordinateArray>
+class multisegment_array {
+ public:
+  multisegment_array(OffsetArray offsets, CoordinateArray coordinates)
+    : _offsets(offsets), _coordinates(coordinates)
+  {
+  }
 
-template <typename SegmentVector1, typename SegmentVector2>
-void expect_segment_equivalent(SegmentVector1 expected, SegmentVector2 got)
+  auto offsets_range() { return range(_offsets.begin(), _offsets.end()); }
+  auto coordinates_range() { return range(_coordinates.begin(), _coordinates.end()); }
+  auto release() { return std::pair{std::move(_offsets), std::move(_coordinates)}; }
+
+ protected:
+  OffsetArray _offsets;
+  CoordinateArray _coordinates;
+};
+
+template <typename OffsetArray, typename CoordinateArray>
+multisegment_array(OffsetArray, CoordinateArray)
+  -> multisegment_array<OffsetArray, CoordinateArray>;
+
+template <typename IndexType, typename T>
+auto make_segment_array(std::initializer_list<IndexType> offsets,
+                        std::initializer_list<segment<T>> segments)
 {
-  auto [expected_first, expected_second] = unpack_segment_vector(expected);
-  auto [got_first, got_second]           = unpack_segment_vector(got);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_first, got_first);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_second, got_second);
+  auto d_offsets = make_device_vector(offsets);
+  auto d_coords  = make_device_vector(segments);
+  return multisegment_array{d_offsets, d_coords};
 }
 
 template <typename T>
 struct FindAndCombineSegmentsTest : public BaseFixture {
   rmm::cuda_stream_view stream() { return rmm::cuda_stream_default; }
+
+  template <typename MultiSegmentArray>
+  void run_single_test(MultiSegmentArray segments,
+                       std::initializer_list<uint8_t> expected_flags,
+                       std::initializer_list<segment<T>> expected_segment)
+  {
+    auto d_expected          = make_device_vector(expected_flags);
+    auto d_expected_segments = make_device_vector(expected_segment);
+    auto flags               = rmm::device_vector<uint8_t>(d_expected.size());
+    find_and_combine_segment(
+      segments.offsets_range(), segments.coordinates_range(), flags.begin(), this->stream());
+
+    auto [_, merged_segments] = segments.release();
+
+    expect_segment_equivalent(d_expected_segments, merged_segments);
+    expect_vector_equivalent(d_expected, flags);
+  }
 };
+
+#define RUN_SINGLE_FIND_AND_COMBINE_TEST(...) \
+  do {                                        \
+    SCOPED_TRACE(" <--  line of failure\n");  \
+    this->run_single_test(__VA_ARGS__);       \
+  } while (0)
 
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(FindAndCombineSegmentsTest, TestTypes);
@@ -67,22 +98,14 @@ TYPED_TEST(FindAndCombineSegmentsTest, Simple1)
   using P       = vec_2d<T>;
   using S       = segment<T>;
 
-  auto segment_offsets = make_device_vector<index_t>({0, 3});
-  auto segments        = make_device_vector<segment<T>>(
+  auto segments = make_segment_array<index_t, T>(
+    {0, 3},
     {S{P{0.0, 0.0}, P{0.0, 0.5}}, S{P{0.0, 0.25}, P{0.0, 0.75}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
-  auto merged_flag = rmm::device_vector<uint8_t>(segments.size());
 
-  auto expected_segments = make_device_vector<segment<T>>(
+  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+    segments,
+    {0, 1, 1},
     {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.25}, P{0.0, 0.75}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
-  auto expected_merged_flag = make_device_vector<uint8_t>({0, 1, 1});
-
-  find_and_combine_segment(range(segment_offsets.begin(), segment_offsets.end()),
-                           range(segments.begin(), segments.end()),
-                           merged_flag.begin(),
-                           this->stream());
-
-  expect_segment_equivalent(segments, expected_segments);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(merged_flag, expected_merged_flag);
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, Simple2)
@@ -92,24 +115,15 @@ TYPED_TEST(FindAndCombineSegmentsTest, Simple2)
   using P       = vec_2d<T>;
   using S       = segment<T>;
 
-  auto segment_offsets = make_device_vector<index_t>({0, 3});
-  auto segments        = make_device_vector<segment<T>>(
+  auto segments = make_segment_array<index_t, T>(
+    {0, 3},
     {S{P{0.0, 0.0}, P{0.5, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
-  auto merged_flag = rmm::device_vector<uint8_t>(segments.size());
 
-  auto expected_segments = make_device_vector<segment<T>>(
+  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+    segments,
+    {0, 1, 1},
     {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
-  auto expected_merged_flag = make_device_vector<uint8_t>({0, 1, 1});
-
-  find_and_combine_segment(range(segment_offsets.begin(), segment_offsets.end()),
-                           range(segments.begin(), segments.end()),
-                           merged_flag.begin(),
-                           this->stream());
-
-  expect_segment_equivalent(segments, expected_segments);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(merged_flag, expected_merged_flag);
 }
-
 TYPED_TEST(FindAndCombineSegmentsTest, Simple3)
 {
   using T       = TypeParam;
@@ -117,22 +131,14 @@ TYPED_TEST(FindAndCombineSegmentsTest, Simple3)
   using P       = vec_2d<T>;
   using S       = segment<T>;
 
-  auto segment_offsets = make_device_vector<index_t>({0, 3});
-  auto segments        = make_device_vector<segment<T>>(
+  auto segments = make_segment_array<index_t, T>(
+    {0, 3},
     {S{P{0.0, 0.0}, P{0.5, 0.5}}, S{P{0.25, 0.25}, P{0.75, 0.75}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
-  auto merged_flag = rmm::device_vector<uint8_t>(segments.size());
 
-  auto expected_segments = make_device_vector<segment<T>>(
+  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+    segments,
+    {0, 1, 1},
     {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.25, 0.25}, P{0.75, 0.75}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
-  auto expected_merged_flag = make_device_vector<uint8_t>({0, 1, 1});
-
-  find_and_combine_segment(range(segment_offsets.begin(), segment_offsets.end()),
-                           range(segments.begin(), segments.end()),
-                           merged_flag.begin(),
-                           this->stream());
-
-  expect_segment_equivalent(segments, expected_segments);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(merged_flag, expected_merged_flag);
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, Touching1)
@@ -142,22 +148,11 @@ TYPED_TEST(FindAndCombineSegmentsTest, Touching1)
   using P       = vec_2d<T>;
   using S       = segment<T>;
 
-  auto segment_offsets = make_device_vector<index_t>({0, 2});
-  auto segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{0.0, 0.5}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
-  auto merged_flag = rmm::device_vector<uint8_t>(segments.size());
+  auto segments = make_segment_array<index_t, T>(
+    {0, 2}, {S{P{0.0, 0.0}, P{0.0, 0.5}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
 
-  auto expected_segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
-  auto expected_merged_flag = make_device_vector<uint8_t>({0, 1});
-
-  find_and_combine_segment(range(segment_offsets.begin(), segment_offsets.end()),
-                           range(segments.begin(), segments.end()),
-                           merged_flag.begin(),
-                           this->stream());
-
-  expect_segment_equivalent(segments, expected_segments);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(merged_flag, expected_merged_flag);
+  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+    segments, {0, 1}, {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, Touching2)
@@ -167,22 +162,11 @@ TYPED_TEST(FindAndCombineSegmentsTest, Touching2)
   using P       = vec_2d<T>;
   using S       = segment<T>;
 
-  auto segment_offsets = make_device_vector<index_t>({0, 2});
-  auto segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{0.5, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
-  auto merged_flag = rmm::device_vector<uint8_t>(segments.size());
+  auto segments = make_segment_array<index_t, T>(
+    {0, 2}, {S{P{0.0, 0.0}, P{0.5, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
 
-  auto expected_segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
-  auto expected_merged_flag = make_device_vector<uint8_t>({0, 1});
-
-  find_and_combine_segment(range(segment_offsets.begin(), segment_offsets.end()),
-                           range(segments.begin(), segments.end()),
-                           merged_flag.begin(),
-                           this->stream());
-
-  expect_segment_equivalent(segments, expected_segments);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(merged_flag, expected_merged_flag);
+  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+    segments, {0, 1}, {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, Touching3)
@@ -192,22 +176,11 @@ TYPED_TEST(FindAndCombineSegmentsTest, Touching3)
   using P       = vec_2d<T>;
   using S       = segment<T>;
 
-  auto segment_offsets = make_device_vector<index_t>({0, 2});
-  auto segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{0.5, 0.5}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
-  auto merged_flag = rmm::device_vector<uint8_t>(segments.size());
+  auto segments = make_segment_array<index_t, T>(
+    {0, 2}, {S{P{0.0, 0.0}, P{0.5, 0.5}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
 
-  auto expected_segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
-  auto expected_merged_flag = make_device_vector<uint8_t>({0, 1});
-
-  find_and_combine_segment(range(segment_offsets.begin(), segment_offsets.end()),
-                           range(segments.begin(), segments.end()),
-                           merged_flag.begin(),
-                           this->stream());
-
-  expect_segment_equivalent(segments, expected_segments);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(merged_flag, expected_merged_flag);
+  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+    segments, {0, 1}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, contains1)
@@ -217,22 +190,11 @@ TYPED_TEST(FindAndCombineSegmentsTest, contains1)
   using P       = vec_2d<T>;
   using S       = segment<T>;
 
-  auto segment_offsets = make_device_vector<index_t>({0, 2});
-  auto segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.25, 0.25}, P{0.75, 0.75}}});
-  auto merged_flag = rmm::device_vector<uint8_t>(segments.size());
+  auto segments = make_segment_array<index_t, T>(
+    {0, 2}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.25, 0.25}, P{0.75, 0.75}}});
 
-  auto expected_segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.25, 0.25}, P{0.75, 0.75}}});
-  auto expected_merged_flag = make_device_vector<uint8_t>({0, 1});
-
-  find_and_combine_segment(range(segment_offsets.begin(), segment_offsets.end()),
-                           range(segments.begin(), segments.end()),
-                           merged_flag.begin(),
-                           this->stream());
-
-  expect_segment_equivalent(segments, expected_segments);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(merged_flag, expected_merged_flag);
+  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+    segments, {0, 1}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.25, 0.25}, P{0.75, 0.75}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, contains2)
@@ -242,22 +204,11 @@ TYPED_TEST(FindAndCombineSegmentsTest, contains2)
   using P       = vec_2d<T>;
   using S       = segment<T>;
 
-  auto segment_offsets = make_device_vector<index_t>({0, 2});
-  auto segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.25}, P{0.0, 0.75}}});
-  auto merged_flag = rmm::device_vector<uint8_t>(segments.size());
+  auto segments = make_segment_array<index_t, T>(
+    {0, 2}, {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.25}, P{0.0, 0.75}}});
 
-  auto expected_segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.25}, P{0.0, 0.75}}});
-  auto expected_merged_flag = make_device_vector<uint8_t>({0, 1});
-
-  find_and_combine_segment(range(segment_offsets.begin(), segment_offsets.end()),
-                           range(segments.begin(), segments.end()),
-                           merged_flag.begin(),
-                           this->stream());
-
-  expect_segment_equivalent(segments, expected_segments);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(merged_flag, expected_merged_flag);
+  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+    segments, {0, 1}, {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.25}, P{0.0, 0.75}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, contains3)
@@ -267,22 +218,11 @@ TYPED_TEST(FindAndCombineSegmentsTest, contains3)
   using P       = vec_2d<T>;
   using S       = segment<T>;
 
-  auto segment_offsets = make_device_vector<index_t>({0, 2});
-  auto segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}});
-  auto merged_flag = rmm::device_vector<uint8_t>(segments.size());
+  auto segments = make_segment_array<index_t, T>(
+    {0, 2}, {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}});
 
-  auto expected_segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}});
-  auto expected_merged_flag = make_device_vector<uint8_t>({0, 1});
-
-  find_and_combine_segment(range(segment_offsets.begin(), segment_offsets.end()),
-                           range(segments.begin(), segments.end()),
-                           merged_flag.begin(),
-                           this->stream());
-
-  expect_segment_equivalent(segments, expected_segments);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(merged_flag, expected_merged_flag);
+  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+    segments, {0, 1}, {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, nooverlap1)
@@ -292,22 +232,11 @@ TYPED_TEST(FindAndCombineSegmentsTest, nooverlap1)
   using P       = vec_2d<T>;
   using S       = segment<T>;
 
-  auto segment_offsets = make_device_vector<index_t>({0, 2});
-  auto segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.0, 1.0}, P{0.0, 2.0}}});
-  auto merged_flag = rmm::device_vector<uint8_t>(segments.size());
+  auto segments = make_segment_array<index_t, T>(
+    {0, 2}, {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.0, 1.0}, P{0.0, 2.0}}});
 
-  auto expected_segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.0, 1.0}, P{0.0, 2.0}}});
-  auto expected_merged_flag = make_device_vector<uint8_t>({0, 0});
-
-  find_and_combine_segment(range(segment_offsets.begin(), segment_offsets.end()),
-                           range(segments.begin(), segments.end()),
-                           merged_flag.begin(),
-                           this->stream());
-
-  expect_segment_equivalent(segments, expected_segments);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(merged_flag, expected_merged_flag);
+  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+    segments, {0, 0}, {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.0, 1.0}, P{0.0, 2.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, nooverlap2)
@@ -317,22 +246,11 @@ TYPED_TEST(FindAndCombineSegmentsTest, nooverlap2)
   using P       = vec_2d<T>;
   using S       = segment<T>;
 
-  auto segment_offsets = make_device_vector<index_t>({0, 2});
-  auto segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{2.0, 2.0}, P{3.0, 3.0}}});
-  auto merged_flag = rmm::device_vector<uint8_t>(segments.size());
+  auto segments = make_segment_array<index_t, T>(
+    {0, 2}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{2.0, 2.0}, P{3.0, 3.0}}});
 
-  auto expected_segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{2.0, 2.0}, P{3.0, 3.0}}});
-  auto expected_merged_flag = make_device_vector<uint8_t>({0, 0});
-
-  find_and_combine_segment(range(segment_offsets.begin(), segment_offsets.end()),
-                           range(segments.begin(), segments.end()),
-                           merged_flag.begin(),
-                           this->stream());
-
-  expect_segment_equivalent(segments, expected_segments);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(merged_flag, expected_merged_flag);
+  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+    segments, {0, 0}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{2.0, 2.0}, P{3.0, 3.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, nooverlap3)
@@ -342,20 +260,9 @@ TYPED_TEST(FindAndCombineSegmentsTest, nooverlap3)
   using P       = vec_2d<T>;
   using S       = segment<T>;
 
-  auto segment_offsets = make_device_vector<index_t>({0, 2});
-  auto segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
-  auto merged_flag = rmm::device_vector<uint8_t>(segments.size());
+  auto segments = make_segment_array<index_t, T>(
+    {0, 2}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
 
-  auto expected_segments =
-    make_device_vector<segment<T>>({S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
-  auto expected_merged_flag = make_device_vector<uint8_t>({0, 0});
-
-  find_and_combine_segment(range(segment_offsets.begin(), segment_offsets.end()),
-                           range(segments.begin(), segments.end()),
-                           merged_flag.begin(),
-                           this->stream());
-
-  expect_segment_equivalent(segments, expected_segments);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(merged_flag, expected_merged_flag);
+  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+    segments, {0, 0}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
 }
