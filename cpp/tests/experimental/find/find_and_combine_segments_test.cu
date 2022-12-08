@@ -82,12 +82,6 @@ struct FindAndCombineSegmentsTest : public BaseFixture {
   }
 };
 
-#define RUN_SINGLE_FIND_AND_COMBINE_TEST(...) \
-  do {                                        \
-    SCOPED_TRACE(" <--  line of failure\n");  \
-    this->run_single_test(__VA_ARGS__);       \
-  } while (0)
-
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(FindAndCombineSegmentsTest, TestTypes);
 
@@ -102,7 +96,8 @@ TYPED_TEST(FindAndCombineSegmentsTest, Simple1)
     {0, 3},
     {S{P{0.0, 0.0}, P{0.0, 0.5}}, S{P{0.0, 0.25}, P{0.0, 0.75}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
 
-  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+  RUN_TEST(
+    this->run_single_test,
     segments,
     {0, 1, 1},
     {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.25}, P{0.0, 0.75}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
@@ -119,7 +114,8 @@ TYPED_TEST(FindAndCombineSegmentsTest, Simple2)
     {0, 3},
     {S{P{0.0, 0.0}, P{0.5, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
 
-  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+  RUN_TEST(
+    this->run_single_test,
     segments,
     {0, 1, 1},
     {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
@@ -135,7 +131,8 @@ TYPED_TEST(FindAndCombineSegmentsTest, Simple3)
     {0, 3},
     {S{P{0.0, 0.0}, P{0.5, 0.5}}, S{P{0.25, 0.25}, P{0.75, 0.75}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
 
-  RUN_SINGLE_FIND_AND_COMBINE_TEST(
+  RUN_TEST(
+    this->run_single_test,
     segments,
     {0, 1, 1},
     {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.25, 0.25}, P{0.75, 0.75}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
@@ -151,8 +148,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, Touching1)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{0.0, 0.5}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
 
-  RUN_SINGLE_FIND_AND_COMBINE_TEST(
-    segments, {0, 1}, {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
+  RUN_TEST(this->run_single_test,
+           segments,
+           {0, 1},
+           {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, Touching2)
@@ -165,8 +164,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, Touching2)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{0.5, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
 
-  RUN_SINGLE_FIND_AND_COMBINE_TEST(
-    segments, {0, 1}, {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
+  RUN_TEST(this->run_single_test,
+           segments,
+           {0, 1},
+           {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, Touching3)
@@ -179,8 +180,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, Touching3)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{0.5, 0.5}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
 
-  RUN_SINGLE_FIND_AND_COMBINE_TEST(
-    segments, {0, 1}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
+  RUN_TEST(this->run_single_test,
+           segments,
+           {0, 1},
+           {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, contains1)
@@ -193,8 +196,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, contains1)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.25, 0.25}, P{0.75, 0.75}}});
 
-  RUN_SINGLE_FIND_AND_COMBINE_TEST(
-    segments, {0, 1}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.25, 0.25}, P{0.75, 0.75}}});
+  RUN_TEST(this->run_single_test,
+           segments,
+           {0, 1},
+           {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.25, 0.25}, P{0.75, 0.75}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, contains2)
@@ -207,8 +212,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, contains2)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.25}, P{0.0, 0.75}}});
 
-  RUN_SINGLE_FIND_AND_COMBINE_TEST(
-    segments, {0, 1}, {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.25}, P{0.0, 0.75}}});
+  RUN_TEST(this->run_single_test,
+           segments,
+           {0, 1},
+           {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.25}, P{0.0, 0.75}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, contains3)
@@ -221,8 +228,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, contains3)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}});
 
-  RUN_SINGLE_FIND_AND_COMBINE_TEST(
-    segments, {0, 1}, {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}});
+  RUN_TEST(this->run_single_test,
+           segments,
+           {0, 1},
+           {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, nooverlap1)
@@ -235,8 +244,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, nooverlap1)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.0, 1.0}, P{0.0, 2.0}}});
 
-  RUN_SINGLE_FIND_AND_COMBINE_TEST(
-    segments, {0, 0}, {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.0, 1.0}, P{0.0, 2.0}}});
+  RUN_TEST(this->run_single_test,
+           segments,
+           {0, 0},
+           {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.0, 1.0}, P{0.0, 2.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, nooverlap2)
@@ -249,8 +260,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, nooverlap2)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{2.0, 2.0}, P{3.0, 3.0}}});
 
-  RUN_SINGLE_FIND_AND_COMBINE_TEST(
-    segments, {0, 0}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{2.0, 2.0}, P{3.0, 3.0}}});
+  RUN_TEST(this->run_single_test,
+           segments,
+           {0, 0},
+           {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{2.0, 2.0}, P{3.0, 3.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, nooverlap3)
@@ -263,8 +276,8 @@ TYPED_TEST(FindAndCombineSegmentsTest, nooverlap3)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
 
-  RUN_SINGLE_FIND_AND_COMBINE_TEST(
-    segments, {0, 0}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
+  RUN_TEST(this->run_single_test,
+           segments,
+           {0, 0},
+           {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
 }
-
-#undef RUN_SINGLE_FIND_AND_COMBINE_TEST

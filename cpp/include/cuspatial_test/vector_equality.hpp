@@ -224,5 +224,11 @@ void expect_segment_equivalent(SegmentVector1 expected, SegmentVector2 got)
     cuspatial::test::expect_vector_equivalent(lhs, rhs, ##__VA_ARGS__); \
   } while (0)
 
+#define RUN_TEST(FUNC, ...)                  \
+  do {                                       \
+    SCOPED_TRACE(" <--  line of failure\n"); \
+    FUNC(__VA_ARGS__);                       \
+  } while (0)
+
 }  // namespace test
 }  // namespace cuspatial
