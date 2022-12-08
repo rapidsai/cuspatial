@@ -11,7 +11,7 @@ from cuspatial.utils.column_utils import (
     contains_only_multipoints,
     contains_only_points,
     contains_only_polygons,
-    has_same_dimension,
+    has_same_geometry,
 )
 
 
@@ -241,7 +241,7 @@ class OverlapsBinpred(ContainsProperlyBinpred):
         # Same as contains_properly, but we need to check that the
         # dimensions are the same.
         # TODO: Maybe change this to intersection
-        if not has_same_dimension(self.lhs, self.rhs):
+        if not has_same_geometry(self.lhs, self.rhs):
             return cudf.Series([False] * len(self.lhs))
         result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
         df_result = result
