@@ -78,12 +78,12 @@ def bench_linestring_bounding_boxes(benchmark, sorted_trajectories):
     )
 
 
-def bench_lonlat_to_cartesian(benchmark, gpu_dataframe):
+def bench_sinusoidal_projection(benchmark, gpu_dataframe):
     afghanistan = gpu_dataframe["geometry"][
         gpu_dataframe["name"] == "Afghanistan"
     ]
     benchmark(
-        cuspatial.lonlat_to_cartesian,
+        cuspatial.sinusoidal_projection,
         afghanistan.polygons.y.mean(),
         afghanistan.polygons.x.mean(),
         afghanistan.polygons.y,
@@ -118,12 +118,8 @@ def bench_pairwise_linestring_distance(benchmark, gpu_dataframe):
     geometry = gpu_dataframe["geometry"]
     benchmark(
         cuspatial.pairwise_linestring_distance,
-        geometry.polygons.ring_offset,
-        geometry.polygons.x,
-        geometry.polygons.y,
-        geometry.polygons.ring_offset,
-        geometry.polygons.x,
-        geometry.polygons.y,
+        geometry,
+        geometry,
     )
 
 
@@ -165,8 +161,8 @@ def bench_quadtree_on_points(benchmark, gpu_dataframe):
 
 def bench_quadtree_point_in_polygon(benchmark, polygons):
     polygons = polygons["geometry"].polygons
-    x_points = (cupy.random.random(10000000) - 0.5) * 360
-    y_points = (cupy.random.random(10000000) - 0.5) * 180
+    x_points = (cupy.random.random(50000000) - 0.5) * 360
+    y_points = (cupy.random.random(50000000) - 0.5) * 180
     scale = 5
     max_depth = 7
     min_size = 125
@@ -263,15 +259,16 @@ def bench_quadtree_point_to_nearest_linestring(benchmark):
 
 
 def bench_point_in_polygon(benchmark, gpu_dataframe):
-    x_points = (cupy.random.random(10000000) - 0.5) * 360
-    y_points = (cupy.random.random(10000000) - 0.5) * 180
+    x_points = (cupy.random.random(50000000) - 0.5) * 360
+    y_points = (cupy.random.random(50000000) - 0.5) * 180
     short_dataframe = gpu_dataframe.iloc[0:32]
     geometry = short_dataframe["geometry"]
+    polygon_offset = cudf.Series(geometry.polygons.geometry_offset[0:31])
     benchmark(
         cuspatial.point_in_polygon,
         x_points,
         y_points,
-        geometry.polygons.geometry_offset[0:31],
+        polygon_offset,
         geometry.polygons.ring_offset,
         geometry.polygons.x,
         geometry.polygons.y,
