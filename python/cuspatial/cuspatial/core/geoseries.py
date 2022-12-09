@@ -669,16 +669,18 @@ class GeoSeries(cudf.Series):
 
         """
 
-        index_old = (
-            other.index if len(other.index) >= len(self.index) else self.index
-        )
+        # Merge the two indices and sort them
         idx1 = cudf.DataFrame({"idx": self.index})
         idx2 = cudf.DataFrame({"idx": other.index})
         index = idx1.merge(idx2, how="outer").sort_values("idx")["idx"]
         index.name = None
+
+        # Align the two GeoSeries
         aligned_left = self._align_to_index(index)
         aligned_right = other._align_to_index(index)
-        breakpoint()
+
+        # If the two GeoSeries have the same length, keep the original index
+        # Otherwise, use the union of the two indices
         if len(other) == len(aligned_right):
             aligned_right.index = other.index
         else:
@@ -687,12 +689,13 @@ class GeoSeries(cudf.Series):
             aligned_left.index = self.index
         else:
             aligned_left.index = index
+
+        # Aligned GeoSeries are sorted by index
         aligned_right = aligned_right.sort_index()
         aligned_left = aligned_left.sort_index()
-        aligned_left.index = index
         return (
             aligned_left,
-            aligned_right.loc[aligned_left.index],
+            aligned_right,
         )
 
     def _gather(
