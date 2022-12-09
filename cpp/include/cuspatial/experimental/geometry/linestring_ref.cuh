@@ -43,6 +43,7 @@ class linestring_ref {
   /// Return iterator to one past the last segment
   CUSPATIAL_HOST_DEVICE auto end() const { return segment_end(); }
 
+  /// Return an enumerated range to the segments.
   CUSPATIAL_HOST_DEVICE auto enumerate() { return detail::enumerate_range{begin(), end()}; }
 
   /// Return the `segment_idx`th segment in the linestring.
