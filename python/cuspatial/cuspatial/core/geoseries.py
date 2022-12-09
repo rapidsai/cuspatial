@@ -771,9 +771,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input.
         """
-        return ContainsProperlyBinpred(
-            "contains_properly", self, other, align
-        )()
+        return ContainsProperlyBinpred(self, other, align)()
 
     def intersects(self, other, align=True):
         """Compute the intersections of two GeoSeries.
@@ -791,7 +789,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether the geometries of
             each row intersect.
         """
-        return IntersectsBinpred("intersects", self, other, align)()
+        return IntersectsBinpred(self, other, align)()
 
     def within(self, other, align=True):
         """An object is said to be within other if at least one of its points
@@ -811,7 +809,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature falls
             within the corresponding polygon in the input.
         """
-        return WithinBinpred("within", self, other, align)()
+        return WithinBinpred(self, other, align)()
 
     def overlaps(self, other, align=True):
         """Returns True for all aligned geometries that overlap other, else
@@ -835,4 +833,4 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each geometry
             overlaps the corresponding geometry in the input."""
         # Overlaps has the same requirement as crosses.
-        return OverlapsBinpred("overlaps", self, other, align=align)()
+        return OverlapsBinpred(self, other, align=align)()

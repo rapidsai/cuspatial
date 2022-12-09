@@ -17,7 +17,7 @@ from cuspatial.utils.column_utils import (
 
 class BinaryPredicate(ABC):
     @abstractmethod
-    def preprocess(self, op, lhs, rhs):
+    def preprocess(self, lhs, rhs):
         """Preprocess the input data for the binary operation. This method
         should be implemented by subclasses. Preprocess and postprocess are
         used to implement the discrete math rules of the binary operations.
@@ -47,7 +47,7 @@ class BinaryPredicate(ABC):
         pass
 
     @abstractmethod
-    def postprocess(self, op, point_indices, point_result):
+    def postprocess(self, point_indices, point_result):
         """Postprocess the output data for the binary operation. This method
         should be implemented by subclasses.
 
@@ -72,7 +72,7 @@ class BinaryPredicate(ABC):
         """
         pass
 
-    def __init__(self, op, lhs, rhs, align=True):
+    def __init__(self, lhs, rhs, align=True):
         """Compute the binary operation `op` on `lhs` and `rhs`.
 
         There are ten binary operations supported by cuspatial:
@@ -115,74 +115,22 @@ class BinaryPredicate(ABC):
         (self.lhs, self.rhs) = lhs.align(rhs) if align else (lhs, rhs)
         self.align = align
 
+    def __call__(self) -> cudf.Series:
+        """Return the result of the binary operation."""
         # Type disambiguation
         # Type disambiguation has a large effect on the decisions of the
         # algorithm.
-        (lhs, rhs, indices) = self.preprocess(op, self.lhs, self.rhs)
+        (lhs, rhs, indices) = self.preprocess(self.lhs, self.rhs)
 
         # Binpred call
-        _binpred = getattr(self, op)
-        point_result = _binpred(lhs, rhs)
+        point_result = self._op(lhs, rhs)
 
         # Postprocess: Apply discrete math rules to identify relationships.
-        final_result = self.postprocess(op, indices, point_result)
-
-        # Return
-        self.op_result = final_result
-
-    def __call__(self) -> cudf.Series:
-        """Return the result of the binary operation."""
-        return self.op_result
-
-    def contains_properly(self, lhs, points):
-        """Compute the contains_properly relationship between two GeoSeries.
-        A feature A contains another feature B if no points of B lie in the
-        exterior of A, and at least one point of the interior of B lies in the
-        interior of A. This is the inverse of `within`."""
-        if not contains_only_polygons(lhs):
-            raise TypeError(
-                "`.contains` can only be called with polygon series."
-            )
-
-        # call pip on the three subtypes on the right:
-        point_result = contains_properly(
-            points.x,
-            points.y,
-            lhs.polygons.part_offset[:-1],
-            lhs.polygons.ring_offset[:-1],
-            lhs.polygons.x,
-            lhs.polygons.y,
-        )
-        return point_result
-
-    def intersects(self, lhs, rhs):
-        """Compute from a GeoSeries of points and a GeoSeries of polygons which
-        points are contained within the corresponding polygon. Polygon A
-        contains Point B if B intersects the interior or boundary of A.
-        """
-        # TODO: If rhs is polygon and lhs is point, use contains_properly
-        return self.contains_properly(lhs, rhs)
-
-    def within(self, lhs, rhs):
-        """An object is said to be within rhs if at least one of its points
-        is located in the interior and no points are located in the exterior
-        of the rhs."""
-        return self.contains_properly(lhs, rhs)
-
-    def overlaps(self, lhs, rhs, align=True):
-        """Returns True for all aligned geometries that overlap rhs, else
-        False.
-
-        Geometries overlap if they have more than one but not all points in
-        common, have the same dimension, and the intersection of the
-        interiors of the geometries has the same dimension as the geometries
-        themselves."""
-        # Overlaps has the same requirement as crosses.
-        return self.contains_properly(lhs, rhs)
+        return self.postprocess(indices, point_result)
 
 
 class ContainsProperlyBinpred(BinaryPredicate):
-    def preprocess(self, op, lhs, rhs):
+    def preprocess(self, lhs, rhs):
         """Preprocess the input GeoSeries to ensure that they are of the
         correct type for the operation."""
         # Type determines discrete math recombination outcome
@@ -214,7 +162,28 @@ class ContainsProperlyBinpred(BinaryPredicate):
         ).points
         return (lhs, final_rhs, point_indices)
 
-    def postprocess(self, op, point_indices, point_result):
+    def _op(self, lhs, points):
+        """Compute the contains_properly relationship between two GeoSeries.
+        A feature A contains another feature B if no points of B lie in the
+        exterior of A, and at least one point of the interior of B lies in the
+        interior of A. This is the inverse of `within`."""
+        if not contains_only_polygons(lhs):
+            raise TypeError(
+                "`.contains` can only be called with polygon series."
+            )
+
+        # call pip on the three subtypes on the right:
+        point_result = contains_properly(
+            points.x,
+            points.y,
+            lhs.polygons.part_offset[:-1],
+            lhs.polygons.ring_offset[:-1],
+            lhs.polygons.x,
+            lhs.polygons.y,
+        )
+        return point_result
+
+    def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the operation."""
         result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
@@ -239,7 +208,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
 
 
 class OverlapsBinpred(ContainsProperlyBinpred):
-    def postprocess(self, op, point_indices, point_result):
+    def postprocess(self, point_indices, point_result):
         # Same as contains_properly, but we need to check that the
         # dimensions are the same.
         # TODO: Maybe change this to intersection
@@ -267,24 +236,19 @@ class OverlapsBinpred(ContainsProperlyBinpred):
 
 
 class IntersectsBinpred(ContainsProperlyBinpred):
-    def preprocess(self, op, lhs, rhs):
+    def preprocess(self, lhs, rhs):
         if contains_only_polygons(rhs):
             (lhs, rhs) = (rhs, lhs)
-        return super().preprocess(op, lhs, rhs)
-
-    def postprocess(self, op, point_indices, point_result):
-        """Postprocess the output GeoSeries to ensure that they are of the
-        correct type for the operation."""
-        return super().postprocess(op, point_indices, point_result)
+        return super().preprocess(lhs, rhs)
 
 
 class WithinBinpred(ContainsProperlyBinpred):
-    def preprocess(self, op, lhs, rhs):
+    def preprocess(self, lhs, rhs):
         if contains_only_polygons(rhs):
             (lhs, rhs) = (rhs, lhs)
-        return super().preprocess(op, lhs, rhs)
+        return super().preprocess(lhs, rhs)
 
-    def postprocess(self, op, point_indices, point_result):
+    def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the operation."""
         result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
@@ -305,7 +269,4 @@ class WithinBinpred(ContainsProperlyBinpred):
             df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
         )
         point_result.name = None
-        if op == "equals":
-            if len(point_result) == 1:
-                return point_result[0]
         return point_result
