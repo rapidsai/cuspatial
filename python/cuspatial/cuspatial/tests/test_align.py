@@ -9,21 +9,21 @@ import cuspatial
 
 
 def test_align_more_values():
-    gpdpdf = gpd.GeoSeries(
+    gpdlhs = gpd.GeoSeries(
         [
             Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8))),
             Polygon(((-2, -2), (-2, 2), (2, 2), (2, -2))),
         ]
     )
-    gpdshort = gpdpdf.iloc[0:1]
-    pdf = cuspatial.from_geopandas(gpdpdf)
-    short = cuspatial.from_geopandas(gpdshort)
-    expected = gpdshort.align(gpdpdf)
-    got = short.align(pdf)
+    gpdrhs = gpdlhs.iloc[0:1]
+    lhs = cuspatial.from_geopandas(gpdlhs)
+    rhs = cuspatial.from_geopandas(gpdrhs)
+    expected = gpdrhs.align(gpdlhs)
+    got = rhs.align(lhs)
     pd.testing.assert_series_equal(expected[0], got[0].to_pandas())
     pd.testing.assert_series_equal(expected[1], got[1].to_pandas())
-    expected = gpdpdf.align(gpdshort)
-    got = pdf.align(short)
+    expected = gpdlhs.align(gpdrhs)
+    got = lhs.align(rhs)
     pd.testing.assert_series_equal(expected[0], got[0].to_pandas())
     pd.testing.assert_series_equal(expected[1], got[1].to_pandas())
 
