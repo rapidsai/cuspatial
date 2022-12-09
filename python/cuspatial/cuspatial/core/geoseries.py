@@ -668,19 +668,28 @@ class GeoSeries(cudf.Series):
         dtype: geometry)
 
         """
-        index = (
+
+        index_old = (
             other.index if len(other.index) >= len(self.index) else self.index
         )
+        idx1 = cudf.DataFrame({"idx": self.index})
+        idx2 = cudf.DataFrame({"idx": other.index})
+        index = idx1.merge(idx2, how="outer").sort_values("idx")["idx"]
+        index.name = None
         aligned_left = self._align_to_index(index)
         aligned_right = other._align_to_index(index)
-        aligned_right.index = index
+        breakpoint()
+        if len(other) == len(aligned_right):
+            aligned_right.index = other.index
+        else:
+            aligned_right.index = index
+        if len(self) == len(aligned_left):
+            aligned_left.index = self.index
+        else:
+            aligned_left.index = index
         aligned_right = aligned_right.sort_index()
-        aligned_left.index = (
-            self.index
-            if len(self.index) == len(aligned_left)
-            else aligned_right.index
-        )
         aligned_left = aligned_left.sort_index()
+        aligned_left.index = index
         return (
             aligned_left,
             aligned_right.loc[aligned_left.index],
