@@ -28,11 +28,13 @@ from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.core.binpreds.binpreds import (
     ContainsProperlyBinpred,
     CoversBinpred,
+    CrossesBinpred,
     EqualsBinpred,
     IntersectsBinpred,
     OverlapsBinpred,
     WithinBinpred,
 )
+from cuspatial.utils.column_utils import contains_only_points
 
 T = TypeVar("T", bound="GeoSeries")
 
@@ -773,7 +775,10 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input.
         """
-        return ContainsProperlyBinpred(self, other, align)()
+        if contains_only_points(self) and contains_only_points(other):
+            return cudf.Series(EqualsBinpred(self, other, align)())
+        else:
+            ContainsProperlyBinpred(self, other, align)()
 
     def equals(self, other, align=True):
         """Compute if a GeoSeries of features A is equal to a GeoSeries of
@@ -861,7 +866,10 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether the geometries of
             each row intersect.
         """
-        return IntersectsBinpred(self, other, align)()
+        if contains_only_points(self) and contains_only_points(other):
+            return cudf.Series(EqualsBinpred(self, other, align)())
+        else:
+            return IntersectsBinpred(self, other, align)()
 
     def within(self, other, align=True):
         """An object is said to be within other if at least one of its points
@@ -881,7 +889,10 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature falls
             within the corresponding polygon in the input.
         """
-        return WithinBinpred(self, other, align)()
+        if contains_only_points(self) and contains_only_points(other):
+            return cudf.Series(EqualsBinpred(self, other, align)())
+        else:
+            return WithinBinpred(self, other, align)()
 
     def overlaps(self, other, align=True):
         """Returns True for all aligned geometries that overlap other, else
@@ -905,4 +916,33 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each geometry
             overlaps the corresponding geometry in the input."""
         # Overlaps has the same requirement as crosses.
-        return OverlapsBinpred(self, other, align=align)()
+        if contains_only_points(self) and contains_only_points(other):
+            return cudf.Series([False] * len(self))
+        else:
+            return OverlapsBinpred(self, other, align=align)()
+
+    def crosses(self, other, align=True):
+        """Returns True for all aligned geometries that cross other, else
+        False.
+
+        Geometries cross if they have some but not all interior points in
+        common, have the same dimension, and the intersection of the
+        interiors of the geometries has the dimension of the geometries
+        themselves minus one.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each geometry
+            crosses the corresponding geometry in the input."""
+        if contains_only_points(self) and contains_only_points(other):
+            return cudf.Series([False] * len(self))
+        else:
+            return CrossesBinpred(self, other, align=align)()

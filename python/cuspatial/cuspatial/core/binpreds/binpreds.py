@@ -286,7 +286,17 @@ class EqualsBinpred(BinaryPredicate):
             return point_result[0]
 
     def _op(self, lhs, rhs):
-        return lhs.equals(rhs)
+        """Compute the equals relationship between two GeoSeries."""
+        result = False
+        if contains_only_points(lhs):
+            result = lhs.points.xy.equals(rhs.points.xy)
+        elif contains_only_linestrings(lhs):
+            result = lhs.lines.xy.equals(rhs.lines.xy)
+        elif contains_only_polygons(lhs):
+            result = lhs.polygons.xy.equals(rhs.polygons.xy)
+        elif contains_only_multipoints(lhs):
+            result = lhs.multipoints.xy.equals(rhs.multipoints.xy)
+        return result
 
 
 class CrossesBinpred(EqualsBinpred):
