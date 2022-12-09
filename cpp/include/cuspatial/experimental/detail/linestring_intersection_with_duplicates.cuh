@@ -16,6 +16,7 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/linestring.cuh>
+#include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/experimental/detail/linestring_intersection_count.cuh>
 #include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
@@ -28,7 +29,6 @@
 
 #include <thrust/scan.h>
 #include <thrust/tuple.h>
-#include <thrust/uninitialized_fill.h>
 
 #include <utility>
 
@@ -115,7 +115,8 @@ struct linestring_intersection_intermediates {
       rhs_segment_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream))
   {
     // compute offsets from num_geoms_per_pair
-    thrust::uninitialized_fill_n(rmm::exec_policy(stream), offsets->begin(), offsets->size(), 0);
+
+    zero_data(offsets->begin(), offsets->end(), stream);
     thrust::inclusive_scan(rmm::exec_policy(stream),
                            num_geoms_per_pair.begin(),
                            num_geoms_per_pair.end(),
@@ -248,9 +249,8 @@ pairwise_linestring_intersection_with_duplicates(MultiLinestringRange1 multiline
   rmm::device_uvector<index_t> num_points_per_pair(num_pairs, stream);
   rmm::device_uvector<index_t> num_segments_per_pair(num_pairs, stream);
 
-  thrust::uninitialized_fill_n(rmm::exec_policy(stream), num_points_per_pair.begin(), num_pairs, 0);
-  thrust::uninitialized_fill_n(
-    rmm::exec_policy(stream), num_segments_per_pair.begin(), num_pairs, 0);
+  detail::zero_data(num_points_per_pair.begin(), num_points_per_pair.end(), stream);
+  detail::zero_data(num_segments_per_pair.begin(), num_segments_per_pair.end(), stream);
 
   detail::pairwise_linestring_intersection_upper_bound_count(multilinestrings1,
                                                              multilinestrings2,
@@ -274,10 +274,8 @@ pairwise_linestring_intersection_with_duplicates(MultiLinestringRange1 multiline
   rmm::device_uvector<index_t> num_points_stored_temp(num_pairs, stream);
   rmm::device_uvector<index_t> num_segments_stored_temp(num_pairs, stream);
 
-  thrust::uninitialized_fill_n(
-    rmm::exec_policy(stream), num_points_stored_temp.begin(), num_pairs, 0);
-  thrust::uninitialized_fill_n(
-    rmm::exec_policy(stream), num_segments_stored_temp.begin(), num_pairs, 0);
+  detail::zero_data(num_points_stored_temp.begin(), num_points_stored_temp.end(), stream);
+  detail::zero_data(num_segments_stored_temp.begin(), num_segments_stored_temp.end(), stream);
 
   // Compute the intersections
   auto [threads_per_block, num_blocks] = grid_1d(multilinestrings1.num_points());
