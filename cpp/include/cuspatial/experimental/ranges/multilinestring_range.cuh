@@ -19,6 +19,7 @@
 #include <thrust/pair.h>
 
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 

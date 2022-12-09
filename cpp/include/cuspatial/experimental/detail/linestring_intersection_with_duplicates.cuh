@@ -186,12 +186,9 @@ void __global__ pairwise_linestring_intersection_simple(MultiLinestringRange1 mu
       auto const geometry_collection_offset =
         num_points_offsets_first[geometry_idx] + num_segments_offsets_first[geometry_idx];
 
-      for (auto rhs_linestring_idx = 0; rhs_linestring_idx < multilinestring2.size();
-           ++rhs_linestring_idx) {
-        auto const linestring2 = multilinestring2[rhs_linestring_idx];
-        for (auto rhs_segment_idx = 0; rhs_segment_idx < linestring2.num_segments();
-             ++rhs_segment_idx) {
-          auto [c, d]                   = linestring2.segment(rhs_segment_idx);
+      for (auto [rhs_linestring_idx, linestring2] : multilinestring2.enumerate()) {
+        for (auto [rhs_segment_idx, segment2] : linestring2.enumerate()) {
+          auto [c, d]                   = segment2;
           auto [point_opt, segment_opt] = segment_intersection(segment<T>{a, b}, segment<T>{c, d});
 
           // Writes geometry and origin IDs to output. Note that for each pair, intersecting
