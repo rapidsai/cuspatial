@@ -59,8 +59,10 @@ class BinaryPredicate(ABC):
         op : str
             The binary operation to post process. Determines for example the
             set operation to use for computing the result.
-        processed : cudf.Series
-            The data after applying the fundamental binary operation.
+        point_indices : cudf.Series
+            The indices of the points in the original GeoSeries.
+        point_result : cudf.Series
+            The raw result of the binary operation.
 
         Returns
         -------
