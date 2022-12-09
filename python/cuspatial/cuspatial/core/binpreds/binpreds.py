@@ -225,9 +225,12 @@ class OverlapsBinpred(ContainsProperlyBinpred):
         elif contains_only_polygons(self.rhs) or contains_only_multipoints(
             self.rhs
         ):
-            df_result = result.groupby("idx").sum().sort_index() > 0
+            partial_result = result.groupby("idx").sum()
+            df_result = (partial_result > 0) & (
+                partial_result < len(point_result)
+            )
         else:
-            df_result = result.groupby("idx").sum().sort_index() > 1
+            df_result = result.groupby("idx").sum() > 1
         point_result = cudf.Series(
             df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
         )

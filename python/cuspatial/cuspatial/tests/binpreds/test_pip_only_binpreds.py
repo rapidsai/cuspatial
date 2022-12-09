@@ -28,12 +28,42 @@ def test_max_polygons_overlaps_max_points(polygon_generator, point_generator):
     assert (got == expected).all()
 
 
-def test_polygon_overlaps_polygon():
+def test_polygon_overlaps_polygon_partially():
     gpdpolygon1 = gpd.GeoSeries(
         Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]])
     )
     gpdpolygon2 = gpd.GeoSeries(
         Polygon([[0.5, 0.5], [0.5, 1.5], [1.5, 1.5], [1.5, 0.5], [0.5, 0.5]])
+    )
+    polygon1 = cuspatial.from_geopandas(gpdpolygon1)
+    polygon2 = cuspatial.from_geopandas(gpdpolygon2)
+    got = polygon1.overlaps(polygon2).values_host
+    expected = gpdpolygon1.overlaps(gpdpolygon2).values
+    assert (got == expected).all()
+
+
+def test_polygon_overlaps_polygon_completely():
+    gpdpolygon1 = gpd.GeoSeries(
+        Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]])
+    )
+    gpdpolygon2 = gpd.GeoSeries(
+        Polygon(
+            [[0.25, 0.25], [0.25, 0.5], [0.5, 0.5], [0.5, 0.25], [0.25, 0.25]]
+        )
+    )
+    polygon1 = cuspatial.from_geopandas(gpdpolygon1)
+    polygon2 = cuspatial.from_geopandas(gpdpolygon2)
+    got = polygon1.overlaps(polygon2).values_host
+    expected = gpdpolygon1.overlaps(gpdpolygon2).values
+    assert (got == expected).all()
+
+
+def test_polygon_overlaps_polygon_no_overlap():
+    gpdpolygon1 = gpd.GeoSeries(
+        Polygon([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]])
+    )
+    gpdpolygon2 = gpd.GeoSeries(
+        Polygon([[2, 2], [2, 3], [3, 3], [3, 2], [2, 2]])
     )
     polygon1 = cuspatial.from_geopandas(gpdpolygon1)
     polygon2 = cuspatial.from_geopandas(gpdpolygon2)
