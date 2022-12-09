@@ -25,15 +25,13 @@ from cudf._typing import ColumnLike
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.binops.binops import (
-    ContainsProperlyBinop,
-    CoversBinop,
-    CrossesBinop,
-    EqualsBinop,
-    IntersectsBinop,
-    OverlapsBinop,
-    WithinBinop,
-    _binop,
+from cuspatial.core.binpreds.binpreds import (
+    ContainsProperlyBinpred,
+    CoversBinpred,
+    EqualsBinpred,
+    IntersectsBinpred,
+    OverlapsBinpred,
+    WithinBinpred,
 )
 
 T = TypeVar("T", bound="GeoSeries")
@@ -775,7 +773,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input.
         """
-        return ContainsProperlyBinop("contains_properly", self, other, align)()
+        return ContainsProperlyBinpred(self, other, align)()
 
     def equals(self, other, align=True):
         """Compute if a GeoSeries of features A is equal to a GeoSeries of
@@ -825,55 +823,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature in A
             is equal to the corresponding feature in B.
         """
-        return EqualsBinop("equals", self, other, align)()
-
-    def touches(self, other, align=True):
-        """Compute if a GeoSeries of features A touches a GeoSeries of features
-        B. Features A touches features B if they share a boundary but do not
-        overlap.
-
-        Parameters
-        ----------
-        other
-            a cuspatial.GeoSeries
-        align=True
-            to align the indices before computing .contains or not. If the
-            indices are not aligned, they will be compared based on their
-            implicit row order.
-
-        Examples
-        --------
-        Test if a point touches a polygon:
-        >>> point = cuspatial.GeoSeries(
-            [Point(0, 0)],
-            )
-        >>> polygon = cuspatial.GeoSeries(
-            [
-                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-            ]
-        )
-        >>> print(polygon.touches(point))
-        0    True
-        dtype: bool
-
-        Test if a point touches a point:
-        >>> point = cuspatial.GeoSeries(
-            [Point(0, 0)],
-            )
-        >>> point2 = cuspatial.GeoSeries(
-            [Point(0, 0)],
-            )
-        >>> print(point.touches(point2))
-        0    False
-        dtype: bool
-
-        Returns
-        -------
-        result : cudf.Series
-            A Series of boolean values indicating whether each feature in A
-            touches the corresponding feature in B.
-        """
-        return _binop("touches", self, other, align)()
+        return EqualsBinpred(self, other, align)()
 
     def covers(self, other, align=True):
         """Compute if a GeoSeries of features A covers a second GeoSeries of
@@ -884,7 +834,7 @@ class GeoSeries(cudf.Series):
         other
             a cuspatial.GeoSeries
         align=True
-            align the GeoSeries indexes before calling the binop
+            align the GeoSeries indexes before calling the binpred
 
         Returns
         -------
@@ -893,7 +843,7 @@ class GeoSeries(cudf.Series):
             input GeoSeries covers the corresponding feature in the other
             GeoSeries.
         """
-        return CoversBinop("covers", self, other, align)()
+        return CoversBinpred(self, other, align)()
 
     def intersects(self, other, align=True):
         """Compute the intersections of two GeoSeries.
@@ -903,7 +853,7 @@ class GeoSeries(cudf.Series):
         other
             a cuspatial.GeoSeries
         align=True
-            align the GeoSeries indexes before calling the binop
+            align the GeoSeries indexes before calling the binpred
 
         Returns
         -------
@@ -911,7 +861,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether the geometries of
             each row intersect.
         """
-        return IntersectsBinop("intersects", self, other, align)()
+        return IntersectsBinpred(self, other, align)()
 
     def within(self, other, align=True):
         """An object is said to be within other if at least one of its points
@@ -923,7 +873,7 @@ class GeoSeries(cudf.Series):
         other
             a cuspatial.GeoSeries
         align=True
-            align the GeoSeries indexes before calling the binop
+            align the GeoSeries indexes before calling the binpred
 
         Returns
         -------
@@ -931,32 +881,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature falls
             within the corresponding polygon in the input.
         """
-        return WithinBinop("within", self, other, align)()
-
-    def crosses(self, other, align=True):
-        """Returns a `Series` of `dtype('bool')` with value `True` for each
-        aligned geometry that crosses other.
-
-        An object is said to cross other if its interior intersects the
-        interior of the other but does not contain it, and the dimension of
-        the intersection is less than either.
-
-        Parameters
-        ----------
-        other
-            a cuspatial.GeoSeries
-        align=True
-            align the GeoSeries indexes before calling the binop
-
-        Returns
-        -------
-        result : cudf.Series
-            A Series of boolean values indicating whether each geometry
-            crosses the corresponding geometry in the input."""
-        # Crosses requires the use of point_in_polygon but only requires that
-        # 1 or more points are within the polygon. This differs from
-        # `.contains` which requires all of them.
-        return CrossesBinop("crosses", self, other, align)()
+        return WithinBinpred(self, other, align)()
 
     def overlaps(self, other, align=True):
         """Returns True for all aligned geometries that overlap other, else
@@ -972,7 +897,7 @@ class GeoSeries(cudf.Series):
         other
             a cuspatial.GeoSeries
         align=True
-            align the GeoSeries indexes before calling the binop
+            align the GeoSeries indexes before calling the binpred
 
         Returns
         -------
@@ -980,4 +905,4 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each geometry
             overlaps the corresponding geometry in the input."""
         # Overlaps has the same requirement as crosses.
-        return OverlapsBinop("overlaps", self, other, align=align)()
+        return OverlapsBinpred(self, other, align=align)()
