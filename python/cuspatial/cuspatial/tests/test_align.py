@@ -145,8 +145,9 @@ def test_align_different_out_of_orders_values():
             Polygon(((41, 42), (43, 44), (45, 46), (47, 48))),
         ]
     )
-    gpdrhs = gpdlhs.iloc[np.random.permutation(len(gpdlhs))]
-    lhs = cuspatial.from_geopandas(gpdrhs)
+    rstate = np.random.RandomState(0)
+    gpdrhs = gpdlhs.iloc[rstate.permutation(len(gpdlhs))][0:3]
+    lhs = cuspatial.from_geopandas(gpdlhs)
     rhs = cuspatial.from_geopandas(gpdrhs)
     expected = gpdlhs.align(gpdrhs)
     got = lhs.align(rhs)
