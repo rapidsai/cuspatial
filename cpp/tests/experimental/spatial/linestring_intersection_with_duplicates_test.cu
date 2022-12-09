@@ -36,32 +36,69 @@
 using namespace cuspatial;
 using namespace cuspatial::test;
 
-template <typename SegmentVector, typename T = typename SegmentVector::value_type::value_type>
-std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_segment_vector(
-  SegmentVector const& segments)
-{
-  rmm::device_vector<vec_2d<T>> first(segments.size()), second(segments.size());
-  auto zipped_output = thrust::make_zip_iterator(first.begin(), second.begin());
-  thrust::transform(
-    segments.begin(), segments.end(), zipped_output, [] __device__(segment<T> const& segment) {
-      return thrust::make_tuple(segment.first, segment.second);
-    });
-  return {std::move(first), std::move(second)};
-}
-
-template <typename SegmentVector1, typename SegmentVector2>
-void expect_segment_equivalent(SegmentVector1 const& expected, SegmentVector2 const& got)
-{
-  auto [expected_first, expected_second] = unpack_segment_vector(expected);
-  auto [got_first, got_second]           = unpack_segment_vector(got);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_first, got_first);
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_second, got_second);
-}
-
 template <typename T>
 struct LinestringIntersectionDuplicatesTest : public ::testing::Test {
   rmm::cuda_stream_view stream() { return rmm::cuda_stream_default; }
   rmm::mr::device_memory_resource* mr() { return rmm::mr::get_current_device_resource(); }
+
+  template <typename IndexType, typename MultilinestringRange1, typename MultilinestringRange2>
+  void run_single(MultilinestringRange1 lhs,
+                  MultilinestringRange2 rhs,
+                  std::initializer_list<IndexType> expected_points_offsets,
+                  std::initializer_list<vec_2d<T>> expected_points_coords,
+                  std::initializer_list<IndexType> expected_segments_offsets,
+                  std::initializer_list<segment<T>> expected_segments_coords,
+                  std::initializer_list<IndexType> expected_point_lhs_linestring_ids,
+                  std::initializer_list<IndexType> expected_point_lhs_segment_ids,
+                  std::initializer_list<IndexType> expected_point_rhs_linestring_ids,
+                  std::initializer_list<IndexType> expected_point_rhs_segment_ids,
+                  std::initializer_list<IndexType> expected_segment_lhs_linestring_ids,
+                  std::initializer_list<IndexType> expected_segment_lhs_segment_ids,
+                  std::initializer_list<IndexType> expected_segment_rhs_linestring_ids,
+                  std::initializer_list<IndexType> expected_segment_rhs_segment_ids
+
+  )
+  {
+    auto d_expected_points_offsets   = make_device_vector(expected_points_offsets);
+    auto d_expected_points_coords    = make_device_vector(expected_points_coords);
+    auto d_expected_segments_offsets = make_device_vector(expected_segments_offsets);
+    auto d_expected_segments_coords  = make_device_vector(expected_segments_coords);
+    auto d_expected_point_lhs_linestring_ids =
+      make_device_vector(expected_point_lhs_linestring_ids);
+    auto d_expected_point_lhs_segment_ids = make_device_vector(expected_point_lhs_segment_ids);
+    auto d_expected_point_rhs_linestring_ids =
+      make_device_vector(expected_point_rhs_linestring_ids);
+    auto d_expected_point_rhs_segment_ids = make_device_vector(expected_point_rhs_segment_ids);
+    auto d_expected_segment_lhs_linestring_ids =
+      make_device_vector(expected_segment_lhs_linestring_ids);
+    auto d_expected_segment_lhs_segment_ids = make_device_vector(expected_segment_lhs_segment_ids);
+    auto d_expected_segment_rhs_linestring_ids =
+      make_device_vector(expected_segment_rhs_linestring_ids);
+    auto d_expected_segment_rhs_segment_ids = make_device_vector(expected_segment_rhs_segment_ids);
+
+    auto [points, segments] =
+      detail::pairwise_linestring_intersection_with_duplicates<IndexType, T>(
+        lhs, rhs, this->mr(), this->stream());
+
+    expect_vector_equivalent(d_expected_points_offsets, *std::move(points.offsets));
+    expect_vector_equivalent(d_expected_points_coords, *std::move(points.geoms));
+    expect_vector_equivalent(d_expected_segments_offsets, *std::move(segments.offsets));
+    expect_segment_equivalent(d_expected_segments_coords, *std::move(segments.geoms));
+    expect_vector_equivalent(d_expected_point_lhs_linestring_ids,
+                             *std::move(points.lhs_linestring_ids));
+    expect_vector_equivalent(d_expected_point_lhs_segment_ids, *std::move(points.lhs_segment_ids));
+    expect_vector_equivalent(d_expected_point_rhs_linestring_ids,
+                             *std::move(points.rhs_linestring_ids));
+    expect_vector_equivalent(d_expected_point_rhs_segment_ids, *std::move(points.rhs_segment_ids));
+    expect_vector_equivalent(d_expected_segment_lhs_linestring_ids,
+                             *std::move(segments.lhs_linestring_ids));
+    expect_vector_equivalent(d_expected_segment_lhs_segment_ids,
+                             *std::move(segments.lhs_segment_ids));
+    expect_vector_equivalent(d_expected_segment_rhs_linestring_ids,
+                             *std::move(segments.rhs_linestring_ids));
+    expect_vector_equivalent(d_expected_segment_rhs_segment_ids,
+                             *std::move(segments.rhs_segment_ids));
+  }
 };
 
 // float and double are logically the same but would require seperate tests due to precision.
@@ -101,56 +138,36 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, Example)
      P{0.75, 0.75}, P{1.5, 1.5}, P{0.25, 0.0}, P{0.25, 0.5},  P{0.75, 0.75},
      P{1.5, 1.5},   P{2, 2},     P{3, 3},      P{1, 0},       P{2, 0}});
 
-  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicates<index_t, T>(
-    multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
-
-  auto expected_points_offsets   = make_device_vector<index_t>({0, 1, 3, 3, 5, 7, 7, 7});
-  auto expected_points_coords    = make_device_vector<P>({P{0.5, 0.5},
-                                                       P{0.25, 0.25},
-                                                       P{0.5, 0.5},
-                                                       P{0.25, 0.25},
-                                                       P{0.75, 0.75},
-                                                       P{0.25, 0.25},
-                                                       P{0.75, 0.75}});
-  auto expected_segments_offsets = make_device_vector<index_t>({0, 0, 0, 1, 3, 4, 4, 4});
-  auto expected_segments_coords =
-    make_device_vector<segment<T>>({segment<T>{P{0.5, 0.5}, P{1, 1}},
-                                    segment<T>{P{0, 0}, P{0.25, 0.25}},
-                                    segment<T>{P{0.75, 0.75}, P{1, 1}},
-                                    segment<T>{P{0.75, 0.75}, P{1, 1}}});
-
-  auto expected_point_lhs_linestring_ids = make_device_vector<index_t>({0, 0, 0, 0, 0, 0, 0});
-  auto expected_point_lhs_segment_ids    = make_device_vector<index_t>({0, 0, 0, 0, 0, 0, 0});
-
-  auto expected_point_rhs_linestring_ids = make_device_vector<index_t>({0, 0, 0, 0, 0, 0, 0});
-  auto expected_point_rhs_segment_ids    = make_device_vector<index_t>({0, 0, 1, 1, 2, 0, 1});
-
-  auto expected_segment_lhs_linestring_ids = make_device_vector<index_t>({0, 0, 0, 0});
-  auto expected_segment_lhs_segment_ids    = make_device_vector<index_t>({0, 0, 0, 0});
-
-  auto expected_segment_rhs_linestring_ids = make_device_vector<index_t>({0, 0, 0, 0});
-  auto expected_segment_rhs_segment_ids    = make_device_vector<index_t>({0, 0, 3, 2});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_offsets, *std::move(points.offsets));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_coords, *std::move(points.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segments_offsets, *std::move(segments.offsets));
-  expect_segment_equivalent(expected_segments_coords, *std::move(segments.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_linestring_ids,
-                                      *std::move(points.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_segment_ids,
-                                      *std::move(points.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_linestring_ids,
-                                      *std::move(points.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_segment_ids,
-                                      *std::move(points.rhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_linestring_ids,
-                                      *std::move(segments.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_segment_ids,
-                                      *std::move(segments.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_linestring_ids,
-                                      *std::move(segments.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_segment_ids,
-                                      *std::move(segments.rhs_segment_ids));
+  CUSPATIAL_RUN_TEST(this->template run_single<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     // Point offsets
+                     {0, 1, 3, 3, 5, 7, 7, 7},
+                     // Expected points
+                     {P{0.5, 0.5},
+                      P{0.25, 0.25},
+                      P{0.5, 0.5},
+                      P{0.25, 0.25},
+                      P{0.75, 0.75},
+                      P{0.25, 0.25},
+                      P{0.75, 0.75}},
+                     // Segment offsets
+                     {0, 0, 0, 1, 3, 4, 4, 4},
+                     // Expected segments
+                     {segment<T>{P{0.5, 0.5}, P{1, 1}},
+                      segment<T>{P{0, 0}, P{0.25, 0.25}},
+                      segment<T>{P{0.75, 0.75}, P{1, 1}},
+                      segment<T>{P{0.75, 0.75}, P{1, 1}}},
+                     // Expected look-back id for points
+                     {0, 0, 0, 0, 0, 0, 0},
+                     {0, 0, 0, 0, 0, 0, 0},
+                     {0, 0, 0, 0, 0, 0, 0},
+                     {0, 0, 1, 1, 2, 0, 1},
+                     // Expected look-back id for segments
+                     {0, 0, 0, 0},
+                     {0, 0, 0, 0},
+                     {0, 0, 0, 0},
+                     {0, 0, 3, 2});
 }
 
 // Same Test Case as above, reversing the order of multilinestrings1 and multilinestrings2
@@ -186,56 +203,36 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, ExampleReversed)
      P{0.75, 0.75}, P{1.5, 1.5}, P{0.25, 0.0}, P{0.25, 0.5},  P{0.75, 0.75},
      P{1.5, 1.5},   P{2, 2},     P{3, 3},      P{1, 0},       P{2, 0}});
 
-  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicates<index_t, T>(
-    multilinestrings2.range(), multilinestrings1.range(), this->mr(), this->stream());
-
-  auto expected_points_offsets   = make_device_vector<index_t>({0, 1, 3, 3, 5, 7, 7, 7});
-  auto expected_points_coords    = make_device_vector<P>({P{0.5, 0.5},
-                                                       P{0.25, 0.25},
-                                                       P{0.5, 0.5},
-                                                       P{0.25, 0.25},
-                                                       P{0.75, 0.75},
-                                                       P{0.25, 0.25},
-                                                       P{0.75, 0.75}});
-  auto expected_segments_offsets = make_device_vector<index_t>({0, 0, 0, 1, 3, 4, 4, 4});
-  auto expected_segments_coords =
-    make_device_vector<segment<T>>({segment<T>{P{0.5, 0.5}, P{1, 1}},
-                                    segment<T>{P{0, 0}, P{0.25, 0.25}},
-                                    segment<T>{P{0.75, 0.75}, P{1, 1}},
-                                    segment<T>{P{0.75, 0.75}, P{1, 1}}});
-
-  auto expected_point_rhs_linestring_ids = make_device_vector<index_t>({0, 0, 0, 0, 0, 0, 0});
-  auto expected_point_rhs_segment_ids    = make_device_vector<index_t>({0, 0, 0, 0, 0, 0, 0});
-
-  auto expected_point_lhs_linestring_ids = make_device_vector<index_t>({0, 0, 0, 0, 0, 0, 0});
-  auto expected_point_lhs_segment_ids    = make_device_vector<index_t>({0, 0, 1, 1, 2, 0, 1});
-
-  auto expected_segment_rhs_linestring_ids = make_device_vector<index_t>({0, 0, 0, 0});
-  auto expected_segment_rhs_segment_ids    = make_device_vector<index_t>({0, 0, 0, 0});
-
-  auto expected_segment_lhs_linestring_ids = make_device_vector<index_t>({0, 0, 0, 0});
-  auto expected_segment_lhs_segment_ids    = make_device_vector<index_t>({0, 0, 3, 2});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_offsets, *std::move(points.offsets));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_coords, *std::move(points.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segments_offsets, *std::move(segments.offsets));
-  expect_segment_equivalent(expected_segments_coords, *std::move(segments.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_linestring_ids,
-                                      *std::move(points.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_segment_ids,
-                                      *std::move(points.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_linestring_ids,
-                                      *std::move(points.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_segment_ids,
-                                      *std::move(points.rhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_linestring_ids,
-                                      *std::move(segments.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_segment_ids,
-                                      *std::move(segments.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_linestring_ids,
-                                      *std::move(segments.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_segment_ids,
-                                      *std::move(segments.rhs_segment_ids));
+  CUSPATIAL_RUN_TEST(this->template run_single<index_t>,
+                     multilinestrings2.range(),
+                     multilinestrings1.range(),
+                     // Point Offsets
+                     {0, 1, 3, 3, 5, 7, 7, 7},
+                     // Expected points
+                     {P{0.5, 0.5},
+                      P{0.25, 0.25},
+                      P{0.5, 0.5},
+                      P{0.25, 0.25},
+                      P{0.75, 0.75},
+                      P{0.25, 0.25},
+                      P{0.75, 0.75}},
+                     // Segment Offsets
+                     {0, 0, 0, 1, 3, 4, 4, 4},
+                     // Expected Segments
+                     {segment<T>{P{0.5, 0.5}, P{1, 1}},
+                      segment<T>{P{0, 0}, P{0.25, 0.25}},
+                      segment<T>{P{0.75, 0.75}, P{1, 1}},
+                      segment<T>{P{0.75, 0.75}, P{1, 1}}},
+                     // Point look-back ids
+                     {0, 0, 0, 0, 0, 0, 0},
+                     {0, 0, 1, 1, 2, 0, 1},
+                     {0, 0, 0, 0, 0, 0, 0},
+                     {0, 0, 0, 0, 0, 0, 0},
+                     // Segment look-back ids
+                     {0, 0, 0, 0},
+                     {0, 0, 3, 2},
+                     {0, 0, 0, 0},
+                     {0, 0, 0, 0});
 }
 
 TYPED_TEST(LinestringIntersectionDuplicatesTest, MultilinestringsIntersectionWithDuplicates)
@@ -253,107 +250,27 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, MultilinestringsIntersectionWit
   auto multilinestrings2 =
     make_multilinestring_array({0, 1, 2}, {0, 2, 4}, {P{0, 1}, P{2, 0}, P{0, 2.5}, P{1, 2.5}});
 
-  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicates<index_t, T>(
-    multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
-
-  auto expected_points_offsets = make_device_vector<index_t>({0, 2, 4});
-  auto expected_points_coords =
-    make_device_vector<P>({P{2 / 3., 2 / 3.}, P{4 / 3., 1 / 3.}, P{0, 2.5}, P{0.5, 2.5}});
-
-  auto expected_segments_offsets = make_device_vector<index_t>({0, 0, 0});
-  auto expected_segments_coords  = make_device_vector<segment<T>>({});
-
-  auto expected_point_lhs_linestring_ids = make_device_vector<index_t>({0, 1, 1, 2});
-  auto expected_point_lhs_segment_ids    = make_device_vector<index_t>({0, 0, 0, 0});
-
-  auto expected_point_rhs_linestring_ids = make_device_vector<index_t>({0, 0, 0, 0});
-  auto expected_point_rhs_segment_ids    = make_device_vector<index_t>({0, 0, 0, 0});
-
-  auto expected_segment_lhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_lhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_segment_rhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_rhs_segment_ids    = make_device_vector<index_t>({});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_offsets, *std::move(points.offsets));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_coords, *std::move(points.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segments_offsets, *std::move(segments.offsets));
-  expect_segment_equivalent(expected_segments_coords, *std::move(segments.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_linestring_ids,
-                                      *std::move(points.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_segment_ids,
-                                      *std::move(points.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_linestring_ids,
-                                      *std::move(points.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_segment_ids,
-                                      *std::move(points.rhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_linestring_ids,
-                                      *std::move(segments.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_segment_ids,
-                                      *std::move(segments.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_linestring_ids,
-                                      *std::move(segments.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_segment_ids,
-                                      *std::move(segments.rhs_segment_ids));
-}
-
-TYPED_TEST(LinestringIntersectionDuplicatesTest, MultilinestringsIntersectionWithDuplicatesReversed)
-{
-  using T = TypeParam;
-  using P = vec_2d<T>;
-
-  using index_t = std::size_t;
-
-  auto multilinestrings1 = make_multilinestring_array(
-    {0, 2, 5},
-    {0, 2, 4, 6, 8, 10},
-    {P{0, 0}, P{1, 1}, P{1, 0}, P{2, 1}, P{0, 2}, P{1, 2}, P{0, 3}, P{0, 2}, P{0, 3}, P{1, 2}});
-
-  auto multilinestrings2 =
-    make_multilinestring_array({0, 1, 2}, {0, 2, 4}, {P{0, 1}, P{2, 0}, P{0, 2.5}, P{1, 2.5}});
-
-  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicates<index_t, T>(
-    multilinestrings2.range(), multilinestrings1.range(), this->mr(), this->stream());
-
-  auto expected_points_offsets = make_device_vector<index_t>({0, 2, 4});
-  auto expected_points_coords =
-    make_device_vector<P>({P{2 / 3., 2 / 3.}, P{4 / 3., 1 / 3.}, P{0, 2.5}, P{0.5, 2.5}});
-
-  auto expected_segments_offsets = make_device_vector<index_t>({0, 0, 0});
-  auto expected_segments_coords  = make_device_vector<segment<T>>({});
-
-  auto expected_point_rhs_linestring_ids = make_device_vector<index_t>({0, 1, 1, 2});
-  auto expected_point_rhs_segment_ids    = make_device_vector<index_t>({0, 0, 0, 0});
-
-  auto expected_point_lhs_linestring_ids = make_device_vector<index_t>({0, 0, 0, 0});
-  auto expected_point_lhs_segment_ids    = make_device_vector<index_t>({0, 0, 0, 0});
-
-  auto expected_segment_rhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_rhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_segment_lhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_lhs_segment_ids    = make_device_vector<index_t>({});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_offsets, *std::move(points.offsets));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_coords, *std::move(points.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segments_offsets, *std::move(segments.offsets));
-  expect_segment_equivalent(expected_segments_coords, *std::move(segments.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_linestring_ids,
-                                      *std::move(points.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_segment_ids,
-                                      *std::move(points.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_linestring_ids,
-                                      *std::move(points.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_segment_ids,
-                                      *std::move(points.rhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_linestring_ids,
-                                      *std::move(segments.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_segment_ids,
-                                      *std::move(segments.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_linestring_ids,
-                                      *std::move(segments.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_segment_ids,
-                                      *std::move(segments.rhs_segment_ids));
+  CUSPATIAL_RUN_TEST(this->template run_single<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     // Points offsets
+                     {0, 2, 4},
+                     // Expected Points
+                     {P{2 / 3., 2 / 3.}, P{4 / 3., 1 / 3.}, P{0, 2.5}, P{0.5, 2.5}},
+                     // Segment offsets
+                     {0, 0, 0},
+                     // Expected Segments
+                     {},
+                     // Point look-back ids
+                     {0, 1, 1, 2},
+                     {0, 0, 0, 0},
+                     {0, 0, 0, 0},
+                     {0, 0, 0, 0},
+                     // Segment look-back ids
+                     {},
+                     {},
+                     {},
+                     {});
 }
 
 TYPED_TEST(LinestringIntersectionDuplicatesTest, Empty)
@@ -367,47 +284,27 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, Empty)
 
   auto multilinestrings2 = make_multilinestring_array({0}, {0}, std::initializer_list<P>{});
 
-  auto [points, segments] = pairwise_linestring_intersection_with_duplicates<index_t, T>(
-    multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
-
-  auto expected_points_offsets = make_device_vector<index_t>({0});
-  auto expected_points_coords  = make_device_vector<P>({});
-
-  auto expected_segments_offsets = make_device_vector<index_t>({0});
-  auto expected_segments_coords  = make_device_vector<segment<T>>({});
-
-  auto expected_point_rhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_point_rhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_point_lhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_point_lhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_segment_rhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_rhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_segment_lhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_lhs_segment_ids    = make_device_vector<index_t>({});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_offsets, *std::move(points.offsets));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_coords, *std::move(points.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segments_offsets, *std::move(segments.offsets));
-  expect_segment_equivalent(expected_segments_coords, *std::move(segments.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_linestring_ids,
-                                      *std::move(points.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_segment_ids,
-                                      *std::move(points.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_linestring_ids,
-                                      *std::move(points.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_segment_ids,
-                                      *std::move(points.rhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_linestring_ids,
-                                      *std::move(segments.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_segment_ids,
-                                      *std::move(segments.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_linestring_ids,
-                                      *std::move(segments.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_segment_ids,
-                                      *std::move(segments.rhs_segment_ids));
+  CUSPATIAL_RUN_TEST(this->template run_single<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     // Point offsets
+                     {0},
+                     // Expected Points
+                     {},
+                     // Segment offsets
+                     {0},
+                     // Expected segments
+                     {},
+                     // Point look-back ids
+                     {},
+                     {},
+                     {},
+                     {},
+                     // segment look-back ids
+                     {},
+                     {},
+                     {},
+                     {});
 }
 
 TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairSingleToSingleOneSegment)
@@ -417,53 +314,31 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairSingleToSingleOneSegment
 
   using index_t = std::size_t;
 
-  auto multilinestrings1 =
-    make_multilinestring_array({0, 1}, {0, 2}, std::initializer_list<P>{P{0, 0}, P{1, 1}});
+  auto multilinestrings1 = make_multilinestring_array({0, 1}, {0, 2}, {P{0, 0}, P{1, 1}});
 
-  auto multilinestrings2 =
-    make_multilinestring_array({0, 1}, {0, 2}, std::initializer_list<P>{P{0, 1}, P{1, 0}});
+  auto multilinestrings2 = make_multilinestring_array({0, 1}, {0, 2}, {P{0, 1}, P{1, 0}});
 
-  auto [points, segments] = pairwise_linestring_intersection_with_duplicates<index_t, T>(
-    multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
-
-  auto expected_points_offsets = make_device_vector<index_t>({0, 1});
-  auto expected_points_coords  = make_device_vector<P>({P{0.5, 0.5}});
-
-  auto expected_segments_offsets = make_device_vector<index_t>({0, 0});
-  auto expected_segments_coords  = make_device_vector<segment<T>>({});
-
-  auto expected_point_lhs_linestring_ids = make_device_vector<index_t>({0});
-  auto expected_point_lhs_segment_ids    = make_device_vector<index_t>({0});
-
-  auto expected_point_rhs_linestring_ids = make_device_vector<index_t>({0});
-  auto expected_point_rhs_segment_ids    = make_device_vector<index_t>({0});
-
-  auto expected_segment_lhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_lhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_segment_rhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_rhs_segment_ids    = make_device_vector<index_t>({});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_offsets, *std::move(points.offsets));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_coords, *std::move(points.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segments_offsets, *std::move(segments.offsets));
-  expect_segment_equivalent(expected_segments_coords, *std::move(segments.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_linestring_ids,
-                                      *std::move(points.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_segment_ids,
-                                      *std::move(points.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_linestring_ids,
-                                      *std::move(points.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_segment_ids,
-                                      *std::move(points.rhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_linestring_ids,
-                                      *std::move(segments.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_segment_ids,
-                                      *std::move(segments.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_linestring_ids,
-                                      *std::move(segments.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_segment_ids,
-                                      *std::move(segments.rhs_segment_ids));
+  CUSPATIAL_RUN_TEST(this->template run_single<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     // Point offsets
+                     {0, 1},
+                     // Expected Points
+                     {P{0.5, 0.5}},
+                     // Segment offsets
+                     {0, 0},
+                     // Expected segments
+                     {},
+                     // Point look-back ids
+                     {0},
+                     {0},
+                     {0},
+                     {0},
+                     // segment look-back ids
+                     {},
+                     {},
+                     {},
+                     {});
 }
 
 TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairSingleToSingleTwoSegments)
@@ -473,53 +348,31 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairSingleToSingleTwoSegment
 
   using index_t = std::size_t;
 
-  auto multilinestrings1 = make_multilinestring_array(
-    {0, 1}, {0, 3}, std::initializer_list<P>{P{-1, 0}, P{0, 0}, P{1, 1}});
+  auto multilinestrings1 = make_multilinestring_array({0, 1}, {0, 3}, {P{-1, 0}, P{0, 0}, P{1, 1}});
 
-  auto multilinestrings2 =
-    make_multilinestring_array({0, 1}, {0, 3}, std::initializer_list<P>{P{0, 2}, P{0, 1}, P{1, 0}});
+  auto multilinestrings2 = make_multilinestring_array({0, 1}, {0, 3}, {P{0, 2}, P{0, 1}, P{1, 0}});
 
-  auto [points, segments] = pairwise_linestring_intersection_with_duplicates<index_t, T>(
-    multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
-
-  auto expected_points_offsets = make_device_vector<index_t>({0, 1});
-  auto expected_points_coords  = make_device_vector<P>({P{0.5, 0.5}});
-
-  auto expected_segments_offsets = make_device_vector<index_t>({0, 0});
-  auto expected_segments_coords  = make_device_vector<segment<T>>({});
-
-  auto expected_point_lhs_linestring_ids = make_device_vector<index_t>({0});
-  auto expected_point_lhs_segment_ids    = make_device_vector<index_t>({1});
-
-  auto expected_point_rhs_linestring_ids = make_device_vector<index_t>({0});
-  auto expected_point_rhs_segment_ids    = make_device_vector<index_t>({1});
-
-  auto expected_segment_lhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_lhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_segment_rhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_rhs_segment_ids    = make_device_vector<index_t>({});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_offsets, *std::move(points.offsets));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_coords, *std::move(points.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segments_offsets, *std::move(segments.offsets));
-  expect_segment_equivalent(expected_segments_coords, *std::move(segments.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_linestring_ids,
-                                      *std::move(points.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_segment_ids,
-                                      *std::move(points.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_linestring_ids,
-                                      *std::move(points.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_segment_ids,
-                                      *std::move(points.rhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_linestring_ids,
-                                      *std::move(segments.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_segment_ids,
-                                      *std::move(segments.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_linestring_ids,
-                                      *std::move(segments.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_segment_ids,
-                                      *std::move(segments.rhs_segment_ids));
+  CUSPATIAL_RUN_TEST(this->template run_single<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     // Point offsets
+                     {0, 1},
+                     // Expected Points
+                     {P{0.5, 0.5}},
+                     // Segment offsets
+                     {0, 0},
+                     // Expected segments
+                     {},
+                     // Point look-back ids
+                     {0},
+                     {1},
+                     {0},
+                     {1},
+                     // segment look-back ids
+                     {},
+                     {},
+                     {},
+                     {});
 }
 
 TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairSingletoSingleOverlap)
@@ -529,54 +382,32 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairSingletoSingleOverlap)
 
   using index_t = std::size_t;
 
-  auto multilinestrings1 =
-    make_multilinestring_array({0, 1}, {0, 2}, std::initializer_list<P>{P{0, 0}, P{1, 1}});
+  auto multilinestrings1 = make_multilinestring_array({0, 1}, {0, 2}, {P{0, 0}, P{1, 1}});
 
-  auto multilinestrings2 = make_multilinestring_array(
-    {0, 1}, {0, 2}, std::initializer_list<P>{P{0.75, 0.75}, P{0.25, 0.25}});
+  auto multilinestrings2 =
+    make_multilinestring_array({0, 1}, {0, 2}, {P{0.75, 0.75}, P{0.25, 0.25}});
 
-  auto [points, segments] = pairwise_linestring_intersection_with_duplicates<index_t, T>(
-    multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
-
-  auto expected_points_offsets = make_device_vector<index_t>({0, 0});
-  auto expected_points_coords  = make_device_vector<P>({});
-
-  auto expected_segments_offsets = make_device_vector<index_t>({0, 1});
-  auto expected_segments_coords =
-    make_device_vector<segment<T>>({segment<T>{P{0.25, 0.25}, P{0.75, 0.75}}});
-
-  auto expected_point_lhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_point_lhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_point_rhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_point_rhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_segment_lhs_linestring_ids = make_device_vector<index_t>({0});
-  auto expected_segment_lhs_segment_ids    = make_device_vector<index_t>({0});
-
-  auto expected_segment_rhs_linestring_ids = make_device_vector<index_t>({0});
-  auto expected_segment_rhs_segment_ids    = make_device_vector<index_t>({0});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_offsets, *std::move(points.offsets));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_coords, *std::move(points.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segments_offsets, *std::move(segments.offsets));
-  expect_segment_equivalent(expected_segments_coords, *std::move(segments.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_linestring_ids,
-                                      *std::move(points.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_segment_ids,
-                                      *std::move(points.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_linestring_ids,
-                                      *std::move(points.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_segment_ids,
-                                      *std::move(points.rhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_linestring_ids,
-                                      *std::move(segments.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_segment_ids,
-                                      *std::move(segments.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_linestring_ids,
-                                      *std::move(segments.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_segment_ids,
-                                      *std::move(segments.rhs_segment_ids));
+  CUSPATIAL_RUN_TEST(this->template run_single<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     // Point offsets
+                     {0, 0},
+                     // Expected Points
+                     {},
+                     // Segment offsets
+                     {0, 1},
+                     // Expected segments
+                     {segment<T>{P{0.25, 0.25}, P{0.75, 0.75}}},
+                     // Point look-back ids
+                     {},
+                     {},
+                     {},
+                     {},
+                     // segment look-back ids
+                     {0},
+                     {0},
+                     {0},
+                     {0});
 }
 
 TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairSingletoSingleOverlapTwoSegments)
@@ -586,57 +417,36 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairSingletoSingleOverlapTwo
 
   using index_t = std::size_t;
 
-  auto multilinestrings1 =
-    make_multilinestring_array({0, 1}, {0, 3}, std::initializer_list<P>{P{0, 0}, P{1, 1}, P{2, 2}});
+  auto multilinestrings1 = make_multilinestring_array({0, 1}, {0, 3}, {P{0, 0}, P{1, 1}, P{2, 2}});
 
-  auto multilinestrings2 = make_multilinestring_array(
-    {0, 1}, {0, 3}, std::initializer_list<P>{P{1.25, 1.25}, P{0.75, 0.75}, P{0.25, 0.25}});
+  auto multilinestrings2 =
+    make_multilinestring_array({0, 1}, {0, 3}, {P{1.25, 1.25}, P{0.75, 0.75}, P{0.25, 0.25}});
 
-  auto [points, segments] = pairwise_linestring_intersection_with_duplicates<index_t, T>(
-    multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
-
-  auto expected_points_offsets = make_device_vector<index_t>({0, 0});
-  auto expected_points_coords  = make_device_vector<P>({});
-
-  auto expected_segments_offsets = make_device_vector<index_t>({0, 3});
-  auto expected_segments_coords  = make_device_vector<segment<T>>({
-    segment<T>{P{0.75, 0.75}, P{1.0, 1.0}},
-    segment<T>{P{1.0, 1.0}, P{1.25, 1.25}},
-    segment<T>{P{0.25, 0.25}, P{0.75, 0.75}},
-  });
-
-  auto expected_point_lhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_point_lhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_point_rhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_point_rhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_segment_lhs_linestring_ids = make_device_vector<index_t>({0, 0, 0});
-  auto expected_segment_lhs_segment_ids    = make_device_vector<index_t>({0, 1, 0});
-
-  auto expected_segment_rhs_linestring_ids = make_device_vector<index_t>({0, 0, 0});
-  auto expected_segment_rhs_segment_ids    = make_device_vector<index_t>({0, 0, 1});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_offsets, *std::move(points.offsets));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_coords, *std::move(points.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segments_offsets, *std::move(segments.offsets));
-  expect_segment_equivalent(expected_segments_coords, *std::move(segments.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_linestring_ids,
-                                      *std::move(points.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_segment_ids,
-                                      *std::move(points.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_linestring_ids,
-                                      *std::move(points.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_segment_ids,
-                                      *std::move(points.rhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_linestring_ids,
-                                      *std::move(segments.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_segment_ids,
-                                      *std::move(segments.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_linestring_ids,
-                                      *std::move(segments.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_segment_ids,
-                                      *std::move(segments.rhs_segment_ids));
+  CUSPATIAL_RUN_TEST(this->template run_single<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     // Point offsets
+                     {0, 0},
+                     // Expected Points
+                     {},
+                     // Segment offsets
+                     {0, 3},
+                     // Expected segments
+                     {
+                       segment<T>{P{0.75, 0.75}, P{1.0, 1.0}},
+                       segment<T>{P{1.0, 1.0}, P{1.25, 1.25}},
+                       segment<T>{P{0.25, 0.25}, P{0.75, 0.75}},
+                     },
+                     // Point look-back ids
+                     {},
+                     {},
+                     {},
+                     {},
+                     // segment look-back ids
+                     {0, 0, 0},
+                     {0, 1, 0},
+                     {0, 0, 0},
+                     {0, 0, 1});
 }
 
 TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairMultiSingle)
@@ -646,53 +456,32 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairMultiSingle)
 
   using index_t = std::size_t;
 
-  auto multilinestrings1 = make_multilinestring_array(
-    {0, 2}, {0, 2, 4}, std::initializer_list<P>{P{0, 0}, P{1, 1}, P{0, 0}, P{-1, 1}});
+  auto multilinestrings1 =
+    make_multilinestring_array({0, 2}, {0, 2, 4}, {P{0, 0}, P{1, 1}, P{0, 0}, P{-1, 1}});
 
-  auto multilinestrings2 =
-    make_multilinestring_array({0, 1}, {0, 2}, std::initializer_list<P>{P{-2, 0.5}, P{2, 0.5}});
+  auto multilinestrings2 = make_multilinestring_array({0, 1}, {0, 2}, {P{-2, 0.5}, P{2, 0.5}});
 
-  auto [points, segments] = pairwise_linestring_intersection_with_duplicates<index_t, T>(
-    multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
-
-  auto expected_points_offsets = make_device_vector<index_t>({0, 2});
-  auto expected_points_coords  = make_device_vector<P>({P{0.5, 0.5}, P{-0.5, 0.5}});
-
-  auto expected_segments_offsets = make_device_vector<index_t>({0, 0});
-  auto expected_segments_coords  = make_device_vector<segment<T>>({});
-
-  auto expected_point_lhs_linestring_ids = make_device_vector<index_t>({0, 1});
-  auto expected_point_lhs_segment_ids    = make_device_vector<index_t>({0, 0});
-
-  auto expected_point_rhs_linestring_ids = make_device_vector<index_t>({0, 0});
-  auto expected_point_rhs_segment_ids    = make_device_vector<index_t>({0, 0});
-
-  auto expected_segment_lhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_lhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_segment_rhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_rhs_segment_ids    = make_device_vector<index_t>({});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_offsets, *std::move(points.offsets));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_coords, *std::move(points.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segments_offsets, *std::move(segments.offsets));
-  expect_segment_equivalent(expected_segments_coords, *std::move(segments.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_linestring_ids,
-                                      *std::move(points.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_segment_ids,
-                                      *std::move(points.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_linestring_ids,
-                                      *std::move(points.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_segment_ids,
-                                      *std::move(points.rhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_linestring_ids,
-                                      *std::move(segments.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_segment_ids,
-                                      *std::move(segments.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_linestring_ids,
-                                      *std::move(segments.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_segment_ids,
-                                      *std::move(segments.rhs_segment_ids));
+  CUSPATIAL_RUN_TEST(this->template run_single<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     // Point offsets
+                     {0, 2},
+                     // Expected Points
+                     {P{0.5, 0.5}, P{-0.5, 0.5}},
+                     // Segment offsets
+                     {0, 0},
+                     // Expected segments
+                     {},
+                     // Point look-back ids
+                     {0, 1},
+                     {0, 0},
+                     {0, 0},
+                     {0, 0},
+                     // segment look-back ids
+                     {},
+                     {},
+                     {},
+                     {});
 }
 
 TYPED_TEST(LinestringIntersectionDuplicatesTest, TwoPairsSingletoSingle)
@@ -702,53 +491,33 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, TwoPairsSingletoSingle)
 
   using index_t = std::size_t;
 
-  auto multilinestrings1 = make_multilinestring_array(
-    {0, 1, 2}, {0, 2, 4}, std::initializer_list<P>{P{0, 0}, P{1, 1}, P{0, 0}, P{-1, 1}});
+  auto multilinestrings1 =
+    make_multilinestring_array({0, 1, 2}, {0, 2, 4}, {P{0, 0}, P{1, 1}, P{0, 0}, P{-1, 1}});
 
-  auto multilinestrings2 = make_multilinestring_array(
-    {0, 1, 2}, {0, 2, 4}, std::initializer_list<P>{P{0, 1}, P{1, 0}, P{0, 1}, P{-1, 0}});
+  auto multilinestrings2 =
+    make_multilinestring_array({0, 1, 2}, {0, 2, 4}, {P{0, 1}, P{1, 0}, P{0, 1}, P{-1, 0}});
 
-  auto [points, segments] = pairwise_linestring_intersection_with_duplicates<index_t, T>(
-    multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
-
-  auto expected_points_offsets = make_device_vector<index_t>({0, 1, 2});
-  auto expected_points_coords  = make_device_vector<P>({P{0.5, 0.5}, P{-0.5, 0.5}});
-
-  auto expected_segments_offsets = make_device_vector<index_t>({0, 0, 0});
-  auto expected_segments_coords  = make_device_vector<segment<T>>({});
-
-  auto expected_point_lhs_linestring_ids = make_device_vector<index_t>({0, 0});
-  auto expected_point_lhs_segment_ids    = make_device_vector<index_t>({0, 0});
-
-  auto expected_point_rhs_linestring_ids = make_device_vector<index_t>({0, 0});
-  auto expected_point_rhs_segment_ids    = make_device_vector<index_t>({0, 0});
-
-  auto expected_segment_lhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_lhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_segment_rhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_rhs_segment_ids    = make_device_vector<index_t>({});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_offsets, *std::move(points.offsets));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_coords, *std::move(points.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segments_offsets, *std::move(segments.offsets));
-  expect_segment_equivalent(expected_segments_coords, *std::move(segments.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_linestring_ids,
-                                      *std::move(points.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_segment_ids,
-                                      *std::move(points.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_linestring_ids,
-                                      *std::move(points.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_segment_ids,
-                                      *std::move(points.rhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_linestring_ids,
-                                      *std::move(segments.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_segment_ids,
-                                      *std::move(segments.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_linestring_ids,
-                                      *std::move(segments.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_segment_ids,
-                                      *std::move(segments.rhs_segment_ids));
+  CUSPATIAL_RUN_TEST(this->template run_single<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     // Point offsets
+                     {0, 1, 2},
+                     // Expected Points
+                     {P{0.5, 0.5}, P{-0.5, 0.5}},
+                     // Segment offsets
+                     {0, 0, 0},
+                     // Expected segments
+                     {},
+                     // Point look-back ids
+                     {0, 0},
+                     {0, 0},
+                     {0, 0},
+                     {0, 0},
+                     // segment look-back ids
+                     {},
+                     {},
+                     {},
+                     {});
 }
 
 TYPED_TEST(LinestringIntersectionDuplicatesTest, TwoPairsMultitoMulti)
@@ -768,45 +537,25 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, TwoPairsMultitoMulti)
     {0, 2, 4, 6, 8},
     {P{0, 1}, P{1, 0}, P{2, 1}, P{3, 0}, P{-1, 0}, P{-2, 1}, P{-3, -2}, P{-4, 3}});
 
-  auto [points, segments] = pairwise_linestring_intersection_with_duplicates<index_t, T>(
-    multilinestrings1.range(), multilinestrings2.range(), this->mr(), this->stream());
-
-  auto expected_points_offsets = make_device_vector<index_t>({0, 2, 2});
-  auto expected_points_coords  = make_device_vector<P>({P{0.5, 0.5}, P{2.5, 0.5}});
-
-  auto expected_segments_offsets = make_device_vector<index_t>({0, 0, 0});
-  auto expected_segments_coords  = make_device_vector<segment<T>>({});
-
-  auto expected_point_lhs_linestring_ids = make_device_vector<index_t>({0, 1});
-  auto expected_point_lhs_segment_ids    = make_device_vector<index_t>({0, 0});
-
-  auto expected_point_rhs_linestring_ids = make_device_vector<index_t>({0, 1});
-  auto expected_point_rhs_segment_ids    = make_device_vector<index_t>({0, 0});
-
-  auto expected_segment_lhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_lhs_segment_ids    = make_device_vector<index_t>({});
-
-  auto expected_segment_rhs_linestring_ids = make_device_vector<index_t>({});
-  auto expected_segment_rhs_segment_ids    = make_device_vector<index_t>({});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_offsets, *std::move(points.offsets));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points_coords, *std::move(points.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segments_offsets, *std::move(segments.offsets));
-  expect_segment_equivalent(expected_segments_coords, *std::move(segments.geoms));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_linestring_ids,
-                                      *std::move(points.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_lhs_segment_ids,
-                                      *std::move(points.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_linestring_ids,
-                                      *std::move(points.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_point_rhs_segment_ids,
-                                      *std::move(points.rhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_linestring_ids,
-                                      *std::move(segments.lhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_lhs_segment_ids,
-                                      *std::move(segments.lhs_segment_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_linestring_ids,
-                                      *std::move(segments.rhs_linestring_ids));
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_segment_rhs_segment_ids,
-                                      *std::move(segments.rhs_segment_ids));
+  CUSPATIAL_RUN_TEST(this->template run_single<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     // Point offsets
+                     {0, 2, 2},
+                     // Expected Points
+                     {P{0.5, 0.5}, P{2.5, 0.5}},
+                     // Segment offsets
+                     {0, 0, 0},
+                     // Expected segments
+                     {},
+                     // Point look-back ids
+                     {0, 1},
+                     {0, 0},
+                     {0, 1},
+                     {0, 0},
+                     // segment look-back ids
+                     {},
+                     {},
+                     {},
+                     {});
 }
