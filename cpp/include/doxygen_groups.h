@@ -117,7 +117,7 @@
  *          @brief Abstract Data Type that Represents any containers represented by a start and end
  *          iterator
  *
- *          Cuspatial header only APIs accepts ranges that are composed of flattened view of
+ *          cuSpatial header only APIs accept ranges that provide flattened views of
  *          offsets and coordinates. Various accessors are provided for flexible access to the data.
  *          @file range.cuh
  *          @file multipoint_range.cuh
