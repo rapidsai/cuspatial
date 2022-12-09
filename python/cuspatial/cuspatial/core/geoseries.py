@@ -778,7 +778,7 @@ class GeoSeries(cudf.Series):
         if contains_only_points(self) and contains_only_points(other):
             return cudf.Series(EqualsBinpred(self, other, align)())
         else:
-            ContainsProperlyBinpred(self, other, align)()
+            return ContainsProperlyBinpred(self, other, align)()
 
     def equals(self, other, align=True):
         """Compute if a GeoSeries of features A is equal to a GeoSeries of
