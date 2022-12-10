@@ -16,15 +16,13 @@
 
 #pragma once
 
-#include "cuspatial_test/test_util.cuh"
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/detail/combine/combine_point_on_segments.cuh>
-#include <cuspatial/experimental/detail/combine/combine_points.cuh>
-#include <cuspatial/experimental/detail/combine/combine_segments.cuh>
+#include <cuspatial/experimental/detail/find/find_and_combine_segment.cuh>
+#include <cuspatial/experimental/detail/find/find_duplicate_points.cuh>
+#include <cuspatial/experimental/detail/find/find_point_on_segments.cuh>
 #include <cuspatial/experimental/detail/linestring_intersection_count.cuh>
 #include <cuspatial/experimental/detail/linestring_intersection_with_duplicates.cuh>
 #include <cuspatial/experimental/ranges/multipoint_range.cuh>
@@ -61,6 +59,44 @@ struct linestring_intersection_result;
 
 namespace detail {
 
+/**
+ * @brief Functor to gather the look-back ids from the ids in intermediates.
+ *
+ * In the final step, intersection function is required to compute a single look-back id
+ * column for the union column rows. This functor looks at each row of the union
+ * column, determine its geometry type, and gather the look-back id from the
+ * corresponding id range.
+ */
+template <typename OffsetRange, typename TypeRange>
+struct gather_ids_functor {
+  id_ranges<OffsetRange> points;
+  id_ranges<OffsetRange> segments;
+
+  TypeRange types_buffer;
+  OffsetRange offset_buffer;
+
+  gather_ids_functor(id_ranges<OffsetRange> points,
+                     id_ranges<OffsetRange> segments,
+                     TypeRange types_buffer,
+                     OffsetRange offset_buffer)
+    : points(points), segments(segments), types_buffer(types_buffer), offset_buffer(offset_buffer)
+  {
+  }
+
+  template <typename IndexType>
+  auto __device__ operator()(IndexType i)
+  {
+    if (types_buffer[i] == IntersectionTypeCode::POINT) {
+      return points[offset_buffer[i]];
+    } else {
+      return segments[offset_buffer[i]];
+    }
+  }
+};
+
+/**
+ * @brief Functor to compute types buffer in the final union column result.
+ */
 template <typename type_t, typename OffsetRangeA, typename OffsetRangeB>
 struct types_buffer_functor {
   OffsetRangeA geometric_column_offset;
@@ -86,15 +122,19 @@ struct types_buffer_functor {
 
     auto num_points   = points_offset[geometry_idx + 1] - points_offset[geometry_idx];
     auto num_segments = segments_offset[geometry_idx + 1] - segments_offset[geometry_idx];
-    auto base         = geometric_column_offset[geometry_idx];
-    // points precedes segments
-    if (base <= i && i < base + num_points)
+    auto pair_offset  = geometric_column_offset[geometry_idx];
+
+    // In each pair, points always precedes segment (arbitrarily).
+    if (pair_offset <= i && i < pair_offset + num_points)
       return IntersectionTypeCode::POINT;
     else
       return IntersectionTypeCode::LINESTRING;
   }
 };
 
+/**
+ * @brief Compute types buffer in the final union column result.
+ */
 template <typename types_t, typename index_t, typename OffsetRangeA, typename OffsetRangeB>
 std::unique_ptr<rmm::device_uvector<types_t>> compute_types_buffer(
   index_t union_column_size,
@@ -147,33 +187,6 @@ std::unique_ptr<rmm::device_uvector<index_t>> compute_offset_buffer(
   return offset_buffer;
 }
 
-template <typename OffsetRange, typename TypeRange>
-struct gather_ids_functor {
-  id_ranges<OffsetRange> points;
-  id_ranges<OffsetRange> segments;
-
-  TypeRange types_buffer;
-  OffsetRange offset_buffer;
-
-  gather_ids_functor(id_ranges<OffsetRange> points,
-                     id_ranges<OffsetRange> segments,
-                     TypeRange types_buffer,
-                     OffsetRange offset_buffer)
-    : points(points), segments(segments), types_buffer(types_buffer), offset_buffer(offset_buffer)
-  {
-  }
-
-  template <typename IndexType>
-  auto __device__ operator()(IndexType i)
-  {
-    if (types_buffer[i] == IntersectionTypeCode::POINT) {
-      return points[offset_buffer[i]];
-    } else {
-      return segments[offset_buffer[i]];
-    }
-  }
-};
-
 }  // namespace detail
 
 /**
@@ -204,65 +217,41 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
 
   auto const num_pairs = multilinestrings1.size();
 
-  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicate<index_t, T>(
+  // Phase 1 and 2: Estimate and compute duplicates
+  auto [points, segments] = detail::pairwise_linestring_intersection_with_duplicates<index_t, T>(
     multilinestrings1, multilinestrings2, mr, stream);
   auto num_points   = points.num_geoms();
   auto num_segments = segments.num_geoms();
 
-  stream.synchronize();
-  cuspatial::test::print_device_vector(*points.offsets);
-  cuspatial::test::print_device_vector(*points.geoms);
-  std::cout << "computed duplicates" << std::endl;
-
+  // Phase 3: Remove duplicate points from intermediates
   // TODO: improve memory usage by using IIFE to
   // Remove the duplicate points
-  // rmm::device_uvector<uint8_t> point_stencils(num_points, stream);
-  rmm::device_uvector<int32_t> point_stencils(num_points, stream);
-  detail::combine_duplicate_points(
-    make_multipoint_range(points.offset_range(), points.geom_range()),
-    point_stencils.begin(),
-    stream);
+  rmm::device_uvector<int32_t> point_flags(num_points, stream);
+  detail::find_duplicate_points(
+    make_multipoint_range(points.offset_range(), points.geom_range()), point_flags.begin(), stream);
 
-  cuspatial::test::print_device_vector(point_stencils);
-
-  points.remove_if(range(point_stencils.begin(), point_stencils.end()), stream);
-  point_stencils.resize(points.geoms->size(), stream);
-
-  stream.synchronize();
-  std::cout << "removed duplicate points" << std::endl;
-  cuspatial::test::print_device_vector(*points.offsets);
-  cuspatial::test::print_device_vector(*points.geoms);
+  points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
+  point_flags.resize(points.geoms->size(), stream);
 
   // Merge mergable segments
-  rmm::device_uvector<uint8_t> segment_stencils(num_segments, stream);
-  detail::combine_segments(
-    segments.offset_range(), segments.geom_range(), segment_stencils.begin(), stream);
-  segments.remove_if(range(segment_stencils.begin(), segment_stencils.end()), stream);
-
-  stream.synchronize();
-  std::cout << "combined segments" << std::endl;
-  cuspatial::test::print_device_vector(*points.offsets);
+  rmm::device_uvector<uint8_t> segment_flags(num_segments, stream);
+  detail::find_and_combine_segment(
+    segments.offset_range(), segments.geom_range(), segment_flags.begin(), stream);
+  segments.remove_if(range(segment_flags.begin(), segment_flags.end()), stream);
 
   // Merge point on segments
-  detail::combine_point_on_segments(
-    make_multipoint_range(points.offset_range(), points.geom_range()),
-    segments.offset_range(),
-    segments.geom_range(),
-    point_stencils.begin(),
-    stream);
+  detail::find_point_on_segments(make_multipoint_range(points.offset_range(), points.geom_range()),
+                                 segments.offset_range(),
+                                 segments.geom_range(),
+                                 point_flags.begin(),
+                                 stream);
 
-  points.remove_if(range(point_stencils.begin(), point_stencils.end()), stream);
+  points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
 
-  stream.synchronize();
-  std::cout << "combined point on segments." << std::endl;
-
+  // Phase 4: Assemble results as union column
   auto num_union_column_rows = points.geoms->size() + segments.geoms->size();
   auto geometry_collection_offsets =
     std::make_unique<rmm::device_uvector<index_t>>(num_pairs + 1, stream, mr);
-
-  std::cout << "Before computing geom collection offset:" << std::endl;
-  cuspatial::test::print_device_vector(*points.offsets);
-  cuspatial::test::print_device_vector(*segments.offsets);
 
   thrust::transform(rmm::exec_policy(stream),
                     points.offsets->begin(),
