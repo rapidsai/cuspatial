@@ -16,15 +16,26 @@
 
 #pragma once
 
+#include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 namespace cuspatial {
 
 template <typename T>
-struct segment {
+class segment {
+ public:
   using value_type = T;
   vec_2d<T> first;
   vec_2d<T> second;
+
+  /// Return a copy of segment, translated by `v`.
+  segment<T> CUSPATIAL_HOST_DEVICE translate(vec_2d<T> const& v) const
+  {
+    return segment<T>{first + v, second + v};
+  }
+
+  /// Return the geometric center of segment.
+  vec_2d<T> CUSPATIAL_HOST_DEVICE center() const { return midpoint(first, second); }
 };
 
 }  // namespace cuspatial

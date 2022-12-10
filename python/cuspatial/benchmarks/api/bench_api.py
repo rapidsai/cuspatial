@@ -78,12 +78,12 @@ def bench_linestring_bounding_boxes(benchmark, sorted_trajectories):
     )
 
 
-def bench_lonlat_to_cartesian(benchmark, gpu_dataframe):
+def bench_sinusoidal_projection(benchmark, gpu_dataframe):
     afghanistan = gpu_dataframe["geometry"][
         gpu_dataframe["name"] == "Afghanistan"
     ]
     benchmark(
-        cuspatial.lonlat_to_cartesian,
+        cuspatial.sinusoidal_projection,
         afghanistan.polygons.y.mean(),
         afghanistan.polygons.x.mean(),
         afghanistan.polygons.y,

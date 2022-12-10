@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "thrust/detail/raw_reference_cast.h"
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/traits.hpp>
 
@@ -55,7 +56,7 @@ class range {
   template <typename IndexType>
   auto& CUSPATIAL_HOST_DEVICE operator[](IndexType i)
   {
-    return *(begin() + i);
+    return thrust::raw_reference_cast(_begin[i]);
   }
 
  private:
