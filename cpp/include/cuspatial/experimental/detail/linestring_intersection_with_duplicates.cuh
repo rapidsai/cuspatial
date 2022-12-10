@@ -194,35 +194,33 @@ struct linestring_intersection_intermediates {
                            thrust::next(offsets->begin()));
   }
 
-  /// Given a flag array, remove the ith geometry if `stencil[i] == 1`.
+  /// Given a flag array, remove the ith geometry if `flags[i] == 1`.
   /// @pre flag array must have the same size as the geometry array.
-  template <typename StencilRange>
-  void remove_if(StencilRange stencil, rmm::cuda_stream_view stream)
+  template <typename FlagRange>
+  void remove_if(FlagRange flags, rmm::cuda_stream_view stream)
   {
     // Update offsets
     rmm::device_uvector<index_t> reduced_keys(num_pairs(), stream);
-    rmm::device_uvector<index_t> reduced_stencil(num_pairs(), stream);
+    rmm::device_uvector<index_t> reduced_flags(num_pairs(), stream);
     auto keys_begin = make_counting_transform_iterator(
       0, intersection_functors::offsets_to_keys_functor{offsets->begin(), offsets->end()});
 
-    auto [keys_end, stencils_end] =
+    auto [keys_end, flags_end] =
       thrust::reduce_by_key(rmm::exec_policy(stream),
                             keys_begin,
-                            keys_begin + stencil.size(),
-                            stencil.begin(),
+                            keys_begin + flags.size(),
+                            flags.begin(),
                             reduced_keys.begin(),
-                            reduced_stencil.begin(),
+                            reduced_flags.begin(),
                             thrust::equal_to<index_t>(),
-                            thrust::plus<index_t>());  // explicitly cast stencils to index_t type
+                            thrust::plus<index_t>());  // explicitly cast flagss to index_t type
                                                        // before adding to avoid overflow.
 
     reduced_keys.resize(thrust::distance(reduced_keys.begin(), keys_end), stream);
-    reduced_stencil.resize(thrust::distance(reduced_stencil.begin(), stencils_end), stream);
+    reduced_flags.resize(thrust::distance(reduced_flags.begin(), flags_end), stream);
 
-    thrust::inclusive_scan(rmm::exec_policy(stream),
-                           reduced_stencil.begin(),
-                           reduced_stencil.end(),
-                           reduced_stencil.begin());
+    thrust::inclusive_scan(
+      rmm::exec_policy(stream), reduced_flags.begin(), reduced_flags.end(), reduced_flags.begin());
 
     thrust::transform(
       rmm::exec_policy(stream),
@@ -231,7 +229,7 @@ struct linestring_intersection_intermediates {
       thrust::make_counting_iterator(0),
       offsets->begin(),
       intersection_functors::offsets_update_functor{
-        reduced_keys.begin(), reduced_keys.end(), reduced_stencil.begin(), reduced_stencil.end()});
+        reduced_keys.begin(), reduced_keys.end(), reduced_flags.begin(), reduced_flags.end()});
 
     // Update geoms and resize
     auto geom_id_it  = thrust::make_zip_iterator(geoms->begin(),
@@ -242,7 +240,7 @@ struct linestring_intersection_intermediates {
     auto geom_id_end = thrust::remove_if(rmm::exec_policy(stream),
                                          geom_id_it,
                                          geom_id_it + geoms->size(),
-                                         stencil.begin(),
+                                         flags.begin(),
                                          [] __device__(uint8_t flag) { return flag == 1; });
 
     auto new_geom_size = thrust::distance(geom_id_it, geom_id_end);
