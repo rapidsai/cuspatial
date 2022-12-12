@@ -1,46 +1,40 @@
+# Copyright (c) 2019-2022, NVIDIA CORPORATION.
+
 repos:
-      - repo: https://github.com/pycqa/isort
+      - repo: https://github.com/PyCQA/isort
         rev: 5.10.1
         hooks:
               - id: isort
-                args: ["--settings-path=python/cuspatial/setup.cfg"]
-                files: python/cuspatial/.*
-                exclude: __init__.py$
-                types: [text]
-                types_or: [python, cython]
-      - repo: https://github.com/ambv/black
+                # Use the config file specific to each subproject so that each
+                # project can specify its own first/third-party packages.
+                args: ["--config-root=python/", "--resolve-all-configs"]
+                files: python/.*
+                types_or: [python, cython, pyi]
+      - repo: https://github.com/psf/black
         rev: 22.3.0
         hooks:
               - id: black
                 files: python/cuspatial/.*
               # Explicitly specify the pyproject.toml at the repo root, not per-project.
                 args: ["--config", "pyproject.toml"]
-      - repo: https://gitlab.com/pycqa/flake8
-        rev: 3.7.7
+      - repo: https://github.com/PyCQA/flake8
+        rev: 5.0.4
         hooks:
               - id: flake8
-                files: python/cuspatial/.*\.py
-      - repo: https://gitlab.com/pycqa/flake8
-        rev: 3.7.7
+                args: ["--config=setup.cfg"]
+                files: python/.*$
+                types: [file]
+                types_or: [python, cython]
+                additional_dependencies: ["flake8-force"]
+      - repo: https://github.com/MarcoGorelli/cython-lint
+        rev: v0.1.10
         hooks:
-              - id: flake8
-                alias: flake8-cython
-                name: flake8-cython
-                args: ["--config=python/cuspatial/.flake8.cython"]
-                types: [cython]
-      - repo: local
+              - id: cython-lint
+      - repo: https://github.com/pre-commit/mirrors-clang-format
+        rev: v11.1.0
         hooks:
               - id: clang-format
-                # Using the pre-commit stage to simplify invocation of all
-                # other hooks simultaneously (via any other hook stage).  This
-                # can be removed if we also move to running clang-format
-                # entirely through pre-commit.
-                stages: [commit]
-                name: clang-format
-                description: Format files with ClangFormat.
-                entry: clang-format -i
-                language: system
-                files: \.(cu|cuh|h|hpp|cpp|inl)$
-                args: ['-fallback-style=none']
+                types_or: [c, c++, cuda]
+                args: ["-fallback-style=none", "-style=file", "-i"]
 default_language_version:
       python: python3

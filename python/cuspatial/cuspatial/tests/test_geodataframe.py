@@ -107,24 +107,6 @@ def test_select_multiple_columns(gpdf):
     )
 
 
-def test_sort_values(gpdf):
-    cugpdf = cuspatial.from_geopandas(gpdf)
-    sort_gpdf = gpdf.sort_values("random")
-    sort_cugpdf = cugpdf.sort_values("random").to_pandas()
-    pd.testing.assert_frame_equal(sort_gpdf, sort_cugpdf)
-
-
-def test_groupby(gpdf):
-    cugpdf = cuspatial.from_geopandas(gpdf)
-    pd.testing.assert_frame_equal(
-        gpdf.groupby("key")[["integer", "random"]].min().sort_index(),
-        cugpdf.groupby("key")[["integer", "random"]]
-        .min()
-        .sort_index()
-        .to_pandas(),
-    )
-
-
 def test_type_persistence(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     assert type(cugpdf["geometry"]) == cuspatial.GeoSeries

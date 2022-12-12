@@ -3,11 +3,11 @@
 from cudf import DataFrame
 from cudf.core.column import as_column
 
+from cuspatial._lib.linestring_bounding_boxes import (
+    linestring_bounding_boxes as cpp_linestring_bounding_boxes,
+)
 from cuspatial._lib.polygon_bounding_boxes import (
     polygon_bounding_boxes as cpp_polygon_bounding_boxes,
-)
-from cuspatial._lib.polyline_bounding_boxes import (
-    polyline_bounding_boxes as cpp_polyline_bounding_boxes,
 )
 from cuspatial.utils.column_utils import normalize_point_columns
 
@@ -48,24 +48,24 @@ def polygon_bounding_boxes(poly_offsets, ring_offsets, xs, ys):
     )
 
 
-def polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius):
-    """Compute the minimum bounding-boxes for a set of polylines.
+def linestring_bounding_boxes(linestring_offsets, xs, ys, expansion_radius):
+    """Compute the minimum bounding boxes for a set of linestrings.
 
     Parameters
     ----------
-    poly_offsets
-        Begin indices of the first ring in each polyline (i.e. prefix-sum)
+    linestring_offsets
+        Begin indices of the each linestring
     xs
-        Polyline point x-coordinates
+        Linestring point x-coordinates
     ys
-        Polyline point y-coordinates
+        Linestring point y-coordinates
     expansion_radius
-        radius of each polyline point
+        radius of each linestring point
 
     Returns
     -------
     result : cudf.DataFrame
-        minimum bounding boxes for each polyline
+        minimum bounding boxes for each linestring
 
         x_min : cudf.Series
             the minimum x-coordinate of each bounding box
@@ -76,8 +76,10 @@ def polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius):
         y_max : cudf.Series
             the maximum y-coordinate of each bounding box
     """
-    poly_offsets = as_column(poly_offsets, dtype="int32")
+    linestring_offsets = as_column(linestring_offsets, dtype="int32")
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
     return DataFrame._from_data(
-        *cpp_polyline_bounding_boxes(poly_offsets, xs, ys, expansion_radius)
+        *cpp_linestring_bounding_boxes(
+            linestring_offsets, xs, ys, expansion_radius
+        )
     )

@@ -47,8 +47,8 @@ endfunction(ConfigureTest)
 ConfigureTest(CUBIC_SPLINE_TEST
     interpolate/cubic_spline_test.cpp)
 
-ConfigureTest(COORDINATE_TRANSFORM_TEST
-    spatial/coordinate_transform_test.cu)
+ConfigureTest(SINUSOIDAL_PROJECTION_TEST
+    spatial/sinusoidal_projection_test.cu)
 
 ConfigureTest(HAVERSINE_TEST
     spatial/haversine_test.cpp)
@@ -62,17 +62,20 @@ ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST
 ConfigureTest(JOIN_POINT_IN_POLYGON_LARGE_TEST
     join/point_in_polygon_test_large.cpp)
 
-ConfigureTest(JOIN_POINT_TO_POLYLINE_SMALL_TEST
-    join/point_to_nearest_polyline_test_small.cpp)
+ConfigureTest(JOIN_POINT_TO_LINESTRING_SMALL_TEST
+    join/point_to_nearest_linestring_test_small.cpp)
 
 ConfigureTest(POINT_IN_POLYGON_TEST
     spatial/point_in_polygon_test.cpp)
 
+ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST
+    spatial/pairwise_point_in_polygon_test.cpp)
+
 ConfigureTest(POINT_QUADTREE_TEST
     indexing/point_quadtree_test.cu)
 
-ConfigureTest(POLYLINE_BBOX_TEST
-    spatial/polyline_bbox_test.cu)
+ConfigureTest(LINESTRING_BBOX_TEST
+    spatial/linestring_bbox_test.cu)
 
 ConfigureTest(POLYGON_BBOX_TEST
     spatial/polygon_bbox_test.cu)
@@ -84,7 +87,7 @@ ConfigureTest(POINT_LINESTRING_DISTANCE_TEST
     spatial/point_linestring_distance_test.cpp)
 
 ConfigureTest(LINESTRING_DISTANCE_TEST
-    spatial/linestring_distance_test.cpp spatial/linestring_distance_test_medium.cpp)
+    spatial/linestring_distance_test.cpp)
 
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST
     spatial/point_linestring_nearest_points_test.cpp)
@@ -95,8 +98,8 @@ ConfigureTest(SHAPEFILE_READER_TEST
 ConfigureTest(QUADTREE_POLYGON_FILTERING_TEST
     join/quadtree_polygon_filtering_test.cu)
 
-ConfigureTest(QUADTREE_POLYLINE_FILTERING_TEST
-    join/quadtree_polyline_filtering_test.cu)
+ConfigureTest(QUADTREE_LINESTRING_FILTERING_TEST
+    join/quadtree_linestring_filtering_test.cu)
 
 ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST
     trajectory/test_trajectory_distances_and_speeds.cu)
@@ -109,6 +112,11 @@ ConfigureTest(TRAJECTORY_BOUNDING_BOXES_TEST
 
 ConfigureTest(SPATIAL_WINDOW_POINT_TEST
     spatial_window/spatial_window_test.cpp)
+
+ConfigureTest(UTILITY_TEST
+    utility_test/test_float_equivalent.cu
+    utility_test/test_multipoint_factory.cu
+)
 
 # Experimental API
 ConfigureTest(HAVERSINE_TEST_EXP
@@ -123,13 +131,17 @@ ConfigureTest(HAUSDORFF_TEST_EXP
     experimental/spatial/hausdorff_test.cu)
 
 ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
-    experimental/spatial/linestring_distance_test.cu)
+    experimental/spatial/linestring_distance_test.cu
+    experimental/spatial/linestring_distance_test_medium.cu)
+
+ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP
+    experimental/spatial/linestring_intersection_count_test.cu)
 
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST_EXP
     experimental/spatial/point_linestring_nearest_points_test.cu)
 
-ConfigureTest(COORDINATE_TRANSFORM_TEST_EXP
-    experimental/spatial/coordinate_transform_test.cu)
+ConfigureTest(SINUSOIDAL_PROJECTION_TEST_EXP
+    experimental/spatial/sinusoidal_projection_test.cu)
 
 ConfigureTest(POINTS_IN_RANGE_TEST_EXP
     experimental/spatial/points_in_range_test.cu)
@@ -137,8 +149,23 @@ ConfigureTest(POINTS_IN_RANGE_TEST_EXP
 ConfigureTest(POINT_IN_POLYGON_TEST_EXP
     experimental/spatial/point_in_polygon_test.cu)
 
+ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST_EXP
+    experimental/spatial/pairwise_point_in_polygon_test.cu)
+
 ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP
     experimental/trajectory/derive_trajectories_test.cu)
 
+ConfigureTest(POINT_BOUNDING_BOXES_TEST_EXP
+    experimental/spatial/point_bounding_boxes_test.cu)
+
+ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_EXP
+    experimental/trajectory/trajectory_distances_and_speeds_test.cu)
+
 ConfigureTest(POINT_QUADTREE_TEST_EXP
     experimental/indexing/point_quadtree_test.cu)
+
+ConfigureTest(OPERATOR_TEST_EXP
+    experimental/operators/linestrings_test.cu)
+
+ConfigureTest(FIND_TEST_EXP
+    experimental/find/find_duplicate_points_test.cu)

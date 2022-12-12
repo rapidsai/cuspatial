@@ -29,33 +29,40 @@
 
 namespace cuspatial {
 
-template <class Cart2dItA, class Cart2dItB, class OutputIt>
-OutputIt pairwise_point_distance(Cart2dItA points1_first,
-                                 Cart2dItA points1_last,
-                                 Cart2dItB points2_first,
+template <class MultiPointArrayViewA, class MultiPointArrayViewB, class OutputIt>
+OutputIt pairwise_point_distance(MultiPointArrayViewA multipoints1,
+                                 MultiPointArrayViewB multipoints2,
                                  OutputIt distances_first,
                                  rmm::cuda_stream_view stream)
 {
-  using T = typename cuspatial::iterator_vec_base_type<Cart2dItA>;
+  using T = iterator_vec_base_type<typename MultiPointArrayViewA::point_it_t>;
 
-  static_assert(is_same_floating_point<T,
-                                       typename cuspatial::iterator_vec_base_type<Cart2dItB>,
-                                       typename cuspatial::iterator_value_type<OutputIt>>(),
-                "Inputs and output must have the same floating point value type.");
+  static_assert(
+    is_same_floating_point<T, iterator_vec_base_type<typename MultiPointArrayViewB::point_it_t>>(),
+    "Inputs must have the same floating point value type.");
 
   static_assert(is_same<vec_2d<T>,
-                        typename cuspatial::iterator_value_type<Cart2dItA>,
-                        typename cuspatial::iterator_value_type<Cart2dItB>>(),
+                        typename MultiPointArrayViewA::point_t,
+                        typename MultiPointArrayViewB::point_t>(),
                 "All Input types must be cuspatial::vec_2d with the same value type");
 
+  CUSPATIAL_EXPECTS(multipoints1.size() == multipoints2.size(),
+                    "Inputs should have the same number of multipoints.");
+
   return thrust::transform(rmm::exec_policy(stream),
-                           points1_first,
-                           points1_last,
-                           points2_first,
+                           multipoints1.multipoint_begin(),
+                           multipoints1.multipoint_end(),
+                           multipoints2.multipoint_begin(),
                            distances_first,
-                           [] __device__(auto p1, auto p2) {
-                             auto v = p1 - p2;
-                             return std::sqrt(dot(v, v));
+                           [] __device__(auto& mp1, auto& mp2) {
+                             T min_distance_squared = std::numeric_limits<T>::max();
+                             for (vec_2d<T> const& p1 : mp1) {
+                               for (vec_2d<T> const& p2 : mp2) {
+                                 auto v               = p1 - p2;
+                                 min_distance_squared = min(min_distance_squared, dot(v, v));
+                               }
+                             }
+                             return sqrt(min_distance_squared);
                            });
 }
 

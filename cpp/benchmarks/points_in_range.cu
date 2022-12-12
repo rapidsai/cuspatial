@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "cuspatial/error.hpp"
 #include <benchmarks/fixture/rmm_pool_raii.hpp>
-#include <benchmarks/utility/random.cuh>
+#include <cuspatial_test/random.cuh>
 
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/error.hpp>
 #include <cuspatial/experimental/points_in_range.cuh>
 #include <cuspatial/vec_2d.hpp>
 

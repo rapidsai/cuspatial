@@ -1,5 +1,7 @@
 import cupy as cp
 
+from cudf.core.column import as_column
+
 import cuspatial._lib.nearest_points as nearest_points
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core.geodataframe import GeoDataFrame
@@ -78,7 +80,7 @@ def pairwise_point_linestring_nearest_points(
     points_geometry_offset = (
         None
         if len(points.points.xy) > 0
-        else points.multipoints.geometry_offset._column
+        else as_column(points.multipoints.geometry_offset)
     )
 
     (
@@ -88,10 +90,10 @@ def pairwise_point_linestring_nearest_points(
         point_on_linestring_xy,
     ) = nearest_points.pairwise_point_linestring_nearest_points(
         points_xy._column,
-        linestrings.lines.part_offset._column,
+        as_column(linestrings.lines.part_offset),
         linestrings.lines.xy._column,
         points_geometry_offset,
-        linestrings.lines.geometry_offset._column,
+        as_column(linestrings.lines.geometry_offset),
     )
 
     point_on_linestring = GeoColumn._from_points_xy(point_on_linestring_xy)

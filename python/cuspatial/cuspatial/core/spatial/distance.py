@@ -1,16 +1,18 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
+from typing import Tuple
+
+import cudf
 from cudf import DataFrame, Series
 from cudf.core.column import as_column
 
+from cuspatial._lib.distance import (
+    pairwise_linestring_distance as cpp_pairwise_linestring_distance,
+    pairwise_point_distance as cpp_pairwise_point_distance,
+    pairwise_point_linestring_distance as c_pairwise_point_linestring_distance,
+)
 from cuspatial._lib.hausdorff import (
     directed_hausdorff_distance as cpp_directed_hausdorff_distance,
-)
-from cuspatial._lib.linestring_distance import (
-    pairwise_linestring_distance as cpp_pairwise_linestring_distance,
-)
-from cuspatial._lib.point_linestring_distance import (
-    pairwise_point_linestring_distance as c_pairwise_point_linestring_distance,
 )
 from cuspatial._lib.spatial import haversine_distance as cpp_haversine_distance
 from cuspatial.core.geoseries import GeoSeries
@@ -124,8 +126,76 @@ def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
     return cpp_haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat)
 
 
-def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
-    """Compute shortest distance between pairs of linestrings (a.k.a. polylines)
+def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
+    """Compute shortest distance between pairs of points and multipoints
+
+    Currently `points1` and `points2` must contain either only points or
+    multipoints. Mixing points and multipoints in the same series is
+    unsupported.
+
+    Parameters
+    ----------
+    points1 : GeoSeries
+        A GeoSeries of (multi)points
+    points2 : GeoSeries
+        A GeoSeries of (multi)points
+
+    Returns
+    -------
+    distance : cudf.Series
+        the distance between each pair of (multi)points
+
+    Examples
+    --------
+    >>> from shapely.geometry import Point, MultiPoint
+    >>> p1 = cuspatial.GeoSeries([
+    ...     MultiPoint([(0.0, 0.0), (1.0, 0.0)]),
+    ...     MultiPoint([(0.0, 1.0), (1.0, 0.0)])
+    ... ])
+    >>> p2 = cuspatial.GeoSeries([
+    ...     Point(2.0, 2.0), Point(0.0, 0.5)
+    ... ])
+    >>> cuspatial.pairwise_point_distance(p1, p2)
+    0    2.236068
+    1    0.500000
+    dtype: float64
+    """
+
+    if not len(points1) == len(points2):
+        raise ValueError("`points1` and `points2` must have the same length")
+
+    if len(points1) == 0:
+        return cudf.Series(dtype="float64")
+
+    if not contains_only_points(points1):
+        raise ValueError("`points1` array must contain only points")
+    if not contains_only_points(points2):
+        raise ValueError("`points2` array must contain only points")
+    if (len(points1.points.xy) > 0 and len(points1.multipoints.xy) > 0) or (
+        len(points2.points.xy) > 0 and len(points2.multipoints.xy) > 0
+    ):
+        raise NotImplementedError(
+            "Mixing point and multipoint geometries is not supported"
+        )
+
+    points1_xy, points1_geometry_offsets = _flatten_point_series(points1)
+    points2_xy, points2_geometry_offsets = _flatten_point_series(points2)
+    return Series._from_data(
+        {
+            None: cpp_pairwise_point_distance(
+                points1_xy,
+                points2_xy,
+                points1_geometry_offsets,
+                points2_geometry_offsets,
+            )
+        }
+    )
+
+
+def pairwise_linestring_distance(
+    multilinestrings1: GeoSeries, multilinestrings2: GeoSeries
+):
+    """Compute shortest distance between pairs of linestrings
 
     The shortest distance between two linestrings is defined as the shortest
     distance between all pairs of segments of the two linestrings. If any of
@@ -133,18 +203,10 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
 
     Parameters
     ----------
-    offsets1
-        Indices of the first point of the first linestring of each pair.
-    xs1
-        x-components of points in the first linestring of each pair.
-    ys1
-        y-component of points in the first linestring of each pair.
-    offsets2
-        Indices of the first point of the second linestring of each pair.
-    xs2
-        x-component of points in the second linestring of each pair.
-    ys2
-        y-component of points in the second linestring of each pair.
+    multilinestrings1 : GeoSeries
+        A GeoSeries of (multi)linestrings
+    multilinestrings2 : GeoSeries
+        A GeoSeries of (multi)linestrings
 
     Returns
     -------
@@ -153,71 +215,45 @@ def pairwise_linestring_distance(offsets1, xs1, ys1, offsets2, xs2, ys2):
 
     Examples
     --------
-    The following example contains 4 pairs of linestrings.
-
-    First pair::
-
-        (0, 1) -> (1, 0) -> (-1, 0)
-        (1, 1) -> (2, 1) -> (2, 0) -> (3, 0)
-
-            |
-            *   #####
-            | *     #
-        ----O---*---#####
-            | *
-            *
-            |
-
-    The shortest distance between the two linestrings is the distance
-    from point ``(1, 1)`` to segment ``(0, 1) -> (1, 0)``, which is
-    ``sqrt(2)/2``.
-
-    Second pair::
-
-        (0, 0) -> (0, 1)
-        (1, 0) -> (1, 1) -> (1, 2)
-
-
-    These linestrings are parallel. Their distance is 1 (point
-    ``(0, 0)`` to point ``(1, 0)``).
-
-    Third pair::
-
-        (0, 0) -> (2, 2) -> (-2, 0)
-        (2, 0) -> (0, 2)
-
-
-    These linestrings intersect, so their distance is 0.
-
-    Forth pair::
-
-        (2, 2) -> (-2, -2)
-        (1, 1) -> (5, 5) -> (10, 0)
-
-
-    These linestrings contain colinear and overlapping sections, so
-    their distance is 0.
-
-    The input of above example is::
-
-        linestring1_offsets:  {0, 3, 5, 8}
-        linestring1_points_x: {0, 1, -1, 0, 0, 0, 2, -2, 2, -2}
-        linestring1_points_y: {1, 0, 0, 0, 1, 0, 2, 0, 2, -2}
-        linestring2_offsets:  {0, 4, 7, 9}
-        linestring2_points_x: {1, 2, 2, 3, 1, 1, 1, 2, 0, 1, 5, 10}
-        linestring2_points_y: {1, 1, 0, 0, 0, 1, 2, 0, 2, 1, 5, 0}
-
-        Result: {sqrt(2.0)/2, 1, 0, 0}
+    >>> from shapely.geometry import LineString, MultiLineString
+    >>> ls1 = cuspatial.GeoSeries([
+    ...     LineString([(0, 0), (1, 1)]),
+    ...     LineString([(1, 0), (2, 1)])
+    ... ])
+    >>> ls2 = cuspatial.GeoSeries([
+    ...     MultiLineString([
+    ...         LineString([(-1, 0), (-2, -1)]),
+    ...         LineString([(-2, -1), (-3, -2)])
+    ...     ]),
+    ...     MultiLineString([
+    ...         LineString([(0, -1), (0, -2), (0, -3)]),
+    ...         LineString([(0, -3), (-1, -3), (-2, -3)])
+    ...     ])
+    ... ])
+    >>> cuspatial.pairwise_linestring_distance(ls1, ls2)
+    0    1.000000
+    1    1.414214
+    dtype: float64
     """
-    xs1, ys1, xs2, ys2 = normalize_point_columns(
-        as_column(xs1), as_column(ys1), as_column(xs2), as_column(ys2)
-    )
-    offsets1 = as_column(offsets1, dtype="int32")
-    offsets2 = as_column(offsets2, dtype="int32")
+
+    if not len(multilinestrings1) == len(multilinestrings2):
+        raise ValueError(
+            "`multilinestrings1` and `multilinestrings2` must have the same "
+            "length"
+        )
+
+    if len(multilinestrings1) == 0:
+        return cudf.Series(dtype="float64")
+
     return Series._from_data(
         {
             None: cpp_pairwise_linestring_distance(
-                offsets1, xs1, ys1, offsets2, xs2, ys2
+                as_column(multilinestrings1.lines.part_offset),
+                as_column(multilinestrings1.lines.xy),
+                as_column(multilinestrings2.lines.part_offset),
+                as_column(multilinestrings2.lines.xy),
+                as_column(multilinestrings1.lines.geometry_offset),
+                as_column(multilinestrings2.lines.geometry_offset),
             )
         }
     )
@@ -328,25 +364,30 @@ def pairwise_point_linestring_distance(
             "Mixing point and multipoint geometries is not supported"
         )
 
-    points_xy = (
-        points.points.xy
-        if len(points.points.xy) > 0
-        else points.multipoints.xy
-    )
-    points_geometry_offset = (
-        None
-        if len(points.points.xy) > 0
-        else points.multipoints.geometry_offset._column
-    )
+    point_xy_col, points_geometry_offset = _flatten_point_series(points)
 
     return Series._from_data(
         {
             None: c_pairwise_point_linestring_distance(
-                points_xy._column,
-                linestrings.lines.part_offset._column,
+                point_xy_col,
+                as_column(linestrings.lines.part_offset),
                 linestrings.lines.xy._column,
                 points_geometry_offset,
-                linestrings.lines.geometry_offset._column,
+                as_column(linestrings.lines.geometry_offset),
             )
         }
+    )
+
+
+def _flatten_point_series(
+    points: GeoSeries,
+) -> Tuple[
+    cudf.core.column.column.ColumnBase, cudf.core.column.column.ColumnBase
+]:
+    """Given a geoseries of (multi)points, extract the offset and x/y column"""
+    if len(points.points.xy) > 0:
+        return points.points.xy._column, None
+    return (
+        points.multipoints.xy._column,
+        as_column(points.multipoints.geometry_offset),
     )

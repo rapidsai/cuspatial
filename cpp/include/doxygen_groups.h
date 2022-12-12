@@ -36,13 +36,14 @@
  * @}
  * @defgroup spatial_api Spatial APIs
  * @{
- *      @defgroup coordinate_transform Coordinate Transform
+ *      @defgroup projection Projections
  *      @{
- *          @brief APIs to transform coordinates
+ *          @brief APIs to project coordinates between coordinate reference systems.
  *
  *          This module contains APIs that transforms cartesian and geodesic coordinates.
+ *          @file projection.hpp
  *          @file coordinate_transform.hpp
-            @file coordinate_transform.cuh
+ *          @file sinusoidal_projection.cuh
  *      @}
  *      @defgroup distance Distance
  *      @{
@@ -63,10 +64,11 @@
  *      @{
  *          @brief APIs related to spatial relationship
  *
+            @file bounding_box.hpp
  *          @file point_in_polygon.hpp
  *          @file point_in_polygon.cuh
  *          @file polygon_bounding_box.hpp
- *          @file polyline_bounding_box.hpp
+ *          @file linestring_bounding_box.hpp
  *          @file spatial_window.hpp
  *      @}
  *      @defgroup nearest_points Nearest Points
@@ -110,7 +112,15 @@
  *          to create iterators from data in various format.
  *          @file iterator_factory.hpp
  *      @}
- * @}
+ *      @defgroup ranges Ranges
+ *      @{
+ *          @brief Non owning object of geometry arrays
+ *
+ *          Cuspatial header only APIs accepts ranges that are composed of flattened view of
+ *          offsets and coordinates. Various accessors are provided for flexible access to the data.
+ *          @file multipoint_range.cuh
+ *          @file multilinestring_range.cuh
+ *      @}
  * @defgroup io I/O
  * @{
  *      @brief APIs for spatial data I/O
