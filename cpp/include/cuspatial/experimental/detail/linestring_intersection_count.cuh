@@ -38,7 +38,7 @@ __global__ void count_intersection_and_overlaps_simple(MultiLinestringRange1 mul
                                                        OutputIt2 segment_count_it)
 {
   using T = typename MultiLinestringRange1::element_t;
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multilinestrings1.num_points();
+  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multilinestrings1.size();
        idx += gridDim.x * blockDim.x) {
     auto const part_idx = multilinestrings1.part_idx_from_point_idx(idx);
     if (!multilinestrings1.is_valid_segment_id(idx, part_idx)) continue;
