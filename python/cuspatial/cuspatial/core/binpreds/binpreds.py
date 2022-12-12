@@ -9,7 +9,6 @@ from cuspatial.core.binpreds.contains import contains_properly
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
-    contains_only_points,
     contains_only_polygons,
     has_same_geometry,
 )
@@ -92,7 +91,7 @@ class BinaryPredicate(ABC):
         `multilinestring`, `polygon`, and `multipolygon`. The ordering of
         `lhs` and `rhs` is important because the result of the binary
         operation is not symmetric. For example, `A.contains(B)` is not
-        necessarily the same as `B.within(A)`.
+        the same as `B.contains(A)`.
 
         Parameters
         ----------
@@ -133,9 +132,6 @@ class ContainsProperlyBinpred(BinaryPredicate):
     def preprocess(self, lhs, rhs):
         """Preprocess the input GeoSeries to ensure that they are of the
         correct type for the operation."""
-        # Type determines discrete math recombination outcome
-        if contains_only_points(lhs) and contains_only_points(rhs):
-            return (lhs, rhs, rhs.points.point_indices())
         # RHS conditioning:
         point_indices = None
         # point in polygon
@@ -153,7 +149,8 @@ class ContainsProperlyBinpred(BinaryPredicate):
             geom = rhs.points
         xy_points = geom.xy
 
-        # Arrange into shape for calling pip, intersection, or equals
+        # Arrange into shape for calling point-in-polygon, intersection, or
+        # equals
         point_indices = geom.point_indices()
         from cuspatial.core.geoseries import GeoSeries
 
