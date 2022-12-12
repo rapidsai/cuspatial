@@ -79,7 +79,8 @@ void find_point_on_segments(MultiPointRange multipoints,
                             rmm::cuda_stream_view stream)
 {
   using index_t = typename MultiPointRange::index_t;
-  CUSPATIAL_EXPECTS(multipoints.size() == segments.size(),
+
+  CUSPATIAL_EXPECTS(multipoints.size() == segment_offsets.size() - 1,
                     "Input should contain the same number of pairs.");
 
   if (segments.size() == 0) return;
