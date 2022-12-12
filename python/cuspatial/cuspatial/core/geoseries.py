@@ -691,6 +691,48 @@ class GeoSeries(cudf.Series):
     ):
         return self.iloc[gather_map]
 
+    def reset_index(self, drop=False, inplace=False, name=None):
+        """
+        Reset the index of the GeoSeries.
+
+        Parameters
+        ----------
+        drop : bool, default False
+            If drop is False, create a new dataframe with the original
+            index as a column. If drop is True, the original index is
+            dropped.
+        name : object, optional
+            The name to use for the column containing the original
+            Series values.
+
+        Returns
+        -------
+        GeoSeries
+            GeoSeries with reset index.
+
+        Examples
+        --------
+        >>> points = gpd.GeoSeries([
+            Point((-8, -8)),
+            Point((-2, -2)),
+        ], index=[1, 0])
+        >>> print(points.reset_index())
+
+        0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        dtype: geometry
+        """
+
+        result = self.copy(deep=True)
+        if not drop:
+            from cuspatial.core.geodataframe import GeoDataFrame
+
+            result = GeoDataFrame(
+                {"index": result.index, name if name else 0: result}
+            )
+        result.index = cudf.core.index.RangeIndex(len(self))
+        return result
+
     def contains_properly(self, other, align=True):
         """Compute from a GeoSeries of points and a GeoSeries of polygons which
         points are properly contained within the corresponding polygon. Polygon
@@ -768,6 +810,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input.
         """
+
         if not contains_only_polygons(self):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
