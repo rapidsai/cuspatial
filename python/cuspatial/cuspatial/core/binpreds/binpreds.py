@@ -153,7 +153,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
             geom = rhs.points
         xy_points = geom.xy
 
-        # Arrange into shape for calling pip, intersection, or equals
+        # Arrange into shape for calling point-in-polygon, intersection, or equals
         point_indices = geom.point_indices()
         from cuspatial.core.geoseries import GeoSeries
 
