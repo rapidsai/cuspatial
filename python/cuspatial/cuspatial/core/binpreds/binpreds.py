@@ -9,7 +9,6 @@ from cuspatial.core.binpreds.contains import contains_properly
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
-    contains_only_points,
     contains_only_polygons,
     has_same_geometry,
 )
@@ -133,10 +132,6 @@ class ContainsProperlyBinpred(BinaryPredicate):
     def preprocess(self, lhs, rhs):
         """Preprocess the input GeoSeries to ensure that they are of the
         correct type for the operation."""
-        # Preprocessing will shortcut the operation if the input is
-        # both lhs and rhs of type Point.
-        if contains_only_points(lhs) and contains_only_points(rhs):
-            return (lhs, rhs, rhs.points.point_indices())
         # RHS conditioning:
         point_indices = None
         # point in polygon
