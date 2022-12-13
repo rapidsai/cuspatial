@@ -54,11 +54,14 @@ TYPED_TEST(LinestringBoundingBoxTest, test_one)
 {
   using T = TypeParam;
 
-  auto offsets  = make_device_vector<int32_t>({0});
+  // GeoArrow: Final offset points to the end of the data. The number of offsets is number of
+  // geometries / parts plus one.
+  auto offsets  = make_device_vector<int32_t>({0, 4});
   auto vertices = make_device_vector<vec_2d<T>>(
     {{2.488450, 5.856625}, {1.333584, 5.008840}, {3.460720, 4.586599}, {2.488450, 5.856625}});
 
-  auto bboxes = rmm::device_vector<cuspatial::box<T>>(offsets.size());
+  // GeoArrow: Number of linestrings is number of offsets minus one.
+  auto bboxes = rmm::device_vector<cuspatial::box<T>>(offsets.size() - 1);
 
   auto bboxes_end = cuspatial::linestring_bounding_boxes(
     offsets.begin(), offsets.end(), vertices.begin(), vertices.end(), bboxes.begin());
@@ -75,7 +78,9 @@ TYPED_TEST(LinestringBoundingBoxTest, test_small)
 {
   using T = TypeParam;
 
-  auto offsets  = make_device_vector<int32_t>({0, 4, 9, 13});
+  // GeoArrow: Final offset points to the end of the data. The number of offsets is number of
+  // geometries / parts plus one.
+  auto offsets  = make_device_vector<int32_t>({0, 4, 9, 13, 17});
   auto vertices = make_device_vector<vec_2d<T>>({// 1
                                                  {2.488450, 5.856625},
                                                  {1.333584, 5.008840},
@@ -98,7 +103,8 @@ TYPED_TEST(LinestringBoundingBoxTest, test_small)
                                                  {2.415080, 2.896937},
                                                  {3.208660, 3.745936}});
 
-  auto bboxes = rmm::device_vector<cuspatial::box<T>>(offsets.size());
+  // GeoArrow: Number of linestrings is number of offsets minus one.
+  auto bboxes = rmm::device_vector<cuspatial::box<T>>(offsets.size() - 1);
 
   auto bboxes_end = cuspatial::linestring_bounding_boxes(
     offsets.begin(), offsets.end(), vertices.begin(), vertices.end(), bboxes.begin());

@@ -49,6 +49,13 @@ namespace cuspatial {
  * @param expansion_radius Optional radius to expand each vertex of the output bounding boxes.
  * @param stream the CUDA stream on which to perform computations and allocate memory.
  *
+ * @pre For compatibility with GeoArrow, the number of polygon offsets
+ * `std::distance(polygon_offsets_first, polygon_offsets_last)` should be one more than the number
+ * of polygons. The number of ring offsets `std::distance(polygon_ring_offsets_first,
+ * polygon_ring_offsets_last)` should be one more than the number of total rings. The
+ * final offset in each range is not used by this function, but the number of offsets is used.
+ *
+ *
  * @return An iterator to the end of the range of output bounding boxes.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator

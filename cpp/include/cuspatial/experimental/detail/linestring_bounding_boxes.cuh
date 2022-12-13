@@ -51,7 +51,8 @@ BoundingBoxIterator linestring_bounding_boxes(LinestringOffsetIterator linestrin
   static_assert(cuspatial::is_integral<iterator_value_type<LinestringOffsetIterator>>(),
                 "Offset iterators must have integral value type.");
 
-  auto const num_linestrings = std::distance(linestring_offsets_first, linestring_offsets_last);
+  // GeoArrow: Number of linestrings is number of offsets minus one.
+  auto const num_linestrings = std::distance(linestring_offsets_first, linestring_offsets_last) - 1;
   auto const num_vertices    = std::distance(linestring_vertices_first, linestring_vertices_last);
 
   if (num_linestrings == 0 || num_vertices == 0) { return bounding_boxes_first; }

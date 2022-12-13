@@ -55,22 +55,21 @@ BoundingBoxIterator polygon_bounding_boxes(PolygonOffsetIterator polygon_offsets
                                        iterator_value_type<RingOffsetIterator>>(),
                 "OffsetIterators must have integral value type.");
 
-  auto const num_polys = std::distance(polygon_offsets_first, polygon_offsets_last);
-  auto const num_rings = std::distance(polygon_ring_offsets_first, polygon_ring_offsets_last);
-  auto const num_poly_vertices = std::distance(polygon_vertices_first, polygon_vertices_last);
+  auto const num_polys = std::distance(polygon_offsets_first, polygon_offsets_last) - 1;
+  auto const num_rings = std::distance(polygon_ring_offsets_first, polygon_ring_offsets_last) - 1;
+  auto const num_vertices = std::distance(polygon_vertices_first, polygon_vertices_last);
 
   CUSPATIAL_EXPECTS(num_rings >= num_polys, "Each polygon must have at least one ring");
 
-  CUSPATIAL_EXPECTS(num_poly_vertices >= num_polys * 3,
-                    "Each ring must have at least three vertices");
+  CUSPATIAL_EXPECTS(num_vertices >= num_polys * 3, "Each ring must have at least three vertices");
 
-  if (num_polys == 0 || num_rings == 0 || num_poly_vertices == 0) { return bounding_boxes_first; }
+  if (num_polys == 0 || num_rings == 0 || num_vertices == 0) { return bounding_boxes_first; }
 
   auto vertex_ids_iter = make_geometry_id_iterator<IndexT>(
     polygon_offsets_first, polygon_offsets_last, polygon_ring_offsets_first);
 
   return point_bounding_boxes(vertex_ids_iter,
-                              vertex_ids_iter + num_poly_vertices,
+                              vertex_ids_iter + num_vertices,
                               polygon_vertices_first,
                               bounding_boxes_first,
                               expansion_radius,

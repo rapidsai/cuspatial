@@ -82,16 +82,19 @@ struct trajectory_test_data {
       rmm::exec_policy(), sizes.begin(), sizes.end(), size_rand_functor(gen, size_rand));
 
     // offset to each trajectory
-    offsets.resize(num_trajectories);
+    // GeoArrow: offsets size is one more than number of points. Last offset points past the end of
+    // the data array
+    offsets.resize(num_trajectories + 1);
     thrust::exclusive_scan(rmm::exec_policy(), sizes.begin(), sizes.end(), offsets.begin(), 0);
-    auto total_points = sizes[num_trajectories - 1] + offsets[num_trajectories - 1];
+    auto total_points         = sizes[num_trajectories - 1] + offsets[num_trajectories - 1];
+    offsets[num_trajectories] = total_points;
 
     ids.resize(total_points);
-    ids_sorted.resize(total_points);
+    ids_sorted.resize(ids.size());
     times.resize(total_points);
-    times_sorted.resize(total_points);
+    times_sorted.resize(times.size());
     points.resize(total_points);
-    points_sorted.resize(total_points);
+    points_sorted.resize(points.size());
 
     using namespace std::chrono_literals;
 
@@ -303,11 +306,11 @@ struct trajectory_test_data {
                       distance_per_step.begin() + 1,
                       distance_functor{});
 
-    rmm::device_vector<Rep> durations_tmp(offsets.size());
-    rmm::device_vector<T> distances_tmp(offsets.size());
+    rmm::device_vector<Rep> durations_tmp(num_trajectories);
+    rmm::device_vector<T> distances_tmp(num_trajectories);
 
-    rmm::device_vector<T> distances(offsets.size());
-    rmm::device_vector<T> speeds(offsets.size());
+    rmm::device_vector<T> distances(num_trajectories);
+    rmm::device_vector<T> speeds(num_trajectories);
 
     auto duration_distance_and_speed = thrust::make_zip_iterator(
       durations_tmp.begin(), distances_tmp.begin(), distances.begin(), speeds.begin());
