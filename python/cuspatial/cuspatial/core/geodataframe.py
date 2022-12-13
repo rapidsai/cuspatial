@@ -205,19 +205,40 @@ class GeoDataFrame(cudf.DataFrame):
     def reset_index(
         self, level=None, drop=False, inplace=False, col_level=0, col_fill=""
     ):
-        """
-        Reset the index to the default integer index.
-        """
+        # Split geometry and non-geometry columns
         geo_data, cudf_data = self._split_out_geometry_columns()
+
+        # Reset cudf column
         reindexed = cudf_data.reset_index(
             level, drop, inplace, col_level, col_fill
         )
+
+        # Reset GeoColumns
+        recombiner = self.copy(deep=False)
+        recombiner.index = cudf.RangeIndex(len(recombiner))
         if reindexed:
+            # Not a multi-index, and the index was not dropped.
             if "index" in reindexed.columns:
-                self.insert(loc=0, name="index", value=reindexed["index"])
+                recombiner.insert(
+                    loc=0, name="index", value=reindexed["index"]
+                )
+            # If the index is a MultiIndex, we need to insert the
+            # individual levels into the GeoDataFrame.
+            elif "level" in reindexed.columns[0]:
+                levels = [
+                    "level_" + str(n)
+                    for n in range(len(cudf_data.index.levels))
+                ]
+                [
+                    recombiner.insert(loc=n, name=name, value=reindexed[name])
+                    for n, name in enumerate(levels)
+                ]
+                recombiner.index = reindexed.index
+            # Reset the index of the GeoDataFrame to match the
+            # cudf DataFrame and recombine.
             geo_data.index = reindexed.index
             result = GeoDataFrame._from_data(
-                self._recombine_columns(geo_data, reindexed)
+                recombiner._recombine_columns(geo_data, reindexed)
             )
             return result
         else:

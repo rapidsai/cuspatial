@@ -414,6 +414,7 @@ def test_from_dict_with_list():
 @pytest.mark.parametrize("col_level", [0, 1])
 @pytest.mark.parametrize("col_fill", ["", "some_lv"])
 def test_reset_index(drop, inplace, col_level, col_fill):
+    midx = pd.MultiIndex.from_tuples([("a", 1), ("a", 2), ("b", 1), ("b", 2)])
     df = gpd.GeoDataFrame(
         {
             "geometry": [
@@ -423,7 +424,8 @@ def test_reset_index(drop, inplace, col_level, col_fill):
                 Point(8, 9),
             ],
             "a": [*"abcd"],
-        }
+        },
+        index=midx,
     )
     expected = df.reset_index(None, drop, inplace, col_level, col_fill)
     got = cuspatial.from_geopandas(df).reset_index(
