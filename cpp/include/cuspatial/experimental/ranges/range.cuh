@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "thrust/detail/raw_reference_cast.h"
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/traits.hpp>
 
+#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/distance.h>
 
 namespace cuspatial {

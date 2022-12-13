@@ -78,7 +78,7 @@ struct FindAndCombineSegmentsTest : public BaseFixture {
     auto [_, merged_segments] = segments.release();
 
     expect_segment_equivalent(d_expected_segments, merged_segments);
-    expect_vector_equivalent(d_expected, flags);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, flags);
   }
 };
 

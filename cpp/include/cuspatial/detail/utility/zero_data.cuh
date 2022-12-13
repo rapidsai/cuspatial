@@ -31,7 +31,7 @@ namespace detail {
  * @param stream CUDA stream used for device memory operations and kernel launches
  */
 template <typename Iterator>
-void zero_data(Iterator begin, Iterator end, rmm::cuda_stream_view stream)
+void zero_data_async(Iterator begin, Iterator end, rmm::cuda_stream_view stream)
 {
   using value_type = iterator_value_type<Iterator>;
   auto dst         = thrust::raw_pointer_cast(&*begin);
