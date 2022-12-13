@@ -32,6 +32,7 @@ namespace cuspatial {
 namespace detail {
 
 /**
+ * @internal
  * @brief Temporary solution to allow structure binding in the range based for loop.
  * To be replaced once cuda::std::tuple is available in libcu++.
  */
@@ -52,6 +53,7 @@ struct to_indexed_pair_functor {
 };
 
 /**
+ * @internal
  * @brief An "enumerated range" is a range that iterate on the element, along with the indices.
  *
  * @tparam Iterator the type of the iterator to the range.
