@@ -782,7 +782,7 @@ class GeoSeries(cudf.Series):
 
     def equals(self, other, align=True):
         """Compute if a GeoSeries of features A is equal to a GeoSeries of
-        features B. Features are equal if their coordinates are equal.
+        features B. Features are equal if their vertices are equal.
 
         An object is equal to other if its set-theoretic boundary, interior,
         and exterior coincide with those of the other object.
