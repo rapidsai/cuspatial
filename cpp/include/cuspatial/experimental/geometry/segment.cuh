@@ -21,21 +21,37 @@
 
 namespace cuspatial {
 
-template <typename T>
-class segment {
+/**
+ * @addtogroup types
+ * @{
+ */
+
+/**
+ * @brief A generic segment type.
+ *
+ * @tparam T the base type for the coordinates
+ * @tparam Vertex the vector type to use for vertices, vec_2d<T> by default
+ */
+
+template <typename T, typename Vertex = cuspatial::vec_2d<T>>
+class alignas(sizeof(Vertex)) segment {
  public:
   using value_type = T;
-  vec_2d<T> first;
-  vec_2d<T> second;
+  Vertex v1;
+  Vertex v2;
 
   /// Return a copy of segment, translated by `v`.
-  segment<T> CUSPATIAL_HOST_DEVICE translate(vec_2d<T> const& v) const
+  segment<T> CUSPATIAL_HOST_DEVICE translate(Vertex const& v) const
   {
-    return segment<T>{first + v, second + v};
+    return segment<T>{v1 + v, v2 + v};
   }
 
   /// Return the geometric center of segment.
-  vec_2d<T> CUSPATIAL_HOST_DEVICE center() const { return midpoint(first, second); }
+  Vertex CUSPATIAL_HOST_DEVICE center() const { return midpoint(v1, v2); }
 };
+
+// deduction guide, enables CTAD
+template <typename T>
+segment(vec_2d<T> a, vec_2d<T> b) -> segment<T, vec_2d<T>>;
 
 }  // namespace cuspatial
