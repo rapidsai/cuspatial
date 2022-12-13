@@ -196,6 +196,12 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, T a
   }
 }
 
+#define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs, ...)              \
+  do {                                                                  \
+    SCOPED_TRACE(" <--  line of failure\n");                            \
+    cuspatial::test::expect_vector_equivalent(lhs, rhs, ##__VA_ARGS__); \
+  } while (0)
+
 template <typename SegmentVector, typename T = typename SegmentVector::value_type::value_type>
 std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_segment_vector(
   SegmentVector const& segments)
@@ -219,12 +225,6 @@ void expect_segment_equivalent(SegmentVector1 expected, SegmentVector2 got)
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_first, got_first);
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_second, got_second);
 }
-
-#define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs, ...)              \
-  do {                                                                  \
-    SCOPED_TRACE(" <--  line of failure\n");                            \
-    cuspatial::test::expect_vector_equivalent(lhs, rhs, ##__VA_ARGS__); \
-  } while (0)
 
 #define RUN_TEST(FUNC, ...)                  \
   do {                                       \
