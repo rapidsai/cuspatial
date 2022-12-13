@@ -34,17 +34,9 @@ namespace cuspatial {
 template <typename T, typename Vertex = cuspatial::vec_2d<T>>
 class alignas(sizeof(Vertex)) box {
  public:
+  using value_type = T;
   Vertex v1;
   Vertex v2;
-
- private:
-  /**
-   * @brief Compare two bounding boxes for equality.
-   */
-  friend CUSPATIAL_HOST_DEVICE bool operator==(box<T> const& lhs, box<T> const& rhs)
-  {
-    return (lhs.v1 == rhs.v1);
-  }
 };
 
 template <typename T>

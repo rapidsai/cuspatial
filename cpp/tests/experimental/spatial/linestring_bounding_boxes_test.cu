@@ -68,7 +68,7 @@ TYPED_TEST(LinestringBoundingBoxTest, test_one)
   auto bboxes_expected =
     make_device_vector<cuspatial::box<T>>({{{1.333584, 4.586599}, {3.460720, 5.856625}}});
 
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(bboxes, bboxes_expected);
+  cuspatial::test::expect_vec_2d_pair_equivalent(bboxes, bboxes_expected);
 }
 
 TYPED_TEST(LinestringBoundingBoxTest, test_small)
@@ -111,5 +111,5 @@ TYPED_TEST(LinestringBoundingBoxTest, test_small)
      {{5.5737199999999998, 0.086693000000000006}, {6.7035340000000003, 1.235638}},
      {{1.0348919999999999, 2.8969369999999999}, {3.2086600000000001, 4.5415289999999997}}});
 
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(bboxes, bboxes);
+  cuspatial::test::expect_vec_2d_pair_equivalent(bboxes, bboxes_expected);
 }

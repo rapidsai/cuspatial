@@ -15,6 +15,7 @@
  */
 
 #include "../trajectory/trajectory_test_utils.cuh"
+#include "cuspatial_test/vector_equality.hpp"
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/bounding_box.cuh>
@@ -51,7 +52,7 @@ struct PointBoundingBoxesTest : public ::testing::Test {
 
     EXPECT_EQ(std::distance(bounding_boxes.begin(), boxes_end), data.num_trajectories);
 
-    EXPECT_EQ(bounding_boxes, data.bounding_boxes());
+    cuspatial::test::expect_vec_2d_pair_equivalent(bounding_boxes, data.bounding_boxes());
   }
 };
 

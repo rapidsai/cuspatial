@@ -196,24 +196,28 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, T a
   }
 }
 
-template <typename SegmentVector, typename T = typename SegmentVector::value_type::value_type>
-std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_segment_vector(
-  SegmentVector const& segments)
+// unpack a `device_vector of structs comprising two `vec_2d`s each into two vectors of `vec_2d`.
+// Works, e.g., with `cuspatial::box` or `cuspatial::segment`.
+template <typename Pair, typename T = typename Pair::value_type>
+std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_vec2d_pair_vector(
+  rmm::device_vector<Pair> const& pairs)
 {
-  rmm::device_vector<vec_2d<T>> first(segments.size()), second(segments.size());
+  auto first         = rmm::device_vector<vec_2d<T>>(pairs.size());
+  auto second        = rmm::device_vector<vec_2d<T>>(pairs.size());
   auto zipped_output = thrust::make_zip_iterator(first.begin(), second.begin());
-  thrust::transform(
-    segments.begin(), segments.end(), zipped_output, [] __device__(segment<T> const& segment) {
-      return thrust::make_tuple(segment.first, segment.second);
-    });
+
+  thrust::transform(pairs.begin(), pairs.end(), zipped_output, [] __device__(Pair const& pair) {
+    auto [a, b] = pair;
+    return thrust::make_tuple(a, b);
+  });
   return {std::move(first), std::move(second)};
 }
 
-template <typename SegmentVector1, typename SegmentVector2>
-void expect_segment_equivalent(SegmentVector1 expected, SegmentVector2 got)
+template <typename PairVector1, typename PairVector2>
+void expect_vec_2d_pair_equivalent(PairVector1 expected, PairVector2 got)
 {
-  auto [expected_first, expected_second] = unpack_segment_vector(expected);
-  auto [got_first, got_second]           = unpack_segment_vector(got);
+  auto [expected_first, expected_second] = unpack_vec2d_pair_vector(expected);
+  auto [got_first, got_second]           = unpack_vec2d_pair_vector(got);
   expect_vector_equivalent(expected_first, got_first);
   expect_vector_equivalent(expected_second, got_second);
 }
