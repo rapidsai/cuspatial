@@ -78,7 +78,7 @@ struct FindAndCombineSegmentsTest : public BaseFixture {
     auto [_, merged_segments] = segments.release();
 
     expect_segment_equivalent(d_expected_segments, merged_segments);
-    expect_vector_equivalent(d_expected, flags);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, flags);
   }
 };
 
@@ -96,7 +96,7 @@ TYPED_TEST(FindAndCombineSegmentsTest, Simple1)
     {0, 3},
     {S{P{0.0, 0.0}, P{0.0, 0.5}}, S{P{0.0, 0.25}, P{0.0, 0.75}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
 
-  RUN_TEST(
+  CUSPATIAL_RUN_TEST(
     this->run_single_test,
     segments,
     {0, 1, 1},
@@ -114,7 +114,7 @@ TYPED_TEST(FindAndCombineSegmentsTest, Simple2)
     {0, 3},
     {S{P{0.0, 0.0}, P{0.5, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
 
-  RUN_TEST(
+  CUSPATIAL_RUN_TEST(
     this->run_single_test,
     segments,
     {0, 1, 1},
@@ -131,7 +131,7 @@ TYPED_TEST(FindAndCombineSegmentsTest, Simple3)
     {0, 3},
     {S{P{0.0, 0.0}, P{0.5, 0.5}}, S{P{0.25, 0.25}, P{0.75, 0.75}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
 
-  RUN_TEST(
+  CUSPATIAL_RUN_TEST(
     this->run_single_test,
     segments,
     {0, 1, 1},
@@ -148,10 +148,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, Touching1)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{0.0, 0.5}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
 
-  RUN_TEST(this->run_single_test,
-           segments,
-           {0, 1},
-           {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
+  CUSPATIAL_RUN_TEST(this->run_single_test,
+                     segments,
+                     {0, 1},
+                     {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.5}, P{0.0, 1.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, Touching2)
@@ -164,10 +164,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, Touching2)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{0.5, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
 
-  RUN_TEST(this->run_single_test,
-           segments,
-           {0, 1},
-           {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
+  CUSPATIAL_RUN_TEST(this->run_single_test,
+                     segments,
+                     {0, 1},
+                     {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.5, 0.0}, P{1.0, 0.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, Touching3)
@@ -180,10 +180,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, Touching3)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{0.5, 0.5}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
 
-  RUN_TEST(this->run_single_test,
-           segments,
-           {0, 1},
-           {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
+  CUSPATIAL_RUN_TEST(this->run_single_test,
+                     segments,
+                     {0, 1},
+                     {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.5, 0.5}, P{1.0, 1.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, contains1)
@@ -196,10 +196,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, contains1)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.25, 0.25}, P{0.75, 0.75}}});
 
-  RUN_TEST(this->run_single_test,
-           segments,
-           {0, 1},
-           {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.25, 0.25}, P{0.75, 0.75}}});
+  CUSPATIAL_RUN_TEST(this->run_single_test,
+                     segments,
+                     {0, 1},
+                     {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.25, 0.25}, P{0.75, 0.75}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, contains2)
@@ -212,10 +212,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, contains2)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.25}, P{0.0, 0.75}}});
 
-  RUN_TEST(this->run_single_test,
-           segments,
-           {0, 1},
-           {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.25}, P{0.0, 0.75}}});
+  CUSPATIAL_RUN_TEST(this->run_single_test,
+                     segments,
+                     {0, 1},
+                     {S{P{0.0, 0.0}, P{0.0, 1.0}}, S{P{0.0, 0.25}, P{0.0, 0.75}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, contains3)
@@ -228,10 +228,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, contains3)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}});
 
-  RUN_TEST(this->run_single_test,
-           segments,
-           {0, 1},
-           {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}});
+  CUSPATIAL_RUN_TEST(this->run_single_test,
+                     segments,
+                     {0, 1},
+                     {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.25, 0.0}, P{0.75, 0.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, nooverlap1)
@@ -244,10 +244,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, nooverlap1)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.0, 1.0}, P{0.0, 2.0}}});
 
-  RUN_TEST(this->run_single_test,
-           segments,
-           {0, 0},
-           {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.0, 1.0}, P{0.0, 2.0}}});
+  CUSPATIAL_RUN_TEST(this->run_single_test,
+                     segments,
+                     {0, 0},
+                     {S{P{0.0, 0.0}, P{1.0, 0.0}}, S{P{0.0, 1.0}, P{0.0, 2.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, nooverlap2)
@@ -260,10 +260,10 @@ TYPED_TEST(FindAndCombineSegmentsTest, nooverlap2)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{2.0, 2.0}, P{3.0, 3.0}}});
 
-  RUN_TEST(this->run_single_test,
-           segments,
-           {0, 0},
-           {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{2.0, 2.0}, P{3.0, 3.0}}});
+  CUSPATIAL_RUN_TEST(this->run_single_test,
+                     segments,
+                     {0, 0},
+                     {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{2.0, 2.0}, P{3.0, 3.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, nooverlap3)
@@ -276,8 +276,8 @@ TYPED_TEST(FindAndCombineSegmentsTest, nooverlap3)
   auto segments = make_segment_array<index_t, T>(
     {0, 2}, {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
 
-  RUN_TEST(this->run_single_test,
-           segments,
-           {0, 0},
-           {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
+  CUSPATIAL_RUN_TEST(this->run_single_test,
+                     segments,
+                     {0, 0},
+                     {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
 }

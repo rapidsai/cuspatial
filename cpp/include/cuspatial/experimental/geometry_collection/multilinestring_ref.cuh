@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 #pragma once
+
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
 
 namespace cuspatial {
 
@@ -50,6 +52,13 @@ class multilinestring_ref {
   CUSPATIAL_HOST_DEVICE auto begin() const { return part_begin(); }
   /// Return iterator to one past the last linestring of the multilinestring.
   CUSPATIAL_HOST_DEVICE auto end() const { return part_end(); }
+
+  /// Return an enumerated range to the linestrings.
+  CUSPATIAL_HOST_DEVICE auto enumerate() const { return detail::enumerate_range{begin(), end()}; }
+
+  /// Return `linestring_idx`th linestring in the multilinestring.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto operator[](IndexType linestring_idx) const;
 
  protected:
   PartIterator _part_begin;
