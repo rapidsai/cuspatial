@@ -878,7 +878,7 @@ class GeoSeries(cudf.Series):
             return IntersectsBinpred(self, other, align)()
 
     def within(self, other, align=True):
-        """An object is said to be within other if at least one of its points
+        """An object is said to be within another if at least one of its points
         is located in the interior and no points are located in the exterior
         of the other.
 
