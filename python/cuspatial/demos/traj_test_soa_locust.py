@@ -54,7 +54,7 @@ print(out2)
 
 y, m, d, hh, mm, ss, wd, yd, ms, pid = get_ts_struct(ts_0)
 
-xys = cuspatial.lonlat_to_cartesian(
+xys = cuspatial.sinusoidal_projection(
     cam_lon, cam_lat, lonlats["lon"], lonlats["lat"]
 )
 num_traj, trajectories = cuspatial.derive(xys["x"], xys["y"], ids, ts)

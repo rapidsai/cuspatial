@@ -16,6 +16,7 @@
 
 #include <cuspatial/experimental/ranges/multilinestring_range.cuh>
 #include <cuspatial/experimental/ranges/multipoint_range.cuh>
+#include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
