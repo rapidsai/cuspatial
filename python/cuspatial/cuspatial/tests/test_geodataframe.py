@@ -326,7 +326,7 @@ def test_memory_usage(gs):
     )
     gpu_dataframe = cuspatial.from_geopandas(host_dataframe)
     # The df size is 8kb of cudf rows and 217kb of the geometry column
-    assert gpu_dataframe.memory_usage().sum() == 225173
+    assert gpu_dataframe.memory_usage().sum() == 224945
 
 
 def test_from_dict():
