@@ -39,6 +39,7 @@ class alignas(sizeof(Vertex)) box {
   Vertex v2;
 };
 
+// deduction guide, enables CTAD
 template <typename T>
 box(vec_2d<T> a, vec_2d<T> b) -> box<T, vec_2d<T>>;
 
