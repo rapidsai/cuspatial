@@ -407,3 +407,29 @@ def test_from_dict_with_list():
         gpd.GeoDataFrame(dict_with_lists),
         cuspatial.GeoDataFrame(dict_with_lists).to_geopandas(),
     )
+
+
+@pytest.mark.parametrize("drop", [False, True])
+@pytest.mark.parametrize("inplace", [False, True])
+@pytest.mark.parametrize("col_level", [0, 1])
+@pytest.mark.parametrize("col_fill", ["", "some_lv"])
+def test_reset_index(drop, inplace, col_level, col_fill):
+    df = gpd.GeoDataFrame(
+        {
+            "geometry": [
+                Point(0, 1),
+                Point(2, 3),
+                MultiPoint([(4, 5), (6, 7)]),
+                Point(8, 9),
+            ],
+            "a": [*"abcd"],
+        }
+    )
+    expected = df.reset_index(None, drop, inplace, col_level, col_fill)
+    got = cuspatial.from_geopandas(df).reset_index(
+        None, drop, inplace, col_level, col_fill
+    )
+    if expected is not None:
+        pd.testing.assert_frame_equal(expected, got.to_pandas())
+    else:
+        assert expected == got

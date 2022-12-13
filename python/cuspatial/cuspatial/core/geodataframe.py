@@ -202,6 +202,27 @@ class GeoDataFrame(cudf.DataFrame):
         # return
         return result
 
+    def reset_index(
+        self, level=None, drop=False, inplace=False, col_level=0, col_fill=""
+    ):
+        """
+        Reset the index to the default integer index.
+        """
+        geo_data, cudf_data = self._split_out_geometry_columns()
+        reindexed = cudf_data.reset_index(
+            level, drop, inplace, col_level, col_fill
+        )
+        if reindexed:
+            if "index" in reindexed.columns:
+                self.insert(loc=0, name="index", value=reindexed["index"])
+            geo_data.index = reindexed.index
+            result = GeoDataFrame._from_data(
+                self._recombine_columns(geo_data, reindexed)
+            )
+            return result
+        else:
+            return None
+
 
 class _GeoSeriesUtility:
     @classmethod
