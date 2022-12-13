@@ -34,10 +34,16 @@ template <typename MultiPointRange, typename OutputIt>
 void __global__ find_duplicate_points_kernel_simple(MultiPointRange multipoints,
                                                     OutputIt duplicate_flags)
 {
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multipoints.num_points();
+  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multipoints.size();
        idx += gridDim.x * blockDim.x) {
     auto multipoint    = multipoints[idx];
     auto global_offset = multipoints.offsets_begin()[idx];
+
+    // Zero-initialize duplicate_flags for all points in the current space
+    for (auto i = 0; i < multipoint.size(); ++i) {
+      duplicate_flags[i + global_offset] = 0;
+    }
+
     for (auto i = 0; i < multipoint.size() && duplicate_flags[i] != 1; ++i)
       for (auto j = i + 1; j < multipoint.size(); ++j) {
         if (multipoint[i] == multipoint[j]) duplicate_flags[j + global_offset] = 1;
@@ -58,9 +64,6 @@ void find_duplicate_points(MultiPointRange multipoints,
                            rmm::cuda_stream_view stream)
 {
   if (multipoints.size() == 0) return;
-
-  thrust::uninitialized_fill_n(
-    rmm::exec_policy(stream), duplicate_flags, multipoints.num_points(), 0);
 
   auto [threads_per_block, num_blocks] = grid_1d(multipoints.size());
   find_duplicate_points_kernel_simple<<<num_blocks, threads_per_block, 0, stream.value()>>>(
