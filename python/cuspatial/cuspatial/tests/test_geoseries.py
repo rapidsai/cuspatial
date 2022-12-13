@@ -596,6 +596,7 @@ def test_memory_usage_large():
     assert geometry.memory_usage() == 216793
 
 
+"""
 @pytest.mark.parametrize(
     "drop, name",
     [
@@ -605,15 +606,31 @@ def test_memory_usage_large():
         [True, "foo"],
     ],
 )
-def test_reset_index(drop, name):
+"""
+
+
+@pytest.mark.parametrize("level", [None, 0, 1])
+@pytest.mark.parametrize("drop", [False, True])
+@pytest.mark.parametrize("inplace", [False, True])
+@pytest.mark.parametrize("name", [None, "ser"])
+def test_reset_index(level, drop, name, inplace):
+    if not drop and inplace:
+        pytest.skip(
+            "For exception checks, see "
+            "test_reset_index_dup_level_name_exceptions"
+        )
+
+    midx = pd.MultiIndex.from_tuples([("a", 1), ("a", 2), ("b", 1), ("b", 2)])
     gpdpdf = gpd.GeoSeries(
-        [Point(0, 0), Point(0, 1), Point(2, 2), Point(3, 3)],
-        index=["a", "b", "c", "d"],
+        [Point(0, 0), Point(0, 1), Point(2, 2), Point(3, 3)], index=midx
     )
     pdf = cuspatial.from_geopandas(gpdpdf)
-    expected = gpdpdf.reset_index(drop=drop, name=name)
-    got = pdf.reset_index(drop=drop, name=name)
-    if drop:
-        pd.testing.assert_series_equal(expected, got.to_pandas())
+    expected = gpdpdf.reset_index(level, drop, name, inplace)
+    got = pdf.reset_index(level, drop, name, inplace)
+    if expected is not None:
+        if drop:
+            pd.testing.assert_series_equal(expected, got.to_pandas())
+        else:
+            pd.testing.assert_frame_equal(expected, got.to_pandas())
     else:
-        pd.testing.assert_frame_equal(expected, got.to_pandas())
+        assert got == expected

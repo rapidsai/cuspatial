@@ -691,7 +691,14 @@ class GeoSeries(cudf.Series):
     ):
         return self.iloc[gather_map]
 
-    def reset_index(self, drop=False, inplace=False, name=None):
+    # def reset_index(self, drop=False, inplace=False, name=None):
+    def reset_index(
+        self,
+        level=None,
+        drop=False,
+        name=None,
+        inplace=False,
+    ):
         """
         Reset the index of the GeoSeries.
 
@@ -722,16 +729,27 @@ class GeoSeries(cudf.Series):
         1    POINT (-2.00000 -2.00000)
         dtype: geometry
         """
+        geo_series = self.copy(deep=False)
 
-        result = self.copy(deep=True)
-        if not drop:
+        cudf_series = cudf.Series(
+            np.arange(len(geo_series.index)), index=geo_series.index
+        )
+        cudf_result = cudf_series.reset_index(level, drop, name, inplace)
+
+        if isinstance(cudf_result, cudf.Series):
+            geo_series.index = cudf_result.index
+            return geo_series
+        elif isinstance(cudf_result, cudf.DataFrame):
             from cuspatial.core.geodataframe import GeoDataFrame
 
-            result = GeoDataFrame(
-                {"index": result.index, name if name else 0: result}
-            )
-        result.index = cudf.core.index.RangeIndex(len(self))
-        return result
+            columns = {col: cudf_result[col] for col in cudf_result.columns}
+            geo_result = GeoDataFrame(columns)
+            geo_series.index = geo_result.index
+            if name:
+                geo_result[name] = geo_series
+            else:
+                geo_result[0] = geo_series
+            return geo_result
 
     def contains_properly(self, other, align=True):
         """Compute from a GeoSeries of points and a GeoSeries of polygons which
