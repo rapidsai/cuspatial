@@ -593,7 +593,7 @@ def test_memory_usage_large():
     )
     geometry = cuspatial.from_geopandas(host_dataframe)["geometry"]
     # the geometry column from naturalearth_lowres is 217kb of coordinates
-    assert geometry.memory_usage() == 217021
+    assert geometry.memory_usage() == 216793
 
 
 @pytest.mark.parametrize(
