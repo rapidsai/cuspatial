@@ -40,6 +40,11 @@ namespace cuspatial {
  * y_min - the minimum y-coordinate of each bounding box
  * x_max - the maximum x-coordinate of each bounding box
  * y_max - the maximum y-coordinate of each bounding box
+ *
+ * @pre For compatibility with GeoArrow, the size of @p poly_offsets should be one more than the
+ * number of polygons to process. The size of @p ring_offsets should be one more than the number of
+ * total rings. The final offset in each range is not used by this function, but the number of
+ * polygon offsets determines the output size.
  */
 std::unique_ptr<cudf::table> polygon_bounding_boxes(
   cudf::column_view const& poly_offsets,
