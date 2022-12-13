@@ -67,4 +67,12 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::point
   return _point_end;
 }
 
+template <typename PartIterator, typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::operator[](
+  IndexType i) const
+{
+  return *(part_begin() + i);
+}
+
 }  // namespace cuspatial

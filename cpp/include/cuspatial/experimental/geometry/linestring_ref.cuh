@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 #pragma once
+
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
 
 namespace cuspatial {
 
@@ -28,6 +30,7 @@ class linestring_ref {
  public:
   CUSPATIAL_HOST_DEVICE linestring_ref(VecIterator begin, VecIterator end);
 
+  /// Return the number of segments in the linestring
   CUSPATIAL_HOST_DEVICE auto num_segments() const;
 
   /// Return iterator to the first segment of the linestring
@@ -39,6 +42,13 @@ class linestring_ref {
   CUSPATIAL_HOST_DEVICE auto begin() const { return segment_begin(); }
   /// Return iterator to one past the last segment
   CUSPATIAL_HOST_DEVICE auto end() const { return segment_end(); }
+
+  /// Return an enumerated range to the segments.
+  CUSPATIAL_HOST_DEVICE auto enumerate() { return detail::enumerate_range{begin(), end()}; }
+
+  /// Return the `segment_idx`th segment in the linestring.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto segment(IndexType segment_idx) const;
 
  protected:
   VecIterator _point_begin;
