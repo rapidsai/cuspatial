@@ -122,12 +122,6 @@ ConfigureTest(UTILITY_TEST
 ConfigureTest(HAVERSINE_TEST_EXP
     experimental/spatial/haversine_test.cu)
 
-ConfigureTest(POLYGON_BOUNDING_BOXES_TEST_EXP
-    experimental/spatial/polygon_bounding_boxes_test.cu)
-
-ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST_EXP
-    experimental/spatial/linestring_bounding_boxes_test.cu)
-
 ConfigureTest(POINT_DISTANCE_TEST_EXP
     experimental/spatial/point_distance_test.cu)
 
@@ -165,6 +159,12 @@ ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP
 ConfigureTest(POINT_BOUNDING_BOXES_TEST_EXP
     experimental/spatial/point_bounding_boxes_test.cu)
 
+ConfigureTest(POLYGON_BOUNDING_BOXES_TEST_EXP
+    experimental/spatial/polygon_bounding_boxes_test.cu)
+
+ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST_EXP
+    experimental/spatial/linestring_bounding_boxes_test.cu)
+
 ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_EXP
     experimental/trajectory/trajectory_distances_and_speeds_test.cu)
 
@@ -175,4 +175,5 @@ ConfigureTest(OPERATOR_TEST_EXP
     experimental/operators/linestrings_test.cu)
 
 ConfigureTest(FIND_TEST_EXP
+    experimental/find/find_and_combine_segments_test.cu
     experimental/find/find_duplicate_points_test.cu)

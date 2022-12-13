@@ -16,26 +16,33 @@
 
 #pragma once
 
+#include "thrust/detail/raw_reference_cast.h"
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/traits.hpp>
+
+#include <thrust/distance.h>
 
 namespace cuspatial {
 
-template <typename T>
-class segment {
+template <typename IteratorType>
+class range {
  public:
-  using value_type = T;
-  vec_2d<T> first;
-  vec_2d<T> second;
+  using value_type = iterator_value_type<IteratorType>;
+  range(IteratorType begin, IteratorType end) : _begin(begin), _end(end) {}
 
-  /// Return a copy of segment, translated by `v`.
-  segment<T> CUSPATIAL_HOST_DEVICE translate(vec_2d<T> const& v) const
+  auto CUSPATIAL_HOST_DEVICE begin() { return _begin; }
+  auto CUSPATIAL_HOST_DEVICE end() { return _end; }
+  auto CUSPATIAL_HOST_DEVICE size() { return thrust::distance(_begin, _end); }
+
+  template <typename IndexType>
+  auto& CUSPATIAL_HOST_DEVICE operator[](IndexType i)
   {
-    return segment<T>{first + v, second + v};
+    return thrust::raw_reference_cast(_begin[i]);
   }
 
-  /// Return the geometric center of segment.
-  vec_2d<T> CUSPATIAL_HOST_DEVICE center() const { return midpoint(first, second); }
+ private:
+  IteratorType _begin;
+  IteratorType _end;
 };
 
 }  // namespace cuspatial
