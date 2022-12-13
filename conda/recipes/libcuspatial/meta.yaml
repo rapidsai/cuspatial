@@ -37,11 +37,12 @@ requirements:
     - ninja
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    - libcudf {{ minor_version }}.*
-    - librmm {{ minor_version }}.*
-    - libcusparse-dev=11.7.0.107 # This version corresponds to CUDA 11.5
     - cudatoolkit {{ cuda_version }}.*
     - gdal {{ gdal_version }}
+    - libcudf {{ minor_version }}.*
+    - libcusparse {{ libcusparse_version }}
+    - libcusparse-dev {{ libcusparse_version }}
+    - librmm {{ minor_version }}.*
 
 outputs:
   - name: libcuspatial
@@ -62,7 +63,8 @@ outputs:
         - cudatoolkit {{ cuda_spec }}
         - libcudf {{ minor_version }}.*
         - librmm {{ minor_version }}.*
-        - libcusparse=11.7.0.107 # This version corresponds to CUDA 11.5
+        - libcusparse-dev {{ libcusparse_version }}
+        - libcusparse {{ libcusparse_version }}
         - gdal {{ gdal_version }}
     test:
       commands:
