@@ -9,6 +9,7 @@ from cuspatial.core.binpreds.contains import contains_properly
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
+    contains_only_points,
     contains_only_polygons,
     has_same_geometry,
 )
@@ -51,7 +52,9 @@ class BinaryPredicate(ABC):
         should be implemented by subclasses.
 
         Postprocess converts the raw results of the binary operation into
-        the final result. This is where the discrete math rules are applied.
+        the final result. At this step the results for none, any, and all
+        are applied to the result of the equals, intersects, and
+        point-in-polygon operations.
 
         Parameters
         ----------
@@ -183,20 +186,24 @@ class ContainsProperlyBinpred(BinaryPredicate):
     def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the operation."""
+        # Map the point-in-polygon results to the original index.
         result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
         df_result = result
-        # Discrete math recombination
         if (
             contains_only_linestrings(self.rhs)
             or contains_only_polygons(self.rhs)
             or contains_only_multipoints(self.rhs)
         ):
-            # process for completed linestrings, polygons, and multipoints.
-            # Not necessary for points.
+            # Compute the set of results for each point-in-polygon operation.
+            # Group them by the original index, and sum the results. If the
+            # sum of points in the rhs feature is equal to the number of
+            # points found in the polygon, then the polygon contains the
+            # feature.
             df_result = (
                 result.groupby("idx").sum().sort_index()
                 == result.groupby("idx").count().sort_index()
             )
+        # Convert the result to a GeoSeries.
         point_result = cudf.Series(
             df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
         )

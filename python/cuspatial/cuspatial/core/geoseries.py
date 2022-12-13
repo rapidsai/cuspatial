@@ -784,6 +784,9 @@ class GeoSeries(cudf.Series):
         """Compute if a GeoSeries of features A is equal to a GeoSeries of
         features B. Features are equal if their coordinates are equal.
 
+        An object is equal to other if its set-theoretic boundary, interior,
+        and exterior coincide with those of the other object.
+
         Parameters
         ----------
         other
@@ -851,7 +854,10 @@ class GeoSeries(cudf.Series):
         return CoversBinpred(self, other, align)()
 
     def intersects(self, other, align=True):
-        """Compute the intersections of two GeoSeries.
+        """Compute whether two `GeoSeries` intersect.
+
+        Two objects are said to intersect if their boundaries or interiors
+        share any points in common.
 
         Parameters
         ----------
