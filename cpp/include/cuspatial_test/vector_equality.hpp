@@ -210,7 +210,7 @@ std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_s
 }
 
 template <typename SegmentVector1, typename SegmentVector2>
-void expect_segment_equivalent(SegmentVector1 expected, SegmentVector2 got)
+void expect_segment_equivalent(SegmentVector1 const& expected, SegmentVector2 const& got)
 {
   auto [expected_first, expected_second] = unpack_segment_vector(expected);
   auto [got_first, got_second]           = unpack_segment_vector(got);
@@ -224,7 +224,7 @@ void expect_segment_equivalent(SegmentVector1 expected, SegmentVector2 got)
     cuspatial::test::expect_vector_equivalent(lhs, rhs, ##__VA_ARGS__); \
   } while (0)
 
-#define RUN_TEST(FUNC, ...)                  \
+#define CUSPATIAL_RUN_TEST(FUNC, ...)        \
   do {                                       \
     SCOPED_TRACE(" <--  line of failure\n"); \
     FUNC(__VA_ARGS__);                       \
