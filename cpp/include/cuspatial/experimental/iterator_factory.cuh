@@ -61,7 +61,7 @@ struct vec_2d_to_tuple {
 
 /**
  * @internal
- * @brief Helper to convert a `bouinding_box` into a tuple of elements
+ * @brief Helper to convert a `box` into a tuple of elements
  */
 template <typename T, typename Box = box<T>>
 struct box_to_tuple {
