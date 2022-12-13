@@ -704,6 +704,9 @@ class GeoSeries(cudf.Series):
 
         Parameters
         ----------
+        level : int, str, tuple, or list, default None
+            Only remove the given levels from the index. Removes all levels
+            by default.
         drop : bool, default False
             If drop is False, create a new dataframe with the original
             index as a column. If drop is True, the original index is
@@ -711,6 +714,8 @@ class GeoSeries(cudf.Series):
         name : object, optional
             The name to use for the column containing the original
             Series values.
+        inplace: bool, default False
+            If True, the original GeoSeries is modified.
 
         Returns
         -------

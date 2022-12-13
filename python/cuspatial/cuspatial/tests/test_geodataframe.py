@@ -415,7 +415,7 @@ def test_from_dict_with_list():
 @pytest.mark.parametrize("col_fill", ["", "some_lv"])
 def test_reset_index(drop, inplace, col_level, col_fill):
     midx = pd.MultiIndex.from_tuples([("a", 1), ("a", 2), ("b", 1), ("b", 2)])
-    df = gpd.GeoDataFrame(
+    gpdf = gpd.GeoDataFrame(
         {
             "geometry": [
                 Point(0, 1),
@@ -427,11 +427,13 @@ def test_reset_index(drop, inplace, col_level, col_fill):
         },
         index=midx,
     )
-    expected = df.reset_index(None, drop, inplace, col_level, col_fill)
-    got = cuspatial.from_geopandas(df).reset_index(
-        None, drop, inplace, col_level, col_fill
-    )
+    gdf = cuspatial.from_geopandas(gpdf)
+    expected = gpdf.reset_index(None, drop, inplace, col_level, col_fill)
+    got = gdf.reset_index(None, drop, inplace, col_level, col_fill)
     if expected is not None:
+        if inplace:
+            expected = gpdf
+            got = gdf
         pd.testing.assert_frame_equal(expected, got.to_pandas())
     else:
         assert expected == got

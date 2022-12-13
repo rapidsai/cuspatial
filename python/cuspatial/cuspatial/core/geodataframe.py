@@ -205,6 +205,31 @@ class GeoDataFrame(cudf.DataFrame):
     def reset_index(
         self, level=None, drop=False, inplace=False, col_level=0, col_fill=""
     ):
+        """Reset the index, or a level of it.
+
+        Parameters
+        ----------
+        level : `int`, `str`, `tuple`, or `list`, default `None`
+            Only remove the given levels from the index. Removes all levels by
+            default.
+        drop : `bool`, default `False`
+            Do not try to insert index into dataframe columns. This resets the
+            index to the default integer index.
+        inplace : `bool`, default `False`
+            Modify the GeoDataFrame in place (do not create a new object).
+        col_level : `int` or `str`, default `0`
+            If the columns have multiple levels, determines which level the
+            labels are inserted into. By default it is inserted into the first
+            level.
+        col_fill : `object`, default `""`
+            If the columns have multiple levels, determines how the other
+            levels are named. If None then the index name is repeated.
+
+        Returns
+        -------
+        `GeoDataFrame`
+        """
+
         # Split geometry and non-geometry columns
         geo_data, cudf_data = self._split_out_geometry_columns()
 
