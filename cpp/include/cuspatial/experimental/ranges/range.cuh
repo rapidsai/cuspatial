@@ -19,10 +19,10 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/traits.hpp>
 
+#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/distance.h>
 
 namespace cuspatial {
-
 /**
  * @brief Abstract Data Type (ADT) for any containers representable with a start and end iterator.
  *
@@ -55,7 +55,7 @@ class range {
   template <typename IndexType>
   auto& CUSPATIAL_HOST_DEVICE operator[](IndexType i)
   {
-    return *(begin() + i);
+    return thrust::raw_reference_cast(_begin[i]);
   }
 
  private:
