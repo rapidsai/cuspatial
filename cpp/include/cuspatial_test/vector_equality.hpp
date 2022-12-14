@@ -196,14 +196,23 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, T a
   }
 }
 
+#define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs, ...)              \
+  do {                                                                  \
+    SCOPED_TRACE(" <--  line of failure\n");                            \
+    cuspatial::test::expect_vector_equivalent(lhs, rhs, ##__VA_ARGS__); \
+  } while (0)
+
 // unpack a `device_vector of structs comprising two `vec_2d`s each into two vectors of `vec_2d`.
 // Works, e.g., with `cuspatial::box` or `cuspatial::segment`.
-template <typename Pair, typename T = typename Pair::value_type>
+template <typename PairVector, typename T = typename PairVector::value_type::value_type>
 std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_vec2d_pair_vector(
-  rmm::device_vector<Pair> const& pairs)
+  PairVector const& pairs)
 {
-  auto first         = rmm::device_vector<vec_2d<T>>(pairs.size());
-  auto second        = rmm::device_vector<vec_2d<T>>(pairs.size());
+  using Pair = typename PairVector::value_type;
+
+  auto first  = rmm::device_vector<vec_2d<T>>(pairs.size());
+  auto second = rmm::device_vector<vec_2d<T>>(pairs.size());
+
   auto zipped_output = thrust::make_zip_iterator(first.begin(), second.begin());
 
   thrust::transform(pairs.begin(), pairs.end(), zipped_output, [] __device__(Pair const& pair) {
@@ -214,12 +223,12 @@ std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_v
 }
 
 template <typename PairVector1, typename PairVector2>
-void expect_vec_2d_pair_equivalent(PairVector1 expected, PairVector2 got)
+void expect_vec_2d_pair_equivalent(PairVector1 const& expected, PairVector2 const& got)
 {
   auto [expected_first, expected_second] = unpack_vec2d_pair_vector(expected);
   auto [got_first, got_second]           = unpack_vec2d_pair_vector(got);
-  expect_vector_equivalent(expected_first, got_first);
-  expect_vector_equivalent(expected_second, got_second);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_first, got_first);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_second, got_second);
 }
 
 #define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs, ...)              \
@@ -228,7 +237,7 @@ void expect_vec_2d_pair_equivalent(PairVector1 expected, PairVector2 got)
     cuspatial::test::expect_vector_equivalent(lhs, rhs, ##__VA_ARGS__); \
   } while (0)
 
-#define RUN_TEST(FUNC, ...)                  \
+#define CUSPATIAL_RUN_TEST(FUNC, ...)        \
   do {                                       \
     SCOPED_TRACE(" <--  line of failure\n"); \
     FUNC(__VA_ARGS__);                       \

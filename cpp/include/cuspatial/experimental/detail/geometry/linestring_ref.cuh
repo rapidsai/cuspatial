@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 #pragma once
+
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <thrust/iterator/zip_iterator.h>
@@ -33,7 +35,7 @@ struct to_segment_functor {
   to_segment_functor(VecIterator point_begin) : _point_begin(point_begin) {}
 
   CUSPATIAL_HOST_DEVICE
-  thrust::pair<vec_2d<element_t>, vec_2d<element_t>> operator()(difference_type i)
+  segment<element_t> operator()(difference_type i)
   {
     return {_point_begin[i], _point_begin[i + 1]};
   }
@@ -66,6 +68,13 @@ template <typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto linestring_ref<VecIterator>::segment_end() const
 {
   return segment_begin() + num_segments();
+}
+
+template <typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto linestring_ref<VecIterator>::segment(IndexType i) const
+{
+  return *(segment_begin() + i);
 }
 
 }  // namespace cuspatial
