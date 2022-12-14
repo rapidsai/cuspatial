@@ -140,22 +140,39 @@ struct id_ranges {
  * @tparam GeomType Type of geometry
  * @tparam index_t  Type of index
  */
-template <typename GeomType, typename index_t>
+template <typename GeomType, typename IndexType>
 struct linestring_intersection_intermediates {
   using geometry_t = GeomType;
+  using index_t    = IndexType;
 
   /// Offset array to geometries, temporary.
-  std::unique_ptr<rmm::device_uvector<index_t>> offsets;
+  std::unique_ptr<rmm::device_uvector<IndexType>> offsets;
   /// Array to store the resulting geometry, non-temporary.
   std::unique_ptr<rmm::device_uvector<GeomType>> geoms;
   /// Look-back ids for the resulting geometry, temporary.
-  std::unique_ptr<rmm::device_uvector<index_t>> lhs_linestring_ids;
+  std::unique_ptr<rmm::device_uvector<IndexType>> lhs_linestring_ids;
   /// Look-back ids for the resulting geometry, temporary.
-  std::unique_ptr<rmm::device_uvector<index_t>> lhs_segment_ids;
+  std::unique_ptr<rmm::device_uvector<IndexType>> lhs_segment_ids;
   /// Look-back ids for the resulting geometry, temporary.
-  std::unique_ptr<rmm::device_uvector<index_t>> rhs_linestring_ids;
+  std::unique_ptr<rmm::device_uvector<IndexType>> rhs_linestring_ids;
   /// Look-back ids for the resulting geometry, temporary.
-  std::unique_ptr<rmm::device_uvector<index_t>> rhs_segment_ids;
+  std::unique_ptr<rmm::device_uvector<IndexType>> rhs_segment_ids;
+
+  linestring_intersection_intermediates(
+    std::unique_ptr<rmm::device_uvector<index_t>> offsets,
+    std::unique_ptr<rmm::device_uvector<GeomType>> geoms,
+    std::unique_ptr<rmm::device_uvector<index_t>> lhs_linestring_ids,
+    std::unique_ptr<rmm::device_uvector<index_t>> lhs_segment_ids,
+    std::unique_ptr<rmm::device_uvector<index_t>> rhs_linestring_ids,
+    std::unique_ptr<rmm::device_uvector<index_t>> rhs_segment_ids)
+    : offsets(std::move(offsets)),
+      geoms(std::move(geoms)),
+      lhs_linestring_ids(std::move(lhs_linestring_ids)),
+      lhs_segment_ids(std::move(lhs_segment_ids)),
+      rhs_linestring_ids(std::move(rhs_linestring_ids)),
+      rhs_segment_ids(std::move(rhs_segment_ids))
+  {
+  }
 
   linestring_intersection_intermediates(
     std::unique_ptr<rmm::device_uvector<index_t>> offsets,
@@ -175,15 +192,15 @@ struct linestring_intersection_intermediates {
 
   linestring_intersection_intermediates(std::size_t num_pairs,
                                         std::size_t num_geoms,
-                                        rmm::device_uvector<index_t> const& num_geoms_per_pair,
+                                        rmm::device_uvector<IndexType> const& num_geoms_per_pair,
                                         rmm::cuda_stream_view stream,
                                         rmm::mr::device_memory_resource* mr)
-    : offsets(std::make_unique<rmm::device_uvector<index_t>>(num_pairs + 1, stream)),
+    : offsets(std::make_unique<rmm::device_uvector<IndexType>>(num_pairs + 1, stream)),
       geoms(std::make_unique<rmm::device_uvector<GeomType>>(num_geoms, stream, mr)),
-      lhs_linestring_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream)),
-      lhs_segment_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream)),
-      rhs_linestring_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream)),
-      rhs_segment_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream))
+      lhs_linestring_ids(std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream)),
+      lhs_segment_ids(std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream)),
+      rhs_linestring_ids(std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream)),
+      rhs_segment_ids(std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream))
   {
     // compute offsets from num_geoms_per_pair
 
@@ -264,6 +281,13 @@ struct linestring_intersection_intermediates {
                      range(lhs_segment_ids->begin(), lhs_segment_ids->end()),
                      range(rhs_linestring_ids->begin(), rhs_linestring_ids->end()),
                      range(rhs_segment_ids->begin(), rhs_segment_ids->end())};
+  }
+
+  /// Return list-id corresponding to the geometry
+  auto keys_begin()
+  {
+    return make_counting_transform_iterator(
+      0, intersection_functors::offsets_to_keys_functor{offsets->begin(), offsets->end()});
   }
 
   /// Return the number of pairs in the intermediates
