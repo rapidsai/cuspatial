@@ -81,7 +81,7 @@ struct LinestringIntersectionIntermediatesRemoveIfTest : public ::testing::Test 
     if constexpr (cuspatial::is_vec_2d<GeomType>())
       expect_vector_equivalent(*intermediates.geoms, *expected.geoms);
     else
-      expect_segment_equivalent(*intermediates.geoms, *expected.geoms);
+      expect_vec_2d_pair_equivalent(*intermediates.geoms, *expected.geoms);
     expect_vector_equivalent(*intermediates.lhs_linestring_ids, *expected.lhs_linestring_ids);
     expect_vector_equivalent(*intermediates.lhs_segment_ids, *expected.lhs_segment_ids);
     expect_vector_equivalent(*intermediates.rhs_linestring_ids, *expected.rhs_linestring_ids);

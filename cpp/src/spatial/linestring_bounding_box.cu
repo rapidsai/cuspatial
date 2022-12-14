@@ -17,6 +17,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/bounding_box.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/experimental/linestring_bounding_boxes.cuh>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
@@ -27,17 +28,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
-#include <thrust/functional.h>
-#include <thrust/gather.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/reduce.h>
-#include <thrust/scan.h>
-#include <thrust/scatter.h>
-#include <thrust/tuple.h>
 
 #include <memory>
 #include <utility>
@@ -55,21 +46,7 @@ std::unique_ptr<cudf::table> compute_linestring_bounding_boxes(
   rmm::cuda_stream_view stream,
   rmm::mr::device_memory_resource* mr)
 {
-  auto num_linestrings = linestring_offsets.size();
-  rmm::device_vector<int32_t> point_ids(x.size());
-
-  // Scatter the linestring offsets into a list of point_ids for reduction
-  thrust::scatter(rmm::exec_policy(stream),
-                  thrust::make_counting_iterator(0),
-                  thrust::make_counting_iterator(0) + num_linestrings,
-                  linestring_offsets.begin<int32_t>(),
-                  point_ids.begin());
-
-  thrust::inclusive_scan(rmm::exec_policy(stream),
-                         point_ids.begin(),
-                         point_ids.end(),
-                         point_ids.begin(),
-                         thrust::maximum<int32_t>());
+  auto num_linestrings = linestring_offsets.size() > 0 ? linestring_offsets.size() - 1 : 0;
 
   auto type = cudf::data_type{cudf::type_to_id<T>()};
   std::vector<std::unique_ptr<cudf::column>> cols{};
@@ -83,19 +60,21 @@ std::unique_ptr<cudf::table> compute_linestring_bounding_boxes(
   cols.push_back(
     cudf::make_numeric_column(type, num_linestrings, cudf::mask_state::UNALLOCATED, stream, mr));
 
-  auto points_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
+  auto vertices_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
 
-  auto bbox_mins  = cuspatial::make_vec_2d_output_iterator(cols.at(0)->mutable_view().begin<T>(),
-                                                          cols.at(1)->mutable_view().begin<T>());
-  auto bbox_maxes = cuspatial::make_vec_2d_output_iterator(cols.at(2)->mutable_view().begin<T>(),
-                                                           cols.at(3)->mutable_view().begin<T>());
+  auto bounding_boxes_begin =
+    cuspatial::make_box_output_iterator(cols.at(0)->mutable_view().begin<T>(),
+                                        cols.at(1)->mutable_view().begin<T>(),
+                                        cols.at(2)->mutable_view().begin<T>(),
+                                        cols.at(3)->mutable_view().begin<T>());
 
-  point_bounding_boxes(point_ids.begin(),
-                       point_ids.end(),
-                       points_begin,
-                       thrust::make_zip_iterator(bbox_mins, bbox_maxes),
-                       expansion_radius,
-                       stream);
+  linestring_bounding_boxes(linestring_offsets.begin<cudf::size_type>(),
+                            linestring_offsets.end<cudf::size_type>(),
+                            vertices_begin,
+                            vertices_begin + x.size(),
+                            bounding_boxes_begin,
+                            expansion_radius,
+                            stream);
 
   return std::make_unique<cudf::table>(std::move(cols));
 }
@@ -151,12 +130,14 @@ std::unique_ptr<cudf::table> linestring_bounding_boxes(cudf::column_view const& 
                                                        double expansion_radius,
                                                        rmm::mr::device_memory_resource* mr)
 {
+  auto num_linestrings = linestring_offsets.size() > 0 ? linestring_offsets.size() - 1 : 0;
+
   CUSPATIAL_EXPECTS(x.type() == y.type(), "Data type mismatch");
   CUSPATIAL_EXPECTS(x.size() == y.size(), "x and y must be the same size");
   CUSPATIAL_EXPECTS(linestring_offsets.type().id() == cudf::type_id::INT32,
                     "Invalid linestring_offsets type");
   CUSPATIAL_EXPECTS(expansion_radius >= 0, "expansion radius must be greater or equal than 0");
-  CUSPATIAL_EXPECTS(x.size() >= 2 * linestring_offsets.size(),
+  CUSPATIAL_EXPECTS(x.size() >= 2 * num_linestrings,
                     "all linestrings must have at least 2 vertices");
 
   if (linestring_offsets.is_empty() || x.is_empty() || y.is_empty()) {

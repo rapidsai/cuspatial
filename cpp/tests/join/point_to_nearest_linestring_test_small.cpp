@@ -103,7 +103,7 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto& point_indices = std::get<0>(quadtree_pair);
 
   double const expansion_radius{2.0};
-  fixed_width_column_wrapper<int32_t> linestring_offsets({0, 4, 10, 14});
+  fixed_width_column_wrapper<int32_t> linestring_offsets({0, 4, 10, 14, 19});
   fixed_width_column_wrapper<T> linestring_x({// ring 1
                                               2.488450,
                                               1.333584,

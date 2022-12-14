@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+#include <cuspatial_test/base_fixture.hpp>
 #include <cuspatial_test/vector_equality.hpp>
-#include <tests/base_fixture.hpp>
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/linestring.cuh>
@@ -68,7 +68,7 @@ struct unpack_optional_segment {
   operator()(thrust::optional<segment<T>> segment)
   {
     if (segment.has_value())
-      return thrust::make_tuple(segment.value().first, segment.value().second);
+      return thrust::make_tuple(segment.value().v1, segment.value().v2);
     else
       return thrust::tuple<optional_vec2d<T>, optional_vec2d<T>>{thrust::nullopt, thrust::nullopt};
   }

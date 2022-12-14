@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "../base_fixture.hpp"
+#include <cuspatial_test/base_fixture.hpp>
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/trajectory.hpp>
