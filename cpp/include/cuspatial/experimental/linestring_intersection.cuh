@@ -78,7 +78,7 @@ struct linestring_intersection_result {
  * @param multilinestrings2 Range to the second multilinestring in the pair
  * @param mr The resource to use to allocate the returned data
  * @param stream The CUDA stream on which to perform computations
- * @return Results of intersection with duplicates
+ * @return Intersection Result
  */
 template <typename T,
           typename index_t,
