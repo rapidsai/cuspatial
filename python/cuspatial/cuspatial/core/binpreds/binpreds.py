@@ -186,7 +186,6 @@ class ContainsProperlyBinpred(BinaryPredicate):
     def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate."""
-        # Map the point-in-polygon results to the original index.
         result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
         df_result = result
         if (

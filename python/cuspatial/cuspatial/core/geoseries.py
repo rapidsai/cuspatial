@@ -699,7 +699,10 @@ class GeoSeries(cudf.Series):
         return self.iloc[gather_map]
 
     def contains_properly(self, other, align=True):
-        """Compute from a GeoSeries of points and a GeoSeries of polygons which
+        """Returns a `Series` of `dtype('bool')` with value `True` for each
+        aligned geometry that contains _other_.
+
+        Compute from a GeoSeries of points and a GeoSeries of polygons which
         points are properly contained within the corresponding polygon. Polygon
         A contains Point B properly if B intersects the interior of A but not
         the boundary (or exterior).
@@ -854,10 +857,11 @@ class GeoSeries(cudf.Series):
         return CoversBinpred(self, other, align)()
 
     def intersects(self, other, align=True):
-        """Compute whether two `GeoSeries` intersect.
+        """Returns a `Series` of `dtype('bool')` with value `True` for each
+        aligned geometry that intersects _other_.
 
-        Two objects are said to intersect if their boundaries or interiors
-        share any points in common.
+        An object is said to intersect _other_ if its _boundary_ and
+        _interior_ intersects in any way with those of other.
 
         Parameters
         ----------
@@ -878,7 +882,10 @@ class GeoSeries(cudf.Series):
             return IntersectsBinpred(self, other, align)()
 
     def within(self, other, align=True):
-        """An object is said to be within another if at least one of its points
+        """Returns a `Series` of `dtype('bool')` with value `True` for each
+        aligned geometry that is within _other_.
+
+        An object is said to be within other if at least one of its points
         is located in the interior and no points are located in the exterior
         of the other.
 
