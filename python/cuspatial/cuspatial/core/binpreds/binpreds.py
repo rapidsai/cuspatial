@@ -18,9 +18,9 @@ from cuspatial.utils.column_utils import (
 class BinaryPredicate(ABC):
     @abstractmethod
     def preprocess(self, lhs, rhs):
-        """Preprocess the input data for the binary operation. This method
+        """Preprocess the input data for the binary predicate. This method
         should be implemented by subclasses. Preprocess and postprocess are
-        used to implement the discrete math rules of the binary operations.
+        used to implement the discrete math rules of the binary predicates.
 
         Notes
         -----
@@ -29,42 +29,42 @@ class BinaryPredicate(ABC):
         Parameters
         ----------
         op : str
-            The binary operation to perform.
+            The binary predicate to perform.
         lhs : GeoSeries
-            The left-hand-side of the GeoSeries-level binary operation.
+            The left-hand-side of the GeoSeries-level binary predicate.
         rhs : GeoSeries
-            The right-hand-side of the GeoSeries-level binary operation.
+            The right-hand-side of the GeoSeries-level binary predicate.
 
         Returns
         -------
         GeoSeries
-            The left-hand-side of the internal binary operation, may be
+            The left-hand-side of the internal binary predicate, may be
             reordered.
         GeoSeries
-            The right-hand-side of the internal binary operation, may be
+            The right-hand-side of the internal binary predicate, may be
             reordered.
         """
         return (lhs, rhs, cudf.RangeIndex(len(rhs)))
 
     @abstractmethod
     def postprocess(self, point_indices, point_result):
-        """Postprocess the output data for the binary operation. This method
+        """Postprocess the output data for the binary predicate. This method
         should be implemented by subclasses.
 
-        Postprocess converts the raw results of the binary operation into
+        Postprocess converts the raw results of the binary predicate into
         the final result. At this step the results for none, any, and all
         are applied to the result of the equals, intersects, and
-        point-in-polygon operations.
+        point-in-polygon predicates.
 
         Parameters
         ----------
         op : str
-            The binary operation to post process. Determines for example the
-            set operation to use for computing the result.
+            The binary predicate to post process. Determines for example the
+            set predicate to use for computing the result.
         point_indices : cudf.Series
             The indices of the points in the original GeoSeries.
         point_result : cudf.Series
-            The raw result of the binary operation.
+            The raw result of the binary predicate.
 
         Returns
         -------
@@ -75,9 +75,9 @@ class BinaryPredicate(ABC):
         pass
 
     def __init__(self, lhs, rhs, align=True):
-        """Compute the binary operation `op` on `lhs` and `rhs`.
+        """Compute the binary predicate `op` on `lhs` and `rhs`.
 
-        There are ten binary operations supported by cuspatial:
+        There are ten binary predicates supported by cuspatial:
         - `.equals`
         - `.disjoint`
         - `.touches`
@@ -93,32 +93,32 @@ class BinaryPredicate(ABC):
         unordered pairs of each `point`, `multipoint`, `linestring`,
         `multilinestring`, `polygon`, and `multipolygon`. The ordering of
         `lhs` and `rhs` is important because the result of the binary
-        operation is not symmetric. For example, `A.contains(B)` is not
+        predicate is not symmetric. For example, `A.contains(B)` is not
         the same as `B.contains(A)`.
 
         Parameters
         ----------
         op : str
-            The binary operation to perform.
+            The binary predicate to perform.
         lhs : GeoSeries
-            The left-hand-side of the binary operation.
+            The left-hand-side of the binary predicate.
         rhs : GeoSeries
-            The right-hand-side of the binary operation.
+            The right-hand-side of the binary predicate.
         align : bool
             If True, align the indices of `lhs` and `rhs` before performing
-            the binary operation. If False, `lhs` and `rhs` must have the
+            the binary predicate. If False, `lhs` and `rhs` must have the
             same index.
 
         Returns
         -------
         GeoSeries
-            A GeoSeries containing the result of the binary operation.
+            A GeoSeries containing the result of the binary predicate.
         """
         (self.lhs, self.rhs) = lhs.align(rhs) if align else (lhs, rhs)
         self.align = align
 
     def __call__(self) -> cudf.Series:
-        """Return the result of the binary operation."""
+        """Return the result of the binary predicate."""
         # Type disambiguation
         # Type disambiguation has a large effect on the decisions of the
         # algorithm.
@@ -134,7 +134,7 @@ class BinaryPredicate(ABC):
 class ContainsProperlyBinpred(BinaryPredicate):
     def preprocess(self, lhs, rhs):
         """Preprocess the input GeoSeries to ensure that they are of the
-        correct type for the operation."""
+        correct type for the predicate."""
         # RHS conditioning:
         point_indices = None
         # point in polygon
@@ -185,7 +185,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
 
     def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
-        correct type for the operation."""
+        correct type for the predicate."""
         # Map the point-in-polygon results to the original index.
         result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
         df_result = result
@@ -194,7 +194,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
             or contains_only_polygons(self.rhs)
             or contains_only_multipoints(self.rhs)
         ):
-            # Compute the set of results for each point-in-polygon operation.
+            # Compute the set of results for each point-in-polygon predicate.
             # Group them by the original index, and sum the results. If the
             # sum of points in the rhs feature is equal to the number of
             # points found in the polygon, then the polygon contains the
@@ -257,7 +257,7 @@ class WithinBinpred(ContainsProperlyBinpred):
 
     def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
-        correct type for the operation."""
+        correct type for the predicate."""
         result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
         df_result = result
         # Discrete math recombination
