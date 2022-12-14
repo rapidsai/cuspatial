@@ -46,7 +46,7 @@ std::unique_ptr<cudf::table> compute_linestring_bounding_boxes(
   rmm::cuda_stream_view stream,
   rmm::mr::device_memory_resource* mr)
 {
-  auto num_linestrings = linestring_offsets.size();
+  auto num_linestrings = linestring_offsets.size() > 0 ? linestring_offsets.size() - 1 : 0;
 
   auto type = cudf::data_type{cudf::type_to_id<T>()};
   std::vector<std::unique_ptr<cudf::column>> cols{};
@@ -130,12 +130,14 @@ std::unique_ptr<cudf::table> linestring_bounding_boxes(cudf::column_view const& 
                                                        double expansion_radius,
                                                        rmm::mr::device_memory_resource* mr)
 {
+  auto num_linestrings = linestring_offsets.size() > 0 ? linestring_offsets.size() - 1 : 0;
+
   CUSPATIAL_EXPECTS(x.type() == y.type(), "Data type mismatch");
   CUSPATIAL_EXPECTS(x.size() == y.size(), "x and y must be the same size");
   CUSPATIAL_EXPECTS(linestring_offsets.type().id() == cudf::type_id::INT32,
                     "Invalid linestring_offsets type");
   CUSPATIAL_EXPECTS(expansion_radius >= 0, "expansion radius must be greater or equal than 0");
-  CUSPATIAL_EXPECTS(x.size() >= 2 * linestring_offsets.size(),
+  CUSPATIAL_EXPECTS(x.size() >= 2 * num_linestrings,
                     "all linestrings must have at least 2 vertices");
 
   if (linestring_offsets.is_empty() || x.is_empty() || y.is_empty()) {

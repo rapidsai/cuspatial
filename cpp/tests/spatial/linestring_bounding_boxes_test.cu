@@ -31,11 +31,11 @@ TEST_F(LinestringBoundingBoxErrorTest, test_empty)
 {
   using namespace cudf::test;
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({});
+  fixed_width_column_wrapper<int32_t> linestring_offsets({});
   fixed_width_column_wrapper<T> x({});
   fixed_width_column_wrapper<T> y({});
 
-  auto bboxes = cuspatial::linestring_bounding_boxes(poly_offsets, x, y, 0.0);
+  auto bboxes = cuspatial::linestring_bounding_boxes(linestring_offsets, x, y, 0.0);
 
   EXPECT_EQ(bboxes->num_rows(), 0);
 }
@@ -44,12 +44,25 @@ TEST_F(LinestringBoundingBoxErrorTest, type_mismatch)
 {
   using namespace cudf::test;
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({0});
+  fixed_width_column_wrapper<int32_t> linestring_offsets({0, 4});
   fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
   fixed_width_column_wrapper<double> y({5.856625, 5.008840, 4.586599, 5.856625});
 
-  EXPECT_THROW(cuspatial::linestring_bounding_boxes(poly_offsets, x, y, 0.0),
+  EXPECT_THROW(cuspatial::linestring_bounding_boxes(linestring_offsets, x, y, 0.0),
                cuspatial::logic_error);
+}
+
+TEST_F(LinestringBoundingBoxErrorTest, not_enough_offsets)
+{
+  using namespace cudf::test;
+
+  fixed_width_column_wrapper<int32_t> linestring_offsets({0});
+  fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
+  fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599, 5.856625});
+
+  auto bboxes = cuspatial::linestring_bounding_boxes(linestring_offsets, x, y, 0.0);
+
+  EXPECT_EQ(bboxes->num_rows(), 0);
 }
 
 TEST_F(LinestringBoundingBoxErrorTest, offset_type_error)
@@ -57,11 +70,11 @@ TEST_F(LinestringBoundingBoxErrorTest, offset_type_error)
   using namespace cudf::test;
 
   {
-    fixed_width_column_wrapper<float> poly_offsets({0});
+    fixed_width_column_wrapper<float> linestring_offsets({0, 4});
     fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
     fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599, 5.856625});
 
-    EXPECT_THROW(cuspatial::linestring_bounding_boxes(poly_offsets, x, y, 0.0),
+    EXPECT_THROW(cuspatial::linestring_bounding_boxes(linestring_offsets, x, y, 0.0),
                  cuspatial::logic_error);
   }
 }
@@ -70,10 +83,10 @@ TEST_F(LinestringBoundingBoxErrorTest, vertex_size_mismatch)
 {
   using namespace cudf::test;
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({0});
+  fixed_width_column_wrapper<int32_t> linestring_offsets({0, 4});
   fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
   fixed_width_column_wrapper<T> y({5.856625, 5.008840});
 
-  EXPECT_THROW(cuspatial::linestring_bounding_boxes(poly_offsets, x, y, 0.0),
+  EXPECT_THROW(cuspatial::linestring_bounding_boxes(linestring_offsets, x, y, 0.0),
                cuspatial::logic_error);
 }
