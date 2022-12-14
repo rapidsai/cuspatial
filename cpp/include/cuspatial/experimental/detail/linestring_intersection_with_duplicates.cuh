@@ -28,6 +28,11 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <thrust/binary_search.h>
+#include <thrust/distance.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/reduce.h>
+#include <thrust/remove.h>
 #include <thrust/scan.h>
 #include <thrust/tuple.h>
 #include <thrust/uninitialized_fill.h>
@@ -39,6 +44,28 @@ namespace cuspatial {
 namespace detail {
 
 namespace intersection_functors {
+
+template <typename Keys, typename Values>
+struct offsets_update_functor {
+  Keys reduced_keys_begin;
+  Keys reduced_keys_end;
+  Values reduced_values_begin;
+  Values reduced_values_end;
+
+  offsets_update_functor(Keys kb, Keys ke, Values vb, Values ve)
+    : reduced_keys_begin(kb), reduced_keys_end(ke), reduced_values_begin(vb), reduced_values_end(ve)
+  {
+  }
+
+  int __device__ operator()(int offset, int i)
+  {
+    if (i == 0) return 0;
+    auto j = thrust::distance(
+      reduced_keys_begin,
+      thrust::upper_bound(thrust::seq, reduced_keys_begin, reduced_keys_end, i - 1));
+    return offset - reduced_values_begin[j - 1];
+  }
+};
 
 template <typename Iterator>
 struct offsets_to_keys_functor {
@@ -189,7 +216,11 @@ struct linestring_intersection_intermediates {
   template <typename FlagRange>
   void remove_if(FlagRange flags, rmm::cuda_stream_view stream)
   {
-    // Update offsets
+    // The offsets for the geometry array marks the start index for each list.
+    // When geometries are removed, the offset for the next list must
+    // be subtracted by the number of removed geometries in *all* previous lists.
+
+    // Use `reduce_by_key` to compute the number of removed geometry per list.
     rmm::device_uvector<index_t> reduced_keys(num_pairs(), stream);
     rmm::device_uvector<index_t> reduced_flags(num_pairs(), stream);
     auto keys_begin = make_counting_transform_iterator(
@@ -203,15 +234,17 @@ struct linestring_intersection_intermediates {
                             reduced_keys.begin(),
                             reduced_flags.begin(),
                             thrust::equal_to<index_t>(),
-                            thrust::plus<index_t>());  // explicitly cast flagss to index_t type
+                            thrust::plus<index_t>());  // explicitly cast flags to index_t type
                                                        // before adding to avoid overflow.
 
     reduced_keys.resize(thrust::distance(reduced_keys.begin(), keys_end), stream);
     reduced_flags.resize(thrust::distance(reduced_flags.begin(), flags_end), stream);
 
+    // Use `inclusive_scan` to compute the number of removed geometries in *all* previous lists.
     thrust::inclusive_scan(
       rmm::exec_policy(stream), reduced_flags.begin(), reduced_flags.end(), reduced_flags.begin());
 
+    // Update the offsets
     thrust::transform(
       rmm::exec_policy(stream),
       offsets->begin(),
@@ -221,7 +254,7 @@ struct linestring_intersection_intermediates {
       intersection_functors::offsets_update_functor{
         reduced_keys.begin(), reduced_keys.end(), reduced_flags.begin(), reduced_flags.end()});
 
-    // Update geoms and resize
+    // Remove the geometries and the corresponding ids per flag.
     auto geom_id_it  = thrust::make_zip_iterator(geoms->begin(),
                                                 lhs_linestring_ids->begin(),
                                                 lhs_segment_ids->begin(),
