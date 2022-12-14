@@ -47,8 +47,8 @@ TEST_F(PolygonBoundingBoxErrorTest, test_more_polys_than_rings)
 {
   using namespace cudf::test;
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0});
+  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2});
+  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4});
   fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
   fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599, 5.856625});
 
@@ -60,8 +60,8 @@ TEST_F(PolygonBoundingBoxErrorTest, type_mismatch)
 {
   using namespace cudf::test;
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({0});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0});
+  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1});
+  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4});
   fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
   fixed_width_column_wrapper<double> y({5.856625, 5.008840, 4.586599, 5.856625});
 
@@ -74,8 +74,8 @@ TEST_F(PolygonBoundingBoxErrorTest, offset_type_error)
   using namespace cudf::test;
 
   {
-    fixed_width_column_wrapper<float> poly_offsets({0});
-    fixed_width_column_wrapper<int32_t> ring_offsets({0});
+    fixed_width_column_wrapper<float> poly_offsets({0, 1});
+    fixed_width_column_wrapper<int32_t> ring_offsets({0, 4});
     fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
     fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599, 5.856625});
 
@@ -83,8 +83,8 @@ TEST_F(PolygonBoundingBoxErrorTest, offset_type_error)
                  cuspatial::logic_error);
   }
   {
-    fixed_width_column_wrapper<int32_t> poly_offsets({0});
-    fixed_width_column_wrapper<float> ring_offsets({0});
+    fixed_width_column_wrapper<int32_t> poly_offsets({0, 1});
+    fixed_width_column_wrapper<float> ring_offsets({0, 4});
     fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
     fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599, 5.856625});
 
@@ -97,8 +97,8 @@ TEST_F(PolygonBoundingBoxErrorTest, vertex_size_mismatch)
 {
   using namespace cudf::test;
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({0});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0});
+  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1});
+  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4});
   fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
   fixed_width_column_wrapper<T> y({5.856625, 5.008840});
 
@@ -110,8 +110,8 @@ TEST_F(PolygonBoundingBoxErrorTest, ring_too_small)
 {
   using namespace cudf::test;
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({0});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0});
+  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1});
+  fixed_width_column_wrapper<int32_t> ring_offsets({0, 2});
   fixed_width_column_wrapper<T> x({2.488450, 1.333584});
   fixed_width_column_wrapper<T> y({5.856625, 5.008840});
 
