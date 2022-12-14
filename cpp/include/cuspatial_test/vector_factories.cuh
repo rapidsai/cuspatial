@@ -35,6 +35,21 @@ auto make_device_vector(std::initializer_list<T> inl)
   return rmm::device_vector<T>(inl.begin(), inl.end());
 }
 
+template <typename T>
+auto make_device_uvector(std::initializer_list<T> inl,
+                         rmm::cuda_stream_view stream,
+                         rmm::mr::device_memory_resource* mr)
+{
+  std::vector<T> hvec(inl.begin(), inl.end());
+  auto res = rmm::device_uvector<T>(inl.size(), stream, mr);
+  cudaMemcpyAsync(res.data(),
+                  hvec.data(),
+                  hvec.size() * sizeof(T),
+                  cudaMemcpyKind::cudaMemcpyHostToDevice,
+                  stream.value());
+  return res;
+}
+
 /**
  * @brief Owning object of a multilinestring array following geoarrow layout.
  *
