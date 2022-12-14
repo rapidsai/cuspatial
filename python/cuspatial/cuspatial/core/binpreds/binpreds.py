@@ -30,9 +30,9 @@ class BinaryPredicate(ABC):
         op : str
             The binary operation to perform.
         lhs : GeoSeries
-            The left-hand-side of the GeoSeries-level binary operation.
+            The left-hand-side of the GeoSeries-level binary predicate.
         rhs : GeoSeries
-            The right-hand-side of the GeoSeries-level binary operation.
+            The right-hand-side of the GeoSeries-level binary predicate.
 
         Returns
         -------
