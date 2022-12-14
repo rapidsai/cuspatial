@@ -15,7 +15,8 @@
  */
 
 #include "../trajectory/trajectory_test_utils.cuh"
-#include "cuspatial_test/vector_equality.hpp"
+
+#include <cuspatial_test/vector_equality.hpp>
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/bounding_box.cuh>
