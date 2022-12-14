@@ -196,11 +196,19 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, T a
   }
 }
 
+#define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs, ...)              \
+  do {                                                                  \
+    SCOPED_TRACE(" <--  line of failure\n");                            \
+    cuspatial::test::expect_vector_equivalent(lhs, rhs, ##__VA_ARGS__); \
+  } while (0)
+
 template <typename SegmentVector, typename T = typename SegmentVector::value_type::value_type>
 std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_segment_vector(
   SegmentVector const& segments)
 {
-  rmm::device_vector<vec_2d<T>> first(segments.size()), second(segments.size());
+  rmm::device_vector<vec_2d<T>> first(segments.size());
+  rmm::device_vector<vec_2d<T>> second(segments.size());
+
   auto zipped_output = thrust::make_zip_iterator(first.begin(), second.begin());
   thrust::transform(
     segments.begin(), segments.end(), zipped_output, [] __device__(segment<T> const& segment) {
@@ -214,8 +222,8 @@ void expect_segment_equivalent(SegmentVector1 const& expected, SegmentVector2 co
 {
   auto [expected_first, expected_second] = unpack_segment_vector(expected);
   auto [got_first, got_second]           = unpack_segment_vector(got);
-  expect_vector_equivalent(expected_first, got_first);
-  expect_vector_equivalent(expected_second, got_second);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_first, got_first);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_second, got_second);
 }
 
 #define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs, ...)              \
