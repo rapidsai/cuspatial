@@ -137,6 +137,7 @@ ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
 
 ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP
     experimental/spatial/linestring_intersection_count_test.cu
+    experimental/spatial/linestring_intersection_intermediates_remove_if_test.cu
     experimental/spatial/linestring_intersection_with_duplicates_test.cu)
 
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST_EXP

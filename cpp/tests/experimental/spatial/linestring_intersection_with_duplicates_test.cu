@@ -24,17 +24,135 @@
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/device_uvector.hpp>
 #include <rmm/device_vector.hpp>
+#include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
+#include <thrust/gather.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/sequence.h>
+#include <thrust/sort.h>
+
+#include <cub/device/device_segmented_sort.cuh>
 
 #include <initializer_list>
 #include <type_traits>
 
 using namespace cuspatial;
 using namespace cuspatial::test;
+
+// Custom order for two segments
+template <typename T>
+bool CUSPATIAL_HOST_DEVICE operator<(segment<T> lhs, segment<T> rhs)
+{
+  return lhs.first < rhs.first || (lhs.first == rhs.first && lhs.second < rhs.second);
+}
+
+/**
+ * @brief Functor for segmented sorting a geometry array
+ *
+ * Using a label array and a geometry array as keys, this functor defines that
+ * all keys with smaller labels should precede keys with larger labels; and that
+ * the order with the same label should be determined by the natural order of the
+ * geometries.
+ *
+ * Example:
+ * Labels: {0, 0, 0, 1}
+ * Points: {(0, 0), (5, 5), (1, 1), (3, 3)}
+ * Result: {(0, 0), (1, 1), (5, 5), (3, 3)}
+ */
+template <typename KeyType, typename GeomType>
+struct order_key_value_pairs {
+  using key_value_t = thrust::tuple<KeyType, GeomType>;
+
+  bool CUSPATIAL_HOST_DEVICE operator()(key_value_t lhs, key_value_t rhs)
+  {
+    return thrust::get<0>(lhs) < thrust::get<0>(rhs) ||
+           (thrust::get<0>(lhs) == thrust::get<0>(rhs) &&
+            thrust::get<1>(lhs) < thrust::get<1>(rhs));
+  }
+};
+
+/**
+ * @brief Sort geometries in `intersection_intermediates` by segments
+ *
+ * The order of results from `linestring_intersection_with_duplicates` is non-deterministic.
+ * Specifically, while each result is written to the dedicated location for the pair, if there
+ * are multiple results in the same pair (e.g. 2 intersection point of the pair), the order
+ * between these pairs are non-deterministic. This doesn't affect the semantic of the intersection
+ * result, but will make tests flaky since the expected results are hard-coded.
+ *
+ * This function sorts the intersection results so that the comparison is deterministic.
+ *
+ * Example:
+ * offsets: {0, 1, 3, 4}
+ * points: {{0, 0}, {2, 1}, {0, 1}, {5, 5}}
+ *                    ^       ^
+ * The order of points[1] and points[2] are non-deterministic.
+ * Sort Result (deterministic):
+ * points: {{0, 0}, {0, 1}, {2, 1}, {5, 5}}
+ *
+ * @tparam Intermediate Type of intersection_intermediate
+ * @param intermediate Intermediate result from `intersection_with_duplicates`
+ * @param stream The CUDA stream to use for device memory operations and kernel launches.
+ * @param mr The optional resource to use for output device memory allocations.
+ * @return A copy of the intermediate result containing sorted geometries
+ */
+template <typename Intermediate>
+Intermediate segmented_sort_intersection_intermediates(Intermediate& intermediate,
+                                                       rmm::cuda_stream_view stream,
+                                                       rmm::mr::device_memory_resource* mr)
+{
+  using GeomType  = typename Intermediate::geometry_t;
+  using IndexType = typename Intermediate::index_t;
+
+  auto const num_geoms = intermediate.geoms->size();
+  if (num_geoms == 0) return std::move(intermediate);
+
+  auto keys       = rmm::device_uvector<IndexType>(num_geoms, stream);
+  auto gather_map = rmm::device_uvector<IndexType>(num_geoms, stream);
+
+  auto keys_it = intermediate.keys_begin();
+  thrust::copy(rmm::exec_policy(stream), keys_it, keys_it + keys.size(), keys.begin());
+
+  thrust::sequence(rmm::exec_policy(stream), gather_map.begin(), gather_map.end());
+
+  auto sort_keys_it = thrust::make_zip_iterator(keys.begin(), intermediate.geoms->begin());
+
+  thrust::sort_by_key(rmm::exec_policy(stream),
+                      sort_keys_it,
+                      sort_keys_it + keys.size(),
+                      gather_map.begin(),
+                      order_key_value_pairs<IndexType, GeomType>{});
+
+  // Update intermediate indices
+  auto lhs_linestring_ids = std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream, mr);
+  auto lhs_segment_ids    = std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream, mr);
+  auto rhs_linestring_ids = std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream, mr);
+  auto rhs_segment_ids    = std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream, mr);
+
+  auto input_it = thrust::make_zip_iterator(intermediate.lhs_linestring_ids->begin(),
+                                            intermediate.lhs_segment_ids->begin(),
+                                            intermediate.rhs_linestring_ids->begin(),
+                                            intermediate.rhs_segment_ids->begin());
+
+  auto output_it = thrust::make_zip_iterator(lhs_linestring_ids->begin(),
+                                             lhs_segment_ids->begin(),
+                                             rhs_linestring_ids->begin(),
+                                             rhs_segment_ids->begin());
+
+  thrust::gather(
+    rmm::exec_policy(stream), gather_map.begin(), gather_map.end(), input_it, output_it);
+
+  return Intermediate{std::move(intermediate.offsets),
+                      std::move(intermediate.geoms),
+                      std::move(lhs_linestring_ids),
+                      std::move(lhs_segment_ids),
+                      std::move(rhs_linestring_ids),
+                      std::move(rhs_segment_ids)};
+}
 
 template <typename T>
 struct LinestringIntersectionDuplicatesTest : public ::testing::Test {
@@ -76,28 +194,39 @@ struct LinestringIntersectionDuplicatesTest : public ::testing::Test {
       make_device_vector(expected_segment_rhs_linestring_ids);
     auto d_expected_segment_rhs_segment_ids = make_device_vector(expected_segment_rhs_segment_ids);
 
-    auto [points, segments] =
-      detail::pairwise_linestring_intersection_with_duplicates<IndexType, T>(
-        lhs, rhs, this->mr(), this->stream());
+    auto [points, segments] = [&lhs, &rhs, this]() {
+      auto [points, segments] =
+        detail::pairwise_linestring_intersection_with_duplicates<IndexType, T>(
+          lhs, rhs, this->mr(), this->stream());
 
-    expect_vector_equivalent(d_expected_points_offsets, *std::move(points.offsets));
-    expect_vector_equivalent(d_expected_points_coords, *std::move(points.geoms));
-    expect_vector_equivalent(d_expected_segments_offsets, *std::move(segments.offsets));
+      auto sorted_points =
+        segmented_sort_intersection_intermediates(points, this->stream(), this->mr());
+      auto sorted_segments =
+        segmented_sort_intersection_intermediates(segments, this->stream(), this->mr());
+
+      return std::pair{std::move(sorted_points), std::move(sorted_segments)};
+    }();
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_points_offsets, *std::move(points.offsets));
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_points_coords, *std::move(points.geoms));
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_segments_offsets, *std::move(segments.offsets));
     expect_vec_2d_pair_equivalent(d_expected_segments_coords, *std::move(segments.geoms));
-    expect_vector_equivalent(d_expected_point_lhs_linestring_ids,
-                             *std::move(points.lhs_linestring_ids));
-    expect_vector_equivalent(d_expected_point_lhs_segment_ids, *std::move(points.lhs_segment_ids));
-    expect_vector_equivalent(d_expected_point_rhs_linestring_ids,
-                             *std::move(points.rhs_linestring_ids));
-    expect_vector_equivalent(d_expected_point_rhs_segment_ids, *std::move(points.rhs_segment_ids));
-    expect_vector_equivalent(d_expected_segment_lhs_linestring_ids,
-                             *std::move(segments.lhs_linestring_ids));
-    expect_vector_equivalent(d_expected_segment_lhs_segment_ids,
-                             *std::move(segments.lhs_segment_ids));
-    expect_vector_equivalent(d_expected_segment_rhs_linestring_ids,
-                             *std::move(segments.rhs_linestring_ids));
-    expect_vector_equivalent(d_expected_segment_rhs_segment_ids,
-                             *std::move(segments.rhs_segment_ids));
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_point_lhs_linestring_ids,
+                                        *std::move(points.lhs_linestring_ids));
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_point_lhs_segment_ids,
+                                        *std::move(points.lhs_segment_ids));
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_point_rhs_linestring_ids,
+                                        *std::move(points.rhs_linestring_ids));
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_point_rhs_segment_ids,
+                                        *std::move(points.rhs_segment_ids));
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_segment_lhs_linestring_ids,
+                                        *std::move(segments.lhs_linestring_ids));
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_segment_lhs_segment_ids,
+                                        *std::move(segments.lhs_segment_ids));
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_segment_rhs_linestring_ids,
+                                        *std::move(segments.rhs_linestring_ids));
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_segment_rhs_segment_ids,
+                                        *std::move(segments.rhs_segment_ids));
   }
 };
 
@@ -432,11 +561,9 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairSingletoSingleOverlapTwo
                      // Segment offsets
                      {0, 3},
                      // Expected segments
-                     {
-                       segment<T>{P{0.75, 0.75}, P{1.0, 1.0}},
-                       segment<T>{P{1.0, 1.0}, P{1.25, 1.25}},
-                       segment<T>{P{0.25, 0.25}, P{0.75, 0.75}},
-                     },
+                     {segment<T>{P{0.25, 0.25}, P{0.75, 0.75}},
+                      segment<T>{P{0.75, 0.75}, P{1.0, 1.0}},
+                      segment<T>{P{1.0, 1.0}, P{1.25, 1.25}}},
                      // Point look-back ids
                      {},
                      {},
@@ -444,9 +571,9 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairSingletoSingleOverlapTwo
                      {},
                      // segment look-back ids
                      {0, 0, 0},
-                     {0, 1, 0},
+                     {0, 0, 1},
                      {0, 0, 0},
-                     {0, 0, 1});
+                     {1, 0, 0});
 }
 
 TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairMultiSingle)
@@ -467,13 +594,13 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairMultiSingle)
                      // Point offsets
                      {0, 2},
                      // Expected Points
-                     {P{0.5, 0.5}, P{-0.5, 0.5}},
+                     {P{-0.5, 0.5}, P{0.5, 0.5}},
                      // Segment offsets
                      {0, 0},
                      // Expected segments
                      {},
                      // Point look-back ids
-                     {0, 1},
+                     {1, 0},
                      {0, 0},
                      {0, 0},
                      {0, 0},
