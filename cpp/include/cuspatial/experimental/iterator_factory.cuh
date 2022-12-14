@@ -347,6 +347,8 @@ auto make_geometry_id_iterator(GeometryIter offsets_begin, GeometryIter offsets_
  * of [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @param offsets_begin Beginning of range of geometry offsets
  * @param offsets_end End of range of geometry offsets
+ * @param part_offsets_begin Beginning of range of part (e.g. ring) offsets
+ *
  * @return An iterator over unique IDs for each element of each geometry defined by the offsets
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
