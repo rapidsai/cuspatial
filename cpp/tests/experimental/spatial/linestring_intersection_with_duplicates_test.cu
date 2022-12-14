@@ -55,7 +55,7 @@ bool CUSPATIAL_HOST_DEVICE operator<(segment<T> lhs, segment<T> rhs)
  *
  * Using a label array and a geometry array as keys, this functor defines that
  * all keys with smaller labels should precede keys with larger labels; and that
- * the order with the same label should be determined by the natrual order of the
+ * the order with the same label should be determined by the natural order of the
  * geometries.
  *
  * Example:
