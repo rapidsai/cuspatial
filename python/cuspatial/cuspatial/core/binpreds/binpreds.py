@@ -19,7 +19,7 @@ class BinaryPredicate(ABC):
     def preprocess(self, lhs, rhs):
         """Preprocess the input data for the binary operation. This method
         should be implemented by subclasses. Preprocess and postprocess are
-        used to implement the discrete math rules of the binary operations.
+        used to implement the discrete math rules of the binary predicates.
 
         Notes
         -----
