@@ -670,6 +670,12 @@ class GeoSeries(cudf.Series):
         """
 
         # Merge the two indices and sort them
+        if (
+            len(self.index) == len(other.index)
+            and (self.index == other.index).all()
+        ):
+            return self, other
+
         idx1 = cudf.DataFrame({"idx": self.index})
         idx2 = cudf.DataFrame({"idx": other.index})
         index = idx1.merge(idx2, how="outer").sort_values("idx")["idx"]
