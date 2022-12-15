@@ -92,7 +92,30 @@ void print_device_range(Iter begin,
                         std::string_view pre  = "",
                         std::string_view post = "\n")
 {
+  cudaDeviceSynchronize();
   auto hvec = to_host(begin, end);
+
+  std::cout << pre;
+  std::for_each(hvec.begin(), hvec.end(), [](auto const& x) { std::cout << x << " "; });
+  std::cout << post;
+}
+
+/**
+ * @brief Print a range of device-side data.
+ *
+ * @note Copies the data range to host before printing.
+ *
+ * @tparam Iter Iterator to device data
+ * @param begin The beginning of the range to print
+ * @param end The end of the range to print
+ * @param pre String to print before the device data range
+ * @param post String to print after the device data range
+ */
+template <typename Vector>
+void print_device_vector(Vector& v, std::string_view pre = "", std::string_view post = "\n")
+{
+  using T   = typename Vector::value_type;
+  auto hvec = to_host<T>(v);
 
   std::cout << pre;
   std::for_each(hvec.begin(), hvec.end(), [](auto const& x) { std::cout << x << " "; });

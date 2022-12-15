@@ -21,7 +21,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_vector.hpp>
 
-#include <cuspatial/experimental/detail/find/find_point_on_segments.cuh>
+#include <cuspatial/experimental/detail/find/find_points_on_segments.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
@@ -52,11 +52,11 @@ TYPED_TEST(FindPointOnSegmentTest, Simple1)
   rmm::device_vector<uint8_t> flags(multipoints.range().num_points());
   std::vector<uint8_t> expected_flags{0, 1};
 
-  find_point_on_segments(multipoints.range(),
-                         range(segment_offsets.begin(), segment_offsets.end()),
-                         range(segments.begin(), segments.end()),
-                         flags.begin(),
-                         this->stream());
+  find_points_on_segments(multipoints.range(),
+                          range(segment_offsets.begin(), segment_offsets.end()),
+                          range(segments.begin(), segments.end()),
+                          flags.begin(),
+                          this->stream());
 
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(flags, expected_flags);
 }
@@ -76,11 +76,11 @@ TYPED_TEST(FindPointOnSegmentTest, Simple2)
   rmm::device_vector<uint8_t> flags(multipoints.range().num_points());
   std::vector<uint8_t> expected_flags{0, 1};
 
-  find_point_on_segments(multipoints.range(),
-                         range(segment_offsets.begin(), segment_offsets.end()),
-                         range(segments.begin(), segments.end()),
-                         flags.begin(),
-                         this->stream());
+  find_points_on_segments(multipoints.range(),
+                          range(segment_offsets.begin(), segment_offsets.end()),
+                          range(segments.begin(), segments.end()),
+                          flags.begin(),
+                          this->stream());
 
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(flags, expected_flags);
 }
@@ -100,11 +100,11 @@ TYPED_TEST(FindPointOnSegmentTest, Simple3)
   rmm::device_vector<uint8_t> flags(multipoints.range().num_points());
   std::vector<uint8_t> expected_flags{0, 1};
 
-  find_point_on_segments(multipoints.range(),
-                         range(segment_offsets.begin(), segment_offsets.end()),
-                         range(segments.begin(), segments.end()),
-                         flags.begin(),
-                         this->stream());
+  find_points_on_segments(multipoints.range(),
+                          range(segment_offsets.begin(), segment_offsets.end()),
+                          range(segments.begin(), segments.end()),
+                          flags.begin(),
+                          this->stream());
 
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(flags, expected_flags);
 }
@@ -124,11 +124,11 @@ TYPED_TEST(FindPointOnSegmentTest, Simple4)
   rmm::device_vector<uint8_t> flags(multipoints.range().num_points());
   std::vector<uint8_t> expected_flags{0, 1};
 
-  find_point_on_segments(multipoints.range(),
-                         range(segment_offsets.begin(), segment_offsets.end()),
-                         range(segments.begin(), segments.end()),
-                         flags.begin(),
-                         this->stream());
+  find_points_on_segments(multipoints.range(),
+                          range(segment_offsets.begin(), segment_offsets.end()),
+                          range(segments.begin(), segments.end()),
+                          flags.begin(),
+                          this->stream());
 
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(flags, expected_flags);
 }
@@ -148,11 +148,11 @@ TYPED_TEST(FindPointOnSegmentTest, NoPointOnSegment1)
   rmm::device_vector<uint8_t> flags(multipoints.range().num_points());
   std::vector<uint8_t> expected_flags{0, 0};
 
-  find_point_on_segments(multipoints.range(),
-                         range(segment_offsets.begin(), segment_offsets.end()),
-                         range(segments.begin(), segments.end()),
-                         flags.begin(),
-                         this->stream());
+  find_points_on_segments(multipoints.range(),
+                          range(segment_offsets.begin(), segment_offsets.end()),
+                          range(segments.begin(), segments.end()),
+                          flags.begin(),
+                          this->stream());
 
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(flags, expected_flags);
 }
@@ -172,11 +172,11 @@ TYPED_TEST(FindPointOnSegmentTest, NoPointOnSegment2)
   rmm::device_vector<uint8_t> flags(multipoints.range().num_points());
   std::vector<uint8_t> expected_flags{0, 0};
 
-  find_point_on_segments(multipoints.range(),
-                         range(segment_offsets.begin(), segment_offsets.end()),
-                         range(segments.begin(), segments.end()),
-                         flags.begin(),
-                         this->stream());
+  find_points_on_segments(multipoints.range(),
+                          range(segment_offsets.begin(), segment_offsets.end()),
+                          range(segments.begin(), segments.end()),
+                          flags.begin(),
+                          this->stream());
 
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(flags, expected_flags);
 }
@@ -197,11 +197,11 @@ TYPED_TEST(FindPointOnSegmentTest, TwoPairs)
   rmm::device_vector<uint8_t> flags(multipoints.range().num_points());
   std::vector<uint8_t> expected_flags{0, 0, 1};
 
-  find_point_on_segments(multipoints.range(),
-                         range(segment_offsets.begin(), segment_offsets.end()),
-                         range(segments.begin(), segments.end()),
-                         flags.begin(),
-                         this->stream());
+  find_points_on_segments(multipoints.range(),
+                          range(segment_offsets.begin(), segment_offsets.end()),
+                          range(segments.begin(), segments.end()),
+                          flags.begin(),
+                          this->stream());
 
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(flags, expected_flags);
 }

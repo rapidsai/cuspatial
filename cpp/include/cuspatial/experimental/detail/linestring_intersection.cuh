@@ -22,7 +22,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/find/find_and_combine_segment.cuh>
 #include <cuspatial/experimental/detail/find/find_duplicate_points.cuh>
-#include <cuspatial/experimental/detail/find/find_point_on_segments.cuh>
+#include <cuspatial/experimental/detail/find/find_points_on_segments.cuh>
 #include <cuspatial/experimental/detail/linestring_intersection_count.cuh>
 #include <cuspatial/experimental/detail/linestring_intersection_with_duplicates.cuh>
 #include <cuspatial/experimental/ranges/multipoint_range.cuh>
@@ -240,11 +240,11 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
   segments.remove_if(range(segment_flags.begin(), segment_flags.end()), stream);
 
   // Merge point on segments
-  detail::find_point_on_segments(make_multipoint_range(points.offset_range(), points.geom_range()),
-                                 segments.offset_range(),
-                                 segments.geom_range(),
-                                 point_flags.begin(),
-                                 stream);
+  detail::find_points_on_segments(make_multipoint_range(points.offset_range(), points.geom_range()),
+                                  segments.offset_range(),
+                                  segments.geom_range(),
+                                  point_flags.begin(),
+                                  stream);
 
   points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
 

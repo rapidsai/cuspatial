@@ -72,11 +72,11 @@ template <typename MultiPointRange,
           typename OffsetsRange,
           typename SegmentsRange,
           typename OutputIt1>
-void find_point_on_segments(MultiPointRange multipoints,
-                            OffsetsRange segment_offsets,
-                            SegmentsRange segments,
-                            OutputIt1 mergeable_flag,
-                            rmm::cuda_stream_view stream)
+void find_points_on_segments(MultiPointRange multipoints,
+                             OffsetsRange segment_offsets,
+                             SegmentsRange segments,
+                             OutputIt1 mergeable_flag,
+                             rmm::cuda_stream_view stream)
 {
   using index_t = typename MultiPointRange::index_t;
 
