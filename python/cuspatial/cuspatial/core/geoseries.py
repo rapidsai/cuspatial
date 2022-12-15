@@ -781,7 +781,7 @@ class GeoSeries(cudf.Series):
         aligned geometry that intersects _other_.
 
         An object is said to intersect _other_ if its _boundary_ and
-        _interior_ intersects in any way with those of other.
+        _interior_ intersect in any way with those of other.
 
         Parameters
         ----------
