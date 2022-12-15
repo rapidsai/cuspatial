@@ -712,6 +712,85 @@ class GeoSeries(cudf.Series):
     ):
         return self.iloc[gather_map]
 
+    # def reset_index(self, drop=False, inplace=False, name=None):
+    def reset_index(
+        self,
+        level=None,
+        drop=False,
+        name=None,
+        inplace=False,
+    ):
+        """
+        Reset the index of the GeoSeries.
+
+        Parameters
+        ----------
+        level : int, str, tuple, or list, default None
+            Only remove the given levels from the index. Removes all levels
+            by default.
+        drop : bool, default False
+            If drop is False, create a new dataframe with the original
+            index as a column. If drop is True, the original index is
+            dropped.
+        name : object, optional
+            The name to use for the column containing the original
+            Series values.
+        inplace: bool, default False
+            If True, the original GeoSeries is modified.
+
+        Returns
+        -------
+        GeoSeries
+            GeoSeries with reset index.
+
+        Examples
+        --------
+        >>> points = gpd.GeoSeries([
+            Point((-8, -8)),
+            Point((-2, -2)),
+        ], index=[1, 0])
+        >>> print(points.reset_index())
+
+        0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        dtype: geometry
+        """
+        geo_series = self.copy(deep=False)
+
+        # Create a cudf series with the same index as the GeoSeries
+        # and use `cudf` reset_index to identify what our result
+        # should look like.
+        cudf_series = cudf.Series(
+            np.arange(len(geo_series.index)), index=geo_series.index
+        )
+        cudf_result = cudf_series.reset_index(level, drop, name, inplace)
+
+        if not inplace:
+            if isinstance(cudf_result, cudf.Series):
+                geo_series.index = cudf_result.index
+                return geo_series
+            elif isinstance(cudf_result, cudf.DataFrame):
+                # Drop was equal to False, so we need to create a
+                # `GeoDataFrame` from the `GeoSeries`
+                from cuspatial.core.geodataframe import GeoDataFrame
+
+                # The columns of the `cudf.DataFrame` are the new
+                # columns of the `GeoDataFrame`.
+                columns = {
+                    col: cudf_result[col] for col in cudf_result.columns
+                }
+                geo_result = GeoDataFrame(columns)
+                geo_series.index = geo_result.index
+                # Add the original `GeoSeries` as a column.
+                if name:
+                    geo_result[name] = geo_series
+                else:
+                    geo_result[0] = geo_series
+                return geo_result
+        else:
+            self.index = cudf_series.index
+            return None
+
     def contains_properly(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that contains _other_.
