@@ -220,8 +220,8 @@ struct LinestringIntersectionTest : public ::testing::Test {
                                         *std::move(got.offset_buffer));
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(*std::move(expected.points_coords),
                                         *std::move(got.points_coords));
-    expect_segment_equivalent(*std::move(expected.segments_coords),
-                              *std::move(got.segments_coords));
+    expect_vec_2d_pair_equivalent(*std::move(expected.segments_coords),
+                                  *std::move(got.segments_coords));
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(*std::move(expected.lhs_linestring_id),
                                         *std::move(got.lhs_linestring_id));
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(*std::move(expected.lhs_segment_id),

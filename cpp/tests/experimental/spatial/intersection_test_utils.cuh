@@ -28,7 +28,7 @@ namespace test {
 template <typename T>
 bool CUSPATIAL_HOST_DEVICE operator<(segment<T> lhs, segment<T> rhs)
 {
-  return lhs.first < rhs.first || (lhs.first == rhs.first && lhs.second < rhs.second);
+  return lhs.v1 < rhs.v2 || (lhs.v1 == rhs.v1 && lhs.v2 < rhs.v2);
 }
 
 /**
