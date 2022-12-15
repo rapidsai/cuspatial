@@ -741,20 +741,26 @@ class GeoSeries(cudf.Series):
         )
         cudf_result = cudf_series.reset_index(level, drop, name, inplace)
 
-        if isinstance(cudf_result, cudf.Series):
-            geo_series.index = cudf_result.index
-            return geo_series
-        elif isinstance(cudf_result, cudf.DataFrame):
-            from cuspatial.core.geodataframe import GeoDataFrame
+        if not inplace:
+            if isinstance(cudf_result, cudf.Series):
+                geo_series.index = cudf_result.index
+                return geo_series
+            elif isinstance(cudf_result, cudf.DataFrame):
+                from cuspatial.core.geodataframe import GeoDataFrame
 
-            columns = {col: cudf_result[col] for col in cudf_result.columns}
-            geo_result = GeoDataFrame(columns)
-            geo_series.index = geo_result.index
-            if name:
-                geo_result[name] = geo_series
-            else:
-                geo_result[0] = geo_series
-            return geo_result
+                columns = {
+                    col: cudf_result[col] for col in cudf_result.columns
+                }
+                geo_result = GeoDataFrame(columns)
+                geo_series.index = geo_result.index
+                if name:
+                    geo_result[name] = geo_series
+                else:
+                    geo_result[0] = geo_series
+                return geo_result
+        else:
+            self.index = cudf_series.index
+            return None
 
     def contains_properly(self, other, align=True):
         """Compute from a GeoSeries of points and a GeoSeries of polygons which

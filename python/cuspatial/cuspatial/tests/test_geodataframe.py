@@ -414,6 +414,11 @@ def test_from_dict_with_list():
 @pytest.mark.parametrize("col_level", [0, 1])
 @pytest.mark.parametrize("col_fill", ["", "some_lv"])
 def test_reset_index(drop, inplace, col_level, col_fill):
+    if not drop and inplace:
+        pytest.skip(
+            "For exception checks, see "
+            "test_reset_index_dup_level_name_exceptions"
+        )
     midx = pd.MultiIndex.from_tuples([("a", 1), ("a", 2), ("b", 1), ("b", 2)])
     gpdf = gpd.GeoDataFrame(
         {

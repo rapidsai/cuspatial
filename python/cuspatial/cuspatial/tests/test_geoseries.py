@@ -614,13 +614,10 @@ def test_reset_index(level, drop, name, inplace):
     gs = cuspatial.from_geopandas(gps)
     expected = gps.reset_index(level, drop, name, inplace)
     got = gs.reset_index(level, drop, name, inplace)
-    if expected is not None:
-        if inplace:
-            expected = gps
-            got = gs
-        if drop:
-            pd.testing.assert_series_equal(expected, got.to_pandas())
-        else:
-            pd.testing.assert_frame_equal(expected, got.to_pandas())
+    if inplace:
+        expected = gps
+        got = gs
+    if drop:
+        pd.testing.assert_series_equal(expected, got.to_pandas())
     else:
-        assert got == expected
+        pd.testing.assert_frame_equal(expected, got.to_pandas())
