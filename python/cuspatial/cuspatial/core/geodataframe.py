@@ -233,41 +233,48 @@ class GeoDataFrame(cudf.DataFrame):
         # Split geometry and non-geometry columns
         geo_data, cudf_data = self._split_out_geometry_columns()
 
+        original_index = cudf_data.index
+
         # Reset cudf column
-        reindexed = cudf_data.reset_index(
+        cudf_reindexed = cudf_data.reset_index(
             level, drop, inplace, col_level, col_fill
         )
+
+        if inplace:
+            cudf_reindexed = cudf_data
 
         # Reset GeoColumns
         recombiner = self.copy(deep=False)
         recombiner.index = cudf.RangeIndex(len(recombiner))
-        if reindexed:
-            # Not a multi-index, and the index was not dropped.
-            if "index" in reindexed.columns:
-                recombiner.insert(
-                    loc=0, name="index", value=reindexed["index"]
-                )
-            # If the index is a MultiIndex, we need to insert the
-            # individual levels into the GeoDataFrame.
-            elif "level" in reindexed.columns[0]:
-                levels = [
-                    "level_" + str(n)
-                    for n in range(len(cudf_data.index.levels))
-                ]
-                [
-                    recombiner.insert(loc=n, name=name, value=reindexed[name])
-                    for n, name in enumerate(levels)
-                ]
-                recombiner.index = reindexed.index
+        # Not a multi-index, and the index was not dropped.
+        if "index" in cudf_reindexed.columns:
+            recombiner.insert(
+                loc=0, name="index", value=cudf_reindexed["index"]
+            )
+        # If the index is a MultiIndex, we need to insert the
+        # individual levels into the GeoDataFrame.
+        elif "level" in cudf_reindexed.columns[0]:
+            levels = [
+                "level_" + str(n) for n in range(len(original_index.levels))
+            ]
+            [
+                recombiner.insert(loc=n, name=name, value=cudf_reindexed[name])
+                for n, name in enumerate(levels)
+            ]
+            recombiner.index = cudf_reindexed.index
+
+        if inplace:
+            self.index = cudf_reindexed.index
+            self._data = recombiner._data
+            return None
+        else:
             # Reset the index of the GeoDataFrame to match the
             # cudf DataFrame and recombine.
-            geo_data.index = reindexed.index
+            geo_data.index = cudf_reindexed.index
             result = GeoDataFrame._from_data(
-                recombiner._recombine_columns(geo_data, reindexed)
+                recombiner._recombine_columns(geo_data, cudf_reindexed)
             )
             return result
-        else:
-            return None
 
 
 class _GeoSeriesUtility:

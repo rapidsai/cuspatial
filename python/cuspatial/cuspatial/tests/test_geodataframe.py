@@ -430,10 +430,7 @@ def test_reset_index(drop, inplace, col_level, col_fill):
     gdf = cuspatial.from_geopandas(gpdf)
     expected = gpdf.reset_index(None, drop, inplace, col_level, col_fill)
     got = gdf.reset_index(None, drop, inplace, col_level, col_fill)
-    if expected is not None:
-        if inplace:
-            expected = gpdf
-            got = gdf
-        pd.testing.assert_frame_equal(expected, got.to_pandas())
-    else:
-        assert expected == got
+    if inplace:
+        expected = gpdf
+        got = gdf
+    pd.testing.assert_frame_equal(expected, got.to_pandas())
