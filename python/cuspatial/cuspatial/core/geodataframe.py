@@ -263,14 +263,12 @@ class GeoDataFrame(cudf.DataFrame):
                 elif not isinstance(level, list):
                     level = [level]
                 levels = ["level_" + str(n) for n in level]
-                [
+                for n, name in enumerate(levels):
                     recombiner.insert(
                         loc=n,
                         name=name,
                         value=cudf_reindexed[name].reset_index(drop=True),
                     )
-                    for n, name in enumerate(levels)
-                ]
                 recombiner.index = cudf_reindexed.index
 
         if inplace:
