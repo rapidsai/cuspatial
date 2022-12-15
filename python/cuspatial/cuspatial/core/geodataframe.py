@@ -245,32 +245,33 @@ class GeoDataFrame(cudf.DataFrame):
         recombiner = self.copy(deep=False)
         recombiner.index = cudf.RangeIndex(len(recombiner))
         # Not a multi-index, and the index was not dropped.
-        if "index" in cudf_reindexed.columns:
-            recombiner.insert(
-                loc=0, name="index", value=cudf_reindexed["index"]
-            )
-        # If the index is a MultiIndex, we need to insert the
-        # individual levels into the GeoDataFrame.
-        elif "level" in cudf_reindexed.columns[0]:
-            # If level is not specified, it will be the difference
-            # between the number of columns in reindexed dataframe
-            # and the original.
-            if not level:
-                level = range(
-                    len(cudf_reindexed.columns) - len(cudf_data.columns)
-                )
-            elif not isinstance(level, list):
-                level = [level]
-            levels = ["level_" + str(n) for n in level]
-            [
+        if not drop:
+            if not isinstance(cudf_data.index, cudf.MultiIndex):
                 recombiner.insert(
-                    loc=n,
-                    name=name,
-                    value=cudf_reindexed[name].reset_index(drop=True),
+                    loc=0, name="index", value=cudf_reindexed["index"]
                 )
-                for n, name in enumerate(levels)
-            ]
-            recombiner.index = cudf_reindexed.index
+            # If the index is a MultiIndex, we need to insert the
+            # individual levels into the GeoDataFrame.
+            elif isinstance(cudf_data.index, cudf.MultiIndex):
+                # If level is not specified, it will be the difference
+                # between the number of columns in reindexed dataframe
+                # and the original.
+                if not level:
+                    level = range(
+                        len(cudf_reindexed.columns) - len(cudf_data.columns)
+                    )
+                elif not isinstance(level, list):
+                    level = [level]
+                levels = ["level_" + str(n) for n in level]
+                [
+                    recombiner.insert(
+                        loc=n,
+                        name=name,
+                        value=cudf_reindexed[name].reset_index(drop=True),
+                    )
+                    for n, name in enumerate(levels)
+                ]
+                recombiner.index = cudf_reindexed.index
 
         if inplace:
             self.index = cudf_reindexed.index
