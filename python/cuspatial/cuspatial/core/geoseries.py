@@ -25,11 +25,11 @@ from cudf._typing import ColumnLike
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.binops.contains import contains_properly
-from cuspatial.utils.column_utils import (
-    contains_only_linestrings,
-    contains_only_multipoints,
-    contains_only_polygons,
+from cuspatial.core.binpreds.binpreds import (
+    ContainsProperlyBinpred,
+    IntersectsBinpred,
+    OverlapsBinpred,
+    WithinBinpred,
 )
 
 T = TypeVar("T", bound="GeoSeries")
@@ -168,9 +168,12 @@ class GeoSeries(cudf.Series):
         def point_indices(self):
             # Return a cupy.ndarray containing the index values that each
             # point belongs to.
+            """
             offsets = cp.arange(0, len(self.xy) + 1, 2)
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
+            """
+            return self._series.index
 
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -710,7 +713,10 @@ class GeoSeries(cudf.Series):
         return self.iloc[gather_map]
 
     def contains_properly(self, other, align=True):
-        """Compute from a GeoSeries of points and a GeoSeries of polygons which
+        """Returns a `Series` of `dtype('bool')` with value `True` for each
+        aligned geometry that contains _other_.
+
+        Compute from a GeoSeries of points and a GeoSeries of polygons which
         points are properly contained within the corresponding polygon. Polygon
         A contains Point B properly if B intersects the interior of A but not
         the boundary (or exterior).
@@ -786,63 +792,73 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input.
         """
-        if not contains_only_polygons(self):
-            raise TypeError(
-                "`.contains` can only be called with polygon series."
-            )
+        return ContainsProperlyBinpred(self, other, align)()
 
-        (lhs, rhs) = self.align(other) if align else (self, other)
+    def intersects(self, other, align=True):
+        """Returns a `Series` of `dtype('bool')` with value `True` for each
+        aligned geometry that intersects _other_.
 
-        # RHS conditioning:
-        mode = "POINTS"
-        # point in polygon
-        if contains_only_linestrings(rhs):
-            # condition for linestrings
-            mode = "LINESTRINGS"
-            geom = rhs.lines
-        elif contains_only_polygons(rhs) is True:
-            # polygon in polygon
-            mode = "POLYGONS"
-            geom = rhs.polygons
-        elif contains_only_multipoints(rhs) is True:
-            # mpoint in polygon
-            mode = "MULTIPOINTS"
-            geom = rhs.multipoints
-        else:
-            # no conditioning is required
-            geom = rhs.points
-        xy_points = geom.xy
-        point_indices = geom.point_indices()
-        points = GeoSeries(GeoColumn._from_points_xy(xy_points._column)).points
+        A geometry intersects another geometry if its boundary or interior
+        intersect in any way with the other geometry.
 
-        # call pip on the three subtypes on the right:
-        point_result = contains_properly(
-            points.x,
-            points.y,
-            lhs.polygons.part_offset[:-1],
-            lhs.polygons.ring_offset[:-1],
-            lhs.polygons.x,
-            lhs.polygons.y,
-        )
-        if (
-            mode == "LINESTRINGS"
-            or mode == "POLYGONS"
-            or mode == "MULTIPOINTS"
-        ):
-            # process for completed linestrings, polygons, and multipoints.
-            # Not necessary for points.
-            result = cudf.DataFrame(
-                {"idx": point_indices, "pip": point_result}
-            )
-            # if the number of points in the polygon is equal to the number of
-            # points, then the requirements for `.contains_properly` are met
-            # for this geometry type.
-            df_result = (
-                result.groupby("idx").sum().sort_index()
-                == result.groupby("idx").count().sort_index()
-            )
-            point_result = cudf.Series(
-                df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
-            )
-            point_result.name = None
-        return point_result
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether the geometries of
+            each row intersect.
+        """
+        return IntersectsBinpred(self, other, align)()
+
+    def within(self, other, align=True):
+        """Returns a `Series` of `dtype('bool')` with value `True` for each
+        aligned geometry that is within _other_.
+
+        A geometry is within another geometry if at least one of its points is
+        located in the interior of the other geometry and no points are
+        located in the exterior of the other geometry.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each feature falls
+            within the corresponding polygon in the input.
+        """
+        return WithinBinpred(self, other, align)()
+
+    def overlaps(self, other, align=True):
+        """Returns True for all aligned geometries that overlap other, else
+        False.
+
+        Geometries overlap if they have more than one but not all points in
+        common, have the same dimension, and the intersection of the
+        interiors of the geometries has the same dimension as the geometries
+        themselves.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each geometry
+            overlaps the corresponding geometry in the input."""
+        # Overlaps has the same requirement as crosses.
+        return OverlapsBinpred(self, other, align=align)()
