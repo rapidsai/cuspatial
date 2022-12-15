@@ -736,6 +736,9 @@ class GeoSeries(cudf.Series):
         """
         geo_series = self.copy(deep=False)
 
+        # Create a cudf series with the same index as the GeoSeries
+        # and use `cudf` reset_index to identify what our result
+        # should look like.
         cudf_series = cudf.Series(
             np.arange(len(geo_series.index)), index=geo_series.index
         )
@@ -746,13 +749,18 @@ class GeoSeries(cudf.Series):
                 geo_series.index = cudf_result.index
                 return geo_series
             elif isinstance(cudf_result, cudf.DataFrame):
+                # Drop was equal to False, so we need to create a
+                # `GeoDataFrame` from the `GeoSeries`
                 from cuspatial.core.geodataframe import GeoDataFrame
 
+                # The columns of the `cudf.DataFrame` are the new
+                # columns of the `GeoDataFrame`.
                 columns = {
                     col: cudf_result[col] for col in cudf_result.columns
                 }
                 geo_result = GeoDataFrame(columns)
                 geo_series.index = geo_result.index
+                # Add the original `GeoSeries` as a column.
                 if name:
                     geo_result[name] = geo_series
                 else:
