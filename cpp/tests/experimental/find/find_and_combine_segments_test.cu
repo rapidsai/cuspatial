@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include <cuspatial_test/base_fixture.hpp>
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
-#include <tests/base_fixture.hpp>
 
 #include <cuspatial/experimental/detail/find/find_and_combine_segment.cuh>
 #include <cuspatial/experimental/geometry/segment.cuh>
@@ -77,7 +77,7 @@ struct FindAndCombineSegmentsTest : public BaseFixture {
 
     auto [_, merged_segments] = segments.release();
 
-    expect_segment_equivalent(d_expected_segments, merged_segments);
+    expect_vec_2d_pair_equivalent(d_expected_segments, merged_segments);
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, flags);
   }
 };

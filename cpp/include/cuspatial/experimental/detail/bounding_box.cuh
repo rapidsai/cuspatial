@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -33,8 +34,6 @@ namespace detail {
 
 template <typename T>
 struct point_bounding_box {
-  using point_tuple = thrust::tuple<cuspatial::vec_2d<T>, cuspatial::vec_2d<T>>;
-
   vec_2d<T> box_offset{};
 
   CUSPATIAL_HOST_DEVICE point_bounding_box(T expansion_radius = T{0})
@@ -42,23 +41,17 @@ struct point_bounding_box {
   {
   }
 
-  inline __host__ __device__ point_tuple operator()(vec_2d<T> const& point)
+  inline CUSPATIAL_HOST_DEVICE box<T> operator()(vec_2d<T> const& point)
   {
-    return point_tuple{point - box_offset, point + box_offset};
+    return box<T>{point - box_offset, point + box_offset};
   }
 };
 
 template <typename T>
 struct box_minmax {
-  using point_tuple = thrust::tuple<cuspatial::vec_2d<T>, cuspatial::vec_2d<T>>;
-
-  inline __host__ __device__ point_tuple operator()(point_tuple const& a, point_tuple const& b)
+  inline CUSPATIAL_HOST_DEVICE box<T> operator()(box<T> const& a, box<T> const& b)
   {
-    // structured binding doesn't seem to work with thrust::tuple
-    vec_2d<T> p1, p2, p3, p4;
-    thrust::tie(p1, p2) = a;
-    thrust::tie(p3, p4) = b;
-    return {box_min(box_min(p1, p2), p3), box_max(box_max(p1, p2), p4)};
+    return {box_min(box_min(a.v1, a.v2), b.v1), box_max(box_max(a.v1, a.v2), b.v2)};
   }
 };
 

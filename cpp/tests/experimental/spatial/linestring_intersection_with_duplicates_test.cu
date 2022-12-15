@@ -180,7 +180,7 @@ struct LinestringIntersectionDuplicatesTest : public ::testing::Test {
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_points_offsets, *std::move(points.offsets));
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_points_coords, *std::move(points.geoms));
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_segments_offsets, *std::move(segments.offsets));
-    expect_segment_equivalent(d_expected_segments_coords, *std::move(segments.geoms));
+    expect_vec_2d_pair_equivalent(d_expected_segments_coords, *std::move(segments.geoms));
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_point_lhs_linestring_ids,
                                         *std::move(points.lhs_linestring_ids));
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected_point_lhs_segment_ids,
