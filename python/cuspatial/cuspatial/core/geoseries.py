@@ -780,8 +780,8 @@ class GeoSeries(cudf.Series):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that intersects _other_.
 
-        An object is said to intersect _other_ if its _boundary_ and
-        _interior_ intersect in any way with those of other.
+        A geometry intersects another geometry if its boundary or interior
+        intersect in any way with the other geometry.
 
         Parameters
         ----------
@@ -802,9 +802,9 @@ class GeoSeries(cudf.Series):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that is within _other_.
 
-        An object is said to be within other if at least one of its points
-        is located in the interior and no points are located in the exterior
-        of the other.
+        A geometry is within another geometry if at least one of its points is
+        located in the interior of the other geometry and no points are
+        located in the exterior of the other geometry.
 
         Parameters
         ----------
