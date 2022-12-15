@@ -174,22 +174,6 @@ struct linestring_intersection_intermediates {
   {
   }
 
-  linestring_intersection_intermediates(
-    std::unique_ptr<rmm::device_uvector<index_t>> offsets,
-    std::unique_ptr<rmm::device_uvector<GeomType>> geoms,
-    std::unique_ptr<rmm::device_uvector<index_t>> lhs_linestring_ids,
-    std::unique_ptr<rmm::device_uvector<index_t>> lhs_segment_ids,
-    std::unique_ptr<rmm::device_uvector<index_t>> rhs_linestring_ids,
-    std::unique_ptr<rmm::device_uvector<index_t>> rhs_segment_ids)
-    : offsets(std::move(offsets)),
-      geoms(std::move(geoms)),
-      lhs_linestring_ids(std::move(lhs_linestring_ids)),
-      lhs_segment_ids(std::move(lhs_segment_ids)),
-      rhs_linestring_ids(std::move(rhs_linestring_ids)),
-      rhs_segment_ids(std::move(rhs_segment_ids))
-  {
-  }
-
   linestring_intersection_intermediates(std::size_t num_pairs,
                                         std::size_t num_geoms,
                                         rmm::device_uvector<IndexType> const& num_geoms_per_pair,
