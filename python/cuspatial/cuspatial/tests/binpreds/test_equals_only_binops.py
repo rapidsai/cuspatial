@@ -1,111 +1,112 @@
 import geopandas as gpd
+import pandas as pd
 from shapely.geometry import LineString, Point, Polygon
 
 import cuspatial
 
 
-def test_point_equals_point():
+def test_point_geom_equals_point():
     gpdpoint1 = gpd.GeoSeries([Point(0, 0)])
     gpdpoint2 = gpd.GeoSeries([Point(0, 0)])
     point1 = cuspatial.from_geopandas(gpdpoint1)
     point2 = cuspatial.from_geopandas(gpdpoint2)
-    got = point1.equals(point2)
-    expected = gpdpoint1.equals(gpdpoint2)
-    assert got == expected
+    got = point1.geom_equals(point2)
+    expected = gpdpoint1.geom_equals(gpdpoint2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_31_points_equals_31_points(point_generator):
+def test_31_points_geom_equals_31_points(point_generator):
     gpdpoints1 = gpd.GeoSeries([*point_generator(31)])
     gpdpoints2 = gpd.GeoSeries([*point_generator(31)])
     points1 = cuspatial.from_geopandas(gpdpoints1)
     points2 = cuspatial.from_geopandas(gpdpoints2)
-    got = points1.equals(points2)
-    expected = gpdpoints1.equals(gpdpoints2)
-    assert got == expected
+    got = points1.geom_equals(points2)
+    expected = gpdpoints1.geom_equals(gpdpoints2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_linestring_equals_linestring():
+def test_linestring_geom_equals_linestring():
     gpdline1 = gpd.GeoSeries([LineString([(0, 0), (1, 1)])])
     gpdline2 = gpd.GeoSeries([LineString([(0, 0), (1, 1)])])
     line1 = cuspatial.from_geopandas(gpdline1)
     line2 = cuspatial.from_geopandas(gpdline2)
-    got = line1.equals(line2)
-    expected = gpdline1.equals(gpdline2)
-    assert got == expected
+    got = line1.geom_equals(line2)
+    expected = gpdline1.geom_equals(gpdline2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_31_linestrings_equals_31_linestrings(linestring_generator):
+def test_31_linestrings_geom_equals_31_linestrings(linestring_generator):
     gpdlines1 = gpd.GeoSeries([*linestring_generator(31, 5)])
     gpdlines2 = gpd.GeoSeries([*linestring_generator(31, 5)])
     lines1 = cuspatial.from_geopandas(gpdlines1)
     lines2 = cuspatial.from_geopandas(gpdlines2)
-    got = lines1.equals(lines2)
-    expected = gpdlines1.equals(gpdlines2)
-    assert got == expected
+    got = lines1.geom_equals(lines2)
+    expected = gpdlines1.geom_equals(gpdlines2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_linestring_equals_polygon():
+def test_linestring_geom_equals_polygon():
     gpdline = gpd.GeoSeries([LineString([(0, 0), (1, 1)])])
     gpdpolygon = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
     line = cuspatial.from_geopandas(gpdline)
     polygon = cuspatial.from_geopandas(gpdpolygon)
-    got = line.equals(polygon)
-    expected = gpdline.equals(gpdpolygon)
-    assert got == expected
+    got = line.geom_equals(polygon)
+    expected = gpdline.geom_equals(gpdpolygon)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_31_linestrings_equals_31_polygons(
+def test_31_linestrings_geom_equals_31_polygons(
     polygon_generator, linestring_generator
 ):
     gpdlines = gpd.GeoSeries([*linestring_generator(31, 5)])
     gpdpolygons = gpd.GeoSeries([*polygon_generator(31, 0)])
     lines = cuspatial.from_geopandas(gpdlines)
     polygons = cuspatial.from_geopandas(gpdpolygons)
-    got = lines.equals(polygons)
-    expected = gpdlines.equals(gpdpolygons)
-    assert got == expected
+    got = lines.geom_equals(polygons)
+    expected = gpdlines.geom_equals(gpdpolygons)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_polygon_equals_linestring():
+def test_polygon_geom_equals_linestring():
     gpdline = gpd.GeoSeries([LineString([(0, 0), (1, 1)])])
     gpdpolygon = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
     line = cuspatial.from_geopandas(gpdline)
     polygon = cuspatial.from_geopandas(gpdpolygon)
-    got = polygon.equals(line)
-    expected = gpdpolygon.equals(gpdline)
-    assert got == expected
+    got = polygon.geom_equals(line)
+    expected = gpdpolygon.geom_equals(gpdline)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_31_polygons_equals_31_linestrings(
+def test_31_polygons_geom_equals_31_linestrings(
     polygon_generator, linestring_generator
 ):
     gpdpolygons = gpd.GeoSeries([*polygon_generator(31, 0)])
     gpdlines = gpd.GeoSeries([*linestring_generator(31, 5)])
     polygons = cuspatial.from_geopandas(gpdpolygons)
     lines = cuspatial.from_geopandas(gpdlines)
-    got = polygons.equals(lines)
-    expected = gpdpolygons.equals(gpdlines)
-    assert got == expected
+    got = polygons.geom_equals(lines)
+    expected = gpdpolygons.geom_equals(gpdlines)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_polygon_equals_polygon():
+def test_polygon_geom_equals_polygon():
     gpdpolygon1 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
     gpdpolygon2 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
     polygon1 = cuspatial.from_geopandas(gpdpolygon1)
     polygon2 = cuspatial.from_geopandas(gpdpolygon2)
-    got = polygon1.equals(polygon2)
-    expected = gpdpolygon1.equals(gpdpolygon2)
-    assert got == expected
+    got = polygon1.geom_equals(polygon2)
+    expected = gpdpolygon1.geom_equals(gpdpolygon2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_31_polygons_equals_31_polygons(polygon_generator):
+def test_31_polygons_geom_equals_31_polygons(polygon_generator):
     gpdpolygons1 = gpd.GeoSeries([*polygon_generator(31, 0)])
     gpdpolygons2 = gpd.GeoSeries([*polygon_generator(31, 0)])
     polygons1 = cuspatial.from_geopandas(gpdpolygons1)
     polygons2 = cuspatial.from_geopandas(gpdpolygons2)
-    got = polygons1.equals(polygons2)
-    expected = gpdpolygons1.equals(gpdpolygons2)
-    assert got == expected
+    got = polygons1.geom_equals(polygons2)
+    expected = gpdpolygons1.geom_equals(gpdpolygons2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
 def test_point_contains_point():
@@ -185,7 +186,7 @@ def test_31_points_within_31_points(point_generator):
     points2 = cuspatial.from_geopandas(gpdpoints2)
     got = points1.within(points2).values_host
     expected = gpdpoints1.within(gpdpoints2).values
-    assert (got == expected).all()
+    (pd.testing.assert_series_equal(expected, got.to_pandas())).all()
 
 
 def test_point_crosses_point():

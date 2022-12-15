@@ -283,23 +283,56 @@ class EqualsBinpred(BinaryPredicate):
         return (lhs, rhs, None)
 
     def postprocess(self, point_indices, point_result):
+        return point_result
+        """
         if isinstance(point_result, bool):
             return point_result
         elif len(point_result) == 1:
             return point_result[0]
+        """
+
+    def _offsets_equals(self, lhs, rhs):
+        """Compute the equals relationship between two sets of offsets
+        buffers."""
+        return lhs == rhs
+
+    def _vertices_equals(self, lhs, rhs):
+        """Compute the equals relationship between interleaved xy
+        coordinate buffers."""
+        a = (lhs[::2] == rhs[::2]).reset_index(drop=True)
+        b = (rhs[1::2] == lhs[1::2]).reset_index(drop=True)
+        return a & b
 
     def _op(self, lhs, rhs):
         """Compute the equals relationship between two GeoSeries."""
         result = False
         if contains_only_points(lhs):
-            result = lhs.points.xy.equals(rhs.points.xy)
+            result = self._vertices_equals(lhs.points.xy, rhs.points.xy)
         elif contains_only_linestrings(lhs):
-            result = lhs.lines.xy.equals(rhs.lines.xy)
+            lengths_equal = self._offsets_equals(
+                lhs.lines.part_offset, rhs.lines.part_offset
+            )
+            lhs_matches = lhs[lengths_equal[:-1]]
+            rhs_matches = rhs[lengths_equal[:-1]]
+            if lengths_equal.any():
+                indices = lhs_matches.lines.point_indices()
+                result = self._vertices_equals(
+                    lhs_matches.lines.xy, rhs_matches.lines.xy
+                )
+                result_df = cudf.DataFrame({"idx": indices, "pip": result})
+                result = (
+                    result_df.groupby("idx").sum()
+                    == result_df.groupby("idx").count()
+                )["pip"]
+                result.index.name = None
+                result.name = None
+            else:
+                result = lengths_equal
         elif contains_only_polygons(lhs):
             result = lhs.polygons.xy.equals(rhs.polygons.xy)
         elif contains_only_multipoints(lhs):
             result = lhs.multipoints.xy.equals(rhs.multipoints.xy)
-        return result
+        return cudf.Series(result)
 
 
 class CrossesBinpred(EqualsBinpred):
