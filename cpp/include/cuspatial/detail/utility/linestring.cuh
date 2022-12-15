@@ -259,21 +259,5 @@ thrust::optional<segment<T>> __device__ maybe_merge_segments(segment<T> const& s
   return segment<T>{e0, e1}.translate(center);
 }
 
-/*
- * @brief Given a point and a segment, returns true if point is on the segment.
- */
-template <typename T>
-bool __device__ is_point_on_segment(segment<T> const& segment, vec_2d<T> const& c)
-{
-  auto [a, b] = segment;
-  auto ab     = b - a;
-  auto ac     = c - a;
-
-  if (not float_equal(det(ab, ac), T{0})) return false;
-
-  if (b < a) thrust::swap(a, b);
-  return a <= c && c <= b;
-}
-
 }  // namespace detail
 }  // namespace cuspatial
