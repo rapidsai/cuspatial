@@ -409,11 +409,12 @@ def test_from_dict_with_list():
     )
 
 
+@pytest.mark.parametrize("level", [None, 0, 1])
 @pytest.mark.parametrize("drop", [False, True])
 @pytest.mark.parametrize("inplace", [False, True])
 @pytest.mark.parametrize("col_level", [0, 1])
 @pytest.mark.parametrize("col_fill", ["", "some_lv"])
-def test_reset_index(drop, inplace, col_level, col_fill):
+def test_reset_index(level, drop, inplace, col_level, col_fill):
     if not drop and inplace:
         pytest.skip(
             "For exception checks, see "
@@ -433,8 +434,8 @@ def test_reset_index(drop, inplace, col_level, col_fill):
         index=midx,
     )
     gdf = cuspatial.from_geopandas(gpdf)
-    expected = gpdf.reset_index(None, drop, inplace, col_level, col_fill)
-    got = gdf.reset_index(None, drop, inplace, col_level, col_fill)
+    expected = gpdf.reset_index(level, drop, inplace, col_level, col_fill)
+    got = gdf.reset_index(level, drop, inplace, col_level, col_fill)
     if inplace:
         expected = gpdf
         got = gdf
