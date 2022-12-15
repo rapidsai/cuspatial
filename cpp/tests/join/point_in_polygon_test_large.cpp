@@ -85,11 +85,10 @@ inline auto make_polygons_geometry(thrust::host_vector<uint32_t> const& poly_off
                                    thrust::host_vector<T> const& poly_y)
 {
   std::vector<OGRGeometry*> polygons{};
-  for (uint32_t poly_idx = 0, poly_end = poly_offsets.size(); poly_idx < poly_end; ++poly_idx) {
+  for (uint32_t poly_idx = 0, poly_end = poly_offsets.size() - 1; poly_idx < poly_end; ++poly_idx) {
     auto ring_idx = static_cast<size_t>(poly_offsets[poly_idx]);
-    auto ring_end = static_cast<size_t>(
-      poly_idx < poly_offsets.size() - 1 ? poly_offsets[poly_idx + 1] : ring_offsets.size());
-    auto polygon = static_cast<OGRPolygon*>(OGRGeometryFactory::createGeometry(wkbPolygon));
+    auto ring_end = static_cast<size_t>(poly_offsets[poly_idx + 1]);
+    auto polygon  = static_cast<OGRPolygon*>(OGRGeometryFactory::createGeometry(wkbPolygon));
     for (; ring_idx < ring_end; ++ring_idx) {
       auto seg_idx = static_cast<size_t>(ring_offsets[ring_idx]);
       auto seg_end = static_cast<size_t>(
@@ -167,8 +166,8 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   auto points         = cudf::gather(
     cudf::table_view{{x, y}}, *point_indices, cudf::out_of_bounds_policy::DONT_CHECK, this->mr());
 
-  auto poly_offsets = fixed_width_column_wrapper<int32_t>({0, 1, 2, 3});
-  auto ring_offsets = fixed_width_column_wrapper<int32_t>({0, 4, 10, 14});
+  auto poly_offsets = fixed_width_column_wrapper<int32_t>({0, 1, 2, 3, 4});
+  auto ring_offsets = fixed_width_column_wrapper<int32_t>({0, 4, 10, 14, 19});
   auto poly_x       = fixed_width_column_wrapper<T>({// ring 1
                                                2.488450,
                                                1.333584,

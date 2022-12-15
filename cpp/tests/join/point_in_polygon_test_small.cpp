@@ -100,8 +100,8 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto& quadtree      = std::get<1>(quadtree_pair);
   auto& point_indices = std::get<0>(quadtree_pair);
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14});
+  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3, 4});
+  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14, 19});
   fixed_width_column_wrapper<T> poly_x({// ring 1
                                         2.488450,
                                         1.333584,

@@ -27,13 +27,66 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <thrust/binary_search.h>
+#include <thrust/distance.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/reduce.h>
+#include <thrust/remove.h>
 #include <thrust/scan.h>
 #include <thrust/tuple.h>
+#include <thrust/uninitialized_fill.h>
 
+#include <type_traits>
 #include <utility>
 
 namespace cuspatial {
 namespace detail {
+
+namespace intersection_functors {
+
+template <typename Keys, typename Values>
+struct offsets_update_functor {
+  Keys reduced_keys_begin;
+  Keys reduced_keys_end;
+  Values reduced_values_begin;
+  Values reduced_values_end;
+
+  offsets_update_functor(Keys kb, Keys ke, Values vb, Values ve)
+    : reduced_keys_begin(kb), reduced_keys_end(ke), reduced_values_begin(vb), reduced_values_end(ve)
+  {
+  }
+
+  int __device__ operator()(int offset, int i)
+  {
+    if (i == 0) return 0;
+    auto j = thrust::distance(
+      reduced_keys_begin,
+      thrust::upper_bound(thrust::seq, reduced_keys_begin, reduced_keys_end, i - 1));
+    return offset - reduced_values_begin[j - 1];
+  }
+};
+
+template <typename Iterator>
+struct offsets_to_keys_functor {
+  Iterator _offsets_begin;
+  Iterator _offsets_end;
+
+  offsets_to_keys_functor(Iterator offset_begin, Iterator offset_end)
+    : _offsets_begin(offset_begin), _offsets_end(offset_end)
+  {
+  }
+
+  template <typename IndexType>
+  IndexType __device__ operator()(IndexType i)
+  {
+    return thrust::distance(
+      _offsets_begin,
+      thrust::prev(thrust::upper_bound(thrust::seq, _offsets_begin, _offsets_end, i)));
+  }
+};
+
+}  // namespace intersection_functors
 
 /// Internal structure to provide convenient access to the intersection intermediate id arrays.
 template <typename IntegerRange>
@@ -87,32 +140,51 @@ struct id_ranges {
  * @tparam GeomType Type of geometry
  * @tparam index_t  Type of index
  */
-template <typename GeomType, typename index_t>
+template <typename GeomType, typename IndexType>
 struct linestring_intersection_intermediates {
+  using geometry_t = GeomType;
+  using index_t    = IndexType;
+
   /// Offset array to geometries, temporary.
-  std::unique_ptr<rmm::device_uvector<index_t>> offsets;
+  std::unique_ptr<rmm::device_uvector<IndexType>> offsets;
   /// Array to store the resulting geometry, non-temporary.
   std::unique_ptr<rmm::device_uvector<GeomType>> geoms;
   /// Look-back ids for the resulting geometry, temporary.
-  std::unique_ptr<rmm::device_uvector<index_t>> lhs_linestring_ids;
+  std::unique_ptr<rmm::device_uvector<IndexType>> lhs_linestring_ids;
   /// Look-back ids for the resulting geometry, temporary.
-  std::unique_ptr<rmm::device_uvector<index_t>> lhs_segment_ids;
+  std::unique_ptr<rmm::device_uvector<IndexType>> lhs_segment_ids;
   /// Look-back ids for the resulting geometry, temporary.
-  std::unique_ptr<rmm::device_uvector<index_t>> rhs_linestring_ids;
+  std::unique_ptr<rmm::device_uvector<IndexType>> rhs_linestring_ids;
   /// Look-back ids for the resulting geometry, temporary.
-  std::unique_ptr<rmm::device_uvector<index_t>> rhs_segment_ids;
+  std::unique_ptr<rmm::device_uvector<IndexType>> rhs_segment_ids;
+
+  linestring_intersection_intermediates(
+    std::unique_ptr<rmm::device_uvector<index_t>> offsets,
+    std::unique_ptr<rmm::device_uvector<GeomType>> geoms,
+    std::unique_ptr<rmm::device_uvector<index_t>> lhs_linestring_ids,
+    std::unique_ptr<rmm::device_uvector<index_t>> lhs_segment_ids,
+    std::unique_ptr<rmm::device_uvector<index_t>> rhs_linestring_ids,
+    std::unique_ptr<rmm::device_uvector<index_t>> rhs_segment_ids)
+    : offsets(std::move(offsets)),
+      geoms(std::move(geoms)),
+      lhs_linestring_ids(std::move(lhs_linestring_ids)),
+      lhs_segment_ids(std::move(lhs_segment_ids)),
+      rhs_linestring_ids(std::move(rhs_linestring_ids)),
+      rhs_segment_ids(std::move(rhs_segment_ids))
+  {
+  }
 
   linestring_intersection_intermediates(std::size_t num_pairs,
                                         std::size_t num_geoms,
-                                        rmm::device_uvector<index_t> const& num_geoms_per_pair,
+                                        rmm::device_uvector<IndexType> const& num_geoms_per_pair,
                                         rmm::cuda_stream_view stream,
                                         rmm::mr::device_memory_resource* mr)
-    : offsets(std::make_unique<rmm::device_uvector<index_t>>(num_pairs + 1, stream)),
+    : offsets(std::make_unique<rmm::device_uvector<IndexType>>(num_pairs + 1, stream)),
       geoms(std::make_unique<rmm::device_uvector<GeomType>>(num_geoms, stream, mr)),
-      lhs_linestring_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream)),
-      lhs_segment_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream)),
-      rhs_linestring_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream)),
-      rhs_segment_ids(std::make_unique<rmm::device_uvector<index_t>>(num_geoms, stream))
+      lhs_linestring_ids(std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream)),
+      lhs_segment_ids(std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream)),
+      rhs_linestring_ids(std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream)),
+      rhs_segment_ids(std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream))
   {
     // compute offsets from num_geoms_per_pair
 
@@ -121,6 +193,69 @@ struct linestring_intersection_intermediates {
                            num_geoms_per_pair.begin(),
                            num_geoms_per_pair.end(),
                            thrust::next(offsets->begin()));
+  }
+
+  /// Given a flag array, remove the ith geometry if `flags[i] == 1`.
+  /// @pre flag array must have the same size as the geometry array.
+  template <typename FlagRange>
+  void remove_if(FlagRange flags, rmm::cuda_stream_view stream)
+  {
+    // The offsets for the geometry array marks the start index for each list.
+    // When geometries are removed, the offset for the next list must
+    // be subtracted by the number of removed geometries in *all* previous lists.
+
+    // Use `reduce_by_key` to compute the number of removed geometry per list.
+    rmm::device_uvector<index_t> reduced_keys(num_pairs(), stream);
+    rmm::device_uvector<index_t> reduced_flags(num_pairs(), stream);
+    auto keys_begin = make_counting_transform_iterator(
+      0, intersection_functors::offsets_to_keys_functor{offsets->begin(), offsets->end()});
+
+    auto [keys_end, flags_end] =
+      thrust::reduce_by_key(rmm::exec_policy(stream),
+                            keys_begin,
+                            keys_begin + flags.size(),
+                            flags.begin(),
+                            reduced_keys.begin(),
+                            reduced_flags.begin(),
+                            thrust::equal_to<index_t>(),
+                            thrust::plus<index_t>());  // explicitly cast flags to index_t type
+                                                       // before adding to avoid overflow.
+
+    reduced_keys.resize(thrust::distance(reduced_keys.begin(), keys_end), stream);
+    reduced_flags.resize(thrust::distance(reduced_flags.begin(), flags_end), stream);
+
+    // Use `inclusive_scan` to compute the number of removed geometries in *all* previous lists.
+    thrust::inclusive_scan(
+      rmm::exec_policy(stream), reduced_flags.begin(), reduced_flags.end(), reduced_flags.begin());
+
+    // Update the offsets
+    thrust::transform(
+      rmm::exec_policy(stream),
+      offsets->begin(),
+      offsets->end(),
+      thrust::make_counting_iterator(0),
+      offsets->begin(),
+      intersection_functors::offsets_update_functor{
+        reduced_keys.begin(), reduced_keys.end(), reduced_flags.begin(), reduced_flags.end()});
+
+    // Remove the geometries and the corresponding ids per flag.
+    auto geom_id_it  = thrust::make_zip_iterator(geoms->begin(),
+                                                lhs_linestring_ids->begin(),
+                                                lhs_segment_ids->begin(),
+                                                rhs_linestring_ids->begin(),
+                                                rhs_segment_ids->begin());
+    auto geom_id_end = thrust::remove_if(rmm::exec_policy(stream),
+                                         geom_id_it,
+                                         geom_id_it + geoms->size(),
+                                         flags.begin(),
+                                         [] __device__(uint8_t flag) { return flag == 1; });
+
+    auto new_geom_size = thrust::distance(geom_id_it, geom_id_end);
+    geoms->resize(new_geom_size, stream);
+    lhs_linestring_ids->resize(new_geom_size, stream);
+    lhs_segment_ids->resize(new_geom_size, stream);
+    rhs_linestring_ids->resize(new_geom_size, stream);
+    rhs_segment_ids->resize(new_geom_size, stream);
   }
 
   /// Return range to offset array
@@ -138,8 +273,18 @@ struct linestring_intersection_intermediates {
                      range(rhs_segment_ids->begin(), rhs_segment_ids->end())};
   }
 
+  /// Return list-id corresponding to the geometry
+  auto keys_begin()
+  {
+    return make_counting_transform_iterator(
+      0, intersection_functors::offsets_to_keys_functor{offsets->begin(), offsets->end()});
+  }
+
   /// Return the number of pairs in the intermediates
-  auto size() { return offsets->size() - 1; }
+  auto num_pairs() { return offsets->size() - 1; }
+
+  /// Return the number of geometries in the intermediates
+  auto num_geoms() { return geoms->size(); }
 };
 
 /**
