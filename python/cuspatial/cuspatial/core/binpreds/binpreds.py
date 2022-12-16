@@ -314,6 +314,17 @@ class EqualsBinpred(BinaryPredicate):
         b = (rhs[1::2] == lhs[1::2]).reset_index(drop=True)
         return a & b
 
+    def _compare_aligned_vertices(self, lhs, rhs):
+        indices = lhs.point_indices()
+        result = self._vertices_equals(lhs.xy, rhs.xy)
+        result_df = cudf.DataFrame({"idx": indices, "pip": result})
+        result = (
+            result_df.groupby("idx").sum() == result_df.groupby("idx").count()
+        )["pip"]
+        result.index.name = None
+        result.name = None
+        return result
+
     def _op(self, lhs, rhs):
         """Compute the equals relationship between two GeoSeries."""
         result = False
@@ -324,20 +335,10 @@ class EqualsBinpred(BinaryPredicate):
                 lhs.lines.part_offset, rhs.lines.part_offset
             )
             if lengths_equal.any():
-                lhs_matches = lhs[lengths_equal]
-                rhs_matches = rhs[lengths_equal]
-                indices = lhs_matches.lines.point_indices()
-                result = self._vertices_equals(
-                    lhs_matches.lines.xy, rhs_matches.lines.xy
+                groups_equal = self._compare_aligned_vertices(
+                    lhs[lengths_equal].lines, rhs[lengths_equal].lines
                 )
-                result_df = cudf.DataFrame({"idx": indices, "pip": result})
-                result = (
-                    result_df.groupby("idx").sum()
-                    == result_df.groupby("idx").count()
-                )["pip"]
-                result.index.name = None
-                result.name = None
-                lengths_equal[result.index] = result
+                lengths_equal[groups_equal.index] = groups_equal
             result = lengths_equal
         elif contains_only_polygons(lhs):
             geoms_equal = self._offsets_equals(
@@ -348,20 +349,11 @@ class EqualsBinpred(BinaryPredicate):
                 rhs[geoms_equal].polygons.ring_offset,
             )
             if lengths_equal.any():
-                lhs_matches = lhs[geoms_equal][lengths_equal]
-                rhs_matches = rhs[geoms_equal][lengths_equal]
-                indices = lhs_matches.polygons.point_indices()
-                result = self._vertices_equals(
-                    lhs_matches.polygons.xy, rhs_matches.polygons.xy
+                groups_equal = self._compare_aligned_vertices(
+                    lhs[geoms_equal][lengths_equal].polygons,
+                    rhs[geoms_equal][lengths_equal].polygons,
                 )
-                result_df = cudf.DataFrame({"idx": indices, "pip": result})
-                result = (
-                    result_df.groupby("idx").sum()
-                    == result_df.groupby("idx").count()
-                )["pip"]
-                result.index.name = None
-                result.name = None
-                lengths_equal[result.index] = result
+                lengths_equal[groups_equal.index] = groups_equal
             result = lengths_equal
         elif contains_only_multipoints(lhs):
             result = lhs.multipoints.xy.equals(rhs.multipoints.xy)
