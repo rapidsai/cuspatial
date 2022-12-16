@@ -1,7 +1,7 @@
 import geopandas as gpd
 import pandas as pd
 import pytest
-from shapely.geometry import LineString, Point, Polygon
+from shapely.geometry import LineString, MultiPoint, Point, Polygon
 
 import cuspatial
 
@@ -330,6 +330,16 @@ def test_point_crosses_point():
     assert (got.values_host == expected.values).all()
 
 
+def test_point_not_crosses_point():
+    gpdpoint1 = gpd.GeoSeries([Point(0, 0)])
+    gpdpoint2 = gpd.GeoSeries([Point(1, 1)])
+    point1 = cuspatial.from_geopandas(gpdpoint1)
+    point2 = cuspatial.from_geopandas(gpdpoint2)
+    got = point1.crosses(point2)
+    expected = gpdpoint1.crosses(gpdpoint2)
+    assert (got.values_host == expected.values).all()
+
+
 def test_31_points_crosses_31_points(point_generator):
     gpdpoints1 = gpd.GeoSeries([*point_generator(31)])
     gpdpoints2 = gpd.GeoSeries([*point_generator(31)])
@@ -367,4 +377,70 @@ def test_31_points_overlaps_31_points(point_generator):
     point2 = cuspatial.from_geopandas(gpdpoint2)
     got = point1.overlaps(point2)
     expected = gpdpoint1.overlaps(gpdpoint2)
+    assert (got.values_host == expected.values).all()
+
+
+def test_multipoint_geom_equals_multipoint():
+    gpdpoint1 = gpd.GeoSeries([MultiPoint([(0, 0), (1, 1)])])
+    gpdpoint2 = gpd.GeoSeries([MultiPoint([(0, 0), (1, 1)])])
+    point1 = cuspatial.from_geopandas(gpdpoint1)
+    point2 = cuspatial.from_geopandas(gpdpoint2)
+    got = point1.geom_equals(point2)
+    expected = gpdpoint1.geom_equals(gpdpoint2)
+    assert (got.values_host == expected.values).all()
+
+
+def test_multipoint_not_geom_equals_multipoint():
+    gpdpoint1 = gpd.GeoSeries([MultiPoint([(0, 0), (1, 1)])])
+    gpdpoint2 = gpd.GeoSeries([MultiPoint([(0, 1), (1, 1)])])
+    point1 = cuspatial.from_geopandas(gpdpoint1)
+    point2 = cuspatial.from_geopandas(gpdpoint2)
+    got = point1.geom_equals(point2)
+    expected = gpdpoint1.geom_equals(gpdpoint2)
+    assert (got.values_host == expected.values).all()
+
+
+def test_31_multipoints_geom_equals_31_multipoints(multipoint_generator):
+    gpdpoints1 = gpd.GeoSeries([*multipoint_generator(31, 10)])
+    gpdpoints2 = gpd.GeoSeries([*multipoint_generator(31, 10)])
+    points1 = cuspatial.from_geopandas(gpdpoints1)
+    points2 = cuspatial.from_geopandas(gpdpoints2)
+    got = points1.geom_equals(points2)
+    expected = gpdpoints1.geom_equals(gpdpoints2)
+    assert (got.values_host == expected.values).all()
+
+
+@pytest.mark.parametrize(
+    "lhs",
+    [
+        [
+            MultiPoint([(0, 0), (1, 1)]),
+            MultiPoint([(0, 0), (1, 1)]),
+            MultiPoint([(0, 0), (1, 1)]),
+        ],
+        [
+            MultiPoint([(0, 0), (1, 1)]),
+            MultiPoint([(0, 1), (1, 1)]),
+            MultiPoint([(0, 0), (1, 1)]),
+        ],
+        [
+            MultiPoint([(0, 0), (1, 1)]),
+            MultiPoint([(0, 2), (1, 1)]),
+            MultiPoint([(0, 0), (1, 1)]),
+        ],
+    ],
+)
+def test_3_multipoints_geom_equals_3_multipoints_one_equal(lhs):
+    gpdpoints1 = gpd.GeoSeries(lhs)
+    gpdpoints2 = gpd.GeoSeries(
+        [
+            MultiPoint([(0, 0), (0, 1)]),
+            MultiPoint([(0, 0), (1, 1)]),
+            MultiPoint([(0, 0), (2, 1)]),
+        ]
+    )
+    points1 = cuspatial.from_geopandas(gpdpoints1)
+    points2 = cuspatial.from_geopandas(gpdpoints2)
+    got = points1.geom_equals(points2)
+    expected = gpdpoints1.geom_equals(gpdpoints2)
     assert (got.values_host == expected.values).all()

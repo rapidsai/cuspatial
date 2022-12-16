@@ -315,6 +315,7 @@ class EqualsBinpred(BinaryPredicate):
         return a & b
 
     def _compare_aligned_vertices(self, lhs, rhs):
+        # TODO: Sort aligned vertices by groups before testing for equality
         indices = lhs.point_indices()
         result = self._vertices_equals(lhs.xy, rhs.xy)
         result_df = cudf.DataFrame({"idx": indices, "pip": result})
@@ -328,8 +329,18 @@ class EqualsBinpred(BinaryPredicate):
     def _op(self, lhs, rhs):
         """Compute the equals relationship between two GeoSeries."""
         result = False
-        if contains_only_points(lhs):
-            result = self._vertices_equals(lhs.points.xy, rhs.points.xy)
+        if contains_only_multipoints(lhs):
+            lengths_equal = self._offsets_equals(
+                lhs.multipoints.geometry_offset,
+                rhs.multipoints.geometry_offset,
+            )
+            if lengths_equal.any():
+                groups_equal = self._compare_aligned_vertices(
+                    lhs[lengths_equal].multipoints,
+                    rhs[lengths_equal].multipoints,
+                )
+                lengths_equal[groups_equal.index] = groups_equal
+            result = lengths_equal
         elif contains_only_linestrings(lhs):
             lengths_equal = self._offsets_equals(
                 lhs.lines.part_offset, rhs.lines.part_offset
@@ -355,8 +366,8 @@ class EqualsBinpred(BinaryPredicate):
                 )
                 lengths_equal[groups_equal.index] = groups_equal
             result = lengths_equal
-        elif contains_only_multipoints(lhs):
-            result = lhs.multipoints.xy.equals(rhs.multipoints.xy)
+        elif contains_only_points(lhs):
+            result = self._vertices_equals(lhs.points.xy, rhs.points.xy)
         return cudf.Series(result)
 
 
