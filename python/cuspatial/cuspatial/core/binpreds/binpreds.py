@@ -49,7 +49,9 @@ class BinaryPredicate(ABC):
         return (lhs, rhs, cudf.RangeIndex(len(rhs)))
 
     @abstractmethod
-    def postprocess(self, point_indices, point_result):
+    def postprocess(
+        self, point_indices: cudf.Series, point_result: cudf.Series
+    ) -> cudf.Series:
         """Postprocess the output data for the binary predicate. This method
         should be implemented by subclasses.
 
@@ -290,6 +292,29 @@ class WithinBinpred(ContainsProperlyBinpred):
 
 
 class EqualsBinpred(BinaryPredicate):
+    def _offset_equals(self, lhs, rhs):
+        """Compute the equals relationship between two sets of offsets
+        buffers."""
+        lhs_lengths = lhs[:-1] - lhs[1:]
+        rhs_lengths = rhs[:-1] - rhs[1:]
+        return lhs_lengths == rhs_lengths
+
+    def _sort_xy_by_offset(self, lhs, rhs):
+        """Sort xy according to bins defined by offset"""
+        sort_indices = cp.repeat(lhs.point_indices(), 2)
+        lhs_xy, rhs_xy = lhs.xy, rhs.xy
+        lhs_xy.index = sort_indices
+        rhs_xy.index = sort_indices
+        lhs_df = lhs_xy.reset_index(drop=False, name="xy")
+        rhs_df = rhs_xy.reset_index(drop=False, name="xy")
+        lhs_sorted = lhs_df.sort_values(by=["index", "xy"]).reset_index(
+            drop=True
+        )
+        rhs_sorted = rhs_df.sort_values(by=["index", "xy"]).reset_index(
+            drop=True
+        )
+        return (lhs_sorted["xy"], rhs_sorted["xy"])
+
     def preprocess(self, lhs, rhs):
         # Compare types
         type_compare = lhs.dtype == rhs.dtype
@@ -316,6 +341,9 @@ class EqualsBinpred(BinaryPredicate):
                 lhs.lines.part_offset, rhs.lines.part_offset
             )
             if lengths_equal.any():
+                lhs_sorted, rhs_sorted = self._sort_xy_by_offset(
+                    lhs[lengths_equal].lines, rhs[lengths_equal].lines
+                )
                 return (
                     lhs[lengths_equal].lines,
                     rhs[lengths_equal].lines,
@@ -343,16 +371,12 @@ class EqualsBinpred(BinaryPredicate):
             return (lhs.points, rhs.points, type_compare)
 
     def postprocess(self, lengths_equal, point_result):
-        point_result = point_result.sort_index()
-        lengths_equal[point_result.index] = point_result
+        # if point_result is not a Series, preprocessing terminated
+        # the results early.
+        if isinstance(point_result, cudf.Series):
+            point_result = point_result.sort_index()
+            lengths_equal[point_result.index] = point_result
         return cudf.Series(lengths_equal)
-
-    def _offset_equals(self, lhs, rhs):
-        """Compute the equals relationship between two sets of offsets
-        buffers."""
-        lhs_lengths = lhs[:-1] - lhs[1:]
-        rhs_lengths = rhs[:-1] - rhs[1:]
-        return lhs_lengths == rhs_lengths
 
     def _vertices_equals(self, lhs, rhs):
         """Compute the equals relationship between interleaved xy
@@ -361,22 +385,15 @@ class EqualsBinpred(BinaryPredicate):
         b = (rhs[1::2] == lhs[1::2]).reset_index(drop=True)
         return a & b
 
-    def _compare_aligned_vertices(self, lhs, rhs):
-        # TODO: Sort aligned vertices by groups before testing for equality
+    def _op(self, lhs, rhs):
+        """
+        if not hasattr(lhs, "xy"):
+            lhs_sorted, rhs_sorted = self._sort_xy_by_offset(lhs, rhs)
+        else:
+            lhs_sorted, rhs_sorted = lhs.xy, rhs.xy
+        """
         indices = lhs.point_indices()
-        sort_indices = cp.repeat(lhs.point_indices(), 2)
-        lhs_xy, rhs_xy = lhs.xy, rhs.xy
-        lhs_xy.index = sort_indices
-        rhs_xy.index = sort_indices
-        lhs_df = lhs_xy.reset_index(drop=False, name="xy")
-        rhs_df = rhs_xy.reset_index(drop=False, name="xy")
-        lhs_sorted = lhs_df.sort_values(by=["index", "xy"]).reset_index(
-            drop=True
-        )
-        rhs_sorted = rhs_df.sort_values(by=["index", "xy"]).reset_index(
-            drop=True
-        )
-        result = self._vertices_equals(lhs_sorted["xy"], rhs_sorted["xy"])
+        result = self._vertices_equals(lhs, rhs)
         result_df = cudf.DataFrame({"idx": indices, "equals": result})
         result = (
             result_df.groupby("idx").sum() == result_df.groupby("idx").count()
@@ -384,20 +401,6 @@ class EqualsBinpred(BinaryPredicate):
         result.index.name = None
         result.name = None
         return result
-
-    def _op(self, lhs, rhs):
-        """Compute the equals relationship between two GeoSeries.
-
-        Parameters
-        ----------
-        lhs : GeoColumnAccessor
-        rhs : GeoColumnAccessor
-
-        Returns
-        -------
-        GeoSeries
-        """
-        return self._compare_aligned_vertices(lhs, rhs)
 
 
 class CrossesBinpred(EqualsBinpred):

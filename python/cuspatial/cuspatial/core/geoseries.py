@@ -140,126 +140,19 @@ class GeoSeries(cudf.Series):
         )
         return result
 
-    class GeoColumnAccessor:
-        def __init__(self, list_series, meta):
-            self._series = list_series
-            self._col = self._series._column
-            self._meta = meta
-            self._type = Feature_Enum.POINT
-
-        @property
-        def x(self):
-            return self.xy[::2].reset_index(drop=True)
-
-        @property
-        def y(self):
-            return self.xy[1::2].reset_index(drop=True)
-
-        @property
-        def xy(self):
-            return cudf.Series(
-                self._get_current_features(self._type).leaves().values
-            )
-
-        def _get_current_features(self, type):
-            # Resample the existing features so that the offsets returned
-            # by `_offset` methods reflect previous slicing, and match
-            # the values returned by .xy.
-            existing_indices = self._meta.union_offsets[
-                self._meta.input_types == type.value
-            ]
-            existing_features = self._col.take(existing_indices._column)
-            return existing_features
-
-        def point_indices(self):
-            # Return a cupy.ndarray containing the index values that each
-            # point belongs to.
-            """
-            offsets = cp.arange(0, len(self.xy) + 1, 2)
-            sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._meta.input_types.index, sizes)
-            """
-            return self._meta.input_types.index[self._meta.input_types != -1]
-
-    class MultiPointGeoColumnAccessor(GeoColumnAccessor):
-        def __init__(self, list_series, meta):
-            super().__init__(list_series, meta)
-            self._type = Feature_Enum.MULTIPOINT
-
-        @property
-        def geometry_offset(self):
-            return self._get_current_features(self._type).offsets.values
-
-        def point_indices(self):
-            # Return a cupy.ndarray containing the index values from the
-            # MultiPoint GeoSeries that each individual point is member of.
-            offsets = cp.array(self.geometry_offset)
-            sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._meta.input_types.index, sizes)
-
-    class LineStringGeoColumnAccessor(GeoColumnAccessor):
-        def __init__(self, list_series, meta):
-            super().__init__(list_series, meta)
-            self._type = Feature_Enum.LINESTRING
-
-        @property
-        def geometry_offset(self):
-            return self._get_current_features(self._type).offsets.values
-
-        @property
-        def part_offset(self):
-            return self._get_current_features(
-                self._type
-            ).elements.offsets.values
-
-        def point_indices(self):
-            # Return a cupy.ndarray containing the index values from the
-            # LineString GeoSeries that each individual point is member of.
-            offsets = cp.array(self.part_offset)
-            sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._meta.input_types.index, sizes)
-
-    class PolygonGeoColumnAccessor(GeoColumnAccessor):
-        def __init__(self, list_series, meta):
-            super().__init__(list_series, meta)
-            self._type = Feature_Enum.POLYGON
-
-        @property
-        def geometry_offset(self):
-            return self._get_current_features(self._type).offsets.values
-
-        @property
-        def part_offset(self):
-            return self._get_current_features(
-                self._type
-            ).elements.offsets.values
-
-        @property
-        def ring_offset(self):
-            return self._get_current_features(
-                self._type
-            ).elements.elements.offsets.values
-
-        def point_indices(self):
-            # Return a cupy.ndarray containing the index values from the
-            # Polygon GeoSeries that each individual point is member of.
-            offsets = cp.array(self.ring_offset)
-            sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._meta.input_types.index, sizes)
-
     @property
     def points(self):
         """
         Access the `PointsArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.GeoColumnAccessor(self._column.points, self._column._meta)
+        return GeoColumnAccessor(self._column.points, self._column._meta)
 
     @property
     def multipoints(self):
         """
         Access the `MultiPointArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.MultiPointGeoColumnAccessor(
+        return MultiPointGeoColumnAccessor(
             self._column.mpoints, self._column._meta
         )
 
@@ -268,7 +161,7 @@ class GeoSeries(cudf.Series):
         """
         Access the `LineArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.LineStringGeoColumnAccessor(
+        return LineStringGeoColumnAccessor(
             self._column.lines, self._column._meta
         )
 
@@ -277,7 +170,7 @@ class GeoSeries(cudf.Series):
         """
         Access the `PolygonArray` of the underlying `GeoArrowBuffers`.
         """
-        return self.PolygonGeoColumnAccessor(
+        return PolygonGeoColumnAccessor(
             self._column.polygons, self._column._meta
         )
 
@@ -961,3 +854,110 @@ class GeoSeries(cudf.Series):
             return cudf.Series([False] * len(self))
         else:
             return CrossesBinpred(self, other, align=align)()
+
+
+class GeoColumnAccessor:
+    def __init__(self, list_series, meta):
+        self._series = list_series
+        self._col = self._series._column
+        self._meta = meta
+        self._type = Feature_Enum.POINT
+
+    @property
+    def x(self):
+        return self.xy[::2].reset_index(drop=True)
+
+    @property
+    def y(self):
+        return self.xy[1::2].reset_index(drop=True)
+
+    @property
+    def xy(self):
+        return cudf.Series(
+            self._get_current_features(self._type).leaves().values
+        )
+
+    def _get_current_features(self, type):
+        # Resample the existing features so that the offsets returned
+        # by `_offset` methods reflect previous slicing, and match
+        # the values returned by .xy.
+        existing_indices = self._meta.union_offsets[
+            self._meta.input_types == type.value
+        ]
+        existing_features = self._col.take(existing_indices._column)
+        return existing_features
+
+    def point_indices(self):
+        # Return a cupy.ndarray containing the index values that each
+        # point belongs to.
+        """
+        offsets = cp.arange(0, len(self.xy) + 1, 2)
+        sizes = offsets[1:] - offsets[:-1]
+        return cp.repeat(self._meta.input_types.index, sizes)
+        """
+        return self._meta.input_types.index[self._meta.input_types != -1]
+
+
+class MultiPointGeoColumnAccessor(GeoColumnAccessor):
+    def __init__(self, list_series, meta):
+        super().__init__(list_series, meta)
+        self._type = Feature_Enum.MULTIPOINT
+
+    @property
+    def geometry_offset(self):
+        return self._get_current_features(self._type).offsets.values
+
+    def point_indices(self):
+        # Return a cupy.ndarray containing the index values from the
+        # MultiPoint GeoSeries that each individual point is member of.
+        offsets = cp.array(self.geometry_offset)
+        sizes = offsets[1:] - offsets[:-1]
+        return cp.repeat(self._meta.input_types.index, sizes)
+
+
+class LineStringGeoColumnAccessor(GeoColumnAccessor):
+    def __init__(self, list_series, meta):
+        super().__init__(list_series, meta)
+        self._type = Feature_Enum.LINESTRING
+
+    @property
+    def geometry_offset(self):
+        return self._get_current_features(self._type).offsets.values
+
+    @property
+    def part_offset(self):
+        return self._get_current_features(self._type).elements.offsets.values
+
+    def point_indices(self):
+        # Return a cupy.ndarray containing the index values from the
+        # LineString GeoSeries that each individual point is member of.
+        offsets = cp.array(self.part_offset)
+        sizes = offsets[1:] - offsets[:-1]
+        return cp.repeat(self._meta.input_types.index, sizes)
+
+
+class PolygonGeoColumnAccessor(GeoColumnAccessor):
+    def __init__(self, list_series, meta):
+        super().__init__(list_series, meta)
+        self._type = Feature_Enum.POLYGON
+
+    @property
+    def geometry_offset(self):
+        return self._get_current_features(self._type).offsets.values
+
+    @property
+    def part_offset(self):
+        return self._get_current_features(self._type).elements.offsets.values
+
+    @property
+    def ring_offset(self):
+        return self._get_current_features(
+            self._type
+        ).elements.elements.offsets.values
+
+    def point_indices(self):
+        # Return a cupy.ndarray containing the index values from the
+        # Polygon GeoSeries that each individual point is member of.
+        offsets = cp.array(self.ring_offset)
+        sizes = offsets[1:] - offsets[:-1]
+        return cp.repeat(self._meta.input_types.index, sizes)

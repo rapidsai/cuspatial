@@ -446,7 +446,7 @@ def test_3_multipoints_geom_equals_3_multipoints_one_equal(lhs):
     assert (got.values_host == expected.values).all()
 
 
-def test_multipoint_geom_equals_multipoint_three_misordered():
+def test_3_multipoints_geom_equals_3_multipoints_misordered():
     gpdpoints1 = gpd.GeoSeries(
         [
             MultiPoint([(0, 0), (1, 1)]),
@@ -466,3 +466,69 @@ def test_multipoint_geom_equals_multipoint_three_misordered():
     got = points1.geom_equals(points2)
     expected = gpdpoints1.geom_equals(gpdpoints2)
     assert (got.values_host == expected.values).all()
+
+
+def test_3_linestrings_geom_equals_3_linestrings_misordered():
+    gpdline1 = gpd.GeoSeries(
+        [
+            LineString([(1, 1), (0, 0)]),
+            LineString([(2, 2), (1, 1)]),
+            LineString([(3, 3), (2, 2)]),
+        ]
+    )
+    gpdline2 = gpd.GeoSeries(
+        [
+            LineString([(0, 0), (1, 1)]),
+            LineString([(1, 1), (2, 2)]),
+            LineString([(2, 2), (3, 3)]),
+        ]
+    )
+    line1 = cuspatial.from_geopandas(gpdline1)
+    line2 = cuspatial.from_geopandas(gpdline2)
+    got = line1.geom_equals(line2)
+    expected = gpdline1.geom_equals(gpdline2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_3_polygons_geom_equals_3_polygons_different_sizes():
+    gpdpoly1 = gpd.GeoSeries(
+        [
+            Polygon([(0, 0), (0, 1), (1, 1), (1, 0)]),
+            Polygon([(0, 0), (0, 1), (1, 1), (1, 0)]),
+            Polygon([(0, 0), (0, 1), (1, 1), (1, 0)]),
+        ]
+    )
+    gpdpoly2 = gpd.GeoSeries(
+        [
+            Polygon([(0, 0), (1, 1), (1, 0), (0, 0)]),  # Oppositely wound
+            Polygon([(1, 1), (1, 0), (0, 0), (1, 1)]),  # Wound by +1 offset
+            Polygon([(1, 0), (0, 0), (1, 1), (1, 0)]),  # Wound by -1 offset
+        ]
+    )
+    poly1 = cuspatial.from_geopandas(gpdpoly1)
+    poly2 = cuspatial.from_geopandas(gpdpoly2)
+    got = poly1.geom_equals(poly2)
+    expected = gpdpoly1.geom_equals(gpdpoly2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_3_polygons_geom_equals_3_polygons_misordered():
+    gpdpoly1 = gpd.GeoSeries(
+        [
+            Polygon([(0, 0), (0, 1), (1, 1), (0, 0)]),
+            Polygon([(0, 0), (0, 1), (1, 1), (0, 0)]),
+            Polygon([(0, 0), (0, 1), (1, 1), (0, 0)]),
+        ]
+    )
+    gpdpoly2 = gpd.GeoSeries(
+        [
+            Polygon([(0, 0), (1, 1), (1, 0), (0, 0)]),  # Oppositely wound
+            Polygon([(1, 1), (1, 0), (0, 0), (1, 1)]),  # Wound by +1 offset
+            Polygon([(1, 0), (0, 0), (1, 1), (1, 0)]),  # Wound by -1 offset
+        ]
+    )
+    poly1 = cuspatial.from_geopandas(gpdpoly1)
+    poly2 = cuspatial.from_geopandas(gpdpoly2)
+    got = poly1.geom_equals(poly2)
+    expected = gpdpoly1.geom_equals(gpdpoly2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
