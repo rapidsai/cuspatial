@@ -17,6 +17,19 @@ from cuspatial.utils.column_utils import (
 )
 
 
+class PreprocessorOutput:
+    def __init__(self, coords, indices) -> None:
+        self.vertices = coords
+        self.indices = indices
+
+    @property
+    def xy(self):
+        return self.vertices
+
+    def point_indices(self):
+        return self.indices
+
+
 class BinaryPredicate(ABC):
     @abstractmethod
     def preprocess(self, lhs, rhs):
@@ -299,7 +312,7 @@ class EqualsBinpred(BinaryPredicate):
         rhs_lengths = rhs[:-1] - rhs[1:]
         return lhs_lengths == rhs_lengths
 
-    def _sort_xy_by_offset(self, lhs, rhs):
+    def _sort_xy_by_offset(self, lhs, rhs, initial):
         """Sort xy according to bins defined by offset"""
         sort_indices = cp.repeat(lhs.point_indices(), 2)
         lhs_xy, rhs_xy = lhs.xy, rhs.xy
@@ -313,7 +326,11 @@ class EqualsBinpred(BinaryPredicate):
         rhs_sorted = rhs_df.sort_values(by=["index", "xy"]).reset_index(
             drop=True
         )
-        return (lhs_sorted["xy"], rhs_sorted["xy"])
+        return (
+            PreprocessorOutput(lhs_sorted["xy"], lhs.point_indices()),
+            PreprocessorOutput(rhs_sorted["xy"], rhs.point_indices()),
+            initial,
+        )
 
     def preprocess(self, lhs, rhs):
         # Compare types
@@ -329,7 +346,7 @@ class EqualsBinpred(BinaryPredicate):
                 rhs.multipoints.geometry_offset,
             )
             if lengths_equal.any():
-                return (
+                return self._sort_xy_by_offset(
                     lhs[lengths_equal].multipoints,
                     rhs[lengths_equal].multipoints,
                     lengths_equal,
@@ -341,10 +358,7 @@ class EqualsBinpred(BinaryPredicate):
                 lhs.lines.part_offset, rhs.lines.part_offset
             )
             if lengths_equal.any():
-                lhs_sorted, rhs_sorted = self._sort_xy_by_offset(
-                    lhs[lengths_equal].lines, rhs[lengths_equal].lines
-                )
-                return (
+                return self._sort_xy_by_offset(
                     lhs[lengths_equal].lines,
                     rhs[lengths_equal].lines,
                     lengths_equal,
@@ -360,6 +374,7 @@ class EqualsBinpred(BinaryPredicate):
                 rhs[geoms_equal].polygons.ring_offset,
             )
             if lengths_equal.any():
+                # Don't sort polygons
                 return (
                     lhs[lengths_equal].polygons,
                     rhs[lengths_equal].polygons,
@@ -386,14 +401,8 @@ class EqualsBinpred(BinaryPredicate):
         return a & b
 
     def _op(self, lhs, rhs):
-        """
-        if not hasattr(lhs, "xy"):
-            lhs_sorted, rhs_sorted = self._sort_xy_by_offset(lhs, rhs)
-        else:
-            lhs_sorted, rhs_sorted = lhs.xy, rhs.xy
-        """
         indices = lhs.point_indices()
-        result = self._vertices_equals(lhs, rhs)
+        result = self._vertices_equals(lhs.xy, rhs.xy)
         result_df = cudf.DataFrame({"idx": indices, "equals": result})
         result = (
             result_df.groupby("idx").sum() == result_df.groupby("idx").count()
