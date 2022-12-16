@@ -177,7 +177,7 @@ class GeoSeries(cudf.Series):
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
             """
-            return self._meta.input_types.index
+            return self._series.index
 
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -193,7 +193,7 @@ class GeoSeries(cudf.Series):
             # MultiPoint GeoSeries that each individual point is member of.
             offsets = cp.array(self.geometry_offset)
             sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._meta.input_types.index, sizes)
+            return cp.repeat(self._series.index, sizes)
 
     class LineStringGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -213,10 +213,9 @@ class GeoSeries(cudf.Series):
         def point_indices(self):
             # Return a cupy.ndarray containing the index values from the
             # LineString GeoSeries that each individual point is member of.
-            breakpoint()
             offsets = cp.array(self.part_offset)
             sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._meta.input_types.index, sizes)
+            return cp.repeat(self._series.index, sizes)
 
     class PolygonGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -244,7 +243,7 @@ class GeoSeries(cudf.Series):
             # Polygon GeoSeries that each individual point is member of.
             offsets = cp.array(self.ring_offset)
             sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._meta.input_types.index, sizes)
+            return cp.repeat(self._series.index, sizes)
 
     @property
     def points(self):
@@ -283,9 +282,6 @@ class GeoSeries(cudf.Series):
     def __repr__(self):
         # TODO: Implement Iloc with slices so that we can use `Series.__repr__`
         return self.to_pandas().__repr__()
-
-    def __getitem__(self, item):
-        return self.loc[item]
 
     class GeoSeriesLocIndexer:
         """
