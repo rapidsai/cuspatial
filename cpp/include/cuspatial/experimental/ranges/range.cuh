@@ -23,6 +23,7 @@
 #include <thrust/distance.h>
 
 namespace cuspatial {
+
 /**
  * @brief Abstract Data Type (ADT) for any containers representable with a start and end iterator.
  *
