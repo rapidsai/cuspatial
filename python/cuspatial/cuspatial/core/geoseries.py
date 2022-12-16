@@ -124,6 +124,10 @@ class GeoSeries(cudf.Series):
         )
 
     @property
+    def dtype(self):
+        return self._column._meta.input_types
+
+    @property
     def type(self):
         gpu_types = cudf.Series(self._column._meta.input_types).astype("str")
         result = gpu_types.replace(
@@ -131,9 +135,7 @@ class GeoSeries(cudf.Series):
                 "0": "Point",
                 "1": "MultiPoint",
                 "2": "Linestring",
-                "3": "MultiLinestring",
-                "4": "Polygon",
-                "5": "MultiPolygon",
+                "3": "Polygon",
             }
         )
         return result
@@ -175,9 +177,9 @@ class GeoSeries(cudf.Series):
             """
             offsets = cp.arange(0, len(self.xy) + 1, 2)
             sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._series.index, sizes)
+            return cp.repeat(self._meta.input_types.index, sizes)
             """
-            return self._series.index
+            return self._meta.input_types.index[self._meta.input_types != -1]
 
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -193,7 +195,7 @@ class GeoSeries(cudf.Series):
             # MultiPoint GeoSeries that each individual point is member of.
             offsets = cp.array(self.geometry_offset)
             sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._series.index, sizes)
+            return cp.repeat(self._meta.input_types.index, sizes)
 
     class LineStringGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -215,7 +217,7 @@ class GeoSeries(cudf.Series):
             # LineString GeoSeries that each individual point is member of.
             offsets = cp.array(self.part_offset)
             sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._series.index, sizes)
+            return cp.repeat(self._meta.input_types.index, sizes)
 
     class PolygonGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -243,7 +245,7 @@ class GeoSeries(cudf.Series):
             # Polygon GeoSeries that each individual point is member of.
             offsets = cp.array(self.ring_offset)
             sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._series.index, sizes)
+            return cp.repeat(self._meta.input_types.index, sizes)
 
     @property
     def points(self):

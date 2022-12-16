@@ -186,7 +186,7 @@ def test_31_points_within_31_points(point_generator):
     points2 = cuspatial.from_geopandas(gpdpoints2)
     got = points1.within(points2).values_host
     expected = gpdpoints1.within(gpdpoints2).values
-    (pd.testing.assert_series_equal(expected, got.to_pandas())).all()
+    assert (expected == got).all()
 
 
 def test_point_crosses_point():

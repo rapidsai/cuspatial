@@ -280,6 +280,15 @@ class WithinBinpred(ContainsProperlyBinpred):
 
 class EqualsBinpred(BinaryPredicate):
     def preprocess(self, lhs, rhs):
+        # Compare types
+        type_compare = lhs.dtype == rhs.dtype
+        if (type_compare == False).all():  # noqa: E712
+            self._op = lambda x, y: type_compare
+            return (lhs, rhs, None)
+        # Any unmatched type is not equal
+        # Get indices of matching types
+        # Return lhs, rhs of only matching types?
+        # If no matching types, return False
         return (lhs, rhs, None)
 
     def postprocess(self, point_indices, point_result):
@@ -294,7 +303,9 @@ class EqualsBinpred(BinaryPredicate):
     def _offsets_equals(self, lhs, rhs):
         """Compute the equals relationship between two sets of offsets
         buffers."""
-        return lhs == rhs
+        lhs_lengths = lhs[:-1] - lhs[1:]
+        rhs_lengths = rhs[:-1] - rhs[1:]
+        return lhs_lengths == rhs_lengths
 
     def _vertices_equals(self, lhs, rhs):
         """Compute the equals relationship between interleaved xy
@@ -312,9 +323,9 @@ class EqualsBinpred(BinaryPredicate):
             lengths_equal = self._offsets_equals(
                 lhs.lines.part_offset, rhs.lines.part_offset
             )
-            lhs_matches = lhs[lengths_equal[:-1]]
-            rhs_matches = rhs[lengths_equal[:-1]]
             if lengths_equal.any():
+                lhs_matches = lhs[lengths_equal]
+                rhs_matches = rhs[lengths_equal]
                 indices = lhs_matches.lines.point_indices()
                 result = self._vertices_equals(
                     lhs_matches.lines.xy, rhs_matches.lines.xy
@@ -326,10 +337,32 @@ class EqualsBinpred(BinaryPredicate):
                 )["pip"]
                 result.index.name = None
                 result.name = None
-            else:
-                result = lengths_equal
+                lengths_equal[result.index] = result
+            result = lengths_equal
         elif contains_only_polygons(lhs):
-            result = lhs.polygons.xy.equals(rhs.polygons.xy)
+            geoms_equal = self._offsets_equals(
+                lhs.polygons.part_offset, rhs.polygons.part_offset
+            )
+            lengths_equal = self._offsets_equals(
+                lhs[geoms_equal].polygons.ring_offset,
+                rhs[geoms_equal].polygons.ring_offset,
+            )
+            if lengths_equal.any():
+                lhs_matches = lhs[geoms_equal][lengths_equal]
+                rhs_matches = rhs[geoms_equal][lengths_equal]
+                indices = lhs_matches.polygons.point_indices()
+                result = self._vertices_equals(
+                    lhs_matches.polygons.xy, rhs_matches.polygons.xy
+                )
+                result_df = cudf.DataFrame({"idx": indices, "pip": result})
+                result = (
+                    result_df.groupby("idx").sum()
+                    == result_df.groupby("idx").count()
+                )["pip"]
+                result.index.name = None
+                result.name = None
+                lengths_equal[result.index] = result
+            result = lengths_equal
         elif contains_only_multipoints(lhs):
             result = lhs.multipoints.xy.equals(rhs.multipoints.xy)
         return cudf.Series(result)
