@@ -92,7 +92,6 @@ void print_device_range(Iter begin,
                         std::string_view pre  = "",
                         std::string_view post = "\n")
 {
-  cudaDeviceSynchronize();
   auto hvec = to_host(begin, end);
 
   std::cout << pre;
