@@ -15,7 +15,6 @@
  */
 
 #include "intersection_test_utils.cuh"
-#include <cuspatial_test/test_util.cuh>
 
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
