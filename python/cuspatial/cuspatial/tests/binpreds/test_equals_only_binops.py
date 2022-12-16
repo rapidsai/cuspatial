@@ -444,3 +444,25 @@ def test_3_multipoints_geom_equals_3_multipoints_one_equal(lhs):
     got = points1.geom_equals(points2)
     expected = gpdpoints1.geom_equals(gpdpoints2)
     assert (got.values_host == expected.values).all()
+
+
+def test_multipoint_geom_equals_multipoint_three_misordered():
+    gpdpoints1 = gpd.GeoSeries(
+        [
+            MultiPoint([(0, 0), (1, 1)]),
+            MultiPoint([(0, 0), (1, 1)]),
+            MultiPoint([(0, 0), (1, 1)]),
+        ]
+    )
+    gpdpoints2 = gpd.GeoSeries(
+        [
+            MultiPoint([(1, 1), (0, 0)]),
+            MultiPoint([(1, 1), (0, 0)]),
+            MultiPoint([(1, 1), (0, 0)]),
+        ]
+    )
+    points1 = cuspatial.from_geopandas(gpdpoints1)
+    points2 = cuspatial.from_geopandas(gpdpoints2)
+    got = points1.geom_equals(points2)
+    expected = gpdpoints1.geom_equals(gpdpoints2)
+    assert (got.values_host == expected.values).all()

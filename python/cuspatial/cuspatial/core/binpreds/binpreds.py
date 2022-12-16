@@ -2,6 +2,8 @@
 
 from abc import ABC, abstractmethod
 
+import cupy as cp
+
 import cudf
 
 from cuspatial.core._column.geocolumn import GeoColumn
@@ -116,6 +118,15 @@ class BinaryPredicate(ABC):
         """
         (self.lhs, self.rhs) = lhs.align(rhs) if align else (lhs, rhs)
         self.align = align
+
+    def _cancel_op(self, lhs, rhs, result):
+        """Used to disable computation of the binary predicate.
+
+        This occurs when the binary predicate is not supported for the
+        input types, and a final result can be computed only using
+        `preprocess` and `postprocess`."""
+        self._op = lambda x, y: result
+        return (lhs, rhs, result)
 
     def __call__(self) -> cudf.Series:
         """Return the result of the binary predicate."""
@@ -282,25 +293,61 @@ class EqualsBinpred(BinaryPredicate):
     def preprocess(self, lhs, rhs):
         # Compare types
         type_compare = lhs.dtype == rhs.dtype
-        if (type_compare == False).all():  # noqa: E712
-            self._op = lambda x, y: type_compare
-            return (lhs, rhs, None)
         # Any unmatched type is not equal
+        if (type_compare == False).all():  # noqa: E712
+            # Override _op so that it will not be run.
+            return self._cancel_op(lhs, rhs, type_compare)
         # Get indices of matching types
-        # Return lhs, rhs of only matching types?
-        # If no matching types, return False
-        return (lhs, rhs, None)
+        if contains_only_multipoints(lhs):
+            lengths_equal = self._offset_equals(
+                lhs.multipoints.geometry_offset,
+                rhs.multipoints.geometry_offset,
+            )
+            if lengths_equal.any():
+                return (
+                    lhs[lengths_equal].multipoints,
+                    rhs[lengths_equal].multipoints,
+                    lengths_equal,
+                )
+            else:
+                return self._cancel_op(lhs, rhs, lengths_equal)
+        elif contains_only_linestrings(lhs):
+            lengths_equal = self._offset_equals(
+                lhs.lines.part_offset, rhs.lines.part_offset
+            )
+            if lengths_equal.any():
+                return (
+                    lhs[lengths_equal].lines,
+                    rhs[lengths_equal].lines,
+                    lengths_equal,
+                )
+            else:
+                return self._cancel_op(lhs, rhs, lengths_equal)
+        elif contains_only_polygons(lhs):
+            geoms_equal = self._offset_equals(
+                lhs.polygons.part_offset, rhs.polygons.part_offset
+            )
+            lengths_equal = self._offset_equals(
+                lhs[geoms_equal].polygons.ring_offset,
+                rhs[geoms_equal].polygons.ring_offset,
+            )
+            if lengths_equal.any():
+                return (
+                    lhs[lengths_equal].polygons,
+                    rhs[lengths_equal].polygons,
+                    lengths_equal,
+                )
+            else:
+                return self._cancel_op(lhs, rhs, lengths_equal)
+        elif contains_only_points(lhs):
+            return (lhs.points, rhs.points, type_compare)
 
-    def postprocess(self, point_indices, point_result):
-        return point_result
-        """
-        if isinstance(point_result, bool):
-            return point_result
-        elif len(point_result) == 1:
-            return point_result[0]
-        """
+    def postprocess(self, lengths_equal, point_result):
+        point_result = point_result.sort_index()
+        lengths_equal[point_result.index] = point_result
+        return cudf.Series(lengths_equal)
 
-    def _offsets_equals(self, lhs, rhs):
+    def _offset_equals(self, lhs, rhs):
         """Compute the equals relationship between two sets of offsets
         buffers."""
         lhs_lengths = lhs[:-1] - lhs[1:]
@@ -317,58 +364,40 @@ class EqualsBinpred(BinaryPredicate):
     def _compare_aligned_vertices(self, lhs, rhs):
         # TODO: Sort aligned vertices by groups before testing for equality
         indices = lhs.point_indices()
-        result = self._vertices_equals(lhs.xy, rhs.xy)
-        result_df = cudf.DataFrame({"idx": indices, "pip": result})
+        sort_indices = cp.repeat(lhs.point_indices(), 2)
+        lhs_xy, rhs_xy = lhs.xy, rhs.xy
+        lhs_xy.index = sort_indices
+        rhs_xy.index = sort_indices
+        lhs_df = lhs_xy.reset_index(drop=False, name="xy")
+        rhs_df = rhs_xy.reset_index(drop=False, name="xy")
+        lhs_sorted = lhs_df.sort_values(by=["index", "xy"]).reset_index(
+            drop=True
+        )
+        rhs_sorted = rhs_df.sort_values(by=["index", "xy"]).reset_index(
+            drop=True
+        )
+        result = self._vertices_equals(lhs_sorted["xy"], rhs_sorted["xy"])
+        result_df = cudf.DataFrame({"idx": indices, "equals": result})
         result = (
             result_df.groupby("idx").sum() == result_df.groupby("idx").count()
-        )["pip"]
+        )["equals"]
         result.index.name = None
         result.name = None
         return result
 
     def _op(self, lhs, rhs):
-        """Compute the equals relationship between two GeoSeries."""
-        result = False
-        if contains_only_multipoints(lhs):
-            lengths_equal = self._offsets_equals(
-                lhs.multipoints.geometry_offset,
-                rhs.multipoints.geometry_offset,
-            )
-            if lengths_equal.any():
-                groups_equal = self._compare_aligned_vertices(
-                    lhs[lengths_equal].multipoints,
-                    rhs[lengths_equal].multipoints,
-                )
-                lengths_equal[groups_equal.index] = groups_equal
-            result = lengths_equal
-        elif contains_only_linestrings(lhs):
-            lengths_equal = self._offsets_equals(
-                lhs.lines.part_offset, rhs.lines.part_offset
-            )
-            if lengths_equal.any():
-                groups_equal = self._compare_aligned_vertices(
-                    lhs[lengths_equal].lines, rhs[lengths_equal].lines
-                )
-                lengths_equal[groups_equal.index] = groups_equal
-            result = lengths_equal
-        elif contains_only_polygons(lhs):
-            geoms_equal = self._offsets_equals(
-                lhs.polygons.part_offset, rhs.polygons.part_offset
-            )
-            lengths_equal = self._offsets_equals(
-                lhs[geoms_equal].polygons.ring_offset,
-                rhs[geoms_equal].polygons.ring_offset,
-            )
-            if lengths_equal.any():
-                groups_equal = self._compare_aligned_vertices(
-                    lhs[geoms_equal][lengths_equal].polygons,
-                    rhs[geoms_equal][lengths_equal].polygons,
-                )
-                lengths_equal[groups_equal.index] = groups_equal
-            result = lengths_equal
-        elif contains_only_points(lhs):
-            result = self._vertices_equals(lhs.points.xy, rhs.points.xy)
-        return cudf.Series(result)
+        """Compute the equals relationship between two GeoSeries.
+
+        Parameters
+        ----------
+        lhs : GeoColumnAccessor
+        rhs : GeoColumnAccessor
+
+        Returns
+        -------
+        GeoSeries
+        """
+        return self._compare_aligned_vertices(lhs, rhs)
 
 
 class CrossesBinpred(EqualsBinpred):
