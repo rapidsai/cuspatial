@@ -19,6 +19,7 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/vec_2d.hpp>
 
+#include <iostream>
 namespace cuspatial {
 
 /**
@@ -48,6 +49,12 @@ class alignas(sizeof(Vertex)) segment {
 
   /// Return the geometric center of segment.
   Vertex CUSPATIAL_HOST_DEVICE center() const { return midpoint(v1, v2); }
+
+ private:
+  friend std::ostream& operator<<(std::ostream& os, segment<T> const& seg)
+  {
+    return os << seg.v1 << " -> " << seg.v2;
+  }
 };
 
 // deduction guide, enables CTAD
