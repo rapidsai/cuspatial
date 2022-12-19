@@ -26,16 +26,6 @@
 namespace cuspatial {
 namespace detail {
 
-template <typename T>
-struct tuple_sum {
-  inline __device__ thrust::tuple<T, T> operator()(thrust::tuple<T, T> const& a,
-                                                   thrust::tuple<T, T> const& b)
-  {
-    return thrust::make_tuple(thrust::get<0>(a) + thrust::get<0>(b),
-                              thrust::get<1>(a) + thrust::get<1>(b));
-  }
-};
-
 /**
  * @brief Helper function to reduce verbosity creating cudf fixed-width columns
  */
