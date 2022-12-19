@@ -93,28 +93,28 @@ TYPED_TEST(QuadtreeLinestringBoundingBoxJoinTest, test_small)
   auto& quadtree = std::get<1>(pair);
 
   double const expansion_radius{2.0};
-  fixed_width_column_wrapper<int32_t> linestring_offsets({0, 3, 8, 12});
-  fixed_width_column_wrapper<T> poly_x({// ring 1
-                                        2.488450,
-                                        1.333584,
-                                        3.460720,
-                                        // ring 2
-                                        5.039823,
-                                        5.561707,
-                                        7.103516,
-                                        7.190674,
-                                        5.998939,
-                                        // ring 3
-                                        5.998939,
-                                        5.573720,
-                                        6.703534,
-                                        5.998939,
-                                        // ring 4
-                                        2.088115,
-                                        1.034892,
-                                        2.415080,
-                                        3.208660,
-                                        2.088115});
+  fixed_width_column_wrapper<int32_t> linestring_offsets({0, 3, 8, 12, 17});
+  fixed_width_column_wrapper<T> linestring_x({// ring 1
+                                              2.488450,
+                                              1.333584,
+                                              3.460720,
+                                              // ring 2
+                                              5.039823,
+                                              5.561707,
+                                              7.103516,
+                                              7.190674,
+                                              5.998939,
+                                              // ring 3
+                                              5.998939,
+                                              5.573720,
+                                              6.703534,
+                                              5.998939,
+                                              // ring 4
+                                              2.088115,
+                                              1.034892,
+                                              2.415080,
+                                              3.208660,
+                                              2.088115});
   fixed_width_column_wrapper<T> linestring_y({// ring 1
                                               5.856625,
                                               5.008840,
@@ -138,7 +138,7 @@ TYPED_TEST(QuadtreeLinestringBoundingBoxJoinTest, test_small)
                                               4.541529});
 
   auto linestring_bboxes = cuspatial::linestring_bounding_boxes(
-    linestring_offsets, poly_x, linestring_y, expansion_radius, this->mr());
+    linestring_offsets, linestring_x, linestring_y, expansion_radius, this->mr());
 
   auto linestring_quadrant_pairs = cuspatial::join_quadtree_and_bounding_boxes(
     *quadtree, *linestring_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());
@@ -147,10 +147,11 @@ TYPED_TEST(QuadtreeLinestringBoundingBoxJoinTest, test_small)
     linestring_quadrant_pairs->num_columns() == 2,
     "a linestring-quadrant pair table must have 2 columns (linestring_index, quadrant_index)");
 
-  expect_tables_equal(
-    cudf::table_view{{fixed_width_column_wrapper<uint32_t>(
-                        {3, 1, 2, 3, 3, 0, 1, 2, 3, 0, 3, 1, 2, 3, 1, 2, 1, 2, 0, 1, 3}),
-                      fixed_width_column_wrapper<uint32_t>({3, 8, 8, 8,  9,  10, 10, 10, 10, 11, 11,
-                                                            6, 6, 6, 12, 12, 13, 13, 2,  2,  2})}},
-    *linestring_quadrant_pairs);
+  auto expect_first = fixed_width_column_wrapper<uint32_t>(
+    {3, 1, 2, 3, 3, 0, 1, 2, 3, 0, 3, 1, 2, 3, 1, 2, 1, 2, 0, 1, 3});
+  auto expect_second = fixed_width_column_wrapper<uint32_t>(
+    {3, 8, 8, 8, 9, 10, 10, 10, 10, 11, 11, 6, 6, 6, 12, 12, 13, 13, 2, 2, 2});
+  auto expect = cudf::table_view{{expect_first, expect_second}};
+
+  CUDF_TEST_EXPECT_TABLES_EQUAL(expect, *linestring_quadrant_pairs);
 }

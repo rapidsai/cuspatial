@@ -66,9 +66,15 @@ multipoint_range<GeometryIterator, VecIterator>::multipoint_range(GeometryIterat
 }
 
 template <typename GeometryIterator, typename VecIterator>
-auto multipoint_range<GeometryIterator, VecIterator>::size()
+CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::num_multipoints()
 {
   return thrust::distance(_geometry_begin, _geometry_end) - 1;
+}
+
+template <typename GeometryIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::num_points()
+{
+  return thrust::distance(_points_begin, _points_end);
 }
 
 template <typename GeometryIterator, typename VecIterator>
@@ -85,15 +91,27 @@ auto multipoint_range<GeometryIterator, VecIterator>::multipoint_end()
 }
 
 template <typename GeometryIterator, typename VecIterator>
-auto multipoint_range<GeometryIterator, VecIterator>::point_begin()
+CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::point_begin()
 {
   return _points_begin;
 }
 
 template <typename GeometryIterator, typename VecIterator>
-auto multipoint_range<GeometryIterator, VecIterator>::point_end()
+CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::point_end()
 {
   return _points_end;
+}
+
+template <typename GeometryIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::offsets_begin()
+{
+  return _geometry_begin;
+}
+
+template <typename GeometryIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::offsets_end()
+{
+  return _geometry_end;
 }
 
 template <typename GeometryIterator, typename VecIterator>
@@ -103,6 +121,16 @@ CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::oper
 {
   return multipoint_ref<VecIterator>{_points_begin + _geometry_begin[idx],
                                      _points_begin + _geometry_begin[idx + 1]};
+}
+
+template <typename GeometryIterator, typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto
+multipoint_range<GeometryIterator, VecIterator>::geometry_idx_from_point_idx(IndexType idx) const
+{
+  return thrust::distance(
+    _geometry_begin,
+    thrust::prev(thrust::upper_bound(thrust::seq, _geometry_begin, _geometry_end, idx)));
 }
 
 }  // namespace cuspatial

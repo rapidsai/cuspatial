@@ -1,10 +1,12 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+from typing import TypeVar
+
 import numpy as np
 
 from cudf.api.types import is_datetime_dtype
 
-from cuspatial.core.geoseries import GeoSeries
+GeoSeries = TypeVar("GeoSeries", bound="GeoSeries")
 
 
 def normalize_point_columns(*cols):
@@ -73,6 +75,14 @@ def contains_only_points(gs: GeoSeries):
     )
 
 
+def contains_only_multipoints(gs: GeoSeries):
+    """
+    Returns true if `gs` contains only multipoints
+    """
+
+    return contain_single_type_geometry(gs) and (len(gs.multipoints.xy) > 0)
+
+
 def contains_only_linestrings(gs: GeoSeries):
     """
     Returns true if `gs` contains only linestrings
@@ -87,3 +97,21 @@ def contains_only_polygons(gs: GeoSeries):
     """
 
     return contain_single_type_geometry(gs) and len(gs.polygons.xy) > 0
+
+
+def has_same_geometry(lhs: GeoSeries, rhs: GeoSeries):
+    """
+    Returns true if `lhs` and `rhs` have only features of the same homogeneous
+    geometry type.
+    """
+
+    if contains_only_points(lhs) and contains_only_points(rhs):
+        return True
+    elif contains_only_multipoints(lhs) and contains_only_multipoints(rhs):
+        return True
+    elif contains_only_linestrings(lhs) and contains_only_linestrings(rhs):
+        return True
+    elif contains_only_polygons(lhs) and contains_only_polygons(rhs):
+        return True
+    else:
+        return False

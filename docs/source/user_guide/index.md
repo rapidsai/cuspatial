@@ -2,5 +2,5 @@
 ```{toctree}
 :maxdepth: 2
 
-users
+cuspatial_api_examples
 ```

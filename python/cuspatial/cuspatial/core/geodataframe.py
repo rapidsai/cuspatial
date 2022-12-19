@@ -178,6 +178,113 @@ class GeoDataFrame(cudf.DataFrame):
         )
         return self.__class__(result)
 
+    def _gather(
+        self, gather_map, keep_index=True, nullify=False, check_bounds=True
+    ):
+        geo_data, cudf_data = self._split_out_geometry_columns()
+        # gather cudf columns
+        df = cudf.DataFrame._from_data(data=cudf_data, index=self.index)
+        cudf_gathered = cudf.DataFrame._gather(
+            df, gather_map, keep_index, nullify, check_bounds
+        )
+
+        # gather GeoColumns
+        gathered = {
+            geo: geo_data[geo].iloc[gather_map] for geo in geo_data.keys()
+        }
+        geo_gathered = GeoDataFrame(gathered)
+
+        # combine
+        result = GeoDataFrame._from_data(
+            self._recombine_columns(geo_gathered, cudf_gathered)
+        )
+        result.index = geo_gathered.index
+        # return
+        return result
+
+    def reset_index(
+        self, level=None, drop=False, inplace=False, col_level=0, col_fill=""
+    ):
+        """Reset the index, or a level of it.
+
+        Parameters
+        ----------
+        level : `int`, `str`, `tuple`, or `list`, default `None`
+            Only remove the given levels from the index. Removes all levels by
+            default.
+        drop : `bool`, default `False`
+            Do not try to insert index into dataframe columns. This resets the
+            index to the default integer index.
+        inplace : `bool`, default `False`
+            Modify the GeoDataFrame in place (do not create a new object).
+        col_level : `int` or `str`, default `0`
+            If the columns have multiple levels, determines which level the
+            labels are inserted into. By default it is inserted into the first
+            level.
+        col_fill : `object`, default `""`
+            If the columns have multiple levels, determines how the other
+            levels are named. If None then the index name is repeated.
+
+        Returns
+        -------
+        `GeoDataFrame`
+        """
+
+        # Split geometry and non-geometry columns
+        geo_data, cudf_data = self._split_out_geometry_columns()
+
+        # Reset cudf column
+        cudf_reindexed = cudf_data.reset_index(
+            level, drop, inplace, col_level, col_fill
+        )
+
+        if inplace:
+            cudf_reindexed = cudf_data
+
+        # Reset GeoColumns
+        recombiner = self.copy(deep=False)
+        recombiner.index = cudf.RangeIndex(len(recombiner))
+        # Not a multi-index, and the index was not dropped.
+        if not drop:
+            if not isinstance(cudf_data.index, cudf.MultiIndex):
+                recombiner.insert(
+                    loc=0, name="index", value=cudf_reindexed["index"]
+                )
+            # If the index is a MultiIndex, we need to insert the
+            # individual levels into the GeoDataFrame.
+            elif isinstance(cudf_data.index, cudf.MultiIndex):
+                # If level is not specified, it will be the difference
+                # between the number of columns in reindexed dataframe
+                # and the original.
+                if not level:
+                    level = range(
+                        len(cudf_reindexed.columns) - len(cudf_data.columns)
+                    )
+                elif not isinstance(level, list):
+                    level = [level]
+                levels = ["level_" + str(n) for n in level]
+                for n, name in enumerate(levels):
+                    recombiner.insert(
+                        loc=n,
+                        name=name,
+                        value=cudf_reindexed[name].reset_index(drop=True),
+                    )
+                recombiner.index = cudf_reindexed.index
+
+        if inplace:
+            self.index = cudf_reindexed.index
+            self._data = recombiner._data
+            return None
+        else:
+            # Reset the index of the GeoDataFrame to match the
+            # cudf DataFrame and recombine.
+            geo_data.index = cudf_reindexed.index
+            result = GeoDataFrame._from_data(
+                recombiner._recombine_columns(geo_data, cudf_reindexed)
+            )
+            result.index = geo_data.index
+            return result
+
 
 class _GeoSeriesUtility:
     @classmethod

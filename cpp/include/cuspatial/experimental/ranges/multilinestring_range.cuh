@@ -19,6 +19,7 @@
 #include <thrust/pair.h>
 
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -91,6 +92,13 @@ class multilinestring_range {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto part_idx_from_point_idx(IndexType point_idx);
 
+  /// Given the index of a segment, return the part (linestring) index where the segment locates.
+  /// If the segment id is invalid, returns nullopt.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE
+    thrust::optional<typename thrust::iterator_traits<PartIterator>::difference_type>
+    part_idx_from_segment_idx(IndexType point_idx);
+
   /// Given the index of a part (linestring), return the geometry (multilinestring) index
   /// where the linestring locates.
   template <typename IndexType>
@@ -100,6 +108,14 @@ class multilinestring_range {
   /// point locates.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto geometry_idx_from_point_idx(IndexType point_idx);
+
+  // Given index to a linestring, return the index of the linestring inside its multilinestring.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto intra_part_idx(IndexType global_part_idx);
+
+  // Given index to a point, return the index of the point inside its linestring.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto intra_point_idx(IndexType global_point_idx);
 
   /// Given an index of a segment, returns true if the index is valid.
   /// The index of a segment is the same as the index to the starting point of the segment.
@@ -123,6 +139,16 @@ class multilinestring_range {
   PartIterator _part_end;
   VecIterator _point_begin;
   VecIterator _point_end;
+
+ private:
+  /// @internal
+  /// Return the iterator to the part index where the point locates.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto _part_iter_from_point_idx(IndexType point_idx);
+  /// @internal
+  /// Return the iterator to the geometry index where the part locates.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto _geometry_iter_from_part_idx(IndexType part_idx);
 };
 
 /**

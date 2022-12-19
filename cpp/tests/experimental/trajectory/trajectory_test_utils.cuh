@@ -82,16 +82,19 @@ struct trajectory_test_data {
       rmm::exec_policy(), sizes.begin(), sizes.end(), size_rand_functor(gen, size_rand));
 
     // offset to each trajectory
-    offsets.resize(num_trajectories);
+    // GeoArrow: offsets size is one more than number of points. Last offset points past the end of
+    // the data array
+    offsets.resize(num_trajectories + 1);
     thrust::exclusive_scan(rmm::exec_policy(), sizes.begin(), sizes.end(), offsets.begin(), 0);
-    auto total_points = sizes[num_trajectories - 1] + offsets[num_trajectories - 1];
+    auto total_points         = sizes[num_trajectories - 1] + offsets[num_trajectories - 1];
+    offsets[num_trajectories] = total_points;
 
     ids.resize(total_points);
-    ids_sorted.resize(total_points);
+    ids_sorted.resize(ids.size());
     times.resize(total_points);
-    times_sorted.resize(total_points);
+    times_sorted.resize(times.size());
     points.resize(total_points);
-    points_sorted.resize(total_points);
+    points_sorted.resize(points.size());
 
     using namespace std::chrono_literals;
 
@@ -192,32 +195,37 @@ struct trajectory_test_data {
   };
 
   struct box_minmax {
-    using point_tuple = thrust::tuple<cuspatial::vec_2d<T>, cuspatial::vec_2d<T>>;
-    __host__ __device__ point_tuple operator()(point_tuple const& a, point_tuple const& b)
+    __host__ __device__ box<T> operator()(box<T> const& a, box<T> const& b)
     {
-      vec_2d<T> p1, p2, p3, p4;
-      thrust::tie(p1, p2) = a;
-      thrust::tie(p3, p4) = b;
-      return {box_min(box_min(p1, p2), p3), box_max(box_max(p1, p2), p4)};
+      return {box_min(box_min(a.v1, a.v2), b.v1), box_max(box_max(a.v1, a.v2), b.v2)};
     }
   };
 
-  auto extrema()
-  {
-    auto minima = rmm::device_vector<cuspatial::vec_2d<T>>(num_trajectories);
-    auto maxima = rmm::device_vector<cuspatial::vec_2d<T>>(num_trajectories);
+  struct point_bbox_functor {
+    T expansion_radius{};
+    __host__ __device__ box<T> operator()(cuspatial::vec_2d<T> const& p)
+    {
+      auto expansion = cuspatial::vec_2d<T>{expansion_radius, expansion_radius};
+      return {p - expansion, p + expansion};
+    }
+  };
 
-    auto point_tuples = thrust::make_zip_iterator(points_sorted.begin(), points_sorted.begin());
+  auto bounding_boxes(T expansion_radius = T{})
+  {
+    auto bounding_boxes = rmm::device_vector<box<T>>(num_trajectories);
+
+    auto point_tuples =
+      thrust::make_transform_iterator(points_sorted.begin(), point_bbox_functor{expansion_radius});
 
     thrust::reduce_by_key(ids_sorted.begin(),
                           ids_sorted.end(),
                           point_tuples,
                           thrust::discard_iterator{},
-                          thrust::make_zip_iterator(minima.begin(), maxima.begin()),
+                          bounding_boxes.begin(),
                           thrust::equal_to<std::int32_t>(),
                           box_minmax{});
 
-    return std::pair{minima, maxima};
+    return bounding_boxes;
   }
 
   struct duration_functor {
@@ -298,11 +306,11 @@ struct trajectory_test_data {
                       distance_per_step.begin() + 1,
                       distance_functor{});
 
-    rmm::device_vector<Rep> durations_tmp(offsets.size());
-    rmm::device_vector<T> distances_tmp(offsets.size());
+    rmm::device_vector<Rep> durations_tmp(num_trajectories);
+    rmm::device_vector<T> distances_tmp(num_trajectories);
 
-    rmm::device_vector<T> distances(offsets.size());
-    rmm::device_vector<T> speeds(offsets.size());
+    rmm::device_vector<T> distances(num_trajectories);
+    rmm::device_vector<T> speeds(num_trajectories);
 
     auto duration_distance_and_speed = thrust::make_zip_iterator(
       durations_tmp.begin(), distances_tmp.begin(), distances.begin(), speeds.begin());

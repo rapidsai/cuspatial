@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/bounding_box.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/trajectory_bounding_boxes.cuh>
 
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
@@ -66,16 +66,19 @@ struct dispatch_element {
 
     auto points_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
 
-    auto bbox_mins  = cuspatial::make_vec_2d_output_iterator(cols.at(0)->mutable_view().begin<T>(),
-                                                            cols.at(1)->mutable_view().begin<T>());
-    auto bbox_maxes = cuspatial::make_vec_2d_output_iterator(cols.at(2)->mutable_view().begin<T>(),
-                                                             cols.at(3)->mutable_view().begin<T>());
+    auto bounding_boxes_begin =
+      cuspatial::make_box_output_iterator(cols.at(0)->mutable_view().begin<T>(),
+                                          cols.at(1)->mutable_view().begin<T>(),
+                                          cols.at(2)->mutable_view().begin<T>(),
+                                          cols.at(3)->mutable_view().begin<T>());
 
-    trajectory_bounding_boxes(object_id.begin<cudf::size_type>(),
-                              object_id.end<cudf::size_type>(),
-                              points_begin,
-                              thrust::make_zip_iterator(bbox_mins, bbox_maxes),
-                              stream);
+    point_bounding_boxes(object_id.begin<cudf::size_type>(),
+                         object_id.end<cudf::size_type>(),
+                         points_begin,
+                         bounding_boxes_begin,
+                         T{0},
+                         stream);
+
     // check for errors
     CUSPATIAL_CHECK_CUDA(stream.value());
 

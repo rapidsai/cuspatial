@@ -9,7 +9,10 @@ from typing import Union
 import cudf
 
 
+# This causes arrow to encode NONE as =255, which I'll accept now
+# in order to keep the rest of the enums the same.
 class Feature_Enum(Enum):
+    NONE = -1
     POINT = 0
     MULTIPOINT = 1
     LINESTRING = 2
@@ -25,8 +28,10 @@ class GeoMeta:
 
     def __init__(self, meta: Union[GeoMeta, dict]):
         if isinstance(meta, dict):
-            self.input_types = cudf.Series(meta["input_types"])
-            self.union_offsets = cudf.Series(meta["union_offsets"])
+            self.input_types = cudf.Series(meta["input_types"], dtype="int8")
+            self.union_offsets = cudf.Series(
+                meta["union_offsets"], dtype="int32"
+            )
         else:
             self.input_types = cudf.Series(meta.input_types, dtype="int8")
             self.union_offsets = cudf.Series(meta.union_offsets, dtype="int32")

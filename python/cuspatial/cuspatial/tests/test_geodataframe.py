@@ -107,24 +107,6 @@ def test_select_multiple_columns(gpdf):
     )
 
 
-def test_sort_values(gpdf):
-    cugpdf = cuspatial.from_geopandas(gpdf)
-    sort_gpdf = gpdf.sort_values("random")
-    sort_cugpdf = cugpdf.sort_values("random").to_pandas()
-    pd.testing.assert_frame_equal(sort_gpdf, sort_cugpdf)
-
-
-def test_groupby(gpdf):
-    cugpdf = cuspatial.from_geopandas(gpdf)
-    pd.testing.assert_frame_equal(
-        gpdf.groupby("key")[["integer", "random"]].min().sort_index(),
-        cugpdf.groupby("key")[["integer", "random"]]
-        .min()
-        .sort_index()
-        .to_pandas(),
-    )
-
-
 def test_type_persistence(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     assert type(cugpdf["geometry"]) == cuspatial.GeoSeries
@@ -344,7 +326,7 @@ def test_memory_usage(gs):
     )
     gpu_dataframe = cuspatial.from_geopandas(host_dataframe)
     # The df size is 8kb of cudf rows and 217kb of the geometry column
-    assert gpu_dataframe.memory_usage().sum() == 225173
+    assert gpu_dataframe.memory_usage().sum() == 224945
 
 
 def test_from_dict():
@@ -425,3 +407,36 @@ def test_from_dict_with_list():
         gpd.GeoDataFrame(dict_with_lists),
         cuspatial.GeoDataFrame(dict_with_lists).to_geopandas(),
     )
+
+
+@pytest.mark.parametrize("level", [None, 0, 1])
+@pytest.mark.parametrize("drop", [False, True])
+@pytest.mark.parametrize("inplace", [False, True])
+@pytest.mark.parametrize("col_level", [0, 1])
+@pytest.mark.parametrize("col_fill", ["", "some_lv"])
+def test_reset_index(level, drop, inplace, col_level, col_fill):
+    if not drop and inplace:
+        pytest.skip(
+            "For exception checks, see "
+            "test_reset_index_dup_level_name_exceptions"
+        )
+    midx = pd.MultiIndex.from_tuples([("a", 1), ("a", 2), ("b", 1), ("b", 2)])
+    gpdf = gpd.GeoDataFrame(
+        {
+            "geometry": [
+                Point(0, 1),
+                Point(2, 3),
+                MultiPoint([(4, 5), (6, 7)]),
+                Point(8, 9),
+            ],
+            "a": [*"abcd"],
+        },
+        index=midx,
+    )
+    gdf = cuspatial.from_geopandas(gpdf)
+    expected = gpdf.reset_index(level, drop, inplace, col_level, col_fill)
+    got = gdf.reset_index(level, drop, inplace, col_level, col_fill)
+    if inplace:
+        expected = gpdf
+        got = gdf
+    pd.testing.assert_frame_equal(expected, got.to_pandas())

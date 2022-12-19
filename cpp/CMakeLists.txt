@@ -25,7 +25,7 @@ include(rapids-find)
 
 rapids_cuda_init_architectures(CUSPATIAL)
 
-project(CUSPATIAL VERSION 22.12.00 LANGUAGES C CXX CUDA)
+project(CUSPATIAL VERSION 23.02.00 LANGUAGES C CXX CUDA)
 
 # Needed because GoogleBenchmark changes the state of FindThreads.cmake,
 # causing subsequent runs to have different values for the `Threads::Threads` target.
@@ -126,6 +126,7 @@ add_library(cuspatial
     src/spatial/polygon_bounding_box.cu
     src/spatial/linestring_bounding_box.cu
     src/spatial/point_in_polygon.cu
+    src/spatial/pairwise_point_in_polygon.cu
     src/spatial_window/spatial_window.cu
     src/spatial/haversine.cu
     src/spatial/hausdorff.cu

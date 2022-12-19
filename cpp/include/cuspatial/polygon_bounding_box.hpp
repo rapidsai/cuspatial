@@ -25,7 +25,7 @@
 namespace cuspatial {
 
 /**
- * @brief Compute minimum bounding boxes for a set of polygons.
+ * @brief Compute minimum bounding box for each polygon in a list.
  *
  * @ingroup spatial_relationship
  *
@@ -33,19 +33,25 @@ namespace cuspatial {
  * @param ring_offsets Begin indices of the first point in each ring (i.e. prefix-sum)
  * @param x Polygon point x-coordinates
  * @param y Polygon point y-coordinates
+ * @param expansion_radius radius to add to each point when computing its bounding box.
  *
  * @return a cudf table of bounding boxes as four columns of the same type as `x` and `y`:
  * x_min - the minimum x-coordinate of each bounding box
  * y_min - the minimum y-coordinate of each bounding box
  * x_max - the maximum x-coordinate of each bounding box
  * y_max - the maximum y-coordinate of each bounding box
+ *
+ * @pre For compatibility with GeoArrow, the size of @p poly_offsets should be one more than the
+ * number of polygons to process. The size of @p ring_offsets should be one more than the number of
+ * total rings. The final offset in each range is not used by this function, but the number of
+ * polygon offsets determines the output size.
  */
-
 std::unique_ptr<cudf::table> polygon_bounding_boxes(
   cudf::column_view const& poly_offsets,
   cudf::column_view const& ring_offsets,
   cudf::column_view const& x,
   cudf::column_view const& y,
+  double expansion_radius             = 0.0,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial
