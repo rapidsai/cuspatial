@@ -29,7 +29,7 @@ export CUSPATIAL_HOME="${PWD}"
 rapids-print-env
 
 rapids-mamba-retry install \
-  -c "${CPP_CHANNEL}" \
+  --channel "${CPP_CHANNEL}" \
   libcuspatial libcuspatial-tests
 
 rapids-logger "Check GPU usage"
