@@ -2,9 +2,69 @@
 
 Please see https://github.com/rapidsai/cuspatial/releases/tag/v23.02.00a for the latest changes to this development branch.
 
-# cuSpatial 22.12.00 (Date TBD)
+# cuSpatial 22.12.00 (8 Dec 2022)
 
-Please see https://github.com/rapidsai/cuspatial/releases/tag/v22.12.00a for the latest changes to this development branch.
+## 🚨 Breaking Changes
+
+- Update quadtree spatial join docstrings ([#797](https://github.com/rapidsai/cuspatial/pull/797)) [@trxcllnt](https://github.com/trxcllnt)
+- Rename lonlat_to_cartesian to sinusoidal_projection ([#794](https://github.com/rapidsai/cuspatial/pull/794)) [@harrism](https://github.com/harrism)
+- Consolidate bounding box code ([#793](https://github.com/rapidsai/cuspatial/pull/793)) [@harrism](https://github.com/harrism)
+- Globally replace &quot;polyline&quot; with &quot;linestring&quot; ([#788](https://github.com/rapidsai/cuspatial/pull/788)) [@harrism](https://github.com/harrism)
+- Refactor of `pairwise_linestring_distance` to use `multilinestring_range`, adds support to multilinestring distance ([#755](https://github.com/rapidsai/cuspatial/pull/755)) [@isVoid](https://github.com/isVoid)
+- Introduce `multilinestring_range` structure, simplifies point-linestring distance API ([#747](https://github.com/rapidsai/cuspatial/pull/747)) [@isVoid](https://github.com/isVoid)
+- Add python bindings for (multi)point-(multi)point distance ([#734](https://github.com/rapidsai/cuspatial/pull/734)) [@isVoid](https://github.com/isVoid)
+- Introduce `multipoint_range` interface; Refactors `point_distance` API to support multipoint to multipoint distance. ([#731](https://github.com/rapidsai/cuspatial/pull/731)) [@isVoid](https://github.com/isVoid)
+
+## 🐛 Bug Fixes
+
+- Add Floating Point Equality Tests to Build List ([#812](https://github.com/rapidsai/cuspatial/pull/812)) [@isVoid](https://github.com/isVoid)
+- Fix a Bug in Segment Intersection Primitive ([#808](https://github.com/rapidsai/cuspatial/pull/808)) [@isVoid](https://github.com/isVoid)
+- Don&#39;t use CMake 3.25.0 as it has a FindCUDAToolkit show stopping bug ([#805](https://github.com/rapidsai/cuspatial/pull/805)) [@robertmaynard](https://github.com/robertmaynard)
+- Fix style checks. ([#791](https://github.com/rapidsai/cuspatial/pull/791)) [@bdice](https://github.com/bdice)
+- Force using old fmt in nvbench. ([#783](https://github.com/rapidsai/cuspatial/pull/783)) [@isVoid](https://github.com/isVoid)
+- Fix issue with `.loc` returning values out of order. ([#782](https://github.com/rapidsai/cuspatial/pull/782)) [@thomcom](https://github.com/thomcom)
+- address issue with vector equivalent utility ([#777](https://github.com/rapidsai/cuspatial/pull/777)) [@isVoid](https://github.com/isVoid)
+
+## 📖 Documentation
+
+- Add symlink to `users.ipynb` for notebooks CI ([#790](https://github.com/rapidsai/cuspatial/pull/790)) [@thomcom](https://github.com/thomcom)
+- Fix failed automerge (branch 22.12 merge 22.10) ([#740](https://github.com/rapidsai/cuspatial/pull/740)) [@harrism](https://github.com/harrism)
+
+## 🚀 New Features
+
+- Add `find_duplicate_points` Internal API ([#815](https://github.com/rapidsai/cuspatial/pull/815)) [@isVoid](https://github.com/isVoid)
+- Add Internal Function `intersection_count_upper_bound` ([#795](https://github.com/rapidsai/cuspatial/pull/795)) [@isVoid](https://github.com/isVoid)
+- Support `Multilinestring` in column API and python Bindings for `pairwise_linestring_distance` ([#786](https://github.com/rapidsai/cuspatial/pull/786)) [@isVoid](https://github.com/isVoid)
+- Introduce Segment Intersection Primitive ([#778](https://github.com/rapidsai/cuspatial/pull/778)) [@isVoid](https://github.com/isVoid)
+- Introduce ULP Based Floating Point Equality Test to Device Function ([#773](https://github.com/rapidsai/cuspatial/pull/773)) [@isVoid](https://github.com/isVoid)
+- Augment Cuspatial Test Utility to Allow User Specified Abs Error ([#752](https://github.com/rapidsai/cuspatial/pull/752)) [@isVoid](https://github.com/isVoid)
+- Create `pairwise_point_in_polygon` to be used by pairwise `GeoSeries` ([#750](https://github.com/rapidsai/cuspatial/pull/750)) [@thomcom](https://github.com/thomcom)
+- Replacing markdown issue templates with yml forms ([#748](https://github.com/rapidsai/cuspatial/pull/748)) [@jarmak-nv](https://github.com/jarmak-nv)
+- Introduce `multilinestring_range` structure, simplifies point-linestring distance API ([#747](https://github.com/rapidsai/cuspatial/pull/747)) [@isVoid](https://github.com/isVoid)
+- Add python bindings for (multi)point-(multi)point distance ([#734](https://github.com/rapidsai/cuspatial/pull/734)) [@isVoid](https://github.com/isVoid)
+- Introduce `multipoint_range` interface; Refactors `point_distance` API to support multipoint to multipoint distance. ([#731](https://github.com/rapidsai/cuspatial/pull/731)) [@isVoid](https://github.com/isVoid)
+
+## 🛠️ Improvements
+
+- Set max version pin for `gdal` ([#806](https://github.com/rapidsai/cuspatial/pull/806)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update Dependency List with `dependencies.yaml` ([#803](https://github.com/rapidsai/cuspatial/pull/803)) [@isVoid](https://github.com/isVoid)
+- Labeler: Change cpp label to libcuspatial ([#800](https://github.com/rapidsai/cuspatial/pull/800)) [@jarmak-nv](https://github.com/jarmak-nv)
+- Update pre-commit configuration and CI ([#799](https://github.com/rapidsai/cuspatial/pull/799)) [@bdice](https://github.com/bdice)
+- Update quadtree spatial join docstrings ([#797](https://github.com/rapidsai/cuspatial/pull/797)) [@trxcllnt](https://github.com/trxcllnt)
+- Rename lonlat_to_cartesian to sinusoidal_projection ([#794](https://github.com/rapidsai/cuspatial/pull/794)) [@harrism](https://github.com/harrism)
+- Consolidate bounding box code ([#793](https://github.com/rapidsai/cuspatial/pull/793)) [@harrism](https://github.com/harrism)
+- Globally replace &quot;polyline&quot; with &quot;linestring&quot; ([#788](https://github.com/rapidsai/cuspatial/pull/788)) [@harrism](https://github.com/harrism)
+- Fix conda channel order ([#787](https://github.com/rapidsai/cuspatial/pull/787)) [@harrism](https://github.com/harrism)
+- Delete deprecated board GitHub Actions ([#779](https://github.com/rapidsai/cuspatial/pull/779)) [@jarmak-nv](https://github.com/jarmak-nv)
+- Better slicing via `union_offsets` ([#776](https://github.com/rapidsai/cuspatial/pull/776)) [@thomcom](https://github.com/thomcom)
+- Header-only refactoring of trajectory_distances_and_speeds ([#769](https://github.com/rapidsai/cuspatial/pull/769)) [@harrism](https://github.com/harrism)
+- Allow None rows in `GeoSeries` and an `align` method to match `GeoPandas` ([#760](https://github.com/rapidsai/cuspatial/pull/760)) [@thomcom](https://github.com/thomcom)
+- Refactor of `pairwise_linestring_distance` to use `multilinestring_range`, adds support to multilinestring distance ([#755](https://github.com/rapidsai/cuspatial/pull/755)) [@isVoid](https://github.com/isVoid)
+- Remove stale labeler ([#751](https://github.com/rapidsai/cuspatial/pull/751)) [@raydouglass](https://github.com/raydouglass)
+- Create `GeoSeries.contains_properly` method using point_in_polygon. ([#749](https://github.com/rapidsai/cuspatial/pull/749)) [@thomcom](https://github.com/thomcom)
+- Header-only trajectory_bounding_boxes ([#741](https://github.com/rapidsai/cuspatial/pull/741)) [@harrism](https://github.com/harrism)
+- Update Conda Recipe and `README.md` ([#730](https://github.com/rapidsai/cuspatial/pull/730)) [@isVoid](https://github.com/isVoid)
+- Remove `cudf/cuda.cuh` Dependency ([#729](https://github.com/rapidsai/cuspatial/pull/729)) [@isVoid](https://github.com/isVoid)
 
 # cuSpatial 22.10.00 (12 Oct 2022)
 
