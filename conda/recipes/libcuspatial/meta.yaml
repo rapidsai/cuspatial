@@ -3,7 +3,7 @@
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
 {% set minor_version = version.split('.')[0] + '.' + version.split('.')[1] %}
 {% set cuda_version = '.'.join(environ['RAPIDS_CUDA_VERSION'].split('.')[:2]) %}
-{% set cuda_major=cuda_version.split('.')[0] %}
+{% set cuda_major = cuda_version.split('.')[0] %}
 {% set cuda_spec = ">=" + cuda_major ~ ",<" + (cuda_major | int + 1) ~ ".0a0" %} # i.e. >=11,<12.0a0
 
 package:
@@ -36,12 +36,12 @@ requirements:
     - ninja
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    - cudatoolkit {{ cuda_version }}.*
+    - cudatoolkit ={{ cuda_version }}
     - gdal {{ gdal_version }}
-    - libcudf {{ minor_version }}.*
+    - libcudf ={{ minor_version }}
     - libcusparse {{ libcusparse_version }}
     - libcusparse-dev {{ libcusparse_version }}
-    - librmm {{ minor_version }}.*
+    - librmm ={{ minor_version }}
 
 outputs:
   - name: libcuspatial
@@ -60,8 +60,8 @@ outputs:
         - ninja
       run:
         - cudatoolkit {{ cuda_spec }}
-        - libcudf {{ minor_version }}.*
-        - librmm {{ minor_version }}.*
+        - libcudf ={{ minor_version }}
+        - librmm ={{ minor_version }}
         - libcusparse-dev {{ libcusparse_version }}
         - libcusparse {{ libcusparse_version }}
         - gdal {{ gdal_version }}
