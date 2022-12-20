@@ -40,7 +40,7 @@ Bounding Boxes
 Projection Functions
 ++++++++++++++++++++
 
-.. autofunction:: cuspatial.lonlat_to_cartesian
+.. autofunction:: cuspatial.sinusoidal_projection
 
 Spatial Filtering Functions
 +++++++++++++++++++++++++++

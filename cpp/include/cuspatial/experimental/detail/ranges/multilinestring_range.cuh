@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <optional>
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -124,8 +125,19 @@ CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::part_idx_from_point_idx(
   IndexType point_idx)
 {
-  auto part_it = thrust::upper_bound(thrust::seq, _part_begin, _part_end, point_idx);
-  return thrust::distance(_part_begin, thrust::prev(part_it));
+  return thrust::distance(_part_begin, _part_iter_from_point_idx(point_idx));
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE
+  thrust::optional<typename thrust::iterator_traits<PartIterator>::difference_type>
+  multilinestring_range<GeometryIterator, PartIterator, VecIterator>::part_idx_from_segment_idx(
+    IndexType segment_idx)
+{
+  auto part_idx = thrust::distance(_part_begin, _part_iter_from_point_idx(segment_idx));
+  if (not is_valid_segment_id(segment_idx, part_idx)) return thrust::nullopt;
+  return part_idx;
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -134,8 +146,7 @@ CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::geometry_idx_from_part_idx(
   IndexType part_idx)
 {
-  auto geom_it = thrust::upper_bound(thrust::seq, _geometry_begin, _geometry_end, part_idx);
-  return thrust::distance(_geometry_begin, thrust::prev(geom_it));
+  return thrust::distance(_geometry_begin, _geometry_iter_from_part_idx(part_idx));
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -145,6 +156,22 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::geometry_idx
   IndexType point_idx)
 {
   return geometry_idx_from_part_idx(part_idx_from_point_idx(point_idx));
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::intra_part_idx(IndexType i)
+{
+  return i - *_geometry_iter_from_part_idx(i);
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::intra_point_idx(IndexType i)
+{
+  return i - *_part_iter_from_point_idx(i);
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -176,6 +203,24 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::operator[](
   IndexType multilinestring_idx)
 {
   return multilinestring_begin()[multilinestring_idx];
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::_part_iter_from_point_idx(
+  IndexType point_idx)
+{
+  return thrust::prev(thrust::upper_bound(thrust::seq, _part_begin, _part_end, point_idx));
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::_geometry_iter_from_part_idx(
+  IndexType part_idx)
+{
+  return thrust::prev(thrust::upper_bound(thrust::seq, _geometry_begin, _geometry_end, part_idx));
 }
 
 }  // namespace cuspatial

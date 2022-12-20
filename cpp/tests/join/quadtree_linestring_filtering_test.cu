@@ -93,28 +93,28 @@ TYPED_TEST(QuadtreeLinestringBoundingBoxJoinTest, test_small)
   auto& quadtree = std::get<1>(pair);
 
   double const expansion_radius{2.0};
-  fixed_width_column_wrapper<int32_t> linestring_offsets({0, 3, 8, 12});
-  fixed_width_column_wrapper<T> poly_x({// ring 1
-                                        2.488450,
-                                        1.333584,
-                                        3.460720,
-                                        // ring 2
-                                        5.039823,
-                                        5.561707,
-                                        7.103516,
-                                        7.190674,
-                                        5.998939,
-                                        // ring 3
-                                        5.998939,
-                                        5.573720,
-                                        6.703534,
-                                        5.998939,
-                                        // ring 4
-                                        2.088115,
-                                        1.034892,
-                                        2.415080,
-                                        3.208660,
-                                        2.088115});
+  fixed_width_column_wrapper<int32_t> linestring_offsets({0, 3, 8, 12, 17});
+  fixed_width_column_wrapper<T> linestring_x({// ring 1
+                                              2.488450,
+                                              1.333584,
+                                              3.460720,
+                                              // ring 2
+                                              5.039823,
+                                              5.561707,
+                                              7.103516,
+                                              7.190674,
+                                              5.998939,
+                                              // ring 3
+                                              5.998939,
+                                              5.573720,
+                                              6.703534,
+                                              5.998939,
+                                              // ring 4
+                                              2.088115,
+                                              1.034892,
+                                              2.415080,
+                                              3.208660,
+                                              2.088115});
   fixed_width_column_wrapper<T> linestring_y({// ring 1
                                               5.856625,
                                               5.008840,
@@ -138,7 +138,7 @@ TYPED_TEST(QuadtreeLinestringBoundingBoxJoinTest, test_small)
                                               4.541529});
 
   auto linestring_bboxes = cuspatial::linestring_bounding_boxes(
-    linestring_offsets, poly_x, linestring_y, expansion_radius, this->mr());
+    linestring_offsets, linestring_x, linestring_y, expansion_radius, this->mr());
 
   auto linestring_quadrant_pairs = cuspatial::join_quadtree_and_bounding_boxes(
     *quadtree, *linestring_bboxes, x_min, x_max, y_min, y_max, scale, max_depth, this->mr());

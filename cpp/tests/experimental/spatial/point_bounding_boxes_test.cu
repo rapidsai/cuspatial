@@ -16,8 +16,11 @@
 
 #include "../trajectory/trajectory_test_utils.cuh"
 
+#include <cuspatial_test/vector_equality.hpp>
+
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/bounding_box.cuh>
+#include <cuspatial/experimental/geometry/box.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -41,20 +44,16 @@ struct PointBoundingBoxesTest : public ::testing::Test {
   {
     auto data = cuspatial::test::trajectory_test_data<T>(num_trajectories, points_per_trajectory);
 
-    auto minima = rmm::device_vector<cuspatial::vec_2d<T>>(data.num_trajectories);
-    auto maxima = rmm::device_vector<cuspatial::vec_2d<T>>(data.num_trajectories);
+    auto bounding_boxes = rmm::device_vector<cuspatial::box<T>>(data.num_trajectories);
 
-    auto extrema = thrust::make_zip_iterator(minima.begin(), maxima.begin());
+    auto boxes_end = cuspatial::point_bounding_boxes(data.ids_sorted.begin(),
+                                                     data.ids_sorted.end(),
+                                                     data.points_sorted.begin(),
+                                                     bounding_boxes.begin());
 
-    auto extrema_end = cuspatial::point_bounding_boxes(
-      data.ids_sorted.begin(), data.ids_sorted.end(), data.points_sorted.begin(), extrema);
+    EXPECT_EQ(std::distance(bounding_boxes.begin(), boxes_end), data.num_trajectories);
 
-    auto [expected_minima, expected_maxima] = data.extrema();
-
-    EXPECT_EQ(std::distance(extrema, extrema_end), data.num_trajectories);
-
-    EXPECT_EQ(minima, expected_minima);
-    EXPECT_EQ(maxima, expected_maxima);
+    cuspatial::test::expect_vec_2d_pair_equivalent(bounding_boxes, data.bounding_boxes());
   }
 };
 

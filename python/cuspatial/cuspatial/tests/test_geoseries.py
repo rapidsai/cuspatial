@@ -593,4 +593,31 @@ def test_memory_usage_large():
     )
     geometry = cuspatial.from_geopandas(host_dataframe)["geometry"]
     # the geometry column from naturalearth_lowres is 217kb of coordinates
-    assert geometry.memory_usage() == 217021
+    assert geometry.memory_usage() == 216793
+
+
+@pytest.mark.parametrize("level", [None, 0, 1])
+@pytest.mark.parametrize("drop", [False, True])
+@pytest.mark.parametrize("inplace", [False, True])
+@pytest.mark.parametrize("name", [None, "ser"])
+def test_reset_index(level, drop, name, inplace):
+    if not drop and inplace:
+        pytest.skip(
+            "For exception checks, see "
+            "test_reset_index_dup_level_name_exceptions"
+        )
+
+    midx = pd.MultiIndex.from_tuples([("a", 1), ("a", 2), ("b", 1), ("b", 2)])
+    gps = gpd.GeoSeries(
+        [Point(0, 0), Point(0, 1), Point(2, 2), Point(3, 3)], index=midx
+    )
+    gs = cuspatial.from_geopandas(gps)
+    expected = gps.reset_index(level, drop, name, inplace)
+    got = gs.reset_index(level, drop, name, inplace)
+    if inplace:
+        expected = gps
+        got = gs
+    if drop:
+        pd.testing.assert_series_equal(expected, got.to_pandas())
+    else:
+        pd.testing.assert_frame_equal(expected, got.to_pandas())

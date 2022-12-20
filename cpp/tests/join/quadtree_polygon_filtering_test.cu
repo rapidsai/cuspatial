@@ -181,8 +181,8 @@ TYPED_TEST(QuadtreePolygonFilteringTest, test_small)
 
   auto& quadtree = std::get<1>(pair);
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0, 3, 8, 12});
+  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3, 4});
+  fixed_width_column_wrapper<int32_t> ring_offsets({0, 3, 8, 12, 17});
   fixed_width_column_wrapper<T> poly_x({// ring 1
                                         2.488450,
                                         1.333584,

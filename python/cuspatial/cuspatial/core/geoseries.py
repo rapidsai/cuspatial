@@ -25,11 +25,11 @@ from cudf._typing import ColumnLike
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.binops.contains import contains_properly
-from cuspatial.utils.column_utils import (
-    contains_only_linestrings,
-    contains_only_multipoints,
-    contains_only_polygons,
+from cuspatial.core.binpreds.binpreds import (
+    ContainsProperlyBinpred,
+    IntersectsBinpred,
+    OverlapsBinpred,
+    WithinBinpred,
 )
 
 T = TypeVar("T", bound="GeoSeries")
@@ -168,9 +168,12 @@ class GeoSeries(cudf.Series):
         def point_indices(self):
             # Return a cupy.ndarray containing the index values that each
             # point belongs to.
+            """
             offsets = cp.arange(0, len(self.xy) + 1, 2)
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
+            """
+            return self._series.index
 
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -668,22 +671,40 @@ class GeoSeries(cudf.Series):
         dtype: geometry)
 
         """
-        index = (
-            other.index if len(other.index) >= len(self.index) else self.index
-        )
+
+        # Merge the two indices and sort them
+        if (
+            len(self.index) == len(other.index)
+            and (self.index == other.index).all()
+        ):
+            return self, other
+
+        idx1 = cudf.DataFrame({"idx": self.index})
+        idx2 = cudf.DataFrame({"idx": other.index})
+        index = idx1.merge(idx2, how="outer").sort_values("idx")["idx"]
+        index.name = None
+
+        # Align the two GeoSeries
         aligned_left = self._align_to_index(index)
         aligned_right = other._align_to_index(index)
-        aligned_right.index = index
+
+        # If the two GeoSeries have the same length, keep the original index
+        # Otherwise, use the union of the two indices
+        if len(other) == len(aligned_right):
+            aligned_right.index = other.index
+        else:
+            aligned_right.index = index
+        if len(self) == len(aligned_left):
+            aligned_left.index = self.index
+        else:
+            aligned_left.index = index
+
+        # Aligned GeoSeries are sorted by index
         aligned_right = aligned_right.sort_index()
-        aligned_left.index = (
-            self.index
-            if len(self.index) == len(aligned_left)
-            else aligned_right.index
-        )
         aligned_left = aligned_left.sort_index()
         return (
             aligned_left,
-            aligned_right.loc[aligned_left.index],
+            aligned_right,
         )
 
     def _gather(
@@ -691,8 +712,90 @@ class GeoSeries(cudf.Series):
     ):
         return self.iloc[gather_map]
 
+    # def reset_index(self, drop=False, inplace=False, name=None):
+    def reset_index(
+        self,
+        level=None,
+        drop=False,
+        name=None,
+        inplace=False,
+    ):
+        """
+        Reset the index of the GeoSeries.
+
+        Parameters
+        ----------
+        level : int, str, tuple, or list, default None
+            Only remove the given levels from the index. Removes all levels
+            by default.
+        drop : bool, default False
+            If drop is False, create a new dataframe with the original
+            index as a column. If drop is True, the original index is
+            dropped.
+        name : object, optional
+            The name to use for the column containing the original
+            Series values.
+        inplace: bool, default False
+            If True, the original GeoSeries is modified.
+
+        Returns
+        -------
+        GeoSeries
+            GeoSeries with reset index.
+
+        Examples
+        --------
+        >>> points = gpd.GeoSeries([
+            Point((-8, -8)),
+            Point((-2, -2)),
+        ], index=[1, 0])
+        >>> print(points.reset_index())
+
+        0    POINT (-8.00000 -8.00000)
+        1    POINT (-2.00000 -2.00000)
+        dtype: geometry
+        """
+        geo_series = self.copy(deep=False)
+
+        # Create a cudf series with the same index as the GeoSeries
+        # and use `cudf` reset_index to identify what our result
+        # should look like.
+        cudf_series = cudf.Series(
+            np.arange(len(geo_series.index)), index=geo_series.index
+        )
+        cudf_result = cudf_series.reset_index(level, drop, name, inplace)
+
+        if not inplace:
+            if isinstance(cudf_result, cudf.Series):
+                geo_series.index = cudf_result.index
+                return geo_series
+            elif isinstance(cudf_result, cudf.DataFrame):
+                # Drop was equal to False, so we need to create a
+                # `GeoDataFrame` from the `GeoSeries`
+                from cuspatial.core.geodataframe import GeoDataFrame
+
+                # The columns of the `cudf.DataFrame` are the new
+                # columns of the `GeoDataFrame`.
+                columns = {
+                    col: cudf_result[col] for col in cudf_result.columns
+                }
+                geo_result = GeoDataFrame(columns)
+                geo_series.index = geo_result.index
+                # Add the original `GeoSeries` as a column.
+                if name:
+                    geo_result[name] = geo_series
+                else:
+                    geo_result[0] = geo_series
+                return geo_result
+        else:
+            self.index = cudf_series.index
+            return None
+
     def contains_properly(self, other, align=True):
-        """Compute from a GeoSeries of points and a GeoSeries of polygons which
+        """Returns a `Series` of `dtype('bool')` with value `True` for each
+        aligned geometry that contains _other_.
+
+        Compute from a GeoSeries of points and a GeoSeries of polygons which
         points are properly contained within the corresponding polygon. Polygon
         A contains Point B properly if B intersects the interior of A but not
         the boundary (or exterior).
@@ -768,63 +871,73 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input.
         """
-        if not contains_only_polygons(self):
-            raise TypeError(
-                "`.contains` can only be called with polygon series."
-            )
+        return ContainsProperlyBinpred(self, other, align)()
 
-        (lhs, rhs) = self.align(other) if align else (self, other)
+    def intersects(self, other, align=True):
+        """Returns a `Series` of `dtype('bool')` with value `True` for each
+        aligned geometry that intersects _other_.
 
-        # RHS conditioning:
-        mode = "POINTS"
-        # point in polygon
-        if contains_only_linestrings(rhs):
-            # condition for linestrings
-            mode = "LINESTRINGS"
-            geom = rhs.lines
-        elif contains_only_polygons(rhs) is True:
-            # polygon in polygon
-            mode = "POLYGONS"
-            geom = rhs.polygons
-        elif contains_only_multipoints(rhs) is True:
-            # mpoint in polygon
-            mode = "MULTIPOINTS"
-            geom = rhs.multipoints
-        else:
-            # no conditioning is required
-            geom = rhs.points
-        xy_points = geom.xy
-        point_indices = geom.point_indices()
-        points = GeoSeries(GeoColumn._from_points_xy(xy_points._column)).points
+        A geometry intersects another geometry if its boundary or interior
+        intersect in any way with the other geometry.
 
-        # call pip on the three subtypes on the right:
-        point_result = contains_properly(
-            points.x,
-            points.y,
-            lhs.polygons.part_offset[:-1],
-            lhs.polygons.ring_offset[:-1],
-            lhs.polygons.x,
-            lhs.polygons.y,
-        )
-        if (
-            mode == "LINESTRINGS"
-            or mode == "POLYGONS"
-            or mode == "MULTIPOINTS"
-        ):
-            # process for completed linestrings, polygons, and multipoints.
-            # Not necessary for points.
-            result = cudf.DataFrame(
-                {"idx": point_indices, "pip": point_result}
-            )
-            # if the number of points in the polygon is equal to the number of
-            # points, then the requirements for `.contains_properly` are met
-            # for this geometry type.
-            df_result = (
-                result.groupby("idx").sum().sort_index()
-                == result.groupby("idx").count().sort_index()
-            )
-            point_result = cudf.Series(
-                df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
-            )
-            point_result.name = None
-        return point_result
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether the geometries of
+            each row intersect.
+        """
+        return IntersectsBinpred(self, other, align)()
+
+    def within(self, other, align=True):
+        """Returns a `Series` of `dtype('bool')` with value `True` for each
+        aligned geometry that is within _other_.
+
+        A geometry is within another geometry if at least one of its points is
+        located in the interior of the other geometry and no points are
+        located in the exterior of the other geometry.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each feature falls
+            within the corresponding polygon in the input.
+        """
+        return WithinBinpred(self, other, align)()
+
+    def overlaps(self, other, align=True):
+        """Returns True for all aligned geometries that overlap other, else
+        False.
+
+        Geometries overlap if they have more than one but not all points in
+        common, have the same dimension, and the intersection of the
+        interiors of the geometries has the same dimension as the geometries
+        themselves.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each geometry
+            overlaps the corresponding geometry in the input."""
+        # Overlaps has the same requirement as crosses.
+        return OverlapsBinpred(self, other, align=align)()

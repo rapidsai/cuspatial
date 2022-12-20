@@ -32,7 +32,7 @@ def test_linestring_bounding_boxes_empty(dtype):
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_linestring_bounding_boxes_one(dtype):
     result = cuspatial.linestring_bounding_boxes(
-        cudf.Series([0]),
+        cudf.Series([0, 3]),
         cudf.Series([2.488450, 1.333584, 3.460720], dtype=dtype),
         cudf.Series([5.856625, 5.008840, 4.586599], dtype=dtype),
         0,  # expansion_radius
@@ -53,7 +53,7 @@ def test_linestring_bounding_boxes_one(dtype):
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_linestring_bounding_boxes_small(dtype):
     result = cuspatial.linestring_bounding_boxes(
-        cudf.Series([0, 3, 8, 12]),
+        cudf.Series([0, 3, 8, 12, 17]),
         cudf.Series(
             [
                 # ring 1
