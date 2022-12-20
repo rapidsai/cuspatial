@@ -63,22 +63,21 @@ namespace cuspatial {
  *   - bbox_offset - indices for each polygon/linestring bbox that intersects with the quadtree.
  *   - quad_offset - indices for each leaf quadrant intersecting with a polygon/linestring bbox.
  */
-template <class KeyIt,
-          class LevelIt,
-          class IsInternalIt,
-          class BoundingBoxIt,
-          class T = typename cuspatial::iterator_vec_base_type<
-            std::tuple_element_t<0, typename cuspatial::iterator_value_type<BoundingBoxIt>>>>
+template <class KeyIterator,
+          class LevelIterator,
+          class IsInternalIterator,
+          class BoundingBoxIterator,
+          class T = typename cuspatial::iterator_vec_base_type<BoundingBoxIterator>>
 std::pair<rmm::device_uvector<uint32_t>, rmm::device_uvector<uint32_t>>
 join_quadtree_and_bounding_boxes(
-  KeyIt keys_first,
-  KeyIt keys_last,
-  LevelIt levels_first,
-  IsInternalIt is_internal_nodes_first,
-  KeyIt lengths_first,
-  KeyIt offsets_first,
-  BoundingBoxIt bounding_boxes_first,
-  BoundingBoxIt bounding_boxes_last,
+  KeyIterator keys_first,
+  KeyIterator keys_last,
+  LevelIterator levels_first,
+  IsInternalIterator is_internal_nodes_first,
+  KeyIterator lengths_first,
+  KeyIterator offsets_first,
+  BoundingBoxIterator bounding_boxes_first,
+  BoundingBoxIterator bounding_boxes_last,
   T x_min,
   T y_min,
   T scale,

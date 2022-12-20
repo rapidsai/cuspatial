@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <cuspatial/experimental/detail/quadtree_bbox_filtering.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/experimental/spatial_join.cuh>
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
@@ -58,19 +58,28 @@ struct dispatch_quadtree_bounding_box_join {
     auto bbox_max = cuspatial::make_vec_2d_iterator(bbox.column(2).template begin<T>(),
                                                     bbox.column(3).template begin<T>());
 
-    return join_quadtree_and_bounding_boxes(keys.begin<uint32_t>(),
-                                            keys.end<uint32_t>(),
-                                            levels.begin<uint8_t>(),
-                                            is_internal.begin<uint8_t>(),
-                                            lengths.begin<uint32_t>(),
-                                            offsets.begin<uint32_t>(),
-                                            thrust::make_zip_iterator(bbox_min, bbox_max),
-                                            static_cast<T>(x_min),
-                                            static_cast<T>(y_min),
-                                            static_cast<T>(scale),
-                                            max_depth,
-                                            mr,
-                                            stream);
+    auto bbox_itr = cuspatial::make_box_iterator(bbox_min, bbox_max);
+
+    auto [bbox_offset, quad_offset] = join_quadtree_and_bounding_boxes(keys.begin<uint32_t>(),
+                                                                       keys.end<uint32_t>(),
+                                                                       levels.begin<uint8_t>(),
+                                                                       is_internal.begin<uint8_t>(),
+                                                                       lengths.begin<uint32_t>(),
+                                                                       offsets.begin<uint32_t>(),
+                                                                       bbox_itr,
+                                                                       bbox_itr + bbox.num_rows(),
+                                                                       static_cast<T>(x_min),
+                                                                       static_cast<T>(y_min),
+                                                                       static_cast<T>(scale),
+                                                                       max_depth,
+                                                                       mr,
+                                                                       stream);
+
+    std::vector<std::unique_ptr<cudf::column>> cols{};
+    cols.push_back(std::make_unique<cudf::column>(std::move(bbox_offset)));
+    cols.push_back(std::make_unique<cudf::column>(std::move(quad_offset)));
+
+    return std::make_unique<cudf::table>(std::move(cols));
   }
   template <typename T,
             std::enable_if_t<!std::is_floating_point<T>::value>* = nullptr,

@@ -16,13 +16,7 @@
 
 #pragma once
 
-#include "thrust/iterator/permutation_iterator.h"
-#include <indexing/construction/detail/utilities.cuh>
-
 #include <cuspatial/detail/utility/z_order.cuh>
-
-#include <cudf/column/column_device_view.cuh>
-#include <cudf/table/table_view.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -30,6 +24,7 @@
 
 #include <thrust/copy.h>
 #include <thrust/distance.h>
+#include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/remove.h>
@@ -46,10 +41,10 @@ static __device__ uint8_t const quad_indicator = 1;
 static __device__ uint8_t const none_indicator = 2;
 
 template <typename InputIterator, typename OutputIterator>
-inline cudf::size_type copy_leaf_intersections(InputIterator input_begin,
-                                               InputIterator input_end,
-                                               OutputIterator output_begin,
-                                               rmm::cuda_stream_view stream)
+inline int32_t copy_leaf_intersections(InputIterator input_begin,
+                                       InputIterator input_end,
+                                       OutputIterator output_begin,
+                                       rmm::cuda_stream_view stream)
 {
   return thrust::distance(
     output_begin,
@@ -60,10 +55,10 @@ inline cudf::size_type copy_leaf_intersections(InputIterator input_begin,
 }
 
 template <typename InputIterator, typename OutputIterator>
-inline cudf::size_type remove_non_quad_intersections(InputIterator input_begin,
-                                                     InputIterator input_end,
-                                                     OutputIterator output_begin,
-                                                     rmm::cuda_stream_view stream)
+inline int32_t remove_non_quad_intersections(InputIterator input_begin,
+                                             InputIterator input_end,
+                                             OutputIterator output_begin,
+                                             rmm::cuda_stream_view stream)
 {
   return thrust::distance(
     output_begin,
@@ -74,29 +69,28 @@ inline cudf::size_type remove_non_quad_intersections(InputIterator input_begin,
 }
 
 template <class T,
-          class KeyIt,
-          class LevelIt,
-          class IsInternalIt,
-          class BoundingBoxIt,
+          class KeyIterator,
+          class LevelIterator,
+          class IsInternalIterator,
+          class BoundingBoxIterator,
           class NodeIndicesIterator,
           class BBoxIndicesIterator,
           class NodePairsIterator,
           class LeafPairsIterator>
-inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
-  KeyIt keys_first,
-  LevelIt levels_first,
-  IsInternalIt is_internal_node_first,
-  BoundingBoxIt bounding_box_first,
-  NodeIndicesIterator node_indices,
-  BBoxIndicesIterator bbox_indices,
-  NodePairsIterator node_pairs,
-  LeafPairsIterator leaf_pairs,
-  cudf::size_type num_pairs,
-  T x_min,
-  T y_min,
-  T scale,
-  int8_t max_depth,
-  rmm::cuda_stream_view stream)
+inline std::pair<int32_t, int32_t> find_intersections(KeyIterator keys_first,
+                                                      LevelIterator levels_first,
+                                                      IsInternalIterator is_internal_node_first,
+                                                      BoundingBoxIterator bounding_box_first,
+                                                      NodeIndicesIterator node_indices,
+                                                      BBoxIndicesIterator bbox_indices,
+                                                      NodePairsIterator node_pairs,
+                                                      LeafPairsIterator leaf_pairs,
+                                                      int32_t num_pairs,
+                                                      T x_min,
+                                                      T y_min,
+                                                      T scale,
+                                                      int8_t max_depth,
+                                                      rmm::cuda_stream_view stream)
 {
   auto nodes_first = thrust::make_zip_iterator(keys_first, levels_first, is_internal_node_first);
 
@@ -110,14 +104,14 @@ inline std::pair<cudf::size_type, cudf::size_type> find_intersections(
       auto const& node_idx = thrust::get<0>(node_and_bbox);
       auto const& bbox_idx = thrust::get<1>(node_and_bbox);
 
-      auto const& node             = nodes[node_idx];
-      uint32_t const& key          = thrust::get<0>(node);
-      uint8_t const& level         = thrust::get<1>(node);
-      bool const& is_internal_node = thrust::get<2>(node);
+      auto const& node                = nodes[node_idx];
+      uint32_t const& key             = thrust::get<0>(node);
+      uint8_t const& level            = thrust::get<1>(node);
+      uint8_t const& is_internal_node = thrust::get<2>(node);
 
       auto const& bbox       = bboxes[bbox_idx];
-      auto const& bbox_min   = thrust::get<0>(bbox);
-      auto const& bbox_max   = thrust::get<1>(bbox);
+      auto const& bbox_min   = bbox.v1;
+      auto const& bbox_max   = bbox.v2;
       auto const& poly_x_min = bbox_min.x;
       auto const& poly_y_min = bbox_min.y;
       auto const& poly_x_max = bbox_max.x;

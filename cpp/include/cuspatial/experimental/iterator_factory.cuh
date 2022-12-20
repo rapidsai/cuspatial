@@ -73,6 +73,20 @@ struct box_to_tuple {
 
 /**
  * @internal
+ * @brief Helper to convert a tuple of vec_2d into a `box`
+ */
+template <typename T, typename Vertex = vec_2d<T>>
+struct vec_2d_tuple_to_box {
+  __device__ box<T, Vertex> operator()(thrust::tuple<Vertex, Vertex> pair)
+  {
+    auto v1 = thrust::get<0>(pair);
+    auto v2 = thrust::get<1>(pair);
+    return {v1, v2};
+  }
+};
+
+/**
+ * @internal
  * @brief Generic to convert any iterator pointing to interleaved xy range into
  * iterator of vec_2d.
  *
@@ -258,6 +272,38 @@ auto make_vec_2d_output_iterator(Iter d_points_begin)
   auto zipped_outputs =
     thrust::make_zip_iterator(thrust::make_tuple(even_positions, odd_positions));
   return thrust::make_transform_output_iterator(zipped_outputs, detail::vec_2d_to_tuple<T>());
+}
+
+/**
+ * @brief Create an iterator to `box` data from two input iterators of `vec_2d`.
+ *
+ * Interleaves box_min and box_max points from separate iterators into a single iterator of `box`.
+ *
+ * @tparam VectorType cuSpatial vector type, must be `vec_2d`
+ * @tparam FirstIter Iterator of `vec_2d`. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam SecondIter Iterator of `vec_2d`. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @param first Iterator to beginning of `box::v1`
+ * @param second Iterator to beginning of `box::v2`
+ * @return Iterator to `box`
+ *
+ * @pre `first` and `second` must iterate the same vec_2d data type.
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
+ */
+template <typename FirstIter, typename SecondIter>
+auto make_box_iterator(FirstIter first, SecondIter second)
+{
+  using Vertex = typename cuspatial::iterator_value_type<FirstIter>;
+  using T      = typename Vertex::value_type;
+
+  static_assert(is_same<Vertex, cuspatial::iterator_value_type<SecondIter>>(),
+                "Iterator value_type mismatch");
+
+  auto zipped = thrust::make_zip_iterator(first, second);
+  return thrust::make_transform_iterator(zipped, detail::vec_2d_tuple_to_box<T>());
 }
 
 /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 #pragma once
-
-#include <indexing/construction/detail/utilities.cuh>
 
 #include <cuspatial/detail/utility/z_order.cuh>
 
@@ -52,19 +50,19 @@ namespace detail {
  * @param parent_node_indices indices of the intersecting quadrants at the current level
  * @param parent_poly_indices indices of the intersecting polygons at the current level
  * @param stream CUDA stream on which to schedule work
- * @return An std::tuple containing the `cudf::size_type` number of elements in the next level, and
+ * @return A `std::tuple` containing the `int32_t` number of elements in the next level, and
  * `rmm::device_uvectors` for each of the `types`, `levels`, `quad_indices`, and `poly_indices` of
  * the next-level quadrants and polygons
  */
-template <typename LengthsIter, typename OffsetsIter>
-inline std::tuple<cudf::size_type,
+template <typename LengthsIterator, typename OffsetsIterator>
+inline std::tuple<int32_t,
                   rmm::device_uvector<uint8_t>,
                   rmm::device_uvector<uint8_t>,
                   rmm::device_uvector<uint32_t>,
                   rmm::device_uvector<uint32_t>>
-descend_quadtree(LengthsIter counts,
-                 OffsetsIter offsets,
-                 cudf::size_type num_quads,
+descend_quadtree(LengthsIterator counts,
+                 OffsetsIterator offsets,
+                 int32_t num_quads,
                  rmm::device_uvector<uint8_t>& parent_types,
                  rmm::device_uvector<uint8_t>& parent_levels,
                  rmm::device_uvector<uint32_t>& parent_node_indices,

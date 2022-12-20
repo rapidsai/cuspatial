@@ -20,22 +20,29 @@
 #include <cuspatial/experimental/detail/join/intersection.cuh>
 #include <cuspatial/experimental/detail/join/traversal.cuh>
 #include <cuspatial/experimental/point_quadtree.cuh>
+#include <cuspatial/traits.hpp>
+
+#include <thrust/iterator/discard_iterator.h>
 
 #include <iterator>
 #include <utility>
 
 namespace cuspatial {
 
-template <class KeyIt, class LevelIt, class IsInternalIt, class BoundingBoxIt, class T>
+template <class KeyIterator,
+          class LevelIterator,
+          class IsInternalIterator,
+          class BoundingBoxIterator,
+          class T>
 std::pair<rmm::device_uvector<uint32_t>, rmm::device_uvector<uint32_t>>
-join_quadtree_and_bounding_boxes(KeyIt keys_first,
-                                 KeyIt keys_last,
-                                 LevelIt levels_first,
-                                 IsInternalIt is_internal_nodes_first,
-                                 KeyIt lengths_first,
-                                 KeyIt offsets_first,
-                                 BoundingBoxIt bounding_boxes_first,
-                                 BoundingBoxIt bounding_boxes_last,
+join_quadtree_and_bounding_boxes(KeyIterator keys_first,
+                                 KeyIterator keys_last,
+                                 LevelIterator levels_first,
+                                 IsInternalIterator is_internal_nodes_first,
+                                 KeyIterator lengths_first,
+                                 KeyIterator offsets_first,
+                                 BoundingBoxIterator bounding_boxes_first,
+                                 BoundingBoxIterator bounding_boxes_last,
                                  T x_min,
                                  T y_min,
                                  T scale,
@@ -43,6 +50,9 @@ join_quadtree_and_bounding_boxes(KeyIt keys_first,
                                  rmm::mr::device_memory_resource* mr,
                                  rmm::cuda_stream_view stream)
 {
+  static_assert(is_same<T, cuspatial::iterator_vec_base_type<BoundingBoxIterator>>(),
+                "Iterator value_type mismatch");
+
   auto const num_nodes = std::distance(keys_first, keys_last);
   auto const num_boxes = std::distance(bounding_boxes_first, bounding_boxes_last);
 
@@ -69,8 +79,6 @@ join_quadtree_and_bounding_boxes(KeyIt keys_first,
   rmm::device_uvector<uint32_t> cur_bbox_idxs(num_pairs, stream);
 
   // Vectors for found pairs of bbox and leaf node indices
-  rmm::device_uvector<uint8_t> out_types(num_pairs, stream);
-  rmm::device_uvector<uint8_t> out_levels(num_pairs, stream);
   rmm::device_uvector<uint32_t> out_node_idxs(num_pairs, stream, mr);
   rmm::device_uvector<uint32_t> out_bbox_idxs(num_pairs, stream, mr);
 
@@ -80,9 +88,10 @@ join_quadtree_and_bounding_boxes(KeyIt keys_first,
   };
 
   auto make_output_values_iter = [&]() {
-    return num_results +
-           thrust::make_zip_iterator(
-             out_types.begin(), out_levels.begin(), out_node_idxs.begin(), out_bbox_idxs.begin());
+    return num_results + thrust::make_zip_iterator(thrust::make_discard_iterator(),
+                                                   thrust::make_discard_iterator(),
+                                                   out_node_idxs.begin(),
+                                                   out_bbox_idxs.begin());
   };
 
   // Find intersections for all the top level quadrants and bounding boxes
@@ -121,11 +130,10 @@ join_quadtree_and_bounding_boxes(KeyIt keys_first,
     // Grow preallocated output vectors. The next level will expand out to no more
     // than `num_parents * 4` pairs, since each parent quadrant has up to 4 children.
     size_t max_num_results = num_results + num_parents * 4;
-    if (max_num_results > out_types.capacity()) {
-      // grow preallocated output sizes in multiples of the current capacity
-      // auto new_size = out_types.capacity() * ((max_num_results / out_types.capacity()) + 1);
-      out_types.resize(max_num_results, stream);
-      out_levels.resize(max_num_results, stream);
+    if (max_num_results > out_node_idxs.capacity()) {
+      // TODO: grow preallocated output sizes in multiples of the current capacity?
+      // auto new_size = out_node_idxs.capacity() *  //
+      //                 ((max_num_results / out_node_idxs.capacity()) + 1);
       out_node_idxs.resize(max_num_results, stream);
       out_bbox_idxs.resize(max_num_results, stream);
     }
@@ -179,6 +187,11 @@ join_quadtree_and_bounding_boxes(KeyIt keys_first,
       tmp_node_offsets.end(),
       thrust::make_zip_iterator(out_bbox_idxs.begin(), out_node_idxs.begin()));
   }();
+
+  out_node_idxs.resize(num_results, stream);
+  out_bbox_idxs.resize(num_results, stream);
+  out_node_idxs.shrink_to_fit(stream);
+  out_bbox_idxs.shrink_to_fit(stream);
 
   return {std::move(out_bbox_idxs), std::move(out_node_idxs)};
 }
