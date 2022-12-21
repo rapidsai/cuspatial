@@ -16,6 +16,7 @@ set(cython_sources
     distance.pyx
     hausdorff.pyx
     interpolate.pyx
+    intersection.pyx
     nearest_points.pyx
     point_in_polygon.pyx
     pairwise_point_in_polygon.pyx
@@ -27,6 +28,7 @@ set(cython_sources
     spatial_join.pyx
     spatial_window.pyx
     trajectory.pyx
+    types.pyx
     utils.pyx
     )
 set(linked_libraries cuspatial::cuspatial)

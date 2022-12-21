@@ -27,6 +27,19 @@
 namespace cuspatial {
 
 /**
+ * @brief Convenience macro for SFINAE as an unnamed template parameter.
+ *
+ * Example:
+ * \code{cpp}
+ * // This function will participate in overload resolution only if T is an integral type
+ * template <typename T, CUDF_ENABLE_IF(std::is_integral_v<T> )>
+ * void foo();
+ * \endcode
+ *
+ */
+#define CUSPATIAL_ENABLE_IF(...) typename std::enable_if_t<(__VA_ARGS__)>* = nullptr
+
+/**
  * @internal
  * @brief returns true if all types Ts... are the same as T.
  */
