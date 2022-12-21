@@ -77,3 +77,21 @@ def test_two_pairs():
     )
 
     run_test(s1, s2, expect_offset, expect_geom, expect_ids)
+
+
+def test_one_pair_with_overlap():
+    s1 = gpd.GeoSeries([LineString([(-1, 0), (0, 0), (0, 1), (-1, 1)])])
+    s2 = gpd.GeoSeries([LineString([(1, 0), (0, 0), (0, 1), (1, 1)])])
+
+    expect_offset = pd.Series([0, 1])
+    expect_geom = s1.intersection(s2)
+    expect_ids = pd.DataFrame(
+        {
+            "lhs_linestring_id": [[0]],
+            "lhs_segment_id": [[0]],
+            "rhs_linestring_id": [[0]],
+            "rhs_segment_id": [[0]],
+        }
+    )
+
+    run_test(s1, s2, expect_offset, expect_geom, expect_ids)
