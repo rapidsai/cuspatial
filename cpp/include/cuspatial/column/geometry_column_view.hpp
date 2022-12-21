@@ -19,12 +19,13 @@
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/types.hpp>
 
-#include <cudf/column/column_view.hpp>
+#include <cudf/lists/lists_column_view.hpp>
 #include <cudf/types.hpp>
 
 namespace cuspatial {
 
 /**
+ * @ingroup cuspatial_types
  * @brief A non-owning, immutable view of a geometry column.
  *
  * A geometry column is GeoArrow compliant, except that the data type for
@@ -33,9 +34,8 @@ namespace cuspatial {
  * even sequence (0, 2, 4, ...) is used for the offsets of the coordinate
  * column.
  */
-class geometry_column_view : private cudf::column_view {
+class geometry_column_view : private cudf::lists_column_view {
  public:
-  geometry_column_view() = default;
   geometry_column_view(cudf::column_view const& column,
                        collection_type_id collection_type,
                        geometry_type_id geometry_type);
@@ -63,10 +63,9 @@ class geometry_column_view : private cudf::column_view {
 
   cudf::data_type coordinate_type() const;
 
-  cudf::column_view child() const;
-  cudf::column_view offsets() const;
-
-  using cudf::column_view::size;
+  using cudf::lists_column_view::child;
+  using cudf::lists_column_view::offsets;
+  using cudf::lists_column_view::size;
 
  protected:
   geometry_type_id _geometry_type;

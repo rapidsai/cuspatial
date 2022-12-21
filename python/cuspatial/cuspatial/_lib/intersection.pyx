@@ -1,6 +1,7 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
 from libcpp.utility cimport move
+from libcpp.memory cimport make_shared, shared_ptr
 
 from cudf._lib.column cimport Column
 
@@ -24,7 +25,7 @@ def pairwise_linestring_intersection(Column lhs, Column rhs):
     """
     Compute the intersection of two (multi)linestrings.
     """
-    from cuspatial.core._column.geometa import FeatureEnum
+    from cuspatial.core._column.geometa import Feature_Enum
 
     cdef linestring_intersection_column_result c_result
     cdef collection_type_id multi_type = <collection_type_id>(
@@ -34,19 +35,23 @@ def pairwise_linestring_intersection(Column lhs, Column rhs):
         <underlying_geometry_type_id_t>(GeometryType.LINESTRING.value)
     )
 
-    cdef geometry_column_view c_lhs = geometry_column_view(
-        lhs.view(),
-        multi_type,
-        linestring_type
-    )
-    cdef geometry_column_view c_rhs = geometry_column_view(
-        rhs.view(),
-        multi_type,
-        linestring_type
-    )
+    cdef shared_ptr[geometry_column_view] c_lhs = \
+        make_shared[geometry_column_view](
+            lhs.view(),
+            multi_type,
+            linestring_type
+        )
+    cdef shared_ptr[geometry_column_view] c_rhs = \
+        make_shared[geometry_column_view](
+            rhs.view(),
+            multi_type,
+            linestring_type
+        )
 
     with nogil:
-        c_result = move(cpp_pairwise_linestring_intersection(c_lhs, c_rhs))
+        c_result = move(cpp_pairwise_linestring_intersection(
+            c_lhs.get()[0], c_rhs.get()[0]
+        ))
 
     geometry_collection_offset = Column.from_unique_ptr(
         move(c_result.geometry_collection_offset)
@@ -68,7 +73,7 @@ def pairwise_linestring_intersection(Column lhs, Column rhs):
 
     # Map linestring type codes from libcuspatial to cuspatial
     types_buffer[types_buffer == GeometryType.LINESTRING.value] = (
-        FeatureEnum.LINESTRING.value
+        Feature_Enum.LINESTRING.value
     )
 
     return ((geometry_collection_offset,

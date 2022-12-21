@@ -37,34 +37,11 @@ cudf::data_type leaf_data_type(cudf::column_view const& column)
 geometry_column_view::geometry_column_view(cudf::column_view const& column,
                                            collection_type_id collection_type,
                                            geometry_type_id geometry_type)
-  : cudf::column_view(column), _collection_type(collection_type), _geometry_type(geometry_type)
+  : cudf::lists_column_view(column),
+    _collection_type(collection_type),
+    _geometry_type(geometry_type)
 {
-  // Single point array is FixedSizeList<f>[n_dim]
-  if (geometry_type == geometry_type_id::POINT && collection_type == collection_type_id::SINGLE) {
-    CUSPATIAL_EXPECTS(type() == cudf::data_type{cudf::type_id::FLOAT32} ||
-                        type() == cudf::data_type{cudf::type_id::FLOAT64},
-                      "Single point column must be a non-nested column.");
-  } else {
-    CUSPATIAL_EXPECTS(
-      type() == cudf::data_type{cudf::type_id::LIST},
-      "Geometry column other than a single point column must be a list type column.");
-  }
 }
 
-cudf::data_type geometry_column_view::coordinate_type() const { return leaf_data_type(*this); }
-
-cudf::column_view geometry_column_view::child() const
-{
-  CUSPATIAL_EXPECTS(type() == cudf::data_type{cudf::type_id::LIST},
-                    "Only LIST column can contain offsets and child.");
-  return cudf::column_view::child(cudf::lists_column_view::child_column_index);
-}
-
-cudf::column_view geometry_column_view::offsets() const
-{
-  CUSPATIAL_EXPECTS(type() == cudf::data_type{cudf::type_id::LIST},
-                    "Only LIST column can contain offsets and child.");
-  return cudf::column_view::child(cudf::lists_column_view::offsets_column_index);
-}
-
+cudf::data_type geometry_column_view::coordinate_type() const { return leaf_data_type(child()); }
 }  // namespace cuspatial
