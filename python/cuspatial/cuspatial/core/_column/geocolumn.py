@@ -189,32 +189,40 @@ class GeoColumn(ColumnBase):
             raise ValueError("points_xy must have an even number of elements")
 
         num_points = len(points_xy) // 2
-        meta = GeoMeta(
-            {
-                "input_types": as_column(
-                    cp.full(
-                        num_points, Feature_Enum.POINT.value, dtype=cp.int8
-                    )
-                ),
-                "union_offsets": as_column(
-                    cp.arange(num_points, dtype=cp.int32)
-                ),
-            }
+        types_buffer = cp.full(
+            num_points, Feature_Enum.POINT.value, dtype=cp.int8
         )
-
+        offsets_buffer = cp.arange(num_points, dtype=cp.int32)
         indices = as_column(cp.arange(0, num_points * 2 + 1, 2), dtype="int32")
         point_col = build_list_column(
             indices=indices, elements=points_xy, size=num_points
         )
-        return cls(
+
+        return cls._from_arrays(
+            types_buffer,
+            offsets_buffer,
             (
                 cudf.Series(point_col),
                 cudf.Series(),
                 cudf.Series(),
                 cudf.Series(),
             ),
-            meta,
         )
+
+    @classmethod
+    def _from_arrays(cls, types_buffer, offsets_buffer, *children):
+        """
+        Create a GeoColumn from a buffer of types, offsets, and coordinates.
+        """
+        types_col = as_column(types_buffer)
+        offsets_col = as_column(offsets_buffer)
+
+        meta = GeoMeta(
+            {"input_types": types_col, "union_offsets": offsets_col}
+        )
+
+        children = tuple(cudf.Series(as_column(child)) for child in children)
+        return cls(children, meta)
 
     @cached_property
     def memory_usage(self) -> int:

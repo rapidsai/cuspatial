@@ -72,12 +72,14 @@ def pairwise_linestring_intersection(
         segments_xy,
     ) = geoms
 
-    (
-        lhs_linestring_id,
-        lhs_segment_id,
-        rhs_linestring_id,
-        rhs_segment_id,
-    ) = _create_list_for_ids(geometry_collection_offset, look_back_ids)
+    (lhs_linestring_id, lhs_segment_id, rhs_linestring_id, rhs_segment_id,) = [
+        build_list_column(
+            indices=geometry_collection_offset,
+            elements=id_,
+            size=len(geometry_collection_offset) - 1,
+        )
+        for id_ in look_back_ids
+    ]
 
     points_column = build_list_column(
         indices=arange(0, len(points_xy) + 1, 2, dtype="int32"),
@@ -85,11 +87,15 @@ def pairwise_linestring_intersection(
         size=len(points_xy) // 2,
     )
 
-    segment_column = build_list_column(
+    linestring_column = build_list_column(
         indices=arange(0, len(segments_offsets), dtype="int32"),
         elements=build_list_column(
             indices=segments_offsets,
-            elements=segments_xy,
+            elements=build_list_column(
+                indices=arange(0, len(segments_xy) + 1, 2, dtype="int32"),
+                elements=segments_xy,
+                size=len(segments_xy) // 2,
+            ),
             size=len(segments_offsets) - 1,
         ),
         size=len(segments_offsets) - 1,
@@ -101,12 +107,10 @@ def pairwise_linestring_intersection(
             offset_buffer,
             cudf.Series(points_column),
             cudf.Series(),
-            cudf.Series(segment_column),
+            cudf.Series(linestring_column),
             cudf.Series(),
         )
     )
-
-    breakpoint()
 
     ids = cudf.DataFrame(
         {
@@ -117,14 +121,3 @@ def pairwise_linestring_intersection(
         }
     )
     return geometry_collection_offset, geometries, ids
-
-
-def _create_list_for_ids(geometry_collection_offset, ids):
-    return [
-        build_list_column(
-            indices=geometry_collection_offset,
-            elements=id_,
-            size=len(geometry_collection_offset) - 1,
-        )
-        for id_ in ids
-    ]
