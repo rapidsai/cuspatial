@@ -39,8 +39,8 @@ requirements:
     - cudatoolkit ={{ cuda_version }}
     - gdal {{ gdal_version }}
     - libcudf ={{ minor_version }}
-    - libcusparse {{ libcusparse_version }}
-    - libcusparse-dev {{ libcusparse_version }}
+    - libcusparse {{ libcusparse_host_version }}
+    - libcusparse-dev {{ libcusparse_host_version }}
     - librmm ={{ minor_version }}
 
 outputs:
@@ -62,8 +62,8 @@ outputs:
         - cudatoolkit {{ cuda_spec }}
         - gdal {{ gdal_version }}
         - libcudf ={{ minor_version }}
-        - libcusparse {{ libcusparse_version }}
-        - libcusparse-dev {{ libcusparse_version }}
+        - libcusparse {{ libcusparse_run_version }}
+        - libcusparse-dev {{ libcusparse_run_version }}
         - librmm ={{ minor_version }}
     test:
       commands:

@@ -100,20 +100,25 @@ dependencies:
       - output_types: conda
         matrices:
           - matrix:
-              cuda: "11.2"
+              cuda: "11.5"
             packages:
-              - cudatoolkit=11.2
-              - libcusparse-dev=11.6.0.43  # belongs to cuda-11.4.0 but it's the oldest available
+              - cudatoolkit=11.5
+              - libcusparse-dev>=11.7.0.31,<=11.7.0.107
+              - libcusparse>=11.7.0.31,<=11.7.0.107
           - matrix:
               cuda: "11.4"
             packages:
               - cudatoolkit=11.4
-              - libcusparse-dev=11.6.0.120
+              - &libcusparse_dev114 libcusparse-dev>=11.6.0.43,<=11.6.0.120
+              - &libcusparse114 libcusparse>=11.6.0.43,<=11.6.0.120
           - matrix:
-              cuda: "11.5"
+              cuda: "11.2"
             packages:
-              - cudatoolkit=11.5
-              - libcusparse-dev=11.7.0.107
+              - cudatoolkit=11.2
+              # The NVIDIA channel doesn't publish pkgs older than 11.4 for these libs,
+              # so 11.2 uses 11.4 packages (the oldest available).
+              - *libcusparse_dev114
+              - *libcusparse114
   develop:
     common:
       - output_types: [conda, requirements]
