@@ -124,7 +124,13 @@ else
     nvidia-smi
 
     gpuci_logger "Installing libcuspatial and libcuspatial-tests"
-    gpuci_mamba_retry install -c "${CONDA_ARTIFACT_PATH}" libcuspatial libcuspatial-tests
+    # orc version spec is a workaround to keep Jenkins builds working
+    # for now.
+    gpuci_mamba_retry install \
+    --channel "${CONDA_ARTIFACT_PATH}" \
+    "orc=1.7" \
+    libcuspatial \
+    libcuspatial-tests
 
     # TODO: Move boa install to gpuci/rapidsai
     gpuci_mamba_retry install boa
