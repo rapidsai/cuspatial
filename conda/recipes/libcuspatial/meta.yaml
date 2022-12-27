@@ -38,6 +38,8 @@ requirements:
   host:
     - cudatoolkit ={{ cuda_version }}
     - gdal {{ gdal_version }}
+    - gmock {{ gtest_version }}
+    - gtest {{ gtest_version }}
     - libcudf ={{ minor_version }}
     - libcusparse {{ libcusparse_host_version }}
     - libcusparse-dev {{ libcusparse_host_version }}
@@ -85,8 +87,6 @@ outputs:
     requirements:
       build:
         - cmake {{ cmake_version }}
-        - gmock {{ gtest_version }}
-        - gtest {{ gtest_version }}
       run:
         - {{ pin_subpackage('libcuspatial', exact=True) }}
         - cudatoolkit {{ cuda_spec }}
