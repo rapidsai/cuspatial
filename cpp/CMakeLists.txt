@@ -110,10 +110,7 @@ rapids_find_package(
 rapids_cpm_init()
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
-# find or install GoogleTest
-if(CUSPATIAL_BUILD_TESTS)
-  include(cmake/thirdparty/get_gtest.cmake)
-endif()
+
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
