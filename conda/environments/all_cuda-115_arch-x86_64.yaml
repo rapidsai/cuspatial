@@ -18,6 +18,8 @@ dependencies:
 - gmock=1.10.0
 - gtest=1.10.0
 - libcudf=22.12.*
+- libcusparse-dev>=11.7.0.31,<=11.7.0.107
+- libcusparse>=11.7.0.31,<=11.7.0.107
 - librmm=22.12.*
 - myst-parser
 - ninja
@@ -26,6 +28,7 @@ dependencies:
 - pydata-sphinx-theme
 - pytest
 - pytest-cov
+- pytest-xdist
 - python>=3.8,<3.10
 - rmm=22.12.*
 - scikit-build>=0.13.1
