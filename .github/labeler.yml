@@ -5,7 +5,7 @@
 Python:
   - 'python/**'
   - 'notebooks/**'
-  
+
 libcuspatial:
   - 'cpp/**'
 
@@ -13,11 +13,11 @@ CMake:
   - '**/CMakeLists.txt'
   - '**/cmake/**'
 
-gpuCI:
+ci:
   - 'ci/**'
 
 conda:
     - 'conda/**'
-    
+
 Java:
   - 'java/**'
