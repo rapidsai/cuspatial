@@ -13,13 +13,11 @@ files:
       - doc
       - py_version
       - run_python
-      - test_cpp
       - test_python
   test_cpp:
     output: none
     includes:
       - cudatoolkit
-      - test_cpp
   test_python:
     output: none
     includes:
@@ -29,8 +27,8 @@ files:
   checks:
     output: none
     includes:
-      - build
       - develop
+      - py_version
 channels:
   - rapidsai
   - rapidsai-nightly
@@ -45,6 +43,8 @@ dependencies:
           - c-compiler
           - cxx-compiler
           - gdal>3.5.0,<3.6.0
+          - gmock=1.10.0
+          - gtest=1.10.0
           - libcudf=22.12.*
           - librmm=22.12.*
           - ninja
@@ -100,17 +100,25 @@ dependencies:
       - output_types: conda
         matrices:
           - matrix:
-              cuda: "11.2"
+              cuda: "11.5"
             packages:
-              - cudatoolkit=11.2
+              - cudatoolkit=11.5
+              - libcusparse-dev>=11.7.0.31,<=11.7.0.107
+              - libcusparse>=11.7.0.31,<=11.7.0.107
           - matrix:
               cuda: "11.4"
             packages:
               - cudatoolkit=11.4
+              - &libcusparse_dev114 libcusparse-dev>=11.6.0.43,<=11.6.0.120
+              - &libcusparse114 libcusparse>=11.6.0.43,<=11.6.0.120
           - matrix:
-              cuda: "11.5"
+              cuda: "11.2"
             packages:
-              - cudatoolkit=11.5
+              - cudatoolkit=11.2
+              # The NVIDIA channel doesn't publish pkgs older than 11.4 for these libs,
+              # so 11.2 uses 11.4 packages (the oldest available).
+              - *libcusparse_dev114
+              - *libcusparse114
   develop:
     common:
       - output_types: [conda, requirements]
@@ -144,15 +152,10 @@ dependencies:
           - *cudf_ver
           - geopandas>=0.11.0
           - rmm=22.12.*
-  test_cpp:
-    common:
-      - output_types: conda
-        packages:
-          - gtest=1.10.0
-          - gmock=1.10.0
   test_python:
     common:
       - output_types: [conda, requirements]
         packages:
           - pytest
           - pytest-cov
+          - pytest-xdist
