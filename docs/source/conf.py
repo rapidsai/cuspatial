@@ -155,7 +155,7 @@ latex_documents = [
         master_doc,
         "cuspatial.tex",
         "cuspatial Documentation",
-        "Continuum Analytics",
+        "NVIDIA Corporation",
         "manual",
     )
 ]
