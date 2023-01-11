@@ -21,6 +21,7 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     packages=find_packages(include=["cuspatial", "cuspatial.*"]),
     package_data={"cuspatial._lib": ["*.pxd"]},
