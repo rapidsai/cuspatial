@@ -45,8 +45,8 @@ dependencies:
           - gdal>3.5.0,<3.6.0
           - gmock=1.10.0
           - gtest=1.10.0
-          - libcudf=23.02
-          - librmm=23.02
+          - libcudf=23.04
+          - librmm=23.04
           - ninja
     specific:
       - output_types: conda
@@ -78,7 +78,7 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - *cmake_ver
-          - &cudf_ver cudf=23.02
+          - &cudf_ver cudf=23.04
           - cython>=0.29,<0.30
           - scikit-build>=0.13.1
           - setuptools
@@ -161,7 +161,7 @@ dependencies:
         packages:
           - *cudf_ver
           - geopandas>=0.11.0
-          - rmm=23.02
+          - rmm=23.04
   test_python:
     common:
       - output_types: [conda, requirements]
