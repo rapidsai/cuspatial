@@ -10,7 +10,7 @@ files:
       - build_python
       - cudatoolkit
       - develop
-      - doc
+      - docs_build
       - py_version
       - run_python
       - test_python
@@ -29,6 +29,12 @@ files:
     includes:
       - develop
       - py_version
+  docs:
+    output: none
+    includes:
+      - cudatoolkit
+      - py_version
+      - docs_build
 channels:
   - rapidsai
   - rapidsai-nightly
@@ -130,7 +136,7 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - pre-commit
-  doc:
+  docs_build:
     common:
       - output_types: [conda, requirements]
         packages:
