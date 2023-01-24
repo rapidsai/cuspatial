@@ -144,6 +144,8 @@ dependencies:
           - myst-parser
           - doxygen
           - numpydoc
+          - ipython
+          - nbsphinx
   py_version:
     specific:
       - output_types: conda

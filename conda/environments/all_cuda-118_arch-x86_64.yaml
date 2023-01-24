@@ -18,11 +18,13 @@ dependencies:
 - geopandas>=0.11.0
 - gmock=1.10.0
 - gtest=1.10.0
+- ipython
 - libcudf=23.02
 - libcusparse-dev=11.7.5.86
 - libcusparse=11.7.5.86
 - librmm=23.02
 - myst-parser
+- nbsphinx
 - ninja
 - numpydoc
 - nvcc_linux-64=11.8
