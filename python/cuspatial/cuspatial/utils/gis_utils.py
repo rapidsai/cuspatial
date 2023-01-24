@@ -35,5 +35,7 @@ def pip_bitmap_column_to_binary_array(polygon_bitmap_column, width):
     """Convert the bitmap output of point_in_polygon
     to an array of 0s and 1s.
     """
-    binary_maps = apply_binarize(polygon_bitmap_column.data_array_view(mode="read"), width)
+    binary_maps = apply_binarize(
+        polygon_bitmap_column.data_array_view(mode="read"), width
+    )
     return binary_maps
