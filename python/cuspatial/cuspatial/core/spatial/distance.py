@@ -91,9 +91,10 @@ def directed_hausdorff_distance(xs, ys, space_offsets):
         ys,
         as_column(space_offsets, dtype="uint32"),
     )
-    result = result.data_array_view()
-    result = result.reshape(num_spaces, num_spaces)
-    return DataFrame(result)
+    with cudf.core.buffer.acquire_spill_lock():
+        result = result.data_array_view(mode="write")
+        result = result.reshape(num_spaces, num_spaces)
+        return DataFrame(result)
 
 
 def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
