@@ -24,6 +24,7 @@ dependencies:
 - librmm=23.02
 - myst-parser
 - ninja
+- numpydoc
 - nvcc_linux-64=11.8
 - pre-commit
 - pydata-sphinx-theme
