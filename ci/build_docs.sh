@@ -45,5 +45,5 @@ popd
 if [[ ${RAPIDS_BUILD_TYPE} == "branch" ]]; then
   aws s3 sync --delete docs/_html "s3://rapidsai-docs/cuspatial/${VERSION_NUMBER}/html"
   aws s3 sync --delete docs/_text "s3://rapidsai-docs/cuspatial/${VERSION_NUMBER}/txt"
-  aws s3 sync --delete doxygen/html "s3://rapidsai-docs/libcuspatial/${VERSION_NUMBER}/html"
+  aws s3 sync --delete cpp/doxygen/html "s3://rapidsai-docs/libcuspatial/${VERSION_NUMBER}/html"
 fi
