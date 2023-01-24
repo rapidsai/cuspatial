@@ -142,6 +142,7 @@ dependencies:
         packages:
           - pydata-sphinx-theme
           - myst-parser
+          - doxygen
   py_version:
     specific:
       - output_types: conda
