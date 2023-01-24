@@ -91,7 +91,7 @@ def directed_hausdorff_distance(xs, ys, space_offsets):
         ys,
         as_column(space_offsets, dtype="uint32"),
     )
-    result = result.data_array_view
+    result = result.data_array_view()
     result = result.reshape(num_spaces, num_spaces)
     return DataFrame(result)
 
