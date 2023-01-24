@@ -143,6 +143,7 @@ dependencies:
           - pydata-sphinx-theme
           - myst-parser
           - doxygen
+          - numpydoc
   py_version:
     specific:
       - output_types: conda
