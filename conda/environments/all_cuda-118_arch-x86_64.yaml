@@ -12,6 +12,7 @@ dependencies:
 - cudf=23.02
 - cxx-compiler
 - cython>=0.29,<0.30
+- doxygen
 - gcc_linux-64=9.*
 - gdal>3.5.0,<3.6.0
 - geopandas>=0.11.0
