@@ -66,17 +66,18 @@ body:
     id: logs
     attributes:
       label: Relevant log output
-      description: Please paste relevant error and log output here
+      description: Please paste relevant errdor and log output here
       render: shell
 
   - type: textarea
     id: env-details
     attributes:
       label: Environment details
-      description: Please provide any relevant environment details
+      description: Please specify installation info and paste the results from print_env.sh here
       placeholder: |
-       Environment location: [Bare-metal, Docker, Cloud(specify cloud provider)]
-       If method of install is Docker, provide `docker pull` & `docker run` commands used
+       + Environment location: [Bare-metal, Docker, Cloud(specify cloud provider)]
+       + If method of install is Docker, provide `docker pull` & `docker run` commands used
+       + print_env.sh output
       render: shell
 
   - type: textarea
