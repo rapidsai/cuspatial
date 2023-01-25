@@ -92,7 +92,7 @@ def directed_hausdorff_distance(xs, ys, space_offsets):
         as_column(space_offsets, dtype="uint32"),
     )
     with cudf.core.buffer.acquire_spill_lock():
-        result = result.data_array_view(mode="write")
+        result = result.data_array_view(mode="read")
         result = result.reshape(num_spaces, num_spaces)
         return DataFrame(result)
 
