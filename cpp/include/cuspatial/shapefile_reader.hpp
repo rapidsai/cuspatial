@@ -47,8 +47,9 @@ typedef enum class winding_order : bool { CLOCKWISE, COUNTER_CLOCKWISE } winding
  * @note The number of polygons is equal to the length of the first column
  *
  **/
-[[deprecated("Use Python libraries or GDAL to load shapefiles.")]]
-std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
+[[deprecated(
+  "Use Python libraries or GDAL to load shapefiles.")]] std::vector<std::unique_ptr<cudf::column>>
+read_polygon_shapefile(
   std::string const& filename,
   const winding_order outer_ring_winding = winding_order::COUNTER_CLOCKWISE,
   rmm::mr::device_memory_resource* mr    = rmm::mr::get_current_device_resource());
