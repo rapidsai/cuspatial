@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,7 @@ using namespace cuspatial;
 using namespace cuspatial::test;
 
 template <typename T>
-struct PairwisePointLinestringNearestPointsTest : public ::testing::Test {
-};
+struct PairwisePointLinestringNearestPointsTest : public ::testing::Test {};
 
 // float and double are logically the same but would require seperate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;
@@ -80,7 +79,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, Empty)
   EXPECT_EQ(nearest_point_id, std::vector<int32_t>{});
   EXPECT_EQ(nearest_linestring_parts_id, std::vector<int32_t>{});
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>{});
-  expect_vector_equivalent(neartest_point_coordinate, std::vector<vec_2d<T>>{});
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(neartest_point_coordinate, std::vector<vec_2d<T>>{});
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
@@ -119,7 +118,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, OnePairSingleComponent)
 
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>{1});
   auto expected_coordinate = CartVec{{0.5, 0.5}};
-  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(neartest_point_coordinate, expected_coordinate);
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
@@ -158,7 +157,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, NearestAtLeftEndPoint)
 
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>{0});
   auto expected_coordinate = CartVec{{1, 1}};
-  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(neartest_point_coordinate, expected_coordinate);
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
@@ -197,7 +196,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, NearestAtRightEndPoint)
 
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>{0});
   auto expected_coordinate = CartVec{{2, 2}};
-  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(neartest_point_coordinate, expected_coordinate);
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
@@ -237,7 +236,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, PointAtEndPoints)
 
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>({0, 0, 1}));
   auto expected_coordinate = CartVec{{0, 0}, {1, 1}, {2, 2}};
-  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(neartest_point_coordinate, expected_coordinate);
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
@@ -277,7 +276,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, PointOnLineString)
 
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>({0, 1}));
   auto expected_coordinate = CartVec{{0.5, 0.5}, {1.5, 1.5}};
-  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(neartest_point_coordinate, expected_coordinate);
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
@@ -317,7 +316,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, TwoPairsSingleComponent)
 
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>({1, 0}));
   auto expected_coordinate = CartVec{{0.5, 0.5}, {1.5, 0.5}};
-  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(neartest_point_coordinate, expected_coordinate);
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
@@ -361,7 +360,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, OnePairMultiComponent)
   EXPECT_EQ(nearest_linestring_linestring_id, std::vector<int32_t>({0}));
   EXPECT_EQ(nearest_linestring_segment_id, std::vector<int32_t>({0}));
   auto expected_coordinate = CartVec{{1.2189892802450228, 1.8705972434915774}};
-  expect_vector_equivalent(neartest_point_coordinate, expected_coordinate);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(neartest_point_coordinate, expected_coordinate);
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }
 
@@ -416,7 +415,8 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, ThreePairMultiComponent)
   EXPECT_EQ(thrust::host_vector<int32_t>(nearest_point_id), std::vector<int32_t>({1, 0, 0}));
   EXPECT_EQ(thrust::host_vector<int32_t>(nearest_linestring_id), std::vector<int32_t>({0, 1, 0}));
   EXPECT_EQ(thrust::host_vector<int32_t>(nearest_segment_id), std::vector<int32_t>({0, 0, 2}));
-  expect_vector_equivalent(neartest_point_coordinate,
-                           CartVec{{3.545131432802666, 2.30503517215846}, {9.9, 9.4}, {0.0, -8.7}});
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(
+    neartest_point_coordinate,
+    CartVec{{3.545131432802666, 2.30503517215846}, {9.9, 9.4}, {0.0, -8.7}});
   EXPECT_EQ(std::distance(output_it, ret), num_pairs);
 }

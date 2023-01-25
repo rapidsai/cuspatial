@@ -231,10 +231,10 @@ void expect_vec_2d_pair_equivalent(PairVector1 const& expected, PairVector2 cons
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_second, got_second);
 }
 
-#define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs, ...)              \
-  do {                                                                  \
-    SCOPED_TRACE(" <--  line of failure\n");                            \
-    cuspatial::test::expect_vector_equivalent(lhs, rhs, ##__VA_ARGS__); \
+#define CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(lhs, rhs)     \
+  do {                                                        \
+    SCOPED_TRACE(" <--  line of failure\n");                  \
+    cuspatial::test::expect_vec_2d_pair_equivalent(lhs, rhs); \
   } while (0)
 
 #define CUSPATIAL_RUN_TEST(FUNC, ...)        \

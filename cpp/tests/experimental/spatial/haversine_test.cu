@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,7 @@
 #include <gtest/gtest.h>
 
 template <typename T>
-struct HaversineTest : public ::testing::Test {
-};
+struct HaversineTest : public ::testing::Test {};
 
 // float and double are logically the same but would require seperate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;
@@ -47,7 +46,7 @@ TYPED_TEST(HaversineTest, Empty)
   auto distance_end = cuspatial::haversine_distance(
     a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
 
-  cuspatial::test::expect_vector_equivalent(expected, distance);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, distance);
   EXPECT_EQ(0, std::distance(distance.begin(), distance_end));
 }
 
@@ -66,7 +65,7 @@ TYPED_TEST(HaversineTest, Zero)
   auto distance_end = cuspatial::haversine_distance(
     a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
 
-  cuspatial::test::expect_vector_equivalent(expected, distance);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, distance);
   EXPECT_EQ(1, std::distance(distance.begin(), distance_end));
 }
 
@@ -106,7 +105,7 @@ TYPED_TEST(HaversineTest, EquivalentPoints)
   auto distance_end = cuspatial::haversine_distance(
     a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
 
-  cuspatial::test::expect_vector_equivalent(expected, distance);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, distance);
   EXPECT_EQ(2, std::distance(distance.begin(), distance_end));
 }
 
@@ -139,6 +138,6 @@ TYPED_TEST(HaversineTest, TransformIterator)
   auto distance_end =
     cuspatial::haversine_distance(xform_begin, xform_end, b_lonlat.begin(), distance.begin());
 
-  cuspatial::test::expect_vector_equivalent(expected, distance);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, distance);
   EXPECT_EQ(2, std::distance(distance.begin(), distance_end));
 }
