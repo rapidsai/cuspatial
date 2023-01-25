@@ -25,7 +25,8 @@
 #include <gtest/gtest.h>
 
 template <typename T>
-struct LinestringBoundingBoxTest : public ::testing::Test {};
+struct LinestringBoundingBoxTest : public ::testing::Test {
+};
 
 using cuspatial::vec_2d;
 using cuspatial::test::make_device_vector;
