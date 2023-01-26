@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ struct PointBoundingBoxesTest : public ::testing::Test {
 
     EXPECT_EQ(std::distance(bounding_boxes.begin(), boxes_end), data.num_trajectories);
 
-    cuspatial::test::expect_vec_2d_pair_equivalent(bounding_boxes, data.bounding_boxes());
+    CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(bounding_boxes, data.bounding_boxes());
   }
 };
 
