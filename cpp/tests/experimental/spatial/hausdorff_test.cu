@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ struct HausdorffTest : public ::testing::Test {
 
     thrust::host_vector<T> h_distances(distances);
 
-    cuspatial::test::expect_vector_equivalent(distances, expected);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(distances, expected);
     EXPECT_EQ(num_distances, std::distance(distances.begin(), distances_end));
   }
 };
@@ -63,7 +63,7 @@ TYPED_TEST_CASE(HausdorffTest, TestTypes);
 
 TYPED_TEST(HausdorffTest, Empty)
 {
-  this->template test<cuspatial::vec_2d<TypeParam>, uint32_t>({}, {}, {});
+  CUSPATIAL_RUN_TEST((this->template test<cuspatial::vec_2d<TypeParam>, uint32_t>), {}, {}, {});
 }
 
 TYPED_TEST(HausdorffTest, Simple)
@@ -76,7 +76,10 @@ TYPED_TEST(HausdorffTest, Simple)
 
 TYPED_TEST(HausdorffTest, SingleTrajectorySinglePoint)
 {
-  this->template test<cuspatial::vec_2d<TypeParam>, uint32_t>({{152.2, 2351.0}}, {{0}}, {{0.0}});
+  CUSPATIAL_RUN_TEST((this->template test<cuspatial::vec_2d<TypeParam>, uint32_t>),
+                     {{152.2, 2351.0}},
+                     {{0}},
+                     {{0.0}});
 }
 
 TYPED_TEST(HausdorffTest, TwoShortSpaces)
@@ -87,44 +90,45 @@ TYPED_TEST(HausdorffTest, TwoShortSpaces)
 
 TYPED_TEST(HausdorffTest, TwoShortSpaces2)
 {
-  this->template test<cuspatial::vec_2d<TypeParam>, uint32_t>(
-    {{1, 1}, {5, 12}, {4, 3}, {2, 8}, {3, 4}, {7, 7}},
-    {{0, 3, 4}},
-    {{0.0,
-      7.0710678118654755,
-      5.3851648071345037,
-      5.0000000000000000,
-      0.0,
-      4.1231056256176606,
-      5.0,
-      5.0990195135927854,
-      0.0}});
+  CUSPATIAL_RUN_TEST((this->template test<cuspatial::vec_2d<TypeParam>, uint32_t>),
+                     {{1, 1}, {5, 12}, {4, 3}, {2, 8}, {3, 4}, {7, 7}},
+                     {{0, 3, 4}},
+                     {{0.0,
+                       7.0710678118654755,
+                       5.3851648071345037,
+                       5.0000000000000000,
+                       0.0,
+                       4.1231056256176606,
+                       5.0,
+                       5.0990195135927854,
+                       0.0}});
 }
 
 TYPED_TEST(HausdorffTest, ThreeSpacesLengths543)
 {
-  this->template test<cuspatial::vec_2d<TypeParam>, uint32_t>({{0.0, 1.0},
-                                                               {1.0, 2.0},
-                                                               {2.0, 3.0},
-                                                               {3.0, 5.0},
-                                                               {1.0, 7.0},
-                                                               {3.0, 0.0},
-                                                               {5.0, 2.0},
-                                                               {6.0, 3.0},
-                                                               {5.0, 6.0},
-                                                               {4.0, 1.0},
-                                                               {7.0, 3.0},
-                                                               {4.0, 6.0}},
-                                                              {{0, 5, 9}},
-                                                              {{0.0000000000000000,
-                                                                4.1231056256176606,
-                                                                4.0000000000000000,
-                                                                3.6055512754639896,
-                                                                0.0000000000000000,
-                                                                1.4142135623730951,
-                                                                4.4721359549995796,
-                                                                1.4142135623730951,
-                                                                0.0000000000000000}});
+  CUSPATIAL_RUN_TEST((this->template test<cuspatial::vec_2d<TypeParam>, uint32_t>),
+                     {{0.0, 1.0},
+                      {1.0, 2.0},
+                      {2.0, 3.0},
+                      {3.0, 5.0},
+                      {1.0, 7.0},
+                      {3.0, 0.0},
+                      {5.0, 2.0},
+                      {6.0, 3.0},
+                      {5.0, 6.0},
+                      {4.0, 1.0},
+                      {7.0, 3.0},
+                      {4.0, 6.0}},
+                     {{0, 5, 9}},
+                     {{0.0000000000000000,
+                       4.1231056256176606,
+                       4.0000000000000000,
+                       3.6055512754639896,
+                       0.0000000000000000,
+                       1.4142135623730951,
+                       4.4721359549995796,
+                       1.4142135623730951,
+                       0.0000000000000000}});
 }
 
 TYPED_TEST(HausdorffTest, MoreSpacesThanPoints)
@@ -157,7 +161,7 @@ void generic_hausdorff_test()
                                                               space_offset_iter + num_spaces,
                                                               distances.begin());
 
-  cuspatial::test::expect_vector_equivalent(distances, expected);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(distances, expected);
   EXPECT_EQ(num_distances, std::distance(distances.begin(), distances_end));
 }
 
