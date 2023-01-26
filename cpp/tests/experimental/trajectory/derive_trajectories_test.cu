@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "cuspatial_test/vector_equality.hpp"
 #include "trajectory_test_utils.cuh"
 
 #include <cuspatial/detail/iterator.hpp>
@@ -59,7 +60,7 @@ TYPED_TEST(DeriveTrajectoriesTest, OneMillionSmallTrajectories)
                                                      traj_times.begin());
 
   EXPECT_EQ(traj_ids, data.ids_sorted);
-  EXPECT_EQ(traj_points, data.points_sorted);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(traj_points, data.points_sorted);
   EXPECT_EQ(traj_times, data.times_sorted);
 }
 
@@ -80,7 +81,7 @@ TYPED_TEST(DeriveTrajectoriesTest, OneHundredLargeTrajectories)
                                                      traj_times.begin());
 
   EXPECT_EQ(traj_ids, data.ids_sorted);
-  EXPECT_EQ(traj_points, data.points_sorted);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(traj_points, data.points_sorted);
   EXPECT_EQ(traj_times, data.times_sorted);
 }
 
@@ -101,6 +102,6 @@ TYPED_TEST(DeriveTrajectoriesTest, OneVeryLargeTrajectory)
                                                      traj_times.begin());
 
   EXPECT_EQ(traj_ids, data.ids_sorted);
-  EXPECT_EQ(traj_points, data.points_sorted);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(traj_points, data.points_sorted);
   EXPECT_EQ(traj_times, data.times_sorted);
 }
