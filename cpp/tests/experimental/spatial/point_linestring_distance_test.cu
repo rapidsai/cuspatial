@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, Empty)
 
   auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
-  expect_vector_equivalent(expect, got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -105,7 +105,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairFromVectorSingleComponent
 
   auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
-  expect_vector_equivalent(expect, got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -141,7 +141,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairFromCountingIteratorSingl
 
   auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
-  expect_vector_equivalent(expect, got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -177,7 +177,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, TwoPairFromVectorSingleComponent
 
   auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
-  expect_vector_equivalent(expect, got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -216,7 +216,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, ManyPairsFromIteratorsSingleComp
 
   auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
-  expect_vector_equivalent(expect, got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -377,7 +377,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePartFiftyPairsCompareWithShap
 
   auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
-  expect_vector_equivalent(expect, got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -414,7 +414,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairMultiPointMultiLinestring
 
   auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
-  expect_vector_equivalent(expect, got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
@@ -451,7 +451,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, ThreePairMultiPointMultiLinestri
 
   auto ret = pairwise_point_linestring_distance(multipoints, multilinestrings, got.begin());
 
-  expect_vector_equivalent(expect, got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expect, got);
   EXPECT_EQ(ret, got.end());
 }
 
