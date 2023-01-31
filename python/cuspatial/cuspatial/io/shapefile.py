@@ -1,4 +1,6 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
+
+import warnings
 
 from cudf import DataFrame, Series
 
@@ -34,7 +36,18 @@ def read_polygon_shapefile(
                 x-components of each polygon's points
             y : cudf.Series(dtype=np.float64)
                 y-components of each polygon's points
+
+    Notes
+    -----
+    This function is deprecated and will be removed in a future release.
     """
+    warning_msg = (
+        "read_polygon_shapefile is deprecated and will be removed in a "
+        "future release. Polygon data can be loaded using other libraries "
+        "such as GeoPandas or PyShp."
+    )
+    warnings.warn(warning_msg, DeprecationWarning)
+
     result = cpp_read_polygon_shapefile(filename, outer_ring_order)
     f_pos = Series(result[0], name="f_pos")
     r_pos = Series(result[1], name="r_pos")
