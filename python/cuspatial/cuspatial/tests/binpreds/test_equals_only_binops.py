@@ -490,6 +490,28 @@ def test_3_linestrings_geom_equals_3_linestrings_misordered():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
+def test_3_linestrings_geom_equals_3_linestrings_longer():
+    gpdline1 = gpd.GeoSeries(
+        [
+            LineString([(1, 1), (0, 0), (0, 4)]),
+            LineString([(2, 2), (1, 1), (0, 4)]),
+            LineString([(3, 3), (2, 2), (0, 4)]),
+        ]
+    )
+    gpdline2 = gpd.GeoSeries(
+        [
+            LineString([(0, 0), (1, 1), (0, 4)]),
+            LineString([(1, 1), (2, 2), (0, 4)]),
+            LineString([(2, 2), (3, 3), (0, 4)]),
+        ]
+    )
+    line1 = cuspatial.from_geopandas(gpdline1)
+    line2 = cuspatial.from_geopandas(gpdline2)
+    got = line1.geom_equals(line2)
+    expected = gpdline1.geom_equals(gpdline2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
 def test_3_polygons_geom_equals_3_polygons_different_sizes():
     gpdpoly1 = gpd.GeoSeries(
         [

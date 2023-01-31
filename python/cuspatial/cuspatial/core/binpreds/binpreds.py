@@ -306,13 +306,12 @@ class WithinBinpred(ContainsProperlyBinpred):
 
 class EqualsBinpred(BinaryPredicate):
     def _offset_equals(self, lhs, rhs):
-        """Compute the equals relationship between two sets of offsets
-        buffers."""
+        """Compute the pairwise length equality of two offset arrays"""
         lhs_lengths = lhs[:-1] - lhs[1:]
         rhs_lengths = rhs[:-1] - rhs[1:]
         return lhs_lengths == rhs_lengths
 
-    def _sort_xy_by_offset(self, lhs, rhs, initial):
+    def _sort_multipoints(self, lhs, rhs, initial):
         """Sort xy according to bins defined by offset"""
         sort_indices = cp.repeat(lhs.point_indices(), 2)
         lhs_xy, rhs_xy = lhs.xy, rhs.xy
@@ -332,6 +331,73 @@ class EqualsBinpred(BinaryPredicate):
             initial,
         )
 
+    def _sort_linestrings(self, lhs, rhs, initial):
+        """Swap first and last values of each linestring to ensure that
+        the first point is the lowest value. This is necessary to ensure
+        that the endpoints are not included in the comparison."""
+        # Save temporary values since lhs.x cannot be used modified.
+        lhs_x = lhs.x
+        lhs_y = lhs.y
+        rhs_x = rhs.x
+        rhs_y = rhs.y
+        point_range = cudf.Series(cp.arange(len(lhs_x)))
+        indices = point_range.groupby(lhs.point_indices())
+        # Create masks for the first and last values of each linestring
+        swap_lx = lhs_x[indices.last()].reset_index(drop=True) < lhs_x[
+            indices.first()
+        ].reset_index(drop=True)
+        swap_ly = lhs_y[indices.last()].reset_index(drop=True) < lhs_y[
+            indices.first()
+        ].reset_index(drop=True)
+        swap_rx = rhs_x[indices.last()].reset_index(drop=True) < rhs_x[
+            indices.first()
+        ].reset_index(drop=True)
+        swap_ry = rhs_y[indices.last()].reset_index(drop=True) < rhs_y[
+            indices.first()
+        ].reset_index(drop=True)
+        # Swap the first and last values of each linestring
+        (
+            lhs_x.iloc[indices.last()[swap_lx]],
+            lhs_x.iloc[indices.first()[swap_lx]],
+        ) = (
+            lhs_x.iloc[indices.first()[swap_lx]],
+            lhs_x.iloc[indices.last()[swap_lx]],
+        )
+        (
+            lhs_y.iloc[indices.last()[swap_ly]],
+            lhs_y.iloc[indices.first()[swap_ly]],
+        ) = (
+            lhs_y.iloc[indices.first()[swap_ly]],
+            lhs_y.iloc[indices.last()[swap_ly]],
+        )
+        (
+            rhs_x.iloc[indices.last()[swap_rx]],
+            rhs_x.iloc[indices.first()[swap_rx]],
+        ) = (
+            rhs_x.iloc[indices.first()[swap_rx]],
+            rhs_x.iloc[indices.last()[swap_rx]],
+        )
+        (
+            rhs_y.iloc[indices.last()[swap_ry]],
+            rhs_y.iloc[indices.first()[swap_ry]],
+        ) = (
+            rhs_y.iloc[indices.first()[swap_ry]],
+            rhs_y.iloc[indices.last()[swap_ry]],
+        )
+        # Reconstruct the xy columns
+        lhs_xy = lhs.xy
+        rhs_xy = rhs.xy
+        lhs_xy.iloc[::2] = lhs_x
+        lhs_xy.iloc[1::2] = lhs_y
+        rhs_xy.iloc[::2] = rhs_x
+        rhs_xy.iloc[1::2] = rhs_y
+
+        return (
+            PreprocessorOutput(lhs_xy, lhs.point_indices()),
+            PreprocessorOutput(rhs_xy, rhs.point_indices()),
+            initial,
+        )
+
     def preprocess(self, lhs, rhs):
         # Compare types
         type_compare = lhs.dtype == rhs.dtype
@@ -346,19 +412,25 @@ class EqualsBinpred(BinaryPredicate):
                 rhs.multipoints.geometry_offset,
             )
             if lengths_equal.any():
-                return self._sort_xy_by_offset(
+                # Multipoints are equal if they contains the
+                # same unordered points.
+                return self._sort_multipoints(
                     lhs[lengths_equal].multipoints,
                     rhs[lengths_equal].multipoints,
                     lengths_equal,
                 )
             else:
+                # No lengths are equal, so none can be equal.
                 return self._cancel_op(lhs, rhs, lengths_equal)
         elif contains_only_linestrings(lhs):
             lengths_equal = self._offset_equals(
                 lhs.lines.part_offset, rhs.lines.part_offset
             )
             if lengths_equal.any():
-                return self._sort_xy_by_offset(
+                # Linestrings are equal if their sorted points
+                # are equal. This is unintuitive and perhaps
+                # incorrect, but it is the behavior of shapely.
+                return self._sort_linestrings(
                     lhs[lengths_equal].lines,
                     rhs[lengths_equal].lines,
                     lengths_equal,
@@ -396,14 +468,17 @@ class EqualsBinpred(BinaryPredicate):
     def _vertices_equals(self, lhs, rhs):
         """Compute the equals relationship between interleaved xy
         coordinate buffers."""
-        a = (lhs[::2] == rhs[::2]).reset_index(drop=True)
-        b = (rhs[1::2] == lhs[1::2]).reset_index(drop=True)
+        length = min(len(lhs), len(rhs))
+        a = lhs[:length:2]._column == rhs[:length:2]._column
+        b = rhs[1:length:2]._column == lhs[1:length:2]._column
         return a & b
 
     def _op(self, lhs, rhs):
         indices = lhs.point_indices()
         result = self._vertices_equals(lhs.xy, rhs.xy)
-        result_df = cudf.DataFrame({"idx": indices, "equals": result})
+        result_df = cudf.DataFrame(
+            {"idx": indices[: len(result)], "equals": result}
+        )
         result = (
             result_df.groupby("idx").sum() == result_df.groupby("idx").count()
         )["equals"]
