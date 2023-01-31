@@ -73,10 +73,11 @@ body:
     id: env-details
     attributes:
       label: Environment details
-      description: Please provide any relevant environment details
+      description: Please specify installation info and paste the results from [print_env.sh](https://github.com/rapidsai/cuspatial/blob/main/print_env.sh) here
       placeholder: |
-       Environment location: [Bare-metal, Docker, Cloud(specify cloud provider)]
-       If method of install is Docker, provide `docker pull` & `docker run` commands used
+       + Environment location: [Bare-metal, Docker, Cloud(specify cloud provider)]
+       + If method of install is Docker, provide `docker pull` & `docker run` commands used
+       + Paste in print_env.sh (linked above) output here
       render: shell
 
   - type: textarea
