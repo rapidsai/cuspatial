@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,17 +90,17 @@ TYPED_TEST_CASE(TrajectoryDistancesAndSpeedsTest, TestTypes);
 
 TYPED_TEST(TrajectoryDistancesAndSpeedsTest, OneMillionSmallTrajectories)
 {
-  this->run_test(1'000'000, 50);
+  CUSPATIAL_RUN_TEST(this->run_test, 1'000'000, 50);
 }
 
 TYPED_TEST(TrajectoryDistancesAndSpeedsTest, OneHundredLargeTrajectories)
 {
-  this->run_test(100, 1'000'000);
+  CUSPATIAL_RUN_TEST(this->run_test, 100, 1'000'000);
 }
 
 TYPED_TEST(TrajectoryDistancesAndSpeedsTest, OneVeryLargeTrajectory)
 {
-  this->run_test(1, 100'000'000);
+  CUSPATIAL_RUN_TEST(this->run_test, 1, 100'000'000);
 }
 
 struct time_point_generator {

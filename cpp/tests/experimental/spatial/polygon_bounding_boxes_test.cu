@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ TYPED_TEST(PolygonBoundingBoxTest, test_one)
   auto bboxes_expected =
     make_device_vector<cuspatial::box<T>>({{{1.333584, 4.586599}, {3.460720, 5.856625}}});
 
-  cuspatial::test::expect_vec_2d_pair_equivalent(bboxes, bboxes_expected);
+  CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(bboxes, bboxes_expected);
 }
 
 TYPED_TEST(PolygonBoundingBoxTest, test_small)
@@ -135,5 +135,5 @@ TYPED_TEST(PolygonBoundingBoxTest, test_small)
      {{5.5737199999999998, 0.086693000000000006}, {6.7035340000000003, 1.235638}},
      {{1.0348919999999999, 2.8969369999999999}, {3.2086600000000001, 4.5415289999999997}}});
 
-  cuspatial::test::expect_vec_2d_pair_equivalent(bboxes, bboxes_expected);
+  CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(bboxes, bboxes_expected);
 }

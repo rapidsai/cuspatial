@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,11 +54,11 @@ struct QuadtreeOnPointIndexingTest : public ::testing::Test {
 
     using namespace cuspatial::test;
 
-    expect_vector_equivalent(expected_key, key_d);
-    expect_vector_equivalent(expected_level, level_d);
-    expect_vector_equivalent(expected_is_internal_node, is_internal_node_d);
-    expect_vector_equivalent(expected_length, length_d);
-    expect_vector_equivalent(expected_offset, offset_d);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_key, key_d);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_level, level_d);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_is_internal_node, is_internal_node_d);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_length, length_d);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_offset, offset_d);
   }
 };
 
@@ -74,7 +74,8 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_empty)
   const int32_t max_size = 1;
   const T scale          = 1.0;
 
-  this->test({}, vertex_1, vertex_2, scale, max_depth, max_size, {}, {}, {}, {}, {});
+  CUSPATIAL_RUN_TEST(
+    this->test, {}, vertex_1, vertex_2, scale, max_depth, max_size, {}, {}, {}, {}, {});
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_single)
@@ -86,8 +87,18 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_single)
   const int32_t max_size = 1;
   const T scale          = 1.0;
 
-  this->test(
-    {{0.45, 0.45}}, vertex_1, vertex_2, scale, max_depth, max_size, {0}, {0}, {false}, {1}, {0});
+  CUSPATIAL_RUN_TEST(this->test,
+                     {{0.45, 0.45}},
+                     vertex_1,
+                     vertex_2,
+                     scale,
+                     max_depth,
+                     max_size,
+                     {0},
+                     {0},
+                     {false},
+                     {1},
+                     {0});
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_two)
@@ -99,17 +110,18 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_two)
   const int32_t max_size = 1;
   const T scale          = 1.0;
 
-  this->test({{0.45, 0.45}, {1.45, 1.45}},
-             vertex_1,
-             vertex_2,
-             scale,
-             max_depth,
-             max_size,
-             {0, 3},
-             {0, 0},
-             {false, false},
-             {1, 1},
-             {0, 1});
+  CUSPATIAL_RUN_TEST(this->test,
+                     {{0.45, 0.45}, {1.45, 1.45}},
+                     vertex_1,
+                     vertex_2,
+                     scale,
+                     max_depth,
+                     max_size,
+                     {0, 3},
+                     {0, 0},
+                     {false, false},
+                     {1, 1},
+                     {0, 1});
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
@@ -120,17 +132,18 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
   const int8_t max_depth = 2;
   const int32_t max_size = 1;
 
-  this->test({{-100.0, -100.0}, {100.0, 100.0}},
-             vertex_1,
-             vertex_2,
-             -1,
-             max_depth,
-             max_size,
-             {3, 12, 15},
-             {0, 1, 1},
-             {true, false, false},
-             {2, 1, 1},
-             {1, 0, 1});
+  CUSPATIAL_RUN_TEST(this->test,
+                     {{-100.0, -100.0}, {100.0, 100.0}},
+                     vertex_1,
+                     vertex_2,
+                     -1,
+                     max_depth,
+                     max_size,
+                     {3, 12, 15},
+                     {0, 1, 1},
+                     {true, false, false},
+                     {2, 1, 1},
+                     {1, 0, 1});
 }
 
 TYPED_TEST(QuadtreeOnPointIndexingTest, test_small)
@@ -142,7 +155,8 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_small)
   const int32_t max_size = 12;
   const T scale          = 1.0;
 
-  this->test(
+  CUSPATIAL_RUN_TEST(
+    this->test,
     {
       {1.9804558865545805, 1.3472225743317712},  {0.1895259128530169, 0.5431061133894604},
       {1.2591725716781235, 0.1448705855995005},  {0.8178039499335275, 0.8138440641113271},
