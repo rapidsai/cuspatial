@@ -196,32 +196,45 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, T a
   }
 }
 
-template <typename SegmentVector, typename T = typename SegmentVector::value_type::value_type>
-std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_segment_vector(
-  SegmentVector const& segments)
-{
-  rmm::device_vector<vec_2d<T>> first(segments.size()), second(segments.size());
-  auto zipped_output = thrust::make_zip_iterator(first.begin(), second.begin());
-  thrust::transform(
-    segments.begin(), segments.end(), zipped_output, [] __device__(segment<T> const& segment) {
-      return thrust::make_tuple(segment.first, segment.second);
-    });
-  return {std::move(first), std::move(second)};
-}
-
-template <typename SegmentVector1, typename SegmentVector2>
-void expect_segment_equivalent(SegmentVector1 const& expected, SegmentVector2 const& got)
-{
-  auto [expected_first, expected_second] = unpack_segment_vector(expected);
-  auto [got_first, got_second]           = unpack_segment_vector(got);
-  expect_vector_equivalent(expected_first, got_first);
-  expect_vector_equivalent(expected_second, got_second);
-}
-
 #define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs, ...)              \
   do {                                                                  \
     SCOPED_TRACE(" <--  line of failure\n");                            \
     cuspatial::test::expect_vector_equivalent(lhs, rhs, ##__VA_ARGS__); \
+  } while (0)
+
+// unpack a `device_vector of structs comprising two `vec_2d`s each into two vectors of `vec_2d`.
+// Works, e.g., with `cuspatial::box` or `cuspatial::segment`.
+template <typename PairVector, typename T = typename PairVector::value_type::value_type>
+std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_vec2d_pair_vector(
+  PairVector const& pairs)
+{
+  using Pair = typename PairVector::value_type;
+
+  auto first  = rmm::device_vector<vec_2d<T>>(pairs.size());
+  auto second = rmm::device_vector<vec_2d<T>>(pairs.size());
+
+  auto zipped_output = thrust::make_zip_iterator(first.begin(), second.begin());
+
+  thrust::transform(pairs.begin(), pairs.end(), zipped_output, [] __device__(Pair const& pair) {
+    auto [a, b] = pair;
+    return thrust::make_tuple(a, b);
+  });
+  return {std::move(first), std::move(second)};
+}
+
+template <typename PairVector1, typename PairVector2>
+void expect_vec_2d_pair_equivalent(PairVector1 const& expected, PairVector2 const& got)
+{
+  auto [expected_first, expected_second] = unpack_vec2d_pair_vector(expected);
+  auto [got_first, got_second]           = unpack_vec2d_pair_vector(got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_first, got_first);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_second, got_second);
+}
+
+#define CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(lhs, rhs)     \
+  do {                                                        \
+    SCOPED_TRACE(" <--  line of failure\n");                  \
+    cuspatial::test::expect_vec_2d_pair_equivalent(lhs, rhs); \
   } while (0)
 
 #define CUSPATIAL_RUN_TEST(FUNC, ...)        \

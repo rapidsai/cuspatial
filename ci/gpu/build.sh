@@ -20,6 +20,13 @@ export CUDF_HOME="$WORKSPACE/cudf"
 export CUSPATIAL_HOME="$WORKSPACE"
 export CONDA_ARTIFACT_PATH="$WORKSPACE/ci/artifacts/cuspatial/cpu/.conda-bld/"
 
+# Workaround to keep Jenkins builds working
+# until we migrate fully to GitHub Actions
+export RAPIDS_CUDA_VERSION="${CUDA}"
+export SCCACHE_BUCKET=rapids-sccache
+export SCCACHE_REGION=us-west-2
+export SCCACHE_IDLE_TIMEOUT=32768
+
 # Set home to the job's workspace
 export HOME="$WORKSPACE"
 
@@ -117,10 +124,14 @@ else
     nvidia-smi
 
     gpuci_logger "Installing libcuspatial and libcuspatial-tests"
-    gpuci_mamba_retry install -c "${CONDA_ARTIFACT_PATH}" libcuspatial libcuspatial-tests
+    gpuci_mamba_retry install \
+    --channel "${CONDA_ARTIFACT_PATH}" \
+    --freeze-installed \
+    libcuspatial \
+    libcuspatial-tests
 
     # TODO: Move boa install to gpuci/rapidsai
-    gpuci_mamba_retry install boa
+    gpuci_mamba_retry install --freeze-installed boa
 
     gpuci_logger "Building and installing cuspatial"
     export CONDA_BLD_DIR="${WORKSPACE}/.conda-bld"

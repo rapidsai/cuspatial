@@ -74,11 +74,11 @@ ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST
 ConfigureTest(POINT_QUADTREE_TEST
     indexing/point_quadtree_test.cu)
 
-ConfigureTest(LINESTRING_BBOX_TEST
-    spatial/linestring_bbox_test.cu)
+ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST
+    spatial/linestring_bounding_boxes_test.cu)
 
-ConfigureTest(POLYGON_BBOX_TEST
-    spatial/polygon_bbox_test.cu)
+ConfigureTest(POLYGON_BOUNDING_BOXES_TEST
+    spatial/polygon_bounding_boxes_test.cu)
 
 ConfigureTest(POINT_DISTANCE_TEST
     spatial/point_distance_test.cpp)
@@ -137,7 +137,9 @@ ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
 
 ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP
     experimental/spatial/linestring_intersection_count_test.cu
-    experimental/spatial/linestring_intersection_with_duplicates_test.cu)
+    experimental/spatial/linestring_intersection_intermediates_remove_if_test.cu
+    experimental/spatial/linestring_intersection_with_duplicates_test.cu
+    experimental/spatial/linestring_intersection_test.cu)
 
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST_EXP
     experimental/spatial/point_linestring_nearest_points_test.cu)
@@ -160,6 +162,12 @@ ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP
 ConfigureTest(POINT_BOUNDING_BOXES_TEST_EXP
     experimental/spatial/point_bounding_boxes_test.cu)
 
+ConfigureTest(POLYGON_BOUNDING_BOXES_TEST_EXP
+    experimental/spatial/polygon_bounding_boxes_test.cu)
+
+ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST_EXP
+    experimental/spatial/linestring_bounding_boxes_test.cu)
+
 ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST_EXP
     experimental/trajectory/trajectory_distances_and_speeds_test.cu)
 
@@ -171,4 +179,5 @@ ConfigureTest(OPERATOR_TEST_EXP
 
 ConfigureTest(FIND_TEST_EXP
     experimental/find/find_and_combine_segments_test.cu
+    experimental/find/find_points_on_segments_test.cu
     experimental/find/find_duplicate_points_test.cu)

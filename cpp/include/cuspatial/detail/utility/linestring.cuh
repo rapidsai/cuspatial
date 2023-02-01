@@ -209,6 +209,22 @@ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
 }
 
 /**
+ * @brief Given a point and a segment, returns true if point is on the segment.
+ */
+template <typename T>
+bool __device__ is_point_on_segment(segment<T> const& segment, vec_2d<T> const& c)
+{
+  auto [a, b] = segment;
+  auto ab     = b - a;
+  auto ac     = c - a;
+
+  if (not float_equal(det(ab, ac), T{0})) return false;
+
+  if (b < a) thrust::swap(a, b);
+  return a <= c && c <= b;
+}
+
+/*
  * @brief Given two segments, if they are mergable, return the merged result. Otherwise return
  * nullopt.
  */
