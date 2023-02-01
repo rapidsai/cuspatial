@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -181,7 +181,7 @@ TYPED_TEST(PairwisePointDistanceTest, Empty)
 
   auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
 
-  test::expect_vector_equivalent(expected, got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, got);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
@@ -207,7 +207,7 @@ TYPED_TEST(PairwisePointDistanceTest, OnePairSingleComponent)
 
   auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
 
-  test::expect_vector_equivalent(expected, got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, got);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
@@ -235,7 +235,7 @@ TYPED_TEST(PairwisePointDistanceTest, SingleComponentManyRandom)
   auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
   thrust::host_vector<T> hgot(got);
 
-  test::expect_vector_equivalent(hgot, expected);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(hgot, expected);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
@@ -394,7 +394,7 @@ TYPED_TEST(PairwisePointDistanceTest, SingleComponentCompareWithShapely)
   auto ret_it = pairwise_point_distance(multipoints_1, multipoints_2, got.begin());
 
   thrust::host_vector<T> hgot(got);
-  test::expect_vector_equivalent(hgot, expected);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(hgot, expected);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
@@ -419,7 +419,7 @@ TYPED_TEST(PairwisePointDistanceTest, MultiComponentSinglePair)
 
   auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
 
-  test::expect_vector_equivalent(expected, got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, got);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 
@@ -446,7 +446,7 @@ TYPED_TEST(PairwisePointDistanceTest, MultiComponentRandom)
 
   auto ret_it = pairwise_point_distance(multipoint_1, multipoint_2, got.begin());
 
-  test::expect_vector_equivalent(expected, got);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, got);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,15 +77,17 @@ struct LinestringIntersectionIntermediatesRemoveIfTest : public ::testing::Test 
     auto d_flags   = make_device_uvector<FlagType>(flags, this->stream(), this->mr());
     intermediates.remove_if(range(d_flags.begin(), d_flags.end()), this->stream());
 
-    expect_vector_equivalent(*intermediates.offsets, *expected.offsets);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(*intermediates.offsets, *expected.offsets);
     if constexpr (cuspatial::is_vec_2d<GeomType>())
-      expect_vector_equivalent(*intermediates.geoms, *expected.geoms);
+      CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(*intermediates.geoms, *expected.geoms);
     else
-      expect_vec_2d_pair_equivalent(*intermediates.geoms, *expected.geoms);
-    expect_vector_equivalent(*intermediates.lhs_linestring_ids, *expected.lhs_linestring_ids);
-    expect_vector_equivalent(*intermediates.lhs_segment_ids, *expected.lhs_segment_ids);
-    expect_vector_equivalent(*intermediates.rhs_linestring_ids, *expected.rhs_linestring_ids);
-    expect_vector_equivalent(*intermediates.rhs_segment_ids, *expected.rhs_segment_ids);
+      CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(*intermediates.geoms, *expected.geoms);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(*intermediates.lhs_linestring_ids,
+                                        *expected.lhs_linestring_ids);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(*intermediates.lhs_segment_ids, *expected.lhs_segment_ids);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(*intermediates.rhs_linestring_ids,
+                                        *expected.rhs_linestring_ids);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(*intermediates.rhs_segment_ids, *expected.rhs_segment_ids);
   }
 };
 
