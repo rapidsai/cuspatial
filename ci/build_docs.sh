@@ -27,14 +27,11 @@ rapids-mamba-retry install \
   libcuspatial \
   cuspatial
 
-
-# Build Doxygen docs
 rapids-logger "Build Doxygen docs"
 pushd cpp/doxygen
 doxygen Doxyfile
 popd
 
-# Build Python docs
 rapids-logger "Build Sphinx docs"
 pushd docs
 sphinx-build -b dirhtml source _html

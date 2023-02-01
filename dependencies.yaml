@@ -138,7 +138,7 @@ dependencies:
           - pre-commit
   docs_build:
     common:
-      - output_types: [conda, requirements]
+      - output_types: [conda]
         packages:
           - doxygen
           - ipython
@@ -146,6 +146,7 @@ dependencies:
           - nbsphinx
           - numpydoc
           - pydata-sphinx-theme
+          - sphinx<6
   py_version:
     specific:
       - output_types: conda
