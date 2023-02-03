@@ -27,7 +27,8 @@ class GeoDataFrame(cudf.DataFrame):
 
         Parameters
         ----------
-        data : A geopandas.GeoDataFrame object
+        data : A geopandas.GeoDataFrame object, a cudf.DataFrame object,
+        or a dictionary of objects that can be converted to a GeoDataFrame.
         """
         super().__init__()
         if isinstance(data, (gpGeoDataFrame, cudf.DataFrame)):
