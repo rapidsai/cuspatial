@@ -183,6 +183,9 @@ class GeoColumn(ColumnBase):
     def valid_count(self) -> int:
         """
         Returns the number of valid geometries stored in this GeoColumn.
+        Null support is implemented in GeoSeries and this is not expected
+        to ever return less than the length of the GeoColumn. This is
+        provided as a cudf shim layer.
         """
         return self._meta.input_types.valid_count
 
@@ -190,6 +193,8 @@ class GeoColumn(ColumnBase):
         """
         Returns True if any of the geometries stored in this GeoColumn are
         null.
+        Null support is implemented in GeoSEries and this is not expected
+        to ever return True, but is provided as a cudf shim layer.
         """
         return self._meta.input_types.has_nulls
 
