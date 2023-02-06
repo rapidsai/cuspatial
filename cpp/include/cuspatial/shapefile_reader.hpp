@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,9 @@ typedef enum class winding_order : bool { CLOCKWISE, COUNTER_CLOCKWISE } winding
  * @note The number of polygons is equal to the length of the first column
  *
  **/
-std::vector<std::unique_ptr<cudf::column>> read_polygon_shapefile(
+[[deprecated(
+  "Use Python libraries or GDAL to load shapefiles.")]] std::vector<std::unique_ptr<cudf::column>>
+read_polygon_shapefile(
   std::string const& filename,
   const winding_order outer_ring_winding = winding_order::COUNTER_CLOCKWISE,
   rmm::mr::device_memory_resource* mr    = rmm::mr::get_current_device_resource());

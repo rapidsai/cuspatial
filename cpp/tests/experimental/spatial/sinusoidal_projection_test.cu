@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ struct SinusoidalProjectionTest : public ::testing::Test {
     auto xy_end =
       cuspatial::sinusoidal_projection(lonlats.begin(), lonlats.end(), xy_output.begin(), origin);
 
-    cuspatial::test::expect_vector_equivalent(h_expected, xy_output);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(h_expected, xy_output);
     EXPECT_EQ(h_expected.size(), std::distance(xy_output.begin(), xy_end));
   }
 };
@@ -98,7 +98,7 @@ TYPED_TEST(SinusoidalProjectionTest, Empty)
   auto origin = Loc{-90.66511046, 42.49197018};
 
   auto h_point_lonlat = std::vector<Loc>{};
-  this->run_test(h_point_lonlat, origin);
+  CUSPATIAL_RUN_TEST(this->run_test, h_point_lonlat, origin);
 }
 
 TYPED_TEST(SinusoidalProjectionTest, Single)
@@ -110,7 +110,7 @@ TYPED_TEST(SinusoidalProjectionTest, Single)
   auto origin = Loc{-90.66511046, 42.49197018};
 
   auto h_point_lonlat = std::vector<Loc>({{-90.664973, 42.493894}});
-  this->run_test(h_point_lonlat, origin);
+  CUSPATIAL_RUN_TEST(this->run_test, h_point_lonlat, origin);
 }
 
 TYPED_TEST(SinusoidalProjectionTest, Extremes)
@@ -123,7 +123,7 @@ TYPED_TEST(SinusoidalProjectionTest, Extremes)
 
   auto h_points_lonlat = std::vector<Loc>(
     {{0.0, -90.0}, {0.0, 90.0}, {-180.0, 0.0}, {180.0, 0.0}, {45.0, 0.0}, {-180.0, -90.0}});
-  this->run_test(h_points_lonlat, origin);
+  CUSPATIAL_RUN_TEST(this->run_test, h_points_lonlat, origin);
 }
 
 TYPED_TEST(SinusoidalProjectionTest, Multiple)
@@ -138,7 +138,7 @@ TYPED_TEST(SinusoidalProjectionTest, Multiple)
                                            {-90.665393, 42.491520},
                                            {-90.664976, 42.491420},
                                            {-90.664537, 42.493823}});
-  this->run_test(h_points_lonlat, origin);
+  CUSPATIAL_RUN_TEST(this->run_test, h_points_lonlat, origin);
 }
 
 TYPED_TEST(SinusoidalProjectionTest, OriginOutOfBounds)
@@ -198,6 +198,6 @@ TYPED_TEST(SinusoidalProjectionTest, TransformIterator)
 
   auto xy_end = cuspatial::sinusoidal_projection(xform_begin, xform_end, xy_output.begin(), origin);
 
-  EXPECT_EQ(expected, xy_output);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, xy_output);
   EXPECT_EQ(4, std::distance(xy_output.begin(), xy_end));
 }

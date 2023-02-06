@@ -1,8 +1,10 @@
 IO
 --
 
-cuSpatial offers native GPU-accelerated shapefile reading. In addition, any host-side GeoPandas DataFrame can be copied into GPU memory for use with cuSpatial
-algorithms.
+cuSpatial offers limited shapefile reading (polygons only), but this is deprecated and will be
+removed in a future release.
+
+Any host-side GeoPandas DataFrame can be copied into GPU memory for use with cuSpatial algorithms.
 
 .. currentmodule:: cuspatial
 
