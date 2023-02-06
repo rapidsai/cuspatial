@@ -38,8 +38,8 @@ struct linestring_intersection_column_result {
   std::unique_ptr<cudf::column> types_buffer;
   std::unique_ptr<cudf::column> offset_buffer;
 
-  /// Child 0: Point Results
-  std::unique_ptr<cudf::column> points_xy;
+  /// Child 0: Point Results as List Type Column
+  std::unique_ptr<cudf::column> points;
 
   /// Child 1: Segment Results as List Type Column
   std::unique_ptr<cudf::column> segments;
