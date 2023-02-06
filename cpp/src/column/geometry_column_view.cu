@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,13 @@ namespace cuspatial {
 
 namespace {
 
+/**
+ * @brief Retrieve the leaf column type of the LIST column. 
+ * @internal
+ * 
+ * @param column The LIST column to retrieve leaf column type.
+ * @return cudf type of the leaf column
+ */
 cudf::data_type leaf_data_type(cudf::column_view const& column)
 {
   if (column.type() != cudf::data_type{cudf::type_id::LIST}) return column.type();

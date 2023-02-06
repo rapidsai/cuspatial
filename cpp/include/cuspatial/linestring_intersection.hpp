@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,8 @@ struct linestring_intersection_column_result {
   /// Child 0: Point Results
   std::unique_ptr<cudf::column> points_xy;
 
-  /// Child 1: Segment Results
-  // TODO: this can be conbined into a list type column.
-  std::unique_ptr<cudf::column> segments_offsets;
-  std::unique_ptr<cudf::column> segments_xy;
+  /// Child 1: Segment Results as List Type Column
+  std::unique_ptr<cudf::column> segments;
 
   /// Look-back Indices
   std::unique_ptr<cudf::column> lhs_linestring_id;

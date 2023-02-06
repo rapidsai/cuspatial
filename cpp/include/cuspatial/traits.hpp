@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ namespace cuspatial {
  * Example:
  * \code{cpp}
  * // This function will participate in overload resolution only if T is an integral type
- * template <typename T, CUDF_ENABLE_IF(std::is_integral_v<T> )>
+ * template <typename T, CUSPATIAL_ENABLE_IF(std::is_integral_v<T> )>
  * void foo();
  * \endcode
  *

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,18 +43,8 @@ class geometry_column_view : private cudf::lists_column_view {
   geometry_column_view(const geometry_column_view&) = default;  ///< Copy constructor
   ~geometry_column_view()                           = default;
 
-  /**
-   * @brief Copy assignment operator
-   *
-   * @return The reference to this lists column
-   */
   geometry_column_view& operator=(geometry_column_view const&) = default;
 
-  /**
-   * @brief Move assignment operator
-   *
-   * @return The reference to this lists column
-   */
   geometry_column_view& operator=(geometry_column_view&&) = default;
 
   geometry_type_id geometry_type() const { return _geometry_type; }

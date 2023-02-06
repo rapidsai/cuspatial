@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,11 +54,74 @@ template <typename T>
 using wrapper = cudf::test::fixed_width_column_wrapper<T>;
 
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
+
+// helper function to make a linestring column
 template <typename T>
-struct LinestringIntersectionTest : public BaseFixture {
+std::pair<collection_type_id, std::unique_ptr<cudf::column>> make_linestring_column(
+  std::initializer_list<cudf::size_type>&& linestring_offsets,
+  std::initializer_list<T>&& linestring_coords,
+  rmm::cuda_stream_view stream)
+{
+  auto num_points = linestring_coords.size() / 2;
+  auto size       = linestring_offsets.size() - 1;
+
+  auto zero           = make_fixed_width_scalar<size_type>(0, stream);
+  auto two            = make_fixed_width_scalar<size_type>(2, stream);
+  auto offsets_column = wrapper<cudf::size_type>(linestring_offsets).release();
+  auto coords_offset  = cudf::sequence(num_points + 1, *zero, *two);
+  auto coords_column  = wrapper<T>(linestring_coords).release();
+
+  return {collection_type_id::SINGLE,
+          cudf::make_lists_column(
+            size,
+            std::move(offsets_column),
+            cudf::make_lists_column(
+              num_points, std::move(coords_offset), std::move(coords_column), 0, {}),
+            0,
+            {})};
+}
+
+// helper function to make a multilinestring column
+template <typename T>
+std::pair<collection_type_id, std::unique_ptr<cudf::column>> make_linestring_column(
+  std::initializer_list<cudf::size_type>&& multilinestring_offsets,
+  std::initializer_list<cudf::size_type>&& linestring_offsets,
+  std::initializer_list<T> linestring_coords,
+  rmm::cuda_stream_view stream)
+{
+  auto geometry_size = multilinestring_offsets.size() - 1;
+  auto part_size     = linestring_offsets.size() - 1;
+  auto num_points    = linestring_coords.size() / 2;
+
+  auto zero            = make_fixed_width_scalar<size_type>(0, stream);
+  auto two             = make_fixed_width_scalar<size_type>(2, stream);
+  auto geometry_column = wrapper<cudf::size_type>(multilinestring_offsets).release();
+  auto part_column     = wrapper<cudf::size_type>(linestring_offsets).release();
+  auto coords_offset   = cudf::sequence(num_points + 1, *zero, *two);
+  auto coord_column    = wrapper<T>(linestring_coords).release();
+
+  return {collection_type_id::MULTI,
+          cudf::make_lists_column(
+            geometry_size,
+            std::move(geometry_column),
+            cudf::make_lists_column(
+              part_size,
+              std::move(part_column),
+              cudf::make_lists_column(
+                num_points, std::move(coords_offset), std::move(coord_column), 0, {}),
+              0,
+              {}),
+            0,
+            {})};
+}
+
+struct LinestringIntersectionTestBase : public BaseFixture {
   rmm::cuda_stream_view stream{rmm::cuda_stream_default};
   rmm::mr::device_memory_resource* mr{rmm::mr::get_current_device_resource()};
+};
 
+template <typename T>
+struct LinestringIntersectionTest : public LinestringIntersectionTestBase {
   void run_single(geometry_column_view lhs,
                   geometry_column_view rhs,
                   linestring_intersection_column_result const& expected)
@@ -76,9 +139,7 @@ struct LinestringIntersectionTest : public BaseFixture {
       result.points_xy->view(), expected.points_xy->view(), verbosity);
 
     CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(
-      result.segments_offsets->view(), expected.segments_offsets->view(), verbosity);
-    CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(
-      result.segments_xy->view(), expected.segments_xy->view(), verbosity);
+      result.segments->view(), expected.segments->view(), verbosity);
 
     CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(
       result.lhs_linestring_id->view(), expected.lhs_linestring_id->view(), verbosity);
@@ -105,11 +166,15 @@ struct LinestringIntersectionTest : public BaseFixture {
   {
     auto d_geometry_collection_offset =
       wrapper<cudf::size_type>(geometry_collection_offset).release();
-    auto d_types_buffer       = wrapper<uint8_t>(types_buffer).release();
-    auto d_offset_buffer      = wrapper<cudf::size_type>(offset_buffer).release();
-    auto d_points_xy          = wrapper<T>(points_xy).release();
-    auto d_segments_offsets   = wrapper<size_type>(segments_offsets).release();
-    auto d_segments_xy        = wrapper<T>(segments_xy).release();
+    auto d_types_buffer     = wrapper<uint8_t>(types_buffer).release();
+    auto d_offset_buffer    = wrapper<cudf::size_type>(offset_buffer).release();
+    auto d_points_xy        = wrapper<T>(points_xy).release();
+    auto d_segments_offsets = wrapper<size_type>(segments_offsets).release();
+    auto d_segments_xy      = wrapper<T>(segments_xy).release();
+    auto num_segments       = d_segments_offsets->size() - 1;
+    auto d_segments         = make_lists_column(
+      num_segments, std::move(d_segments_offsets), std::move(d_segments_xy), 0, {});
+
     auto d_lhs_linestring_ids = wrapper<cudf::size_type>(lhs_linestring_ids).release();
     auto d_lhs_segment_ids    = wrapper<cudf::size_type>(lhs_segment_ids).release();
     auto d_rhs_linestring_ids = wrapper<cudf::size_type>(rhs_linestring_ids).release();
@@ -119,72 +184,15 @@ struct LinestringIntersectionTest : public BaseFixture {
                                                  std::move(d_types_buffer),
                                                  std::move(d_offset_buffer),
                                                  std::move(d_points_xy),
-                                                 std::move(d_segments_offsets),
-                                                 std::move(d_segments_xy),
+                                                 std::move(d_segments),
                                                  std::move(d_lhs_linestring_ids),
                                                  std::move(d_lhs_segment_ids),
                                                  std::move(d_rhs_linestring_ids),
                                                  std::move(d_rhs_segment_ids)};
   }
-
-  // helper function to make a linestring column
-  std::pair<collection_type_id, std::unique_ptr<cudf::column>> make_linestring_column(
-    std::initializer_list<cudf::size_type>&& linestring_offsets,
-    std::initializer_list<T>&& linestring_coords)
-  {
-    auto num_points = linestring_coords.size() / 2;
-    auto size       = linestring_offsets.size() - 1;
-
-    auto zero           = make_fixed_width_scalar<size_type>(0, this->stream);
-    auto two            = make_fixed_width_scalar<size_type>(2, this->stream);
-    auto offsets_column = wrapper<cudf::size_type>(linestring_offsets).release();
-    auto coords_offset  = cudf::sequence(num_points + 1, *zero, *two);
-    auto coords_column  = wrapper<T>(linestring_coords).release();
-
-    return {collection_type_id::SINGLE,
-            cudf::make_lists_column(
-              size,
-              std::move(offsets_column),
-              cudf::make_lists_column(
-                num_points, std::move(coords_offset), std::move(coords_column), 0, {}),
-              0,
-              {})};
-  }
-
-  // helper function to make a multilinestring column
-  std::pair<collection_type_id, std::unique_ptr<cudf::column>> make_linestring_column(
-    std::initializer_list<cudf::size_type>&& multilinestring_offsets,
-    std::initializer_list<cudf::size_type>&& linestring_offsets,
-    std::initializer_list<T> linestring_coords)
-  {
-    auto geometry_size = multilinestring_offsets.size() - 1;
-    auto part_size     = linestring_offsets.size() - 1;
-    auto num_points    = linestring_coords.size() / 2;
-
-    auto zero            = make_fixed_width_scalar<size_type>(0, this->stream);
-    auto two             = make_fixed_width_scalar<size_type>(2, this->stream);
-    auto geometry_column = wrapper<cudf::size_type>(multilinestring_offsets).release();
-    auto part_column     = wrapper<cudf::size_type>(linestring_offsets).release();
-    auto coords_offset   = cudf::sequence(num_points + 1, *zero, *two);
-    auto coord_column    = wrapper<T>(linestring_coords).release();
-
-    return {collection_type_id::MULTI,
-            cudf::make_lists_column(
-              geometry_size,
-              std::move(geometry_column),
-              cudf::make_lists_column(
-                part_size,
-                std::move(part_column),
-                cudf::make_lists_column(
-                  num_points, std::move(coords_offset), std::move(coord_column), 0, {}),
-                0,
-                {}),
-              0,
-              {})};
-  }
 };
 
-struct LinestringIntersectionTestUntyped : public BaseFixture {
+struct LinestringIntersectionTestUntyped : public LinestringIntersectionTestBase {
 };
 
 // float and double are logically the same but would require separate tests due to precision.
@@ -195,8 +203,8 @@ TYPED_TEST(LinestringIntersectionTest, SingleToSingleEmpty)
 {
   using T = TypeParam;
 
-  auto [ltype, lhs] = this->make_linestring_column({0}, std::initializer_list<T>{});
-  auto [rtype, rhs] = this->make_linestring_column({0}, std::initializer_list<T>{});
+  auto [ltype, lhs] = make_linestring_column<T>({0}, std::initializer_list<T>{}, this->stream);
+  auto [rtype, rhs] = make_linestring_column<T>({0}, std::initializer_list<T>{}, this->stream);
 
   auto expected =
     this->make_linestring_intersection_result({0},
@@ -218,8 +226,9 @@ TYPED_TEST(LinestringIntersectionTest, SingleToSingleEmpty)
 
 TYPED_TEST(LinestringIntersectionTest, SingleToSingleOnePair)
 {
-  auto [ltype, lhs] = this->make_linestring_column({0, 2}, {0, 0, 1, 1});
-  auto [rtype, rhs] = this->make_linestring_column({0, 2}, {0, 1, 1, 0});
+  using T           = TypeParam;
+  auto [ltype, lhs] = make_linestring_column<T>({0, 2}, {0, 0, 1, 1}, this->stream);
+  auto [rtype, rhs] = make_linestring_column<T>({0, 2}, {0, 1, 1, 0}, this->stream);
 
   auto expected = this->make_linestring_intersection_result(
     {0, 1}, {0}, {0}, {0.5, 0.5}, {0}, {}, {0}, {0}, {0}, {0});
@@ -234,8 +243,8 @@ TYPED_TEST(LinestringIntersectionTest, MultiToSingleEmpty)
 {
   using T = TypeParam;
 
-  auto [ltype, lhs] = this->make_linestring_column({0}, {0}, std::initializer_list<T>{});
-  auto [rtype, rhs] = this->make_linestring_column({0}, std::initializer_list<T>{});
+  auto [ltype, lhs] = make_linestring_column<T>({0}, {0}, std::initializer_list<T>{}, this->stream);
+  auto [rtype, rhs] = make_linestring_column<T>({0}, std::initializer_list<T>{}, this->stream);
 
   auto expected =
     this->make_linestring_intersection_result({0},
@@ -259,8 +268,8 @@ TYPED_TEST(LinestringIntersectionTest, MultiToSingleOnePair)
 {
   using T = TypeParam;
 
-  auto [ltype, lhs] = this->make_linestring_column({0, 1}, {0, 2}, {0, 2, 2, 2});
-  auto [rtype, rhs] = this->make_linestring_column({0, 2}, {1, 3, 1, 0});
+  auto [ltype, lhs] = make_linestring_column<T>({0, 1}, {0, 2}, {0, 2, 2, 2}, this->stream);
+  auto [rtype, rhs] = make_linestring_column<T>({0, 2}, {1, 3, 1, 0}, this->stream);
 
   auto expected = this->make_linestring_intersection_result(
     {0, 1}, {0}, {0}, {1, 2}, {0}, std::initializer_list<T>{}, {0}, {0}, {0}, {0});
@@ -275,8 +284,8 @@ TYPED_TEST(LinestringIntersectionTest, SingleToMultiEmpty)
 {
   using T = TypeParam;
 
-  auto [ltype, lhs] = this->make_linestring_column({0}, std::initializer_list<T>{});
-  auto [rtype, rhs] = this->make_linestring_column({0}, {0}, std::initializer_list<T>{});
+  auto [ltype, lhs] = make_linestring_column<T>({0}, std::initializer_list<T>{}, this->stream);
+  auto [rtype, rhs] = make_linestring_column<T>({0}, {0}, std::initializer_list<T>{}, this->stream);
 
   auto expected =
     this->make_linestring_intersection_result({0},
@@ -298,8 +307,9 @@ TYPED_TEST(LinestringIntersectionTest, SingleToMultiEmpty)
 
 TYPED_TEST(LinestringIntersectionTest, SingleToMultiOnePair)
 {
-  auto [ltype, lhs] = this->make_linestring_column({0, 2}, {0, 2, 2, 2});
-  auto [rtype, rhs] = this->make_linestring_column({0, 1}, {0, 2}, {1, 3, 1, 0});
+  using T           = TypeParam;
+  auto [ltype, lhs] = make_linestring_column<T>({0, 2}, {0, 2, 2, 2}, this->stream);
+  auto [rtype, rhs] = make_linestring_column<T>({0, 1}, {0, 2}, {1, 3, 1, 0}, this->stream);
 
   auto expected = this->make_linestring_intersection_result(
     {0, 1}, {0}, {0}, {1, 2}, {0}, {}, {0}, {0}, {0}, {0});
@@ -314,8 +324,8 @@ TYPED_TEST(LinestringIntersectionTest, MultiToMultiEmpty)
 {
   using T = TypeParam;
 
-  auto [ltype, lhs] = this->make_linestring_column({0}, {0}, std::initializer_list<T>{});
-  auto [rtype, rhs] = this->make_linestring_column({0}, {0}, std::initializer_list<T>{});
+  auto [ltype, lhs] = make_linestring_column<T>({0}, {0}, std::initializer_list<T>{}, this->stream);
+  auto [rtype, rhs] = make_linestring_column<T>({0}, {0}, std::initializer_list<T>{}, this->stream);
 
   auto expected =
     this->make_linestring_intersection_result({0},
@@ -339,8 +349,8 @@ TYPED_TEST(LinestringIntersectionTest, MultiToMultiOnePair)
 {
   using T = TypeParam;
 
-  auto [ltype, lhs] = this->make_linestring_column({0, 1}, {0, 2}, {0, 2, 2, 2});
-  auto [rtype, rhs] = this->make_linestring_column({0, 1}, {0, 2}, {1, 3, 1, 0});
+  auto [ltype, lhs] = make_linestring_column<T>({0, 1}, {0, 2}, {0, 2, 2, 2}, this->stream);
+  auto [rtype, rhs] = make_linestring_column<T>({0, 1}, {0, 2}, {1, 3, 1, 0}, this->stream);
 
   auto expected = this->make_linestring_intersection_result(
     {0, 1}, {0}, {0}, {1, 2}, {0}, std::initializer_list<T>{}, {0}, {0}, {0}, {0});
@@ -447,15 +457,14 @@ TEST_F(LinestringIntersectionTestUntyped, MismatchSizeMultiToMulti)
 
 TEST_F(LinestringIntersectionTestUntyped, NotLineString)
 {
-  auto lhs_coords = fixed_width_column_wrapper<double>{0, 1, 1, 2};
+  auto lhs_offsets = fixed_width_column_wrapper<cudf::size_type>{0, 2, 4};
+  auto lhs_coords  = fixed_width_column_wrapper<double>{0, 1, 1, 2};
+  auto lhs         = cudf::make_lists_column(2, lhs_offsets.release(), lhs_coords.release(), 0, {});
   auto lhs_view =
-    geometry_column_view(lhs_coords, collection_type_id::SINGLE, geometry_type_id::POINT);
+    geometry_column_view(lhs->view(), collection_type_id::SINGLE, geometry_type_id::POINT);
 
-  auto rhs_geom   = fixed_width_column_wrapper<cudf::size_type>{0, 2};
-  auto rhs_coords = fixed_width_column_wrapper<double>{0, 1, 1, 0};
-  auto rhs        = cudf::make_lists_column(1, rhs_geom.release(), rhs_coords.release(), 0, {});
-  auto rhs_view =
-    geometry_column_view(rhs->view(), collection_type_id::SINGLE, geometry_type_id::LINESTRING);
+  auto [rhs_type, rhs] = make_linestring_column<double>({0, 2}, {0, 1, 1, 0}, this->stream);
+  auto rhs_view        = geometry_column_view(rhs->view(), rhs_type, geometry_type_id::LINESTRING);
 
   EXPECT_THROW(cuspatial::pairwise_linestring_intersection(lhs_view, rhs_view),
                cuspatial::logic_error);

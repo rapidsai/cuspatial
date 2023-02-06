@@ -1,6 +1,5 @@
-
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,18 +26,17 @@ using T = collection_type_id;
 
 /**
  * @brief Invokes an `operator()` template with the instantiation based on the specificed
- * `opt1` and `opt2` value.
- * This dispatcher effectively converts the runtime information of two boolean variables
- * to compile time. This is useful when an API accepts an `std::optional` argument,
- * but further in the code path a function requires these information at compile time.
+ * `lhs_type` and `rhs_type` value.
+ * This dispatcher effectively converts the runtime information of `collection_type_id` variables
+ * to compile time.
  *
  * @tparam Functor The functor object whose `operator()` is invoked
  * @tparam Args Variadic parameter type
- * @param opt1 The first boolean value to convert to compile time
- * @param opt2 The second boolean value to convert to compile time
+ * @param lhs_type The collection type of lhs
+ * @param rhs_type The collection type of lhs
  * @param args The parameter pack of arguments forwarded to the `operator()`
  * invocation
- * @return Whatever returned by the callable's `operator()`
+ * @return Any returned by the callable's `operator()`
  */
 template <template <T, T> class Functor, typename... Args>
 auto multi_geometry_double_dispatch(T lhs_type, T rhs_type, Args&&... args)

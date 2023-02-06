@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,13 +100,23 @@ struct pairwise_linestring_intersection_launch {
                                      num_segment_coords,
                                      intersection_results.segments_coords->release());
 
+    auto num_segments = segment_offsets->size()-1;
+    auto segments = cudf::make_lists_column(
+        num_segments,
+        std::move(segment_offsets),
+        std::move(segments_xy),
+        0,
+        {},
+        stream,
+        mr
+    );
+
     return linestring_intersection_column_result{
       move_uvector(std::move(intersection_results.geometry_collection_offset)),
       move_uvector(std::move(intersection_results.types_buffer)),
       move_uvector(std::move(intersection_results.offset_buffer)),
       std::move(points_xy),
-      std::move(segment_offsets),
-      std::move(segments_xy),
+      std::move(segments),
       move_uvector(std::move(intersection_results.lhs_linestring_id)),
       move_uvector(std::move(intersection_results.lhs_segment_id)),
       move_uvector(std::move(intersection_results.rhs_linestring_id)),
