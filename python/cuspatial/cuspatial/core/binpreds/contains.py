@@ -1,14 +1,11 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
+from math import ceil, sqrt
+
 from cudf import Series
 from cudf.core.column import as_column
 
-from cuspatial._lib.pairwise_point_in_polygon import (
-    pairwise_point_in_polygon as cpp_pairwise_point_in_polygon,
-)
-from cuspatial._lib.point_in_polygon import (
-    point_in_polygon as cpp_point_in_polygon,
-)
+import cuspatial
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
@@ -50,6 +47,13 @@ def contains_properly(
         within its corresponding polygon.
     """
 
+    scale = (
+        (test_points_x.std() + test_points_y.std()) / 2.0
+        if len(test_points_x) > 1
+        else 1.0
+    )
+    max_depth = 15
+    min_size = ceil(sqrt(len(test_points_x)))
     if len(poly_offsets) == 0:
         return Series()
     (
@@ -63,27 +67,40 @@ def contains_properly(
         as_column(poly_points_x),
         as_column(poly_points_y),
     )
-    poly_offsets_column = as_column(poly_offsets, dtype="int32")
-    poly_ring_offsets_column = as_column(poly_ring_offsets, dtype="int32")
-
-    if len(test_points_x) == len(poly_offsets):
-        pip_result = cpp_pairwise_point_in_polygon(
-            test_points_x,
-            test_points_y,
-            poly_offsets_column,
-            poly_ring_offsets_column,
-            poly_points_x,
-            poly_points_y,
-        )
-    else:
-        pip_result = cpp_point_in_polygon(
-            test_points_x,
-            test_points_y,
-            poly_offsets_column,
-            poly_ring_offsets_column,
-            poly_points_x,
-            poly_points_y,
-        )
-
-    result = Series(pip_result, dtype="bool")
-    return result
+    x_max = poly_points_x.max()
+    x_min = poly_points_x.min()
+    y_max = poly_points_y.max()
+    y_min = poly_points_y.min()
+    point_indices, quadtree = cuspatial.quadtree_on_points(
+        test_points_x,
+        test_points_y,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        scale,
+        max_depth,
+        min_size,
+    )
+    poly_bboxes = cuspatial.polygon_bounding_boxes(
+        poly_offsets, poly_ring_offsets, poly_points_x, poly_points_y
+    )
+    intersections = cuspatial.join_quadtree_and_bounding_boxes(
+        quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth
+    )
+    polygons_and_points = cuspatial.quadtree_point_in_polygon(
+        intersections,
+        quadtree,
+        point_indices,
+        test_points_x,
+        test_points_y,
+        poly_offsets,
+        poly_ring_offsets,
+        poly_points_x,
+        poly_points_y,
+    )
+    polygons_and_points["point_index"] = point_indices.iloc[
+        polygons_and_points["point_index"]
+    ].reset_index(drop=True)
+    breakpoint()
+    return polygons_and_points

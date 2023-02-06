@@ -1,7 +1,7 @@
 import geopandas as gpd
 import numpy as np
 import pytest
-from shapely.geometry import LineString, Point, Polygon
+from shapely.geometry import LineString, MultiPolygon, Point, Polygon
 
 import cuspatial
 
@@ -348,4 +348,24 @@ def test_max_polygons_max_multipoints(multipoint_generator, polygon_generator):
     lhs = cuspatial.from_geopandas(gpdlhs)
     got = lhs.contains_properly(rhs).values_host
     expected = gpdlhs.contains(gpdrhs).values
+    assert (got == expected).all()
+
+
+@pytest.mark.parametrize(
+    "object",
+    [
+        Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+        MultiPolygon(
+            [
+                Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+            ]
+        ),
+    ],
+)
+def test_self_contains(object):
+    gpdobject = gpd.GeoSeries(object)
+    object = cuspatial.from_geopandas(gpdobject)
+    got = object.contains_properly(object).values_host
+    expected = gpdobject.contains(gpdobject).values
     assert (got == expected).all()

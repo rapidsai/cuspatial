@@ -19,6 +19,8 @@
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/types.hpp>
 
+#include <cuspatial/detail/utility/floating_point.cuh>
+
 namespace cuspatial {
 namespace detail {
 
@@ -32,6 +34,7 @@ inline __device__ bool is_point_in_polygon(T const x,
                                            cudf::column_device_view const& poly_points_y)
 {
   bool in_polygon     = false;
+  bool is_colinear    = false;
   uint32_t poly_begin = poly_offsets.element<uint32_t>(poly_idx);
   uint32_t poly_end   = poly_idx < poly_offsets.size() - 1
                           ? poly_offsets.element<uint32_t>(poly_idx + 1)
@@ -55,8 +58,16 @@ inline __device__ bool is_point_in_polygon(T const x,
       T run                = x1 - x0;
       T rise               = y1 - y0;
       T rise_to_point      = y - y0;
+      T run_to_point       = x - x0;
+
+      is_colinear = float_equal(run * rise_to_point, run_to_point * rise);
+      if (is_colinear) { break; }
 
       if (y_in_bounds && x < (run / rise) * rise_to_point + x0) { in_polygon = not in_polygon; }
+    }
+    if (is_colinear) {
+      in_polygon = false;
+      break;
     }
   }
 

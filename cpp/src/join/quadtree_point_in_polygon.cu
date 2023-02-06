@@ -268,7 +268,7 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const& p
                     "number of rings must be no less than number of polygons");
   CUSPATIAL_EXPECTS(poly_points_x.size() == poly_points_y.size(),
                     "numbers of vertices must be the same for both x and y columns");
-  CUSPATIAL_EXPECTS(poly_points_x.size() >= 3 * ring_offsets.size(),
+  CUSPATIAL_EXPECTS(poly_points_x.size() >= 3 * (ring_offsets.size() - 1),
                     "all rings must have at least 3 vertices");
   CUSPATIAL_EXPECTS(poly_points_x.type() == poly_points_y.type(),
                     "polygon columns must have the same data type");

@@ -151,9 +151,11 @@ class GeoSeries(cudf.Series):
 
         @property
         def xy(self):
-            return cudf.Series(
-                self._get_current_features(self._type).leaves().values
-            )
+            features = self._get_current_features(self._type)
+            if hasattr(features, "leaves"):
+                return cudf.Series(features.leaves().values)
+            else:
+                return cudf.Series()
 
         def _get_current_features(self, type):
             # Resample the existing features so that the offsets returned
@@ -237,7 +239,7 @@ class GeoSeries(cudf.Series):
         def point_indices(self):
             # Return a cupy.ndarray containing the index values from the
             # Polygon GeoSeries that each individual point is member of.
-            offsets = cp.array(self.ring_offset)
+            offsets = cp.array(self.part_offset)
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
 

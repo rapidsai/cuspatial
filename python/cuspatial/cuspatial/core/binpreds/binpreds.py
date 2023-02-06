@@ -2,6 +2,8 @@
 
 from abc import ABC, abstractmethod
 
+import cupy as cp
+
 import cudf
 
 from cuspatial.core._column.geocolumn import GeoColumn
@@ -173,17 +175,30 @@ class ContainsProperlyBinpred(BinaryPredicate):
         point_result = contains_properly(
             points.x,
             points.y,
-            lhs.polygons.part_offset[:-1],
-            lhs.polygons.ring_offset[:-1],
+            lhs.polygons.part_offset,
+            lhs.polygons.ring_offset,
             lhs.polygons.x,
             lhs.polygons.y,
         )
+        breakpoint()
         return point_result
 
     def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate."""
-        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
+        breakpoint()
+        group_result = point_result.groupby("point_index").count() > 0
+        return (
+            group_result
+            if len(group_result) > 0
+            else cudf.Series([False], dtype=cp.bool)
+        )
+        in_polygon = cudf.Series(
+            cp.zeros(len(point_indices), dtype=cp.bool), index=point_indices
+        )
+        in_polygon.loc[group_result.index] = group_result["point_index"].values
+
+        result = cudf.DataFrame({"idx": point_indices, "pip": in_polygon})
         df_result = result
         # Discrete math recombination
         if (
