@@ -57,8 +57,14 @@ inline __device__ bool is_point_in_polygon(T const x,
       bool y_in_bounds     = y_between_ay_by || y_between_by_ay;  // is y in range [by, ay]
       T run                = x1 - x0;
       T rise               = y1 - y0;
-      T rise_to_point      = y - y0;
-      T run_to_point       = x - x0;
+
+      // Points on the line segment are the same, so intersection is impossible.
+      // This is possible because we allow closed or unclosed polygons.
+      T constexpr zero = 0.0;
+      if (float_equal(run, zero) && float_equal(rise, zero)) continue;
+
+      T rise_to_point = y - y0;
+      T run_to_point  = x - x0;
 
       is_colinear = float_equal(run * rise_to_point, run_to_point * rise);
       if (is_colinear) { break; }
