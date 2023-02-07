@@ -38,7 +38,8 @@ def pairwise_linestring_intersection(
     -------
     Tuple[cudf.Series, GeoSeries, DataFrame]
         A tuple of three elements:
-        - An integral cudf serial to indicate the offsets of the geoseries.
+        - An integral cuDF series of offsets to each intersection result in the
+          GeoSeries.
         - A Geoseries of the results of the intersection.
         - A DataFrame of the ids of the linestrings and segments that
           the intersection results came from.
