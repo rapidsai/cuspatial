@@ -201,11 +201,11 @@ class ContainsProperlyBinpred(BinaryPredicate):
                 result.groupby("idx").sum().sort_index()
                 == result.groupby("idx").count().sort_index()
             )
-        point_result = cudf.Series(
+        final_result = cudf.Series(
             df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
         )
-        point_result.name = None
-        return point_result
+        final_result.name = None
+        return final_result
 
 
 class OverlapsBinpred(ContainsProperlyBinpred):
@@ -215,7 +215,11 @@ class OverlapsBinpred(ContainsProperlyBinpred):
         # TODO: Maybe change this to intersection
         if not has_same_geometry(self.lhs, self.rhs):
             return cudf.Series([False] * len(self.lhs))
-        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
+        group_result = point_result.groupby("point_index").count() > 0
+        result = cudf.DataFrame({"idx": point_indices})
+        result.reset_index(drop=True, inplace=True)
+        result["pip"] = group_result["polygon_index"]
+        result = result.fillna(False)
         df_result = result
         # Discrete math recombination
         if contains_only_linestrings(self.rhs):
@@ -228,7 +232,7 @@ class OverlapsBinpred(ContainsProperlyBinpred):
         ):
             partial_result = result.groupby("idx").sum()
             df_result = (partial_result > 0) & (
-                partial_result < len(point_result)
+                partial_result < len(point_indices)
             )
         else:
             df_result = result.groupby("idx").sum() > 1
@@ -255,7 +259,11 @@ class WithinBinpred(ContainsProperlyBinpred):
     def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate."""
-        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
+        group_result = point_result.groupby("point_index").count() > 0
+        result = cudf.DataFrame({"idx": point_indices})
+        result.reset_index(drop=True, inplace=True)
+        result["pip"] = group_result["polygon_index"]
+        result = result.fillna(False)
         df_result = result
         # Discrete math recombination
         if (

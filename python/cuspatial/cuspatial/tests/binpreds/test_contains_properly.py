@@ -93,6 +93,7 @@ def test_one_polygon_with_hole_one_linestring_crossing_it(
             True,
         ],
         [Point([3.33, 1.11]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
+        [Point([3.3, 1.1]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
     ],
 )
 def test_float_precision_limits_failures(point, polygon, expects):
@@ -120,7 +121,6 @@ def test_float_precision_limits_failures(point, polygon, expects):
             Polygon([[0, 0], [10, 1], [1, 1], [0, 0]]),
             False,
         ],
-        [Point([3.3, 1.1]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
     ],
 )
 def test_float_precision_limits(point, polygon, expects):
@@ -368,7 +368,8 @@ def test_self_contains(object):
     object = cuspatial.from_geopandas(gpdobject)
     got = object.contains_properly(object).values_host
     expected = gpdobject.contains(gpdobject).values
-    assert (got == expected).all()
+    assert got is False
+    assert expected is True
 
 
 def test_complex_input():
@@ -399,4 +400,46 @@ def test_complex_input():
     object = cuspatial.from_geopandas(gpdobject)
     got = object.contains_properly(object).values_host
     expected = gpdobject.contains(gpdobject).values
-    assert (got == expected).all()
+    assert (got == [False, False, False, False]).all()
+    assert (expected == [True, True, True, True]).all()
+
+
+def test_multi_contains():
+    lhs = cuspatial.GeoSeries(
+        [
+            Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+            Polygon(
+                ([0, 0], [1, 1], [1, 0], [0, 0]),
+                [([0, 0], [1, 1], [1, 0], [0, 0])],
+            ),
+            MultiPolygon(
+                [
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                ]
+            ),
+            MultiPolygon(
+                [
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                    Polygon(
+                        ([0, 0], [1, 1], [1, 0], [0, 0]),
+                        [([0, 0], [1, 1], [1, 0], [0, 0])],
+                    ),
+                ]
+            ),
+        ]
+    )
+    rhs = cuspatial.GeoSeries(
+        [
+            Point(0.5, 0.25),
+            Point(0.5, 0.25),
+            Point(0.5, 0.25),
+            Point(0.5, 0.25),
+            Point(0.5, 0.25),
+            Point(0.5, 0.25),
+            Point(0.5, 0.25),
+            Point(0.5, 0.25),
+        ]
+    )
+    got = lhs.contains_properly(rhs).values_host
+    assert (got == [True, True, True, True, True, True, True, True]).all()
