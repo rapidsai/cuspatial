@@ -3,7 +3,6 @@ from functools import cached_property
 from typing import Tuple, TypeVar
 
 import cupy as cp
-import numpy as np
 import pyarrow as pa
 
 import cudf
