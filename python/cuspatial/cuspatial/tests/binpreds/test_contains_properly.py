@@ -369,3 +369,34 @@ def test_self_contains(object):
     got = object.contains_properly(object).values_host
     expected = gpdobject.contains(gpdobject).values
     assert (got == expected).all()
+
+
+def test_complex_input():
+    gpdobject = gpd.GeoSeries(
+        [
+            Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+            Polygon(
+                ([0, 0], [1, 1], [1, 0], [0, 0]),
+                [([0, 0], [1, 1], [1, 0], [0, 0])],
+            ),
+            MultiPolygon(
+                [
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                ]
+            ),
+            MultiPolygon(
+                [
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                    Polygon(
+                        ([0, 0], [1, 1], [1, 0], [0, 0]),
+                        [([0, 0], [1, 1], [1, 0], [0, 0])],
+                    ),
+                ]
+            ),
+        ]
+    )
+    object = cuspatial.from_geopandas(gpdobject)
+    got = object.contains_properly(object).values_host
+    expected = gpdobject.contains(gpdobject).values
+    assert (got == expected).all()
