@@ -187,7 +187,7 @@ class GeoColumn(ColumnBase):
         Create a GeoColumn of only single points from a cudf Series with
         interleaved xy coordinates.
         """
-        if not np.finfo(points_xy.dtypes).kind == "f":
+        if not points_xy.dtype.kind == "f":
             raise ValueError("Coordinates must be floating point numbers.")
 
         if len(points_xy) % 2 != 0:
