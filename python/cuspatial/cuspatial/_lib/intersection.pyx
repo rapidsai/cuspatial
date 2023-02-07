@@ -1,4 +1,4 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2023, NVIDIA CORPORATION.
 
 from libcpp.memory cimport make_shared, shared_ptr
 from libcpp.utility cimport move
@@ -57,9 +57,8 @@ def pairwise_linestring_intersection(Column lhs, Column rhs):
 
     types_buffer = Column.from_unique_ptr(move(c_result.types_buffer))
     offset_buffer = Column.from_unique_ptr(move(c_result.offset_buffer))
-    points_xy = Column.from_unique_ptr(move(c_result.points_xy))
-    segments_offsets = Column.from_unique_ptr(move(c_result.segments_offsets))
-    segments_xy = Column.from_unique_ptr(move(c_result.segments_xy))
+    points = Column.from_unique_ptr(move(c_result.points))
+    segments = Column.from_unique_ptr(move(c_result.segments))
     lhs_linestring_id = Column.from_unique_ptr(
         move(c_result.lhs_linestring_id)
     )
@@ -77,9 +76,8 @@ def pairwise_linestring_intersection(Column lhs, Column rhs):
     return ((geometry_collection_offset,
             types_buffer,
             offset_buffer,
-            points_xy,
-            segments_offsets,
-            segments_xy),
+            points,
+            segments),
             (lhs_linestring_id,
              lhs_segment_id,
              rhs_linestring_id,

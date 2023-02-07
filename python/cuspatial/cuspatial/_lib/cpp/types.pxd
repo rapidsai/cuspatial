@@ -1,4 +1,5 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2023, NVIDIA CORPORATION.
+
 cdef extern from "cuspatial/types.hpp" namespace "cuspatial" nogil:
     cdef enum geometry_type_id:
         POINT "cuspatial::geometry_type_id::POINT"

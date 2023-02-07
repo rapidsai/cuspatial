@@ -1,4 +1,4 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2023, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 
@@ -18,10 +18,9 @@ cdef extern from "cuspatial/linestring_intersection.hpp" \
         unique_ptr[column] types_buffer
         unique_ptr[column] offset_buffer
 
-        unique_ptr[column] points_xy
+        unique_ptr[column] points
 
-        unique_ptr[column] segments_offsets
-        unique_ptr[column] segments_xy
+        unique_ptr[column] segments
 
         unique_ptr[column] lhs_linestring_id
         unique_ptr[column] lhs_segment_id

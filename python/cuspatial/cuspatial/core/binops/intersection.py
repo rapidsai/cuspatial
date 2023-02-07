@@ -1,4 +1,4 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2023, NVIDIA CORPORATION.
 
 import cudf
 from cudf.core.column import arange, build_list_column
@@ -7,8 +7,12 @@ from cuspatial._lib.intersection import (
     pairwise_linestring_intersection as c_pairwise_linestring_intersection,
 )
 from cuspatial.core._column.geocolumn import GeoColumn
+from cuspatial.core._column.geometa import Feature_Enum
 from cuspatial.core.geoseries import GeoSeries
-from cuspatial.utils.column_utils import contains_only_linestrings
+from cuspatial.utils.column_utils import (
+    contains_only_linestrings,
+    empty_geometry_column,
+)
 
 
 def pairwise_linestring_intersection(
@@ -19,9 +23,9 @@ def pairwise_linestring_intersection(
 
     Note
     ----
-    Note that the result should be interpreted as type list<union>, since
-    cuDF does not support union type, the result is returned as a sperate list
-    and a GeoSeries.
+    The result contains an index list and a GeoSeries and is interpreted
+    as `List<Union>`. This is a temporary workaround until cuDF supports union
+    column.
 
     Parameters
     ----------
@@ -67,11 +71,11 @@ def pairwise_linestring_intersection(
         geometry_collection_offset,
         types_buffer,
         offset_buffer,
-        points_xy,
-        segments_offsets,
-        segments_xy,
+        points,
+        segments,
     ) = geoms
 
+    # Organize the look back ids into list column
     (lhs_linestring_id, lhs_segment_id, rhs_linestring_id, rhs_segment_id,) = [
         build_list_column(
             indices=geometry_collection_offset,
@@ -81,34 +85,21 @@ def pairwise_linestring_intersection(
         for id_ in look_back_ids
     ]
 
-    points_column = build_list_column(
-        indices=arange(0, len(points_xy) + 1, 2, dtype="int32"),
-        elements=points_xy,
-        size=len(points_xy) // 2,
-    )
-
     linestring_column = build_list_column(
-        indices=arange(0, len(segments_offsets), dtype="int32"),
-        elements=build_list_column(
-            indices=segments_offsets,
-            elements=build_list_column(
-                indices=arange(0, len(segments_xy) + 1, 2, dtype="int32"),
-                elements=segments_xy,
-                size=len(segments_xy) // 2,
-            ),
-            size=len(segments_offsets) - 1,
-        ),
-        size=len(segments_offsets) - 1,
+        indices=arange(0, len(segments) + 1, dtype="int32"),
+        elements=segments,
+        size=len(segments),
     )
 
+    coord_dtype = points.dtype.leaf_type
     geometries = GeoSeries(
         GeoColumn._from_arrays(
             types_buffer,
             offset_buffer,
-            cudf.Series(points_column),
-            cudf.Series(),
+            cudf.Series(points),
+            empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype),
             cudf.Series(linestring_column),
-            cudf.Series(),
+            empty_geometry_column(Feature_Enum.POLYGON, coord_dtype),
         )
     )
 
