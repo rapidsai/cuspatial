@@ -133,7 +133,7 @@ class multilinestring_range {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator[](IndexType multilinestring_idx);
 
-  protected:
+ protected:
   GeometryIterator _geometry_begin;
   GeometryIterator _geometry_end;
   PartIterator _part_begin;

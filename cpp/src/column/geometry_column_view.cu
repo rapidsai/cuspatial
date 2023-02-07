@@ -27,9 +27,9 @@ namespace cuspatial {
 namespace {
 
 /**
- * @brief Retrieve the leaf column type of the LIST column. 
+ * @brief Retrieve the leaf column type of the LIST column.
  * @internal
- * 
+ *
  * @param column The LIST column to retrieve leaf column type.
  * @return cudf type of the leaf column
  */
