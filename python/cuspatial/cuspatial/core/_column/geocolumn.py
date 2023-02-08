@@ -6,9 +6,10 @@ import cupy as cp
 import pyarrow as pa
 
 import cudf
-from cudf.core.column import ColumnBase, as_column, build_list_column
+from cudf.core.column import ColumnBase, arange, as_column, build_list_column
 
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
+from cuspatial.utils.column_utils import empty_geometry_column
 
 T = TypeVar("T", bound="GeoColumn")
 
@@ -185,6 +186,9 @@ class GeoColumn(ColumnBase):
         Create a GeoColumn of only single points from a cudf Series with
         interleaved xy coordinates.
         """
+        if not points_xy.dtype.kind == "f":
+            raise ValueError("Coordinates must be floating point numbers.")
+
         if len(points_xy) % 2 != 0:
             raise ValueError("points_xy must have an even number of elements")
 
@@ -202,16 +206,23 @@ class GeoColumn(ColumnBase):
             }
         )
 
-        indices = as_column(cp.arange(0, num_points * 2 + 1, 2), dtype="int32")
+        indices = arange(0, num_points * 2 + 1, 2, dtype="int32")
         point_col = build_list_column(
             indices=indices, elements=points_xy, size=num_points
         )
+        coord_dtype = points_xy.dtype
         return cls(
             (
                 cudf.Series(point_col),
-                cudf.Series(),
-                cudf.Series(),
-                cudf.Series(),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
+                ),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.LINESTRING, coord_dtype)
+                ),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
+                ),
             ),
             meta,
         )
