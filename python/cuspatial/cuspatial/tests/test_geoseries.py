@@ -624,7 +624,7 @@ def test_reset_index(level, drop, name, inplace):
         pd.testing.assert_frame_equal(expected, got.to_pandas())
 
 
-def test_geocolumn_polygon_accessor(naturalearth_lowres):
+def test_geocolumn_polygon_accessor():
     s = gpd.GeoSeries(
         [
             Polygon([(0.0, 0.0), (1.0, 1.0), (0.0, 1.0), (0.0, 0.0)]),
