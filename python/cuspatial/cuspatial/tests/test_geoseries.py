@@ -3,6 +3,7 @@
 from enum import Enum
 from numbers import Integral
 
+import cupy as cp
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -621,3 +622,97 @@ def test_reset_index(level, drop, name, inplace):
         pd.testing.assert_series_equal(expected, got.to_pandas())
     else:
         pd.testing.assert_frame_equal(expected, got.to_pandas())
+
+
+def test_geocolumn_polygon_accessor(naturalearth_lowres):
+    s = gpd.GeoSeries(
+        [
+            Polygon([(0.0, 0.0), (1.0, 1.0), (0.0, 1.0), (0.0, 0.0)]),
+            MultiPolygon(
+                [
+                    Polygon([(1.0, 1.0), (2.0, 1.0), (2.0, 2.0), (1.0, 1.0)]),
+                    Polygon([(5.0, 5.0), (4.0, 4.0), (4.0, 5.0), (5.0, 5.0)]),
+                ]
+            ),
+            Polygon(
+                [(3.0, 3.0), (2.0, 3.0), (2.0, 2.0), (3.0, 2.0), (3.0, 3.0)]
+            ),
+        ]
+    )
+    gs = cuspatial.from_geopandas(s)
+    expected_xy = [
+        0.0,
+        0.0,
+        1.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        1.0,
+        2.0,
+        1.0,
+        2.0,
+        2.0,
+        1.0,
+        1.0,
+        5.0,
+        5.0,
+        4.0,
+        4.0,
+        4.0,
+        5.0,
+        5.0,
+        5.0,
+        3.0,
+        3.0,
+        2.0,
+        3.0,
+        2.0,
+        2.0,
+        3.0,
+        2.0,
+        3.0,
+        3.0,
+    ]
+
+    cp.testing.assert_array_equal(gs.polygons.xy, cp.array(expected_xy))
+
+    expected_ring_offset = [0, 4, 8, 12, 17]
+    cp.testing.assert_array_equal(
+        gs.polygons.ring_offset, cp.array(expected_ring_offset)
+    )
+
+    expected_part_offset = [0, 1, 2, 3, 4]
+    cp.testing.assert_array_equal(
+        gs.polygons.part_offset, cp.array(expected_part_offset)
+    )
+
+    expected_geometry_offset = [0, 1, 3, 4]
+    cp.testing.assert_array_equal(
+        gs.polygons.geometry_offset, cp.array(expected_geometry_offset)
+    )
+
+    expected_point_indices = [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+    ]
+    cp.testing.assert_array_equal(
+        gs.polygons.point_indices(), cp.array(expected_point_indices)
+    )
