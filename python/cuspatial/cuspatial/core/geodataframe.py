@@ -19,16 +19,19 @@ class GeoDataFrame(cudf.DataFrame):
     A GPU GeoDataFrame object.
     """
 
-    def __init__(self, data: Union[Dict, gpGeoDataFrame] = None):
+    def __init__(
+        self, data: Union[Dict, gpGeoDataFrame, cudf.DataFrame] = None
+    ):
         """
         Constructs a GPU GeoDataFrame from a GeoPandas dataframe.
 
         Parameters
         ----------
-        data : A geopandas.GeoDataFrame object
+        data : A geopandas.GeoDataFrame object, a cudf.DataFrame object,
+        or a dictionary of objects that can be converted to a GeoDataFrame.
         """
         super().__init__()
-        if isinstance(data, gpGeoDataFrame):
+        if isinstance(data, (gpGeoDataFrame, cudf.DataFrame)):
             self.index = data.index
             for col in data.columns:
                 if is_geometry_type(data[col]):
