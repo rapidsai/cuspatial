@@ -440,3 +440,9 @@ def test_reset_index(level, drop, inplace, col_level, col_fill):
         expected = gpdf
         got = gdf
     pd.testing.assert_frame_equal(expected, got.to_pandas())
+
+
+def test_cudf_dataframe_init():
+    df = cudf.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    gdf = cuspatial.GeoDataFrame(df)
+    assert_eq_geo_df(gdf.to_pandas(), df.to_pandas())
