@@ -102,4 +102,6 @@ def contains_properly(
     polygons_and_points["point_index"] = point_indices.iloc[
         polygons_and_points["point_index"]
     ].reset_index(drop=True)
+    polygons_and_points["part_index"] = polygons_and_points["polygon_index"]
+    polygons_and_points.drop("polygon_index", axis=1, inplace=True)
     return polygons_and_points

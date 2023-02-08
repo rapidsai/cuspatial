@@ -250,7 +250,6 @@ class GeoSeries(cudf.Series):
             parts_map = cudf.Series(cp.arange(len(part_sizes))).repeat(
                 part_sizes
             )
-
             parts_to_geoms = cp.array(self.geometry_offset)
             geometry_sizes = parts_to_geoms[1:] - parts_to_geoms[:-1]
             geometry_map = cudf.Series(cp.arange(len(geometry_sizes))).repeat(
@@ -815,7 +814,7 @@ class GeoSeries(cudf.Series):
             self.index = cudf_series.index
             return None
 
-    def contains_properly(self, other, align=True):
+    def contains_properly(self, other, align=True, allpairs=False):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that contains _other_.
 
@@ -895,7 +894,7 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input.
         """
-        return ContainsProperlyBinpred(self, other, align)()
+        return ContainsProperlyBinpred(self, other, align, allpairs)()
 
     def intersects(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each

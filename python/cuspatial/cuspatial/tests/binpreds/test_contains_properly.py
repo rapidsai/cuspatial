@@ -1,3 +1,4 @@
+import cupy as cp
 import geopandas as gpd
 import numpy as np
 import pytest
@@ -368,8 +369,8 @@ def test_self_contains(object):
     object = cuspatial.from_geopandas(gpdobject)
     got = object.contains_properly(object).values_host
     expected = gpdobject.contains(gpdobject).values
-    assert got is False
-    assert expected is True
+    assert not got
+    assert expected
 
 
 def test_complex_input():
@@ -443,3 +444,79 @@ def test_multi_contains():
     )
     got = lhs.contains_properly(rhs).values_host
     assert (got == [True, True, True, True, True, True, True, True]).all()
+
+
+def test_allpairs_with_holes():
+    lhs = cuspatial.GeoSeries(
+        [
+            MultiPolygon(
+                [
+                    # Point is in part 0, but not in part 1
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                    Polygon(
+                        ([0, 0], [1, 1], [1, 0], [0, 0]),
+                        [([0, 0], [1, 1], [1, 0], [0, 0])],
+                    ),
+                ]
+            ),
+            MultiPolygon(
+                [
+                    # Point is in part 2 and 3
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                ]
+            ),
+            Polygon(
+                # Point is not in part 4 because of the hole
+                ([0, 0], [1, 1], [1, 0], [0, 0]),
+                [([0, 0], [1, 1], [1, 0], [0, 0])],
+            ),
+            # Point is in part 5
+            Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+        ]
+    )
+    rhs = cuspatial.GeoSeries(
+        [
+            Point(0.5, 0.25),
+        ]
+    )
+    got = lhs.contains_properly(rhs, allpairs=True).sort_values(
+        "polygon_index"
+    )
+    assert (got["polygon_index"].values_host == [0, 1, 3]).all()
+
+
+def test_allpairs():
+    lhs = cuspatial.GeoSeries(
+        [
+            MultiPolygon(
+                [
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                    Polygon(
+                        ([0, 0], [1, 1], [1, 0], [0, 0]),
+                        [([0, 0], [1, 1], [0, 1], [0, 0])],
+                    ),
+                ]
+            ),
+            MultiPolygon(
+                [
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                ]
+            ),
+            Polygon(
+                ([0, 0], [1, 1], [1, 0], [0, 0]),
+                [([0, 0], [1, 1], [0, 1], [0, 0])],
+            ),
+            Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+        ]
+    )
+    rhs = cuspatial.GeoSeries(
+        [
+            Point(0.5, 0.25),
+        ]
+    )
+    got = lhs.contains_properly(rhs, allpairs=True).sort_values(
+        "polygon_index"
+    )
+    assert (got["polygon_index"] == cp.arange(4)).all()
