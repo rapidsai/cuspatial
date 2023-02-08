@@ -21,7 +21,6 @@ from shapely.geometry import (
 
 import cudf
 from cudf._typing import ColumnLike
-from cudf.core.column.column import as_column
 
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
@@ -240,29 +239,12 @@ class GeoSeries(cudf.Series):
         def point_indices(self):
             # Return a cupy.ndarray containing the index values from the
             # Polygon GeoSeries that each individual point is member of.
-            points_to_rings = cp.array(self.ring_offset)
-            ring_sizes = points_to_rings[1:] - points_to_rings[:-1]
-            rings_map = cudf.Series(cp.arange(len(ring_sizes))).repeat(
-                ring_sizes
+            offsets = self.ring_offset.take(self.part_offset).take(
+                self.geometry_offset
             )
-            rings_to_parts = cp.array(self.part_offset)
-            part_sizes = rings_to_parts[1:] - rings_to_parts[:-1]
-            parts_map = cudf.Series(cp.arange(len(part_sizes))).repeat(
-                part_sizes
-            )
-            parts_to_geoms = cp.array(self.geometry_offset)
-            geometry_sizes = parts_to_geoms[1:] - parts_to_geoms[:-1]
-            geometry_map = cudf.Series(cp.arange(len(geometry_sizes))).repeat(
-                geometry_sizes
-            )
-            rings_mapped = cudf.Series(rings_map).replace(
-                as_column(cp.arange(len(parts_map))), as_column(parts_map)
-            )
-            point_indices = cudf.Series(rings_mapped).replace(
-                as_column(cp.arange(len(geometry_map))),
-                as_column(geometry_map),
-            )
-            return point_indices
+            sizes = offsets[1:] - offsets[:-1]
+
+            return self._series.index.repeat(sizes).values
 
     @property
     def points(self):
