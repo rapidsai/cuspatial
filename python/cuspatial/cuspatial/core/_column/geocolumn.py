@@ -179,20 +179,6 @@ class GeoColumn(ColumnBase):
         )
         return result
 
-    @property
-    def valid_count(self) -> int:
-        """
-        Returns the number of valid geometries stored in this GeoColumn.
-        """
-        return self._meta.input_types.valid_count
-
-    def has_nulls(self) -> bool:
-        """
-        Returns True if any of the geometries stored in this GeoColumn are
-        null.
-        """
-        return self._meta.input_types.has_nulls
-
     @classmethod
     def _from_points_xy(cls, points_xy: ColumnBase):
         """
