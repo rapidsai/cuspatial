@@ -10,8 +10,8 @@ import cuspatial
 bbox_1 = (0, 1, 0, 1)
 bbox_2 = (0, 2, 0, 2)
 
-small_poly_offsets = cudf.Series([0, 1, 2, 3], dtype=np.uint32)
-small_ring_offsets = cudf.Series([0, 3, 8, 12], dtype=np.uint32)
+small_poly_offsets = cudf.Series([0, 1, 2, 3, 4], dtype=np.uint32)
+small_ring_offsets = cudf.Series([0, 3, 8, 12, 17], dtype=np.uint32)
 
 small_poly_xs = cudf.Series(
     [

@@ -100,8 +100,8 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto& quadtree      = std::get<1>(quadtree_pair);
   auto& point_indices = std::get<0>(quadtree_pair);
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14});
+  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2, 3, 4});
+  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4, 10, 14, 19});
   fixed_width_column_wrapper<T> poly_x({// ring 1
                                         2.488450,
                                         1.333584,
@@ -168,12 +168,10 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
 
   CUSPATIAL_EXPECTS(point_in_polygon_pairs->num_columns() == 2,
                     "a polygon-quadrant pair table must have 2 columns");
-
-  expect_tables_equivalent(
-    cudf::table_view{
-      {fixed_width_column_wrapper<uint32_t>(
-         {3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 3}),
-       fixed_width_column_wrapper<uint32_t>(
-         {28, 29, 30, 31, 32, 33, 34, 35, 45, 46, 47, 48, 49, 50, 51, 52, 54, 62, 60})}},
-    *point_in_polygon_pairs);
+  fixed_width_column_wrapper<uint32_t> expected1(
+    {3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 3});
+  fixed_width_column_wrapper<uint32_t> expected2(
+    {28, 29, 30, 31, 32, 33, 34, 35, 45, 46, 47, 48, 49, 50, 51, 52, 54, 62, 60});
+  auto expected = cudf::table_view{{expected1, expected2}};
+  CUDF_TEST_EXPECT_TABLES_EQUIVALENT(expected, *point_in_polygon_pairs);
 }

@@ -154,6 +154,11 @@ class alignas(2 * sizeof(T)) vec_2d {
     return !(lhs < rhs);
   }
 };
+
+// Deduction guide enables CTAD
+template <typename T>
+vec_2d(T x, T y) -> vec_2d<T>;
+
 /**
  * @brief Compute dot product of two 2D vectors.
  */

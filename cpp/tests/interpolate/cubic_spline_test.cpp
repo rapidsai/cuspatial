@@ -49,9 +49,10 @@ TEST_F(CubicSplineTest, test_coefficients_single)
   cudf::test::fixed_width_column_wrapper<float> detail1_expected{{-1.5, -4.5, -4.5, 22.5}};
   cudf::test::fixed_width_column_wrapper<float> detail0_expected{{3.0, 4.0, 4.0, -23.0}};
 
-  cudf::test::expect_tables_equivalent(
-    *splines,
-    cudf::table_view{{detail3_expected, detail2_expected, detail1_expected, detail0_expected}});
+  auto expected =
+    cudf::table_view{{detail3_expected, detail2_expected, detail1_expected, detail0_expected}};
+
+  CUDF_TEST_EXPECT_TABLES_EQUIVALENT(*splines, expected);
 }
 
 TEST_F(CubicSplineTest, test_coefficients_full)
@@ -74,9 +75,10 @@ TEST_F(CubicSplineTest, test_coefficients_full)
   cudf::test::fixed_width_column_wrapper<float> detail0_expected{
     {3.0, 4.0, 4.0, -23.0, 3.0, 4.0, 4.0, -23.0, 3.0, 4.0, 4.0, -23.0}};
 
-  cudf::test::expect_tables_equivalent(
-    *splines,
-    cudf::table_view{{detail3_expected, detail2_expected, detail1_expected, detail0_expected}});
+  auto expected =
+    cudf::table_view{{detail3_expected, detail2_expected, detail1_expected, detail0_expected}};
+
+  CUDF_TEST_EXPECT_TABLES_EQUIVALENT(*splines, expected);
 }
 
 TEST_F(CubicSplineTest, test_interpolate_between_control_points)
@@ -107,7 +109,7 @@ TEST_F(CubicSplineTest, test_interpolate_between_control_points)
                  gather_map)
       ->get_column(0);
 
-  cudf::test::expect_columns_equivalent(
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(
     interpolants_gather,
     cudf::test::fixed_width_column_wrapper<float>{{3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3}});
 }
@@ -125,7 +127,7 @@ TEST_F(CubicSplineTest, test_interpolate_single)
   auto interpolants = cuspatial::cubicspline_interpolate(
     t_column, point_ids_column, prefix_column, t_column, *splines);
 
-  cudf::test::expect_columns_equivalent(
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(
     *interpolants, cudf::test::fixed_width_column_wrapper<float>{{3, 2, 3, 4, 3}});
 }
 
@@ -145,7 +147,7 @@ TEST_F(CubicSplineTest, test_interpolate_at_control_points_full)
   auto interpolants = cuspatial::cubicspline_interpolate(
     t_column, point_ids_column, prefix_column, t_column, *splines);
 
-  cudf::test::expect_columns_equivalent(
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(
     *interpolants,
     cudf::test::fixed_width_column_wrapper<float>{{3, 2, 3, 4, 3, 3, 2, 3, 4, 3, 3, 2, 3, 4, 3}});
 }
@@ -163,8 +165,8 @@ TEST_F(CubicSplineTest, test_parallel_search_single)
                                                              rmm::cuda_stream_default,
                                                              this->mr());
 
-  cudf::test::expect_columns_equivalent(
-    *indexes, cudf::test::fixed_width_column_wrapper<int>{{0, 1, 2, 3, 3}});
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(*indexes,
+                                      cudf::test::fixed_width_column_wrapper<int>{{0, 1, 2, 3, 3}});
 }
 
 TEST_F(CubicSplineTest, test_parallel_search_triple)
@@ -182,7 +184,7 @@ TEST_F(CubicSplineTest, test_parallel_search_triple)
                                                              rmm::cuda_stream_default,
                                                              this->mr());
 
-  cudf::test::expect_columns_equivalent(
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(
     *indexes,
     cudf::test::fixed_width_column_wrapper<int>{{0, 1, 2, 3, 3, 4, 5, 6, 7, 7, 8, 9, 10, 11, 11}});
 }
@@ -202,7 +204,7 @@ TEST_F(CubicSplineTest, test_parallel_search_middle_single)
                                                              rmm::cuda_stream_default,
                                                              this->mr());
 
-  cudf::test::expect_columns_equivalent(
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(
     *indexes, cudf::test::fixed_width_column_wrapper<int>{{0, 0, 1, 1, 2, 2, 3, 3, 3}});
 }
 
@@ -224,7 +226,7 @@ TEST_F(CubicSplineTest, test_parallel_search_middle_triple)
                                                              rmm::cuda_stream_default,
                                                              this->mr());
 
-  cudf::test::expect_columns_equivalent(
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(
     *indexes,
     cudf::test::fixed_width_column_wrapper<int>{
       {0, 0, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 11}});
@@ -244,8 +246,8 @@ TEST_F(CubicSplineTest, test_parallel_search_single_end_values)
                                                              rmm::cuda_stream_default,
                                                              this->mr());
 
-  cudf::test::expect_columns_equivalent(
-    *indexes, cudf::test::fixed_width_column_wrapper<int>{{3, 3, 3, 3, 3}});
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(*indexes,
+                                      cudf::test::fixed_width_column_wrapper<int>{{3, 3, 3, 3, 3}});
 }
 
 TEST_F(CubicSplineTest, test_parallel_search_triple_end_values)
@@ -265,7 +267,7 @@ TEST_F(CubicSplineTest, test_parallel_search_triple_end_values)
                                                              rmm::cuda_stream_default,
                                                              this->mr());
 
-  cudf::test::expect_columns_equivalent(*indexes,
-                                        cudf::test::fixed_width_column_wrapper<int>{
-                                          {3, 3, 3, 3, 3, 7, 7, 7, 7, 7, 11, 11, 11, 11, 11}});
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(*indexes,
+                                      cudf::test::fixed_width_column_wrapper<int>{
+                                        {3, 3, 3, 3, 3, 7, 7, 7, 7, 7, 11, 11, 11, 11, 11}});
 }

@@ -39,6 +39,10 @@ namespace cuspatial {
  * y_min - the minimum y-coordinate of each bounding box
  * x_max - the maximum x-coordinate of each bounding box
  * y_max - the maximum y-coordinate of each bounding box
+ *
+ * @pre For compatibility with GeoArrow, the size of @p linestring_offsets should be one more than
+ * the number of linestrings to process. The final offset is not used by this function, but the
+ * number of offsets determines the output size.
  */
 
 std::unique_ptr<cudf::table> linestring_bounding_boxes(

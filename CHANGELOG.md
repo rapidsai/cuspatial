@@ -1,3 +1,52 @@
+# cuSpatial 23.02.00 (9 Feb 2023)
+
+## 🚨 Breaking Changes
+
+- Deprecate shapefile reader ([#872](https://github.com/rapidsai/cuspatial/pull/872)) [@harrism](https://github.com/harrism)
+- Remove deprecated min_size parameter from quadtree_on_points ([#843](https://github.com/rapidsai/cuspatial/pull/843)) [@harrism](https://github.com/harrism)
+- Remove deprecated lonlat_to_cartesian functions ([#842](https://github.com/rapidsai/cuspatial/pull/842)) [@harrism](https://github.com/harrism)
+
+## 🐛 Bug Fixes
+
+- pre-commit: Update isort version to 5.12.0 ([#877](https://github.com/rapidsai/cuspatial/pull/877)) [@wence-](https://github.com/wence-)
+- Use vector equivalence macros consistently in header-only API tests. ([#873](https://github.com/rapidsai/cuspatial/pull/873)) [@harrism](https://github.com/harrism)
+- Fix: Sort Intersection Result by Keys in `intersection_with_duplicate` Test ([#857](https://github.com/rapidsai/cuspatial/pull/857)) [@isVoid](https://github.com/isVoid)
+- Add `reset_index` to `GeoSeries` and `GeoDataFrame` ([#856](https://github.com/rapidsai/cuspatial/pull/856)) [@thomcom](https://github.com/thomcom)
+- Update `memory_usage` with tweaked sizes ([#855](https://github.com/rapidsai/cuspatial/pull/855)) [@thomcom](https://github.com/thomcom)
+- Fix a bug preventing `align` from working with a basic slice. ([#850](https://github.com/rapidsai/cuspatial/pull/850)) [@thomcom](https://github.com/thomcom)
+- Fix failed automerge Branch 23.02 merge 22.12 ([#811](https://github.com/rapidsai/cuspatial/pull/811)) [@harrism](https://github.com/harrism)
+
+## 📖 Documentation
+
+- Fix documentation author ([#866](https://github.com/rapidsai/cuspatial/pull/866)) [@bdice](https://github.com/bdice)
+
+## 🚀 New Features
+
+- Deprecate shapefile reader ([#872](https://github.com/rapidsai/cuspatial/pull/872)) [@harrism](https://github.com/harrism)
+- Add Header Only API `pairwise_linestring_intersection` ([#852](https://github.com/rapidsai/cuspatial/pull/852)) [@isVoid](https://github.com/isVoid)
+- Adds `remove_if` Function to `linestring_intersection_intermediates` ([#851](https://github.com/rapidsai/cuspatial/pull/851)) [@isVoid](https://github.com/isVoid)
+- Add `find_point_on_segment` internal API ([#819](https://github.com/rapidsai/cuspatial/pull/819)) [@isVoid](https://github.com/isVoid)
+- Add `find_and_combine_segment` internal API ([#818](https://github.com/rapidsai/cuspatial/pull/818)) [@isVoid](https://github.com/isVoid)
+- Add `pairwise_linestring_intersection_with_duplicates` API ([#813](https://github.com/rapidsai/cuspatial/pull/813)) [@isVoid](https://github.com/isVoid)
+
+## 🛠️ Improvements
+
+- Update shared workflow branches ([#897](https://github.com/rapidsai/cuspatial/pull/897)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add print_env.sh to improve bug reporting ([#874](https://github.com/rapidsai/cuspatial/pull/874)) [@jarmak-nv](https://github.com/jarmak-nv)
+- Refactor calls to `data_array_view` ([#871](https://github.com/rapidsai/cuspatial/pull/871)) [@galipremsagar](https://github.com/galipremsagar)
+- Build CUDA 11.8 and Python 3.10 Packages ([#865](https://github.com/rapidsai/cuspatial/pull/865)) [@bdice](https://github.com/bdice)
+- Update workflows for nightly tests ([#864](https://github.com/rapidsai/cuspatial/pull/864)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Enable `Recently Updated` Check ([#863](https://github.com/rapidsai/cuspatial/pull/863)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add header-only `cuspatial::join_quadtree_and_bounding_boxes` ([#861](https://github.com/rapidsai/cuspatial/pull/861)) [@trxcllnt](https://github.com/trxcllnt)
+- Remove deprecated min_size parameter from quadtree_on_points ([#843](https://github.com/rapidsai/cuspatial/pull/843)) [@harrism](https://github.com/harrism)
+- Remove deprecated lonlat_to_cartesian functions ([#842](https://github.com/rapidsai/cuspatial/pull/842)) [@harrism](https://github.com/harrism)
+- Use Libcudf Test Macro ([#841](https://github.com/rapidsai/cuspatial/pull/841)) [@isVoid](https://github.com/isVoid)
+- Add Missing License in `Distance.py` ([#840](https://github.com/rapidsai/cuspatial/pull/840)) [@isVoid](https://github.com/isVoid)
+- Enable copy_prs. ([#837](https://github.com/rapidsai/cuspatial/pull/837)) [@bdice](https://github.com/bdice)
+- Add GitHub Actions Workflows ([#836](https://github.com/rapidsai/cuspatial/pull/836)) [@bdice](https://github.com/bdice)
+- Implement all binary operations that depend only on point-in-polygon ([#834](https://github.com/rapidsai/cuspatial/pull/834)) [@thomcom](https://github.com/thomcom)
+- Header-only polygon_bounding_boxes and linestring_bounding_boxes, `make_geometry_id_iterator` utility, and `box&lt;T&gt;` class. ([#820](https://github.com/rapidsai/cuspatial/pull/820)) [@harrism](https://github.com/harrism)
+
 # cuSpatial 22.12.00 (8 Dec 2022)
 
 ## 🚨 Breaking Changes

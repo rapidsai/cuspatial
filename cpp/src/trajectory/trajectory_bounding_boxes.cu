@@ -66,15 +66,16 @@ struct dispatch_element {
 
     auto points_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
 
-    auto bbox_mins  = cuspatial::make_vec_2d_output_iterator(cols.at(0)->mutable_view().begin<T>(),
-                                                            cols.at(1)->mutable_view().begin<T>());
-    auto bbox_maxes = cuspatial::make_vec_2d_output_iterator(cols.at(2)->mutable_view().begin<T>(),
-                                                             cols.at(3)->mutable_view().begin<T>());
+    auto bounding_boxes_begin =
+      cuspatial::make_box_output_iterator(cols.at(0)->mutable_view().begin<T>(),
+                                          cols.at(1)->mutable_view().begin<T>(),
+                                          cols.at(2)->mutable_view().begin<T>(),
+                                          cols.at(3)->mutable_view().begin<T>());
 
     point_bounding_boxes(object_id.begin<cudf::size_type>(),
                          object_id.end<cudf::size_type>(),
                          points_begin,
-                         thrust::make_zip_iterator(bbox_mins, bbox_maxes),
+                         bounding_boxes_begin,
                          T{0},
                          stream);
 

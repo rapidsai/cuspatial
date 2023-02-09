@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ struct SpatialRangeTest : public testing::Test {
     auto result_points = DeviceVecVec<T>(result_size);
     cuspatial::copy_points_in_range(v1, v2, points.begin(), points.end(), result_points.begin());
 
-    cuspatial::test::expect_vector_equivalent(expected_points, result_points);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_points, result_points);
   }
 };
 
@@ -66,7 +66,8 @@ TYPED_TEST(SpatialRangeTest, Empty)
   auto points          = DeviceVecVec<T>{};
   auto expected_points = DeviceVecVec<T>{};
 
-  this->spatial_range_test(Vec<T>{1.5, 1.5}, Vec<T>{5.5, 5.5}, points, expected_points);
+  CUSPATIAL_RUN_TEST(
+    this->spatial_range_test, Vec<T>{1.5, 1.5}, Vec<T>{5.5, 5.5}, points, expected_points);
 }
 
 TYPED_TEST(SpatialRangeTest, SimpleTest)
@@ -87,7 +88,8 @@ TYPED_TEST(SpatialRangeTest, SimpleTest)
 
   auto expected_points = DeviceVecVec<T>(VecVec<T>({{3.0, 2.0}, {5.0, 3.0}, {2.0, 5.0}}));
 
-  this->spatial_range_test(Vec<T>{1.5, 1.5}, Vec<T>{5.5, 5.5}, points, expected_points);
+  CUSPATIAL_RUN_TEST(
+    this->spatial_range_test, Vec<T>{1.5, 1.5}, Vec<T>{5.5, 5.5}, points, expected_points);
 }
 
 // Test that ranges with min/max reversed still work
@@ -109,7 +111,8 @@ TYPED_TEST(SpatialRangeTest, ReversedRange)
 
   auto expected_points = DeviceVecVec<T>(VecVec<T>({{3.0, 2.0}, {5.0, 3.0}, {2.0, 5.0}}));
 
-  this->spatial_range_test(Vec<T>{5.5, 5.5}, Vec<T>{1.5, 1.5}, points, expected_points);
+  CUSPATIAL_RUN_TEST(
+    this->spatial_range_test, Vec<T>{5.5, 5.5}, Vec<T>{1.5, 1.5}, points, expected_points);
 }
 
 TYPED_TEST(SpatialRangeTest, AllPointsInRange)
@@ -141,7 +144,8 @@ TYPED_TEST(SpatialRangeTest, AllPointsInRange)
                                                     {3.0, 7.0},
                                                     {6.0, 4.0}}));
 
-  this->spatial_range_test(Vec<T>{-10.0, -10.0}, Vec<T>{10.0, 10.0}, points, expected_points);
+  CUSPATIAL_RUN_TEST(
+    this->spatial_range_test, Vec<T>{-10.0, -10.0}, Vec<T>{10.0, 10.0}, points, expected_points);
 }
 
 TYPED_TEST(SpatialRangeTest, PointsOnOrNearEdges)
@@ -190,5 +194,5 @@ TYPED_TEST(SpatialRangeTest, PointsOnOrNearEdges)
   auto expected_points =
     DeviceVecVec<T>(VecVec<T>({in_ll, in_ul, in_lr, in_ur, in_left, in_right, in_bottom, in_top}));
 
-  this->spatial_range_test(v1, v2, points, expected_points);
+  CUSPATIAL_RUN_TEST(this->spatial_range_test, v1, v2, points, expected_points);
 }

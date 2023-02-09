@@ -56,7 +56,7 @@ TYPED_TEST(PairwisePointInPolygonTest, Empty)
   auto actual = cuspatial::pairwise_point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
 
-  expect_columns_equal(expected, actual->view(), verbosity);
+  CUDF_TEST_EXPECT_COLUMNS_EQUAL(expected, actual->view(), verbosity);
 }
 
 template <typename T>
