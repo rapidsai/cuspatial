@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-#include "detail/get_quad_and_local_point_indices.cuh"
-
 #include <indexing/construction/detail/utilities.cuh>
 #include <utility/point_to_nearest_linestring.cuh>
+
+#include <cuspatial/experimental/detail/indexing/construction/utilities.cuh>
+#include <cuspatial/experimental/detail/join/get_quad_and_local_point_indices.cuh>
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/spatial_join.hpp>
