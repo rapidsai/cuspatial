@@ -180,6 +180,21 @@ class GeoColumn(ColumnBase):
         )
         return result
 
+    @property
+    def valid_count(self) -> int:
+        """
+        Arrow's UnionArray does not support nulls, so this is always
+        equal to the length of the GeoColumn.
+        """
+        return self._meta.input_types.valid_count
+
+    def has_nulls(self) -> bool:
+        """
+        Arrow's UnionArray does not support nulls, so this is always
+        False.
+        """
+        return self._meta.input_types.has_nulls
+
     @classmethod
     def _from_points_xy(cls, points_xy: ColumnBase):
         """
