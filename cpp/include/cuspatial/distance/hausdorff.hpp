@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cudf/table/table_view.hpp>
 #include <cudf/types.hpp>
 
 #include <rmm/mr/device/per_device_resource.hpp>
@@ -87,7 +88,7 @@ namespace cuspatial {
  *
  * @note Hausdorff distances are asymmetrical
  */
-std::unique_ptr<cudf::column> directed_hausdorff_distance(
+std::pair<std::unique_ptr<cudf::column>, cudf::table_view> directed_hausdorff_distance(
   cudf::column_view const& xs,
   cudf::column_view const& ys,
   cudf::column_view const& space_offsets,
