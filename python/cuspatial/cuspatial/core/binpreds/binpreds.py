@@ -212,7 +212,14 @@ class ContainsProperlyBinpred(BinaryPredicate):
             # Replace the polygon index with the row index
             result = geom_df.merge(part_result, on="part_index")
             result = result[["polygon_index", "point_index"]]
-            return result.drop_duplicates()
+            result = result.drop_duplicates()
+            # Replace the polygon index with the original index
+            result["polygon_index"] = result["polygon_index"].replace(
+                cudf.Series(
+                    self.lhs.index, index=cp.arange(len(self.lhs.index))
+                )
+            )
+            return result
         else:
             group_result = point_result.groupby("point_index").count() > 0
             result = cudf.DataFrame({"idx": point_indices})

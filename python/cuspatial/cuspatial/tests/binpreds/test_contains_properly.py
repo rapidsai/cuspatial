@@ -520,3 +520,40 @@ def test_allpairs():
         "polygon_index"
     )
     assert (got["polygon_index"] == cp.arange(4)).all()
+
+
+def test_allpairs_polygon_indices_match_source_index():
+    lhs = cuspatial.GeoSeries(
+        [
+            MultiPolygon(
+                [
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                    Polygon(
+                        ([0, 0], [1, 1], [1, 0], [0, 0]),
+                        [([0, 0], [1, 1], [0, 1], [0, 0])],
+                    ),
+                ]
+            ),
+            MultiPolygon(
+                [
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                ]
+            ),
+            Polygon(
+                ([0, 0], [1, 1], [1, 0], [0, 0]),
+                [([0, 0], [1, 1], [0, 1], [0, 0])],
+            ),
+            Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+        ]
+    )
+    lhs.index = [1, 2, 3, 4]
+    rhs = cuspatial.GeoSeries(
+        [
+            Point(0.5, 0.25),
+        ]
+    )
+    got = lhs.contains_properly(rhs, align=False, allpairs=True).sort_values(
+        "polygon_index"
+    )
+    assert (got["polygon_index"] == cp.arange(1, 5)).all()
