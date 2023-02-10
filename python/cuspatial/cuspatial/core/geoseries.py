@@ -211,7 +211,7 @@ class GeoSeries(cudf.Series):
         def point_indices(self):
             # Return a cupy.ndarray containing the index values from the
             # LineString GeoSeries that each individual point is member of.
-            offsets = cp.array(self.part_offset)
+            offsets = self.part_offset.take(self.geometry_offset)
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
 
