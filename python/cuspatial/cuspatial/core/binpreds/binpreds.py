@@ -221,7 +221,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
             )
             return result
         else:
-        # pairwise
+            # pairwise
             group_result = point_result.groupby("point_index").count() > 0
             result = cudf.DataFrame({"idx": point_indices})
             result.reset_index(drop=True, inplace=True)
