@@ -40,9 +40,6 @@ set +e
 
 # Run libcuspatial gtests from libcuspatial-tests package
 rapids-logger "Run gtests"
-
-# TODO: exit code handling is too verbose. Find a cleaner solution.
-
 for gt in "$CONDA_PREFIX"/bin/gtests/libcuspatial/* ; do
     test_name=$(basename ${gt})
     echo "Running gtest $test_name"
