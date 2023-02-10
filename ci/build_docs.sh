@@ -35,7 +35,7 @@ popd
 rapids-logger "Build Sphinx docs"
 pushd docs
 sphinx-build -b dirhtml source _html -W
-sphinx-build -b text source _text
+sphinx-build -b text source _text -W
 popd
 
 
