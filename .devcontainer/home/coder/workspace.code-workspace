@@ -1,0 +1,12 @@
+{
+  "folders": [
+    { "path": "cuspatial" },
+    { "path": "cudf" },
+    { "path": "rmm" },
+    { "path": ".conda" },
+    { "path": ".cache" },
+  ],
+  "settings": {
+    "terminal.integrated.cwd": ""
+  }
+}
