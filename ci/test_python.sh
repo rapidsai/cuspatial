@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -25,7 +25,6 @@ PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
 RAPIDS_COVERAGE_DIR=${RAPIDS_COVERAGE_DIR:-"${PWD}/coverage-results"}
 mkdir -p "${RAPIDS_TESTS_DIR}" "${RAPIDS_COVERAGE_DIR}"
-SUITEERROR=0
 
 # CUSPATIAL_HOME is used to find test files
 export CUSPATIAL_HOME="${PWD}"
@@ -40,6 +39,8 @@ rapids-mamba-retry install \
 rapids-logger "Check GPU usage"
 nvidia-smi
 
+EXITCODE=0
+trap "EXITCODE=1" ERR
 set +e
 
 rapids-logger "pytest cuspatial"
@@ -55,12 +56,7 @@ pytest \
   --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/cuspatial-coverage.xml" \
   --cov-report=term \
   tests
-exitcode=$?
-
-if (( ${exitcode} != 0 )); then
-    SUITEERROR=${exitcode}
-    echo "FAILED: 1 or more tests in cuspatial"
-fi
 popd
 
-exit ${SUITEERROR}
+rapids-logger "Test script exiting with value: $EXITCODE"
+exit ${EXITCODE}
