@@ -14,7 +14,8 @@ from cuspatial.utils.column_utils import normalize_point_columns
 def quadtree_on_points(
     xs, ys, x_min, x_max, y_min, y_max, scale, max_depth, max_size
 ):
-    """Construct a quadtree from a set of points for a given area-of-interest
+    """
+    Construct a quadtree from a set of points for a given area-of-interest
     bounding box.
 
     Parameters
@@ -72,23 +73,18 @@ def quadtree_on_points(
     -----
 
     * Swaps ``min_x`` and ``max_x`` if ``min_x > max_x``
-
     * Swaps ``min_y`` and ``max_y`` if ``min_y > max_y``
-
     * 2D coordinates are converted into a 1D Morton code by dividing each x/y
-    by the ``scale``: (``(x - min_x) / scale`` and ``(y - min_y) / scale``).
-
+      by the ``scale``: (``(x - min_x) / scale`` and ``(y - min_y) / scale``).
     * `max_depth` should be less than 16, since Morton codes are represented
-    as `uint32_t`. The eventual number of levels may be less than `max_depth`
-    if the number of points is small or `max_size` is large.
-
+      as `uint32_t`. The eventual number of levels may be less than `max_depth`
+      if the number of points is small or `max_size` is large.
     * All intermediate quadtree nodes will have fewer than `max_size` number of
-    points. Leaf nodes are permitted (but not guaranteed) to have >= `max_size`
-    number of points.
+      points. Leaf nodes are permitted (but not guaranteed) to have >= `max_size`
+      number of points.
 
     Examples
     --------
-
     An example of selecting the ``max_size`` and ``scale`` based on input::
 
         >>> np.random.seed(0)
@@ -100,9 +96,9 @@ def quadtree_on_points(
         >>> max_depth = 3
         >>> max_size = 50
         >>> min_x, min_y, max_x, max_y = (points["x"].min(),
-                                          points["y"].min(),
-                                          points["x"].max(),
-                                          points["y"].max())
+                                            points["y"].min(),
+                                            points["x"].max(),
+                                            points["y"].max())
         >>> scale = max(max_x - min_x, max_y - min_y) // (1 << max_depth)
         >>> print(
                 "max_size:   " + str(max_size) + "\\n"
@@ -159,6 +155,7 @@ def quadtree_on_points(
         118     98
         119     24
         Length: 120, dtype: int32
+    
     """
 
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))

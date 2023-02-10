@@ -51,6 +51,7 @@ execution_timeout = 300
 copybutton_prompt_text = ">>> "
 autosummary_generate = True
 ipython_mplbackend = "str"
+myst_heading_anchors = 3
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

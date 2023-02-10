@@ -792,7 +792,8 @@ class GeoSeries(cudf.Series):
             return None
 
     def contains_properly(self, other, align=True):
-        """Returns a `Series` of `dtype('bool')` with value `True` for each
+        """
+        Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that contains _other_.
 
         Compute from a GeoSeries of points and a GeoSeries of polygons which
@@ -811,8 +812,8 @@ class GeoSeries(cudf.Series):
 
         Examples
         --------
-
         Test if a polygon is inside another polygon:
+
         >>> point = cuspatial.GeoSeries(
             [Point(0.5, 0.5)],
             )
@@ -827,6 +828,7 @@ class GeoSeries(cudf.Series):
 
 
         Test whether three points fall within either of two polygons
+
         >>> point = cuspatial.GeoSeries(
             [Point(0, 0)],
             [Point(-1, 0)],
@@ -860,6 +862,7 @@ class GeoSeries(cudf.Series):
         indexed by poly_offsets. If there are rings in poly_ring_offsets that
         are not part of the polygons in poly_offsets, results are likely to be
         incorrect and behavior is undefined.
+        
         Note
         ----
         Polygons must be closed: the first and last coordinate of each polygon
@@ -870,6 +873,7 @@ class GeoSeries(cudf.Series):
         result : cudf.Series
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input.
+        
         """
         return ContainsProperlyBinpred(self, other, align)()
 
