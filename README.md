@@ -1,7 +1,5 @@
 # <div align="left"><img src="https://rapids.ai/assets/images/rapids_logo.png" width="90px"/>&nbsp;cuSpatial - GPU-Accelerated Spatial and Trajectory Data Management and Analytics Library</div>
 
-[![Build Status](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/cuspatial/job/branches/job/cuspatial-branch-pipeline/badge/icon)](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/cuspatial/job/branches/job/cuspatial-branch-pipeline/)
-
 **NOTE:** cuSpatial depends on [cuDF](https://github.com/rapidsai/cudf) and
 [RMM](https://github.com/rapidsai/rmm) from [RAPIDS](https://rapids.ai/).
 
@@ -59,7 +57,7 @@ git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
 2. clone the cuSpatial repo
 
 ```shell
-conda env update --file conda/environments/all_cuda-115_arch-x86_64.yaml 
+conda env update --file conda/environments/all_cuda-115_arch-x86_64.yaml
 ```
 
 ### Build and install cuSpatial
@@ -87,10 +85,10 @@ conda env update --file conda/environments/all_cuda-115_arch-x86_64.yaml
    pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. They are available at
    `$CUSPATIAL_HOME/test_fixtures/shapefiles` <br>
 
-**NOTE:** Currently, cuSpatial supports reading point/polyine/polygon data using
+**NOTE:** Currently, cuSpatial supports reading point/polyline/polygon data using
 Structure of Array (SoA) format and a [shapefile reader](./cpp/src/io/shp)
 to read polygon data from a shapefile.
-Alternatively, python users can read any point/polyine/polygon data using
+Alternatively, python users can read any point/polyline/polygon data using
 existing python packages, e.g., [Shapely](https://pypi.org/project/Shapely/)
 and [Fiona](https://github.com/Toblerity/Fiona),to generate numpy arrays and feed them to
-[cuSpatial python APIs](https://docs.rapids.ai/api/cuspatial/stable/).
+[cuSpatial Python APIs](https://docs.rapids.ai/api/cuspatial/stable/).
