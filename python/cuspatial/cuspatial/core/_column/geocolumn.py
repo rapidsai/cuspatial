@@ -242,6 +242,17 @@ class GeoColumn(ColumnBase):
             meta,
         )
 
+    def apply_boolean_mask(self, mask) -> "GeoColumn":
+        input_types = self._meta.input_types[mask]
+        union_offsets = self._meta.union_offsets[mask]
+
+        return self.__class__(
+            (self.points, self.mpoints, self.lines, self.polygons),
+            GeoMeta(
+                {"input_types": input_types, "union_offsets": union_offsets}
+            ),
+        )
+
     @cached_property
     def memory_usage(self) -> int:
         """

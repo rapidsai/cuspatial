@@ -715,6 +715,12 @@ class GeoSeries(cudf.Series):
     ):
         return self.iloc[gather_map]
 
+    def _apply_boolean_mask(self, mask):
+        new_index = self.index._apply_boolean_mask(mask)
+        return GeoSeries(
+            self._column.apply_boolean_mask(mask), index=new_index
+        )
+
     # def reset_index(self, drop=False, inplace=False, name=None):
     def reset_index(
         self,

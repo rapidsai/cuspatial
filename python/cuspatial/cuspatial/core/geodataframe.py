@@ -181,6 +181,21 @@ class GeoDataFrame(cudf.DataFrame):
         )
         return self.__class__(result)
 
+    def _apply_boolean_mask(self, mask) -> T:
+        geo_columns, data_columns = self._split_out_geometry_columns()
+        data = data_columns._apply_boolean_mask(mask)
+
+        geo = GeoDataFrame(
+            {
+                name: geo_columns[name]._apply_boolean_mask(mask)
+                for name in geo_columns
+            }
+        )
+
+        res = self.__class__._from_data(self._recombine_columns(geo, data))
+        res.index = data.index
+        return res
+
     def _gather(
         self, gather_map, keep_index=True, nullify=False, check_bounds=True
     ):
