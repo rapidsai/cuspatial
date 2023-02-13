@@ -127,6 +127,7 @@ def has_same_geometry(lhs: GeoSeries, rhs: GeoSeries):
 
 
 def empty_geometry_column(feature: Feature_Enum, base_type):
+    """Return a geometry column of type `feature`. Length is 0."""
     if feature == Feature_Enum.POINT:
         return column_empty(0, point_dtype(base_type), masked=False)
     elif feature == Feature_Enum.MULTIPOINT:
