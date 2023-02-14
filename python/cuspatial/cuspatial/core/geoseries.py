@@ -21,6 +21,7 @@ from shapely.geometry import (
 
 import cudf
 from cudf._typing import ColumnLike
+from cudf.core.column.column import as_column
 
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
@@ -607,6 +608,53 @@ class GeoSeries(cudf.Series):
             },
         )
         return GeoSeries(column)
+
+    @classmethod
+    def from_points_xy(cls, points_xy):
+        """
+        Construct a GeoSeries of POINTs from an array of interleaved xy
+        coordinates.
+
+        Parameters
+        ----------
+        points_xy: array-like
+            Coordinates of the points, interpreted as interlaved x-y coords.
+
+        Returns
+        -------
+        GeoSeries:
+            A GeoSeries made of the points.
+        """
+        return cls(GeoColumn._from_points_xy(as_column(points_xy)))
+
+    @classmethod
+    def from_multipoints_xy(cls, multipoints_xy, geometry_offset):
+        """
+        Construct a GeoSeries of MULTIPOINTs from an array of interleaved xy
+        coordinates.
+
+        Parameters
+        ----------
+        points_xy: array-like
+            Coordinates of the points, interpreted as interlaved x-y coords.
+        geometry_offset: array-like
+            Offsets indicating the starting index of the multipoint. See
+            example for detail.
+
+        Returns
+        -------
+        GeoSeries:
+            A GeoSeries made of the points.
+
+        Example
+        -------
+
+        """
+        return cls(
+            GeoColumn._from_multipoints_xy(
+                as_column(multipoints_xy), as_column(geometry_offset)
+            )
+        )
 
     def align(self, other):
         """

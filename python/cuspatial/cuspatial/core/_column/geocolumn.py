@@ -248,7 +248,11 @@ class GeoColumn(ColumnBase):
         if not multipoints_xy.dtype.kind == "f":
             raise ValueError("Coordinates must be floating point numbers.")
 
-        multipoint_col = _xy_as_variable_sized_list(multipoints_xy)
+        multipoint_col = build_list_column(
+            indices=geometry_offsets,
+            elements=_xy_as_variable_sized_list(multipoints_xy),
+            size=len(geometry_offsets) - 1,
+        )
         num_multipoints = len(multipoint_col)
 
         meta = GeoMeta(
