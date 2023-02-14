@@ -32,7 +32,7 @@ class GeoColumn(ColumnBase):
         self,
         data: Tuple,
         meta: GeoMeta = None,
-        shuffle_order: cudf.Index = None
+        shuffle_order: cudf.Index = None,
     ):
         if (
             isinstance(data[0], cudf.Series)

@@ -544,6 +544,7 @@ def test_construction_from_foreign_object(data):
 
     assert_geoseries_equal(cugs.to_geopandas(), gps)
 
+
 def test_memory_usage_simple(gs):
     cugs = cuspatial.from_geopandas(gs)
     assert cugs.memory_usage() == 1616
