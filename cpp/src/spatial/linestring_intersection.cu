@@ -43,15 +43,6 @@
 namespace cuspatial {
 namespace detail {
 
-/**
- * @brief Move the ownership to a buffer from a `device_uvector` to a `cudf::column`
- */
-template <typename T>
-std::unique_ptr<cudf::column> move_uvector(std::unique_ptr<rmm::device_uvector<T>> ptr)
-{
-  return std::unique_ptr<cudf::column>(new cudf::column(std::move(*ptr)));
-}
-
 std::unique_ptr<cudf::column> even_sequence(cudf::size_type size,
                                             rmm::cuda_stream_view stream,
                                             rmm::mr::device_memory_resource* mr)
@@ -129,15 +120,15 @@ struct pairwise_linestring_intersection_launch {
                               mr);
 
     return linestring_intersection_column_result{
-      move_uvector(std::move(intersection_results.geometry_collection_offset)),
-      move_uvector(std::move(intersection_results.types_buffer)),
-      move_uvector(std::move(intersection_results.offset_buffer)),
+      std::make_unique<cudf::column>(std::move(*intersection_results.geometry_collection_offset)),
+      std::make_unique<cudf::column>(std::move(*intersection_results.types_buffer)),
+      std::make_unique<cudf::column>(std::move(*intersection_results.offset_buffer)),
       std::move(points),
       std::move(segments),
-      move_uvector(std::move(intersection_results.lhs_linestring_id)),
-      move_uvector(std::move(intersection_results.lhs_segment_id)),
-      move_uvector(std::move(intersection_results.rhs_linestring_id)),
-      move_uvector(std::move(intersection_results.rhs_segment_id))};
+      std::make_unique<cudf::column>(std::move(*intersection_results.lhs_linestring_id)),
+      std::make_unique<cudf::column>(std::move(*intersection_results.lhs_segment_id)),
+      std::make_unique<cudf::column>(std::move(*intersection_results.rhs_linestring_id)),
+      std::make_unique<cudf::column>(std::move(*intersection_results.rhs_segment_id))};
   }
 
   template <typename T, typename... Args>
