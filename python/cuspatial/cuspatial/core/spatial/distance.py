@@ -1,4 +1,4 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 from typing import Tuple
 
@@ -20,7 +20,6 @@ from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
     contains_only_points,
-    normalize_point_columns,
 )
 
 
@@ -96,34 +95,37 @@ def directed_hausdorff_distance(multipoints: GeoSeries):
         return DataFrame(result)
 
 
-def haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat):
+def haversine_distance(p1: GeoSeries, p2: GeoSeries):
     """Compute the haversine distances in kilometers between an arbitrary
     list of lon/lat pairs
 
     Parameters
     ----------
-    p1_lon
-        longitude of first set of coords
-    p1_lat
-        latitude of first set of coords
-    p2_lon
-        longitude of second set of coords
-    p2_lat
-        latitude of second set of coords
+    p1: GeoSeries
+        Series of points
+    p2: GeoSeries
+        Series of points
 
     Returns
     -------
     result : cudf.Series
-        The distance between all pairs of lon/lat coordinates
+        The distance between pairs of points between `p1` and `p2`
     """
 
-    p1_lon, p1_lat, p2_lon, p2_lat = normalize_point_columns(
-        as_column(p1_lon),
-        as_column(p1_lat),
-        as_column(p2_lon),
-        as_column(p2_lat),
+    if any([not contains_only_points(p1), not contains_only_points(p2)]):
+        raise ValueError("Input muist be two series of points.")
+
+    if len(p1) != len(p2):
+        raise ValueError("Mismatch length of inputs.")
+
+    p1_lon = p1.points.x._column
+    p1_lat = p1.points.y._column
+    p2_lon = p2.points.x._column
+    p2_lat = p2.points.y._column
+
+    return cudf.Series._from_data(
+        {"None": cpp_haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat)}
     )
-    return cpp_haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat)
 
 
 def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
