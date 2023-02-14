@@ -970,11 +970,9 @@ class GeoColumnAccessor:
 
     @property
     def xy(self):
-        features = self._get_current_features(self._type)
-        if hasattr(features, "leaves"):
-            return cudf.Series(features.leaves().values)
-        else:
-            return cudf.Series()
+        return cudf.Series(
+            self._get_current_features(self._type).leaves().values
+        )
 
     def _get_current_features(self, type):
         # Resample the existing features so that the offsets returned
@@ -992,7 +990,7 @@ class GeoColumnAccessor:
         """
         offsets = cp.arange(0, len(self.xy) + 1, 2)
         sizes = offsets[1:] - offsets[:-1]
-        return cp.repeat(self._meta.input_types.index, sizes)
+        return cp.repeat(self._series.index, sizes)
         """
         return self._meta.input_types.index[self._meta.input_types != -1]
 
@@ -1057,6 +1055,9 @@ class PolygonGeoColumnAccessor(GeoColumnAccessor):
     def point_indices(self):
         # Return a cupy.ndarray containing the index values from the
         # Polygon GeoSeries that each individual point is member of.
-        offsets = cp.array(self.ring_offset)
+        offsets = self.ring_offset.take(self.part_offset).take(
+            self.geometry_offset
+        )
         sizes = offsets[1:] - offsets[:-1]
-        return cp.repeat(self._meta.input_types.index, sizes)
+
+        return self._series.index.repeat(sizes).values
