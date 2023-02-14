@@ -920,7 +920,7 @@ class GeoSeries(cudf.Series):
         indexed by poly_offsets. If there are rings in poly_ring_offsets that
         are not part of the polygons in poly_offsets, results are likely to be
         incorrect and behavior is undefined.
-        
+
         Note
         ----
         Polygons must be closed: the first and last coordinate of each polygon
@@ -931,7 +931,7 @@ class GeoSeries(cudf.Series):
         result : cudf.Series
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input.
-        
+
         """
         return ContainsProperlyBinpred(self, other, align)()
 

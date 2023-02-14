@@ -155,7 +155,7 @@ def quadtree_on_points(
         118     98
         119     24
         Length: 120, dtype: int32
-    
+
     """
 
     xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
