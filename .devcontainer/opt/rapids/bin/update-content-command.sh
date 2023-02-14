@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-mkdir -m 0755 -p ~/{.cache,.conda,rmm,cudf};
+mkdir -m 0755 -p ~/{.aws,.cache,.conda,.config,rmm,cudf};
 
 cat <<"EOF" >> ~/.bashrc
 if [[ "$PATH" != *"/opt/rapids/bin"* ]]; then
