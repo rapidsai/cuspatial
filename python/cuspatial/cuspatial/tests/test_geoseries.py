@@ -716,3 +716,23 @@ def test_geocolumn_polygon_accessor():
     cp.testing.assert_array_equal(
         gs.polygons.point_indices(), cp.array(expected_point_indices)
     )
+
+
+def test_from_points_xy(point_generator):
+    hs = gpd.GeoSeries(point_generator(10))
+    gs = cuspatial.from_geopandas(hs)
+
+    gs2 = cuspatial.GeoSeries.from_points_xy(gs.points.xy)
+
+    gpd.testing.assert_geoseries_equal(hs, gs2.to_geopandas())
+
+
+def test_from_multipoints_xy(multipoint_generator):
+    hs = gpd.GeoSeries(multipoint_generator(10, max_num_geometries=10))
+    gs = cuspatial.from_geopandas(hs)
+
+    gs2 = cuspatial.GeoSeries.from_multipoints_xy(
+        gs.multipoints.xy, gs.multipoints.geometry_offset
+    )
+
+    gpd.testing.assert_geoseries_equal(hs, gs2.to_geopandas())
