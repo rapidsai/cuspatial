@@ -743,7 +743,7 @@ def test_from_linestrings_xy(linestring_generator):
     gs = cuspatial.from_geopandas(hs)
 
     gs2 = cuspatial.GeoSeries.from_linestrings_xy(
-        gs.lines.xy, gs.lines.geometry_offset, gs.lines.part_offset
+        gs.lines.xy, gs.lines.part_offset, gs.lines.geometry_offset
     )
 
     gpd.testing.assert_geoseries_equal(hs, gs2.to_geopandas())
@@ -755,9 +755,9 @@ def test_from_polygons_xy(polygon_generator):
 
     gs2 = cuspatial.GeoSeries.from_polygons_xy(
         gs.polygons.xy,
-        gs.polygons.geometry_offset,
-        gs.polygons.part_offset,
         gs.polygons.ring_offset,
+        gs.polygons.part_offset,
+        gs.polygons.geometry_offset,
     )
 
     gpd.testing.assert_geoseries_equal(hs, gs2.to_geopandas())
@@ -767,10 +767,10 @@ def test_from_linestrings_xy_example():
     linestrings_xy = cudf.Series(
         [0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4]
     )
-    geometry_offset = cudf.Series([0, 1, 2])
     part_offset = cudf.Series([0, 5, 10])
+    geometry_offset = cudf.Series([0, 1, 2])
     gline = cuspatial.GeoSeries.from_linestrings_xy(
-        linestrings_xy, geometry_offset, part_offset
+        linestrings_xy, part_offset, geometry_offset
     )
     hline = gpd.GeoSeries(
         [
@@ -785,11 +785,14 @@ def test_from_linestrings_xy_example():
 
 def test_from_polygons_xy_example():
     polygons_xy = cudf.Series([0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 0, 0])
-    geometry_offset = cudf.Series([0, 1])
-    part_offset = cudf.Series([0, 1])
     ring_offset = cudf.Series([0, 6])
+    part_offset = cudf.Series([0, 1])
+    geometry_offset = cudf.Series([0, 1])
     gpolygon = cuspatial.GeoSeries.from_polygons_xy(
-        polygons_xy, geometry_offset, part_offset, ring_offset
+        polygons_xy,
+        ring_offset,
+        part_offset,
+        geometry_offset,
     )
     hpolygon = gpd.GeoSeries(
         [Polygon([(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (0, 0)])]

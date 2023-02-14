@@ -292,8 +292,8 @@ class GeoColumn(ColumnBase):
     def _from_linestrings_xy(
         cls,
         linestrings_xy: ColumnBase,
-        geometry_offsets: ColumnBase,
         part_offsets: ColumnBase,
+        geometry_offsets: ColumnBase,
     ):
         """
         Create a GeoColumn of only single points from a cudf Series with
@@ -351,9 +351,9 @@ class GeoColumn(ColumnBase):
     def _from_polygons_xy(
         cls,
         polygons_xy: ColumnBase,
-        geometry_offsets: ColumnBase,
-        part_offsets: ColumnBase,
         ring_offsets: ColumnBase,
+        part_offsets: ColumnBase,
+        geometry_offsets: ColumnBase,
     ):
         """
         Create a GeoColumn of only single points from a cudf Series with
