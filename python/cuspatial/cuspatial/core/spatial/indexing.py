@@ -80,8 +80,8 @@ def quadtree_on_points(
       as `uint32_t`. The eventual number of levels may be less than `max_depth`
       if the number of points is small or `max_size` is large.
     * All intermediate quadtree nodes will have fewer than `max_size` number of
-      points. Leaf nodes are permitted (but not guaranteed) to have >= `max_size`
-      number of points.
+      points. Leaf nodes are permitted (but not guaranteed) to have >=
+      `max_size` number of points.
 
     Examples
     --------
