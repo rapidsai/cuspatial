@@ -18,30 +18,27 @@ from cuspatial._lib.spatial import haversine_distance as cpp_haversine_distance
 from cuspatial.core.geoseries import GeoSeries
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
+    contains_only_multipoints,
     contains_only_points,
     normalize_point_columns,
 )
 
 
-def directed_hausdorff_distance(xs, ys, space_offsets):
+def directed_hausdorff_distance(multipoints: GeoSeries):
     """Compute the directed Hausdorff distances between all pairs of
     spaces.
 
     Parameters
     ----------
-    xs
-        column of x-coordinates
-    ys
-        column of y-coordinates
-    space_offsets
-        beginning index of each space, plus the last space's end offset.
+    multipoints: GeoSeries
+        A column of multipoint, where each multipoint indicates an input space
+        to compute its hausdorff distance to the rest of input spaces.
 
     Returns
     -------
     result : cudf.DataFrame
-        The pairwise directed distance matrix with one row and one
-        column per input space; the value at row i, column j represents the
-        hausdorff distance from space i to space j.
+        result[i, j] indicates the hausdorff distance between multipoints[i]
+        and multipoint[j].
 
     Examples
     --------
@@ -70,27 +67,29 @@ def directed_hausdorff_distance(xs, ys, space_offsets):
     y\\ :sub:`0` to the farthest point in ``x`` is 1.414.
 
     Compute the directed hausdorff distances between a set of spaces
-
-    >>> result = cuspatial.directed_hausdorff_distance(
-            [0, 1, 0, 0], # xs
-            [0, 0, 1, 2], # ys
-            [0, 2],    # space_offsets
-        )
-    >>> print(result)
-             0         1
-        0  0.0  1.414214
-        1  2.0  0.000000
+    >>> pts = cuspatial.GeoSeries([
+    ...     MultiPoint([(0, 0), (1, 0)]),
+    ...     MultiPoint([(0, 1), (0, 2)])
+    ... ])
+    >>> cuspatial.directed_hausdorff_distance(pts)
+        0         1
+    0  0.0  1.414214
+    1  2.0  0.000000
     """
 
-    num_spaces = len(space_offsets)
-    if num_spaces == 0:
+    if len(multipoints) == 0:
         return DataFrame()
-    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+
+    if not contains_only_multipoints(multipoints):
+        raise ValueError("Input must be a series of multipoints.")
+
     result = cpp_directed_hausdorff_distance(
-        xs,
-        ys,
-        as_column(space_offsets, dtype="uint32"),
+        multipoints.multipoints.x._column,
+        multipoints.multipoints.y._column,
+        as_column(multipoints.multipoints.geometry_offset[:-1]),
     )
+
+    num_spaces = len(multipoints)
     with cudf.core.buffer.acquire_spill_lock():
         result = result.data_array_view(mode="read")
         result = result.reshape(num_spaces, num_spaces)
