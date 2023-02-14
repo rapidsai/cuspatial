@@ -21,6 +21,7 @@ from shapely.geometry import (
 
 import cudf
 from cudf._typing import ColumnLike
+from cudf.core.column.column import as_column
 
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
@@ -583,6 +584,60 @@ class GeoSeries(cudf.Series):
             },
         )
         return GeoSeries(column)
+
+    @classmethod
+    def from_points_xy(cls, points_xy):
+        """
+        Construct a GeoSeries of POINTs from an array of interleaved xy
+        coordinates.
+
+        Parameters
+        ----------
+        points_xy: array-like
+            Coordinates of the points, interpreted as interlaved x-y coords.
+
+        Returns
+        -------
+        GeoSeries:
+            A GeoSeries made of the points.
+        """
+        return cls(GeoColumn._from_points_xy(as_column(points_xy)))
+
+    @classmethod
+    def from_multipoints_xy(cls, multipoints_xy, geometry_offset):
+        """
+        Construct a GeoSeries of MULTIPOINTs from an array of interleaved xy
+        coordinates.
+
+        Parameters
+        ----------
+        points_xy: array-like
+            Coordinates of the points, interpreted as interleaved x-y coords.
+        geometry_offset: array-like
+            Offsets indicating the starting index of the multipoint. Multiply
+            the index by 2 results in the starting index of the coordinate.
+            See example for detail.
+
+        Returns
+        -------
+        GeoSeries:
+            A GeoSeries made of the points.
+
+        Example
+        -------
+        >>> import numpy as np
+        >>> cuspatial.GeoSeries.from_multipoints_xy(
+        ...     np.array([0, 0, 1, 1, 2, 2, 3, 3], dtype='f8'),
+        ...     np.array([0, 2, 4], dtype='i4'))
+        0    MULTIPOINT (0.00000 0.00000, 1.00000 1.00000)
+        1    MULTIPOINT (2.00000 2.00000, 3.00000 3.00000)
+        dtype: geometry
+        """
+        return cls(
+            GeoColumn._from_multipoints_xy(
+                as_column(multipoints_xy), as_column(geometry_offset)
+            )
+        )
 
     def align(self, other):
         """
