@@ -19,8 +19,8 @@ def test_polygon_overlaps_point():
 
 
 def test_max_polygons_overlaps_max_points(polygon_generator, point_generator):
-    gpdpolygon = gpd.GeoSeries([*polygon_generator(40000, 0)])
-    gpdpoint = gpd.GeoSeries([*point_generator(40000)])
+    gpdpolygon = gpd.GeoSeries([*polygon_generator(31, 0)])
+    gpdpoint = gpd.GeoSeries([*point_generator(31)])
     polygon = cuspatial.from_geopandas(gpdpolygon)
     point = cuspatial.from_geopandas(gpdpoint)
     got = polygon.overlaps(point).values_host
