@@ -1,8 +1,9 @@
 ARG CUDA=11.8
+ARG LLVM=15
 ARG RAPIDS=23.04
 ARG DISTRO=ubuntu22.04
 ARG REPO=rapidsai/devcontainers
-ARG FROM_IMAGE=${REPO}:${RAPIDS}-cpp-cuda${CUDA}-mambaforge-${DISTRO}
+ARG FROM_IMAGE=${REPO}:${RAPIDS}-cpp-llvm${LLVM}-cuda${CUDA}-mambaforge-${DISTRO}
 
 FROM ${FROM_IMAGE}
 

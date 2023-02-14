@@ -24,6 +24,8 @@ make_rapids_conda_env() {
 
     local dfg_args="--file_key all --output conda --matrix arch=$(uname -m);cuda=${cuda_version};py=${python_version}";
 
+    export PATH="$PATH:/opt/conda/bin"
+
     # Generate a combined conda env yaml file.
     conda-merge \
         <(rapids-dependency-file-generator --config ~/rmm/dependencies.yaml ${dfg_args}) \
