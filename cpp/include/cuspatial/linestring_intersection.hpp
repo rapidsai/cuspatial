@@ -26,7 +26,7 @@ namespace cuspatial {
 /**
  * @brief Result of linestring intersections
  *
- * Owning object to the result of linestring intersections.
+ * Owning object to hold the result of linestring intersections.
  * The results are modeled after arrow type List<Union<Point, LineString>>,
  * with additional information about the indices where the intersection locates.
  */

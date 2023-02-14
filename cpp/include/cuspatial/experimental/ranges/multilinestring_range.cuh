@@ -229,7 +229,7 @@ auto make_multilinestring_range(IntegerRange1 geometry_offsets,
 
 /**
  * @ingroup ranges
- * @brief Create a range object of multilinestring from cuspatial::geometry_column_view
+ * @brief Create a range object of multilinestring from cuspatial::geometry_column_view.
  * Specialization for linestrings column.
  *
  * @pre linestrings_column must be a cuspatial::geometry_column_view
@@ -237,8 +237,8 @@ auto make_multilinestring_range(IntegerRange1 geometry_offsets,
 template <collection_type_id Type,
           typename T,
           typename IndexType,
-          CUSPATIAL_ENABLE_IF(Type == collection_type_id::SINGLE),
-          typename GeometryColumnView>
+          typename GeometryColumnView,
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::SINGLE)>
 auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
 {
   CUSPATIAL_EXPECTS(linestrings_column.geometry_type() == geometry_type_id::LINESTRING,
@@ -259,7 +259,7 @@ auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
 
 /**
  * @ingroup ranges
- * @brief Create a range object of multilinestring from cuspatial::geometry_column_view
+ * @brief Create a range object of multilinestring from cuspatial::geometry_column_view.
  * Specialization for multilinestrings column.
  *
  * @pre linestring_column must be a cuspatial::geometry_column_view

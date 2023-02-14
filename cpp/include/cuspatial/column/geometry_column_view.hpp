@@ -39,8 +39,8 @@ class geometry_column_view : private cudf::lists_column_view {
   geometry_column_view(cudf::column_view const& column,
                        collection_type_id collection_type,
                        geometry_type_id geometry_type);
-  geometry_column_view(geometry_column_view&&)      = default;  ///< Move constructor
-  geometry_column_view(const geometry_column_view&) = default;  ///< Copy constructor
+  geometry_column_view(geometry_column_view&&)      = default;
+  geometry_column_view(const geometry_column_view&) = default;
   ~geometry_column_view()                           = default;
 
   geometry_column_view& operator=(geometry_column_view const&) = default;

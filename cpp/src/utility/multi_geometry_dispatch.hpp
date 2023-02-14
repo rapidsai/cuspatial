@@ -27,6 +27,7 @@ using T = collection_type_id;
 /**
  * @brief Invokes an `operator()` template with the instantiation based on the specificed
  * `lhs_type` and `rhs_type` value.
+ *
  * This dispatcher effectively converts the runtime information of `collection_type_id` variables
  * to compile time.
  *
@@ -36,7 +37,7 @@ using T = collection_type_id;
  * @param rhs_type The collection type of lhs
  * @param args The parameter pack of arguments forwarded to the `operator()`
  * invocation
- * @return Any returned by the callable's `operator()`
+ * @return Whatever is returned by the callable's invoked Functor `operator()`
  */
 template <template <T, T> class Functor, typename... Args>
 auto multi_geometry_double_dispatch(T lhs_type, T rhs_type, Args&&... args)
