@@ -636,7 +636,7 @@ class GeoSeries(cudf.Series):
         Parameters
         ----------
         points_xy: array-like
-            Coordinates of the points, interpreted as interlaved x-y coords.
+            Coordinates of the points, interpreted as interleaved x-y coords.
         geometry_offset: array-like
             Offsets indicating the starting index of the multipoint. Multiply
             the index by 2 results in the starting index of the coordinate.
