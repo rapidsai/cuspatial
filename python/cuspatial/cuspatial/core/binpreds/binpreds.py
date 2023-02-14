@@ -479,9 +479,10 @@ class EqualsBinpred(BinaryPredicate):
         result_df = cudf.DataFrame(
             {"idx": indices[: len(result)], "equals": result}
         )
-        result = (
-            result_df.groupby("idx").sum() == result_df.groupby("idx").count()
-        )["equals"]
+        gb_idx = result_df.groupby("idx")
+        result = (gb_idx.sum().sort_index() == gb_idx.count().sort_index())[
+            "equals"
+        ]
         result.index.name = None
         result.name = None
         return result

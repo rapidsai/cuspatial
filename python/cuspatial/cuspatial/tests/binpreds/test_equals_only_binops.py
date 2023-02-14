@@ -1,9 +1,23 @@
+import cupy as cp
 import geopandas as gpd
 import pandas as pd
 import pytest
 from shapely.geometry import LineString, MultiPoint, Point, Polygon
 
+import cudf
+
 import cuspatial
+
+
+def test_from_points_xy_large():
+    points = cuspatial.GeoSeries(
+        cuspatial.core._column.geocolumn.GeoColumn._from_points_xy(
+            cudf.core.column.column.as_column(
+                cp.arange(10000000, dtype="float64")
+            )
+        )
+    )
+    assert points.geom_equals(points).all()
 
 
 def test_point_geom_equals_point():
