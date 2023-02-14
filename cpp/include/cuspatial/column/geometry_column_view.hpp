@@ -58,8 +58,8 @@ class geometry_column_view : private cudf::lists_column_view {
   using cudf::lists_column_view::size;
 
  protected:
-  geometry_type_id _geometry_type;
   collection_type_id _collection_type;
+  geometry_type_id _geometry_type;
 };
 
 }  // namespace cuspatial

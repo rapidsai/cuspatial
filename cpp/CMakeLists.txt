@@ -116,7 +116,7 @@ include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial
-    src/column/geometry_column_view.cu
+    src/column/geometry_column_view.cpp
     src/indexing/construction/point_quadtree.cu
     src/interpolate/cubic_spline.cu
     src/io/shp/polygon_shapefile_reader.cpp
