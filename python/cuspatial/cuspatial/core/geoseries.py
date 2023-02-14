@@ -638,8 +638,9 @@ class GeoSeries(cudf.Series):
         points_xy: array-like
             Coordinates of the points, interpreted as interlaved x-y coords.
         geometry_offset: array-like
-            Offsets indicating the starting index of the multipoint. See
-            example for detail.
+            Offsets indicating the starting index of the multipoint. Multiply
+            the index by 2 results in the starting index of the coordinate.
+            See example for detail.
 
         Returns
         -------
@@ -648,7 +649,13 @@ class GeoSeries(cudf.Series):
 
         Example
         -------
-
+        >>> import numpy as np
+        >>> cuspatial.GeoSeries.from_multipoints_xy(
+        ...     np.array([0, 0, 1, 1, 2, 2, 3, 3], dtype='f8'),
+        ...     np.array([0, 2, 4], dtype='i4'))
+        0    MULTIPOINT (0.00000 0.00000, 1.00000 1.00000)
+        1    MULTIPOINT (2.00000 2.00000, 3.00000 3.00000)
+        dtype: geometry
         """
         return cls(
             GeoColumn._from_multipoints_xy(
