@@ -92,12 +92,14 @@ def bench_sinusoidal_projection(benchmark, gpu_dataframe):
 
 
 def bench_directed_hausdorff_distance(benchmark, sorted_trajectories):
-    benchmark(
-        cuspatial.directed_hausdorff_distance,
-        sorted_trajectories[0]["x"],
-        sorted_trajectories[0]["y"],
-        sorted_trajectories[1],
+    coords = sorted_trajectories[0][["x", "y"]].interleave_columns()
+    offsets = sorted_trajectories[1]
+    s = cuspatial.GeoSeries(
+        cuspatial.core._column.geocolumn.GeoColumn._from_multipoints_xy(
+            coords._column, offsets._column
+        )
     )
+    benchmark(cuspatial.directed_hausdorff_distance, s)
 
 
 def bench_haversine_distance(benchmark, gpu_dataframe):
