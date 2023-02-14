@@ -45,7 +45,7 @@ def pairwise_linestring_intersection(
           the intersection results came from.
     """
 
-    if len(linestrings1) == 0:
+    if len(linestrings1) == 0 and len(linestrings2) == 0:
         return (
             cudf.Series([0]),
             GeoSeries([]),
@@ -59,9 +59,9 @@ def pairwise_linestring_intersection(
             ),
         )
 
-    if not contains_only_linestrings(
-        linestrings1
-    ) or not contains_only_linestrings(linestrings2):
+    if any(
+        not contains_only_linestrings(s) for s in [linestrings1, linestrings2]
+    ):
         raise ValueError("Input GeoSeries must contain only linestrings.")
 
     geoms, look_back_ids = c_pairwise_linestring_intersection(
