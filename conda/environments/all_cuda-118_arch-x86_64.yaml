@@ -13,7 +13,6 @@ dependencies:
 - cxx-compiler
 - cython>=0.29,<0.30
 - gcc_linux-64=9.*
-- gdal>3.5.0,<3.6.0
 - geopandas>=0.11.0
 - gmock=1.10.0
 - gtest=1.10.0

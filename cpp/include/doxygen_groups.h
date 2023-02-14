@@ -123,11 +123,6 @@
  *          @file multipoint_range.cuh
  *          @file multilinestring_range.cuh
  *      @}
- * @defgroup io I/O
- * @{
- *      @brief APIs for spatial data I/O
- *      @file shapefile_reader.hpp
- * @}
  * @defgroup exception Exception
  * @{
  *      @brief cuSpatial exception types

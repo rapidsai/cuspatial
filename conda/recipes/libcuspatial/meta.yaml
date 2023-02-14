@@ -38,7 +38,6 @@ requirements:
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
     - cudatoolkit ={{ cuda_version }}
-    - gdal {{ gdal_version }}
     - gmock {{ gtest_version }}
     - gtest {{ gtest_version }}
     - libcudf ={{ minor_version }}
@@ -63,7 +62,6 @@ outputs:
         - ninja
       run:
         - cudatoolkit {{ cuda_spec }}
-        - gdal {{ gdal_version }}
         - libcudf ={{ minor_version }}
         - libcusparse {{ libcusparse_run_version }}
         - libcusparse-dev {{ libcusparse_run_version }}
