@@ -736,3 +736,62 @@ def test_from_multipoints_xy(multipoint_generator):
     )
 
     gpd.testing.assert_geoseries_equal(hs, gs2.to_geopandas())
+
+
+def test_from_linestrings_xy(linestring_generator):
+    hs = gpd.GeoSeries(linestring_generator(10, 10))
+    gs = cuspatial.from_geopandas(hs)
+
+    gs2 = cuspatial.GeoSeries.from_linestrings_xy(
+        gs.lines.xy, gs.lines.geometry_offset, gs.lines.part_offset
+    )
+
+    gpd.testing.assert_geoseries_equal(hs, gs2.to_geopandas())
+
+
+def test_from_polygons_xy(polygon_generator):
+    hs = gpd.GeoSeries(polygon_generator(10, 10))
+    gs = cuspatial.from_geopandas(hs)
+
+    gs2 = cuspatial.GeoSeries.from_polygons_xy(
+        gs.polygons.xy,
+        gs.polygons.geometry_offset,
+        gs.polygons.part_offset,
+        gs.polygons.ring_offset,
+    )
+
+    gpd.testing.assert_geoseries_equal(hs, gs2.to_geopandas())
+
+
+def test_from_linestrings_xy_example():
+    linestrings_xy = cudf.Series(
+        [0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4]
+    )
+    geometry_offset = cudf.Series([0, 1, 2])
+    part_offset = cudf.Series([0, 5, 10])
+    gline = cuspatial.GeoSeries.from_linestrings_xy(
+        linestrings_xy, geometry_offset, part_offset
+    )
+    hline = gpd.GeoSeries(
+        [
+            LineString([(0, 0), (1, 1), (2, 2), (3, 3), (4, 4)]),
+            LineString([(0, 0), (1, 1), (2, 2), (3, 3), (4, 4)]),
+        ]
+    )
+    gpd.testing.assert_geoseries_equal(
+        gline.to_geopandas(), hline, check_less_precise=True
+    )
+
+
+def test_from_polygons_xy_example():
+    polygons_xy = cudf.Series([0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 0, 0])
+    geometry_offset = cudf.Series([0, 1])
+    part_offset = cudf.Series([0, 1])
+    ring_offset = cudf.Series([0, 6])
+    gpolygon = cuspatial.GeoSeries.from_polygons_xy(
+        polygons_xy, geometry_offset, part_offset, ring_offset
+    )
+    hpolygon = gpd.GeoSeries(
+        [Polygon([(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (0, 0)])]
+    )
+    gpd.testing.assert_geoseries_equal(gpolygon.to_geopandas(), hpolygon)
