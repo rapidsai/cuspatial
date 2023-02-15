@@ -1,6 +1,4 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
-import numpy as np
-import pytest
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
 from shapely.geometry import MultiPoint
 
 import cudf
