@@ -1,5 +1,6 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION.
 
+import cupy as cp
 import numpy as np
 import pytest
 
@@ -218,12 +219,8 @@ def test_empty(dtype):
         1,  # max_depth
         1,  # min_size
     )
-    poly_bboxes = cuspatial.polygon_bounding_boxes(
-        cudf.Series(),
-        cudf.Series(),
-        cudf.Series([], dtype=dtype),
-        cudf.Series([], dtype=dtype),
-    )
+    poly_bboxes = cuspatial.polygon_bounding_boxes(cuspatial.GeoSeries([]))
+    poly_bboxes = poly_bboxes.astype(dtype)
     # empty should not throw
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree,
@@ -267,12 +264,16 @@ def test_polygon_join_small(dtype):
         max_depth,
         min_size,
     )
-    poly_bboxes = cuspatial.polygon_bounding_boxes(
-        small_poly_offsets,
+    xy = cudf.DataFrame(
+        {"x": poly_points_x, "y": poly_points_y}
+    ).interleave_columns()
+    polygons = cuspatial.GeoSeries.from_polygons_xy(
+        xy,
         small_ring_offsets,
-        poly_points_x,
-        poly_points_y,
+        small_poly_offsets,
+        cp.arange(len(small_poly_offsets)),
     )
+    poly_bboxes = cuspatial.polygon_bounding_boxes(polygons)
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree,
         poly_bboxes,
@@ -424,12 +425,16 @@ def test_quadtree_point_in_polygon_small(dtype):
         max_depth,
         min_size,
     )
-    poly_bboxes = cuspatial.polygon_bounding_boxes(
-        small_poly_offsets,
+    xy = cudf.DataFrame(
+        {"x": poly_points_x, "y": poly_points_y}
+    ).interleave_columns()
+    polygons = cuspatial.GeoSeries.from_polygons_xy(
+        xy,
         small_ring_offsets,
-        poly_points_x,
-        poly_points_y,
+        small_poly_offsets,
+        cp.arange(len(small_poly_offsets)),
     )
+    poly_bboxes = cuspatial.polygon_bounding_boxes(polygons)
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree,
         poly_bboxes,
