@@ -630,8 +630,8 @@ class GeoSeries(cudf.Series):
     @classmethod
     def from_multipoints_xy(cls, multipoints_xy, geometry_offset):
         """
-        Construct a GeoSeries of MULTIPOINTs from an array of interleaved xy
-        coordinates.
+        Construct a GeoSeries of MULTIPOINTs from an array of interleaved
+        xy coordinates.
 
         Parameters
         ----------
@@ -660,6 +660,103 @@ class GeoSeries(cudf.Series):
         return cls(
             GeoColumn._from_multipoints_xy(
                 as_column(multipoints_xy), as_column(geometry_offset)
+            )
+        )
+
+    @classmethod
+    def from_linestrings_xy(
+        cls, linestrings_xy, part_offset, geometry_offset
+    ) -> T:
+        """
+        Construct a GeoSeries of MULTILINESTRINGs from an array of interleaved
+        xy coordinates.
+
+        Parameters
+        ----------
+        linestrings_xy : array-like
+            Coordinates of the points, interpreted as interleaved x-y coords.
+        geometry_offset : array-like
+            Offsets of the first coordinate of each geometry. The length of
+            this array is the number of geometries.  Offsets with a difference
+            greater than 1 indicate a MultiLinestring.
+        part_offset : array-like
+            Offsets into the coordinates array indicating the beginning of
+            each part. The length of this array is the number of parts.
+
+        Returns
+        -------
+        GeoSeries:
+            A GeoSeries of MULTILINESTRINGs.
+
+        Example
+        -------
+        >>> import cudf
+        >>> import cuspatial
+        >>> linestrings_xy = cudf.Series(
+                [0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5])
+        >>> part_offset = cudf.Series([0, 6])
+        >>> geometry_offset = cudf.Series([0, 1])
+        >>> cuspatial.GeoSeries.from_linestrings_xy(
+                linestrings_xy, part_offset, geometry_offset)
+        0    LINESTRING (0 0, 1 1, 2 2, 3 3, 4 4, 5 5)
+        dtype: geometry
+        """
+        return cls(
+            GeoColumn._from_linestrings_xy(
+                as_column(linestrings_xy),
+                as_column(part_offset, dtype="int32"),
+                as_column(geometry_offset, dtype="int32"),
+            )
+        )
+
+    @classmethod
+    def from_polygons_xy(
+        cls, polygons_xy, ring_offset, part_offset, geometry_offset
+    ) -> T:
+        """
+        Construct a GeoSeries of MULTIPOLYGONs from an array of interleaved xy
+        coordinates.
+
+        Parameters
+        ----------
+        polygons_xy : array-like
+            Coordinates of the points, interpreted as interleaved x-y coords.
+        geometry_offset : array-like
+            Offsets of the first coordinate of each geometry. The length of
+            this array is the number of geometries.  Offsets with a difference
+            greater than 1 indicate a MultiLinestring.
+        part_offset : array-like
+            Offsets into the coordinates array indicating the beginning of
+            each part. The length of this array is the number of parts.
+        rint_offset : array-like
+            Offsets into the part array indicating the beginning of each ring.
+            The length of this array is the number of rings.
+
+        Returns
+        -------
+        GeoSeries:
+            A GeoSeries of MULTIPOLYGONs.
+
+        Example
+        -------
+        >>> import cudf
+        >>> import cuspatial
+        >>> polygons_xy = cudf.Series(
+                [0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5])
+        >>> ring_offset = cudf.Series([0, 6])
+        >>> part_offset = cudf.Series([0, 1])
+        >>> geometry_offset = cudf.Series([0, 1])
+        >>> cuspatial.GeoSeries.from_polygons_xy(
+                polygons_xy, ring_offset, part_offset, geometry_offset)
+        0    POLYGON (0 0, 1 1, 2 2, 3 3, 4 4, 5 5)
+        dtype: geometry
+        """
+        return cls(
+            GeoColumn._from_polygons_xy(
+                as_column(polygons_xy),
+                as_column(ring_offset, dtype="int32"),
+                as_column(part_offset, dtype="int32"),
+                as_column(geometry_offset, dtype="int32"),
             )
         )
 
