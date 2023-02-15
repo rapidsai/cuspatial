@@ -66,6 +66,7 @@ def directed_hausdorff_distance(multipoints: GeoSeries):
     y\\ :sub:`0` to the farthest point in ``x`` is 1.414.
 
     Compute the directed hausdorff distances between a set of spaces
+
     >>> pts = cuspatial.GeoSeries([
     ...     MultiPoint([(0, 0), (1, 0)]),
     ...     MultiPoint([(0, 1), (0, 2)])
