@@ -20,10 +20,6 @@ extensions = [
     "myst_parser"
 ]
 
-suppress_warnings = [
-    "autosectionlabel.*"
-]
-
 jupyter_execute_notebooks = "force"
 execution_timeout = 300
 
