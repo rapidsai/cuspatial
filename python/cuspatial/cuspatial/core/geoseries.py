@@ -21,6 +21,7 @@ from shapely.geometry import (
 
 import cudf
 from cudf._typing import ColumnLike
+from cudf.core.column.column import as_column
 
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
