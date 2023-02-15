@@ -65,7 +65,7 @@ def bench_polygon_bounding_boxes(benchmark, polygons):
 def bench_linestring_bounding_boxes(benchmark, sorted_trajectories):
     xy = sorted_trajectories[0][["x", "y"]].interleave_columns()
     lines = cuspatial.GeoSeries.from_linestrings_xy(
-        xy, sorted_trajectories[1], cp.arange(len(sorted_trajectories))
+        xy, sorted_trajectories[1], cupy.arange(len(sorted_trajectories))
     )
     benchmark(
         cuspatial.linestring_bounding_boxes,
@@ -225,7 +225,7 @@ def bench_quadtree_point_to_nearest_linestring(benchmark):
         {"x": polygons.x, "y": polygons.y}
     ).interleave_columns()
     lines = cuspatial.GeoSeries.from_linestrings_xy(
-        xy, polygons.ring_offset, cp.arange(len(polygons.ring_offset))
+        xy, polygons.ring_offset, cupy.arange(len(polygons.ring_offset))
     )
     linestring_bboxes = cuspatial.linestring_bounding_boxes(lines, 2.0)
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
