@@ -254,15 +254,3 @@ class GeoColumn(ColumnBase):
         final_size = final_size + self.lines._column.memory_usage
         final_size = final_size + self.polygons._column.memory_usage
         return final_size
-
-
-def _xy_as_variable_sized_list(xy: ColumnBase):
-    """Given an array of interleaved x-y coordinate, construct a cuDF ListDtype
-    type array, where each row is the coordinate.
-    """
-    if len(xy) % 2 != 0:
-        raise ValueError("xy must have an even number of elements")
-
-    num_points = len(xy) // 2
-    indices = arange(0, num_points * 2 + 1, 2, dtype="int32")
-    return build_list_column(indices=indices, elements=xy, size=num_points)
