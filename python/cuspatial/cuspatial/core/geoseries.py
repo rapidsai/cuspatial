@@ -694,10 +694,10 @@ class GeoSeries(cudf.Series):
         >>> import cuspatial
         >>> linestrings_xy = cudf.Series(
                 [0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5])
-        >>> geometry_offset = cudf.Series([0, 1])
         >>> part_offset = cudf.Series([0, 6])
+        >>> geometry_offset = cudf.Series([0, 1])
         >>> cuspatial.GeoSeries.from_linestrings_xy(
-                linestrings_xy, geometry_offset, part_offset)
+                linestrings_xy, part_offset, geometry_offset)
         0    LINESTRING (0 0, 1 1, 2 2, 3 3, 4 4, 5 5)
         dtype: geometry
         """
@@ -743,11 +743,11 @@ class GeoSeries(cudf.Series):
         >>> import cuspatial
         >>> polygons_xy = cudf.Series(
                 [0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5])
-        >>> geometry_offset = cudf.Series([0, 1])
-        >>> part_offset = cudf.Series([0, 1])
         >>> ring_offset = cudf.Series([0, 6])
+        >>> part_offset = cudf.Series([0, 1])
+        >>> geometry_offset = cudf.Series([0, 1])
         >>> cuspatial.GeoSeries.from_polygons_xy(
-                polygons_xy, geometry_offset, part_offset, ring_offset)
+                polygons_xy, ring_offset, part_offset, geometry_offset)
         0    POLYGON (0 0, 1 1, 2 2, 3 3, 4 4, 5 5)
         dtype: geometry
         """

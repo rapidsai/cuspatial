@@ -765,8 +765,8 @@ def test_from_polygons_xy(polygon_generator):
 
 def test_from_linestrings_xy_example():
     linestrings_xy = cudf.Series([0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5])
-    geometry_offset = cudf.Series([0, 1])
     part_offset = cudf.Series([0, 6])
+    geometry_offset = cudf.Series([0, 1])
     gline = cuspatial.GeoSeries.from_linestrings_xy(
         linestrings_xy, part_offset, geometry_offset
     )
