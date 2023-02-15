@@ -139,13 +139,16 @@ def bench_quadtree_on_points(benchmark, gpu_dataframe):
     polygons = gpu_dataframe["geometry"].polygons
     x_points = (cupy.random.random(10000000) - 0.5) * 360
     y_points = (cupy.random.random(10000000) - 0.5) * 180
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame({"x": x_points, "y": y_points}).interleave_columns()
+    )
+
     scale = 5
     max_depth = 7
     min_size = 125
     benchmark(
         cuspatial.quadtree_on_points,
-        x_points,
-        y_points,
+        points,
         polygons.x.min(),
         polygons.x.max(),
         polygons.y.min(),
@@ -163,9 +166,11 @@ def bench_quadtree_point_in_polygon(benchmark, polygons):
     scale = 5
     max_depth = 7
     min_size = 125
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame({"x": x_points, "y": y_points}).interleave_columns()
+    )
     point_indices, quadtree = cuspatial.quadtree_on_points(
-        x_points,
-        y_points,
+        points,
         polygons.x.min(),
         polygons.x.max(),
         polygons.y.min(),
@@ -218,9 +223,11 @@ def bench_quadtree_point_to_nearest_linestring(benchmark):
     polygons = gpu_countries["geometry"].polygons
     points_x = gpu_cities["geometry"].points.x
     points_y = gpu_cities["geometry"].points.y
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame({"x": points_x, "y": points_y}).interleave_columns()
+    )
     point_indices, quadtree = cuspatial.quadtree_on_points(
-        points_x,
-        points_y,
+        points,
         polygons.x.min(),
         polygons.x.max(),
         polygons.y.min(),
