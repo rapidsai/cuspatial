@@ -630,8 +630,8 @@ class GeoSeries(cudf.Series):
     @classmethod
     def from_multipoints_xy(cls, multipoints_xy, geometry_offset):
         """
-        Construct a GeoSeries of MULTIPOINTs from an array of interleaved xy
-        coordinates.
+        Construct a GeoSeries of MULTIPOINTs from an array of interleaved
+        xy coordinates.
 
         Parameters
         ----------

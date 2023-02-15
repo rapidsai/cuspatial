@@ -242,7 +242,7 @@ class GeoColumn(ColumnBase):
         cls, multipoints_xy: ColumnBase, geometry_offsets: ColumnBase
     ):
         """
-        Create a GeoColumn of only single points from a cudf Series with
+        Create a GeoColumn of multipoints from a cudf Series with
         interleaved xy coordinates.
         """
         if not multipoints_xy.dtype.kind == "f":
@@ -296,7 +296,7 @@ class GeoColumn(ColumnBase):
         geometry_offsets: ColumnBase,
     ):
         """
-        Create a GeoColumn of only single points from a cudf Series with
+        Create a GeoColumn of multilinestrings from a cudf Series with
         interleaved xy coordinates.
         """
         if not linestrings_xy.dtype.kind == "f":
@@ -356,7 +356,7 @@ class GeoColumn(ColumnBase):
         geometry_offsets: ColumnBase,
     ):
         """
-        Create a GeoColumn of only single points from a cudf Series with
+        Create a GeoColumn of multipolygons from a cudf Series with
         interleaved xy coordinates.
         """
         if not polygons_xy.dtype.kind == "f":
