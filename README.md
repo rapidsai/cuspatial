@@ -85,7 +85,7 @@ conda env update --file conda/environments/all_cuda-115_arch-x86_64.yaml
    pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. They are available at
    `$CUSPATIAL_HOME/test_fixtures/shapefiles` <br>
 
-Python users can read any point/polyline/polygon data using existing python
+Python users can read any point/polyline/polygon data using existing Python
 packages, e.g., [Shapely](https://pypi.org/project/Shapely/) and
 [Fiona](https://github.com/Toblerity/Fiona), to generate numpy arrays and feed
 them to [cuSpatial Python APIs](https://docs.rapids.ai/api/cuspatial/stable/).
