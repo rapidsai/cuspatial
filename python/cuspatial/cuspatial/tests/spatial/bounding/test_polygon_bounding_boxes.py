@@ -1,7 +1,5 @@
 # Copyright (c) 2020-2023, NVIDIA CORPORATION.
 
-import numpy as np
-import pytest
 from shapely.geometry import MultiPolygon, Polygon
 
 import cudf
