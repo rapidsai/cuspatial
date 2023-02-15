@@ -92,26 +92,20 @@ def bench_sinusoidal_projection(benchmark, gpu_dataframe):
 
 
 def bench_directed_hausdorff_distance(benchmark, sorted_trajectories):
-    benchmark(
-        cuspatial.directed_hausdorff_distance,
-        sorted_trajectories[0]["x"],
-        sorted_trajectories[0]["y"],
-        sorted_trajectories[1],
-    )
+    coords = sorted_trajectories[0][["x", "y"]].interleave_columns()
+    offsets = sorted_trajectories[1]
+    s = cuspatial.GeoSeries.from_multipoints_xy(coords, offsets)
+    benchmark(cuspatial.directed_hausdorff_distance, s)
 
 
 def bench_haversine_distance(benchmark, gpu_dataframe):
-    polygons_first = gpu_dataframe["geometry"][0:10]
-    polygons_second = gpu_dataframe["geometry"][10:20]
-    # The number of coordinates in two sets of polygons vary, so
-    # we'll just compare the first set of 1000 values here.
-    benchmark(
-        cuspatial.haversine_distance,
-        polygons_first.polygons.x[0:1000],
-        polygons_first.polygons.y[0:1000],
-        polygons_second.polygons.x[0:1000],
-        polygons_second.polygons.y[0:1000],
-    )
+    coords_first = gpu_dataframe["geometry"][0:10].polygons.xy[0:1000]
+    coords_second = gpu_dataframe["geometry"][10:20].polygons.xy[0:1000]
+
+    points_first = cuspatial.GeoSeries.from_points_xy(coords_first)
+    points_second = cuspatial.GeoSeries.from_points_xy(coords_second)
+
+    benchmark(cuspatial.haversine_distance, points_first, points_second)
 
 
 def bench_pairwise_linestring_distance(benchmark, gpu_dataframe):
