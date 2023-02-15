@@ -494,15 +494,7 @@ class CrossesBinpred(EqualsBinpred):
             self.lhs
         ):
             return cudf.Series([False] * len(self.lhs))
-        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
-        df_result = result
-        # Discrete math recombination
-        if (
-            contains_only_linestrings(self.rhs)
-            or contains_only_polygons(self.rhs)
-            or contains_only_multipoints(self.rhs)
-        ):
-            df_result = ~result
+        df_result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
         point_result = cudf.Series(
             df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
         )

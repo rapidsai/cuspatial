@@ -48,9 +48,9 @@ def test_3_points_equals_3_points_one_equal(lhs):
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_31_points_geom_equals_31_points(point_generator):
-    gpdpoints1 = gpd.GeoSeries([*point_generator(31)])
-    gpdpoints2 = gpd.GeoSeries([*point_generator(31)])
+def test_10000_points_geom_equals_10000_points(point_generator):
+    gpdpoints1 = gpd.GeoSeries([*point_generator(10000)])
+    gpdpoints2 = gpd.GeoSeries([*point_generator(10000)])
     points1 = cuspatial.from_geopandas(gpdpoints1)
     points2 = cuspatial.from_geopandas(gpdpoints2)
     got = points1.geom_equals(points2)
@@ -104,9 +104,9 @@ def test_3_linestrings_equals_3_linestrings_one_equal(lhs):
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_31_linestrings_geom_equals_31_linestrings(linestring_generator):
-    gpdlines1 = gpd.GeoSeries([*linestring_generator(31, 5)])
-    gpdlines2 = gpd.GeoSeries([*linestring_generator(31, 5)])
+def test_10000_linestrings_geom_equals_10000_linestrings(linestring_generator):
+    gpdlines1 = gpd.GeoSeries([*linestring_generator(10000, 5)])
+    gpdlines2 = gpd.GeoSeries([*linestring_generator(10000, 5)])
     lines1 = cuspatial.from_geopandas(gpdlines1)
     lines2 = cuspatial.from_geopandas(gpdlines2)
     got = lines1.geom_equals(lines2)
@@ -124,11 +124,11 @@ def test_linestring_geom_equals_polygon():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_31_linestrings_geom_equals_31_polygons(
+def test_10000_linestrings_geom_equals_10000_polygons(
     polygon_generator, linestring_generator
 ):
-    gpdlines = gpd.GeoSeries([*linestring_generator(31, 5)])
-    gpdpolygons = gpd.GeoSeries([*polygon_generator(31, 0)])
+    gpdlines = gpd.GeoSeries([*linestring_generator(10000, 5)])
+    gpdpolygons = gpd.GeoSeries([*polygon_generator(10000, 0)])
     lines = cuspatial.from_geopandas(gpdlines)
     polygons = cuspatial.from_geopandas(gpdpolygons)
     got = lines.geom_equals(polygons)
@@ -146,11 +146,11 @@ def test_polygon_geom_equals_linestring():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_31_polygons_geom_equals_31_linestrings(
+def test_10000_polygons_geom_equals_10000_linestrings(
     polygon_generator, linestring_generator
 ):
-    gpdpolygons = gpd.GeoSeries([*polygon_generator(31, 0)])
-    gpdlines = gpd.GeoSeries([*linestring_generator(31, 5)])
+    gpdpolygons = gpd.GeoSeries([*polygon_generator(10000, 0)])
+    gpdlines = gpd.GeoSeries([*linestring_generator(10000, 5)])
     polygons = cuspatial.from_geopandas(gpdpolygons)
     lines = cuspatial.from_geopandas(gpdlines)
     got = polygons.geom_equals(lines)
@@ -204,9 +204,9 @@ def test_3_polygons_geom_equals_3_polygons_one_equal(lhs):
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_31_polygons_geom_equals_31_polygons(polygon_generator):
-    gpdpolygons1 = gpd.GeoSeries([*polygon_generator(31, 0)])
-    gpdpolygons2 = gpd.GeoSeries([*polygon_generator(31, 0)])
+def test_10000_polygons_geom_equals_10000_polygons(polygon_generator):
+    gpdpolygons1 = gpd.GeoSeries([*polygon_generator(10000, 0)])
+    gpdpolygons2 = gpd.GeoSeries([*polygon_generator(10000, 0)])
     polygons1 = cuspatial.from_geopandas(gpdpolygons1)
     polygons2 = cuspatial.from_geopandas(gpdpolygons2)
     got = polygons1.geom_equals(polygons2)
@@ -234,9 +234,9 @@ def test_point_not_contains_point():
     assert (got.values_host == expected.values).all()
 
 
-def test_31_points_contains_31_points(point_generator):
-    gpdpoints1 = gpd.GeoSeries([*point_generator(31)])
-    gpdpoints2 = gpd.GeoSeries([*point_generator(31)])
+def test_10000_points_contains_10000_points(point_generator):
+    gpdpoints1 = gpd.GeoSeries([*point_generator(10000)])
+    gpdpoints2 = gpd.GeoSeries([*point_generator(10000)])
     points1 = cuspatial.from_geopandas(gpdpoints1)
     points2 = cuspatial.from_geopandas(gpdpoints2)
     got = points1.contains_properly(points2)
@@ -264,9 +264,9 @@ def test_point_not_covers_point():
     assert (got.values_host == expected.values).all()
 
 
-def test_31_points_covers_31_points(point_generator):
-    gpdpoints1 = gpd.GeoSeries([*point_generator(31)])
-    gpdpoints2 = gpd.GeoSeries([*point_generator(31)])
+def test_10000_points_covers_10000_points(point_generator):
+    gpdpoints1 = gpd.GeoSeries([*point_generator(10000)])
+    gpdpoints2 = gpd.GeoSeries([*point_generator(10000)])
     points1 = cuspatial.from_geopandas(gpdpoints1)
     points2 = cuspatial.from_geopandas(gpdpoints2)
     got = points1.covers(points2)
@@ -294,9 +294,9 @@ def test_point_not_intersects_point():
     assert (got.values_host == expected.values).all()
 
 
-def test_31_points_intersects_31_points(point_generator):
-    gpdpoints1 = gpd.GeoSeries([*point_generator(31)])
-    gpdpoints2 = gpd.GeoSeries([*point_generator(31)])
+def test_10000_points_intersects_10000_points(point_generator):
+    gpdpoints1 = gpd.GeoSeries([*point_generator(10000)])
+    gpdpoints2 = gpd.GeoSeries([*point_generator(10000)])
     points1 = cuspatial.from_geopandas(gpdpoints1)
     points2 = cuspatial.from_geopandas(gpdpoints2)
     got = points1.intersects(points2)
@@ -324,9 +324,9 @@ def test_point_not_within_point():
     assert (got.values_host == expected.values).all()
 
 
-def test_31_points_within_31_points(point_generator):
-    gpdpoints1 = gpd.GeoSeries(point_generator(31))
-    gpdpoints2 = gpd.GeoSeries(point_generator(31))
+def test_10000_points_within_10000_points(point_generator):
+    gpdpoints1 = gpd.GeoSeries(point_generator(10000))
+    gpdpoints2 = gpd.GeoSeries(point_generator(10000))
     points1 = cuspatial.from_geopandas(gpdpoints1)
     points2 = cuspatial.from_geopandas(gpdpoints2)
     got = points1.within(points2).values_host
@@ -354,9 +354,9 @@ def test_point_not_crosses_point():
     assert (got.values_host == expected.values).all()
 
 
-def test_31_points_crosses_31_points(point_generator):
-    gpdpoints1 = gpd.GeoSeries([*point_generator(31)])
-    gpdpoints2 = gpd.GeoSeries([*point_generator(31)])
+def test_10000_points_crosses_10000_points(point_generator):
+    gpdpoints1 = gpd.GeoSeries([*point_generator(10000)])
+    gpdpoints2 = gpd.GeoSeries([*point_generator(10000)])
     points1 = cuspatial.from_geopandas(gpdpoints1)
     points2 = cuspatial.from_geopandas(gpdpoints2)
     got = points1.crosses(points2)
@@ -384,9 +384,9 @@ def test_point_not_overlaps_point():
     assert (got.values_host == expected.values).all()
 
 
-def test_31_points_overlaps_31_points(point_generator):
-    gpdpoint1 = gpd.GeoSeries([*point_generator(31)])
-    gpdpoint2 = gpd.GeoSeries([*point_generator(31)])
+def test_10000_points_overlaps_10000_points(point_generator):
+    gpdpoint1 = gpd.GeoSeries([*point_generator(10000)])
+    gpdpoint2 = gpd.GeoSeries([*point_generator(10000)])
     point1 = cuspatial.from_geopandas(gpdpoint1)
     point2 = cuspatial.from_geopandas(gpdpoint2)
     got = point1.overlaps(point2)
@@ -414,9 +414,9 @@ def test_multipoint_not_geom_equals_multipoint():
     assert (got.values_host == expected.values).all()
 
 
-def test_31_multipoints_geom_equals_31_multipoints(multipoint_generator):
-    gpdpoints1 = gpd.GeoSeries([*multipoint_generator(31, 10)])
-    gpdpoints2 = gpd.GeoSeries([*multipoint_generator(31, 10)])
+def test_10000_multipoints_geom_equals_10000_multipoints(multipoint_generator):
+    gpdpoints1 = gpd.GeoSeries([*multipoint_generator(10000, 10)])
+    gpdpoints2 = gpd.GeoSeries([*multipoint_generator(10000, 10)])
     points1 = cuspatial.from_geopandas(gpdpoints1)
     points2 = cuspatial.from_geopandas(gpdpoints2)
     got = points1.geom_equals(points2)
