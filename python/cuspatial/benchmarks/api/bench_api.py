@@ -121,14 +121,17 @@ def bench_points_in_spatial_window(benchmark, gpu_dataframe):
     geometry = gpu_dataframe["geometry"]
     mean_x, std_x = (geometry.polygons.x.mean(), geometry.polygons.x.std())
     mean_y, std_y = (geometry.polygons.y.mean(), geometry.polygons.y.std())
+    xy = cudf.DataFrame(
+        {"x": geometry.polygons.x, "y": geometry.polygons.y}
+    ).interleave_columns()
+    points = cuspatial.GeoSeries.from_points_xy(xy)
     benchmark(
         cuspatial.points_in_spatial_window,
+        points,
         mean_x - std_x,
         mean_x + std_x,
         mean_y - std_y,
         mean_y + std_y,
-        geometry.polygons.x,
-        geometry.polygons.y,
     )
 
 
