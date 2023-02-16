@@ -252,18 +252,12 @@ def bench_quadtree_point_to_nearest_linestring(benchmark):
     )
 
 
-def bench_point_in_polygon(benchmark, gpu_dataframe):
-    x_points = (cupy.random.random(50000000) - 0.5) * 360
-    y_points = (cupy.random.random(50000000) - 0.5) * 180
-    short_dataframe = gpu_dataframe.iloc[0:32]
-    geometry = short_dataframe["geometry"]
-    polygon_offset = cudf.Series(geometry.polygons.geometry_offset[0:31])
-    benchmark(
-        cuspatial.point_in_polygon,
-        x_points,
-        y_points,
-        polygon_offset,
-        geometry.polygons.ring_offset,
-        geometry.polygons.x,
-        geometry.polygons.y,
+def bench_point_in_polygon(benchmark, polygons):
+    x_points = (cupy.random.random(5000) - 0.5) * 360
+    y_points = (cupy.random.random(5000) - 0.5) * 180
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame({"x": x_points, "y": y_points}).interleave_columns()
     )
+    short_dataframe = polygons.iloc[0:31]
+    geometry = short_dataframe["geometry"]
+    benchmark(cuspatial.point_in_polygon, points, geometry)
