@@ -7,7 +7,7 @@ from cuspatial._lib.intersection import (
     pairwise_linestring_intersection as c_pairwise_linestring_intersection,
 )
 from cuspatial.core._column.geocolumn import GeoColumn
-from cuspatial.core._column.geometa import Feature_Enum
+from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.core.geoseries import GeoSeries
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -93,14 +93,23 @@ def pairwise_linestring_intersection(
     )
 
     coord_dtype = points.dtype.leaf_type
+
+    meta = GeoMeta(
+        {"input_types": types_buffer, "union_offsets": offset_buffer}
+    )
     geometries = GeoSeries(
-        GeoColumn._from_arrays(
-            types_buffer,
-            offset_buffer,
-            cudf.Series(points),
-            empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype),
-            cudf.Series(linestring_column),
-            empty_geometry_column(Feature_Enum.POLYGON, coord_dtype),
+        GeoColumn(
+            (
+                cudf.Series(points),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
+                ),
+                cudf.Series(linestring_column),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
+                ),
+            ),
+            meta,
         )
     )
 
