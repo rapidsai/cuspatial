@@ -204,23 +204,24 @@ class GeoColumn(ColumnBase):
         if not points_xy.dtype.kind == "f":
             raise ValueError("Coordinates must be floating point numbers.")
 
-        if len(points_xy) % 2 != 0:
-            raise ValueError("points_xy must have an even number of elements")
+        point_col = _xy_as_variable_sized_list(points_xy)
+        num_points = len(point_col)
 
-        num_points = len(points_xy) // 2
-        types_buffer = cp.full(
-            num_points, Feature_Enum.POINT.value, dtype=cp.int8
+        meta = GeoMeta(
+            {
+                "input_types": as_column(
+                    cp.full(
+                        num_points, Feature_Enum.POINT.value, dtype=cp.int8
+                    )
+                ),
+                "union_offsets": as_column(
+                    cp.arange(num_points, dtype=cp.int32)
+                ),
+            }
         )
-        offsets_buffer = cp.arange(num_points, dtype=cp.int32)
 
-        indices = arange(0, num_points * 2 + 1, 2, dtype="int32")
-        point_col = build_list_column(
-            indices=indices, elements=points_xy, size=num_points
-        )
         coord_dtype = points_xy.dtype
-        return cls.from_arrays(
-            types_buffer,
-            offsets_buffer,
+        return cls(
             (
                 cudf.Series(point_col),
                 cudf.Series(
@@ -233,22 +234,183 @@ class GeoColumn(ColumnBase):
                     empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
                 ),
             ),
+            meta,
         )
 
     @classmethod
-    def _from_arrays(cls, types_buffer, offsets_buffer, *children):
+    def _from_multipoints_xy(
+        cls, multipoints_xy: ColumnBase, geometry_offsets: ColumnBase
+    ):
         """
-        Create a GeoColumn from a buffer of types, offsets, and coordinates.
+        Create a GeoColumn of multipoints from a cudf Series with
+        interleaved xy coordinates.
         """
-        types_col = as_column(types_buffer)
-        offsets_col = as_column(offsets_buffer)
+        if not multipoints_xy.dtype.kind == "f":
+            raise ValueError("Coordinates must be floating point numbers.")
+
+        multipoint_col = build_list_column(
+            indices=geometry_offsets,
+            elements=_xy_as_variable_sized_list(multipoints_xy),
+            size=len(geometry_offsets) - 1,
+        )
+        num_multipoints = len(multipoint_col)
 
         meta = GeoMeta(
-            {"input_types": types_col, "union_offsets": offsets_col}
+            {
+                "input_types": as_column(
+                    cp.full(
+                        num_multipoints,
+                        Feature_Enum.MULTIPOINT.value,
+                        dtype=cp.int8,
+                    )
+                ),
+                "union_offsets": as_column(
+                    cp.arange(num_multipoints, dtype=cp.int32)
+                ),
+            }
         )
 
-        children = tuple(cudf.Series(as_column(child)) for child in children)
-        return cls(children, meta)
+        coord_dtype = multipoints_xy.dtype
+
+        return cls(
+            (
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.POINT, coord_dtype)
+                ),
+                cudf.Series(multipoint_col),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.LINESTRING, coord_dtype)
+                ),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
+                ),
+            ),
+            meta,
+        )
+
+    @classmethod
+    def _from_linestrings_xy(
+        cls,
+        linestrings_xy: ColumnBase,
+        part_offsets: ColumnBase,
+        geometry_offsets: ColumnBase,
+    ):
+        """
+        Create a GeoColumn of multilinestrings from a cudf Series with
+        interleaved xy coordinates.
+        """
+        if not linestrings_xy.dtype.kind == "f":
+            raise ValueError("Coordinates must be floating point numbers.")
+
+        parts_col = build_list_column(
+            indices=part_offsets,
+            elements=_xy_as_variable_sized_list(linestrings_xy),
+            size=len(part_offsets) - 1,
+        )
+        linestrings_col = build_list_column(
+            indices=geometry_offsets,
+            elements=parts_col,
+            size=len(geometry_offsets) - 1,
+        )
+        num_linestrings = len(linestrings_col)
+
+        meta = GeoMeta(
+            {
+                "input_types": as_column(
+                    cp.full(
+                        num_linestrings,
+                        Feature_Enum.LINESTRING.value,
+                        dtype=cp.int8,
+                    )
+                ),
+                "union_offsets": as_column(
+                    cp.arange(num_linestrings, dtype=cp.int32)
+                ),
+            }
+        )
+
+        coord_dtype = linestrings_xy.dtype
+
+        return cls(
+            (
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.POINT, coord_dtype)
+                ),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
+                ),
+                cudf.Series(linestrings_col),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
+                ),
+            ),
+            meta,
+        )
+
+    @classmethod
+    def _from_polygons_xy(
+        cls,
+        polygons_xy: ColumnBase,
+        ring_offsets: ColumnBase,
+        part_offsets: ColumnBase,
+        geometry_offsets: ColumnBase,
+    ):
+        """
+        Create a GeoColumn of multipolygons from a cudf Series with
+        interleaved xy coordinates.
+        """
+        if not polygons_xy.dtype.kind == "f":
+            raise ValueError("Coordinates must be floating point numbers.")
+
+        rings_col = build_list_column(
+            indices=ring_offsets,
+            elements=_xy_as_variable_sized_list(polygons_xy),
+            size=len(ring_offsets) - 1,
+        )
+        parts_col = build_list_column(
+            indices=part_offsets,
+            elements=rings_col,
+            size=len(part_offsets) - 1,
+        )
+        polygons_col = build_list_column(
+            indices=geometry_offsets,
+            elements=parts_col,
+            size=len(geometry_offsets) - 1,
+        )
+        num_polygons = len(polygons_col)
+
+        meta = GeoMeta(
+            {
+                "input_types": as_column(
+                    cp.full(
+                        num_polygons,
+                        Feature_Enum.POLYGON.value,
+                        dtype=cp.int8,
+                    )
+                ),
+                "union_offsets": as_column(
+                    cp.arange(num_polygons, dtype=cp.int32)
+                ),
+            }
+        )
+
+        coord_dtype = polygons_xy.dtype
+
+        return cls(
+            (
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.POINT, coord_dtype)
+                ),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
+                ),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.LINESTRING, coord_dtype)
+                ),
+                cudf.Series(polygons_col),
+            ),
+            meta,
+        )
 
     @cached_property
     def memory_usage(self) -> int:
@@ -262,3 +424,15 @@ class GeoColumn(ColumnBase):
         final_size = final_size + self.lines._column.memory_usage
         final_size = final_size + self.polygons._column.memory_usage
         return final_size
+
+
+def _xy_as_variable_sized_list(xy: ColumnBase):
+    """Given an array of interleaved x-y coordinate, construct a cuDF ListDtype
+    type array, where each row is the coordinate.
+    """
+    if len(xy) % 2 != 0:
+        raise ValueError("xy must have an even number of elements")
+
+    num_points = len(xy) // 2
+    indices = arange(0, num_points * 2 + 1, 2, dtype="int32")
+    return build_list_column(indices=indices, elements=xy, size=num_points)
