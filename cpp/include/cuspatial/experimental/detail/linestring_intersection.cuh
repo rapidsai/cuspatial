@@ -29,8 +29,6 @@
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/traits.hpp>
 
-#include <cuspatial_test/test_util.cuh>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
@@ -233,7 +231,6 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
     make_multipoint_range(points.offset_range(), points.geom_range()), point_flags.begin(), stream);
 
   points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
-  std::cout << "remove points" << std::endl;
   point_flags.resize(points.geoms->size(), stream);
 
   // Merge mergable segments
@@ -241,10 +238,7 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
   detail::find_and_combine_segment(
     segments.offset_range(), segments.geom_range(), segment_flags.begin(), stream);
 
-  test::print_device_vector(segment_flags);
-  segments.debug_print();
   segments.remove_if(range(segment_flags.begin(), segment_flags.end()), stream);
-  std::cout << "remove segments" << std::endl;
 
   // Merge point on segments
   detail::find_points_on_segments(make_multipoint_range(points.offset_range(), points.geom_range()),
@@ -254,7 +248,6 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
                                   stream);
 
   points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
-  std::cout << "merge points" << std::endl;
 
   // Phase 4: Assemble results as union column
   auto num_union_column_rows = points.geoms->size() + segments.geoms->size();

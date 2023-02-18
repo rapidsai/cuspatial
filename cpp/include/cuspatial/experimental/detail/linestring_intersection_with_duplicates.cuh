@@ -23,8 +23,6 @@
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
-#include <cuspatial_test/test_util.cuh>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
@@ -364,22 +362,6 @@ struct linestring_intersection_intermediates {
 
   /// Return the number of geometries in the intermediates
   auto num_geoms() { return geoms->size(); }
-
-  void debug_print()
-  {
-    std::cout << "Offsets: ";
-    test::print_device_vector(*offsets);
-    std::cout << "Geoms: ";
-    test::print_device_vector(*geoms);
-    std::cout << "lhs_linestring_ids: ";
-    test::print_device_vector(*lhs_linestring_ids);
-    std::cout << "lhs_segment_ids: ";
-    test::print_device_vector(*lhs_segment_ids);
-    std::cout << "rhs_linestring_ids: ";
-    test::print_device_vector(*rhs_linestring_ids);
-    std::cout << "rhs_segment_ids : ";
-    test::print_device_vector(*rhs_segment_ids);
-  }
 };
 
 /**
