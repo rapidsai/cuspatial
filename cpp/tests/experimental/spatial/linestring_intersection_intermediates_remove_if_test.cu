@@ -266,8 +266,6 @@ TYPED_TEST(LinestringIntersectionIntermediatesRemoveIfTest, FourSegmentsKeep)
                                                                          this->stream(),
                                                                          this->mr());
 
-  intermediates.debug_print();
-
   CUSPATIAL_RUN_TEST(this->template run_single<flag_t>, intermediates, {0, 0, 0, 0}, expected);
 }
 
