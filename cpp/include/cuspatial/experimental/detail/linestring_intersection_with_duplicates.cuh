@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,13 @@
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
+#include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/linestring_intersection_count.cuh>
 #include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
+
+#include <cuspatial_test/test_util.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -45,11 +48,30 @@ namespace detail {
 
 namespace intersection_functors {
 
+/** @brief Functor to compute the updated offset buffer after `remove_if` operation.
+ *
+ *  Given the `i`th row in the `geometry_collection_offset`, find the number of all
+ *  previous removed geometry from `reduced_values` by searching `reduced_keys`.
+ *
+ *  Example:
+ *  i:                             0  1  2  3  4  5  6  7
+ *  Geometry Collection Offset:    0  0  0  1  3  4  4  4
+ *  Reduced Keys:                  3  4  5
+ *  j:                            -1 -1 -1  0  1  2  2  2
+ *  Reduced Values:                0  2  2                  (Removed 2 geometries)
+ *  Should subtract:               /  /  /  0  2  2  2  2
+ *  Result:                        0  0  0  0  1  2  2  2
+ */
 template <typename Keys, typename Values>
 struct offsets_update_functor {
+  // Start of range that marks the group key of `reduced_values`
   Keys reduced_keys_begin;
+  // Start of range that marks the group key of `reduced_values`
   Keys reduced_keys_end;
+
+  // Start of range that contains number of removed geometries in all previous lists
   Values reduced_values_begin;
+  // End of range that contains number of removed geometries in all previous lists
   Values reduced_values_end;
 
   offsets_update_functor(Keys kb, Keys ke, Values vb, Values ve)
@@ -59,14 +81,30 @@ struct offsets_update_functor {
 
   int __device__ operator()(int offset, int i)
   {
-    if (i == 0) return 0;
     auto j = thrust::distance(
       reduced_keys_begin,
-      thrust::upper_bound(thrust::seq, reduced_keys_begin, reduced_keys_end, i - 1));
-    return offset - reduced_values_begin[j - 1];
+      thrust::prev(thrust::upper_bound(thrust::seq, reduced_keys_begin, reduced_keys_end, i)));
+    // j < 0 happens when all groups that precedes `i` don't contain any geometry
+    // offset must be 0 and shouldn't be subracted.
+    if (j < 0) return offset;
+
+    return offset - reduced_values_begin[j];
   }
 };
 
+/** @brief Given list offset and row `i`, return a unique key that represent the list of `i`.
+ *
+ *  The key is computed by performing a `upper_bound` search with `i` in the offset array.
+ *  Then subtracts the position with the start of offset array.
+ *
+ *  Example:
+ *  offset:  0 0 0 1 3 4 4 4
+ *  i:       0 1 2 3
+ *  key:     3 4 4 5
+ *
+ *  Note that the values of `key`, {offset[3], offset[4], offset[5]} denotes the ending
+ *  position of the first 3 non-empty list.
+ */
 template <typename Iterator>
 struct offsets_to_keys_functor {
   Iterator _offsets_begin;
@@ -80,9 +118,8 @@ struct offsets_to_keys_functor {
   template <typename IndexType>
   IndexType __device__ operator()(IndexType i)
   {
-    return thrust::distance(
-      _offsets_begin,
-      thrust::prev(thrust::upper_bound(thrust::seq, _offsets_begin, _offsets_end, i)));
+    return thrust::distance(_offsets_begin,
+                            thrust::upper_bound(thrust::seq, _offsets_begin, _offsets_end, i));
   }
 };
 
@@ -174,6 +211,21 @@ struct linestring_intersection_intermediates {
   {
   }
 
+  /** @brief Construct a zero-pair, zero-geometry intermediate object
+   */
+  linestring_intersection_intermediates(rmm::cuda_stream_view stream,
+                                        rmm::mr::device_memory_resource* mr)
+    : offsets(std::make_unique<rmm::device_uvector<IndexType>>(1, stream)),
+      geoms(std::make_unique<rmm::device_uvector<GeomType>>(0, stream, mr)),
+      lhs_linestring_ids(std::make_unique<rmm::device_uvector<IndexType>>(0, stream)),
+      lhs_segment_ids(std::make_unique<rmm::device_uvector<IndexType>>(0, stream)),
+      rhs_linestring_ids(std::make_unique<rmm::device_uvector<IndexType>>(0, stream)),
+      rhs_segment_ids(std::make_unique<rmm::device_uvector<IndexType>>(0, stream))
+
+  {
+    zero_data_async(offsets->begin(), offsets->end(), stream);
+  }
+
   linestring_intersection_intermediates(std::size_t num_pairs,
                                         std::size_t num_geoms,
                                         rmm::device_uvector<IndexType> const& num_geoms_per_pair,
@@ -195,11 +247,38 @@ struct linestring_intersection_intermediates {
                            thrust::next(offsets->begin()));
   }
 
-  /// Given a flag array, remove the ith geometry if `flags[i] == 1`.
-  /// @pre flag array must have the same size as the geometry array.
+  /** Given a flag array, remove the ith geometry if `flags[i] == 1`.
+   *  @pre flag array must have the same size as the geometry array.
+   *
+   *  Example:
+   *  Given a segment intermediate that has 7 groups and 4 geometries,
+   *  where the segments are denoted with S0, S1, S2, S3.
+   *
+   *  offsets:              0 0 0 1 3 4 4 4
+   *  geoms:                S0 S1 S2 S3
+   *  lhs_linestring_ids:   0  1  2  3
+   *  lhs_segment_ids:      0  1  2  3
+   *  rhs_linestring_ids:   0  1  2  3
+   *  rhs_segment_ids:      0  1  2  3
+   *
+   *  flag:                 0  1  0  1          (Remove S1 and S3)
+   *
+   *  Result:
+   *  offsets:              0 0 0 1 2 2 2 2
+   *  geoms:                S0 S2
+   *  lhs_linestring_ids:   0  2
+   *  lhs_segment_ids:      0  2
+   *  rhs_linestring_ids:   0  2
+   *  rhs_segment_ids:      0  2
+   */
   template <typename FlagRange>
   void remove_if(FlagRange flags, rmm::cuda_stream_view stream)
   {
+    CUSPATIAL_EXPECTS(static_cast<std::size_t>(flags.size()) == num_geoms(),
+                      "Number of flags must equal to the number of geometries.");
+
+    if (flags.size() == 0) return;
+
     // The offsets for the geometry array marks the start index for each list.
     // When geometries are removed, the offset for the next list must
     // be subtracted by the number of removed geometries in *all* previous lists.
@@ -285,6 +364,22 @@ struct linestring_intersection_intermediates {
 
   /// Return the number of geometries in the intermediates
   auto num_geoms() { return geoms->size(); }
+
+  void debug_print()
+  {
+    std::cout << "Offsets: ";
+    test::print_device_vector(*offsets);
+    std::cout << "Geoms: ";
+    test::print_device_vector(*geoms);
+    std::cout << "lhs_linestring_ids: ";
+    test::print_device_vector(*lhs_linestring_ids);
+    std::cout << "lhs_segment_ids: ";
+    test::print_device_vector(*lhs_segment_ids);
+    std::cout << "rhs_linestring_ids: ";
+    test::print_device_vector(*rhs_linestring_ids);
+    std::cout << "rhs_segment_ids : ";
+    test::print_device_vector(*rhs_segment_ids);
+  }
 };
 
 /**
@@ -389,7 +484,16 @@ pairwise_linestring_intersection_with_duplicates(MultiLinestringRange1 multiline
   static_assert(std::is_integral_v<index_t>, "Index type must be integral.");
   static_assert(std::is_floating_point_v<T>, "Coordinate type must be floating point.");
 
+  CUSPATIAL_EXPECTS(multilinestrings1.size() == multilinestrings2.size(),
+                    "Input must contain equal number of multilinestrings.");
+
   auto const num_pairs = multilinestrings1.size();
+
+  if (num_pairs == 0) {
+    return {detail::linestring_intersection_intermediates<vec_2d<T>, index_t>(stream, mr),
+            detail::linestring_intersection_intermediates<segment<T>, index_t>(stream, mr)};
+  }
+
   // Compute the upper bound of spaces required to store intersection results.
   rmm::device_uvector<index_t> num_points_per_pair(num_pairs, stream);
   rmm::device_uvector<index_t> num_segments_per_pair(num_pairs, stream);
@@ -438,6 +542,8 @@ pairwise_linestring_intersection_with_duplicates(MultiLinestringRange1 multiline
       segments.get_id_ranges(),
       points.geoms->begin(),
       segments.geoms->begin());
+
+  CUSPATIAL_CUDA_TRY(cudaGetLastError());
 
   return {std::move(points), std::move(segments)};
 }

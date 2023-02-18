@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/error.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
@@ -68,6 +69,8 @@ void find_duplicate_points(MultiPointRange multipoints,
   auto [threads_per_block, num_blocks] = grid_1d(multipoints.size());
   find_duplicate_points_kernel_simple<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     multipoints, duplicate_flags);
+
+  CUSPATIAL_CUDA_TRY(cudaGetLastError());
 }
 
 }  // namespace detail
