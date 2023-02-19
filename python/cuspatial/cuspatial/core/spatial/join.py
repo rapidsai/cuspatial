@@ -1,8 +1,13 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
+import operator
 import warnings
 
+import rmm
+from numba import cuda
+
 from cudf import DataFrame
+from cudf.core.buffer import acquire_spill_lock
 from cudf.core.column import as_column
 
 from cuspatial import GeoSeries
@@ -10,7 +15,6 @@ from cuspatial._lib import spatial_join
 from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_point_in_polygon,
 )
-from cuspatial.utils import gis_utils
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
@@ -77,7 +81,7 @@ def point_in_polygon(points: GeoSeries, polygons: GeoSeries):
 
     result = cpp_point_in_polygon(x, y, poly_offsets, ring_offsets, px, py)
     result = DataFrame(
-        gis_utils.pip_bitmap_column_to_binary_array(
+        pip_bitmap_column_to_binary_array(
             polygon_bitmap_column=result, width=len(poly_offsets)
         )
     )
@@ -314,3 +318,40 @@ def quadtree_point_to_nearest_linestring(
             linestring_points_y,
         )
     )
+
+
+@cuda.jit
+def binarize(in_col, out, width):
+    """Convert any positive integer to a binary array."""
+    i = cuda.grid(1)
+    if i < in_col.size:
+        n = in_col[i]
+        idx = width - 1
+
+        out[i, idx] = operator.mod(n, 2)
+        idx -= 1
+
+        while n > 1:
+            n = operator.rshift(n, 1)
+            out[i, idx] = operator.mod(n, 2)
+            idx -= 1
+
+
+def apply_binarize(in_col, width):
+    buf = rmm.DeviceBuffer(size=(in_col.size * width))
+    out = cuda.as_cuda_array(buf).view("int8").reshape((in_col.size, width))
+    if out.size > 0:
+        out[:] = 0
+        binarize.forall(out.size)(in_col, out, width)
+    return out
+
+
+def pip_bitmap_column_to_binary_array(polygon_bitmap_column, width):
+    """Convert the bitmap output of point_in_polygon
+    to an array of 0s and 1s.
+    """
+    with acquire_spill_lock():
+        binary_maps = apply_binarize(
+            polygon_bitmap_column.data_array_view(mode="read"), width
+        )
+    return binary_maps
