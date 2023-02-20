@@ -1,6 +1,7 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION.
 
 import numpy as np
+import cupy as cp
 import pytest
 
 import cudf
@@ -210,9 +211,16 @@ small_points_y = cudf.Series(
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_empty(dtype):
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": cudf.Series([], dtype=dtype),  # x
+                "y": cudf.Series([], dtype=dtype),  # y
+            }
+        ).interleave_columns()
+    )
     order, quadtree = cuspatial.quadtree_on_points(
-        cudf.Series([], dtype=dtype),  # x
-        cudf.Series([], dtype=dtype),  # y
+        points,
         *bbox_1,  # bbox
         1,  # scale
         1,  # max_depth
@@ -254,11 +262,18 @@ def test_polygon_join_small(dtype):
     min_size = 12
     points_x = small_points_x.astype(dtype)
     points_y = small_points_y.astype(dtype)
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": points_x,  # x
+                "y": points_y,  # y
+            }
+        ).interleave_columns()
+    )
     poly_points_x = small_poly_xs.astype(dtype)
     poly_points_y = small_poly_ys.astype(dtype)
     point_indices, quadtree = cuspatial.quadtree_on_points(
-        points_x,
-        points_y,
+        points,
         x_min,
         x_max,
         y_min,
@@ -310,11 +325,18 @@ def test_linestring_join_small(dtype):
     expansion_radius = 2.0
     points_x = small_points_x.astype(dtype)
     points_y = small_points_y.astype(dtype)
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": points_x,  # x
+                "y": points_y,  # y
+            }
+        ).interleave_columns()
+    )
     linestring_points_x = small_poly_xs.astype(dtype)
     linestring_points_y = small_poly_ys.astype(dtype)
     point_indices, quadtree = cuspatial.quadtree_on_points(
-        points_x,
-        points_y,
+        points,
         x_min,
         x_max,
         y_min,
@@ -411,11 +433,28 @@ def test_quadtree_point_in_polygon_small(dtype):
     min_size = 12
     points_x = small_points_x.astype(dtype)
     points_y = small_points_y.astype(dtype)
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": points_x,  # x
+                "y": points_y,  # y
+            }
+        ).interleave_columns()
+    )
     poly_points_x = small_poly_xs.astype(dtype)
     poly_points_y = small_poly_ys.astype(dtype)
+    poly_points = cudf.DataFrame(
+        {"x": poly_points_x, "y": poly_points_y}
+    ).interleave_columns()
+
+    polygons = cuspatial.GeoSeries.from_polygons_xy(
+        poly_points,
+        small_ring_offsets,
+        small_poly_offsets,
+        cp.arange(len(small_poly_offsets)),
+    )
     point_indices, quadtree = cuspatial.quadtree_on_points(
-        points_x,
-        points_y,
+        points,
         x_min,
         x_max,
         y_min,
@@ -441,15 +480,7 @@ def test_quadtree_point_in_polygon_small(dtype):
         max_depth,
     )
     polygons_and_points = cuspatial.quadtree_point_in_polygon(
-        intersections,
-        quadtree,
-        point_indices,
-        points_x,
-        points_y,
-        small_poly_offsets,
-        small_ring_offsets,
-        poly_points_x,
-        poly_points_y,
+        intersections, quadtree, point_indices, points, polygons
     )
     cudf.testing.assert_frame_equal(
         polygons_and_points,
@@ -501,11 +532,18 @@ def run_test_quadtree_point_to_nearest_linestring_small(
     expansion_radius = 2.0
     points_x = small_points_x.astype(dtype)
     points_y = small_points_y.astype(dtype)
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": points_x,  # x
+                "y": points_y,  # y
+            }
+        ).interleave_columns()
+    )
     linestring_points_x = small_poly_xs.astype(dtype)
     linestring_points_y = small_poly_ys.astype(dtype)
     point_indices, quadtree = cuspatial.quadtree_on_points(
-        points_x,
-        points_y,
+        points,
         x_min,
         x_max,
         y_min,

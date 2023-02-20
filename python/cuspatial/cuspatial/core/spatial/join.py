@@ -15,7 +15,11 @@ from cuspatial._lib import spatial_join
 from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_point_in_polygon,
 )
-from cuspatial.utils.column_utils import normalize_point_columns
+from cuspatial.utils.column_utils import (
+    normalize_point_columns,
+    contains_only_points,
+    contains_only_polygons,
+)
 
 
 def point_in_polygon(points: GeoSeries, polygons: GeoSeries):
@@ -166,12 +170,8 @@ def quadtree_point_in_polygon(
     poly_quad_pairs,
     quadtree,
     point_indices,
-    points_x,
-    points_y,
-    poly_offsets,
-    ring_offsets,
-    poly_points_x,
-    poly_points_y,
+    points: GeoSeries,
+    polygons: GeoSeries,
 ):
     """Test whether the specified points are inside any of the specified
     polygons.
@@ -193,18 +193,10 @@ def quadtree_point_in_polygon(
         A complete quadtree for a given area-of-interest bounding box.
     point_indices : cudf.Series
         Sorted point indices returned by ``cuspatial.quadtree_on_points``
-    points_x : cudf.Series
-        x-coordinates of points used to construct the quadtree.
-    points_y : cudf.Series
-        y-coordinates of points used to construct the quadtree.
-    poly_offsets : cudf.Series
-        Begin index of the first ring in each polygon.
-    ring_offsets : cudf.Series
-        Begin index of the first point in each ring.
-    poly_points_x : cudf.Series
-        Polygon point x-coodinates.
-    poly_points_y : cudf.Series
-        Polygon point y-coodinates.
+    points: GeoSeries
+        Points used to build the quadtree
+    polygons: GeoSeries
+        Polygons to test against
 
     Returns
     -------
@@ -218,26 +210,32 @@ def quadtree_point_in_polygon(
             so it is an index to an index.
     """
 
-    (
-        points_x,
-        points_y,
-        poly_points_x,
-        poly_points_y,
-    ) = normalize_point_columns(
-        as_column(points_x),
-        as_column(points_y),
-        as_column(poly_points_x),
-        as_column(poly_points_y),
-    )
+    if not contains_only_points(points):
+        raise ValueError(
+            "`point` Geoseries must contains only point geometries."
+        )
+    if not contains_only_polygons(polygons):
+        raise ValueError(
+            "`polygons` Geoseries must contains only polygons geometries."
+        )
+
+    points_x = as_column(points.points.x)
+    points_y = as_column(points.points.y)
+
+    poly_offsets = as_column(polygons.polygons.part_offset)
+    ring_offsets = as_column(polygons.polygons.ring_offset)
+    poly_points_x = as_column(polygons.polygons.x)
+    poly_points_y = as_column(polygons.polygons.y)
+
     return DataFrame._from_data(
         *spatial_join.quadtree_point_in_polygon(
             poly_quad_pairs,
             quadtree,
-            as_column(point_indices, dtype="uint32"),
+            point_indices._column,
             points_x,
             points_y,
-            as_column(poly_offsets, dtype="uint32"),
-            as_column(ring_offsets, dtype="uint32"),
+            poly_offsets,
+            ring_offsets,
             poly_points_x,
             poly_points_y,
         )
