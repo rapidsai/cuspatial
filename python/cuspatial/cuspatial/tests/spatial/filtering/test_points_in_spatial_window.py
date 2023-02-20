@@ -1,26 +1,25 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
 
+import geopandas as gpd
 import pytest
-
-import cudf
+from geopandas.testing import assert_geoseries_equal
+from shapely.geometry import Point
 
 import cuspatial
 
 
 def test_zeros():
     result = cuspatial.points_in_spatial_window(  # noqa: F841
-        0, 0, 0, 0, cudf.Series([0.0]), cudf.Series([0.0])
+        cuspatial.GeoSeries([Point(0, 0)]), 0, 0, 0, 0
     )
     assert result.empty
 
 
 def test_centered():
-    result = cuspatial.points_in_spatial_window(
-        -1, 1, -1, 1, cudf.Series([0.0]), cudf.Series([0.0])
-    )
-    cudf.testing.assert_frame_equal(
-        result, cudf.DataFrame({"x": [0.0], "y": [0.0]})
-    )
+    s = cuspatial.GeoSeries([Point(0, 0)])
+    result = cuspatial.points_in_spatial_window(s, -1, 1, -1, 1)
+
+    assert_geoseries_equal(result.to_geopandas(), gpd.GeoSeries([Point(0, 0)]))
 
 
 @pytest.mark.parametrize(
@@ -29,38 +28,48 @@ def test_centered():
 def test_corners(coords):
     x, y = coords
     result = cuspatial.points_in_spatial_window(
-        -1.1, 1.1, -1.1, 1.1, cudf.Series([x]), cudf.Series([y])
+        cuspatial.GeoSeries([Point(x, y)]), -1.1, 1.1, -1.1, 1.1
     )
-    cudf.testing.assert_frame_equal(
-        result, cudf.DataFrame({"x": [x], "y": [y]})
-    )
+    assert_geoseries_equal(result.to_geopandas(), gpd.GeoSeries([Point(x, y)]))
 
 
 def test_pair():
     result = cuspatial.points_in_spatial_window(
-        -1.1, 1.1, -1.1, 1.1, cudf.Series([0.0, 1.0]), cudf.Series([1.0, 0.0])
+        cuspatial.GeoSeries([Point(0, 1), Point(1, 0)]), -1.1, 1.1, -1.1, 1.1
     )
-    cudf.testing.assert_frame_equal(
-        result, cudf.DataFrame({"x": [0.0, 1.0], "y": [1.0, 0.0]})
+    assert_geoseries_equal(
+        result.to_geopandas(), gpd.GeoSeries([Point(0, 1), Point(1, 0)])
     )
 
 
 def test_oob():
     result = cuspatial.points_in_spatial_window(
-        -1, 1, -1, 1, cudf.Series([-2.0, 2.0]), cudf.Series([2.0, -2.0])
+        cuspatial.GeoSeries([Point(-2.0, 2.0), Point(2.0, -2.0)]),
+        -1,
+        1,
+        -1,
+        1,
     )
-    cudf.testing.assert_frame_equal(result, cudf.DataFrame({"x": [], "y": []}))
+    assert_geoseries_equal(result.to_geopandas(), gpd.GeoSeries([]))
 
 
 def test_half():
     result = cuspatial.points_in_spatial_window(
+        cuspatial.GeoSeries(
+            [
+                Point(-1.0, 1.0),
+                Point(1.0, -1.0),
+                Point(3.0, 3.0),
+                Point(-3.0, -3.0),
+            ]
+        ),
         -2,
         2,
         -2,
         2,
-        cudf.Series([-1.0, 1.0, 3.0, -3.0]),
-        cudf.Series([1.0, -1.0, 3.0, -3.0]),
     )
-    cudf.testing.assert_frame_equal(
-        result, cudf.DataFrame({"x": [-1.0, 1.0], "y": [1.0, -1.0]})
+
+    assert_geoseries_equal(
+        result.to_geopandas(),
+        gpd.GeoSeries([Point(-1.0, 1.0), Point(1.0, -1.0)]),
     )

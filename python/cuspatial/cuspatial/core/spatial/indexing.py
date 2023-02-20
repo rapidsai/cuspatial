@@ -1,18 +1,19 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 import warnings
 
 from cudf import DataFrame, Series
 from cudf.core.column import as_column
 
+from cuspatial import GeoSeries
 from cuspatial._lib.quadtree import (
     quadtree_on_points as cpp_quadtree_on_points,
 )
-from cuspatial.utils.column_utils import normalize_point_columns
+from cuspatial.utils.column_utils import contains_only_points
 
 
 def quadtree_on_points(
-    xs, ys, x_min, x_max, y_min, y_max, scale, max_depth, max_size
+    points: GeoSeries, x_min, x_max, y_min, y_max, scale, max_depth, max_size
 ):
     """
     Construct a quadtree from a set of points for a given area-of-interest
@@ -20,10 +21,8 @@ def quadtree_on_points(
 
     Parameters
     ----------
-    xs
-        Column of x-coordinates for each point.
-    ys
-        Column of y-coordinates for each point.
+    points
+        Series of points.
     x_min
         The lower-left x-coordinate of the area of interest bounding box.
     x_max
@@ -157,7 +156,12 @@ def quadtree_on_points(
         Length: 120, dtype: int32
     """
 
-    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    if not len(points) == 0 and not contains_only_points(points):
+        raise ValueError("GeoSeries must contain only points.")
+
+    xs = as_column(points.points.x)
+    ys = as_column(points.points.y)
+
     x_min, x_max, y_min, y_max = (
         min(x_min, x_max),
         max(x_min, x_max),
