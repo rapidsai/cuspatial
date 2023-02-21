@@ -16,7 +16,7 @@ from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_point_in_polygon,
 )
 from cuspatial.utils.column_utils import (
-    normalize_point_columns,
+    contains_only_linestrings,
     contains_only_points,
     contains_only_polygons,
 )
@@ -219,6 +219,11 @@ def quadtree_point_in_polygon(
             "`polygons` Geoseries must contains only polygons geometries."
         )
 
+    if len(polygons.polygons.part_offset) != len(
+        polygons.polygons.geometry_offset
+    ):
+        raise ValueError("GeoSeries cannot contain multipolygon.")
+
     points_x = as_column(points.points.x)
     points_y = as_column(points.points.y)
 
@@ -246,11 +251,8 @@ def quadtree_point_to_nearest_linestring(
     linestring_quad_pairs,
     quadtree,
     point_indices,
-    points_x,
-    points_y,
-    linestring_offsets,
-    linestring_points_x,
-    linestring_points_y,
+    points: GeoSeries,
+    linestrings: GeoSeries,
 ):
     """Finds the nearest linestring to each point in a quadrant, and computes
     the distances between each point and linestring.
@@ -268,16 +270,10 @@ def quadtree_point_to_nearest_linestring(
         A complete quadtree for a given area-of-interest bounding box.
     point_indices : cudf.Series
         Sorted point indices returned by ``cuspatial.quadtree_on_points``
-    points_x : cudf.Series
-        x-coordinates of points used to construct the quadtree.
-    points_y : cudf.Series
-        y-coordinates of points used to construct the quadtree.
-    linestring_offsets : cudf.Series
-        Begin index of the first point in each linestring.
-    poly_points_x : cudf.Series
-        Linestring point x-coordinates.
-    poly_points_y : cudf.Series
-        Linestring point y-coordinates.
+    points: GeoSeries
+        Points to find nearest linestring for
+    linestrings: GeoSeries
+        Linestrings to test for
 
     Returns
     -------
@@ -293,17 +289,28 @@ def quadtree_point_to_nearest_linestring(
         distance : cudf.Series
             Distance between point and its nearest linestring.
     """
-    (
-        points_x,
-        points_y,
-        linestring_points_x,
-        linestring_points_y,
-    ) = normalize_point_columns(
-        as_column(points_x),
-        as_column(points_y),
-        as_column(linestring_points_x),
-        as_column(linestring_points_y),
-    )
+
+    if not contains_only_points(points):
+        raise ValueError(
+            "`point` Geoseries must contains only point geometries."
+        )
+    if not contains_only_linestrings(linestrings):
+        raise ValueError(
+            "`linestrings` Geoseries must contains only linestring geometries."
+        )
+
+    if len(linestrings.lines.part_offset) != len(
+        linestrings.lines.geometry_offset
+    ):
+        raise ValueError("GeoSeries cannot contain multilinestrings.")
+
+    points_x = as_column(points.points.x)
+    points_y = as_column(points.points.y)
+
+    linestring_points_x = as_column(linestrings.lines.x)
+    linestring_points_y = as_column(linestrings.lines.y)
+    linestring_offsets = as_column(linestrings.lines.part_offset)
+
     return DataFrame._from_data(
         *spatial_join.quadtree_point_to_nearest_linestring(
             linestring_quad_pairs,
