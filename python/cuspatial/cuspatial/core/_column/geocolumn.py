@@ -207,6 +207,130 @@ class GeoColumn(ColumnBase):
             meta,
         )
 
+    @classmethod
+    def _from_linestrings_xy(
+        cls,
+        linestrings_xy: ColumnBase,
+        part_offsets: ColumnBase,
+        geometry_offsets: ColumnBase,
+    ):
+        """
+        Create a GeoColumn of multilinestrings from a cudf Series with
+        interleaved xy coordinates.
+        """
+        if not linestrings_xy.dtype.kind == "f":
+            raise ValueError("Coordinates must be floating point numbers.")
+
+        parts_col = build_list_column(
+            indices=part_offsets,
+            elements=_xy_as_variable_sized_list(linestrings_xy),
+            size=len(part_offsets) - 1,
+        )
+        linestrings_col = build_list_column(
+            indices=geometry_offsets,
+            elements=parts_col,
+            size=len(geometry_offsets) - 1,
+        )
+        num_linestrings = len(linestrings_col)
+
+        meta = GeoMeta(
+            {
+                "input_types": as_column(
+                    cp.full(
+                        num_linestrings,
+                        Feature_Enum.LINESTRING.value,
+                        dtype=cp.int8,
+                    )
+                ),
+                "union_offsets": as_column(
+                    cp.arange(num_linestrings, dtype=cp.int32)
+                ),
+            }
+        )
+
+        coord_dtype = linestrings_xy.dtype
+
+        return cls(
+            (
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.POINT, coord_dtype)
+                ),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
+                ),
+                cudf.Series(linestrings_col),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
+                ),
+            ),
+            meta,
+        )
+
+    @classmethod
+    def _from_polygons_xy(
+        cls,
+        polygons_xy: ColumnBase,
+        ring_offsets: ColumnBase,
+        part_offsets: ColumnBase,
+        geometry_offsets: ColumnBase,
+    ):
+        """
+        Create a GeoColumn of multipolygons from a cudf Series with
+        interleaved xy coordinates.
+        """
+        if not polygons_xy.dtype.kind == "f":
+            raise ValueError("Coordinates must be floating point numbers.")
+
+        rings_col = build_list_column(
+            indices=ring_offsets,
+            elements=_xy_as_variable_sized_list(polygons_xy),
+            size=len(ring_offsets) - 1,
+        )
+        parts_col = build_list_column(
+            indices=part_offsets,
+            elements=rings_col,
+            size=len(part_offsets) - 1,
+        )
+        polygons_col = build_list_column(
+            indices=geometry_offsets,
+            elements=parts_col,
+            size=len(geometry_offsets) - 1,
+        )
+        num_polygons = len(polygons_col)
+
+        meta = GeoMeta(
+            {
+                "input_types": as_column(
+                    cp.full(
+                        num_polygons,
+                        Feature_Enum.POLYGON.value,
+                        dtype=cp.int8,
+                    )
+                ),
+                "union_offsets": as_column(
+                    cp.arange(num_polygons, dtype=cp.int32)
+                ),
+            }
+        )
+
+        coord_dtype = polygons_xy.dtype
+
+        return cls(
+            (
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.POINT, coord_dtype)
+                ),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
+                ),
+                cudf.Series(
+                    empty_geometry_column(Feature_Enum.LINESTRING, coord_dtype)
+                ),
+                cudf.Series(polygons_col),
+            ),
+            meta,
+        )
+
     @cached_property
     def memory_usage(self) -> int:
         """
