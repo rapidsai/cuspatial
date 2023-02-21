@@ -161,6 +161,7 @@ def bench_quadtree_on_points(benchmark, gpu_dataframe):
 
 
 def bench_quadtree_point_in_polygon(benchmark, polygons):
+    df = polygons
     polygons = polygons["geometry"].polygons
     x_points = (cupy.random.random(50000000) - 0.5) * 360
     y_points = (cupy.random.random(50000000) - 0.5) * 180
@@ -198,12 +199,8 @@ def bench_quadtree_point_in_polygon(benchmark, polygons):
         intersections,
         quadtree,
         point_indices,
-        x_points,
-        y_points,
-        polygons.part_offset,
-        polygons.ring_offset,
-        polygons.x,
-        polygons.y,
+        points,
+        df["geometry"],
     )
 
 
@@ -226,6 +223,14 @@ def bench_quadtree_point_to_nearest_linestring(benchmark):
     points_y = gpu_cities["geometry"].points.y
     points = cuspatial.GeoSeries.from_points_xy(
         cudf.DataFrame({"x": points_x, "y": points_y}).interleave_columns()
+    )
+
+    linestrings = cuspatial.GeoSeries.from_linestrings_xy(
+        cudf.DataFrame(
+            {"x": polygons.x, "y": polygons.y}
+        ).interleave_columns(),
+        polygons.ring_offset,
+        cupy.arange(len(polygons.ring_offset)),
     )
     point_indices, quadtree = cuspatial.quadtree_on_points(
         points,
@@ -255,11 +260,8 @@ def bench_quadtree_point_to_nearest_linestring(benchmark):
         intersections,
         quadtree,
         point_indices,
-        points_x,
-        points_y,
-        polygons.ring_offset,
-        polygons.x,
-        polygons.y,
+        points,
+        linestrings,
     )
 
 
