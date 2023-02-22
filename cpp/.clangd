@@ -17,6 +17,8 @@ If:
   PathMatch: .*\.cuh?
 CompileFlags:
   Add:
+    - "-x"
+    - "cuda"
     # No error on unknown CUDA versions
     - "-Wno-unknown-cuda-version"
     # Allow variadic CUDA functions
@@ -39,12 +41,14 @@ CompileFlags:
     - "-gpu=*"
     - "--diag_suppress*"
     # strip CUDA arch flags
+    - "-arch*"
     - "-gencode*"
     - "--generate-code*"
     # strip gcc's -fcoroutines
     - -fcoroutines
     # strip CUDA flags unknown to clang
     - "-ccbin*"
+    - "-Xcudafe=*"
     - "--compiler-options*"
     - "--expt-extended-lambda"
     - "--expt-relaxed-constexpr"
