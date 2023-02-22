@@ -443,6 +443,16 @@ def test_quadtree_point_in_polygon_small(dtype):
     )
     poly_points_x = small_poly_xs.astype(dtype)
     poly_points_y = small_poly_ys.astype(dtype)
+    poly_points = cudf.DataFrame(
+        {"x": poly_points_x, "y": poly_points_y}
+    ).interleave_columns()
+
+    polygons = cuspatial.GeoSeries.from_polygons_xy(
+        poly_points,
+        small_ring_offsets,
+        small_poly_offsets,
+        cp.arange(len(small_poly_offsets)),
+    )
     point_indices, quadtree = cuspatial.quadtree_on_points(
         points,
         x_min,
@@ -474,15 +484,7 @@ def test_quadtree_point_in_polygon_small(dtype):
         max_depth,
     )
     polygons_and_points = cuspatial.quadtree_point_in_polygon(
-        intersections,
-        quadtree,
-        point_indices,
-        points_x,
-        points_y,
-        small_poly_offsets,
-        small_ring_offsets,
-        poly_points_x,
-        poly_points_y,
+        intersections, quadtree, point_indices, points, polygons
     )
     cudf.testing.assert_frame_equal(
         polygons_and_points,
@@ -544,6 +546,13 @@ def run_test_quadtree_point_to_nearest_linestring_small(
     )
     linestring_points_x = small_poly_xs.astype(dtype)
     linestring_points_y = small_poly_ys.astype(dtype)
+    linestrings = cuspatial.GeoSeries.from_linestrings_xy(
+        cudf.DataFrame(
+            {"x": linestring_points_x, "y": linestring_points_y}
+        ).interleave_columns(),
+        small_ring_offsets,
+        cp.arange(len(small_ring_offsets)),
+    )
     point_indices, quadtree = cuspatial.quadtree_on_points(
         points,
         x_min,
@@ -571,14 +580,7 @@ def run_test_quadtree_point_to_nearest_linestring_small(
         max_depth,
     )
     p2np_result = cuspatial.quadtree_point_to_nearest_linestring(
-        intersections,
-        quadtree,
-        point_indices,
-        points_x,
-        points_y,
-        small_ring_offsets,
-        linestring_points_x,
-        linestring_points_y,
+        intersections, quadtree, point_indices, points, linestrings
     )
     cudf.testing.assert_frame_equal(
         p2np_result,
