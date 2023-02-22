@@ -8,15 +8,6 @@ import cudf
 import cuspatial
 
 
-def bench_io_read_polygon_shapefile(benchmark, shapefile):
-    benchmark(cuspatial.read_polygon_shapefile, shapefile)
-
-
-def bench_io_geoseries_from_offsets(benchmark, shapefile):
-    shapefile_data = cuspatial.read_polygon_shapefile(shapefile)
-    benchmark(cuspatial.core.geoseries.GeoSeries, shapefile_data)
-
-
 def bench_io_from_geopandas(benchmark, host_dataframe):
     benchmark(cuspatial.from_geopandas, host_dataframe)
 
