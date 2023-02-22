@@ -7,68 +7,37 @@
       "LLVM": "15"
     }
   },
-
-  "capAdd": [
-    "SYS_PTRACE"
-  ],
-  "securityOpt": [
-    "seccomp=unconfined"
-  ],
   "hostRequirements": {
     "gpu": true
   },
 
-  "initializeCommand": "mkdir -p ../.aws ../.cache ../.conda ../.config ../rmm ../cudf",
+  "features": {
+    "ghcr.io/trxcllnt/devcontainers/features/mambaforge:latest": {},
+    "ghcr.io/trxcllnt/devcontainers/features/utils:latest": {},
+    "ghcr.io/trxcllnt/devcontainers/features/rapids-build-utils:latest": {}
+  },
+  "overrideFeatureInstallOrder": [
+    "ghcr.io/trxcllnt/devcontainers/features/mambaforge",
+    "ghcr.io/trxcllnt/devcontainers/features/utils",
+    "ghcr.io/trxcllnt/devcontainers/features/rapids-build-utils"
+  ],
+
+  "initializeCommand": [
+    "/bin/bash", "-c", "mkdir -m 0755 -p ../{.aws,.cache,.conda,.config}"
+  ],
 
   "containerEnv": {
-    "DEFAULT_CONDA_ENV": "cuspatial",
-    "PYTHONDONTWRITEBYTECODE": "1",
-    "VAULT_HOST": "https://vault.ops.k8s.rapids.ai"
+    "DEFAULT_CONDA_ENV": "rapids"
   },
 
   "workspaceFolder": "/home/coder",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/cuspatial,type=bind",
   "mounts": [
-    {
-      "type": "bind",
-      "target": "/home/coder/.aws",
-      "source": "${localWorkspaceFolder}/../.aws"
-    },
-    {
-      "type": "bind",
-      "target": "/home/coder/.cache",
-      "source": "${localWorkspaceFolder}/../.cache"
-    },
-    {
-      "type": "bind",
-      "target": "/home/coder/.conda",
-      "source": "${localWorkspaceFolder}/../.conda"
-    },
-    {
-      "type": "bind",
-      "target": "/home/coder/.config",
-      "source": "${localWorkspaceFolder}/../.config"
-    },
-    {
-      "type": "bind",
-      "target": "/home/coder/rmm",
-      "source": "${localWorkspaceFolder}/../rmm"
-    },
-    {
-      "type": "bind",
-      "target": "/home/coder/cudf",
-      "source": "${localWorkspaceFolder}/../cudf"
-    },
-    {
-      "type": "bind",
-      "target": "/opt/rapids",
-      "source": "${localWorkspaceFolder}/.devcontainer/opt/rapids"
-    },
-    {
-      "type": "bind",
-      "target": "/home/coder/workspace.code-workspace",
-      "source": "${localWorkspaceFolder}/.devcontainer/home/coder/workspace.code-workspace"
-    }
+    "source=${localWorkspaceFolder}/../.aws,target=/home/coder/.aws,type=bind",
+    "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind",
+    "source=${localWorkspaceFolder}/../.conda,target=/home/coder/.conda,type=bind",
+    "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind",
+    "source=${localWorkspaceFolder}/.devcontainer/opt/cuspatial,target=/opt/cuspatial,type=bind"
   ],
 
   "customizations": {

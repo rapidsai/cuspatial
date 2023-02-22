@@ -1,0 +1,51 @@
+{
+  "build": {
+    "context": "${localWorkspaceFolder}/.devcontainer",
+    "dockerfile": "${localWorkspaceFolder}/.devcontainer/Dockerfile",
+    "args": {
+      "CUDA": "11.8",
+      "LLVM": "15"
+    }
+  },
+  "hostRequirements": {
+    "gpu": true
+  },
+
+  "features": {
+    "./features/utils": {},
+    "./features/rapids-build-utils": {}
+  },
+  "overrideFeatureInstallOrder": [
+    "./features/utils",
+    "./features/rapids-build-utils"
+  ],
+
+  "updateContentCommand": [
+    "/bin/bash", "-c", "cp -ar /workspaces/cuspatial /home/coder/cuspatial && rapids-make-vscode-workspace > ~/workspace.code-workspace"
+  ],
+
+  "containerEnv": {
+    "DEFAULT_CONDA_ENV": "rapids"
+  },
+
+  "workspaceFolder": "/home/coder",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/cuspatial,type=bind",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mutantdino.resourcemonitor",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "files.trimFinalNewlines": true,
+        "files.insertFinalNewline": true,
+        "files.trimTrailingWhitespace": true,
+        "files.watcherExclude": {
+          "**/target/**": true
+        },
+        "python.linting.flake8Enabled": true
+      }
+    }
+  }
+}

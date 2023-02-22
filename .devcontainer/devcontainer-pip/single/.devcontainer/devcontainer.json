@@ -1,0 +1,58 @@
+{
+  "build": {
+    "context": "../../..",
+    "dockerfile": "../../../Dockerfile",
+    "args": {
+      "CUDA": "11.8",
+      "LLVM": "15"
+    }
+  },
+  "hostRequirements": {
+    "gpu": true
+  },
+
+  "features": {
+    "./features/utils": {},
+    "./features/rapids-build-utils": {}
+  },
+  "overrideFeatureInstallOrder": [
+    "./features/utils",
+    "./features/rapids-build-utils"
+  ],
+
+  "initializeCommand": [
+    "/bin/bash", "-c", "mkdir -m 0755 -p ../../../../{.aws,.cache,.conda,.config}"
+  ],
+
+  "containerEnv": {
+    "DEFAULT_CONDA_ENV": "rapids"
+  },
+
+  "workspaceFolder": "/home/coder",
+  "workspaceMount": "source=${localWorkspaceFolder}/../../..,target=/home/coder/cuspatial,type=bind",
+  "mounts": [
+    "source=${localWorkspaceFolder}/../../../../.aws,target=/home/coder/.aws,type=bind",
+    "source=${localWorkspaceFolder}/../../../../.cache,target=/home/coder/.cache,type=bind",
+    "source=${localWorkspaceFolder}/../../../../.conda,target=/home/coder/.conda,type=bind",
+    "source=${localWorkspaceFolder}/../../../../.config,target=/home/coder/.config,type=bind",
+    "source=${localWorkspaceFolder}/../../../.devcontainer/opt/cuspatial,target=/opt/cuspatial,type=bind"
+  ],
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mutantdino.resourcemonitor",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "files.trimFinalNewlines": true,
+        "files.insertFinalNewline": true,
+        "files.trimTrailingWhitespace": true,
+        "files.watcherExclude": {
+          "**/target/**": true
+        },
+        "python.linting.flake8Enabled": true
+      }
+    }
+  }
+}

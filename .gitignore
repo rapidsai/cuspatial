@@ -153,4 +153,5 @@ notebooks/taxi2017.csv
 notebooks/tzones_lonlat.json
 notebooks/cu_taxi.zones.*
 
-!.devcontainer/opt/rapids/.clangd
+# clang tooling
+compile_commands.json
