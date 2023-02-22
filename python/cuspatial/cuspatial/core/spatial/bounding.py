@@ -116,16 +116,8 @@ def linestring_bounding_boxes(linestrings: GeoSeries, expansion_radius: float):
     x = linestrings.lines.x
     y = linestrings.lines.y
 
-    return DataFrame._from_data(
-        dict(
-            zip(
-                column_names,
-                cpp_linestring_bounding_boxes(
-                    as_column(line_offsets),
-                    as_column(x),
-                    as_column(y),
-                    expansion_radius,
-                ),
-            )
-        )
+    results = cpp_linestring_bounding_boxes(
+        as_column(line_offsets), as_column(x), as_column(y), expansion_radius
     )
+
+    return DataFrame._from_data(dict(zip(column_names, results)))

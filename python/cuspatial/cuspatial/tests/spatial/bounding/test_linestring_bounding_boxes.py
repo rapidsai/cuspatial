@@ -39,7 +39,7 @@ def test_linestring_bounding_boxes_one(dtype):
     )
 
     result = cuspatial.linestring_bounding_boxes(s, 0)
-    expected = cudf.DataFrame(s.to_geopandas().bounds)
+    expected = cudf.DataFrame(s.to_geopandas().bounds, dtype=dtype)
 
     cudf.testing.assert_frame_equal(result, expected)
 
@@ -88,7 +88,7 @@ def test_linestring_bounding_boxes_small(dtype):
             dtype=dtype,
         ),
         cudf.Series([0, 3, 8, 12, 17]),
-        cudf.Series([0, 1, 2, 3, 4, 5]),
+        cudf.Series([0, 1, 2, 3, 4]),
     )
 
     result = cuspatial.linestring_bounding_boxes(
@@ -99,7 +99,7 @@ def test_linestring_bounding_boxes_small(dtype):
         result,
         cudf.DataFrame(
             {
-                "xmin": cudf.Series(
+                "minx": cudf.Series(
                     [
                         0.8335840000000001,
                         4.5398230000000002,
@@ -108,7 +108,7 @@ def test_linestring_bounding_boxes_small(dtype):
                     ],
                     dtype=dtype,
                 ),
-                "y_min": cudf.Series(
+                "miny": cudf.Series(
                     [
                         4.0865989999999996,
                         1.003906,
@@ -117,7 +117,7 @@ def test_linestring_bounding_boxes_small(dtype):
                     ],
                     dtype=dtype,
                 ),
-                "xmax": cudf.Series(
+                "maxx": cudf.Series(
                     [
                         3.9607199999999998,
                         7.6906739999999996,
@@ -126,7 +126,7 @@ def test_linestring_bounding_boxes_small(dtype):
                     ],
                     dtype=dtype,
                 ),
-                "ymax": cudf.Series(
+                "maxy": cudf.Series(
                     [
                         6.3566250000000002,
                         6.153384,
