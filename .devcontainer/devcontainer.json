@@ -12,14 +12,11 @@
   },
 
   "features": {
-    "ghcr.io/trxcllnt/devcontainers/features/mambaforge:latest": {},
-    "ghcr.io/trxcllnt/devcontainers/features/utils:latest": {},
-    "ghcr.io/trxcllnt/devcontainers/features/rapids-build-utils:latest": {}
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:latest": {}
   },
+
   "overrideFeatureInstallOrder": [
-    "ghcr.io/trxcllnt/devcontainers/features/mambaforge",
-    "ghcr.io/trxcllnt/devcontainers/features/utils",
-    "ghcr.io/trxcllnt/devcontainers/features/rapids-build-utils"
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
   ],
 
   "initializeCommand": [

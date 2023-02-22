@@ -12,12 +12,11 @@
   },
 
   "features": {
-    "./features/utils": {},
-    "./features/rapids-build-utils": {}
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:latest": {}
   },
+
   "overrideFeatureInstallOrder": [
-    "./features/utils",
-    "./features/rapids-build-utils"
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
   ],
 
   "updateContentCommand": [
