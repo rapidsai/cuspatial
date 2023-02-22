@@ -71,6 +71,7 @@ inline __device__ bool is_point_in_polygon(T const x,
 
       if (y_in_bounds && x < (run / rise) * rise_to_point + x0) { in_polygon = not in_polygon; }
     }
+    // If points are on the polygon edge, they are not contained in the polygon.
     if (is_colinear) {
       in_polygon = false;
       break;
