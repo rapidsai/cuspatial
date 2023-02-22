@@ -22,7 +22,6 @@ set(cython_sources
     polygon_bounding_boxes.pyx
     linestring_bounding_boxes.pyx
     quadtree.pyx
-    shapefile_reader.pyx
     spatial.pyx
     spatial_join.pyx
     spatial_window.pyx
