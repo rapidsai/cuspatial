@@ -24,6 +24,11 @@ files:
       - cudatoolkit
       - py_version
       - test_python
+  test_notebooks:
+    output: none
+    includes:
+      - notebooks
+      - py_version
   checks:
     output: none
     includes:
@@ -147,6 +152,13 @@ dependencies:
           - numpydoc
           - pydata-sphinx-theme
           - sphinx<6
+  notebooks:
+    common:
+      - output_types: [conda, requirements]
+        packages:
+          - ipython
+          - notebook
+          - shapely
   py_version:
     specific:
       - output_types: conda
