@@ -73,12 +73,17 @@ def bench_sinusoidal_projection(benchmark, gpu_dataframe):
     afghanistan = gpu_dataframe["geometry"][
         gpu_dataframe["name"] == "Afghanistan"
     ]
+    lonlat = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {"lon": afghanistan.polygons.y, "lat": afghanistan.polygons.x}
+        ).interleave_columns()
+    )
+
     benchmark(
         cuspatial.sinusoidal_projection,
         afghanistan.polygons.y.mean(),
         afghanistan.polygons.x.mean(),
-        afghanistan.polygons.y,
-        afghanistan.polygons.x,
+        lonlat,
     )
 
 
