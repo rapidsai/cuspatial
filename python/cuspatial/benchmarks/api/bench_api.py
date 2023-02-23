@@ -50,21 +50,17 @@ def bench_trajectory_bounding_boxes(benchmark, sorted_trajectories):
 
 
 def bench_polygon_bounding_boxes(benchmark, polygons):
-    benchmark(
-        cuspatial.polygon_bounding_boxes,
-        polygons["geometry"].polygons.part_offset[:-1],
-        polygons["geometry"].polygons.ring_offset[:-1],
-        polygons["geometry"].polygons.x,
-        polygons["geometry"].polygons.y,
-    )
+    benchmark(cuspatial.polygon_bounding_boxes, polygons)
 
 
 def bench_linestring_bounding_boxes(benchmark, sorted_trajectories):
+    xy = sorted_trajectories[0][["x", "y"]].interleave_columns()
+    lines = cuspatial.GeoSeries.from_linestrings_xy(
+        xy, sorted_trajectories[1], cupy.arange(len(sorted_trajectories))
+    )
     benchmark(
         cuspatial.linestring_bounding_boxes,
-        sorted_trajectories[1],
-        sorted_trajectories[0]["x"],
-        sorted_trajectories[0]["y"],
+        lines,
         0.0001,
     )
 
@@ -152,6 +148,7 @@ def bench_quadtree_on_points(benchmark, gpu_dataframe):
 
 
 def bench_quadtree_point_in_polygon(benchmark, polygons):
+    df = polygons
     polygons = polygons["geometry"].polygons
     x_points = (cupy.random.random(50000000) - 0.5) * 360
     y_points = (cupy.random.random(50000000) - 0.5) * 180
@@ -171,9 +168,7 @@ def bench_quadtree_point_in_polygon(benchmark, polygons):
         max_depth,
         min_size,
     )
-    poly_bboxes = cuspatial.polygon_bounding_boxes(
-        polygons.part_offset, polygons.ring_offset, polygons.x, polygons.y
-    )
+    poly_bboxes = cuspatial.polygon_bounding_boxes(df["geometry"])
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree,
         poly_bboxes,
@@ -189,12 +184,8 @@ def bench_quadtree_point_in_polygon(benchmark, polygons):
         intersections,
         quadtree,
         point_indices,
-        x_points,
-        y_points,
-        polygons.part_offset,
-        polygons.ring_offset,
-        polygons.x,
-        polygons.y,
+        points,
+        df["geometry"],
     )
 
 
@@ -218,6 +209,14 @@ def bench_quadtree_point_to_nearest_linestring(benchmark):
     points = cuspatial.GeoSeries.from_points_xy(
         cudf.DataFrame({"x": points_x, "y": points_y}).interleave_columns()
     )
+
+    linestrings = cuspatial.GeoSeries.from_linestrings_xy(
+        cudf.DataFrame(
+            {"x": polygons.x, "y": polygons.y}
+        ).interleave_columns(),
+        polygons.ring_offset,
+        cupy.arange(len(polygons.ring_offset)),
+    )
     point_indices, quadtree = cuspatial.quadtree_on_points(
         points,
         polygons.x.min(),
@@ -228,9 +227,13 @@ def bench_quadtree_point_to_nearest_linestring(benchmark):
         MAX_DEPTH,
         MIN_SIZE,
     )
-    linestring_bboxes = cuspatial.linestring_bounding_boxes(
-        polygons.ring_offset, polygons.x, polygons.y, 2.0
+    xy = cudf.DataFrame(
+        {"x": polygons.x, "y": polygons.y}
+    ).interleave_columns()
+    lines = cuspatial.GeoSeries.from_linestrings_xy(
+        xy, polygons.ring_offset, cupy.arange(len(polygons.ring_offset))
     )
+    linestring_bboxes = cuspatial.linestring_bounding_boxes(lines, 2.0)
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree,
         linestring_bboxes,
@@ -246,26 +249,17 @@ def bench_quadtree_point_to_nearest_linestring(benchmark):
         intersections,
         quadtree,
         point_indices,
-        points_x,
-        points_y,
-        polygons.ring_offset,
-        polygons.x,
-        polygons.y,
+        points,
+        linestrings,
     )
 
 
-def bench_point_in_polygon(benchmark, gpu_dataframe):
-    x_points = (cupy.random.random(50000000) - 0.5) * 360
-    y_points = (cupy.random.random(50000000) - 0.5) * 180
-    short_dataframe = gpu_dataframe.iloc[0:32]
+def bench_point_in_polygon(benchmark, polygons):
+    x_points = (cupy.random.random(5000) - 0.5) * 360
+    y_points = (cupy.random.random(5000) - 0.5) * 180
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame({"x": x_points, "y": y_points}).interleave_columns()
+    )
+    short_dataframe = polygons.iloc[0:31]
     geometry = short_dataframe["geometry"]
-    polygon_offset = cudf.Series(geometry.polygons.geometry_offset[0:31])
-    benchmark(
-        cuspatial.point_in_polygon,
-        x_points,
-        y_points,
-        polygon_offset,
-        geometry.polygons.ring_offset,
-        geometry.polygons.x,
-        geometry.polygons.y,
-    )
+    benchmark(cuspatial.point_in_polygon, points, geometry)
