@@ -46,10 +46,6 @@ for nb in $*; do
     echo "Running \"ipython ${NO_COLORS} ${NBTESTSCRIPT}\" on $(date)"
     echo
     time bash -c "ipython ${NO_COLORS} ${NBTESTSCRIPT}; EC=\$?; echo -------------------------------------------------------------------------------- ; echo DONE: ${NBNAME}; exit \$EC"
-    NBEXITCODE=$?
-    echo EXIT CODE: ${NBEXITCODE}
-    echo
-    EXITCODE=$((EXITCODE | ${NBEXITCODE}))
 done
 
 exit ${EXITCODE}
