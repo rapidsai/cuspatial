@@ -5,12 +5,12 @@ import numpy as np
 from cudf import DataFrame, Series
 from cudf.core.column import as_column
 
+from cuspatial import GeoSeries
 from cuspatial._lib.trajectory import (
     derive_trajectories as cpp_derive_trajectories,
     trajectory_bounding_boxes as cpp_trajectory_bounding_boxes,
     trajectory_distances_and_speeds as cpp_trajectory_distances_and_speeds,
 )
-from cuspatial import GeoSeries
 from cuspatial.utils.column_utils import (
     contains_only_points,
     normalize_timestamp_column,
