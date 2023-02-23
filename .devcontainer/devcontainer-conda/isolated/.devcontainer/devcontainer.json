@@ -20,7 +20,7 @@
   ],
 
   "updateContentCommand": [
-    "/bin/bash", "-c", "cp -ar /workspaces/cuspatial /home/coder/cuspatial && rapids-make-vscode-workspace > ~/workspace.code-workspace"
+    "/bin/bash", "-c", "cp -ar /workspaces/${localWorkspaceFolderBasename} /home/coder/${localWorkspaceFolderBasename} && rapids-make-vscode-workspace > ~/workspace.code-workspace"
   ],
 
   "containerEnv": {
@@ -28,7 +28,7 @@
   },
 
   "workspaceFolder": "/home/coder",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/cuspatial,type=bind",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind",
 
   "customizations": {
     "vscode": {

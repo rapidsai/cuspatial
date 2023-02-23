@@ -1,7 +1,7 @@
 {
   "build": {
-    "context": "../../..",
-    "dockerfile": "../../../Dockerfile",
+    "context": "${localWorkspaceFolder}/.devcontainer",
+    "dockerfile": "${localWorkspaceFolder}/.devcontainer/Dockerfile",
     "args": {
       "CUDA": "11.8",
       "LLVM": "15"
@@ -20,7 +20,7 @@
   ],
 
   "initializeCommand": [
-    "/bin/bash", "-c", "mkdir -m 0755 -p ../../../../{.aws,.cache,.conda,.config,rmm,cudf}"
+    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../{.aws,.cache,.conda,.config,rmm,cudf}"
   ],
 
   "containerEnv": {
@@ -28,15 +28,15 @@
   },
 
   "workspaceFolder": "/home/coder",
-  "workspaceMount": "source=${localWorkspaceFolder}/../../..,target=/home/coder/cuspatial,type=bind",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind",
   "mounts": [
-    "source=${localWorkspaceFolder}/../../../../rmm,target=/home/coder/rmm,type=bind",
-    "source=${localWorkspaceFolder}/../../../../cudf,target=/home/coder/cudf,type=bind",
-    "source=${localWorkspaceFolder}/../../../../.aws,target=/home/coder/.aws,type=bind",
-    "source=${localWorkspaceFolder}/../../../../.cache,target=/home/coder/.cache,type=bind",
-    "source=${localWorkspaceFolder}/../../../../.conda,target=/home/coder/.conda,type=bind",
-    "source=${localWorkspaceFolder}/../../../../.config,target=/home/coder/.config,type=bind",
-    "source=${localWorkspaceFolder}/../../../.devcontainer/opt/cuspatial,target=/opt/cuspatial,type=bind"
+    "source=${localWorkspaceFolder}/../rmm,target=/home/coder/rmm,type=bind",
+    "source=${localWorkspaceFolder}/../cudf,target=/home/coder/cudf,type=bind",
+    "source=${localWorkspaceFolder}/../.aws,target=/home/coder/.aws,type=bind",
+    "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind",
+    "source=${localWorkspaceFolder}/../.conda,target=/home/coder/.conda,type=bind",
+    "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind",
+    "source=${localWorkspaceFolder}/.devcontainer/opt/${localWorkspaceFolderBasename},target=/opt/${localWorkspaceFolderBasename},type=bind"
   ],
 
   "customizations": {

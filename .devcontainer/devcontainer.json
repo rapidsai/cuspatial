@@ -28,13 +28,13 @@
   },
 
   "workspaceFolder": "/home/coder",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/cuspatial,type=bind",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind",
   "mounts": [
     "source=${localWorkspaceFolder}/../.aws,target=/home/coder/.aws,type=bind",
     "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind",
     "source=${localWorkspaceFolder}/../.conda,target=/home/coder/.conda,type=bind",
     "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind",
-    "source=${localWorkspaceFolder}/.devcontainer/opt/cuspatial,target=/opt/cuspatial,type=bind"
+    "source=${localWorkspaceFolder}/.devcontainer/opt/${localWorkspaceFolderBasename},target=/opt/${localWorkspaceFolderBasename},type=bind"
   ],
 
   "customizations": {
