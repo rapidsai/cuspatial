@@ -23,29 +23,46 @@ def bench_derive_trajectories(benchmark, sorted_trajectories):
     timestamps = cupy.random.random(10000) * 10000
     x = cupy.random.random(10000)
     y = cupy.random.random(10000)
-    benchmark(cuspatial.derive_trajectories, ids, x, y, timestamps)
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame({"x": x, "y": y}).interleave_columns()
+    )
+    benchmark(cuspatial.derive_trajectories, ids, points, timestamps)
 
 
 def bench_trajectory_distances_and_speeds(benchmark, sorted_trajectories):
     length = len(cudf.Series(sorted_trajectories[1]).unique())
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": sorted_trajectories[0]["x"],
+                "y": sorted_trajectories[0]["y"],
+            }
+        ).interleave_columns()
+    )
     benchmark(
         cuspatial.trajectory_distances_and_speeds,
         length,
         sorted_trajectories[0]["object_id"],
-        sorted_trajectories[0]["x"],
-        sorted_trajectories[0]["y"],
+        points,
         sorted_trajectories[0]["timestamp"],
     )
 
 
 def bench_trajectory_bounding_boxes(benchmark, sorted_trajectories):
     length = len(cudf.Series(sorted_trajectories[1]).unique())
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": sorted_trajectories[0]["x"],
+                "y": sorted_trajectories[0]["y"],
+            }
+        ).interleave_columns()
+    )
     benchmark(
         cuspatial.trajectory_bounding_boxes,
         length,
         sorted_trajectories[0]["object_id"],
-        sorted_trajectories[0]["x"],
-        sorted_trajectories[0]["y"],
+        points,
     )
 
 
@@ -69,12 +86,17 @@ def bench_sinusoidal_projection(benchmark, gpu_dataframe):
     afghanistan = gpu_dataframe["geometry"][
         gpu_dataframe["name"] == "Afghanistan"
     ]
+    lonlat = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {"lon": afghanistan.polygons.y, "lat": afghanistan.polygons.x}
+        ).interleave_columns()
+    )
+
     benchmark(
         cuspatial.sinusoidal_projection,
         afghanistan.polygons.y.mean(),
         afghanistan.polygons.x.mean(),
-        afghanistan.polygons.y,
-        afghanistan.polygons.x,
+        lonlat,
     )
 
 
