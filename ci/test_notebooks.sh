@@ -42,13 +42,7 @@ SUITEERROR=0
 set +e
 for nb in $(find . -name "*.ipynb"); do
     nbBasename=$(basename ${nb})
-    # Skip all notebooks that use dask (in the code or even in their name)
-    if ((echo ${nb} | grep -qi dask) || \
-        (grep -q dask ${nb})); then
-        echo "--------------------------------------------------------------------------------"
-        echo "SKIPPING: ${nb} (suspected Dask usage, not currently automatable)"
-        echo "--------------------------------------------------------------------------------"
-    elif (echo " ${SKIPNBS} " | grep -q " ${nbBasename} "); then
+    if (echo " ${SKIPNBS} " | grep -q " ${nbBasename} "); then
         echo "--------------------------------------------------------------------------------"
         echo "SKIPPING: ${nb} (listed in skip list)"
         echo "--------------------------------------------------------------------------------"
