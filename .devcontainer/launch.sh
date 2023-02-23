@@ -21,15 +21,15 @@ launch_devcontainer() {
         *      ) mode="single";;
     esac
 
-    local tmpdir="$(mktemp -d)";
+    local workspace="$(basename "$(pwd)")";
+    local tmpdir="$(mktemp -d)/$workspace";
     local flavor="devcontainer-${pkgs}/${mode}";
     local path="$(pwd)/.devcontainer/${flavor}";
 
-    if [[ "$mode" == "isolated" ]]; then
-        cp -arL "$path/.devcontainer" "${tmpdir}/";
-        sed -i "s@\${localWorkspaceFolder}@$(pwd)@g" "${tmpdir}/.devcontainer/devcontainer.json";
-        path="${tmpdir}";
-    fi
+    mkdir -p "$tmpdir";
+    cp -arL "$path/.devcontainer" "${tmpdir}/";
+    sed -i "s@\${localWorkspaceFolder}@$(pwd)@g" "${tmpdir}/.devcontainer/devcontainer.json";
+    path="${tmpdir}";
 
     local hash="$(echo -n "${path}" | xxd -pu - | tr -d '[:space:]')";
     local url="vscode://vscode-remote/dev-container+${hash}/home/coder";
