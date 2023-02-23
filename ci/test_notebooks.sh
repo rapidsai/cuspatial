@@ -36,8 +36,8 @@ pushd notebooks
 # (space-separated list of filenames without paths)
 SKIPNBS=""
 
-# Set SUITEERROR to failure if any run fails
-SUITEERROR=0
+EXITCODE=0
+trap "EXITCODE=1" ERR
 
 set +e
 for nb in $(find . -name "*.ipynb"); do
@@ -53,4 +53,5 @@ for nb in $(find . -name "*.ipynb"); do
     fi
 done
 
-exit ${SUITEERROR}
+rapids-logger "Notebook test script exiting with value: $EXITCODE"
+exit ${EXITCODE}

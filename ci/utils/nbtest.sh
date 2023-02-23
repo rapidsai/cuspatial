@@ -22,9 +22,11 @@ get_ipython().run_cell_magic=my_run_cell_magic
 "
 
 NO_COLORS=--colors=NoColor
-EXITCODE=0
 NBTMPDIR="$WORKSPACE/tmp"
 mkdir -p ${NBTMPDIR}
+
+EXITCODE=0
+trap "EXITCODE=1" ERR
 
 for nb in $*; do
     NBFILENAME=$1
