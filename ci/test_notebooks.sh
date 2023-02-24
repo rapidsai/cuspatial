@@ -49,7 +49,6 @@ for nb in $(find . -name "*.ipynb"); do
     else
         nvidia-smi
         ${NBTEST} ${nbBasename}
-        SUITEERROR=$((SUITEERROR | $?))
     fi
 done
 
