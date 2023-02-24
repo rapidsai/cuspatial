@@ -159,6 +159,7 @@ dependencies:
           - ipython
           - notebook
           - shapely
+          - pydeck
   py_version:
     specific:
       - output_types: conda
