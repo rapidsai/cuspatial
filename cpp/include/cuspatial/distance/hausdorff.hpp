@@ -71,15 +71,18 @@ namespace cuspatial {
  * :        2 :  2 :     0 :    :       2 :   :      :
  * +----------+----+-------+    +---------+---+------+
  *
- * returned as concatenation of columns
- * [0 2 4 3 0 2 9 6 0]
+ * Returns:
+ * column: [0 4 2 9 0 6 3 2 0]
+ * table_view: [0 4 2] [9 0 6] [3 2 0]
+ *
  * ```
  *
  * @param[in] xs: x component of points
  * @param[in] ys: y component of points
  * @param[in] space_offsets: beginning index of each space, plus the last space's end offset.
  *
- * @returns Hausdorff distances for each pair of spaces
+ * @returns An owning object of the result of the hausdorff distances.
+ * A table view containing the split view for each input space.
  *
  * @throw cudf::cuda_error if `xs` and `ys` lengths differ
  * @throw cudf::cuda_error if `xs` and `ys` types differ
