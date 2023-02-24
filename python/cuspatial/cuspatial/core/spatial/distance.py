@@ -77,7 +77,8 @@ def directed_hausdorff_distance(multipoints: GeoSeries):
     1  2.0  0.000000
     """
 
-    if len(multipoints) == 0:
+    num_spaces = len(multipoints)
+    if num_spaces == 0:
         return DataFrame()
 
     if not contains_only_multipoints(multipoints):
@@ -89,7 +90,7 @@ def directed_hausdorff_distance(multipoints: GeoSeries):
         as_column(multipoints.multipoints.geometry_offset[:-1]),
     )
 
-    return DataFrame._from_columns(result, range(num_spaces)).T
+    return DataFrame._from_columns(result, range(num_spaces))
 
 
 def haversine_distance(p1: GeoSeries, p2: GeoSeries):
