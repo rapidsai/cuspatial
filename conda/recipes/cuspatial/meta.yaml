@@ -50,7 +50,6 @@ requirements:
     - setuptools
   run:
     - cudf ={{ minor_version }}
-    - gdal {{ gdal_version }}
     - geopandas >=0.11.0
     - python
     - rmm ={{ minor_version }}
