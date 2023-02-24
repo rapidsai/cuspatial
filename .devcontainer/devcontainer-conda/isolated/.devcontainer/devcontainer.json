@@ -29,6 +29,12 @@
 
   "workspaceFolder": "/home/coder",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind",
+  "mounts": [
+    "source=${localWorkspaceFolder}/../.aws,target=/home/coder/.aws,type=bind",
+    "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind",
+    "source=${localWorkspaceFolder}/../.conda/pkgs,target=/home/coder/.conda/pkgs,type=bind",
+    "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind"
+  ],
 
   "customizations": {
     "vscode": {
