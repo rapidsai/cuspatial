@@ -28,15 +28,15 @@
   },
 
   "workspaceFolder": "/home/coder",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
   "mounts": [
-    "source=${localWorkspaceFolder}/../rmm,target=/home/coder/rmm,type=bind",
-    "source=${localWorkspaceFolder}/../cudf,target=/home/coder/cudf,type=bind",
-    "source=${localWorkspaceFolder}/../.aws,target=/home/coder/.aws,type=bind",
-    "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind",
-    "source=${localWorkspaceFolder}/../.conda,target=/home/coder/.conda,type=bind",
-    "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind",
-    "source=${localWorkspaceFolder}/.devcontainer/opt/${localWorkspaceFolderBasename},target=/opt/${localWorkspaceFolderBasename},type=bind"
+    "source=${localWorkspaceFolder}/../rmm,target=/home/coder/rmm,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../cudf,target=/home/coder/cudf,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../.conda,target=/home/coder/.conda,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/.devcontainer/opt/${localWorkspaceFolderBasename},target=/opt/${localWorkspaceFolderBasename},type=bind,consistency=consistent"
   ],
 
   "customizations": {
