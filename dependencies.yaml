@@ -159,6 +159,8 @@ dependencies:
           - ipython
           - notebook
           - shapely
+          - scikit-image
+          - ipywidgets
   py_version:
     specific:
       - output_types: conda
