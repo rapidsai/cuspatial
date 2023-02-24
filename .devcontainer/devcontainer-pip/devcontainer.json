@@ -24,7 +24,7 @@
   },
 
   "workspaceFolder": "/home/coder",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
 
   "customizations": {
     "vscode": {
