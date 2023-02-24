@@ -27,6 +27,7 @@
 #include <cudf/table/table_view.hpp>
 #include <cudf/types.hpp>
 #include <cudf/utilities/error.hpp>
+#include <cudf/utilities/span.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -35,12 +36,34 @@
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/fill.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/sequence.h>
 
 #include <memory>
 #include <type_traits>
 
 namespace {
+
+/**
+ * @brief Split `col` into equal size chunks, each has `size`.
+ *
+ * @note only applicable to fixed width type.
+ * @note only applicable to columns of `size*size`.
+ */
+template <typename T>
+std::vector<cudf::column_view> split_by_size(cudf::column_view const& col, cudf::size_type size)
+{
+  std::vector<cudf::column_view> res;
+  cudf::size_type num_splits = col.size() / size;
+  std::transform(thrust::counting_iterator(0),
+                 thrust::counting_iterator(num_splits),
+                 std::back_inserter(res),
+                 [size, num_splits, &col](int i) {
+                   return cudf::column_view(
+                     col.type(), size, col.data<T>(), nullptr, 0, size * i, {});
+                 });
+  return res;
+}
 
 struct hausdorff_functor {
   template <typename T, typename... Args>
@@ -85,11 +108,7 @@ struct hausdorff_functor {
                                            result_view.begin<T>(),
                                            stream);
 
-    thrust::host_vector<cudf::size_type> splits(num_spaces - 1);
-    thrust::sequence(thrust::host, splits.begin(), splits.end(), num_spaces, num_spaces);
-
-    return {std::move(result),
-            cudf::table_view(cudf::detail::split(result->view(), splits, stream))};
+    return {std::move(result), cudf::table_view(split_by_size<T>(result->view(), num_spaces))};
   }
 };
 

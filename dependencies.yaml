@@ -10,7 +10,7 @@ files:
       - build_python
       - cudatoolkit
       - develop
-      - doc
+      - docs
       - py_version
       - run_python
       - test_python
@@ -24,10 +24,21 @@ files:
       - cudatoolkit
       - py_version
       - test_python
+  test_notebooks:
+    output: none
+    includes:
+      - notebooks
+      - py_version
   checks:
     output: none
     includes:
       - develop
+      - py_version
+  docs:
+    output: none
+    includes:
+      - cudatoolkit
+      - docs
       - py_version
 channels:
   - rapidsai
@@ -130,12 +141,24 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - pre-commit
-  doc:
+  docs:
+    common:
+      - output_types: [conda]
+        packages:
+          - doxygen
+          - ipython
+          - myst-parser
+          - nbsphinx
+          - numpydoc
+          - pydata-sphinx-theme
+          - sphinx<6
+  notebooks:
     common:
       - output_types: [conda, requirements]
         packages:
-          - pydata-sphinx-theme
-          - myst-parser
+          - ipython
+          - notebook
+          - shapely
   py_version:
     specific:
       - output_types: conda

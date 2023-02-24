@@ -71,7 +71,7 @@ TYPED_TEST(HausdorffTest, Simple)
   this->template test<cuspatial::vec_2d<TypeParam>, uint32_t>(
     {{0, 0}, {1, 0}, {0, 1}, {0, 2}},
     {{0, 2}},
-    {{0.0, static_cast<TypeParam>(std::sqrt(2.0)), 2.0, 0.0}});
+    {{0.0, 2.0, static_cast<TypeParam>(std::sqrt(2.0)), 0.0}});
 }
 
 TYPED_TEST(HausdorffTest, SingleTrajectorySinglePoint)
@@ -85,7 +85,7 @@ TYPED_TEST(HausdorffTest, SingleTrajectorySinglePoint)
 TYPED_TEST(HausdorffTest, TwoShortSpaces)
 {
   this->template test<cuspatial::vec_2d<TypeParam>, uint32_t>(
-    {{0, 0}, {5, 12}, {4, 3}}, {{0, 1}}, {{0.0, 5.0, 13.0, 0.0}});
+    {{0, 0}, {5, 12}, {4, 3}}, {{0, 1}}, {{0.0, 13.0, 5.0, 0.0}});
 }
 
 TYPED_TEST(HausdorffTest, TwoShortSpaces2)
@@ -94,13 +94,13 @@ TYPED_TEST(HausdorffTest, TwoShortSpaces2)
                      {{1, 1}, {5, 12}, {4, 3}, {2, 8}, {3, 4}, {7, 7}},
                      {{0, 3, 4}},
                      {{0.0,
-                       7.0710678118654755,
-                       5.3851648071345037,
                        5.0000000000000000,
-                       0.0,
-                       4.1231056256176606,
                        5.0,
+                       7.0710678118654755,
+                       0.0,
                        5.0990195135927854,
+                       5.3851648071345037,
+                       4.1231056256176606,
                        0.0}});
 }
 
@@ -121,12 +121,12 @@ TYPED_TEST(HausdorffTest, ThreeSpacesLengths543)
                       {4.0, 6.0}},
                      {{0, 5, 9}},
                      {{0.0000000000000000,
-                       4.1231056256176606,
-                       4.0000000000000000,
                        3.6055512754639896,
+                       4.4721359549995796,
+                       4.1231056256176606,
                        0.0000000000000000,
                        1.4142135623730951,
-                       4.4721359549995796,
+                       4.0000000000000000,
                        1.4142135623730951,
                        0.0000000000000000}});
 }
