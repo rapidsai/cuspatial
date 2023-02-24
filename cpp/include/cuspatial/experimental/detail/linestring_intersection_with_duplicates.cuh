@@ -51,14 +51,47 @@ namespace intersection_functors {
  *  Given the `i`th row in the `geometry_collection_offset`, find the number of all
  *  previous removed geometry from `reduced_values` by searching `reduced_keys`.
  *
- *  Example:
+ *  `reduced_keys` represents the end position of the indices for non-empty lists in
+ *  column.
+ *
+ *  `redcued_values` stores the total number of removed geometries for all preceding
+ *  lists.
+ *
+ *  In this example, there are 3 non-empty lists ending at position 1, 3, 4.
+ *  2 geometries were removed for the second non-empty list.
+ *
+ *  ```
  *  i:                             0  1  2  3  4  5  6  7
  *  Geometry Collection Offset:    0  0  0  1  3  4  4  4
  *  Reduced Keys:                  3  4  5
+ *  Reduced Values:                0  2  2
+ *  ```
+ *  `GeometryCollectionOffset[reduced_keys[0]] == 1` means the first non-empty list
+ *  ends at position 1 of the column. Perform a search of this array with `i` gives `j`:
+ *
+ *  ```
  *  j:                            -1 -1 -1  0  1  2  2  2
- *  Reduced Values:                0  2  2                  (Removed 2 geometries)
+ *  ```
+ *
+ *  `i == {0, 1, 2}`, `j == -1`, which means there are no non-empty lists that
+ *  precedes list 0, 1, 2. No offsets should be subtracted from `geometry_collection_offset`.
+ *
+ *  `i == 3`, `j == 0`, the last non-empty list that precedes list 3 ends at
+ *  `GeometryCollectionOffset[reduced_key[0]] == 1`.
+ *  `reduced_values[0] == 0` geometries should be subtracted from offset.
+ *
+ *  `i == 4`, `j == 1`, the last non-empty list that preceds list 4 ends at
+ *  `GeometryCollectionOffset[reduced_key[1]] == 3`.
+ *  `reduced_values[1] == 2` geometries should be subtracted from offset.
+ *
+ *  `i == {5, 6, 7}`, `j == 2`, the last non-empty list that precedes
+ *  list 5, 6, 7 ends at `GeometryCollectionOffset[reduced_key[2]] == 4`.
+ *  `reduced_values[2] == 2` geometries should be subtracted from offset.
+ *
+ *  ```
  *  Should subtract:               /  /  /  0  2  2  2  2
  *  Result:                        0  0  0  0  1  2  2  2
+ *  ```
  */
 template <typename Keys, typename Values>
 struct offsets_update_functor {
@@ -525,7 +558,7 @@ pairwise_linestring_intersection_with_duplicates(MultiLinestringRange1 multiline
       points.geoms->begin(),
       segments.geoms->begin());
 
-  CUSPATIAL_CUDA_TRY(cudaGetLastError());
+  CUSPATIAL_CHECK_CUDA(stream.value());
 
   return {std::move(points), std::move(segments)};
 }

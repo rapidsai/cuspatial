@@ -70,7 +70,7 @@ void find_duplicate_points(MultiPointRange multipoints,
   find_duplicate_points_kernel_simple<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     multipoints, duplicate_flags);
 
-  CUSPATIAL_CUDA_TRY(cudaGetLastError());
+  CUSPATIAL_CHECK_CUDA(stream.value());
 }
 
 }  // namespace detail

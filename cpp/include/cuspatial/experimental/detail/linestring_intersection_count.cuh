@@ -91,7 +91,7 @@ void pairwise_linestring_intersection_upper_bound_count(MultiLinestringRange1 mu
     count_intersection_and_overlaps_simple<<<num_blocks, threads_per_block, 0, stream.value()>>>(
       multilinestrings1, multilinestrings2, points_count_it, segments_count_it);
 
-  CUSPATIAL_CUDA_TRY(cudaGetLastError());
+  CUSPATIAL_CHECK_CUDA(stream.value());
 }
 
 }  // namespace detail

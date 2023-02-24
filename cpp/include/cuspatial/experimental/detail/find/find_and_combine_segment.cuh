@@ -74,7 +74,7 @@ void find_and_combine_segment(OffsetRange offsets,
   simple_find_and_combine_segments_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     offsets, segments, merged_flag);
 
-  CUSPATIAL_CUDA_TRY(cudaGetLastError());
+  CUSPATIAL_CHECK_CUDA(stream.value());
 }
 
 }  // namespace detail
