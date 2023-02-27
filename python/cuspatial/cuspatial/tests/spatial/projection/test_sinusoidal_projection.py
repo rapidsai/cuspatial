@@ -1,6 +1,8 @@
-# Copyright (c) 2019-2022, NVIDIA CORPORATION.
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
 
 import pytest
+from geopandas.testing import assert_geoseries_equal
+from shapely.geometry import Point
 
 import cudf
 
@@ -10,28 +12,28 @@ import cuspatial
 def test_camera_oob_0():
     with pytest.raises(RuntimeError):
         result = cuspatial.sinusoidal_projection(  # noqa: F841
-            -200, 0, cudf.Series([0]), cudf.Series([0])
+            -200, 0, cuspatial.GeoSeries([Point(0, 0)])
         )
 
 
 def test_camera_oob_1():
     with pytest.raises(RuntimeError):
         result = cuspatial.sinusoidal_projection(  # noqa: F841
-            200, 0, cudf.Series([0]), cudf.Series([0])
+            200, 0, cuspatial.GeoSeries([Point(0, 0)])
         )
 
 
 def test_camera_oob_2():
     with pytest.raises(RuntimeError):
         result = cuspatial.sinusoidal_projection(  # noqa: F841
-            0, -100, cudf.Series([0]), cudf.Series([0])
+            0, -100, cuspatial.GeoSeries([Point(0, 0)])
         )
 
 
 def test_camera_oob_3():
     with pytest.raises(RuntimeError):
         result = cuspatial.sinusoidal_projection(  # noqa: F841
-            0, 100, cudf.Series([0]), cudf.Series([0])
+            0, 100, cuspatial.GeoSeries([Point(0, 0)])
         )
 
 
@@ -39,45 +41,43 @@ def test_camera_oob_3():
 def test_camera_corners(corner):
     x = [-180.0, 180.0, -180.0, 180.0]
     y = [-90.0, 90.0, 90.0, -90.0]
-    result = cuspatial.sinusoidal_projection(
-        x[corner], y[corner], cudf.Series(x[corner]), cudf.Series(y[corner])
-    )
-    cudf.testing.assert_frame_equal(
-        result, cudf.DataFrame({"x": [0.0], "y": [0.0]})
+    lonlat = cuspatial.GeoSeries.from_points_xy([x[corner], y[corner]])
+    result = cuspatial.sinusoidal_projection(x[corner], y[corner], lonlat)
+    assert_geoseries_equal(
+        result.to_geopandas(),
+        cuspatial.GeoSeries([Point(0.0, 0.0)]).to_geopandas(),
     )
 
 
 def test_longest_distance():
     result = cuspatial.sinusoidal_projection(
-        -180, -90, cudf.Series([180.0]), cudf.Series([90.0])
+        -180, -90, cuspatial.GeoSeries.from_points_xy([180.0, 90.0])
     )
-    cudf.testing.assert_frame_equal(
-        result, cudf.DataFrame({"x": [-40000.0], "y": [-20000.0]})
+    assert_geoseries_equal(
+        result.to_geopandas(),
+        cuspatial.GeoSeries([Point(-40000.0, -20000.0)]).to_geopandas(),
     )
 
 
 def test_half_distance():
     result = cuspatial.sinusoidal_projection(
-        -180.0, -90.0, cudf.Series([0.0]), cudf.Series([0.0])
+        -180.0, -90.0, cuspatial.GeoSeries([Point(0.0, 0.0)])
     )
-    cudf.testing.assert_frame_equal(
-        result, cudf.DataFrame({"x": [-14142.135623730952], "y": [-10000.0]})
+    assert_geoseries_equal(
+        result.to_geopandas(),
+        cuspatial.GeoSeries(
+            [Point(-14142.135623730952, -10000.0)]
+        ).to_geopandas(),
     )
-
-
-def test_missing_coords():
-    with pytest.raises(RuntimeError):
-        result = cuspatial.sinusoidal_projection(  # noqa: F841
-            -180.0, -90.0, cudf.Series(), cudf.Series([0.0])
-        )
 
 
 def test_zeros():
     result = cuspatial.sinusoidal_projection(
-        0.0, 0.0, cudf.Series([0.0]), cudf.Series([0.0])
+        0.0, 0.0, cuspatial.GeoSeries([Point(0.0, 0.0)])
     )
-    cudf.testing.assert_frame_equal(
-        result, cudf.DataFrame({"x": [0.0], "y": [0.0]})
+    assert_geoseries_equal(
+        result.to_geopandas(),
+        cuspatial.GeoSeries([Point(0.0, 0.0)]).to_geopandas(),
     )
 
 
@@ -88,14 +88,20 @@ def test_values():
     py_lon = cudf.Series([-90.66518941, -90.66540743, -90.66489239])
     py_lat = cudf.Series([42.49207437, 42.49202408, 42.49266787])
 
+    lonlat = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame({"x": py_lon, "y": py_lat}).interleave_columns()
+    )
+
     # note: x/y coordinates in killometers -km
-    result = cuspatial.sinusoidal_projection(cam_lon, cam_lat, py_lon, py_lat)
-    cudf.testing.assert_frame_equal(
-        result,
+    result = cuspatial.sinusoidal_projection(cam_lon, cam_lat, lonlat)
+    expected = cuspatial.GeoSeries.from_points_xy(
         cudf.DataFrame(
             {
                 "x": [0.0064683857, 0.024330807, -0.0178664241],
                 "y": [-0.0115766660, -0.005988880, -0.0775211111],
             }
-        ),
+        ).interleave_columns()
+    )
+    assert_geoseries_equal(
+        result.to_geopandas(), expected.to_geopandas(), check_less_precise=True
     )
