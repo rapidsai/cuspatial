@@ -1,10 +1,13 @@
 {
+  "shutdownAction": "none",
+
   "build": {
     "context": "${localWorkspaceFolder}/.devcontainer",
     "dockerfile": "${localWorkspaceFolder}/.devcontainer/Dockerfile",
     "args": {
       "CUDA": "11.8",
-      "LLVM": "15"
+      "LLVM": "15",
+      "PYTHON_PACKAGE_MANAGER": "conda"
     }
   },
   "hostRequirements": {
@@ -19,8 +22,12 @@
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
   ],
 
+  "initializeCommand": [
+    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../{.aws,.cache,.config,.conda}"
+  ],
+
   "updateContentCommand": [
-    "/bin/bash", "-c", "cp -ar /workspaces/${localWorkspaceFolderBasename} /home/coder/${localWorkspaceFolderBasename} && rapids-make-vscode-workspace > ~/workspace.code-workspace"
+    "/bin/bash", "-c", "cp -ar /workspaces/${localWorkspaceFolderBasename} /home/coder/${localWorkspaceFolderBasename}"
   ],
 
   "containerEnv": {
@@ -32,8 +39,8 @@
   "mounts": [
     "source=${localWorkspaceFolder}/../.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/../.conda/pkgs,target=/home/coder/.conda/pkgs,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind,consistency=consistent"
+    "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../.conda/pkgs,target=/home/coder/.conda/pkgs,type=bind,consistency=consistent"
   ],
 
   "customizations": {

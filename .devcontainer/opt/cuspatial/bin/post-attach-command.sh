@@ -6,4 +6,4 @@
 # Once "postAttachCommand" is finished, the terminal is relenquished to
 # the user. Sourcing here ensures the new conda env is already activated
 # in the shell for the user.
-source rapids-make-conda-env;
+source rapids-make-${PYTHON_PACKAGE_MANAGER}-env;
