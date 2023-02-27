@@ -1,10 +1,13 @@
 {
+  "shutdownAction": "none",
+
   "build": {
     "context": "${localWorkspaceFolder}/.devcontainer",
     "dockerfile": "${localWorkspaceFolder}/.devcontainer/Dockerfile",
     "args": {
       "CUDA": "11.8",
-      "LLVM": "15"
+      "LLVM": "15",
+      "PYTHON_PACKAGE_MANAGER": "pip"
     }
   },
   "hostRequirements": {
@@ -12,19 +15,25 @@
   },
 
   "features": {
+    "ghcr.io/devcontainers/features/python:1": {},
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:latest": {}
   },
 
   "overrideFeatureInstallOrder": [
+    "ghcr.io/devcontainers/features/python",
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
   ],
 
+  "initializeCommand": [
+    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../{.aws,.cache,.config,.local}"
+  ],
+
   "updateContentCommand": [
-    "/bin/bash", "-c", "cp -ar /workspaces/${localWorkspaceFolderBasename} /home/coder/${localWorkspaceFolderBasename} && rapids-make-vscode-workspace > ~/workspace.code-workspace"
+    "/bin/bash", "-c", "cp -ar /workspaces/${localWorkspaceFolderBasename} /home/coder/${localWorkspaceFolderBasename}"
   ],
 
   "containerEnv": {
-    "DEFAULT_CONDA_ENV": "rapids"
+    "DEFAULT_VIRTUAL_ENV": "rapids"
   },
 
   "workspaceFolder": "/home/coder",
@@ -32,7 +41,8 @@
   "mounts": [
     "source=${localWorkspaceFolder}/../.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind,consistency=consistent"
+    "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../.local,target=/home/coder/.local,type=bind,consistency=consistent"
   ],
 
   "customizations": {

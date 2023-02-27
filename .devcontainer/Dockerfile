@@ -5,11 +5,23 @@ ARG LLVM=15
 ARG RAPIDS=23.04
 ARG DISTRO=ubuntu22.04
 ARG REPO=rapidsai/devcontainers
-ARG FROM_IMAGE=${REPO}:${RAPIDS}-cpp-llvm${LLVM}-cuda${CUDA}-mambaforge-${DISTRO}
 
-FROM ${FROM_IMAGE}
+ARG PYTHON_PACKAGE_MANAGER=conda
 
-COPY --chown=root:root opt/cuspatial /opt/cuspatial
+FROM ${REPO}:${RAPIDS}-cpp-llvm${LLVM}-cuda${CUDA}-${DISTRO} as pip-base
+
+FROM ${REPO}:${RAPIDS}-cpp-llvm${LLVM}-cuda${CUDA}-mambaforge-${DISTRO} as conda-base
+
+FROM ${PYTHON_PACKAGE_MANAGER}-base
+
+ARG PYTHON_PACKAGE_MANAGER
+ENV PYTHON_PACKAGE_MANAGER="${PYTHON_PACKAGE_MANAGER}"
+
+USER coder
+
+COPY --chown=coder:coder opt/cuspatial /opt/cuspatial
+
+RUN /bin/bash -c 'mkdir -m 0755 -p ~/{.aws,.cache,.conda,.config,.local}'
 
 WORKDIR /home/coder/
 
