@@ -100,5 +100,68 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
 
   return point_is_within;
 }
+
+// In progress -- failing TwoPolygonsOneRingEach
+template <class Cart2d,
+          class OffsetType,
+          class OffsetIterator,
+          class Cart2dIt,
+          class OffsetItDiffType = typename std::iterator_traits<OffsetIterator>::difference_type,
+          class Cart2dItDiffType = typename std::iterator_traits<Cart2dIt>::difference_type>
+__device__ inline bool is_point_in_polygon2(Cart2d const& test_point,
+                                            OffsetType poly_begin,
+                                            OffsetType poly_end,
+                                            OffsetIterator ring_offsets_first,
+                                            OffsetItDiffType const& num_rings,
+                                            Cart2dIt poly_points_first,
+                                            Cart2dItDiffType const& num_poly_points)
+{
+  using T = iterator_vec_base_type<Cart2dIt>;
+
+  bool inside_right = false;
+  bool inside_left  = false;
+
+  // for each ring
+  for (auto ring_idx = poly_begin; ring_idx < poly_end; ring_idx++) {
+    int32_t ring_idx_next = ring_idx + 1;
+    int32_t ring_begin    = ring_offsets_first[ring_idx];
+    int32_t ring_end =
+      (ring_idx_next < num_rings) ? ring_offsets_first[ring_idx_next] : num_poly_points;
+
+    Cart2d a = poly_points_first[ring_end - 1];
+
+    // for each line segment, starting with the segment between the last and first vertex
+    for (auto point_idx = ring_begin; point_idx < ring_end; point_idx++) {
+      Cart2d const b = poly_points_first[point_idx];
+
+      T run  = b.x - a.x;
+      T rise = b.y - a.y;
+
+      // Points on the line segment are the same, so intersection is impossible.
+      // This is possible because we allow closed or unclosed polygons.
+      T constexpr zero = 0.0;
+      if (float_equal(run, zero) && float_equal(rise, zero)) continue;
+
+      bool in_y = (a.y <= test_point.y && test_point.y <= b.y) ||
+                  (b.y <= test_point.y && test_point.y <= a.y);
+      if (in_y) {
+        // Transform the following inequality to avoid division
+        //  test_point.x < (run / rise) * (test_point.y - a.y) + a.x
+        auto lhs = run * (test_point.y - a.y);
+        auto rhs = rise * (test_point.x - a.x);
+        if (float_equal(lhs, rhs)) {  // point is on an edge
+          return false;
+        } else if ((lhs < rhs) == (rise > 0)) {
+          inside_left = !inside_left;
+        } else if ((lhs > rhs) == (rise > 0)) {
+          inside_right = !inside_right;
+        }
+      }
+      a = b;
+    }
+  }
+
+  return inside_right && inside_left;
+}
 }  // namespace detail
 }  // namespace cuspatial

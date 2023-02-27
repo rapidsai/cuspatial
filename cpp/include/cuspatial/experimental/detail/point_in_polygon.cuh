@@ -68,13 +68,13 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
     OffsetType poly_end =
       (poly_idx_next < num_polys) ? poly_offsets_first[poly_idx_next] : num_rings;
 
-    bool const point_is_within = is_point_in_polygon(test_point,
-                                                     poly_begin,
-                                                     poly_end,
-                                                     ring_offsets_first,
-                                                     num_rings,
-                                                     poly_points_first,
-                                                     num_poly_points);
+    bool const point_is_within = is_point_in_polygon2(test_point,
+                                                      poly_begin,
+                                                      poly_end,
+                                                      ring_offsets_first,
+                                                      num_rings,
+                                                      poly_points_first,
+                                                      num_poly_points);
 
     hit_mask |= point_is_within << poly_idx;
   }
