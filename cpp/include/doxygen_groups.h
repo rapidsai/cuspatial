@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,9 @@
  * @defgroup cuspatial_types Types
  * @{
  *      @brief Type declarations for cuspatial
+ *      @file types.hpp
  *      @file vec_2d.hpp
+ *      @file geometry_column_view.hpp
  *
  *      @defgroup type_factories Factory Methods
  *      @{

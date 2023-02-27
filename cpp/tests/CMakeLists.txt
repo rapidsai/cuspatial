@@ -1,5 +1,5 @@
 ﻿#=============================================================================
-# Copyright (c) 2019-2022, NVIDIA CORPORATION.
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -96,6 +96,9 @@ ConfigureTest(POINT_LINESTRING_DISTANCE_TEST
 
 ConfigureTest(LINESTRING_DISTANCE_TEST
     spatial/linestring_distance_test.cpp)
+
+ConfigureTest(LINESTRING_INTERSECTION_TEST
+    spatial/linestring_intersection_test.cpp)
 
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST
     spatial/point_linestring_nearest_points_test.cpp)
