@@ -21,12 +21,12 @@ launch_devcontainer() {
         *      ) mode="single";;
     esac
 
+    local flavor="${pkgs}/${mode}";
     local workspace="$(basename "$(pwd)")";
-    local tmpdir="$(mktemp -d)/$workspace";
-    local flavor="devcontainer-${pkgs}/${mode}";
+    local tmpdir="$(mktemp -d)/${workspace}";
     local path="$(pwd)/.devcontainer/${flavor}";
 
-    mkdir -p "$tmpdir";
+    mkdir -p "${tmpdir}";
     cp -arL "$path/.devcontainer" "${tmpdir}/";
     sed -i "s@\${localWorkspaceFolder}@$(pwd)@g" "${tmpdir}/.devcontainer/devcontainer.json";
     path="${tmpdir}";
@@ -34,7 +34,7 @@ launch_devcontainer() {
     local hash="$(echo -n "${path}" | xxd -pu - | tr -d '[:space:]')";
     local url="vscode://vscode-remote/dev-container+${hash}/home/coder";
 
-    echo "devcontainer URL: $url";
+    echo "devcontainer URL: ${url}";
 
     local launch="";
     if type open >/dev/null 2>&1; then
@@ -45,7 +45,7 @@ launch_devcontainer() {
 
     if [ -n "${launch}" ]; then
         code --new-window "$tmpdir";
-        $launch "$url" >/dev/null 2>&1 &
+        $launch "${url}" >/dev/null 2>&1 &
     fi
 }
 
