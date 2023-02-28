@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <optional>
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -29,6 +28,7 @@
 #include <cuspatial/vec_2d.hpp>
 
 #include <iterator>
+#include <optional>
 
 namespace cuspatial {
 
