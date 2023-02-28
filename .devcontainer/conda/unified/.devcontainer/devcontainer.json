@@ -6,7 +6,7 @@
     "dockerfile": "${localWorkspaceFolder}/.devcontainer/Dockerfile",
     "args": {
       "CUDA": "11.8",
-      "LLVM": "15",
+      "LLVM": "16",
       "PYTHON_PACKAGE_MANAGER": "conda"
     }
   },
@@ -23,7 +23,7 @@
   ],
 
   "initializeCommand": [
-    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../{.aws,.cache,.config,.conda/pkgs,.conda/${localWorkspaceFolderBasename}-unified-envs}"
+    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../.{aws,cache,config,conda/pkgs,conda/${localWorkspaceFolderBasename}-unified-envs}"
   ],
 
   "containerEnv": {
