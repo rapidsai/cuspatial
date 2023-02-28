@@ -52,9 +52,6 @@ endfunction(ConfigureTest)
 ### test sources ##################################################################################
 ###################################################################################################
 
-ConfigureTest(CUBIC_SPLINE_TEST
-    interpolate/cubic_spline_test.cpp)
-
 ConfigureTest(SINUSOIDAL_PROJECTION_TEST
     spatial/sinusoidal_projection_test.cu)
 
