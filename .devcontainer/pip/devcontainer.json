@@ -6,7 +6,7 @@
     "dockerfile": "${localWorkspaceFolder}/.devcontainer/Dockerfile",
     "args": {
       "CUDA": "11.8",
-      "LLVM": "15",
+      "LLVM": "16",
       "PYTHON_PACKAGE_MANAGER": "pip"
     }
   },
@@ -25,7 +25,7 @@
   ],
 
   "initializeCommand": [
-    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../{.aws,.cache,.config,.${localWorkspaceFolderBasename}-single-local}"
+    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../.{aws,cache,config/clangd,${localWorkspaceFolderBasename}-single-local}"
   ],
 
   "containerEnv": {
