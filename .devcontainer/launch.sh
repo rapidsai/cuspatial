@@ -8,13 +8,13 @@ launch_devcontainer() {
     local mode="${1:-single}";
     local pkgs="${2:-conda}";
 
-    case "$pkgs" in
+    case "${pkgs}" in
         pip   ) ;;
         conda ) ;;
         *     ) pkgs="conda";;
     esac
 
-    case "$mode" in
+    case "${mode}" in
         single  ) ;;
         unified ) ;;
         isolated) ;;

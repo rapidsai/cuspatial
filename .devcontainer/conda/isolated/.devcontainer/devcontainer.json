@@ -23,7 +23,7 @@
   ],
 
   "initializeCommand": [
-    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../{.aws,.cache,.config,.conda}"
+    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../{.aws,.cache,.config,.conda/pkgs}"
   ],
 
   "updateContentCommand": [
