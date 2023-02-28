@@ -44,7 +44,7 @@ launch_devcontainer() {
     fi
 
     if [ -n "${launch}" ]; then
-        code --new-window "$tmpdir";
+        code --new-window "${tmpdir}";
         $launch "${url}" >/dev/null 2>&1 &
     fi
 }
