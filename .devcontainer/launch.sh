@@ -5,8 +5,8 @@ launch_devcontainer() {
     # Ensure we're in the repo root
     cd "$( cd "$( dirname "$(realpath -m "${BASH_SOURCE[0]}")" )" && pwd )/..";
 
-    local pkgs="${1:-conda}";
-    local mode="${2:-single}";
+    local mode="${1:-single}";
+    local pkgs="${2:-conda}";
 
     case "$pkgs" in
         pip   ) ;;
