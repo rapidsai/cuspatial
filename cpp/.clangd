@@ -55,3 +55,6 @@ CompileFlags:
     - "--expt-relaxed-constexpr"
     - "-forward-unknown-to-host-compiler"
     - "-Werror=cross-execution-space-call"
+Diagnostics:
+  Suppress:
+    - "attributes_not_allowed"
