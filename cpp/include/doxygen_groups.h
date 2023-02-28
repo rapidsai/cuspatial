@@ -77,11 +77,6 @@
  *          @file point_linestring_nearest_points.hpp
  *          @file point_linestring_nearest_points.cuh
  *      @}
- *      @defgroup cubic_spline Cubic Spline
- *      @{
- *          @brief APIs related to cubic splines
- *          @file cubic_spline.hpp
- *      @}
  * @}
  * @defgroup trajectory_api Trajectory APIs
  * @{
