@@ -29,6 +29,7 @@ CompileFlags:
 # Tweak the clangd parse settings for all files
 CompileFlags:
   Add:
+    - "-stdlib=libc++"
     # report all errors
     - "-ferror-limit=0"
     - "-fmacro-backtrace-limit=0"
