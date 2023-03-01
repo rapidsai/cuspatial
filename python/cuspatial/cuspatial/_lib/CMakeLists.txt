@@ -15,7 +15,6 @@
 set(cython_sources
     distance.pyx
     hausdorff.pyx
-    interpolate.pyx
     intersection.pyx
     nearest_points.pyx
     point_in_polygon.pyx
