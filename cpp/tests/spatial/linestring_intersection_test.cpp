@@ -42,6 +42,7 @@
 
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <utility>
 
 using namespace cuspatial;
