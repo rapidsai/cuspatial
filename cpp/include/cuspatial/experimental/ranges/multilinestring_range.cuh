@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,13 @@
 
 #pragma once
 
-#include <thrust/pair.h>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
 #include <cuspatial/traits.hpp>
+#include <cuspatial/types.hpp>
 #include <cuspatial/vec_2d.hpp>
+
+#include <thrust/pair.h>
 
 namespace cuspatial {
 
@@ -225,6 +226,67 @@ auto make_multilinestring_range(IntegerRange1 geometry_offsets,
                                points.begin(),
                                points.end());
 }
+
+/**
+ * @ingroup ranges
+ * @brief Create a range object of multilinestring from cuspatial::geometry_column_view.
+ * Specialization for linestrings column.
+ *
+ * @pre linestrings_column must be a cuspatial::geometry_column_view
+ */
+template <collection_type_id Type,
+          typename T,
+          typename IndexType,
+          typename GeometryColumnView,
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::SINGLE)>
+auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
+{
+  CUSPATIAL_EXPECTS(linestrings_column.geometry_type() == geometry_type_id::LINESTRING,
+                    "Must be Linestring geometry type.");
+  auto geometry_iter       = thrust::make_counting_iterator(0);
+  auto const& part_offsets = linestrings_column.offsets();
+  auto const& points_xy    = linestrings_column.child().child(1);
+
+  auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
+
+  return multilinestring_range(geometry_iter,
+                               geometry_iter + part_offsets.size(),
+                               part_offsets.template begin<IndexType>(),
+                               part_offsets.template end<IndexType>(),
+                               points_it,
+                               points_it + points_xy.size() / 2);
+}
+
+/**
+ * @ingroup ranges
+ * @brief Create a range object of multilinestring from cuspatial::geometry_column_view.
+ * Specialization for multilinestrings column.
+ *
+ * @pre linestring_column must be a cuspatial::geometry_column_view
+ */
+template <collection_type_id Type,
+          typename T,
+          typename IndexType,
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::MULTI),
+          typename GeometryColumnView>
+auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
+{
+  CUSPATIAL_EXPECTS(linestrings_column.geometry_type() == geometry_type_id::LINESTRING,
+                    "Must be Linestring geometry type.");
+  auto const& geometry_offsets = linestrings_column.offsets();
+  auto const& parts            = linestrings_column.child();
+  auto const& part_offsets     = parts.child(0);
+  auto const& points_xy        = parts.child(1).child(1);
+
+  auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
+
+  return multilinestring_range(geometry_offsets.template begin<IndexType>(),
+                               geometry_offsets.template end<IndexType>(),
+                               part_offsets.template begin<IndexType>(),
+                               part_offsets.template end<IndexType>(),
+                               points_it,
+                               points_it + points_xy.size() / 2);
+};
 
 }  // namespace cuspatial
 

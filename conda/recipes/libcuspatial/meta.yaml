@@ -42,8 +42,6 @@ requirements:
     - gmock {{ gtest_version }}
     - gtest {{ gtest_version }}
     - libcudf ={{ minor_version }}
-    - libcusparse {{ libcusparse_host_version }}
-    - libcusparse-dev {{ libcusparse_host_version }}
     - librmm ={{ minor_version }}
 
 outputs:
@@ -64,8 +62,6 @@ outputs:
       run:
         - cudatoolkit {{ cuda_spec }}
         - libcudf ={{ minor_version }}
-        - libcusparse {{ libcusparse_run_version }}
-        - libcusparse-dev {{ libcusparse_run_version }}
         - librmm ={{ minor_version }}
     test:
       commands:

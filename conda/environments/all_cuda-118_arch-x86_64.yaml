@@ -20,8 +20,6 @@ dependencies:
 - gtest=1.10.0
 - ipython
 - libcudf=23.04
-- libcusparse-dev=11.7.5.86
-- libcusparse=11.7.5.86
 - librmm=23.04
 - myst-parser
 - nbsphinx
