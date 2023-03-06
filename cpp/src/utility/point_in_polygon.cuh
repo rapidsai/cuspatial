@@ -58,8 +58,9 @@ inline __device__ bool is_point_in_polygon(T const x,
       T run                = x1 - x0;
       T rise               = y1 - y0;
 
-      // Points on the line segment are the same, so intersection is impossible.
-      // This is possible because we allow closed or unclosed polygons.
+      // The endpoint of the line segment is the same, and the segment degenerates to a point.
+      // This can happen in polygon vertices when the first and last vertex of the ring are
+      // the same. In this scenario, do not attempt ray casting on a degenerate point.
       T constexpr zero = 0.0;
       if (float_equal(run, zero) && float_equal(rise, zero)) continue;
 
