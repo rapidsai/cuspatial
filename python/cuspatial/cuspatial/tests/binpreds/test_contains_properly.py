@@ -443,7 +443,7 @@ def test_multi_contains():
         ]
     )
     got = lhs.contains_properly(rhs).values_host
-    assert (got == [True, True, True, True, True, True, True, True]).all()
+    assert got == [True, True, True, True, True, True, True, True]
 
 
 def test_allpairs_with_holes():

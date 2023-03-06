@@ -47,11 +47,7 @@ def contains_properly(
         within its corresponding polygon.
     """
 
-    scale = (
-        (test_points_x.std() + test_points_y.std()) / 2.0
-        if len(test_points_x) > 1
-        else 1.0
-    )
+    scale = -1
     max_depth = 15
     min_size = ceil(sqrt(len(test_points_x)))
     if len(poly_offsets) == 0:

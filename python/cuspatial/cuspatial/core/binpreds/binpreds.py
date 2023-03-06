@@ -196,8 +196,8 @@ class ContainsProperlyBinpred(BinaryPredicate):
             parts_map = cudf.Series(
                 cp.arange(len(part_sizes)), name="part_index"
             ).repeat(part_sizes)
-            # Mapping of parts to polygons
             parts_df = parts_map.reset_index(drop=True).reset_index()
+            # Mapping of parts to polygons
             parts_to_geoms = cp.array(self.lhs.polygons.geometry_offset)
             geometry_sizes = parts_to_geoms[1:] - parts_to_geoms[:-1]
             geometry_map = cudf.Series(
