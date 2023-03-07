@@ -125,9 +125,9 @@ TEST_F(PolygonShapefileReaderTest, OnePointInPolygon)
   auto ys       = polygon_columns.at(3)->view();
   fixed_width_column_wrapper<double> test_xs({0.0});
   fixed_width_column_wrapper<double> test_ys({0.0});
-  fixed_width_column_wrapper<int32_t> expected({true});
+  fixed_width_column_wrapper<bool> expected({true});
 
   auto ret = cuspatial::point_in_polygon(test_xs, test_ys, polygons, rings, xs, ys);
 
-  expect_columns_equivalent(ret->view(), expected);
+  expect_columns_equivalent(ret.first->view(), expected);
 }

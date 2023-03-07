@@ -6,6 +6,9 @@ from cudf import Series
 from cudf.core.column import as_column
 
 import cuspatial
+from cuspatial._lib.pairwise_point_in_polygon import (
+    pairwise_point_in_polygon as cpp_pairwise_point_in_polygon,
+)
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
@@ -111,4 +114,11 @@ def contains_properly_pairwise(
     poly_points_x,
     poly_points_y,
 ):
-    pass
+    return cpp_pairwise_point_in_polygon(
+        test_points_x,
+        test_points_y,
+        poly_offsets,
+        poly_ring_offsets,
+        poly_points_x,
+        poly_points_y,
+    )

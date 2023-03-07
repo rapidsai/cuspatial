@@ -57,8 +57,6 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
 
   if (idx >= num_test_points) { return; }
 
-  int32_t hit_mask = 0;
-
   Cart2d const test_point = test_points_first[idx];
 
   // for each polygon
@@ -76,9 +74,8 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
                                                      poly_points_first,
                                                      num_poly_points);
 
-    hit_mask |= point_is_within << poly_idx;
+    result[num_test_points * poly_idx + idx] = point_is_within;
   }
-  result[idx] = hit_mask;
 }
 
 }  // namespace detail
@@ -116,11 +113,9 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
                                        iterator_value_type<OffsetIteratorB>>(),
                 "OffsetIterators must point to integral type.");
 
-  static_assert(std::is_same_v<iterator_value_type<OutputIt>, int32_t>,
-                "OutputIt must point to 32 bit integer type.");
-
-  CUSPATIAL_EXPECTS(num_polys <= std::numeric_limits<int32_t>::digits,
-                    "Number of polygons cannot exceed 31");
+  // TODO Assert it points to a column, is that an OffsetIterator?
+  // static_assert(cuspatial::is_integral<iterator_value_type<OutputIt>>(),
+  //             "OutputIt must point to integral type.");
 
   CUSPATIAL_EXPECTS(num_rings >= num_polys, "Each polygon must have at least one ring");
   CUSPATIAL_EXPECTS(num_poly_points >= num_polys * 4, "Each ring must have at least four vertices");
@@ -143,7 +138,7 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
     output);
   CUSPATIAL_CUDA_TRY(cudaGetLastError());
 
-  return output + num_test_points;
+  return output + num_test_points * num_polys;
 }
 
 }  // namespace cuspatial

@@ -62,8 +62,8 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
   auto poly_point =
     this->make_device_points({{-1.0, -1.0}, {1.0, -1.0}, {1.0, 1.0}, {-1.0, 1.0}, {-1.0, -1.0}});
 
-  auto got      = rmm::device_vector<int32_t>(test_point.size());
-  auto expected = std::vector<int32_t>{false, false, false, false, true, true, true, true};
+  auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
+  auto expected = std::vector<bool>{false, false, false, false, true, true, true, true};
 
   auto ret = point_in_polygon(test_point.begin(),
                               test_point.end(),
@@ -103,8 +103,23 @@ TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
                                               {-1.0, 0.0},
                                               {0.0, 1.0}});
 
-  auto got      = rmm::device_vector<int32_t>(test_point.size());
-  auto expected = std::vector<int32_t>({0b00, 0b00, 0b00, 0b00, 0b11, 0b11, 0b11, 0b11});
+  auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
+  auto expected = std::vector<bool>({false,
+                                     false,
+                                     false,
+                                     false,
+                                     true,
+                                     true,
+                                     true,
+                                     true,
+                                     false,
+                                     false,
+                                     false,
+                                     false,
+                                     true,
+                                     true,
+                                     true,
+                                     true});
 
   auto ret = point_in_polygon(test_point.begin(),
                               test_point.end(),
@@ -137,8 +152,8 @@ TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
                                               {0.5, -0.5},
                                               {-0.5, -0.5}});
 
-  auto got      = rmm::device_vector<int32_t>(test_point.size());
-  auto expected = std::vector<int32_t>{0b0, 0b0, 0b1, 0b0, 0b1};
+  auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
+  auto expected = std::vector<bool>{false, false, true, false, true};
 
   auto ret = point_in_polygon(test_point.begin(),
                               test_point.end(),
@@ -169,8 +184,10 @@ TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
      {1.0, 1.0},   {0.0, 1.0},  {0.0, -1.0}, {-1.0, -1.0}, {-1.0, 0.0},  {1.0, 0.0},  {1.0, -1.0},
      {-1.0, 1.0},  {-1.0, 0.0}, {-1.0, 1.0}, {1.0, 1.0},   {1.0, 0.0},   {-1.0, 0.0}});
 
-  auto expected = std::vector<int32_t>{0b0000};
-  auto got      = rmm::device_vector<int32_t>(test_point.size());
+  // point is included in rects on min x and y sides, but not on max x or y sides.
+  // this behavior is inconsistent, and not necessarily intentional.
+  auto expected = std::vector<bool>{false, true, false, true};
+  auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
 
   auto ret = point_in_polygon(test_point.begin(),
                               test_point.end(),
@@ -201,8 +218,10 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
      {0.0, 1.0},   {-1.0, 0.0}, {-1.0, 0.0}, {0.0, -1.0}, {0.0, 0.0},   {1.0, 0.0},  {1.0, -1.0},
      {0.0, -1.0},  {0.0, 0.0},  {0.0, 1.0},  {1.0, 1.0},  {1.0, 0.0},   {0.0, 0.0}});
 
-  auto expected = std::vector<int32_t>{0b0000};
-  auto got      = rmm::device_vector<int32_t>(test_point.size());
+  // point is only included on the max x max y corner.
+  // this behavior is inconsistent, and not necessarily intentional.
+  auto expected = std::vector<bool>{false, false, false, true};
+  auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
 
   auto ret = point_in_polygon(test_point.begin(),
                               test_point.end(),
@@ -269,9 +288,53 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
     thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorB<T>{});
   auto poly_point_iter = make_vec_2d_iterator(poly_point_xs_iter, poly_point_ys_iter);
 
-  auto expected =
-    std::vector<int32_t>({0b1111111111111111111111111111111, 0b0000000000000000000000000000000});
-  auto got = rmm::device_vector<int32_t>(test_point.size());
+  auto expected = std::vector<bool>{
+    true,  false, true,  false, true,  false, true,  false, true,  false, true,  false, true,
+    false, true,  false, true,  false, true,  false, true,  false, true,  false, true,  false,
+    true,  false, true,  false, true,  false, true,  false, true,  false, true,  false, true,
+    false, true,  false, true,  false, true,  false, true,  false, true,  false, true,  false,
+    true,  false, true,  false, true,  false, true,  false, true,  false,
+  };
+  auto got = rmm::device_vector<bool>(test_point.size() * num_polys);
+
+  auto ret = point_in_polygon(test_point.begin(),
+                              test_point.end(),
+                              offsets_iter,
+                              offsets_iter + num_polys,
+                              poly_ring_offsets_iter,
+                              poly_ring_offsets_iter + num_polys,
+                              poly_point_iter,
+                              poly_point_iter + num_poly_points,
+                              got.begin());
+
+  EXPECT_EQ(got, expected);
+  EXPECT_EQ(ret, got.end());
+}
+
+TYPED_TEST(PointInPolygonTest, 32PolygonSupport)
+{
+  using T = TypeParam;
+
+  auto constexpr num_polys       = 32;
+  auto constexpr num_poly_points = num_polys * 5;
+
+  auto test_point   = this->make_device_points({{0.0, 0.0}, {2.0, 0.0}});
+  auto offsets_iter = thrust::make_counting_iterator<std::size_t>(0);
+  auto poly_ring_offsets_iter =
+    thrust::make_transform_iterator(offsets_iter, OffsetIteratorFunctor{});
+  auto poly_point_xs_iter =
+    thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorA<T>{});
+  auto poly_point_ys_iter =
+    thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorB<T>{});
+  auto poly_point_iter = make_vec_2d_iterator(poly_point_xs_iter, poly_point_ys_iter);
+
+  auto expected = std::vector<bool>{
+    true,  false, true,  false, true,  false, true,  false, true,  false, true,  false, true,
+    false, true,  false, true,  false, true,  false, true,  false, true,  false, true,  false,
+    true,  false, true,  false, true,  false, true,  false, true,  false, true,  false, true,
+    false, true,  false, true,  false, true,  false, true,  false, true,  false, true,  false,
+    true,  false, true,  false, true,  false, true,  false, true,  false, true,  false};
+  auto got = rmm::device_vector<bool>(test_point.size() * num_polys);
 
   auto ret = point_in_polygon(test_point.begin(),
                               test_point.end(),
@@ -298,7 +361,7 @@ TEST_F(PointInPolygonErrorTest, MismatchPolyPointXYLength)
   auto poly_offsets      = this->make_device_offsets({0});
   auto poly_ring_offsets = this->make_device_offsets({0});
   auto poly_point        = this->make_device_points({{0.0, 1.0}, {1.0, 0.0}, {0.0, -1.0}});
-  auto got               = rmm::device_vector<int32_t>(test_point.size());
+  auto got               = rmm::device_vector<bool>(test_point.size());
 
   EXPECT_THROW(point_in_polygon(test_point.begin(),
                                 test_point.end(),
@@ -320,8 +383,8 @@ TYPED_TEST(PointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
   auto poly_ring_offsets = this->make_device_offsets({0});
   // "left" edge missing
   auto poly_point = this->make_device_points({{-1, 1}, {1, 1}, {1, -1}, {-1, -1}});
-  auto expected   = std::vector<int32_t>{0b0, 0b1, 0b0};
-  auto got        = rmm::device_vector<int32_t>(test_point.size());
+  auto expected   = std::vector<bool>{false, true, false};
+  auto got        = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
 
   auto ret = point_in_polygon(test_point.begin(),
                               test_point.end(),
@@ -345,8 +408,8 @@ TYPED_TEST(PointInPolygonTest, SelfClosingLoopRightEdgeMissing)
   auto poly_ring_offsets = this->make_device_offsets({0});
   // "right" edge missing
   auto poly_point = this->make_device_points({{1, -1}, {-1, -1}, {-1, 1}, {1, 1}});
-  auto expected   = std::vector<int32_t>{0b0, 0b1, 0b0};
-  auto got        = rmm::device_vector<int32_t>(test_point.size());
+  auto expected   = std::vector<bool>{false, true, false};
+  auto got        = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
 
   auto ret = point_in_polygon(test_point.begin(),
                               test_point.end(),

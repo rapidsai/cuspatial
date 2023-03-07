@@ -2,6 +2,8 @@
 
 import warnings
 
+import numpy as np
+
 from cudf import DataFrame
 from cudf.core.column import as_column
 
@@ -9,7 +11,6 @@ from cuspatial._lib import spatial_join
 from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_point_in_polygon,
 )
-from cuspatial.utils import gis_utils
 from cuspatial.utils.column_utils import normalize_point_columns
 
 
@@ -107,17 +108,7 @@ def point_in_polygon(
         poly_points_x,
         poly_points_y,
     )
-
-    result = gis_utils.pip_bitmap_column_to_binary_array(
-        polygon_bitmap_column=result, width=len(poly_offsets)
-    )
-    result = DataFrame(result)
-    result = DataFrame._from_data(
-        {name: col.astype("bool") for name, col in result._data.items()}
-    )
-    result.columns = [x for x in list(reversed(poly_offsets.index))]
-    result = result[list(reversed(result.columns))]
-    return result
+    return DataFrame._from_columns(result, np.arange(len(poly_offsets)))
 
 
 def join_quadtree_and_bounding_boxes(

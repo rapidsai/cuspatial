@@ -78,7 +78,6 @@ inline __device__ bool is_point_in_polygon(T const x,
       break;
     }
   }
-
   return in_polygon;
 }
 
