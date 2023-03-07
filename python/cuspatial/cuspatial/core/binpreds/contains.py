@@ -101,14 +101,3 @@ def contains_properly_quadtree(
     polygons_and_points["part_index"] = polygons_and_points["polygon_index"]
     polygons_and_points.drop("polygon_index", axis=1, inplace=True)
     return polygons_and_points
-
-
-def contains_properly_pairwise(
-    test_points_x,
-    test_points_y,
-    poly_offsets,
-    poly_ring_offsets,
-    poly_points_x,
-    poly_points_y,
-):
-    pass
