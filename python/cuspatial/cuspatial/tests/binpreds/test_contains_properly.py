@@ -557,3 +557,41 @@ def test_allpairs_polygon_indices_match_source_index():
         "polygon_index"
     )
     assert (got["polygon_index"] == cp.arange(1, 5)).all()
+
+
+def test_example_1():
+    point = cuspatial.GeoSeries(
+        [Point(0.5, 0.5)],
+    )
+    polygon = cuspatial.GeoSeries(
+        [
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+        ]
+    )
+    got = polygon.contains_properly(point)
+    assert got.values_host == [False]
+
+
+def test_example_2():
+    point = cuspatial.GeoSeries(
+        [
+            Point(0, 0),
+            Point(-1, 0),
+            Point(-2, 0),
+            Point(0, 0),
+            Point(-1, 0),
+            Point(-2, 0),
+        ]
+    )
+    polygon = cuspatial.GeoSeries(
+        [
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+            Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+            Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+        ]
+    )
+    got = polygon.contains_properly(point)
+    assert (got.values_host == [False, False, False, False, True, False]).all()

@@ -73,7 +73,7 @@ class BinaryPredicate(ABC):
         """
         pass
 
-    def __init__(self, lhs, rhs, align=True, allpairs=False):
+    def __init__(self, lhs, rhs, align=True):
         """Compute the binary predicate `op` on `lhs` and `rhs`.
 
         There are ten binary predicates supported by cuspatial:
@@ -115,7 +115,6 @@ class BinaryPredicate(ABC):
         """
         (self.lhs, self.rhs) = lhs.align(rhs) if align else (lhs, rhs)
         self.align = align
-        self.allpairs = allpairs
 
     def __call__(self) -> cudf.Series:
         """Return the result of the binary predicate."""
@@ -132,6 +131,10 @@ class BinaryPredicate(ABC):
 
 
 class ContainsProperlyBinpred(BinaryPredicate):
+    def __init__(self, lhs, rhs, align=True, mode="pairs"):
+        super().__init__(lhs, rhs, align=align)
+        self.allpairs = mode == "allpairs"
+
     def preprocess(self, lhs, rhs):
         """Preprocess the input GeoSeries to ensure that they are of the
         correct type for the predicate."""
@@ -186,64 +189,40 @@ class ContainsProperlyBinpred(BinaryPredicate):
     def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate."""
+        # This complex block of code is to create a dataframe that
+        # contains the polygon index and the point index for each
+        # point in the polygon. Quadtree pip returns the _part_index_
+        # of the polygon, not the polygon index.
+        rings_to_parts = cp.array(self.lhs.polygons.part_offset)
+        part_sizes = rings_to_parts[1:] - rings_to_parts[:-1]
+        parts_map = cudf.Series(
+            cp.arange(len(part_sizes)), name="part_index"
+        ).repeat(part_sizes)
+        parts_df = parts_map.reset_index(drop=True).reset_index()
+        # Mapping of parts to polygons
+        parts_to_geoms = cp.array(self.lhs.polygons.geometry_offset)
+        geometry_sizes = parts_to_geoms[1:] - parts_to_geoms[:-1]
+        geometry_map = cudf.Series(
+            cp.arange(len(geometry_sizes)), name="polygon_index"
+        ).repeat(geometry_sizes)
+        geom_df = geometry_map.reset_index(drop=True)
+        geom_df.index.name = "part_index"
+        geom_df = geom_df.reset_index()
+        # Replace the part index with the polygon index
+        part_result = parts_df.merge(point_result, on="part_index")
+        # Replace the polygon index with the row index
+        result = geom_df.merge(part_result, on="part_index")
+        result = result[["polygon_index", "point_index"]]
+        result = result.drop_duplicates()
+        breakpoint()
         if self.allpairs:
-            # This complex block of code is to create a dataframe that
-            # contains the polygon index and the point index for each
-            # point in the polygon. Quadtree pip returns the _part_index_
-            # of the polygon, not the polygon index.
-            rings_to_parts = cp.array(self.lhs.polygons.part_offset)
-            part_sizes = rings_to_parts[1:] - rings_to_parts[:-1]
-            parts_map = cudf.Series(
-                cp.arange(len(part_sizes)), name="part_index"
-            ).repeat(part_sizes)
-            parts_df = parts_map.reset_index(drop=True).reset_index()
-            # Mapping of parts to polygons
-            parts_to_geoms = cp.array(self.lhs.polygons.geometry_offset)
-            geometry_sizes = parts_to_geoms[1:] - parts_to_geoms[:-1]
-            geometry_map = cudf.Series(
-                cp.arange(len(geometry_sizes)), name="polygon_index"
-            ).repeat(geometry_sizes)
-            geom_df = geometry_map.reset_index(drop=True)
-            geom_df.index.name = "part_index"
-            geom_df = geom_df.reset_index()
-            # Replace the part index with the polygon index
-            part_result = parts_df.merge(point_result, on="part_index")
-            # Replace the polygon index with the row index
-            result = geom_df.merge(part_result, on="part_index")
-            result = result[["polygon_index", "point_index"]]
-            result = result.drop_duplicates()
             # Replace the polygon index with the original index
             result["polygon_index"] = result["polygon_index"].replace(
                 cudf.Series(
                     self.lhs.index, index=cp.arange(len(self.lhs.index))
                 )
             )
-            return result
-        else:
-            # pairwise
-            group_result = point_result.groupby("point_index").count() > 0
-            result = cudf.DataFrame({"idx": point_indices})
-            result.reset_index(drop=True, inplace=True)
-            result["pip"] = group_result["part_index"]
-            result = result.fillna(False)
-            df_result = result
-            # Discrete math recombination
-            if (
-                contains_only_linestrings(self.rhs)
-                or contains_only_polygons(self.rhs)
-                or contains_only_multipoints(self.rhs)
-            ):
-                # process for completed linestrings, polygons, and multipoints.
-                # Not necessary for points.
-                df_result = (
-                    result.groupby("idx").sum().sort_index()
-                    == result.groupby("idx").count().sort_index()
-                )
-            final_result = cudf.Series(
-                df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
-            )
-            final_result.name = None
-            return final_result
+        return result
 
 
 class OverlapsBinpred(ContainsProperlyBinpred):
