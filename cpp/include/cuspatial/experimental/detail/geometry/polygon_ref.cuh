@@ -15,11 +15,10 @@
  */
 #pragma once
 
-#include "linestring_ref.cuh"
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/geometry/segment.cuh>
+#include <cuspatial/experimental/geometry_collection/multilinestring_ref.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <thrust/iterator/zip_iterator.h>
@@ -32,28 +31,41 @@ CUSPATIAL_HOST_DEVICE polygon_ref<RingIterator, VecIterator>::polygon_ref(RingIt
                                                                           RingIterator ring_end,
                                                                           VecIterator point_begin,
                                                                           VecIterator point_end)
-  : _ring_begin(ring_begin), _ring_end(ring_end), _point_begin(begin), _point_end(end)
+  : _ring_begin(ring_begin), _ring_end(ring_end), _point_begin(point_begin), _point_end(point_end)
 {
-  using T = iterator_vec_base_type<RingIterator, VecIterator>;
+  using T = iterator_vec_base_type<VecIterator>;
   static_assert(is_same<vec_2d<T>, iterator_value_type<VecIterator>>(), "must be vec2d type");
 }
 
 template <typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto polygon_ref<RingIterator, VecIterator>::num_rings() const
 {
-  return thrust::distance(_point_begin, _point_end) - 1;
+  return thrust::distance(_ring_begin, _ring_end) - 1;
 }
 
 template <typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto polygon_ref<RingIterator, VecIterator>::ring_begin() const
 {
-  return detail::make_counting_transform_iterator(0, to_linestring_ref{_point_begin});
+  return detail::make_counting_transform_iterator(0,
+                                                  to_linestring_functor{_ring_begin, _point_begin});
 }
 
 template <typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto polygon_ref<RingIterator, VecIterator>::ring_end() const
 {
-  return ring_begin() + num_rings();
+  return ring_begin() + size();
+}
+
+template <typename RingIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto polygon_ref<RingIterator, VecIterator>::point_begin() const
+{
+  return _point_begin;
+}
+
+template <typename RingIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto polygon_ref<RingIterator, VecIterator>::point_end() const
+{
+  return _point_end;
 }
 
 template <typename RingIterator, typename VecIterator>

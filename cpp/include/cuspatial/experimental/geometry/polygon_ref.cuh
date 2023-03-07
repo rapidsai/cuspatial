@@ -16,7 +16,6 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
 
 namespace cuspatial {
 
@@ -36,18 +35,23 @@ class polygon_ref {
   /// Return the number of rings in the polygon
   CUSPATIAL_HOST_DEVICE auto num_rings() const;
 
+  /// Return the number of rings in the polygon
+  CUSPATIAL_HOST_DEVICE auto size() const { return num_rings(); }
+
   /// Return iterator to the first ring of the polygon
   CUSPATIAL_HOST_DEVICE auto ring_begin() const;
   /// Return iterator to one past the last ring
   CUSPATIAL_HOST_DEVICE auto ring_end() const;
 
+  /// Return iterator to the first point of the polygon
+  CUSPATIAL_HOST_DEVICE auto point_begin() const;
+  /// Return iterator to one past the last point
+  CUSPATIAL_HOST_DEVICE auto point_end() const;
+
   /// Return iterator to the first ring of the polygon
   CUSPATIAL_HOST_DEVICE auto begin() const { return ring_begin(); }
   /// Return iterator to one past the last ring
   CUSPATIAL_HOST_DEVICE auto end() const { return ring_end(); }
-
-  /// Return an enumerated range to the rings.
-  CUSPATIAL_HOST_DEVICE auto enumerate() { return detail::enumerate_range{begin(), end()}; }
 
   /// Return the `ring_idx`th ring in the polygon.
   template <typename IndexType>
