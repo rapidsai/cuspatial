@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/is_point_in_polygon.cuh>
 #include <cuspatial/traits.hpp>
@@ -101,11 +102,6 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
 {
   using T = iterator_vec_base_type<Cart2dItA>;
 
-  auto const num_test_points = std::distance(test_points_first, test_points_last);
-  auto const num_polys       = std::distance(polygon_offsets_first, polygon_offsets_last);
-  auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last);
-  auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
-
   static_assert(is_same_floating_point<T, iterator_vec_base_type<Cart2dItB>>(),
                 "Underlying type of Cart2dItA and Cart2dItB must be the same floating point type");
   static_assert(
@@ -119,19 +115,24 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
   static_assert(std::is_same_v<iterator_value_type<OutputIt>, int32_t>,
                 "OutputIt must point to 32 bit integer type.");
 
+  auto const num_test_points = std::distance(test_points_first, test_points_last);
+  auto const num_polys       = std::distance(polygon_offsets_first, polygon_offsets_last) - 1;
+  auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last) - 1;
+  auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
+
+  std::cout << num_polys << " " << num_rings << " " << num_poly_points << std::endl;
+
+  CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
+    num_poly_points,
+    std::distance(polygon_offsets_first, polygon_offsets_last),
+    std::distance(poly_ring_offsets_first, poly_ring_offsets_last));
+
   CUSPATIAL_EXPECTS(num_polys <= std::numeric_limits<int32_t>::digits,
                     "Number of polygons cannot exceed 31");
 
-  CUSPATIAL_EXPECTS(num_rings >= num_polys, "Each polygon must have at least one ring");
-  CUSPATIAL_EXPECTS(num_poly_points >= num_polys * 4, "Each ring must have at least four vertices");
+  auto [threads_per_block, num_blocks] = grid_1d(num_test_points);
 
-  // TODO: introduce a validation function that checks the rings of the polygon are
-  // actually closed. (i.e. the first and last vertices are the same)
-
-  auto constexpr block_size = 256;
-  auto const num_blocks     = (num_test_points + block_size - 1) / block_size;
-
-  detail::point_in_polygon_kernel<<<num_blocks, block_size, 0, stream.value()>>>(
+  detail::point_in_polygon_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     test_points_first,
     num_test_points,
     polygon_offsets_first,
@@ -141,7 +142,7 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
     polygon_points_first,
     num_poly_points,
     output);
-  CUSPATIAL_CUDA_TRY(cudaGetLastError());
+  CUSPATIAL_CHECK_CUDA(stream.value());
 
   return output + num_test_points;
 }

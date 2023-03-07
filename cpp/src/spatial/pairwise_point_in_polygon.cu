@@ -137,13 +137,9 @@ std::unique_ptr<cudf::column> pairwise_point_in_polygon(cudf::column_view const&
   CUSPATIAL_EXPECTS(not poly_points_x.has_nulls() && not poly_points_y.has_nulls(),
                     "Polygon points must not contain nulls");
 
-  CUSPATIAL_EXPECTS(poly_ring_offsets.size() >= poly_offsets.size(),
-                    "Each polygon must have at least one ring");
+  std::cout << "points: " << test_points_x.size() << " polys: " << poly_offsets.size() << std::endl;
 
-  CUSPATIAL_EXPECTS(poly_points_x.size() >= poly_offsets.size() * 4,
-                    "Each ring must have at least four vertices");
-
-  CUSPATIAL_EXPECTS(test_points_x.size() == poly_offsets.size(),
+  CUSPATIAL_EXPECTS(test_points_x.size() == std::max(poly_offsets.size() - 1, 0),
                     "Must pass in the same number of points as polygons.");
 
   return cuspatial::detail::pairwise_point_in_polygon(test_points_x,

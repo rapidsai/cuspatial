@@ -66,7 +66,7 @@ def contains_properly(
     poly_offsets_column = as_column(poly_offsets, dtype="int32")
     poly_ring_offsets_column = as_column(poly_ring_offsets, dtype="int32")
 
-    if len(test_points_x) == len(poly_offsets):
+    if len(test_points_x) == len(poly_offsets) - 1:
         pip_result = cpp_pairwise_point_in_polygon(
             test_points_x,
             test_points_y,
