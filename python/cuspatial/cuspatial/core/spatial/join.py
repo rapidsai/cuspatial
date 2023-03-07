@@ -144,6 +144,7 @@ def join_quadtree_and_bounding_boxes(
         min(y_min, y_max),
         max(y_min, y_max),
     )
+    breakpoint()
 
     min_scale = max(x_max - x_min, y_max - y_min) / ((1 << max_depth) + 2)
     if scale < min_scale:
@@ -219,11 +220,7 @@ def quadtree_point_in_polygon(
             "`polygons` Geoseries must contains only polygons geometries."
         )
 
-    if len(polygons.polygons.part_offset) != len(
-        polygons.polygons.geometry_offset
-    ):
-        raise ValueError("GeoSeries cannot contain multipolygon.")
-
+    breakpoint()
     points_x = as_column(points.points.x)
     points_y = as_column(points.points.y)
 

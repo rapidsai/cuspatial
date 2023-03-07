@@ -163,9 +163,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
         point_indices = geom.point_indices()
         from cuspatial.core.geoseries import GeoSeries
 
-        final_rhs = GeoSeries(
-            GeoColumn._from_points_xy(xy_points._column)
-        ).points
+        final_rhs = GeoSeries(GeoColumn._from_points_xy(xy_points._column))
         return (lhs, final_rhs, point_indices)
 
     def _op(self, lhs, points):
@@ -177,16 +175,12 @@ class ContainsProperlyBinpred(BinaryPredicate):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
             )
-
+        breakpoint()
         # call pip on the three subtypes on the right:
         if self.allpairs:
             point_result = contains_properly_quadtree(
-                points.x,
-                points.y,
-                lhs.polygons.part_offset,
-                lhs.polygons.ring_offset,
-                lhs.polygons.x,
-                lhs.polygons.y,
+                points,
+                lhs,
             )
         else:
             point_result = contains_properly_pairwise(
@@ -227,6 +221,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
             part_result = parts_df.merge(point_result, on="part_index")
             # Replace the polygon index with the row index
             result = geom_df.merge(part_result, on="part_index")
+            breakpoint()
             result = result[["polygon_index", "point_index"]]
             result = result.drop_duplicates()
             # Replace the polygon index with the original index
@@ -243,7 +238,6 @@ class ContainsProperlyBinpred(BinaryPredicate):
             result["idx"] = point_indices
             df_result = result
             print(result)
-            breakpoint()
             # Discrete math recombination
             if (
                 contains_only_linestrings(self.rhs)

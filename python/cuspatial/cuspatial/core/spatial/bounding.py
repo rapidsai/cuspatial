@@ -57,17 +57,17 @@ def polygon_bounding_boxes(polygons: GeoSeries):
     ring_offsets = polygons.polygons.ring_offset
     x = polygons.polygons.x
     y = polygons.polygons.y
-
+    result = cpp_polygon_bounding_boxes(
+        as_column(poly_offsets),
+        as_column(ring_offsets),
+        as_column(x),
+        as_column(y),
+    )
     return DataFrame._from_data(
         dict(
             zip(
                 column_names,
-                cpp_polygon_bounding_boxes(
-                    as_column(poly_offsets),
-                    as_column(ring_offsets),
-                    as_column(x),
-                    as_column(y),
-                ),
+                result[0].values(),
             )
         )
     )

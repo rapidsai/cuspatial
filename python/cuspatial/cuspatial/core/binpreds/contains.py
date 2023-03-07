@@ -6,6 +6,9 @@ from cudf import DataFrame, Series
 from cudf.core.column import NumericalColumn, as_column
 
 import cuspatial
+from cuspatial._lib.pairwise_point_in_polygon import (
+    pairwise_point_in_polygon as cpp_pairwise_point_in_polygon,
+)
 from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_point_in_polygon,
 )
@@ -13,12 +16,8 @@ from cuspatial.utils.column_utils import normalize_point_columns
 
 
 def contains_properly_quadtree(
-    test_points_x,
-    test_points_y,
-    poly_offsets,
-    poly_ring_offsets,
-    poly_points_x,
-    poly_points_y,
+    test_points,
+    polygons,
 ):
     """Compute from a series of points and a series of polygons which points
     are properly contained within the corresponding polygon. Polygon A contains
@@ -30,18 +29,10 @@ def contains_properly_quadtree(
 
     Parameters
     ----------
-    test_points_x
-        x-coordinate of points to test for containment
-    test_points_y
-        y-coordinate of points to test for containment
-    poly_offsets
-        beginning index of the first ring in each polygon
-    poly_ring_offsets
-        beginning index of the first point in each ring
-    poly_points_x
-        x-coordinates of polygon vertices
-    poly_points_y
-        y-coordinates of polygon vertices
+    test_points
+        GeoSeries of points to test for containment
+    polygons
+        GeoSeries of polygons to test for containment
 
     Returns
     -------
@@ -52,27 +43,13 @@ def contains_properly_quadtree(
 
     scale = -1
     max_depth = 15
-    min_size = ceil(sqrt(len(test_points_x)))
-    if len(poly_offsets) == 0:
-        return Series()
-    (
-        test_points_x,
-        test_points_y,
-        poly_points_x,
-        poly_points_y,
-    ) = normalize_point_columns(
-        as_column(test_points_x),
-        as_column(test_points_y),
-        as_column(poly_points_x),
-        as_column(poly_points_y),
-    )
-    x_max = poly_points_x.max()
-    x_min = poly_points_x.min()
-    y_max = poly_points_y.max()
-    y_min = poly_points_y.min()
+    min_size = ceil(sqrt(len(test_points)))
+    x_max = polygons.polygons.x.max()
+    x_min = polygons.polygons.x.min()
+    y_max = polygons.points.y.max()
+    y_min = polygons.points.y.min()
     point_indices, quadtree = cuspatial.quadtree_on_points(
-        test_points_x,
-        test_points_y,
+        test_points,
         x_min,
         x_max,
         y_min,
@@ -81,9 +58,7 @@ def contains_properly_quadtree(
         max_depth,
         min_size,
     )
-    poly_bboxes = cuspatial.polygon_bounding_boxes(
-        poly_offsets, poly_ring_offsets, poly_points_x, poly_points_y
-    )
+    poly_bboxes = cuspatial.polygon_bounding_boxes(polygons)
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth
     )
@@ -91,12 +66,8 @@ def contains_properly_quadtree(
         intersections,
         quadtree,
         point_indices,
-        test_points_x,
-        test_points_y,
-        poly_offsets,
-        poly_ring_offsets,
-        poly_points_x,
-        poly_points_y,
+        test_points,
+        polygons,
     )
     polygons_and_points["point_index"] = point_indices.iloc[
         polygons_and_points["point_index"]
@@ -127,16 +98,28 @@ def contains_properly_pairwise(
         as_column(poly_points_x),
         as_column(poly_points_y),
     )
+    poly_offsets = poly_offsets[:-1]
+    poly_ring_offsets = poly_ring_offsets[:-1]
     poly_offsets_column = as_column(poly_offsets, dtype="int32")
     poly_ring_offsets_column = as_column(poly_ring_offsets, dtype="int32")
-    pip_result = cpp_point_in_polygon(
-        test_points_x,
-        test_points_y,
-        poly_offsets_column,
-        poly_ring_offsets_column,
-        poly_points_x,
-        poly_points_y,
-    )
+    if len(test_points_x) == len(poly_offsets):
+        pip_result = cpp_pairwise_point_in_polygon(
+            test_points_x,
+            test_points_y,
+            poly_offsets_column,
+            poly_ring_offsets_column,
+            poly_points_x,
+            poly_points_y,
+        )
+    else:
+        pip_result = cpp_point_in_polygon(
+            test_points_x,
+            test_points_y,
+            poly_offsets_column,
+            poly_ring_offsets_column,
+            poly_points_x,
+            poly_points_y,
+        )
     if isinstance(pip_result, NumericalColumn):
         result = DataFrame(pip_result)
     else:
