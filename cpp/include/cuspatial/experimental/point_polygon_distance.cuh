@@ -33,7 +33,7 @@ namespace cuspatial {
  */
 template <class MultiPointRange, class MultiPolygonRange, class OutputIt>
 OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
-                                         MultiPolygonRangeB multipoiygons,
+                                         MultiPolygonRange multipoiygons,
                                          OutputIt distances_first,
                                          rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial
