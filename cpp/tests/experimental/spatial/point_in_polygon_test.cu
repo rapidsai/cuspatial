@@ -184,9 +184,8 @@ TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
      {1.0, 1.0},   {0.0, 1.0},  {0.0, -1.0}, {-1.0, -1.0}, {-1.0, 0.0},  {1.0, 0.0},  {1.0, -1.0},
      {-1.0, 1.0},  {-1.0, 0.0}, {-1.0, 1.0}, {1.0, 1.0},   {1.0, 0.0},   {-1.0, 0.0}});
 
-  // point is included in rects on min x and y sides, but not on max x or y sides.
-  // this behavior is inconsistent, and not necessarily intentional.
-  auto expected = std::vector<bool>{false, true, false, true};
+  // point is excluded from all due to colinearity testing
+  auto expected = std::vector<bool>{false, false, false, false};
   auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
 
   auto ret = point_in_polygon(test_point.begin(),
@@ -218,9 +217,8 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
      {0.0, 1.0},   {-1.0, 0.0}, {-1.0, 0.0}, {0.0, -1.0}, {0.0, 0.0},   {1.0, 0.0},  {1.0, -1.0},
      {0.0, -1.0},  {0.0, 0.0},  {0.0, 1.0},  {1.0, 1.0},  {1.0, 0.0},   {0.0, 0.0}});
 
-  // point is only included on the max x max y corner.
-  // this behavior is inconsistent, and not necessarily intentional.
-  auto expected = std::vector<bool>{false, false, false, true};
+  // colinearity excludes all points
+  auto expected = std::vector<bool>{false, false, false, false};
   auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
 
   auto ret = point_in_polygon(test_point.begin(),
@@ -357,9 +355,12 @@ TEST_F(PointInPolygonErrorTest, MismatchPolyPointXYLength)
 {
   using T = double;
 
-  auto test_point        = this->make_device_points({{0.0, 0.0}, {0.0, 0.0}});
-  auto poly_offsets      = this->make_device_offsets({0});
-  auto poly_ring_offsets = this->make_device_offsets({0});
+  auto test_point        = this->make_device_points({
+    {0.0, 0.0},
+    {0.0, 0.0},
+  });
+  auto poly_offsets      = this->make_device_offsets({0, 1});
+  auto poly_ring_offsets = this->make_device_offsets({0, 3});
   auto poly_point        = this->make_device_points({{0.0, 1.0}, {1.0, 0.0}, {0.0, -1.0}});
   auto got               = rmm::device_vector<bool>(test_point.size());
 
