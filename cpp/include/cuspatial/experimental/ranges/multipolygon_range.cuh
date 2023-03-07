@@ -63,6 +63,8 @@ class multipolygon_range {
   using point_t       = iterator_value_type<VecIterator>;
   using element_t     = iterator_vec_base_type<VecIterator>;
 
+  int64_t static constexpr INVALID_INDEX = -1;
+
   multipolygon_range(GeometryIterator geometry_begin,
                      GeometryIterator geometry_end,
                      PartIterator part_begin,
@@ -98,13 +100,42 @@ class multipolygon_range {
 
   /// Return the iterator to the one past the last multipolygon in the range.
   CUSPATIAL_HOST_DEVICE auto end() { return multipolygon_end(); }
+  /// Given the index of a segment, return the geometry (multipolygon) index where the
+  /// segment locates.
+  /// Segment index is the index to the starting point of the segment. If the
+  /// index is the last point of the ring, then it is not a valid index.
+  /// This function returns multipolygon_range::INVALID_INDEX if the index is invalid.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto geometry_idx_from_segment_idx(IndexType segment_idx);
 
-  /// Given the index of a point, return the ring index where the point locates.
+  /// Returns the `multipolygon_idx`th multipolygon in the range.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto operator[](IndexType multipolygon_idx);
+
+  //   template <typename IndexType>
+  //   CUSPATIAL_HOST_DEVICE auto get_point(IndexType point_idx);
+
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto get_segment(IndexType segment_idx);
+
+ protected:
+  GeometryIterator _geometry_begin;
+  GeometryIterator _geometry_end;
+  PartIterator _part_begin;
+  PartIterator _part_end;
+  RingIterator _ring_begin;
+  RingIterator _ring_end;
+  VecIterator _point_begin;
+  VecIterator _point_end;
+
+ private:
+  /// Given the index of a point, return the ring index
+  /// where the point locates.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto ring_idx_from_point_idx(IndexType point_idx);
 
   /// Given the index of a ring, return the part (polygon) index
-  /// where the polygon locates.
+  /// where the ring locates.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto part_idx_from_ring_idx(IndexType ring_idx);
 
@@ -113,22 +144,8 @@ class multipolygon_range {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto geometry_idx_from_part_idx(IndexType part_idx);
 
-  /// Given the index of a point, return the geometry (multipolygon) index where the
-  /// point locates.
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto geometry_idx_from_point_idx(IndexType point_idx);
-
-  /// Returns the `multipolygon_idx`th multipolygon in the range.
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto operator[](IndexType multipolygon_idx);
-
- protected:
-  GeometryIterator _geometry_begin;
-  GeometryIterator _geometry_end;
-  PartIterator _part_begin;
-  PartIterator _part_end;
-  VecIterator _point_begin;
-  VecIterator _point_end;
+  template <typename IndexType1, typename IndexType2>
+  CUSPATIAL_HOST_DEVICE bool is_valid_segment_id(IndexType1 segment_idx, IndexType2 ring_idx);
 };
 
 }  // namespace cuspatial

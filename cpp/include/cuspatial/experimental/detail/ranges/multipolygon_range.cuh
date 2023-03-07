@@ -23,6 +23,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/experimental/geometry_collection/multipolygon_ref.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
@@ -43,6 +44,7 @@ struct to_multipolygon_functor {
   GeometryIterator _geometry_begin;
   PartIterator _part_begin;
   RingIterator _ring_begin;
+  RingIterator _ring_end;
   VecIterator _point_begin;
   VecIterator _point_end;
 
@@ -50,11 +52,13 @@ struct to_multipolygon_functor {
   to_multipolygon_functor(GeometryIterator geometry_begin,
                           PartIterator part_begin,
                           RingIterator ring_begin,
+                          RingIterator ring_end,
                           VecIterator point_begin,
                           VecIterator point_end)
     : _geometry_begin(geometry_begin),
       _part_begin(part_begin),
       _ring_begin(ring_begin),
+      _ring_end(ring_end),
       _point_begin(point_begin),
       _point_end(point_end)
   {
@@ -62,8 +66,22 @@ struct to_multipolygon_functor {
 
   CUSPATIAL_HOST_DEVICE auto operator()(difference_type i)
   {
+    auto new_part_begin = _part_begin + _geometry_begin[i];
+    auto new_part_end   = thrust::next(_part_begin, _geometry_begin[i + 1] + 1);
+
+    printf(
+      "In to_multipolygon_functor: %d %d %d\n\t new_part_begin_val: %d, "
+      "new_part_end_dist_from_begin: %d\n",
+      static_cast<int>(i),
+      static_cast<int>(_geometry_begin[i]),
+      static_cast<int>(_geometry_begin[i + 1]),
+      static_cast<int>(*new_part_begin),
+      static_cast<int>(thrust::distance(new_part_end, new_part_begin)));
+
     return multipolygon_ref{_part_begin + _geometry_begin[i],
-                            thrust::next(_part_begin + _geometry_begin[i + 1]),
+                            thrust::next(_part_begin, _geometry_begin[i + 1] + 1),
+                            _ring_begin,
+                            _ring_end,
                             _point_begin,
                             _point_end};
   }
@@ -79,17 +97,21 @@ template <typename GeometryIterator,
           typename PartIterator,
           typename RingIterator,
           typename VecIterator>
-multipolygon_range<GeometryIterator, PartIterator, VecIterator>::multipolygon_range(
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::multipolygon_range(
   GeometryIterator geometry_begin,
   GeometryIterator geometry_end,
   PartIterator part_begin,
   PartIterator part_end,
+  RingIterator ring_begin,
+  RingIterator ring_end,
   VecIterator point_begin,
   VecIterator point_end)
   : _geometry_begin(geometry_begin),
     _geometry_end(geometry_end),
     _part_begin(part_begin),
     _part_end(part_end),
+    _ring_begin(ring_begin),
+    _ring_end(ring_end),
     _point_begin(point_begin),
     _point_end(point_end)
 {
@@ -100,7 +122,7 @@ template <typename GeometryIterator,
           typename RingIterator,
           typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, VecIterator>::num_multipolygons()
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::num_multipolygons()
 {
   return thrust::distance(_geometry_begin, _geometry_end) - 1;
 }
@@ -110,7 +132,7 @@ template <typename GeometryIterator,
           typename RingIterator,
           typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, VecIterator>::num_polygons()
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::num_polygons()
 {
   return thrust::distance(_part_begin, _part_end) - 1;
 }
@@ -120,7 +142,7 @@ template <typename GeometryIterator,
           typename RingIterator,
           typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, VecIterator>::num_rings()
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::num_rings()
 {
   return thrust::distance(_ring_begin, _ring_end) - 1;
 }
@@ -130,7 +152,7 @@ template <typename GeometryIterator,
           typename RingIterator,
           typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, VecIterator>::num_points()
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::num_points()
 {
   return thrust::distance(_point_begin, _point_end);
 }
@@ -140,11 +162,12 @@ template <typename GeometryIterator,
           typename RingIterator,
           typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, VecIterator>::multipolygon_begin()
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::multipolygon_begin()
 {
   return detail::make_counting_transform_iterator(
     0,
-    to_multipolygon_functor{_geometry_begin, _part_begin, _ring_begin, _point_begin, _point_end});
+    to_multipolygon_functor{
+      _geometry_begin, _part_begin, _ring_begin, _ring_end, _point_begin, _point_end});
 }
 
 template <typename GeometryIterator,
@@ -152,7 +175,7 @@ template <typename GeometryIterator,
           typename RingIterator,
           typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, VecIterator>::multipolygon_end()
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::multipolygon_end()
 {
   return multipolygon_begin() + num_multipolygons();
 }
@@ -163,37 +186,11 @@ template <typename GeometryIterator,
           typename VecIterator>
 template <typename IndexType>
 CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, VecIterator>::ring_idx_from_point_idx(
-  IndexType point_idx)
-{
-  return thrust::distance(_ring_begin,
-                          thrust::prev(thrust::upper_bound(_ring_begin, _ring_end, point_idx)));
-}
-
-template <typename GeometryIterator,
-          typename PartIterator,
-          typename RingIterator,
-          typename VecIterator>
-template <typename IndexType>
-CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, VecIterator>::part_idx_from_ring_idx(
-  IndexType ring_idx)
-{
-  return thrust::distance(_part_begin,
-                          thrust::prev(thrust::upper_bound(_part_begin, _part_begin, ring_idx)));
-}
-
-template <typename GeometryIterator,
-          typename PartIterator,
-          typename RingIterator,
-          typename VecIterator>
-template <typename IndexType>
-CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, VecIterator>::geometry_idx_from_part_idx(
-  IndexType part_idx)
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+  ring_idx_from_point_idx(IndexType point_idx)
 {
   return thrust::distance(
-    _geometry_begin, thrust::prev(thrust::upper_bound(_geometry_begin, _geometry_end, part_idx)));
+    _ring_begin, thrust::prev(thrust::upper_bound(thrust::seq, _ring_begin, _ring_end, point_idx)));
 }
 
 template <typename GeometryIterator,
@@ -202,10 +199,12 @@ template <typename GeometryIterator,
           typename VecIterator>
 template <typename IndexType>
 CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, VecIterator>::geometry_idx_from_point_idx(
-  IndexType point_idx)
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+  part_idx_from_ring_idx(IndexType ring_idx)
 {
-  return geometry_idx_from_part_idx(part_idx_from_ring_idx(ring_idx_from_part_idx(point_idx)));
+  return thrust::distance(
+    _part_begin,
+    thrust::prev(thrust::upper_bound(thrust::seq, _part_begin, _part_begin, ring_idx)));
 }
 
 template <typename GeometryIterator,
@@ -214,10 +213,67 @@ template <typename GeometryIterator,
           typename VecIterator>
 template <typename IndexType>
 CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, VecIterator>::operator[](
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+  geometry_idx_from_part_idx(IndexType part_idx)
+{
+  return thrust::distance(
+    _geometry_begin,
+    thrust::prev(thrust::upper_bound(thrust::seq, _geometry_begin, _geometry_end, part_idx)));
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+  geometry_idx_from_segment_idx(IndexType segment_idx)
+{
+  auto ring_idx = ring_idx_from_point_idx(segment_idx);
+  if (!is_valid_segment_id(segment_idx, ring_idx))
+    return multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+      INVALID_INDEX;
+  return geometry_idx_from_part_idx(part_idx_from_ring_idx(ring_idx));
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+template <typename IndexType1, typename IndexType2>
+CUSPATIAL_HOST_DEVICE bool
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::is_valid_segment_id(
+  IndexType1 point_idx, IndexType2 ring_idx)
+{
+  if constexpr (std::is_signed_v<IndexType1>)
+    return point_idx >= 0 && point_idx < (_ring_begin[ring_idx + 1] - 1);
+  else
+    return point_idx < (_ring_begin[ring_idx + 1] - 1);
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::operator[](
   IndexType multipolygon_idx)
 {
   return multipolygon_begin()[multipolygon_idx];
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::get_segment(
+  IndexType segment_idx)
+{
+  return segment{_point_begin[segment_idx], _point_begin[segment_idx + 1]};
 }
 
 }  // namespace cuspatial
