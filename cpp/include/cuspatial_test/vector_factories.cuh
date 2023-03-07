@@ -16,6 +16,7 @@
 
 #include <cuspatial/experimental/ranges/multilinestring_range.cuh>
 #include <cuspatial/experimental/ranges/multipoint_range.cuh>
+#include <cuspatial/experimental/ranges/multipolygon_range.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
@@ -48,6 +49,63 @@ auto make_device_uvector(std::initializer_list<T> inl,
                   cudaMemcpyKind::cudaMemcpyHostToDevice,
                   stream.value());
   return res;
+}
+
+/**
+ * @brief Owning object of a multipolygon array following geoarrow layout.
+ *
+ * @tparam GeometryArray Array type of geometry offset array
+ * @tparam PartArray Array type of part offset array
+ * @tparam RingArray Array type of ring offset array
+ * @tparam CoordinateArray Array type of coordinate array
+ */
+template <typename GeometryArray, typename PartArray, typename RingArray, typename CoordinateArray>
+class multipolygon_array {
+ public:
+  multipolygon_array(GeometryArray geometry_offsets_array,
+                     PartArray part_offsets_array,
+                     RingArray ring_offsets_array,
+                     CoordinateArray coordinate_offsets_array)
+    : _geometry_offsets_array(geometry_offsets_array),
+      _part_offsets_array(part_offsets_array),
+      _ring_offsets_array(ring_offsets_array),
+      _coordinate_offsets_array(coordinate_offsets_array)
+  {
+  }
+
+  /// Return the number of multilinestrings
+  auto size() { return _geometry_offsets_array.size() - 1; }
+
+  /// Return range object of the multilinestring array
+  auto range()
+  {
+    return multipolygon_range(_geometry_offsets_array.begin(),
+                              _geometry_offsets_array.end(),
+                              _part_offsets_array.begin(),
+                              _part_offsets_array.end(),
+                              _ring_offsets_array.begin(),
+                              _ring_offsets_array.end(),
+                              _coordinate_offsets_array.begin(),
+                              _coordinate_offsets_array.end());
+  }
+
+ protected:
+  GeometryArray _geometry_offsets_array;
+  PartArray _part_offsets_array;
+  RingArray _ring_offsets_array;
+  CoordinateArray _coordinate_offsets_array;
+};
+
+template <typename T>
+auto make_multipolygon_array(std::initializer_list<std::size_t> geometry_inl,
+                             std::initializer_list<std::size_t> part_inl,
+                             std::initializer_list<std::size_t> ring_inl,
+                             std::initializer_list<vec_2d<T>> coord_inl)
+{
+  return multipolygon_array{make_device_vector(geometry_inl),
+                            make_device_vector(part_inl),
+                            make_device_vector(ring_inl),
+                            make_device_vector(coord_inl)};
 }
 
 /**
