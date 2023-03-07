@@ -46,8 +46,8 @@ def contains_properly_quadtree(
     min_size = ceil(sqrt(len(test_points)))
     x_max = polygons.polygons.x.max()
     x_min = polygons.polygons.x.min()
-    y_max = polygons.points.y.max()
-    y_min = polygons.points.y.min()
+    y_max = polygons.polygons.y.max()
+    y_min = polygons.polygons.y.min()
     point_indices, quadtree = cuspatial.quadtree_on_points(
         test_points,
         x_min,
