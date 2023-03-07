@@ -137,8 +137,6 @@ std::unique_ptr<cudf::column> pairwise_point_in_polygon(cudf::column_view const&
   CUSPATIAL_EXPECTS(not poly_points_x.has_nulls() && not poly_points_y.has_nulls(),
                     "Polygon points must not contain nulls");
 
-  std::cout << "points: " << test_points_x.size() << " polys: " << poly_offsets.size() << std::endl;
-
   CUSPATIAL_EXPECTS(test_points_x.size() == std::max(poly_offsets.size() - 1, 0),
                     "Must pass in the same number of points as polygons.");
 

@@ -120,8 +120,6 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
   auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last) - 1;
   auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
 
-  std::cout << num_polys << " " << num_rings << " " << num_poly_points << std::endl;
-
   CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
     num_poly_points,
     std::distance(polygon_offsets_first, polygon_offsets_last),
