@@ -51,6 +51,8 @@ class multipoint_range {
   using point_t       = iterator_value_type<point_it_t>;
   using element_t     = iterator_vec_base_type<point_it_t>;
 
+  int32_t INVALID_IDX = -1;
+
   /**
    * @brief Construct a new multipoint array object
    */
@@ -128,6 +130,16 @@ class multipoint_range {
    */
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator[](IndexType idx);
+
+  /**
+   * @brief Returns the `idx`th point in the array.
+   *
+   * @tparam IndexType type of the index
+   * @param idx the index to the point
+   * @return a vec_2d object
+   */
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto point(IndexType idx);
 
  protected:
   /// Iterator to the start of the index array of start positions to each multipoint.

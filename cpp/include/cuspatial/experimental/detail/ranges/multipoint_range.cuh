@@ -133,4 +133,11 @@ multipoint_range<GeometryIterator, VecIterator>::geometry_idx_from_point_idx(Ind
     thrust::prev(thrust::upper_bound(thrust::seq, _geometry_begin, _geometry_end, idx)));
 }
 
+template <typename GeometryIterator, typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::point(IndexType idx)
+{
+  return _points_begin[idx];
+}
+
 }  // namespace cuspatial
