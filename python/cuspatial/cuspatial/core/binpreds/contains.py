@@ -3,20 +3,11 @@
 from math import ceil, sqrt
 
 from cudf import Series
-from cudf.core.column import as_column
 
 import cuspatial
-from cuspatial.utils.column_utils import normalize_point_columns
 
 
-def contains_properly_quadtree(
-    test_points_x,
-    test_points_y,
-    poly_offsets,
-    poly_ring_offsets,
-    poly_points_x,
-    poly_points_y,
-):
+def contains_properly_quadtree(points, polygons):
     """Compute from a series of points and a series of polygons which points
     are properly contained within the corresponding polygon. Polygon A contains
     Point B properly if B intersects the interior of A but not the boundary (or
@@ -27,18 +18,10 @@ def contains_properly_quadtree(
 
     Parameters
     ----------
-    test_points_x
-        x-coordinate of points to test for containment
-    test_points_y
-        y-coordinate of points to test for containment
-    poly_offsets
-        beginning index of the first ring in each polygon
-    poly_ring_offsets
-        beginning index of the first point in each ring
-    poly_points_x
-        x-coordinates of polygon vertices
-    poly_points_y
-        y-coordinates of polygon vertices
+    points : GeoSeries
+        A GeoSeries of points.
+    polygons : GeoSeries
+        A GeoSeries of polygons.
 
     Returns
     -------
@@ -49,27 +32,15 @@ def contains_properly_quadtree(
 
     scale = -1
     max_depth = 15
-    min_size = ceil(sqrt(len(test_points_x)))
-    if len(poly_offsets) == 0:
+    min_size = ceil(sqrt(len(points)))
+    if len(polygons) == 0:
         return Series()
-    (
-        test_points_x,
-        test_points_y,
-        poly_points_x,
-        poly_points_y,
-    ) = normalize_point_columns(
-        as_column(test_points_x),
-        as_column(test_points_y),
-        as_column(poly_points_x),
-        as_column(poly_points_y),
-    )
-    x_max = poly_points_x.max()
-    x_min = poly_points_x.min()
-    y_max = poly_points_y.max()
-    y_min = poly_points_y.min()
+    x_max = polygons.polygons.x.max()
+    x_min = polygons.polygons.x.min()
+    y_max = polygons.polygons.y.max()
+    y_min = polygons.polygons.y.min()
     point_indices, quadtree = cuspatial.quadtree_on_points(
-        test_points_x,
-        test_points_y,
+        points,
         x_min,
         x_max,
         y_min,
@@ -78,22 +49,12 @@ def contains_properly_quadtree(
         max_depth,
         min_size,
     )
-    poly_bboxes = cuspatial.polygon_bounding_boxes(
-        poly_offsets, poly_ring_offsets, poly_points_x, poly_points_y
-    )
+    poly_bboxes = cuspatial.polygon_bounding_boxes(polygons)
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree, poly_bboxes, x_min, x_max, y_min, y_max, scale, max_depth
     )
     polygons_and_points = cuspatial.quadtree_point_in_polygon(
-        intersections,
-        quadtree,
-        point_indices,
-        test_points_x,
-        test_points_y,
-        poly_offsets,
-        poly_ring_offsets,
-        poly_points_x,
-        poly_points_y,
+        intersections, quadtree, point_indices, points, polygons
     )
     breakpoint()
     polygons_and_points["point_index"] = point_indices.iloc[
