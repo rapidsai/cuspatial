@@ -1,5 +1,6 @@
 # Copyright (c) 2022, NVIDIA CORPORATION.
 
+
 from abc import abstractmethod
 
 import cudf
@@ -280,7 +281,8 @@ class ContainsProperlyBinop(_binop):
     def postprocess(self, op, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the operation."""
-        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
+        result = point_result
+        result["idx"] = point_indices
         df_result = result
         # Discrete math recombination
         if (

@@ -238,9 +238,8 @@ class ContainsProperlyBinpred(BinaryPredicate):
         else:
             """Postprocess the output GeoSeries to ensure that they are of the
             correct type for the predicate."""
-            result = cudf.DataFrame(
-                {"idx": point_indices, "pip": point_result}
-            )
+            result = point_result
+            result["idx"] = point_indices
             df_result = result
             # Discrete math recombination
             if (
@@ -254,9 +253,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
                     result.groupby("idx").sum().sort_index()
                     == result.groupby("idx").count().sort_index()
                 )
-            point_result = cudf.Series(
-                df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
-            )
+            point_result = df_result[0]
             point_result.name = None
             return point_result
 
