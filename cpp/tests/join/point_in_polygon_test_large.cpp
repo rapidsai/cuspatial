@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/point_in_polygon.hpp>
 #include <cuspatial/point_quadtree.hpp>
 #include <cuspatial/polygon_bounding_box.hpp>
 #include <cuspatial/spatial_join.hpp>
@@ -25,31 +26,18 @@
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
 
-#include <rmm/device_uvector.hpp>
-
 #include <cudf_test/base_fixture.hpp>
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/column_wrapper.hpp>
 #include <cudf_test/table_utilities.hpp>
 #include <cudf_test/type_lists.hpp>
 
-#include <thrust/distance.h>
-#include <thrust/host_vector.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/reduce.h>
 #include <thrust/sort.h>
 
-#include <ogrsf_frmts.h>
-
-// #include <algorithm>
-
 /*
- * The test uses the same quadtree structure as in pip_refine_test_small.
- * However, the numbers of randomly generated points under all quadrants (min_size) are increased
- * to be more than the number of threads per-block (currently fixed to 256, but can be set between
- * 32 2048 (CUDA Compute Capacity 7.0, multiples of warp size, which is 32) The test is designed to
- * fully test the two kernels in the refinment code, including both warp level reduce and scan, vote
- * and popc. Thrust primitives to divide quadrants into sub-blocks are also tested.
+ * The test uses the same quadtree structure as in pip_refine_test_small. However, the number of
+ * randomly generated points under all quadrants (min_size) are increased to be more than the
+ * number of threads per-block.
  */
 
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
@@ -76,57 +64,6 @@ inline auto generate_points(std::vector<std::vector<T>> const& quads, uint32_t p
     });
   }
   return std::make_pair(std::move(point_x), std::move(point_y));
-}
-
-template <typename T>
-inline auto make_polygons_geometry(thrust::host_vector<uint32_t> const& poly_offsets,
-                                   thrust::host_vector<uint32_t> const& ring_offsets,
-                                   thrust::host_vector<T> const& poly_x,
-                                   thrust::host_vector<T> const& poly_y)
-{
-  std::vector<OGRGeometry*> polygons{};
-  for (uint32_t poly_idx = 0, poly_end = poly_offsets.size() - 1; poly_idx < poly_end; ++poly_idx) {
-    auto ring_idx = static_cast<size_t>(poly_offsets[poly_idx]);
-    auto ring_end = static_cast<size_t>(poly_offsets[poly_idx + 1]);
-    auto polygon  = static_cast<OGRPolygon*>(OGRGeometryFactory::createGeometry(wkbPolygon));
-    for (; ring_idx < ring_end; ++ring_idx) {
-      auto seg_idx = static_cast<size_t>(ring_offsets[ring_idx]);
-      auto seg_end = static_cast<size_t>(
-        ring_idx < ring_offsets.size() - 1 ? ring_offsets[ring_idx + 1] : poly_x.size());
-      auto ring = static_cast<OGRLineString*>(OGRGeometryFactory::createGeometry(wkbLinearRing));
-      for (; seg_idx < seg_end; ++seg_idx) {
-        ring->addPoint(poly_x[seg_idx], poly_y[seg_idx]);
-      }
-      polygon->addRing(ring);
-    }
-    polygons.push_back(polygon);
-  }
-  return polygons;
-}
-
-template <typename T>
-auto geometry_to_poly_and_point_indices(std::vector<OGRGeometry*> const& polygons,
-                                        thrust::host_vector<T> const& x,
-                                        thrust::host_vector<T> const& y)
-{
-  std::vector<uint32_t> poly_indices{};
-  std::vector<uint32_t> point_lengths{};
-  std::vector<uint32_t> point_indices{};
-
-  for (uint32_t i = 0, n = x.size(); i < n; i++) {
-    OGRPoint point(x[i], y[i]);
-    std::vector<uint32_t> found_poly_idxs{};
-    for (uint32_t j = 0; j < polygons.size(); j++) {
-      if (polygons[j]->Contains(&point)) { found_poly_idxs.push_back(j); }
-    }
-    if (found_poly_idxs.size() > 0) {
-      point_lengths.push_back(found_poly_idxs.size());
-      point_indices.push_back(i);
-      poly_indices.insert(poly_indices.end(), found_poly_idxs.begin(), found_poly_idxs.end());
-    }
-  }
-  return std::make_tuple(
-    std::move(poly_indices), std::move(point_indices), std::move(point_lengths));
 }
 
 TYPED_TEST(PIPRefineTestLarge, TestLarge)
@@ -235,57 +172,47 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   auto poly_idx  = point_in_polygon_pairs->get_column(0).view();
   auto point_idx = point_in_polygon_pairs->get_column(1).view();
 
-  // verify
-
-  auto h_poly = make_polygons_geometry(cudf::test::to_host<uint32_t>(poly_offsets).first,
-                                       cudf::test::to_host<uint32_t>(ring_offsets).first,
-                                       cudf::test::to_host<T>(poly_x).first,
-                                       cudf::test::to_host<T>(poly_y).first);
-
-  auto host_poly_and_point_indices =
-    geometry_to_poly_and_point_indices(h_poly,
-                                       cudf::test::to_host<T>(points->get_column(0)).first,
-                                       cudf::test::to_host<T>(points->get_column(1)).first);
-
-  auto& expected_poly_indices  = std::get<0>(host_poly_and_point_indices);
-  auto& expected_point_indices = std::get<1>(host_poly_and_point_indices);
-  auto& expected_point_lengths = std::get<2>(host_poly_and_point_indices);
-
   auto actual_poly_indices  = cudf::test::to_host<uint32_t>(poly_idx).first;
   auto actual_point_indices = cudf::test::to_host<uint32_t>(point_idx).first;
-  auto actual_point_lengths = thrust::host_vector<uint32_t>(point_in_polygon_pairs->num_rows());
 
   thrust::stable_sort_by_key(
     actual_point_indices.begin(), actual_point_indices.end(), actual_poly_indices.begin());
 
-  auto num_search_points = thrust::distance(actual_point_indices.begin(),
-                                            thrust::reduce_by_key(actual_point_indices.begin(),
-                                                                  actual_point_indices.end(),
-                                                                  thrust::make_constant_iterator(1),
-                                                                  actual_point_indices.begin(),
-                                                                  actual_point_lengths.begin())
-                                              .first);
+  {
+    // verify
 
-  actual_point_indices.resize(num_search_points);
-  actual_point_lengths.resize(num_search_points);
-  actual_point_indices.shrink_to_fit();
-  actual_point_lengths.shrink_to_fit();
+    auto hits = cuspatial::point_in_polygon(
+      points->get_column(0), points->get_column(1), poly_offsets, ring_offsets, poly_x, poly_y);
 
-  auto poly_a = fixed_width_column_wrapper<uint32_t>(expected_poly_indices.begin(),
-                                                     expected_poly_indices.end());
-  auto poly_b =
-    fixed_width_column_wrapper<uint32_t>(actual_poly_indices.begin(), actual_poly_indices.end());
-  CUDF_TEST_EXPECT_COLUMNS_EQUAL(poly_a, poly_b, verbosity);
+    auto hits_host = cudf::test::to_host<int32_t>(hits->view()).first;
 
-  auto point_a = fixed_width_column_wrapper<uint32_t>(expected_point_indices.begin(),
-                                                      expected_point_indices.end());
-  auto point_b =
-    fixed_width_column_wrapper<uint32_t>(actual_point_indices.begin(), actual_point_indices.end());
-  CUDF_TEST_EXPECT_COLUMNS_EQUAL(point_a, point_b, verbosity);
+    std::vector<uint32_t> expected_poly_indices;
+    std::vector<uint32_t> expected_point_indices;
 
-  auto lengths_a = fixed_width_column_wrapper<uint32_t>(expected_point_lengths.begin(),
-                                                        expected_point_lengths.end());
-  auto lengths_b =
-    fixed_width_column_wrapper<uint32_t>(actual_point_lengths.begin(), actual_point_lengths.end());
-  CUDF_TEST_EXPECT_COLUMNS_EQUAL(lengths_a, lengths_b, verbosity);
+    for (int point_index = 0; point_index < hits->size(); point_index++) {
+      std::uint32_t bits = hits_host[point_index];
+      while (bits != 0) {
+        std::uint32_t t          = bits & -bits;          // get only LSB
+        std::uint32_t poly_index = __builtin_ctzl(bits);  // get index of LSB
+        expected_poly_indices.push_back(poly_index);
+        expected_point_indices.push_back(point_index);
+        bits ^= t;  // reset LSB to zero to advance to next set bit
+      }
+    }
+
+    thrust::stable_sort_by_key(
+      expected_point_indices.begin(), expected_point_indices.end(), expected_poly_indices.begin());
+
+    auto poly_a = fixed_width_column_wrapper<uint32_t>(expected_poly_indices.begin(),
+                                                       expected_poly_indices.end());
+    auto poly_b =
+      fixed_width_column_wrapper<uint32_t>(actual_poly_indices.begin(), actual_poly_indices.end());
+    CUDF_TEST_EXPECT_COLUMNS_EQUAL(poly_a, poly_b, verbosity);
+
+    auto point_a = fixed_width_column_wrapper<uint32_t>(expected_point_indices.begin(),
+                                                        expected_point_indices.end());
+    auto point_b = fixed_width_column_wrapper<uint32_t>(actual_point_indices.begin(),
+                                                        actual_point_indices.end());
+    CUDF_TEST_EXPECT_COLUMNS_EQUAL(point_a, point_b, verbosity);
+  }
 }

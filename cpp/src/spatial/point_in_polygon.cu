@@ -143,7 +143,7 @@ std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_poi
   CUSPATIAL_EXPECTS(poly_ring_offsets.size() >= poly_offsets.size(),
                     "Each polygon must have at least one ring");
 
-  CUSPATIAL_EXPECTS(poly_points_x.size() >= poly_offsets.size() * 4,
+  CUSPATIAL_EXPECTS(poly_points_x.size() >= (poly_ring_offsets.size() - 1) * 4,
                     "Each ring must have at least four vertices");
 
   return cuspatial::detail::point_in_polygon(test_points_x,

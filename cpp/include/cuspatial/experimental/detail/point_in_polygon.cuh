@@ -102,8 +102,8 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
   using T = iterator_vec_base_type<Cart2dItA>;
 
   auto const num_test_points = std::distance(test_points_first, test_points_last);
-  auto const num_polys       = std::distance(polygon_offsets_first, polygon_offsets_last);
-  auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last);
+  auto const num_polys       = std::distance(polygon_offsets_first, polygon_offsets_last) - 1;
+  auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last) - 1;
   auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
 
   static_assert(is_same_floating_point<T, iterator_vec_base_type<Cart2dItB>>(),
