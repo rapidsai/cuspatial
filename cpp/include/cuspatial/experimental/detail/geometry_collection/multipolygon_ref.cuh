@@ -15,16 +15,23 @@ struct to_polygon_functor {
   PartIterator part_begin;
   RingIterator ring_begin;
   VecIterator point_begin;
+  VecIterator point_end;
 
   CUSPATIAL_HOST_DEVICE
-  to_polygon_functor(PartIterator part_begin, RingIterator ring_begin, VecIterator point_begin)
-    : part_begin(part_begin), ring_begin(ring_begin), point_begin(point_begin)
+  to_polygon_functor(PartIterator part_begin,
+                     RingIterator ring_begin,
+                     VecIterator point_begin,
+                     VecIterator point_end)
+    : part_begin(part_begin), ring_begin(ring_begin), point_begin(point_begin), point_end(point_end)
   {
   }
 
   CUSPATIAL_HOST_DEVICE auto operator()(difference_type i)
   {
-    return polygon_ref{point_begin + part_begin[i], point_begin + part_begin[i + 1]};
+    return polygon_ref{ring_begin + part_begin[i],
+                       thrust::next(ring_begin + part_begin[i + 1]),
+                       point_begin,
+                       point_end};
   }
 };
 
@@ -60,7 +67,7 @@ CUSPATIAL_HOST_DEVICE auto multipolygon_ref<PartIterator, RingIterator, VecItera
   const
 {
   return detail::make_counting_transform_iterator(
-    0, to_polygon_functor{_part_begin, _ring_begin, _point_begin});
+    0, to_polygon_functor{_part_begin, _ring_begin, _point_begin, _point_end});
 }
 
 template <typename PartIterator, typename RingIterator, typename VecIterator>

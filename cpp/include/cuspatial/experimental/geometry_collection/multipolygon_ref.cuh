@@ -26,11 +26,13 @@ namespace cuspatial {
  * @tparam PartIterator type of iterator to the part offset array.
  * @tparam VecIterator type of iterator to the underlying point array.
  */
-template <typename GeomIterator, typename PartIterator, typename VecIterator>
+template <typename PartIterator, typename RingIterator, typename VecIterator>
 class multipolygon_ref {
  public:
   CUSPATIAL_HOST_DEVICE multipolygon_ref(PartIterator part_begin,
                                          PartIterator part_end,
+                                         RingIterator ring_begin,
+                                         RingIterator ring_end,
                                          VecIterator point_begin,
                                          VecIterator point_end);
   /// Return the number of polygons in the multipolygon.
@@ -43,10 +45,10 @@ class multipolygon_ref {
   /// Return iterator to one past the last polygon.
   CUSPATIAL_HOST_DEVICE auto part_end() const;
 
-  /// Return iterator to the first polygon.
+  /// Return iterator to the first ring.
   CUSPATIAL_HOST_DEVICE auto ring_begin() const;
-  /// Return iterator to one past the last polygon.
-  CUSPATIAL_HOST_DEVICE auto ring_begin() const;
+  /// Return iterator to one past the last ring.
+  CUSPATIAL_HOST_DEVICE auto ring_end() const;
 
   /// Return iterator to the first point of the multipolygon.
   CUSPATIAL_HOST_DEVICE auto point_begin() const;
