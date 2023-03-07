@@ -480,7 +480,7 @@ def test_allpairs_with_holes():
             Point(0.5, 0.25),
         ]
     )
-    got = lhs.contains_properly(rhs, allpairs=True).sort_values(
+    got = lhs.contains_properly(rhs, mode="allpairs").sort_values(
         "polygon_index"
     )
     assert (got["polygon_index"].values_host == [0, 1, 3]).all()
@@ -516,7 +516,7 @@ def test_allpairs():
             Point(0.5, 0.25),
         ]
     )
-    got = lhs.contains_properly(rhs, allpairs=True).sort_values(
+    got = lhs.contains_properly(rhs, mode="allpairs").sort_values(
         "polygon_index"
     )
     assert (got["polygon_index"] == cp.arange(4)).all()
@@ -553,7 +553,7 @@ def test_allpairs_polygon_indices_match_source_index():
             Point(0.5, 0.25),
         ]
     )
-    got = lhs.contains_properly(rhs, align=False, allpairs=True).sort_values(
+    got = lhs.contains_properly(rhs, align=False, mode="allpairs").sort_values(
         "polygon_index"
     )
     assert (got["polygon_index"] == cp.arange(1, 5)).all()

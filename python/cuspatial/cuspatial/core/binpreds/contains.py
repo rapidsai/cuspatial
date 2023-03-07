@@ -95,6 +95,7 @@ def contains_properly_quadtree(
         poly_points_x,
         poly_points_y,
     )
+    breakpoint()
     polygons_and_points["point_index"] = point_indices.iloc[
         polygons_and_points["point_index"]
     ].reset_index(drop=True)
