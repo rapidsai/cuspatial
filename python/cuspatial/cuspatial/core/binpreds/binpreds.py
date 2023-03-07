@@ -274,21 +274,8 @@ class OverlapsBinpred(ContainsProperlyBinpred):
         result["pip"] = group_result["part_index"]
         result = result.fillna(False)
         df_result = result
-        # Discrete math recombination
-        if contains_only_linestrings(self.rhs):
-            df_result = (
-                result.groupby("idx").sum().sort_index()
-                == result.groupby("idx").count().sort_index()
-            )
-        elif contains_only_polygons(self.rhs) or contains_only_multipoints(
-            self.rhs
-        ):
-            partial_result = result.groupby("idx").sum()
-            df_result = (partial_result > 0) & (
-                partial_result < len(point_indices)
-            )
-        else:
-            df_result = result.groupby("idx").sum() > 1
+        partial_result = result.groupby("idx").sum()
+        df_result = (partial_result > 0) & (partial_result < len(point_result))
         point_result = cudf.Series(
             df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
         )
@@ -308,30 +295,3 @@ class WithinBinpred(ContainsProperlyBinpred):
         if contains_only_polygons(rhs):
             (lhs, rhs) = (rhs, lhs)
         return super().preprocess(lhs, rhs)
-
-    def postprocess(self, point_indices, point_result):
-        """Postprocess the output GeoSeries to ensure that they are of the
-        correct type for the predicate."""
-        group_result = point_result.groupby("point_index").count() > 0
-        result = cudf.DataFrame({"idx": point_indices})
-        result.reset_index(drop=True, inplace=True)
-        result["pip"] = group_result["part_index"]
-        result = result.fillna(False)
-        df_result = result
-        # Discrete math recombination
-        if (
-            contains_only_linestrings(self.rhs)
-            or contains_only_polygons(self.rhs)
-            or contains_only_multipoints(self.rhs)
-        ):
-            # process for completed linestrings, polygons, and multipoints.
-            # Not necessary for points.
-            df_result = (
-                result.groupby("idx").sum().sort_index()
-                == result.groupby("idx").count().sort_index()
-            )
-        point_result = cudf.Series(
-            df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
-        )
-        point_result.name = None
-        return point_result

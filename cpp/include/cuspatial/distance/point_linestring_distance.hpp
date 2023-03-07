@@ -16,6 +16,8 @@
 
 #include <cudf/column/column_view.hpp>
 
+#include <optional>
+
 namespace cuspatial {
 
 /**

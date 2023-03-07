@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2019-2022, NVIDIA CORPORATION.
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -99,13 +99,6 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 ###################################################################################################
 # - dependencies ----------------------------------------------------------------------------------
 
-# find gdal
-rapids_find_package(
-    GDAL REQUIRED
-    GLOBAL_TARGETS GDAL::GDAL
-    BUILD_EXPORT_SET cuspatial-exports
-    INSTALL_EXPORT_SET cuspatial-exports
-)
 # add third party dependencies using CPM
 rapids_cpm_init()
 # find or add cuDF
@@ -116,10 +109,8 @@ include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial
+    src/column/geometry_column_view.cpp
     src/indexing/construction/point_quadtree.cu
-    src/interpolate/cubic_spline.cu
-    src/io/shp/polygon_shapefile_reader.cpp
-    src/io/shp/polygon_shapefile_reader.cu
     src/join/quadtree_point_in_polygon.cu
     src/join/quadtree_point_to_nearest_linestring.cu
     src/join/quadtree_bbox_filtering.cu
@@ -131,6 +122,7 @@ add_library(cuspatial
     src/spatial/haversine.cu
     src/spatial/hausdorff.cu
     src/spatial/linestring_distance.cu
+    src/spatial/linestring_intersection.cu
     src/spatial/point_distance.cu
     src/spatial/point_linestring_distance.cu
     src/spatial/point_linestring_nearest_points.cu
@@ -195,7 +187,7 @@ endif()
 target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
 # Specify the target module library dependencies
-target_link_libraries(cuspatial PUBLIC GDAL::GDAL cudf::cudf CUDA::cusparse${_ctk_static_suffix})
+target_link_libraries(cuspatial PUBLIC cudf::cudf)
 
 add_library(cuspatial::cuspatial ALIAS cuspatial)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,11 +77,6 @@
  *          @file point_linestring_nearest_points.hpp
  *          @file point_linestring_nearest_points.cuh
  *      @}
- *      @defgroup cubic_spline Cubic Spline
- *      @{
- *          @brief APIs related to cubic splines
- *          @file cubic_spline.hpp
- *      @}
  * @}
  * @defgroup trajectory_api Trajectory APIs
  * @{
@@ -101,7 +96,9 @@
  * @defgroup cuspatial_types Types
  * @{
  *      @brief Type declarations for cuspatial
+ *      @file types.hpp
  *      @file vec_2d.hpp
+ *      @file geometry_column_view.hpp
  *
  *      @defgroup type_factories Factory Methods
  *      @{
@@ -123,11 +120,6 @@
  *          @file multipoint_range.cuh
  *          @file multilinestring_range.cuh
  *      @}
- * @defgroup io I/O
- * @{
- *      @brief APIs for spatial data I/O
- *      @file shapefile_reader.hpp
- * @}
  * @defgroup exception Exception
  * @{
  *      @brief cuSpatial exception types
