@@ -19,6 +19,8 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/vec_2d.hpp>
 
+#include <thrust/device_reference.h>
+
 #include <iostream>
 namespace cuspatial {
 
@@ -61,4 +63,7 @@ class alignas(sizeof(Vertex)) segment {
 template <typename T>
 segment(vec_2d<T> a, vec_2d<T> b) -> segment<T, vec_2d<T>>;
 
+template <typename T>
+segment(thrust::device_reference<vec_2d<T>> a, thrust::device_reference<vec_2d<T>> b)
+  -> segment<T, vec_2d<T>>;
 }  // namespace cuspatial
