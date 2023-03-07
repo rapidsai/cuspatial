@@ -203,6 +203,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate."""
         if self.allpairs:
+
             # This complex block of code is to create a dataframe that
             # contains the polygon index and the point index for each
             # point in the polygon. Quadtree pip returns the _part_index_
@@ -241,6 +242,8 @@ class ContainsProperlyBinpred(BinaryPredicate):
             result = point_result
             result["idx"] = point_indices
             df_result = result
+            print(result)
+            breakpoint()
             # Discrete math recombination
             if (
                 contains_only_linestrings(self.rhs)
@@ -253,9 +256,9 @@ class ContainsProperlyBinpred(BinaryPredicate):
                     result.groupby("idx").sum().sort_index()
                     == result.groupby("idx").count().sort_index()
                 )
-            point_result = df_result[0]
-            point_result.name = None
-            return point_result
+            final_result = df_result[0]
+            final_result.name = None
+            return final_result
 
 
 class OverlapsBinpred(ContainsProperlyBinpred):

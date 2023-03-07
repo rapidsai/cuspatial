@@ -59,7 +59,7 @@ struct point_in_polygon_functor {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
-    auto size = test_points_x.size() * poly_offsets.size();
+    auto size = test_points_x.size() * (poly_offsets.size() - 1);
     auto tid  = cudf::type_to_id<bool>();
     auto type = cudf::data_type{tid};
 
@@ -91,6 +91,7 @@ struct point_in_polygon_functor {
     auto splits_iter = thrust::make_transform_iterator(
       one_iter, [width = test_points_x.size()](cudf::size_type idx) { return idx * width; });
     auto splits = std::vector<cudf::size_type>(splits_iter, splits_iter + poly_offsets.size() - 1);
+    printf("Size %d", size);
     auto column = std::make_unique<cudf::column>(
       type,
       size,
@@ -160,7 +161,7 @@ std::pair<std::unique_ptr<cudf::column>, cudf::table_view> point_in_polygon(
   CUSPATIAL_EXPECTS(poly_ring_offsets.size() >= poly_offsets.size(),
                     "Each polygon must have at least one ring");
 
-  CUSPATIAL_EXPECTS(poly_points_x.size() >= poly_offsets.size() * 4,
+  CUSPATIAL_EXPECTS(poly_points_x.size() >= (poly_offsets.size() - 1) * 4,
                     "Each ring must have at least four vertices");
 
   return cuspatial::detail::point_in_polygon(test_points_x,

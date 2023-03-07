@@ -118,7 +118,8 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
   //             "OutputIt must point to integral type.");
 
   CUSPATIAL_EXPECTS(num_rings >= num_polys, "Each polygon must have at least one ring");
-  CUSPATIAL_EXPECTS(num_poly_points >= num_polys * 4, "Each ring must have at least four vertices");
+  CUSPATIAL_EXPECTS(num_poly_points >= (num_polys - 1) * 4,
+                    "Each ring must have at least four vertices");
 
   // TODO: introduce a validation function that checks the rings of the polygon are
   // actually closed. (i.e. the first and last vertices are the same)

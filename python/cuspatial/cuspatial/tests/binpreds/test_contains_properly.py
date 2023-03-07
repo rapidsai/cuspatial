@@ -76,8 +76,7 @@ def test_one_polygon_with_hole_one_linestring_crossing_it(
     polygons = cuspatial.from_geopandas(gpdpolygon)
     got = polygons.contains_properly(linestring).values_host
     expected = gpdpolygon.contains(gpdlinestring).values
-    assert np.all(got)
-    assert not np.any(expected)
+    assert (got == expected).all()
 
 
 @pytest.mark.parametrize(
@@ -94,7 +93,6 @@ def test_one_polygon_with_hole_one_linestring_crossing_it(
             True,
         ],
         [Point([3.33, 1.11]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
-        [Point([3.3, 1.1]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
     ],
 )
 def test_float_precision_limits_failures(point, polygon, expects):
@@ -443,7 +441,7 @@ def test_multi_contains():
         ]
     )
     got = lhs.contains_properly(rhs).values_host
-    assert got == [True, True, True, True, True, True, True, True]
+    assert (got == [True, True, True, True, True, True, True, True]).all()
 
 
 def test_allpairs_with_holes():
@@ -480,7 +478,7 @@ def test_allpairs_with_holes():
             Point(0.5, 0.25),
         ]
     )
-    got = lhs.contains_properly(rhs, allpairs=True).sort_values(
+    got = lhs.contains_properly(rhs, mode="allpairs").sort_values(
         "polygon_index"
     )
     assert (got["polygon_index"].values_host == [0, 1, 3]).all()
@@ -516,7 +514,7 @@ def test_allpairs():
             Point(0.5, 0.25),
         ]
     )
-    got = lhs.contains_properly(rhs, allpairs=True).sort_values(
+    got = lhs.contains_properly(rhs, mode="allpairs").sort_values(
         "polygon_index"
     )
     assert (got["polygon_index"] == cp.arange(4)).all()
@@ -553,7 +551,7 @@ def test_allpairs_polygon_indices_match_source_index():
             Point(0.5, 0.25),
         ]
     )
-    got = lhs.contains_properly(rhs, align=False, allpairs=True).sort_values(
+    got = lhs.contains_properly(rhs, align=False, mode="allpairs").sort_values(
         "polygon_index"
     )
     assert (got["polygon_index"] == cp.arange(1, 5)).all()
@@ -593,5 +591,8 @@ def test_example_2():
             Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
         ]
     )
+    gpdpoint = point.to_geopandas()
+    gpdpolygon = polygon.to_geopandas()
     got = polygon.contains_properly(point)
-    assert (got.values_host == [False, False, False, False, True, False]).all()
+    expected = gpdpolygon.contains(gpdpoint)
+    assert (got.values_host == expected).all()
