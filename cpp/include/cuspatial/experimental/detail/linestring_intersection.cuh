@@ -237,6 +237,7 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
   rmm::device_uvector<uint8_t> segment_flags(num_segments, stream);
   detail::find_and_combine_segment(
     segments.offset_range(), segments.geom_range(), segment_flags.begin(), stream);
+
   segments.remove_if(range(segment_flags.begin(), segment_flags.end()), stream);
 
   // Merge point on segments

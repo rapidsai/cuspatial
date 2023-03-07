@@ -1,28 +1,28 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 import warnings
 
 from cudf import DataFrame, Series
 from cudf.core.column import as_column
 
+from cuspatial import GeoSeries
 from cuspatial._lib.quadtree import (
     quadtree_on_points as cpp_quadtree_on_points,
 )
-from cuspatial.utils.column_utils import normalize_point_columns
+from cuspatial.utils.column_utils import contains_only_points
 
 
 def quadtree_on_points(
-    xs, ys, x_min, x_max, y_min, y_max, scale, max_depth, max_size
+    points: GeoSeries, x_min, x_max, y_min, y_max, scale, max_depth, max_size
 ):
-    """Construct a quadtree from a set of points for a given area-of-interest
+    """
+    Construct a quadtree from a set of points for a given area-of-interest
     bounding box.
 
     Parameters
     ----------
-    xs
-        Column of x-coordinates for each point.
-    ys
-        Column of y-coordinates for each point.
+    points
+        Series of points.
     x_min
         The lower-left x-coordinate of the area of interest bounding box.
     x_max
@@ -72,23 +72,18 @@ def quadtree_on_points(
     -----
 
     * Swaps ``min_x`` and ``max_x`` if ``min_x > max_x``
-
     * Swaps ``min_y`` and ``max_y`` if ``min_y > max_y``
-
     * 2D coordinates are converted into a 1D Morton code by dividing each x/y
-    by the ``scale``: (``(x - min_x) / scale`` and ``(y - min_y) / scale``).
-
+      by the ``scale``: (``(x - min_x) / scale`` and ``(y - min_y) / scale``).
     * `max_depth` should be less than 16, since Morton codes are represented
-    as `uint32_t`. The eventual number of levels may be less than `max_depth`
-    if the number of points is small or `max_size` is large.
-
+      as `uint32_t`. The eventual number of levels may be less than `max_depth`
+      if the number of points is small or `max_size` is large.
     * All intermediate quadtree nodes will have fewer than `max_size` number of
-    points. Leaf nodes are permitted (but not guaranteed) to have >= `max_size`
-    number of points.
+      points. Leaf nodes are permitted (but not guaranteed) to have >=
+      `max_size` number of points.
 
     Examples
     --------
-
     An example of selecting the ``max_size`` and ``scale`` based on input::
 
         >>> np.random.seed(0)
@@ -161,7 +156,12 @@ def quadtree_on_points(
         Length: 120, dtype: int32
     """
 
-    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    if not len(points) == 0 and not contains_only_points(points):
+        raise ValueError("GeoSeries must contain only points.")
+
+    xs = as_column(points.points.x)
+    ys = as_column(points.points.y)
+
     x_min, x_max, y_min, y_max = (
         min(x_min, x_max),
         max(x_min, x_max),

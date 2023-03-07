@@ -21,6 +21,7 @@ from shapely.geometry import (
 
 import cudf
 from cudf._typing import ColumnLike
+from cudf.core.column.column import as_column
 
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
@@ -81,30 +82,6 @@ class GeoSeries(cudf.Series):
             adapter = GeoPandasReader(data)
             pandas_meta = GeoMeta(adapter.get_geopandas_meta())
             column = GeoColumn(adapter._get_geotuple(), pandas_meta)
-        elif isinstance(data, Tuple):
-            # This must be a Polygon Tuple returned by
-            # cuspatial.read_polygon_shapefile
-            # TODO: If an index is passed in, it needs to be reflected
-            # in the column, because otherwise .iloc indexing will ignore
-            # it.
-            column = GeoColumn(
-                data,
-                GeoMeta(
-                    {
-                        "input_types": cp.repeat(
-                            cp.array(
-                                [Feature_Enum.POLYGON.value], dtype="int8"
-                            ),
-                            len(data[0]),
-                        ),
-                        "union_offsets": cp.arange(
-                            len(data[0]), dtype="int32"
-                        ),
-                    }
-                ),
-                from_read_polygon_shapefile=True,
-            )
-
         else:
             raise TypeError(
                 f"Incompatible object passed to GeoSeries ctor {type(data)}"
@@ -610,6 +587,157 @@ class GeoSeries(cudf.Series):
         )
         return GeoSeries(column)
 
+    @classmethod
+    def from_points_xy(cls, points_xy):
+        """
+        Construct a GeoSeries of POINTs from an array of interleaved xy
+        coordinates.
+
+        Parameters
+        ----------
+        points_xy: array-like
+            Coordinates of the points, interpreted as interlaved x-y coords.
+
+        Returns
+        -------
+        GeoSeries:
+            A GeoSeries made of the points.
+        """
+        return cls(GeoColumn._from_points_xy(as_column(points_xy)))
+
+    @classmethod
+    def from_multipoints_xy(cls, multipoints_xy, geometry_offset):
+        """
+        Construct a GeoSeries of MULTIPOINTs from an array of interleaved
+        xy coordinates.
+
+        Parameters
+        ----------
+        points_xy: array-like
+            Coordinates of the points, interpreted as interleaved x-y coords.
+        geometry_offset: array-like
+            Offsets indicating the starting index of the multipoint. Multiply
+            the index by 2 results in the starting index of the coordinate.
+            See example for detail.
+
+        Returns
+        -------
+        GeoSeries:
+            A GeoSeries made of the points.
+
+        Example
+        -------
+        >>> import numpy as np
+        >>> cuspatial.GeoSeries.from_multipoints_xy(
+        ...     np.array([0, 0, 1, 1, 2, 2, 3, 3], dtype='f8'),
+        ...     np.array([0, 2, 4], dtype='i4'))
+        0    MULTIPOINT (0.00000 0.00000, 1.00000 1.00000)
+        1    MULTIPOINT (2.00000 2.00000, 3.00000 3.00000)
+        dtype: geometry
+        """
+        return cls(
+            GeoColumn._from_multipoints_xy(
+                as_column(multipoints_xy), as_column(geometry_offset)
+            )
+        )
+
+    @classmethod
+    def from_linestrings_xy(
+        cls, linestrings_xy, part_offset, geometry_offset
+    ) -> T:
+        """
+        Construct a GeoSeries of MULTILINESTRINGs from an array of interleaved
+        xy coordinates.
+
+        Parameters
+        ----------
+        linestrings_xy : array-like
+            Coordinates of the points, interpreted as interleaved x-y coords.
+        geometry_offset : array-like
+            Offsets of the first coordinate of each geometry. The length of
+            this array is the number of geometries.  Offsets with a difference
+            greater than 1 indicate a MultiLinestring.
+        part_offset : array-like
+            Offsets into the coordinates array indicating the beginning of
+            each part. The length of this array is the number of parts.
+
+        Returns
+        -------
+        GeoSeries:
+            A GeoSeries of MULTILINESTRINGs.
+
+        Example
+        -------
+        >>> import cudf
+        >>> import cuspatial
+        >>> linestrings_xy = cudf.Series(
+                [0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5])
+        >>> part_offset = cudf.Series([0, 6])
+        >>> geometry_offset = cudf.Series([0, 1])
+        >>> cuspatial.GeoSeries.from_linestrings_xy(
+                linestrings_xy, part_offset, geometry_offset)
+        0    LINESTRING (0 0, 1 1, 2 2, 3 3, 4 4, 5 5)
+        dtype: geometry
+        """
+        return cls(
+            GeoColumn._from_linestrings_xy(
+                as_column(linestrings_xy),
+                as_column(part_offset, dtype="int32"),
+                as_column(geometry_offset, dtype="int32"),
+            )
+        )
+
+    @classmethod
+    def from_polygons_xy(
+        cls, polygons_xy, ring_offset, part_offset, geometry_offset
+    ) -> T:
+        """
+        Construct a GeoSeries of MULTIPOLYGONs from an array of interleaved xy
+        coordinates.
+
+        Parameters
+        ----------
+        polygons_xy : array-like
+            Coordinates of the points, interpreted as interleaved x-y coords.
+        geometry_offset : array-like
+            Offsets of the first coordinate of each geometry. The length of
+            this array is the number of geometries.  Offsets with a difference
+            greater than 1 indicate a MultiLinestring.
+        part_offset : array-like
+            Offsets into the coordinates array indicating the beginning of
+            each part. The length of this array is the number of parts.
+        rint_offset : array-like
+            Offsets into the part array indicating the beginning of each ring.
+            The length of this array is the number of rings.
+
+        Returns
+        -------
+        GeoSeries:
+            A GeoSeries of MULTIPOLYGONs.
+
+        Example
+        -------
+        >>> import cudf
+        >>> import cuspatial
+        >>> polygons_xy = cudf.Series(
+                [0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5])
+        >>> ring_offset = cudf.Series([0, 6])
+        >>> part_offset = cudf.Series([0, 1])
+        >>> geometry_offset = cudf.Series([0, 1])
+        >>> cuspatial.GeoSeries.from_polygons_xy(
+                polygons_xy, ring_offset, part_offset, geometry_offset)
+        0    POLYGON (0 0, 1 1, 2 2, 3 3, 4 4, 5 5)
+        dtype: geometry
+        """
+        return cls(
+            GeoColumn._from_polygons_xy(
+                as_column(polygons_xy),
+                as_column(ring_offset, dtype="int32"),
+                as_column(part_offset, dtype="int32"),
+                as_column(geometry_offset, dtype="int32"),
+            )
+        )
+
     def align(self, other):
         """
         Align the rows of two GeoSeries using outer join.
@@ -829,8 +957,8 @@ class GeoSeries(cudf.Series):
 
         Examples
         --------
-
         Test if a polygon is inside another polygon:
+
         >>> point = cuspatial.GeoSeries(
             [Point(0.5, 0.5)],
             )
@@ -889,9 +1017,6 @@ class GeoSeries(cudf.Series):
         >>> print(polygon.contains(point, mode='allpairs'))
               point_indices  polygon_indices
         0                 2                1
-
-
-
 
         Returns
         -------
