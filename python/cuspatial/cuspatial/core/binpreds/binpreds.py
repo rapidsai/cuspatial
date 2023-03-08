@@ -177,12 +177,8 @@ class ContainsProperlyBinpred(BinaryPredicate):
 
         # call pip on the three subtypes on the right:
         point_result = contains_properly_quadtree(
-            points.x,
-            points.y,
-            lhs.polygons.part_offset,
-            lhs.polygons.ring_offset,
-            lhs.polygons.x,
-            lhs.polygons.y,
+            self.rhs,
+            self.lhs,
         )
         return point_result
 

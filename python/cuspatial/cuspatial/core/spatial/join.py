@@ -219,11 +219,6 @@ def quadtree_point_in_polygon(
             "`polygons` Geoseries must contains only polygons geometries."
         )
 
-    if len(polygons.polygons.part_offset) != len(
-        polygons.polygons.geometry_offset
-    ):
-        raise ValueError("GeoSeries cannot contain multipolygon.")
-
     points_x = as_column(points.points.x)
     points_y = as_column(points.points.y)
 
