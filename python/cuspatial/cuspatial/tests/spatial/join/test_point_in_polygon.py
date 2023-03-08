@@ -1,11 +1,8 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-import numpy as np
-
 import cudf
 
 import cuspatial
-from cuspatial.core.spatial.join import pip_bitmap_column_to_binary_array
 
 
 def test_empty():
@@ -225,45 +222,3 @@ def test_three_points_two_features():
     expected[0] = [True, True, False]
     expected[1] = [False, False, True]
     cudf.testing.assert_frame_equal(expected, result)
-
-
-def test_pip_bitmap_column_to_binary_array():
-    col = cudf.Series([0b00000000, 0b00001101, 0b00000011, 0b00001001])._column
-    got = pip_bitmap_column_to_binary_array(col, width=4)
-    expected = np.array(
-        [[0, 0, 0, 0], [1, 1, 0, 1], [0, 0, 1, 1], [1, 0, 0, 1]], dtype="int8"
-    )
-    np.testing.assert_array_equal(got.copy_to_host(), expected)
-
-    col = cudf.Series([])._column
-    got = pip_bitmap_column_to_binary_array(col, width=0)
-    expected = np.array([], dtype="int8").reshape(0, 0)
-    np.testing.assert_array_equal(got.copy_to_host(), expected)
-
-    col = cudf.Series([None, None], dtype="float64")._column
-    got = pip_bitmap_column_to_binary_array(col, width=0)
-    expected = np.array([], dtype="int8").reshape(2, 0)
-    np.testing.assert_array_equal(got.copy_to_host(), expected)
-
-    col = cudf.Series(
-        [
-            0b000000011101110,
-            0b000000000001101,
-            0b111001110011010,
-        ]
-    )._column
-    got = pip_bitmap_column_to_binary_array(col, width=15)
-    expected = np.array(
-        [
-            [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1],
-            [1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0],
-        ],
-        dtype="int8",
-    )
-    np.testing.assert_array_equal(got.copy_to_host(), expected)
-
-    col = cudf.Series([0, 0, 0])._column
-    got = pip_bitmap_column_to_binary_array(col, width=3)
-    expected = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]], dtype="int8")
-    np.testing.assert_array_equal(got.copy_to_host(), expected)
