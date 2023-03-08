@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "cuspatial/experimental/geometry_collection/multipoint_ref.cuh"
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -48,8 +49,8 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
     auto b       = last_segment.v2;
     bool y0_flag = b.y > test_point.y;
     bool y1_flag;
-    for (auto it = ring.point_begin(); it != ring.point_end(); ++it) {
-      vec_2d<T> a = *it;
+    auto ring_points = multipoint_ref{ring.point_begin(), ring.point_end()};
+    for (vec_2d<T> a : ring_points) {
       // for each line segment, including the segment between the last and first vertex
       T run  = b.x - a.x;
       T rise = b.y - a.y;
