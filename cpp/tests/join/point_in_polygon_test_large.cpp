@@ -190,10 +190,11 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
     std::vector<uint32_t> expected_point_indices;
 
     for (int point_index = 0; point_index < hits->size(); point_index++) {
+      // iterate over set bits
       std::uint32_t bits = hits_host[point_index];
       while (bits != 0) {
-        std::uint32_t t          = bits & -bits;          // get only LSB
-        std::uint32_t poly_index = __builtin_ctzl(bits);  // get index of LSB
+        std::uint32_t t          = bits & -bits;         // get only LSB
+        std::uint32_t poly_index = __builtin_ctz(bits);  // get index of LSB
         expected_poly_indices.push_back(poly_index);
         expected_point_indices.push_back(point_index);
         bits ^= t;  // reset LSB to zero to advance to next set bit
