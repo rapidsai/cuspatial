@@ -85,6 +85,35 @@ def contains_properly_pairwise(
     poly_points_x,
     poly_points_y,
 ):
+    """Compute from a series of points and a series of polygons which points
+    are properly contained within the corresponding polygon. Polygon A contains
+    Point B properly if B intersects the interior of A but not the boundary (or
+    exterior).
+
+    Note that polygons must be closed: the first and last vertex of each
+    polygon must be the same.
+
+    Parameters
+    ----------
+    test_points_x
+        x-coordinates of points to test for containment
+    test_points_y
+        y-coordinates of points to test for containment
+    poly_offsets
+        offsets of the first ring in each polygon
+    poly_ring_offsets
+        offsets of the first point in each ring
+    poly_points_x
+        x-coordinates of polygon points
+    poly_points_y
+        y-coordinates of polygon points
+
+    Returns
+    -------
+    result : cudf.DataFrame
+        A DataFrame of boolean values indicating whether each point falls
+        within its corresponding polygon.
+    """
     if len(poly_offsets) == 0:
         return Series()
     (
