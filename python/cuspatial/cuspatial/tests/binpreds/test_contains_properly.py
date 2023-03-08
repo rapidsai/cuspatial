@@ -294,8 +294,8 @@ def test_six_polygons_six_linestrings(linestring_generator):
 
 
 def test_max_polygons_max_linestrings(linestring_generator, polygon_generator):
-    gpdlinestring = gpd.GeoSeries([*linestring_generator(31, 3)])
-    gpdpolygons = gpd.GeoSeries([*polygon_generator(31, 0)])
+    gpdlinestring = gpd.GeoSeries([*linestring_generator(500, 3)])
+    gpdpolygons = gpd.GeoSeries([*polygon_generator(500, 0)])
     linestring = cuspatial.from_geopandas(gpdlinestring)
     polygons = cuspatial.from_geopandas(gpdpolygons)
     got = polygons.contains_properly(linestring).values_host
@@ -317,8 +317,8 @@ def test_one_polygon_one_polygon(polygon_generator):
 
 
 def test_max_polygons_max_polygons(simple_polygon_generator):
-    gpdlhs = gpd.GeoSeries([*simple_polygon_generator(31, 1, 3)])
-    gpdrhs = gpd.GeoSeries([*simple_polygon_generator(31, 1.49, 2)])
+    gpdlhs = gpd.GeoSeries([*simple_polygon_generator(500, 1, 3)])
+    gpdrhs = gpd.GeoSeries([*simple_polygon_generator(500, 1.49, 2)])
     rhs = cuspatial.from_geopandas(gpdrhs)
     lhs = cuspatial.from_geopandas(gpdlhs)
     got = lhs.contains_properly(rhs).values_host
@@ -340,8 +340,8 @@ def test_one_polygon_one_multipoint(multipoint_generator, polygon_generator):
 
 
 def test_max_polygons_max_multipoints(multipoint_generator, polygon_generator):
-    gpdlhs = gpd.GeoSeries([*polygon_generator(31, 0, 1)])
-    gpdrhs = gpd.GeoSeries([*multipoint_generator(31, 10)])
+    gpdlhs = gpd.GeoSeries([*polygon_generator(500, 0, 1)])
+    gpdrhs = gpd.GeoSeries([*multipoint_generator(500, 10)])
     rhs = cuspatial.from_geopandas(gpdrhs)
     lhs = cuspatial.from_geopandas(gpdlhs)
     got = lhs.contains_properly(rhs).values_host
