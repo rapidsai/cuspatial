@@ -112,9 +112,6 @@ class multipolygon_range {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator[](IndexType multipolygon_idx);
 
-  //   template <typename IndexType>
-  //   CUSPATIAL_HOST_DEVICE auto get_point(IndexType point_idx);
-
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto get_segment(IndexType segment_idx);
 

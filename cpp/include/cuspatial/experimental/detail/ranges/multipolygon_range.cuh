@@ -203,8 +203,7 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   part_idx_from_ring_idx(IndexType ring_idx)
 {
   return thrust::distance(
-    _part_begin,
-    thrust::prev(thrust::upper_bound(thrust::seq, _part_begin, _part_begin, ring_idx)));
+    _part_begin, thrust::prev(thrust::upper_bound(thrust::seq, _part_begin, _part_end, ring_idx)));
 }
 
 template <typename GeometryIterator,
@@ -230,10 +229,15 @@ CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   geometry_idx_from_segment_idx(IndexType segment_idx)
 {
+  printf("segment_idx: %d\n", static_cast<int>(segment_idx));
   auto ring_idx = ring_idx_from_point_idx(segment_idx);
+  printf("ring_idx: %d\n", static_cast<int>(ring_idx));
   if (!is_valid_segment_id(segment_idx, ring_idx))
     return multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
       INVALID_INDEX;
+
+  auto part_idx = part_idx_from_ring_idx(ring_idx);
+  printf("part_idx: %d\n", static_cast<int>(part_idx));
   return geometry_idx_from_part_idx(part_idx_from_ring_idx(ring_idx));
 }
 

@@ -16,11 +16,14 @@
 
 #pragma once
 
+#include <cuspatial_test/test_util.cuh>
+
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/detail/utility/offset_to_keys.cuh>
+#include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
@@ -36,6 +39,7 @@
 #include <thrust/tabulate.h>
 
 #include <cstdint>
+#include <limits>
 #include <type_traits>
 
 namespace cuspatial {
@@ -70,6 +74,7 @@ struct point_in_multipolygon_test_functor {
       intersects = intersects || is_point_in_polygon(point, polygon);
     }
 
+    printf("Intersect: %d\n", static_cast<int>(intersects));
     return static_cast<uint8_t>(intersects);
   }
 };
@@ -88,25 +93,32 @@ void __global__ pairwise_point_polygon_distance_kernel(MultiPointRange multipoin
 {
   using T = typename MultiPointRange::element_t;
 
-  T dist_squared = std::numeric_limits<T>::max();
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multipolygons.num_points();
        idx += gridDim.x * blockDim.x) {
     auto geometry_idx = multipolygons.geometry_idx_from_segment_idx(idx);
     if (geometry_idx == MultiPolygonRange::INVALID_INDEX) continue;
 
+    printf("Intesects? %d Geometry_idx: %d\n",
+           static_cast<int>(intersects[geometry_idx]),
+           static_cast<int>(geometry_idx));
+
     if (intersects[geometry_idx]) {
       // TODO: only the leading thread of the pair need to store the result, atomics is not needed.
+      printf("In intersects, idx: %d\n", static_cast<int>(idx));
       atomicMin(&distances[geometry_idx], T{0.0});
       continue;
     }
 
-    printf("In distance kernel: %d %d %d",
+    printf("In distance kernel: point_idx: %d segment_idx: %d\n",
            static_cast<int>(idx),
-           static_cast<int>(geometry_idx),
-           static_cast<int>(intersects.size()));
+           static_cast<int>(geometry_idx));
 
-    auto [a, b] = multipolygons.get_segment(idx);
+    T dist_squared = std::numeric_limits<T>::max();
+    auto [a, b]    = multipolygons.get_segment(idx);
     for (vec_2d<T> point : multipoints[geometry_idx]) {
+      printf("point: %f %f\n", point.x, point.y);
+      printf("segment: (%f %f) -> (%f %f)\n", a.x, a.y, b.x, b.y);
+      printf("dist: %f\n", point_to_segment_distance_squared(point, a, b));
       dist_squared = min(dist_squared, point_to_segment_distance_squared(point, a, b));
     }
 
@@ -134,6 +146,8 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
   CUSPATIAL_EXPECTS(multipoints.size() == multipolygons.size(),
                     "Must have the same number of input rows.");
 
+  if (multipoints.size() == 0) return distances_first;
+
   auto multipoint_intersects = [&]() {
     rmm::device_uvector<uint8_t> point_intersects(multipoints.num_points(), stream);
 
@@ -142,7 +156,10 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
                      point_intersects.end(),
                      detail::point_in_multipolygon_test_functor{multipoints, multipolygons});
 
+    // TODO: optimize when input is not a multipolygon
     rmm::device_uvector<uint8_t> multipoint_intersects(multipoints.num_multipoints(), stream);
+    detail::zero_data_async(multipoint_intersects.begin(), multipoint_intersects.end(), stream);
+
     auto offset_as_key_it = detail::make_counting_transform_iterator(
       0, offsets_to_keys_functor{multipoints.offsets_begin(), multipoints.offsets_end()});
 
@@ -157,10 +174,16 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
     return multipoint_intersects;
   }();
 
+  thrust::fill(rmm::exec_policy(stream),
+               distances_first,
+               distances_first + multipoints.size(),
+               std::numeric_limits<T>::max());
   auto [threads_per_block, n_blocks] = grid_1d(multipolygons.num_points());
 
+  std::cout << "Size of multipoint intersects: " << multipoint_intersects.size() << std::endl;
+
   detail::
-    pairwise_point_polygon_distance_kernel<<<threads_per_block, n_blocks, 0, stream.value()>>>(
+    pairwise_point_polygon_distance_kernel<<<n_blocks, threads_per_block, 0, stream.value()>>>(
       multipoints, multipolygons, multipoint_intersects.begin(), distances_first);
 
   CUSPATIAL_CHECK_CUDA(stream.value());

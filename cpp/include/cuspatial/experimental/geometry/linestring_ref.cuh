@@ -38,6 +38,11 @@ class linestring_ref {
   /// Return iterator to one past the last segment
   CUSPATIAL_HOST_DEVICE auto segment_end() const;
 
+  /// Return iterator to the first point of the linestring
+  CUSPATIAL_HOST_DEVICE auto point_begin() const;
+  /// Return iterator to one past the last point
+  CUSPATIAL_HOST_DEVICE auto point_end() const;
+
   /// Return iterator to the first segment of the linestring
   CUSPATIAL_HOST_DEVICE auto begin() const { return segment_begin(); }
   /// Return iterator to one past the last segment
