@@ -59,7 +59,7 @@ struct point_in_polygon_functor {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
-    auto size = test_points_x.size() * (poly_offsets.size());
+    auto size = test_points_x.size() * poly_offsets.size();
     auto tid  = cudf::type_to_id<bool>();
     auto type = cudf::data_type{tid};
 
