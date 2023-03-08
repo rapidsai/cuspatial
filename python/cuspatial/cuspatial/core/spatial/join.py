@@ -84,18 +84,8 @@ def point_in_polygon(points: GeoSeries, polygons: GeoSeries):
     py = as_column(polygons.polygons.y)
 
     result = cpp_point_in_polygon(x, y, poly_offsets, ring_offsets, px, py)
-    result = DataFrame(
-        pip_bitmap_column_to_binary_array(
-            polygon_bitmap_column=result, width=len(poly_offsets)
-        )
-    )
-
-    result.columns = polygons.index[::-1]
     return DataFrame._from_data(
-        {
-            name: result[name].astype("bool")
-            for name in reversed(result.columns)
-        }
+        {name: result[i] for i, name in enumerate(polygons.index)}
     )
 
 

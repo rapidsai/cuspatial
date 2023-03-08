@@ -260,19 +260,14 @@ class OverlapsBinpred(ContainsProperlyBinpred):
         # TODO: Maybe change this to intersection
         if not has_same_geometry(self.lhs, self.rhs):
             return cudf.Series([False] * len(self.lhs))
-        group_result = point_result.groupby("point_index").count() > 0
-        result = cudf.DataFrame({"idx": point_indices})
-        result.reset_index(drop=True, inplace=True)
-        result["pip"] = group_result["part_index"]
-        result = result.fillna(False)
-        df_result = result
-        partial_result = result.groupby("idx").sum()
-        df_result = (partial_result > 0) & (partial_result < len(point_result))
-        point_result = cudf.Series(
-            df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
-        )
-        point_result.name = None
-        return point_result
+        point_result["point_index"] = point_indices
+        hits = point_result.groupby("point_index").sum()
+        size = point_result.groupby("point_index").count()
+        x = hits != size
+        y = size > 0
+        z = hits > 0
+        group_result = x & y & z
+        return group_result
 
 
 class IntersectsBinpred(ContainsProperlyBinpred):
