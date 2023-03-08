@@ -127,7 +127,7 @@ TEST_F(PointInPolygonErrorTest, EmptyPolygonOffsets)
     cuspatial::logic_error);
 }
 
-TEST_F(PointInPolygonErrorTest, TriangleUnclsedNotEnoughPoints)
+TEST_F(PointInPolygonErrorTest, TriangleUnclosedNotEnoughPoints)
 {
   using T = double;
 
