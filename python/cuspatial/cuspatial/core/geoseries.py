@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2022, NVIDIA CORPORATION
+# Copyright (c) 2020-2023, NVIDIA CORPORATION
 
 from functools import cached_property
 from numbers import Integral
@@ -1042,7 +1042,7 @@ class GeoSeries(cudf.Series):
         >>> point2 = cuspatial.GeoSeries(
             [Point(0, 0)],
             )
-        >>> print(point.equals(point2))
+        >>> print(point.geom_equals(point2))
         0    True
         dtype: bool
 
@@ -1057,7 +1057,7 @@ class GeoSeries(cudf.Series):
                 Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
             ]
         )
-        >>> print(polygon.equals(polygon2))
+        >>> print(polygon.geom_equals(polygon2))
         0    True
         dtype: bool
 
