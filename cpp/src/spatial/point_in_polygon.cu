@@ -91,7 +91,6 @@ struct point_in_polygon_functor {
     auto splits_iter = thrust::make_transform_iterator(
       one_iter, [width = test_points_x.size()](cudf::size_type idx) { return idx * width; });
     auto splits = std::vector<cudf::size_type>(splits_iter, splits_iter + poly_offsets.size() - 1);
-    printf("Size %d", size);
     auto column = std::make_unique<cudf::column>(
       type,
       size,
