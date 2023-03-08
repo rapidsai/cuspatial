@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+
 import cupy as cp
 import geopandas as gpd
 import numpy as np

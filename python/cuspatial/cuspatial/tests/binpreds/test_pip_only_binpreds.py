@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+
 import geopandas as gpd
 from shapely.geometry import LineString, Point, Polygon
 
