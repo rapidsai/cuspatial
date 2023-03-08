@@ -245,21 +245,8 @@ class OverlapsBinpred(ContainsProperlyBinpred):
             return cudf.Series([False] * len(self.lhs))
         result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
         df_result = result
-        # Discrete math recombination
-        if contains_only_linestrings(self.rhs):
-            df_result = (
-                result.groupby("idx").sum().sort_index()
-                == result.groupby("idx").count().sort_index()
-            )
-        elif contains_only_polygons(self.rhs) or contains_only_multipoints(
-            self.rhs
-        ):
-            partial_result = result.groupby("idx").sum()
-            df_result = (partial_result > 0) & (
-                partial_result < len(point_result)
-            )
-        else:
-            df_result = result.groupby("idx").sum() > 1
+        partial_result = result.groupby("idx").sum()
+        df_result = (partial_result > 0) & (partial_result < len(point_result))
         point_result = cudf.Series(
             df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
         )
