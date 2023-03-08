@@ -39,21 +39,41 @@ TYPED_TEST(PolygonBoundingBoxTest, test_empty)
 {
   using T = TypeParam;
 
-  auto poly_offsets = make_device_vector<int32_t>({});
-  auto ring_offsets = make_device_vector<int32_t>({});
-  auto vertices     = make_device_vector<vec_2d<T>>({});
+  {
+    auto poly_offsets = make_device_vector<int32_t>({});
+    auto ring_offsets = make_device_vector<int32_t>({});
+    auto vertices     = make_device_vector<vec_2d<T>>({});
 
-  auto bboxes = rmm::device_vector<cuspatial::box<T>>(poly_offsets.size());
+    auto bboxes = rmm::device_vector<cuspatial::box<T>>(0);
 
-  auto bboxes_end = cuspatial::polygon_bounding_boxes(poly_offsets.begin(),
-                                                      poly_offsets.end(),
-                                                      ring_offsets.begin(),
-                                                      ring_offsets.end(),
-                                                      vertices.begin(),
-                                                      vertices.end(),
-                                                      bboxes.begin());
+    auto bboxes_end = cuspatial::polygon_bounding_boxes(poly_offsets.begin(),
+                                                        poly_offsets.end(),
+                                                        ring_offsets.begin(),
+                                                        ring_offsets.end(),
+                                                        vertices.begin(),
+                                                        vertices.end(),
+                                                        bboxes.begin());
 
-  EXPECT_EQ(std::distance(bboxes.begin(), bboxes_end), 0);
+    EXPECT_EQ(std::distance(bboxes.begin(), bboxes_end), 0);
+  }
+
+  {
+    auto poly_offsets = make_device_vector<int32_t>({0});
+    auto ring_offsets = make_device_vector<int32_t>({});
+    auto vertices     = make_device_vector<vec_2d<T>>({});
+
+    auto bboxes = rmm::device_vector<cuspatial::box<T>>(0);
+
+    auto bboxes_end = cuspatial::polygon_bounding_boxes(poly_offsets.begin(),
+                                                        poly_offsets.end(),
+                                                        ring_offsets.begin(),
+                                                        ring_offsets.end(),
+                                                        vertices.begin(),
+                                                        vertices.end(),
+                                                        bboxes.begin());
+
+    EXPECT_EQ(std::distance(bboxes.begin(), bboxes_end), 0);
+  }
 }
 
 TYPED_TEST(PolygonBoundingBoxTest, test_one)

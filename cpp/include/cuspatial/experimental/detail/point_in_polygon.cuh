@@ -120,27 +120,29 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
   auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last) - 1;
   auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
 
-  CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
-    num_poly_points,
-    std::distance(polygon_offsets_first, polygon_offsets_last),
-    std::distance(poly_ring_offsets_first, poly_ring_offsets_last));
+  if (num_test_points > 0) {
+    CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
+      num_poly_points,
+      std::distance(polygon_offsets_first, polygon_offsets_last),
+      std::distance(poly_ring_offsets_first, poly_ring_offsets_last));
 
-  CUSPATIAL_EXPECTS(num_polys <= std::numeric_limits<int32_t>::digits,
-                    "Number of polygons cannot exceed 31");
+    CUSPATIAL_EXPECTS(num_polys <= std::numeric_limits<int32_t>::digits,
+                      "Number of polygons cannot exceed 31");
 
-  auto [threads_per_block, num_blocks] = grid_1d(num_test_points);
+    auto [threads_per_block, num_blocks] = grid_1d(num_test_points);
 
-  detail::point_in_polygon_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
-    test_points_first,
-    num_test_points,
-    polygon_offsets_first,
-    num_polys,
-    poly_ring_offsets_first,
-    num_rings,
-    polygon_points_first,
-    num_poly_points,
-    output);
-  CUSPATIAL_CHECK_CUDA(stream.value());
+    detail::point_in_polygon_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
+      test_points_first,
+      num_test_points,
+      polygon_offsets_first,
+      num_polys,
+      poly_ring_offsets_first,
+      num_rings,
+      polygon_points_first,
+      num_poly_points,
+      output);
+    CUSPATIAL_CHECK_CUDA(stream.value());
+  }
 
   return output + num_test_points;
 }

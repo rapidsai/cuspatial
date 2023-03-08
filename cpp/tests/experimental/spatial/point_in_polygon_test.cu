@@ -79,6 +79,11 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
   EXPECT_EQ(ret, got.end());
 }
 
+// cuspatial expects closed rings, however algorithms may work OK with unclosed rings
+// in the future if we change to an algorithm that requires closed rings we may change or remove
+// this test.
+// Note that we don't introspect the values of offset arrays to validate closedness. So this test
+// uses a polygon ring with 4 vertices so it doesn't fail polygon validation.
 TYPED_TEST(PointInPolygonTest, OnePolygonOneRingUnclosed)
 {
   auto test_point        = this->make_device_points({{-2.0, 0.0},
@@ -90,8 +95,8 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRingUnclosed)
                                               {0.0, -0.5},
                                               {0.0, 0.5}});
   auto poly_offsets      = this->make_device_offsets({0, 1});
-  auto poly_ring_offsets = this->make_device_offsets({0, 3});
-  auto poly_point        = this->make_device_points({{-1.0, -1.0}, {1.0, -1.0}, {1.0, 1.0}});
+  auto poly_ring_offsets = this->make_device_offsets({0, 4});
+  auto poly_point = this->make_device_points({{-1.0, -1.0}, {1.0, -1.0}, {1.0, 0.0}, {1.0, 1.0}});
 
   auto got      = rmm::device_vector<int32_t>(test_point.size());
   auto expected = std::vector<int32_t>{false, false, false, false, false, true, true, false};

@@ -144,7 +144,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& pol
   CUSPATIAL_EXPECTS(ring_offsets.type().id() == cudf::type_id::INT32, "Invalid ring_offsets type");
   CUSPATIAL_EXPECTS(x.size() == y.size(), "x and y must be the same size");
 
-  if (poly_offsets.is_empty() || ring_offsets.is_empty() || x.is_empty() || y.is_empty()) {
+  if (num_polys == 0) {
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(4);
     cols.push_back(cudf::empty_like(x));

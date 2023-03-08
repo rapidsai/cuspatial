@@ -60,21 +60,24 @@ BoundingBoxIterator polygon_bounding_boxes(PolygonOffsetIterator polygon_offsets
   auto const num_rings = std::distance(polygon_ring_offsets_first, polygon_ring_offsets_last) - 1;
   auto const num_vertices = std::distance(polygon_vertices_first, polygon_vertices_last);
 
-  CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
-    num_vertices,
-    std::distance(polygon_offsets_first, polygon_offsets_last),
-    std::distance(polygon_ring_offsets_first, polygon_ring_offsets_last));
+  if (num_polys > 0) {
+    CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
+      num_vertices,
+      std::distance(polygon_offsets_first, polygon_offsets_last),
+      std::distance(polygon_ring_offsets_first, polygon_ring_offsets_last));
 
-  if (num_polys == 0 || num_rings == 0 || num_vertices == 0) { return bounding_boxes_first; }
+    if (num_polys == 0 || num_rings == 0 || num_vertices == 0) { return bounding_boxes_first; }
 
-  auto vertex_ids_iter = make_geometry_id_iterator<IndexT>(
-    polygon_offsets_first, polygon_offsets_last, polygon_ring_offsets_first);
+    auto vertex_ids_iter = make_geometry_id_iterator<IndexT>(
+      polygon_offsets_first, polygon_offsets_last, polygon_ring_offsets_first);
 
-  return point_bounding_boxes(vertex_ids_iter,
-                              vertex_ids_iter + num_vertices,
-                              polygon_vertices_first,
-                              bounding_boxes_first,
-                              expansion_radius,
-                              stream);
+    return point_bounding_boxes(vertex_ids_iter,
+                                vertex_ids_iter + num_vertices,
+                                polygon_vertices_first,
+                                bounding_boxes_first,
+                                expansion_radius,
+                                stream);
+  }
+  return bounding_boxes_first;
 }
 }  // namespace cuspatial

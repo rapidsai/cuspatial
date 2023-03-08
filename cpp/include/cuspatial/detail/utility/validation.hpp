@@ -22,30 +22,29 @@
  * @brief Macro for validating the data array sizes for a polygon.
  *
  * Raises an exception if any of the following are false:
- *  - There are either zero or at least 2 polygon offsets (number of polygons + 1).
- *  - There are either zero or at least 2 polygon ring offsets (number of rings + 1).
+ *  - The number of polygon offsets is greater than zero.
+ *  - The number of ring offsets is greater than zero.
  *  - There is at least one ring offset per polygon offset.
- *  - There are at least 3 vertices per ring offset.
+ *  - There are at least four vertices per ring offset.
  *
  * Polygons follow [GeoArrow data layout][1]. Offsets arrays (polygons and rings) have one more
  * element than the number of items in the array. The last offset is always the sum of the previous
  * offset and the size of that element. For example the last value in the ring offsets array is the
  * last ring offset plus the number of rings in the last polygon. See
- * [Arrow Variable-Size Binary layout](2).
+ * [Arrow Variable-Size Binary layout](2). Note that an empty list still has one offset: {0}.
  *
- * Rings are not assumed to be open or closed (closed means the first and last vertices of
- * each ring are equal). Rings must have at least 3 vertices.
+ * Rings are assumed to be closed (closed means the first and last vertices of
+ * each ring are equal). Therefore rings must have at least 4 vertices.
  *
  * [1]: https://github.com/geoarrow/geoarrow/blob/main/format.md
  * [2]: https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout
  */
-#define CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(                                    \
-  num_poly_points, num_poly_offsets, num_poly_ring_offsets)                       \
-  CUSPATIAL_EXPECTS(num_poly_offsets == 0 || num_poly_offsets > 1,                \
-                    "Polygon offsets must contain at least two (2) values");      \
-  CUSPATIAL_EXPECTS(num_poly_ring_offsets == 0 || num_poly_ring_offsets > 1,      \
-                    "Polygon ring offsets must contain at least two (2) values"); \
-  CUSPATIAL_EXPECTS(num_poly_ring_offsets >= num_poly_offsets,                    \
-                    "Each polygon must have at least one ring");                  \
-  CUSPATIAL_EXPECTS(num_poly_points >= 3 * (num_poly_ring_offsets - 1),           \
-                    "Each ring must have at least three (3) vertices");
+#define CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(                                                    \
+  num_poly_points, num_poly_offsets, num_poly_ring_offsets)                                       \
+  CUSPATIAL_EXPECTS(num_poly_offsets > 0, "Polygon offsets must contain at least one (1) value"); \
+  CUSPATIAL_EXPECTS(num_poly_ring_offsets > 0,                                                    \
+                    "Polygon ring offsets must contain at least one (1) value");                  \
+  CUSPATIAL_EXPECTS(num_poly_ring_offsets >= num_poly_offsets,                                    \
+                    "Each polygon must have at least one (1) ring");                              \
+  CUSPATIAL_EXPECTS(num_poly_points >= 4 * (num_poly_ring_offsets - 1),                           \
+                    "Each ring must have at least four (4) vertices");
