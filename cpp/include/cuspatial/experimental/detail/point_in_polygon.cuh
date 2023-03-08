@@ -118,14 +118,14 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
   auto const num_test_points = std::distance(test_points_first, test_points_last);
 
   if (num_test_points > 0) {
+    auto const num_polys       = std::distance(polygon_offsets_first, polygon_offsets_last) - 1;
+    auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last) - 1;
+    auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
+
     CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
       num_poly_points,
       std::distance(polygon_offsets_first, polygon_offsets_last),
       std::distance(poly_ring_offsets_first, poly_ring_offsets_last));
-
-    auto const num_polys       = std::distance(polygon_offsets_first, polygon_offsets_last) - 1;
-    auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last) - 1;
-    auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
 
     CUSPATIAL_EXPECTS(num_polys <= std::numeric_limits<int32_t>::digits,
                       "Number of polygons cannot exceed 31");
