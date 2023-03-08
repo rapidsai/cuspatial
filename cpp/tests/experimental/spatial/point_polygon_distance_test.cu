@@ -308,7 +308,7 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairTwoPolygonTwoRing)
   using P = vec_2d<T>;
 
   CUSPATIAL_RUN_TEST(this->run_single,
-                     {{P{2.5, 3}}, {P{-2.5, -1.5}}},
+                     {{P{2.5, 3}}, {P{-1.75, -1.5}}},
                      {0, 1, 2},
                      {0, 2, 4},
                      {0, 5, 10, 14, 18},
@@ -333,7 +333,7 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairTwoPolygonTwoRing)
                        P{-2, -2},
                        P{-1, -1},
                      },
-                     {0.0, 0.5});
+                     {0.0, 0.17677669529663687});
 }
 
 TYPED_TEST(PairwisePointPolygonDistanceTest, ThreePolygons)
