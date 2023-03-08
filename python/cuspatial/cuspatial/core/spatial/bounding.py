@@ -51,9 +51,7 @@ def polygon_bounding_boxes(polygons: GeoSeries):
     # by combining the geometry offset and parts offset of the multipolygon
     # array.
 
-    poly_offsets = polygons.polygons.part_offset.take(
-        polygons.polygons.geometry_offset
-    )
+    poly_offsets = polygons.polygons.part_offset
     ring_offsets = polygons.polygons.ring_offset
     x = polygons.polygons.x
     y = polygons.polygons.y

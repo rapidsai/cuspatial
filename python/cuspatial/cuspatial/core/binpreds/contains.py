@@ -56,7 +56,6 @@ def contains_properly_quadtree(points, polygons):
     polygons_and_points = cuspatial.quadtree_point_in_polygon(
         intersections, quadtree, point_indices, points, polygons
     )
-    breakpoint()
     polygons_and_points["point_index"] = point_indices.iloc[
         polygons_and_points["point_index"]
     ].reset_index(drop=True)
