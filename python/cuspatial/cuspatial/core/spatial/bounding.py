@@ -67,7 +67,7 @@ def polygon_bounding_boxes(polygons: GeoSeries):
         dict(
             zip(
                 column_names,
-                result[0].values(),
+                result,
             )
         )
     )

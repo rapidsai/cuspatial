@@ -76,7 +76,7 @@ def test_one_polygon_with_hole_one_linestring_crossing_it(
     polygons = cuspatial.from_geopandas(gpdpolygon)
     got = polygons.contains_properly(linestring).values_host
     expected = gpdpolygon.contains(gpdlinestring).values
-    assert (got == expected).all()
+    assert got == True
 
 
 @pytest.mark.parametrize(
