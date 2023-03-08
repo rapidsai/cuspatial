@@ -75,8 +75,7 @@ def test_one_polygon_with_hole_one_linestring_crossing_it(
     linestring = cuspatial.from_geopandas(gpdlinestring)
     polygons = cuspatial.from_geopandas(gpdpolygon)
     got = polygons.contains_properly(linestring).values_host
-    expected = gpdpolygon.contains(gpdlinestring).values
-    assert got == True
+    assert (got is True).all()
 
 
 @pytest.mark.parametrize(
@@ -596,3 +595,22 @@ def test_example_2():
     got = polygon.contains_properly(point)
     expected = gpdpolygon.contains(gpdpoint)
     assert (got.values_host == expected).all()
+
+
+def test_example_3():
+    point = cuspatial.GeoSeries(
+        [
+            Point(0, 0),
+            Point(-1, 0),
+            Point(-2, 0),
+        ]
+    )
+    polygon = cuspatial.GeoSeries(
+        [
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+        ]
+    )
+    got = polygon.contains_properly(point, mode="allpairs")
+    assert (got["polygon_index"].values_host == [1]).all()
+    assert (got["point_index"].values_host == [1]).all()

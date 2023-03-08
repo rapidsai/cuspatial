@@ -1002,11 +1002,11 @@ class GeoSeries(cudf.Series):
 
         Test whether three points fall within either of two polygons using
         `allpairs` mode:
-        >>> point = cuspatial.GeoSeries(
-                [Point(0, 0)],
-                [Point(-1, 0)],
-                [Point(-2, 0)],
-            )
+        >>> point = cuspatial.GeoSeries([
+                Point(0, 0),
+                Point(-1, 0),
+                Point(-2, 0),
+            ])
         >>> polygon = cuspatial.GeoSeries(
                 [
                     Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
@@ -1015,7 +1015,7 @@ class GeoSeries(cudf.Series):
             )
         >>> print(polygon.contains(point, mode='allpairs'))
               point_indices  polygon_indices
-        0                 2                1
+        0                 1                1
 
 
         Returns
