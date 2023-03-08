@@ -112,8 +112,15 @@ class multipolygon_range {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator[](IndexType multipolygon_idx);
 
+  /// Returns the `segment_idx`th segment in the multipolygon range.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto get_segment(IndexType segment_idx);
+
+  /// Returns `true` if `point_idx`th point is the first point of its
+  /// multipolygon
+  template <typename IndexType1, typename IndexType2>
+  CUSPATIAL_HOST_DEVICE bool is_first_point_of_multipolygon(IndexType1 point_idx,
+                                                            IndexType2 geometry_idx);
 
  protected:
   GeometryIterator _geometry_begin;

@@ -58,23 +58,13 @@ struct point_in_multipolygon_test_functor {
   template <typename IndexType>
   uint8_t __device__ operator()(IndexType pidx)
   {
-    printf("%d\n", static_cast<int>(pidx));
-
-    auto point = thrust::raw_reference_cast(multipoints.point(pidx));
-
-    printf("%f, %f\n", point.x, point.y);
-
+    auto point        = thrust::raw_reference_cast(multipoints.point(pidx));
     auto geometry_idx = multipoints.geometry_idx_from_point_idx(pidx);
-
-    printf("%d\n", static_cast<int>(geometry_idx));
 
     bool intersects = false;
     for (auto polygon : multipolygons[geometry_idx]) {
-      printf("here\n");
       intersects = intersects || is_point_in_polygon(point, polygon);
     }
-
-    printf("Intersect: %d\n", static_cast<int>(intersects));
     return static_cast<uint8_t>(intersects);
   }
 };
@@ -98,27 +88,15 @@ void __global__ pairwise_point_polygon_distance_kernel(MultiPointRange multipoin
     auto geometry_idx = multipolygons.geometry_idx_from_segment_idx(idx);
     if (geometry_idx == MultiPolygonRange::INVALID_INDEX) continue;
 
-    printf("Intesects? %d Geometry_idx: %d\n",
-           static_cast<int>(intersects[geometry_idx]),
-           static_cast<int>(geometry_idx));
-
     if (intersects[geometry_idx]) {
-      // TODO: only the leading thread of the pair need to store the result, atomics is not needed.
-      printf("In intersects, idx: %d\n", static_cast<int>(idx));
-      atomicMin(&distances[geometry_idx], T{0.0});
+      if (multipolygons.is_first_point_of_multipolygon(idx, geometry_idx))
+        distances[geometry_idx] = T{0.0};
       continue;
     }
-
-    printf("In distance kernel: point_idx: %d segment_idx: %d\n",
-           static_cast<int>(idx),
-           static_cast<int>(geometry_idx));
 
     T dist_squared = std::numeric_limits<T>::max();
     auto [a, b]    = multipolygons.get_segment(idx);
     for (vec_2d<T> point : multipoints[geometry_idx]) {
-      printf("point: %f %f\n", point.x, point.y);
-      printf("segment: (%f %f) -> (%f %f)\n", a.x, a.y, b.x, b.y);
-      printf("dist: %f\n", point_to_segment_distance_squared(point, a, b));
       dist_squared = min(dist_squared, point_to_segment_distance_squared(point, a, b));
     }
 
@@ -179,8 +157,6 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
                distances_first + multipoints.size(),
                std::numeric_limits<T>::max());
   auto [threads_per_block, n_blocks] = grid_1d(multipolygons.num_points());
-
-  std::cout << "Size of multipoint intersects: " << multipoint_intersects.size() << std::endl;
 
   detail::
     pairwise_point_polygon_distance_kernel<<<n_blocks, threads_per_block, 0, stream.value()>>>(

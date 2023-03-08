@@ -38,9 +38,6 @@ struct to_linestring_functor {
 
   CUSPATIAL_HOST_DEVICE auto operator()(difference_type i)
   {
-    printf("In to_linestring_functor: %d %d\n",
-           static_cast<int>(part_begin[i]),
-           static_cast<int>(part_begin[i + 1]));
     return linestring_ref{point_begin + part_begin[i], point_begin + part_begin[i + 1]};
   }
 };

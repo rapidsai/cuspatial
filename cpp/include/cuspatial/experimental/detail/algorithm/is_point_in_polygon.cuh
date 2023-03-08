@@ -42,22 +42,14 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
 {
   bool point_is_within = false;
   bool is_colinear     = false;
-  printf("Polygon num rings: %d\n", static_cast<int>(polygon.num_rings()));
   for (auto ring : polygon) {
-    printf("here in ring\n");
     auto last_segment = ring.segment(ring.num_segments() - 1);
-    printf("Last segment is: (%f %f)->(%f %f)\n",
-           last_segment.v1.x,
-           last_segment.v1.y,
-           last_segment.v2.x,
-           last_segment.v2.y);
 
     auto b       = last_segment.v2;
     bool y0_flag = b.y > test_point.y;
     bool y1_flag;
     for (auto it = ring.point_begin(); it != ring.point_end(); ++it) {
       vec_2d<T> a = *it;
-      printf("here in segment (%f, %f) -> (%f, %f)\n", a.x, a.y, b.x, b.y);
       // for each line segment, including the segment between the last and first vertex
       T run  = b.x - a.x;
       T rise = b.y - a.y;
@@ -76,10 +68,6 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
 
       //   y0_flag = a.y > test_point.y;
       y1_flag = a.y > test_point.y;
-      printf("\t y0_flag: %d, y1_flag: %d, point_is_within: %d\n",
-             static_cast<int>(y0_flag),
-             static_cast<int>(y1_flag),
-             static_cast<int>(point_is_within));
       if (y1_flag != y0_flag) {
         // Transform the following inequality to avoid division
         //  test_point.x < (run / rise) * rise_to_point + a.x
@@ -95,8 +83,6 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
       break;
     }
   }
-
-  printf("Exiting pip. Result: %d\n", static_cast<int>(point_is_within));
 
   return point_is_within;
 }

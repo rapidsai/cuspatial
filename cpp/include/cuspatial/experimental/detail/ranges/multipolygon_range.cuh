@@ -66,18 +66,6 @@ struct to_multipolygon_functor {
 
   CUSPATIAL_HOST_DEVICE auto operator()(difference_type i)
   {
-    auto new_part_begin = _part_begin + _geometry_begin[i];
-    auto new_part_end   = thrust::next(_part_begin, _geometry_begin[i + 1] + 1);
-
-    printf(
-      "In to_multipolygon_functor: %d %d %d\n\t new_part_begin_val: %d, "
-      "new_part_end_dist_from_begin: %d\n",
-      static_cast<int>(i),
-      static_cast<int>(_geometry_begin[i]),
-      static_cast<int>(_geometry_begin[i + 1]),
-      static_cast<int>(*new_part_begin),
-      static_cast<int>(thrust::distance(new_part_end, new_part_begin)));
-
     return multipolygon_ref{_part_begin + _geometry_begin[i],
                             thrust::next(_part_begin, _geometry_begin[i + 1] + 1),
                             _ring_begin,
@@ -229,15 +217,12 @@ CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   geometry_idx_from_segment_idx(IndexType segment_idx)
 {
-  printf("segment_idx: %d\n", static_cast<int>(segment_idx));
   auto ring_idx = ring_idx_from_point_idx(segment_idx);
-  printf("ring_idx: %d\n", static_cast<int>(ring_idx));
   if (!is_valid_segment_id(segment_idx, ring_idx))
     return multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
       INVALID_INDEX;
 
   auto part_idx = part_idx_from_ring_idx(ring_idx);
-  printf("part_idx: %d\n", static_cast<int>(part_idx));
   return geometry_idx_from_part_idx(part_idx_from_ring_idx(ring_idx));
 }
 
@@ -278,6 +263,18 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::g
   IndexType segment_idx)
 {
   return segment{_point_begin[segment_idx], _point_begin[segment_idx + 1]};
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+template <typename IndexType1, typename IndexType2>
+CUSPATIAL_HOST_DEVICE bool
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+  is_first_point_of_multipolygon(IndexType1 point_idx, IndexType2 geometry_idx)
+{
+  return point_idx == _ring_begin[_part_begin[_geometry_begin[geometry_idx]]];
 }
 
 }  // namespace cuspatial
