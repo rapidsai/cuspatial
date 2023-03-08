@@ -61,35 +61,39 @@ struct point_quadtree {
  * @note All intermediate quadtree nodes will have fewer than `max_size` number of points. Leaf
  * nodes are permitted (but not guaranteed) to have >= `max_size` number of points.
  *
- * @param points Iterator of x, y coordinates for each point.
+ * @tparam PointIterator Iterator over x/y points. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam T the floating-point coordinate value type of the input x/y points.
+ *
+ * @param points_first Iterator to the beginning of the range of (x, y) points.
+ * @param points_last Iterator to the end of the range of (x, y) points.
  * @param vertex_1 Vertex of the area of interest bounding box
  * @param vertex_2 Vertex of the area of interest bounding box opposite `vertex_1`
  * @param scale Scale to apply to each x and y distance from min.x and min.y.
  * @param max_depth Maximum quadtree depth.
  * @param max_size Maximum number of points allowed in a node before it's split into 4 leaf nodes.
+ * @param stream The CUDA stream on which to perform computations
  * @param mr The optional resource to use for output device memory allocations.
  *
- * All input iterators must have a `value_type` of `cuspatial::vec_2d<T>` (x/y coordinates), and the
- * output iterator must be able to accept for storage values of type `cuspatial::vec_2d<T>`
- * (Cartesian coordinates).
- *
- * @tparam PointIt Iterator over x/y points. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam T the floating-point coordinate value type of the input x/y points.
- *
  * @return Pair of UINT32 column of sorted keys to point indices and a point_quadtree
+ *
+ * @pre Point iterators must have the same `vec_2d` value type, with  the same underlying
+ * floating-point coordinate type (e.g. `cuspatial::vec_2d<float>`).
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
  */
-template <class PointIt, class T = typename cuspatial::iterator_value_type<PointIt>>
+template <class PointIterator, class T = typename cuspatial::iterator_value_type<PointIterator>>
 std::pair<rmm::device_uvector<uint32_t>, point_quadtree> quadtree_on_points(
-  PointIt points_first,
-  PointIt points_last,
+  PointIterator points_first,
+  PointIterator points_last,
   vec_2d<T> vertex_1,
   vec_2d<T> vertex_2,
   T scale,
   int8_t max_depth,
   int32_t max_size,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(),
-  rmm::cuda_stream_view stream        = rmm::cuda_stream_default);
+  rmm::cuda_stream_view stream        = rmm::cuda_stream_default,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
  * @} // end of doxygen group
