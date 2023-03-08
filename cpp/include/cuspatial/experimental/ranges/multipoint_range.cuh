@@ -141,6 +141,11 @@ class multipoint_range {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto point(IndexType idx);
 
+  /**
+   * @brief Returns `true` if the range contains only single points
+   */
+  CUSPATIAL_HOST_DEVICE bool is_single_point_range();
+
  protected:
   /// Iterator to the start of the index array of start positions to each multipoint.
   GeometryIterator _geometry_begin;

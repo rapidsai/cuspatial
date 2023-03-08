@@ -140,4 +140,10 @@ CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::poin
   return _points_begin[idx];
 }
 
+template <typename GeometryIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE bool multipoint_range<GeometryIterator, VecIterator>::is_single_point_range()
+{
+  return num_multipoints() == num_points();
+}
+
 }  // namespace cuspatial

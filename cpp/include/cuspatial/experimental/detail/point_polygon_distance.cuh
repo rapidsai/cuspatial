@@ -126,6 +126,9 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
 
   if (multipoints.size() == 0) return distances_first;
 
+  // Compute whether each multipoint intersects with the corresponding multipolygon.
+  // First, compute the point-multipolygon intersection. Then use reduce-by-key to
+  // compute the multipoint-multipolygon intersection.
   auto multipoint_intersects = [&]() {
     rmm::device_uvector<uint8_t> point_intersects(multipoints.num_points(), stream);
 
@@ -134,7 +137,9 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
                      point_intersects.end(),
                      detail::point_in_multipolygon_test_functor{multipoints, multipolygons});
 
-    // TODO: optimize when input is not a multipolygon
+    // `multipoints` contains only single points, no need to reduce.
+    if (multipoints.is_single_point_range()) return point_intersects;
+
     rmm::device_uvector<uint8_t> multipoint_intersects(multipoints.num_multipoints(), stream);
     detail::zero_data_async(multipoint_intersects.begin(), multipoint_intersects.end(), stream);
 
