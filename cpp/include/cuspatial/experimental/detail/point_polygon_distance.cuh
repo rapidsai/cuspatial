@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <cuspatial_test/test_util.cuh>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
@@ -113,13 +111,6 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
                                          rmm::cuda_stream_view stream)
 {
   using T = typename MultiPointRange::element_t;
-
-  static_assert(is_same_floating_point<T, typename MultiPolygonRange::element_t>(),
-                "Inputs must have same floating point value type.");
-
-  static_assert(
-    is_same<vec_2d<T>, typename MultiPointRange::point_t, typename MultiPolygonRange::point_t>(),
-    "Inputs must be cuspatial::vec_2d");
 
   CUSPATIAL_EXPECTS(multipoints.size() == multipolygons.size(),
                     "Must have the same number of input rows.");

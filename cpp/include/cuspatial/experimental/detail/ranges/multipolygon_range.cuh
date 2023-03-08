@@ -103,6 +103,8 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::m
     _point_begin(point_begin),
     _point_end(point_end)
 {
+  static_assert(is_vec_2d<iterator_value_type<VecIterator>>(),
+                "Coordinate range must be constructed with iterators to vec_2d.");
 }
 
 template <typename GeometryIterator,

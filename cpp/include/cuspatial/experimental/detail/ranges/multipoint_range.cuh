@@ -63,6 +63,8 @@ multipoint_range<GeometryIterator, VecIterator>::multipoint_range(GeometryIterat
     _points_begin(points_begin),
     _points_end(points_end)
 {
+  static_assert(is_vec_2d<iterator_value_type<VecIterator>>(),
+                "Coordinate range must be constructed with iterators to vec_2d.");
 }
 
 template <typename GeometryIterator, typename VecIterator>

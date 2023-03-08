@@ -22,14 +22,18 @@ namespace cuspatial {
 
 /**
  * @ingroup distance
- * @copybrief cuspatial::pairwise_point_polygon_distance
+ * @brief Computes pairwise multipoint to multipolygon distance
  *
  * @tparam MultiPointRange An instance of template type `MultiPointRange`
- * @tparam MultiPolygonRangeB An instance of template type `MultiPolygonRange`
+ * @tparam MultiPolygonRange An instance of template type `MultiPolygonRange`
+ * @tparam OutputIt iterator type for output array. Must meet the requirements of [LRAI](LinkLRAI).
  *
- * @param multipoints Range of multipoints in each distance pair.
- * @param multipolygons Range of multipolygons in each distance pair.
- * @return Iterator past the last distance computed
+ * @param multipoints Range of multipoints, one per computed distance pair.
+ * @param multipolygons Range of multilinestrings, one per computed distance pair.
+ * @return Output Iterator past the last distance computed
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
  */
 template <class MultiPointRange, class MultiPolygonRange, class OutputIt>
 OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
