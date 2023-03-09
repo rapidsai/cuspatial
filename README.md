@@ -27,7 +27,7 @@ p2 = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
 geoseries = geopandas.GeoSeries([p1, p2])
 
 cuspatial_geoseries = cuspatial.from_geopandas(geoseries)
-print(cuspatial_g)
+print(cuspatial_geoseries)
 ```
 Output:
 ```
@@ -43,24 +43,24 @@ cuSpatial is constantly working on new features! Check out the [epics](https://g
 
 ### Core Spatial Functions
 - DE9-IM Functionality [Follow Along!](https://github.com/rapidsai/cuspatial/milestone/5)
-  - contains_properly
+  - [Contains Properly](https://docs.rapids.ai/api/cuspatial/stable/api_docs/geopandas_compatibility.html#cuspatial.GeoSeries.contains_properly)
 - ST_Distance equivalent functionality [Follow Along!](https://github.com/rapidsai/cuspatial/issues/767)
-  - Pairwise linestring distance
-  - Point to linestring distance
+  - [Pairwise Linestring Distance](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.pairwise_linestring_distance)
+  - [Pairwise Point-Linestring Distance](https://docs.rapids.ai/api/cuspatial/stable/api_docs/spatial.html#cuspatial.pairwise_point_linestring_distance)
 - Linestring-linestring intersection
-- Haversine distance
-- Hausdorff distance
-- Spatial window filtering
+- [Haversine distance](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.haversine_distance)
+- [Hausdorff distance](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.directed_hausdorff_distance)
+- [Spatial window filtering](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.points_in_spatial_window)
 
 ### Indexing and Join Functions
-- Quadtree indexing
-- Spatial joins
-- Quadtree-based point-to-polygon
+- [Quadtree indexing](https://docs.rapids.ai/api/cuspatial/nightly/user_guide/cuspatial_api_examples.html#Quadtree-Indexing)
+- [Spatial joins](https://docs.rapids.ai/api/cuspatial/nightly/user_guide/cuspatial_api_examples.html#Indexed-Spatial-Joins)
+- [Quadtree-based point-to-polygon](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.quadtree_point_in_polygon)
 
 ### Trajectory Functions
-- Deriving trajectories from point location data
-- Computing distance/speed of trajectories
-- Computing spatial bounding boxes of trajectories
+- [Deriving trajectories from point location data](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.derive_trajectories)
+- [Computing distance/speed of trajectories](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.trajectory_distances_and_speeds)
+- [Computing spatial bounding boxes of trajectories](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.trajectory_bounding_boxes)
 
 ### What if operations I need aren't supported?
 Thanks to the `from_geopandas` and `to_geopandas` functions you can accelerate what cuSpatial supports, and leave the rest of the workflow in place:
@@ -74,25 +74,24 @@ title: Integrating into Existing Workflows
             'commitLabelBackground': '#ffffff',
             'commitLabelFontSize': '14px'}} }%%
 gitGraph
-   commit id: "Existing Workflow"
    commit id: "Existing Workflow Start"
    commit id: "GeoPandas IO"
    commit id: "Geospatial Analytics"
-   branch from_geopandas
-   checkout from_geopandas
+   branch a
+   checkout a
    commit id: "from_geopandas"
    commit id: "cuSpatial GPU Acceleration"
-   branch other_rapids
-   checkout other_rapids
+   branch b
+   checkout b
    commit id: "cuDF"
    commit id: "cuML"
    commit id: "cuGraph"
-   checkout from_geopandas
-   merge other_rapids
+   checkout a
+   merge b
    commit id: "to_geopandas"
    checkout main
-   merge from_geopandas
-   commit id: "Existing Workflow"
+   merge a
+   commit id: "Continue Work"
 ```
 
 
@@ -107,6 +106,7 @@ Pascal architecture or better (Compute Capability >=6.0)
 ### Quickstart - Docker
 Use the [RAPIDS Release Selector](https://rapids.ai/start.html#get-rapids), selecting `Docker` as the installation method. All RAPIDS Docker images contain cuSpatial.
 
+An example command from the Release Selector:
 ```shell
 docker pull nvcr.io/nvidia/rapidsai/rapidsai-core:23.02-cuda11.8-runtime-ubuntu22.04-py3.10
 docker run --gpus all --rm -it \
@@ -133,51 +133,3 @@ See the [RAPIDS release selector](https://rapids.ai/start.html#get-rapids) for m
 ### Install from Source
 
 To build and install cuSpatial from source please see the [developer documentation](https://docs.rapids.ai/api/cuspatial/stable/developer_guide/development_environment.html).
-
-> **Warning**
-> I'd like to make the install from source part of the developer docs instead of having it here. Most users will not use this method.
->#### Pre-requisite
->
->- gcc >= 7.5
->- cmake >= 3.23
->- miniconda
->
->#### Fetch cuSpatial repository
->
->```shell
->export `CUSPATIAL_HOME=$(pwd)/cuspatial` && \
->git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
->```
->#### Install dependencies
->
->1. `export CUSPATIAL_HOME=$(pwd)/cuspatial`
->2. clone the cuSpatial repo
->
->```shell
->conda env update --file conda/environments/all_cuda-115_arch-x86_64.yaml
->```
->
->#### Build and install cuSpatial
->
->1. Compile and install
->   ```shell
->   cd $CUSPATIAL_HOME && \
->   chmod +x ./build.sh && \
->  ./build.sh
->   ```
->
->2. Run C++/Python test code
->
->   Some tests using inline data can be run directly, e.g.:
->
->   ```shell
->   $CUSPATIAL_HOME/cpp/build/gtests/LEGACY_HAUSDORFF_TEST
->   $CUSPATIAL_HOME/cpp/build/gtests/POINT_IN_POLYGON_TEST
->   python python/cuspatial/cuspatial/tests/legacy/test_hausdorff_distance.py
->   python python/cuspatial/cuspatial/tests/test_pip.py
->   ```
->
->   Some other tests involve I/O from data files under `$CUSPATIAL_HOME/test_fixtures`.
->   For example, `$CUSPATIAL_HOME/cpp/build/gtests/SHAPEFILE_READER_TEST` requires three
->   pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. They are available at
->   `$CUSPATIAL_HOME/test_fixtures/shapefiles` <br>
