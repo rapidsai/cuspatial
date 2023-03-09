@@ -70,6 +70,16 @@ def test_linestring_geom_equals_linestring():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
+def test_linestring_geom_equals_linestring_reversed():
+    gpdline1 = gpd.GeoSeries([LineString([(0, 0), (1, 1)])])
+    gpdline2 = gpd.GeoSeries([LineString([(1, 1), (0, 0)])])
+    line1 = cuspatial.from_geopandas(gpdline1)
+    line2 = cuspatial.from_geopandas(gpdline2)
+    got = line1.geom_equals(line2)
+    expected = gpdline1.geom_equals(gpdline2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
 @pytest.mark.parametrize(
     "lhs",
     [
@@ -163,6 +173,16 @@ def test_10000_polygons_geom_equals_10000_linestrings(
 def test_polygon_geom_equals_polygon():
     gpdpolygon1 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
     gpdpolygon2 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
+    polygon1 = cuspatial.from_geopandas(gpdpolygon1)
+    polygon2 = cuspatial.from_geopandas(gpdpolygon2)
+    got = polygon1.geom_equals(polygon2)
+    expected = gpdpolygon1.geom_equals(gpdpolygon2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_polygon_geom_equals_polygon_swap_inner():
+    gpdpolygon1 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
+    gpdpolygon2 = gpd.GeoSeries(Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]))
     polygon1 = cuspatial.from_geopandas(gpdpolygon1)
     polygon2 = cuspatial.from_geopandas(gpdpolygon2)
     got = polygon1.geom_equals(polygon2)
@@ -531,14 +551,16 @@ def test_3_linestrings_geom_equals_3_linestrings_longer():
 def test_3_polygons_geom_equals_3_polygons_different_sizes():
     gpdpoly1 = gpd.GeoSeries(
         [
-            Polygon([(0, 0), (0, 1), (1, 1), (1, 0)]),
+            Polygon([(0, 0), (0, 1), (1, 1), (1, 0)]),  # Length 5
             Polygon([(0, 0), (0, 1), (1, 1), (1, 0)]),
             Polygon([(0, 0), (0, 1), (1, 1), (1, 0)]),
         ]
     )
     gpdpoly2 = gpd.GeoSeries(
         [
-            Polygon([(0, 0), (1, 1), (1, 0), (0, 0)]),  # Oppositely wound
+            Polygon(
+                [(0, 0), (1, 1), (1, 0), (0, 0)]
+            ),  # Oppositely wound, length 4
             Polygon([(1, 1), (1, 0), (0, 0), (1, 1)]),  # Wound by +1 offset
             Polygon([(1, 0), (0, 0), (1, 1), (1, 0)]),  # Wound by -1 offset
         ]
@@ -563,6 +585,30 @@ def test_3_polygons_geom_equals_3_polygons_misordered():
             Polygon([(0, 0), (1, 1), (1, 0), (0, 0)]),  # Oppositely wound
             Polygon([(1, 1), (1, 0), (0, 0), (1, 1)]),  # Wound by +1 offset
             Polygon([(1, 0), (0, 0), (1, 1), (1, 0)]),  # Wound by -1 offset
+        ]
+    )
+    poly1 = cuspatial.from_geopandas(gpdpoly1)
+    poly2 = cuspatial.from_geopandas(gpdpoly2)
+    got = poly1.geom_equals(poly2)
+    expected = gpdpoly1.geom_equals(gpdpoly2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_3_polygons_geom_equals_3_polygons_misordered_corrected_vertex():
+    """This test is to compare that the correct points are used compared to
+    above."""
+    gpdpoly1 = gpd.GeoSeries(
+        [
+            Polygon([(0, 0), (0, 1), (1, 1), (0, 0)]),
+            Polygon([(0, 0), (0, 1), (1, 1), (0, 0)]),
+            Polygon([(0, 0), (0, 1), (1, 1), (0, 0)]),
+        ]
+    )
+    gpdpoly2 = gpd.GeoSeries(
+        [
+            Polygon([(0, 0), (1, 1), (0, 1), (0, 0)]),  # Oppositely wound
+            Polygon([(1, 1), (0, 1), (0, 0), (1, 1)]),  # Wound by +1 offset
+            Polygon([(0, 1), (0, 0), (1, 1), (0, 1)]),  # Wound by -1 offset
         ]
     )
     poly1 = cuspatial.from_geopandas(gpdpoly1)

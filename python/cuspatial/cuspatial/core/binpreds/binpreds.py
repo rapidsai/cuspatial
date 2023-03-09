@@ -322,6 +322,8 @@ class EqualsBinpred(BinaryPredicate):
         """Swap first and last values of each linestring to ensure that
         the first point is the lowest value. This is necessary to ensure
         that the endpoints are not included in the comparison."""
+        # TODO: Refactor the 4x repetition here into a utility method.
+
         # Save temporary values since lhs.x cannot be used modified.
         lhs_x = lhs.x
         lhs_y = lhs.y
@@ -385,6 +387,56 @@ class EqualsBinpred(BinaryPredicate):
             initial,
         )
 
+    def _sort_polygons(self, lhs, rhs, initial):
+        """Sort xy according to bins defined by offset"""
+        # Find the point_index offset of each value in the lhs
+        # and rhs.
+        # Sort the lhs and rhs xy values according to the
+        # lhs and rhs point_indices.
+
+        # Check if first == last, if so, drop last
+        if (
+            lhs.x.iloc[0] == lhs.x.iloc[-1]
+            and lhs.y.iloc[0] == lhs.y.iloc[-1]
+            and rhs.x.iloc[0] == rhs.x.iloc[-1]
+            and rhs.y.iloc[0] == rhs.y.iloc[-1]
+        ):
+            lhs_x = lhs.x[:-1]
+            lhs_y = lhs.y[:-1]
+            rhs_x = rhs.x[:-1]
+            rhs_y = rhs.y[:-1]
+        else:
+            lhs_x = lhs.x
+            lhs_y = lhs.y
+            rhs_x = rhs.x
+            rhs_y = rhs.y
+        # Add column of polygon indices to a dataframe
+        #  containing the xy values as columns.
+        lhs_sort_df = cudf.DataFrame(
+            {"x": lhs_x, "y": lhs_y, "index": lhs.point_indices()}
+        )
+        rhs_sort_df = cudf.DataFrame(
+            {"x": rhs_x, "y": rhs_y, "index": rhs.point_indices()}
+        )
+        # Sort by polygon index and xy values.
+        lhs_sorted_df = lhs_sort_df.sort_values(by=["index", "x", "y"])
+        rhs_sorted_df = rhs_sort_df.sort_values(by=["index", "x", "y"])
+        # Drop polygon index column.
+        lhs_sorted_df = lhs_sorted_df.drop("index", axis=1)
+        rhs_sorted_df = rhs_sorted_df.drop("index", axis=1)
+        # Reconstruct xy columns.
+        lhs_xy = lhs.xy
+        rhs_xy = rhs.xy
+        lhs_xy.iloc[::2] = lhs_sorted_df["x"]
+        lhs_xy.iloc[1::2] = lhs_sorted_df["y"]
+        rhs_xy.iloc[::2] = rhs_sorted_df["x"]
+        rhs_xy.iloc[1::2] = rhs_sorted_df["y"]
+        return (
+            PreprocessorOutput(lhs_xy, lhs.point_indices()),
+            PreprocessorOutput(rhs_xy, rhs.point_indices()),
+            initial,
+        )
+
     def preprocess(self, lhs, rhs):
         # Compare types
         type_compare = lhs.dtype == rhs.dtype
@@ -425,6 +477,7 @@ class EqualsBinpred(BinaryPredicate):
             else:
                 return self._cancel_op(lhs, rhs, lengths_equal)
         elif contains_only_polygons(lhs):
+            breakpoint()
             geoms_equal = self._offset_equals(
                 lhs.polygons.part_offset, rhs.polygons.part_offset
             )
@@ -433,8 +486,8 @@ class EqualsBinpred(BinaryPredicate):
                 rhs[geoms_equal].polygons.ring_offset,
             )
             if lengths_equal.any():
-                # Don't sort polygons
-                return (
+                # TODO: Do sort polygons?
+                return self._sort_polygons(
                     lhs[lengths_equal].polygons,
                     rhs[lengths_equal].polygons,
                     lengths_equal,
@@ -461,6 +514,7 @@ class EqualsBinpred(BinaryPredicate):
         return a & b
 
     def _op(self, lhs, rhs):
+        breakpoint()
         indices = lhs.point_indices()
         result = self._vertices_equals(lhs.xy, rhs.xy)
         result_df = cudf.DataFrame(
