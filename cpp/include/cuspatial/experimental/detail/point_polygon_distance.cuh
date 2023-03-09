@@ -87,6 +87,7 @@ void __global__ pairwise_point_polygon_distance_kernel(MultiPointRange multipoin
     if (geometry_idx == MultiPolygonRange::INVALID_INDEX) continue;
 
     if (intersects[geometry_idx]) {
+      // Leading thread of the pair writes to the output
       if (multipolygons.is_first_point_of_multipolygon(idx, geometry_idx))
         distances[geometry_idx] = T{0.0};
       continue;

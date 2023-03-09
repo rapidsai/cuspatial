@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,6 +100,7 @@ class multipolygon_range {
 
   /// Return the iterator to the one past the last multipolygon in the range.
   CUSPATIAL_HOST_DEVICE auto end() { return multipolygon_end(); }
+  
   /// Given the index of a segment, return the geometry (multipolygon) index where the
   /// segment locates.
   /// Segment index is the index to the starting point of the segment. If the
@@ -116,7 +117,7 @@ class multipolygon_range {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto get_segment(IndexType segment_idx);
 
-  /// Returns `true` if `point_idx`th point is the first point of its
+  /// Returns `true` if `point_idx`th point is the first point of `geometry_idx`th
   /// multipolygon
   template <typename IndexType1, typename IndexType2>
   CUSPATIAL_HOST_DEVICE bool is_first_point_of_multipolygon(IndexType1 point_idx,

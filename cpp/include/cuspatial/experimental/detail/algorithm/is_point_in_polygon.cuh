@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "cuspatial/experimental/geometry_collection/multipoint_ref.cuh"
+#include <cuspatial/experimental/geometry_collection/multipoint_ref.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -67,7 +67,6 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
       is_colinear    = float_equal(run * rise_to_point, run_to_point * rise);
       if (is_colinear) { break; }
 
-      //   y0_flag = a.y > test_point.y;
       y1_flag = a.y > test_point.y;
       if (y1_flag != y0_flag) {
         // Transform the following inequality to avoid division
