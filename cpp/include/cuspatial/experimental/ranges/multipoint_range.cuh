@@ -18,6 +18,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/traits.hpp>
+#include <cuspatial/types.hpp>
 
 namespace cuspatial {
 
@@ -158,7 +159,7 @@ class multipoint_range {
 };
 
 /**
- * @brief Create a multilinestring_range object of from size and start iterators
+ * @brief Create a multipoint_range object of from size and start iterators
  * @ingroup ranges
  *
  * @tparam GeometryIteratorDiffType Index type of the size of the geometry array
@@ -194,7 +195,7 @@ multipoint_range<GeometryIterator, VecIterator> make_multipoint_range(
 }
 
 /**
- * @brief Create multilinestring_range object from offset and point ranges
+ * @brief Create multipoint_range object from offset and point ranges
  *
  * @tparam IntegerRange Range to integers
  * @tparam PointRange Range to points
@@ -209,6 +210,60 @@ auto make_multipoint_range(IntegerRange geometry_offsets, PointRange points)
   return multipoint_range(
     geometry_offsets.begin(), geometry_offsets.end(), points.begin(), points.end());
 }
+
+/**
+ * @ingroup ranges
+ * @brief Create a range object of multipoints from cuspatial::geometry_column_view.
+ * Specialization for points column.
+ *
+ * @pre points_column must be a cuspatial::geometry_column_view
+ */
+template <collection_type_id Type,
+          typename T,
+          typename IndexType,
+          typename GeometryColumnView,
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::SINGLE)>
+auto make_multipoints_range(GeometryColumnView const& points_column)
+{
+  CUSPATIAL_EXPECTS(points_column.geometry_type() == geometry_type_id::POINT,
+                    "Must be POINT geometry type.");
+  auto geometry_iter    = thrust::make_counting_iterator(0);
+  auto const& points_xy = points_column.child();  // Ignores x-y offset {0, 2, 4...}
+
+  auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
+
+  return multipoints(geometry_iter,
+                     geometry_iter + points_column.size(),
+                     points_it,
+                     points_it + points_xy.size() / 2);
+}
+
+/**
+ * @ingroup ranges
+ * @brief Create a range object of multipoints from cuspatial::geometry_column_view.
+ * Specialization for multipoints column.
+ *
+ * @pre multipoints_column must be a cuspatial::geometry_column_view
+ */
+template <collection_type_id Type,
+          typename T,
+          typename IndexType,
+          typename GeometryColumnView,
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::MULTI)>
+auto make_multipoint_range(GeometryColumnView const& points_column)
+{
+  CUSPATIAL_EXPECTS(points_column.geometry_type() == geometry_type_id::POINT,
+                    "Must be POINT geometry type.");
+  auto const& geometry_offsets = points_column.offsets();
+  auto const& points_xy        = points_column.child().child();  // Ignores x-y offset {0, 2, 4...}
+
+  auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
+
+  return multipoint_range(geometry_offsets.template begin<IndexType>(),
+                          geometry_offsets.template end<IndexType>(),
+                          points_it,
+                          points_it + points_xy.size() / 2);
+};
 
 }  // namespace cuspatial
 

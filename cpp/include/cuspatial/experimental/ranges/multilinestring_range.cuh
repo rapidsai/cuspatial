@@ -245,7 +245,7 @@ auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
                     "Must be Linestring geometry type.");
   auto geometry_iter       = thrust::make_counting_iterator(0);
   auto const& part_offsets = linestrings_column.offsets();
-  auto const& points_xy    = linestrings_column.child().child(1);
+  auto const& points_xy    = linestrings_column.child().child();  // Ignores x-y offset {0, 2, 4...}
 
   auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
 
@@ -275,8 +275,8 @@ auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
                     "Must be Linestring geometry type.");
   auto const& geometry_offsets = linestrings_column.offsets();
   auto const& parts            = linestrings_column.child();
-  auto const& part_offsets     = parts.child(0);
-  auto const& points_xy        = parts.child(1).child(1);
+  auto const& part_offsets     = parts.offsets();
+  auto const& points_xy        = parts.child().child();  // Ignores x-y offset {0, 2, 4...}
 
   auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
 
