@@ -100,7 +100,7 @@ class multipolygon_range {
 
   /// Return the iterator to the one past the last multipolygon in the range.
   CUSPATIAL_HOST_DEVICE auto end() { return multipolygon_end(); }
-  
+
   /// Given the index of a segment, return the geometry (multipolygon) index where the
   /// segment locates.
   /// Segment index is the index to the starting point of the segment. If the
