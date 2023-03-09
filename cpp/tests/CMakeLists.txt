@@ -72,10 +72,10 @@ ConfigureTest(POINT_QUADTREE_TEST
     indexing/point_quadtree_test.cu)
 
 ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST
-    spatial/linestring_bounding_boxes_test.cu)
+    spatial/linestring_bounding_boxes_test.cpp)
 
 ConfigureTest(POLYGON_BOUNDING_BOXES_TEST
-    spatial/polygon_bounding_boxes_test.cu)
+    spatial/polygon_bounding_boxes_test.cpp)
 
 ConfigureTest(POINT_DISTANCE_TEST
     spatial/point_distance_test.cpp)

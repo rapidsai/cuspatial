@@ -69,7 +69,7 @@ dependencies:
           - matrix:
               arch: aarch64
             packages:
-              - &gcc_aarch64 gcc_linux-aarch64=9.*
+              - &gcc_aarch64 gcc_linux-aarch64=11.*
               - &sysroot_aarch64 sysroot_linux-aarch64==2.17
       - output_types: conda
         matrices:
