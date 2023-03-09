@@ -64,12 +64,18 @@ def test_one_point_in_two_rings():
     cudf.testing.assert_frame_equal(expected, result)
 
 
-def test_one_point_in_two_rings_no_repeat():
+# Note this test uses unclosed polygons which we don't strictly support, but
+# currently work with our point-in-polygon algorithm. This may change in the
+# future.
+def test_one_point_in_two_unclosed_rings():
     result = cuspatial.point_in_polygon(
         cuspatial.GeoSeries.from_points_xy(cudf.Series([0, 0], dtype="f8")),
         cuspatial.GeoSeries.from_polygons_xy(
-            cudf.Series([-1, -1, 1, 0, -1, 1, 3, -1, 5, 0, 3, 1], dtype="f8"),
-            cudf.Series([0, 3, 6]),
+            cudf.Series(
+                [-1, -1, 1, 0, 0, 0.5, -1, 1, 3, -1, 5, 0, 4, 0.5, 3, 1],
+                dtype="f8",
+            ),
+            cudf.Series([0, 4, 8]),
             cudf.Series([0, 2]),
             cudf.Series([0, 1]),
         ),
@@ -95,12 +101,18 @@ def test_one_point_out_two_rings():
     cudf.testing.assert_frame_equal(expected, result)
 
 
-def test_one_point_out_two_rings_no_repeat():
+# Note this test uses unclosed polygons which we don't strictly support, but
+# currently work with our point-in-polygon algorithm. This may change in the
+# future.
+def test_one_point_out_two_unclosed_rings():
     result = cuspatial.point_in_polygon(
         cuspatial.GeoSeries.from_points_xy(cudf.Series([1, 1], dtype="f8")),
         cuspatial.GeoSeries.from_polygons_xy(
-            cudf.Series([-1, -1, 1, 0, -1, 1, 3, -1, 5, 0, 3, 1], dtype="f8"),
-            cudf.Series([0, 3, 6]),
+            cudf.Series(
+                [-1, -1, 1, 0, 0, 0.5, -1, 1, 3, -1, 5, 0, 4, 0.5, 3, 1],
+                dtype="f8",
+            ),
+            cudf.Series([0, 4, 8]),
             cudf.Series([0, 2]),
             cudf.Series([0, 1]),
         ),
