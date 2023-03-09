@@ -43,6 +43,9 @@
 namespace cuspatial {
 namespace detail {
 
+/**
+ * @brief For each point in the multipoint, compute point-in-multipolygon in corresponding pair.
+ */
 template <typename MultiPointRange, typename MultiPolygonRange>
 struct point_in_multipolygon_test_functor {
   MultiPointRange multipoints;
