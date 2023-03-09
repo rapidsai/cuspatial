@@ -58,8 +58,6 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
 
   if (idx >= num_test_points) { return; }
 
-  int32_t hit_mask = 0;
-
   Cart2d const test_point = test_points_first[idx];
 
   // for each polygon
@@ -77,9 +75,8 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
                                                      poly_points_first,
                                                      num_poly_points);
 
-    hit_mask |= point_is_within << poly_idx;
+    result[num_test_points * poly_idx + idx] = point_is_within;
   }
-  result[idx] = hit_mask;
 }
 
 }  // namespace detail
@@ -112,23 +109,16 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
                                        iterator_value_type<OffsetIteratorB>>(),
                 "OffsetIterators must point to integral type.");
 
-  static_assert(std::is_same_v<iterator_value_type<OutputIt>, int32_t>,
-                "OutputIt must point to 32 bit integer type.");
-
   auto const num_test_points = std::distance(test_points_first, test_points_last);
+  auto const num_polys       = std::distance(polygon_offsets_first, polygon_offsets_last) - 1;
+  auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last) - 1;
+  auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
 
   if (num_test_points > 0) {
-    auto const num_polys       = std::distance(polygon_offsets_first, polygon_offsets_last) - 1;
-    auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last) - 1;
-    auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
-
     CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
       num_poly_points,
       std::distance(polygon_offsets_first, polygon_offsets_last),
       std::distance(poly_ring_offsets_first, poly_ring_offsets_last));
-
-    CUSPATIAL_EXPECTS(num_polys <= std::numeric_limits<int32_t>::digits,
-                      "Number of polygons cannot exceed 31");
 
     auto [threads_per_block, num_blocks] = grid_1d(num_test_points);
 
@@ -145,7 +135,7 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
     CUSPATIAL_CHECK_CUDA(stream.value());
   }
 
-  return output + num_test_points;
+  return output + num_test_points * num_polys;
 }
 
 }  // namespace cuspatial

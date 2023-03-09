@@ -1,4 +1,4 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 from cudf import DataFrame
 from cudf.core.column import as_column
@@ -51,23 +51,21 @@ def polygon_bounding_boxes(polygons: GeoSeries):
     # by combining the geometry offset and parts offset of the multipolygon
     # array.
 
-    poly_offsets = polygons.polygons.part_offset.take(
-        polygons.polygons.geometry_offset
-    )
+    poly_offsets = polygons.polygons.part_offset
     ring_offsets = polygons.polygons.ring_offset
     x = polygons.polygons.x
     y = polygons.polygons.y
-
+    result = cpp_polygon_bounding_boxes(
+        as_column(poly_offsets),
+        as_column(ring_offsets),
+        as_column(x),
+        as_column(y),
+    )
     return DataFrame._from_data(
         dict(
             zip(
                 column_names,
-                cpp_polygon_bounding_boxes(
-                    as_column(poly_offsets),
-                    as_column(ring_offsets),
-                    as_column(x),
-                    as_column(y),
-                ),
+                result,
             )
         )
     )

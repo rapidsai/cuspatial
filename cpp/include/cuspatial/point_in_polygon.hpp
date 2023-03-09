@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ namespace cuspatial {
  *        +-----------+   +------------------------+
  * ```
  */
-std::unique_ptr<cudf::column> point_in_polygon(
+std::pair<std::unique_ptr<cudf::column>, cudf::table_view> point_in_polygon(
   cudf::column_view const& test_points_x,
   cudf::column_view const& test_points_y,
   cudf::column_view const& poly_offsets,

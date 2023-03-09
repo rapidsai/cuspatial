@@ -51,12 +51,12 @@ TYPED_TEST(PointInPolygonTest, Empty)
   auto poly_point_xs     = wrapper<T>({});
   auto poly_point_ys     = wrapper<T>({});
 
-  auto expected = wrapper<int32_t>({0b0});
+  auto expected = wrapper<bool>({});
 
   auto actual = cuspatial::point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
 
-  CUDF_TEST_EXPECT_COLUMNS_EQUAL(expected, actual->view(), verbosity);
+  expect_columns_equal(expected, actual.first->view(), verbosity);
 }
 
 template <typename T>
