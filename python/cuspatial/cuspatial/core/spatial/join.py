@@ -73,8 +73,8 @@ def point_in_polygon(points: GeoSeries, polygons: GeoSeries):
     x = as_column(points.points.x)
     y = as_column(points.points.y)
 
-    poly_offsets = as_column(polygons.polygons.part_offset[:-1])
-    ring_offsets = as_column(polygons.polygons.ring_offset[:-1])
+    poly_offsets = as_column(polygons.polygons.part_offset)
+    ring_offsets = as_column(polygons.polygons.ring_offset)
     px = as_column(polygons.polygons.x)
     py = as_column(polygons.polygons.y)
 

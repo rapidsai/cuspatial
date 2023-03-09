@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,14 +33,27 @@ TEST_F(PolygonBoundingBoxErrorTest, test_empty)
 {
   using namespace cudf::test;
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({});
-  fixed_width_column_wrapper<int32_t> ring_offsets({});
-  fixed_width_column_wrapper<T> x({});
-  fixed_width_column_wrapper<T> y({});
+  {
+    fixed_width_column_wrapper<int32_t> poly_offsets({});
+    fixed_width_column_wrapper<int32_t> ring_offsets({});
+    fixed_width_column_wrapper<T> x({});
+    fixed_width_column_wrapper<T> y({});
 
-  auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0);
+    auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0);
 
-  EXPECT_EQ(bboxes->num_rows(), 0);
+    EXPECT_EQ(bboxes->num_rows(), 0);
+  }
+
+  {
+    fixed_width_column_wrapper<int32_t> poly_offsets({0});
+    fixed_width_column_wrapper<int32_t> ring_offsets({});
+    fixed_width_column_wrapper<T> x({});
+    fixed_width_column_wrapper<T> y({});
+
+    auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0);
+
+    EXPECT_EQ(bboxes->num_rows(), 0);
+  }
 }
 
 TEST_F(PolygonBoundingBoxErrorTest, test_more_polys_than_rings)
@@ -69,18 +82,17 @@ TEST_F(PolygonBoundingBoxErrorTest, type_mismatch)
                cuspatial::logic_error);
 }
 
-TEST_F(PolygonBoundingBoxErrorTest, not_enough_offsets)
+TEST_F(PolygonBoundingBoxErrorTest, not_enough_ring_offsets)
 {
   using namespace cudf::test;
 
-  fixed_width_column_wrapper<int32_t> poly_offsets({0});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0});
+  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1});
+  fixed_width_column_wrapper<int32_t> ring_offsets({});
   fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
   fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599, 5.856625});
 
-  auto bboxes = cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0);
-
-  EXPECT_EQ(bboxes->num_rows(), 0);
+  EXPECT_THROW(cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0),
+               cuspatial::logic_error);
 }
 
 TEST_F(PolygonBoundingBoxErrorTest, offset_type_error)

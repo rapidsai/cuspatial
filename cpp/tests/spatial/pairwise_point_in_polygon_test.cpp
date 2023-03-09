@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,8 +72,8 @@ TYPED_TEST(PairwisePointInPolygonUnsupportedTypesTest, UnsupportedPointType)
 
   auto test_point_xs     = wrapper<T>({0.0});
   auto test_point_ys     = wrapper<T>({0.0});
-  auto poly_offsets      = wrapper<cudf::size_type>({0});
-  auto poly_ring_offsets = wrapper<cudf::size_type>({0});
+  auto poly_offsets      = wrapper<cudf::size_type>({0, 1});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0, 4});
   auto poly_point_xs     = wrapper<T>({0.0, 1.0, 0.0, -1.0});
   auto poly_point_ys     = wrapper<T>({1.0, 0.0, -1.0, 0.0});
 
@@ -116,8 +116,8 @@ TEST_F(PairwisePointInPolygonErrorTest, MismatchTestPointXYLength)
 
   auto test_point_xs     = wrapper<T>({0.0, 0.0});
   auto test_point_ys     = wrapper<T>({0.0});
-  auto poly_offsets      = wrapper<cudf::size_type>({0});
-  auto poly_ring_offsets = wrapper<cudf::size_type>({0});
+  auto poly_offsets      = wrapper<cudf::size_type>({0, 1});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0, 4});
   auto poly_point_xs     = wrapper<T>({0.0, 1.0, 0.0, -1.0});
   auto poly_point_ys     = wrapper<T>({1.0, 0.0, -1.0, 0.0});
 
@@ -133,9 +133,9 @@ TEST_F(PairwisePointInPolygonErrorTest, MismatchTestPointType)
 
   auto test_point_xs     = wrapper<T>({0.0});
   auto test_point_ys     = wrapper<float>({0.0});
-  auto poly_offsets      = wrapper<cudf::size_type>({0});
-  auto poly_ring_offsets = wrapper<cudf::size_type>({0});
-  auto poly_point_xs     = wrapper<T>({0.0, 1.0, 0.0});
+  auto poly_offsets      = wrapper<cudf::size_type>({0, 1});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0, 4});
+  auto poly_point_xs     = wrapper<T>({0.0, 1.0, 0.0, -1.0});
   auto poly_point_ys     = wrapper<T>({1.0, 0.0, -1.0, 0.0});
 
   EXPECT_THROW(
@@ -150,8 +150,8 @@ TEST_F(PairwisePointInPolygonErrorTest, MismatchPolyPointXYLength)
 
   auto test_point_xs     = wrapper<T>({0.0});
   auto test_point_ys     = wrapper<T>({0.0});
-  auto poly_offsets      = wrapper<cudf::size_type>({0});
-  auto poly_ring_offsets = wrapper<cudf::size_type>({0});
+  auto poly_offsets      = wrapper<cudf::size_type>({0, 1});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0, 4});
   auto poly_point_xs     = wrapper<T>({0.0, 1.0, 0.0});
   auto poly_point_ys     = wrapper<T>({1.0, 0.0, -1.0, 0.0});
 
@@ -167,8 +167,8 @@ TEST_F(PairwisePointInPolygonErrorTest, MismatchPolyPointType)
 
   auto test_point_xs     = wrapper<T>({0.0});
   auto test_point_ys     = wrapper<T>({0.0});
-  auto poly_offsets      = wrapper<cudf::size_type>({0});
-  auto poly_ring_offsets = wrapper<cudf::size_type>({0});
+  auto poly_offsets      = wrapper<cudf::size_type>({0, 1});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0, 4});
   auto poly_point_xs     = wrapper<T>({0.0, 1.0, 0.0});
   auto poly_point_ys     = wrapper<float>({1.0, 0.0, -1.0, 0.0});
 
@@ -182,8 +182,8 @@ TEST_F(PairwisePointInPolygonErrorTest, MismatchPointTypes)
 {
   auto test_point_xs     = wrapper<float>({0.0});
   auto test_point_ys     = wrapper<float>({0.0});
-  auto poly_offsets      = wrapper<cudf::size_type>({0});
-  auto poly_ring_offsets = wrapper<cudf::size_type>({0});
+  auto poly_offsets      = wrapper<cudf::size_type>({0, 1});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0, 4});
   auto poly_point_xs     = wrapper<double>({0.0, 1.0, 0.0, -1.0});
   auto poly_point_ys     = wrapper<double>({1.0, 0.0, -1.0, 0.0});
 
@@ -197,8 +197,8 @@ TEST_F(PairwisePointInPolygonErrorTest, MorePointsThanPolygons)
 {
   auto test_point_xs     = wrapper<float>({0.0, 0.0});
   auto test_point_ys     = wrapper<float>({0.0, 0.0});
-  auto poly_offsets      = wrapper<cudf::size_type>({0});
-  auto poly_ring_offsets = wrapper<cudf::size_type>({0});
+  auto poly_offsets      = wrapper<cudf::size_type>({0, 1});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0, 4});
   auto poly_point_xs     = wrapper<float>({0.0, 1.0, 0.0, -1.0});
   auto poly_point_ys     = wrapper<float>({1.0, 0.0, -1.0, 0.0});
 
@@ -212,8 +212,8 @@ TEST_F(PairwisePointInPolygonErrorTest, MorePolygonsThanPoints)
 {
   auto test_point_xs     = wrapper<float>({0.0});
   auto test_point_ys     = wrapper<float>({0.0});
-  auto poly_offsets      = wrapper<cudf::size_type>({0, 4});
-  auto poly_ring_offsets = wrapper<cudf::size_type>({0, 4});
+  auto poly_offsets      = wrapper<cudf::size_type>({0, 1, 2});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0, 4, 8});
   auto poly_point_xs     = wrapper<float>({0.0, 1.0, 0.0, -1.0, 0.0, 1.0, 0.0, -1.0});
   auto poly_point_ys     = wrapper<float>({1.0, 0.0, -1.0, 0.0, 1.0, 0.0, -1.0, 0.0});
 

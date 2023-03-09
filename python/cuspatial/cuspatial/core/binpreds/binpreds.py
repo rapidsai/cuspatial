@@ -1,4 +1,4 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 from abc import ABC, abstractmethod
 
@@ -230,12 +230,10 @@ class ContainsProperlyBinpred(BinaryPredicate):
             )
             return result
         else:
-            """Postprocess the output GeoSeries to ensure that they are of the
-            correct type for the predicate."""
+
             result = point_result
             result["idx"] = point_indices
             df_result = result
-            print(result)
             # Discrete math recombination
             if (
                 contains_only_linestrings(self.rhs)
