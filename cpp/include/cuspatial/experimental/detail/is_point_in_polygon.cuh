@@ -30,10 +30,6 @@ namespace detail {
  * See "Crossings test" section of http://erich.realtimerendering.com/ptinpoly/
  * The improvement in addenda is also addopted to remove divisions in this kernel.
  *
- * TODO: the ultimate goal of refactoring this as independent function is to remove
- * src/utility/point_in_polygon.cuh and its usage in quadtree_point_in_polygon.cu. It isn't
- * possible today without further work to refactor quadtree_point_in_polygon into header only
- * API.
  */
 template <class Cart2d,
           class OffsetType,
