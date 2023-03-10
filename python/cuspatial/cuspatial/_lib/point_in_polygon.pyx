@@ -14,7 +14,7 @@ from cuspatial._lib.cpp.point_in_polygon cimport (
 )
 
 
-def point_in_polygon(
+def byte_point_in_polygon(
     Column test_points_x,
     Column test_points_y,
     Column poly_offsets,

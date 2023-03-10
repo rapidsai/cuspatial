@@ -10,7 +10,8 @@ from cuspatial._lib.pairwise_point_in_polygon import (
     pairwise_point_in_polygon as cpp_pairwise_point_in_polygon,
 )
 from cuspatial._lib.point_in_polygon import (
-    point_in_polygon as cpp_point_in_polygon,
+    byte_point_in_polygon as cpp_byte_point_in_polygon,
+    columnar_point_in_polygon as cpp_columnar_point_in_polygon,
 )
 from cuspatial.utils.column_utils import normalize_point_columns
 
@@ -139,8 +140,17 @@ def contains_properly_pairwise(
             poly_points_x,
             poly_points_y,
         )
+    elif len(poly_offsets_column < 32):
+        pip_result = cpp_byte_point_in_polygon(
+            test_points_x,
+            test_points_y,
+            poly_offsets_column,
+            poly_ring_offsets_column,
+            poly_points_x,
+            poly_points_y,
+        )
     else:
-        pip_result = cpp_point_in_polygon(
+        pip_result = cpp_columnar_point_in_polygon(
             test_points_x,
             test_points_y,
             poly_offsets_column,
