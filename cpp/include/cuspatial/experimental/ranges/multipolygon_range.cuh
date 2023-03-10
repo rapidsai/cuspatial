@@ -170,9 +170,9 @@ auto make_multipolygon_range(GeometryColumnView const& polygons_column)
                     "Must be polygon geometry type.");
   auto geometry_iter       = thrust::make_counting_iterator(0);
   auto const& part_offsets = polygons_column.offsets();
-  auto const& ring_offsets = polygons_column.child().offsets();
+  auto const& ring_offsets = polygons_column.child().child(0);
   auto const& points_xy =
-    polygons_column.child().child().child();  // Ignores x-y offset {0, 2, 4...}
+    polygons_column.child().child(1).child(1);  // Ignores x-y offset {0, 2, 4...}
 
   auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
 
@@ -203,10 +203,10 @@ auto make_multipolygon_range(GeometryColumnView const& polygons_column)
   CUSPATIAL_EXPECTS(polygons_column.geometry_type() == geometry_type_id::POLYGON,
                     "Must be polygon geometry type.");
   auto const& geometry_offsets = polygons_column.offsets();
-  auto const& part_offsets     = polygons_column.child().offsets();
-  auto const& ring_offsets     = polygons_column.child().child().offsets();
+  auto const& part_offsets     = polygons_column.child().child(0);
+  auto const& ring_offsets     = polygons_column.child().child(1).child(0);
   auto const& points_xy =
-    polygons_column.child().child().child().child();  // Ignores x-y offset {0, 2, 4...}
+    polygons_column.child().child(1).child(1).child(1);  // Ignores x-y offset {0, 2, 4...}
 
   auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
 

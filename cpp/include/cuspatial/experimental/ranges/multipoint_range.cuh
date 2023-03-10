@@ -221,9 +221,9 @@ auto make_multipoint_range(IntegerRange geometry_offsets, PointRange points)
 template <collection_type_id Type,
           typename T,
           typename IndexType,
-          typename GeometryColumnView,
-          CUSPATIAL_ENABLE_IF(Type == collection_type_id::SINGLE)>
-auto make_multipoints_range(GeometryColumnView const& points_column)
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::SINGLE),
+          typename GeometryColumnView>
+auto make_multipoint_range(GeometryColumnView const& points_column)
 {
   CUSPATIAL_EXPECTS(points_column.geometry_type() == geometry_type_id::POINT,
                     "Must be POINT geometry type.");
@@ -232,10 +232,10 @@ auto make_multipoints_range(GeometryColumnView const& points_column)
 
   auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
 
-  return multipoints(geometry_iter,
-                     geometry_iter + points_column.size(),
-                     points_it,
-                     points_it + points_xy.size() / 2);
+  return multipoint_range(geometry_iter,
+                          thrust::next(geometry_iter, points_column.size() + 1),
+                          points_it,
+                          points_it + points_xy.size() / 2);
 }
 
 /**
@@ -248,14 +248,14 @@ auto make_multipoints_range(GeometryColumnView const& points_column)
 template <collection_type_id Type,
           typename T,
           typename IndexType,
-          typename GeometryColumnView,
-          CUSPATIAL_ENABLE_IF(Type == collection_type_id::MULTI)>
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::MULTI),
+          typename GeometryColumnView>
 auto make_multipoint_range(GeometryColumnView const& points_column)
 {
   CUSPATIAL_EXPECTS(points_column.geometry_type() == geometry_type_id::POINT,
                     "Must be POINT geometry type.");
   auto const& geometry_offsets = points_column.offsets();
-  auto const& points_xy        = points_column.child().child();  // Ignores x-y offset {0, 2, 4...}
+  auto const& points_xy        = points_column.child().child(1);  // Ignores x-y offset {0, 2, 4...}
 
   auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
 
