@@ -33,6 +33,13 @@ namespace detail {
  * See "Crossings test" section of http://erich.realtimerendering.com/ptinpoly/
  * The improvement in addenda is also addopted to remove divisions in this kernel.
  *
+ * @tparam T type of coordinate
+ * @tparam PolygonRef polygon_ref type
+ * @param test_point point to test for point in polygon
+ * @param polygon polygon to test for point in polygon
+ * @return boolean to indicate if point is inside the polygon.
+ * `false` if point is on the edge of the polygon.
+ *
  * TODO: the ultimate goal of refactoring this as independent function is to remove
  * src/utility/point_in_polygon.cuh and its usage in quadtree_point_in_polygon.cu. It isn't
  * possible today without further work to refactor quadtree_point_in_polygon into header only
@@ -104,10 +111,10 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
                                            Cart2dIt poly_points_first,
                                            Cart2dItDiffType const& num_poly_points)
 {
-  auto polygon = polygon_ref{ring_offsets_first + poly_begin,
-                             ring_offsets_first + poly_end,
+  auto polygon = polygon_ref{thrust::next(ring_offsets_first, poly_begin),
+                             thrust::next(ring_offsets_first, poly_end + 1),
                              poly_points_first,
-                             poly_points_first + num_poly_points};
+                             thrust::next(poly_points_first, num_poly_points)};
   return is_point_in_polygon(test_point, polygon);
 }
 
