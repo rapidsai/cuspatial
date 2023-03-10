@@ -37,7 +37,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 option(BUILD_SHARED_LIBS "Build cuSpatial shared libraries" ON)
 option(USE_NVTX "Build with NVTX support" ON)
-option(BUILD_TESTS "Configure CMake to build tests" OFF)
+option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
@@ -116,7 +116,8 @@ add_library(cuspatial
     src/join/quadtree_bbox_filtering.cu
     src/spatial/polygon_bounding_box.cu
     src/spatial/linestring_bounding_box.cu
-    src/spatial/point_in_polygon.cu
+    src/spatial/byte_point_in_polygon.cu
+    src/spatial/columnar_point_in_polygon.cu
     src/spatial/pairwise_point_in_polygon.cu
     src/spatial_window/spatial_window.cu
     src/spatial/haversine.cu

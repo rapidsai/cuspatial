@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/columnar_point_in_polygon.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/point_in_polygon.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
@@ -65,15 +65,15 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
   auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
   auto expected = std::vector<bool>{false, false, false, false, true, true, true, true};
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
+  auto ret = columnar_point_in_polygon(test_point.begin(),
+                                       test_point.end(),
+                                       poly_offsets.begin(),
+                                       poly_offsets.end(),
+                                       poly_ring_offsets.begin(),
+                                       poly_ring_offsets.end(),
+                                       poly_point.begin(),
+                                       poly_point.end(),
+                                       got.begin());
 
   EXPECT_EQ(got, expected);
   EXPECT_EQ(ret, got.end());
@@ -101,15 +101,15 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRingUnclosed)
   auto got      = rmm::device_vector<int32_t>(test_point.size());
   auto expected = std::vector<int32_t>{false, false, false, false, false, true, true, false};
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
+  auto ret = columnar_point_in_polygon(test_point.begin(),
+                                       test_point.end(),
+                                       poly_offsets.begin(),
+                                       poly_offsets.end(),
+                                       poly_ring_offsets.begin(),
+                                       poly_ring_offsets.end(),
+                                       poly_point.begin(),
+                                       poly_point.end(),
+                                       got.begin());
 
   EXPECT_EQ(got, expected);
   EXPECT_EQ(ret, got.end());
@@ -157,15 +157,15 @@ TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
                                      true,
                                      true});
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
+  auto ret = columnar_point_in_polygon(test_point.begin(),
+                                       test_point.end(),
+                                       poly_offsets.begin(),
+                                       poly_offsets.end(),
+                                       poly_ring_offsets.begin(),
+                                       poly_ring_offsets.end(),
+                                       poly_point.begin(),
+                                       poly_point.end(),
+                                       got.begin());
 
   EXPECT_EQ(got, expected);
   EXPECT_EQ(ret, got.end());
@@ -191,15 +191,15 @@ TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
   auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
   auto expected = std::vector<bool>{false, false, true, false, true};
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
+  auto ret = columnar_point_in_polygon(test_point.begin(),
+                                       test_point.end(),
+                                       poly_offsets.begin(),
+                                       poly_offsets.end(),
+                                       poly_ring_offsets.begin(),
+                                       poly_ring_offsets.end(),
+                                       poly_point.begin(),
+                                       poly_point.end(),
+                                       got.begin());
 
   EXPECT_EQ(got, expected);
   EXPECT_EQ(ret, got.end());
@@ -224,15 +224,15 @@ TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
   auto expected = std::vector<bool>{false, false, false, false};
   auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
+  auto ret = columnar_point_in_polygon(test_point.begin(),
+                                       test_point.end(),
+                                       poly_offsets.begin(),
+                                       poly_offsets.end(),
+                                       poly_ring_offsets.begin(),
+                                       poly_ring_offsets.end(),
+                                       poly_point.begin(),
+                                       poly_point.end(),
+                                       got.begin());
 
   EXPECT_EQ(got, expected);
   EXPECT_EQ(ret, got.end());
@@ -257,15 +257,15 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
   auto expected = std::vector<bool>{false, false, false, false};
   auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
+  auto ret = columnar_point_in_polygon(test_point.begin(),
+                                       test_point.end(),
+                                       poly_offsets.begin(),
+                                       poly_offsets.end(),
+                                       poly_ring_offsets.begin(),
+                                       poly_ring_offsets.end(),
+                                       poly_point.begin(),
+                                       poly_point.end(),
+                                       got.begin());
 
   EXPECT_EQ(got, expected);
   EXPECT_EQ(ret, got.end());
@@ -331,15 +331,15 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
   };
   auto got = rmm::device_vector<bool>(test_point.size() * num_polys);
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              offsets_iter,
-                              offsets_iter + num_polys,
-                              poly_ring_offsets_iter,
-                              poly_ring_offsets_iter + num_polys,
-                              poly_point_iter,
-                              poly_point_iter + num_poly_points,
-                              got.begin());
+  auto ret = columnar_point_in_polygon(test_point.begin(),
+                                       test_point.end(),
+                                       offsets_iter,
+                                       offsets_iter + num_polys,
+                                       poly_ring_offsets_iter,
+                                       poly_ring_offsets_iter + num_polys,
+                                       poly_point_iter,
+                                       poly_point_iter + num_poly_points,
+                                       got.begin());
 
   EXPECT_EQ(got, expected);
   EXPECT_EQ(ret, got.end());
@@ -370,15 +370,15 @@ TYPED_TEST(PointInPolygonTest, 32PolygonSupport)
     true,  false, true,  false, true,  false, true,  false, true,  false, true,  false};
   auto got = rmm::device_vector<bool>(test_point.size() * num_polys);
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              offsets_iter,
-                              offsets_iter + num_polys + 1,
-                              poly_ring_offsets_iter,
-                              poly_ring_offsets_iter + num_polys + 1,
-                              poly_point_iter,
-                              poly_point_iter + num_poly_points,
-                              got.begin());
+  auto ret = columnar_point_in_polygon(test_point.begin(),
+                                       test_point.end(),
+                                       offsets_iter,
+                                       offsets_iter + num_polys + 1,
+                                       poly_ring_offsets_iter,
+                                       poly_ring_offsets_iter + num_polys + 1,
+                                       poly_point_iter,
+                                       poly_point_iter + num_poly_points,
+                                       got.begin());
 
   EXPECT_EQ(got, expected);
   EXPECT_EQ(ret, got.end());
@@ -398,15 +398,15 @@ TYPED_TEST(PointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
   auto expected   = std::vector<bool>{false, true, false};
   auto got        = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
+  auto ret = columnar_point_in_polygon(test_point.begin(),
+                                       test_point.end(),
+                                       poly_offsets.begin(),
+                                       poly_offsets.end(),
+                                       poly_ring_offsets.begin(),
+                                       poly_ring_offsets.end(),
+                                       poly_point.begin(),
+                                       poly_point.end(),
+                                       got.begin());
 
   EXPECT_EQ(expected, got);
   EXPECT_EQ(got.end(), ret);
@@ -423,15 +423,15 @@ TYPED_TEST(PointInPolygonTest, SelfClosingLoopRightEdgeMissing)
   auto expected   = std::vector<bool>{false, true, false};
   auto got        = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
+  auto ret = columnar_point_in_polygon(test_point.begin(),
+                                       test_point.end(),
+                                       poly_offsets.begin(),
+                                       poly_offsets.end(),
+                                       poly_ring_offsets.begin(),
+                                       poly_ring_offsets.end(),
+                                       poly_point.begin(),
+                                       poly_point.end(),
+                                       got.begin());
 
   EXPECT_EQ(expected, got);
   EXPECT_EQ(got.end(), ret);

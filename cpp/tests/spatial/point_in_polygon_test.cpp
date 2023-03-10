@@ -53,10 +53,11 @@ TYPED_TEST(PointInPolygonTest, Empty)
 
   auto expected = wrapper<bool>({});
 
-  auto actual = cuspatial::point_in_polygon(
+  auto actual = cuspatial::columnar_point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
 
-  expect_columns_equal(expected, actual.first->view(), verbosity);
+  std::cout << actual.second.column(0).size() << std::endl;
+  expect_columns_equal(expected, actual.second.column(0), verbosity);
 }
 
 template <typename T>
@@ -78,7 +79,7 @@ TYPED_TEST(PointInPolygonUnsupportedTypesTest, UnsupportedPointType)
   auto poly_point_ys     = wrapper<T>({1.0, 0.0, -1.0, 0.0});
 
   EXPECT_THROW(
-    cuspatial::point_in_polygon(
+    cuspatial::columnar_point_in_polygon(
       test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
     cuspatial::logic_error);
 }
@@ -102,7 +103,7 @@ TYPED_TEST(PointInPolygonUnsupportedChronoTypesTest, UnsupportedPointChronoType)
   auto poly_point_ys     = wrapper<T, R>({R{1}, R{0}, R{-1}, R{0}});
 
   EXPECT_THROW(
-    cuspatial::point_in_polygon(
+    cuspatial::columnar_point_in_polygon(
       test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
     cuspatial::logic_error);
 }
@@ -122,7 +123,7 @@ TEST_F(PointInPolygonErrorTest, EmptyPolygonOffsets)
   auto poly_point_ys     = wrapper<T>({});
 
   EXPECT_THROW(
-    cuspatial::point_in_polygon(
+    cuspatial::columnar_point_in_polygon(
       test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
     cuspatial::logic_error);
 }
@@ -139,7 +140,7 @@ TEST_F(PointInPolygonErrorTest, TriangleUnclosedNotEnoughPoints)
   auto poly_point_ys     = wrapper<T>({1.0, 0.0, -1.0});
 
   EXPECT_THROW(
-    cuspatial::point_in_polygon(
+    cuspatial::columnar_point_in_polygon(
       test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
     cuspatial::logic_error);
 }
@@ -157,10 +158,10 @@ TEST_F(PointInPolygonErrorTest, EmptyTestPointsReturnsEmpty)
 
   auto expected = wrapper<int32_t>({});
 
-  auto actual = cuspatial::point_in_polygon(
+  auto actual = cuspatial::columnar_point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
 
-  CUDF_TEST_EXPECT_COLUMNS_EQUAL(expected, actual->view(), verbosity);
+  CUDF_TEST_EXPECT_COLUMNS_EQUAL(expected, actual.first->view(), verbosity);
 }
 
 TEST_F(PointInPolygonErrorTest, MismatchTestPointXYLength)
@@ -175,7 +176,7 @@ TEST_F(PointInPolygonErrorTest, MismatchTestPointXYLength)
   auto poly_point_ys     = wrapper<T>({1.0, 0.0, -1.0, 0.0});
 
   EXPECT_THROW(
-    cuspatial::point_in_polygon(
+    cuspatial::columnar_point_in_polygon(
       test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
     cuspatial::logic_error);
 }
@@ -192,7 +193,7 @@ TEST_F(PointInPolygonErrorTest, MismatchTestPointType)
   auto poly_point_ys     = wrapper<T>({1.0, 0.0, -1.0, 0.0});
 
   EXPECT_THROW(
-    cuspatial::point_in_polygon(
+    cuspatial::columnar_point_in_polygon(
       test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
     cuspatial::logic_error);
 }
@@ -209,7 +210,7 @@ TEST_F(PointInPolygonErrorTest, MismatchPolyPointXYLength)
   auto poly_point_ys     = wrapper<T>({1.0, 0.0, -1.0, 0.0});
 
   EXPECT_THROW(
-    cuspatial::point_in_polygon(
+    cuspatial::columnar_point_in_polygon(
       test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
     cuspatial::logic_error);
 }
@@ -226,7 +227,7 @@ TEST_F(PointInPolygonErrorTest, MismatchPolyPointType)
   auto poly_point_ys     = wrapper<float>({1.0, 0.0, -1.0, 0.0});
 
   EXPECT_THROW(
-    cuspatial::point_in_polygon(
+    cuspatial::columnar_point_in_polygon(
       test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
     cuspatial::logic_error);
 }
@@ -241,7 +242,7 @@ TEST_F(PointInPolygonErrorTest, MismatchPointTypes)
   auto poly_point_ys     = wrapper<double>({1.0, 0.0, -1.0, 0.0});
 
   EXPECT_THROW(
-    cuspatial::point_in_polygon(
+    cuspatial::columnar_point_in_polygon(
       test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
     cuspatial::logic_error);
 }
