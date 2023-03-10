@@ -32,6 +32,11 @@ project(CUSPATIAL VERSION 23.04.00 LANGUAGES C CXX CUDA)
 # Setting this flag ensures `Threads::Threads` is the same value in first run and subsequent runs.
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
+# Must come after enable_language(CUDA)
+# Use `-isystem <path>` instead of `-isystem=<path>`
+# because the former works with clangd intellisense
+set(CMAKE_INCLUDE_SYSTEM_FLAG_CUDA "-isystem ")
+
 ###################################################################################################
 # - build options ---------------------------------------------------------------------------------
 
