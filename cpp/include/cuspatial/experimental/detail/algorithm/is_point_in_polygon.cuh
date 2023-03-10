@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "cuspatial/experimental/geometry_collection/multipoint_ref.cuh"
+#include <cuspatial/experimental/geometry_collection/multipoint_ref.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -32,6 +32,13 @@ namespace detail {
  * Implemented based on Eric Haines's crossings-multiply algorithm:
  * See "Crossings test" section of http://erich.realtimerendering.com/ptinpoly/
  * The improvement in addenda is also addopted to remove divisions in this kernel.
+ *
+ * @tparam T type of coordinate
+ * @tparam PolygonRef polygon_ref type
+ * @param test_point point to test for point in polygon
+ * @param polygon polygon to test for point in polygon
+ * @return boolean to indicate if point is inside the polygon.
+ * `false` if point is on the edge of the polygon.
  *
  * TODO: the ultimate goal of refactoring this as independent function is to remove
  * src/utility/point_in_polygon.cuh and its usage in quadtree_point_in_polygon.cu. It isn't
@@ -67,7 +74,6 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
       is_colinear    = float_equal(run * rise_to_point, run_to_point * rise);
       if (is_colinear) { break; }
 
-      //   y0_flag = a.y > test_point.y;
       y1_flag = a.y > test_point.y;
       if (y1_flag != y0_flag) {
         // Transform the following inequality to avoid division
@@ -105,10 +111,10 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
                                            Cart2dIt poly_points_first,
                                            Cart2dItDiffType const& num_poly_points)
 {
-  auto polygon = polygon_ref{ring_offsets_first + poly_begin,
-                             ring_offsets_first + poly_end,
+  auto polygon = polygon_ref{thrust::next(ring_offsets_first, poly_begin),
+                             thrust::next(ring_offsets_first, poly_end + 1),
                              poly_points_first,
-                             poly_points_first + num_poly_points};
+                             thrust::next(poly_points_first, num_poly_points)};
   return is_point_in_polygon(test_point, polygon);
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,7 +224,6 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
     return multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
       INVALID_INDEX;
 
-  auto part_idx = part_idx_from_ring_idx(ring_idx);
   return geometry_idx_from_part_idx(part_idx_from_ring_idx(ring_idx));
 }
 
