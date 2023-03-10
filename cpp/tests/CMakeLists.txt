@@ -155,8 +155,11 @@ ConfigureTest(SINUSOIDAL_PROJECTION_TEST_EXP
 ConfigureTest(POINTS_IN_RANGE_TEST_EXP
     experimental/spatial/points_in_range_test.cu)
 
-ConfigureTest(POINT_IN_POLYGON_TEST_EXP
-    experimental/spatial/point_in_polygon_test.cu)
+ConfigureTest(COLUMNAR_POINT_IN_POLYGON_TEST_EXP
+    experimental/spatial/columnar_point_in_polygon_test.cu)
+
+ConfigureTest(BYTE_POINT_IN_POLYGON_TEST_EXP
+    experimental/spatial/byte_point_in_polygon_test.cu)
 
 ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST_EXP
     experimental/spatial/pairwise_point_in_polygon_test.cu)
