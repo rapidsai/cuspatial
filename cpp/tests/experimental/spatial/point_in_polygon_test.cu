@@ -62,7 +62,7 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
   auto poly_point =
     this->make_device_points({{-1.0, -1.0}, {1.0, -1.0}, {1.0, 1.0}, {-1.0, 1.0}, {-1.0, -1.0}});
 
-  auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
+  auto got      = rmm::device_vector<bool>(test_point.size() * (poly_offsets.size() - 1));
   auto expected = std::vector<bool>{false, false, false, false, true, true, true, true};
 
   auto ret = columnar_point_in_polygon(test_point.begin(),
@@ -139,7 +139,7 @@ TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
                                               {-1.0, 0.0},
                                               {0.0, 1.0}});
 
-  auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
+  auto got      = rmm::device_vector<bool>(test_point.size() * (poly_offsets.size() - 1));
   auto expected = std::vector<bool>({false,
                                      false,
                                      false,
@@ -188,7 +188,7 @@ TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
                                               {0.5, -0.5},
                                               {-0.5, -0.5}});
 
-  auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
+  auto got      = rmm::device_vector<bool>(test_point.size() * (poly_offsets.size() - 1));
   auto expected = std::vector<bool>{false, false, true, false, true};
 
   auto ret = columnar_point_in_polygon(test_point.begin(),
@@ -222,7 +222,7 @@ TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
 
   // point is excluded from all due to colinearity testing
   auto expected = std::vector<bool>{false, false, false, false};
-  auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
+  auto got      = rmm::device_vector<bool>(test_point.size() * (poly_offsets.size() - 1));
 
   auto ret = columnar_point_in_polygon(test_point.begin(),
                                        test_point.end(),
@@ -255,7 +255,7 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
 
   // colinearity excludes all points
   auto expected = std::vector<bool>{false, false, false, false};
-  auto got      = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
+  auto got      = rmm::device_vector<bool>(test_point.size() * (poly_offsets.size() - 1));
 
   auto ret = columnar_point_in_polygon(test_point.begin(),
                                        test_point.end(),
@@ -334,13 +334,14 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
   auto ret = columnar_point_in_polygon(test_point.begin(),
                                        test_point.end(),
                                        offsets_iter,
-                                       offsets_iter + num_polys,
+                                       offsets_iter + num_polys + 1,
                                        poly_ring_offsets_iter,
-                                       poly_ring_offsets_iter + num_polys,
+                                       poly_ring_offsets_iter + num_polys + 1,
                                        poly_point_iter,
                                        poly_point_iter + num_poly_points,
                                        got.begin());
-
+  std::cout << "got:  " << got.size() << std::endl;
+  std::cout << "expected:  " << expected.size() << std::endl;
   EXPECT_EQ(got, expected);
   EXPECT_EQ(ret, got.end());
 }
@@ -396,7 +397,7 @@ TYPED_TEST(PointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
   // "left" edge missing
   auto poly_point = this->make_device_points({{-1, 1}, {1, 1}, {1, -1}, {-1, -1}});
   auto expected   = std::vector<bool>{false, true, false};
-  auto got        = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
+  auto got        = rmm::device_vector<bool>(test_point.size() * (poly_offsets.size() - 1));
 
   auto ret = columnar_point_in_polygon(test_point.begin(),
                                        test_point.end(),
@@ -421,7 +422,7 @@ TYPED_TEST(PointInPolygonTest, SelfClosingLoopRightEdgeMissing)
   // "right" edge missing
   auto poly_point = this->make_device_points({{1, -1}, {-1, -1}, {-1, 1}, {1, 1}});
   auto expected   = std::vector<bool>{false, true, false};
-  auto got        = rmm::device_vector<bool>(test_point.size() * poly_offsets.size());
+  auto got        = rmm::device_vector<bool>(test_point.size() * (poly_offsets.size() - 1));
 
   auto ret = columnar_point_in_polygon(test_point.begin(),
                                        test_point.end(),
