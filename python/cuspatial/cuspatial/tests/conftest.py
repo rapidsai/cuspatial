@@ -1,5 +1,6 @@
 # Copyright (c) 2020-2021, NVIDIA CORPORATION.
 
+import cupy as cp
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -13,6 +14,8 @@ from shapely.geometry import (
     Point,
     Polygon,
 )
+
+import cuspatial
 
 
 @pytest.fixture
@@ -171,6 +174,21 @@ def point_generator():
 
 
 @pytest.fixture
+def fast_point_generator():
+    """Generator that creates polygons with no interior ring
+    Uses a single shapely Polygon to generate n random polygons using
+    cudf arithmetic instead of host calls.
+    """
+
+    def generator(n):
+        points = cp.random.random(n * 2)
+        result = cuspatial.GeoSeries.from_points_xy(points)
+        yield result
+
+    return generator
+
+
+@pytest.fixture
 def multipoint_generator(point_generator):
     """Generator for n multipoints. Usage: mp=generator(n, max_num_points)"""
     rstate = np.random.RandomState(0)
@@ -209,6 +227,29 @@ def multilinestring_generator(linestring_generator):
             yield MultiLineString(
                 [*linestring_generator(num_geometries, max_num_segments)]
             )
+
+    return generator
+
+
+@pytest.fixture
+def n_duplicated_polygons():
+    """Generator that creates polygons with no interior ring
+    Uses a single shapely Polygon to generate n random polygons using
+    cudf arithmetic instead of host calls.
+    """
+
+    def generator(n, distance_from_origin, radius=1.0):
+        outer = Point(distance_from_origin * 2, 0).buffer(radius)
+        circle = Polygon(outer)
+        gcircle = cuspatial.GeoSeries([circle])
+        polygon = gcircle.polygons.xy
+        polygon_length = len(polygon) // 2
+        final_buffer = cp.repeat(polygon, n)
+        final_offsets = cp.arange(n) * polygon_length
+        result = cuspatial.GeoSeries.from_polygons_xy(
+            final_buffer, final_offsets, cp.arange(n), cp.arange(n)
+        )
+        yield result
 
     return generator
 

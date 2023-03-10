@@ -1,0 +1,220 @@
+---------------------------------------------------------------------------------------------------------                                 
+                                                        Name                   Max     StdDev
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------                                 
+                        bench_pairwise_contains_properly[10]               74.8049     1.6040
+                     bench_pairwise_contains_properly[50000]               83.3078     4.2814
+            bench_quadtree_contains_properly[100-10-1000000]              118.6059     0.8629
+                 bench_quadtree_contains_properly[100-10-10]              121.9263     2.0149
+              bench_quadtree_contains_properly[100-10-50000]              121.8196     3.2368
+              bench_quadtree_contains_properly[4-10-1000000]              133.3737    15.4102
+                bench_quadtree_contains_properly[4-10-50000]              133.0877     9.1341
+                bench_quadtree_contains_properly[4-50000-10]              145.0595    21.0037
+           bench_quadtree_contains_properly[100-50000-50000]              129.2035     2.7693
+              bench_quadtree_contains_properly[100-50000-10]              132.1624     6.6270
+         bench_quadtree_contains_properly[100-50000-1000000]              128.5895     0.8084
+                   bench_quadtree_contains_properly[4-10-10]              144.8040    12.2081
+           bench_quadtree_contains_properly[4-50000-1000000]              140.2046     3.6604
+             bench_quadtree_contains_properly[4-50000-50000]              149.2742    18.5786
+                   bench_pairwise_contains_properly[1000000]              167.3197    15.5772
+           bench_quadtree_contains_properly[4-1000000-50000]              198.7988     8.8226
+         bench_quadtree_contains_properly[4-1000000-1000000]              209.9049    15.4345
+              bench_quadtree_contains_properly[4-1000000-10]              218.1407    13.0180
+               bench_quadtree_contains_properly[50000-10-10]              211.0540     5.7755
+            bench_quadtree_contains_properly[50000-10-50000]              214.6285     5.1871
+          bench_quadtree_contains_properly[50000-10-1000000]              216.7332     7.5414
+            bench_quadtree_contains_properly[100-1000000-10]              240.2261     9.1753
+         bench_quadtree_contains_properly[100-1000000-50000]              271.0407    12.8562
+       bench_quadtree_contains_properly[100-1000000-1000000]              278.4046     4.6649
+         bench_quadtree_contains_properly[50000-50000-50000]            1,198.7464     7.6783
+       bench_quadtree_contains_properly[50000-50000-1000000]            1,205.3095     7.2587
+            bench_quadtree_contains_properly[50000-50000-10]            1,201.8701     3.7631
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------                                 
+
+-------------------------------------------------- benchmark: 63 tests
+--------------------------------------------------
+Name (time in ms)
+Mean             StdDev            Rounds
+-------------------------------------------------------------------------------------------------------------------------
+bench_column_length_limited_contains_properly[100-10-10]
+57.4705 (1.02)      1.7961 (inf)          14
+bench_byte_limited_contains_properly[100-10-10]
+56.3888 (1.00)      1.1555 (inf)          14
+bench_column_length_limited_contains_properly[50000-10-10]
+57.9655 (1.03)      4.0325 (inf)          14
+bench_column_length_limited_contains_properly[4-10-10]
+56.3580 (1.0)       0.2450 (inf)          13
+bench_byte_limited_contains_properly[50000-10-10]
+57.8307 (1.03)      2.2736 (inf)          12
+bench_byte_limited_contains_properly[4-10-10]
+58.8027 (1.04)      0.8048 (inf)          17
+bench_pairwise_contains_properly[10]
+70.8808 (1.26)      1.6473 (inf)           6
+bench_byte_limited_contains_properly[4-50000-10]
+74.6583 (1.32)      1.4629 (inf)          14
+bench_column_length_limited_contains_properly[50000-50000-10]
+75.2647 (1.34)      1.6730 (inf)          13
+bench_byte_limited_contains_properly[100-50000-10]
+75.3132 (1.34)      1.3582 (inf)          14
+bench_byte_limited_contains_properly[50000-50000-10]
+75.3325 (1.34)      1.5126 (inf)          14
+bench_pairwise_contains_properly[50000]
+76.6656 (1.36)      2.9202 (inf)          13
+bench_column_length_limited_contains_properly[4-50000-10]
+76.1645 (1.35)      2.6718 (inf)          13
+bench_column_length_limited_contains_properly[100-50000-10]
+75.8085 (1.35)      0.9089 (inf)          13
+bench_byte_limited_contains_properly[4-50000-50000]
+104.3049 (1.85)      8.7217 (inf)          11
+bench_column_length_limited_contains_properly[50000-50000-50000]
+100.9605 (1.79)      5.8928 (inf)          11
+bench_byte_limited_contains_properly[50000-50000-50000]
+101.9042 (1.81)      6.2540 (inf)          11
+bench_column_length_limited_contains_properly[100-50000-50000]
+105.7622 (1.88)      7.2927 (inf)          11
+bench_byte_limited_contains_properly[100-50000-50000]
+101.4931 (1.80)      4.9301 (inf)          10
+bench_column_length_limited_contains_properly[4-50000-50000]
+105.1650 (1.87)      5.7739 (inf)          11
+bench_quadtree_contains_properly[50000-10-10]
+105.7834 (1.88)      2.5374 (inf)          10
+bench_quadtree_contains_properly[100-10-10]
+108.3069 (1.92)      4.8502 (inf)          10
+bench_quadtree_contains_properly[4-10-10]
+117.0486 (2.08)      3.2008 (inf)           4
+bench_quadtree_contains_properly[100-50000-10]
+122.4728 (2.17)      1.7539 (inf)           8
+bench_pairwise_contains_properly[1000000]
+138.6059 (2.46)     19.2582 (inf)           7
+bench_quadtree_contains_properly[50000-50000-10]
+130.8743 (2.32)      7.9013 (inf)           7
+bench_quadtree_contains_properly[4-50000-10]
+138.5161 (2.46)      2.7417 (inf)           7
+bench_column_length_limited_contains_properly[50000-1000000-10]
+151.3893 (2.69)     16.0028 (inf)           7
+bench_byte_limited_contains_properly[50000-1000000-10]
+147.7716 (2.62)      7.7225 (inf)           7
+bench_column_length_limited_contains_properly[4-1000000-10]
+152.9962 (2.71)      6.7210 (inf)           7
+bench_byte_limited_contains_properly[100-1000000-10]
+154.6884 (2.74)     10.2034 (inf)           7
+bench_byte_limited_contains_properly[4-1000000-10]
+158.6235 (2.81)     16.0542 (inf)           7
+bench_column_length_limited_contains_properly[100-1000000-10]
+154.6152 (2.74)      5.4782 (inf)           7
+bench_quadtree_contains_properly[50000-1000000-10]
+211.7241 (3.76)     12.9948 (inf)           5
+bench_quadtree_contains_properly[100-1000000-10]
+208.4061 (3.70)      7.4714 (inf)           5
+bench_quadtree_contains_properly[50000-10-50000]
+215.2335 (3.82)     20.7865 (inf)           5
+bench_quadtree_contains_properly[4-1000000-10]
+210.8242 (3.74)      4.9642 (inf)           5
+bench_quadtree_contains_properly[100-10-50000]
+211.5034 (3.75)      3.4979 (inf)           5
+bench_quadtree_contains_properly[4-10-50000]
+228.9729 (4.06)     11.9980 (inf)           4
+bench_byte_limited_contains_properly[4-1000000-1000000]
+532.1973 (9.44)     22.5202 (inf)           2
+bench_column_length_limited_contains_properly[50000-1000000-1000000]
+561.6378 (9.97)     41.7220 (inf)           2
+bench_byte_limited_contains_properly[50000-1000000-1000000]
+548.5765 (9.73)     18.4273 (inf)           2
+bench_byte_limited_contains_properly[100-1000000-1000000]
+544.3531 (9.66)      7.4685 (inf)           2
+bench_column_length_limited_contains_properly[4-1000000-1000000]
+562.0639 (9.97)     19.0799 (inf)           2
+bench_column_length_limited_contains_properly[100-1000000-1000000]
+560.3080 (9.94)     16.3032 (inf)           2
+bench_quadtree_contains_properly[100-50000-50000]
+1,205.0392 (21.38)     0.0000 (1.0)           1
+bench_quadtree_contains_properly[50000-50000-50000]
+1,211.6060 (21.50)     0.0000 (1.0)           1
+bench_quadtree_contains_properly[4-50000-50000]
+1,216.3529 (21.58)     0.0000 (1.0)           1
+bench_quadtree_contains_properly[50000-10-1000000]
+1,718.0183 (30.48)     0.0000 (1.0)           1
+bench_quadtree_contains_properly[100-10-1000000]
+1,719.5508 (30.51)     0.0000 (1.0)           1
+bench_quadtree_contains_properly[4-10-1000000]
+1,745.9866 (30.98)     0.0000 (1.0)           1
+bench_column_length_limited_contains_properly[100-10-50000]
+2,798.9317 (49.66)     0.0000 (1.0)           1
+bench_column_length_limited_contains_properly[4-10-50000]
+2,810.0424 (49.86)     0.0000 (1.0)           1
+bench_byte_limited_contains_properly[4-10-50000]
+2,855.4268 (50.67)     0.0000 (1.0)           1
+bench_column_length_limited_contains_properly[50000-10-50000]
+2,873.5451 (50.99)     0.0000 (1.0)           1
+bench_byte_limited_contains_properly[100-10-50000]
+2,920.8515 (51.83)     0.0000 (1.0)           1
+bench_byte_limited_contains_properly[50000-10-50000]
+2,954.0087 (52.42)     0.0000 (1.0)           1
+bench_column_length_limited_contains_properly[50000-10-1000000]
+54,626.0772 (969.27)    0.0000 (1.0)           1
+bench_column_length_limited_contains_properly[100-10-1000000]
+54,831.1615 (972.91)    0.0000 (1.0)           1
+bench_byte_limited_contains_properly[50000-10-1000000]
+55,155.4757 (978.66)    0.0000 (1.0)           1
+bench_column_length_limited_contains_properly[4-10-1000000]
+55,155.7887 (978.67)    0.0000 (1.0)           1
+bench_byte_limited_contains_properly[100-10-1000000]
+55,511.7361 (984.98)    0.0000 (1.0)           1
+bench_byte_limited_contains_properly[4-10-1000000]
+55,572.9893 (986.07)    0.0000 (1.0)           1
+-------------------------------------------------------------------------------------------------------------------------
+
+Legend:
+  Outliers: 1 Standard Deviation from Mean; 1.5 IQR (InterQuartile Range) from
+1st Quartile and 3rd Quartile.
+  OPS: Operations Per Second, computed as 1 / Mean
+==========================================================================================
+short test summary info
+==========================================================================================
+FAILED bench_pip.py::bench_quadtree_contains_properly[4-50000-1000000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_quadtree_contains_properly[4-1000000-50000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_quadtree_contains_properly[4-1000000-1000000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_quadtree_contains_properly[100-50000-1000000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_quadtree_contains_properly[100-1000000-50000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_quadtree_contains_properly[100-1000000-1000000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_quadtree_contains_properly[50000-50000-1000000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_quadtree_contains_properly[50000-1000000-50000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_quadtree_contains_properly[50000-1000000-1000000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_byte_limited_contains_properly[4-50000-1000000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_byte_limited_contains_properly[4-1000000-50000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_byte_limited_contains_properly[100-50000-1000000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_byte_limited_contains_properly[100-1000000-50000] -
+NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_byte_limited_contains_properly[50000-50000-1000000]
+- NameError: name 'e' is not defined
+FAILED bench_pip.py::bench_byte_limited_contains_properly[50000-1000000-50000]
+- NameError: name 'e' is not defined
+FAILED
+bench_pip.py::bench_column_length_limited_contains_properly[4-50000-1000000] -
+NameError: name 'e' is not defined
+FAILED
+bench_pip.py::bench_column_length_limited_contains_properly[4-1000000-50000] -
+NameError: name 'e' is not defined
+FAILED
+bench_pip.py::bench_column_length_limited_contains_properly[100-50000-1000000]
+- NameError: name 'e' is not defined
+FAILED
+bench_pip.py::bench_column_length_limited_contains_properly[100-1000000-50000]
+- NameError: name 'e' is not defined
+FAILED
+bench_pip.py::bench_column_length_limited_contains_properly[50000-50000-1000000]
+- NameError: name 'e' is not defined
+FAILED
+bench_pip.py::bench_column_length_limited_contains_properly[50000-1000000-50000]
+- NameError: name 'e' is not defined
