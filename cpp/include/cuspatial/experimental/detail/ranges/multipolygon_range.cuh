@@ -23,6 +23,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/experimental/geometry_collection/multipolygon_ref.cuh>
 #include <cuspatial/traits.hpp>
@@ -104,7 +105,10 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::m
     _point_end(point_end)
 {
   static_assert(is_vec_2d<iterator_value_type<VecIterator>>(),
-                "Coordinate range must be constructed with iterators to vec_2d.");
+                "Point iterator must be iterators to floating point vec_2d types.");
+
+  CUSPATIAL_EXPECTS_VALID_MULTIPOLYGON_SIZES(
+    num_points(), num_multipolygons() + 1, num_polygons() + 1, num_rings() + 1);
 }
 
 template <typename GeometryIterator,
