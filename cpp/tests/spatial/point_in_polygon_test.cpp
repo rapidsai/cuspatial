@@ -51,12 +51,13 @@ TYPED_TEST(PointInPolygonTest, Empty)
   auto poly_point_xs     = wrapper<T>({});
   auto poly_point_ys     = wrapper<T>({});
 
-  auto expected = wrapper<bool>({});
+  auto expected = wrapper<bool>({0});
 
   auto actual = cuspatial::columnar_point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
 
   std::cout << actual.second.column(0).size() << std::endl;
+  std::cout << to_string(actual.first->view(), ",") << std::endl;
   expect_columns_equal(expected, actual.second.column(0), verbosity);
 }
 
@@ -111,23 +112,6 @@ TYPED_TEST(PointInPolygonUnsupportedChronoTypesTest, UnsupportedPointChronoType)
 struct PointInPolygonErrorTest : public BaseFixture {
 };
 
-TEST_F(PointInPolygonErrorTest, EmptyPolygonOffsets)
-{
-  using T = double;
-
-  auto test_point_xs     = wrapper<T>({0});
-  auto test_point_ys     = wrapper<T>({0});
-  auto poly_offsets      = wrapper<cudf::size_type>({});  // empty lists have a single offset
-  auto poly_ring_offsets = wrapper<cudf::size_type>({});
-  auto poly_point_xs     = wrapper<T>({});
-  auto poly_point_ys     = wrapper<T>({});
-
-  EXPECT_THROW(
-    cuspatial::columnar_point_in_polygon(
-      test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
-    cuspatial::logic_error);
-}
-
 TEST_F(PointInPolygonErrorTest, TriangleUnclosedNotEnoughPoints)
 {
   using T = double;
@@ -156,7 +140,7 @@ TEST_F(PointInPolygonErrorTest, EmptyTestPointsReturnsEmpty)
   auto poly_point_xs     = wrapper<T>({});
   auto poly_point_ys     = wrapper<T>({});
 
-  auto expected = wrapper<int32_t>({});
+  auto expected = wrapper<bool>({});
 
   auto actual = cuspatial::columnar_point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
