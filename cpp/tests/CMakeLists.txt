@@ -1,5 +1,5 @@
 ﻿#=============================================================================
-# Copyright (c) 2019-2022, NVIDIA CORPORATION.
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -52,9 +52,6 @@ endfunction(ConfigureTest)
 ### test sources ##################################################################################
 ###################################################################################################
 
-ConfigureTest(CUBIC_SPLINE_TEST
-    interpolate/cubic_spline_test.cpp)
-
 ConfigureTest(SINUSOIDAL_PROJECTION_TEST
     spatial/sinusoidal_projection_test.cu)
 
@@ -83,10 +80,10 @@ ConfigureTest(POINT_QUADTREE_TEST
     indexing/point_quadtree_test.cu)
 
 ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST
-    spatial/linestring_bounding_boxes_test.cu)
+    spatial/linestring_bounding_boxes_test.cpp)
 
 ConfigureTest(POLYGON_BOUNDING_BOXES_TEST
-    spatial/polygon_bounding_boxes_test.cu)
+    spatial/polygon_bounding_boxes_test.cpp)
 
 ConfigureTest(POINT_DISTANCE_TEST
     spatial/point_distance_test.cpp)
@@ -96,6 +93,9 @@ ConfigureTest(POINT_LINESTRING_DISTANCE_TEST
 
 ConfigureTest(LINESTRING_DISTANCE_TEST
     spatial/linestring_distance_test.cpp)
+
+ConfigureTest(LINESTRING_INTERSECTION_TEST
+    spatial/linestring_intersection_test.cpp)
 
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST
     spatial/point_linestring_nearest_points_test.cpp)

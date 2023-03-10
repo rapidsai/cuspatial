@@ -1,8 +1,6 @@
 from ._version import get_versions
-from .core import interpolate
 from .core.geodataframe import GeoDataFrame
 from .core.geoseries import GeoSeries
-from .core.interpolate import CubicSpline
 from .core.spatial import (
     directed_hausdorff_distance,
     haversine_distance,
