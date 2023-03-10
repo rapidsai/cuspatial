@@ -18,7 +18,7 @@ cdef extern from "cuspatial/point_in_polygon.hpp" namespace "cuspatial" nogil:
     ) except +
 
 cdef extern from "cuspatial/point_in_polygon.hpp" namespace "cuspatial" nogil:
-    cdef pair[unique_ptr[column], table_view] byte_point_in_polygon(
+    cdef pair[unique_ptr[column], table_view] columnar_point_in_polygon(
         const column_view & test_points_x,
         const column_view & test_points_y,
         const column_view & poly_offsets,
