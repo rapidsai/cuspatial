@@ -1,20 +1,91 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
+import operator
 import warnings
 
+import rmm
+from numba import cuda
+
 from cudf import DataFrame
+from cudf.core.buffer import acquire_spill_lock
 from cudf.core.column import as_column
 
 from cuspatial import GeoSeries
 from cuspatial._lib import spatial_join
 from cuspatial._lib.point_in_polygon import (
-    point_in_polygon as cpp_point_in_polygon,
+    byte_point_in_polygon as cpp_byte_point_in_polygon,
+    columnar_point_in_polygon as cpp_columnar_point_in_polygon,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_points,
     contains_only_polygons,
 )
+
+
+def columnar_point_in_polygon(points: GeoSeries, polygons: GeoSeries):
+    """Compute from a set of points and a set of polygons which points fall
+    within which polygons. Note that `polygons_(x,y)` must be specified as
+    closed polygons: the first and last coordinate of each polygon must be
+    the same.
+    Parameters
+    ----------
+    points : GeoSeries
+        A Series of points to test
+    polygons: GeoSeries
+        A Series of polygons to test
+    Examples
+    --------
+    Test whether 3 points fall within either of two polygons
+    >>> result = cuspatial.point_in_polygon(
+        GeoSeries([Point(0, 0), Point(-8, -8), Point(6, 6)]),
+        GeoSeries([
+            Polygon([(-10, -10), (5, -10), (5, 5), (-10, 5), (-10, -10)]),
+            Polygon([(0, 0), (10, 0), (10, 10), (0, 10), (0, 0)])
+        ], index=['nyc', 'hudson river'])
+    )
+    # The result of point_in_polygon is a DataFrame of Boolean
+    # values indicating whether each point (rows) falls within
+    # each polygon (columns).
+    >>> print(result)
+                nyc            hudson river
+    0          True          True
+    1          True         False
+    2         False          True
+    # Point 0: (0, 0) falls in both polygons
+    # Point 1: (-8, -8) falls in the first polygon
+    # Point 2: (6.0, 6.0) falls in the second polygon
+    Returns
+    -------
+    result : cudf.DataFrame
+        A DataFrame of boolean values indicating whether each point falls
+        within each polygon.
+    """
+
+    if len(polygons) == 0:
+        return DataFrame()
+
+    # The C++ API only supports single-polygon, reject if input has
+    # multipolygons
+    if len(polygons.polygons.part_offset) != len(
+        polygons.polygons.geometry_offset
+    ):
+        raise ValueError("GeoSeries cannot contain multipolygon.")
+
+    x = as_column(points.points.x)
+    y = as_column(points.points.y)
+
+    poly_offsets = as_column(polygons.polygons.part_offset)
+    ring_offsets = as_column(polygons.polygons.ring_offset)
+    px = as_column(polygons.polygons.x)
+    py = as_column(polygons.polygons.y)
+
+    result = cpp_columnar_point_in_polygon(
+        x, y, poly_offsets, ring_offsets, px, py
+    )
+    return DataFrame._from_data(
+        {name: result[i] for i, name in enumerate(polygons.index)}
+    )
 
 
 def point_in_polygon(points: GeoSeries, polygons: GeoSeries):
@@ -78,9 +149,20 @@ def point_in_polygon(points: GeoSeries, polygons: GeoSeries):
     px = as_column(polygons.polygons.x)
     py = as_column(polygons.polygons.y)
 
-    result = cpp_point_in_polygon(x, y, poly_offsets, ring_offsets, px, py)
+    result = cpp_byte_point_in_polygon(
+        x, y, poly_offsets, ring_offsets, px, py
+    )
+    result = DataFrame(
+        pip_bitmap_column_to_binary_array(
+            polygon_bitmap_column=result, width=len(poly_offsets) - 1
+        )
+    )
+    result.columns = polygons.index[::-1]
     return DataFrame._from_data(
-        {name: result[i] for i, name in enumerate(polygons.index)}
+        {
+            name: result[name].astype("bool")
+            for name in reversed(result.columns)
+        }
     )
 
 
@@ -303,3 +385,40 @@ def quadtree_point_to_nearest_linestring(
             linestring_points_y,
         )
     )
+
+
+@cuda.jit
+def binarize(in_col, out, width):
+    """Convert any positive integer to a binary array."""
+    i = cuda.grid(1)
+    if i < in_col.size:
+        n = in_col[i]
+        idx = width - 1
+
+        out[i, idx] = operator.mod(n, 2)
+        idx -= 1
+
+        while n > 1:
+            n = operator.rshift(n, 1)
+            out[i, idx] = operator.mod(n, 2)
+            idx -= 1
+
+
+def apply_binarize(in_col, width):
+    buf = rmm.DeviceBuffer(size=(in_col.size * width))
+    out = cuda.as_cuda_array(buf).view("int8").reshape((in_col.size, width))
+    if out.size > 0:
+        out[:] = 0
+        binarize.forall(out.size)(in_col, out, width)
+    return out
+
+
+def pip_bitmap_column_to_binary_array(polygon_bitmap_column, width):
+    """Convert the bitmap output of point_in_polygon
+    to an array of 0s and 1s.
+    """
+    with acquire_spill_lock():
+        binary_maps = apply_binarize(
+            polygon_bitmap_column.data_array_view(mode="read"), width
+        )
+    return binary_maps
