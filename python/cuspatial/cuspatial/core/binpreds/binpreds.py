@@ -15,6 +15,7 @@ from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
     contains_only_polygons,
+    has_multipolygons,
     has_same_geometry,
 )
 
@@ -136,7 +137,11 @@ class BinaryPredicate(ABC):
 class ContainsProperlyBinpred(BinaryPredicate):
     def __init__(self, lhs, rhs, align=True, mode="pairs"):
         super().__init__(lhs, rhs, align=align)
-        self.allpairs = mode == "allpairs"
+        if mode == "allpairs":
+            self.allpairs = True
+            self.align = False
+        else:
+            self.allpairs = False
 
     def preprocess(self, lhs, rhs):
         """Preprocess the input GeoSeries to ensure that they are of the
@@ -176,7 +181,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
                 "`.contains` can only be called with polygon series."
             )
         # call pip on the three subtypes on the right:
-        if self.allpairs:
+        if self.allpairs or has_multipolygons(self.lhs):
             point_result = contains_properly_quadtree(
                 points,
                 lhs,
@@ -195,7 +200,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
     def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate."""
-        if self.allpairs:
+        if self.allpairs or has_multipolygons(self.lhs):
 
             # This complex block of code is to create a dataframe that
             # contains the polygon index and the point index for each
@@ -216,6 +221,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
             geom_df = geometry_map.reset_index(drop=True)
             geom_df.index.name = "part_index"
             geom_df = geom_df.reset_index()
+
             # Replace the part index with the polygon index
             part_result = parts_df.merge(point_result, on="part_index")
             # Replace the polygon index with the row index
@@ -228,12 +234,50 @@ class ContainsProperlyBinpred(BinaryPredicate):
                     self.lhs.index, index=cp.arange(len(self.lhs.index))
                 )
             )
-            return result
+            if has_multipolygons(self.lhs) and not self.allpairs:
+                if len(result) == 0:
+                    return cudf.Series([False] * len(self.lhs))
+                final_result = cudf.Series([False] * len(point_indices))
+                grouped = result.groupby("polygon_index").count() == len(
+                    point_indices
+                )
+                final_result.loc[grouped.index] = True
+                return final_result
+            else:
+                return result
         else:
 
+            # Result can be:
+            # 1. A boolean series
+            # 2. A boolean dataframe represeting the relationship between
+            #    each point and each polygon.
+            #
+            # a. Produced by pairwise-point-in-polygon
+            # b. Produced by byte-limited-point-in-polygon
+            # c. Produced by column-limited-point-in-polygon
+            #
+            # Aligned or unaligned
+
             result = point_result
-            result["idx"] = point_indices
-            df_result = result
+            if has_multipolygons(self.lhs):
+                # Recombine the results of the pairwise pip
+                # based on the multipolygon index.
+                part_indices = self.lhs.polygons.part_offset.take(
+                    self.lhs.polygons.geometry_offset
+                )
+                part_offset = part_indices[1:] - part_indices[:-1]
+                part_map = (
+                    cudf.Series(cp.arange(len(part_offset)), name="part_index")
+                    .repeat(part_offset)
+                    .reset_index(drop=True)
+                )
+                result = point_result
+                result["idx"] = part_map
+                result = (
+                    result.groupby("idx").sum().sort_index()
+                    == result.groupby("idx").count().sort_index()
+                )
+
             # Discrete math recombination
             if (
                 contains_only_linestrings(self.rhs)
@@ -242,11 +286,13 @@ class ContainsProperlyBinpred(BinaryPredicate):
             ):
                 # process for completed linestrings, polygons, and multipoints.
                 # Not necessary for points.
+                result["idx"] = point_indices
                 df_result = (
                     result.groupby("idx").sum().sort_index()
                     == result.groupby("idx").count().sort_index()
                 )
-            final_result = df_result[0]
+                result = df_result
+            final_result = result[0]
             final_result.name = None
             return final_result
 

@@ -14,6 +14,7 @@ from cuspatial._lib.point_in_polygon import (
     columnar_point_in_polygon as cpp_columnar_point_in_polygon,
 )
 from cuspatial.utils.column_utils import normalize_point_columns
+from cuspatial.utils.join_utils import pip_bitmap_column_to_binary_array
 
 
 def contains_properly_quadtree(
@@ -140,7 +141,7 @@ def contains_properly_pairwise(
             poly_points_x,
             poly_points_y,
         )
-    elif len(poly_offsets_column < 32):
+    elif len(poly_offsets_column) < 32:
         pip_result = cpp_byte_point_in_polygon(
             test_points_x,
             test_points_y,
@@ -149,6 +150,19 @@ def contains_properly_pairwise(
             poly_points_x,
             poly_points_y,
         )
+        result = DataFrame(
+            pip_bitmap_column_to_binary_array(
+                polygon_bitmap_column=pip_result, width=len(poly_offsets) - 1
+            )
+        )
+        final_result = DataFrame._from_data(
+            {
+                name: result[name].astype("bool")
+                for name in reversed(result.columns)
+            }
+        )
+        final_result.columns = range(len(final_result.columns))
+        return final_result
     else:
         pip_result = cpp_columnar_point_in_polygon(
             test_points_x,

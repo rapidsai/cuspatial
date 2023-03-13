@@ -441,8 +441,11 @@ def test_multi_contains():
             Point(0.5, 0.25),
         ]
     )
+    gpdlhs = lhs.to_geopandas()
+    gpdrhs = rhs.to_geopandas()
     got = lhs.contains_properly(rhs).values_host
-    assert (got == [True, True, True, True, True, True, True, True]).all()
+    expected = gpdlhs.contains(gpdrhs).values
+    assert (got == expected).all()
 
 
 def test_allpairs_with_holes():
