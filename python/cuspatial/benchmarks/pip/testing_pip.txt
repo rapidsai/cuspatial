@@ -1,0 +1,23 @@
+
+cpp_point_in_polygon returns a list of columns
+return a single column and 
+transform it with cupy into a matrix
+create a dataframe from that if possiblek
+
+Benchmark byte point in polygon with 31 polygons
+Benchmark column length limited point in polygon with 31 polygons.
+
+bench_pip.py .                                                                                                        [100%]
+
+
+------------- benchmark 'pip benchmarking': 1 tests -------------
+Name (time in s)                             Mean  StdDev  Rounds
+-----------------------------------------------------------------
+bench_column_limited_contains_properly     1.9704  0.0000       1
+-----------------------------------------------------------------
+
+Max around 60m points and 31 polygons
+
+
+Memory test byte point in polygon with 31 polygons
+Benchmark column length limited point in polygon with 31 polygons.
