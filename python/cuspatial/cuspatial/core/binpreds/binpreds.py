@@ -234,6 +234,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
                     self.lhs.index, index=cp.arange(len(self.lhs.index))
                 )
             )
+            # Using allpairs for all multipolygon requests
             if has_multipolygons(self.lhs) and not self.allpairs:
                 if len(result) == 0:
                     return cudf.Series([False] * len(self.lhs))
