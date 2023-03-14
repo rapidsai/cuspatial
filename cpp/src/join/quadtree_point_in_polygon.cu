@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <cuspatial/experimental/detail/join/get_quad_and_local_point_indices.cuh>
 
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/spatial_join.hpp>
 
@@ -264,12 +265,12 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const& p
   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "a quadtree table must have 5 columns");
   CUSPATIAL_EXPECTS(point_indices.size() == point_x.size() && point_x.size() == point_y.size(),
                     "number of points must be the same for both x and y columns");
-  CUSPATIAL_EXPECTS(ring_offsets.size() >= poly_offsets.size(),
-                    "number of rings must be no less than number of polygons");
   CUSPATIAL_EXPECTS(poly_points_x.size() == poly_points_y.size(),
                     "numbers of vertices must be the same for both x and y columns");
-  CUSPATIAL_EXPECTS(poly_points_x.size() >= 3 * (ring_offsets.size() - 1),
-                    "all rings must have at least 3 vertices");
+
+  CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
+    poly_points_x.size(), poly_offsets.size(), ring_offsets.size());
+
   CUSPATIAL_EXPECTS(poly_points_x.type() == poly_points_y.type(),
                     "polygon columns must have the same data type");
   CUSPATIAL_EXPECTS(point_x.type() == point_y.type(), "point columns must have the same data type");

@@ -17,14 +17,6 @@
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
 
-# find gdal
-rapids_find_package(
-    GDAL REQUIRED
-    GLOBAL_TARGETS GDAL::GDAL
-    BUILD_EXPORT_SET cuspatial-exports
-    INSTALL_EXPORT_SET cuspatial-exports
-)
-
 function(ConfigureTest CMAKE_TEST_NAME)
     add_executable(${CMAKE_TEST_NAME} ${ARGN})
     target_compile_options(${CMAKE_TEST_NAME}
@@ -38,7 +30,7 @@ function(ConfigureTest CMAKE_TEST_NAME)
         PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gtests>"
                    INSTALL_RPATH "\$ORIGIN/../../../lib"
     )
-    target_link_libraries(${CMAKE_TEST_NAME} GDAL::GDAL GTest::gtest_main GTest::gmock_main cudf::cudftestutil cuspatial)
+    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main cudf::cudftestutil cuspatial)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
     install(
         TARGETS ${CMAKE_TEST_NAME}
@@ -80,10 +72,10 @@ ConfigureTest(POINT_QUADTREE_TEST
     indexing/point_quadtree_test.cu)
 
 ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST
-    spatial/linestring_bounding_boxes_test.cu)
+    spatial/linestring_bounding_boxes_test.cpp)
 
 ConfigureTest(POLYGON_BOUNDING_BOXES_TEST
-    spatial/polygon_bounding_boxes_test.cu)
+    spatial/polygon_bounding_boxes_test.cpp)
 
 ConfigureTest(POINT_DISTANCE_TEST
     spatial/point_distance_test.cpp)
