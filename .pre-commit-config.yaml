@@ -40,11 +40,8 @@ repos:
         rev: v2.2.4
         hooks:
               - id: codespell
-                exclude: |
-                  (?x)^(
-                    pyproject.toml|
-                    data/
-                  )
+                args: ["--config pyproject.toml"]
+                additional_dependencies: ["tomli"]
 
 default_language_version:
       python: python3
