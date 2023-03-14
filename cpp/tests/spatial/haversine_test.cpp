@@ -35,7 +35,7 @@ template <typename T>
 struct HaversineTest : public BaseFixture {
 };
 
-// float and double are logically the same but would require seperate tests due to precision.
+// float and double are logically the same but would require separate tests due to precision.
 using TestTypes = Types<double>;
 TYPED_TEST_CASE(HaversineTest, TestTypes);
 

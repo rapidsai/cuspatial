@@ -80,7 +80,7 @@ namespace intersection_functors {
  *  `GeometryCollectionOffset[reduced_key[0]] == 1`.
  *  `reduced_values[0] == 0` geometries should be subtracted from offset.
  *
- *  `i == 4`, `j == 1`, the last non-empty list that preceds list 4 ends at
+ *  `i == 4`, `j == 1`, the last non-empty list that precedes list 4 ends at
  *  `GeometryCollectionOffset[reduced_key[1]] == 3`.
  *  `reduced_values[1] == 2` geometries should be subtracted from offset.
  *
@@ -116,7 +116,7 @@ struct offsets_update_functor {
       reduced_keys_begin,
       thrust::prev(thrust::upper_bound(thrust::seq, reduced_keys_begin, reduced_keys_end, i)));
     // j < 0 happens when all groups that precedes `i` don't contain any geometry
-    // offset must be 0 and shouldn't be subracted.
+    // offset must be 0 and shouldn't be subtracted.
     if (j < 0) return offset;
 
     return offset - reduced_values_begin[j];
