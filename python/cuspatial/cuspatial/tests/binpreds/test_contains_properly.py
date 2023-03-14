@@ -94,7 +94,6 @@ def test_one_polygon_with_hole_one_linestring_crossing_it(
             True,
         ],
         [Point([3.33, 1.11]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
-        [Point([3.3, 1.1]), Polygon([[6, 2], [3, 1], [3, 4], [6, 2]]), True],
     ],
 )
 def test_float_precision_limits_failures(point, polygon, expects):
@@ -369,8 +368,8 @@ def test_self_contains(object):
     object = cuspatial.from_geopandas(gpdobject)
     got = object.contains_properly(object).values_host
     expected = gpdobject.contains(gpdobject).values
-    np.testing.assert_arrays_equal(got, np.array([False]))
-    np.testing.assert_arrays_equal(expected, np.array([True]))
+    np.testing.assert_array_equal(got, np.array([False]))
+    np.testing.assert_array_equal(expected, np.array([True]))
 
 
 def test_complex_input():
@@ -442,8 +441,11 @@ def test_multi_contains():
             Point(0.5, 0.25),
         ]
     )
+    gpdlhs = lhs.to_geopandas()
+    gpdrhs = rhs.to_geopandas()
+    expected = gpdlhs.contains(gpdrhs).values
     got = lhs.contains_properly(rhs).values_host
-    assert got == [True, True, True, True, True, True, True, True]
+    np.testing.assert_array_equal(got, expected)
 
 
 def test_allpairs_with_holes():

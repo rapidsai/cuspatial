@@ -171,6 +171,11 @@ class ContainsProperlyBinpred(BinaryPredicate):
         final_rhs = GeoSeries(GeoColumn._from_points_xy(xy_points._column))
         return (lhs, final_rhs, point_indices)
 
+    def _should_use_quadtree(self):
+        return (
+            len(self.lhs) >= 32 or has_multipolygons(self.lhs) or self.allpairs
+        )
+
     def _op(self, lhs, points):
         """Compute the contains_properly relationship between two GeoSeries.
         A feature A contains another feature B if no points of B lie in the
@@ -180,106 +185,118 @@ class ContainsProperlyBinpred(BinaryPredicate):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
             )
-        if len(self.lhs) < 32:
-            point_result = contains_properly_byte_limited(points, lhs)
-        else:
+        if self._should_use_quadtree():
             point_result = contains_properly_quadtree(
                 points,
                 lhs,
             )
+        else:
+            point_result = contains_properly_byte_limited(points, lhs)
         return point_result
+
+    def _postprocess_quadtree_result(self, point_indices, point_result):
+        # If there are more than 31 polygons, the point indices are
+        # returned as a dataframe with two columns: part_index and
+        # point_index.
+
+        # This complex block of code is to create a dataframe that
+        # contains the polygon index and the point index for each
+        # point in the polygon. Quadtree pip returns the _part_index_
+        # of the polygon, not the polygon index.
+        rings_to_parts = cp.array(self.lhs.polygons.part_offset)
+        part_sizes = rings_to_parts[1:] - rings_to_parts[:-1]
+        parts_map = cudf.Series(
+            cp.arange(len(part_sizes)), name="part_index"
+        ).repeat(part_sizes)
+        parts_df = parts_map.reset_index(drop=True).reset_index()
+        # Mapping of parts to polygons
+        parts_to_geoms = cp.array(self.lhs.polygons.geometry_offset)
+        geometry_sizes = parts_to_geoms[1:] - parts_to_geoms[:-1]
+        geometry_map = cudf.Series(
+            cp.arange(len(geometry_sizes)), name="polygon_index"
+        ).repeat(geometry_sizes)
+        geom_df = geometry_map.reset_index(drop=True)
+        geom_df.index.name = "part_index"
+        geom_df = geom_df.reset_index()
+
+        # Replace the part index with the polygon index
+        part_result = parts_df.merge(point_result, on="part_index")
+        # Replace the polygon index with the row index
+        result = geom_df.merge(part_result, on="part_index")
+        result = result[["polygon_index", "point_index"]]
+        result = result.drop_duplicates()
+        # Replace the polygon index with the original index
+        result["polygon_index"] = result["polygon_index"].replace(
+            cudf.Series(self.lhs.index, index=cp.arange(len(self.lhs.index)))
+        )
+        # Using allpairs for all requests with more than 31 polygons.
+        if not self.allpairs:
+            if len(result) == 0:
+                return cudf.Series([False] * len(self.lhs))
+            final_result = cudf.Series([False] * len(point_indices))
+            grouped = result.groupby("polygon_index").count() == len(
+                point_indices
+            )
+            final_result.loc[grouped.index] = True
+            return final_result
+        else:
+            return result
+
+    def _postprocess_brute_force_result(self, point_indices, point_result):
+        # If there are 31 or fewer polygons in the input, the result
+        # is a dataframe with one row per point and one column per
+        # polygon.
+
+        # Result can be:
+        # A Dataframe of booleans with n_points rows and up to 31 columns.
+        result = point_result.copy()
+        # Discrete math recombination
+        if (
+            contains_only_linestrings(self.rhs)
+            or contains_only_polygons(self.rhs)
+            or contains_only_multipoints(self.rhs)
+        ):
+            # process for completed linestrings, polygons, and multipoints.
+            # Not necessary for points.
+            result["idx"] = point_indices
+            df_result = (
+                result.groupby("idx").sum().sort_index()
+                == result.groupby("idx").count().sort_index()
+            )
+            result = df_result
+
+        final_result = cudf.Series([False] * len(self.lhs))
+
+        if len(result.columns) > 1:
+            final_result[result.index] = cp.diag(result.values)
+        else:
+            final_result[result.index] = result[result.columns[0]]
+        final_result.name = None
+        return final_result
 
     def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
-        correct type for the predicate."""
-        if len(self.lhs) >= 32:
+        correct type for the predicate.
 
-            # This complex block of code is to create a dataframe that
-            # contains the polygon index and the point index for each
-            # point in the polygon. Quadtree pip returns the _part_index_
-            # of the polygon, not the polygon index.
-            rings_to_parts = cp.array(self.lhs.polygons.part_offset)
-            part_sizes = rings_to_parts[1:] - rings_to_parts[:-1]
-            parts_map = cudf.Series(
-                cp.arange(len(part_sizes)), name="part_index"
-            ).repeat(part_sizes)
-            parts_df = parts_map.reset_index(drop=True).reset_index()
-            # Mapping of parts to polygons
-            parts_to_geoms = cp.array(self.lhs.polygons.geometry_offset)
-            geometry_sizes = parts_to_geoms[1:] - parts_to_geoms[:-1]
-            geometry_map = cudf.Series(
-                cp.arange(len(geometry_sizes)), name="polygon_index"
-            ).repeat(geometry_sizes)
-            geom_df = geometry_map.reset_index(drop=True)
-            geom_df.index.name = "part_index"
-            geom_df = geom_df.reset_index()
+        Postprocess for contains_properly has to handle multiple input and
+        output configurations.
 
-            # Replace the part index with the polygon index
-            part_result = parts_df.merge(point_result, on="part_index")
-            # Replace the polygon index with the row index
-            result = geom_df.merge(part_result, on="part_index")
-            result = result[["polygon_index", "point_index"]]
-            result = result.drop_duplicates()
-            # Replace the polygon index with the original index
-            result["polygon_index"] = result["polygon_index"].replace(
-                cudf.Series(
-                    self.lhs.index, index=cp.arange(len(self.lhs.index))
-                )
+        The input can be a single polygon, a single multipolygon, or a
+        GeoSeries containing a mix of polygons and multipolygons.
+
+        The input to postprocess is `point_indices`, which can be either a
+        cudf.DataFrame with one row per point and one column per polygon or
+        a cudf.DataFrame containing the point index and the part index for
+        each point in the polygon.
+        """
+        if self._should_use_quadtree():
+            return self._postprocess_quadtree_result(
+                point_indices, point_result
             )
-            # Using allpairs for all requests with more than 31 polygons.
-            if not self.allpairs:
-                if len(result) == 0:
-                    return cudf.Series([False] * len(self.lhs))
-                final_result = cudf.Series([False] * len(point_indices))
-                grouped = result.groupby("polygon_index").count() == len(
-                    point_indices
-                )
-                final_result.loc[grouped.index] = True
-                return final_result
-            else:
-                return result
         else:
-
-            # Result can be:
-            # A Dataframe of booleans with n_points rows and up to 31 columns.
-
-            result = point_result
-            if has_multipolygons(self.lhs):
-                # Recombine the results of the pairwise pip
-                # based on the multipolygon index.
-                part_indices = self.lhs.polygons.part_offset.take(
-                    self.lhs.polygons.geometry_offset
-                )
-                part_offset = part_indices[1:] - part_indices[:-1]
-                part_map = (
-                    cudf.Series(cp.arange(len(part_offset)), name="part_index")
-                    .repeat(part_offset)
-                    .reset_index(drop=True)
-                )
-                result = point_result
-                result["idx"] = part_map
-                result = (
-                    result.groupby("idx").sum().sort_index()
-                    == result.groupby("idx").count().sort_index()
-                )
-
-            # Discrete math recombination
-            if (
-                contains_only_linestrings(self.rhs)
-                or contains_only_polygons(self.rhs)
-                or contains_only_multipoints(self.rhs)
-            ):
-                # process for completed linestrings, polygons, and multipoints.
-                # Not necessary for points.
-                result["idx"] = point_indices
-                df_result = (
-                    result.groupby("idx").sum().sort_index()
-                    == result.groupby("idx").count().sort_index()
-                )
-                result = df_result
-            final_result = result[0]
-            final_result.name = None
-            return final_result
+            return self._postprocess_brute_force_result(
+                point_indices, point_result
+            )
 
 
 class OverlapsBinpred(ContainsProperlyBinpred):
