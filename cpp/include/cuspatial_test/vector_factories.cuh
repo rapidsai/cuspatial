@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,13 @@
 
 namespace cuspatial {
 namespace test {
+
+template <typename Range>
+auto make_device_vector(Range rng)
+{
+  using T = typename Range::value_type;
+  return rmm::device_vector<T>(rng.begin(), rng.end());
+}
 
 template <typename T>
 auto make_device_vector(std::initializer_list<T> inl)
@@ -96,11 +103,11 @@ class multipolygon_array {
   CoordinateArray _coordinate_offsets_array;
 };
 
-template <typename T>
-auto make_multipolygon_array(std::initializer_list<std::size_t> geometry_inl,
-                             std::initializer_list<std::size_t> part_inl,
-                             std::initializer_list<std::size_t> ring_inl,
-                             std::initializer_list<vec_2d<T>> coord_inl)
+template <typename IndexRange, typename CoordRange>
+auto make_multipolygon_array(IndexRange geometry_inl,
+                             IndexRange part_inl,
+                             IndexRange ring_inl,
+                             CoordRange coord_inl)
 {
   return multipolygon_array{make_device_vector(geometry_inl),
                             make_device_vector(part_inl),

@@ -101,11 +101,10 @@ class multipolygon_range {
   /// Return the iterator to the one past the last multipolygon in the range.
   CUSPATIAL_HOST_DEVICE auto end() { return multipolygon_end(); }
 
-  /// Given the index of a segment, return the geometry (multipolygon) index where the
-  /// segment locates.
-  /// Segment index is the index to the starting point of the segment. If the
-  /// index is the last point of the ring, then it is not a valid index.
-  /// This function returns multipolygon_range::INVALID_INDEX if the index is invalid.
+  /// Given the index of a segment, return the index of the geometry (multipolygon) that contains
+  /// the segment. Segment index is the index to the starting point of the segment. If the index is
+  /// the last point of the ring, then it is not a valid index. This function returns
+  /// multipolygon_range::INVALID_INDEX if the index is invalid.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto geometry_idx_from_segment_idx(IndexType segment_idx);
 

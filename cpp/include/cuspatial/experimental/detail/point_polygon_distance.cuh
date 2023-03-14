@@ -67,6 +67,7 @@ struct point_in_multipolygon_test_functor {
     auto geometry_idx      = multipoints.geometry_idx_from_point_idx(pidx);
 
     auto const& polys = multipolygons[geometry_idx];
+    // TODO: benchmark against range based for loop
     bool intersects =
       thrust::any_of(thrust::seq, polys.begin(), polys.end(), [&point] __device__(auto poly) {
         return is_point_in_polygon(point, poly);
@@ -96,14 +97,13 @@ void __global__ pairwise_point_polygon_distance_kernel(MultiPointRange multipoin
     if (geometry_idx == MultiPolygonRange::INVALID_INDEX) continue;
 
     if (intersects[geometry_idx]) {
-      // Leading thread of the pair writes to the output
-      if (multipolygons.is_first_point_of_multipolygon(idx, geometry_idx))
-        distances[geometry_idx] = T{0.0};
+      distances[geometry_idx] = T{0.0};
       continue;
     }
 
+    auto [a, b] = multipolygons.get_segment(idx);
+
     T dist_squared = std::numeric_limits<T>::max();
-    auto [a, b]    = multipolygons.get_segment(idx);
     for (vec_2d<T> point : multipoints[geometry_idx]) {
       dist_squared = min(dist_squared, point_to_segment_distance_squared(point, a, b));
     }

@@ -17,7 +17,9 @@
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
+#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/point_polygon_distance.cuh>
+#include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -28,6 +30,8 @@
 
 using namespace cuspatial;
 using namespace cuspatial::test;
+
+double constexpr PI = 3.14159265358979323846;
 
 template <typename T>
 struct PairwisePointPolygonDistanceTest : public ::testing::Test {
@@ -41,11 +45,28 @@ struct PairwisePointPolygonDistanceTest : public ::testing::Test {
                   std::initializer_list<vec_2d<T>> multipolygon_coordinates,
                   std::initializer_list<T> expected)
   {
+    std::vector<vec_2d<T>> multipolygon_coordinates_vec(multipolygon_coordinates);
+    return this->run_single(multipoints,
+                            multipolygon_geometry_offsets,
+                            multipolygon_part_offsets,
+                            multipolygon_ring_offsets,
+                            multipolygon_coordinates_vec,
+                            expected);
+  }
+
+  void run_single(std::initializer_list<std::initializer_list<vec_2d<T>>> multipoints,
+                  std::initializer_list<std::size_t> multipolygon_geometry_offsets,
+                  std::initializer_list<std::size_t> multipolygon_part_offsets,
+                  std::initializer_list<std::size_t> multipolygon_ring_offsets,
+                  std::vector<vec_2d<T>> const& multipolygon_coordinates,
+                  std::initializer_list<T> expected)
+  {
     auto d_multipoints   = make_multipoints_array(multipoints);
-    auto d_multipolygons = make_multipolygon_array(multipolygon_geometry_offsets,
-                                                   multipolygon_part_offsets,
-                                                   multipolygon_ring_offsets,
-                                                   multipolygon_coordinates);
+    auto d_multipolygons = make_multipolygon_array(
+      range{multipolygon_geometry_offsets.begin(), multipolygon_geometry_offsets.end()},
+      range{multipolygon_part_offsets.begin(), multipolygon_part_offsets.end()},
+      range{multipolygon_ring_offsets.begin(), multipolygon_ring_offsets.end()},
+      range{multipolygon_coordinates.begin(), multipolygon_coordinates.end()});
 
     auto got = rmm::device_uvector<T>(d_multipoints.size(), stream());
 
@@ -480,4 +501,25 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairMultiPointOnePolygon2)
     {0, 5, 9},
     {P{-1, -1}, P{1, -1}, P{1, 1}, P{-1, 1}, P{-1, -1}, P{-1, 1}, P{1, 1}, P{0, -1}, P{-1, 1}},
     {1.0, 0.0});
+}
+
+// Large distance test
+TYPED_TEST(PairwisePointPolygonDistanceTest, DistanceTestManyVertex)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+
+  std::size_t num_vertex = 2000;
+  P centroid{0.0, 0.0};
+  T radius = 1.0;
+
+  std::vector<P> polygon;
+  auto it = detail::make_counting_transform_iterator(0, [](auto i) {
+    T theta = i / (2 * PI);
+    return P{cos(theta), sin(theta)};
+  });
+  std::copy(it, it + num_vertex, std::back_inserter(polygon));
+
+  CUSPATIAL_RUN_TEST(
+    this->run_single, {{P{0.0, 0.0}}}, {0, 1}, {0, 1}, {0, num_vertex + 1}, polygon, {0.0});
 }

@@ -51,8 +51,6 @@ class multipoint_range {
   using point_t       = iterator_value_type<point_it_t>;
   using element_t     = iterator_vec_base_type<point_it_t>;
 
-  int32_t INVALID_IDX = -1;
-
   /**
    * @brief Construct a new multipoint array object
    */
