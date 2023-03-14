@@ -62,3 +62,7 @@ def contains_properly_quadtree(points, polygons):
     polygons_and_points["part_index"] = polygons_and_points["polygon_index"]
     polygons_and_points.drop("polygon_index", axis=1, inplace=True)
     return polygons_and_points
+
+
+def contains_properly_byte_limited(points, polygons):
+    pass
