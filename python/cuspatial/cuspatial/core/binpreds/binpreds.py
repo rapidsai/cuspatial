@@ -15,7 +15,6 @@ from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
     contains_only_polygons,
-    has_multipolygons,
     has_same_geometry,
 )
 
@@ -199,7 +198,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
     def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate."""
-        if self.allpairs or has_multipolygons(self.lhs):
+        if len(self.lhs) >= 32:
 
             # This complex block of code is to create a dataframe that
             # contains the polygon index and the point index for each
@@ -233,8 +232,8 @@ class ContainsProperlyBinpred(BinaryPredicate):
                     self.lhs.index, index=cp.arange(len(self.lhs.index))
                 )
             )
-            # Using allpairs for all multipolygon requests
-            if has_multipolygons(self.lhs) and not self.allpairs:
+            # Using allpairs for all requests with more than 31 polygons.
+            if not self.allpairs:
                 if len(result) == 0:
                     return cudf.Series([False] * len(self.lhs))
                 final_result = cudf.Series([False] * len(point_indices))
@@ -248,15 +247,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
         else:
 
             # Result can be:
-            # 1. A boolean series
-            # 2. A boolean dataframe represeting the relationship between
-            #    each point and each polygon.
-            #
-            # a. Produced by pairwise-point-in-polygon
-            # b. Produced by byte-limited-point-in-polygon
-            # c. Produced by column-limited-point-in-polygon
-            #
-            # Aligned or unaligned
+            # A Dataframe of booleans with n_points rows and up to 31 columns.
 
             result = point_result
             if has_multipolygons(self.lhs):

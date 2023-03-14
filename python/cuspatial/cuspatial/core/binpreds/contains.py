@@ -1,12 +1,16 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 from math import ceil, sqrt
 
-from cudf import Series
+from cudf import DataFrame, Series
+from cudf.core.column import NumericalColumn, as_column
 
 import cuspatial
-from cuspatial._lib.spatial_join import cpp_byte_point_in_polygon
-
+from cuspatial._lib.point_in_polygon import (
+    point_in_polygon as cpp_byte_point_in_polygon,
+)
+from cuspatial.utils.column_utils import normalize_point_columns
+from cuspatial.utils.join_utils import pip_bitmap_column_to_binary_array
 
 def contains_properly_quadtree(points, polygons):
     """Compute from a series of points and a series of polygons which points
