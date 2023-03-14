@@ -369,8 +369,8 @@ def test_self_contains(object):
     object = cuspatial.from_geopandas(gpdobject)
     got = object.contains_properly(object).values_host
     expected = gpdobject.contains(gpdobject).values
-    assert not got
-    assert expected
+    np.testing.assert_arrays_equal(got, np.array([False]))
+    np.testing.assert_arrays_equal(expected, np.array([True]))
 
 
 def test_complex_input():
