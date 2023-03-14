@@ -27,6 +27,7 @@ namespace cuspatial {
  * @tparam MultiPointRange An instance of template type `MultiPointRange`
  * @tparam MultiPolygonRange An instance of template type `MultiPolygonRange`
  * @tparam OutputIt iterator type for output array. Must meet the requirements of [LRAI](LinkLRAI).
+ * Must be an iterator to type convertible from floating points.
  *
  * @param multipoints Range of multipoints, one per computed distance pair.
  * @param multipolygons Range of multilinestrings, one per computed distance pair.

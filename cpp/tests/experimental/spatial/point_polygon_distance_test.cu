@@ -62,6 +62,7 @@ using TestTypes = ::testing::Types<float, double>;
 
 TYPED_TEST_CASE(PairwisePointPolygonDistanceTest, TestTypes);
 
+// Inputs are empty columns
 TYPED_TEST(PairwisePointPolygonDistanceTest, ZeroPairs)
 {
   using T = TypeParam;
@@ -76,6 +77,9 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, ZeroPairs)
                      std::initializer_list<T>{});
 }
 
+// Point in 1 ring polygon.
+// POINT (0 0)
+// POLYGON ((-1 -1, 1, -1, 1 1, -1 1, -1 -1))
 TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairOnePolygonOneRing)
 {
   using T = TypeParam;
@@ -90,6 +94,9 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairOnePolygonOneRing)
                      {0.0});
 }
 
+// Point outside 1 ring polygon.
+// POINT (0 2)
+// POLYGON ((-1 -1, 1 -1, 1 1, -1 1, -1 -1))
 TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairOnePolygonOneRing2)
 {
   using T = TypeParam;
@@ -104,6 +111,9 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairOnePolygonOneRing2)
                      {1.0});
 }
 
+// Point in the hole. Polygon has two rings. Point in the hole.
+// POINT (0 0)
+// POLYGON ((-2 -2, 2 -2, 2 2, -2 2, -2 -2), (-1 -1, 1 -1, 1 1, -1 1, -1 -1))
 TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairOnePolygonTwoRings)
 {
   using T = TypeParam;
@@ -129,6 +139,9 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairOnePolygonTwoRings)
                      {1.0});
 }
 
+// Point in polygon. Polygon has two rings. Point outside of polygon.
+// POINT (1.5 0)
+// POLYGON ((-2 -2, 2 -2, 2 2, -2 2, -2 -2), (-1 -1, 1 -1, 1 1, -1 1, -1 -1))
 TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairOnePolygonTwoRings2)
 {
   using T = TypeParam;
@@ -154,6 +167,9 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairOnePolygonTwoRings2)
                      {0.0});
 }
 
+// Point outside of polygon. Polygon has two rings. Point outside of polygon.
+// POINT (3 0)
+// POLYGON ((-2 -2, 2 -2, 2 2, -2 2, -2 -2), (-1 -1, 1 -1, 1 1, -1 1, -1 -1))
 TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairOnePolygonTwoRings3)
 {
   using T = TypeParam;
@@ -179,6 +195,9 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairOnePolygonTwoRings3)
                      {1.0});
 }
 
+// 1 Multipolygon with 2 Polygons. Point intersects with second polygon
+// POINT (1 1)
+// MULTIPOLYGON (((-2 -2, 0 -2, 0 0, -2 0, -2 -2)), ((0 0, 2 0, 2 2, 0 2, 0 0)))
 TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairTwoPolygonOneRing)
 {
   using T = TypeParam;
@@ -204,6 +223,9 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairTwoPolygonOneRing)
                      {0.0});
 }
 
+// 1 Multipolygon with 2 Polygons. Point intersects with first polygon.
+// POINT (-1 -1)
+// MULTIPOLYGON (((-2 -2, 0 -2, 0 0, -2 0, -2 -2)), ((0 0, 2 0, 2 2, 0 2, 0 0)))
 TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairTwoPolygonOneRing2)
 {
   using T = TypeParam;
@@ -229,6 +251,9 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairTwoPolygonOneRing2)
                      {0.0});
 }
 
+// 1 Multipolygon with 2 Polygons. Point does not intersect. Closer to first polygon.
+// POINT (-1 0.5)
+// MULTIPOLYGON (((-2 -2, 0 -2, 0 0, -2 0, -2 -2)), ((0 0, 2 0, 2 2, 0 2, 0 0)))
 TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairTwoPolygonOneRing3)
 {
   using T = TypeParam;
@@ -254,6 +279,9 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairTwoPolygonOneRing3)
                      {0.5});
 }
 
+// 1 Multipolygon with 2 Polygons. Point does not intersect. Closer to second polygon.
+// POINT (-0.3, 1)
+// MULTIPOLYGON (((-2 -2, 0 -2, 0 0, -2 0, -2 -2)), ((0 0, 2 0, 2 2, 0 2, 0 0)))
 TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairTwoPolygonOneRing4)
 {
   using T = TypeParam;
@@ -279,6 +307,12 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairTwoPolygonOneRing4)
                      {0.3});
 }
 
+// Two Pairs.
+// POINT (-0.6 -0.6)
+// POLYGON ((-1 -1, 0 0, 0 1, -1 -1))
+//
+// POINT (0 0)
+// POLYGON ((1 1, 1 0, 2 2, 1 1))
 TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairOnePolygonOneRing)
 {
   using T = TypeParam;
@@ -302,6 +336,12 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairOnePolygonOneRing)
                      {0.0, 1.0});
 }
 
+// Two Pairs, each polygon has two rings.
+// POINT (2.5, 3)
+// POLYGON ((0 0, 3 0, 3 3, 0 3, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))
+//
+// POINT (-1.75, -1.5)
+// POLYGON ((0 0, -3 0, -3 -3, 0 0), (-1 -1, -2 -1, -2 -2, -1 -1))
 TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairTwoPolygonTwoRing)
 {
   using T = TypeParam;
@@ -336,6 +376,19 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairTwoPolygonTwoRing)
                      {0.0, 0.17677669529663687});
 }
 
+// Three Polygons
+// POINT (1 1)
+// POLYGON ((0 1, -1 -1, 1 -1, 0 1), (0 0.5, 0.5 -0.5, -0.5 -0.5, 0 0.5))
+//
+// POINT (2 2)
+// POLYGON ((1 1, 1 2, 2 1, 1 1))
+//
+// POINT (1.5 0)
+// POLYGON (
+//    (-3 -3, 3 -3, 3 3, -3 3, -3 -3),
+//    (-2 -2, -1 -2, -1 2, -2 2, -2 -2),
+//    (2 2, 2 -2, 1 -2, 1 2, 2 2)
+// )
 TYPED_TEST(PairwisePointPolygonDistanceTest, ThreePolygons)
 {
   using T = TypeParam;
@@ -383,6 +436,7 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, ThreePolygons)
                      {0.894427190999916, 0.7071067811865476, 0.5});
 }
 
+// Multipoint tests: 1 multipoint - 1 polygon. No Intersection.
 TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairMultiPointOnePolygon)
 {
   using T = TypeParam;
@@ -397,6 +451,7 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairMultiPointOnePolygon)
                      {1.3416407864998738});
 }
 
+// Multipoint tests: 1 multipoint - 1 polygon. Intesects.
 TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairMultiPointOnePolygon2)
 {
   using T = TypeParam;
@@ -411,6 +466,7 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairMultiPointOnePolygon2)
                      {0.0});
 }
 
+// Multipoint tests: 2 multipoints - 2 polygons.
 TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairMultiPointOnePolygon2)
 {
   using T = TypeParam;
@@ -418,10 +474,10 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairMultiPointOnePolygon2)
 
   CUSPATIAL_RUN_TEST(
     this->run_single,
-    {{P{0, 2}, P{0, 0}}, {P{1, 1}, P{-1, -1}}},
+    {{P{0, 2}, P{3, 0}}, {P{1, 1}, P{-1, -1}}},
     {0, 1, 2},
     {0, 1, 2},
     {0, 5, 9},
     {P{-1, -1}, P{1, -1}, P{1, 1}, P{-1, 1}, P{-1, -1}, P{-1, 1}, P{1, 1}, P{0, -1}, P{-1, 1}},
-    {0.0, 0.0});
+    {1.0, 0.0});
 }

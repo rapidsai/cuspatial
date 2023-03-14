@@ -73,10 +73,10 @@ class multipolygon_array {
   {
   }
 
-  /// Return the number of multilinestrings
+  /// Return the number of multipolygons
   auto size() { return _geometry_offsets_array.size() - 1; }
 
-  /// Return range object of the multilinestring array
+  /// Return range object of the multipolygon array
   auto range()
   {
     return multipolygon_range(_geometry_offsets_array.begin(),

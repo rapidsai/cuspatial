@@ -24,6 +24,7 @@ namespace cuspatial {
  * @brief Represent a reference to a multipolygon stored in a structure of arrays.
  *
  * @tparam PartIterator type of iterator to the part offset array.
+ * @tparam RingIterator type of iterator to the ring offset array.
  * @tparam VecIterator type of iterator to the underlying point array.
  */
 template <typename PartIterator, typename RingIterator, typename VecIterator>
