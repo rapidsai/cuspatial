@@ -346,3 +346,8 @@ def mask_factory(request):
         return mask
 
     return factory
+
+
+@pytest.fixture
+def host_dataframe():
+    return gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
