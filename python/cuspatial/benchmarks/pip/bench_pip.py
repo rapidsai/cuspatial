@@ -25,7 +25,10 @@ with contains_properly
     disable_gc=False,
     warmup=False,
 )
-@pytest.mark.parametrize("rhs_size", [31, 30_000, 1_000_000, 69_000_000])
+@pytest.mark.parametrize(
+    "rhs_size",
+    [31, 30_000, 1_000_000, 10_000_000, 20_000_000, 30_000_000, 69_000_000],
+)
 @pytest.mark.parametrize("lhs_size", [31])
 def bench_contains_properly_low_poly(
     benchmark,
@@ -49,7 +52,7 @@ def bench_contains_properly_low_poly(
 )
 @pytest.mark.parametrize(
     "rhs_size",
-    [31, 30_000, 1_000_000, 10_000_000, 20_000_000, 30_000_000, 69_000_000],
+    [31, 30_000, 1_000_000, 10_000_000, 20_000_000, 30_000_000, 62_000_000],
 )
 @pytest.mark.parametrize("lhs_size", [31])
 def bench_contains_properly_low_poly_allpairs(
