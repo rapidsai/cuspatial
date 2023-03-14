@@ -33,7 +33,7 @@ namespace cuspatial {
  * provide implicit device-host transfer. It is up to developer's prudence not to access device
  * memory from host or the reverse.
  *
- * @tparam Type of both start and end iterator. IteratorType must statisfy
+ * @tparam Type of both start and end iterator. IteratorType must satisfy
  * LegacyRandomAccessIterator[LinkLRAI].
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
