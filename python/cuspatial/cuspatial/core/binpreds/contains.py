@@ -5,6 +5,7 @@ from math import ceil, sqrt
 from cudf import Series
 
 import cuspatial
+from cuspatial._lib.spatial_join import cpp_byte_point_in_polygon
 
 
 def contains_properly_quadtree(points, polygons):
@@ -65,4 +66,45 @@ def contains_properly_quadtree(points, polygons):
 
 
 def contains_properly_byte_limited(points, polygons):
-    pass
+    """Compute from a series of points and a series of polygons which points
+    are properly contained within the corresponding polygon. Polygon A contains
+    Point B properly if B intersects the interior of A but not the boundary (or
+    exterior).
+
+    Note that polygons must be closed: the first and last vertex of each
+    polygon must be the same.
+
+    Parameters
+    ----------
+    points : GeoSeries
+        A GeoSeries of points.
+    polygons : GeoSeries
+        A GeoSeries of polygons.
+
+    Returns
+    -------
+    result : cudf.DataFrame
+        A DataFrame of boolean values indicating whether each point falls
+        within its corresponding polygon.
+    """
+    pip_result = cpp_byte_point_in_polygon(
+        points.points.x,
+        points.points.y,
+        polygons.polygons.part_offset,
+        polygons.polygons.ring_offset,
+        polyons.polygons.x,
+        polygons.polygons.y,
+    )
+    result = DataFrame(
+        pip_bitmap_column_to_binary_array(
+            polygon_bitmap_column=pip_result, width=len(poly_offsets) - 1
+        )
+    )
+    final_result = DataFrame._from_data(
+        {
+            name: result[name].astype("bool")
+            for name in reversed(result.columns)
+        }
+    )
+    final_result.columns = range(len(final_result.columns))
+    return final_result
