@@ -25,6 +25,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
+#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -33,6 +34,7 @@
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/logical.h>
 #include <thrust/reduce.h>
 #include <thrust/tabulate.h>
 
@@ -48,6 +50,8 @@ namespace detail {
  */
 template <typename MultiPointRange, typename MultiPolygonRange>
 struct point_in_multipolygon_test_functor {
+  using T = typename MultiPointRange::element_t;
+
   MultiPointRange multipoints;
   MultiPolygonRange multipolygons;
 
@@ -59,13 +63,15 @@ struct point_in_multipolygon_test_functor {
   template <typename IndexType>
   uint8_t __device__ operator()(IndexType pidx)
   {
-    auto point        = thrust::raw_reference_cast(multipoints.point(pidx));
-    auto geometry_idx = multipoints.geometry_idx_from_point_idx(pidx);
+    vec_2d<T> const& point = multipoints.point(pidx);
+    auto geometry_idx      = multipoints.geometry_idx_from_point_idx(pidx);
 
-    bool intersects = false;
-    for (auto polygon : multipolygons[geometry_idx]) {
-      intersects = intersects || is_point_in_polygon(point, polygon);
-    }
+    auto const& polys = multipolygons[geometry_idx];
+    bool intersects =
+      thrust::any_of(thrust::seq, polys.begin(), polys.end(), [&point] __device__(auto poly) {
+        return is_point_in_polygon(point, poly);
+      });
+
     return static_cast<uint8_t>(intersects);
   }
 };
