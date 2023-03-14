@@ -8,8 +8,8 @@ import cudf
 
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core.binpreds.contains import (
-    contains_properly_byte_limited,
-    contains_properly_quadtree,
+    byte_limited_contains_properly,
+    quadtree_contains_properly,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -186,12 +186,12 @@ class ContainsProperlyBinpred(BinaryPredicate):
                 "`.contains` can only be called with polygon series."
             )
         if self._should_use_quadtree():
-            point_result = contains_properly_quadtree(
+            point_result = quadtree_contains_properly(
                 points,
                 lhs,
             )
         else:
-            point_result = contains_properly_byte_limited(points, lhs)
+            point_result = byte_limited_contains_properly(points, lhs)
         return point_result
 
     def _postprocess_quadtree_result(self, point_indices, point_result):

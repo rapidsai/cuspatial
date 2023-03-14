@@ -12,7 +12,7 @@ from cuspatial._lib.point_in_polygon import (
 from cuspatial.utils.join_utils import pip_bitmap_column_to_binary_array
 
 
-def contains_properly_quadtree(points, polygons):
+def quadtree_contains_properly(points, polygons):
     """Compute from a series of points and a series of polygons which points
     are properly contained within the corresponding polygon. Polygon A contains
     Point B properly if B intersects the interior of A but not the boundary (or
@@ -69,7 +69,7 @@ def contains_properly_quadtree(points, polygons):
     return polygons_and_points
 
 
-def contains_properly_byte_limited(points, polygons):
+def byte_limited_contains_properly(points, polygons):
     """Compute from a series of points and a series of polygons which points
     are properly contained within the corresponding polygon. Polygon A contains
     Point B properly if B intersects the interior of A but not the boundary (or
