@@ -20,7 +20,7 @@
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
-#include <cuspatial/detail/utility/offset_to_keys.cuh>
+#include <cuspatial/detail/utility/upper_bound_index.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
@@ -139,7 +139,7 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
     detail::zero_data_async(multipoint_intersects.begin(), multipoint_intersects.end(), stream);
 
     auto offset_as_key_it = detail::make_counting_transform_iterator(
-      0, offsets_to_keys_functor{multipoints.offsets_begin(), multipoints.offsets_end()});
+      0, detail::upper_bound_index_functor{multipoints.offsets_begin(), multipoints.offsets_end()});
 
     thrust::reduce_by_key(rmm::exec_policy(stream),
                           offset_as_key_it,

@@ -16,6 +16,7 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/linestring.cuh>
+#include <cuspatial/detail/utility/upper_bound_index.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/linestring_intersection_count.cuh>
@@ -120,37 +121,6 @@ struct offsets_update_functor {
     if (j < 0) return offset;
 
     return offset - reduced_values_begin[j];
-  }
-};
-
-/** @brief Given list offset and row `i`, return a unique key that represent the list of `i`.
- *
- *  The key is computed by performing a `upper_bound` search with `i` in the offset array.
- *  Then subtracts the position with the start of offset array.
- *
- *  Example:
- *  offset:  0 0 0 1 3 4 4 4
- *  i:       0 1 2 3
- *  key:     3 4 4 5
- *
- *  Note that the values of `key`, {offset[3], offset[4], offset[5]} denotes the ending
- *  position of the first 3 non-empty list.
- */
-template <typename Iterator>
-struct offsets_to_keys_functor {
-  Iterator _offsets_begin;
-  Iterator _offsets_end;
-
-  offsets_to_keys_functor(Iterator offset_begin, Iterator offset_end)
-    : _offsets_begin(offset_begin), _offsets_end(offset_end)
-  {
-  }
-
-  template <typename IndexType>
-  IndexType __device__ operator()(IndexType i)
-  {
-    return thrust::distance(_offsets_begin,
-                            thrust::upper_bound(thrust::seq, _offsets_begin, _offsets_end, i));
   }
 };
 
@@ -318,7 +288,7 @@ struct linestring_intersection_intermediates {
     rmm::device_uvector<index_t> reduced_keys(num_pairs(), stream);
     rmm::device_uvector<index_t> reduced_flags(num_pairs(), stream);
     auto keys_begin = make_counting_transform_iterator(
-      0, intersection_functors::offsets_to_keys_functor{offsets->begin(), offsets->end()});
+      0, upper_bound_index_functor{offsets->begin(), offsets->end()});
 
     auto [keys_end, flags_end] =
       thrust::reduce_by_key(rmm::exec_policy(stream),
@@ -387,7 +357,7 @@ struct linestring_intersection_intermediates {
   auto keys_begin()
   {
     return make_counting_transform_iterator(
-      0, intersection_functors::offsets_to_keys_functor{offsets->begin(), offsets->end()});
+      0, upper_bound_index_functor{offsets->begin(), offsets->end()});
   }
 
   /// Return the number of pairs in the intermediates
