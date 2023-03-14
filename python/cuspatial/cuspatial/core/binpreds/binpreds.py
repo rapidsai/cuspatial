@@ -15,6 +15,7 @@ from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
     contains_only_polygons,
+    has_multipolygons,
     has_same_geometry,
 )
 
@@ -179,15 +180,8 @@ class ContainsProperlyBinpred(BinaryPredicate):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
             )
-        if len(self.lhs < 32):
-            point_result = contains_properly_byte_limited(
-                points.points.x,
-                points.points.y,
-                lhs.polygons.part_offset,
-                lhs.polygons.ring_offset,
-                lhs.polygons.x,
-                lhs.polygons.y,
-            )
+        if len(self.lhs) < 32:
+            point_result = contains_properly_byte_limited(points, lhs)
         else:
             point_result = contains_properly_quadtree(
                 points,

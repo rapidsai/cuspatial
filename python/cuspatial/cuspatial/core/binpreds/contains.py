@@ -3,14 +3,14 @@
 from math import ceil, sqrt
 
 from cudf import DataFrame, Series
-from cudf.core.column import NumericalColumn, as_column
+from cudf.core.column import as_column
 
 import cuspatial
 from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_byte_point_in_polygon,
 )
-from cuspatial.utils.column_utils import normalize_point_columns
 from cuspatial.utils.join_utils import pip_bitmap_column_to_binary_array
+
 
 def contains_properly_quadtree(points, polygons):
     """Compute from a series of points and a series of polygons which points
@@ -92,16 +92,17 @@ def contains_properly_byte_limited(points, polygons):
         within its corresponding polygon.
     """
     pip_result = cpp_byte_point_in_polygon(
-        points.points.x,
-        points.points.y,
-        polygons.polygons.part_offset,
-        polygons.polygons.ring_offset,
-        polyons.polygons.x,
-        polygons.polygons.y,
+        as_column(points.points.x),
+        as_column(points.points.y),
+        as_column(polygons.polygons.part_offset),
+        as_column(polygons.polygons.ring_offset),
+        as_column(polygons.polygons.x),
+        as_column(polygons.polygons.y),
     )
     result = DataFrame(
         pip_bitmap_column_to_binary_array(
-            polygon_bitmap_column=pip_result, width=len(poly_offsets) - 1
+            polygon_bitmap_column=pip_result,
+            width=len(polygons.polygons.part_offset) - 1,
         )
     )
     final_result = DataFrame._from_data(
