@@ -309,10 +309,10 @@ class OverlapsBinpred(ContainsProperlyBinpred):
         point_result["point_index"] = point_indices
         hits = point_result.groupby("point_index").sum()
         size = point_result.groupby("point_index").count()
-        x = hits != size
-        y = size > 0
-        z = hits > 0
-        group_result = x & y & z
+        partial_overlap = hits != size
+        non_empty = size > 0
+        at_least_one_overlap = hits > 0
+        group_result = partial_overlap & non_empty & at_least_one_overlap
         return group_result
 
 
