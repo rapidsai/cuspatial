@@ -119,8 +119,8 @@ join_quadtree_and_bounding_boxes(
  * @param ring_offsets_last iterator to end of range of indices to the first point in each ring
  * @param polygon_points_first iterator to beginning of range of polygon points
  * @param polygon_points_last iterator to end of range of polygon points
- * @param mr The optional resource to use for output device memory allocations.
  * @param stream The CUDA stream on which to perform computations
+ * @param mr The optional resource to use for output device memory allocations.
  *
  * @throw cuspatial::logic_error If the number of rings is less than the number of polygons.
  * @throw cuspatial::logic_error If any ring has fewer than four vertices.
@@ -133,7 +133,8 @@ join_quadtree_and_bounding_boxes(
  *       and `point_indices` range, respectively.
  *
  **/
-template <class PolyQuadPairIterator,
+template <class PolyIndexIterator,
+          class QuadIndexIterator,
           class KeyIterator,
           class LevelIterator,
           class IsInternalIterator,
@@ -141,16 +142,18 @@ template <class PolyQuadPairIterator,
           class PointIterator,
           class PolygonOffsetIterator,
           class RingOffsetIterator,
-          class VertexIterator>
-std::pair<rmm::device_uvector<uint32_t>, rmm::device_uvector<uint32_t>> quadtree_point_in_polygon(
-  PolyQuadPairIterator poly_quad_pairs_first,
-  PolyQuadPairIterator poly_quad_pairs_last,
+          class VertexIterator,
+          class IndexType = iterator_value_type<PointIndexIterator>>
+std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtree_point_in_polygon(
+  PolyIndexIterator poly_indices_first,
+  PolyIndexIterator poly_indices_last,
+  QuadIndexIterator quad_indices_first,
   KeyIterator keys_first,
   KeyIterator keys_last,
   LevelIterator levels_first,
   IsInternalIterator is_internal_nodes_first,
-  KeyIterator lengths_first,
-  KeyIterator offsets_first,
+  KeyIterator quad_lengths_first,
+  KeyIterator quad_offsets_first,
   PointIndexIterator point_indices_first,
   PointIndexIterator point_indices_last,
   PointIterator points_first,
@@ -160,9 +163,10 @@ std::pair<rmm::device_uvector<uint32_t>, rmm::device_uvector<uint32_t>> quadtree
   RingOffsetIterator polygon_ring_offsets_last,
   VertexIterator polygon_vertices_first,
   VertexIterator polygon_vertices_last,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(),
-  rmm::cuda_stream_view stream        = rmm::cuda_stream_default);
+  rmm::cuda_stream_view stream        = rmm::cuda_stream_default,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/quadtree_bbox_filtering.cuh>
+#include <cuspatial/experimental/detail/quadtree_point_in_polygon.cuh>

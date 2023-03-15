@@ -30,15 +30,25 @@
 namespace cuspatial {
 namespace detail {
 
-template <class IndexType,
-          class QuadOffsetsIterator,
-          class PointOffsetsIterator,
-          class PolyIndexIterator>
+template <class QuadOffsetsIterator, class PointOffsetsIterator, class PolyIndexIterator>
 struct compute_poly_and_point_indices {
   QuadOffsetsIterator quad_point_offsets_begin;
   PointOffsetsIterator point_offsets_begin;
   PointOffsetsIterator point_offsets_end;
   PolyIndexIterator poly_indices_begin;
+
+  compute_poly_and_point_indices(QuadOffsetsIterator quad_point_offsets_begin,
+                                 PointOffsetsIterator point_offsets_begin,
+                                 PointOffsetsIterator point_offsets_end,
+                                 PolyIndexIterator poly_indices_begin)
+    : quad_point_offsets_begin(quad_point_offsets_begin),
+      point_offsets_begin(point_offsets_begin),
+      point_offsets_end(point_offsets_end),
+      poly_indices_begin(poly_indices_begin)
+  {
+  }
+
+  using IndexType = iterator_value_type<QuadOffsetsIterator>;
 
   inline thrust::tuple<IndexType, IndexType> __device__
   operator()(IndexType const global_index) const
@@ -51,30 +61,47 @@ struct compute_poly_and_point_indices {
   }
 };
 
-template <
-  class IndexType,
-  class PointIterator,
-  class PolygonOffsetIterator,
-  class RingOffsetIterator,
-  class VertexIterator,
-  class PolyOffsetDiffType = typename std::iterator_traits<PolygonOffsetIterator>::difference_type,
-  class RingOffsetItDiffType = typename std::iterator_traits<RingOffsetIterator>::difference_type,
-  class VertexDiffType       = typename std::iterator_traits<VertexIterator>::difference_type>
+template <class PointIterator,
+          class PolygonOffsetIterator,
+          class RingOffsetIterator,
+          class VertexIterator>
 struct test_poly_point_intersection {
+  using IndexType = iterator_value_type<PolygonOffsetIterator>;
+
+  test_poly_point_intersection(PointIterator points_first,
+                               PolygonOffsetIterator polygon_offsets_first,
+                               IndexType const& num_polys,
+                               RingOffsetIterator polygon_ring_offsets_first,
+                               IndexType const& num_rings,
+                               VertexIterator polygon_vertices_first,
+                               IndexType const& num_vertices)
+    : points_first(points_first),
+      polygon_offsets_first(polygon_offsets_first),
+      num_polys(num_polys),
+      polygon_ring_offsets_first(polygon_ring_offsets_first),
+      num_rings(num_rings),
+      polygon_vertices_first(polygon_vertices_first),
+      num_vertices(num_vertices)
+  {
+  }
+
   PointIterator points_first;
   PolygonOffsetIterator polygon_offsets_first;
-  PolyOffsetDiffType const& num_polys;
+  IndexType const num_polys;
   RingOffsetIterator polygon_ring_offsets_first;
-  RingOffsetItDiffType const& num_rings;
+  IndexType const num_rings;
   VertexIterator polygon_vertices_first;
-  VertexDiffType const& num_vertices;
+  IndexType const num_vertices;
 
   inline bool __device__ operator()(thrust::tuple<IndexType, IndexType> const& poly_point_idxs)
   {
-    auto& poly_idx  = thrust::get<0>(poly_point_idxs);
-    auto& point_idx = thrust::get<1>(poly_point_idxs);
-    auto poly_begin = polygon_offsets_first[poly_idx];
-    auto poly_end   = (poly_idx + 1 < num_polys) ? polygon_offsets_first[poly_idx + 1] : num_rings;
+    auto const poly_idx  = thrust::get<0>(poly_point_idxs);
+    auto const point_idx = thrust::get<1>(poly_point_idxs);
+
+    auto const poly_begin = polygon_offsets_first[poly_idx];
+    auto const poly_end =
+      (poly_idx + 1 < num_polys) ? polygon_offsets_first[poly_idx + 1] : num_rings;
+
     return is_point_in_polygon(points_first[point_idx],
                                poly_begin,
                                poly_end,
@@ -87,8 +114,7 @@ struct test_poly_point_intersection {
 
 }  // namespace detail
 
-template <class IndexType,
-          class PolyIndexIterator,
+template <class PolyIndexIterator,
           class QuadIndexIterator,
           class KeyIterator,
           class LevelIterator,
@@ -97,7 +123,8 @@ template <class IndexType,
           class PointIterator,
           class PolygonOffsetIterator,
           class RingOffsetIterator,
-          class VertexIterator>
+          class VertexIterator,
+          class IndexType>
 std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtree_point_in_polygon(
   PolyIndexIterator poly_indices_first,
   PolyIndexIterator poly_indices_last,
@@ -135,6 +162,7 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
   // `inclusive_scan` is the total number of points to be tested against any polygon.
   rmm::device_uvector<IndexType> local_point_offsets(num_poly_quad_pairs + 1, stream);
 
+  // inclusive scan of quad_lengths_iter
   thrust::inclusive_scan(rmm::exec_policy(stream),
                          quad_lengths_iter,
                          quad_lengths_iter + num_poly_quad_pairs,
@@ -175,9 +203,9 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
                                            local_point_offsets.end(),
                                            poly_indices_first});
 
-  auto num_polys = std::distance(polygon_offsets_first, polygon_offsets_last);
-  auto num_rings = std::distance(polygon_ring_offsets_first, polygon_ring_offsets_last);
-  auto num_verts = std::distance(polygon_vertices_first, polygon_vertices_last);
+  IndexType const num_polys = std::distance(polygon_offsets_first, polygon_offsets_last);
+  IndexType const num_rings = std::distance(polygon_ring_offsets_first, polygon_ring_offsets_last);
+  IndexType const num_verts = std::distance(polygon_vertices_first, polygon_vertices_last);
 
   // Compute the number of intersections by removing (poly, point) pairs that don't intersect
   auto num_intersections = thrust::distance(
@@ -201,7 +229,5 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
 
   return std::pair{std::move(poly_indices), std::move(point_indices)};
 }
-
-}  // namespace cuspatial
 
 }  // namespace cuspatial
