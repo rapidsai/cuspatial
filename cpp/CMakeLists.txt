@@ -281,14 +281,17 @@ rapids_export(
 # ##################################################################################################
 # * build documentation ----------------------------------------------------------------------------
 
-find_package(Doxygen)
-if(Doxygen_FOUND)
+find_package(Doxygen
+             REQUIRED dot
+             OPTIONAL_COMPONENTS mscgen dia)
+
+if(DOXYGEN_FOUND)
 
 # doc targets for cuDF
 add_custom_command(
   OUTPUT CUSPATIAL_DOXYGEN
   WORKING_DIRECTORY ${CUSPATIAL_SOURCE_DIR}/doxygen
-  COMMAND doxygen Doxyfile
+  COMMAND $(DOXYGEN_EXECUTABLE) Doxyfile
   VERBATIM
   COMMENT "Custom command for building cuspatial doxygen docs."
 )
