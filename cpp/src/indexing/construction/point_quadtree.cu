@@ -83,8 +83,8 @@ struct dispatch_construct_quadtree {
                          static_cast<T>(scale),
                          max_depth,
                          max_size,
-                         mr,
-                         stream);
+                         stream,
+                         mr);
 
     auto size = static_cast<cudf::size_type>(tree.key.size());
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -241,8 +241,8 @@ std::pair<rmm::device_uvector<uint32_t>, point_quadtree> quadtree_on_points(
   T scale,
   int8_t max_depth,
   int32_t max_size,
-  rmm::mr::device_memory_resource* mr,
-  rmm::cuda_stream_view stream)
+  rmm::cuda_stream_view stream,
+  rmm::mr::device_memory_resource* mr)
 {
   auto num_points = thrust::distance(points_first, points_last);
   if (num_points <= 0) {
