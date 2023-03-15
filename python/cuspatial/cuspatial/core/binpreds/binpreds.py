@@ -394,22 +394,15 @@ class EqualsBinpred(BinaryPredicate):
         # Sort the lhs and rhs xy values according to the
         # lhs and rhs point_indices.
 
-        # Check if first == last, if so, drop last
-        if (
-            lhs.x.iloc[0] == lhs.x.iloc[-1]
-            and lhs.y.iloc[0] == lhs.y.iloc[-1]
-            and rhs.x.iloc[0] == rhs.x.iloc[-1]
-            and rhs.y.iloc[0] == rhs.y.iloc[-1]
-        ):
-            lhs_x = lhs.x[:-1]
-            lhs_y = lhs.y[:-1]
-            rhs_x = rhs.x[:-1]
-            rhs_y = rhs.y[:-1]
-        else:
-            lhs_x = lhs.x
-            lhs_y = lhs.y
-            rhs_x = rhs.x
-            rhs_y = rhs.y
+        # Assume first == last
+        lhs_offsets = self.lhs.polygons.ring_offset[:-1]
+        lhs_x = lhs.x
+        lhs_x[lhs_offsets] = None
+        lhs_x = lhs_x.dropna()
+        lhs_x_new_offsets = self.lhs.polygons.ring_offset - cp.arange(len(
+            self.lhs.polygons.ring_offset
+        ))
+        breakpoint()
         # Add column of polygon indices to a dataframe
         #  containing the xy values as columns.
         lhs_sort_df = cudf.DataFrame(
