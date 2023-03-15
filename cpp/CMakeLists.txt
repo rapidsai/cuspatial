@@ -105,7 +105,7 @@ rapids_cpm_init()
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
 # find or install GoogleTest
 if (CUSPATIAL_BUILD_TESTS)
-    include(cmake/thirdparty/get_gtests.cmake)
+    include(cmake/thirdparty/get_gtest.cmake)
 endif()
 
 ###################################################################################################
