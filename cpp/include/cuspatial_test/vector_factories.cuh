@@ -215,7 +215,7 @@ class multipoint_array {
  * make_multipoints_array({{P{0.0, 1.0}, P{2.0, 0.0}}, {}, {P{3.0, 4.0}}});
  *
  * Example: Construct an empty multilinestring array:
- * make_multipoints_array<float>({}); // Explict parameter required to deduce type.
+ * make_multipoints_array<float>({}); // Explicit parameter required to deduce type.
  *
  * @tparam T Type of coordinate
  * @param inl List of multipoints

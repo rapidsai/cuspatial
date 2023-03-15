@@ -74,7 +74,7 @@ struct TrajectoryDistancesAndSpeedsTest : public ::testing::Test {
     // For speed, there is an additional division. There is also accumulated error in the reductions
     // and we find k_ulps == 10 reliably results in the expected computation matching the actual
     // computation for large trajectories with disparate positions and increasing timestamps.
-    // This value and the magnitude of the values involed (e.g. max distance) are used to scale
+    // This value and the magnitude of the values involved (e.g. max distance) are used to scale
     // the machine epsilon to come up with an absolute error tolerance.
 
     int k_ulps           = 10;

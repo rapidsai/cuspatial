@@ -31,7 +31,7 @@ namespace detail {
  *
  * Implemented based on Eric Haines's crossings-multiply algorithm:
  * See "Crossings test" section of http://erich.realtimerendering.com/ptinpoly/
- * The improvement in addenda is also addopted to remove divisions in this kernel.
+ * The improvement in addenda is also adopted to remove divisions in this kernel.
  *
  * @tparam T type of coordinate
  * @tparam PolygonRef polygon_ref type

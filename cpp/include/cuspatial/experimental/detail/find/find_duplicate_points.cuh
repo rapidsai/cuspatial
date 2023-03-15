@@ -57,7 +57,7 @@ void __global__ find_duplicate_points_kernel_simple(MultiPointRange multipoints,
  * @brief For each multipoint, find the duplicate points.
  *
  * If a point has duplicates, all but one flags for the duplicates will be set to 1.
- * There is no gaurentee which of the duplicates will not be set.
+ * There is no guarantee which of the duplicates will not be set.
  */
 template <typename MultiPointRange, typename OutputIt>
 void find_duplicate_points(MultiPointRange multipoints,
