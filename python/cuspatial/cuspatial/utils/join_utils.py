@@ -7,6 +7,7 @@ from numba import cuda
 
 from cudf.core.buffer import acquire_spill_lock
 
+
 @cuda.jit
 def binarize(in_col, out, width):
     """Convert any positive integer to a binary array."""
