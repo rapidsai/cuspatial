@@ -249,7 +249,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
 
         # Result can be:
         # A Dataframe of booleans with n_points rows and up to 31 columns.
-        result = point_result.copy()
+        result = point_result
         # Discrete math recombination
         if (
             contains_only_linestrings(self.rhs)
