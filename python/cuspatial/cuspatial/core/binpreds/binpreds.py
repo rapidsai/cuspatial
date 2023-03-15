@@ -135,9 +135,9 @@ class BinaryPredicate(ABC):
 
 
 class ContainsProperlyBinpred(BinaryPredicate):
-    def __init__(self, lhs, rhs, align=True, mode="pairs"):
+    def __init__(self, lhs, rhs, align=True, allpairs=False):
         super().__init__(lhs, rhs, align=align)
-        if mode == "allpairs":
+        if allpairs:
             self.allpairs = True
             self.align = False
         else:

@@ -924,7 +924,7 @@ class GeoSeries(cudf.Series):
             self.index = cudf_series.index
             return None
 
-    def contains_properly(self, other, align=True, mode="pairs"):
+    def contains_properly(self, other, align=True, allpairs=False):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that contains _other_.
 
@@ -933,8 +933,8 @@ class GeoSeries(cudf.Series):
         A contains Point B properly if B intersects the interior of A but not
         the boundary (or exterior).
 
-        If `mode='pairs'`, the result will be a `Series` of `dtype('bool')`.
-        If `mode='allpairs'`, the result will be a `DataFrame` containing two
+        If `allpairs=False`, the result will be a `Series` of `dtype('bool')`.
+        If `allpairs=True`, the result will be a `DataFrame` containing two
         columns, `point_indices` and `polygon_indices`, each of which is a
         `Series` of `dtype('int32')`. The `point_indices` `Series` contains
         the indices of the points in the right GeoSeries, and the
@@ -949,11 +949,11 @@ class GeoSeries(cudf.Series):
             to align the indices before computing .contains or not. If the
             indices are not aligned, they will be compared based on their
             implicit row order.
-        mode={'allpairs', 'pairs'}
-            'allpairs' computes the contains for all pairs of geometries
-            between the two GeoSeries. 'pairs' computes the contains for
+        allpairs=False
+            True computes the contains for all pairs of geometries
+            between the two GeoSeries. False computes the contains for
             each geometry in the left GeoSeries against the corresponding
-            geometry in the right GeoSeries. Defaults to `pairs`.
+            geometry in the right GeoSeries. Defaults to False.
 
         Examples
         --------
@@ -1014,7 +1014,7 @@ class GeoSeries(cudf.Series):
                     Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
                 ]
             )
-        >>> print(polygon.contains(point, mode='allpairs'))
+        >>> print(polygon.contains(point, allpairs=True))
               point_indices  polygon_indices
         0                 2                1
 
@@ -1023,12 +1023,11 @@ class GeoSeries(cudf.Series):
         result : cudf.Series or cudf.DataFrame
             A Series of boolean values indicating whether each point falls
             within the corresponding polygon in the input in the case of
-            `mode='pairs'`. A DataFrame containing two columns, `point_indices`
-            and `polygon_indices`, each of which is a `Series` of
-            `dtype('int32')`
-            in the case of `mode='allpairs'`.
+            `allpairs=False`. A DataFrame containing two columns,
+            `point_indices` and `polygon_indices`, each of which is a
+            `Series` of `dtype('int32')` in the case of `allpairs=True`.
         """
-        return ContainsProperlyBinpred(self, other, align, mode)()
+        return ContainsProperlyBinpred(self, other, align, allpairs)()
 
     def intersects(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
