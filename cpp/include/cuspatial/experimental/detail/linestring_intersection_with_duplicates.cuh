@@ -16,11 +16,11 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/linestring.cuh>
-#include <cuspatial/detail/utility/upper_bound_index.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/linestring_intersection_count.cuh>
 #include <cuspatial/experimental/geometry/segment.cuh>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
@@ -287,8 +287,7 @@ struct linestring_intersection_intermediates {
     // Use `reduce_by_key` to compute the number of removed geometry per list.
     rmm::device_uvector<index_t> reduced_keys(num_pairs(), stream);
     rmm::device_uvector<index_t> reduced_flags(num_pairs(), stream);
-    auto keys_begin = make_counting_transform_iterator(
-      0, upper_bound_index_functor{offsets->begin(), offsets->end()});
+    auto keys_begin = make_geometry_id_iterator<index_t>(offsets->begin(), offsets->end());
 
     auto [keys_end, flags_end] =
       thrust::reduce_by_key(rmm::exec_policy(stream),
@@ -354,11 +353,7 @@ struct linestring_intersection_intermediates {
   }
 
   /// Return list-id corresponding to the geometry
-  auto keys_begin()
-  {
-    return make_counting_transform_iterator(
-      0, upper_bound_index_functor{offsets->begin(), offsets->end()});
-  }
+  auto keys_begin() { return make_geometry_id_iterator<index_t>(offsets->begin(), offsets->end()); }
 
   /// Return the number of pairs in the intermediates
   auto num_pairs() { return offsets->size() - 1; }

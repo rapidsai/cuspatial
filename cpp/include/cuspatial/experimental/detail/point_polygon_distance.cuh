@@ -20,10 +20,10 @@
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
-#include <cuspatial/detail/utility/upper_bound_index.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
@@ -120,7 +120,8 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
                                          OutputIt distances_first,
                                          rmm::cuda_stream_view stream)
 {
-  using T = typename MultiPointRange::element_t;
+  using T       = typename MultiPointRange::element_t;
+  using index_t = typename MultiPointRange::index_t;
 
   CUSPATIAL_EXPECTS(multipoints.size() == multipolygons.size(),
                     "Must have the same number of input rows.");
@@ -144,8 +145,8 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
     rmm::device_uvector<uint8_t> multipoint_intersects(multipoints.num_multipoints(), stream);
     detail::zero_data_async(multipoint_intersects.begin(), multipoint_intersects.end(), stream);
 
-    auto offset_as_key_it = detail::make_counting_transform_iterator(
-      0, detail::upper_bound_index_functor{multipoints.offsets_begin(), multipoints.offsets_end()});
+    auto offset_as_key_it =
+      make_geometry_id_iterator<index_t>(multipoints.offsets_begin(), multipoints.offsets_end());
 
     thrust::reduce_by_key(rmm::exec_policy(stream),
                           offset_as_key_it,

@@ -20,7 +20,6 @@
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/detail/utility/upper_bound_index.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/linestring_intersection.cuh>
@@ -82,10 +81,9 @@ linestring_intersection_result<T, IndexType> segment_sort_intersection_result(
   // Compute keys for each row in the union column. Rows of the same list
   // are assigned the same label.
   rmm::device_uvector<IndexType> geometry_collection_keys(num_geoms, stream);
-  auto geometry_collection_keys_begin = detail::make_counting_transform_iterator(
-    0,
-    detail::upper_bound_index_functor{result.geometry_collection_offset->begin(),
-                                      result.geometry_collection_offset->end()});
+  auto geometry_collection_keys_begin = make_geometry_id_iterator<IndexType>(
+    result.geometry_collection_offset->begin(), result.geometry_collection_offset->end());
+
   thrust::copy(rmm::exec_policy(stream),
                geometry_collection_keys_begin,
                geometry_collection_keys_begin + num_geoms,
