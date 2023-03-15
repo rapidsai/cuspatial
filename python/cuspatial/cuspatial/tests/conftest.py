@@ -174,18 +174,19 @@ def point_generator():
 
 
 @pytest.fixture
-def fast_point_generator():
-    """Generator that creates polygons with no interior ring
-    Uses a single shapely Polygon to generate n random polygons using
-    cudf arithmetic instead of host calls.
-    """
+def gpu_polygons(n):
+    return fast_point_generator
+
+
+def fast_point_generator(n):
+    """Generator that creates n random points between [0, 1) on the gpu."""
 
     def generator(n):
         points = cp.random.random(n * 2)
         result = cuspatial.GeoSeries.from_points_xy(points)
         yield result
 
-    return generator
+    return generator(n)
 
 
 @pytest.fixture
@@ -232,7 +233,11 @@ def multilinestring_generator(linestring_generator):
 
 
 @pytest.fixture
-def n_duplicated_polygons():
+def gpu_polygons_fixture(n, distance_from_origin):
+    return n_duplicated_polygons(n, distance_from_origin)
+
+
+def n_duplicated_polygons(n, distance_from_origin):
     """Generator that creates polygons with no interior ring
     Uses a single shapely Polygon to generate n random polygons using
     cudf arithmetic instead of host calls.
@@ -251,7 +256,7 @@ def n_duplicated_polygons():
         )
         yield result
 
-    return generator
+    return generator(n, distance_from_origin)
 
 
 @pytest.fixture
