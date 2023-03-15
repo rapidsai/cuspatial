@@ -96,7 +96,7 @@ APIs should accept a `GeoSeries` or `GeoDataFrame` as input. Developers
 may extract geometry offsets and coordinates via cuSpatial's geometry
 accessors such as `GeoSeries.points`, `GeoSeries.multipoints`,
 `GeoSeries.lines`, `GeoSeries.polygons`. Developer can then pass the geometries
-offsets and corrdinate arrays to Cython APIs.
+offsets and coordinate arrays to Cython APIs.
 
 ## Cython Layer
 

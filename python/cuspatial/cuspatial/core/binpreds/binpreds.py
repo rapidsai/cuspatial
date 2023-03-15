@@ -1,4 +1,4 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 from abc import ABC, abstractmethod
 
@@ -173,8 +173,8 @@ class ContainsProperlyBinpred(BinaryPredicate):
         point_result = contains_properly(
             points.x,
             points.y,
-            lhs.polygons.part_offset[:-1],
-            lhs.polygons.ring_offset[:-1],
+            lhs.polygons.part_offset,
+            lhs.polygons.ring_offset,
             lhs.polygons.x,
             lhs.polygons.y,
         )
