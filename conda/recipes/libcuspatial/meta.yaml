@@ -41,7 +41,6 @@ requirements:
   host:
     - cudatoolkit ={{ cuda_version }}
     - doxygen
-    - gdal {{ gdal_version }}
     - gmock {{ gtest_version }}
     - gtest {{ gtest_version }}
     - libcudf ={{ minor_version }}
@@ -89,6 +88,5 @@ outputs:
       run:
         - {{ pin_subpackage('libcuspatial', exact=True) }}
         - cudatoolkit {{ cuda_spec }}
-        - gdal {{ gdal_version }}
         - gmock {{ gtest_version }}
         - gtest {{ gtest_version }}

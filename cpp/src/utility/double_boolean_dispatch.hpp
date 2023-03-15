@@ -22,7 +22,7 @@
 namespace cuspatial {
 
 /**
- * @brief Invokes an `operator()` template with the instantiation based on the specificed
+ * @brief Invokes an `operator()` template with the instantiation based on the specified
  * `opt1` and `opt2` value.
  * This dispatcher effectively converts the runtime information of two boolean variables
  * to compile time. This is useful when an API accepts an `std::optional` argument,
