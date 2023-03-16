@@ -194,11 +194,9 @@ class ContainsProperlyBinpred(BinaryPredicate):
             point_result = byte_limited_contains_properly(points, lhs)
         return point_result
 
-    def _postprocess_quadtree_result(self, point_indices, point_result):
-        # If there are more than 31 polygons, the point indices are
-        # returned as a dataframe with two columns: part_index and
-        # point_index.
-
+    def _convert_quadtree_result_from_part_to_polygon_indices(
+        self, point_result
+    ):
         # This complex block of code is to create a dataframe that
         # contains the polygon index and the point index for each
         # point in the polygon. Quadtree pip returns the _part_index_
@@ -218,29 +216,39 @@ class ContainsProperlyBinpred(BinaryPredicate):
         geom_df = geometry_map.reset_index(drop=True)
         geom_df.index.name = "part_index"
         geom_df = geom_df.reset_index()
-
         # Replace the part index with the polygon index
         part_result = parts_df.merge(point_result, on="part_index")
         # Replace the polygon index with the row index
-        result = geom_df.merge(part_result, on="part_index")
-        result = result[["polygon_index", "point_index"]]
-        result = result.drop_duplicates()
+        return geom_df.merge(part_result, on="part_index")[
+            ["polygon_index", "point_index"]
+        ]
+
+    def _postprocess_quadtree_result(self, point_indices, point_result):
+        if len(point_result) == 0:
+            return cudf.Series([False] * len(self.lhs))
+
+        polygon_indices = (
+            self._convert_quadtree_result_from_part_to_polygon_indices(
+                point_result
+            )
+        )
+        allpairs_result = polygon_indices.drop_duplicates()
         # Replace the polygon index with the original index
-        result["polygon_index"] = result["polygon_index"].replace(
+        allpairs_result["polygon_index"] = allpairs_result[
+            "polygon_index"
+        ].replace(
             cudf.Series(self.lhs.index, index=cp.arange(len(self.lhs.index)))
         )
-        # Using allpairs for all requests with more than 31 polygons.
+
         if self.allpairs:
-            return result
+            return allpairs_result
         else:
             # for each input pair i: result[i] =  true iff point[i] is
             # contained in at least one polygon of multipolygon[i].
-            if len(result) == 0:
-                return cudf.Series([False] * len(self.lhs))
-            final_result = cudf.Series([False] * len(point_indices))
-            grouped = result.groupby("polygon_index").count() >= len(
+            grouped = allpairs_result.groupby("polygon_index").count() >= len(
                 point_indices
             )
+            final_result = cudf.Series([False] * len(point_indices))
             final_result.loc[grouped.index] = True
             return final_result
 
