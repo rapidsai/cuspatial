@@ -137,11 +137,9 @@ class BinaryPredicate(ABC):
 class ContainsProperlyBinpred(BinaryPredicate):
     def __init__(self, lhs, rhs, align=True, allpairs=False):
         super().__init__(lhs, rhs, align=align)
+        self.allpairs = allpairs
         if allpairs:
-            self.allpairs = True
             self.align = False
-        else:
-            self.allpairs = False
 
     def preprocess(self, lhs, rhs):
         """Preprocess the input GeoSeries to ensure that they are of the
@@ -197,29 +195,47 @@ class ContainsProperlyBinpred(BinaryPredicate):
     def _convert_quadtree_result_from_part_to_polygon_indices(
         self, point_result
     ):
-        # This complex block of code is to create a dataframe that
-        # contains the polygon index and the point index for each
-        # point in the polygon. Quadtree pip returns the _part_index_
-        # of the polygon, not the polygon index.
+        """Convert the result of a quadtree contains_properly call from
+        part indices to polygon indices.
+
+        Parameters
+        ----------
+        point_result : cudf.Series
+            The result of a quadtree contains_properly call. This result
+            contains the `part_index` of the polygon that contains the
+            point, not the polygon index.
+
+        Returns
+        -------
+        cudf.Series
+            The result of a quadtree contains_properly call. This result
+            contains the `polygon_index` of the polygon that contains the
+            point, not the part index.
+        """
+        # Get the length of each part, map it to indices, and store
+        # the result in a dataframe.
         rings_to_parts = cp.array(self.lhs.polygons.part_offset)
         part_sizes = rings_to_parts[1:] - rings_to_parts[:-1]
         parts_map = cudf.Series(
             cp.arange(len(part_sizes)), name="part_index"
         ).repeat(part_sizes)
-        parts_df = parts_map.reset_index(drop=True).reset_index()
-        # Mapping of parts to polygons
+        parts_index_mapping_df = parts_map.reset_index(drop=True).reset_index()
+        # Map the length of each polygon in a similar fashion, then
+        # join them below.
         parts_to_geoms = cp.array(self.lhs.polygons.geometry_offset)
         geometry_sizes = parts_to_geoms[1:] - parts_to_geoms[:-1]
         geometry_map = cudf.Series(
             cp.arange(len(geometry_sizes)), name="polygon_index"
         ).repeat(geometry_sizes)
-        geom_df = geometry_map.reset_index(drop=True)
-        geom_df.index.name = "part_index"
-        geom_df = geom_df.reset_index()
-        # Replace the part index with the polygon index
-        part_result = parts_df.merge(point_result, on="part_index")
-        # Replace the polygon index with the row index
-        return geom_df.merge(part_result, on="part_index")[
+        geom_index_mapping_df = geometry_map.reset_index(drop=True)
+        geom_index_mapping_df.index.name = "part_index"
+        geom_index_mapping_df = geom_index_mapping_df.reset_index()
+        # Replace the part index with the polygon index by join
+        part_result = parts_index_mapping_df.merge(
+            point_result, on="part_index"
+        )
+        # Replace the polygon index with the row index by join
+        return geom_index_mapping_df.merge(part_result, on="part_index")[
             ["polygon_index", "point_index"]
         ]
 
@@ -227,12 +243,18 @@ class ContainsProperlyBinpred(BinaryPredicate):
         if len(point_result) == 0:
             return cudf.Series([False] * len(self.lhs))
 
+        # Convert the quadtree part indices df into a polygon indices df
         polygon_indices = (
             self._convert_quadtree_result_from_part_to_polygon_indices(
                 point_result
             )
         )
+
+        # Because the quadtree contains_properly call returns a list of
+        # points that are contained in each part, parts can be duplicated
+        # once their index is converted to a polygon index.
         allpairs_result = polygon_indices.drop_duplicates()
+
         # Replace the polygon index with the original index
         allpairs_result["polygon_index"] = allpairs_result[
             "polygon_index"
@@ -240,6 +262,9 @@ class ContainsProperlyBinpred(BinaryPredicate):
             cudf.Series(self.lhs.index, index=cp.arange(len(self.lhs.index)))
         )
 
+        # If the user wants all pairs, return the result. Otherwise,
+        # return a boolean series indicating whether each point is
+        # contained in the corresponding polygon.
         if self.allpairs:
             return allpairs_result
         else:
