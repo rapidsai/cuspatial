@@ -170,6 +170,26 @@ class ContainsProperlyBinpred(BinaryPredicate):
         return (lhs, final_rhs, point_indices)
 
     def _should_use_quadtree(self):
+        """Determine if the quadtree should be used for the binary predicate.
+
+        Returns
+        -------
+        bool
+            True if the quadtree should be used, False otherwise.
+
+        Notes
+        -----
+        1. Quadtree is always used if user requests `allpairs=True`.
+        2. If the number of polygons in the lhs is less than 32, we use the
+           byte-limited algorithm because it is faster and has less memory
+           overhead.
+        3. If the lhs contains more than 32 polygons, we use the quadtree
+           because it does not have a polygon-count limit.
+        4. If the lhs contains multipolygons, we use quadtree because the
+           performance between quadtree and byte-limited is similar, but
+           code complexity would be higher if we did multipolygon
+           reconstruction on both code paths.
+        """
         return (
             len(self.lhs) >= 32 or has_multipolygons(self.lhs) or self.allpairs
         )
