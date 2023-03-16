@@ -284,7 +284,6 @@ class ContainsProperlyBinpred(BinaryPredicate):
 
         # Result can be:
         # A Dataframe of booleans with n_points rows and up to 31 columns.
-        result = point_result
         # Discrete math recombination
         if (
             contains_only_linestrings(self.rhs)
@@ -293,21 +292,29 @@ class ContainsProperlyBinpred(BinaryPredicate):
         ):
             # process for completed linestrings, polygons, and multipoints.
             # Not necessary for points.
-            result["idx"] = point_indices
-            df_result = (
-                result.groupby("idx").sum().sort_index()
-                == result.groupby("idx").count().sort_index()
+            point_result["idx"] = point_indices
+            group_result = (
+                point_result.groupby("idx").sum().sort_index()
+                == point_result.groupby("idx").count().sort_index()
             )
-            result = df_result
-
-        final_result = cudf.Series([False] * len(self.lhs))
-
-        if len(result.columns) > 1:
-            final_result[result.index] = cp.diag(result.values)
         else:
-            final_result[result.index] = result[result.columns[0]]
-        final_result.name = None
-        return final_result
+            group_result = point_result
+
+        # If there is only one column, the result is a series with
+        # one row per point. If it is a dataframe, the result needs
+        # to be converted from each matching row/column value to a
+        # series using `cp.diag`.
+        boolean_series_output = cudf.Series([False] * len(self.lhs))
+        boolean_series_output.name = None
+        if len(point_result.columns) > 1:
+            boolean_series_output[group_result.index] = cp.diag(
+                group_result.values
+            )
+        else:
+            boolean_series_output[group_result.index] = group_result[
+                group_result.columns[0]
+            ]
+        return boolean_series_output
 
     def postprocess(self, point_indices, point_result):
         """Postprocess the output GeoSeries to ensure that they are of the
