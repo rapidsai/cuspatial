@@ -924,7 +924,7 @@ class GeoSeries(cudf.Series):
             self.index = cudf_series.index
             return None
 
-    def contains_properly(self, other, align=True, allpairs=False):
+    def contains_properly(self, other, align=False, allpairs=False):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that contains _other_.
 

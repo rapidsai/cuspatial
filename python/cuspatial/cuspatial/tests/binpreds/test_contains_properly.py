@@ -216,6 +216,42 @@ def test_one_point_two_polygons():
     assert (got == expected).all()
 
 
+def test_ten_fixed_points():
+    gpdpoints = gpd.GeoSeries(
+        [
+            Point(0, 0),
+            Point(0, 0),
+            Point(0.5, 0.25),
+            Point(0.5, 0.25),
+            Point(0.5, 0.25),
+            Point(0.5, 0.25),
+            Point(0.5, 0.25),
+            Point(0.5, 0.25),
+            Point(0, 0),
+            Point(0, 0),
+        ]
+    )
+    gpdpolygons = gpd.GeoSeries(
+        [
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [0, 1], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [0, 1], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [0, 1], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [0, 1], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [0, 1], [1, 1], [0, 0]]),
+        ]
+    )
+    points = cuspatial.from_geopandas(gpdpoints)
+    polygons = cuspatial.from_geopandas(gpdpolygons)
+    got = polygons.contains_properly(points).values_host
+    expected = gpdpolygons.contains(gpdpoints).values
+    assert (got == expected).all()
+
+
 def test_ten_pair_points(point_generator, polygon_generator):
     gpdpoints = gpd.GeoSeries([*point_generator(10)])
     gpdpolygons = gpd.GeoSeries([*polygon_generator(10, 0)])

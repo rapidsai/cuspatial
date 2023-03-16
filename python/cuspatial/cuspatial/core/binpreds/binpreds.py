@@ -7,10 +7,7 @@ import cupy as cp
 import cudf
 
 from cuspatial.core._column.geocolumn import GeoColumn
-from cuspatial.core.binpreds.contains import (
-    byte_limited_contains_properly,
-    quadtree_contains_properly,
-)
+from cuspatial.core.binpreds.contains import contains_properly
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
@@ -167,7 +164,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
         from cuspatial.core.geoseries import GeoSeries
 
         final_rhs = GeoSeries(GeoColumn._from_points_xy(xy_points._column))
-        return (lhs, final_rhs, point_indices)
+        return (lhs, final_rhs, cudf.Series(point_indices))
 
     def _should_use_quadtree(self):
         """Determine if the quadtree should be used for the binary predicate.
@@ -204,13 +201,9 @@ class ContainsProperlyBinpred(BinaryPredicate):
                 "`.contains` can only be called with polygon series."
             )
         if self._should_use_quadtree():
-            point_result = quadtree_contains_properly(
-                points,
-                lhs,
-            )
+            return contains_properly(lhs, points, how="quadtree")
         else:
-            point_result = byte_limited_contains_properly(points, lhs)
-        return point_result
+            return contains_properly(lhs, points, how="byte-limited")
 
     def _convert_quadtree_result_from_part_to_polygon_indices(
         self, point_result
@@ -259,6 +252,46 @@ class ContainsProperlyBinpred(BinaryPredicate):
             ["polygon_index", "point_index"]
         ]
 
+    def _count_results_in_multipoint_geometries(
+        self, point_indices, point_result
+    ):
+        """Count the number of points in each multipoint geometry.
+
+        Parameters
+        ----------
+        point_indices : cudf.Series
+            The indices of the points in the original (rhs) GeoSeries.
+        point_result : cudf.DataFrame
+            The result of a contains_properly call.
+
+        Returns
+        -------
+        cudf.Series
+            The number of points that fell within a particular polygon id.
+        cudf.Series
+            The number of points in each multipoint geometry.
+        """
+        point_indices_df = cudf.Series(
+            point_indices,
+            name="rhs_index",
+            index=cudf.RangeIndex(len(point_indices), name="point_index"),
+        ).reset_index()
+        with_rhs_indices = point_result.merge(
+            point_indices_df, on="point_index"
+        )
+        points_grouped_by_original_polygon = with_rhs_indices[
+            ["point_index", "rhs_index"]
+        ].drop_duplicates()
+        hits = (
+            points_grouped_by_original_polygon.groupby("rhs_index")
+            .count()
+            .sort_index()
+        )
+        expected_count = (
+            point_indices_df.groupby("rhs_index").count().sort_index()
+        )
+        return hits, expected_count
+
     def _postprocess_quadtree_result(self, point_indices, point_result):
         if len(point_result) == 0:
             return cudf.Series([False] * len(self.lhs))
@@ -269,7 +302,6 @@ class ContainsProperlyBinpred(BinaryPredicate):
                 point_result
             )
         )
-
         # Because the quadtree contains_properly call returns a list of
         # points that are contained in each part, parts can be duplicated
         # once their index is converted to a polygon index.
@@ -290,12 +322,46 @@ class ContainsProperlyBinpred(BinaryPredicate):
         else:
             # for each input pair i: result[i] =  true iff point[i] is
             # contained in at least one polygon of multipolygon[i].
-            grouped = allpairs_result.groupby("polygon_index").count() >= len(
-                point_indices
-            )
-            final_result = cudf.Series([False] * len(point_indices))
-            final_result.loc[grouped.index] = True
-            return final_result
+            if (
+                contains_only_linestrings(self.rhs)
+                or contains_only_polygons(self.rhs)
+                or contains_only_multipoints(self.rhs)
+            ):
+                (
+                    hits,
+                    expected_count,
+                ) = self._count_results_in_multipoint_geometries(
+                    point_indices, allpairs_result
+                )
+                result_df = hits.reset_index().merge(
+                    expected_count.reset_index(), on="rhs_index"
+                )
+                result_df["feature_in_polygon"] = (
+                    result_df["point_index_x"] >= result_df["point_index_y"]
+                )
+                final_result = cudf.Series(
+                    [False] * (point_indices.max().item() + 1)
+                )  # point_indices is zero index
+                final_result.loc[
+                    result_df["rhs_index"][result_df["feature_in_polygon"]]
+                ] = True
+                return final_result
+            else:
+                # pairwise
+                if len(self.lhs) == len(self.rhs):
+                    matches = (
+                        allpairs_result["polygon_index"]
+                        == allpairs_result["point_index"]
+                    )
+                    final_result = cudf.Series([False] * len(point_indices))
+                    final_result.loc[
+                        allpairs_result["polygon_index"][matches]
+                    ] = True
+                    return final_result
+                else:
+                    final_result = cudf.Series([False] * len(point_indices))
+                    final_result.loc[allpairs_result["polygon_index"]] = True
+                    return final_result
 
     def _postprocess_brute_force_result(self, point_indices, point_result):
         # If there are 31 or fewer polygons in the input, the result
@@ -351,14 +417,7 @@ class ContainsProperlyBinpred(BinaryPredicate):
         a cudf.DataFrame containing the point index and the part index for
         each point in the polygon.
         """
-        if self._should_use_quadtree():
-            return self._postprocess_quadtree_result(
-                point_indices, point_result
-            )
-        else:
-            return self._postprocess_brute_force_result(
-                point_indices, point_result
-            )
+        return self._postprocess_quadtree_result(point_indices, point_result)
 
 
 class OverlapsBinpred(ContainsProperlyBinpred):
@@ -368,14 +427,25 @@ class OverlapsBinpred(ContainsProperlyBinpred):
         # TODO: Maybe change this to intersection
         if not has_same_geometry(self.lhs, self.rhs):
             return cudf.Series([False] * len(self.lhs))
-        point_result["point_index"] = point_indices
-        hits = point_result.groupby("point_index").sum()
-        size = point_result.groupby("point_index").count()
-        partial_overlap = hits != size
-        non_empty = size > 0
-        at_least_one_overlap = hits > 0
-        group_result = partial_overlap & non_empty & at_least_one_overlap
-        return group_result
+        if len(point_result) == 0:
+            return cudf.Series([False] * len(self.lhs))
+        polygon_indices = (
+            self._convert_quadtree_result_from_part_to_polygon_indices(
+                point_result
+            )
+        )
+        group_counts = polygon_indices.groupby("polygon_index").count()
+        point_counts = (
+            cudf.DataFrame(
+                {"point_indices": point_indices, "input_size": True}
+            )
+            .groupby("point_indices")
+            .count()
+        )
+        result = (group_counts["point_index"] > 0) & (
+            group_counts["point_index"] < point_counts["input_size"]
+        )
+        return result
 
 
 class IntersectsBinpred(ContainsProperlyBinpred):
