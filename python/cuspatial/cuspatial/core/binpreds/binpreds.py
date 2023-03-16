@@ -230,17 +230,19 @@ class ContainsProperlyBinpred(BinaryPredicate):
             cudf.Series(self.lhs.index, index=cp.arange(len(self.lhs.index)))
         )
         # Using allpairs for all requests with more than 31 polygons.
-        if not self.allpairs:
+        if self.allpairs:
+            return result
+        else:
+            # for each input pair i: result[i] =  true iff point[i] is
+            # contained in at least one polygon of multipolygon[i].
             if len(result) == 0:
                 return cudf.Series([False] * len(self.lhs))
             final_result = cudf.Series([False] * len(point_indices))
-            grouped = result.groupby("polygon_index").count() == len(
+            grouped = result.groupby("polygon_index").count() >= len(
                 point_indices
             )
             final_result.loc[grouped.index] = True
             return final_result
-        else:
-            return result
 
     def _postprocess_brute_force_result(self, point_indices, point_result):
         # If there are 31 or fewer polygons in the input, the result

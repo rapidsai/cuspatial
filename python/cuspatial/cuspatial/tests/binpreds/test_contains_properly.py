@@ -439,6 +439,7 @@ def test_multi_contains():
             Point(0.5, 0.25),
             Point(0.5, 0.25),
             Point(0.5, 0.25),
+            Point(1.0, 1.0),
         ]
     )
     gpdlhs = lhs.to_geopandas()
