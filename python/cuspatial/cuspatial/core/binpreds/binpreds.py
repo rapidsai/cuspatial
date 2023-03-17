@@ -18,6 +18,18 @@ from cuspatial.utils.column_utils import (
 
 
 class BinaryPredicate(ABC):
+    """BinaryPredicate is an abstract class that implements the binary
+    predicate algorithm. The binary predicate algorithm is used to compute
+    the relationship between two GeoSeries.
+
+    The algorithm is implemented in three steps: `preprocess`, `_op`, and
+    `postprocess`. The `preprocess` step is used to ensure that the input
+    GeoSeries are of the correct type for the binary predicate. The
+    `_op` step is used to compute the relationship between the points
+    in the input GeoSeries. The `postprocess` step is used to compute
+    the relationship between the input GeoSeries.
+    """
+
     @abstractmethod
     def preprocess(self, lhs, rhs):
         """Preprocess the input data for the binary predicate. This method
@@ -55,6 +67,11 @@ class BinaryPredicate(ABC):
 
         Postprocess converts the raw results of the binary predicate into
         the final result. This is where the discrete math rules are applied.
+        The binary predicate operation does not compute any relationships
+        between features in the input GeoSeries', it only computes the
+        relationship between the points in the input geometries. The
+        postprocess method uses the discrete math rules to compute the
+        relationship between the input geometries.
 
         Parameters
         ----------
