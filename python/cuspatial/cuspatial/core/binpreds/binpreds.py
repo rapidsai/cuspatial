@@ -6,6 +6,7 @@ import cupy as cp
 
 import cudf
 
+import cuspatial
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core.binpreds.contains import contains_properly
 from cuspatial.utils.column_utils import (
@@ -305,13 +306,15 @@ class EqualsBinpred(BinaryPredicate):
         lhs_xy.index = sort_indices
         rhs_xy.index = sort_indices
         lhs_df = lhs_xy.reset_index(drop=False, name="xy")
+        lhs_df["axis"] = lhs_df.index % 2
         rhs_df = rhs_xy.reset_index(drop=False, name="xy")
-        lhs_sorted = lhs_df.sort_values(by=["index", "xy"]).reset_index(
-            drop=True
-        )
-        rhs_sorted = rhs_df.sort_values(by=["index", "xy"]).reset_index(
-            drop=True
-        )
+        rhs_df["axis"] = rhs_df.index % 2
+        lhs_sorted = lhs_df.sort_values(
+            by=["index", "axis", "xy"]
+        ).reset_index(drop=True)
+        rhs_sorted = rhs_df.sort_values(
+            by=["index", "axis", "xy"]
+        ).reset_index(drop=True)
         return (
             PreprocessorOutput(lhs_sorted["xy"], lhs.point_indices()),
             PreprocessorOutput(rhs_sorted["xy"], rhs.point_indices()),
@@ -380,11 +383,27 @@ class EqualsBinpred(BinaryPredicate):
         lhs_xy.iloc[1::2] = lhs_y
         rhs_xy.iloc[::2] = rhs_x
         rhs_xy.iloc[1::2] = rhs_y
-
         return (
             PreprocessorOutput(lhs_xy, lhs.point_indices()),
             PreprocessorOutput(rhs_xy, rhs.point_indices()),
             initial,
+        )
+
+    def _polygons_to_multipoints(self, polygons):
+        """Strip the first value of each polygon"""
+        offsets = polygons.ring_offset[:-1]
+        x = polygons.x
+        x[offsets] = None
+        x = x.dropna()
+        new_offsets = self.lhs.polygons.ring_offset - cp.arange(
+            len(self.lhs.polygons.ring_offset)
+        )
+        y = polygons.y
+        y[offsets] = None
+        y = y.dropna()
+        xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
+        return cuspatial.GeoSeries.from_multipoints_xy(
+            xy, new_offsets.astype("int32")
         )
 
     def _sort_polygons(self, lhs, rhs, initial):
@@ -394,39 +413,12 @@ class EqualsBinpred(BinaryPredicate):
         # Sort the lhs and rhs xy values according to the
         # lhs and rhs point_indices.
 
-        # Assume first == last
-        lhs_offsets = self.lhs.polygons.ring_offset[:-1]
-        lhs_x = lhs.x
-        lhs_x[lhs_offsets] = None
-        lhs_x = lhs_x.dropna()
-        lhs_x_new_offsets = self.lhs.polygons.ring_offset - cp.arange(len(
-            self.lhs.polygons.ring_offset
-        ))
-        breakpoint()
-        # Add column of polygon indices to a dataframe
-        #  containing the xy values as columns.
-        lhs_sort_df = cudf.DataFrame(
-            {"x": lhs_x, "y": lhs_y, "index": lhs.point_indices()}
-        )
-        rhs_sort_df = cudf.DataFrame(
-            {"x": rhs_x, "y": rhs_y, "index": rhs.point_indices()}
-        )
-        # Sort by polygon index and xy values.
-        lhs_sorted_df = lhs_sort_df.sort_values(by=["index", "x", "y"])
-        rhs_sorted_df = rhs_sort_df.sort_values(by=["index", "x", "y"])
-        # Drop polygon index column.
-        lhs_sorted_df = lhs_sorted_df.drop("index", axis=1)
-        rhs_sorted_df = rhs_sorted_df.drop("index", axis=1)
-        # Reconstruct xy columns.
-        lhs_xy = lhs.xy
-        rhs_xy = rhs.xy
-        lhs_xy.iloc[::2] = lhs_sorted_df["x"]
-        lhs_xy.iloc[1::2] = lhs_sorted_df["y"]
-        rhs_xy.iloc[::2] = rhs_sorted_df["x"]
-        rhs_xy.iloc[1::2] = rhs_sorted_df["y"]
-        return (
-            PreprocessorOutput(lhs_xy, lhs.point_indices()),
-            PreprocessorOutput(rhs_xy, rhs.point_indices()),
+        lhs_polygons_as_multipoints = self._polygons_to_multipoints(lhs)
+        rhs_polygons_as_multipoints = self._polygons_to_multipoints(rhs)
+
+        return self._sort_multipoints(
+            lhs_polygons_as_multipoints.multipoints,
+            rhs_polygons_as_multipoints.multipoints,
             initial,
         )
 
@@ -470,7 +462,6 @@ class EqualsBinpred(BinaryPredicate):
             else:
                 return self._cancel_op(lhs, rhs, lengths_equal)
         elif contains_only_polygons(lhs):
-            breakpoint()
             geoms_equal = self._offset_equals(
                 lhs.polygons.part_offset, rhs.polygons.part_offset
             )
@@ -507,7 +498,6 @@ class EqualsBinpred(BinaryPredicate):
         return a & b
 
     def _op(self, lhs, rhs):
-        breakpoint()
         indices = lhs.point_indices()
         result = self._vertices_equals(lhs.xy, rhs.xy)
         result_df = cudf.DataFrame(
