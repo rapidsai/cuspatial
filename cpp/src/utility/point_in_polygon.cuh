@@ -34,7 +34,6 @@ inline __device__ bool is_point_in_polygon(T const x,
                                            cudf::column_device_view const& poly_points_y)
 {
   bool in_polygon     = false;
-  bool is_colinear    = false;
   uint32_t poly_begin = poly_offsets.element<uint32_t>(poly_idx);
   uint32_t poly_end   = poly_idx < poly_offsets.size() - 1
                           ? poly_offsets.element<uint32_t>(poly_idx + 1)
@@ -71,10 +70,6 @@ inline __device__ bool is_point_in_polygon(T const x,
       if (float_equal(run * rise_to_point, run_to_point * rise)) { return false; }
 
       if (y_in_bounds && x < (run / rise) * rise_to_point + x0) { in_polygon = not in_polygon; }
-    }
-    if (is_colinear) {
-      in_polygon = false;
-      break;
     }
   }
 
