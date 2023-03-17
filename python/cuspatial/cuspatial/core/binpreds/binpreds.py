@@ -227,6 +227,10 @@ class ContainsProperlyBinpred(BinaryPredicate):
         """
         # Get the length of each part, map it to indices, and store
         # the result in a dataframe.
+        if not contains_only_polygons(self.lhs):
+            raise TypeError(
+                "`.contains` can only be called with polygon series."
+            )
         rings_to_parts = cp.array(self.lhs.polygons.part_offset)
         part_sizes = rings_to_parts[1:] - rings_to_parts[:-1]
         parts_map = cudf.Series(
@@ -451,12 +455,18 @@ class OverlapsBinpred(ContainsProperlyBinpred):
 class IntersectsBinpred(ContainsProperlyBinpred):
     def preprocess(self, lhs, rhs):
         if contains_only_polygons(rhs):
-            (lhs, rhs) = (rhs, lhs)
-        return super().preprocess(lhs, rhs)
+            (self.lhs, self.rhs) = (rhs, lhs)
+        return super().preprocess(rhs, lhs)
+
+    def postprocess(self, point_indices, point_result):
+        # Same as contains_properly, but we need to check that the
+        # dimensions are the same.
+        contains_result = super().postprocess(point_indices, point_result)
+        return contains_result
 
 
 class WithinBinpred(ContainsProperlyBinpred):
     def preprocess(self, lhs, rhs):
         if contains_only_polygons(rhs):
-            (lhs, rhs) = (rhs, lhs)
-        return super().preprocess(lhs, rhs)
+            (self.lhs, self.rhs) = (rhs, lhs)
+        return super().preprocess(rhs, lhs)
