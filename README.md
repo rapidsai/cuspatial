@@ -37,16 +37,16 @@ Output:
 1    POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))
 ```
 
-For additional examples, browse our complete [API documentation](https://docs.rapids.ai/api/cuspatial/stable/), or check out our more detailed [notebooks](https://github.com/rapidsai/notebooks-contrib) - the NYC Taxi and Weather notebooks make use of cuSpatial.
+For additional examples, browse the complete [API documentation](https://docs.rapids.ai/api/cuspatial/stable/), or check out more detailed [notebooks](https://github.com/rapidsai/notebooks-contrib). the [NYC Taxi][1] and [Weather][2] notebooks make use of cuSpatial.
 
 ## Supported Geospatial Operations
 
 cuSpatial is constantly working on new features! Check out the [epics](https://github.com/orgs/rapidsai/projects/41/views/4) for a high-level view of our development, or the [roadmap](https://github.com/orgs/rapidsai/projects/41/views/5) for the details!
 
 ### Core Spatial Functions
-- DE9-IM Functionality [Follow Along!](https://github.com/rapidsai/cuspatial/milestone/5)
+- Spatial relationship queries (DE-9IM) [Follow Development!](https://github.com/rapidsai/cuspatial/milestone/5)
   - [Contains Properly](https://docs.rapids.ai/api/cuspatial/stable/api_docs/geopandas_compatibility.html#cuspatial.GeoSeries.contains_properly)
-- ST_Distance equivalent functionality [Follow Along!](https://github.com/rapidsai/cuspatial/issues/767)
+- Distance computations (ST_Distance) [Follow Development!](https://github.com/rapidsai/cuspatial/issues/767)
   - [Pairwise Linestring Distance](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.pairwise_linestring_distance)
   - [Pairwise Point-Linestring Distance](https://docs.rapids.ai/api/cuspatial/stable/api_docs/spatial.html#cuspatial.pairwise_point_linestring_distance)
 - Linestring-linestring intersection
@@ -57,7 +57,8 @@ cuSpatial is constantly working on new features! Check out the [epics](https://g
 ### Indexing and Join Functions
 - [Quadtree indexing](https://docs.rapids.ai/api/cuspatial/nightly/user_guide/cuspatial_api_examples.html#Quadtree-Indexing)
 - [Spatial joins](https://docs.rapids.ai/api/cuspatial/nightly/user_guide/cuspatial_api_examples.html#Indexed-Spatial-Joins)
-- [Quadtree-based point-to-polygon](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.quadtree_point_in_polygon)
+- [Quadtree-based point-in-polygon](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.quadtree_point_in_polygon)
+- [Quadtree-based point-to-nearest-linestring](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.quadtree_point_to_nearest_linestring)
 
 ### Trajectory Functions
 - [Deriving trajectories from point location data](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.derive_trajectories)
@@ -65,7 +66,7 @@ cuSpatial is constantly working on new features! Check out the [epics](https://g
 - [Computing spatial bounding boxes of trajectories](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.trajectory_bounding_boxes)
 
 ### What if operations I need aren't supported?
-Thanks to the `from_geopandas` and `to_geopandas` functions you can accelerate what cuSpatial supports, and leave the rest of the workflow in place:
+Thanks to the `from_geopandas` and `to_geopandas` functions you can accelerate what cuSpatial supports, and leave the rest of the workflow in place.
 
 ```mermaid
 ---
@@ -105,7 +106,7 @@ NVIDIA driver 450.80.02+
 Pascal architecture or better (Compute Capability >=6.0)
 ```
 
-### Quickstart - Docker
+### Quick start: Docker
 Use the [RAPIDS Release Selector](https://rapids.ai/start.html#get-rapids), selecting `Docker` as the installation method. All RAPIDS Docker images contain cuSpatial.
 
 An example command from the Release Selector:
