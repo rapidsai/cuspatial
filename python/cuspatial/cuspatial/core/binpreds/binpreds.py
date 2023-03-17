@@ -6,7 +6,6 @@ import cupy as cp
 
 import cudf
 
-import cuspatial
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core.binpreds.contains import contains_properly
 from cuspatial.utils.column_utils import (
@@ -321,8 +320,9 @@ class EqualsBinpred(BinaryPredicate):
             initial,
         )
 
-    def _swap_linestring_first_and_last(self, linestring):
-        """Swap the first and last values of a linestring"""
+    def _maybe_swap_linestring_first_and_last(self, linestring):
+        """Swap the first and last values of a linestring if the
+        first value is greater than the last value."""
         # Save temporary values since x cannot be used unmodified
         x = linestring.x
         y = linestring.y
@@ -346,47 +346,18 @@ class EqualsBinpred(BinaryPredicate):
         )
         return cudf.Series(cp.column_stack((x.values, y.values)))
 
-    def _sort_linestrings(self, lhs, rhs, initial):
+    def _order_linestring_endings(self, lhs, rhs, initial):
         """Swap first and last values of each linestring to ensure that
         the first point is the lowest value. This is necessary to ensure
         that the endpoints are not included in the comparison."""
         # TODO: Refactor the 4x repetition here into a utility method.
 
-        lhs_xy = self._swap_linestring_first_and_last(lhs)
-        rhs_xy = self._swap_linestring_first_and_last(rhs)
+        lhs_xy = self._maybe_swap_linestring_first_and_last(lhs)
+        rhs_xy = self._maybe_swap_linestring_first_and_last(rhs)
 
         return (
             PreprocessorOutput(lhs_xy, lhs.point_indices()),
             PreprocessorOutput(rhs_xy, rhs.point_indices()),
-            initial,
-        )
-
-    def _polygons_to_multipoints(self, polygons):
-        """Strip the first value of each polygon"""
-        offsets = polygons.ring_offset[:-1]
-        x = polygons.x
-        x[offsets] = None
-        x = x.dropna()
-        y = polygons.y
-        y[offsets] = None
-        y = y.dropna()
-        new_offsets = self.lhs.polygons.ring_offset - cp.arange(
-            len(self.lhs.polygons.ring_offset)
-        )
-        xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
-        return cuspatial.GeoSeries.from_multipoints_xy(
-            xy, new_offsets.astype("int32")
-        )
-
-    def _sort_polygons(self, lhs, rhs, initial):
-        """Sort xy according to bins defined by offset"""
-
-        lhs_polygons_as_multipoints = self._polygons_to_multipoints(lhs)
-        rhs_polygons_as_multipoints = self._polygons_to_multipoints(rhs)
-
-        return self._sort_multipoints(
-            lhs_polygons_as_multipoints.multipoints,
-            rhs_polygons_as_multipoints.multipoints,
             initial,
         )
 
@@ -419,10 +390,7 @@ class EqualsBinpred(BinaryPredicate):
                 lhs.lines.part_offset, rhs.lines.part_offset
             )
             if lengths_equal.any():
-                # Linestrings are equal if their sorted points
-                # are equal. This is unintuitive and perhaps
-                # incorrect, but it is the behavior of shapely.
-                return self._sort_linestrings(
+                return self._order_linestring_endings(
                     lhs[lengths_equal].lines,
                     rhs[lengths_equal].lines,
                     lengths_equal,
@@ -430,22 +398,7 @@ class EqualsBinpred(BinaryPredicate):
             else:
                 return self._cancel_op(lhs, rhs, lengths_equal)
         elif contains_only_polygons(lhs):
-            geoms_equal = self._offset_equals(
-                lhs.polygons.part_offset, rhs.polygons.part_offset
-            )
-            lengths_equal = self._offset_equals(
-                lhs[geoms_equal].polygons.ring_offset,
-                rhs[geoms_equal].polygons.ring_offset,
-            )
-            if lengths_equal.any():
-                # TODO: Do sort polygons?
-                return self._sort_polygons(
-                    lhs[lengths_equal].polygons,
-                    rhs[lengths_equal].polygons,
-                    lengths_equal,
-                )
-            else:
-                return self._cancel_op(lhs, rhs, lengths_equal)
+            raise NotImplementedError
         elif contains_only_points(lhs):
             return (lhs.points, rhs.points, type_compare)
 
@@ -481,6 +434,13 @@ class EqualsBinpred(BinaryPredicate):
 
 
 class CrossesBinpred(EqualsBinpred):
+    """An object is said to cross other if its interior intersects the
+    interior of the other but does not contain it, and the dimension of
+    the intersection is less than the dimension of the one or the other.
+
+    This is only implemented for `points.crosses(points)` at this time.
+    """
+
     def postprocess(self, point_indices, point_result):
         if has_same_geometry(self.lhs, self.rhs) and contains_only_points(
             self.lhs
@@ -495,5 +455,11 @@ class CrossesBinpred(EqualsBinpred):
 
 
 class CoversBinpred(EqualsBinpred):
+    """An object A covers another B if no points of B lie in the exterior
+    of A, and at least one point of the interior of B lies in the interior
+    of A.
+
+    This is only implemented for `points.covers(points)` at this time."""
+
     def postprocess(self, point_indices, point_result):
         return cudf.Series(point_result, index=point_indices)

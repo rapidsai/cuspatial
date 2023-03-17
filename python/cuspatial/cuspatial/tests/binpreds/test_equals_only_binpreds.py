@@ -170,72 +170,6 @@ def test_10000_polygons_geom_equals_10000_linestrings(
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-def test_polygon_geom_equals_polygon():
-    gpdpolygon1 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
-    gpdpolygon2 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
-    polygon1 = cuspatial.from_geopandas(gpdpolygon1)
-    polygon2 = cuspatial.from_geopandas(gpdpolygon2)
-    got = polygon1.geom_equals(polygon2)
-    expected = gpdpolygon1.geom_equals(gpdpolygon2)
-    pd.testing.assert_series_equal(expected, got.to_pandas())
-
-
-def test_polygon_geom_equals_polygon_swap_inner():
-    gpdpolygon1 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
-    gpdpolygon2 = gpd.GeoSeries(Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]))
-    polygon1 = cuspatial.from_geopandas(gpdpolygon1)
-    polygon2 = cuspatial.from_geopandas(gpdpolygon2)
-    got = polygon1.geom_equals(polygon2)
-    expected = gpdpolygon1.geom_equals(gpdpolygon2)
-    pd.testing.assert_series_equal(expected, got.to_pandas())
-
-
-@pytest.mark.parametrize(
-    "lhs",
-    [
-        [
-            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-        ],
-        [
-            Polygon([[0, 0], [2, 0], [2, 2], [0, 0]]),
-            Polygon([[0, 0], [2, 0], [2, 2], [0, 0]]),
-            Polygon([[0, 0], [2, 0], [2, 2], [0, 0]]),
-        ],
-        [
-            Polygon([[0, 0], [3, 0], [3, 3], [0, 0]]),
-            Polygon([[0, 0], [3, 0], [3, 3], [0, 0]]),
-            Polygon([[0, 0], [3, 0], [3, 3], [0, 0]]),
-        ],
-    ],
-)
-def test_3_polygons_geom_equals_3_polygons_one_equal(lhs):
-    gpdpolygons1 = gpd.GeoSeries(lhs)
-    gpdpolygons2 = gpd.GeoSeries(
-        [
-            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-            Polygon([[0, 0], [2, 0], [2, 2], [0, 0]]),
-            Polygon([[0, 0], [3, 0], [3, 3], [0, 0]]),
-        ]
-    )
-    polygons1 = cuspatial.from_geopandas(gpdpolygons1)
-    polygons2 = cuspatial.from_geopandas(gpdpolygons2)
-    got = polygons1.geom_equals(polygons2)
-    expected = gpdpolygons1.geom_equals(gpdpolygons2)
-    pd.testing.assert_series_equal(expected, got.to_pandas())
-
-
-def test_10000_polygons_geom_equals_10000_polygons(polygon_generator):
-    gpdpolygons1 = gpd.GeoSeries([*polygon_generator(10000, 0)])
-    gpdpolygons2 = gpd.GeoSeries([*polygon_generator(10000, 0)])
-    polygons1 = cuspatial.from_geopandas(gpdpolygons1)
-    polygons2 = cuspatial.from_geopandas(gpdpolygons2)
-    got = polygons1.geom_equals(polygons2)
-    expected = gpdpolygons1.geom_equals(gpdpolygons2)
-    pd.testing.assert_series_equal(expected, got.to_pandas())
-
-
 def test_point_contains_point():
     gpdpoint1 = gpd.GeoSeries([Point(0, 0)])
     gpdpoint2 = gpd.GeoSeries([Point(0, 0)])
@@ -548,6 +482,149 @@ def test_3_linestrings_geom_equals_3_linestrings_longer():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
+def test_pair_linestrings_different_last_two():
+    gpdlinestring1 = gpd.GeoSeries(
+        [
+            LineString([(0, 0), (1, 1), (2, 1)]),
+        ]
+    )
+    gpdlinestring2 = gpd.GeoSeries(
+        [
+            LineString([(0, 0), (2, 1), (1, 1)]),
+        ]
+    )
+    linestring1 = cuspatial.from_geopandas(gpdlinestring1)
+    linestring2 = cuspatial.from_geopandas(gpdlinestring2)
+    got = linestring1.geom_equals(linestring2)
+    expected = gpdlinestring1.geom_equals(gpdlinestring2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+"""These tests will be reintroduced when we have `.contains` implemented
+def test_pair_polygons_different_ordering():
+    gpdpoly1 = gpd.GeoSeries(
+        [
+            Polygon([(0, 0), (1, 0), (1, 1), (0.5, 0.5), (0, 1), (0, 0)]),
+        ]
+    )
+    gpdpoly2 = gpd.GeoSeries(
+        [
+            Polygon([(0, 0), (0.5, 0.5), (1, 0), (1, 1), (0, 1), (0, 0)]),
+        ]
+    )
+    poly1 = cuspatial.from_geopandas(gpdpoly1)
+    poly2 = cuspatial.from_geopandas(gpdpoly2)
+    got = poly1.geom_equals(poly2)
+    expected = gpdpoly1.geom_equals(gpdpoly2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_pair_polygons_different_winding():
+    gpdpoly1 = gpd.GeoSeries(
+        [
+            Polygon([(0, 0), (1, 0), (1, 1), (0.5, 0.5), (0, 1), (0, 0)]),
+        ]
+    )
+    gpdpoly2 = gpd.GeoSeries(
+        [
+            Polygon([(1, 0), (1, 1), (0.5, 0.5), (0, 1), (0, 0), (1, 0)]),
+        ]
+    )
+    poly1 = cuspatial.from_geopandas(gpdpoly1)
+    poly2 = cuspatial.from_geopandas(gpdpoly2)
+    got = poly1.geom_equals(poly2)
+    expected = gpdpoly1.geom_equals(gpdpoly2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_3_polygons_geom_equals_3_polygons_misordered_corrected_vertex():
+    gpdpoly1 = gpd.GeoSeries(
+        [
+            Polygon([(0, 0), (0, 1), (1, 1), (0, 0)]),
+            Polygon([(0, 0), (0, 1), (1, 1), (0, 0)]),
+            Polygon([(0, 0), (0, 1), (1, 1), (0, 0)]),
+        ]
+    )
+    gpdpoly2 = gpd.GeoSeries(
+        [
+            Polygon([(0, 0), (1, 1), (0, 1), (0, 0)]),  # Oppositely wound
+            Polygon([(1, 1), (0, 1), (0, 0), (1, 1)]),  # Wound by +1 offset
+            Polygon([(0, 1), (0, 0), (1, 1), (0, 1)]),  # Wound by -1 offset
+        ]
+    )
+    poly1 = cuspatial.from_geopandas(gpdpoly1)
+    poly2 = cuspatial.from_geopandas(gpdpoly2)
+    got = poly1.geom_equals(poly2)
+    expected = gpdpoly1.geom_equals(gpdpoly2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_polygon_geom_equals_polygon():
+    gpdpolygon1 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
+    gpdpolygon2 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
+    polygon1 = cuspatial.from_geopandas(gpdpolygon1)
+    polygon2 = cuspatial.from_geopandas(gpdpolygon2)
+    got = polygon1.geom_equals(polygon2)
+    expected = gpdpolygon1.geom_equals(gpdpolygon2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_polygon_geom_equals_polygon_swap_inner():
+    gpdpolygon1 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
+    gpdpolygon2 = gpd.GeoSeries(Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]))
+    polygon1 = cuspatial.from_geopandas(gpdpolygon1)
+    polygon2 = cuspatial.from_geopandas(gpdpolygon2)
+    got = polygon1.geom_equals(polygon2)
+    expected = gpdpolygon1.geom_equals(gpdpolygon2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+@pytest.mark.parametrize(
+    "lhs",
+    [
+        [
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+        ],
+        [
+            Polygon([[0, 0], [2, 0], [2, 2], [0, 0]]),
+            Polygon([[0, 0], [2, 0], [2, 2], [0, 0]]),
+            Polygon([[0, 0], [2, 0], [2, 2], [0, 0]]),
+        ],
+        [
+            Polygon([[0, 0], [3, 0], [3, 3], [0, 0]]),
+            Polygon([[0, 0], [3, 0], [3, 3], [0, 0]]),
+            Polygon([[0, 0], [3, 0], [3, 3], [0, 0]]),
+        ],
+    ],
+)
+def test_3_polygons_geom_equals_3_polygons_one_equal(lhs):
+    gpdpolygons1 = gpd.GeoSeries(lhs)
+    gpdpolygons2 = gpd.GeoSeries(
+        [
+            Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+            Polygon([[0, 0], [2, 0], [2, 2], [0, 0]]),
+            Polygon([[0, 0], [3, 0], [3, 3], [0, 0]]),
+        ]
+    )
+    polygons1 = cuspatial.from_geopandas(gpdpolygons1)
+    polygons2 = cuspatial.from_geopandas(gpdpolygons2)
+    got = polygons1.geom_equals(polygons2)
+    expected = gpdpolygons1.geom_equals(gpdpolygons2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_10000_polygons_geom_equals_10000_polygons(polygon_generator):
+    gpdpolygons1 = gpd.GeoSeries([*polygon_generator(10000, 0)])
+    gpdpolygons2 = gpd.GeoSeries([*polygon_generator(10000, 0)])
+    polygons1 = cuspatial.from_geopandas(gpdpolygons1)
+    polygons2 = cuspatial.from_geopandas(gpdpolygons2)
+    got = polygons1.geom_equals(polygons2)
+    expected = gpdpolygons1.geom_equals(gpdpolygons2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
 def test_3_polygons_geom_equals_3_polygons_different_sizes():
     gpdpoly1 = gpd.GeoSeries(
         [
@@ -592,27 +669,4 @@ def test_3_polygons_geom_equals_3_polygons_misordered():
     got = poly1.geom_equals(poly2)
     expected = gpdpoly1.geom_equals(gpdpoly2)
     pd.testing.assert_series_equal(expected, got.to_pandas())
-
-
-def test_3_polygons_geom_equals_3_polygons_misordered_corrected_vertex():
-    """This test is to compare that the correct points are used compared to
-    above."""
-    gpdpoly1 = gpd.GeoSeries(
-        [
-            Polygon([(0, 0), (0, 1), (1, 1), (0, 0)]),
-            Polygon([(0, 0), (0, 1), (1, 1), (0, 0)]),
-            Polygon([(0, 0), (0, 1), (1, 1), (0, 0)]),
-        ]
-    )
-    gpdpoly2 = gpd.GeoSeries(
-        [
-            Polygon([(0, 0), (1, 1), (0, 1), (0, 0)]),  # Oppositely wound
-            Polygon([(1, 1), (0, 1), (0, 0), (1, 1)]),  # Wound by +1 offset
-            Polygon([(0, 1), (0, 0), (1, 1), (0, 1)]),  # Wound by -1 offset
-        ]
-    )
-    poly1 = cuspatial.from_geopandas(gpdpoly1)
-    poly2 = cuspatial.from_geopandas(gpdpoly2)
-    got = poly1.geom_equals(poly2)
-    expected = gpdpoly1.geom_equals(gpdpoly2)
-    pd.testing.assert_series_equal(expected, got.to_pandas())
+"""
