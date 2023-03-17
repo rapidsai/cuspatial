@@ -18,6 +18,14 @@ from cuspatial.utils.column_utils import (
 
 
 class PreprocessorOutput:
+    """The output of the preprocess method of a binary predicate.
+
+    This makes it possible to create a class that matches the necessary
+    signature of a geoseries.GeoColumnAccessor object. In some cases the
+    preprocessor may need to reorder the input data, in which case the
+    preprocessor will return a PreprocessorOutput object instead of a
+    GeoColumnAccessor."""
+
     def __init__(self, coords, indices) -> None:
         self.vertices = coords
         self.indices = indices
@@ -348,9 +356,9 @@ class EqualsBinpred(BinaryPredicate):
 
     def _order_linestring_endings(self, lhs, rhs, initial):
         """Swap first and last values of each linestring to ensure that
-        the first point is the lowest value. This is necessary to ensure
-        that the endpoints are not included in the comparison."""
-        # TODO: Refactor the 4x repetition here into a utility method.
+        the first point is lexicographically prior to the last point.
+        This is necessary to ensure that the endpoints are not included
+        in the comparison."""
 
         lhs_xy = self._maybe_swap_linestring_first_and_last(lhs)
         rhs_xy = self._maybe_swap_linestring_first_and_last(rhs)
