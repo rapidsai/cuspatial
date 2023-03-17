@@ -14,7 +14,9 @@
 - [cuSpatial Roadmap](https://github.com/orgs/rapidsai/projects/41/views/5): Report issues or request features.
 
 ## Overview
-Now based on the [GeoArrow](https://github.com/geoarrow/geoarrow) format, cuSpatial accelerates vector geospatial operations through GPU parallelization. As part of the RAPIDS libraries, it's inherently connected to [cuDF](https://github.com/rapidsai/cudf), [cuML](https://github.com/rapidsai/cuml), and [cuGraph](https://github.com/rapidsai/cugraph), enabling GPU acceleration across entire workflows. 
+cuSpatial accelerates vector geospatial operations through GPU parallelization. As part of the RAPIDS libraries, cuSpatial is inherently connected to [cuDF](https://github.com/rapidsai/cudf), [cuML](https://github.com/rapidsai/cuml), and [cuGraph](https://github.com/rapidsai/cugraph), enabling GPU acceleration across entire workflows. 
+
+cuSpatial represents data in [GeoArrow](https://github.com/geoarrow/geoarrow) format, which enables compatibility with the [Apache Arrow](https://arrow.apache.org) ecosystem.
 
 cuSpatial's Python API is closely matched to GeoPandas and data can seamlessly transition between the two:
 ```python
