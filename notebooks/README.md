@@ -14,6 +14,7 @@ documentation tree,
 Notebook Title | Data set(s) | Notebook Description | External Download (Size)
 --- | --- | --- | ---
 [NYC Taxi Years Correlation](nyc_taxi_years_correlation.ipynb) | [NYC Taxi Yellow 01/2016, 01/2017, taxi zone data](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page) | Demonstrates using Point in Polygon to correlate the NYC Taxi datasets pre-2017 `lat/lon` locations with the post-2017 `LocationID` for cross format comparisons. | Yes (~3GB)
+[GTC 2023](GTC-2023.ipynb) | [National Address Database](https://nationaladdressdata.s3.amazonaws.com/NAD_r12_TXT.zip) [NYC Taxi Zones](https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip) [taxi2015.csv](https://rapidsai-data.s3.us-east-2.amazonaws.com/viz-data/nyc_taxi.tar.gz) | Reverse Geocoding of 22GB of datasets in NYC | Yes (~22GB)
 
 ## For more details
 Many more examples can be found in the [RAPIDS Notebooks
