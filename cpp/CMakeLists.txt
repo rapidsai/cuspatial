@@ -103,7 +103,10 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 rapids_cpm_init()
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
-
+# find or install GoogleTest
+if (CUSPATIAL_BUILD_TESTS)
+    include(cmake/thirdparty/get_gtest.cmake)
+endif()
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
@@ -279,9 +282,10 @@ rapids_export(
 # * build documentation ----------------------------------------------------------------------------
 
 find_package(Doxygen)
-if(Doxygen_FOUND)
 
-# doc targets for cuDF
+if(DOXYGEN_FOUND)
+
+# doc targets for cuSpatial
 add_custom_command(
   OUTPUT CUSPATIAL_DOXYGEN
   WORKING_DIRECTORY ${CUSPATIAL_SOURCE_DIR}/doxygen

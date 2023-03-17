@@ -194,7 +194,7 @@ struct compute_quadtree_point_to_nearest_linestring {
       //     pl_pairs_and_dist.append((point, linestring, min_distance(point, linestring)))
       // ```
       //
-      // However, the above psuedocode produces values in an order such that the distance
+      // However, the above pseudocode produces values in an order such that the distance
       // from a point to each linestring cannot be reduced with `thrust::reduce_by_key`:
       // ```
       //   point | linestring | distance
