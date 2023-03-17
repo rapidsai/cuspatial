@@ -12,21 +12,21 @@ dependencies and RAPIDS libraries automatically fetched and correctly versioned.
 script commands for simple building and testing of all RAPIDS libraries, including cuSpatial.
 `rapids-compose` is the recommended way to set up your environment to develop for cuspatial.
 
-### To build and install cuSpatial from source:
+## To build and install cuSpatial from source:
 
-#### Pre-requisite
+### Pre-requisite
 
 - gcc >= 7.5
 - cmake >= 3.23
 - miniconda
 
-#### Fetch cuSpatial repository
+### Fetch cuSpatial repository
 
 ```shell
 export `CUSPATIAL_HOME=$(pwd)/cuspatial` && \
 git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
 ```
-#### Install dependencies
+### Install dependencies
 
 1. `export CUSPATIAL_HOME=$(pwd)/cuspatial`
 2. clone the cuSpatial repo
@@ -35,7 +35,7 @@ git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
 conda env update --file conda/environments/all_cuda-115_arch-x86_64.yaml
 ```
 
-#### Build and install cuSpatial
+### Build and install cuSpatial
 
 1. Compile and install
    ```shell
