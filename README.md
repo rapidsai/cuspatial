@@ -135,3 +135,7 @@ See the [RAPIDS release selector](https://rapids.ai/start.html#get-rapids) for m
 ### Install from Source
 
 To build and install cuSpatial from source please see the [developer documentation](https://docs.rapids.ai/api/cuspatial/stable/developer_guide/development_environment.html).
+
+#### Appendix/Footnotes
+[1]:https://github.com/rapidsai-community/notebooks-contrib/blob/main/community_tutorials_and_guides/taxi/NYCTaxi-E2E.ipynb
+[2]:https://github.com/rapidsai-community/notebooks-contrib/blob/main/community_tutorials_and_guides/weather.ipynb
