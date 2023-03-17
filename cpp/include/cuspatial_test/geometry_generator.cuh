@@ -87,7 +87,7 @@ VecIterator generate_polygon(std::size_t num_sides_per_ring,
   points_it = generate_ring(num_sides_per_ring, centroid, radius, points_it, stream);
 
   // Align hole centroid to the horizontal axis of the polygon centroid
-  T hole_radius           = radius / num_holes;
+  T hole_radius           = radius / (num_holes + 1);
   T max_hole_displacement = radius - hole_radius;
 
   // make hole
