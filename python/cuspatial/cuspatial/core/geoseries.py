@@ -37,8 +37,7 @@ T = TypeVar("T", bound="GeoSeries")
 
 
 class GeoSeries(cudf.Series):
-    """
-    cuspatial.GeoSeries enables GPU-backed storage and computation of
+    """cuspatial.GeoSeries enables GPU-backed storage and computation of
     shapely-like objects. Our goal is to give feature parity with GeoPandas.
     At this time, only from_geopandas and to_geopandas are directly supported.
     cuspatial GIS, indexing, and trajectory functions depend on the arrays
@@ -225,34 +224,26 @@ class GeoSeries(cudf.Series):
 
     @property
     def points(self):
-        """
-        Access the `PointsArray` of the underlying `GeoArrowBuffers`.
-        """
+        """Access the `PointsArray` of the underlying `GeoArrowBuffers`."""
         return self.GeoColumnAccessor(self._column.points, self._column._meta)
 
     @property
     def multipoints(self):
-        """
-        Access the `MultiPointArray` of the underlying `GeoArrowBuffers`.
-        """
+        """Access the `MultiPointArray` of the underlying `GeoArrowBuffers`."""
         return self.MultiPointGeoColumnAccessor(
             self._column.mpoints, self._column._meta
         )
 
     @property
     def lines(self):
-        """
-        Access the `LineArray` of the underlying `GeoArrowBuffers`.
-        """
+        """Access the `LineArray` of the underlying `GeoArrowBuffers`."""
         return self.LineStringGeoColumnAccessor(
             self._column.lines, self._column._meta
         )
 
     @property
     def polygons(self):
-        """
-        Access the `PolygonArray` of the underlying `GeoArrowBuffers`.
-        """
+        """Access the `PolygonArray` of the underlying `GeoArrowBuffers`."""
         return self.PolygonGeoColumnAccessor(
             self._column.polygons, self._column._meta
         )
@@ -262,9 +253,7 @@ class GeoSeries(cudf.Series):
         return self.to_pandas().__repr__()
 
     class GeoSeriesLocIndexer:
-        """
-        Map the index to an integer Series and use that.
-        """
+        """Map the index to an integer Series and use that."""
 
         def __init__(self, _sr):
             self._sr = _sr
@@ -294,9 +283,7 @@ class GeoSeries(cudf.Series):
                 return result
 
     class GeoSeriesILocIndexer:
-
-        """
-        Each row of a GeoSeries is one of the six types: Point, MultiPoint,
+        """Each row of a GeoSeries is one of the six types: Point, MultiPoint,
         LineString, MultiLineString, Polygon, or MultiPolygon.
         """
 
@@ -354,21 +341,16 @@ class GeoSeries(cudf.Series):
 
     @property
     def loc(self):
-        """
-        Not currently supported.
-        """
+        """Not currently supported."""
         return self.GeoSeriesLocIndexer(self)
 
     @property
     def iloc(self):
-        """
-        Return the i-th row of the GeoSeries.
-        """
+        """Return the i-th row of the GeoSeries."""
         return self.GeoSeriesILocIndexer(self)
 
     def to_geopandas(self, nullable=False):
-        """
-        Returns a new GeoPandas GeoSeries object from the coordinates in
+        """Returns a new GeoPandas GeoSeries object from the coordinates in
         the cuspatial GeoSeries.
         """
         if nullable is True:
@@ -381,8 +363,7 @@ class GeoSeries(cudf.Series):
         )
 
     def to_pandas(self):
-        """
-        Treats to_pandas and to_geopandas as the same call, which improves
+        """Treats to_pandas and to_geopandas as the same call, which improves
         compatibility with pandas.
         """
         return self.to_geopandas()
@@ -453,8 +434,7 @@ class GeoSeries(cudf.Series):
             return results
 
     def to_arrow(self):
-        """
-        Convert to a GeoArrow Array.
+        """Convert to a GeoArrow Array.
 
         Returns
         -------
@@ -555,8 +535,7 @@ class GeoSeries(cudf.Series):
         sort: bool = True,
         allow_non_unique: bool = False,
     ) -> T:
-        """
-        The values in the newly aligned columns will not change,
+        """The values in the newly aligned columns will not change,
         only positions in the union offsets and type codes.
         """
         aligned_union_offsets = (
@@ -589,8 +568,7 @@ class GeoSeries(cudf.Series):
 
     @classmethod
     def from_points_xy(cls, points_xy):
-        """
-        Construct a GeoSeries of POINTs from an array of interleaved xy
+        """Construct a GeoSeries of POINTs from an array of interleaved xy
         coordinates.
 
         Parameters
@@ -607,8 +585,7 @@ class GeoSeries(cudf.Series):
 
     @classmethod
     def from_multipoints_xy(cls, multipoints_xy, geometry_offset):
-        """
-        Construct a GeoSeries of MULTIPOINTs from an array of interleaved
+        """Construct a GeoSeries of MULTIPOINTs from an array of interleaved
         xy coordinates.
 
         Parameters
@@ -645,9 +622,8 @@ class GeoSeries(cudf.Series):
     def from_linestrings_xy(
         cls, linestrings_xy, part_offset, geometry_offset
     ) -> T:
-        """
-        Construct a GeoSeries of MULTILINESTRINGs from an array of interleaved
-        xy coordinates.
+        """Construct a GeoSeries of MULTILINESTRINGs from an array of
+        interleaved xy coordinates.
 
         Parameters
         ----------
@@ -691,9 +667,8 @@ class GeoSeries(cudf.Series):
     def from_polygons_xy(
         cls, polygons_xy, ring_offset, part_offset, geometry_offset
     ) -> T:
-        """
-        Construct a GeoSeries of MULTIPOLYGONs from an array of interleaved xy
-        coordinates.
+        """Construct a GeoSeries of MULTIPOLYGONs from an array of
+        interleaved xy coordinates.
 
         Parameters
         ----------
@@ -739,8 +714,7 @@ class GeoSeries(cudf.Series):
         )
 
     def align(self, other):
-        """
-        Align the rows of two GeoSeries using outer join.
+        """Align the rows of two GeoSeries using outer join.
 
         `align` rearranges two GeoSeries so that their indices match.
         If one GeoSeries is longer than the other, the shorter GeoSeries
@@ -853,8 +827,7 @@ class GeoSeries(cudf.Series):
         name=None,
         inplace=False,
     ):
-        """
-        Reset the index of the GeoSeries.
+        """Reset the index of the GeoSeries.
 
         Parameters
         ----------
@@ -925,8 +898,7 @@ class GeoSeries(cudf.Series):
             return None
 
     def contains_properly(self, other, align=False, allpairs=False):
-        """
-        Returns a `Series` of `dtype('bool')` with value `True` for each
+        """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that contains _other_.
 
         Compute from a GeoSeries of points and a GeoSeries of polygons which
