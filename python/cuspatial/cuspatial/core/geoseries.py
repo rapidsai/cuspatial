@@ -1038,10 +1038,10 @@ class GeoSeries(cudf.Series):
         Test if two points are equal:
         >>> point = cuspatial.GeoSeries(
             [Point(0, 0)],
-            )
+        )
         >>> point2 = cuspatial.GeoSeries(
             [Point(0, 0)],
-            )
+        )
         >>> print(point.geom_equals(point2))
         0    True
         dtype: bool
