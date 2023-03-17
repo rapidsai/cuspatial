@@ -367,12 +367,12 @@ class EqualsBinpred(BinaryPredicate):
         x = polygons.x
         x[offsets] = None
         x = x.dropna()
-        new_offsets = self.lhs.polygons.ring_offset - cp.arange(
-            len(self.lhs.polygons.ring_offset)
-        )
         y = polygons.y
         y[offsets] = None
         y = y.dropna()
+        new_offsets = self.lhs.polygons.ring_offset - cp.arange(
+            len(self.lhs.polygons.ring_offset)
+        )
         xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
         return cuspatial.GeoSeries.from_multipoints_xy(
             xy, new_offsets.astype("int32")
@@ -380,10 +380,6 @@ class EqualsBinpred(BinaryPredicate):
 
     def _sort_polygons(self, lhs, rhs, initial):
         """Sort xy according to bins defined by offset"""
-        # Find the point_index offset of each value in the lhs
-        # and rhs.
-        # Sort the lhs and rhs xy values according to the
-        # lhs and rhs point_indices.
 
         lhs_polygons_as_multipoints = self._polygons_to_multipoints(lhs)
         rhs_polygons_as_multipoints = self._polygons_to_multipoints(rhs)
