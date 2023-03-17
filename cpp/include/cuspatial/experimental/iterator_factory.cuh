@@ -164,9 +164,8 @@ struct index_to_geometry_id {
 
   CUSPATIAL_HOST_DEVICE auto operator()(IndexT idx)
   {
-    return thrust::distance(
-      geometry_begin,
-      thrust::prev(thrust::upper_bound(thrust::seq, geometry_begin, geometry_end, idx)));
+    return thrust::distance(geometry_begin,
+                            thrust::upper_bound(thrust::seq, geometry_begin, geometry_end, idx));
   }
 };
 
