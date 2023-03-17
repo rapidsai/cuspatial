@@ -321,68 +321,40 @@ class EqualsBinpred(BinaryPredicate):
             initial,
         )
 
+    def _swap_linestring_first_and_last(self, linestring):
+        """Swap the first and last values of a linestring"""
+        # Save temporary values since x cannot be used unmodified
+        x = linestring.x
+        y = linestring.y
+        point_range = cudf.Series(cp.arange(len(x)))
+        indices = point_range.groupby(linestring.point_indices())
+        # Create masks for the first and last values of each linestring
+        swap_x = x[indices.last()].reset_index(drop=True) < x[
+            indices.first()
+        ].reset_index(drop=True)
+        swap_y = y[indices.last()].reset_index(drop=True) < y[
+            indices.first()
+        ].reset_index(drop=True)
+        # Swap the first and last values of each linestring
+        (x.iloc[indices.last()[swap_x]], x.iloc[indices.first()[swap_x]],) = (
+            x.iloc[indices.first()[swap_x]],
+            x.iloc[indices.last()[swap_x]],
+        )
+        (y.iloc[indices.last()[swap_y]], y.iloc[indices.first()[swap_y]],) = (
+            y.iloc[indices.first()[swap_y]],
+            y.iloc[indices.last()[swap_y]],
+        )
+        return cudf.Series(cp.column_stack((x.values, y.values)))
+
     def _sort_linestrings(self, lhs, rhs, initial):
         """Swap first and last values of each linestring to ensure that
         the first point is the lowest value. This is necessary to ensure
         that the endpoints are not included in the comparison."""
         # TODO: Refactor the 4x repetition here into a utility method.
 
-        # Save temporary values since lhs.x cannot be used modified.
-        lhs_x = lhs.x
-        lhs_y = lhs.y
-        rhs_x = rhs.x
-        rhs_y = rhs.y
-        point_range = cudf.Series(cp.arange(len(lhs_x)))
-        indices = point_range.groupby(lhs.point_indices())
-        # Create masks for the first and last values of each linestring
-        swap_lx = lhs_x[indices.last()].reset_index(drop=True) < lhs_x[
-            indices.first()
-        ].reset_index(drop=True)
-        swap_ly = lhs_y[indices.last()].reset_index(drop=True) < lhs_y[
-            indices.first()
-        ].reset_index(drop=True)
-        swap_rx = rhs_x[indices.last()].reset_index(drop=True) < rhs_x[
-            indices.first()
-        ].reset_index(drop=True)
-        swap_ry = rhs_y[indices.last()].reset_index(drop=True) < rhs_y[
-            indices.first()
-        ].reset_index(drop=True)
-        # Swap the first and last values of each linestring
-        (
-            lhs_x.iloc[indices.last()[swap_lx]],
-            lhs_x.iloc[indices.first()[swap_lx]],
-        ) = (
-            lhs_x.iloc[indices.first()[swap_lx]],
-            lhs_x.iloc[indices.last()[swap_lx]],
-        )
-        (
-            lhs_y.iloc[indices.last()[swap_ly]],
-            lhs_y.iloc[indices.first()[swap_ly]],
-        ) = (
-            lhs_y.iloc[indices.first()[swap_ly]],
-            lhs_y.iloc[indices.last()[swap_ly]],
-        )
-        (
-            rhs_x.iloc[indices.last()[swap_rx]],
-            rhs_x.iloc[indices.first()[swap_rx]],
-        ) = (
-            rhs_x.iloc[indices.first()[swap_rx]],
-            rhs_x.iloc[indices.last()[swap_rx]],
-        )
-        (
-            rhs_y.iloc[indices.last()[swap_ry]],
-            rhs_y.iloc[indices.first()[swap_ry]],
-        ) = (
-            rhs_y.iloc[indices.first()[swap_ry]],
-            rhs_y.iloc[indices.last()[swap_ry]],
-        )
-        # Reconstruct the xy columns
-        lhs_xy = lhs.xy
-        rhs_xy = rhs.xy
-        lhs_xy.iloc[::2] = lhs_x
-        lhs_xy.iloc[1::2] = lhs_y
-        rhs_xy.iloc[::2] = rhs_x
-        rhs_xy.iloc[1::2] = rhs_y
+        lhs_xy = self._swap_linestring_first_and_last(lhs)
+        rhs_xy = self._swap_linestring_first_and_last(rhs)
+
         return (
             PreprocessorOutput(lhs_xy, lhs.point_indices()),
             PreprocessorOutput(rhs_xy, rhs.point_indices()),
