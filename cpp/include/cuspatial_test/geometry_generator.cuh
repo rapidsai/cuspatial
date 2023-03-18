@@ -16,6 +16,9 @@
 
 #include <cuspatial_test/vector_factories.cuh>
 
+#include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/error.hpp>
+#include <cuspatial/experimental/ranges/multipolygon_range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -41,83 +44,83 @@ struct multipolygon_generator_parameter {
   vec_2d<T> centroid;
   T radius;
 
-  std::size_t num_polygons() { return num_multipolygons * num_polygons_per_multipolygon; }
-  std::size_t num_rings() { return num_polygons() * num_rings_per_polygon(); }
-  std::size_t num_coords() { return num_rings() * num_vertices_per_ring(); }
-  std::size_t num_vertices_per_ring() { return num_sides_per_ring + 1; }
-  std::size_t num_rings_per_polygon() { return num_holes_per_polygon + 1; }
+  CUSPATIAL_HOST_DEVICE std::size_t num_polygons()
+  {
+    return num_multipolygons * num_polygons_per_multipolygon;
+  }
+  CUSPATIAL_HOST_DEVICE std::size_t num_rings() { return num_polygons() * num_rings_per_polygon(); }
+  CUSPATIAL_HOST_DEVICE std::size_t num_coords() { return num_rings() * num_vertices_per_ring(); }
+  CUSPATIAL_HOST_DEVICE std::size_t num_vertices_per_ring() { return num_sides_per_ring + 1; }
+  CUSPATIAL_HOST_DEVICE std::size_t num_rings_per_polygon() { return num_holes_per_polygon + 1; }
+  CUSPATIAL_HOST_DEVICE T hole_radius() { return radius / (num_holes_per_polygon + 1); }
 };
 
-template <typename T, typename VecIterator>
-VecIterator generate_ring(std::size_t num_sides,
-                          vec_2d<T> centroid,
-                          T radius,
-                          VecIterator points_it,
-                          rmm::cuda_stream_view stream)
+template <typename T>
+vec_2d<T> __device__ generate_polygon_coordinate(std::size_t point_local_idx,
+                                                 std::size_t num_sides,
+                                                 vec_2d<T> centroid,
+                                                 T radius)
 {
-  std::size_t num_vertices = num_sides + 1;
-  std::cout << "generate_ring: \n num_vertices: " << num_vertices << std::endl;
-  thrust::tabulate(
-    rmm::exec_policy(stream),
-    points_it,
-    points_it + num_vertices,
-    [num_sides, centroid, radius] __device__(int32_t i) {
-      // Overrides last coordinate to make sure ring is closed.
-      if (i == num_sides) return vec_2d<T>{centroid.x + radius, centroid.y};
+  // Overrides last coordinate to make sure ring is closed.
+  if (point_local_idx == num_sides) return vec_2d<T>{centroid.x + radius, centroid.y};
 
-      T angle = 2.0 * PI * i / num_sides;
-      return vec_2d<T>{centroid.x + radius * cos(angle), centroid.y + radius * sin(angle)};
-    });
+  T angle = 2.0 * PI * point_local_idx / num_sides;
 
-  std::cout << "Done generate_ring: \n" << std::endl;
-
-  return points_it + num_vertices;
+  return vec_2d<T>{centroid.x + radius * cos(angle), centroid.y + radius * sin(angle)};
 }
 
-template <typename T, typename VecIterator>
-VecIterator generate_polygon(std::size_t num_sides_per_ring,
-                             std::size_t num_holes,
-                             vec_2d<T> centroid,
-                             T radius,
-                             VecIterator points_it,
-                             rmm::cuda_stream_view stream)
+template <typename T>
+vec_2d<T> __device__ multipolygon_centroid_displacement(vec_2d<T> centroid,
+                                                        std::size_t part_local_idx,
+                                                        T radius)
 {
-  std::cout << "generate_polygon: \n" << std::endl;
-  // make shell
-  points_it = generate_ring(num_sides_per_ring, centroid, radius, points_it, stream);
+  return centroid + vec_2d<T>{part_local_idx * radius * T{3.0}, T{0.0}};
+}
 
-  // Align hole centroid to the horizontal axis of the polygon centroid
-  T hole_radius           = radius / (num_holes + 1);
+template <typename T>
+vec_2d<T> __device__ polygon_centroid_displacement(vec_2d<T> centroid,
+                                                   std::size_t ring_local_idx,
+                                                   T radius,
+                                                   T hole_radius)
+{
+  // This is a shell
+  if (ring_local_idx == 0) { return centroid; }
+
+  // This is a hole
+  ring_local_idx -= 1;  // offset hole indices to be 0-based
   T max_hole_displacement = radius - hole_radius;
-
-  // make hole
-  for (std::size_t i = 0; i < num_holes; ++i) {
-    T displacement_x        = -max_hole_displacement + i * hole_radius * 2;
-    T displacement_y        = 0.0;
-    vec_2d<T> hole_centroid = centroid + vec_2d<T>{displacement_x, displacement_y};
-    points_it = generate_ring(num_sides_per_ring, hole_centroid, hole_radius, points_it, stream);
-  }
-
-  return points_it;
+  T displacement_x        = -max_hole_displacement + ring_local_idx * hole_radius * 2;
+  T displacement_y        = 0.0;
+  return centroid + vec_2d<T>{displacement_x, displacement_y};
 }
 
-template <typename T, typename VecIterator>
-VecIterator generate_multipolygon(std::size_t num_polygons,
-                                  std::size_t num_sides_per_ring,
-                                  std::size_t num_holes,
-                                  vec_2d<T> origin,
-                                  T radius,
-                                  VecIterator points_it,
-                                  rmm::cuda_stream_view stream)
+template <typename T, typename MultipolygonRange>
+void __global__ generate_multipolygon_array_coordinates(MultipolygonRange multipolygons,
+                                                        multipolygon_generator_parameter<T> params)
 {
-  std::cout << "generate_multipolygon: \n" << std::endl;
-  for (std::size_t i = 0; i < num_polygons; ++i) {
-    vec_2d<T> centroid = origin + vec_2d<T>{i * radius * 3, 0};
-    points_it =
-      generate_polygon(num_sides_per_ring, num_holes, centroid, radius, points_it, stream);
-  }
+  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multipolygons.num_points();
+       idx += gridDim.x * blockDim.x) {
+    auto ring_idx     = multipolygons.ring_idx_from_point_idx(idx);
+    auto part_idx     = multipolygons.part_idx_from_ring_idx(ring_idx);
+    auto geometry_idx = multipolygons.geometry_idx_from_part_idx(part_idx);
 
-  return points_it;
+    auto point_local_idx = idx - params.num_vertices_per_ring() * ring_idx;
+    auto ring_local_idx  = ring_idx - params.num_rings_per_polygon() * part_idx;
+    auto part_local_idx  = part_idx - params.num_polygons_per_multipolygon * geometry_idx;
+
+    auto centroid = polygon_centroid_displacement(
+      multipolygon_centroid_displacement(params.centroid, part_local_idx, params.radius),
+      ring_local_idx,
+      params.radius,
+      params.hole_radius());
+
+    if (ring_local_idx == 0)  // Generate coordinate for shell
+      multipolygons.point_begin()[idx] = generate_polygon_coordinate(
+        point_local_idx, params.num_sides_per_ring, centroid, params.radius);
+    else  // Generate coordinate for holes
+      multipolygons.point_begin()[idx] = generate_polygon_coordinate(
+        point_local_idx, params.num_sides_per_ring, centroid, params.hole_radius());
+  }
 }
 
 /**
@@ -132,23 +135,10 @@ template <typename T>
 auto generate_multipolygon_array(multipolygon_generator_parameter<T> params,
                                  rmm::cuda_stream_view stream)
 {
-  std::cout << "Num_coords: " << params.num_coords() << std::endl;
-  rmm::device_uvector<vec_2d<T>> coordinates(params.num_coords(), stream);
-  auto points_it = coordinates.begin();
-
-  for (std::size_t i = 0; i < params.num_multipolygons; ++i) {
-    points_it = generate_multipolygon(params.num_polygons_per_multipolygon,
-                                      params.num_sides_per_ring,
-                                      params.num_holes_per_polygon,
-                                      params.centroid,
-                                      params.radius,
-                                      points_it,
-                                      stream);
-  }
-
-  rmm::device_uvector<std::size_t> ring_offsets(params.num_rings() + 1, stream);
-  rmm::device_uvector<std::size_t> part_offsets(params.num_polygons() + 1, stream);
   rmm::device_uvector<std::size_t> geometry_offsets(params.num_multipolygons + 1, stream);
+  rmm::device_uvector<std::size_t> part_offsets(params.num_polygons() + 1, stream);
+  rmm::device_uvector<std::size_t> ring_offsets(params.num_rings() + 1, stream);
+  rmm::device_uvector<vec_2d<T>> coordinates(params.num_coords(), stream);
 
   thrust::sequence(rmm::exec_policy(stream),
                    ring_offsets.begin(),
@@ -162,13 +152,26 @@ auto generate_multipolygon_array(multipolygon_generator_parameter<T> params,
                    std::size_t{0},
                    params.num_rings_per_polygon());
 
-  std::cout << "num_polygons_per_multipolygon:" << params.num_polygons_per_multipolygon
-            << std::endl;
   thrust::sequence(rmm::exec_policy(stream),
                    geometry_offsets.begin(),
                    geometry_offsets.end(),
                    std::size_t{0},
                    params.num_polygons_per_multipolygon);
+
+  auto multipolygons = multipolygon_range(geometry_offsets.begin(),
+                                          geometry_offsets.end(),
+                                          part_offsets.begin(),
+                                          part_offsets.end(),
+                                          ring_offsets.begin(),
+                                          ring_offsets.end(),
+                                          coordinates.begin(),
+                                          coordinates.end());
+
+  auto [tpb, nblocks] = grid_1d(multipolygons.num_points());
+
+  generate_multipolygon_array_coordinates<T><<<nblocks, tpb, 0, stream>>>(multipolygons, params);
+
+  CUSPATIAL_CHECK_CUDA(stream.value());
 
   return make_multipolygon_array_from_uvector<std::size_t, vec_2d<T>>(std::move(geometry_offsets),
                                                                       std::move(part_offsets),
