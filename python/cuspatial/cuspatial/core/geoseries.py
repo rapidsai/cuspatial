@@ -1036,27 +1036,19 @@ class GeoSeries(cudf.Series):
         Examples
         --------
         Test if two points are equal:
-        >>> point = cuspatial.GeoSeries(
-            [Point(0, 0)],
-        )
-        >>> point2 = cuspatial.GeoSeries(
-            [Point(0, 0)],
-        )
+        >>> point = cuspatial.GeoSeries([Point(0, 0)])
+        >>> point2 = cuspatial.GeoSeries([Point(0, 0)])
         >>> print(point.geom_equals(point2))
         0    True
         dtype: bool
 
         Test if two polygons are equal:
-        >>> polygon = cuspatial.GeoSeries(
-            [
-                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-            ]
-        )
-        >>> polygon2 = cuspatial.GeoSeries(
-            [
-                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-            ]
-        )
+        >>> polygon = cuspatial.GeoSeries([
+        >>>     Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+        >>> ])
+        >>> polygon2 = cuspatial.GeoSeries([
+        >>>     Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+        >>> ])
         >>> print(polygon.geom_equals(polygon2))
         0    True
         dtype: bool
