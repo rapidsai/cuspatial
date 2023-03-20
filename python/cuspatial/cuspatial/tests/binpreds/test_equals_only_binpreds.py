@@ -500,7 +500,7 @@ def test_pair_linestrings_different_last_two():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-"""These tests will be reintroduced when we have `.contains` implemented
+@pytest.mark.skip(reason="NotImplemented: Depends on .contains")
 def test_pair_polygons_different_ordering():
     gpdpoly1 = gpd.GeoSeries(
         [
@@ -519,6 +519,7 @@ def test_pair_polygons_different_ordering():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
+@pytest.mark.skip(reason="NotImplemented: Depends on .contains")
 def test_pair_polygons_different_winding():
     gpdpoly1 = gpd.GeoSeries(
         [
@@ -537,6 +538,7 @@ def test_pair_polygons_different_winding():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
+@pytest.mark.skip(reason="NotImplemented: Depends on .contains")
 def test_3_polygons_geom_equals_3_polygons_misordered_corrected_vertex():
     gpdpoly1 = gpd.GeoSeries(
         [
@@ -559,6 +561,7 @@ def test_3_polygons_geom_equals_3_polygons_misordered_corrected_vertex():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
+@pytest.mark.skip(reason="NotImplemented: Depends on .contains")
 def test_polygon_geom_equals_polygon():
     gpdpolygon1 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
     gpdpolygon2 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
@@ -569,6 +572,7 @@ def test_polygon_geom_equals_polygon():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
+@pytest.mark.skip(reason="NotImplemented: Depends on .contains")
 def test_polygon_geom_equals_polygon_swap_inner():
     gpdpolygon1 = gpd.GeoSeries(Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]))
     gpdpolygon2 = gpd.GeoSeries(Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]))
@@ -579,6 +583,7 @@ def test_polygon_geom_equals_polygon_swap_inner():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
+@pytest.mark.skip(reason="NotImplemented: Depends on .contains")
 @pytest.mark.parametrize(
     "lhs",
     [
@@ -615,6 +620,7 @@ def test_3_polygons_geom_equals_3_polygons_one_equal(lhs):
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
+@pytest.mark.skip(reason="NotImplemented: Depends on .contains")
 def test_10000_polygons_geom_equals_10000_polygons(polygon_generator):
     gpdpolygons1 = gpd.GeoSeries([*polygon_generator(10000, 0)])
     gpdpolygons2 = gpd.GeoSeries([*polygon_generator(10000, 0)])
@@ -625,6 +631,7 @@ def test_10000_polygons_geom_equals_10000_polygons(polygon_generator):
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
+@pytest.mark.skip(reason="NotImplemented: Depends on .contains")
 def test_3_polygons_geom_equals_3_polygons_different_sizes():
     gpdpoly1 = gpd.GeoSeries(
         [
@@ -649,6 +656,7 @@ def test_3_polygons_geom_equals_3_polygons_different_sizes():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
+@pytest.mark.skip(reason="NotImplemented: Depends on .contains")
 def test_3_polygons_geom_equals_3_polygons_misordered():
     gpdpoly1 = gpd.GeoSeries(
         [
@@ -669,4 +677,3 @@ def test_3_polygons_geom_equals_3_polygons_misordered():
     got = poly1.geom_equals(poly2)
     expected = gpdpoly1.geom_equals(gpdpoly2)
     pd.testing.assert_series_equal(expected, got.to_pandas())
-"""
