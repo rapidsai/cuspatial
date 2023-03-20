@@ -279,53 +279,44 @@ TYPED_TEST(GeometryFactoryTest, multipolygonarray_basic_radius)
   CUSPATIAL_RUN_TEST(this->run, params, std::move(expected), abs_error<T>(params.radius));
 }
 
-// struct GeometryFactoryCountVerificationTest : public BaseFixtureWithParam<std::size_t,
-//                                                                           std::size_t,
-//                                                                           std::size_t,
-//                                                                           std::size_t,
-//                                                                           vec_2d<float>,
-//                                                                           float> {
-//   void run(multipolygon_generator_parameter<float> params)
-//   {
-//     auto got = generate_multipolygon_array(params, stream());
+struct GeometryFactoryCountVerificationTest
+  : public BaseFixtureWithParam<std::size_t, std::size_t, std::size_t, std::size_t> {
+  void run(multipolygon_generator_parameter<float> params)
+  {
+    auto got = generate_multipolygon_array(params, stream());
 
-//     auto [got_geometry_offsets, got_part_offsets, got_ring_offsets, got_coordinates] =
-//       got.to_host();
+    auto [got_geometry_offsets, got_part_offsets, got_ring_offsets, got_coordinates] =
+      got.to_host();
 
-//     EXPECT_EQ(got_geometry_offsets.size(), params.num_multipolygons + 1);
-//     EXPECT_EQ(got_part_offsets.size(), params.num_polygons() + 1);
-//     EXPECT_EQ(got_ring_offsets.size(), params.num_rings() + 1);
-//     EXPECT_EQ(got_coordinates.size(), params.num_coords());
-//   }
-// };
+    EXPECT_EQ(got_geometry_offsets.size(), params.num_multipolygons + 1);
+    EXPECT_EQ(got_part_offsets.size(), params.num_polygons() + 1);
+    EXPECT_EQ(got_ring_offsets.size(), params.num_rings() + 1);
+    EXPECT_EQ(got_coordinates.size(), params.num_coords());
+  }
+};
 
-// TEST_P(GeometryFactoryCountVerificationTest, CountsVerification)
-// {
-//   // Structured binding unsupported by Gtest
-//   std::size_t num_multipolygons             = std::get<0>(GetParam());
-//   std::size_t num_polygons_per_multipolygon = std::get<1>(GetParam());
-//   std::size_t num_holes_per_polygon         = std::get<2>(GetParam());
-//   std::size_t num_sides_per_ring            = std::get<3>(GetParam());
-//   vec_2d<float> centroid                    = std::get<4>(GetParam());
-//   float radius                              = std::get<5>(GetParam());
+TEST_P(GeometryFactoryCountVerificationTest, CountsVerification)
+{
+  // Structured binding unsupported by Gtest
+  std::size_t num_multipolygons             = std::get<0>(GetParam());
+  std::size_t num_polygons_per_multipolygon = std::get<1>(GetParam());
+  std::size_t num_holes_per_polygon         = std::get<2>(GetParam());
+  std::size_t num_sides_per_ring            = std::get<3>(GetParam());
 
-//   auto params = multipolygon_generator_parameter<float>{num_multipolygons,
-//                                                         num_polygons_per_multipolygon,
-//                                                         num_holes_per_polygon,
-//                                                         num_sides_per_ring,
-//                                                         centroid,
-//                                                         radius};
-//   CUSPATIAL_RUN_TEST(this->run, params);
-// }
+  auto params = multipolygon_generator_parameter<float>{num_multipolygons,
+                                                        num_polygons_per_multipolygon,
+                                                        num_holes_per_polygon,
+                                                        num_sides_per_ring,
+                                                        vec_2d<float>{0.0, 0.0},
+                                                        1.0};
+  CUSPATIAL_RUN_TEST(this->run, params);
+}
 
-// INSTANTIATE_TEST_SUITE_P(
-//   GeometryFactoryCountVerificationTests,
-//   GeometryFactoryCountVerificationTest,
-//   ::testing::Combine(
-//     ::testing::Range<std::size_t>(1 << 4, 1 << 10, 2),  // num_multipolygons
-//     ::testing::Range<std::size_t>(1 << 4, 1 << 10, 2),  // num_polygons_per_multipolygon
-//     ::testing::Range<std::size_t>(1 << 4, 1 << 10, 2),  // num_holes_per_polygon
-//     ::testing::Range<std::size_t>(1 << 4, 1 << 10, 2),  // num_sides_per_ring
-//     ::testing::Values(vec_2d<float>{0.0, 0.0}, vec_2d<float>{1.0, 5.0}),  // centroid
-//     ::testing::Values(1.0, 6.0)                                           // radius
-//     ));
+INSTANTIATE_TEST_SUITE_P(
+  GeometryFactoryCountVerificationTests,
+  GeometryFactoryCountVerificationTest,
+  ::testing::Combine(::testing::Values<std::size_t>(1, 1000),  // num_multipolygons
+                     ::testing::Values<std::size_t>(1, 30),    // num_polygons_per_multipolygon
+                     ::testing::Values<std::size_t>(0, 100),   // num_holes_per_polygon
+                     ::testing::Values<std::size_t>(3, 100)    // num_sides_per_ring
+                     ));
