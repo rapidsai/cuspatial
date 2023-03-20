@@ -25,7 +25,7 @@ namespace cuspatial {
 using T = collection_type_id;
 
 /**
- * @brief Invokes an `operator()` template with the instantiation based on the specificed
+ * @brief Invokes an `operator()` template with the instantiation based on the specified
  * `lhs_type` and `rhs_type` value.
  *
  * This dispatcher effectively converts the runtime information of `collection_type_id` variables

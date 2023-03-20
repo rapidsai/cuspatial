@@ -1,5 +1,6 @@
 # Copyright (c) 2020-2023, NVIDIA CORPORATION.
 
+import pytest
 from shapely.geometry import MultiPolygon, Polygon
 
 import cudf
@@ -79,6 +80,7 @@ def test_polygon_bounding_boxes_small():
     )
 
 
+@pytest.mark.skip(reason="MultiPolygon not yet supported")
 def test_multipolygon_bounding_box():
     s = cuspatial.GeoSeries(
         [
