@@ -22,6 +22,9 @@
 namespace cuspatial {
 namespace test {
 
+/**
+ * @brief Uses CRTP to supply rmm resources for test fixtures.
+ */
 template <class Fixture>
 class RMMResourceMixin {
   rmm::mr::device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
