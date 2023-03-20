@@ -120,6 +120,9 @@ class multipolygon_array {
                               _coordinate_offsets_array.end());
   }
 
+  /**
+   * @brief Copy the offset arrays to host.
+   */
   auto to_host() const
   {
     auto geometry_offsets   = cuspatial::test::to_host<geometry_t>(_geometry_offsets_array);
@@ -186,10 +189,10 @@ auto make_multipolygon_array(std::initializer_list<std::size_t> geometry_inl,
 }
 
 template <typename IndexType, typename CoordType>
-auto make_multipolygon_array_from_uvector(rmm::device_uvector<IndexType> geometry_inl,
-                                          rmm::device_uvector<IndexType> part_inl,
-                                          rmm::device_uvector<IndexType> ring_inl,
-                                          rmm::device_uvector<CoordType> coord_inl)
+auto make_multipolygon_array(rmm::device_uvector<IndexType> geometry_inl,
+                             rmm::device_uvector<IndexType> part_inl,
+                             rmm::device_uvector<IndexType> ring_inl,
+                             rmm::device_uvector<CoordType> coord_inl)
 {
   return multipolygon_array<rmm::device_uvector<IndexType>,
                             rmm::device_uvector<IndexType>,

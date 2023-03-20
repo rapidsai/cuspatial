@@ -16,17 +16,17 @@
 
 #pragma once
 
-#include <thrust/binary_search.h>
-#include <thrust/distance.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/pair.h>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/experimental/geometry_collection/multipolygon_ref.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
+
+#include <thrust/binary_search.h>
+#include <thrust/distance.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/pair.h>
 
 #include <iterator>
 #include <optional>

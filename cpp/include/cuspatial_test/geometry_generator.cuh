@@ -33,6 +33,11 @@ namespace test {
 
 constexpr double PI = 3.14159265358979323846;
 
+/**
+ * @brief Struct to store the parameters of the multipolygon array generator
+ *
+ * @tparam T Type of the coordinates
+ */
 template <typename T>
 struct multipolygon_generator_parameter {
   using element_t = T;
@@ -69,19 +74,62 @@ vec_2d<T> __device__ generate_polygon_coordinate(std::size_t point_local_idx,
   return vec_2d<T>{centroid.x + radius * cos(angle), centroid.y + radius * sin(angle)};
 }
 
+/**
+ * @brief Apply displacement to the centroid of a polygon.
+ *
+ * The `i`th polygon's centroid is displaced by (3*radius*i, 0). This makes sure
+ * polygons within a multipolygon does not overlap.
+ *
+ * @tparam T Type of the coordinates
+ * @param centroid The first centroid of the polygons
+ * @param part_local_idx Local index of the polygon
+ * @param radius Radius of each polygon
+ * @return Displaced centroid
+ */
 template <typename T>
-vec_2d<T> __device__ multipolygon_centroid_displacement(vec_2d<T> centroid,
-                                                        std::size_t part_local_idx,
-                                                        T radius)
+vec_2d<T> __device__ polygon_centroid_displacement(vec_2d<T> centroid,
+                                                   std::size_t part_local_idx,
+                                                   T radius)
 {
   return centroid + vec_2d<T>{part_local_idx * radius * T{3.0}, T{0.0}};
 }
 
+/**
+ * @brief Given a ring centroid, displace it based on its ring index.
+ *
+ * A Polygon contains at least 1 shell. It may contain 0 or more holes.
+ * The shell is the leading ring of the polygon (index 0). All holes' centroid
+ * has the same y value as the shell's centroid. Holes are aligned from left
+ * to right on the center axis, with no overlapping areas. It may look like:
+ *
+ *            ******
+ *        **          **
+ *      *                *
+ *    *                    *
+ *   *                      *
+ *  @@@ @@@ @@@ @@@          *
+ * @   @   @   @   @          *
+ * @   @   @   @   @          *
+ * @   @   @   @   @          *
+ * *@@@ @@@ @@@ @@@           *
+ *  *                        *
+ *   *                      *
+ *    *                    *
+ *      *                *
+ *        **          **
+ *            ******
+ *
+ *
+ * @tparam T Type of the coordinates
+ * @param centroid The center of the polygon
+ * @param ring_local_idx Local index of the ring
+ * @param radius Radius of the polygon
+ * @param hole_radius Radius of each hole
+ * @return Centroid of the ring
+ */
 template <typename T>
-vec_2d<T> __device__ polygon_centroid_displacement(vec_2d<T> centroid,
-                                                   std::size_t ring_local_idx,
-                                                   T radius,
-                                                   T hole_radius)
+vec_2d<T> __device__
+ring_centroid_displacement(vec_2d<T> centroid, std::size_t ring_local_idx, T radius, T hole_radius)
 {
   // This is a shell
   if (ring_local_idx == 0) { return centroid; }
@@ -94,6 +142,17 @@ vec_2d<T> __device__ polygon_centroid_displacement(vec_2d<T> centroid,
   return centroid + vec_2d<T>{displacement_x, displacement_y};
 }
 
+/**
+ * @brief Kernel to generate coordinates for multipolygon arrays.
+ *
+ * @pre This kernel requires that the three offset arrays (geometry, part, ring) has been prefilled
+ * with the correct offsets.
+ *
+ * @tparam T Type of the coordinate
+ * @tparam MultipolygonRange A specialization of `multipolygon_range`
+ * @param multipolygons The range of multipolygons
+ * @param params Parameters to generate the mulitpolygons
+ */
 template <typename T, typename MultipolygonRange>
 void __global__ generate_multipolygon_array_coordinates(MultipolygonRange multipolygons,
                                                         multipolygon_generator_parameter<T> params)
@@ -108,8 +167,8 @@ void __global__ generate_multipolygon_array_coordinates(MultipolygonRange multip
     auto ring_local_idx  = ring_idx - params.num_rings_per_polygon() * part_idx;
     auto part_local_idx  = part_idx - params.num_polygons_per_multipolygon * geometry_idx;
 
-    auto centroid = polygon_centroid_displacement(
-      multipolygon_centroid_displacement(params.centroid, part_local_idx, params.radius),
+    auto centroid = ring_centroid_displacement(
+      polygon_centroid_displacement(params.centroid, part_local_idx, params.radius),
       ring_local_idx,
       params.radius,
       params.hole_radius());
@@ -124,12 +183,12 @@ void __global__ generate_multipolygon_array_coordinates(MultipolygonRange multip
 }
 
 /**
- * @brief Helper to generate multipolygon arrays used for benchmarks.
+ * @brief Helper to generate multipolygon arrays used for tests and benchmarks.
  *
  * @tparam T The floating point type for the coordinates
+ * @param params The parameters to set for the multipolygon array
  * @param stream The CUDA stream to use for device memory operations and kernel launches
- * @return A tuple of x and y coordinates of points and offsets to which the first point
- * of each linestring starts.
+ * @return A cuspatial::test::multipolygon_array object.
  */
 template <typename T>
 auto generate_multipolygon_array(multipolygon_generator_parameter<T> params,
@@ -173,10 +232,10 @@ auto generate_multipolygon_array(multipolygon_generator_parameter<T> params,
 
   CUSPATIAL_CHECK_CUDA(stream.value());
 
-  return make_multipolygon_array_from_uvector<std::size_t, vec_2d<T>>(std::move(geometry_offsets),
-                                                                      std::move(part_offsets),
-                                                                      std::move(ring_offsets),
-                                                                      std::move(coordinates));
+  return make_multipolygon_array<std::size_t, vec_2d<T>>(std::move(geometry_offsets),
+                                                         std::move(part_offsets),
+                                                         std::move(ring_offsets),
+                                                         std::move(coordinates));
 }
 
 }  // namespace test
