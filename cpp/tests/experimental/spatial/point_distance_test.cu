@@ -57,9 +57,12 @@ struct PairwisePointDistanceTest : public ::testing::Test {
     std::size_t seed,
     rmm::cuda_stream_view stream = rmm::cuda_stream_default)
   {
-    auto engine  = deterministic_engine(0);
-    auto uniform = make_normal_dist<T>(0.0, 1.0);
-    auto pgen    = point_generator(T{0.0}, T{1.0}, engine, uniform);
+    auto engine_x  = deterministic_engine(0);
+    auto engine_y  = deterministic_engine(0);
+    auto uniform_x = make_normal_dist<T>(0.0, 1.0);
+    auto uniform_y = make_normal_dist<T>(0.0, 1.0);
+    auto pgen =
+      point_generator(vec_2d<T>{0, 0}, vec_2d<T>{1, 1}, engine_x, engine_y, uniform_x, uniform_y);
     rmm::device_vector<vec_2d<T>> points(num_points);
     auto counting_iter = thrust::make_counting_iterator(seed);
     thrust::transform(

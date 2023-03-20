@@ -270,8 +270,19 @@ auto make_multilinestring_array(std::initializer_list<std::size_t> geometry_inl,
 template <typename GeometryArray, typename CoordinateArray>
 class multipoint_array {
  public:
-  multipoint_array(GeometryArray geometry_offsets_array, CoordinateArray coordinate_array)
+  using geometry_t = typename GeometryArray::value_type;
+  using coord_t    = typename CoordinateArray::value_type;
+
+  multipoint_array(thrust::device_vector<geometry_t> geometry_offsets_array,
+                   thrust::device_vector<coord_t> coordinate_array)
     : _geometry_offsets(geometry_offsets_array), _coordinates(coordinate_array)
+  {
+  }
+
+  multipoint_array(rmm::device_uvector<geometry_t>&& geometry_offsets_array,
+                   rmm::device_uvector<coord_t>&& coordinate_array)
+    : _geometry_offsets(std::move(geometry_offsets_array)),
+      _coordinates(std::move(coordinate_array))
   {
   }
 
@@ -322,8 +333,20 @@ auto make_multipoints_array(std::initializer_list<std::initializer_list<vec_2d<T
       return init;
     });
 
-  return multipoint_array{rmm::device_vector<std::size_t>(offsets),
-                          rmm::device_vector<vec_2d<T>>(coordinates)};
+  return multipoint_array<rmm::device_vector<std::size_t>, rmm::device_vector<vec_2d<T>>>{
+    rmm::device_vector<std::size_t>(offsets), rmm::device_vector<vec_2d<T>>(coordinates)};
+}
+
+/**
+ * @brief Factory method to construct multipoint array by moving the offsets and coordinates from
+ * `rmm::device_uvector`.
+ */
+template <typename IndexType, typename T>
+auto make_multipoints_array(rmm::device_uvector<IndexType> geometry_offsets,
+                            rmm::device_uvector<vec_2d<T>> coords)
+{
+  return multipoint_array<rmm::device_uvector<std::size_t>, rmm::device_uvector<vec_2d<T>>>{
+    std::move(geometry_offsets), std::move(coords)};
 }
 
 }  // namespace test
