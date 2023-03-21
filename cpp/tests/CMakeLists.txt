@@ -17,14 +17,6 @@
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
 
-# find gdal
-rapids_find_package(
-    GDAL REQUIRED
-    GLOBAL_TARGETS GDAL::GDAL
-    BUILD_EXPORT_SET cuspatial-exports
-    INSTALL_EXPORT_SET cuspatial-exports
-)
-
 function(ConfigureTest CMAKE_TEST_NAME)
     add_executable(${CMAKE_TEST_NAME} ${ARGN})
     target_compile_options(${CMAKE_TEST_NAME}
@@ -38,7 +30,7 @@ function(ConfigureTest CMAKE_TEST_NAME)
         PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gtests>"
                    INSTALL_RPATH "\$ORIGIN/../../../lib"
     )
-    target_link_libraries(${CMAKE_TEST_NAME} GDAL::GDAL GTest::gtest_main GTest::gmock_main cudf::cudftestutil cuspatial)
+    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main cudf::cudftestutil cuspatial)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
     install(
         TARGETS ${CMAKE_TEST_NAME}
@@ -132,6 +124,9 @@ ConfigureTest(POINT_DISTANCE_TEST_EXP
 
 ConfigureTest(POINT_LINESTRING_DISTANCE_TEST_EXP
     experimental/spatial/point_linestring_distance_test.cu)
+
+ConfigureTest(POINT_POLYGON_DISTANCE_TEST_EXP
+    experimental/spatial/point_polygon_distance_test.cu)
 
 ConfigureTest(HAUSDORFF_TEST_EXP
     experimental/spatial/hausdorff_test.cu)
