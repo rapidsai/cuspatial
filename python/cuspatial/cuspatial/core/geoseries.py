@@ -35,7 +35,12 @@ from cuspatial.core.binpreds.binpreds import (
     OverlapsBinpred,
     WithinBinpred,
 )
-from cuspatial.utils.column_utils import contains_only_points
+from cuspatial.utils.column_utils import (
+    contains_only_linestrings,
+    contains_only_multipoints,
+    contains_only_points,
+    contains_only_polygons,
+)
 
 T = TypeVar("T", bound="GeoSeries")
 
@@ -116,6 +121,22 @@ class GeoSeries(cudf.Series):
             }
         )
         return result
+
+    @property
+    def point_indices(self):
+        if contains_only_polygons(self):
+            return self.polygons.point_indices()
+        elif contains_only_linestrings(self):
+            return self.lines.point_indices()
+        elif contains_only_multipoints(self):
+            return self.multipoints.point_indices()
+        elif contains_only_points(self):
+            return self.points.point_indices()
+        else:
+            raise TypeError(
+                "GeoSeries must contain only Points, MultiPoints, Lines, or "
+                "Polygons to return point indices."
+            )
 
     class GeoColumnAccessor:
         def __init__(self, list_series, meta):
