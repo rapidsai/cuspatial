@@ -19,6 +19,8 @@
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/types.hpp>
 
+#include <cuspatial/detail/utility/floating_point.cuh>
+
 namespace cuspatial {
 namespace detail {
 
@@ -54,7 +56,18 @@ inline __device__ bool is_point_in_polygon(T const x,
       bool y_in_bounds     = y_between_ay_by || y_between_by_ay;  // is y in range [by, ay]
       T run                = x1 - x0;
       T rise               = y1 - y0;
-      T rise_to_point      = y - y0;
+
+      // The endpoint of the line segment is the same, and the segment degenerates to a point.
+      // This can happen in polygon vertices when the first and last vertex of the ring are
+      // the same. In this scenario, do not attempt ray casting on a degenerate point.
+      T constexpr zero = 0.0;
+      if (float_equal(run, zero) && float_equal(rise, zero)) continue;
+
+      T rise_to_point = y - y0;
+      T run_to_point  = x - x0;
+
+      // If points are on the polygon edge, they are not contained in the polygon.
+      if (float_equal(run * rise_to_point, run_to_point * rise)) { return false; }
 
       if (y_in_bounds && x < (run / rise) * rise_to_point + x0) { in_polygon = not in_polygon; }
     }

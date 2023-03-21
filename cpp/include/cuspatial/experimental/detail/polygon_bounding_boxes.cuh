@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/experimental/bounding_box.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
@@ -59,20 +60,24 @@ BoundingBoxIterator polygon_bounding_boxes(PolygonOffsetIterator polygon_offsets
   auto const num_rings = std::distance(polygon_ring_offsets_first, polygon_ring_offsets_last) - 1;
   auto const num_vertices = std::distance(polygon_vertices_first, polygon_vertices_last);
 
-  CUSPATIAL_EXPECTS(num_rings >= num_polys, "Each polygon must have at least one ring");
+  if (num_polys > 0) {
+    CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
+      num_vertices,
+      std::distance(polygon_offsets_first, polygon_offsets_last),
+      std::distance(polygon_ring_offsets_first, polygon_ring_offsets_last));
 
-  CUSPATIAL_EXPECTS(num_vertices >= num_polys * 3, "Each ring must have at least three vertices");
+    if (num_polys == 0 || num_rings == 0 || num_vertices == 0) { return bounding_boxes_first; }
 
-  if (num_polys == 0 || num_rings == 0 || num_vertices == 0) { return bounding_boxes_first; }
+    auto vertex_ids_iter = make_geometry_id_iterator<IndexT>(
+      polygon_offsets_first, polygon_offsets_last, polygon_ring_offsets_first);
 
-  auto vertex_ids_iter = make_geometry_id_iterator<IndexT>(
-    polygon_offsets_first, polygon_offsets_last, polygon_ring_offsets_first);
-
-  return point_bounding_boxes(vertex_ids_iter,
-                              vertex_ids_iter + num_vertices,
-                              polygon_vertices_first,
-                              bounding_boxes_first,
-                              expansion_radius,
-                              stream);
+    return point_bounding_boxes(vertex_ids_iter,
+                                vertex_ids_iter + num_vertices,
+                                polygon_vertices_first,
+                                bounding_boxes_first,
+                                expansion_radius,
+                                stream);
+  }
+  return bounding_boxes_first;
 }
 }  // namespace cuspatial
