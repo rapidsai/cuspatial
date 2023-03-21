@@ -53,9 +53,6 @@ ConfigureTest(HAVERSINE_TEST
 ConfigureTest(HAUSDORFF_TEST
     spatial/hausdorff_test.cpp)
 
-ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST
-    join/point_in_polygon_test_small.cpp)
-
 ConfigureTest(JOIN_POINT_IN_POLYGON_LARGE_TEST
     join/point_in_polygon_test_large.cpp)
 
@@ -181,3 +178,6 @@ ConfigureTest(FIND_TEST_EXP
     experimental/find/find_and_combine_segments_test.cu
     experimental/find/find_points_on_segments_test.cu
     experimental/find/find_duplicate_points_test.cu)
+
+ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST_EXP
+    experimental/join/quadtree_point_in_polygon_test_small.cu)

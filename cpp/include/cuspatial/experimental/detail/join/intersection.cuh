@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuspatial/experimental/geometry/box.hpp>
 #include <cuspatial/detail/utility/z_order.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -109,13 +110,9 @@ inline std::pair<int32_t, int32_t> find_intersections(KeyIterator keys_first,
       uint8_t const& level            = thrust::get<1>(node);
       uint8_t const& is_internal_node = thrust::get<2>(node);
 
-      auto const& bbox       = bboxes[bbox_idx];
-      auto const& bbox_min   = bbox.v1;
-      auto const& bbox_max   = bbox.v2;
-      auto const& poly_x_min = bbox_min.x;
-      auto const& poly_y_min = bbox_min.y;
-      auto const& poly_x_max = bbox_max.x;
-      auto const& poly_y_max = bbox_max.y;
+      box<T> const bbox        = bboxes[bbox_idx];
+      vec_2d<T> const bbox_min = bbox.v1;
+      vec_2d<T> const bbox_max = bbox.v2;
 
       T const key_x       = utility::z_order_x(key);
       T const key_y       = utility::z_order_y(key);
@@ -125,8 +122,8 @@ inline std::pair<int32_t, int32_t> find_intersections(KeyIterator keys_first,
       T const node_x_max  = x_min + (key_x + 1) * level_scale;
       T const node_y_max  = y_min + (key_y + 1) * level_scale;
 
-      if ((node_x_min > poly_x_max) || (node_x_max < poly_x_min) || (node_y_min > poly_y_max) ||
-          (node_y_max < poly_y_min)) {
+      if ((node_x_min > bbox_max.x) || (node_x_max < bbox_min.x) || (node_y_min > bbox_max.y) ||
+          (node_y_max < bbox_min.y)) {
         // if no overlap, return type = none_indicator
         return thrust::make_tuple(none_indicator, level, node_idx, bbox_idx);
       }

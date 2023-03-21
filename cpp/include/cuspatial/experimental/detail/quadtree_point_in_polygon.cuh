@@ -66,6 +66,7 @@ template <class PointIterator,
           class RingOffsetIterator,
           class VertexIterator>
 struct test_poly_point_intersection {
+  using T = iterator_vec_base_type<PointIterator>;
   using IndexType = iterator_value_type<PolygonOffsetIterator>;
 
   test_poly_point_intersection(PointIterator points_first,
@@ -98,11 +99,13 @@ struct test_poly_point_intersection {
     auto const poly_idx  = thrust::get<0>(poly_point_idxs);
     auto const point_idx = thrust::get<1>(poly_point_idxs);
 
-    auto const poly_begin = polygon_offsets_first[poly_idx];
-    auto const poly_end =
+    IndexType const poly_begin = polygon_offsets_first[poly_idx];
+    IndexType const poly_end =
       (poly_idx + 1 < num_polys) ? polygon_offsets_first[poly_idx + 1] : num_rings;
 
-    return is_point_in_polygon(points_first[point_idx],
+    vec_2d<T> const& point = points_first[point_idx];
+
+    return is_point_in_polygon(point,
                                poly_begin,
                                poly_end,
                                polygon_ring_offsets_first,
