@@ -126,7 +126,7 @@ std::pair<collection_type_id, std::unique_ptr<cudf::column>> make_point_column(
 /**
  * @brief helper function to make a linestring column
  *
- * A multipoint column has cudf type LIST<LIST<FLOAT | DOUBLE>>
+ * A linestring column has cudf type LIST<LIST<FLOAT | DOUBLE>>
  *
  * Example:
  * [LINESTRING (0 0, 1 1, 2 2), LINESTRING (3 3, 4 4)]
@@ -199,7 +199,7 @@ std::pair<collection_type_id, std::unique_ptr<cudf::column>> make_linestring_col
 /**
  * @brief helper function to make a polygon column
  *
- * A multilinestring column has cudf type LIST<LIST<LIST<FLOAT | DOUBLE>>>
+ * A polygon column has cudf type LIST<LIST<LIST<FLOAT | DOUBLE>>>
  *
  * Example:
  * [
@@ -237,9 +237,9 @@ std::pair<collection_type_id, std::unique_ptr<cudf::column>> make_polygon_column
 }
 
 /**
- * @brief helper function to make a polygon column
+ * @brief helper function to make a multipolygon column
  *
- * A multilinestring column has cudf type LIST<LIST<LIST<FLOAT | DOUBLE>>>
+ * A multipolygon column has cudf type LIST<LIST<LIST<LIST<FLOAT | DOUBLE>>>>
  *
  * Example:
  * [
