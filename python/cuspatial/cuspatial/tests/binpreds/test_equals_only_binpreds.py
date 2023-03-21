@@ -309,6 +309,24 @@ def test_point_not_crosses_point():
     assert (got.values_host == expected.values).all()
 
 
+@pytest.mark.parametrize(
+    "points",
+    [
+        [Point(0, 0), Point(3, 3), Point(3, 3)],
+        [Point(3, 3), Point(1, 1), Point(3, 3)],
+        [Point(3, 3), Point(3, 3), Point(2, 2)],
+    ],
+)
+def test_three_points_crosses_three_points(points):
+    gpdpoints1 = gpd.GeoSeries(points)
+    gpdpoints2 = gpd.GeoSeries([Point(0, 0), Point(1, 1), Point(2, 2)])
+    points1 = cuspatial.from_geopandas(gpdpoints1)
+    points2 = cuspatial.from_geopandas(gpdpoints2)
+    got = points1.crosses(points2)
+    expected = gpdpoints1.crosses(gpdpoints2)
+    assert (got.values_host == expected.values).all()
+
+
 def test_10000_points_crosses_10000_points(point_generator):
     gpdpoints1 = gpd.GeoSeries([*point_generator(10000)])
     gpdpoints2 = gpd.GeoSeries([*point_generator(10000)])
@@ -336,6 +354,24 @@ def test_point_not_overlaps_point():
     point2 = cuspatial.from_geopandas(gpdpoint2)
     got = point1.overlaps(point2)
     expected = gpdpoint1.overlaps(gpdpoint2)
+    assert (got.values_host == expected.values).all()
+
+
+@pytest.mark.parametrize(
+    "points",
+    [
+        [Point(0, 0), Point(3, 3), Point(3, 3)],
+        [Point(3, 3), Point(1, 1), Point(3, 3)],
+        [Point(3, 3), Point(3, 3), Point(2, 2)],
+    ],
+)
+def test_three_points_overlaps_three_points(points):
+    gpdpoints1 = gpd.GeoSeries(points)
+    gpdpoints2 = gpd.GeoSeries([Point(0, 0), Point(1, 1), Point(2, 2)])
+    points1 = cuspatial.from_geopandas(gpdpoints1)
+    points2 = cuspatial.from_geopandas(gpdpoints2)
+    got = points1.overlaps(points2)
+    expected = gpdpoints1.crosses(gpdpoints2)
     assert (got.values_host == expected.values).all()
 
 
