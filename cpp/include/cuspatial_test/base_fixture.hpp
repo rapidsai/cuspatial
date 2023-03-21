@@ -23,9 +23,8 @@ namespace cuspatial {
 namespace test {
 
 /**
- * @brief Uses CRTP to supply rmm resources for test fixtures.
+ * @brief Mixin to supply rmm resources for fixtures
  */
-template <class Fixture>
 class RMMResourceMixin {
   rmm::mr::device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
   rmm::cuda_stream_view _stream{rmm::cuda_stream_default};
@@ -55,7 +54,7 @@ class RMMResourceMixin {
  * class MyTestFixture : public cuspatial::test::BaseFixture {};
  * ```
  */
-class BaseFixture : public RMMResourceMixin<BaseFixture>, public ::testing::Test {
+class BaseFixture : public RMMResourceMixin, public ::testing::Test {
 };
 
 /**
@@ -79,7 +78,7 @@ class BaseFixture : public RMMResourceMixin<BaseFixture>, public ::testing::Test
  * ```
  */
 template <typename... Ts>
-class BaseFixtureWithParam : public RMMResourceMixin<BaseFixtureWithParam<Ts...>>,
+class BaseFixtureWithParam : public RMMResourceMixin,
                              public ::testing::TestWithParam<std::tuple<Ts...>> {
 };
 
