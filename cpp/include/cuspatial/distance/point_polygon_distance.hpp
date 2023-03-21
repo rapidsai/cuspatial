@@ -28,9 +28,14 @@ namespace cuspatial {
  * @ingroup distance
  * @brief Compute pairwise (multi)point-to-(multi)polygon Cartesian distance
  *
- * @param multpoints Geometry column of multipoints
+ * @param multipoints Geometry column of multipoints
  * @param multipolygons Geometry column of multipolygons
- * @return Column of distances between each pair of input geometries
+ * @param mr Device memory resource used to allocate the returned column.
+ * @return Column of distances between each pair of input geometries, same type as input coordinate types.
+ *
+ * @throw cuspatial::logic_error if `multipoints` and `multipolygons` has different coordinate types.
+ * @throw cuspatial::logic_error if `multipoints` is not a point column and `multipolygons` is not a polygon column.
+ * @throw cuspatial::logic_error if input column sizes mismatch.
  */
 
 std::unique_ptr<cudf::column> pairwise_point_polygon_distance(
