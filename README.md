@@ -46,7 +46,7 @@ cuSpatial is constantly working on new features! Check out the [epics](https://g
 ### Core Spatial Functions
 - Spatial relationship queries (DE-9IM) [Follow Development!](https://github.com/rapidsai/cuspatial/milestone/5)
   - [Contains Properly](https://docs.rapids.ai/api/cuspatial/stable/api_docs/geopandas_compatibility.html#cuspatial.GeoSeries.contains_properly)
-  - https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#Linestring-Intersections
+  - [Linestring-Linestring Intersections](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#Linestring-Intersections)
 - Distance computations (ST_Distance) [Follow Development!](https://github.com/rapidsai/cuspatial/issues/767)
   - [Pairwise Linestring Distance](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.pairwise_linestring_distance)
   - [Pairwise Point-Linestring Distance](https://docs.rapids.ai/api/cuspatial/stable/api_docs/spatial.html#cuspatial.pairwise_point_linestring_distance)
