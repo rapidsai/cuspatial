@@ -32,6 +32,11 @@ project(CUSPATIAL VERSION 23.04.00 LANGUAGES C CXX CUDA)
 # Setting this flag ensures `Threads::Threads` is the same value in first run and subsequent runs.
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
+# Must come after enable_language(CUDA)
+# Use `-isystem <path>` instead of `-isystem=<path>`
+# because the former works with clangd intellisense
+set(CMAKE_INCLUDE_SYSTEM_FLAG_CUDA "-isystem ")
+
 ###################################################################################################
 # - build options ---------------------------------------------------------------------------------
 
@@ -103,7 +108,10 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 rapids_cpm_init()
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
-
+# find or install GoogleTest
+if (CUSPATIAL_BUILD_TESTS)
+    include(cmake/thirdparty/get_gtest.cmake)
+endif()
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
@@ -280,9 +288,10 @@ rapids_export(
 # * build documentation ----------------------------------------------------------------------------
 
 find_package(Doxygen)
-if(Doxygen_FOUND)
 
-# doc targets for cuDF
+if(DOXYGEN_FOUND)
+
+# doc targets for cuSpatial
 add_custom_command(
   OUTPUT CUSPATIAL_DOXYGEN
   WORKING_DIRECTORY ${CUSPATIAL_SOURCE_DIR}/doxygen

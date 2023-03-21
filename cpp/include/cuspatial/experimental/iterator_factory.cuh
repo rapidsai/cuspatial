@@ -164,9 +164,8 @@ struct index_to_geometry_id {
 
   CUSPATIAL_HOST_DEVICE auto operator()(IndexT idx)
   {
-    return thrust::distance(
-      geometry_begin,
-      thrust::prev(thrust::upper_bound(thrust::seq, geometry_begin, geometry_end, idx)));
+    return thrust::distance(geometry_begin,
+                            thrust::upper_bound(thrust::seq, geometry_begin, geometry_end, idx));
   }
 };
 
@@ -210,7 +209,7 @@ auto make_vec_2d_iterator(FirstIter first, SecondIter second)
 /**
  * @brief Create an iterator to `vec_2d` data from a single iterator.
  *
- * Creates a vec2d view from an interator to the starting range of interleaved x-y coordinates.
+ * Creates a vec2d view from an iterator to the starting range of interleaved x-y coordinates.
  *
  * @tparam
  * @param d_points_begin

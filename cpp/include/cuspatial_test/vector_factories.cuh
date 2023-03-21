@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,13 @@
 
 namespace cuspatial {
 namespace test {
+
+template <typename Range>
+auto make_device_vector(Range rng)
+{
+  using T = typename Range::value_type;
+  return rmm::device_vector<T>(rng.begin(), rng.end());
+}
 
 template <typename T>
 auto make_device_vector(std::initializer_list<T> inl)
@@ -73,10 +80,10 @@ class multipolygon_array {
   {
   }
 
-  /// Return the number of multilinestrings
+  /// Return the number of multipolygons
   auto size() { return _geometry_offsets_array.size() - 1; }
 
-  /// Return range object of the multilinestring array
+  /// Return range object of the multipolygon array
   auto range()
   {
     return multipolygon_range(_geometry_offsets_array.begin(),
@@ -96,11 +103,11 @@ class multipolygon_array {
   CoordinateArray _coordinate_offsets_array;
 };
 
-template <typename T>
-auto make_multipolygon_array(std::initializer_list<std::size_t> geometry_inl,
-                             std::initializer_list<std::size_t> part_inl,
-                             std::initializer_list<std::size_t> ring_inl,
-                             std::initializer_list<vec_2d<T>> coord_inl)
+template <typename IndexRange, typename CoordRange>
+auto make_multipolygon_array(IndexRange geometry_inl,
+                             IndexRange part_inl,
+                             IndexRange ring_inl,
+                             CoordRange coord_inl)
 {
   return multipolygon_array{make_device_vector(geometry_inl),
                             make_device_vector(part_inl),
@@ -208,7 +215,7 @@ class multipoint_array {
  * make_multipoints_array({{P{0.0, 1.0}, P{2.0, 0.0}}, {}, {P{3.0, 4.0}}});
  *
  * Example: Construct an empty multilinestring array:
- * make_multipoints_array<float>({}); // Explict parameter required to deduce type.
+ * make_multipoints_array<float>({}); // Explicit parameter required to deduce type.
  *
  * @tparam T Type of coordinate
  * @param inl List of multipoints
