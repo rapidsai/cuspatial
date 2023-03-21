@@ -106,7 +106,7 @@ class GeoSeries(cudf.Series):
         )
 
     @property
-    def dtype(self):
+    def feature_types(self):
         return self._column._meta.input_types
 
     @property

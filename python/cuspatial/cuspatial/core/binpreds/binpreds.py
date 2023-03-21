@@ -415,7 +415,7 @@ class EqualsBinpred(BinaryPredicate):
 
     def preprocess(self, lhs, rhs):
         # Compare types
-        type_compare = lhs.dtype == rhs.dtype
+        type_compare = lhs.feature_types == rhs.feature_types
         # Any unmatched type is not equal
         if (type_compare == False).all():  # noqa: E712
             # Override _op so that it will not be run.
