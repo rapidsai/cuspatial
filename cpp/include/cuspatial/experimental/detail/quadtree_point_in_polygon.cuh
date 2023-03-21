@@ -15,7 +15,7 @@
  */
 
 #include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/experimental/detail/is_point_in_polygon.cuh>
+#include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/experimental/detail/join/get_quad_and_local_point_indices.cuh>
 #include <cuspatial/traits.hpp>
 
