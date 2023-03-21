@@ -31,10 +31,13 @@ namespace cuspatial {
  * @param multipoints Geometry column of multipoints
  * @param multipolygons Geometry column of multipolygons
  * @param mr Device memory resource used to allocate the returned column.
- * @return Column of distances between each pair of input geometries, same type as input coordinate types.
+ * @return Column of distances between each pair of input geometries, same type as input coordinate
+ * types.
  *
- * @throw cuspatial::logic_error if `multipoints` and `multipolygons` has different coordinate types.
- * @throw cuspatial::logic_error if `multipoints` is not a point column and `multipolygons` is not a polygon column.
+ * @throw cuspatial::logic_error if `multipoints` and `multipolygons` has different coordinate
+ * types.
+ * @throw cuspatial::logic_error if `multipoints` is not a point column and `multipolygons` is not a
+ * polygon column.
  * @throw cuspatial::logic_error if input column sizes mismatch.
  */
 
