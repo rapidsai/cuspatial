@@ -83,8 +83,7 @@ inline std::pair<int32_t, int32_t> find_intersections(point_quadtree_ref quadtre
                                                       NodePairsIterator node_pairs,
                                                       LeafPairsIterator leaf_pairs,
                                                       int32_t num_pairs,
-                                                      T x_min,
-                                                      T y_min,
+                                                      vec_2d<T> const& v_min,
                                                       T scale,
                                                       int8_t max_depth,
                                                       rmm::cuda_stream_view stream)
@@ -97,7 +96,7 @@ inline std::pair<int32_t, int32_t> find_intersections(point_quadtree_ref quadtre
     thrust::make_zip_iterator(node_indices, bbox_indices),
     thrust::make_zip_iterator(node_indices, bbox_indices) + num_pairs,
     node_pairs,
-    [x_min, y_min, scale, max_depth, nodes = nodes_first, bboxes = bounding_box_first] __device__(
+    [v_min, scale, max_depth, nodes = nodes_first, bboxes = bounding_box_first] __device__(
       auto const& node_and_bbox) {
       auto const& node_idx = thrust::get<0>(node_and_bbox);
       auto const& bbox_idx = thrust::get<1>(node_and_bbox);
@@ -114,10 +113,10 @@ inline std::pair<int32_t, int32_t> find_intersections(point_quadtree_ref quadtre
       T const key_x       = utility::z_order_x(key);
       T const key_y       = utility::z_order_y(key);
       T const level_scale = scale * (1 << (max_depth - 1 - level));
-      T const node_x_min  = x_min + (key_x + 0) * level_scale;
-      T const node_y_min  = y_min + (key_y + 0) * level_scale;
-      T const node_x_max  = x_min + (key_x + 1) * level_scale;
-      T const node_y_max  = y_min + (key_y + 1) * level_scale;
+      T const node_x_min  = v_min.x + (key_x + 0) * level_scale;
+      T const node_y_min  = v_min.y + (key_y + 0) * level_scale;
+      T const node_x_max  = v_min.x + (key_x + 1) * level_scale;
+      T const node_y_max  = v_min.y + (key_y + 1) * level_scale;
 
       if ((node_x_min > bbox_max.x) || (node_x_max < bbox_min.x) || (node_y_min > bbox_max.y) ||
           (node_y_max < bbox_min.y)) {

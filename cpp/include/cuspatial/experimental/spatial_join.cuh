@@ -45,8 +45,7 @@ namespace cuspatial {
  * @param quadtree: Reference to a quadtree created using point_quadtree()
  * @param bounding_boxes_first: start bounding boxes iterator
  * @param bounding_boxes_last: end of bounding boxes iterator
- * @param x_min The lower-left x-coordinate of the area of interest bounding box.
- * @param y_min The lower-left y-coordinate of the area of interest bounding box.
+ * @param v_min The lower-left (x, y) corner of the area of interest bounding box.
  * @param scale Scale to apply to each x and y distance from x_min and y_min.
  * @param max_depth Maximum quadtree depth at which to stop testing for intersections.
  * @param stream The CUDA stream on which to perform computations
@@ -66,8 +65,7 @@ join_quadtree_and_bounding_boxes(
   point_quadtree_ref quadtree,
   BoundingBoxIterator bounding_boxes_first,
   BoundingBoxIterator bounding_boxes_last,
-  T x_min,
-  T y_min,
+  vec_2d<T> const& v_min,
   T scale,
   int8_t max_depth,
   rmm::cuda_stream_view stream        = rmm::cuda_stream_default,
@@ -90,8 +88,6 @@ join_quadtree_and_bounding_boxes(
  *                            `cuspatial::quadtree_on_points`
  * @param point_indices_last iterator to end of sequence of point indices returned by
  *                            `cuspatial::quadtree_on_points`
- * @param point_x x-coordinates of points to test
- * @param point_y y-coordinates of points to test
  * @param points_first iterator to beginning of sequence of (x, y) points to test
  * @param polygon_offsets_first iterator to beginning of range of indices to the first ring in each
                                 polygon

@@ -56,20 +56,20 @@ struct dispatch_quadtree_bounding_box_join {
 
     auto quadtree_ref = point_quadtree_ref(quadtree.column(0).begin<uint32_t>(),  // keys
                                            quadtree.column(0).end<uint32_t>(),
-                                           quadtree.column(1).begin<uint8_t>(),  // levels
-                                           quadtree.column(2).begin<bool>(),     // is_internal_node
+                                           quadtree.column(1).begin<uint8_t>(),   // levels
+                                           quadtree.column(2).begin<bool>(),  // is_internal_node
                                            quadtree.column(3).begin<uint32_t>(),   // lengths
                                            quadtree.column(4).begin<uint32_t>());  // offsets
 
-    auto [bbox_offset, quad_offset] = join_quadtree_and_bounding_boxes(quadtree_ref,
-                                                                       bbox_itr,
-                                                                       bbox_itr + bbox.num_rows(),
-                                                                       static_cast<T>(x_min),
-                                                                       static_cast<T>(y_min),
-                                                                       static_cast<T>(scale),
-                                                                       max_depth,
-                                                                       stream,
-                                                                       mr);
+    auto [bbox_offset, quad_offset] = join_quadtree_and_bounding_boxes(
+      quadtree_ref,
+      bbox_itr,
+      bbox_itr + bbox.num_rows(),
+      cuspatial::vec_2d<T>{static_cast<T>(x_min), static_cast<T>(y_min)},
+      static_cast<T>(scale),
+      max_depth,
+      stream,
+      mr);
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.push_back(std::make_unique<cudf::column>(std::move(bbox_offset)));

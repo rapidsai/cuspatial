@@ -32,8 +32,7 @@
  * tested. This is left for pip_refine_test_large.
  */
 template <typename T>
-struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {
-};
+struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 
@@ -140,15 +139,8 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
                                     T{0},
                                     this->stream());
 
-  auto [poly_indices, quad_indices] = cuspatial::join_quadtree_and_bounding_boxes(quadtree,
-                                                                                  bboxes.begin(),
-                                                                                  bboxes.end(),
-                                                                                  v_min.x,
-                                                                                  v_min.y,
-                                                                                  scale,
-                                                                                  max_depth,
-                                                                                  this->stream(),
-                                                                                  this->mr());
+  auto [poly_indices, quad_indices] = cuspatial::join_quadtree_and_bounding_boxes(
+    quadtree, bboxes.begin(), bboxes.end(), v_min, scale, max_depth, this->stream(), this->mr());
 
   auto [poly_offset, point_offset] = cuspatial::quadtree_point_in_polygon(poly_indices.begin(),
                                                                           poly_indices.end(),
