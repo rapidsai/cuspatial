@@ -72,8 +72,8 @@ struct dispatch_quadtree_bounding_box_join {
                                                                        static_cast<T>(y_min),
                                                                        static_cast<T>(scale),
                                                                        max_depth,
-                                                                       mr,
-                                                                       stream);
+                                                                       stream,
+                                                                       mr);
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.push_back(std::make_unique<cudf::column>(std::move(bbox_offset)));
