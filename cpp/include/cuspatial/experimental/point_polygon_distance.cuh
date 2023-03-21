@@ -24,12 +24,14 @@ namespace cuspatial {
  * @ingroup distance
  * @brief Computes pairwise multipoint to multipolygon distance
  *
- * @tparam MultiPointRange An instance of template type `MultiPointRange`
- * @tparam MultiPolygonRange An instance of template type `MultiPolygonRange`
+ * @tparam MultiPointRange An instance of template type `multipoint_range`
+ * @tparam MultiPolygonRange An instance of template type `multipolygon_range`
  * @tparam OutputIt iterator type for output array. Must meet the requirements of [LRAI](LinkLRAI).
+ * Must be an iterator to type convertible from floating points.
  *
  * @param multipoints Range of multipoints, one per computed distance pair.
  * @param multipolygons Range of multilinestrings, one per computed distance pair.
+ * @param stream The CUDA stream on which to perform computations
  * @return Output Iterator past the last distance computed
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator

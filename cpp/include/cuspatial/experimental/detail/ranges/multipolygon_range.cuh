@@ -33,7 +33,6 @@
 #include <optional>
 
 namespace cuspatial {
-
 using namespace detail;
 
 template <typename GeometryIterator,

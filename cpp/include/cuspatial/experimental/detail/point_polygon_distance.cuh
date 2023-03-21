@@ -20,11 +20,12 @@
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
-#include <cuspatial/detail/utility/offset_to_keys.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
+#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
+#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -33,6 +34,7 @@
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/logical.h>
 #include <thrust/reduce.h>
 #include <thrust/tabulate.h>
 
@@ -48,6 +50,8 @@ namespace detail {
  */
 template <typename MultiPointRange, typename MultiPolygonRange>
 struct point_in_multipolygon_test_functor {
+  using T = typename MultiPointRange::element_t;
+
   MultiPointRange multipoints;
   MultiPolygonRange multipolygons;
 
@@ -59,13 +63,16 @@ struct point_in_multipolygon_test_functor {
   template <typename IndexType>
   uint8_t __device__ operator()(IndexType pidx)
   {
-    auto point        = thrust::raw_reference_cast(multipoints.point(pidx));
-    auto geometry_idx = multipoints.geometry_idx_from_point_idx(pidx);
+    vec_2d<T> const& point = multipoints.point(pidx);
+    auto geometry_idx      = multipoints.geometry_idx_from_point_idx(pidx);
 
-    bool intersects = false;
-    for (auto polygon : multipolygons[geometry_idx]) {
-      intersects = intersects || is_point_in_polygon(point, polygon);
-    }
+    auto const& polys = multipolygons[geometry_idx];
+    // TODO: benchmark against range based for loop
+    bool intersects =
+      thrust::any_of(thrust::seq, polys.begin(), polys.end(), [&point] __device__(auto poly) {
+        return is_point_in_polygon(point, poly);
+      });
+
     return static_cast<uint8_t>(intersects);
   }
 };
@@ -90,14 +97,13 @@ void __global__ pairwise_point_polygon_distance_kernel(MultiPointRange multipoin
     if (geometry_idx == MultiPolygonRange::INVALID_INDEX) continue;
 
     if (intersects[geometry_idx]) {
-      // Leading thread of the pair writes to the output
-      if (multipolygons.is_first_point_of_multipolygon(idx, geometry_idx))
-        distances[geometry_idx] = T{0.0};
+      distances[geometry_idx] = T{0.0};
       continue;
     }
 
+    auto [a, b] = multipolygons.get_segment(idx);
+
     T dist_squared = std::numeric_limits<T>::max();
-    auto [a, b]    = multipolygons.get_segment(idx);
     for (vec_2d<T> point : multipoints[geometry_idx]) {
       dist_squared = min(dist_squared, point_to_segment_distance_squared(point, a, b));
     }
@@ -114,7 +120,8 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
                                          OutputIt distances_first,
                                          rmm::cuda_stream_view stream)
 {
-  using T = typename MultiPointRange::element_t;
+  using T       = typename MultiPointRange::element_t;
+  using index_t = typename MultiPointRange::index_t;
 
   CUSPATIAL_EXPECTS(multipoints.size() == multipolygons.size(),
                     "Must have the same number of input rows.");
@@ -138,8 +145,8 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
     rmm::device_uvector<uint8_t> multipoint_intersects(multipoints.num_multipoints(), stream);
     detail::zero_data_async(multipoint_intersects.begin(), multipoint_intersects.end(), stream);
 
-    auto offset_as_key_it = detail::make_counting_transform_iterator(
-      0, offsets_to_keys_functor{multipoints.offsets_begin(), multipoints.offsets_end()});
+    auto offset_as_key_it =
+      make_geometry_id_iterator<index_t>(multipoints.offsets_begin(), multipoints.offsets_end());
 
     thrust::reduce_by_key(rmm::exec_policy(stream),
                           offset_as_key_it,
