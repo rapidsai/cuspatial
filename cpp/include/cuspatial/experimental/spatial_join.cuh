@@ -42,12 +42,7 @@ namespace cuspatial {
  * eventual number of levels may be less than `max_depth` if the number of points is small or
  * `max_size` is large.
  *
- * @param keys_first: start quadtree key iterator
- * @param keys_last: end of quadtree key iterator
- * @param levels_first: start quadtree levels iterator
- * @param is_internal_nodes_first: start quadtree is_internal_node iterator
- * @param lengths_first: start quadtree length iterator
- * @param offsets_first: start quadtree offset iterator
+ * @param quadtree: Reference to a quadtree created using point_quadtree()
  * @param bounding_boxes_first: start bounding boxes iterator
  * @param bounding_boxes_last: end of bounding boxes iterator
  * @param x_min The lower-left x-coordinate of the area of interest bounding box.
@@ -64,19 +59,11 @@ namespace cuspatial {
  * @throw cuspatial::logic_error If scale is less than or equal to 0
  * @throw cuspatial::logic_error If max_depth is less than 1 or greater than 15
  */
-template <class KeyIterator,
-          class LevelIterator,
-          class IsInternalIterator,
-          class BoundingBoxIterator,
+template <class BoundingBoxIterator,
           class T = typename cuspatial::iterator_vec_base_type<BoundingBoxIterator>>
 std::pair<rmm::device_uvector<uint32_t>, rmm::device_uvector<uint32_t>>
 join_quadtree_and_bounding_boxes(
-  KeyIterator keys_first,
-  KeyIterator keys_last,
-  LevelIterator levels_first,
-  IsInternalIterator is_internal_nodes_first,
-  KeyIterator lengths_first,
-  KeyIterator offsets_first,
+  point_quadtree_ref quadtree,
   BoundingBoxIterator bounding_boxes_first,
   BoundingBoxIterator bounding_boxes_last,
   T x_min,
@@ -98,12 +85,7 @@ join_quadtree_and_bounding_boxes(
  *
  * @param poly_quad_pairs_first iterator to the beginning of sequence of polygon/quadrant pairs
  * @param poly_quad_pairs_last iterator to the end of sequence of polygon/quadrant pairs
- * @param keys_first start quadtree key iterator
- * @param keys_last end of quadtree key iterator
- * @param levels_first start quadtree levels iterator
- * @param is_internal_nodes_first start quadtree is_internal_node iterator
- * @param lengths_first start quadtree length iterator
- * @param offsets_first start quadtree offset iterator
+ * @param quadtree: Reference to a quadtree created using point_quadtree()
  * @param point_indices_first iterator to beginning of sequence of point indices returned by
  *                            `cuspatial::quadtree_on_points`
  * @param point_indices_last iterator to end of sequence of point indices returned by
@@ -135,9 +117,6 @@ join_quadtree_and_bounding_boxes(
  **/
 template <class PolyIndexIterator,
           class QuadIndexIterator,
-          class KeyIterator,
-          class LevelIterator,
-          class IsInternalIterator,
           class PointIndexIterator,
           class PointIterator,
           class PolygonOffsetIterator,
@@ -148,12 +127,7 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
   PolyIndexIterator poly_indices_first,
   PolyIndexIterator poly_indices_last,
   QuadIndexIterator quad_indices_first,
-  KeyIterator keys_first,
-  KeyIterator keys_last,
-  LevelIterator levels_first,
-  IsInternalIterator is_internal_nodes_first,
-  KeyIterator quad_lengths_first,
-  KeyIterator quad_offsets_first,
+  point_quadtree_ref quadtree,
   PointIndexIterator point_indices_first,
   PointIndexIterator point_indices_last,
   PointIterator points_first,

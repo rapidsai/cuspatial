@@ -96,7 +96,7 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   auto [point_indices, quadtree] = quadtree_on_points(
     points_in.begin(), points_in.end(), v_min, v_max, scale, max_depth, min_size, this->stream());
 
-  auto points = rmm::device_uvector<vec_2d<T>>(quads.size() * min_size, this->stream(), this->mr());
+  auto points = rmm::device_uvector<vec_2d<T>>(quads.size() * min_size, this->stream());
   thrust::gather(rmm::exec_policy(this->stream()),
                  point_indices.begin(),
                  point_indices.end(),
@@ -143,31 +143,14 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
                                     T{0},
                                     this->stream());
 
-  auto [poly_indices, quad_indices] =
-    cuspatial::join_quadtree_and_bounding_boxes(quadtree.key.begin(),
-                                                quadtree.key.end(),
-                                                quadtree.level.begin(),
-                                                quadtree.is_internal_node.begin(),
-                                                quadtree.length.begin(),
-                                                quadtree.offset.begin(),
-                                                bboxes.begin(),
-                                                bboxes.end(),
-                                                v_min.x,
-                                                v_min.y,
-                                                scale,
-                                                max_depth,
-                                                this->stream());
+  auto [poly_indices, quad_indices] = cuspatial::join_quadtree_and_bounding_boxes(
+    quadtree, bboxes.begin(), bboxes.end(), v_min.x, v_min.y, scale, max_depth, this->stream());
 
   auto [actual_poly_indices, actual_point_indices] =
     cuspatial::quadtree_point_in_polygon(poly_indices.begin(),
                                          poly_indices.end(),
                                          quad_indices.begin(),
-                                         quadtree.key.begin(),
-                                         quadtree.key.end(),
-                                         quadtree.level.begin(),
-                                         quadtree.is_internal_node.begin(),
-                                         quadtree.length.begin(),
-                                         quadtree.offset.begin(),
+                                         quadtree,
                                          point_indices.begin(),
                                          point_indices.end(),
                                          points.begin(),

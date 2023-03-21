@@ -139,43 +139,31 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
                                     T{0},
                                     this->stream());
 
-  auto [poly_indices, quad_indices] =
-    cuspatial::join_quadtree_and_bounding_boxes(quadtree.key.begin(),
-                                                quadtree.key.end(),
-                                                quadtree.level.begin(),
-                                                quadtree.is_internal_node.begin(),
-                                                quadtree.length.begin(),
-                                                quadtree.offset.begin(),
-                                                bboxes.begin(),
-                                                bboxes.end(),
-                                                v_min.x,
-                                                v_min.y,
-                                                scale,
-                                                max_depth,
-                                                this->stream(),
-                                                this->mr());
+  auto [poly_indices, quad_indices] = cuspatial::join_quadtree_and_bounding_boxes(quadtree,
+                                                                                  bboxes.begin(),
+                                                                                  bboxes.end(),
+                                                                                  v_min.x,
+                                                                                  v_min.y,
+                                                                                  scale,
+                                                                                  max_depth,
+                                                                                  this->stream(),
+                                                                                  this->mr());
 
-  auto [poly_offset, point_offset] =
-    cuspatial::quadtree_point_in_polygon(poly_indices.begin(),
-                                         poly_indices.end(),
-                                         quad_indices.begin(),
-                                         quadtree.key.begin(),
-                                         quadtree.key.end(),
-                                         quadtree.level.begin(),
-                                         quadtree.is_internal_node.begin(),
-                                         quadtree.length.begin(),
-                                         quadtree.offset.begin(),
-                                         point_indices.begin(),
-                                         point_indices.end(),
-                                         points.begin(),
-                                         poly_offsets.begin(),
-                                         poly_offsets.end(),
-                                         ring_offsets.begin(),
-                                         ring_offsets.end(),
-                                         poly_points.begin(),
-                                         poly_points.end(),
-                                         this->stream(),
-                                         this->mr());
+  auto [poly_offset, point_offset] = cuspatial::quadtree_point_in_polygon(poly_indices.begin(),
+                                                                          poly_indices.end(),
+                                                                          quad_indices.begin(),
+                                                                          quadtree,
+                                                                          point_indices.begin(),
+                                                                          point_indices.end(),
+                                                                          points.begin(),
+                                                                          poly_offsets.begin(),
+                                                                          poly_offsets.end(),
+                                                                          ring_offsets.begin(),
+                                                                          ring_offsets.end(),
+                                                                          poly_points.begin(),
+                                                                          poly_points.end(),
+                                                                          this->stream(),
+                                                                          this->mr());
 
   auto expected_poly_offset =
     make_device_vector<uint32_t>({3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 3});

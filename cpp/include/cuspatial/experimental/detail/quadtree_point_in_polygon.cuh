@@ -17,6 +17,7 @@
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/experimental/detail/join/get_quad_and_local_point_indices.cuh>
+#include <cuspatial/experimental/point_quadtree.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <rmm/device_uvector.hpp>
@@ -119,9 +120,6 @@ struct test_poly_point_intersection {
 
 template <class PolyIndexIterator,
           class QuadIndexIterator,
-          class KeyIterator,
-          class LevelIterator,
-          class IsInternalIterator,
           class PointIndexIterator,
           class PointIterator,
           class PolygonOffsetIterator,
@@ -132,12 +130,7 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
   PolyIndexIterator poly_indices_first,
   PolyIndexIterator poly_indices_last,
   QuadIndexIterator quad_indices_first,
-  KeyIterator keys_first,
-  KeyIterator keys_last,
-  LevelIterator levels_first,
-  IsInternalIterator is_internal_nodes_first,
-  KeyIterator quad_lengths_first,
-  KeyIterator quad_offsets_first,
+  point_quadtree_ref quadtree,
   PointIndexIterator point_indices_first,
   PointIndexIterator point_indices_last,
   PointIterator points_first,
@@ -155,10 +148,10 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
   auto num_poly_quad_pairs = std::distance(poly_indices_first, poly_indices_last);
 
   auto quad_lengths_iter =
-    thrust::make_permutation_iterator(quad_lengths_first, quad_indices_first);
+    thrust::make_permutation_iterator(quadtree.length_begin(), quad_indices_first);
 
   auto quad_offsets_iter =
-    thrust::make_permutation_iterator(quad_offsets_first, quad_indices_first);
+    thrust::make_permutation_iterator(quadtree.offset_begin(), quad_indices_first);
 
   // Compute a "local" set of zero-based point offsets from number of points in each quadrant
   // Use `num_poly_quad_pairs + 1` as the length so that the last element produced by

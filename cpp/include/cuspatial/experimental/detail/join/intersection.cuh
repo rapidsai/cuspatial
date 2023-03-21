@@ -18,6 +18,7 @@
 
 #include <cuspatial/detail/utility/z_order.cuh>
 #include <cuspatial/experimental/geometry/box.hpp>
+#include <cuspatial/experimental/point_quadtree.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -70,17 +71,12 @@ inline int32_t remove_non_quad_intersections(InputIterator input_begin,
 }
 
 template <class T,
-          class KeyIterator,
-          class LevelIterator,
-          class IsInternalIterator,
           class BoundingBoxIterator,
           class NodeIndicesIterator,
           class BBoxIndicesIterator,
           class NodePairsIterator,
           class LeafPairsIterator>
-inline std::pair<int32_t, int32_t> find_intersections(KeyIterator keys_first,
-                                                      LevelIterator levels_first,
-                                                      IsInternalIterator is_internal_node_first,
+inline std::pair<int32_t, int32_t> find_intersections(point_quadtree_ref quadtree,
                                                       BoundingBoxIterator bounding_box_first,
                                                       NodeIndicesIterator node_indices,
                                                       BBoxIndicesIterator bbox_indices,
@@ -93,7 +89,8 @@ inline std::pair<int32_t, int32_t> find_intersections(KeyIterator keys_first,
                                                       int8_t max_depth,
                                                       rmm::cuda_stream_view stream)
 {
-  auto nodes_first = thrust::make_zip_iterator(keys_first, levels_first, is_internal_node_first);
+  auto nodes_first = thrust::make_zip_iterator(
+    quadtree.key_begin(), quadtree.level_begin(), quadtree.internal_node_flag_begin());
 
   thrust::transform(
     rmm::exec_policy(stream),

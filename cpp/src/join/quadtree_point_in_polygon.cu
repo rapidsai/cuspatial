@@ -61,16 +61,18 @@ struct compute_quadtree_point_in_polygon {
     auto poly_indices = poly_quad_pairs.column(0);
     auto quad_indices = poly_quad_pairs.column(1);
 
+    auto quadtree_ref = point_quadtree_ref(quadtree.column(0).begin<uint32_t>(),  // keys
+                                           quadtree.column(0).end<uint32_t>(),
+                                           quadtree.column(1).begin<uint8_t>(),   // levels
+                                           quadtree.column(2).begin<bool>(),  // is_internal_node
+                                           quadtree.column(3).begin<uint32_t>(),   // lengths
+                                           quadtree.column(4).begin<uint32_t>());  // offsets
+
     auto [poly_idx, point_idx] = quadtree_point_in_polygon(
       poly_indices.begin<uint32_t>(),
       poly_indices.end<uint32_t>(),
       quad_indices.begin<uint32_t>(),
-      quadtree.column(0).begin<uint32_t>(),  // keys
-      quadtree.column(0).end<uint32_t>(),
-      quadtree.column(1).begin<uint32_t>(),  // levels
-      quadtree.column(2).end<uint32_t>(),    // is_internal_node
-      quadtree.column(3).begin<uint32_t>(),  // lengths
-      quadtree.column(4).begin<uint32_t>(),  // offsets
+      quadtree_ref,
       point_indices.begin<uint32_t>(),
       point_indices.end<uint32_t>(),
       make_vec_2d_iterator(point_x.begin<T>(), point_y.begin<T>()),

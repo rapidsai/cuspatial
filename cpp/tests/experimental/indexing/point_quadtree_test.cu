@@ -42,7 +42,7 @@ struct QuadtreeOnPointIndexingTest : public ::testing::Test {
 
     auto& key_d              = tree.key;
     auto& level_d            = tree.level;
-    auto& is_internal_node_d = tree.is_internal_node;
+    auto& is_internal_node_d = tree.internal_node_flag;
     auto& length_d           = tree.length;
     auto& offset_d           = tree.offset;
 
