@@ -31,8 +31,6 @@
 namespace cuspatial {
 namespace test {
 
-constexpr double PI = 3.14159265358979323846;
-
 /**
  * @brief Struct to store the parameters of the multipolygon array generator
  *
@@ -45,7 +43,7 @@ struct multipolygon_generator_parameter {
   std::size_t num_multipolygons;
   std::size_t num_polygons_per_multipolygon;
   std::size_t num_holes_per_polygon;
-  std::size_t num_sides_per_ring;
+  std::size_t num_edges_per_ring;
   vec_2d<T> centroid;
   T radius;
 
@@ -55,7 +53,7 @@ struct multipolygon_generator_parameter {
   }
   CUSPATIAL_HOST_DEVICE std::size_t num_rings() { return num_polygons() * num_rings_per_polygon(); }
   CUSPATIAL_HOST_DEVICE std::size_t num_coords() { return num_rings() * num_vertices_per_ring(); }
-  CUSPATIAL_HOST_DEVICE std::size_t num_vertices_per_ring() { return num_sides_per_ring + 1; }
+  CUSPATIAL_HOST_DEVICE std::size_t num_vertices_per_ring() { return num_edges_per_ring + 1; }
   CUSPATIAL_HOST_DEVICE std::size_t num_rings_per_polygon() { return num_holes_per_polygon + 1; }
   CUSPATIAL_HOST_DEVICE T hole_radius() { return radius / (num_holes_per_polygon + 1); }
 };
@@ -67,22 +65,22 @@ struct multipolygon_generator_parameter {
  * Each step has equal angles.
  *
  * @tparam T Type of coordinate
- * @param point_local_idx Local point of the point
- * @param num_sides Number of sides of the polygon
+ * @param point_local_idx Local index of the point
+ * @param num_edges Number of sides of the polygon
  * @param centroid Centroid of the ring
  * @param radius Radius of the ring
  * @return Coordinate of the point
  */
 template <typename T>
 vec_2d<T> __device__ generate_ring_coordinate(std::size_t point_local_idx,
-                                              std::size_t num_sides,
+                                              std::size_t num_edges,
                                               vec_2d<T> centroid,
                                               T radius)
 {
   // Overrides last coordinate to make sure ring is closed.
-  if (point_local_idx == num_sides) return vec_2d<T>{centroid.x + radius, centroid.y};
+  if (point_local_idx == num_edges) return vec_2d<T>{centroid.x + radius, centroid.y};
 
-  T angle = 2.0 * PI * point_local_idx / num_sides;
+  T angle = (2.0 * M_PI * point_local_idx) / num_edges;
 
   return vec_2d<T>{centroid.x + radius * cos(angle), centroid.y + radius * sin(angle)};
 }
@@ -188,10 +186,10 @@ void __global__ generate_multipolygon_array_coordinates(MultipolygonRange multip
 
     if (ring_local_idx == 0)  // Generate coordinate for shell
       multipolygons.point_begin()[idx] = generate_ring_coordinate(
-        point_local_idx, params.num_sides_per_ring, centroid, params.radius);
+        point_local_idx, params.num_edges_per_ring, centroid, params.radius);
     else  // Generate coordinate for holes
       multipolygons.point_begin()[idx] = generate_ring_coordinate(
-        point_local_idx, params.num_sides_per_ring, centroid, params.hole_radius());
+        point_local_idx, params.num_edges_per_ring, centroid, params.hole_radius());
   }
 }
 
