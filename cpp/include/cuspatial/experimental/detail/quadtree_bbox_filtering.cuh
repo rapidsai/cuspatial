@@ -47,8 +47,8 @@ join_quadtree_and_bounding_boxes(KeyIterator keys_first,
                                  T y_min,
                                  T scale,
                                  int8_t max_depth,
-                                 rmm::mr::device_memory_resource* mr,
-                                 rmm::cuda_stream_view stream)
+                                 rmm::cuda_stream_view stream,
+                                 rmm::mr::device_memory_resource* mr)
 {
   static_assert(is_same<T, cuspatial::iterator_vec_base_type<BoundingBoxIterator>>(),
                 "Iterator value_type mismatch");

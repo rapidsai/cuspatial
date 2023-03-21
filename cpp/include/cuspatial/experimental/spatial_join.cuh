@@ -83,8 +83,8 @@ join_quadtree_and_bounding_boxes(
   T y_min,
   T scale,
   int8_t max_depth,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(),
-  rmm::cuda_stream_view stream        = rmm::cuda_stream_default);
+  rmm::cuda_stream_view stream        = rmm::cuda_stream_default,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
  * @brief Test whether the specified points are inside any of the specified polygons.

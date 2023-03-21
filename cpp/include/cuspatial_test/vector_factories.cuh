@@ -21,6 +21,7 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
+#include <rmm/device_uvector.hpp>
 #include <rmm/device_vector.hpp>
 
 #include <initializer_list>
