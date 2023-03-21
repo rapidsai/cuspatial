@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <cuspatial/experimental/geometry/box.hpp>
 #include <cuspatial/detail/utility/z_order.cuh>
+#include <cuspatial/experimental/geometry/box.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>

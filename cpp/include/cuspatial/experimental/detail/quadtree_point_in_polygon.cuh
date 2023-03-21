@@ -66,7 +66,7 @@ template <class PointIterator,
           class RingOffsetIterator,
           class VertexIterator>
 struct test_poly_point_intersection {
-  using T = iterator_vec_base_type<PointIterator>;
+  using T         = iterator_vec_base_type<PointIterator>;
   using IndexType = iterator_value_type<PolygonOffsetIterator>;
 
   test_poly_point_intersection(PointIterator points_first,

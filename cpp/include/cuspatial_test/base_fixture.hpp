@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <rmm/cuda_stream.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
 #include <gtest/gtest.h>
@@ -31,14 +33,23 @@ namespace test {
  */
 class BaseFixture : public ::testing::Test {
   rmm::mr::device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
+  rmm::cuda_stream _stream{};
 
  public:
   /**
-   * @brief Returns pointer to `device_memory_resource` that should be used for
-   * all tests inheriting from this fixture
+   * @brief Returns pointer to `device_memory_resource` that should be used for all tests inheriting
+   * from this fixture.
    * @return pointer to memory resource
    */
   rmm::mr::device_memory_resource* mr() { return _mr; }
+
+  /**
+   * @brief Returns `cuda_stream_view` that should be used for all tests inheriting from this
+   * fixture.
+   *
+   * @return rmm::cuda_stream_view
+   */
+  rmm::cuda_stream_view stream() { return _stream; }
 };
 
 }  // namespace test
