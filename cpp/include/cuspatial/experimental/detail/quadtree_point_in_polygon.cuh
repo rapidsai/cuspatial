@@ -110,7 +110,8 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
 {
   using T = iterator_vec_base_type<PointIterator>;
 
-  CUSPATIAL_EXPECTS(polygons.num_multipolygons() == polygons.num_polygons());
+  CUSPATIAL_EXPECTS(polygons.num_multipolygons() == polygons.num_polygons(),
+                    "Only one polygon per multipolygon currently supported.");
 
   auto num_poly_quad_pairs = std::distance(poly_indices_first, poly_indices_last);
 
