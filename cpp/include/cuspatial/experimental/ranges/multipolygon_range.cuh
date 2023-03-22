@@ -101,12 +101,31 @@ class multipolygon_range {
   /// Return the iterator to the one past the last multipolygon in the range.
   CUSPATIAL_HOST_DEVICE auto end() { return multipolygon_end(); }
 
+  /// Return the iterator to the first point in the range.
+  CUSPATIAL_HOST_DEVICE auto point_begin();
+
+  /// Return the iterator to the one past the last point in the range.
+  CUSPATIAL_HOST_DEVICE auto point_end();
+
   /// Given the index of a segment, return the index of the geometry (multipolygon) that contains
   /// the segment. Segment index is the index to the starting point of the segment. If the index is
   /// the last point of the ring, then it is not a valid index. This function returns
   /// multipolygon_range::INVALID_INDEX if the index is invalid.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto geometry_idx_from_segment_idx(IndexType segment_idx);
+
+  /// Given the index of a point, return the index of the ring that contains the point.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto ring_idx_from_point_idx(IndexType point_idx);
+
+  /// Given the index of a ring, return the index of the part (polygon) that contains the point.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto part_idx_from_ring_idx(IndexType ring_idx);
+
+  /// Given the index of a part (polygon), return the index of the geometry (multipolygon) that
+  /// contains the part.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto geometry_idx_from_part_idx(IndexType part_idx);
 
   /// Returns the `multipolygon_idx`th multipolygon in the range.
   template <typename IndexType>
@@ -133,21 +152,6 @@ class multipolygon_range {
   VecIterator _point_end;
 
  private:
-  /// Given the index of a point, return the ring index
-  /// where the point locates.
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto ring_idx_from_point_idx(IndexType point_idx);
-
-  /// Given the index of a ring, return the part (polygon) index
-  /// where the ring locates.
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto part_idx_from_ring_idx(IndexType ring_idx);
-
-  /// Given the index of a part (polygon), return the geometry (multipolygon) index
-  /// where the polygon locates.
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto geometry_idx_from_part_idx(IndexType part_idx);
-
   template <typename IndexType1, typename IndexType2>
   CUSPATIAL_HOST_DEVICE bool is_valid_segment_id(IndexType1 segment_idx, IndexType2 ring_idx);
 };

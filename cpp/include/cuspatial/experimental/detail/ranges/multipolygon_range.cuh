@@ -16,11 +16,6 @@
 
 #pragma once
 
-#include <thrust/binary_search.h>
-#include <thrust/distance.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/pair.h>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/validation.hpp>
@@ -28,6 +23,11 @@
 #include <cuspatial/experimental/geometry_collection/multipolygon_ref.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
+
+#include <thrust/binary_search.h>
+#include <thrust/distance.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/pair.h>
 
 #include <iterator>
 #include <optional>
@@ -171,6 +171,26 @@ CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::multipolygon_end()
 {
   return multipolygon_begin() + num_multipolygons();
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::point_begin()
+{
+  return _point_begin;
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::point_end()
+{
+  return _point_end;
 }
 
 template <typename GeometryIterator,
