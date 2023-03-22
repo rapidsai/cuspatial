@@ -16,9 +16,12 @@
 
 #pragma once
 
+#include <cuspatial/experimental/geometry_collection/multipoint_ref.cuh>
 #include <cuspatial/traits.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <cuspatial/detail/utility/floating_point.cuh>
+#include <cuspatial/experimental/geometry/polygon_ref.cuh>
 
 namespace cuspatial {
 namespace detail {
@@ -30,44 +33,34 @@ namespace detail {
  * See "Crossings test" section of http://erich.realtimerendering.com/ptinpoly/
  * The improvement in addenda is also adopted to remove divisions in this kernel.
  *
+ * @tparam T type of coordinate
+ * @tparam PolygonRef polygon_ref type
+ * @param test_point point to test for point in polygon
+ * @param polygon polygon to test for point in polygon
+ * @return boolean to indicate if point is inside the polygon.
+ * `false` if point is on the edge of the polygon.
+ *
  * TODO: the ultimate goal of refactoring this as independent function is to remove
  * src/utility/point_in_polygon.cuh and its usage in quadtree_point_in_polygon.cu. It isn't
  * possible today without further work to refactor quadtree_point_in_polygon into header only
  * API.
  */
-template <class Cart2d,
-          class OffsetType,
-          class OffsetIterator,
-          class Cart2dIt,
-          class OffsetItDiffType = typename std::iterator_traits<OffsetIterator>::difference_type,
-          class Cart2dItDiffType = typename std::iterator_traits<Cart2dIt>::difference_type>
-__device__ inline bool is_point_in_polygon(Cart2d const& test_point,
-                                           OffsetType poly_begin,
-                                           OffsetType poly_end,
-                                           OffsetIterator ring_offsets_first,
-                                           OffsetItDiffType const& num_rings,
-                                           Cart2dIt poly_points_first,
-                                           Cart2dItDiffType const& num_poly_points)
+template <typename T, class PolygonRef>
+__device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonRef const& polygon)
 {
-  using T = iterator_vec_base_type<Cart2dIt>;
-
   bool point_is_within = false;
   bool is_colinear     = false;
-  // for each ring
-  for (auto ring_idx = poly_begin; ring_idx < poly_end; ring_idx++) {
-    int32_t ring_idx_next = ring_idx + 1;
-    int32_t ring_begin    = ring_offsets_first[ring_idx];
-    int32_t ring_end =
-      (ring_idx_next < num_rings) ? ring_offsets_first[ring_idx_next] : num_poly_points;
+  for (auto ring : polygon) {
+    auto last_segment = ring.segment(ring.num_segments() - 1);
 
-    Cart2d b     = poly_points_first[ring_end - 1];
+    auto b       = last_segment.v2;
     bool y0_flag = b.y > test_point.y;
     bool y1_flag;
-    // for each line segment, including the segment between the last and first vertex
-    for (auto point_idx = ring_begin; point_idx < ring_end; point_idx++) {
-      Cart2d const a = poly_points_first[point_idx];
-      T run          = b.x - a.x;
-      T rise         = b.y - a.y;
+    auto ring_points = multipoint_ref{ring.point_begin(), ring.point_end()};
+    for (vec_2d<T> a : ring_points) {
+      // for each line segment, including the segment between the last and first vertex
+      T run  = b.x - a.x;
+      T rise = b.y - a.y;
 
       // Points on the line segment are the same, so intersection is impossible.
       // This is possible because we allow closed or unclosed polygons.
@@ -100,5 +93,30 @@ __device__ inline bool is_point_in_polygon(Cart2d const& test_point,
 
   return point_is_within;
 }
+
+/**
+ * @brief Compatibility layer with non-OOP style input
+ */
+template <class Cart2d,
+          class OffsetType,
+          class OffsetIterator,
+          class Cart2dIt,
+          class OffsetItDiffType = typename std::iterator_traits<OffsetIterator>::difference_type,
+          class Cart2dItDiffType = typename std::iterator_traits<Cart2dIt>::difference_type>
+__device__ inline bool is_point_in_polygon(Cart2d const& test_point,
+                                           OffsetType poly_begin,
+                                           OffsetType poly_end,
+                                           OffsetIterator ring_offsets_first,
+                                           OffsetItDiffType const& num_rings,
+                                           Cart2dIt poly_points_first,
+                                           Cart2dItDiffType const& num_poly_points)
+{
+  auto polygon = polygon_ref{thrust::next(ring_offsets_first, poly_begin),
+                             thrust::next(ring_offsets_first, poly_end + 1),
+                             poly_points_first,
+                             thrust::next(poly_points_first, num_poly_points)};
+  return is_point_in_polygon(test_point, polygon);
+}
+
 }  // namespace detail
 }  // namespace cuspatial
