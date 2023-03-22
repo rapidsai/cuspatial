@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-/*#include <indexing/construction/detail/utilities.cuh>
-#include <utility/point_in_polygon.cuh>
-
-#include <cuspatial/experimental/detail/indexing/construction/utilities.cuh>
-#include <cuspatial/experimental/detail/join/get_quad_and_local_point_indices.cuh>*/
-
-#include "cuspatial/experimental/ranges/multipoint_range.cuh"
 #include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/experimental/ranges/multipoint_range.cuh>
 #include <cuspatial/experimental/ranges/multipolygon_range.cuh>
 #include <cuspatial/experimental/spatial_join.cuh>
 
@@ -65,8 +59,8 @@ struct compute_quadtree_point_in_polygon {
 
     auto quadtree_ref = point_quadtree_ref(quadtree.column(0).begin<uint32_t>(),  // keys
                                            quadtree.column(0).end<uint32_t>(),
-                                           quadtree.column(1).begin<uint8_t>(),  // levels
-                                           quadtree.column(2).begin<bool>(),     // is_internal_node
+                                           quadtree.column(1).begin<uint8_t>(),   // levels
+                                           quadtree.column(2).begin<bool>(),  // is_internal_node
                                            quadtree.column(3).begin<uint32_t>(),   // lengths
                                            quadtree.column(4).begin<uint32_t>());  // offsets
 

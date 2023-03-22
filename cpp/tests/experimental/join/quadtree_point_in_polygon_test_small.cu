@@ -25,16 +25,16 @@
 #include <cuspatial/experimental/spatial_join.cuh>
 
 #include <gtest/gtest.h>
+#include <initializer_list>
 
 /*
  * A small test that it is suitable for manually visualizing point-polygon pairing results in a GIS
- * environment GPU results are compared with expected values embedded in code However, the number of
- * points in each quadrant is less than 32, the two kernels for point-in-polygon test are not fully
- * tested. This is left for pip_refine_test_large.
+ * environment GPU results are compared with expected values embedded in code. However, the number
+ * of points in each quadrant is less than 32, the two kernels for point-in-polygon test are not
+ * fully tested. This is left for pip_refine_test_large.
  */
 template <typename T>
-struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {
-};
+struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 
@@ -94,58 +94,49 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto [point_indices, quadtree] = cuspatial::quadtree_on_points(
     points.begin(), points.end(), v_min, v_max, scale, max_depth, max_size, this->stream());
 
-  auto poly_offsets = make_device_vector<uint32_t>({0, 1, 2, 3, 4});
-  auto ring_offsets = make_device_vector<uint32_t>({0, 4, 10, 14, 19});
+  auto multipoly_array = cuspatial::test::make_multipolygon_array<T>({0, 1, 2, 3, 4},
+                                                                     {0, 1, 2, 3, 4},
+                                                                     {0, 4, 10, 14, 19},
+                                                                     {// ring 1
+                                                                      {2.488450, 5.856625},
+                                                                      {1.333584, 5.008840},
+                                                                      {3.460720, 4.586599},
+                                                                      {2.488450, 5.856625},
+                                                                      // ring 2
+                                                                      {5.039823, 4.229242},
+                                                                      {5.561707, 1.825073},
+                                                                      {7.103516, 1.503906},
+                                                                      {7.190674, 4.025879},
+                                                                      {5.998939, 5.653384},
+                                                                      {5.039823, 4.229242},
+                                                                      // ring 3
+                                                                      {5.998939, 1.235638},
+                                                                      {5.573720, 0.197808},
+                                                                      {6.703534, 0.086693},
+                                                                      {5.998939, 1.235638},
+                                                                      // ring 4
+                                                                      {2.088115, 4.541529},
+                                                                      {1.034892, 3.530299},
+                                                                      {2.415080, 2.896937},
+                                                                      {3.208660, 3.745936},
+                                                                      {2.088115, 4.541529}});
+  auto multipolygons   = multipoly_array.range();
 
-  auto poly_points = make_device_vector<vec_2d<T>>({// ring 1
-                                                    {2.488450, 5.856625},
-                                                    {1.333584, 5.008840},
-                                                    {3.460720, 4.586599},
-                                                    {2.488450, 5.856625},
-                                                    // ring 2
-                                                    {5.039823, 4.229242},
-                                                    {5.561707, 1.825073},
-                                                    {7.103516, 1.503906},
-                                                    {7.190674, 4.025879},
-                                                    {5.998939, 5.653384},
-                                                    {5.039823, 4.229242},
-                                                    // ring 3
-                                                    {5.998939, 1.235638},
-                                                    {5.573720, 0.197808},
-                                                    {6.703534, 0.086693},
-                                                    {5.998939, 1.235638},
-                                                    // ring 4
-                                                    {2.088115, 4.541529},
-                                                    {1.034892, 3.530299},
-                                                    {2.415080, 2.896937},
-                                                    {3.208660, 3.745936},
-                                                    {2.088115, 4.541529}});
+  auto bboxes =
+    rmm::device_uvector<cuspatial::box<T>>(multipolygons.num_polygons(), this->stream());
 
-  // GeoArrow: Number of polygons is number of offsets minus one.
-  auto bboxes = rmm::device_vector<cuspatial::box<T>>(poly_offsets.size() - 1);
-
-  cuspatial::polygon_bounding_boxes(poly_offsets.begin(),
-                                    poly_offsets.end(),
-                                    ring_offsets.begin(),
-                                    ring_offsets.end(),
-                                    poly_points.begin(),
-                                    poly_points.end(),
+  cuspatial::polygon_bounding_boxes(multipolygons.part_begin(),
+                                    multipolygons.part_end(),
+                                    multipolygons.ring_begin(),
+                                    multipolygons.ring_end(),
+                                    multipolygons.point_begin(),
+                                    multipolygons.point_end(),
                                     bboxes.begin(),
                                     T{0},
                                     this->stream());
 
   auto [poly_indices, quad_indices] = cuspatial::join_quadtree_and_bounding_boxes(
     quadtree, bboxes.begin(), bboxes.end(), v_min, scale, max_depth, this->stream(), this->mr());
-
-  auto multipolygons =
-    cuspatial::multipolygon_range(thrust::make_counting_iterator(std::size_t{0}),
-                                  thrust::make_counting_iterator(poly_offsets.size()),
-                                  poly_offsets.begin(),
-                                  poly_offsets.end(),
-                                  ring_offsets.begin(),
-                                  ring_offsets.end(),
-                                  poly_points.begin(),
-                                  poly_points.end());
 
   auto [poly_offset, point_offset] = cuspatial::quadtree_point_in_polygon(poly_indices.begin(),
                                                                           poly_indices.end(),

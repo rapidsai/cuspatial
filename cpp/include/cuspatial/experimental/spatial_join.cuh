@@ -81,8 +81,12 @@ join_quadtree_and_bounding_boxes(
  * faster intersection testing at the expense of extra memory allocated to store the quadtree and
  * sorted point_indices.
  *
- * @param poly_quad_pairs_first iterator to the beginning of sequence of polygon/quadrant pairs
- * @param poly_quad_pairs_last iterator to the end of sequence of polygon/quadrant pairs
+ * @param poly_indices_first iterator to beginning of sequence of polygon indices returned by
+ *                           cuspatial::join_quadtree_and_bounding_boxes
+ * @param poly_indices_first iterator to end of sequence of polygon indices returned by
+ *                           cuspatial::join_quadtree_and_bounding_boxes
+ * @param quad_indices_first iterator to beginning of sequence of quadrant indices returned by
+ *                           cuspatial::join_quadtree_and_bounding_boxes
  * @param quadtree: Reference to a quadtree created using point_quadtree()
  * @param point_indices_first iterator to beginning of sequence of point indices returned by
  *                            `cuspatial::quadtree_on_points`
