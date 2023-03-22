@@ -543,25 +543,6 @@ class WithinBinpred(ContainsProperlyBinpred):
             result_df["rhs_index"][result_df["feature_in_polygon"]]
         ] = True
         return final_result
-        result = cudf.DataFrame({"idx": point_indices, "pip": point_result})
-        df_result = result
-        # Discrete math recombination
-        if (
-            contains_only_linestrings(self.rhs)
-            or contains_only_polygons(self.rhs)
-            or contains_only_multipoints(self.rhs)
-        ):
-            # process for completed linestrings, polygons, and multipoints.
-            # Not necessary for points.
-            df_result = (
-                result.groupby("idx").sum().sort_index()
-                == result.groupby("idx").count().sort_index()
-            )
-        point_result = cudf.Series(
-            df_result["pip"], index=cudf.RangeIndex(0, len(df_result))
-        )
-        point_result.name = None
-        return point_result
 
 
 class EqualsBinpred(BinaryPredicate):
@@ -586,8 +567,9 @@ class EqualsBinpred(BinaryPredicate):
         For sorting multipoints, the keys in order are "object_key", "xy",
         "xy_key". This sorts the points in each multipoint into the same
         bin defined by "object_key", then sorts the points in each bin by
-        x/y coordinates, and finally sorts the points in each bin by x/y
-        ordering.
+        x/y coordinates, and finally sorts the points in each bin by the
+        `xy_key` which maintains that the x coordinate precedes the y
+        coordinate.
 
         For sorting linestrings, the keys in order are "object_key",
         "point_key", "xy_key". This sorts the points in each linestring

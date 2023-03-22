@@ -371,7 +371,7 @@ def test_three_points_overlaps_three_points(points):
     points1 = cuspatial.from_geopandas(gpdpoints1)
     points2 = cuspatial.from_geopandas(gpdpoints2)
     got = points1.overlaps(points2)
-    expected = gpdpoints1.crosses(gpdpoints2)
+    expected = gpdpoints1.overlaps(gpdpoints2)
     assert (got.values_host == expected.values).all()
 
 
