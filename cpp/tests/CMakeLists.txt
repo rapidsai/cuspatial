@@ -114,6 +114,7 @@ ConfigureTest(SPATIAL_WINDOW_POINT_TEST
 ConfigureTest(UTILITY_TEST
     utility_test/test_float_equivalent.cu
     utility_test/test_multipoint_factory.cu
+    utility_test/test_geometry_generators.cu
 )
 
 # Experimental API
