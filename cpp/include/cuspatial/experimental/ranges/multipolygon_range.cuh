@@ -156,6 +156,74 @@ class multipolygon_range {
   CUSPATIAL_HOST_DEVICE bool is_valid_segment_id(IndexType1 segment_idx, IndexType2 ring_idx);
 };
 
+/**
+ * @ingroup ranges
+ * @brief Create a range object of multipolygon from cuspatial::geometry_column_view.
+ * Specialization for polygons column.
+ *
+ * @pre polygons_column must be a cuspatial::geometry_column_view
+ */
+template <collection_type_id Type,
+          typename T,
+          typename IndexType,
+          typename GeometryColumnView,
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::SINGLE)>
+auto make_multipolygon_range(GeometryColumnView const& polygons_column)
+{
+  CUSPATIAL_EXPECTS(polygons_column.geometry_type() == geometry_type_id::POLYGON,
+                    "Must be polygon geometry type.");
+  auto geometry_iter       = thrust::make_counting_iterator(0);
+  auto const& part_offsets = polygons_column.offsets();
+  auto const& ring_offsets = polygons_column.child().child(0);
+  auto const& points_xy =
+    polygons_column.child().child(1).child(1);  // Ignores x-y offset {0, 2, 4...}
+
+  auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
+
+  return multipolygon_range(geometry_iter,
+                            geometry_iter + part_offsets.size(),
+                            part_offsets.template begin<IndexType>(),
+                            part_offsets.template end<IndexType>(),
+                            ring_offsets.template begin<IndexType>(),
+                            ring_offsets.template end<IndexType>(),
+                            points_it,
+                            points_it + points_xy.size() / 2);
+}
+
+/**
+ * @ingroup ranges
+ * @brief Create a range object of multipolygon from cuspatial::geometry_column_view.
+ * Specialization for multipolygons column.
+ *
+ * @pre polygon_column must be a cuspatial::geometry_column_view
+ */
+template <collection_type_id Type,
+          typename T,
+          typename IndexType,
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::MULTI),
+          typename GeometryColumnView>
+auto make_multipolygon_range(GeometryColumnView const& polygons_column)
+{
+  CUSPATIAL_EXPECTS(polygons_column.geometry_type() == geometry_type_id::POLYGON,
+                    "Must be polygon geometry type.");
+  auto const& geometry_offsets = polygons_column.offsets();
+  auto const& part_offsets     = polygons_column.child().child(0);
+  auto const& ring_offsets     = polygons_column.child().child(1).child(0);
+  auto const& points_xy =
+    polygons_column.child().child(1).child(1).child(1);  // Ignores x-y offset {0, 2, 4...}
+
+  auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
+
+  return multipolygon_range(geometry_offsets.template begin<IndexType>(),
+                            geometry_offsets.template end<IndexType>(),
+                            part_offsets.template begin<IndexType>(),
+                            part_offsets.template end<IndexType>(),
+                            ring_offsets.template begin<IndexType>(),
+                            ring_offsets.template end<IndexType>(),
+                            points_it,
+                            points_it + points_xy.size() / 2);
+};
+
 }  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/ranges/multipolygon_range.cuh>
