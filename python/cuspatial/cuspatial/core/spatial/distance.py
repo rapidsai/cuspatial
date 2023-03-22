@@ -388,7 +388,7 @@ def pairwise_point_linestring_distance(
 def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
     """Compute distance between pairs of (multi)points and (multi)polygons
 
-    The distance between a (multi)point and a (multi)polygons
+    The distance between a (multi)point and a (multi)polygon
     is defined as the shortest distance between every point in the
     multipoint and every edge of the (multi)polygon. If the multipoint and
     multipolygon intersects, the distance is 0.
