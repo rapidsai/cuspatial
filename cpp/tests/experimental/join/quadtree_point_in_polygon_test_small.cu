@@ -33,7 +33,8 @@
  * tested. This is left for pip_refine_test_large.
  */
 template <typename T>
-struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {};
+struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {
+};
 
 using TestTypes = ::testing::Types<float, double>;
 
