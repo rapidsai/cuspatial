@@ -40,6 +40,13 @@ namespace detail {
  * @return boolean to indicate if point is inside the polygon.
  * `false` if point is on the edge of the polygon.
  *
+ * @tparam T type of coordinate
+ * @tparam PolygonRef polygon_ref type
+ * @param test_point point to test for point in polygon
+ * @param polygon polygon to test for point in polygon
+ * @return boolean to indicate if point is inside the polygon.
+ * `false` if point is on the edge of the polygon.
+ *
  * TODO: the ultimate goal of refactoring this as independent function is to remove
  * src/utility/point_in_polygon.cuh and its usage in quadtree_point_in_polygon.cu. It isn't
  * possible today without further work to refactor quadtree_point_in_polygon into header only
