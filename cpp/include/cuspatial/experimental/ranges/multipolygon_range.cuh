@@ -21,6 +21,7 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
 #include <cuspatial/traits.hpp>
+#include <cuspatial/types.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 namespace cuspatial {

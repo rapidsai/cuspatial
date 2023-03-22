@@ -20,6 +20,8 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
 
+#include <thrust/iterator/counting_iterator.h>
+
 namespace cuspatial {
 
 /**
