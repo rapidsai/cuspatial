@@ -89,24 +89,20 @@ join_quadtree_and_bounding_boxes(
  * @param point_indices_last iterator to end of sequence of point indices returned by
  *                            `cuspatial::quadtree_on_points`
  * @param points_first iterator to beginning of sequence of (x, y) points to test
- * @param polygon_offsets_first iterator to beginning of range of indices to the first ring in each
-                                polygon
- * @param polygon_offsets_last iterator to end of range of indices to the first ring in each polygon
- * @param ring_offsets_first iterator to beginning of range of indices to the first point in each
-                             ring
- * @param ring_offsets_last iterator to end of range of indices to the first point in each ring
- * @param polygon_points_first iterator to beginning of range of polygon points
- * @param polygon_points_last iterator to end of range of polygon points
+ * @param polygons multipolygon_range of polygons.
  * @param stream The CUDA stream on which to perform computations
  * @param mr The optional resource to use for output device memory allocations.
  *
  * @throw cuspatial::logic_error If the number of rings is less than the number of polygons.
  * @throw cuspatial::logic_error If any ring has fewer than four vertices.
+ * @throw cuspatial::logic_error if the number of multipolygons does not equal the total number of
+ *        multipolygons (one polygon per multipolygon)
  *
  * @return A pair of rmm::device_uvectors where each row represents a point/polygon intersection:
  *     polygon_offset - uint32_t polygon indices
  *     point_offset   - uint32_t point indices
  *
+ * @note Currently only supports single-polygon multipolygons.
  * @note The returned polygon and point indices are offsets into the `poly_quad_pairs` input range
  *       and `point_indices` range, respectively.
  *
@@ -115,9 +111,7 @@ template <class PolyIndexIterator,
           class QuadIndexIterator,
           class PointIndexIterator,
           class PointIterator,
-          class PolygonOffsetIterator,
-          class RingOffsetIterator,
-          class VertexIterator,
+          class MultiPolygonRange,
           class IndexType = iterator_value_type<PointIndexIterator>>
 std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtree_point_in_polygon(
   PolyIndexIterator poly_indices_first,
@@ -127,12 +121,7 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
   PointIndexIterator point_indices_first,
   PointIndexIterator point_indices_last,
   PointIterator points_first,
-  PolygonOffsetIterator polygon_offsets_first,
-  PolygonOffsetIterator polygon_offsets_last,
-  RingOffsetIterator polygon_ring_offsets_first,
-  RingOffsetIterator polygon_ring_offsets_last,
-  VertexIterator polygon_vertices_first,
-  VertexIterator polygon_vertices_last,
+  MultiPolygonRange polygons,
   rmm::cuda_stream_view stream        = rmm::cuda_stream_default,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 

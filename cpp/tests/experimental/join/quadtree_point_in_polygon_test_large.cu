@@ -146,6 +146,16 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   auto [poly_indices, quad_indices] = cuspatial::join_quadtree_and_bounding_boxes(
     quadtree, bboxes.begin(), bboxes.end(), v_min, scale, max_depth, this->stream());
 
+  auto multipolygons =
+    cuspatial::multipolygon_range(thrust::make_counting_iterator(std::size_t{0}),
+                                  thrust::make_counting_iterator(poly_offsets.size()),
+                                  poly_offsets.begin(),
+                                  poly_offsets.end(),
+                                  ring_offsets.begin(),
+                                  ring_offsets.end(),
+                                  poly_points.begin(),
+                                  poly_points.end());
+
   auto [actual_poly_indices, actual_point_indices] =
     cuspatial::quadtree_point_in_polygon(poly_indices.begin(),
                                          poly_indices.end(),
@@ -154,12 +164,7 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
                                          point_indices.begin(),
                                          point_indices.end(),
                                          points.begin(),
-                                         poly_offsets.begin(),
-                                         poly_offsets.end(),
-                                         ring_offsets.begin(),
-                                         ring_offsets.end(),
-                                         poly_points.begin(),
-                                         poly_points.end(),
+                                         multipolygons,
                                          this->stream());
 
   thrust::stable_sort_by_key(rmm::exec_policy(this->stream()),

@@ -15,9 +15,11 @@
  */
 
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/experimental/detail/join/get_quad_and_local_point_indices.cuh>
 #include <cuspatial/experimental/point_quadtree.cuh>
+#include <cuspatial/experimental/ranges/multipolygon_range.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <rmm/device_uvector.hpp>
@@ -62,57 +64,27 @@ struct compute_poly_and_point_indices {
   }
 };
 
-template <class PointIterator,
-          class PolygonOffsetIterator,
-          class RingOffsetIterator,
-          class VertexIterator>
+template <class PointIterator, class MultiPolygonRange>
 struct test_poly_point_intersection {
   using T         = iterator_vec_base_type<PointIterator>;
-  using IndexType = iterator_value_type<PolygonOffsetIterator>;
+  using IndexType = iterator_value_type<typename MultiPolygonRange::part_it_t>;
 
-  test_poly_point_intersection(PointIterator points_first,
-                               PolygonOffsetIterator polygon_offsets_first,
-                               IndexType const& num_polys,
-                               RingOffsetIterator polygon_ring_offsets_first,
-                               IndexType const& num_rings,
-                               VertexIterator polygon_vertices_first,
-                               IndexType const& num_vertices)
-    : points_first(points_first),
-      polygon_offsets_first(polygon_offsets_first),
-      num_polys(num_polys),
-      polygon_ring_offsets_first(polygon_ring_offsets_first),
-      num_rings(num_rings),
-      polygon_vertices_first(polygon_vertices_first),
-      num_vertices(num_vertices)
+  test_poly_point_intersection(PointIterator points_first, MultiPolygonRange polygons)
+    : points_first(points_first), polygons(polygons)
   {
   }
 
   PointIterator points_first;
-  PolygonOffsetIterator polygon_offsets_first;
-  IndexType const num_polys;
-  RingOffsetIterator polygon_ring_offsets_first;
-  IndexType const num_rings;
-  VertexIterator polygon_vertices_first;
-  IndexType const num_vertices;
+  MultiPolygonRange polygons;
 
   inline bool __device__ operator()(thrust::tuple<IndexType, IndexType> const& poly_point_idxs)
   {
     auto const poly_idx  = thrust::get<0>(poly_point_idxs);
     auto const point_idx = thrust::get<1>(poly_point_idxs);
 
-    IndexType const poly_begin = polygon_offsets_first[poly_idx];
-    IndexType const poly_end =
-      (poly_idx + 1 < num_polys) ? polygon_offsets_first[poly_idx + 1] : num_rings;
-
     vec_2d<T> const& point = points_first[point_idx];
 
-    return is_point_in_polygon(point,
-                               poly_begin,
-                               poly_end,
-                               polygon_ring_offsets_first,
-                               num_rings,
-                               polygon_vertices_first,
-                               num_vertices);
+    return is_point_in_polygon(point, polygons[poly_idx][0]);
   }
 };
 
@@ -122,9 +94,7 @@ template <class PolyIndexIterator,
           class QuadIndexIterator,
           class PointIndexIterator,
           class PointIterator,
-          class PolygonOffsetIterator,
-          class RingOffsetIterator,
-          class VertexIterator,
+          class MultiPolygonRange,
           class IndexType>
 std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtree_point_in_polygon(
   PolyIndexIterator poly_indices_first,
@@ -134,16 +104,13 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
   PointIndexIterator point_indices_first,
   PointIndexIterator point_indices_last,
   PointIterator points_first,
-  PolygonOffsetIterator polygon_offsets_first,
-  PolygonOffsetIterator polygon_offsets_last,
-  RingOffsetIterator polygon_ring_offsets_first,
-  RingOffsetIterator polygon_ring_offsets_last,
-  VertexIterator polygon_vertices_first,
-  VertexIterator polygon_vertices_last,
+  MultiPolygonRange polygons,
   rmm::cuda_stream_view stream,
   rmm::mr::device_memory_resource* mr)
 {
   using T = iterator_vec_base_type<PointIterator>;
+
+  CUSPATIAL_EXPECTS(polygons.num_multipolygons() == polygons.num_polygons());
 
   auto num_poly_quad_pairs = std::distance(poly_indices_first, poly_indices_last);
 
@@ -199,9 +166,9 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
                                            local_point_offsets.end(),
                                            poly_indices_first});
 
-  IndexType const num_polys = std::distance(polygon_offsets_first, polygon_offsets_last);
-  IndexType const num_rings = std::distance(polygon_ring_offsets_first, polygon_ring_offsets_last);
-  IndexType const num_verts = std::distance(polygon_vertices_first, polygon_vertices_last);
+  IndexType const num_polys = polygons.num_polygons();
+  IndexType const num_rings = polygons.num_rings();
+  IndexType const num_verts = polygons.num_points();
 
   // Compute the number of intersections by removing (poly, point) pairs that don't intersect
   auto num_intersections = thrust::distance(
@@ -210,13 +177,7 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
                     global_to_poly_and_point_indices,
                     global_to_poly_and_point_indices + num_total_points,
                     poly_and_point_indices,
-                    detail::test_poly_point_intersection{point_xys_iter,
-                                                         polygon_offsets_first,
-                                                         num_polys,
-                                                         polygon_ring_offsets_first,
-                                                         num_rings,
-                                                         polygon_vertices_first,
-                                                         num_verts}));
+                    detail::test_poly_point_intersection{point_xys_iter, polygons}));
 
   poly_indices.resize(num_intersections, stream);
   poly_indices.shrink_to_fit(stream);

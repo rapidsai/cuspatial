@@ -21,6 +21,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/point_quadtree.cuh>
 #include <cuspatial/experimental/polygon_bounding_boxes.cuh>
+#include <cuspatial/experimental/ranges/multipolygon_range.cuh>
 #include <cuspatial/experimental/spatial_join.cuh>
 
 #include <gtest/gtest.h>
@@ -89,15 +90,8 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
      {3.154282922203257, 5.788316610960881}});
 
   // build a quadtree on the points
-  auto [point_indices, quadtree] = cuspatial::quadtree_on_points(points.begin(),
-                                                                 points.end(),
-                                                                 v_min,
-                                                                 v_max,
-                                                                 scale,
-                                                                 max_depth,
-                                                                 max_size,
-                                                                 this->stream(),
-                                                                 this->mr());
+  auto [point_indices, quadtree] = cuspatial::quadtree_on_points(
+    points.begin(), points.end(), v_min, v_max, scale, max_depth, max_size, this->stream());
 
   auto poly_offsets = make_device_vector<uint32_t>({0, 1, 2, 3, 4});
   auto ring_offsets = make_device_vector<uint32_t>({0, 4, 10, 14, 19});
@@ -142,6 +136,16 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto [poly_indices, quad_indices] = cuspatial::join_quadtree_and_bounding_boxes(
     quadtree, bboxes.begin(), bboxes.end(), v_min, scale, max_depth, this->stream(), this->mr());
 
+  auto multipolygons =
+    cuspatial::multipolygon_range(thrust::make_counting_iterator(std::size_t{0}),
+                                  thrust::make_counting_iterator(poly_offsets.size()),
+                                  poly_offsets.begin(),
+                                  poly_offsets.end(),
+                                  ring_offsets.begin(),
+                                  ring_offsets.end(),
+                                  poly_points.begin(),
+                                  poly_points.end());
+
   auto [poly_offset, point_offset] = cuspatial::quadtree_point_in_polygon(poly_indices.begin(),
                                                                           poly_indices.end(),
                                                                           quad_indices.begin(),
@@ -149,14 +153,8 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
                                                                           point_indices.begin(),
                                                                           point_indices.end(),
                                                                           points.begin(),
-                                                                          poly_offsets.begin(),
-                                                                          poly_offsets.end(),
-                                                                          ring_offsets.begin(),
-                                                                          ring_offsets.end(),
-                                                                          poly_points.begin(),
-                                                                          poly_points.end(),
-                                                                          this->stream(),
-                                                                          this->mr());
+                                                                          multipolygons,
+                                                                          this->stream());
 
   auto expected_poly_offset =
     make_device_vector<uint32_t>({3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 3});
