@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-/*#include <indexing/construction/detail/utilities.cuh>
-#include <utility/point_in_polygon.cuh>
-
-#include <cuspatial/experimental/detail/indexing/construction/utilities.cuh>
-#include <cuspatial/experimental/detail/join/get_quad_and_local_point_indices.cuh>*/
-
-#include "cuspatial/experimental/ranges/multipoint_range.cuh"
 #include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/experimental/ranges/multipoint_range.cuh>
 #include <cuspatial/experimental/ranges/multipolygon_range.cuh>
 #include <cuspatial/experimental/spatial_join.cuh>
 

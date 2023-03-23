@@ -167,10 +167,6 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
                                            local_point_offsets.end(),
                                            poly_indices_first});
 
-  IndexType const num_polys = polygons.num_polygons();
-  IndexType const num_rings = polygons.num_rings();
-  IndexType const num_verts = polygons.num_points();
-
   // Compute the number of intersections by removing (poly, point) pairs that don't intersect
   auto num_intersections = thrust::distance(
     poly_and_point_indices,
