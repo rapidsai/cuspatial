@@ -1,4 +1,5 @@
 # Copyright (c) 2021-2022 NVIDIA CORPORATION
+from enum import Enum
 from functools import cached_property
 from typing import Tuple, TypeVar
 
@@ -9,7 +10,14 @@ import cudf
 from cudf.core.column import ColumnBase, arange, as_column, build_list_column
 
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.utils.column_utils import empty_geometry_column
+from cuspatial.utils.column_utils import (
+    contains_only_linestrings,
+    contains_only_multipoints,
+    contains_only_points,
+    contains_only_polygons,
+    empty_geometry_column,
+    has_same_geometry,
+)
 
 T = TypeVar("T", bound="GeoColumn")
 
@@ -343,6 +351,35 @@ class GeoColumn(ColumnBase):
         final_size = final_size + self.lines._column.memory_usage
         final_size = final_size + self.polygons._column.memory_usage
         return final_size
+
+    @property
+    def type(self):
+        """This is used to determine the type of the GeoColumn.
+        It is a value returning method that produces the same result as
+        the various `contains_only_*` methods, except as an Enum instead
+        of many booleans."""
+        if not has_same_geometry(self):
+            return ColumnType.MIXED
+        elif contains_only_polygons(self):
+            return ColumnType.POLYGON
+        elif contains_only_linestrings(self):
+            return ColumnType.LINESTRING
+        elif contains_only_multipoints(self):
+            return ColumnType.MULTIPOINT
+        elif contains_only_points(self):
+            return ColumnType.POINT
+        else:
+            return "Mixed"
+
+
+class ColumnType(Enum):
+    """Types which are returned by GeoColumn.typeclass."""
+
+    MIXED = 0
+    POINT = 1
+    MULTIPOINT = 2
+    LINESTRING = 3
+    POLYGON = 4
 
 
 def _xy_as_variable_sized_list(xy: ColumnBase):

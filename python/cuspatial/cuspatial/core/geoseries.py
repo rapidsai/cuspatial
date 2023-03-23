@@ -26,6 +26,7 @@ from cudf.core.column.column import as_column
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
+from cuspatial.core.binpreds.binpred_dispatch import CONTAINS_DISPATCH
 from cuspatial.core.binpreds.binpreds import (
     ContainsProperlyBinpred,
     IntersectsBinpred,
@@ -109,6 +110,10 @@ class GeoSeries(cudf.Series):
             }
         )
         return result
+
+    @property
+    def column_type(self):
+        return self._column.type
 
     class GeoColumnAccessor:
         def __init__(self, list_series, meta):
@@ -990,7 +995,10 @@ class GeoSeries(cudf.Series):
             `point_indices` and `polygon_indices`, each of which is a
             `Series` of `dtype('int32')` in the case of `allpairs=True`.
         """
-        return ContainsProperlyBinpred(self, other, align, allpairs)()
+        predicate = CONTAINS_DISPATCH[(self.column_type, other.column_type)](
+            self, other, align, allpairs
+        )
+        return predicate()
 
     def intersects(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
