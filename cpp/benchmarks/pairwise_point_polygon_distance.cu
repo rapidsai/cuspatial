@@ -65,8 +65,9 @@ void pairwise_point_polygon_distance_benchmark(nvbench::state& state, nvbench::t
   state.add_element_count(mpoly_generator_param.num_polygons(), "NumPolygons");
   state.add_element_count(mpoly_generator_param.num_rings(), "NumRings");
   state.add_element_count(mpoly_generator_param.num_coords(), "NumPoints (in mpoly)");
-  state.add_element_count(mpoly_generator_param.num_coords() * mpoly_generator_param.num_rings() *
-                            mpoly_generator_param.num_polygons(),
+  state.add_element_count(static_cast<std::size_t>(mpoly_generator_param.num_coords() *
+                                                   mpoly_generator_param.num_rings() *
+                                                   mpoly_generator_param.num_polygons()),
                           "Multipolygon Complexity");
   state.add_element_count(mpoint_generator_param.num_points(), "NumPoints (in multipoints)");
 
@@ -89,41 +90,45 @@ void pairwise_point_polygon_distance_benchmark(nvbench::state& state, nvbench::t
 using floating_point_types = nvbench::type_list<float, double>;
 
 // Benchmark scalability with simple multipolygon (3 sides, 0 hole, 1 poly)
-// NVBENCH_BENCH_TYPES(pairwise_point_polygon_distance_benchmark,
-//                     NVBENCH_TYPE_AXES(floating_point_types))
-//   .set_type_axes_names({"CoordsType"})
-//   .add_int64_axis("num_pairs", {1, 1'00, 10'000, 1'000'000, 100'000'000})
-//   .add_int64_axis("num_polygons_per_multipolygon", {1})
-//   .add_int64_axis("num_holes_per_polygon", {0})
-//   .add_int64_axis("num_edges_per_ring", {3})
-//   .add_int64_axis("num_points_per_multipoint", {1});
+NVBENCH_BENCH_TYPES(pairwise_point_polygon_distance_benchmark,
+                    NVBENCH_TYPE_AXES(floating_point_types))
+  .set_type_axes_names({"CoordsType"})
+  .add_int64_axis("num_pairs", {1, 1'00, 10'000, 1'000'000, 100'000'000})
+  .add_int64_axis("num_polygons_per_multipolygon", {1})
+  .add_int64_axis("num_holes_per_polygon", {0})
+  .add_int64_axis("num_edges_per_ring", {3})
+  .add_int64_axis("num_points_per_multipoint", {1})
+  .set_name("point_polygon_distance_benchmark_simple_polygon");
 
 // Benchmark scalability with complex multipolygon (100 sides, 10 holes, 3 polys)
-// NVBENCH_BENCH_TYPES(pairwise_point_polygon_distance_benchmark,
-//                     NVBENCH_TYPE_AXES(floating_point_types))
-//   .set_type_axes_names({"CoordsType"})
-//   .add_int64_axis("num_pairs", {1'000, 10'000, 100'000, 1'000'000})
-//   .add_int64_axis("num_polygons_per_multipolygon", {3})
-//   .add_int64_axis("num_holes_per_polygon", {10})
-//   .add_int64_axis("num_edges_per_ring", {100})
-//   .add_int64_axis("num_points_per_multipoint", {1});
+NVBENCH_BENCH_TYPES(pairwise_point_polygon_distance_benchmark,
+                    NVBENCH_TYPE_AXES(floating_point_types))
+  .set_type_axes_names({"CoordsType"})
+  .add_int64_axis("num_pairs", {1'000, 10'000, 100'000, 1'000'000})
+  .add_int64_axis("num_polygons_per_multipolygon", {2})
+  .add_int64_axis("num_holes_per_polygon", {3})
+  .add_int64_axis("num_edges_per_ring", {50})
+  .add_int64_axis("num_points_per_multipoint", {1})
+  .set_name("point_polygon_distance_benchmark_complex_polygon");
 
 // // Benchmark impact of rings (100K pairs, 1 polygon, 3 sides)
-// NVBENCH_BENCH_TYPES(pairwise_point_polygon_distance_benchmark,
-//                     NVBENCH_TYPE_AXES(floating_point_types))
-//   .set_type_axes_names({"CoordsType"})
-//   .add_int64_axis("num_pairs", {100'000})
-//   .add_int64_axis("num_polygons_per_multipolygon", {1})
-//   .add_int64_axis("num_holes_per_polygon", {0, 10, 100})
-//   .add_int64_axis("num_edges_per_ring", {3})
-//   .add_int64_axis("num_points_per_multipoint", {1});
+NVBENCH_BENCH_TYPES(pairwise_point_polygon_distance_benchmark,
+                    NVBENCH_TYPE_AXES(floating_point_types))
+  .set_type_axes_names({"CoordsType"})
+  .add_int64_axis("num_pairs", {10'000})
+  .add_int64_axis("num_polygons_per_multipolygon", {1})
+  .add_int64_axis("num_holes_per_polygon", {0, 10, 100, 1000})
+  .add_int64_axis("num_edges_per_ring", {3})
+  .add_int64_axis("num_points_per_multipoint", {1})
+  .set_name("point_polygon_distance_benchmark_ring_numbers");
 
 // Benchmark impact of rings (1M pairs, 1 polygon, 0 holes, 3 sides)
 NVBENCH_BENCH_TYPES(pairwise_point_polygon_distance_benchmark,
                     NVBENCH_TYPE_AXES(floating_point_types))
   .set_type_axes_names({"CoordsType"})
-  .add_int64_axis("num_pairs", {500})
+  .add_int64_axis("num_pairs", {100})
   .add_int64_axis("num_polygons_per_multipolygon", {1})
   .add_int64_axis("num_holes_per_polygon", {0})
   .add_int64_axis("num_edges_per_ring", {3})
-  .add_int64_axis("num_points_per_multipoint", {50, 5'00, 5'000});
+  .add_int64_axis("num_points_per_multipoint", {50, 5'00, 5'000, 50'000, 500'000})
+  .set_name("point_polygon_distance_benchmark_points_in_multipoint");
