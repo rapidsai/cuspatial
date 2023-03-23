@@ -7,7 +7,11 @@ import cupy as cp
 import cudf
 
 import cuspatial
-from cuspatial.core.binpreds.binpred_interface import BinPred
+from cuspatial.core._column.geocolumn import ColumnType
+from cuspatial.core.binpreds.binpred_interface import (
+    BinPred,
+    NotImplementedRoot,
+)
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
@@ -232,7 +236,7 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         elif contains_only_polygons(lhs):
             raise NotImplementedError
         elif contains_only_points(lhs):
-            return (lhs, rhs, type_compare)
+            point_indices = type_compare
         return self._op(lhs, rhs, point_indices)
 
     def _vertices_equals(self, lhs, rhs):
@@ -328,3 +332,28 @@ class PolygonPolygonEquals(PolygonComplexEquals):
 
 class PolygonMultiPolygonEquals(PolygonComplexEquals):
     pass
+
+
+Point = ColumnType.POINT
+MultiPoint = ColumnType.MULTIPOINT
+LineString = ColumnType.LINESTRING
+Polygon = ColumnType.POLYGON
+
+DispatchDict = {
+    (Point, Point): RootEquals,
+    (Point, MultiPoint): NotImplementedRoot,
+    (Point, LineString): NotImplementedRoot,
+    (Point, Polygon): RootEquals,
+    (MultiPoint, Point): NotImplementedRoot,
+    (MultiPoint, MultiPoint): NotImplementedRoot,
+    (MultiPoint, LineString): NotImplementedRoot,
+    (MultiPoint, Polygon): NotImplementedRoot,
+    (LineString, Point): NotImplementedRoot,
+    (LineString, MultiPoint): NotImplementedRoot,
+    (LineString, LineString): NotImplementedRoot,
+    (LineString, Polygon): RootEquals,
+    (Polygon, Point): RootEquals,
+    (Polygon, MultiPoint): RootEquals,
+    (Polygon, LineString): RootEquals,
+    (Polygon, Polygon): RootEquals,
+}
