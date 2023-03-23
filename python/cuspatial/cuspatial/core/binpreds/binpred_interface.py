@@ -1,8 +1,10 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
-from cuspatial.core.geoseries import GeoSeries
+if TYPE_CHECKING:
+    from cuspatial.core.geoseries import GeoSeries
 
 
 class BinPred(ABC):
@@ -75,14 +77,15 @@ class BinPred(ABC):
     >>> from cuspatial.core.geoseries import GeoSeries
     >>> lhs = GeoSeries([Polygon([(0, 0), (1, 1), (1, 0)])])
     >>> rhs = GeoSeries([Point(0, 0), Point(1, 1)])
-    >>> predicate = contains_properly_dispatch[(lhs.column_type, rhs.column_type)](
-    ...     lhs, rhs, align, allpairs)
+    >>> predicate = contains_properly_dispatch[(
+    ...     lhs.column_type, rhs.column_type
+    ... )](lhs, rhs, align, allpairs)
     >>> print(predicate())
     # TODO Output
     """
 
     @abstractmethod
-    def __init__(self, lhs: GeoSeries, rhs: GeoSeries, **kwargs):
+    def __init__(self, lhs: "GeoSeries", rhs: "GeoSeries", **kwargs):
         """Initialize a binary predicate. Collects any arguments passed
         to the binary predicate to be used at runtime.
 
@@ -113,10 +116,11 @@ class BinPred(ABC):
         Methods
         -------
         __call__(self, lhs, rhs)
-            System call for the binary predicate. Calls the _call method, which is
-            implemented by the subclass.
+            System call for the binary predicate. Calls the _call method, which
+            is implemented by the subclass.
         _call(self, lhs, rhs)
-            Call the binary predicate. This method is implemented by the subclass.
+            Call the binary predicate. This method is implemented by the
+            subclass.
         _preprocess(self, lhs, rhs)
             Preprocess the left-hand and right-hand GeoSeries. This method is
             implemented by the subclass.
@@ -124,17 +128,22 @@ class BinPred(ABC):
             Compute the binary predicate between two GeoSeries. This method is
             implemented by the subclass.
         _postprocess(self, lhs, rhs, point_indices, op_result)
-            Postprocess the output GeoSeries to ensure that they are of the correct
-            type for the predicate. This method is implemented by the subclass.
+            Postprocess the output GeoSeries to ensure that they are of the
+            correct type for the predicate. This method is implemented by the
+            subclass.
 
         Examples
         --------
-        >>> from cuspatial.core.binpred.dispatch import contains_properly_dispatch
+        >>> from cuspatial.core.binpred.dispatch import (
+        ...     contains_properly_dispatch
+        ... )
         >>> from cuspatial.core.geoseries import GeoSeries
         >>> lhs = GeoSeries([Polygon([(0, 0), (1, 1), (1, 0)])])
         >>> rhs = GeoSeries([Point(0, 0), Point(1, 1)])
-        >>> predicate = contains_properly_dispatch[(lhs.column_type, rhs.column_type)](
-        ...     lhs, rhs, align, allpairs)
+        >>> predicate = contains_properly_dispatch[
+        ...     (
+        ...         lhs.column_type, rhs.column_type
+        ...     )](lhs, rhs, align, allpairs)
         >>> print(predicate())
         # TODO Output
         """
@@ -150,12 +159,16 @@ class BinPred(ABC):
 
         Examples
         --------
-        >>> from cuspatial.core.binpred.dispatch import contains_properly_dispatch
+        >>> from cuspatial.core.binpred.dispatch import (
+        ...     contains_properly_dispatch
+        ... )
         >>> from cuspatial.core.geoseries import GeoSeries
         >>> lhs = GeoSeries([Polygon([(0, 0), (1, 1), (1, 0)])])
         >>> rhs = GeoSeries([Point(0, 0), Point(1, 1)])
-        >>> predicate = contains_properly_dispatch[(lhs.column_type, rhs.column_type)](
-        ...     lhs, rhs, align, allpairs)
+        >>> predicate = contains_properly_dispatch[
+        ...     (
+        ...         lhs.column_type, rhs.column_type
+        ...     )](lhs, rhs, align, allpairs)
         >>> print(predicate())
         # TODO Output
         """
@@ -175,29 +188,75 @@ class BinPred(ABC):
         Returns
         -------
         result : GeoSeries
-            A GeoSeries of boolean values indicating whether each feature in the
-            right-hand GeoSeries satisfies the requirements of a binary predicate
-            with its corresponding feature in the left-hand GeoSeries.
+            A GeoSeries of boolean values indicating whether each feature in
+            the right-hand GeoSeries satisfies the requirements of a binary
+            predicate with its corresponding feature in the left-hand
+            GeoSeries.
         """
         return self._preprocess(self, lhs, rhs)
 
-    def _preprocess(self, lhs, rhs, points, point_indices):
+    def _preprocess(self, lhs, rhs):
         """Preprocess the left-hand and right-hand GeoSeries. This method
-        is implemented by the subclass. Preprocessing converts the original
-        lhs and rhs into 
+        is implemented by the subclass.
+
+        Preprocessing is used to ensure that the left-hand and right-hand
+        GeoSeries are of the correct type for each of the three basic
+        predicates: 'contains', 'intersects', and 'equals'. For example,
+        `contains` requires that the left-hand GeoSeries be polygons or
+        multipolygons and the right-hand GeoSeries be points or multipoints.
+        `intersects` requires that the left-hand GeoSeries be linestrings or
+        and the right-hand GeoSeries be linestrings or points.
+        `equals` requires that the left-hand and right-hand GeoSeries be
+        points.
+
+        Subclasses that implement `_preprocess` are responsible for calling
+        `_op` to continue the execution of the binary predicate. The last
+        line of `_preprocess` should be
+
+            return self._op(lhs, rhs, points, point_indices)
+
+        # TODO: Change `_op` signature to take `lhs` and `rhs` only?
+        where `points` is a GeoSeries of points and `point_indices` is a
+        cudf.Series of indices that map each point in `points` to its
+        corresponding feature in the right-hand GeoSeries.
+        # TODO: This doc is uncompleted because I haven't tested the
+        implementation yet and need to test new designs.
+
+        Parameters
+        ----------
+        lhs : GeoSeries
+            The original left-hand GeoSeries.
+        rhs : GeoSeries
+            The original right-hand GeoSeries.
+
+        Returns
+        -------
+        result : GeoSeries
+            A GeoSeries of boolean values indicating whether each feature in
+            the right-hand GeoSeries satisfies the requirements of a binary
+            predicate with its corresponding feature in the left-hand
+            GeoSeries.
         """
+        # TODO: Update this as changing `_op` signature is complete.
+        points = None
+        point_indices = None
         return self._op(lhs, rhs, points, point_indices)
 
+    # TODO Change `_op` signature to be more generic.
     def _op(self, lhs, points, point_indices):
-        """Compute the contains_properly relationship between two GeoSeries.
-        A feature A contains another feature B if no points of B lie in the
-        exterior of A, and at least one point of the interior of B lies in the
-        interior of A. This is the inverse of `within`."""
+        """Compute the binary predicate between two GeoSeries. This method
+        is implemented by the subclass. This method is called by `_preprocess`
+        to continue the execution of the binary predicate. `_op` is responsible
+        for calling `_postprocess` to complete the execution of the binary
+        predicate.
+        """
         pass
 
     def _postprocess(self, lhs, rhs, point_indices, op_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate.
+
+        TODO: Update
 
         Postprocess for contains_properly has to handle multiple input and
         output configurations.
@@ -211,3 +270,13 @@ class BinPred(ABC):
         each point in the polygon.
         """
         pass
+
+
+class NotImplementedRoot(BinPred):
+    """A class that is used to raise an error when a binary predicate is
+    not implemented for a given combination of left-hand and right-hand
+    GeoSeries types.
+    """
+
+    def __init__(self):
+        raise NotImplementedError

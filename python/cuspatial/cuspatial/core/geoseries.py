@@ -24,14 +24,19 @@ from cudf._typing import ColumnLike
 from cudf.core.column.column import as_column
 
 import cuspatial.io.pygeoarrow as pygeoarrow
-from cuspatial.core._column.geocolumn import GeoColumn
+from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.core.binpreds.binpred_dispatch import CONTAINS_DISPATCH
 from cuspatial.core.binpreds.binpreds import (
-    ContainsProperlyBinpred,
     IntersectsBinpred,
     OverlapsBinpred,
     WithinBinpred,
+)
+from cuspatial.utils.column_utils import (
+    contains_only_linestrings,
+    contains_only_multipoints,
+    contains_only_points,
+    contains_only_polygons,
 )
 
 T = TypeVar("T", bound="GeoSeries")
@@ -113,7 +118,20 @@ class GeoSeries(cudf.Series):
 
     @property
     def column_type(self):
-        return self._column.type
+        """This is used to determine the type of the GeoColumn.
+        It is a value returning method that produces the same result as
+        the various `contains_only_*` methods, except as an Enum instead
+        of many booleans."""
+        if contains_only_polygons(self):
+            return ColumnType.POLYGON
+        elif contains_only_linestrings(self):
+            return ColumnType.LINESTRING
+        elif contains_only_multipoints(self):
+            return ColumnType.MULTIPOINT
+        elif contains_only_points(self):
+            return ColumnType.POINT
+        else:
+            return "Mixed"
 
     class GeoColumnAccessor:
         def __init__(self, list_series, meta):
@@ -996,7 +1014,7 @@ class GeoSeries(cudf.Series):
             `Series` of `dtype('int32')` in the case of `allpairs=True`.
         """
         predicate = CONTAINS_DISPATCH[(self.column_type, other.column_type)](
-            self, other, align, allpairs
+            self, other, align=align, allpairs=allpairs
         )
         return predicate()
 

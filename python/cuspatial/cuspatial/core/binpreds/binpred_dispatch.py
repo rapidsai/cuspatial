@@ -1,9 +1,7 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
-from cudf.core.series import Series
-
 from cuspatial.core._column.geocolumn import ColumnType
-from cuspatial.core.binpreds.binpred import NotImplementedRoot
+from cuspatial.core.binpreds.binpred_interface import NotImplementedRoot
 from cuspatial.core.binpreds.feature_contains import (
     PointPointContains,
     PolygonLineStringContains,
@@ -12,10 +10,10 @@ from cuspatial.core.binpreds.feature_contains import (
     PolygonPolygonContains,
 )
 
-Point = ColumnType.Point
-MultiPoint = ColumnType.MultiPoint
-LineString = ColumnType.LineString
-Polygon = ColumnType.Polygon
+Point = ColumnType.POINT
+MultiPoint = ColumnType.MULTIPOINT
+LineString = ColumnType.LINESTRING
+Polygon = ColumnType.POLYGON
 
 CONTAINS_DISPATCH = {
     (Point, Point): PointPointContains,

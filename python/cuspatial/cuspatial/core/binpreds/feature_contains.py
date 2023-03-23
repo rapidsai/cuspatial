@@ -1,15 +1,15 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-from abc import ABC, abstractmethod
+from typing import Generic, TypeVar
 
 import cupy as cp
 
+import cudf
 from cudf.core.series import Series
 
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core.binpreds.binpred_interface import BinPred
 from cuspatial.core.binpreds.contains import contains_properly
-from cuspatial.core.geoseries import GeoSeries
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
@@ -17,24 +17,26 @@ from cuspatial.utils.column_utils import (
     has_multipolygons,
 )
 
+GeoSeries = TypeVar("GeoSeries")
 
-class RootContains(BinPred):
+
+class RootContains(BinPred, Generic[GeoSeries]):
     """Base class for binary predicates that are defined in terms of a
     root-level binary predicate. For example, a Point-Point Contains
     predicate is defined in terms of a Point-Point Intersects predicate.
     """
 
-    @abstractmethod
     def __init__(self, lhs: GeoSeries, rhs: GeoSeries, **kwargs):
-        super().__init__(lhs, rhs, **kwargs)
         self.lhs = lhs
         self.rhs = rhs
+        self.align = kwargs.get("align", False)
+        self.allpairs = kwargs.get("allpairs", False)
 
     def __call__(self):
         return self._call()
 
     def _call(self):
-        return self._preprocess()
+        return self._preprocess(self.lhs, self.rhs)
 
     def _preprocess(self, lhs, rhs):
         """Flatten any rhs into only its points xy array. This is necessary
@@ -50,9 +52,10 @@ class RootContains(BinPred):
         Returns
         -------
         result : GeoSeries
-            A GeoSeries of boolean values indicating whether each feature in the
-            right-hand GeoSeries satisfies the requirements of a binary predicate
-            with its corresponding feature in the left-hand GeoSeries.
+            A GeoSeries of boolean values indicating whether each feature in
+            the right-hand GeoSeries satisfies the requirements of a binary
+            predicate with its corresponding feature in the left-hand
+            GeoSeries.
         """
         # RHS conditioning:
         point_indices = None
@@ -118,6 +121,97 @@ class RootContains(BinPred):
         else:
             result = contains_properly(lhs, points, how="byte-limited")
         return self._postprocess(lhs, points, point_indices, result)
+
+    def _count_results_in_multipoint_geometries(
+        self, point_indices, point_result
+    ):
+        """Count the number of points in each multipoint geometry.
+
+        Parameters
+        ----------
+        point_indices : cudf.Series
+            The indices of the points in the original (rhs) GeoSeries.
+        point_result : cudf.DataFrame
+            The result of a contains_properly call.
+
+        Returns
+        -------
+        cudf.Series
+            The number of points that fell within a particular polygon id.
+        cudf.Series
+            The number of points in each multipoint geometry.
+        """
+        point_indices_df = cudf.Series(
+            point_indices,
+            name="rhs_index",
+            index=cudf.RangeIndex(len(point_indices), name="point_index"),
+        ).reset_index()
+        with_rhs_indices = point_result.merge(
+            point_indices_df, on="point_index"
+        )
+        points_grouped_by_original_polygon = with_rhs_indices[
+            ["point_index", "rhs_index"]
+        ].drop_duplicates()
+        hits = (
+            points_grouped_by_original_polygon.groupby("rhs_index")
+            .count()
+            .sort_index()
+        )
+        expected_count = (
+            point_indices_df.groupby("rhs_index").count().sort_index()
+        )
+        return hits, expected_count
+
+    def _convert_quadtree_result_from_part_to_polygon_indices(
+        self, point_result
+    ):
+        """Convert the result of a quadtree contains_properly call from
+        part indices to polygon indices.
+
+        Parameters
+        ----------
+        point_result : cudf.Series
+            The result of a quadtree contains_properly call. This result
+            contains the `part_index` of the polygon that contains the
+            point, not the polygon index.
+
+        Returns
+        -------
+        cudf.Series
+            The result of a quadtree contains_properly call. This result
+            contains the `polygon_index` of the polygon that contains the
+            point, not the part index.
+        """
+        # Get the length of each part, map it to indices, and store
+        # the result in a dataframe.
+        if not contains_only_polygons(self.lhs):
+            raise TypeError(
+                "`.contains` can only be called with polygon series."
+            )
+        rings_to_parts = cp.array(self.lhs.polygons.part_offset)
+        part_sizes = rings_to_parts[1:] - rings_to_parts[:-1]
+        parts_map = cudf.Series(
+            cp.arange(len(part_sizes)), name="part_index"
+        ).repeat(part_sizes)
+        parts_index_mapping_df = parts_map.reset_index(drop=True).reset_index()
+        # Map the length of each polygon in a similar fashion, then
+        # join them below.
+        parts_to_geoms = cp.array(self.lhs.polygons.geometry_offset)
+        geometry_sizes = parts_to_geoms[1:] - parts_to_geoms[:-1]
+        geometry_map = cudf.Series(
+            cp.arange(len(geometry_sizes)), name="polygon_index"
+        ).repeat(geometry_sizes)
+        geom_index_mapping_df = geometry_map.reset_index(drop=True)
+        geom_index_mapping_df.index.name = "part_index"
+        geom_index_mapping_df = geom_index_mapping_df.reset_index()
+        # Replace the part index with the polygon index by join
+        part_result = parts_index_mapping_df.merge(
+            point_result, on="part_index"
+        )
+        # Replace the polygon index with the row index by join
+        return geom_index_mapping_df.merge(part_result, on="part_index")[
+            ["polygon_index", "point_index"]
+        ]
 
     def _postprocess_quadtree_result(self, point_indices, point_result):
         if len(point_result) == 0:
