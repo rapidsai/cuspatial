@@ -241,46 +241,21 @@ class RootContains(BinPred, Generic[GeoSeries]):
         else:
             # for each input pair i: result[i] =  true iff point[i] is
             # contained in at least one polygon of multipolygon[i].
-            if (
-                contains_only_linestrings(self.rhs)
-                or contains_only_polygons(self.rhs)
-                or contains_only_multipoints(self.rhs)
-            ):
-                (
-                    hits,
-                    expected_count,
-                ) = self._count_results_in_multipoint_geometries(
-                    point_indices, allpairs_result
+            # pairwise
+            if len(self.lhs) == len(self.rhs):
+                matches = (
+                    allpairs_result["polygon_index"]
+                    == allpairs_result["point_index"]
                 )
-                result_df = hits.reset_index().merge(
-                    expected_count.reset_index(), on="rhs_index"
-                )
-                result_df["feature_in_polygon"] = (
-                    result_df["point_index_x"] >= result_df["point_index_y"]
-                )
-                final_result = cudf.Series(
-                    [False] * (point_indices.max().item() + 1)
-                )  # point_indices is zero index
+                final_result = Series([False] * len(point_indices))
                 final_result.loc[
-                    result_df["rhs_index"][result_df["feature_in_polygon"]]
+                    allpairs_result["polygon_index"][matches]
                 ] = True
                 return final_result
             else:
-                # pairwise
-                if len(self.lhs) == len(self.rhs):
-                    matches = (
-                        allpairs_result["polygon_index"]
-                        == allpairs_result["point_index"]
-                    )
-                    final_result = Series([False] * len(point_indices))
-                    final_result.loc[
-                        allpairs_result["polygon_index"][matches]
-                    ] = True
-                    return final_result
-                else:
-                    final_result = Series([False] * len(point_indices))
-                    final_result.loc[allpairs_result["polygon_index"]] = True
-                    return final_result
+                final_result = Series([False] * len(point_indices))
+                final_result.loc[allpairs_result["polygon_index"]] = True
+                return final_result
 
     def _postprocess(self, lhs, rhs, point_indices, op_result):
         """Postprocess the output GeoSeries to ensure that they are of the
@@ -308,21 +283,51 @@ class PolygonPointContains(RootContains):
     pass
 
 
-class PolygonMultiPointContains(RootContains):
+class PolygonComplexContains(RootContains):
+    """Base class for contains operations that use a complex object on
+    the right hand side.
+
+    This class is shared by the Polygon*Contains classes that use
+    a non-points object on the right hand side: MultiPoint, LineString,
+    MultiLineString, Polygon, and MultiPolygon."""
+
+    def _postprocess(self, lhs, rhs, point_indices, allpairs_result):
+        # for each input pair i: result[i] =  true iff point[i] is
+        # contained in at least one polygon of multipolygon[i].
+        # pairwise
+        (hits, expected_count,) = self._count_results_in_multipoint_geometries(
+            point_indices, allpairs_result
+        )
+        result_df = hits.reset_index().merge(
+            expected_count.reset_index(), on="rhs_index"
+        )
+        result_df["feature_in_polygon"] = (
+            result_df["point_index_x"] >= result_df["point_index_y"]
+        )
+        final_result = cudf.Series(
+            [False] * (point_indices.max().item() + 1)
+        )  # point_indices is zero index
+        final_result.loc[
+            result_df["rhs_index"][result_df["feature_in_polygon"]]
+        ] = True
+        return final_result
+
+
+class PolygonMultiPointContains(PolygonComplexContains):
     pass
 
 
-class PolygonLineStringContains(RootContains):
+class PolygonLineStringContains(PolygonComplexContains):
     pass
 
 
-class PolygonMultiLineStringContains(RootContains):
+class PolygonMultiLineStringContains(PolygonComplexContains):
     pass
 
 
-class PolygonPolygonContains(RootContains):
+class PolygonPolygonContains(PolygonComplexContains):
     pass
 
 
-class PolygonMultiPolygonContains(RootContains):
+class PolygonMultiPolygonContains(PolygonComplexContains):
     pass
