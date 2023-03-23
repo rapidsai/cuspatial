@@ -86,6 +86,9 @@ ConfigureTest(POINT_LINESTRING_DISTANCE_TEST
 ConfigureTest(LINESTRING_DISTANCE_TEST
     spatial/linestring_distance_test.cpp)
 
+ConfigureTest(POINT_POLYGON_DISTANCE_TEST
+    spatial/point_polygon_distance_test.cpp)
+
 ConfigureTest(LINESTRING_INTERSECTION_TEST
     spatial/linestring_intersection_test.cpp)
 
@@ -113,6 +116,7 @@ ConfigureTest(SPATIAL_WINDOW_POINT_TEST
 ConfigureTest(UTILITY_TEST
     utility_test/test_float_equivalent.cu
     utility_test/test_multipoint_factory.cu
+    utility_test/test_geometry_generators.cu
 )
 
 # Experimental API

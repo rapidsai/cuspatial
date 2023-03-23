@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2023, NVIDIA CORPORATION.
 
 import geopandas as gpd
 import numpy as np
@@ -305,3 +305,13 @@ def mask_factory(request):
         return mask
 
     return factory
+
+
+@pytest.fixture
+def naturalearth_cities():
+    return gpd.read_file(gpd.datasets.get_path("naturalearth_cities"))
+
+
+@pytest.fixture
+def naturalearth_lowres():
+    return gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))

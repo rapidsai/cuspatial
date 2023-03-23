@@ -101,12 +101,31 @@ class multipolygon_range {
   /// Return the iterator to the one past the last multipolygon in the range.
   CUSPATIAL_HOST_DEVICE auto end() { return multipolygon_end(); }
 
+  /// Return the iterator to the first point in the range.
+  CUSPATIAL_HOST_DEVICE auto point_begin();
+
+  /// Return the iterator to the one past the last point in the range.
+  CUSPATIAL_HOST_DEVICE auto point_end();
+
   /// Given the index of a segment, return the index of the geometry (multipolygon) that contains
   /// the segment. Segment index is the index to the starting point of the segment. If the index is
   /// the last point of the ring, then it is not a valid index. This function returns
   /// multipolygon_range::INVALID_INDEX if the index is invalid.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto geometry_idx_from_segment_idx(IndexType segment_idx);
+
+  /// Given the index of a point, return the index of the ring that contains the point.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto ring_idx_from_point_idx(IndexType point_idx);
+
+  /// Given the index of a ring, return the index of the part (polygon) that contains the point.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto part_idx_from_ring_idx(IndexType ring_idx);
+
+  /// Given the index of a part (polygon), return the index of the geometry (multipolygon) that
+  /// contains the part.
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto geometry_idx_from_part_idx(IndexType part_idx);
 
   /// Returns the `multipolygon_idx`th multipolygon in the range.
   template <typename IndexType>
@@ -133,23 +152,76 @@ class multipolygon_range {
   VecIterator _point_end;
 
  private:
-  /// Given the index of a point, return the ring index
-  /// where the point locates.
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto ring_idx_from_point_idx(IndexType point_idx);
-
-  /// Given the index of a ring, return the part (polygon) index
-  /// where the ring locates.
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto part_idx_from_ring_idx(IndexType ring_idx);
-
-  /// Given the index of a part (polygon), return the geometry (multipolygon) index
-  /// where the polygon locates.
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto geometry_idx_from_part_idx(IndexType part_idx);
-
   template <typename IndexType1, typename IndexType2>
   CUSPATIAL_HOST_DEVICE bool is_valid_segment_id(IndexType1 segment_idx, IndexType2 ring_idx);
+};
+
+/**
+ * @ingroup ranges
+ * @brief Create a range object of multipolygon from cuspatial::geometry_column_view.
+ * Specialization for polygons column.
+ *
+ * @pre polygons_column must be a cuspatial::geometry_column_view
+ */
+template <collection_type_id Type,
+          typename T,
+          typename IndexType,
+          typename GeometryColumnView,
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::SINGLE)>
+auto make_multipolygon_range(GeometryColumnView const& polygons_column)
+{
+  CUSPATIAL_EXPECTS(polygons_column.geometry_type() == geometry_type_id::POLYGON,
+                    "Must be polygon geometry type.");
+  auto geometry_iter       = thrust::make_counting_iterator(0);
+  auto const& part_offsets = polygons_column.offsets();
+  auto const& ring_offsets = polygons_column.child().child(0);
+  auto const& points_xy =
+    polygons_column.child().child(1).child(1);  // Ignores x-y offset {0, 2, 4...}
+
+  auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
+
+  return multipolygon_range(geometry_iter,
+                            geometry_iter + part_offsets.size(),
+                            part_offsets.template begin<IndexType>(),
+                            part_offsets.template end<IndexType>(),
+                            ring_offsets.template begin<IndexType>(),
+                            ring_offsets.template end<IndexType>(),
+                            points_it,
+                            points_it + points_xy.size() / 2);
+}
+
+/**
+ * @ingroup ranges
+ * @brief Create a range object of multipolygon from cuspatial::geometry_column_view.
+ * Specialization for multipolygons column.
+ *
+ * @pre polygon_column must be a cuspatial::geometry_column_view
+ */
+template <collection_type_id Type,
+          typename T,
+          typename IndexType,
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::MULTI),
+          typename GeometryColumnView>
+auto make_multipolygon_range(GeometryColumnView const& polygons_column)
+{
+  CUSPATIAL_EXPECTS(polygons_column.geometry_type() == geometry_type_id::POLYGON,
+                    "Must be polygon geometry type.");
+  auto const& geometry_offsets = polygons_column.offsets();
+  auto const& part_offsets     = polygons_column.child().child(0);
+  auto const& ring_offsets     = polygons_column.child().child(1).child(0);
+  auto const& points_xy =
+    polygons_column.child().child(1).child(1).child(1);  // Ignores x-y offset {0, 2, 4...}
+
+  auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
+
+  return multipolygon_range(geometry_offsets.template begin<IndexType>(),
+                            geometry_offsets.template end<IndexType>(),
+                            part_offsets.template begin<IndexType>(),
+                            part_offsets.template end<IndexType>(),
+                            ring_offsets.template begin<IndexType>(),
+                            ring_offsets.template end<IndexType>(),
+                            points_it,
+                            points_it + points_xy.size() / 2);
 };
 
 }  // namespace cuspatial
