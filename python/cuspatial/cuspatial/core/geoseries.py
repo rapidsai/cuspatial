@@ -26,12 +26,12 @@ from cudf.core.column.column import as_column
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.binpreds.binpred_dispatch import CONTAINS_DISPATCH
-from cuspatial.core.binpreds.binpreds import (
-    IntersectsBinpred,
-    OverlapsBinpred,
-    WithinBinpred,
+from cuspatial.core.binpreds.binpred_dispatch import (
+    CONTAINS_DISPATCH,
+    INTERSECTS_DISPATCH,
+    WITHIN_DISPATCH,
 )
+from cuspatial.core.binpreds.binpreds import OverlapsBinpred
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
@@ -1038,7 +1038,10 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether the geometries of
             each row intersect.
         """
-        return IntersectsBinpred(self, other, align)()
+        predicate = INTERSECTS_DISPATCH[(self.column_type, other.column_type)](
+            self, other, align=align
+        )
+        return predicate()
 
     def within(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
@@ -1061,7 +1064,10 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature falls
             within the corresponding polygon in the input.
         """
-        return WithinBinpred(self, other, align)()
+        predicate = WITHIN_DISPATCH[(self.column_type, other.column_type)](
+            self, other, align=align
+        )
+        return predicate()
 
     def overlaps(self, other, align=True):
         """Returns True for all aligned geometries that overlap other, else

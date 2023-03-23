@@ -9,6 +9,8 @@ from cuspatial.core.binpreds.feature_contains import (
     PolygonPointContains,
     PolygonPolygonContains,
 )
+from cuspatial.core.binpreds.feature_intersects import RootIntersects
+from cuspatial.core.binpreds.feature_within import RootWithin
 
 Point = ColumnType.POINT
 MultiPoint = ColumnType.MULTIPOINT
@@ -32,4 +34,42 @@ CONTAINS_DISPATCH = {
     (Polygon, MultiPoint): PolygonMultiPointContains,
     (Polygon, LineString): PolygonLineStringContains,
     (Polygon, Polygon): PolygonPolygonContains,
+}
+
+INTERSECTS_DISPATCH = {
+    (Point, Point): RootIntersects,
+    (Point, MultiPoint): NotImplementedRoot,
+    (Point, LineString): NotImplementedRoot,
+    (Point, Polygon): RootIntersects,
+    (MultiPoint, Point): NotImplementedRoot,
+    (MultiPoint, MultiPoint): NotImplementedRoot,
+    (MultiPoint, LineString): NotImplementedRoot,
+    (MultiPoint, Polygon): NotImplementedRoot,
+    (LineString, Point): NotImplementedRoot,
+    (LineString, MultiPoint): NotImplementedRoot,
+    (LineString, LineString): NotImplementedRoot,
+    (LineString, Polygon): NotImplementedRoot,
+    (Polygon, Point): RootIntersects,
+    (Polygon, MultiPoint): RootIntersects,
+    (Polygon, LineString): RootIntersects,
+    (Polygon, Polygon): RootIntersects,
+}
+
+WITHIN_DISPATCH = {
+    (Point, Point): RootWithin,
+    (Point, MultiPoint): NotImplementedRoot,
+    (Point, LineString): NotImplementedRoot,
+    (Point, Polygon): RootWithin,
+    (MultiPoint, Point): NotImplementedRoot,
+    (MultiPoint, MultiPoint): NotImplementedRoot,
+    (MultiPoint, LineString): NotImplementedRoot,
+    (MultiPoint, Polygon): NotImplementedRoot,
+    (LineString, Point): NotImplementedRoot,
+    (LineString, MultiPoint): NotImplementedRoot,
+    (LineString, LineString): NotImplementedRoot,
+    (LineString, Polygon): RootWithin,
+    (Polygon, Point): RootWithin,
+    (Polygon, MultiPoint): RootWithin,
+    (Polygon, LineString): RootWithin,
+    (Polygon, Polygon): RootWithin,
 }
