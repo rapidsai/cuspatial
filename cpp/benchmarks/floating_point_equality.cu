@@ -45,14 +45,14 @@ template <class FloatsIter>
 void generate_floats(FloatsIter begin, FloatsIter end)
 {
   using T       = typename std::iterator_traits<FloatsIter>::value_type;
-  auto engine_x = deterministic_engine(std::distance(begin, end));
+  auto engine_x = cuspatial::test::deterministic_engine(std::distance(begin, end));
 
   auto lo = std::numeric_limits<T>::min();
   auto hi = std::numeric_limits<T>::max();
 
-  auto x_dist = make_uniform_dist(lo, hi);
+  auto x_dist = cuspatial::test::make_uniform_dist(lo, hi);
 
-  auto x_gen = value_generator{lo, hi, engine_x, x_dist};
+  auto x_gen = cuspatial::test::value_generator{lo, hi, engine_x, x_dist};
 
   thrust::tabulate(
     rmm::exec_policy(), begin, end, [x_gen] __device__(size_t n) mutable { return x_gen(n); });
