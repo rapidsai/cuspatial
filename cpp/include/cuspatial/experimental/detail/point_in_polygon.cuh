@@ -18,7 +18,7 @@
 
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/detail/is_point_in_polygon.cuh>
+#include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
