@@ -3,6 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from cudf import Series
+
 if TYPE_CHECKING:
     from cuspatial.core.geoseries import GeoSeries
 
@@ -152,7 +154,7 @@ class BinPred(ABC):
         self.rhs = rhs
         self.kwargs = kwargs
 
-    def __call__(self, lhs, rhs):
+    def __call__(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """System call for the binary predicate. Calls the _call method,
         which is implemented by the subclass. Executing the binary predicate
         returns the results of the binary predicate as a GeoSeries.
@@ -174,7 +176,7 @@ class BinPred(ABC):
         """
         return self._call(self, lhs, rhs)
 
-    def _call(self, lhs, rhs):
+    def _call(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """Call the binary predicate. This method is implemented by the
         subclass.
 
@@ -195,7 +197,7 @@ class BinPred(ABC):
         """
         return self._preprocess(self, lhs, rhs)
 
-    def _preprocess(self, lhs, rhs):
+    def _preprocess(self, lhs: GeoSeries, rhs: GeoSeries) -> Series:
         """Preprocess the left-hand and right-hand GeoSeries. This method
         is implemented by the subclass.
 
@@ -219,8 +221,6 @@ class BinPred(ABC):
         where `points` is a GeoSeries of points and `point_indices` is a
         cudf.Series of indices that map each point in `points` to its
         corresponding feature in the right-hand GeoSeries.
-        # TODO: This doc is uncompleted because I haven't tested the
-        implementation yet and need to test new designs.
 
         Parameters
         ----------
@@ -243,16 +243,59 @@ class BinPred(ABC):
         return self._op(lhs, rhs, points, point_indices)
 
     # TODO Change `_op` signature to be more generic.
-    def _op(self, lhs, points, point_indices):
+    def _op(
+        self,
+        lhs: "GeoSeries",
+        rhs: "GeoSeries",
+        points: "GeoSeries",
+        point_indices: Series,
+    ) -> Series:
         """Compute the binary predicate between two GeoSeries. This method
         is implemented by the subclass. This method is called by `_preprocess`
         to continue the execution of the binary predicate. `_op` is responsible
         for calling `_postprocess` to complete the execution of the binary
         predicate.
+
+        Op is used to compute the binary predicate, or composition of binary
+        predicates, between two GeoSeries. The left-hand GeoSeries is
+        considered the "base" GeoSeries and the right-hand GeoSeries is
+        considered the "other" GeoSeries. The binary predicate is computed
+        between each feature in the base GeoSeries and the other GeoSeries.
+        The result is a GeoSeries of boolean values indicating whether each
+        feature in the other GeoSeries satisfies the requirements of a binary
+        predicate with its corresponding feature in the base GeoSeries.
+
+        Subclasses that implement `_op` are responsible for calling
+        `_postprocess` to complete the execution of the binary predicate. The
+        last line of `_op` should be
+
+            return self._postprocess(lhs, rhs, points, point_indices)
+
+        where `points` is a GeoSeries of points and `point_indices` is a
+        cudf.Series of indices that map each point in `points` to its
+        corresponding feature in the right-hand GeoSeries.
+
+        Parameters
+        ----------
+        lhs : GeoSeries
+            The left-hand GeoSeries.
+        rhs : GeoSeries
+            The right-hand GeoSeries.
+        points : GeoSeries
+            A GeoSeries of points.
+        point_indices : cudf.Series
+            A cudf.Series of indices that map each point in `points` to its
+            corresponding feature in the right-hand GeoSeries.
         """
         pass
 
-    def _postprocess(self, lhs, rhs, point_indices, op_result):
+    def _postprocess(
+        self,
+        lhs: "GeoSeries",
+        rhs: "GeoSeries",
+        points: "GeoSeries",
+        point_indices: Series,
+    ) -> Series:
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate.
 
