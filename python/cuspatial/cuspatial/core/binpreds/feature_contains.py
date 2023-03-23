@@ -8,6 +8,9 @@ import cudf
 from cudf.core.series import Series
 
 from cuspatial.core._column.geocolumn import GeoColumn
+from cuspatial.core.binpreds.binpred_dispatch import (
+    EQUALS_DISPATCH as equals_dispatch,
+)
 from cuspatial.core.binpreds.binpred_interface import BinPred
 from cuspatial.core.binpreds.contains import contains_properly
 from cuspatial.utils.column_utils import (
@@ -276,7 +279,9 @@ class RootContains(BinPred, Generic[GeoSeries]):
 
 
 class PointPointContains(RootContains):
-    pass
+    def _op(self, lhs: "GeoSeries", rhs: "GeoSeries", point_indices: Series):
+        predicate = equals_dispatch[(lhs.type_id, rhs.type_id)](lhs, rhs)
+        return predicate()
 
 
 class PolygonPointContains(RootContains):

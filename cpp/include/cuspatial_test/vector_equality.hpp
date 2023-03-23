@@ -169,9 +169,10 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs)
   }
 }
 
-template <typename Vector1, typename Vector2, typename T = typename Vector1::value_type>
-inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, T abs_error)
+template <typename Vector1, typename Vector2, typename U>
+inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, U abs_error)
 {
+  using T = typename Vector1::value_type;
   static_assert(std::is_same_v<T, typename Vector2::value_type>, "Value type mismatch.");
   static_assert(!std::is_integral_v<T>, "Integral types cannot be compared with an error.");
 

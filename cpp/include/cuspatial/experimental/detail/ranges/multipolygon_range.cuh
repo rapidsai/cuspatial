@@ -16,23 +16,23 @@
 
 #pragma once
 
-#include <thrust/binary_search.h>
-#include <thrust/distance.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/pair.h>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/experimental/geometry_collection/multipolygon_ref.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
+#include <thrust/binary_search.h>
+#include <thrust/distance.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/pair.h>
+
 #include <iterator>
 #include <optional>
 
 namespace cuspatial {
-
 using namespace detail;
 
 template <typename GeometryIterator,
@@ -104,7 +104,10 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::m
     _point_end(point_end)
 {
   static_assert(is_vec_2d<iterator_value_type<VecIterator>>(),
-                "Coordinate range must be constructed with iterators to vec_2d.");
+                "Point iterator must be iterators to floating point vec_2d types.");
+
+  CUSPATIAL_EXPECTS_VALID_MULTIPOLYGON_SIZES(
+    num_points(), num_multipolygons() + 1, num_polygons() + 1, num_rings() + 1);
 }
 
 template <typename GeometryIterator,
@@ -168,6 +171,26 @@ CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::multipolygon_end()
 {
   return multipolygon_begin() + num_multipolygons();
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::point_begin()
+{
+  return _point_begin;
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::point_end()
+{
+  return _point_end;
 }
 
 template <typename GeometryIterator,

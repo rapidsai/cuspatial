@@ -197,7 +197,7 @@ class BinPred(ABC):
         """
         return self._preprocess(self, lhs, rhs)
 
-    def _preprocess(self, lhs: GeoSeries, rhs: GeoSeries) -> Series:
+    def _preprocess(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """Preprocess the left-hand and right-hand GeoSeries. This method
         is implemented by the subclass.
 

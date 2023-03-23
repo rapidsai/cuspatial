@@ -736,7 +736,7 @@ class EqualsBinpred(BinaryPredicate):
             result = self._vertices_equals(lhs.points.xy, rhs.points.xy)
         elif contains_only_polygons(lhs):
             raise NotImplementedError
-        indices = lhs.point_indices
+        indices = lhs.point_indices()
         result_df = cudf.DataFrame(
             {"idx": indices[: len(result)], "equals": result}
         )
