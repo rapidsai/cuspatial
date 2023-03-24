@@ -16,6 +16,9 @@ from cuspatial.core.binpreds.contains import contains_properly
 from cuspatial.core.binpreds.feature_equals import (
     DispatchDict as EQUALS_DISPATCH_DICT,
 )
+from cuspatial.utils.binpred_utils import (
+    _count_results_in_multipoint_geometries,
+)
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
@@ -119,46 +122,6 @@ class RootContains(BinPred, Generic[GeoSeries]):
         else:
             result = contains_properly(lhs, points, how="byte-limited")
         return self._postprocess(lhs, points, point_indices, result)
-
-    def _count_results_in_multipoint_geometries(
-        self, point_indices, point_result
-    ):
-        """Count the number of points in each multipoint geometry.
-
-        Parameters
-        ----------
-        point_indices : cudf.Series
-            The indices of the points in the original (rhs) GeoSeries.
-        point_result : cudf.DataFrame
-            The result of a contains_properly call.
-
-        Returns
-        -------
-        cudf.Series
-            The number of points that fell within a particular polygon id.
-        cudf.Series
-            The number of points in each multipoint geometry.
-        """
-        point_indices_df = cudf.Series(
-            point_indices,
-            name="rhs_index",
-            index=cudf.RangeIndex(len(point_indices), name="point_index"),
-        ).reset_index()
-        with_rhs_indices = point_result.merge(
-            point_indices_df, on="point_index"
-        )
-        points_grouped_by_original_polygon = with_rhs_indices[
-            ["point_index", "rhs_index"]
-        ].drop_duplicates()
-        hits = (
-            points_grouped_by_original_polygon.groupby("rhs_index")
-            .count()
-            .sort_index()
-        )
-        expected_count = (
-            point_indices_df.groupby("rhs_index").count().sort_index()
-        )
-        return hits, expected_count
 
     def _convert_quadtree_result_from_part_to_polygon_indices(
         self, point_result
@@ -285,7 +248,7 @@ class PolygonComplexContains(RootContains):
         # for each input pair i: result[i] =  true iff point[i] is
         # contained in at least one polygon of multipolygon[i].
         # pairwise
-        (hits, expected_count,) = self._count_results_in_multipoint_geometries(
+        (hits, expected_count,) = _count_results_in_multipoint_geometries(
             point_indices, allpairs_result
         )
         result_df = hits.reset_index().merge(
