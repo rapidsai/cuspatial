@@ -29,11 +29,12 @@ from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.core.binpreds.binpred_dispatch import (
     CONTAINS_DISPATCH,
     COVERS_DISPATCH,
+    CROSSES_DISPATCH,
     EQUALS_DISPATCH,
     INTERSECTS_DISPATCH,
+    OVERLAPS_DISPATCH,
     WITHIN_DISPATCH,
 )
-from cuspatial.core.binpreds.binpreds import CrossesBinpred, OverlapsBinpred
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
@@ -1183,11 +1184,10 @@ class GeoSeries(cudf.Series):
         result : cudf.Series
             A Series of boolean values indicating whether each geometry
             overlaps the corresponding geometry in the input."""
-        # Overlaps has the same requirement as crosses.
-        if contains_only_points(self) and contains_only_points(other):
-            return cudf.Series([False] * len(self))
-        else:
-            return OverlapsBinpred(self, other, align=align)()
+        predicate = OVERLAPS_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
 
     def crosses(self, other, align=True):
         """Returns True for all aligned geometries that cross other, else
@@ -1210,7 +1210,7 @@ class GeoSeries(cudf.Series):
         result : cudf.Series
             A Series of boolean values indicating whether each geometry
             crosses the corresponding geometry in the input."""
-        if contains_only_points(self) and contains_only_points(other):
-            return cudf.Series([False] * len(self))
-        else:
-            return CrossesBinpred(self, other, align=align)()
+        predicate = CROSSES_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
