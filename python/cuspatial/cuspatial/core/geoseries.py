@@ -28,12 +28,12 @@ from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.core.binpreds.binpred_dispatch import (
     CONTAINS_DISPATCH,
+    COVERS_DISPATCH,
     EQUALS_DISPATCH,
     INTERSECTS_DISPATCH,
     WITHIN_DISPATCH,
 )
 from cuspatial.core.binpreds.binpreds import (
-    CoversBinpred,
     CrossesBinpred,
     EqualsBinpred,
     OverlapsBinpred,
@@ -1110,7 +1110,10 @@ class GeoSeries(cudf.Series):
             input GeoSeries covers the corresponding feature in the other
             GeoSeries.
         """
-        return CoversBinpred(self, other, align)()
+        predicate = COVERS_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
 
     def intersects(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
@@ -1132,14 +1135,10 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether the geometries of
             each row intersect.
         """
-        if contains_only_points(self) and contains_only_points(other):
-            # TODO: Update to type dispatch architecture
-            return cudf.Series(EqualsBinpred(self, other, align)())
-        else:
-            predicate = INTERSECTS_DISPATCH[
-                (self.column_type, other.column_type)
-            ](align=align)
-            return predicate(self, other)
+        predicate = INTERSECTS_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
 
     def within(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each

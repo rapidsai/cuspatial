@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from cuspatial.core.geoseries import GeoSeries
 
 
-class BinPred(ABC):
+class BinPredItf(ABC):
     """Base class for binary predicates. This class is an abstract base class
     and should not be instantiated directly. Child classes exist for each
     combination of left-hand and right-hand GeoSeries types and binary
@@ -313,6 +313,46 @@ class BinPred(ABC):
         each point in the polygon.
         """
         pass
+
+
+class BinPred(BinPredItf):
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def __call__(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
+        self.lhs = lhs
+        self.rhs = rhs
+        return self._call(lhs, rhs)
+
+    def _call(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
+        return self._preprocess(lhs, rhs)
+
+    def _preprocess(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
+        raise NotImplementedError(
+            "This method must be implemented by a subclass."
+        )
+
+    def _op(
+        self,
+        lhs: "GeoSeries",
+        rhs: "GeoSeries",
+        points: "GeoSeries",
+        point_indices: Series,
+    ) -> Series:
+        raise NotImplementedError(
+            "This method must be implemented by a subclass."
+        )
+
+    def _postprocess(
+        self,
+        lhs: "GeoSeries",
+        rhs: "GeoSeries",
+        points: "GeoSeries",
+        point_indices: Series,
+    ) -> Series:
+        raise NotImplementedError(
+            "This method must be implemented by a subclass."
+        )
 
 
 class NotImplementedRoot(BinPred):

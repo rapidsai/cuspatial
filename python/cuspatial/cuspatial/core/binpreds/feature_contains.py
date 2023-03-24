@@ -182,10 +182,6 @@ class RootContains(BinPred, Generic[GeoSeries]):
         """
         # Get the length of each part, map it to indices, and store
         # the result in a dataframe.
-        if not contains_only_polygons(self.lhs):
-            raise TypeError(
-                "`.contains` can only be called with polygon series."
-            )
         rings_to_parts = cp.array(self.lhs.polygons.part_offset)
         part_sizes = rings_to_parts[1:] - rings_to_parts[:-1]
         parts_map = cudf.Series(
