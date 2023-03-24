@@ -321,5 +321,5 @@ class NotImplementedRoot(BinPred):
     GeoSeries types.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         raise NotImplementedError

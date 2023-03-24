@@ -9,6 +9,9 @@ from cuspatial.core.binpreds.feature_contains import (
     PolygonPointContains,
     PolygonPolygonContains,
 )
+from cuspatial.core.binpreds.feature_equals import (
+    DispatchDict as EQUALS_DISPATCH_DICT,
+)
 from cuspatial.core.binpreds.feature_intersects import RootIntersects
 from cuspatial.core.binpreds.feature_within import RootWithin
 
@@ -73,3 +76,5 @@ WITHIN_DISPATCH = {
     (Polygon, LineString): RootWithin,
     (Polygon, Polygon): RootWithin,
 }
+
+EQUALS_DISPATCH = EQUALS_DISPATCH_DICT

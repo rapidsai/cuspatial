@@ -656,8 +656,8 @@ class EqualsBinpred(BinaryPredicate):
         lhs_xy = self._reverse_linestrings(lhs.xy, lhs.part_offset)
         rhs_xy = self._reverse_linestrings(rhs.xy, rhs.part_offset)
         return (
-            PreprocessorOutput(lhs_xy, lhs.point_indices()),
-            PreprocessorOutput(rhs_xy, rhs.point_indices()),
+            PreprocessorOutput(lhs_xy, lhs.point_indices),
+            PreprocessorOutput(rhs_xy, rhs.point_indices),
             initial,
         )
 
@@ -736,7 +736,7 @@ class EqualsBinpred(BinaryPredicate):
             result = self._vertices_equals(lhs.points.xy, rhs.points.xy)
         elif contains_only_polygons(lhs):
             raise NotImplementedError
-        indices = lhs.point_indices()
+        indices = lhs.point_indices
         result_df = cudf.DataFrame(
             {"idx": indices[: len(result)], "equals": result}
         )

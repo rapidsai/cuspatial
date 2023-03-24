@@ -106,8 +106,8 @@ def test_3_linestrings_equals_3_linestrings_one_equal(lhs):
 
 
 def test_10_linestrings_geom_equals_10_linestrings(linestring_generator):
-    gpdlines1 = gpd.GeoSeries([*linestring_generator(11, 5)])
-    gpdlines2 = gpd.GeoSeries([*linestring_generator(11, 5)])
+    gpdlines1 = gpd.GeoSeries([*linestring_generator(10, 5)])
+    gpdlines2 = gpd.GeoSeries([*linestring_generator(10, 5)])
     lines1 = cuspatial.from_geopandas(gpdlines1)
     lines2 = cuspatial.from_geopandas(gpdlines2)
     got = lines1.geom_equals(lines2)

@@ -28,6 +28,7 @@ from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.core.binpreds.binpred_dispatch import (
     CONTAINS_DISPATCH,
+    EQUALS_DISPATCH,
     INTERSECTS_DISPATCH,
     WITHIN_DISPATCH,
 )
@@ -140,6 +141,7 @@ class GeoSeries(cudf.Series):
         else:
             return "Mixed"
 
+    @property
     def point_indices(self):
         if contains_only_polygons(self):
             return self.polygons.point_indices()
@@ -150,6 +152,8 @@ class GeoSeries(cudf.Series):
         elif contains_only_points(self):
             return self.points.point_indices()
         else:
+            if len(self) == 0:
+                return cudf.Series([0], dtype="int32")
             raise TypeError(
                 "GeoSeries must contain only Points, MultiPoints, Lines, or "
                 "Polygons to return point indices."
@@ -1083,7 +1087,10 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature in A
             is equal to the corresponding feature in B.
         """
-        return EqualsBinpred(self, other, align)()
+        predicate = EQUALS_DISPATCH[(self.column_type, other.column_type)](
+            self, other, align=align
+        )
+        return predicate()
 
     def covers(self, other, align=True):
         """Compute if a GeoSeries of features A covers a second GeoSeries of

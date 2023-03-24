@@ -7,18 +7,13 @@ from typing import Generic, TypeVar
 import cupy as cp
 
 import cudf
+from cudf import Series
 
 import cuspatial
 from cuspatial.core._column.geocolumn import ColumnType
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     NotImplementedRoot,
-)
-from cuspatial.utils.column_utils import (
-    contains_only_linestrings,
-    contains_only_multipoints,
-    contains_only_points,
-    contains_only_polygons,
 )
 
 GeoSeries = TypeVar("GeoSeries")
@@ -60,6 +55,9 @@ class RootEquals(BinPred, Generic[GeoSeries]):
 
     def _call(self):
         return self._preprocess(self.lhs, self.rhs)
+
+    def _false(self):
+        return Series(cp.zeros(len(self.lhs), dtype=cp.bool_))
 
     def _offset_equals(self, lhs, rhs):
         """Compute the pairwise length equality of two offset arrays"""
@@ -136,7 +134,7 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         result.name = None
         return result
 
-    def _sort_multipoints(self, lhs, rhs, initial):
+    def _sort_multipoints(self, lhs, rhs):
         lhs_sorted = self._sort_multipoint_series(
             lhs.multipoints.xy, lhs.multipoints.geometry_offset
         )
@@ -154,7 +152,6 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         return (
             lhs_result,
             rhs_result,
-            initial,
         )
 
     def _reverse_linestrings(self, coords, offsets):
@@ -171,8 +168,8 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         lhs_xy = self._reverse_linestrings(lhs.xy, lhs.part_offset)
         rhs_xy = self._reverse_linestrings(rhs.xy, rhs.part_offset)
         return (
-            PreprocessorOutput(lhs_xy, lhs.point_indices()),
-            PreprocessorOutput(rhs_xy, rhs.point_indices()),
+            PreprocessorOutput(lhs_xy, lhs.point_indices),
+            PreprocessorOutput(rhs_xy, rhs.point_indices),
             initial,
         )
 
@@ -200,50 +197,20 @@ class RootEquals(BinPred, Generic[GeoSeries]):
             predicate with its corresponding feature in the left-hand
             GeoSeries.
         """
-        # Compare types
         type_compare = lhs.feature_types == rhs.feature_types
         # Any unmatched type is not equal
         if (type_compare == False).all():  # noqa: E712
             # Override _op so that it will not be run.
-            return self._cancel_op(lhs, rhs, type_compare)
-        # Get indices of matching types
-        if contains_only_multipoints(lhs):
-            lengths_equal = self._offset_equals(
-                lhs.multipoints.geometry_offset,
-                rhs.multipoints.geometry_offset,
-            )
-            if lengths_equal.any():
-                # Multipoints are equal if they contains the
-                # same unordered points.
-                point_indices = self._sort_multipoints(
-                    lhs[lengths_equal],
-                    rhs[lengths_equal],
-                    lengths_equal,
-                )
-            else:
-                # No lengths are equal, so none can be equal.
-                return self._cancel_op(lhs, rhs, lengths_equal)
-        elif contains_only_linestrings(lhs):
-            lengths_equal = self._offset_equals(
-                lhs.lines.part_offset, rhs.lines.part_offset
-            )
-            if lengths_equal.any():
-                point_indices = (
-                    lhs[lengths_equal],
-                    rhs[lengths_equal],
-                    lengths_equal,
-                )
-            else:
-                return self._cancel_op(lhs, rhs, lengths_equal)
-        elif contains_only_polygons(lhs):
-            raise NotImplementedError
-        elif contains_only_points(lhs):
-            point_indices = type_compare
-        return self._op(lhs, rhs, point_indices)
+            return self._false()
+        return self._op(lhs, rhs, rhs.point_indices)
 
     def _vertices_equals(self, lhs, rhs):
         """Compute the equals relationship between interleaved xy
         coordinate buffers."""
+        if not isinstance(lhs, Series):
+            raise TypeError("lhs must be a cudf.Series")
+        if not isinstance(rhs, Series):
+            raise TypeError("rhs must be a cudf.Series")
         length = min(len(lhs), len(rhs))
         a = lhs[:length:2]._column == rhs[:length:2]._column
         b = rhs[1:length:2]._column == lhs[1:length:2]._column
@@ -264,73 +231,93 @@ class RootEquals(BinPred, Generic[GeoSeries]):
     # of booleans that determines if the lengths of linestrings in the lhs and
     # rhs are the same size and the set of indices that correspond to the
     # lengths that are equal.
-    def _postprocess(self, lhs, rhs, lengths_equal, point_result):
+    def _postprocess(self, lhs, rhs, point_indices, point_result):
         """Postprocess the output GeoSeries to combine the resulting
         comparisons into a single boolean value for each feature in the
         rhs GeoSeries.
         """
+        return point_result
+
+
+class PolygonPointEquals(RootEquals):
+    def _preprocess(self, lhs, rhs):
+        type_compare = lhs.feature_types == rhs.feature_types
+        point_indices = type_compare
+        return self._op(lhs, rhs, point_indices)
+
+    def _postprocess(self, lhs, rhs, point_indices, result):
+        result = cudf.Series(result)
+        result.index = lhs.index
+        return result
+
+
+class PolygonComplexEquals(RootEquals):
+    def _postprocess(self, lhs, rhs, point_indices, point_result):
+        """Postprocess the output GeoSeries to combine the resulting
+        comparisons into a single boolean value for each feature in the
+        rhs GeoSeries.
+        """
+        if len(point_result) == 0:
+            return cudf.Series(cp.tile([False], len(lhs)), dtype="bool")
         # if point_result is not a Series, preprocessing terminated
         # the results early.
         if isinstance(point_result, cudf.Series):
             op_result = point_result.sort_index()
-            lengths_equal[point_result.index] = op_result
-            return cudf.Series(lengths_equal)
-        indices = lhs.point_indices()
+            point_indices[point_result.index] = op_result
+            return cudf.Series(point_indices)
         result_df = cudf.DataFrame(
-            {"idx": indices[: len(point_result)], "equals": point_result}
+            {"idx": point_indices, "equals": point_result}
         )
         gb_idx = result_df.groupby("idx")
-        result = (gb_idx.sum().sort_index() == gb_idx.count().sort_index())[
-            "equals"
-        ]
-        result.index = lhs.index
-        result.index.name = None
-        result.name = None
+        feature_equals_linestring = (
+            gb_idx.sum().sort_index() == gb_idx.count().sort_index()
+        )["equals"]
+        result = cudf.Series(cp.tile(False, len(lhs)), dtype="bool")
+        result[
+            feature_equals_linestring.index
+        ] = feature_equals_linestring.values
         return result
 
 
-class PointPointEquals(RootEquals):
-    pass
+class MultiPointMultiPointEquals(PolygonComplexEquals):
+    def _preprocess(self, lhs, rhs):
+        # MultiPoints can be compared either forward or
+        # reversed. We need to compare both directions.
+        (lhs_result, rhs_result) = self._sort_multipoints(lhs, rhs)
+        return self._op(lhs_result, rhs_result, rhs_result.point_indices)
 
-
-class PolygonPointEquals(RootEquals):
-    pass
-
-
-class PolygonComplexEquals(RootEquals):
-    pass
-
-
-class PolygonMultiPointEquals(PolygonComplexEquals):
     def _op(self, lhs, rhs, point_indices):
         result = self._vertices_equals(lhs.multipoints.xy, rhs.multipoints.xy)
         return self._postprocess(lhs, rhs, point_indices, result)
 
 
-class PolygonLineStringEquals(PolygonComplexEquals):
-    # Linestrings can be compared either forward or
-    # reversed. We need to compare both directions.
+class LineStringLineStringEquals(PolygonComplexEquals):
     def _op(self, lhs, rhs, point_indices):
-        lhs_reversed = self._reverse_linestrings(
-            lhs.lines.xy, lhs.lines.part_offset
+        # Linestrings can be compared either forward or
+        # reversed. We need to compare both directions.
+        lengths_equal = self._offset_equals(
+            lhs.lines.part_offset, rhs.lines.part_offset
         )
-        forward_result = self._vertices_equals(lhs.lines.xy, rhs.lines.xy)
-        reverse_result = self._vertices_equals(lhs_reversed, rhs.lines.xy)
+        lhs_lengths_equal = lhs[lengths_equal]
+        rhs_lengths_equal = rhs[lengths_equal]
+        lhs_reversed = self._reverse_linestrings(
+            lhs_lengths_equal.lines.xy, lhs_lengths_equal.lines.part_offset
+        )
+        forward_result = self._vertices_equals(
+            lhs_lengths_equal.lines.xy, rhs_lengths_equal.lines.xy
+        )
+        reverse_result = self._vertices_equals(
+            lhs_reversed, rhs_lengths_equal.lines.xy
+        )
         result = forward_result | reverse_result
-        return self._postprocess(lhs, rhs, point_indices, result)
-
-
-class PolygonMultiLineStringEquals(PolygonComplexEquals):
-    pass
+        return self._postprocess(
+            lhs, rhs, lhs_lengths_equal.point_indices, result
+        )
 
 
 class PolygonPolygonEquals(PolygonComplexEquals):
-    def _op(self, lhs, rhs, point_indices):
+    def __init__(self, **kwargs):
         raise NotImplementedError
-
-
-class PolygonMultiPolygonEquals(PolygonComplexEquals):
-    pass
 
 
 Point = ColumnType.POINT
@@ -345,15 +332,15 @@ DispatchDict = {
     (Point, LineString): NotImplementedRoot,
     (Point, Polygon): RootEquals,
     (MultiPoint, Point): NotImplementedRoot,
-    (MultiPoint, MultiPoint): NotImplementedRoot,
+    (MultiPoint, MultiPoint): MultiPointMultiPointEquals,
     (MultiPoint, LineString): NotImplementedRoot,
     (MultiPoint, Polygon): NotImplementedRoot,
     (LineString, Point): NotImplementedRoot,
     (LineString, MultiPoint): NotImplementedRoot,
-    (LineString, LineString): NotImplementedRoot,
+    (LineString, LineString): LineStringLineStringEquals,
     (LineString, Polygon): RootEquals,
-    (Polygon, Point): PolygonPointEquals,
-    (Polygon, MultiPoint): PolygonMultiLineStringEquals,
-    (Polygon, LineString): PolygonLineStringEquals,
-    (Polygon, Polygon): RootEquals,
+    (Polygon, Point): RootEquals,
+    (Polygon, MultiPoint): RootEquals,
+    (Polygon, LineString): RootEquals,
+    (Polygon, Polygon): PolygonPolygonEquals,
 }
