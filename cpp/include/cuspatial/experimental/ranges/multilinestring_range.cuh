@@ -21,6 +21,7 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
 #include <cuspatial/vec_2d.hpp>
+#include <cuspatial/experimental/geometry/segment.cuh>
 
 #include <thrust/pair.h>
 
@@ -128,6 +129,15 @@ class multilinestring_range {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE thrust::pair<vec_2d<element_t>, vec_2d<element_t>> segment(
     IndexType segment_idx);
+
+  /// Returns an infinite iterator to the "tiled" segments of the multilinestring.
+  /// If the multilinestring range has 5 segments, this iterator will iterate on the
+  /// 0th, 1st, 2nd, 3rd, 4th, 0th, 1st, 2nd, 3rd, 4th segment for the first 10 iterations.
+  ///
+  /// The name of `tile` comes from numpy.tile[1]
+  /// [1] https://numpy.org/doc/stable/reference/generated/numpy.tile.html
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE segment<element_t> segment_tiled_begin(IndexType period);
 
   /// Returns the `multilinestring_idx`th multilinestring in the range.
   template <typename IndexType>
