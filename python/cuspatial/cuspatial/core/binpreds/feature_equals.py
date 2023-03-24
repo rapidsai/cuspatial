@@ -1,5 +1,7 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
+from __future__ import annotations
+
 from typing import Generic, TypeVar
 
 import cupy as cp
@@ -253,34 +255,7 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         are the indices of the points in the rhs GeoSeries that correspond
         to each feature in the rhs GeoSeries.
         """
-        if contains_only_linestrings(lhs):
-            # Linestrings can be compared either forward or
-            # reversed. We need to compare both directions.
-            lhs_reversed = self._reverse_linestrings(
-                lhs.lines.xy, lhs.lines.part_offset
-            )
-            forward_result = self._vertices_equals(lhs.lines.xy, rhs.lines.xy)
-            reverse_result = self._vertices_equals(lhs_reversed, rhs.lines.xy)
-            result = forward_result | reverse_result
-        elif contains_only_multipoints(lhs):
-            result = self._vertices_equals(
-                lhs.multipoints.xy, rhs.multipoints.xy
-            )
-        elif contains_only_points(lhs):
-            result = self._vertices_equals(lhs.points.xy, rhs.points.xy)
-        elif contains_only_polygons(lhs):
-            raise NotImplementedError
-        indices = lhs.point_indices()
-        result_df = cudf.DataFrame(
-            {"idx": indices[: len(result)], "equals": result}
-        )
-        gb_idx = result_df.groupby("idx")
-        result = (gb_idx.sum().sort_index() == gb_idx.count().sort_index())[
-            "equals"
-        ]
-        result.index = lhs.index
-        result.index.name = None
-        result.name = None
+        result = self._vertices_equals(lhs.points.xy, rhs.points.xy)
         return self._postprocess(lhs, rhs, point_indices, result)
 
     # TODO: Function signature here doesn't support the existing function
@@ -299,7 +274,19 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         if isinstance(point_result, cudf.Series):
             op_result = point_result.sort_index()
             lengths_equal[point_result.index] = op_result
-        return cudf.Series(lengths_equal)
+            return cudf.Series(lengths_equal)
+        indices = lhs.point_indices()
+        result_df = cudf.DataFrame(
+            {"idx": indices[: len(point_result)], "equals": point_result}
+        )
+        gb_idx = result_df.groupby("idx")
+        result = (gb_idx.sum().sort_index() == gb_idx.count().sort_index())[
+            "equals"
+        ]
+        result.index = lhs.index
+        result.index.name = None
+        result.name = None
+        return result
 
 
 class PointPointEquals(RootEquals):
@@ -315,11 +302,22 @@ class PolygonComplexEquals(RootEquals):
 
 
 class PolygonMultiPointEquals(PolygonComplexEquals):
-    pass
+    def _op(self, lhs, rhs, point_indices):
+        result = self._vertices_equals(lhs.multipoints.xy, rhs.multipoints.xy)
+        return self._postprocess(lhs, rhs, point_indices, result)
 
 
 class PolygonLineStringEquals(PolygonComplexEquals):
-    pass
+    # Linestrings can be compared either forward or
+    # reversed. We need to compare both directions.
+    def _op(self, lhs, rhs, point_indices):
+        lhs_reversed = self._reverse_linestrings(
+            lhs.lines.xy, lhs.lines.part_offset
+        )
+        forward_result = self._vertices_equals(lhs.lines.xy, rhs.lines.xy)
+        reverse_result = self._vertices_equals(lhs_reversed, rhs.lines.xy)
+        result = forward_result | reverse_result
+        return self._postprocess(lhs, rhs, point_indices, result)
 
 
 class PolygonMultiLineStringEquals(PolygonComplexEquals):
@@ -327,7 +325,8 @@ class PolygonMultiLineStringEquals(PolygonComplexEquals):
 
 
 class PolygonPolygonEquals(PolygonComplexEquals):
-    pass
+    def _op(self, lhs, rhs, point_indices):
+        raise NotImplementedError
 
 
 class PolygonMultiPolygonEquals(PolygonComplexEquals):
@@ -338,6 +337,7 @@ Point = ColumnType.POINT
 MultiPoint = ColumnType.MULTIPOINT
 LineString = ColumnType.LINESTRING
 Polygon = ColumnType.POLYGON
+
 
 DispatchDict = {
     (Point, Point): RootEquals,
@@ -352,8 +352,8 @@ DispatchDict = {
     (LineString, MultiPoint): NotImplementedRoot,
     (LineString, LineString): NotImplementedRoot,
     (LineString, Polygon): RootEquals,
-    (Polygon, Point): RootEquals,
-    (Polygon, MultiPoint): RootEquals,
-    (Polygon, LineString): RootEquals,
+    (Polygon, Point): PolygonPointEquals,
+    (Polygon, MultiPoint): PolygonMultiLineStringEquals,
+    (Polygon, LineString): PolygonLineStringEquals,
     (Polygon, Polygon): RootEquals,
 }
