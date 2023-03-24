@@ -3,11 +3,7 @@
 from cuspatial.core._column.geocolumn import ColumnType
 from cuspatial.core.binpreds.binpred_interface import NotImplementedRoot
 from cuspatial.core.binpreds.feature_contains import (
-    PointPointContains,
-    PolygonLineStringContains,
-    PolygonMultiPointContains,
-    PolygonPointContains,
-    PolygonPolygonContains,
+    DispatchDict as CONTAINS_DISPATCH_DICT,
 )
 from cuspatial.core.binpreds.feature_equals import (
     DispatchDict as EQUALS_DISPATCH_DICT,
@@ -20,25 +16,7 @@ MultiPoint = ColumnType.MULTIPOINT
 LineString = ColumnType.LINESTRING
 Polygon = ColumnType.POLYGON
 
-CONTAINS_DISPATCH = {
-    (Point, Point): PointPointContains,
-    (Point, MultiPoint): NotImplementedRoot,
-    (Point, LineString): NotImplementedRoot,
-    (Point, Polygon): NotImplementedRoot,
-    (MultiPoint, Point): NotImplementedRoot,
-    (MultiPoint, MultiPoint): NotImplementedRoot,
-    (MultiPoint, LineString): NotImplementedRoot,
-    (MultiPoint, Polygon): NotImplementedRoot,
-    (LineString, Point): NotImplementedRoot,
-    (LineString, MultiPoint): NotImplementedRoot,
-    (LineString, LineString): NotImplementedRoot,
-    (LineString, Polygon): NotImplementedRoot,
-    (Polygon, Point): PolygonPointContains,
-    (Polygon, MultiPoint): PolygonMultiPointContains,
-    (Polygon, LineString): PolygonLineStringContains,
-    (Polygon, Polygon): PolygonPolygonContains,
-}
-
+CONTAINS_DISPATCH = CONTAINS_DISPATCH_DICT
 INTERSECTS_DISPATCH = {
     (Point, Point): RootIntersects,
     (Point, MultiPoint): NotImplementedRoot,

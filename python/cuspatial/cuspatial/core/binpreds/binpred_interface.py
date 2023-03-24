@@ -87,7 +87,7 @@ class BinPred(ABC):
     """
 
     @abstractmethod
-    def __init__(self, lhs: "GeoSeries", rhs: "GeoSeries", **kwargs):
+    def __init__(self, **kwargs):
         """Initialize a binary predicate. Collects any arguments passed
         to the binary predicate to be used at runtime.
 
@@ -149,9 +149,7 @@ class BinPred(ABC):
         >>> print(predicate())
         # TODO Output
         """
-        super().__init__(lhs, rhs, **kwargs)
-        self.lhs = lhs
-        self.rhs = rhs
+        super().__init__(**kwargs)
         self.kwargs = kwargs
 
     def __call__(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
@@ -174,7 +172,9 @@ class BinPred(ABC):
         >>> print(predicate())
         # TODO Output
         """
-        return self._call(self, lhs, rhs)
+        self.lhs = lhs
+        self.rhs = rhs
+        return self._call(lhs, rhs)
 
     def _call(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """Call the binary predicate. This method is implemented by the
@@ -195,7 +195,7 @@ class BinPred(ABC):
             predicate with its corresponding feature in the left-hand
             GeoSeries.
         """
-        return self._preprocess(self, lhs, rhs)
+        return self._preprocess(lhs, rhs)
 
     def _preprocess(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """Preprocess the left-hand and right-hand GeoSeries. This method
@@ -242,7 +242,7 @@ class BinPred(ABC):
         point_indices = None
         return self._op(lhs, rhs, points, point_indices)
 
-    # TODO Change `_op` signature to be more generic.
+    @abstractmethod
     def _op(
         self,
         lhs: "GeoSeries",

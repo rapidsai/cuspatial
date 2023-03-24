@@ -7,11 +7,14 @@ import cupy as cp
 import cudf
 from cudf.core.series import Series
 
-from cuspatial.core._column.geocolumn import GeoColumn
-from cuspatial.core.binpreds.binpred_interface import BinPred
+from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
+from cuspatial.core.binpreds.binpred_interface import (
+    BinPred,
+    NotImplementedRoot,
+)
 from cuspatial.core.binpreds.contains import contains_properly
 from cuspatial.core.binpreds.feature_equals import (
-    DispatchDict as EqualsDispatchDict,
+    DispatchDict as EQUALS_DISPATCH_DICT,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -29,17 +32,9 @@ class RootContains(BinPred, Generic[GeoSeries]):
     predicate is defined in terms of a Point-Point Intersects predicate.
     """
 
-    def __init__(self, lhs: GeoSeries, rhs: GeoSeries, **kwargs):
-        self.lhs = lhs
-        self.rhs = rhs
+    def __init__(self, **kwargs):
         self.align = kwargs.get("align", False)
         self.allpairs = kwargs.get("allpairs", False)
-
-    def __call__(self):
-        return self._call()
-
-    def _call(self):
-        return self._preprocess(self.lhs, self.rhs)
 
     def _preprocess(self, lhs, rhs):
         """Flatten any rhs into only its points xy array. This is necessary
@@ -278,14 +273,6 @@ class RootContains(BinPred, Generic[GeoSeries]):
         return self._postprocess_quadtree_result(point_indices, op_result)
 
 
-class PointPointContains(RootContains):
-    def _op(self, lhs: "GeoSeries", rhs: "GeoSeries", point_indices: Series):
-        predicate = EqualsDispatchDict[(lhs.column_type, rhs.column_type)](
-            lhs, rhs
-        )
-        return predicate()
-
-
 class PolygonPointContains(RootContains):
     pass
 
@@ -320,6 +307,14 @@ class PolygonComplexContains(RootContains):
         return final_result
 
 
+class PointPointContains(RootContains):
+    def _preprocess(self, lhs, rhs):
+        predicate = EQUALS_DISPATCH_DICT[(lhs.column_type, rhs.column_type)](
+            align=self.align
+        )
+        return predicate(lhs, rhs)
+
+
 class PolygonMultiPointContains(PolygonComplexContains):
     pass
 
@@ -338,3 +333,28 @@ class PolygonPolygonContains(PolygonComplexContains):
 
 class PolygonMultiPolygonContains(PolygonComplexContains):
     pass
+
+
+Point = ColumnType.POINT
+MultiPoint = ColumnType.MULTIPOINT
+LineString = ColumnType.LINESTRING
+Polygon = ColumnType.POLYGON
+
+DispatchDict = {
+    (Point, Point): PointPointContains,
+    (Point, MultiPoint): NotImplementedRoot,
+    (Point, LineString): NotImplementedRoot,
+    (Point, Polygon): NotImplementedRoot,
+    (MultiPoint, Point): NotImplementedRoot,
+    (MultiPoint, MultiPoint): NotImplementedRoot,
+    (MultiPoint, LineString): NotImplementedRoot,
+    (MultiPoint, Polygon): NotImplementedRoot,
+    (LineString, Point): NotImplementedRoot,
+    (LineString, MultiPoint): NotImplementedRoot,
+    (LineString, LineString): NotImplementedRoot,
+    (LineString, Polygon): NotImplementedRoot,
+    (Polygon, Point): PolygonPointContains,
+    (Polygon, MultiPoint): PolygonMultiPointContains,
+    (Polygon, LineString): PolygonLineStringContains,
+    (Polygon, Polygon): PolygonPolygonContains,
+}

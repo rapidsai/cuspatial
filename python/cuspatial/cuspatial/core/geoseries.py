@@ -1040,9 +1040,9 @@ class GeoSeries(cudf.Series):
             `Series` of `dtype('int32')` in the case of `allpairs=True`.
         """
         predicate = CONTAINS_DISPATCH[(self.column_type, other.column_type)](
-            self, other, align=align, allpairs=allpairs
+            align=align, allpairs=allpairs
         )
-        return predicate()
+        return predicate(self, other)
 
     def geom_equals(self, other, align=True):
         """Compute if a GeoSeries of features A is equal to a GeoSeries of
@@ -1088,9 +1088,9 @@ class GeoSeries(cudf.Series):
             is equal to the corresponding feature in B.
         """
         predicate = EQUALS_DISPATCH[(self.column_type, other.column_type)](
-            self, other, align=align
+            align=align
         )
-        return predicate()
+        return predicate(self, other)
 
     def covers(self, other, align=True):
         """Compute if a GeoSeries of features A covers a second GeoSeries of
@@ -1138,8 +1138,8 @@ class GeoSeries(cudf.Series):
         else:
             predicate = INTERSECTS_DISPATCH[
                 (self.column_type, other.column_type)
-            ](self, other, align=align)
-            return predicate()
+            ](align=align)
+            return predicate(self, other)
 
     def within(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
@@ -1166,9 +1166,9 @@ class GeoSeries(cudf.Series):
             return cudf.Series(EqualsBinpred(self, other, align)())
         else:
             predicate = WITHIN_DISPATCH[(self.column_type, other.column_type)](
-                self, other, align=align
+                align=align
             )
-            return predicate()
+            return predicate(self, other)
 
     def overlaps(self, other, align=True):
         """Returns True for all aligned geometries that overlap other, else

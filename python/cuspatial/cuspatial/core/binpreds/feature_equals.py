@@ -19,42 +19,14 @@ from cuspatial.core.binpreds.binpred_interface import (
 GeoSeries = TypeVar("GeoSeries")
 
 
-class PreprocessorOutput:
-    """The output of the preprocess method of a binary predicate.
-
-    This makes it possible to create a class that matches the necessary
-    signature of a geoseries.GeoColumnAccessor object. In some cases the
-    preprocessor may need to reorder the input data, in which case the
-    preprocessor will return a PreprocessorOutput object instead of a
-    GeoColumnAccessor."""
-
-    def __init__(self, coords, indices) -> None:
-        self.vertices = coords
-        self.indices = indices
-
-    @property
-    def xy(self):
-        return self.vertices
-
-    def point_indices(self):
-        return self.indices
-
-
 class RootEquals(BinPred, Generic[GeoSeries]):
     """Base class for binary predicates that are defined in terms of a
     root-level binary predicate. For example, a Point-Point Equals
     predicate is defined in terms of a Point-Point Intersects predicate.
     """
 
-    def __init__(self, lhs: GeoSeries, rhs: GeoSeries, **kwargs):
-        self.lhs = lhs
-        self.rhs = rhs
-
-    def __call__(self):
-        return self._call()
-
-    def _call(self):
-        return self._preprocess(self.lhs, self.rhs)
+    def __init__(self, **kwargs):
+        self.align = kwargs.get("align", False)
 
     def _false(self):
         return Series(cp.zeros(len(self.lhs), dtype=cp.bool_))
@@ -163,16 +135,6 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         result.name = None
         return result
 
-    def _compare_linestrings_and_reversed(self, lhs, rhs, initial):
-        """Compare linestrings with their reversed counterparts."""
-        lhs_xy = self._reverse_linestrings(lhs.xy, lhs.part_offset)
-        rhs_xy = self._reverse_linestrings(rhs.xy, rhs.part_offset)
-        return (
-            PreprocessorOutput(lhs_xy, lhs.point_indices),
-            PreprocessorOutput(rhs_xy, rhs.point_indices),
-            initial,
-        )
-
     def _preprocess(self, lhs: "GeoSeries", rhs: "GeoSeries"):
         """Convert the input geometry types into buffers of points that can
         then be compared with the equals basic predicate.
@@ -204,7 +166,7 @@ class RootEquals(BinPred, Generic[GeoSeries]):
             return self._false()
         return self._op(lhs, rhs, rhs.point_indices)
 
-    def _vertices_equals(self, lhs, rhs):
+    def _vertices_equals(self, lhs: Series, rhs: Series):
         """Compute the equals relationship between interleaved xy
         coordinate buffers."""
         if not isinstance(lhs, Series):
@@ -239,18 +201,6 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         return point_result
 
 
-class PolygonPointEquals(RootEquals):
-    def _preprocess(self, lhs, rhs):
-        type_compare = lhs.feature_types == rhs.feature_types
-        point_indices = type_compare
-        return self._op(lhs, rhs, point_indices)
-
-    def _postprocess(self, lhs, rhs, point_indices, result):
-        result = cudf.Series(result)
-        result.index = lhs.index
-        return result
-
-
 class PolygonComplexEquals(RootEquals):
     def _postprocess(self, lhs, rhs, point_indices, point_result):
         """Postprocess the output GeoSeries to combine the resulting
@@ -259,12 +209,6 @@ class PolygonComplexEquals(RootEquals):
         """
         if len(point_result) == 0:
             return cudf.Series(cp.tile([False], len(lhs)), dtype="bool")
-        # if point_result is not a Series, preprocessing terminated
-        # the results early.
-        if isinstance(point_result, cudf.Series):
-            op_result = point_result.sort_index()
-            point_indices[point_result.index] = op_result
-            return cudf.Series(point_indices)
         result_df = cudf.DataFrame(
             {"idx": point_indices, "equals": point_result}
         )
@@ -315,11 +259,6 @@ class LineStringLineStringEquals(PolygonComplexEquals):
         )
 
 
-class PolygonPolygonEquals(PolygonComplexEquals):
-    def __init__(self, **kwargs):
-        raise NotImplementedError
-
-
 Point = ColumnType.POINT
 MultiPoint = ColumnType.MULTIPOINT
 LineString = ColumnType.LINESTRING
@@ -342,5 +281,5 @@ DispatchDict = {
     (Polygon, Point): RootEquals,
     (Polygon, MultiPoint): RootEquals,
     (Polygon, LineString): RootEquals,
-    (Polygon, Polygon): PolygonPolygonEquals,
+    (Polygon, Polygon): RootEquals,
 }
