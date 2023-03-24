@@ -11,11 +11,13 @@ if TYPE_CHECKING:
 
 class BinPredItf(ABC):
     """Base class for binary predicates. This class is an abstract base class
-    and should not be instantiated directly. Child classes exist for each
-    combination of left-hand and right-hand GeoSeries types and binary
+    and can not be instantiated directly. `BinPred` is the base class that
+    implements this interface in the most general case. Child classes exist
+    for each combination of left-hand and right-hand GeoSeries types and binary
     predicates. For example, a `PointPointContains` predicate is a child class
     of `BinPred` that implements the `contains_properly` predicate for two
     `Point` GeoSeries.
+
 
     Parameters
     ----------
@@ -152,6 +154,7 @@ class BinPredItf(ABC):
         super().__init__(**kwargs)
         self.kwargs = kwargs
 
+    @abstractmethod
     def __call__(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """System call for the binary predicate. Calls the _call method,
         which is implemented by the subclass. Executing the binary predicate
@@ -176,6 +179,7 @@ class BinPredItf(ABC):
         self.rhs = rhs
         return self._call(lhs, rhs)
 
+    @abstractmethod
     def _call(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """Call the binary predicate. This method is implemented by the
         subclass.
@@ -197,6 +201,7 @@ class BinPredItf(ABC):
         """
         return self._preprocess(lhs, rhs)
 
+    @abstractmethod
     def _preprocess(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """Preprocess the left-hand and right-hand GeoSeries. This method
         is implemented by the subclass.
@@ -289,45 +294,86 @@ class BinPredItf(ABC):
         """
         pass
 
+    @abstractmethod
     def _postprocess(
         self,
         lhs: "GeoSeries",
         rhs: "GeoSeries",
-        points: "GeoSeries",
         point_indices: Series,
+        op_result: Series,
     ) -> Series:
         """Postprocess the output GeoSeries to ensure that they are of the
-        correct type for the predicate.
+        correct return type for the predicate. This method is implemented by
+        the subclass.
 
-        TODO: Update
+        Postprocessing is used to convert the results of the `_op` call into
+        countable values. This step converts the results of one of the three
+        binary predicates `contains`, `intersects`, or `equals` into a
+        `Series` of boolean values. When the `rhs` is a non-point type,
+        `_postprocess` is responsible for aggregating the results of the
+        `_op` call into a single boolean value for each feature in the
+        `lhs`.
 
-        Postprocess for contains_properly has to handle multiple input and
-        output configurations.
+        Parameters
+        ----------
+        lhs : GeoSeries
+            The left-hand GeoSeries.
+        rhs : GeoSeries
+            The right-hand GeoSeries.
+        point_indices : cudf.Series
+            A cudf.Series of indices that map each point in `points` to its
+            corresponding feature in the right-hand GeoSeries.
+        op_result : cudf.Series
+            A cudf.Series of boolean values indicating whether each feature
+            in the right-hand GeoSeries satisfies the requirements of a
+            binary predicate with its corresponding feature in the left-hand
+            GeoSeries.
 
-        The input can be a single polygon, a single multipolygon, or a
-        GeoSeries containing a mix of polygons and multipolygons.
+        Returns
+        -------
+        result : Series
+            A Series of boolean values indicating whether each feature in
+            the right-hand GeoSeries satisfies the requirements of a binary
+            predicate with its corresponding feature in the left-hand
+            GeoSeries.
 
-        The input to postprocess is `point_indices`, which can be either a
-        cudf.DataFrame with one row per point and one column per polygon or
-        a cudf.DataFrame containing the point index and the part index for
-        each point in the polygon.
+        Notes
+        -----
+        Arithmetic rules incorporated into `_postprocess` classes:
+
+        (a, b) -> a contains b iff for all points p in b, p is in a
+        (a, b) -> a intersects b iff for any point p in b, p is in a
+
+        I'm currently looking into refactoring these arithmetics into a
+        syntax that more closely resembles it.
         """
         pass
 
 
 class BinPred(BinPredItf):
     def __init__(self, **kwargs):
+        """Root implementation for BinPredItf"""
         self.kwargs = kwargs
 
     def __call__(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
+        """Root implementation of __call__ for BinPredItf..
+
+        Saves the left-hand and right-hand GeoSeries and calls the
+        `_call` method to continue the execution of the binary predicate.
+        """
         self.lhs = lhs
         self.rhs = rhs
         return self._call(lhs, rhs)
 
     def _call(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
+        """
+        Start the processing chain with `self._preprocess` to continue the
+        execution of the binary predicate."""
         return self._preprocess(lhs, rhs)
 
     def _preprocess(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
+        """raises NotImplementedError.
+        A subclass must implement this method."""
         raise NotImplementedError(
             "This method must be implemented by a subclass."
         )
@@ -339,6 +385,8 @@ class BinPred(BinPredItf):
         points: "GeoSeries",
         point_indices: Series,
     ) -> Series:
+        """raises NotImplementedError.
+        A subclass must implement this method."""
         raise NotImplementedError(
             "This method must be implemented by a subclass."
         )
@@ -350,6 +398,9 @@ class BinPred(BinPredItf):
         points: "GeoSeries",
         point_indices: Series,
     ) -> Series:
+        """raises NotImplementedError.
+        A subclass must implement this method.
+        """
         raise NotImplementedError(
             "This method must be implemented by a subclass."
         )
@@ -358,7 +409,9 @@ class BinPred(BinPredItf):
 class NotImplementedRoot(BinPred):
     """A class that is used to raise an error when a binary predicate is
     not implemented for a given combination of left-hand and right-hand
-    GeoSeries types.
+    GeoSeries types. This is useful for delineating which binary predicates
+    are implemented for which GeoSeries types in their appropriate
+    `DispatchDict`.
     """
 
     def __init__(self, *args, **kwargs):

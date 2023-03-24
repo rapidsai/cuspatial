@@ -1,6 +1,5 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
-from cuspatial.core._column.geocolumn import ColumnType
 from cuspatial.core.binpreds.feature_contains import (
     DispatchDict as CONTAINS_DISPATCH_DICT,
 )
@@ -22,11 +21,6 @@ from cuspatial.core.binpreds.feature_overlaps import (
 from cuspatial.core.binpreds.feature_within import (
     DispatchDict as WITHIN_DISPATCH_DICT,
 )
-
-Point = ColumnType.POINT
-MultiPoint = ColumnType.MULTIPOINT
-LineString = ColumnType.LINESTRING
-Polygon = ColumnType.POLYGON
 
 CONTAINS_DISPATCH = CONTAINS_DISPATCH_DICT
 

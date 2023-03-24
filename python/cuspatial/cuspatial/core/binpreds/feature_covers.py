@@ -1,18 +1,22 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-from cuspatial.core._column.geocolumn import ColumnType
 from cuspatial.core.binpreds.binpred_interface import NotImplementedRoot
 from cuspatial.core.binpreds.feature_equals import RootEquals
+from cuspatial.utils.binpred_utils import (
+    LineString,
+    MultiPoint,
+    Point,
+    Polygon,
+)
 
 
 class RootCovers(RootEquals):
+    """Implements the covers predicate across different combinations of
+    geometry types.  For example, a Point-Polygon covers predicate is
+    defined in terms of a Point-Point equals predicate."""
+
     pass
 
-
-Point = ColumnType.POINT
-MultiPoint = ColumnType.MULTIPOINT
-LineString = ColumnType.LINESTRING
-Polygon = ColumnType.POLYGON
 
 DispatchDict = {
     (Point, Point): RootCovers,

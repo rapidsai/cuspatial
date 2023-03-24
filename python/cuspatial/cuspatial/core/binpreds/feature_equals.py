@@ -10,29 +10,58 @@ import cudf
 from cudf import Series
 
 import cuspatial
-from cuspatial.core._column.geocolumn import ColumnType
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     NotImplementedRoot,
+)
+from cuspatial.utils.binpred_utils import (
+    LineString,
+    MultiPoint,
+    Point,
+    Polygon,
 )
 
 GeoSeries = TypeVar("GeoSeries")
 
 
 class RootEquals(BinPred, Generic[GeoSeries]):
-    """Base class for binary predicates that are defined in terms of a
-    root-level binary predicate. For example, a Point-Point Equals
-    predicate is defined in terms of a Point-Point Intersects predicate.
+    """Base class for binary predicates that are defined in terms of the equals
+    basic predicate.  `RootEquals` implements utility functions that are
+    used within many equals-related binary predicates.
     """
 
     def __init__(self, **kwargs):
+        """All binary predicates accept the .align parameter."""
         self.align = kwargs.get("align", False)
 
     def _false(self):
+        """Return a Series of False values"""
         return Series(cp.zeros(len(self.lhs), dtype=cp.bool_))
 
     def _offset_equals(self, lhs, rhs):
-        """Compute the pairwise length equality of two offset arrays"""
+        """Compute the pairwise length equality of two offset arrays. Consider
+        the following example:
+
+        lhs = [0, 3, 5, 7]
+        rhs = [0, 2, 4, 6]
+
+        _offset_equals(lhs, rhs) returns [False, True, True, True]. The first
+        element is False because the first object in lhs has 3 points, while
+        the first object in rhs has 2 points. The remaining elements are True
+        because the remaining objects in lhs and rhs have the same number of
+        points.
+
+        Parameters
+        ----------
+        lhs : cudf.Series
+            left-hand-side offset array
+        rhs : cudf.Series
+            right-hand-side offset array
+
+        Returns
+        -------
+        cudf.Series
+            pairwise length equality"""
         lhs_lengths = lhs[:-1] - lhs[1:]
         rhs_lengths = rhs[:-1] - rhs[1:]
         return lhs_lengths == rhs_lengths
@@ -99,7 +128,26 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         return sorted_df["xy"]
 
     def _sort_multipoint_series(self, coords, offsets):
-        """Sort xy according to bins defined by offset"""
+        """Sort xy according to bins defined by offset. Consider an xy buffer
+        of 20 values and an offset buffer [0, 5]. This means that the first
+        multipoint has 5 points and the second multipoint has 5 points. The
+        first multipoint is sorted by x/y coordinates and the second
+        multipoint is sorted by x/y coordinates. The resultant sorted values
+        are stored in the same offset region, or bin, as the original
+        unsorted values.
+
+        Parameters
+        ----------
+        coords : cudf.Series
+            interleaved x,y coordinates
+        offsets : cudf.Series
+            offsets into coords
+
+        Returns
+        -------
+        cudf.Series
+            Coordinates sorted according to the bins defined by offsets.
+        """
         result = self._sort_interleaved_points_by_offset(
             coords, offsets, ["object_key", "xy", "xy_key"]
         )
@@ -107,6 +155,22 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         return result
 
     def _sort_multipoints(self, lhs, rhs):
+        """Sort the coordinates of the multipoints in the left-hand and
+        right-hand GeoSeries.
+
+        Parameters
+        ----------
+        lhs : GeoSeries
+            The left-hand GeoSeries.
+        rhs : GeoSeries
+            The right-hand GeoSeries.
+
+        Returns
+        -------
+        lhs_result : Tuple
+            A tuple containing the sorted left-hand GeoSeries and the
+            sorted right-hand GeoSeries.
+        """
         lhs_sorted = self._sort_multipoint_series(
             lhs.multipoints.xy, lhs.multipoints.geometry_offset
         )
@@ -225,8 +289,9 @@ class PolygonComplexEquals(RootEquals):
 
 class MultiPointMultiPointEquals(PolygonComplexEquals):
     def _preprocess(self, lhs, rhs):
-        # MultiPoints can be compared either forward or
-        # reversed. We need to compare both directions.
+        """Sort the multipoints by their coordinates. This is necessary
+        because the order of the points in a multipoint is not significant
+        for the equals predicate."""
         (lhs_result, rhs_result) = self._sort_multipoints(lhs, rhs)
         return self._op(lhs_result, rhs_result, rhs_result.point_indices)
 
@@ -237,8 +302,8 @@ class MultiPointMultiPointEquals(PolygonComplexEquals):
 
 class LineStringLineStringEquals(PolygonComplexEquals):
     def _op(self, lhs, rhs, point_indices):
-        # Linestrings can be compared either forward or
-        # reversed. We need to compare both directions.
+        """Linestrings can be compared either forward or reversed. We need
+        to compare both directions."""
         lengths_equal = self._offset_equals(
             lhs.lines.part_offset, rhs.lines.part_offset
         )
@@ -259,12 +324,7 @@ class LineStringLineStringEquals(PolygonComplexEquals):
         )
 
 
-Point = ColumnType.POINT
-MultiPoint = ColumnType.MULTIPOINT
-LineString = ColumnType.LINESTRING
-Polygon = ColumnType.POLYGON
-
-
+"""DispatchDict for Equals operations."""
 DispatchDict = {
     (Point, Point): RootEquals,
     (Point, MultiPoint): NotImplementedRoot,
