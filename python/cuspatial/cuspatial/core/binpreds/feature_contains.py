@@ -7,7 +7,7 @@ import cupy as cp
 import cudf
 from cudf.core.series import Series
 
-from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
+from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     NotImplementedRoot,
@@ -17,6 +17,10 @@ from cuspatial.core.binpreds.feature_equals import (
     DispatchDict as EQUALS_DISPATCH_DICT,
 )
 from cuspatial.utils.binpred_utils import (
+    LineString,
+    MultiPoint,
+    Point,
+    Polygon,
     _count_results_in_multipoint_geometries,
 )
 from cuspatial.utils.column_utils import (
@@ -171,6 +175,23 @@ class RootContains(BinPred, Generic[GeoSeries]):
         ]
 
     def _postprocess_quadtree_result(self, point_indices, point_result):
+        """Postprocess the result of a quadtree contains_properly call.
+
+        Parameters
+        ----------
+        point_indices : cudf.Series
+            The indices of the points in the rhs GeoSeries.
+        point_result : cudf.Series
+            The result of a quadtree contains_properly call. This result
+            contains the `part_index` of the polygon that contains the
+            point, not the polygon index.
+
+        Returns
+        -------
+        cudf.Series
+            A Series of boolean values indicating whether each feature in
+            the rhs GeoSeries is contained in the lhs GeoSeries.
+        """
         if len(point_result) == 0:
             return cudf.Series([False] * len(self.lhs))
 
@@ -232,10 +253,6 @@ class RootContains(BinPred, Generic[GeoSeries]):
         return self._postprocess_quadtree_result(point_indices, op_result)
 
 
-class PolygonPointContains(RootContains):
-    pass
-
-
 class PolygonComplexContains(RootContains):
     """Base class for contains operations that use a complex object on
     the right hand side.
@@ -268,37 +285,16 @@ class PolygonComplexContains(RootContains):
 
 class PointPointContains(RootContains):
     def _preprocess(self, lhs, rhs):
+        """PointPointContains that simply calls the equals predicate on the
+        points."""
         predicate = EQUALS_DISPATCH_DICT[(lhs.column_type, rhs.column_type)](
             align=self.align
         )
         return predicate(lhs, rhs)
 
 
-class PolygonMultiPointContains(PolygonComplexContains):
-    pass
-
-
-class PolygonLineStringContains(PolygonComplexContains):
-    pass
-
-
-class PolygonMultiLineStringContains(PolygonComplexContains):
-    pass
-
-
-class PolygonPolygonContains(PolygonComplexContains):
-    pass
-
-
-class PolygonMultiPolygonContains(PolygonComplexContains):
-    pass
-
-
-Point = ColumnType.POINT
-MultiPoint = ColumnType.MULTIPOINT
-LineString = ColumnType.LINESTRING
-Polygon = ColumnType.POLYGON
-
+"""DispatchDict listing the classes to use for each combination of
+    left and right hand side types. """
 DispatchDict = {
     (Point, Point): PointPointContains,
     (Point, MultiPoint): NotImplementedRoot,
@@ -312,8 +308,8 @@ DispatchDict = {
     (LineString, MultiPoint): NotImplementedRoot,
     (LineString, LineString): NotImplementedRoot,
     (LineString, Polygon): NotImplementedRoot,
-    (Polygon, Point): PolygonPointContains,
-    (Polygon, MultiPoint): PolygonMultiPointContains,
-    (Polygon, LineString): PolygonLineStringContains,
-    (Polygon, Polygon): PolygonPolygonContains,
+    (Polygon, Point): RootContains,
+    (Polygon, MultiPoint): RootContains,
+    (Polygon, LineString): RootContains,
+    (Polygon, Polygon): RootContains,
 }
