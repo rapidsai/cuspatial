@@ -35,8 +35,11 @@ GeoSeries = TypeVar("GeoSeries")
 
 class RootContains(BinPred, Generic[GeoSeries]):
     """Base class for binary predicates that are defined in terms of a
-    root-level binary predicate. For example, a Point-Point Contains
-    predicate is defined in terms of a Point-Point Intersects predicate.
+    `contains` basic predicate. This class implements the logic that underlies
+    `polygon.contains` primarily, and is implemented for many cases.
+
+    Subclasses are selected using the `DispatchDict` located at the end
+    of this file.
     """
 
     def __init__(self, **kwargs):
