@@ -200,8 +200,9 @@ class RootContains(BinPred, Generic[GeoSeries]):
             ["polygon_index", "point_index"]
         ]
 
-    def _prep_allpairs(self, lhs, op_result) -> Union[Series, DataFrame]:
-        """Prepare the allpairs result of a contains_properly call.
+    def _reindex_allpairs(self, lhs, op_result) -> Union[Series, DataFrame]:
+        """Prepare the allpairs result of a contains_properly call as
+        the first step of postprocessing.
 
         Parameters
         ----------
@@ -209,16 +210,16 @@ class RootContains(BinPred, Generic[GeoSeries]):
             The left-hand side of the binary predicate.
         op_result : ContainsOpResult
             The result of the contains_properly call.
+
+        Returns
+        -------
+        cudf.DataFrame
+
         """
-        point_result = op_result.result
-
-        if len(point_result) == 0:
-            return cudf.Series([False] * len(lhs))
-
         # Convert the quadtree part indices df into a polygon indices df
         polygon_indices = (
             self._convert_quadtree_result_from_part_to_polygon_indices(
-                lhs, point_result
+                lhs, op_result.result
             )
         )
         # Because the quadtree contains_properly call returns a list of
@@ -233,8 +234,20 @@ class RootContains(BinPred, Generic[GeoSeries]):
 
         return allpairs_result
 
-    def _postprocess_quadtree_result(self, lhs, rhs, op_result):
-        """Postprocess the result of a quadtree contains_properly call.
+    def _postprocess(self, lhs, rhs, op_result):
+        """Postprocess the output GeoSeries to ensure that they are of the
+        correct type for the predicate.
+
+        Postprocess for contains_properly has to handle multiple input and
+        output configurations.
+
+        The input can be a single polygon, a single multipolygon, or a
+        GeoSeries containing a mix of polygons and multipolygons.
+
+        The input to postprocess is `point_indices`, which can be either a
+        cudf.DataFrame with one row per point and one column per polygon or
+        a cudf.DataFrame containing the point index and the part index for
+        each point in the polygon.
 
         Parameters
         ----------
@@ -242,20 +255,24 @@ class RootContains(BinPred, Generic[GeoSeries]):
             The left-hand side of the binary predicate.
         rhs : GeoSeries
             The right-hand side of the binary predicate.
-        op_result : cudf.Series
-            The result of a quadtree contains_properly call. This result
-            contains the `part_index` of the polygon that contains the
-            point, not the polygon index.
+        preprocessor_output : ContainsOpResult
+            The result of the contains_properly call.
 
         Returns
         -------
-        cudf.Series
+        cudf.Series or cudf.DataFrame
             A Series of boolean values indicating whether each feature in
-            the rhs GeoSeries is contained in the lhs GeoSeries.
+            the rhs GeoSeries is contained in the lhs GeoSeries in the
+            case of allpairs=False. Otherwise, a DataFrame containing the
+            point index and the polygon index for each point in the
+            polygon.
         """
-        allpairs_result = self._prep_allpairs(lhs, op_result)
-        if isinstance(allpairs_result, Series):
-            return allpairs_result
+        if len(op_result.result) == 0:
+            return cudf.Series([False] * len(lhs))
+
+        # Convert the quadtree part indices df into a polygon indices df.
+        # Helps with handling multipolygons.
+        allpairs_result = self._reindex_allpairs(lhs, op_result)
 
         # If the user wants all pairs, return the result. Otherwise,
         # return a boolean series indicating whether each point is
@@ -282,23 +299,6 @@ class RootContains(BinPred, Generic[GeoSeries]):
                 final_result.loc[allpairs_result["polygon_index"]] = True
                 return final_result
 
-    def _postprocess(self, lhs, rhs, preprocessor_output):
-        """Postprocess the output GeoSeries to ensure that they are of the
-        correct type for the predicate.
-
-        Postprocess for contains_properly has to handle multiple input and
-        output configurations.
-
-        The input can be a single polygon, a single multipolygon, or a
-        GeoSeries containing a mix of polygons and multipolygons.
-
-        The input to postprocess is `point_indices`, which can be either a
-        cudf.DataFrame with one row per point and one column per polygon or
-        a cudf.DataFrame containing the point index and the part index for
-        each point in the polygon.
-        """
-        return self._postprocess_quadtree_result(lhs, rhs, preprocessor_output)
-
 
 class PolygonComplexContains(RootContains):
     """Base class for contains operations that use a complex object on
@@ -306,14 +306,15 @@ class PolygonComplexContains(RootContains):
 
     This class is shared by the Polygon*Contains classes that use
     a non-points object on the right hand side: MultiPoint, LineString,
-    MultiLineString, Polygon, and MultiPolygon."""
+    MultiLineString, Polygon, and MultiPolygon.
+    """
 
     def _postprocess(self, lhs, rhs, preprocessor_output):
         # for each input pair i: result[i] =  true iff point[i] is
         # contained in at least one polygon of multipolygon[i].
         # pairwise
         point_indices = preprocessor_output.point_indices
-        allpairs_result = self._prep_allpairs(lhs, preprocessor_output)
+        allpairs_result = self._reindex_allpairs(lhs, preprocessor_output)
         if isinstance(allpairs_result, Series):
             return allpairs_result
 
@@ -339,6 +340,7 @@ class PointPointContains(RootContains):
     def _preprocess(self, lhs, rhs):
         """PointPointContains that simply calls the equals predicate on the
         points."""
+
         predicate = EQUALS_DISPATCH_DICT[(lhs.column_type, rhs.column_type)](
             align=self.config.align
         )
