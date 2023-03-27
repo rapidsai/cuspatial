@@ -1,16 +1,20 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, Union
 
 import cupy as cp
 
 import cudf
+from cudf.core.dataframe import DataFrame
 from cudf.core.series import Series
 
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
+    BinPredConfig,
+    ContainsOpResult,
     NotImplementedRoot,
+    PreprocessorResult,
 )
 from cuspatial.core.binpreds.contains import contains_properly
 from cuspatial.core.binpreds.feature_equals import (
@@ -43,8 +47,8 @@ class RootContains(BinPred, Generic[GeoSeries]):
     """
 
     def __init__(self, **kwargs):
-        self.align = kwargs.get("align", False)
-        self.allpairs = kwargs.get("allpairs", False)
+        self.config = BinPredConfig(**kwargs)
+        self.config.allpairs = kwargs.get("allpairs", False)
 
     def _preprocess(self, lhs, rhs):
         """Flatten any rhs into only its points xy array. This is necessary
@@ -88,9 +92,12 @@ class RootContains(BinPred, Generic[GeoSeries]):
         from cuspatial.core.geoseries import GeoSeries
 
         final_rhs = GeoSeries(GeoColumn._from_points_xy(xy_points._column))
-        return self._op(lhs, final_rhs, Series(point_indices))
+        preprocess_result = PreprocessorResult(
+            lhs, rhs, final_rhs, point_indices
+        )
+        return self._op(lhs, rhs, preprocess_result)
 
-    def _should_use_quadtree(self):
+    def _should_use_quadtree(self, lhs):
         """Determine if the quadtree should be used for the binary predicate.
 
         Returns
@@ -111,11 +118,14 @@ class RootContains(BinPred, Generic[GeoSeries]):
            code complexity would be higher if we did multipolygon
            reconstruction on both code paths.
         """
-        return (
-            len(self.lhs) >= 32 or has_multipolygons(self.lhs) or self.allpairs
-        )
+        return len(lhs) >= 32 or has_multipolygons(lhs) or self.config.allpairs
 
-    def _op(self, lhs, points, point_indices):
+    def _op(
+        self,
+        lhs: "GeoSeries",
+        rhs: "GeoSeries",
+        preprocessor_result: PreprocessorResult,
+    ):
         """Compute the contains_properly relationship between two GeoSeries.
         A feature A contains another feature B if no points of B lie in the
         exterior of A, and at least one point of the interior of B lies in the
@@ -124,14 +134,17 @@ class RootContains(BinPred, Generic[GeoSeries]):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
             )
-        if self._should_use_quadtree():
+        points = preprocessor_result.final_rhs
+        point_indices = preprocessor_result.point_indices
+        if self._should_use_quadtree(lhs):
             result = contains_properly(lhs, points, how="quadtree")
         else:
             result = contains_properly(lhs, points, how="byte-limited")
-        return self._postprocess(lhs, points, point_indices, result)
+        op_result = ContainsOpResult(result, points, point_indices)
+        return self._postprocess(lhs, rhs, op_result)
 
     def _convert_quadtree_result_from_part_to_polygon_indices(
-        self, point_result
+        self, lhs, point_result
     ):
         """Convert the result of a quadtree contains_properly call from
         part indices to polygon indices.
@@ -152,7 +165,7 @@ class RootContains(BinPred, Generic[GeoSeries]):
         """
         # Get the length of each part, map it to indices, and store
         # the result in a dataframe.
-        rings_to_parts = cp.array(self.lhs.polygons.part_offset)
+        rings_to_parts = cp.array(lhs.polygons.part_offset)
         part_sizes = rings_to_parts[1:] - rings_to_parts[:-1]
         parts_map = cudf.Series(
             cp.arange(len(part_sizes)), name="part_index"
@@ -160,7 +173,7 @@ class RootContains(BinPred, Generic[GeoSeries]):
         parts_index_mapping_df = parts_map.reset_index(drop=True).reset_index()
         # Map the length of each polygon in a similar fashion, then
         # join them below.
-        parts_to_geoms = cp.array(self.lhs.polygons.geometry_offset)
+        parts_to_geoms = cp.array(lhs.polygons.geometry_offset)
         geometry_sizes = parts_to_geoms[1:] - parts_to_geoms[:-1]
         geometry_map = cudf.Series(
             cp.arange(len(geometry_sizes)), name="polygon_index"
@@ -177,7 +190,31 @@ class RootContains(BinPred, Generic[GeoSeries]):
             ["polygon_index", "point_index"]
         ]
 
-    def _postprocess_quadtree_result(self, point_indices, point_result):
+    def _prep_allpairs(self, lhs, op_result) -> Union[Series, DataFrame]:
+        point_result = op_result.result
+
+        if len(point_result) == 0:
+            return cudf.Series([False] * len(lhs))
+
+        # Convert the quadtree part indices df into a polygon indices df
+        polygon_indices = (
+            self._convert_quadtree_result_from_part_to_polygon_indices(
+                lhs, point_result
+            )
+        )
+        # Because the quadtree contains_properly call returns a list of
+        # points that are contained in each part, parts can be duplicated
+        # once their index is converted to a polygon index.
+        allpairs_result = polygon_indices.drop_duplicates()
+
+        # Replace the polygon index with the original index
+        allpairs_result["polygon_index"] = allpairs_result[
+            "polygon_index"
+        ].replace(Series(lhs.index, index=cp.arange(len(lhs.index))))
+
+        return allpairs_result
+
+    def _postprocess_quadtree_result(self, lhs, rhs, op_result):
         """Postprocess the result of a quadtree contains_properly call.
 
         Parameters
@@ -195,50 +232,36 @@ class RootContains(BinPred, Generic[GeoSeries]):
             A Series of boolean values indicating whether each feature in
             the rhs GeoSeries is contained in the lhs GeoSeries.
         """
-        if len(point_result) == 0:
-            return cudf.Series([False] * len(self.lhs))
-
-        # Convert the quadtree part indices df into a polygon indices df
-        polygon_indices = (
-            self._convert_quadtree_result_from_part_to_polygon_indices(
-                point_result
-            )
-        )
-        # Because the quadtree contains_properly call returns a list of
-        # points that are contained in each part, parts can be duplicated
-        # once their index is converted to a polygon index.
-        allpairs_result = polygon_indices.drop_duplicates()
-
-        # Replace the polygon index with the original index
-        allpairs_result["polygon_index"] = allpairs_result[
-            "polygon_index"
-        ].replace(Series(self.lhs.index, index=cp.arange(len(self.lhs.index))))
+        allpairs_result = self._prep_allpairs(lhs, op_result)
+        if isinstance(allpairs_result, Series):
+            return allpairs_result
 
         # If the user wants all pairs, return the result. Otherwise,
         # return a boolean series indicating whether each point is
         # contained in the corresponding polygon.
-        if self.allpairs:
+        if self.config.allpairs:
             return allpairs_result
         else:
             # for each input pair i: result[i] =  true iff point[i] is
             # contained in at least one polygon of multipolygon[i].
             # pairwise
-            if len(self.lhs) == len(self.rhs):
+            if len(lhs) == len(rhs):
                 matches = (
                     allpairs_result["polygon_index"]
                     == allpairs_result["point_index"]
                 )
-                final_result = Series([False] * len(point_indices))
+                polygon_indexes = allpairs_result["polygon_index"][matches]
+                final_result = Series([False] * len(rhs))
                 final_result.loc[
-                    allpairs_result["polygon_index"][matches]
+                    op_result.point_indices[polygon_indexes]
                 ] = True
                 return final_result
             else:
-                final_result = Series([False] * len(point_indices))
+                final_result = Series([False] * len(rhs))
                 final_result.loc[allpairs_result["polygon_index"]] = True
                 return final_result
 
-    def _postprocess(self, lhs, rhs, point_indices, op_result):
+    def _postprocess(self, lhs, rhs, preprocessor_output):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate.
 
@@ -253,7 +276,7 @@ class RootContains(BinPred, Generic[GeoSeries]):
         a cudf.DataFrame containing the point index and the part index for
         each point in the polygon.
         """
-        return self._postprocess_quadtree_result(point_indices, op_result)
+        return self._postprocess_quadtree_result(lhs, rhs, preprocessor_output)
 
 
 class PolygonComplexContains(RootContains):
@@ -264,10 +287,15 @@ class PolygonComplexContains(RootContains):
     a non-points object on the right hand side: MultiPoint, LineString,
     MultiLineString, Polygon, and MultiPolygon."""
 
-    def _postprocess(self, lhs, rhs, point_indices, allpairs_result):
+    def _postprocess(self, lhs, rhs, preprocessor_output):
         # for each input pair i: result[i] =  true iff point[i] is
         # contained in at least one polygon of multipolygon[i].
         # pairwise
+        point_indices = preprocessor_output.point_indices
+        allpairs_result = self._prep_allpairs(lhs, preprocessor_output)
+        if isinstance(allpairs_result, Series):
+            return allpairs_result
+
         (hits, expected_count,) = _count_results_in_multipoint_geometries(
             point_indices, allpairs_result
         )
@@ -291,7 +319,7 @@ class PointPointContains(RootContains):
         """PointPointContains that simply calls the equals predicate on the
         points."""
         predicate = EQUALS_DISPATCH_DICT[(lhs.column_type, rhs.column_type)](
-            align=self.align
+            align=self.config.align
         )
         return predicate(lhs, rhs)
 
@@ -312,7 +340,7 @@ DispatchDict = {
     (LineString, LineString): NotImplementedRoot,
     (LineString, Polygon): NotImplementedRoot,
     (Polygon, Point): RootContains,
-    (Polygon, MultiPoint): RootContains,
-    (Polygon, LineString): RootContains,
-    (Polygon, Polygon): RootContains,
+    (Polygon, MultiPoint): PolygonComplexContains,
+    (Polygon, LineString): PolygonComplexContains,
+    (Polygon, Polygon): PolygonComplexContains,
 }

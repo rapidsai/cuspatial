@@ -12,7 +12,9 @@ from cudf import Series
 import cuspatial
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
+    EqualsOpResult,
     NotImplementedRoot,
+    PreprocessorResult,
 )
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -34,9 +36,9 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         """All binary predicates accept the .align parameter."""
         self.align = kwargs.get("align", False)
 
-    def _false(self):
+    def _false(self, lhs):
         """Return a Series of False values"""
-        return Series(cp.zeros(len(self.lhs), dtype=cp.bool_))
+        return Series(cp.zeros(len(lhs), dtype=cp.bool_))
 
     def _offset_equals(self, lhs, rhs):
         """Compute the pairwise length equality of two offset arrays. Consider
@@ -227,8 +229,8 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         # Any unmatched type is not equal
         if (type_compare == False).all():  # noqa: E712
             # Override _op so that it will not be run.
-            return self._false()
-        return self._op(lhs, rhs, rhs.point_indices)
+            return self._false(lhs)
+        return self._op(lhs, rhs, PreprocessorResult(None, rhs.point_indices))
 
     def _vertices_equals(self, lhs: Series, rhs: Series):
         """Compute the equals relationship between interleaved xy
@@ -242,39 +244,35 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         b = rhs[1:length:2]._column == lhs[1:length:2]._column
         return a & b
 
-    def _op(self, lhs, rhs, point_indices):
+    def _op(self, lhs, rhs, preprocessor_result):
         """Perform the binary predicate operation on the input GeoSeries.
         The lhs and rhs are `GeoSeries` of points, and the point_indices
         are the indices of the points in the rhs GeoSeries that correspond
         to each feature in the rhs GeoSeries.
         """
         result = self._vertices_equals(lhs.points.xy, rhs.points.xy)
-        return self._postprocess(lhs, rhs, point_indices, result)
+        return self._postprocess(
+            lhs, rhs, EqualsOpResult(result, preprocessor_result.point_indices)
+        )
 
-    # TODO: Function signature here doesn't support the existing function
-    # signature.
-    # I need to receive, for this predicate, the set of lengths, a cudf Series
-    # of booleans that determines if the lengths of linestrings in the lhs and
-    # rhs are the same size and the set of indices that correspond to the
-    # lengths that are equal.
-    def _postprocess(self, lhs, rhs, point_indices, point_result):
+    def _postprocess(self, lhs, rhs, op_result):
         """Postprocess the output GeoSeries to combine the resulting
         comparisons into a single boolean value for each feature in the
         rhs GeoSeries.
         """
-        return point_result
+        return op_result.result
 
 
 class PolygonComplexEquals(RootEquals):
-    def _postprocess(self, lhs, rhs, point_indices, point_result):
+    def _postprocess(self, lhs, rhs, op_result):
         """Postprocess the output GeoSeries to combine the resulting
         comparisons into a single boolean value for each feature in the
         rhs GeoSeries.
         """
-        if len(point_result) == 0:
+        if len(op_result.result) == 0:
             return cudf.Series(cp.tile([False], len(lhs)), dtype="bool")
         result_df = cudf.DataFrame(
-            {"idx": point_indices, "equals": point_result}
+            {"idx": op_result.point_indices, "equals": op_result.result}
         )
         gb_idx = result_df.groupby("idx")
         feature_equals_linestring = (
@@ -297,11 +295,13 @@ class MultiPointMultiPointEquals(PolygonComplexEquals):
 
     def _op(self, lhs, rhs, point_indices):
         result = self._vertices_equals(lhs.multipoints.xy, rhs.multipoints.xy)
-        return self._postprocess(lhs, rhs, point_indices, result)
+        return self._postprocess(
+            lhs, rhs, EqualsOpResult(result, point_indices)
+        )
 
 
 class LineStringLineStringEquals(PolygonComplexEquals):
-    def _op(self, lhs, rhs, point_indices):
+    def _op(self, lhs, rhs, preprocessor_result):
         """Linestrings can be compared either forward or reversed. We need
         to compare both directions."""
         lengths_equal = self._offset_equals(
@@ -320,7 +320,7 @@ class LineStringLineStringEquals(PolygonComplexEquals):
         )
         result = forward_result | reverse_result
         return self._postprocess(
-            lhs, rhs, lhs_lengths_equal.point_indices, result
+            lhs, rhs, EqualsOpResult(result, lhs_lengths_equal.point_indices)
         )
 
 

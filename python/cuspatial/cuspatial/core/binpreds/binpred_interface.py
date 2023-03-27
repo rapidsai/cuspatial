@@ -9,6 +9,172 @@ if TYPE_CHECKING:
     from cuspatial.core.geoseries import GeoSeries
 
 
+class BinPredConfig:
+    """Configuration for a binary predicate.
+
+    Parameters
+    ----------
+    align : bool
+        Whether to align the left-hand and right-hand GeoSeries before
+        computing the binary predicate. Defaults to True.
+    allpairs : bool
+        Whether to compute the binary predicate between all pairs of
+        features in the left-hand and right-hand GeoSeries. Defaults to
+        False. Only available with the contains predicate.
+
+    Attributes
+    ----------
+    align : bool
+        Whether to align the left-hand and right-hand GeoSeries before
+        computing the binary predicate.
+    allpairs : bool
+        Whether to compute the binary predicate between all pairs of
+        features in the left-hand and right-hand GeoSeries. Only available
+        with the contains predicate.
+    """
+
+    def __init__(self, **kwargs):
+        self.align = kwargs.get("align", True)
+
+    def __repr__(self):
+        return f"BinpredConfig(align={self.align}, allpairs={self.allpairs})"
+
+    def __str__(self):
+        return self.__repr__()
+
+
+class PreprocessorResult:
+    """Result of a binary predicate preprocessor. The following classes
+    are used to give all implementors of `BinaryItf` a common interface
+    for preprocessor results.
+
+    Parameters
+    ----------
+    lhs : GeoSeries
+        The left-hand GeoSeries.
+    rhs : GeoSeries
+        The right-hand GeoSeries.
+    points : GeoSeries
+        A GeoSeries of points.
+    point_indices : cudf.Series
+        A cudf.Series of indices that map each point in `points` to its
+        corresponding feature in the right-hand GeoSeries.
+
+    Attributes
+    ----------
+    lhs : GeoSeries
+        The left-hand GeoSeries.
+    rhs : GeoSeries
+        The right-hand GeoSeries.
+    points : GeoSeries
+        A GeoSeries of points.
+    point_indices : cudf.Series
+        A cudf.Series of indices that map each point in `points` to its
+        corresponding feature in the right-hand GeoSeries.
+    """
+
+    def __init__(
+        self,
+        lhs: "GeoSeries",
+        rhs: "GeoSeries",
+        final_rhs: "GeoSeries" = None,
+        point_indices: Series = None,
+    ):
+        self.lhs = lhs
+        self.rhs = rhs
+        self.final_rhs = final_rhs
+        self.point_indices = point_indices
+
+    def __repr__(self):
+        return f"PreprocessorResult(lhs={self.lhs}, rhs={self.rhs}, \
+        points={self.points}, point_indices={self.point_indices})"
+
+    def __str__(self):
+        return self.__repr__()
+
+
+class OpResult:
+    """Result of a binary predicate operation."""
+
+    pass
+
+
+class ContainsOpResult(OpResult):
+    """Result of a binary predicate operation.
+
+    Parameters
+    ----------
+    result : cudf.Series
+        A cudf.Series of boolean values indicating whether each feature in
+        the right-hand GeoSeries satisfies the requirements of a binary
+        predicate with its corresponding feature in the left-hand GeoSeries.
+    points : GeoSeries
+        A GeoSeries of points.
+    point_indices : cudf.Series
+        A cudf.Series of indices that map each point in `points` to its
+        corresponding feature in the right-hand GeoSeries.
+
+    Attributes
+    ----------
+    result : cudf.Series
+        A cudf.Series of boolean values indicating whether each feature in
+        the right-hand GeoSeries satisfies the requirements of a binary
+        predicate with its corresponding feature in the left-hand GeoSeries.
+    points : GeoSeries
+        A GeoSeries of points.
+    point_indices : cudf.Series
+        A cudf.Series of indices that map each point in `points` to its
+        corresponding feature in the right-hand GeoSeries.
+    """
+
+    def __init__(
+        self,
+        result: Series,
+        points: "GeoSeries" = None,
+        point_indices: Series = None,
+    ):
+        self.result = result
+        self.points = points
+        self.point_indices = point_indices
+
+    def __repr__(self):
+        return f"OpResult(result={self.result}, points={self.points}, \
+        point_indices={self.point_indices})"
+
+    def __str__(self):
+        return self.__repr__()
+
+
+class EqualsOpResult(OpResult):
+    """Result of a binary predicate operation.
+
+    Parameters
+    ----------
+    result : cudf.Series
+        A cudf.Series of boolean values indicating whether each feature in
+        the right-hand GeoSeries satisfies the requirements of a binary
+        predicate with its corresponding feature in the left-hand GeoSeries.
+
+    Attributes
+    ----------
+    result : cudf.Series
+        A cudf.Series of boolean values indicating whether each feature in
+        the right-hand GeoSeries satisfies the requirements of a binary
+        predicate with its corresponding feature in the left-hand GeoSeries.
+    """
+
+    def __init__(self, result: Series, point_indices: Series):
+        self.result = result
+        self.point_indices = point_indices
+
+    def __repr__(self):
+        return f"OpResult(result={self.result}) \
+        point_indices={self.point_indices}"
+
+    def __str__(self):
+        return self.__repr__()
+
+
 class BinPredItf(ABC):
     """Base class for binary predicates. This class is an abstract base class
     and can not be instantiated directly. `BinPred` is the base class that
@@ -45,11 +211,11 @@ class BinPredItf(ABC):
     >>> from cuspatial.core.binpreds.binpred_dispatch import CONTAINS_DISPATCH
     >>> from cuspatial.core.geoseries import GeoSeries
     >>> from shapely.geometry import Point, Polygon
-    >>> lhs = GeoSeries([Polygon([(0, 0), (1, 1), (1, 0)])])
-    >>> rhs = GeoSeries([Point(0, 0), Point(1, 1)])
     >>> predicate = CONTAINS_DISPATCH[(
     ...     lhs.column_type, rhs.column_type
     ... )](align=True, allpairs=False)
+    >>> lhs = GeoSeries([Polygon([(0, 0), (1, 1), (1, 0)])])
+    >>> rhs = GeoSeries([Point(0, 0), Point(1, 1)])
     >>> print(predicate(lhs, rhs))
     0    False
     dtype: bool
@@ -72,10 +238,6 @@ class BinPredItf(ABC):
 
         Attributes
         ----------
-        lhs : GeoSeries
-            The left-hand GeoSeries.
-        rhs : GeoSeries
-            The right-hand GeoSeries.
         kwargs : dict
             Any additional arguments to be used at runtime.
 
@@ -105,11 +267,11 @@ class BinPredItf(ABC):
         ... )
         >>> from cuspatial.core.geoseries import GeoSeries
         >>> from shapely.geometry import Point, Polygon
-        >>> lhs = GeoSeries([Polygon([(0, 0), (1, 1), (1, 0)])])
-        >>> rhs = GeoSeries([Point(0, 0), Point(1, 1)])
         >>> predicate = CONTAINS_DISPATCH[(
         ...     lhs.column_type, rhs.column_type
         ... )](align=True, allpairs=False)
+        >>> lhs = GeoSeries([Polygon([(0, 0), (1, 1), (1, 0)])])
+        >>> rhs = GeoSeries([Point(0, 0), Point(1, 1)])
         >>> print(predicate(lhs, rhs))
         0    False
         dtype: bool
@@ -142,17 +304,15 @@ class BinPredItf(ABC):
         ... )
         >>> from cuspatial.core.geoseries import GeoSeries
         >>> from shapely.geometry import Point, Polygon
-        >>> lhs = GeoSeries([Polygon([(0, 0), (1, 1), (1, 0)])])
-        >>> rhs = GeoSeries([Point(0, 0), Point(1, 1)])
         >>> predicate = CONTAINS_DISPATCH[(
         ...     lhs.column_type, rhs.column_type
         ... )](align=True, allpairs=False)
+        >>> lhs = GeoSeries([Polygon([(0, 0), (1, 1), (1, 0)])])
+        >>> rhs = GeoSeries([Point(0, 0), Point(1, 1)])
         >>> print(predicate(lhs, rhs))
         0    False
         dtype: bool
         """
-        self.lhs = lhs
-        self.rhs = rhs
         return self._call(lhs, rhs)
 
     @abstractmethod
@@ -214,17 +374,15 @@ class BinPredItf(ABC):
             GeoSeries.
         """
         # TODO: Update this as changing `_op` signature is complete.
-        points = None
-        point_indices = None
-        return self._op(lhs, rhs, points, point_indices)
+        result = PreprocessorResult(lhs, rhs)
+        return self._op(lhs, rhs, result)
 
     @abstractmethod
     def _op(
         self,
         lhs: "GeoSeries",
         rhs: "GeoSeries",
-        points: "GeoSeries",
-        point_indices: Series,
+        preprocessor_result: PreprocessorResult,
     ) -> Series:
         """Compute the binary predicate between two GeoSeries. This method
         is implemented by the subclass. This method is called by `_preprocess`
@@ -263,15 +421,20 @@ class BinPredItf(ABC):
             A cudf.Series of indices that map each point in `points` to its
             corresponding feature in the right-hand GeoSeries.
         """
-        pass
+        result = OpResult(
+            lhs,
+            rhs,
+            preprocessor_result.points,
+            preprocessor_result.point_indices,
+        )
+        return self._postprocess(lhs, rhs, result)
 
     @abstractmethod
     def _postprocess(
         self,
         lhs: "GeoSeries",
         rhs: "GeoSeries",
-        point_indices: Series,
-        op_result: Series,
+        op_result: OpResult,
     ) -> Series:
         """Postprocess the output GeoSeries to ensure that they are of the
         correct return type for the predicate. This method is implemented by
@@ -318,7 +481,7 @@ class BinPredItf(ABC):
         I'm currently looking into refactoring these arithmetics into a
         syntax that more closely resembles it.
         """
-        pass
+        return op_result
 
 
 class BinPred(BinPredItf):
@@ -332,8 +495,6 @@ class BinPred(BinPredItf):
         Saves the left-hand and right-hand GeoSeries and calls the
         `_call` method to continue the execution of the binary predicate.
         """
-        self.lhs = lhs
-        self.rhs = rhs
         return self._call(lhs, rhs)
 
     def _call(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
@@ -353,8 +514,7 @@ class BinPred(BinPredItf):
         self,
         lhs: "GeoSeries",
         rhs: "GeoSeries",
-        points: "GeoSeries",
-        point_indices: Series,
+        preprocessor_result: PreprocessorResult,
     ) -> Series:
         """raises NotImplementedError.
         A subclass must implement this method."""
@@ -366,8 +526,7 @@ class BinPred(BinPredItf):
         self,
         lhs: "GeoSeries",
         rhs: "GeoSeries",
-        points: "GeoSeries",
-        point_indices: Series,
+        op_result: OpResult,
     ) -> Series:
         """raises NotImplementedError.
         A subclass must implement this method.

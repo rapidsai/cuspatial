@@ -5,7 +5,11 @@ import cupy as cp
 import cudf
 
 from cuspatial.core._column.geocolumn import ColumnType
-from cuspatial.core.binpreds.binpred_interface import NotImplementedRoot
+from cuspatial.core.binpreds.binpred_interface import (
+    ContainsOpResult,
+    NotImplementedRoot,
+    PreprocessorResult,
+)
 from cuspatial.core.binpreds.feature_contains import RootContains
 from cuspatial.core.binpreds.feature_equals import RootEquals
 from cuspatial.utils.column_utils import has_same_geometry
@@ -18,14 +22,18 @@ class RootOverlaps(RootEquals):
     """
 
     def _preprocess(self, lhs, rhs):
-        return self._op(lhs, rhs, rhs.point_indices)
+        return self._op(lhs, rhs, PreprocessorResult(None, rhs.point_indices))
 
-    def _op(self, lhs, rhs, point_indices):
-        result = super()._op(lhs, rhs, point_indices)
-        return self._postprocess(lhs, rhs, point_indices, result)
+    def _op(self, lhs, rhs, preprocessor_result):
+        result = super()._op(lhs, rhs, preprocessor_result)
+        return self._postprocess(
+            lhs,
+            rhs,
+            ContainsOpResult(result, preprocessor_result.point_indices),
+        )
 
-    def _postprocess(self, lhs, rhs, point_indices, point_result):
-        return super()._postprocess(lhs, rhs, point_indices, point_result)
+    def _postprocess(self, lhs, rhs, op_result):
+        return super()._postprocess(lhs, rhs, op_result)
 
 
 class PointPointOverlaps(RootOverlaps):
@@ -35,20 +43,20 @@ class PointPointOverlaps(RootOverlaps):
 
 
 class PolygonPointOverlaps(RootContains):
-    def _postprocess(self, lhs, rhs, point_indices, point_result):
-        if not has_same_geometry(self.lhs, self.rhs):
-            return cudf.Series([False] * len(self.lhs))
-        if len(point_result) == 0:
-            return cudf.Series([False] * len(self.lhs))
+    def _postprocess(self, lhs, rhs, op_result):
+        if not has_same_geometry(lhs, rhs):
+            return cudf.Series([False] * len(lhs))
+        if len(op_result.point_result) == 0:
+            return cudf.Series([False] * len(lhs))
         polygon_indices = (
             self._convert_quadtree_result_from_part_to_polygon_indices(
-                point_result
+                op_result.point_result
             )
         )
         group_counts = polygon_indices.groupby("polygon_index").count()
         point_counts = (
             cudf.DataFrame(
-                {"point_indices": point_indices, "input_size": True}
+                {"point_indices": op_result.point_indices, "input_size": True}
             )
             .groupby("point_indices")
             .count()

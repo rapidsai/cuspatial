@@ -16,46 +16,40 @@ class RootWithin(RootEquals):
     """
 
     def _preprocess(self, lhs, rhs):
-        self.lhs = rhs
-        self.rhs = lhs
         return super()._preprocess(rhs, lhs)
 
 
 class PointPointWithin(RootWithin):
-    def _postprocess(self, lhs, rhs, point_indices, point_result):
-        return cudf.Series(point_result)
+    def _postprocess(self, lhs, rhs, op_result):
+        return cudf.Series(op_result.result)
 
 
 class PointPolygonWithin(RootContains):
     def _preprocess(self, lhs, rhs):
-        self.lhs = rhs
-        self.rhs = lhs
         return super()._preprocess(rhs, lhs)
 
-    def _op(self, lhs, rhs, point_indices):
-        return super()._op(lhs, rhs, point_indices)
+    def _op(self, lhs, rhs, preprocessor_result):
+        return super()._op(lhs, rhs, preprocessor_result)
 
-    def _postprocess(self, lhs, rhs, point_indices, point_result):
-        return super()._postprocess(lhs, rhs, point_indices, point_result)
+    def _postprocess(self, lhs, rhs, op_result):
+        return super()._postprocess(lhs, rhs, op_result)
 
 
 class ComplexPolygonWithin(RootContains):
     def _preprocess(self, lhs, rhs):
-        self.lhs = rhs
-        self.rhs = lhs
         return super()._preprocess(rhs, lhs)
 
-    def _op(self, lhs, rhs, point_indices):
-        return super()._op(lhs, rhs, point_indices)
+    def _op(self, lhs, rhs, preprocessor_result):
+        return super()._op(lhs, rhs, preprocessor_result)
 
-    def _postprocess(self, lhs, rhs, point_indices, point_result):
+    def _postprocess(self, lhs, rhs, op_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate."""
         (
             hits,
             expected_count,
         ) = binpred_utils._count_results_in_multipoint_geometries(
-            point_indices, point_result
+            op_result.point_indices, op_result.result
         )
         result_df = hits.reset_index().merge(
             expected_count.reset_index(), on="rhs_index"
@@ -64,7 +58,7 @@ class ComplexPolygonWithin(RootContains):
             result_df["point_index_x"] >= result_df["point_index_y"]
         )
         final_result = cudf.Series(
-            [False] * (point_indices.max().item() + 1)
+            [False] * (op_result.point_indices.max().item() + 1)
         )  # point_indices is zero index
         final_result.loc[
             result_df["rhs_index"][result_df["feature_in_polygon"]]
