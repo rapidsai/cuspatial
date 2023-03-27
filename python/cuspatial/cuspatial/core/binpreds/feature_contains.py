@@ -47,12 +47,22 @@ class RootContains(BinPred, Generic[GeoSeries]):
     """
 
     def __init__(self, **kwargs):
+        """`RootContains` constructor.
+
+        Parameters
+        ----------
+        allpairs: bool
+            Whether to compute all pairs of features in the left-hand and
+            right-hand GeoSeries. If False, the feature will be compared in a
+            1:1 fashion with the corresponding feature in the other GeoSeries.
+        """
         self.config = BinPredConfig(**kwargs)
         self.config.allpairs = kwargs.get("allpairs", False)
 
     def _preprocess(self, lhs, rhs):
         """Flatten any rhs into only its points xy array. This is necessary
-        because the root-level binary predicate only accepts points.
+        because the basic predicate for contains, point-in-polygon,
+        only accepts points.
 
         Parameters
         ----------
@@ -65,9 +75,9 @@ class RootContains(BinPred, Generic[GeoSeries]):
         -------
         result : GeoSeries
             A GeoSeries of boolean values indicating whether each feature in
-            the right-hand GeoSeries satisfies the requirements of a binary
-            predicate with its corresponding feature in the left-hand
-            GeoSeries.
+            the right-hand GeoSeries satisfies the requirements of the point-
+            in-polygon basic predicate with its corresponding feature in the
+            left-hand GeoSeries.
         """
         # RHS conditioning:
         point_indices = None
@@ -191,6 +201,15 @@ class RootContains(BinPred, Generic[GeoSeries]):
         ]
 
     def _prep_allpairs(self, lhs, op_result) -> Union[Series, DataFrame]:
+        """Prepare the allpairs result of a contains_properly call.
+
+        Parameters
+        ----------
+        lhs : GeoSeries
+            The left-hand side of the binary predicate.
+        op_result : ContainsOpResult
+            The result of the contains_properly call.
+        """
         point_result = op_result.result
 
         if len(point_result) == 0:
@@ -219,9 +238,11 @@ class RootContains(BinPred, Generic[GeoSeries]):
 
         Parameters
         ----------
-        point_indices : cudf.Series
-            The indices of the points in the rhs GeoSeries.
-        point_result : cudf.Series
+        lhs : GeoSeries
+            The left-hand side of the binary predicate.
+        rhs : GeoSeries
+            The right-hand side of the binary predicate.
+        op_result : cudf.Series
             The result of a quadtree contains_properly call. This result
             contains the `part_index` of the polygon that contains the
             point, not the polygon index.

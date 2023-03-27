@@ -54,8 +54,10 @@ class PreprocessorResult:
         The left-hand GeoSeries.
     rhs : GeoSeries
         The right-hand GeoSeries.
-    points : GeoSeries
-        A GeoSeries of points.
+    final_rhs : GeoSeries
+        The rhs GeoSeries, if modified by the preprocessor. For example
+        the contains preprocessor converts any complex feature type into
+        a collection of points.
     point_indices : cudf.Series
         A cudf.Series of indices that map each point in `points` to its
         corresponding feature in the right-hand GeoSeries.
@@ -66,8 +68,10 @@ class PreprocessorResult:
         The left-hand GeoSeries.
     rhs : GeoSeries
         The right-hand GeoSeries.
-    points : GeoSeries
-        A GeoSeries of points.
+    final_rhs : GeoSeries
+        The rhs GeoSeries, if modified by the preprocessor. For example
+        the contains preprocessor converts any complex feature type into
+        a collection of points.
     point_indices : cudf.Series
         A cudf.Series of indices that map each point in `points` to its
         corresponding feature in the right-hand GeoSeries.
@@ -104,10 +108,11 @@ class ContainsOpResult(OpResult):
 
     Parameters
     ----------
-    result : cudf.Series
-        A cudf.Series of boolean values indicating whether each feature in
-        the right-hand GeoSeries satisfies the requirements of a binary
-        predicate with its corresponding feature in the left-hand GeoSeries.
+    result : cudf.DataFrame
+        A cudf.DataFrame containing two columns: "polygon_index" and
+        Point_index". The "polygon_index" column contains the index of
+        the polygon that contains each point. The "point_index" column
+        contains the index of each point that is contained by a polygon.
     points : GeoSeries
         A GeoSeries of points.
     point_indices : cudf.Series
@@ -116,10 +121,11 @@ class ContainsOpResult(OpResult):
 
     Attributes
     ----------
-    result : cudf.Series
-        A cudf.Series of boolean values indicating whether each feature in
-        the right-hand GeoSeries satisfies the requirements of a binary
-        predicate with its corresponding feature in the left-hand GeoSeries.
+    result : cudf.DataFrame
+        A cudf.DataFrame containing two columns: "polygon_index" and
+        Point_index". The "polygon_index" column contains the index of
+        the polygon that contains each point. The "point_index" column
+        contains the index of each point that is contained by a polygon.
     points : GeoSeries
         A GeoSeries of points.
     point_indices : cudf.Series
@@ -152,15 +158,21 @@ class EqualsOpResult(OpResult):
     ----------
     result : cudf.Series
         A cudf.Series of boolean values indicating whether each feature in
-        the right-hand GeoSeries satisfies the requirements of a binary
-        predicate with its corresponding feature in the left-hand GeoSeries.
+        the right-hand GeoSeries is equal to the point in the left-hand
+        GeoSeries.
+    point_indices: cudf.Series
+        A cudf.Series of indices that map each point in `points` to its
+        corresponding feature in the right-hand GeoSeries.
 
     Attributes
     ----------
     result : cudf.Series
         A cudf.Series of boolean values indicating whether each feature in
-        the right-hand GeoSeries satisfies the requirements of a binary
-        predicate with its corresponding feature in the left-hand GeoSeries.
+        the right-hand GeoSeries is equal to the point in the left-hand
+        GeoSeries.
+    point_indices: cudf.Series
+        A cudf.Series of indices that map each point in `points` to its
+        corresponding feature in the right-hand GeoSeries.
     """
 
     def __init__(self, result: Series, point_indices: Series):
@@ -189,9 +201,9 @@ class BinPredItf(ABC):
     -----
     BinPred classes are selected using the appropriate dispatch function. For
     example, the `contains_properly` predicate is selected using the
-    `contains_dispatch` dispatch function. The dispatch function selects the
-    appropriate BinPred class based on the left-hand and right-hand GeoSeries
-    types.
+    `CONTAINS_DISPATCH` dispatch function from `binpred_dispatch.py`. The
+    dispatch function selects the appropriate BinPred class based on the
+    left-hand and right-hand GeoSeries types.
 
     This enables customized behavior for each combination of left-hand and
     right-hand GeoSeries types and binary predicates. For example, the
@@ -200,11 +212,13 @@ class BinPredItf(ABC):
     predicate for a `Point` GeoSeries and a `Polygon` GeoSeries is implemented
     using a `PointPolygonContains` BinPred class. Most subclasses will be able
     to use all or 2/3rds of the methods defined in the `RootContains(BinPred)
-    class`. The `RootContains` class implements the `contains_properly`
-    predicate for the most common combination of left-hand and right-hand
-    GeoSeries types. The `RootContains` class can be used as a template for
-    implementing the `contains_properly` predicate for other combinations of
-    left-hand and right-hand GeoSeries types.
+    class`.
+
+    The `RootContains` class implements the `contains_properly` predicate for
+    the most common combination of left-hand and right-hand GeoSeries types.
+    The `RootContains` class can be used as a template for implementing the
+    `contains_properly` predicate for other combinations of left-hand and
+    right-hand GeoSeries types.
 
     Examples
     --------
@@ -226,7 +240,7 @@ class BinPredItf(ABC):
         """Initialize a binary predicate. Collects any arguments passed
         to the binary predicate to be used at runtime.
 
-        This class stores the parameters that can be passed to the binary
+        This class stores the config object that can be passed to the binary
         predicate at runtime. The lhs and rhs are set at runtime using the
         __call__ method so that the same binary predicate can be used for
         multiple left-hand and right-hand GeoSeries.
@@ -354,7 +368,7 @@ class BinPredItf(ABC):
 
         Subclasses that implement `_preprocess` are responsible for calling
         `_compute_predicate` to continue the execution of the binary predicate.
-        The last line of `_preprocess` should be
+        The last line of `_preprocess` as implemented by any subclass should be
 
             return self._compute_predicate(lhs, rhs, points, point_indices)
 
@@ -389,22 +403,27 @@ class BinPredItf(ABC):
         is responsible for calling `_postprocess` to complete the execution of
         the binary predicate.
 
-        Op is used to compute the binary predicate, or composition of binary
-        predicates, between two GeoSeries. The left-hand GeoSeries is
-        considered the "base" GeoSeries and the right-hand GeoSeries is
-        considered the "other" GeoSeries. The binary predicate is computed
-        between each feature in the base GeoSeries and the other GeoSeries.
-        The result is a GeoSeries of boolean values indicating whether each
-        feature in the other GeoSeries satisfies the requirements of a binary
-        predicate with its corresponding feature in the base GeoSeries.
+        `compute_predicate` is used to compute the binary predicate, or
+        composition of binary predicates, between two GeoSeries. The left-hand
+        GeoSeries is considered the "base" GeoSeries and the right-hand
+        GeoSeries is considered the "other" GeoSeries. The binary predicate is
+        computed between each feature in the base GeoSeries and the other
+        GeoSeries.  The result is a GeoSeries of boolean values indicating
+        whether each feature in the other GeoSeries satisfies the requirements
+        of a binary predicate with its corresponding feature in the base
+        GeoSeries.
 
         Subclasses that implement `_compute_predicate` are responsible for
         calling `_postprocess` to complete the execution of the binary
         predicate. The last line of `_compute_predicate` should be
 
-            return self._postprocess(lhs, rhs, points, point_indices)
+            return self._postprocess(
+                lhs,
+                rhs,
+                OpResult(modified_rhs, point_indices)
+            )
 
-        where `points` is a GeoSeries of points and `point_indices` is a
+        where `modified_rhs` is a GeoSeries of points and `point_indices` is a
         cudf.Series of indices that map each point in `points` to its
         corresponding feature in the right-hand GeoSeries.
 
@@ -414,11 +433,8 @@ class BinPredItf(ABC):
             The left-hand GeoSeries.
         rhs : GeoSeries
             The right-hand GeoSeries.
-        points : GeoSeries
-            A GeoSeries of points.
-        point_indices : cudf.Series
-            A cudf.Series of indices that map each point in `points` to its
-            corresponding feature in the right-hand GeoSeries.
+        preprocessor_result : PreprocessorResult
+            The result of the preprocessing step.
         """
         result = OpResult(
             lhs,
@@ -453,14 +469,8 @@ class BinPredItf(ABC):
             The left-hand GeoSeries.
         rhs : GeoSeries
             The right-hand GeoSeries.
-        point_indices : cudf.Series
-            A cudf.Series of indices that map each point in `points` to its
-            corresponding feature in the right-hand GeoSeries.
         op_result : cudf.Series
-            A cudf.Series of boolean values indicating whether each feature
-            in the right-hand GeoSeries satisfies the requirements of a
-            binary predicate with its corresponding feature in the left-hand
-            GeoSeries.
+            The result of the `_compute_predicate` call.
 
         Returns
         -------
@@ -484,6 +494,8 @@ class BinPredItf(ABC):
 
 
 class BinPred(BinPredItf):
+    """Root implementation of BinPredItf."""
+
     def __init__(self, **kwargs):
         """Root implementation for BinPredItf"""
         self.kwargs = kwargs
