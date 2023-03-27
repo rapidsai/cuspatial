@@ -6,14 +6,13 @@ import cudf
 
 from cuspatial.core._column.geocolumn import ColumnType
 from cuspatial.core.binpreds.binpred_interface import NotImplementedRoot
-from cuspatial.core.binpreds.feature_contains import RootContains
 from cuspatial.core.binpreds.feature_equals import RootEquals
 
 
 class RootCrosses(RootEquals):
     """Base class for binary predicates that are defined in terms of a
-    root-level binary predicate. For example, a Point-Point Crosses
-    predicate is defined in terms of a Point-Point Crosses predicate.
+    the equals binary predicate. For example, a Point-Point Crosses
+    predicate is defined in terms of a Point-Point Equals predicate.
     """
 
     def _preprocess(self, lhs, rhs):
@@ -33,10 +32,6 @@ class PointPointCrosses(RootCrosses):
         return cudf.Series(cp.tile(False, lhs.size))
 
 
-class PointPolygonCrosses(RootContains):
-    pass
-
-
 Point = ColumnType.POINT
 MultiPoint = ColumnType.MULTIPOINT
 LineString = ColumnType.LINESTRING
@@ -46,7 +41,7 @@ DispatchDict = {
     (Point, Point): PointPointCrosses,
     (Point, MultiPoint): NotImplementedRoot,
     (Point, LineString): NotImplementedRoot,
-    (Point, Polygon): PointPolygonCrosses,
+    (Point, Polygon): RootCrosses,
     (MultiPoint, Point): NotImplementedRoot,
     (MultiPoint, MultiPoint): NotImplementedRoot,
     (MultiPoint, LineString): NotImplementedRoot,
