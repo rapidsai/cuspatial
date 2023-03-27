@@ -14,6 +14,7 @@ files:
       - py_version
       - run_python
       - test_python
+      - notebooks
   test_cpp:
     output: none
     includes:
@@ -172,6 +173,7 @@ dependencies:
           - ipython
           - notebook
           - shapely
+          - pydeck
   py_version:
     specific:
       - output_types: conda
