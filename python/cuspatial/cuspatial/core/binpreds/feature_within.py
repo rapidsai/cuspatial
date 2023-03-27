@@ -28,8 +28,8 @@ class PointPolygonWithin(RootContains):
     def _preprocess(self, lhs, rhs):
         return super()._preprocess(rhs, lhs)
 
-    def _op(self, lhs, rhs, preprocessor_result):
-        return super()._op(lhs, rhs, preprocessor_result)
+    def _compute_predicate(self, lhs, rhs, preprocessor_result):
+        return super()._compute_predicate(lhs, rhs, preprocessor_result)
 
     def _postprocess(self, lhs, rhs, op_result):
         return super()._postprocess(lhs, rhs, op_result)
@@ -39,8 +39,8 @@ class ComplexPolygonWithin(RootContains):
     def _preprocess(self, lhs, rhs):
         return super()._preprocess(rhs, lhs)
 
-    def _op(self, lhs, rhs, preprocessor_result):
-        return super()._op(lhs, rhs, preprocessor_result)
+    def _compute_predicate(self, lhs, rhs, preprocessor_result):
+        return super()._compute_predicate(lhs, rhs, preprocessor_result)
 
     def _postprocess(self, lhs, rhs, op_result):
         """Postprocess the output GeoSeries to ensure that they are of the

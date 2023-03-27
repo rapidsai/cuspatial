@@ -95,7 +95,7 @@ class RootContains(BinPred, Generic[GeoSeries]):
         preprocess_result = PreprocessorResult(
             lhs, rhs, final_rhs, point_indices
         )
-        return self._op(lhs, rhs, preprocess_result)
+        return self._compute_predicate(lhs, rhs, preprocess_result)
 
     def _should_use_quadtree(self, lhs):
         """Determine if the quadtree should be used for the binary predicate.
@@ -120,7 +120,7 @@ class RootContains(BinPred, Generic[GeoSeries]):
         """
         return len(lhs) >= 32 or has_multipolygons(lhs) or self.config.allpairs
 
-    def _op(
+    def _compute_predicate(
         self,
         lhs: "GeoSeries",
         rhs: "GeoSeries",

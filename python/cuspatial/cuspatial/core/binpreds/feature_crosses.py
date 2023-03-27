@@ -17,10 +17,10 @@ class RootCrosses(RootEquals):
     """
 
     def _preprocess(self, lhs, rhs):
-        return self._op(lhs, rhs, rhs.point_indices)
+        return self._compute_predicate(lhs, rhs, rhs.point_indices)
 
-    def _op(self, lhs, rhs, point_indices):
-        result = super()._op(lhs, rhs, point_indices)
+    def _compute_predicate(self, lhs, rhs, point_indices):
+        result = super()._compute_predicate(lhs, rhs, point_indices)
         return self._postprocess(lhs, rhs, point_indices, result)
 
     def _postprocess(self, lhs, rhs, point_indices, point_result):

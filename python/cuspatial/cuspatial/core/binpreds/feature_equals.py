@@ -228,9 +228,11 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         type_compare = lhs.feature_types == rhs.feature_types
         # Any unmatched type is not equal
         if (type_compare == False).all():  # noqa: E712
-            # Override _op so that it will not be run.
+            # Override _compute_predicate so that it will not be run.
             return self._false(lhs)
-        return self._op(lhs, rhs, PreprocessorResult(None, rhs.point_indices))
+        return self._compute_predicate(
+            lhs, rhs, PreprocessorResult(None, rhs.point_indices)
+        )
 
     def _vertices_equals(self, lhs: Series, rhs: Series):
         """Compute the equals relationship between interleaved xy
@@ -244,7 +246,7 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         b = rhs[1:length:2]._column == lhs[1:length:2]._column
         return a & b
 
-    def _op(self, lhs, rhs, preprocessor_result):
+    def _compute_predicate(self, lhs, rhs, preprocessor_result):
         """Perform the binary predicate operation on the input GeoSeries.
         The lhs and rhs are `GeoSeries` of points, and the point_indices
         are the indices of the points in the rhs GeoSeries that correspond
@@ -291,9 +293,11 @@ class MultiPointMultiPointEquals(PolygonComplexEquals):
         because the order of the points in a multipoint is not significant
         for the equals predicate."""
         (lhs_result, rhs_result) = self._sort_multipoints(lhs, rhs)
-        return self._op(lhs_result, rhs_result, rhs_result.point_indices)
+        return self._compute_predicate(
+            lhs_result, rhs_result, rhs_result.point_indices
+        )
 
-    def _op(self, lhs, rhs, point_indices):
+    def _compute_predicate(self, lhs, rhs, point_indices):
         result = self._vertices_equals(lhs.multipoints.xy, rhs.multipoints.xy)
         return self._postprocess(
             lhs, rhs, EqualsOpResult(result, point_indices)
@@ -301,7 +305,7 @@ class MultiPointMultiPointEquals(PolygonComplexEquals):
 
 
 class LineStringLineStringEquals(PolygonComplexEquals):
-    def _op(self, lhs, rhs, preprocessor_result):
+    def _compute_predicate(self, lhs, rhs, preprocessor_result):
         """Linestrings can be compared either forward or reversed. We need
         to compare both directions."""
         lengths_equal = self._offset_equals(

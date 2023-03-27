@@ -252,7 +252,7 @@ class BinPredItf(ABC):
         _preprocess(self, lhs, rhs)
             Preprocess the left-hand and right-hand GeoSeries. This method is
             implemented by the subclass.
-        _op(self, lhs, rhs)
+        _compute_predicate(self, lhs, rhs)
             Compute the binary predicate between two GeoSeries. This method is
             implemented by the subclass.
         _postprocess(self, lhs, rhs, point_indices, op_result)
@@ -353,10 +353,10 @@ class BinPredItf(ABC):
         points.
 
         Subclasses that implement `_preprocess` are responsible for calling
-        `_op` to continue the execution of the binary predicate. The last
-        line of `_preprocess` should be
+        `_compute_predicate` to continue the execution of the binary predicate.
+        The last line of `_preprocess` should be
 
-            return self._op(lhs, rhs, points, point_indices)
+            return self._compute_predicate(lhs, rhs, points, point_indices)
 
         Parameters
         ----------
@@ -373,12 +373,11 @@ class BinPredItf(ABC):
             predicate with its corresponding feature in the left-hand
             GeoSeries.
         """
-        # TODO: Update this as changing `_op` signature is complete.
         result = PreprocessorResult(lhs, rhs)
-        return self._op(lhs, rhs, result)
+        return self._compute_predicate(lhs, rhs, result)
 
     @abstractmethod
-    def _op(
+    def _compute_predicate(
         self,
         lhs: "GeoSeries",
         rhs: "GeoSeries",
@@ -386,9 +385,9 @@ class BinPredItf(ABC):
     ) -> Series:
         """Compute the binary predicate between two GeoSeries. This method
         is implemented by the subclass. This method is called by `_preprocess`
-        to continue the execution of the binary predicate. `_op` is responsible
-        for calling `_postprocess` to complete the execution of the binary
-        predicate.
+        to continue the execution of the binary predicate. `_compute_predicate`
+        is responsible for calling `_postprocess` to complete the execution of
+        the binary predicate.
 
         Op is used to compute the binary predicate, or composition of binary
         predicates, between two GeoSeries. The left-hand GeoSeries is
@@ -399,9 +398,9 @@ class BinPredItf(ABC):
         feature in the other GeoSeries satisfies the requirements of a binary
         predicate with its corresponding feature in the base GeoSeries.
 
-        Subclasses that implement `_op` are responsible for calling
-        `_postprocess` to complete the execution of the binary predicate. The
-        last line of `_op` should be
+        Subclasses that implement `_compute_predicate` are responsible for
+        calling `_postprocess` to complete the execution of the binary
+        predicate. The last line of `_compute_predicate` should be
 
             return self._postprocess(lhs, rhs, points, point_indices)
 
@@ -440,13 +439,13 @@ class BinPredItf(ABC):
         correct return type for the predicate. This method is implemented by
         the subclass.
 
-        Postprocessing is used to convert the results of the `_op` call into
-        countable values. This step converts the results of one of the three
-        binary predicates `contains`, `intersects`, or `equals` into a
-        `Series` of boolean values. When the `rhs` is a non-point type,
-        `_postprocess` is responsible for aggregating the results of the
-        `_op` call into a single boolean value for each feature in the
-        `lhs`.
+        Postprocessing is used to convert the results of the
+        `_compute_predicate` call into countable values. This step converts the
+        results of one of the three binary predicates `contains`, `intersects`,
+        or `equals` into a `Series` of boolean values. When the `rhs` is a
+        non-point type, `_postprocess` is responsible for aggregating the
+        results of the `_compute_predicate` call into a single boolean value
+        for each feature in the `lhs`.
 
         Parameters
         ----------
@@ -510,7 +509,7 @@ class BinPred(BinPredItf):
             "This method must be implemented by a subclass."
         )
 
-    def _op(
+    def _compute_predicate(
         self,
         lhs: "GeoSeries",
         rhs: "GeoSeries",

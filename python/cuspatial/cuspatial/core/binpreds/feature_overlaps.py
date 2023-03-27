@@ -22,10 +22,12 @@ class RootOverlaps(RootEquals):
     """
 
     def _preprocess(self, lhs, rhs):
-        return self._op(lhs, rhs, PreprocessorResult(None, rhs.point_indices))
+        return self._compute_predicate(
+            lhs, rhs, PreprocessorResult(None, rhs.point_indices)
+        )
 
-    def _op(self, lhs, rhs, preprocessor_result):
-        result = super()._op(lhs, rhs, preprocessor_result)
+    def _compute_predicate(self, lhs, rhs, preprocessor_result):
+        result = super()._compute_predicate(lhs, rhs, preprocessor_result)
         return self._postprocess(
             lhs,
             rhs,
