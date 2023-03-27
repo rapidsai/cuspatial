@@ -1,5 +1,7 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
+import cupy as cp
+
 import cudf
 
 from cuspatial.core._column.geocolumn import ColumnType
@@ -12,6 +14,11 @@ Point = ColumnType.POINT
 MultiPoint = ColumnType.MULTIPOINT
 LineString = ColumnType.LINESTRING
 Polygon = ColumnType.POLYGON
+
+
+def _false(lhs):
+    """Return a Series of False values"""
+    return cudf.Series(cp.zeros(len(lhs), dtype=cp.bool_))
 
 
 def _count_results_in_multipoint_geometries(point_indices, point_result):

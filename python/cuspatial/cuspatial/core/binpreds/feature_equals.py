@@ -21,6 +21,7 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
+    _false,
 )
 
 GeoSeries = TypeVar("GeoSeries")
@@ -31,14 +32,6 @@ class RootEquals(BinPred, Generic[GeoSeries]):
     basic predicate.  `RootEquals` implements utility functions that are
     used within many equals-related binary predicates.
     """
-
-    def __init__(self, **kwargs):
-        """All binary predicates accept the .align parameter."""
-        self.align = kwargs.get("align", False)
-
-    def _false(self, lhs):
-        """Return a Series of False values"""
-        return Series(cp.zeros(len(lhs), dtype=cp.bool_))
 
     def _offset_equals(self, lhs, rhs):
         """Compute the pairwise length equality of two offset arrays. Consider
@@ -63,7 +56,8 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         Returns
         -------
         cudf.Series
-            pairwise length equality"""
+            pairwise length equality
+        """
         lhs_lengths = lhs[:-1] - lhs[1:]
         rhs_lengths = rhs[:-1] - rhs[1:]
         return lhs_lengths == rhs_lengths
@@ -229,7 +223,7 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         # Any unmatched type is not equal
         if (type_compare == False).all():  # noqa: E712
             # Override _compute_predicate so that it will not be run.
-            return self._false(lhs)
+            return _false(lhs)
         return self._compute_predicate(
             lhs, rhs, PreprocessorResult(None, rhs.point_indices)
         )
