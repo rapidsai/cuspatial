@@ -16,43 +16,8 @@ class BinPredItf(ABC):
     for each combination of left-hand and right-hand GeoSeries types and binary
     predicates. For example, a `PointPointContains` predicate is a child class
     of `BinPred` that implements the `contains_properly` predicate for two
-    `Point` GeoSeries.
-
-
-    Parameters
-    ----------
-    lhs : GeoSeries
-        The left-hand GeoSeries.
-    rhs : GeoSeries
-        The right-hand GeoSeries.
-    **kwargs
-        Any additional arguments to be used at runtime.
-
-    Attributes
-    ----------
-    lhs : GeoSeries
-        The left-hand GeoSeries.
-    rhs : GeoSeries
-        The right-hand GeoSeries.
-    kwargs : dict
-        Any additional arguments to be used at runtime.
-
-    Methods
-    -------
-    __call__(self, lhs, rhs)
-        System call for the binary predicate. Calls the _call method, which is
-        implemented by the subclass.
-    _call(self, lhs, rhs)
-        Call the binary predicate. This method is implemented by the subclass.
-    _preprocess(self, lhs, rhs)
-        Preprocess the left-hand and right-hand GeoSeries. This method is
-        implemented by the subclass.
-    _op(self, lhs, rhs)
-        Compute the binary predicate between two GeoSeries. This method is
-        implemented by the subclass.
-    _postprocess(self, lhs, rhs, point_indices, op_result)
-        Postprocess the output GeoSeries to ensure that they are of the correct
-        type for the predicate. This method is implemented by the subclass.
+    `Point` GeoSeries. These classes are found in the `feature_<predicateName>`
+    files found in this directory.
 
     Notes
     -----
@@ -77,15 +42,17 @@ class BinPredItf(ABC):
 
     Examples
     --------
-    >>> from cuspatial.core.binpred.dispatch import contains_properly_dispatch
+    >>> from cuspatial.core.binpreds.binpred_dispatch import CONTAINS_DISPATCH
     >>> from cuspatial.core.geoseries import GeoSeries
+    >>> from shapely.geometry import Point, Polygon
     >>> lhs = GeoSeries([Polygon([(0, 0), (1, 1), (1, 0)])])
     >>> rhs = GeoSeries([Point(0, 0), Point(1, 1)])
-    >>> predicate = contains_properly_dispatch[(
+    >>> predicate = CONTAINS_DISPATCH[(
     ...     lhs.column_type, rhs.column_type
-    ... )](lhs, rhs, align, allpairs)
-    >>> print(predicate())
-    # TODO Output
+    ... )](align=True, allpairs=False)
+    >>> print(predicate(lhs, rhs))
+    0    False
+    dtype: bool
     """
 
     @abstractmethod
@@ -93,18 +60,13 @@ class BinPredItf(ABC):
         """Initialize a binary predicate. Collects any arguments passed
         to the binary predicate to be used at runtime.
 
-        This class stores the left-hand and right-hand GeoSeries and any
-        additional arguments to be used at runtime. The left-hand and
-        right-hand GeoSeries are stored as attributes of the class. The
-        additional arguments are stored as a dictionary in the `kwargs`
-        attribute.
+        This class stores the parameters that can be passed to the binary
+        predicate at runtime. The lhs and rhs are set at runtime using the
+        __call__ method so that the same binary predicate can be used for
+        multiple left-hand and right-hand GeoSeries.
 
         Parameters
         ----------
-        lhs : GeoSeries
-            The left-hand GeoSeries.
-        rhs : GeoSeries
-            The right-hand GeoSeries.
         **kwargs
             Any additional arguments to be used at runtime.
 
@@ -138,18 +100,19 @@ class BinPredItf(ABC):
 
         Examples
         --------
-        >>> from cuspatial.core.binpred.dispatch import (
-        ...     contains_properly_dispatch
+        >>> from cuspatial.core.binpreds.binpred_dispatch import (
+        ...     CONTAINS_DISPATCH
         ... )
         >>> from cuspatial.core.geoseries import GeoSeries
+        >>> from shapely.geometry import Point, Polygon
         >>> lhs = GeoSeries([Polygon([(0, 0), (1, 1), (1, 0)])])
         >>> rhs = GeoSeries([Point(0, 0), Point(1, 1)])
-        >>> predicate = contains_properly_dispatch[
-        ...     (
-        ...         lhs.column_type, rhs.column_type
-        ...     )](lhs, rhs, align, allpairs)
-        >>> print(predicate())
-        # TODO Output
+        >>> predicate = CONTAINS_DISPATCH[(
+        ...     lhs.column_type, rhs.column_type
+        ... )](align=True, allpairs=False)
+        >>> print(predicate(lhs, rhs))
+        0    False
+        dtype: bool
         """
         super().__init__(**kwargs)
         self.kwargs = kwargs
@@ -160,20 +123,33 @@ class BinPredItf(ABC):
         which is implemented by the subclass. Executing the binary predicate
         returns the results of the binary predicate as a GeoSeries.
 
+        Parameters
+        ----------
+        lhs : GeoSeries
+            The left-hand GeoSeries.
+        rhs : GeoSeries
+            The right-hand GeoSeries.
+
+        Returns
+        -------
+        GeoSeries
+            The results of the binary predicate.
+
         Examples
         --------
-        >>> from cuspatial.core.binpred.dispatch import (
-        ...     contains_properly_dispatch
+        >>> from cuspatial.core.binpreds.binpred_dispatch import (
+        ...     CONTAINS_DISPATCH
         ... )
         >>> from cuspatial.core.geoseries import GeoSeries
+        >>> from shapely.geometry import Point, Polygon
         >>> lhs = GeoSeries([Polygon([(0, 0), (1, 1), (1, 0)])])
         >>> rhs = GeoSeries([Point(0, 0), Point(1, 1)])
-        >>> predicate = contains_properly_dispatch[
-        ...     (
-        ...         lhs.column_type, rhs.column_type
-        ...     )](lhs, rhs, align, allpairs)
-        >>> print(predicate())
-        # TODO Output
+        >>> predicate = CONTAINS_DISPATCH[(
+        ...     lhs.column_type, rhs.column_type
+        ... )](align=True, allpairs=False)
+        >>> print(predicate(lhs, rhs))
+        0    False
+        dtype: bool
         """
         self.lhs = lhs
         self.rhs = rhs
@@ -212,7 +188,7 @@ class BinPredItf(ABC):
         `contains` requires that the left-hand GeoSeries be polygons or
         multipolygons and the right-hand GeoSeries be points or multipoints.
         `intersects` requires that the left-hand GeoSeries be linestrings or
-        and the right-hand GeoSeries be linestrings or points.
+        points and the right-hand GeoSeries be linestrings or points.
         `equals` requires that the left-hand and right-hand GeoSeries be
         points.
 
@@ -221,11 +197,6 @@ class BinPredItf(ABC):
         line of `_preprocess` should be
 
             return self._op(lhs, rhs, points, point_indices)
-
-        # TODO: Change `_op` signature to take `lhs` and `rhs` only?
-        where `points` is a GeoSeries of points and `point_indices` is a
-        cudf.Series of indices that map each point in `points` to its
-        corresponding feature in the right-hand GeoSeries.
 
         Parameters
         ----------
