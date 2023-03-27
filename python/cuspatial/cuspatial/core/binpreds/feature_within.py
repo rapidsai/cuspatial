@@ -57,9 +57,7 @@ class ComplexPolygonWithin(RootContains):
         result_df["feature_in_polygon"] = (
             result_df["point_index_x"] >= result_df["point_index_y"]
         )
-        final_result = cudf.Series(
-            [False] * (op_result.point_indices.max().item() + 1)
-        )  # point_indices is zero index
+        final_result = binpred_utils._false(lhs)
         final_result.loc[
             result_df["rhs_index"][result_df["feature_in_polygon"]]
         ] = True

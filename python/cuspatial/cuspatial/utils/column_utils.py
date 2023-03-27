@@ -100,14 +100,6 @@ def contains_only_linestrings(gs: GeoSeries):
     return contain_single_type_geometry(gs) and len(gs.lines.xy) > 0
 
 
-def contains_only_linestrings(gs: GeoSeries):
-    """
-    Returns true if `gs` contains only linestrings
-    """
-
-    return contain_single_type_geometry(gs) and len(gs.lines.xy) > 0
-
-
 def contains_only_polygons(gs: GeoSeries):
     """
     Returns true if `gs` contains only polygons
