@@ -34,8 +34,7 @@
  * fully tested. This is left for pip_refine_test_large.
  */
 template <typename T>
-struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {
-};
+struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 
@@ -126,10 +125,10 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
   auto bboxes =
     rmm::device_uvector<cuspatial::box<T>>(multipolygons.num_polygons(), this->stream());
 
-  cuspatial::polygon_bounding_boxes(multipolygons.part_begin(),
-                                    multipolygons.part_end(),
-                                    multipolygons.ring_begin(),
-                                    multipolygons.ring_end(),
+  cuspatial::polygon_bounding_boxes(multipolygons.part_offset_begin(),
+                                    multipolygons.part_offset_end(),
+                                    multipolygons.ring_offset_begin(),
+                                    multipolygons.ring_offset_end(),
                                     multipolygons.point_begin(),
                                     multipolygons.point_end(),
                                     bboxes.begin(),
