@@ -19,6 +19,51 @@
 #include <cuspatial/error.hpp>
 
 /**
+ * @brief Macro for validating the data array sizes for linestrings.
+ *
+ * Raises an exception if any of the following are false:
+ *  - The number of linestring offsets is greater than zero.
+ *  - There are at least two vertices per linestring offset.
+ *
+ * Linestrings follow [GeoArrow data layout][1]. Offsets arrays have one more element than the
+ * number of items in the array. The last offset is always the sum of the previous offset and the
+ * size of that element. For example the last value in the linestring offsets array is the
+ * last linestring offset plus one. See [Arrow Variable-Size Binary layout](2). Note that an
+ * empty list still has one offset: {0}.
+ *
+ * [1]: https://github.com/geoarrow/geoarrow/blob/main/format.md
+ * [2]: https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout
+ */
+#define CUSPATIAL_EXPECTS_VALID_LINESTRING_SIZES(num_linestring_points, num_linestring_offsets) \
+  CUSPATIAL_EXPECTS(num_linestring_offsets > 0,                                                 \
+                    "Polygon offsets must contain at least one (1) value");                     \
+  CUSPATIAL_EXPECTS(num_linestring_points >= 2 * (num_linestring_offsets - 1),                  \
+                    "Each linestring must have at least two vertices");
+
+/**
+ * @brief Macro for validating the data array sizes for multilinestrings.
+ *
+ * Raises an exception if any of the following are false:
+ *  - The number of multilinestring offsets is greater than zero.
+ *  - The number of linestring offsets is greater than zero.
+ *  - There are at least two vertices per linestring offset.
+ *
+ * Multilinestrings follow [GeoArrow data layout][1]. Offsets arrays have one more element than the
+ * number of items in the array. The last offset is always the sum of the previous offset and the
+ * size of that element. For example the last value in the linestring offsets array is the
+ * last linestring offset plus one. See [Arrow Variable-Size Binary layout](2). Note that an
+ * empty list still has one offset: {0}.
+ *
+ * [1]: https://github.com/geoarrow/geoarrow/blob/main/format.md
+ * [2]: https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout
+ */
+#define CUSPATIAL_EXPECTS_VALID_MULTILINESTRING_SIZES(                              \
+  num_linestring_points, num_multilinestring_offsets, num_linestring_offsets)       \
+  CUSPATIAL_EXPECTS(num_multilinestring_offsets > 0,                                \
+                    "Multilinestring offsets must contain at least one (1) value"); \
+  CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(num_linestring_points, num_linestring_offsets);
+
+/**
  * @brief Macro for validating the data array sizes for a polygon.
  *
  * Raises an exception if any of the following are false:

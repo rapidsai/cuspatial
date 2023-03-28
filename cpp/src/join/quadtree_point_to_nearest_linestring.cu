@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "cuspatial/detail/utility/validation.hpp"
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/ranges/multilinestring_range.cuh>
@@ -60,8 +61,8 @@ struct compute_quadtree_point_to_nearest_linestring {
 
     auto quadtree_ref = point_quadtree_ref(quadtree.column(0).begin<uint32_t>(),  // keys
                                            quadtree.column(0).end<uint32_t>(),
-                                           quadtree.column(1).begin<uint8_t>(),  // levels
-                                           quadtree.column(2).begin<bool>(),     // is_internal_node
+                                           quadtree.column(1).begin<uint8_t>(),   // levels
+                                           quadtree.column(2).begin<bool>(),  // is_internal_node
                                            quadtree.column(3).begin<uint32_t>(),   // lengths
                                            quadtree.column(4).begin<uint32_t>());  // offsets
 
@@ -145,12 +146,14 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_linestring(
   CUSPATIAL_EXPECTS(linestring_quad_pairs.num_columns() == 2,
                     "a quadrant-linestring table must have 2 columns");
   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "a quadtree table must have 5 columns");
+
+  CUSPATIAL_EXPECTS_VALID_LINESTRING_SIZES(linestring_points_x.size(),
+                                           linestring_offsets.size() - 1);
+
   CUSPATIAL_EXPECTS(point_indices.size() == point_x.size() && point_x.size() == point_y.size(),
                     "number of points must be the same for both x and y columns");
   CUSPATIAL_EXPECTS(linestring_points_x.size() == linestring_points_y.size(),
                     "numbers of vertices must be the same for both x and y columns");
-  CUSPATIAL_EXPECTS(linestring_points_x.size() >= 2 * linestring_offsets.size(),
-                    "all linestrings must have at least two vertices");
   CUSPATIAL_EXPECTS(linestring_points_x.type() == linestring_points_y.type(),
                     "linestring columns must have the same data type");
   CUSPATIAL_EXPECTS(point_x.type() == point_y.type(), "point columns must have the same data type");
