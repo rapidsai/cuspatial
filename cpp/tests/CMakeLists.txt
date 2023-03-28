@@ -60,6 +60,9 @@ ConfigureTest(HAUSDORFF_TEST
 ConfigureTest(JOIN_POINT_TO_LINESTRING_SMALL_TEST
     join/point_to_nearest_linestring_test_small.cpp)
 
+ConfigureTest(JOIN_POINT_IN_POLYGON_TEST
+    join/quadtree_point_in_polygon_test.cpp)
+
 ConfigureTest(POINT_IN_POLYGON_TEST
     spatial/point_in_polygon_test.cpp)
 

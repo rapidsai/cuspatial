@@ -152,14 +152,14 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const& p
   CUSPATIAL_EXPECTS(poly_points_x.size() == poly_points_y.size(),
                     "numbers of vertices must be the same for both x and y columns");
 
-  CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
-    poly_points_x.size(), poly_offsets.size(), ring_offsets.size());
-
   CUSPATIAL_EXPECTS(poly_points_x.type() == poly_points_y.type(),
                     "polygon columns must have the same data type");
   CUSPATIAL_EXPECTS(point_x.type() == point_y.type(), "point columns must have the same data type");
   CUSPATIAL_EXPECTS(point_x.type() == poly_points_x.type(),
                     "points and polygons must have the same data type");
+
+  CUSPATIAL_EXPECTS(poly_offsets.type() == ring_offsets.type(),
+                    "offset columns must have the same data type");
 
   if (poly_quad_pairs.num_rows() == 0 || quadtree.num_rows() == 0 || point_indices.size() == 0 ||
       poly_offsets.size() == 0) {
