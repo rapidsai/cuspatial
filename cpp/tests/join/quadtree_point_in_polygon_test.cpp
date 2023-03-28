@@ -35,7 +35,7 @@ using T = float;
 template <typename T>
 using wrapper = cudf::test::fixed_width_column_wrapper<T>;
 
-struct QuadtreePointInPolygonErrorTest : public ::testing::Test {
+struct QuadtreePointToNearestLinestringErrorTest : public ::testing::Test {
   auto prepare_test(cudf::column_view const& x,
                     cudf::column_view const& y,
                     cudf::column_view const& polygon_offsets,
@@ -112,7 +112,7 @@ struct QuadtreePointInPolygonErrorTest : public ::testing::Test {
                                      5.998939,
                                      5.039823});
 
-    std::tie(quadtree, point_indices, polygon_bboxes, polygon_quadrant_pairs) =
+    std::tie(quadtree, point_indices, linestring_bboxes, linestring_quadrant_pairs) =
       prepare_test(x_col,
                    y_col,
                    polygon_offsets_col,
@@ -126,30 +126,30 @@ struct QuadtreePointInPolygonErrorTest : public ::testing::Test {
                    min_size,
                    expansion_radius);
 
-    x               = x_col.release();
-    y               = y_col.release();
-    polygon_offsets = polygon_offsets_col.release();
-    ring_offsets    = ring_offsets_col.release();
-    polygon_x       = polygon_x_col.release();
-    polygon_y       = polygon_y_col.release();
+    x                  = x_col.release();
+    y                  = y_col.release();
+    linestring_offsets = polygon_offsets_col.release();
+    ring_offsets       = ring_offsets_col.release();
+    linestring_x       = polygon_x_col.release();
+    linestring_y       = polygon_y_col.release();
   }
 
   void TearDown() override {}
 
   std::unique_ptr<cudf::column> x;
   std::unique_ptr<cudf::column> y;
-  std::unique_ptr<cudf::column> polygon_offsets;
+  std::unique_ptr<cudf::column> linestring_offsets;
   std::unique_ptr<cudf::column> ring_offsets;
-  std::unique_ptr<cudf::column> polygon_x;
-  std::unique_ptr<cudf::column> polygon_y;
+  std::unique_ptr<cudf::column> linestring_x;
+  std::unique_ptr<cudf::column> linestring_y;
   std::unique_ptr<cudf::column> point_indices;
   std::unique_ptr<cudf::table> quadtree;
-  std::unique_ptr<cudf::table> polygon_bboxes;
-  std::unique_ptr<cudf::table> polygon_quadrant_pairs;
+  std::unique_ptr<cudf::table> linestring_bboxes;
+  std::unique_ptr<cudf::table> linestring_quadrant_pairs;
 };
 
 // test cudf::quadtree_point_in_polygon with empty inputs
-TEST_F(QuadtreePointInPolygonErrorTest, test_empty)
+TEST_F(QuadtreePointToNearestLinestringErrorTest, test_empty)
 {
   // empty point data
   {
@@ -157,15 +157,15 @@ TEST_F(QuadtreePointInPolygonErrorTest, test_empty)
     auto empty_x             = wrapper<T>({});
     auto empty_y             = wrapper<T>({});
 
-    auto results = cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+    auto results = cuspatial::quadtree_point_in_polygon(*linestring_quadrant_pairs,
                                                         *quadtree,
                                                         empty_point_indices,
                                                         empty_x,
                                                         empty_y,
-                                                        *polygon_offsets,
+                                                        *linestring_offsets,
                                                         *ring_offsets,
-                                                        *polygon_x,
-                                                        *polygon_y);
+                                                        *linestring_x,
+                                                        *linestring_y);
 
     auto expected_poly_offset  = wrapper<std::uint32_t>({});
     auto expected_point_offset = wrapper<std::uint32_t>({});
@@ -183,7 +183,7 @@ TEST_F(QuadtreePointInPolygonErrorTest, test_empty)
     auto empty_polygon_x       = wrapper<T>({});
     auto empty_polygon_y       = wrapper<T>({});
 
-    auto results = cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+    auto results = cuspatial::quadtree_point_in_polygon(*linestring_quadrant_pairs,
                                                         *quadtree,
                                                         *point_indices,
                                                         *x,
@@ -203,22 +203,22 @@ TEST_F(QuadtreePointInPolygonErrorTest, test_empty)
   }
 }
 
-TEST_F(QuadtreePointInPolygonErrorTest, type_mismatch)
+TEST_F(QuadtreePointToNearestLinestringErrorTest, type_mismatch)
 {
   // x/y type mismatch
   {
     auto x_col = wrapper<int32_t>({1, 2, 3, 4});
     auto y_col = wrapper<float>({1, 2, 3, 4});
 
-    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*linestring_quadrant_pairs,
                                                       *quadtree,
                                                       *point_indices,
                                                       x_col,
                                                       y_col,
-                                                      *polygon_offsets,
+                                                      *linestring_offsets,
                                                       *ring_offsets,
-                                                      *polygon_x,
-                                                      *polygon_y),
+                                                      *linestring_x,
+                                                      *linestring_y),
                  cuspatial::logic_error);
   }
 
@@ -227,12 +227,12 @@ TEST_F(QuadtreePointInPolygonErrorTest, type_mismatch)
     auto polygon_x_col = wrapper<int32_t>({1, 2, 3, 4});
     auto polygon_y_col = wrapper<float>({1, 2, 3, 4});
 
-    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*linestring_quadrant_pairs,
                                                       *quadtree,
                                                       *point_indices,
                                                       *x,
                                                       *y,
-                                                      *polygon_offsets,
+                                                      *linestring_offsets,
                                                       *ring_offsets,
                                                       polygon_x_col,
                                                       polygon_y_col),
@@ -244,39 +244,39 @@ TEST_F(QuadtreePointInPolygonErrorTest, type_mismatch)
     auto x_col         = wrapper<int32_t>({1, 2, 3, 4});
     auto polygon_x_col = wrapper<float>({1, 2, 3, 4});
 
-    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*linestring_quadrant_pairs,
                                                       *quadtree,
                                                       *point_indices,
                                                       x_col,
                                                       *y,
-                                                      *polygon_offsets,
+                                                      *linestring_offsets,
                                                       *ring_offsets,
                                                       polygon_x_col,
-                                                      *polygon_y),
+                                                      *linestring_y),
                  cuspatial::logic_error);
   }
 }
 
-TEST_F(QuadtreePointInPolygonErrorTest, offset_type_error)
+TEST_F(QuadtreePointToNearestLinestringErrorTest, offset_type_error)
 {
   {
     auto polygon_offsets_col = wrapper<float>({0, 4, 10});
     auto ring_offsets_col    = wrapper<std::int32_t>({0, 4, 10});
 
-    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*linestring_quadrant_pairs,
                                                       *quadtree,
                                                       *point_indices,
                                                       *x,
                                                       *y,
                                                       polygon_offsets_col,
                                                       ring_offsets_col,
-                                                      *polygon_x,
-                                                      *polygon_y),
+                                                      *linestring_x,
+                                                      *linestring_y),
                  cuspatial::logic_error);
   }
 }
 
-TEST_F(QuadtreePointInPolygonErrorTest, size_mismatch)
+TEST_F(QuadtreePointToNearestLinestringErrorTest, size_mismatch)
 {
   {
     auto polygon_offsets_col = wrapper<int32_t>({0, 4, 10});
@@ -284,7 +284,7 @@ TEST_F(QuadtreePointInPolygonErrorTest, size_mismatch)
     auto poly_x              = wrapper<float>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
     auto poly_y              = wrapper<float>({1, 2, 3, 4, 5, 6});
 
-    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*linestring_quadrant_pairs,
                                                       *quadtree,
                                                       *point_indices,
                                                       *x,
@@ -300,15 +300,15 @@ TEST_F(QuadtreePointInPolygonErrorTest, size_mismatch)
     auto x             = wrapper<float>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
     auto y             = wrapper<float>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
 
-    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*linestring_quadrant_pairs,
                                                       *quadtree,
                                                       point_indices,
                                                       x,
                                                       y,
-                                                      *polygon_offsets,
+                                                      *linestring_offsets,
                                                       *ring_offsets,
-                                                      *polygon_x,
-                                                      *polygon_y),
+                                                      *linestring_x,
+                                                      *linestring_y),
                  cuspatial::logic_error);
   }
   {
@@ -316,15 +316,15 @@ TEST_F(QuadtreePointInPolygonErrorTest, size_mismatch)
     auto x             = wrapper<float>({1, 2, 3, 4, 5});
     auto y             = wrapper<float>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
 
-    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*linestring_quadrant_pairs,
                                                       *quadtree,
                                                       point_indices,
                                                       x,
                                                       y,
-                                                      *polygon_offsets,
+                                                      *linestring_offsets,
                                                       *ring_offsets,
-                                                      *polygon_x,
-                                                      *polygon_y),
+                                                      *linestring_x,
+                                                      *linestring_y),
                  cuspatial::logic_error);
   }
   {
@@ -332,15 +332,15 @@ TEST_F(QuadtreePointInPolygonErrorTest, size_mismatch)
     auto x             = wrapper<float>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
     auto y             = wrapper<float>({1, 2, 3, 4, 5});
 
-    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*polygon_quadrant_pairs,
+    EXPECT_THROW(cuspatial::quadtree_point_in_polygon(*linestring_quadrant_pairs,
                                                       *quadtree,
                                                       point_indices,
                                                       x,
                                                       y,
-                                                      *polygon_offsets,
+                                                      *linestring_offsets,
                                                       *ring_offsets,
-                                                      *polygon_x,
-                                                      *polygon_y),
+                                                      *linestring_x,
+                                                      *linestring_y),
                  cuspatial::logic_error);
   }
 }

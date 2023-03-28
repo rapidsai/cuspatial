@@ -57,8 +57,8 @@ ConfigureTest(HAVERSINE_TEST
 ConfigureTest(HAUSDORFF_TEST
     spatial/hausdorff_test.cpp)
 
-ConfigureTest(JOIN_POINT_TO_LINESTRING_SMALL_TEST
-    join/point_to_nearest_linestring_test_small.cpp)
+ConfigureTest(JOIN_POINT_TO_NEAREST_LINESTRING_TEST
+    join/quadtree_point_to_nearest_linestring_test.cpp)
 
 ConfigureTest(JOIN_POINT_IN_POLYGON_TEST
     join/quadtree_point_in_polygon_test.cpp)
