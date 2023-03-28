@@ -147,9 +147,6 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_linestring(
                     "a quadrant-linestring table must have 2 columns");
   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "a quadtree table must have 5 columns");
 
-  CUSPATIAL_EXPECTS_VALID_LINESTRING_SIZES(linestring_points_x.size(),
-                                           linestring_offsets.size() - 1);
-
   CUSPATIAL_EXPECTS(point_indices.size() == point_x.size() && point_x.size() == point_y.size(),
                     "number of points must be the same for both x and y columns");
   CUSPATIAL_EXPECTS(linestring_points_x.size() == linestring_points_y.size(),

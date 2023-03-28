@@ -61,7 +61,7 @@
   num_linestring_points, num_multilinestring_offsets, num_linestring_offsets)       \
   CUSPATIAL_EXPECTS(num_multilinestring_offsets > 0,                                \
                     "Multilinestring offsets must contain at least one (1) value"); \
-  CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(num_linestring_points, num_linestring_offsets);
+  CUSPATIAL_EXPECTS_VALID_LINESTRING_SIZES(num_linestring_points, num_linestring_offsets);
 
 /**
  * @brief Macro for validating the data array sizes for a polygon.
