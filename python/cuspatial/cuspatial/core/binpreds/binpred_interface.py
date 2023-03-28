@@ -187,6 +187,19 @@ class EqualsOpResult(OpResult):
         return self.__repr__()
 
 
+class IntersectsOpResult(OpResult):
+    """Result of a binary predicate operation."""
+
+    def __init__(self, result: Series):
+        self.result = result
+
+    def __repr__(self):
+        return f"OpResult(result={self.result})"
+
+    def __str__(self):
+        return self.__repr__()
+
+
 class BinPredItf(ABC):
     """Base class for binary predicates. This class is an abstract base class
     and can not be instantiated directly. `BinPred` is the base class that

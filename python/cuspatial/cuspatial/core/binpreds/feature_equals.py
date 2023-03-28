@@ -256,7 +256,7 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         comparisons into a single boolean value for each feature in the
         rhs GeoSeries.
         """
-        return op_result.result
+        return cudf.Series(op_result.result, dtype="bool")
 
 
 class PolygonComplexEquals(RootEquals):
