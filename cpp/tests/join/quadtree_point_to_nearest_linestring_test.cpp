@@ -231,7 +231,7 @@ TEST_F(QuadtreePointToNearestLinestringErrorTest, type_mismatch)
                  cuspatial::logic_error);
   }
 
-  // x / linestring_x type mimatch
+  // x / linestring_x type mismatch
   {
     auto x_col            = wrapper<int32_t>({1, 2, 3, 4});
     auto linestring_x_col = wrapper<float>({1, 2, 3, 4});
