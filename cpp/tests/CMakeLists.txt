@@ -189,3 +189,6 @@ ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST_EXP
 
 ConfigureTest(JOIN_POINT_IN_POLYGON_LARGE_TEST_EXP
     experimental/join/quadtree_point_in_polygon_test_large.cu)
+
+ConfigureTest(JOIN_POINT_TO_LINESTRING_SMALL_TEST_EXP
+    experimental/join/quadtree_point_to_nearest_linestring_test_small.cu)
