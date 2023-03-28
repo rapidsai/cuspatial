@@ -139,17 +139,34 @@ class multilinestring_range {
   /// Returns an iterator to the end of the segment
   CUSPATIAL_HOST_DEVICE auto segment_end();
 
-  //   /// Returns an infinite iterator to the "tiled" segments of the multilinestring.
-  //   /// If the multilinestring range has 5 segments, this iterator will iterate on the
-  //   /// 0th, 1st, 2nd, 3rd, 4th, 0th, 1st, 2nd, 3rd, 4th segment for the first 10 iterations.
-  //   ///
-  //   /// The name of `tile` comes from numpy.tile[1]
-  //   /// [1] https://numpy.org/doc/stable/reference/generated/numpy.tile.html
-  //   CUSPATIAL_HOST_DEVICE auto segment_tiled_begin();
+  /// Infinite iterators
+  /// Note: Infinite iterators currently doesn't work with ranges that contains empty geometry.
+
+  /// Returns an infinite iterator to the "tiled" segments of the multilinestring.
+  /// If the multilinestring range has 5 segments, this iterator will iterate on the
+  /// 0th, 1st, 2nd, 3rd, 4th, 0th, 1st, 2nd, 3rd, 4th segment for the first 10 iterations.
+  ///
+  /// The name of `tile` comes from numpy.tile[1]
+  /// [1] https://numpy.org/doc/stable/reference/generated/numpy.tile.html
+  CUSPATIAL_HOST_DEVICE auto segment_tiled_begin();
 
   /// Returns the `multilinestring_idx`th multilinestring in the range.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator[](IndexType multilinestring_idx);
+
+  /// Raw offsets iterator
+
+  CUSPATIAL_HOST_DEVICE auto geometry_offsets_begin() { return _geometry_begin; }
+  CUSPATIAL_HOST_DEVICE auto geometry_offsets_end() { return _geometry_end; }
+  CUSPATIAL_HOST_DEVICE auto part_offsets_begin() { return _part_begin; }
+  CUSPATIAL_HOST_DEVICE auto part_offsets_end() { return _part_end; }
+
+  /// Range Casts
+
+  /// Casts the multilinestring range into a multipoint range.
+  /// This treats each multilinestring as simply a collection of points,
+  /// ignoring all edges of the multilinestring.
+  CUSPATIAL_HOST_DEVICE auto as_multipoint_range();
 
  protected:
   GeometryIterator _geometry_begin;

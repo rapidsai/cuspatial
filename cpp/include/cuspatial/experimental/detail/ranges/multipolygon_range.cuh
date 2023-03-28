@@ -197,6 +197,52 @@ template <typename GeometryIterator,
           typename PartIterator,
           typename RingIterator,
           typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::polygon_begin()
+{
+  return detail::make_counting_transform_iterator(
+    0, to_polygon_functor{_part_begin, _ring_begin, point_begin, point_end});
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::polygon_end()
+{
+  return polygon_begin() + num_polygons();
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+  polygon_repeated_begin(IndexType repeats)
+{
+  auto repeat_it = detail::make_counting_transform_iterator(0, repeat_functor{repeats});
+  return thrust::make_permutation_iterator(polygon_begin(), repeat_it);
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::polygon_repeated_end(
+  IndexType repeats)
+{
+  return polygon_repeated_begin(repeats) + repeats * num_polygons();
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
 template <typename IndexType>
 CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::

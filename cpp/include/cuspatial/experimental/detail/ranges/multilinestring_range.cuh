@@ -25,8 +25,11 @@
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/detail/functors.cuh>
 #include <cuspatial/experimental/geometry_collection/multilinestring_ref.cuh>
+#include <cuspatial/experimental/ranges/multipoint_range.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
+
+#include <thrust/iterator/permutation_iterator.h>
 
 #include <iterator>
 #include <optional>
@@ -234,6 +237,26 @@ CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::subtracted_part_end()
 {
   return subtracted_part_begin() + thrust::distance(_part_begin, _part_end);
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_tiled_begin()
+{
+  auto tiled_it =
+    detail::make_counting_transform_iterator(0, detail::wraparound_functor{num_segments()});
+  return thrust::make_permutation_iterator(segment_begin(), tiled_it);
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::as_multipoint_range()
+{
+  auto multipoint_geometry_it = thrust::make_permutation_iterator(_part_begin, _geometry_begin);
+  return multipoint_range{multipoint_geometry_it,
+                          multipoint_geometry_it + num_multilinestrings(),
+                          _point_begin,
+                          _point_end};
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>

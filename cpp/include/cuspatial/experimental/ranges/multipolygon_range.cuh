@@ -141,15 +141,14 @@ class multipolygon_range {
   CUSPATIAL_HOST_DEVICE bool is_first_point_of_multipolygon(IndexType1 point_idx,
                                                             IndexType2 geometry_idx);
 
-
-  // /// Returns an infinite iterator to the "repeated" polygons of the multipolygon range.
-  // /// If the multipolygon range has 2 polygons, an iterator with repeats 3 will iterate on the
-  // /// 0th, 0th, 0th, 1st, 1st, 1st, 0th, 0th, 0th, 1st, 1st, 1st  polygon for the first 12 iterations.
-  // ///
-  // /// The name of `repeated` comes from [numpy.repeat](1)
-  // /// [1] https://numpy.org/doc/stable/reference/generated/numpy.repeat.html
-  // template <typename IndexType>
-  // CUSPATIAL_HOST_DEVICE auto polygon_wraparound_repeated_begin(IndexType repeats);
+  /// Returns an infinite iterator to the "repeated" polygons of the multipolygon range.
+  /// If the multipolygon range has 2 polygons, an iterator with repeats 3 will iterate on the
+  /// 0th, 0th, 0th, 1st, 1st, 1st, 0th, 0th, 0th polygon for the first 9 iterations.
+  ///
+  /// The name of `repeated` comes from [numpy.repeat](1)
+  /// [1] https://numpy.org/doc/stable/reference/generated/numpy.repeat.html
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto polygon_wraparound_repeated_begin(IndexType repeats);
 
  protected:
   GeometryIterator _geometry_begin;
