@@ -109,16 +109,16 @@ class multipolygon_range {
   CUSPATIAL_HOST_DEVICE auto point_end();
 
   /// Return the iterator to the first part offset in the range.
-  CUSPATIAL_HOST_DEVICE auto part_begin() { return _part_begin; }
+  CUSPATIAL_HOST_DEVICE auto part_offset_begin() { return _part_begin; }
 
   /// Return the iterator to the one past the last part offset in the range.
-  CUSPATIAL_HOST_DEVICE auto part_end() { return _part_end; }
+  CUSPATIAL_HOST_DEVICE auto part_offset_end() { return _part_end; }
 
   /// Return the iterator to the first ring offset in the range.
-  CUSPATIAL_HOST_DEVICE auto ring_begin() { return _ring_begin; }
+  CUSPATIAL_HOST_DEVICE auto ring_offset_begin() { return _ring_begin; }
 
   /// Return the iterator to the one past the last ring offset in the range.
-  CUSPATIAL_HOST_DEVICE auto ring_end() { return _ring_end; }
+  CUSPATIAL_HOST_DEVICE auto ring_offset_end() { return _ring_end; }
 
   /// Given the index of a segment, return the index of the geometry (multipolygon) that contains
   /// the segment. Segment index is the index to the starting point of the segment. If the index is
