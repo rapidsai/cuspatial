@@ -25,6 +25,7 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/detail/raw_reference_cast.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -124,8 +125,9 @@ struct compute_point_linestring_indices_and_distances {
       global_index, point_offsets, point_offsets_end, quad_offsets, quad_offsets_end, quad_lengths);
 
     // We currently support only single-linestring multilinestrings, so use the zero index
-    auto linestring     = linestrings[linestring_indices[linestring_id]][0];
-    auto const distance = point_linestring_distance(points[point_id], linestring);
+    auto linestring = linestrings[linestring_indices[linestring_id]][0];
+    auto const distance =
+      point_linestring_distance(thrust::raw_reference_cast(points[point_id]), linestring);
 
     return thrust::make_tuple(point_id, linestring_indices[linestring_id], distance);
   }
