@@ -23,6 +23,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/experimental/detail/functors.cuh>
 #include <cuspatial/experimental/geometry_collection/multilinestring_ref.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
@@ -102,6 +103,13 @@ CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_points()
 {
   return thrust::distance(_point_begin, _point_end);
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_segments()
+{
+  return num_points() - num_linestrings();
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -194,6 +202,38 @@ CUSPATIAL_HOST_DEVICE thrust::pair<
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment(IndexType segment_idx)
 {
   return thrust::make_pair(_point_begin[segment_idx], _point_begin[segment_idx + 1]);
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_begin()
+{
+  return detail::make_counting_transform_iterator(
+    0,
+    detail::to_valid_segment_functor{
+      this->subtracted_part_begin(), this->subtracted_part_end(), _point_begin});
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_end()
+{
+  return segment_begin() + num_segments();
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::subtracted_part_begin()
+{
+  return detail::make_counting_transform_iterator(
+    0, detail::to_subtracted_by_index_iterator{_part_begin});
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::subtracted_part_end()
+{
+  return subtracted_part_begin() + thrust::distance(_part_begin, _part_end);
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>

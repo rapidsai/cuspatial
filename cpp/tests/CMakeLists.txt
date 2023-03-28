@@ -185,3 +185,7 @@ ConfigureTest(FIND_TEST_EXP
     experimental/find/find_and_combine_segments_test.cu
     experimental/find/find_points_on_segments_test.cu
     experimental/find/find_duplicate_points_test.cu)
+
+ConfigureTest(RANGE_TEST_EXP
+    experimental/range/multilinestring_range_test.cu
+)
