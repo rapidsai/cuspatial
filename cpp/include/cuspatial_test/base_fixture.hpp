@@ -31,8 +31,8 @@ class RMMResourceMixin {
 
  public:
   /**
-   * @brief Returns pointer to `device_memory_resource` that should be used for
-   * all tests inheriting from this fixture
+   * @brief Returns pointer to `device_memory_resource` that should be used for all tests inheriting
+   * from this fixture.
    * @return pointer to memory resource
    */
   rmm::mr::device_memory_resource* mr() { return _mr; }
