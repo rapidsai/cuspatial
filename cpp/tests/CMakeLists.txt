@@ -70,7 +70,7 @@ ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST
     spatial/pairwise_point_in_polygon_test.cpp)
 
 ConfigureTest(POINT_QUADTREE_TEST
-    indexing/point_quadtree_test.cu)
+    indexing/point_quadtree_test.cpp)
 
 ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST
     spatial/linestring_bounding_boxes_test.cpp)
