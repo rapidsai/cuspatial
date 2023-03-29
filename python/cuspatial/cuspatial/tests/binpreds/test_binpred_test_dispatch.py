@@ -4,7 +4,12 @@ from functools import wraps
 
 import pandas as pd
 import pytest
-from binpred_test_dispatch import feature_test_dispatch
+from binpred_test_dispatch import (  # noqa: F401
+    feature_test_dispatch,
+    geotype_tuple,
+    predicate,
+    test_type,
+)
 
 
 def skip_on_exception(func):
@@ -19,7 +24,7 @@ def skip_on_exception(func):
 
 
 @skip_on_exception
-def test_fixtures(geotype_tuple, predicate, test_type):
+def test_fixtures(geotype_tuple, predicate, test_type):  # noqa: F811
     """Test that the fixture data is correct."""
     (lhs, rhs) = feature_test_dispatch(
         geotype_tuple[0], geotype_tuple[1], test_type
