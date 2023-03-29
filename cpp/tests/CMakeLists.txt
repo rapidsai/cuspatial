@@ -96,8 +96,8 @@ ConfigureTest(LINESTRING_INTERSECTION_TEST
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST
     spatial/point_linestring_nearest_points_test.cpp)
 
-ConfigureTest(QUADTREE_POLYGON_FILTERING_TEST
-    join/quadtree_polygon_filtering_test.cpp)
+ConfigureTest(JOIN_QUADTREE_AND_BOUNDING_BOXES_TEST
+    join/join_quadtree_and_bounding_boxes_test.cpp)
 
 ConfigureTest(QUADTREE_LINESTRING_FILTERING_TEST
     join/quadtree_linestring_filtering_test.cu)
@@ -120,7 +120,7 @@ ConfigureTest(UTILITY_TEST
     utility_test/test_geometry_generators.cu
 )
 
-# Experimental API
+# Header-only API
 ConfigureTest(HAVERSINE_TEST_EXP
     experimental/spatial/haversine_test.cu)
 
@@ -186,6 +186,9 @@ ConfigureTest(FIND_TEST_EXP
     experimental/find/find_and_combine_segments_test.cu
     experimental/find/find_points_on_segments_test.cu
     experimental/find/find_duplicate_points_test.cu)
+
+ConfigureTest(JOIN_QUADTREE_AND_BOUNDING_BOXES_TEST_EXP
+    experimental/join/join_quadtree_and_bounding_boxes_test.cu)
 
 ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST_EXP
     experimental/join/quadtree_point_in_polygon_test_small.cu)

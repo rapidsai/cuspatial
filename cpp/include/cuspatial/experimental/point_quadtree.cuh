@@ -35,8 +35,6 @@ namespace cuspatial {
  * @{
  */
 
-struct point_quadtree_ref;
-
 struct point_quadtree {
   // uint32_t vector of quad node keys
   rmm::device_uvector<uint32_t> key;
