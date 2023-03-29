@@ -53,10 +53,7 @@ using cuspatial::vec_2d;
  *
  */
 template <class PointsIter, typename T>
-void generate_points(PointsIter begin,
-                     PointsIter end,
-                     cuspatial::vec_2d<T> range_min,
-                     vec_2d<T> range_max)
+void generate_points(PointsIter begin, PointsIter end, vec_2d<T> range_min, vec_2d<T> range_max)
 {
   auto engine_x = cuspatial::test::deterministic_engine(std::distance(begin, end));
   auto engine_y = cuspatial::test::deterministic_engine(2 * std::distance(begin, end));

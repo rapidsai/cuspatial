@@ -15,6 +15,7 @@
  */
 
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/algorithm/point_linestring_distance.cuh>
 #include <cuspatial/experimental/detail/join/get_quad_and_local_point_indices.cuh>
@@ -155,7 +156,7 @@ quadtree_point_to_nearest_linestring(LinestringIndexIterator linestring_indices_
                                      rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(linestrings.num_multilinestrings() == linestrings.num_linestrings(),
-                    "Only one polygon per multipolygon currently supported.");
+                    "Only one linestring per multilinestring currently supported.");
 
   auto num_linestring_quad_pairs = std::distance(linestring_indices_first, linestring_indices_last);
 
@@ -255,9 +256,7 @@ quadtree_point_to_nearest_linestring(LinestringIndexIterator linestring_indices_
   rmm::device_uvector<uint32_t> output_point_idxs(num_points, stream, mr);
 
   // Fill distances with 0
-  CUSPATIAL_CUDA_TRY(cudaMemsetAsync(
-    output_distances.data(), 0, output_distances.size() * sizeof(T), stream.value()));
-
+  zero_data_async(output_distances.begin(), output_distances.end(), stream);
   // Reduce the intermediate point/linestring indices to lists of point/linestring index pairs
   // and distances, selecting the linestring index closest to each point.
   auto point_idxs_end = thrust::reduce_by_key(
