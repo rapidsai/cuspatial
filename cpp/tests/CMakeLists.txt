@@ -97,7 +97,7 @@ ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST
     spatial/point_linestring_nearest_points_test.cpp)
 
 ConfigureTest(QUADTREE_POLYGON_FILTERING_TEST
-    join/quadtree_polygon_filtering_test.cu)
+    join/quadtree_polygon_filtering_test.cpp)
 
 ConfigureTest(QUADTREE_LINESTRING_FILTERING_TEST
     join/quadtree_linestring_filtering_test.cu)
