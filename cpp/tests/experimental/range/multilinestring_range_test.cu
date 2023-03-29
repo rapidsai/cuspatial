@@ -66,6 +66,27 @@ struct MultilinestringRangeTest : public BaseFixture {
     auto d_expected = thrust::device_vector<segment<T>>(expected.begin(), expected.end());
     CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(d_expected, got);
   }
+
+  void run_per_multilinestring_point_count_test(std::initializer_list<std::size_t> geometry_offset,
+                                                std::initializer_list<std::size_t> part_offset,
+                                                std::initializer_list<vec_2d<T>> coordinates,
+                                                std::initializer_list<std::size_t> expected)
+  {
+    auto multilinestring_array =
+      make_multilinestring_array(geometry_offset, part_offset, coordinates);
+
+    auto d_expected = thrust::device_vector<std::size_t>(expected.begin(), expected.end());
+
+    auto rng = multilinestring_array.range();
+
+    rmm::device_uvector<std::size_t> got(rng.num_multilinestrings(), stream());
+    thrust::copy(rmm::exec_policy(stream()),
+                 rng.per_multilinestring_point_count_begin(),
+                 rng.per_multilinestring_point_count_end(),
+                 got.begin());
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, got);
+  }
 };
 
 using TestTypes = ::testing::Types<float, double>;
@@ -123,14 +144,17 @@ TYPED_TEST(MultilinestringRangeTest, SegmentIteratorManyPairTest)
                       P{3, 3},
                       P{4, 4},
                       P{5, 5},
+
                       P{10, 10},
                       P{11, 11},
                       P{12, 12},
                       P{13, 13},
                       P{14, 14},
+
                       P{20, 20},
                       P{21, 21},
                       P{22, 22}},
+
                      {S{P{0, 0}, P{1, 1}},
                       S{P{1, 1}, P{2, 2}},
                       S{P{2, 2}, P{3, 3}},
@@ -215,4 +239,30 @@ TYPED_TEST(MultilinestringRangeTest, DISABLED_SegmentIteratorWithEmptyLineTest)
     {0, 3, 3, 6},
     {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
     {S{P{0, 0}, P{1, 1}}, S{P{1, 1}, P{2, 2}}, S{P{10, 10}, P{11, 11}}, S{P{11, 11}, P{12, 12}}});
+}
+
+TYPED_TEST(MultilinestringRangeTest, PerMultilinestringCountTest)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_per_multilinestring_point_count_test,
+                     {0, 1, 2, 3},
+                     {0, 3, 3, 6},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
+                     {3, 0, 3});
+}
+
+TYPED_TEST(MultilinestringRangeTest, PerMultilinestringCountTest2)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_per_multilinestring_point_count_test,
+                     {0, 1, 3},
+                     {0, 3, 3, 6},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
+                     {3, 3});
 }

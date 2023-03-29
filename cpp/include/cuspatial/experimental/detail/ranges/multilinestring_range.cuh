@@ -208,6 +208,23 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment(Inde
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
+  per_multilinestring_point_count_begin()
+{
+  auto multilinestring_offset_it = thrust::make_permutation_iterator(_part_begin, _geometry_begin);
+  auto paired_it =
+    thrust::make_zip_iterator(multilinestring_offset_it, thrust::next(multilinestring_offset_it));
+  return thrust::make_transform_iterator(paired_it, detail::offset_pair_to_count_iterator{});
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
+  per_multilinestring_point_count_end()
+{
+  return per_multilinestring_point_count_begin() + num_multilinestrings();
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_begin()
 {

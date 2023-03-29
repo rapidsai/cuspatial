@@ -54,8 +54,7 @@ class RMMResourceMixin {
  * class MyTestFixture : public cuspatial::test::BaseFixture {};
  * ```
  */
-class BaseFixture : public RMMResourceMixin, public ::testing::Test {
-};
+class BaseFixture : public RMMResourceMixin, public ::testing::Test {};
 
 /**
  * @brief Base test fixture class from which libcuspatial test with only value parameterization
@@ -79,8 +78,13 @@ class BaseFixture : public RMMResourceMixin, public ::testing::Test {
  */
 template <typename... Ts>
 class BaseFixtureWithParam : public RMMResourceMixin,
-                             public ::testing::TestWithParam<std::tuple<Ts...>> {
-};
+                             public ::testing::TestWithParam<std::tuple<Ts...>> {};
+
+/**
+ * @brief Floating point types to be used in libcuspatial tests
+ *
+ */
+using FloatingPointTypes = ::testing::Types<float, double>;
 
 }  // namespace test
 }  // namespace cuspatial

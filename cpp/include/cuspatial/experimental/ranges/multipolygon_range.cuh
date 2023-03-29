@@ -107,6 +107,12 @@ class multipolygon_range {
   /// Return the iterator to the one past the last point in the range.
   CUSPATIAL_HOST_DEVICE auto point_end();
 
+  //   /// Return the iterator to the first polygon in the range.
+  //   CUSPATIAL_HOST_DEVICE auto polygon_begin();
+
+  //   /// Return the iterator to the one past the last polygon in the range.
+  //   CUSPATIAL_HOST_DEVICE auto polygon_end();
+
   /// Given the index of a segment, return the index of the geometry (multipolygon) that contains
   /// the segment. Segment index is the index to the starting point of the segment. If the index is
   /// the last point of the ring, then it is not a valid index. This function returns
@@ -141,14 +147,22 @@ class multipolygon_range {
   CUSPATIAL_HOST_DEVICE bool is_first_point_of_multipolygon(IndexType1 point_idx,
                                                             IndexType2 geometry_idx);
 
-  /// Returns an infinite iterator to the "repeated" polygons of the multipolygon range.
-  /// If the multipolygon range has 2 polygons, an iterator with repeats 3 will iterate on the
-  /// 0th, 0th, 0th, 1st, 1st, 1st, 0th, 0th, 0th polygon for the first 9 iterations.
-  ///
-  /// The name of `repeated` comes from [numpy.repeat](1)
-  /// [1] https://numpy.org/doc/stable/reference/generated/numpy.repeat.html
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto polygon_wraparound_repeated_begin(IndexType repeats);
+  /// Returns an iterator to the number of points of the first multipolygon
+  CUSPATIAL_HOST_DEVICE auto per_multipolygon_point_count_begin();
+  /// Returns the one past the iterator to the number of points of the last multipolygon
+  CUSPATIAL_HOST_DEVICE auto per_multipolygon_point_count_end();
+
+  //   /// Returns an infinite iterator to the "repeated" polygons of the multipolygon range.
+  //   /// If the multipolygon range has 2 polygons, an iterator with repeats 3 will iterate on the
+  //   /// 0th, 0th, 0th, 1st, 1st, 1st, 0th, 0th, 0th polygon for the first 9 iterations.
+  //   ///
+  //   /// The name of `repeated` comes from [numpy.repeat](1)
+  //   /// [1] https://numpy.org/doc/stable/reference/generated/numpy.repeat.html
+  //   template <typename IndexType>
+  //   CUSPATIAL_HOST_DEVICE auto polygon_wraparound_repeated_begin(IndexType repeats);
+
+  //   template <typename IndexType>
+  //   CUSPATIAL_HOST_DEVICE auto segment_wraparound_repeated_begin()
 
  protected:
   GeometryIterator _geometry_begin;

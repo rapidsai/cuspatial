@@ -16,12 +16,22 @@
 
 #pragma once
 
+#include <cuspatial_test/test_util.cuh>
+
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/detail/utility/device_atomics.cuh>
+#include <cuspatial/detail/utility/zero_data.cuh>
+#include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
+#include <cuspatial/experimental/detail/functors.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
+#include <thrust/logical.h>
+#include <thrust/scan.h>
+#include <thrust/tabulate.h>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -62,6 +72,39 @@ struct point_in_multipolygon_test_functor {
   }
 };
 
+template <typename MultiLinestringRange,
+          typename MultiPolygonRange,
+          typename IndexRange,
+          typename OutputIt>
+void __global__ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestrings,
+                                                            MultiPolygonRange multipolygons,
+                                                            IndexRange thread_bounds,
+                                                            uint8_t* intersects,
+                                                            OutputIt* distances)
+{
+  using T       = typename MultiLinestringRange::element_t;
+  using index_t = iterator_value_type<typename MultiLinestringRange::geometry_it_t>;
+
+  auto num_threads = thread_bounds[thread_bounds.size() - 1];
+  for (auto idx = blockDim.x * blockIdx.x + threadIdx.x; idx < num_threads;
+       idx += blockDim.x * gridDim.x) {
+    auto it = thrust::prev(
+      thrust::upper_bound(thrust::seq, thread_bounds.begin(), thread_bounds.end(), idx));
+    auto geometry_id = thrust::distance(thread_bounds.begin(), it);
+    auto local_idx   = idx - *it;
+
+    if (intersects[geometry_id]) {
+      distances[geometry_id] = 0.0f;
+      continue;
+    }
+
+    printf("idx: %d, geometry_id: %d, local_idx: %d\n",
+           static_cast<int>(idx),
+           static_cast<int>(geometry_id),
+           static_cast<int>(local_idx));
+  }
+}
+
 }  // namespace detail
 
 template <class MultiLinestringRange, class MultiPolygonRange, class OutputIt>
@@ -71,7 +114,7 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
                                               rmm::cuda_stream_view stream)
 {
   using T       = typename MultiLinestringRange::element_t;
-  using index_t = typename MultiLinestringRange::index_t;
+  using index_t = iterator_value_type<typename MultiLinestringRange::geometry_it_t>;
 
   CUSPATIAL_EXPECTS(multilinestrings.size() == multipolygons.size(),
                     "Must have the same number of input rows.");
@@ -111,6 +154,49 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
 
     return multipoint_intersects;
   }();
+
+  auto thread_counts =
+    rmm::device_uvector<index_t>(multilinestrings.num_multilinestrings(), stream);
+
+  auto per_multilinestring_point_count_it =
+    multilinestrings.per_multilinestring_point_count_begin();
+  auto per_multipolygon_point_count_it = multipolygons.per_multipolygon_point_count_begin();
+
+  thrust::transform(
+    rmm::exec_policy(stream),
+    per_multilinestring_point_count_it,
+    per_multilinestring_point_count_it + multilinestrings.num_multilinestrings(),
+    per_multipolygon_point_count_it,
+    thread_counts.begin(),
+    [] __device__(index_t multilinestring_point_count, index_t multipolygon_point_count) {
+      auto multilinestring_segment_count =
+        multilinestring_point_count == 0 ? 0 : multilinestring_point_count - 1;
+      auto multipolygon_segment_count =
+        multipolygon_point_count == 0 ? 0 : multipolygon_point_count - 1;
+      return multilinestring_segment_count * multipolygon_segment_count;
+    });
+
+  auto thread_bounds = rmm::device_uvector<index_t>(thread_counts.size() + 1, stream);
+  detail::zero_data_async(thread_bounds.begin(), thread_bounds.end(), stream);
+
+  thrust::inclusive_scan(rmm::exec_policy(stream),
+                         thread_counts.begin(),
+                         thread_counts.end(),
+                         thrust::next(thread_bounds.begin()));
+
+  cuspatial::test::print_device_vector(thread_bounds, "thread_bounds: ");
+
+  auto num_threads       = thread_bounds.back_element(stream);
+  auto [tpb, num_blocks] = grid_1d(num_threads);
+
+  detail::pairwise_linestring_polygon_distance_kernel<<<num_blocks, tpb, 0, stream.value()>>>(
+    multilinestrings,
+    multipolygons,
+    range{thread_bounds.begin(), thread_bounds.end()},
+    multipoint_intersects.begin(),
+    distances_first);
+
+  return distances_first + multilinestrings.num_multilinestrings();
 }
 
 }  // namespace cuspatial

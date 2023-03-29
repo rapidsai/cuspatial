@@ -133,6 +133,12 @@ class multilinestring_range {
   CUSPATIAL_HOST_DEVICE thrust::pair<vec_2d<element_t>, vec_2d<element_t>> segment(
     IndexType segment_idx);
 
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto per_multilinestring_point_count_begin();
+
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto per_multilinestring_point_count_end();
+
   /// Returns an iterator to the start of the segment
   CUSPATIAL_HOST_DEVICE auto segment_begin();
 

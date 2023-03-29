@@ -9,6 +9,16 @@
 namespace cuspatial {
 namespace detail {
 
+struct offset_pair_to_count_iterator {
+  template <typename OffsetPairIterator>
+  CUSPATIAL_HOST_DEVICE auto operator()(OffsetPairIterator p)
+  {
+    auto first  = thrust::get<0>(p);
+    auto second = thrust::get<1>(p);
+    return second - first;
+  }
+};
+
 template <typename OffsetIterator>
 struct to_subtracted_by_index_iterator {
   OffsetIterator begin;
@@ -62,19 +72,19 @@ struct wraparound_functor {
 template <typename IndexType>
 wraparound_functor(IndexType) -> wraparound_functor<IndexType>;
 
-template <typename IndexType>
-struct repeat_functor {
-  IndexType repeats;
+// template <typename IndexType>
+// struct repeat_functor {
+//   IndexType repeats;
 
-  template <typename IndexType2>
-  CUSPATIAL_HOST_DEVICE auto operator()(IndexType2 i)
-  {
-    return i / repeats;
-  }
-};
+//   template <typename IndexType2>
+//   CUSPATIAL_HOST_DEVICE auto operator()(IndexType2 i)
+//   {
+//     return i / repeats;
+//   }
+// };
 
-template <typename IndexType>
-wraparound_functor(IndexType) -> wraparound_functor<IndexType>;
+// template <typename IndexType>
+// wraparound_functor(IndexType) -> wraparound_functor<IndexType>;
 
 }  // namespace detail
 }  // namespace cuspatial
