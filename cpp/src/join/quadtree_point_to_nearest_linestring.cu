@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "cuspatial/detail/utility/validation.hpp"
+#include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/ranges/multilinestring_range.cuh>
