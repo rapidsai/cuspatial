@@ -760,3 +760,223 @@ def test_multipolygon_intersects_multipolygon():
     got = g1.intersects(g2)
     expected = gpdg1.intersects(gpdg2)
     pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_point_disjoint_linestring():
+    g1 = cuspatial.GeoSeries(
+        [
+            Point(0.0, 0.0),
+            Point(0.0, 0.0),
+        ]
+    )
+    g2 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    gpdg1 = g1.to_geopandas()
+    gpdg2 = g2.to_geopandas()
+    got = g1.disjoint(g2)
+    expected = gpdg1.disjoint(gpdg2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_linestring_disjoint_point():
+    g1 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    g2 = cuspatial.GeoSeries(
+        [
+            Point(0.0, 0.0),
+            Point(0.0, 0.0),
+        ]
+    )
+    gpdg1 = g1.to_geopandas()
+    gpdg2 = g2.to_geopandas()
+    got = g1.disjoint(g2)
+    expected = gpdg1.disjoint(gpdg2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_linestring_disjoint_linestring():
+    g1 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    g2 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    gpdg1 = g1.to_geopandas()
+    gpdg2 = g2.to_geopandas()
+    got = g1.disjoint(g2)
+    expected = gpdg1.disjoint(gpdg2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_linestring_contains_point():
+    g1 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    g2 = cuspatial.GeoSeries(
+        [
+            Point(0.0, 0.0),
+            Point(0.0, 0.0),
+        ]
+    )
+    gpdg1 = g1.to_geopandas()
+    gpdg2 = g2.to_geopandas()
+    got = g1.contains_properly(g2)
+    expected = gpdg1.contains(gpdg2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_linestring_covers_point():
+    g1 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    g2 = cuspatial.GeoSeries(
+        [
+            Point(0.0, 0.0),
+            Point(0.0, 0.0),
+        ]
+    )
+    gpdg1 = g1.to_geopandas()
+    gpdg2 = g2.to_geopandas()
+    got = g1.covers(g2)
+    expected = gpdg1.covers(gpdg2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_linestring_crosses_point():
+    g1 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    g2 = cuspatial.GeoSeries(
+        [
+            Point(0.0, 0.0),
+            Point(0.0, 0.0),
+        ]
+    )
+    gpdg1 = g1.to_geopandas()
+    gpdg2 = g2.to_geopandas()
+    got = g1.crosses(g2)
+    expected = gpdg1.crosses(gpdg2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def linestring_crosses_linestring():
+    g1 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    g2 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    gpdg1 = g1.to_geopandas()
+    gpdg2 = g2.to_geopandas()
+    got = g1.crosses(g2)
+    expected = gpdg1.crosses(gpdg2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def linestring_crosses_polygon():
+    g1 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    g2 = cuspatial.GeoSeries(
+        [
+            Polygon([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            Polygon([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    gpdg1 = g1.to_geopandas()
+    gpdg2 = g2.to_geopandas()
+    got = g1.crosses(g2)
+    expected = gpdg1.crosses(gpdg2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_linestring_overlaps_point():
+    g1 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    g2 = cuspatial.GeoSeries(
+        [
+            Point(0.0, 0.0),
+            Point(0.0, 0.0),
+        ]
+    )
+    gpdg1 = g1.to_geopandas()
+    gpdg2 = g2.to_geopandas()
+    got = g1.overlaps(g2)
+    expected = gpdg1.overlaps(gpdg2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_linestring_overlaps_linestring():
+    g1 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    g2 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 1.0), (1.0, 1.0)]),
+            LineString([(0.0, 1.0), (1.0, 1.0)]),
+        ]
+    )
+    gpdg1 = g1.to_geopandas()
+    gpdg2 = g2.to_geopandas()
+    got = g1.overlaps(g2)
+    expected = gpdg1.overlaps(gpdg2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_linestring_overlaps_polygon():
+    g1 = cuspatial.GeoSeries(
+        [
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            LineString([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    g2 = cuspatial.GeoSeries(
+        [
+            Polygon([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+            Polygon([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.0, 0.0)]),
+        ]
+    )
+    gpdg1 = g1.to_geopandas()
+    gpdg2 = g2.to_geopandas()
+    got = g1.overlaps(g2)
+    expected = gpdg1.overlaps(gpdg2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())

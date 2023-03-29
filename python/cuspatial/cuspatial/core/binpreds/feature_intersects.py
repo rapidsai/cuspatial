@@ -91,7 +91,7 @@ class RootIntersects(BinPred):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate."""
         match_indices = self._get_match_indices(lhs, op_result)
-        result = _false_series(lhs)
+        result = _false_series(len(lhs))
         if len(op_result.result[1]) > 0 and len(lhs) == 1:
             result[0] = True
         elif len(op_result.result[1]) > 0:
@@ -158,7 +158,7 @@ class LineStringMultiPointIntersects(RootIntersects):
         intersections = op_result.result[1]
         x_coords = rhs.lines.x
         y_coords = rhs.lines.y
-        result = _false_series(lhs)
+        result = _false_series(len(lhs))
         for idx in range(len(intersections)):
             if isinstance(intersections[idx], ShapelyLineString):
                 result[match_indices[idx]] = True
@@ -199,11 +199,19 @@ class PolygonPolygonIntersects(RootIntersects):
         )
 
 
+class PointLineStringIntersects(LineStringPointIntersects):
+    def _preprocess(self, lhs, rhs):
+        """Swap LHS and RHS and call the normal contains processing."""
+        self.lhs = rhs
+        self.rhs = lhs
+        return super()._preprocess(rhs, lhs)
+
+
 """ Type dispatch dictionary for intersects binary predicates. """
 DispatchDict = {
     (Point, Point): IntersectsByEquals,
     (Point, MultiPoint): NotImplementedRoot,
-    (Point, LineString): NotImplementedRoot,
+    (Point, LineString): PointLineStringIntersects,
     (Point, Polygon): PointPolygonIntersects,
     (MultiPoint, Point): NotImplementedRoot,
     (MultiPoint, MultiPoint): NotImplementedRoot,

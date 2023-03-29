@@ -334,9 +334,11 @@ class PointPointContains(RootContains):
     def _preprocess(self, lhs, rhs):
         """PointPointContains that simply calls the equals predicate on the
         points."""
-        from cuspatial.core.binpreds.binpred_dispatch import EQUALS_DISPATCH
+        from cuspatial.core.binpreds.binpred_dispatch import (
+            INTERSECTS_DISPATCH,
+        )
 
-        predicate = EQUALS_DISPATCH[(lhs.column_type, rhs.column_type)](
+        predicate = INTERSECTS_DISPATCH[(lhs.column_type, rhs.column_type)](
             align=self.config.align
         )
         return predicate(lhs, rhs)
@@ -353,7 +355,7 @@ DispatchDict = {
     (MultiPoint, MultiPoint): NotImplementedRoot,
     (MultiPoint, LineString): NotImplementedRoot,
     (MultiPoint, Polygon): NotImplementedRoot,
-    (LineString, Point): NotImplementedRoot,
+    (LineString, Point): PointPointContains,
     (LineString, MultiPoint): NotImplementedRoot,
     (LineString, LineString): NotImplementedRoot,
     (LineString, Polygon): NotImplementedRoot,

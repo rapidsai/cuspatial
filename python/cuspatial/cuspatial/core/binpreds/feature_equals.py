@@ -321,6 +321,12 @@ class LineStringLineStringEquals(PolygonComplexEquals):
         )
 
 
+class LineStringPointEquals(RootEquals):
+    def _preprocess(self, lhs, rhs):
+        """A LineString cannot be equal to a point. So, return False."""
+        return _false_series(len(lhs))
+
+
 """DispatchDict for Equals operations."""
 DispatchDict = {
     (Point, Point): RootEquals,
@@ -331,7 +337,7 @@ DispatchDict = {
     (MultiPoint, MultiPoint): MultiPointMultiPointEquals,
     (MultiPoint, LineString): NotImplementedRoot,
     (MultiPoint, Polygon): NotImplementedRoot,
-    (LineString, Point): NotImplementedRoot,
+    (LineString, Point): LineStringPointEquals,
     (LineString, MultiPoint): NotImplementedRoot,
     (LineString, LineString): LineStringLineStringEquals,
     (LineString, Polygon): RootEquals,

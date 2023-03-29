@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 
 from cudf import Series
 
+from cuspatial.utils.binpred_utils import _false_series
+
 if TYPE_CHECKING:
     from cuspatial.core.geoseries import GeoSeries
 
@@ -570,3 +572,12 @@ class NotImplementedRoot(BinPred):
 
     def __init__(self, *args, **kwargs):
         raise NotImplementedError
+
+
+class ImpossibleRoot(BinPred):
+    """There are many combinations that are impossible. This is the base class
+    to simply return a series of False values for these cases.
+    """
+
+    def _preprocess(self, lhs, rhs):
+        return _false_series(len(lhs))

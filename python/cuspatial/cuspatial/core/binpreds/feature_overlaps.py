@@ -2,7 +2,10 @@
 
 import cudf
 
-from cuspatial.core.binpreds.binpred_interface import NotImplementedRoot
+from cuspatial.core.binpreds.binpred_interface import (
+    ImpossibleRoot,
+    NotImplementedRoot,
+)
 from cuspatial.core.binpreds.feature_contains import RootContains
 from cuspatial.core.binpreds.feature_equals import RootEquals
 from cuspatial.utils.binpred_utils import (
@@ -23,12 +26,6 @@ class RootOverlaps(RootEquals):
     """
 
     pass
-
-
-class PointPointOverlaps(RootOverlaps):
-    def _preprocess(self, lhs, rhs):
-        """Points can't overlap other points, so we return False."""
-        return _false_series(len(lhs))
 
 
 class PolygonPointOverlaps(RootContains):
@@ -56,7 +53,7 @@ class PolygonPointOverlaps(RootContains):
 
 """Dispatch table for overlaps binary predicate."""
 DispatchDict = {
-    (Point, Point): PointPointOverlaps,
+    (Point, Point): ImpossibleRoot,
     (Point, MultiPoint): NotImplementedRoot,
     (Point, LineString): NotImplementedRoot,
     (Point, Polygon): RootOverlaps,
@@ -64,10 +61,10 @@ DispatchDict = {
     (MultiPoint, MultiPoint): NotImplementedRoot,
     (MultiPoint, LineString): NotImplementedRoot,
     (MultiPoint, Polygon): NotImplementedRoot,
-    (LineString, Point): NotImplementedRoot,
+    (LineString, Point): ImpossibleRoot,
     (LineString, MultiPoint): NotImplementedRoot,
-    (LineString, LineString): NotImplementedRoot,
-    (LineString, Polygon): NotImplementedRoot,
+    (LineString, LineString): ImpossibleRoot,
+    (LineString, Polygon): ImpossibleRoot,
     (Polygon, Point): RootOverlaps,
     (Polygon, MultiPoint): RootOverlaps,
     (Polygon, LineString): RootOverlaps,

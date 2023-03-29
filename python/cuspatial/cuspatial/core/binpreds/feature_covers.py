@@ -2,6 +2,10 @@
 
 from cuspatial.core.binpreds.binpred_interface import NotImplementedRoot
 from cuspatial.core.binpreds.feature_equals import RootEquals
+from cuspatial.core.binpreds.feature_intersects import (
+    LineStringPointIntersects,
+    PointLineStringIntersects,
+)
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -35,13 +39,13 @@ class RootCovers(RootEquals):
 DispatchDict = {
     (Point, Point): RootCovers,
     (Point, MultiPoint): NotImplementedRoot,
-    (Point, LineString): NotImplementedRoot,
+    (Point, LineString): PointLineStringIntersects,
     (Point, Polygon): RootCovers,
     (MultiPoint, Point): NotImplementedRoot,
     (MultiPoint, MultiPoint): NotImplementedRoot,
     (MultiPoint, LineString): NotImplementedRoot,
     (MultiPoint, Polygon): NotImplementedRoot,
-    (LineString, Point): NotImplementedRoot,
+    (LineString, Point): LineStringPointIntersects,
     (LineString, MultiPoint): NotImplementedRoot,
     (LineString, LineString): NotImplementedRoot,
     (LineString, Polygon): RootCovers,

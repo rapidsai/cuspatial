@@ -1,6 +1,9 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-from cuspatial.core.binpreds.binpred_interface import NotImplementedRoot
+from cuspatial.core.binpreds.binpred_interface import (
+    ImpossibleRoot,
+    NotImplementedRoot,
+)
 from cuspatial.core.binpreds.feature_equals import RootEquals
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -35,7 +38,7 @@ DispatchDict = {
     (MultiPoint, MultiPoint): NotImplementedRoot,
     (MultiPoint, LineString): NotImplementedRoot,
     (MultiPoint, Polygon): NotImplementedRoot,
-    (LineString, Point): NotImplementedRoot,
+    (LineString, Point): ImpossibleRoot,
     (LineString, MultiPoint): NotImplementedRoot,
     (LineString, LineString): NotImplementedRoot,
     (LineString, Polygon): NotImplementedRoot,

@@ -4,6 +4,10 @@ from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     NotImplementedRoot,
 )
+from cuspatial.core.binpreds.feature_intersects import (
+    PointLineStringIntersects,
+    RootIntersects,
+)
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -12,7 +16,7 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-class RootDisjoint(BinPred):
+class ContainsDisjoint(BinPred):
     def _preprocess(self, lhs, rhs):
         """Disjoint is the opposite of contains, so just implement contains
         and then negate the result."""
@@ -24,21 +28,43 @@ class RootDisjoint(BinPred):
         return ~predicate(lhs, rhs)
 
 
+class PointLineStringDisjoint(PointLineStringIntersects):
+    def _postprocess(self, lhs, rhs, op_result):
+        """Disjoint is the opposite of intersects, so just implement intersects
+        and then negate the result."""
+        result = super()._postprocess(lhs, rhs, op_result)
+        return ~result
+
+
+class LineStringPointDisjoint(PointLineStringDisjoint):
+    def _preprocess(self, lhs, rhs):
+        """Swap ordering for Intersects."""
+        return super()._preprocess(rhs, lhs)
+
+
+class LineStringLineStringDisjoint(RootIntersects):
+    def _postprocess(self, lhs, rhs, op_result):
+        """Disjoint is the opposite of intersects, so just implement intersects
+        and then negate the result."""
+        result = super()._postprocess(lhs, rhs, op_result)
+        return ~result
+
+
 DispatchDict = {
-    (Point, Point): RootDisjoint,
+    (Point, Point): ContainsDisjoint,
     (Point, MultiPoint): NotImplementedRoot,
-    (Point, LineString): NotImplementedRoot,
-    (Point, Polygon): RootDisjoint,
+    (Point, LineString): PointLineStringDisjoint,
+    (Point, Polygon): ContainsDisjoint,
     (MultiPoint, Point): NotImplementedRoot,
     (MultiPoint, MultiPoint): NotImplementedRoot,
     (MultiPoint, LineString): NotImplementedRoot,
     (MultiPoint, Polygon): NotImplementedRoot,
-    (LineString, Point): NotImplementedRoot,
+    (LineString, Point): LineStringPointDisjoint,
     (LineString, MultiPoint): NotImplementedRoot,
-    (LineString, LineString): NotImplementedRoot,
+    (LineString, LineString): LineStringLineStringDisjoint,
     (LineString, Polygon): NotImplementedRoot,
-    (Polygon, Point): RootDisjoint,
-    (Polygon, MultiPoint): RootDisjoint,
-    (Polygon, LineString): RootDisjoint,
-    (Polygon, Polygon): RootDisjoint,
+    (Polygon, Point): ContainsDisjoint,
+    (Polygon, MultiPoint): ContainsDisjoint,
+    (Polygon, LineString): ContainsDisjoint,
+    (Polygon, Polygon): ContainsDisjoint,
 }
