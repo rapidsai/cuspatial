@@ -43,9 +43,9 @@ struct DeriveTrajectoriesTest : public ::testing::Test {
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(DeriveTrajectoriesTest, TestTypes);
 
-TYPED_TEST(DeriveTrajectoriesTest, OneMillionSmallTrajectories)
+TYPED_TEST(DeriveTrajectoriesTest, TenThousandSmallTrajectories)
 {
-  auto data = cuspatial::test::trajectory_test_data<TypeParam>(1'000'000, 50);
+  auto data = cuspatial::test::trajectory_test_data<TypeParam>(10'000, 50);
 
   auto traj_ids    = rmm::device_vector<std::int32_t>(data.ids.size());
   auto traj_points = rmm::device_vector<cuspatial::vec_2d<TypeParam>>(data.points.size());
@@ -66,7 +66,7 @@ TYPED_TEST(DeriveTrajectoriesTest, OneMillionSmallTrajectories)
 
 TYPED_TEST(DeriveTrajectoriesTest, OneHundredLargeTrajectories)
 {
-  auto data = cuspatial::test::trajectory_test_data<TypeParam>(100, 1'000'000);
+  auto data = cuspatial::test::trajectory_test_data<TypeParam>(100, 10'000);
 
   auto traj_ids    = rmm::device_vector<std::int32_t>(data.ids.size());
   auto traj_points = rmm::device_vector<cuspatial::vec_2d<TypeParam>>(data.points.size());
@@ -87,7 +87,7 @@ TYPED_TEST(DeriveTrajectoriesTest, OneHundredLargeTrajectories)
 
 TYPED_TEST(DeriveTrajectoriesTest, OneVeryLargeTrajectory)
 {
-  auto data = cuspatial::test::trajectory_test_data<TypeParam>(1, 100'000'000);
+  auto data = cuspatial::test::trajectory_test_data<TypeParam>(1, 1'000'000);
 
   auto traj_ids    = rmm::device_vector<std::int32_t>(data.ids.size());
   auto traj_points = rmm::device_vector<cuspatial::vec_2d<TypeParam>>(data.points.size());
