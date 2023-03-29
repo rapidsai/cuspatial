@@ -10,7 +10,7 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
-    _false,
+    _false_series,
 )
 from cuspatial.utils.column_utils import has_same_geometry
 
@@ -28,13 +28,13 @@ class RootOverlaps(RootEquals):
 class PointPointOverlaps(RootOverlaps):
     def _preprocess(self, lhs, rhs):
         """Points can't overlap other points, so we return False."""
-        return _false(lhs)
+        return _false_series(len(lhs))
 
 
 class PolygonPointOverlaps(RootContains):
     def _postprocess(self, lhs, rhs, op_result):
         if not has_same_geometry(lhs, rhs) or len(op_result.point_result) == 0:
-            return _false(lhs)
+            return _false_series(len(lhs))
         polygon_indices = (
             self._convert_quadtree_result_from_part_to_polygon_indices(
                 op_result.point_result

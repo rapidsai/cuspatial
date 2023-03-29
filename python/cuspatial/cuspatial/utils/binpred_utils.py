@@ -16,9 +16,9 @@ LineString = ColumnType.LINESTRING
 Polygon = ColumnType.POLYGON
 
 
-def _false(lhs):
+def _false_series(size):
     """Return a Series of False values"""
-    return cudf.Series(cp.zeros(len(lhs), dtype=cp.bool_))
+    return cudf.Series(cp.zeros(size, dtype=cp.bool_))
 
 
 def _count_results_in_multipoint_geometries(point_indices, point_result):
