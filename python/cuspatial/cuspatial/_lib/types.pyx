@@ -28,3 +28,10 @@ class CollectionType(IntEnum):
     MULTI = (
         <underlying_collection_type_id_t> collection_type_id.MULTI
     )
+
+
+cdef geometry_type_id geometry_type_py_to_c(typ : GeometryType):
+    return <geometry_type_id>(<underlying_collection_type_id_t> (typ.value))
+
+cdef collection_type_id collection_type_py_to_c(typ : CollectionType):
+    return <collection_type_id>(<underlying_collection_type_id_t> (typ.value))
