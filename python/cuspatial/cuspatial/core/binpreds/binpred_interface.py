@@ -511,7 +511,7 @@ class BinPred(BinPredItf):
 
     def __init__(self, **kwargs):
         """Root implementation for BinPredItf"""
-        self.kwargs = kwargs
+        self.config = BinPredConfig(**kwargs)
 
     def __call__(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """Root implementation of __call__ for BinPredItf..

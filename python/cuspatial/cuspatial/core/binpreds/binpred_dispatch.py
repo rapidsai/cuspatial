@@ -17,6 +17,9 @@ from cuspatial.core.binpreds.feature_covers import (  # NOQA F401
 from cuspatial.core.binpreds.feature_crosses import (  # NOQA F401
     DispatchDict as CROSSES_DISPATCH,
 )
+from cuspatial.core.binpreds.feature_disjoint import (  # NOQA F401
+    DispatchDict as DISJOINT_DISPATCH,
+)
 from cuspatial.core.binpreds.feature_equals import (  # NOQA F401
     DispatchDict as EQUALS_DISPATCH,
 )
@@ -25,6 +28,9 @@ from cuspatial.core.binpreds.feature_intersects import (  # NOQA F401
 )
 from cuspatial.core.binpreds.feature_overlaps import (  # NOQA F401
     DispatchDict as OVERLAPS_DISPATCH,
+)
+from cuspatial.core.binpreds.feature_touches import (  # NOQA F401
+    DispatchDict as TOUCHES_DISPATCH,
 )
 from cuspatial.core.binpreds.feature_within import (  # NOQA F401
     DispatchDict as WITHIN_DISPATCH,

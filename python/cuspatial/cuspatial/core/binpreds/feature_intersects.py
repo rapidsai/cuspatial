@@ -21,7 +21,7 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
-    _false,
+    _false_series,
 )
 
 
@@ -91,7 +91,7 @@ class RootIntersects(BinPred):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate."""
         match_indices = self._get_match_indices(lhs, op_result)
-        result = _false(lhs)
+        result = _false_series(lhs)
         if len(op_result.result[1]) > 0 and len(lhs) == 1:
             result[0] = True
         elif len(op_result.result[1]) > 0:
@@ -158,7 +158,7 @@ class LineStringMultiPointIntersects(RootIntersects):
         intersections = op_result.result[1]
         x_coords = rhs.lines.x
         y_coords = rhs.lines.y
-        result = _false(lhs)
+        result = _false_series(lhs)
         for idx in range(len(intersections)):
             if isinstance(intersections[idx], ShapelyLineString):
                 result[match_indices[idx]] = True

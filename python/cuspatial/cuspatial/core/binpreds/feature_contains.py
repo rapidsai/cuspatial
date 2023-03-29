@@ -11,15 +11,11 @@ from cudf.core.series import Series
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
-    BinPredConfig,
     ContainsOpResult,
     NotImplementedRoot,
     PreprocessorResult,
 )
 from cuspatial.core.binpreds.contains import contains_properly
-from cuspatial.core.binpreds.feature_equals import (
-    DispatchDict as EQUALS_DISPATCH_DICT,
-)
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -57,7 +53,7 @@ class RootContains(BinPred, Generic[GeoSeries]):
             right-hand GeoSeries. If False, the feature will be compared in a
             1:1 fashion with the corresponding feature in the other GeoSeries.
         """
-        self.config = BinPredConfig(**kwargs)
+        super().__init__(**kwargs)
         self.config.allpairs = kwargs.get("allpairs", False)
 
     def _preprocess(self, lhs, rhs):
@@ -338,8 +334,9 @@ class PointPointContains(RootContains):
     def _preprocess(self, lhs, rhs):
         """PointPointContains that simply calls the equals predicate on the
         points."""
+        from cuspatial.core.binpreds.binpred_dispatch import EQUALS_DISPATCH
 
-        predicate = EQUALS_DISPATCH_DICT[(lhs.column_type, rhs.column_type)](
+        predicate = EQUALS_DISPATCH[(lhs.column_type, rhs.column_type)](
             align=self.config.align
         )
         return predicate(lhs, rhs)
