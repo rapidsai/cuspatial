@@ -55,6 +55,7 @@ class linestring_ref {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto segment(IndexType segment_idx) const;
 
+ protected:
   VecIterator _point_begin;
   VecIterator _point_end;
 };
