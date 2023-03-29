@@ -1,4 +1,5 @@
-# Copyright (c) 2021-2022 NVIDIA CORPORATION
+# Copyright (c) 2021-2023 NVIDIA CORPORATION
+
 from enum import Enum
 from functools import cached_property
 from typing import Tuple, TypeVar
@@ -14,8 +15,6 @@ from cuspatial.utils.column_utils import empty_geometry_column
 
 
 class ColumnType(Enum):
-    """Types which are returned by GeoColumn.typeclass."""
-
     MIXED = 0
     POINT = 1
     MULTIPOINT = 2

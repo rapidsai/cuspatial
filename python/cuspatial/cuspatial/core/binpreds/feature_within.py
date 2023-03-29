@@ -2,11 +2,17 @@
 
 import cudf
 
-from cuspatial.core._column.geocolumn import ColumnType
 from cuspatial.core.binpreds.binpred_interface import NotImplementedRoot
 from cuspatial.core.binpreds.feature_contains import RootContains
 from cuspatial.core.binpreds.feature_equals import RootEquals
 from cuspatial.utils import binpred_utils
+from cuspatial.utils.binpred_utils import (
+    LineString,
+    MultiPoint,
+    Point,
+    Polygon,
+    _false_series,
+)
 
 
 class RootWithin(RootEquals):
@@ -15,8 +21,7 @@ class RootWithin(RootEquals):
     predicate is defined in terms of a Point-Point Contains predicate.
     """
 
-    def _preprocess(self, lhs, rhs):
-        return super()._preprocess(rhs, lhs)
+    pass
 
 
 class PointPointWithin(RootWithin):
@@ -26,21 +31,14 @@ class PointPointWithin(RootWithin):
 
 class PointPolygonWithin(RootContains):
     def _preprocess(self, lhs, rhs):
+        # Note the order of arguments is reversed.
         return super()._preprocess(rhs, lhs)
-
-    def _compute_predicate(self, lhs, rhs, preprocessor_result):
-        return super()._compute_predicate(lhs, rhs, preprocessor_result)
-
-    def _postprocess(self, lhs, rhs, op_result):
-        return super()._postprocess(lhs, rhs, op_result)
 
 
 class ComplexPolygonWithin(RootContains):
     def _preprocess(self, lhs, rhs):
+        # Note the order of arguments is reversed.
         return super()._preprocess(rhs, lhs)
-
-    def _compute_predicate(self, lhs, rhs, preprocessor_result):
-        return super()._compute_predicate(lhs, rhs, preprocessor_result)
 
     def _postprocess(self, lhs, rhs, op_result):
         """Postprocess the output GeoSeries to ensure that they are of the
@@ -57,17 +55,12 @@ class ComplexPolygonWithin(RootContains):
         result_df["feature_in_polygon"] = (
             result_df["point_index_x"] >= result_df["point_index_y"]
         )
-        final_result = binpred_utils._false(lhs)
+        final_result = _false_series(len(lhs))
         final_result.loc[
             result_df["rhs_index"][result_df["feature_in_polygon"]]
         ] = True
         return final_result
 
-
-Point = ColumnType.POINT
-MultiPoint = ColumnType.MULTIPOINT
-LineString = ColumnType.LINESTRING
-Polygon = ColumnType.POLYGON
 
 DispatchDict = {
     (Point, Point): PointPointWithin,

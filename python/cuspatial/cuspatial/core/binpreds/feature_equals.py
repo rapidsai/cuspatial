@@ -21,7 +21,7 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
-    _false,
+    _false_series,
 )
 
 GeoSeries = TypeVar("GeoSeries")
@@ -222,8 +222,7 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         type_compare = lhs.feature_types == rhs.feature_types
         # Any unmatched type is not equal
         if (type_compare == False).all():  # noqa: E712
-            # Override _compute_predicate so that it will not be run.
-            return _false(lhs)
+            return _false_series(len(lhs))
         return self._compute_predicate(
             lhs, rhs, PreprocessorResult(None, rhs.point_indices)
         )
@@ -266,7 +265,7 @@ class PolygonComplexEquals(RootEquals):
         rhs GeoSeries.
         """
         if len(op_result.result) == 0:
-            return cudf.Series(cp.tile([False], len(lhs)), dtype="bool")
+            return _false_series(len(lhs))
         result_df = cudf.DataFrame(
             {"idx": op_result.point_indices, "equals": op_result.result}
         )
@@ -274,7 +273,7 @@ class PolygonComplexEquals(RootEquals):
         feature_equals_linestring = (
             gb_idx.sum().sort_index() == gb_idx.count().sort_index()
         )["equals"]
-        result = cudf.Series(cp.tile(False, len(lhs)), dtype="bool")
+        result = _false_series(len(lhs))
         result[
             feature_equals_linestring.index
         ] = feature_equals_linestring.values

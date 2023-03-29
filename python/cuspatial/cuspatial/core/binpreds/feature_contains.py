@@ -26,6 +26,7 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _count_results_in_multipoint_geometries,
+    _false_series,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -268,7 +269,7 @@ class RootContains(BinPred, Generic[GeoSeries]):
             polygon.
         """
         if len(op_result.result) == 0:
-            return cudf.Series([False] * len(lhs))
+            return _false_series(len(lhs))
 
         # Convert the quadtree part indices df into a polygon indices df.
         # Helps with handling multipolygons.
@@ -283,19 +284,18 @@ class RootContains(BinPred, Generic[GeoSeries]):
             # for each input pair i: result[i] =  true iff point[i] is
             # contained in at least one polygon of multipolygon[i].
             # pairwise
+            final_result = _false_series(len(rhs))
             if len(lhs) == len(rhs):
                 matches = (
                     allpairs_result["polygon_index"]
                     == allpairs_result["point_index"]
                 )
                 polygon_indexes = allpairs_result["polygon_index"][matches]
-                final_result = Series([False] * len(rhs))
                 final_result.loc[
                     op_result.point_indices[polygon_indexes]
                 ] = True
                 return final_result
             else:
-                final_result = Series([False] * len(rhs))
                 final_result.loc[allpairs_result["polygon_index"]] = True
                 return final_result
 
@@ -327,9 +327,7 @@ class PolygonComplexContains(RootContains):
         result_df["feature_in_polygon"] = (
             result_df["point_index_x"] >= result_df["point_index_y"]
         )
-        final_result = cudf.Series(
-            [False] * (point_indices.max().item() + 1)
-        )  # point_indices is zero index
+        final_result = _false_series(len(rhs))
         final_result.loc[
             result_df["rhs_index"][result_df["feature_in_polygon"]]
         ] = True

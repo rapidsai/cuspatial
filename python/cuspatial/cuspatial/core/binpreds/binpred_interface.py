@@ -321,7 +321,7 @@ class BinPredItf(ABC):
 
         Returns
         -------
-        GeoSeries
+        result : Series
             The results of the binary predicate.
 
         Examples
@@ -356,8 +356,8 @@ class BinPredItf(ABC):
 
         Returns
         -------
-        result : GeoSeries
-            A GeoSeries of boolean values indicating whether each feature in
+        result : Series
+            A cudf.Series of boolean values indicating whether each feature in
             the right-hand GeoSeries satisfies the requirements of a binary
             predicate with its corresponding feature in the left-hand
             GeoSeries.
@@ -394,8 +394,8 @@ class BinPredItf(ABC):
 
         Returns
         -------
-        result : GeoSeries
-            A GeoSeries of boolean values indicating whether each feature in
+        result : Series
+            A cudf.Series of boolean values indicating whether each feature in
             the right-hand GeoSeries satisfies the requirements of a binary
             predicate with its corresponding feature in the left-hand
             GeoSeries.

@@ -1,37 +1,31 @@
-# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+# Copyright (c) 2023, NVIDIA CORPORATION.
 
-from cuspatial.core.binpreds.feature_contains import (
-    DispatchDict as CONTAINS_DISPATCH_DICT,
+"""`binpred_dispatch.py` contains a collection of dictionaries that
+are used to dispatch binary predicate functions to the correct
+implementation.
+
+The dictionaries are collected here to make using the dispatch
+functionality easier.
+"""
+
+from cuspatial.core.binpreds.feature_contains import (  # NOQA F401
+    DispatchDict as CONTAINS_DISPATCH,
 )
-from cuspatial.core.binpreds.feature_covers import (
-    DispatchDict as COVERS_DISPATCH_DICT,
+from cuspatial.core.binpreds.feature_covers import (  # NOQA F401
+    DispatchDict as COVERS_DISPATCH,
 )
-from cuspatial.core.binpreds.feature_crosses import (
-    DispatchDict as CROSSES_DISPATCH_DICT,
+from cuspatial.core.binpreds.feature_crosses import (  # NOQA F401
+    DispatchDict as CROSSES_DISPATCH,
 )
-from cuspatial.core.binpreds.feature_equals import (
-    DispatchDict as EQUALS_DISPATCH_DICT,
+from cuspatial.core.binpreds.feature_equals import (  # NOQA F401
+    DispatchDict as EQUALS_DISPATCH,
 )
-from cuspatial.core.binpreds.feature_intersects import (
-    DispatchDict as INTERSECTS_DISPATCH_DICT,
+from cuspatial.core.binpreds.feature_intersects import (  # NOQA F401
+    DispatchDict as INTERSECTS_DISPATCH,
 )
-from cuspatial.core.binpreds.feature_overlaps import (
-    DispatchDict as OVERLAPS_DISPATCH_DICT,
+from cuspatial.core.binpreds.feature_overlaps import (  # NOQA F401
+    DispatchDict as OVERLAPS_DISPATCH,
 )
-from cuspatial.core.binpreds.feature_within import (
-    DispatchDict as WITHIN_DISPATCH_DICT,
+from cuspatial.core.binpreds.feature_within import (  # NOQA F401
+    DispatchDict as WITHIN_DISPATCH,
 )
-
-CONTAINS_DISPATCH = CONTAINS_DISPATCH_DICT
-
-INTERSECTS_DISPATCH = INTERSECTS_DISPATCH_DICT
-
-WITHIN_DISPATCH = WITHIN_DISPATCH_DICT
-
-EQUALS_DISPATCH = EQUALS_DISPATCH_DICT
-
-COVERS_DISPATCH = COVERS_DISPATCH_DICT
-
-OVERLAPS_DISPATCH = OVERLAPS_DISPATCH_DICT
-
-CROSSES_DISPATCH = CROSSES_DISPATCH_DICT

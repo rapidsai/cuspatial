@@ -148,7 +148,7 @@ class GeoSeries(cudf.Series):
         elif contains_only_points(self):
             return ColumnType.POINT
         else:
-            return "Mixed"
+            return ColumnType.MIXED
 
     @property
     def point_indices(self):
