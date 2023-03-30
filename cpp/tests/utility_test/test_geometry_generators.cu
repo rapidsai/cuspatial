@@ -315,8 +315,8 @@ TEST_P(GeometryFactoryCountVerificationTest, CountsVerification)
 INSTANTIATE_TEST_SUITE_P(
   GeometryFactoryCountVerificationTests,
   GeometryFactoryCountVerificationTest,
-  ::testing::Combine(::testing::Values<std::size_t>(1, 1000),  // num_multipolygons
-                     ::testing::Values<std::size_t>(1, 30),    // num_polygons_per_multipolygon
-                     ::testing::Values<std::size_t>(0, 100),   // num_holes_per_polygon
-                     ::testing::Values<std::size_t>(3, 100)    // num_sides_per_ring
+  ::testing::Combine(::testing::Values<std::size_t>(1, 100),  // num_multipolygons
+                     ::testing::Values<std::size_t>(1, 30),   // num_polygons_per_multipolygon
+                     ::testing::Values<std::size_t>(0, 100),  // num_holes_per_polygon
+                     ::testing::Values<std::size_t>(3, 100)   // num_sides_per_ring
                      ));

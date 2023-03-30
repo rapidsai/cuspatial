@@ -29,6 +29,10 @@ function(ConfigureTest CMAKE_TEST_NAME)
         ${CMAKE_TEST_NAME}
         PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gtests>"
                    INSTALL_RPATH "\$ORIGIN/../../../lib"
+                   CXX_STANDARD 17
+                   CXX_STANDARD_REQUIRED ON
+                   CUDA_STANDARD 17
+                   CUDA_STANDARD_REQUIRED ON
     )
     target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main cudf::cudftestutil cuspatial)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
@@ -53,14 +57,11 @@ ConfigureTest(HAVERSINE_TEST
 ConfigureTest(HAUSDORFF_TEST
     spatial/hausdorff_test.cpp)
 
-ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST
-    join/point_in_polygon_test_small.cpp)
-
-ConfigureTest(JOIN_POINT_IN_POLYGON_LARGE_TEST
-    join/point_in_polygon_test_large.cpp)
-
 ConfigureTest(JOIN_POINT_TO_LINESTRING_SMALL_TEST
     join/point_to_nearest_linestring_test_small.cpp)
+
+ConfigureTest(JOIN_POINT_IN_POLYGON_TEST
+    join/quadtree_point_in_polygon_test.cpp)
 
 ConfigureTest(POINT_IN_POLYGON_TEST
     spatial/point_in_polygon_test.cpp)
@@ -185,3 +186,9 @@ ConfigureTest(FIND_TEST_EXP
     experimental/find/find_and_combine_segments_test.cu
     experimental/find/find_points_on_segments_test.cu
     experimental/find/find_duplicate_points_test.cu)
+
+ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST_EXP
+    experimental/join/quadtree_point_in_polygon_test_small.cu)
+
+ConfigureTest(JOIN_POINT_IN_POLYGON_LARGE_TEST_EXP
+    experimental/join/quadtree_point_in_polygon_test_large.cu)
