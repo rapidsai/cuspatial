@@ -26,9 +26,9 @@ namespace cuspatial {
  */
 template <typename VecIterator>
 class multipoint_ref {
+ public:
   using point_t = iterator_value_type<VecIterator>;
 
- public:
   CUSPATIAL_HOST_DEVICE multipoint_ref(VecIterator begin, VecIterator end);
 
   /// Return iterator to the starting point of the multipoint.
@@ -41,10 +41,17 @@ class multipoint_ref {
   /// Return iterator the the one-past the last point of the multipoint.
   CUSPATIAL_HOST_DEVICE auto end() const { return point_end(); }
 
-  /// Return the number of points in multipoint.
+  /// Return the number of points in multipoint
   CUSPATIAL_HOST_DEVICE auto num_points() const;
   /// Return the number of points in multipoint.
   CUSPATIAL_HOST_DEVICE auto size() const { return num_points(); }
+
+  /// Tiling iterator
+  CUSPATIAL_HOST_DEVICE auto point_tile_begin() const;
+
+  // Repeating iterator
+  template <typename IndexType>
+  CUSPATIAL_HOST_DEVICE auto point_repeat_begin(IndexType repeats) const;
 
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator[](IndexType point_idx);

@@ -15,10 +15,31 @@
  */
 #pragma once
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/detail/iterator.hpp>
 
 #include <thrust/distance.h>
 
 namespace cuspatial {
+
+template <typename VecIterator, typename IndexType>
+struct point_tile_functor {
+  VecIterator points_begin;
+  IndexType tile_size;
+
+  CUSPATIAL_HOST_DEVICE auto operator()(IndexType i) { return points_begin[i % tile_size]; }
+};
+template <typename VecIterator, typename IndexType>
+point_tile_functor(VecIterator, IndexType) -> point_tile_functor<VecIterator, IndexType>;
+
+template <typename VecIterator, typename IndexType>
+struct point_repeat_functor {
+  VecIterator points_begin;
+  IndexType repeat_size;
+
+  CUSPATIAL_HOST_DEVICE auto operator()(IndexType i) { return points_begin[i / repeat_size]; }
+};
+template <typename VecIterator, typename IndexType>
+point_repeat_functor(VecIterator, IndexType) -> point_repeat_functor<VecIterator, IndexType>;
 
 template <typename VecIterator>
 CUSPATIAL_HOST_DEVICE multipoint_ref<VecIterator>::multipoint_ref(VecIterator begin,
@@ -43,6 +64,20 @@ template <typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::num_points() const
 {
   return thrust::distance(_points_begin, _points_end);
+}
+
+template <typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::point_tile_begin() const
+{
+  return detail::make_counting_transform_iterator(0,
+                                                  point_tile_functor{_points_begin, num_points()});
+}
+
+template <typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::point_repeat_begin(IndexType repeats) const
+{
+  return detail::make_counting_transform_iterator(0, point_repeat_functor{_points_begin, repeats});
 }
 
 template <typename VecIterator>

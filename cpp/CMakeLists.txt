@@ -122,6 +122,7 @@ add_library(cuspatial
     src/join/quadtree_point_in_polygon.cu
     src/join/quadtree_point_to_nearest_linestring.cu
     src/join/quadtree_bbox_filtering.cu
+    src/spatial/allpairs_multipoint_equals_count.cu
     src/spatial/polygon_bounding_box.cu
     src/spatial/linestring_bounding_box.cu
     src/spatial/point_in_polygon.cu

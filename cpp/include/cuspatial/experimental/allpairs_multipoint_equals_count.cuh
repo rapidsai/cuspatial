@@ -57,14 +57,12 @@ namespace cuspatial {
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <class InputIt, class OutputIt, class T>
-OutputIt allpairs_point_equals_count(InputIt lhs_first,
-                                     InputIt rhs_first,
-                                     InputIt lhs_last,
-                                     InputIt rhs_last,
-                                     OutputIt count_first,
-                                     rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+template <class MultiPointRefA, class MultiPointRefB, class OutputIt>
+OutputIt allpairs_multipoint_equals_count(MultiPointRefA lhs_first,
+                                          MultiPointRefB rhs_first,
+                                          OutputIt count_first,
+                                          rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/allpairs_point_equals_count.cuh>
+#include <cuspatial/experimental/detail/allpairs_multipoint_equals_count.cuh>
