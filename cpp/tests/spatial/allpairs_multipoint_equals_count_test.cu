@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
+#include <cuspatial/allpairs_multipoint_equals_count.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/projection.hpp>
-#include <cuspatial/spatial/allpairs_multipoint_equals_count.hpp>
 
 #include <cudf_test/base_fixture.hpp>
 #include <cudf_test/column_utilities.hpp>
@@ -31,8 +30,7 @@ using namespace cudf::test;
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
 
 template <typename T>
-struct AllpairsMultipointEqualsCountTest : public BaseFixture {
-};
+struct AllpairsMultipointEqualsCountTest : public BaseFixture {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = Types<double>;

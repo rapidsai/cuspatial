@@ -88,9 +88,9 @@ std::unique_ptr<cudf::column> allpairs_multipoint_equals_count(cudf::column_view
 
 }  // namespace detail
 
-std::unique_ptr<cudf::column> allpairs_point_equals_count(cudf::column_view const& lhs,
-                                                          cudf::column_view const& rhs,
-                                                          rmm::mr::device_memory_resource* mr)
+std::unique_ptr<cudf::column> allpairs_multipoint_equals_count(cudf::column_view const& lhs,
+                                                               cudf::column_view const& rhs,
+                                                               rmm::mr::device_memory_resource* mr)
 {
   return detail::allpairs_multipoint_equals_count(lhs, rhs, rmm::cuda_stream_default, mr);
 }

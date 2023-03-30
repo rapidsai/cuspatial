@@ -14,44 +14,41 @@
  * limitations under the License.
  */
 
-#include <cuspatial/constants.hpp>
-#include <cuspatial/error.hpp>
-#include <cuspatial/experimental/sinusoidal_projection.cuh>
-#include <cuspatial/vec_2d.hpp>
 #include <cuspatial_test/base_fixture.hpp>
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
-#include <rmm/device_vector.hpp>
+#include <cuspatial/constants.hpp>
+#include <cuspatial/error.hpp>
+#include <cuspatial/experimental/allpairs_multipoint_equals_count.cuh>
+#include <cuspatial/experimental/sinusoidal_projection.cuh>
+#include <cuspatial/vec_2d.hpp>
 
-#include <gtest/gtest.h>
+#include <rmm/device_vector.hpp>
 
 #include <thrust/iterator/transform_iterator.h>
 
+using namespace cuspatial;
+using namespace cuspatial::test;
+
 template <typename T>
-struct AllpairsMultipointEqualsCountTest : public ::testing::Test {
-  rmm::cuda_stream_view stream() { return rmm::cuda_stream_default; }
-  rmm::mr::device_memory_resource* mr() { return rmm::mr::get_current_device_resource(); }
-
+struct AllpairsMultipointEqualsCountTest : public BaseFixture {
   void run_single(std::initializer_list<std::initializer_list<vec_2d<T>>> lhs_coordinates,
                   std::initializer_list<std::initializer_list<vec_2d<T>>> rhs_coordinates,
-                  std::initializer_list<T> expected)
+                  std::initializer_list<uint32_t> expected)
   {
-    std::vector<vec_d2<T>> lhs_ref(lhs_coordinates);
-    std::vector<vec_d2<T>> rhs_ref(rhs_coordinates);
-    // std::vector<vec_2d<T>> multipolygon_coordinates_vec(multipolygon_coordinates);
-    return this->run_single(lhs_ref, rhs_ref, expected);
-  }
+    auto larray = make_multipoints_array(lhs_coordinates);
+    auto rarray = make_multipoints_array(rhs_coordinates);
 
-  void run_single(std::initializer_list<std::initializer_list<vec_2d<T>>> lhs_coordinates,
-                  std::initializer_list<std::initializer_list<vec_2d<T>>> rhs_coordinates,
-                  std::initializer_list<size_t> expected)
-  {
-    auto d_lhs = make_multipoints_array(lhs_coordinates).ref;
-    auto d_rhs = make_multipoints_array(rhs_coordinates).ref;
-    auto got   = rmm::device_uvector<size_t>(d_lhs.size(), stream());
+    auto lrange = larray.range();
+    auto rrange = rarray.range();
 
-    auto ret = allpairs_multipoint_equals_count(d_lhs, d_rhs, got.begin(), stream());
+    auto lhs = lrange[0];
+    auto rhs = rrange[0];
+
+    auto got = rmm::device_uvector<uint32_t>(lhs.size(), stream());
+
+    auto ret = allpairs_multipoint_equals_count(lhs, rhs, got.begin(), stream());
 
     auto d_expected = cuspatial::test::make_device_vector(expected);
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(got, d_expected);
@@ -64,16 +61,50 @@ using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(AllpairsMultipointEqualsCountTest, TestTypes);
 
 // Inputs are empty columns
-TYPED_TEST(AllpairsMultipointEqualsCountTest, ZeroPairs)
+TYPED_TEST(AllpairsMultipointEqualsCountTest, EmptyInput)
 {
   using T = TypeParam;
   using P = vec_2d<T>;
 
   CUSPATIAL_RUN_TEST(this->run_single,
                      std::initializer_list<std::initializer_list<P>>{},
-                     {0},
-                     {0},
-                     {0},
-                     std::initializer_list<P>{},
-                     std::initializer_list<T>{});
+                     std::initializer_list<std::initializer_list<P>>{},
+                     {});
+}
+
+// Inputs are empty columns
+TYPED_TEST(AllpairsMultipointEqualsCountTest, OneOneEqual)
+{
+  CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}}}, {{{0, 0}}}, {1});
+}
+
+// Inputs are empty columns
+TYPED_TEST(AllpairsMultipointEqualsCountTest, OneOneNotEqual)
+{
+  CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}}}, {{{1, 0}}}, {0});
+}
+
+// Inputs are empty columns
+TYPED_TEST(AllpairsMultipointEqualsCountTest, OneTwo)
+{
+  CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}}}, {{{1, 1}, {0, 0}}}, {1});
+}
+
+// Inputs are empty columns
+TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeOneEqual)
+{
+  CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}, {1, 1}, {2, 2}}}, {{{1, 1}}}, {0, 1, 0});
+}
+
+// Inputs are empty columns
+TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeOneNotEqual)
+{
+  CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}, {1, 1}, {2, 2}}}, {{{-1, -1}}}, {0, 0, 0});
+}
+
+// Inputs are empty columns
+TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeThreeEqualMiddle)
+{
+  CUSPATIAL_RUN_TEST(
+    this->run_single, {{{0, 0}, {1, 1}, {2, 2}}}, {{{-1, -1}, {1, 1}, {-1, -1}}}, {0, 1, 0});
 }
