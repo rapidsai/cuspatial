@@ -145,14 +145,14 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs)
   using T = typename Vector1::value_type;
   static_assert(std::is_same_v<T, typename Vector2::value_type>, "Value type mismatch.");
 
-  if constexpr (cuspatial::is_vec_2d<T>()) {
+  if constexpr (cuspatial::is_vec_2d<T>) {
     EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(vec_2d_matcher(), to_host<T>(rhs)));
   } else if constexpr (std::is_floating_point_v<T>) {
     EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(float_matcher(), to_host<T>(rhs)));
   } else if constexpr (std::is_integral_v<T>) {
     EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(::testing::Eq(), to_host<T>(rhs)));
   } else if constexpr (cuspatial::is_optional<T>) {
-    if constexpr (cuspatial::is_vec_2d<typename T::value_type>()) {
+    if constexpr (cuspatial::is_vec_2d<typename T::value_type>) {
       EXPECT_THAT(to_host<T>(lhs),
                   ::testing::Pointwise(optional_matcher(vec_2d_matcher()), to_host<T>(rhs)));
     } else if constexpr (std::is_floating_point_v<typename T::value_type>) {
@@ -176,14 +176,14 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, U a
   static_assert(std::is_same_v<T, typename Vector2::value_type>, "Value type mismatch.");
   static_assert(!std::is_integral_v<T>, "Integral types cannot be compared with an error.");
 
-  if constexpr (cuspatial::is_vec_2d<T>()) {
+  if constexpr (cuspatial::is_vec_2d<T>) {
     EXPECT_THAT(to_host<T>(lhs),
                 ::testing::Pointwise(vec_2d_near_matcher(abs_error), to_host<T>(rhs)));
   } else if constexpr (std::is_floating_point_v<T>) {
     EXPECT_THAT(to_host<T>(lhs),
                 ::testing::Pointwise(float_near_matcher(abs_error), to_host<T>(rhs)));
   } else if constexpr (cuspatial::is_optional<T>) {
-    if constexpr (cuspatial::is_vec_2d<typename T::value_type>()) {
+    if constexpr (cuspatial::is_vec_2d<typename T::value_type>) {
       EXPECT_THAT(to_host<T>(lhs),
                   ::testing::Pointwise(optional_matcher(vec_2d_matcher()), to_host<T>(rhs)));
     } else if constexpr (std::is_floating_point_v<typename T::value_type>) {

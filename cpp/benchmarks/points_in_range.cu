@@ -36,7 +36,7 @@
 
 #include <memory>
 
-using namespace cuspatial;
+using cuspatial::vec_2d;
 
 /**
  * @brief Helper to generate random points within a range
