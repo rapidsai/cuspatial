@@ -67,8 +67,8 @@ TYPED_TEST(AllpairsMultipointEqualsCountTest, EmptyInput)
   using P = vec_2d<T>;
 
   CUSPATIAL_RUN_TEST(this->run_single,
-                     std::initializer_list<std::initializer_list<P>>{},
-                     std::initializer_list<std::initializer_list<P>>{},
+                     std::initializer_list<std::initializer_list<P>>{{}},
+                     std::initializer_list<std::initializer_list<P>>{{}},
                      {});
 }
 

@@ -67,7 +67,11 @@ OutputIt allpairs_multipoint_equals_count(MultiPointRefA lhs,
   static_assert(is_same_floating_point<T, typename MultiPointRefB::point_t::value_type>(),
                 "Origin and input must have the same base floating point type.");
 
+  if (lhs.size() == 0) return output;
+
   detail::zero_data_async(output, output + lhs.size(), stream);
+
+  if (rhs.size() == 0) return output + lhs.size();
 
   auto [threads_per_block, block_size] = grid_1d(lhs.size() * rhs.size());
   detail::allpairs_point_equals_count_kernel<<<block_size, threads_per_block, 0, stream.value()>>>(
