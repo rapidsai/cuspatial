@@ -145,6 +145,12 @@ class multilinestring_range {
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_end();
 
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_begin();
+
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_end();
+
   /// Returns an iterator to the start of the segment
   CUSPATIAL_HOST_DEVICE auto segment_begin();
 

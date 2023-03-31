@@ -157,6 +157,16 @@ template <typename GeometryIterator,
           typename RingIterator,
           typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::num_segments()
+{
+  return num_points() - num_rings();
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::multipolygon_begin()
 {
   return detail::make_counting_transform_iterator(
@@ -288,7 +298,7 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
                                                         thrust::next(multipolygon_point_offset_it));
 
   return thrust::make_transform_iterator(point_offset_pair_it,
-                                         detail::offset_pair_to_count_iterator{});
+                                         detail::offset_pair_to_count_functor{});
 }
 
 template <typename GeometryIterator,
@@ -300,6 +310,61 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   per_multipolygon_point_count_end()
 {
   return per_multipolygon_point_count_begin() + num_multipolygons();
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+  multipolygon_ring_count_begin()
+{
+  auto multipolygon_ring_offset_it =
+    thrust::make_permutation_iterator(_part_begin, _geometry_begin);
+
+  auto ring_offset_pair_it = thrust::make_zip_iterator(multipolygon_ring_offset_it,
+                                                       thrust::next(multipolygon_ring_offset_it));
+
+  return thrust::make_transform_iterator(ring_offset_pair_it,
+                                         detail::offset_pair_to_count_functor{});
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+  multipolygon_ring_count_end()
+{
+  return multipolygon_ring_count_begin() + num_multipolygons();
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+  multipolygon_segment_count_begin()
+{
+  auto multipolygon_point_ring_count_it = thrust::make_zip_iterator(
+    per_multipolygon_point_count_begin(), multipolygon_ring_count_begin());
+
+  return thrust::make_transform_iterator(multipolygon_point_ring_count_it,
+                                         detail::point_count_to_segment_count_functor{});
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+  multipolygon_segment_count_end()
+{
+  return multipolygon_segment_count_begin() + num_multipolygons();
 }
 
 template <typename GeometryIterator,
@@ -339,6 +404,51 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::g
   IndexType segment_idx)
 {
   return segment{_point_begin[segment_idx], _point_begin[segment_idx + 1]};
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::segment_begin()
+{
+  return detail::make_counting_transform_iterator(
+    0,
+    detail::to_valid_segment_functor{
+      this->subtracted_ring_begin(), this->subtracted_ring_end(), _point_begin});
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::segment_end()
+{
+  return segment_begin() + num_segments();
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+  subtracted_ring_begin()
+{
+  return detail::make_counting_transform_iterator(
+    0, detail::to_subtracted_by_index_iterator{_ring_begin});
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::subtracted_ring_end()
+{
+  return subtracted_ring_begin() + thrust::distance(_ring_begin, _ring_end);
 }
 
 template <typename GeometryIterator,

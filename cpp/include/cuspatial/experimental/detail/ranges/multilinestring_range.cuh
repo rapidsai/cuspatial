@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "thrust/iterator/zip_iterator.h"
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -214,7 +215,7 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator,
   auto multilinestring_offset_it = thrust::make_permutation_iterator(_part_begin, _geometry_begin);
   auto paired_it =
     thrust::make_zip_iterator(multilinestring_offset_it, thrust::next(multilinestring_offset_it));
-  return thrust::make_transform_iterator(paired_it, detail::offset_pair_to_count_iterator{});
+  return thrust::make_transform_iterator(paired_it, detail::offset_pair_to_count_functor{});
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -222,6 +223,38 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator,
   per_multilinestring_point_count_end()
 {
   return per_multilinestring_point_count_begin() + num_multilinestrings();
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
+  multilinestring_segment_count_begin()
+{
+  auto n_point_linestring_pair_it = thrust::make_zip_iterator(
+    per_multilinestring_point_count_begin(), multilinestring_linestring_count_begin());
+  return thrust::make_transform_iterator(n_point_linestring_pair_it,
+                                         detail::point_count_to_segment_count_functor{});
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
+  multilinestring_segment_count_end()
+{
+  return multilinestring_segment_count_begin() + num_multilinestrings();
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
+  multilinestring_linestring_count_begin()
+{
+  auto paired_it = thrust::make_zip_iterator(_geometry_begin, thrust::next(_geometry_begin));
+  return thrust::make_transform_iterator(paired_it, detail::offset_pair_to_count_functor{});
+}
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
+  multilinestring_linestring_count_end()
+{
+  return multilinestring_linestring_count_begin() + num_multilinestrings();
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>

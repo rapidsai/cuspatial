@@ -20,6 +20,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
+#include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/experimental/detail/functors.cuh>
@@ -76,11 +77,14 @@ template <typename MultiLinestringRange,
           typename MultiPolygonRange,
           typename IndexRange,
           typename OutputIt>
-void __global__ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestrings,
-                                                            MultiPolygonRange multipolygons,
-                                                            IndexRange thread_bounds,
-                                                            uint8_t* intersects,
-                                                            OutputIt* distances)
+void __global__
+pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestrings,
+                                            MultiPolygonRange multipolygons,
+                                            IndexRange thread_bounds,
+                                            IndexRange multilinestrings_segment_offsets,
+                                            IndexRange multipolygons_segment_offsets,
+                                            uint8_t* intersects,
+                                            OutputIt* distances)
 {
   using T       = typename MultiLinestringRange::element_t;
   using index_t = iterator_value_type<typename MultiLinestringRange::geometry_it_t>;
@@ -98,12 +102,47 @@ void __global__ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange
       continue;
     }
 
-    printf("idx: %d, geometry_id: %d, local_idx: %d\n",
-           static_cast<int>(idx),
-           static_cast<int>(geometry_id),
-           static_cast<int>(local_idx));
+    auto num_segment_this_multilinestring =
+      multilinestrings.multilinestring_segment_count_begin()[geometry_id];
+
+    auto multilinestring_segment_id =
+      local_idx % num_segment_this_multilinestring + multilinestrings_segment_offsets[geometry_id];
+    auto multipolygon_segment_id =
+      local_idx / num_segment_this_multilinestring + multipolygons_segment_offsets[geometry_id];
+
+    printf(
+      "idx: %d, geometry_id: %d, local_idx: %d, multilinestring_segment_id: %d, "
+      "multipolygon_segment_id: %d\n",
+      static_cast<int>(idx),
+      static_cast<int>(geometry_id),
+      static_cast<int>(local_idx),
+      static_cast<int>(multilinestring_segment_id),
+      static_cast<int>(multipolygon_segment_id));
+
+    auto [a, b] = multilinestrings.segment_begin()[multilinestring_segment_id];
+    auto [c, d] = multipolygons.segment_begin()[multipolygon_segment_id];
+
+    printf("ab: (%f, %f) -> (%f, %f), cd: (%f, %f) -> (%f, %f)\n",
+           static_cast<float>(a.x),
+           static_cast<float>(a.y),
+           static_cast<float>(b.x),
+           static_cast<float>(b.y),
+           static_cast<float>(c.x),
+           static_cast<float>(c.y),
+           static_cast<float>(d.x),
+           static_cast<float>(d.y));
+
+    atomicMin(&distances[geometry_id], sqrt(squared_segment_distance(a, b, c, d)));
   }
 }
+
+template <typename index_t>
+struct functor {
+  index_t __device__ operator()(thrust::tuple<index_t, index_t> t)
+  {
+    return thrust::get<0>(t) * thrust::get<1>(t);
+  }
+};
 
 }  // namespace detail
 
@@ -155,36 +194,43 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
     return multipoint_intersects;
   }();
 
-  auto thread_counts =
-    rmm::device_uvector<index_t>(multilinestrings.num_multilinestrings(), stream);
+  // Compute the "boundary" of threads. Threads are partitioned based on the number of linestrings
+  // times the number of polygons in a multipoint-multipolygon pair.
+  auto segment_count_product_it = thrust::make_transform_iterator(
+    thrust::make_zip_iterator(multilinestrings.multilinestring_segment_count_begin(),
+                              multipolygons.multipolygon_segment_count_begin()),
+    detail::functor<index_t>{});
 
-  auto per_multilinestring_point_count_it =
-    multilinestrings.per_multilinestring_point_count_begin();
-  auto per_multipolygon_point_count_it = multipolygons.per_multipolygon_point_count_begin();
-
-  thrust::transform(
-    rmm::exec_policy(stream),
-    per_multilinestring_point_count_it,
-    per_multilinestring_point_count_it + multilinestrings.num_multilinestrings(),
-    per_multipolygon_point_count_it,
-    thread_counts.begin(),
-    [] __device__(index_t multilinestring_point_count, index_t multipolygon_point_count) {
-      auto multilinestring_segment_count =
-        multilinestring_point_count == 0 ? 0 : multilinestring_point_count - 1;
-      auto multipolygon_segment_count =
-        multipolygon_point_count == 0 ? 0 : multipolygon_point_count - 1;
-      return multilinestring_segment_count * multipolygon_segment_count;
-    });
-
-  auto thread_bounds = rmm::device_uvector<index_t>(thread_counts.size() + 1, stream);
+  auto thread_bounds = rmm::device_uvector<index_t>(multilinestrings.size() + 1, stream);
   detail::zero_data_async(thread_bounds.begin(), thread_bounds.end(), stream);
 
   thrust::inclusive_scan(rmm::exec_policy(stream),
-                         thread_counts.begin(),
-                         thread_counts.end(),
+                         segment_count_product_it,
+                         segment_count_product_it + thread_bounds.size() - 1,
                          thrust::next(thread_bounds.begin()));
 
+  auto multilinestring_segment_offsets =
+    rmm::device_uvector<index_t>(multilinestrings.num_multilinestrings() + 1, stream);
+  auto multipolygon_segment_offsets =
+    rmm::device_uvector<index_t>(multipolygons.num_multipolygons() + 1, stream);
+
+  thrust::exclusive_scan(
+    rmm::exec_policy(stream),
+    multilinestrings.multilinestring_segment_count_begin(),
+    multilinestrings.multilinestring_segment_count_begin() + multilinestring_segment_offsets.size(),
+    multilinestring_segment_offsets.begin());
+
+  thrust::exclusive_scan(
+    rmm::exec_policy(stream),
+    multipolygons.multipolygon_segment_count_begin(),
+    multipolygons.multipolygon_segment_count_begin() + multipolygon_segment_offsets.size(),
+    multipolygon_segment_offsets.begin());
+
   cuspatial::test::print_device_vector(thread_bounds, "thread_bounds: ");
+  cuspatial::test::print_device_vector(multilinestring_segment_offsets,
+                                       "multilinestring_segment_offsets:");
+  cuspatial::test::print_device_vector(multipolygon_segment_offsets,
+                                       "multipolygon_segment_offsets: ");
 
   auto num_threads       = thread_bounds.back_element(stream);
   auto [tpb, num_blocks] = grid_1d(num_threads);
@@ -193,6 +239,8 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
     multilinestrings,
     multipolygons,
     range{thread_bounds.begin(), thread_bounds.end()},
+    range{multilinestring_segment_offsets.begin(), multilinestring_segment_offsets.end()},
+    range{multipolygon_segment_offsets.begin(), multipolygon_segment_offsets.end()},
     multipoint_intersects.begin(),
     distances_first);
 

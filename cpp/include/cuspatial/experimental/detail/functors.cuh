@@ -9,13 +9,23 @@
 namespace cuspatial {
 namespace detail {
 
-struct offset_pair_to_count_iterator {
+struct offset_pair_to_count_functor {
   template <typename OffsetPairIterator>
   CUSPATIAL_HOST_DEVICE auto operator()(OffsetPairIterator p)
   {
     auto first  = thrust::get<0>(p);
     auto second = thrust::get<1>(p);
     return second - first;
+  }
+};
+
+struct point_count_to_segment_count_functor {
+  template <typename IndexPair>
+  CUSPATIAL_HOST_DEVICE auto operator()(IndexPair n_point_linestring_pair)
+  {
+    auto nPoints      = thrust::get<0>(n_point_linestring_pair);
+    auto nLinestrings = thrust::get<1>(n_point_linestring_pair);
+    return nPoints - nLinestrings;
   }
 };
 
