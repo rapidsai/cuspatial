@@ -65,7 +65,6 @@ TYPED_TEST(AllpairsMultipointEqualsCountTest, EmptyInput)
 {
   using T = TypeParam;
   using P = vec_2d<T>;
-  printf("Able to call CUSPATIAL_RUN_TEST?\n");
   CUSPATIAL_RUN_TEST(this->run_single,
                      std::initializer_list<std::initializer_list<P>>{{}},
                      std::initializer_list<std::initializer_list<P>>{{}},
