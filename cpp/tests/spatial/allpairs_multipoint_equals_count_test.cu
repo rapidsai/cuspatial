@@ -30,13 +30,14 @@ using namespace cudf::test;
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
 
 template <typename T>
-struct AllpairsMultipointEqualsCountTest : public BaseFixture {};
+struct AllpairsMultipointEqualsCountTest : public BaseFixture {
+};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = Types<double>;
 TYPED_TEST_CASE(AllpairsMultipointEqualsCountTest, TestTypes);
 
-TYPED_TEST(AllpairsMultipointEqualsCountTest, Single)
+TYPED_TEST(AllpairsMultipointEqualsCountTest, Empty)
 {
   using T  = TypeParam;
   auto lhs = fixed_width_column_wrapper<T>({});
@@ -47,4 +48,14 @@ TYPED_TEST(AllpairsMultipointEqualsCountTest, Single)
   auto expected = fixed_width_column_wrapper<T>({});
 
   expect_columns_equivalent(expected, output->view(), verbosity);
+}
+
+TYPED_TEST(AllpairsMultipointEqualsCountTest, InvalidTypes)
+{
+  using T  = TypeParam;
+  auto lhs = fixed_width_column_wrapper<float>({});
+  auto rhs = fixed_width_column_wrapper<double>({});
+
+  EXPECT_THROW(auto output = cuspatial::allpairs_multipoint_equals_count(lhs, rhs),
+               cuspatial::logic_error);
 }
