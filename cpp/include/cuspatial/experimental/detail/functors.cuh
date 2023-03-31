@@ -69,33 +69,6 @@ template <typename OffsetIterator, typename CoordinateIterator>
 to_valid_segment_functor(OffsetIterator, OffsetIterator, CoordinateIterator)
   -> to_valid_segment_functor<OffsetIterator, CoordinateIterator>;
 
-template <typename IndexType>
-struct wraparound_functor {
-  IndexType length;
-
-  template <typename IndexType2>
-  CUSPATIAL_HOST_DEVICE auto operator()(IndexType2 i)
-  {
-    return i % length;
-  }
-};
-
-template <typename IndexType>
-wraparound_functor(IndexType) -> wraparound_functor<IndexType>;
-
-// template <typename IndexType>
-// struct repeat_functor {
-//   IndexType repeats;
-
-//   template <typename IndexType2>
-//   CUSPATIAL_HOST_DEVICE auto operator()(IndexType2 i)
-//   {
-//     return i / repeats;
-//   }
-// };
-
-// template <typename IndexType>
-// wraparound_functor(IndexType) -> wraparound_functor<IndexType>;
 
 }  // namespace detail
 }  // namespace cuspatial
