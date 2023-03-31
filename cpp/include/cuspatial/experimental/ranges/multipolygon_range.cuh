@@ -123,12 +123,6 @@ class multipolygon_range {
   /// Return the iterator to the one past the last ring offset in the range.
   CUSPATIAL_HOST_DEVICE auto ring_offset_end() { return _ring_end; }
 
-  //   /// Return the iterator to the first polygon in the range.
-  //   CUSPATIAL_HOST_DEVICE auto polygon_begin();
-
-  //   /// Return the iterator to the one past the last polygon in the range.
-  //   CUSPATIAL_HOST_DEVICE auto polygon_end();
-
   /// Given the index of a segment, return the index of the geometry (multipolygon) that contains
   /// the segment. Segment index is the index to the starting point of the segment. If the index is
   /// the last point of the ring, then it is not a valid index. This function returns
@@ -164,9 +158,9 @@ class multipolygon_range {
                                                             IndexType2 geometry_idx);
 
   /// Returns an iterator to the number of points of the first multipolygon
-  CUSPATIAL_HOST_DEVICE auto per_multipolygon_point_count_begin();
+  CUSPATIAL_HOST_DEVICE auto multipolygon_point_count_begin();
   /// Returns the one past the iterator to the number of points of the last multipolygon
-  CUSPATIAL_HOST_DEVICE auto per_multipolygon_point_count_end();
+  CUSPATIAL_HOST_DEVICE auto multipolygon_point_count_end();
 
   /// Returns an iterator to the number of rings of the first multipolygon
   CUSPATIAL_HOST_DEVICE auto multipolygon_ring_count_begin();
@@ -183,7 +177,6 @@ class multipolygon_range {
 
   /// Returns an iterator to the end of the segment
   CUSPATIAL_HOST_DEVICE auto segment_end();
-
 
  protected:
   GeometryIterator _geometry_begin;

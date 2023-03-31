@@ -146,10 +146,10 @@ class multilinestring_range {
     IndexType segment_idx);
 
   /// Returns an iterator to the counts of points per multilinestring
-  CUSPATIAL_HOST_DEVICE auto per_multilinestring_point_count_begin();
+  CUSPATIAL_HOST_DEVICE auto multilinestring_point_count_begin();
 
   /// Returns an iterator to the counts of points per multilinestring
-  CUSPATIAL_HOST_DEVICE auto per_multilinestring_point_count_end();
+  CUSPATIAL_HOST_DEVICE auto multilinestring_point_count_end();
 
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_begin();
@@ -168,17 +168,6 @@ class multilinestring_range {
 
   /// Returns an iterator to the end of the segment
   CUSPATIAL_HOST_DEVICE auto segment_end();
-
-  /// Infinite iterators
-  /// Note: Infinite iterators currently doesn't work with ranges that contains empty geometry.
-
-  /// Returns an infinite iterator to the "tiled" segments of the multilinestring.
-  /// If the multilinestring range has 5 segments, this iterator will iterate on the
-  /// 0th, 1st, 2nd, 3rd, 4th, 0th, 1st, 2nd, 3rd, 4th segment for the first 10 iterations.
-  ///
-  /// The name of `tile` comes from numpy.tile[1]
-  /// [1] https://numpy.org/doc/stable/reference/generated/numpy.tile.html
-  CUSPATIAL_HOST_DEVICE auto segment_tiled_begin();
 
   /// Returns the `multilinestring_idx`th multilinestring in the range.
   template <typename IndexType>
