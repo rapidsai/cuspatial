@@ -195,7 +195,7 @@ class multilinestring_range {
 
   /// Casts the multilinestring range into a multipoint range.
   /// This treats each multilinestring as simply a collection of points,
-  /// ignoring all edges of the multilinestring.
+  /// ignoring all edges in the multilinestring.
   CUSPATIAL_HOST_DEVICE auto as_multipoint_range();
 
  protected:
