@@ -18,6 +18,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
+#include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
 #include <cuspatial/vec_2d.hpp>
@@ -76,6 +77,9 @@ class multilinestring_range {
 
   /// Return the total number of points in the array.
   CUSPATIAL_HOST_DEVICE auto num_points();
+
+  /// Return the total number of segments in the array.
+  CUSPATIAL_HOST_DEVICE auto num_segments();
 
   /// Return the iterator to the first multilinestring in the range.
   CUSPATIAL_HOST_DEVICE auto multilinestring_begin();
@@ -141,9 +145,58 @@ class multilinestring_range {
   CUSPATIAL_HOST_DEVICE thrust::pair<vec_2d<element_t>, vec_2d<element_t>> segment(
     IndexType segment_idx);
 
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto per_multilinestring_point_count_begin();
+
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto per_multilinestring_point_count_end();
+
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_begin();
+
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_end();
+
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_begin();
+
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_end();
+
+  /// Returns an iterator to the start of the segment
+  CUSPATIAL_HOST_DEVICE auto segment_begin();
+
+  /// Returns an iterator to the end of the segment
+  CUSPATIAL_HOST_DEVICE auto segment_end();
+
+  /// Infinite iterators
+  /// Note: Infinite iterators currently doesn't work with ranges that contains empty geometry.
+
+  /// Returns an infinite iterator to the "tiled" segments of the multilinestring.
+  /// If the multilinestring range has 5 segments, this iterator will iterate on the
+  /// 0th, 1st, 2nd, 3rd, 4th, 0th, 1st, 2nd, 3rd, 4th segment for the first 10 iterations.
+  ///
+  /// The name of `tile` comes from numpy.tile[1]
+  /// [1] https://numpy.org/doc/stable/reference/generated/numpy.tile.html
+  CUSPATIAL_HOST_DEVICE auto segment_tiled_begin();
+
   /// Returns the `multilinestring_idx`th multilinestring in the range.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator[](IndexType multilinestring_idx);
+
+  /// Raw offsets iterator
+
+  CUSPATIAL_HOST_DEVICE auto geometry_offsets_begin() { return _geometry_begin; }
+  CUSPATIAL_HOST_DEVICE auto geometry_offsets_end() { return _geometry_end; }
+  CUSPATIAL_HOST_DEVICE auto part_offsets_begin() { return _part_begin; }
+  CUSPATIAL_HOST_DEVICE auto part_offsets_end() { return _part_end; }
+
+  /// Range Casts
+
+  /// Casts the multilinestring range into a multipoint range.
+  /// This treats each multilinestring as simply a collection of points,
+  /// ignoring all edges of the multilinestring.
+  CUSPATIAL_HOST_DEVICE auto as_multipoint_range();
 
  protected:
   GeometryIterator _geometry_begin;
@@ -152,6 +205,10 @@ class multilinestring_range {
   PartIterator _part_end;
   VecIterator _point_begin;
   VecIterator _point_end;
+
+  // TODO: find a better name
+  CUSPATIAL_HOST_DEVICE auto subtracted_part_begin();
+  CUSPATIAL_HOST_DEVICE auto subtracted_part_end();
 
  private:
   /// @internal
