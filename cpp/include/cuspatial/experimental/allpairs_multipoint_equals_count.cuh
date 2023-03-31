@@ -58,8 +58,8 @@ namespace cuspatial {
  * "LegacyRandomAccessIterator"
  */
 template <class MultiPointRefA, class MultiPointRefB, class OutputIt>
-OutputIt allpairs_multipoint_equals_count(MultiPointRefA lhs_first,
-                                          MultiPointRefB rhs_first,
+OutputIt allpairs_multipoint_equals_count(MultiPointRefA const& lhs_first,
+                                          MultiPointRefB const& rhs_first,
                                           OutputIt count_first,
                                           rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
