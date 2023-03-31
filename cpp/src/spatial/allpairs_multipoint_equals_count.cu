@@ -55,9 +55,8 @@ struct dispatch_allpairs_multipoint_equals_count {
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
-    auto size = lhs.size();
+    auto size = lhs.size() / 2;  // lhs is a buffer of xy coords
     auto type = cudf::data_type(cudf::type_to_id<uint32_t>());
-
     auto result =
       cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
 

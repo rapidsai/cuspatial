@@ -30,6 +30,10 @@ def allpairs_multipoint_equals_count(lhs: GeoSeries, rhs: GeoSeries):
         return cudf.Series([])
 
     if any(not contains_only_multipoints(s) for s in [lhs, rhs]):
-        raise ValueError("Input GeoSeries must contain only linestrings.")
+        raise ValueError("Input GeoSeries must contain only multipoints.")
 
-    return c_allpairs_multipoint_equals_count(lhs._column, rhs._column)
+    result = c_allpairs_multipoint_equals_count(
+        lhs.multipoints.xy._column, rhs.multipoints.xy._column
+    )
+
+    return cudf.Series(result)
