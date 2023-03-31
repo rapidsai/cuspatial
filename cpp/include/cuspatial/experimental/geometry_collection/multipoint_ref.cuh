@@ -41,7 +41,7 @@ class multipoint_ref {
   /// Return iterator the the one-past the last point of the multipoint.
   CUSPATIAL_HOST_DEVICE auto end() const { return point_end(); }
 
-  /// Return the number of points in multipoint
+  /// Return the number of points in multipoint.
   CUSPATIAL_HOST_DEVICE auto num_points() const;
   /// Return the number of points in multipoint.
   CUSPATIAL_HOST_DEVICE auto size() const { return num_points(); }

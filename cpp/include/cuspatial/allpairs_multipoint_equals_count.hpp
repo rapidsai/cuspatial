@@ -29,8 +29,8 @@ namespace cuspatial {
  * @brief Compute the number of pairs of multipoints that are equal.
  *
  * Given two columns of interleaved multipoint coordinates, returns a column
- * containing the count of points in each multipoint in `lhs` that are equal to
- * a point in the corresponding multipoint in `rhs`.
+ * containing the count of points in each multipoint from `lhs` that are equal
+ * to a point in the corresponding multipoint in `rhs`.
  *
  * @param lhs Geometry column with a multipoint of interleaved coordinates
  * @param rhs Geometry column with a multipoint of interleaved coordinates
@@ -40,6 +40,16 @@ namespace cuspatial {
  *
  * @throw cuspatial::logic_error if `lhs` and `rhs` have different coordinate
  * types.
+ *
+ * @example
+ * ```
+ * lhs: 0, 0, 1, 1, 2, 2
+ * rhs: 0, 0, 1, 1, 2, 2
+ * result: 1, 1, 1
+ *
+ * lhs: 0, 0, 1, 1, 2, 2
+ * rhs: 0, 0
+ * result: 1, 0, 0
  */
 
 /**
