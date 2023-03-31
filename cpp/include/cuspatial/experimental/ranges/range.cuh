@@ -49,6 +49,10 @@ class range {
   auto CUSPATIAL_HOST_DEVICE begin() { return _begin; }
   /// Return the end iterator to the range
   auto CUSPATIAL_HOST_DEVICE end() { return _end; }
+  /// Return the start const iterator to the range
+  auto CUSPATIAL_HOST_DEVICE cbegin() const { return _begin; }
+  /// Return the end const iterator to the range
+  auto CUSPATIAL_HOST_DEVICE cend() const { return _end; }
   /// Return the size of the range
   auto CUSPATIAL_HOST_DEVICE size() { return thrust::distance(_begin, _end); }
 

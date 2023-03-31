@@ -37,30 +37,6 @@
 
 namespace cuspatial {
 
-namespace detail {
-
-// template <class MultiPointRefA, class SortedPointRange, class OutputIt>
-// void __global__ allpairs_point_equals_count_kernel(MultiPointRefA lhs,
-//                                                    SortedPointRange rhs,
-//                                                    OutputIt output)
-// {
-//   using T = typename MultiPointRefA::point_t::value_type;
-
-//   static_assert(is_same_floating_point<T, typename MultiPointRefB::point_t::value_type>(),
-//                 "Origin and input must have the same base floating point type.");
-
-//   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < lhs.size() * rhs.size();
-//        idx += gridDim.x * blockDim.x) {
-//     vec_2d<T> lhs_point = *(lhs.point_tile_begin() + idx);
-//     vec_2d<T> rhs_point = *(rhs.point_repeat_begin(lhs.size()) + idx);
-
-//     size_t lhs_idx = idx % lhs.size();
-//     if (lhs_point == rhs_point) atomicInc(&output[lhs_idx], 1);
-//   }
-// }
-
-}  // namespace detail
-
 template <class MultiPointRefA, class MultiPointRefB, class OutputIt>
 OutputIt allpairs_multipoint_equals_count(MultiPointRefA const& lhs,
                                           MultiPointRefB const& rhs,
@@ -83,11 +59,6 @@ OutputIt allpairs_multipoint_equals_count(MultiPointRefA const& lhs,
   thrust::copy(rmm::exec_policy(stream), rhs.begin(), rhs.end(), rhs_sorted.begin());
   thrust::sort(rmm::exec_policy(stream), rhs_sorted.begin(), rhs_sorted.end());
 
-  //   auto [threads_per_block, block_size] = grid_1d(lhs.size() * rhs.size());
-  //   detail::allpairs_point_equals_count_kernel<<<block_size, threads_per_block, 0,
-  //   stream.value()>>>(
-  //     lhs, range(rhs_sorted.begin(), rhs), output);
-
   return thrust::transform(
     rmm::exec_policy(stream),
     lhs.begin(),
@@ -98,10 +69,6 @@ OutputIt allpairs_multipoint_equals_count(MultiPointRefA const& lhs,
         thrust::seq, rhs_sorted_range.cbegin(), rhs_sorted_range.cend(), lhs_point);
       return thrust::distance(lower_it, upper_it);
     });
-
-  //   CUSPATIAL_CHECK_CUDA(stream.value());
-  // return output +
-  // lhs.size();
 }
 
 }  // namespace cuspatial
