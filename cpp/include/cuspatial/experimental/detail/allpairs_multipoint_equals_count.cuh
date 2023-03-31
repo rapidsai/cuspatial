@@ -50,7 +50,8 @@ void __global__ allpairs_point_equals_count_kernel(MultiPointRefA lhs,
     vec_2d<T> lhs_point = *(lhs.point_tile_begin() + idx);
     vec_2d<T> rhs_point = *(rhs.point_repeat_begin(lhs.size()) + idx);
 
-    atomicInc(&output[idx % lhs.size()], lhs_point == rhs_point);
+    size_t lhs_idx = idx % lhs.size();
+    if (lhs_point == rhs_point) atomicInc(&output[lhs_idx], 1);
   }
 }
 

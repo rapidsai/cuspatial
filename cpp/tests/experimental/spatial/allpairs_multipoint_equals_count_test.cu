@@ -65,7 +65,7 @@ TYPED_TEST(AllpairsMultipointEqualsCountTest, EmptyInput)
 {
   using T = TypeParam;
   using P = vec_2d<T>;
-
+  printf("Able to call CUSPATIAL_RUN_TEST?\n");
   CUSPATIAL_RUN_TEST(this->run_single,
                      std::initializer_list<std::initializer_list<P>>{{}},
                      std::initializer_list<std::initializer_list<P>>{{}},
@@ -103,8 +103,27 @@ TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeOneNotEqual)
 }
 
 // Inputs are empty columns
+TYPED_TEST(AllpairsMultipointEqualsCountTest, OneThreeEqual)
+{
+  CUSPATIAL_RUN_TEST(this->run_single, {{{1, 1}}}, {{{0, 0}, {1, 1}, {0, 0}}}, {1});
+}
+
+// Inputs are empty columns
+TYPED_TEST(AllpairsMultipointEqualsCountTest, OneThreeNotEqual)
+{
+  CUSPATIAL_RUN_TEST(this->run_single, {{{1, 1}}}, {{{0, 0}, {0, 0}, {1, 1}}}, {1});
+}
+
+// Inputs are empty columns
 TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeThreeEqualMiddle)
 {
   CUSPATIAL_RUN_TEST(
     this->run_single, {{{0, 0}, {1, 1}, {2, 2}}}, {{{-1, -1}, {1, 1}, {-1, -1}}}, {0, 1, 0});
+}
+
+// Inputs are empty columns
+TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeThreeNotEqualMiddle)
+{
+  CUSPATIAL_RUN_TEST(
+    this->run_single, {{{0, 0}, {1, 1}, {2, 2}}}, {{{0, 0}, {-1, -1}, {2, 2}}}, {1, 0, 1});
 }
