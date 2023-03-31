@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "thrust/iterator/zip_iterator.h"
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/pair.h>
 
 #include <cuspatial/cuda_utils.hpp>
