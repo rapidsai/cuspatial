@@ -55,10 +55,12 @@ OutputIt allpairs_multipoint_equals_count(MultiPointRefA const& lhs,
     return output + lhs.size();
   }
 
+  // Create a sorted copy of the rhs points.
   rmm::device_uvector<vec_2d<T>> rhs_sorted(rhs.size(), stream);
   thrust::copy(rmm::exec_policy(stream), rhs.begin(), rhs.end(), rhs_sorted.begin());
   thrust::sort(rmm::exec_policy(stream), rhs_sorted.begin(), rhs_sorted.end());
 
+  // For each point in the lhs, count the number of points in the rhs that are equal.
   return thrust::transform(
     rmm::exec_policy(stream),
     lhs.begin(),

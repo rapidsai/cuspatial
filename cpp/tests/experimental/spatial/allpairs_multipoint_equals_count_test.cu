@@ -60,7 +60,6 @@ using TestTypes = ::testing::Types<float, double>;
 
 TYPED_TEST_CASE(AllpairsMultipointEqualsCountTest, TestTypes);
 
-// Inputs are empty columns
 TYPED_TEST(AllpairsMultipointEqualsCountTest, EmptyInput)
 {
   using T = TypeParam;
@@ -71,56 +70,44 @@ TYPED_TEST(AllpairsMultipointEqualsCountTest, EmptyInput)
                      {});
 }
 
-// Inputs are empty columns
 TYPED_TEST(AllpairsMultipointEqualsCountTest, OneOneEqual)
 {
   CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}}}, {{{0, 0}}}, {1});
 }
 
-// Inputs are empty columns
 TYPED_TEST(AllpairsMultipointEqualsCountTest, OneOneNotEqual)
 {
   CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}}}, {{{1, 0}}}, {0});
 }
 
-// Inputs are empty columns
-TYPED_TEST(AllpairsMultipointEqualsCountTest, OneTwo)
 {
   CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}}}, {{{1, 1}, {0, 0}}}, {1});
 }
 
-// Inputs are empty columns
-TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeOneEqual)
 {
   CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}, {1, 1}, {2, 2}}}, {{{1, 1}}}, {0, 1, 0});
 }
 
-// Inputs are empty columns
-TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeOneNotEqual)
 {
   CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}, {1, 1}, {2, 2}}}, {{{-1, -1}}}, {0, 0, 0});
 }
 
-// Inputs are empty columns
 TYPED_TEST(AllpairsMultipointEqualsCountTest, OneThreeEqual)
 {
   CUSPATIAL_RUN_TEST(this->run_single, {{{1, 1}}}, {{{0, 0}, {1, 1}, {0, 0}}}, {1});
 }
 
-// Inputs are empty columns
 TYPED_TEST(AllpairsMultipointEqualsCountTest, OneThreeNotEqual)
 {
   CUSPATIAL_RUN_TEST(this->run_single, {{{1, 1}}}, {{{0, 0}, {0, 0}, {1, 1}}}, {1});
 }
 
-// Inputs are empty columns
 TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeThreeEqualMiddle)
 {
   CUSPATIAL_RUN_TEST(
     this->run_single, {{{0, 0}, {1, 1}, {2, 2}}}, {{{-1, -1}, {1, 1}, {-1, -1}}}, {0, 1, 0});
 }
 
-// Inputs are empty columns
 TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeThreeNotEqualMiddle)
 {
   CUSPATIAL_RUN_TEST(

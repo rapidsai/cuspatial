@@ -25,34 +25,42 @@
 namespace cuspatial {
 
 /**
- * @brief Sinusoidal projection of longitude/latitude relative to origin to Cartesian (x/y)
- * coordinates in km.
+ * @brief Compute the number of multipoint pairs that are equal.
  *
- * Can be used to approximately convert longitude/latitude coordinates to Cartesian coordinates
- * given that all points are near the origin. Error increases with distance from the origin.
- * See [Sinusoidal Projection](https://en.wikipedia.org/wiki/Sinusoidal_projection) for more detail.
+ * Given two sets of multipoints, each represented by a range of `vec_2d<T>`s,
+ * computes the number of pairs of multipoints that are equal. Example:
  *
- * @note All input iterators must have a `value_type` of `cuspatial::vec_2d<T>` (Lat/Lon
- * coordinates), and the output iterator must be able to accept for storage values of type
- * `cuspatial::vec_2d<T>` (Cartesian coordinates).
+ * ```
+ * lhs: { {0, 0}, {1, 1}, {2, 2} }
+ * rhs: { {0, 0}, {1, 1}, {2, 2} }
+ * count: { 1, 1, 1 }
  *
- * @param[in]  lon_lat_first beginning of range of input longitude/latitude coordinates.
- * @param[in]  lon_lat_last end of range of input longitude/latitude coordinates.
- * @param[in]  origin: longitude and latitude of origin.
- * @param[out] xy_first: beginning of range of output x/y coordinates.
+ * lhs: { {0, 0} }
+ * rhs: { {0, 0}, {1, 1}, {2, 2}, {3, 3} }
+ * count: { 1 }
+ *
+ * lhs: { {0, 0}, {1, 1}, {2, 2}, {3, 3} }
+ * rhs: { {0, 0} }
+ * count: { 1, 0, 0, 0 }
+ * ```
+ *
+ * @note All input iterators must have a `value_type` of `cuspatial::vec_2d<T>`
+ * and the output iterator must be able to accept for storage values of type
+ * `uint32_t`.
+ *
+ * @param[in]  lhs_first multipoint_ref of first set of points
+ * @param[in]  rhs_first multipoint_ref of second set of points
+ * @param[out] count_first: beginning of range of uint32_t counts
  * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
  *
- * @tparam InputIt Iterator over longitude/latitude locations. Must meet the requirements of
+ * @tparam MultiPointRefA Iterator over multipoint vec_2ds. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam OutputIt Iterator over Cartesian output points. Must meet the requirements of
+ * @tparam MultiPointRefB Iterator over multipoint vec_2ds. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam OutputIt Iterator over uint32_t. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
- * @tparam T the floating-point coordinate value type of input longitude/latitude coordinates.
  *
- * @pre `lonlat_first` may equal `xy_first`, but the range `[lonlat_first, lonlat_last)`
- * shall not otherwise overlap the range `[xy_first, xy_first + std::distance(lonlat_first,
- * lonlat_last))`.
- *
- * @return Output iterator to the element past the last x/y coordinate computed.
+ * @return Output iterator to the element past the last count result written.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"

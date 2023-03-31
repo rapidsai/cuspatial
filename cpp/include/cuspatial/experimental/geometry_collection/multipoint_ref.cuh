@@ -46,13 +46,6 @@ class multipoint_ref {
   /// Return the number of points in multipoint.
   CUSPATIAL_HOST_DEVICE auto size() const { return num_points(); }
 
-  /// Tiling iterator
-  CUSPATIAL_HOST_DEVICE auto point_tile_begin() const;
-
-  // Repeating iterator
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto point_repeat_begin(IndexType repeats) const;
-
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator[](IndexType point_idx);
 
