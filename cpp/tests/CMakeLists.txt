@@ -49,7 +49,7 @@ endfunction(ConfigureTest)
 ###################################################################################################
 
 ConfigureTest(ALLPAIRS_MULTIPOINT_EQUALS_COUNT_TEST
-    spatial/allpairs_multipoint_equals_count_test.cu)
+    spatial/allpairs_multipoint_equals_count_test.cpp)
 
 ConfigureTest(SINUSOIDAL_PROJECTION_TEST
     spatial/sinusoidal_projection_test.cu)

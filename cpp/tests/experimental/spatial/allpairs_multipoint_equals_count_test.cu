@@ -80,14 +80,17 @@ TYPED_TEST(AllpairsMultipointEqualsCountTest, OneOneNotEqual)
   CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}}}, {{{1, 0}}}, {0});
 }
 
+TYPED_TEST(AllpairsMultipointEqualsCountTest, OneTwoEqual)
 {
   CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}}}, {{{1, 1}, {0, 0}}}, {1});
 }
 
+TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeOneEqual)
 {
   CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}, {1, 1}, {2, 2}}}, {{{1, 1}}}, {0, 1, 0});
 }
 
+TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeOneNotEqual)
 {
   CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}, {1, 1}, {2, 2}}}, {{{-1, -1}}}, {0, 0, 0});
 }
