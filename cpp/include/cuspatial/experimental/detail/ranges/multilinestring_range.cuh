@@ -86,6 +86,11 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::multilinestr
     _point_begin(point_begin),
     _point_end(point_end)
 {
+  static_assert(is_vec_2d<iterator_value_type<VecIterator>>,
+                "point_begin and point_end must be iterators to floating point vec_2d types.");
+
+  CUSPATIAL_EXPECTS_VALID_MULTILINESTRING_SIZES(
+    num_points(), num_multilinestrings() + 1, num_linestrings() + 1);
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
