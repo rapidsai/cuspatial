@@ -24,6 +24,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/experimental/detail/functors.cuh>
 #include <cuspatial/experimental/geometry_collection/multilinestring_ref.cuh>
 #include <cuspatial/experimental/ranges/multipoint_range.cuh>
