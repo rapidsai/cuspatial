@@ -21,6 +21,7 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
 #include <cuspatial/traits.hpp>
+#include <cuspatial/types.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 namespace cuspatial {
@@ -110,11 +111,17 @@ class multipolygon_range {
   /// Return the iterator to the one past the last point in the range.
   CUSPATIAL_HOST_DEVICE auto point_end();
 
-  //   /// Return the iterator to the first polygon in the range.
-  //   CUSPATIAL_HOST_DEVICE auto polygon_begin();
+  /// Return the iterator to the first part offset in the range.
+  CUSPATIAL_HOST_DEVICE auto part_offset_begin() { return _part_begin; }
 
-  //   /// Return the iterator to the one past the last polygon in the range.
-  //   CUSPATIAL_HOST_DEVICE auto polygon_end();
+  /// Return the iterator to the one past the last part offset in the range.
+  CUSPATIAL_HOST_DEVICE auto part_offset_end() { return _part_end; }
+
+  /// Return the iterator to the first ring offset in the range.
+  CUSPATIAL_HOST_DEVICE auto ring_offset_begin() { return _ring_begin; }
+
+  /// Return the iterator to the one past the last ring offset in the range.
+  CUSPATIAL_HOST_DEVICE auto ring_offset_end() { return _ring_end; }
 
   /// Given the index of a segment, return the index of the geometry (multipolygon) that contains
   /// the segment. Segment index is the index to the starting point of the segment. If the index is
@@ -151,9 +158,9 @@ class multipolygon_range {
                                                             IndexType2 geometry_idx);
 
   /// Returns an iterator to the number of points of the first multipolygon
-  CUSPATIAL_HOST_DEVICE auto per_multipolygon_point_count_begin();
+  CUSPATIAL_HOST_DEVICE auto multipolygon_point_count_begin();
   /// Returns the one past the iterator to the number of points of the last multipolygon
-  CUSPATIAL_HOST_DEVICE auto per_multipolygon_point_count_end();
+  CUSPATIAL_HOST_DEVICE auto multipolygon_point_count_end();
 
   /// Returns an iterator to the number of rings of the first multipolygon
   CUSPATIAL_HOST_DEVICE auto multipolygon_ring_count_begin();
@@ -170,18 +177,6 @@ class multipolygon_range {
 
   /// Returns an iterator to the end of the segment
   CUSPATIAL_HOST_DEVICE auto segment_end();
-
-  //   /// Returns an infinite iterator to the "repeated" polygons of the multipolygon range.
-  //   /// If the multipolygon range has 2 polygons, an iterator with repeats 3 will iterate on the
-  //   /// 0th, 0th, 0th, 1st, 1st, 1st, 0th, 0th, 0th polygon for the first 9 iterations.
-  //   ///
-  //   /// The name of `repeated` comes from [numpy.repeat](1)
-  //   /// [1] https://numpy.org/doc/stable/reference/generated/numpy.repeat.html
-  //   template <typename IndexType>
-  //   CUSPATIAL_HOST_DEVICE auto polygon_wraparound_repeated_begin(IndexType repeats);
-
-  //   template <typename IndexType>
-  //   CUSPATIAL_HOST_DEVICE auto segment_wraparound_repeated_begin()
 
  protected:
   GeometryIterator _geometry_begin;

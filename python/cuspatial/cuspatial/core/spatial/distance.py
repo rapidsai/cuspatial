@@ -10,16 +10,19 @@ from cuspatial._lib.distance import (
     pairwise_linestring_distance as cpp_pairwise_linestring_distance,
     pairwise_point_distance as cpp_pairwise_point_distance,
     pairwise_point_linestring_distance as c_pairwise_point_linestring_distance,
+    pairwise_point_polygon_distance as c_pairwise_point_polygon_distance,
 )
 from cuspatial._lib.hausdorff import (
     directed_hausdorff_distance as cpp_directed_hausdorff_distance,
 )
 from cuspatial._lib.spatial import haversine_distance as cpp_haversine_distance
+from cuspatial._lib.types import CollectionType
 from cuspatial.core.geoseries import GeoSeries
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
     contains_only_points,
+    contains_only_polygons,
 )
 
 
@@ -377,6 +380,104 @@ def pairwise_point_linestring_distance(
                 linestrings.lines.xy._column,
                 points_geometry_offset,
                 as_column(linestrings.lines.geometry_offset),
+            )
+        }
+    )
+
+
+def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
+    """Compute distance between pairs of (multi)points and (multi)polygons
+
+    The distance between a (multi)point and a (multi)polygon
+    is defined as the shortest distance between every point in the
+    multipoint and every edge of the (multi)polygon. If the multipoint and
+    multipolygon intersects, the distance is 0.
+
+    This algorithm computes distance pairwise. The ith row in the result is
+    the distance between the ith (multi)point in `points` and the ith
+    (multi)polygon in `polygons`.
+
+    Parameters
+    ----------
+    points : GeoSeries
+        The (multi)points to compute the distance from.
+    polygons : GeoSeries
+        The (multi)polygons to compute the distance from.
+
+    Returns
+    -------
+    distance : cudf.Series
+
+    Notes
+    -----
+    The input `GeoSeries` must contain a single type geometry.
+    For example, `points` series cannot contain both points and polygons.
+    Currently, it is unsupported that `points` contains both points and
+    multipoints.
+
+    Examples
+    --------
+    Compute distance between a point and a polygon:
+    >>> from shapely.geometry import Point
+    >>> points = cuspatial.GeoSeries([Point(0, 0)])
+    >>> polygons = cuspatial.GeoSeries([Point(1, 1).buffer(0.5)])
+    >>> cuspatial.pairwise_point_polygon_distance(points, polygons)
+    0    0.914214
+    dtype: float64
+
+    Compute distance between a multipoint and a multipolygon
+
+    >>> from shapely.geometry import MultiPoint
+    >>> mpoints = cuspatial.GeoSeries([MultiPoint([Point(0, 0), Point(1, 1)])])
+    >>> mpolys = cuspatial.GeoSeries([
+    ...     MultiPoint([Point(2, 2), Point(1, 2)]).buffer(0.5)])
+    >>> cuspatial.pairwise_point_polygon_distance(mpoints, mpolys)
+    0    0.5
+    dtype: float64
+    """
+
+    if len(points) != len(polygons):
+        raise ValueError("Unmatched input geoseries length.")
+
+    if len(points) == 0:
+        return cudf.Series(dtype=points.points.xy.dtype)
+
+    if not contains_only_points(points):
+        raise ValueError("`points` array must contain only points")
+
+    if not contains_only_polygons(polygons):
+        raise ValueError("`linestrings` array must contain only linestrings")
+
+    if len(points.points.xy) > 0 and len(points.multipoints.xy) > 0:
+        raise NotImplementedError(
+            "Mixing point and multipoint geometries is not supported"
+        )
+
+    point_collection_type = (
+        CollectionType.SINGLE
+        if len(points.points.xy > 0)
+        else CollectionType.MULTI
+    )
+
+    # Handle slicing in geoseries
+    points_column = (
+        points._column.points._column
+        if point_collection_type == CollectionType.SINGLE
+        else points._column.mpoints._column
+    )
+    points_column = points_column.take(
+        points._column._meta.union_offsets._column
+    )
+
+    polygon_column = polygons._column.polygons._column
+    polygon_column = polygon_column.take(
+        polygons._column._meta.union_offsets._column
+    )
+
+    return Series._from_data(
+        {
+            None: c_pairwise_point_polygon_distance(
+                point_collection_type, points_column, polygon_column
             )
         }
     )
