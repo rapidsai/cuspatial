@@ -66,8 +66,8 @@ struct MultipolygonRangeTest : public BaseFixture {
     auto got = rmm::device_uvector<std::size_t>(rng.num_multipolygons(), stream());
 
     thrust::copy(rmm::exec_policy(stream()),
-                 rng.per_multipolygon_point_count_begin(),
-                 rng.per_multipolygon_point_count_end(),
+                 rng.multipolygon_point_count_begin(),
+                 rng.multipolygon_point_count_end(),
                  got.begin());
 
     auto d_expected = thrust::device_vector<std::size_t>(expected_point_counts.begin(),
