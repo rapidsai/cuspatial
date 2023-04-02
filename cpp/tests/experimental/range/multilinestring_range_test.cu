@@ -110,6 +110,35 @@ struct MultilinestringRangeTest : public BaseFixture {
 
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, got);
   }
+
+  void run_multilinestring_as_multipoint_test(
+    std::initializer_list<std::size_t> geometry_offset,
+    std::initializer_list<std::size_t> part_offset,
+    std::initializer_list<vec_2d<T>> coordinates,
+    std::initializer_list<std::initializer_list<vec_2d<T>>> expected)
+  {
+    auto multilinestring_array =
+      make_multilinestring_array(geometry_offset, part_offset, coordinates);
+    auto multilinestring_range = multilinestring_array.range();
+
+    auto multipoint_range = multilinestring_range.as_multipoint_range();
+
+    thrust::device_vector<std::size_t> got_geometry_offset(multipoint_range.offsets_begin(),
+                                                           multipoint_range.offsets_end());
+    thrust::device_vector<vec_2d<T>> got_coordinates(multipoint_range.point_begin(),
+                                                     multipoint_range.point_end());
+
+    auto expected_multipoint = make_multipoints_array(expected);
+    auto expected_range      = expected_multipoint.range();
+
+    thrust::device_vector<std::size_t> expected_geometry_offset(expected_range.offsets_begin(),
+                                                                expected_range.offsets_end());
+    thrust::device_vector<vec_2d<T>> expected_coordinates(expected_range.point_begin(),
+                                                          expected_range.point_end());
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_geometry_offset, got_geometry_offset);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected_coordinates, got_coordinates);
+  }
 };
 
 using TestTypes = ::testing::Types<float, double>;
@@ -322,4 +351,56 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringLinestringCountTest2)
     {0, 3, 6, 9},
     {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}, P{20, 20}, P{21, 21}, P{22, 22}},
     {1, 2});
+}
+
+TYPED_TEST(MultilinestringRangeTest, MultilinestringAsMultipointTest)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_as_multipoint_test,
+                     {0, 1},
+                     {0, 3},
+                     {P{0, 0}, P{1, 1}, P{2, 2}},
+                     {{P{0, 0}, P{1, 1}, P{2, 2}}});
+}
+
+TYPED_TEST(MultilinestringRangeTest, MultilinestringAsMultipointTest2)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_as_multipoint_test,
+                     {0, 2},
+                     {0, 3, 5},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{3, 3}, P{4, 4}},
+                     {{P{0, 0}, P{1, 1}, P{2, 2}, P{3, 3}, P{4, 4}}});
+}
+
+TYPED_TEST(MultilinestringRangeTest, MultilinestringAsMultipointTest3)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_as_multipoint_test,
+                     {0, 1, 2},
+                     {0, 3, 5},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}},
+                     {{P{0, 0}, P{1, 1}, P{2, 2}}, {P{10, 10}, P{11, 11}}});
+}
+
+TYPED_TEST(MultilinestringRangeTest, MultilinestringAsMultipointTest4)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_as_multipoint_test,
+                     {0, 1, 3},
+                     {0, 3, 5, 7},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}, P{13, 13}},
+                     {{P{0, 0}, P{1, 1}, P{2, 2}}, {P{10, 10}, P{11, 11}, P{12, 12}, P{13, 13}}});
 }
