@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "thrust/iterator/zip_iterator.h"
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -25,6 +24,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/experimental/detail/functors.cuh>
 #include <cuspatial/experimental/geometry_collection/multilinestring_ref.cuh>
 #include <cuspatial/experimental/ranges/multipoint_range.cuh>
@@ -301,7 +301,7 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::as_multipoin
 {
   auto multipoint_geometry_it = thrust::make_permutation_iterator(_part_begin, _geometry_begin);
   return multipoint_range{multipoint_geometry_it,
-                          multipoint_geometry_it + num_multilinestrings(),
+                          multipoint_geometry_it + thrust::distance(_geometry_begin, _geometry_end),
                           _point_begin,
                           _point_end};
 }
