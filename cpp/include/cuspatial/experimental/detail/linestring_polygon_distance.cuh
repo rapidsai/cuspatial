@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuspatial_test/test_util.cuh>
+#include "distance_utils.cuh"
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
@@ -34,7 +34,6 @@
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/scan.h>
-#include <thrust/tabulate.h>
 #include <thrust/zip_function.h>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -47,38 +46,19 @@ namespace cuspatial {
 namespace detail {
 
 /**
- * @brief For each point in the multipoint, compute point-in-multipolygon in corresponding pair.
+ * @brief Computes distances between the multilinestring and multipolygons
+ *
+ * @param multilinestrings Range to the multilinestring
+ * @param multipolygons Range to the multipolygon
+ * @param thread_bounds Range to the boundary of thread partitions
+ * @param multilinestrings_segment_offsets Range to the indices where the first segment of each
+ * multilinestring begins
+ * @param multipolygons_segment_offsets Range to the indices where the first segment of each
+ * multipolygon begins
+ * @param intersects A uint8_t array that indicates if the corresponding pair of multipoint and
+ * multipolygon intersects
+ * @param distances Output range of distances, pre-filled with std::numerical_limits<T>::max()
  */
-template <typename MultiPointRange, typename MultiPolygonRange>
-struct point_in_multipolygon_test_functor {
-  using T = typename MultiPointRange::element_t;
-
-  MultiPointRange multipoints;
-  MultiPolygonRange multipolygons;
-
-  point_in_multipolygon_test_functor(MultiPointRange multipoints, MultiPolygonRange multipolygons)
-    : multipoints(multipoints), multipolygons(multipolygons)
-  {
-  }
-
-  template <typename IndexType>
-  uint8_t __device__ operator()(IndexType pidx)
-  {
-    vec_2d<T> const& point = multipoints.point(pidx);
-    auto geometry_idx      = multipoints.geometry_idx_from_point_idx(pidx);
-
-    auto const& polys = multipolygons[geometry_idx];
-
-    // TODO: benchmark against range based for loop
-    bool intersects =
-      thrust::any_of(thrust::seq, polys.begin(), polys.end(), [&point] __device__(auto poly) {
-        return is_point_in_polygon(point, poly);
-      });
-
-    return static_cast<uint8_t>(intersects);
-  }
-};
-
 template <typename MultiLinestringRange,
           typename MultiPolygonRange,
           typename IndexRange,
@@ -141,50 +121,20 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
 
   if (multilinestrings.size() == 0) return distances_first;
 
-  // Create a multipoint range from multilinestrings
-  auto multipoints = multilinestrings.as_multipoint_range();
-
-  // Compute whether each multipoint intersects with the corresponding multipolygon.
-  // First, compute the point-multipolygon intersection. Then use reduce-by-key to
-  // compute the multipoint-multipolygon intersection.
-  auto multipoint_intersects = [&]() {
-    rmm::device_uvector<uint8_t> point_intersects(multipoints.num_points(), stream);
-
-    thrust::tabulate(rmm::exec_policy(stream),
-                     point_intersects.begin(),
-                     point_intersects.end(),
-                     detail::point_in_multipolygon_test_functor{multipoints, multipolygons});
-
-    // `multipoints` contains only single points, no need to reduce.
-    if (multipoints.is_single_point_range()) return point_intersects;
-
-    rmm::device_uvector<uint8_t> multipoint_intersects(multipoints.num_multipoints(), stream);
-    detail::zero_data_async(multipoint_intersects.begin(), multipoint_intersects.end(), stream);
-
-    auto offset_as_key_it =
-      make_geometry_id_iterator<index_t>(multipoints.offsets_begin(), multipoints.offsets_end());
-
-    thrust::reduce_by_key(rmm::exec_policy(stream),
-                          offset_as_key_it,
-                          offset_as_key_it + multipoints.num_points(),
-                          point_intersects.begin(),
-                          thrust::make_discard_iterator(),
-                          multipoint_intersects.begin(),
-                          thrust::logical_or<uint8_t>());
-
-    return multipoint_intersects;
-  }();
+  // Create a multipoint range from multilinestrings, computes intersection
+  auto multipoints           = multilinestrings.as_multipoint_range();
+  auto multipoint_intersects = point_polygon_intersects(multipoints, multipolygons, stream);
 
   // Compute the "boundary" of threads. Threads are partitioned based on the number of linestrings
   // times the number of polygons in a multipoint-multipolygon pair.
   auto segment_count_product_it = thrust::make_transform_iterator(
     thrust::make_zip_iterator(multilinestrings.multilinestring_segment_count_begin(),
                               multipolygons.multipolygon_segment_count_begin()),
-    thrust::make_zip_function(thrust::multiplies<index_t>{})
-    );
+    thrust::make_zip_function(thrust::multiplies<index_t>{}));
 
-  // Computes the "thread boundary" of each pair. This array partitions the thread range by geometries.
-  // E.g. threadIdx within [thread_bounds[i], thread_bounds[i+1]) computes distances of the ith pair.
+  // Computes the "thread boundary" of each pair. This array partitions the thread range by
+  // geometries. E.g. threadIdx within [thread_bounds[i], thread_bounds[i+1]) computes distances of
+  // the ith pair.
   auto thread_bounds = rmm::device_uvector<index_t>(multilinestrings.size() + 1, stream);
   detail::zero_data_async(thread_bounds.begin(), thread_bounds.end(), stream);
 
