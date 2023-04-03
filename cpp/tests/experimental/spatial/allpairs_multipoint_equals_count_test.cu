@@ -116,3 +116,11 @@ TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeThreeNotEqualMiddle)
   CUSPATIAL_RUN_TEST(
     this->run_single, {{{0, 0}, {1, 1}, {2, 2}}}, {{{0, 0}, {-1, -1}, {2, 2}}}, {1, 0, 1});
 }
+
+TYPED_TEST(AllpairsMultipointEqualsCountTest, ThreeThreeNeedRhsMultipoints)
+{
+  CUSPATIAL_RUN_TEST(this->run_single,
+                     {{{0, 0}, {1, 1}, {2, 2}}},
+                     {{{0, 0}, {1, 1}}, {{2, 2}, {3, 3}}, {{0, 0}, {1, 1}}},
+                     {2, 0, 2});
+}

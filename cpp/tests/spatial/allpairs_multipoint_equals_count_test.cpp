@@ -52,7 +52,6 @@ TYPED_TEST(AllpairsMultipointEqualsCountTest, Empty)
 
 TYPED_TEST(AllpairsMultipointEqualsCountTest, InvalidTypes)
 {
-  using T  = TypeParam;
   auto lhs = fixed_width_column_wrapper<float>({});
   auto rhs = fixed_width_column_wrapper<double>({});
 
