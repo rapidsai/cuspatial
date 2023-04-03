@@ -86,7 +86,7 @@ struct point_in_multipolygon_test_functor {
           first_point.y,
           static_cast<int>(poly.size()));
         bool res = is_point_in_polygon(point, poly);
-        printf("res: %d", res);
+        printf("res: %d\n", res);
         ++i;
         return res;
       });

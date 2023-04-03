@@ -179,7 +179,7 @@ TYPED_TEST(PairwiseLinestringPolygonDistanceTest, OnePair112Disjoint)
 
   CUSPATIAL_RUN_TEST(this->run_single,
                      {0, 1},
-                     {0, 3},
+                     {0, 4},
                      {P{0, 0}, P{1, 1}, P{2, 2}, P{2, 3}},
                      {0, 1},
                      {0, 2},
@@ -194,7 +194,7 @@ TYPED_TEST(PairwiseLinestringPolygonDistanceTest, OnePair112Disjoint)
                       P{-3, -3},
                       P{-2, -3},
                       P{-2, -2}},
-                     {1.0});
+                     {std::sqrt(T{2})});
 }
 
 TYPED_TEST(PairwiseLinestringPolygonDistanceTest, OnePair112Crosses)
@@ -205,13 +205,13 @@ TYPED_TEST(PairwiseLinestringPolygonDistanceTest, OnePair112Crosses)
   CUSPATIAL_RUN_TEST(
     this->run_single,
     {0, 1},
-    {0, 3},
+    {0, 4},
     {P{0, 0}, P{1, 1}, P{2, 2}, P{2, 3}},
     {0, 1},
     {0, 2},
     {0, 4, 8},
     {P{-1, -1}, P{-2, -2}, P{-2, -1}, P{-1, -1}, P{0, 1}, P{2, 1}, P{2, 0}, P{0, 1}},
-    {1.0});
+    {0.0});
 }
 
 TYPED_TEST(PairwiseLinestringPolygonDistanceTest, OnePair122Disjoint)
@@ -297,7 +297,7 @@ TYPED_TEST(PairwiseLinestringPolygonDistanceTest, OnePair222Contains)
   using P = vec_2d<T>;
 
   CUSPATIAL_RUN_TEST(this->run_single,
-                     {0, 1},
+                     {0, 2},
                      {0, 2, 4},
                      {P{1, 1}, P{0, 0}, P{6, 6}, P{6, 7}},
                      {0, 2},
@@ -324,7 +324,7 @@ TYPED_TEST(PairwiseLinestringPolygonDistanceTest, OnePair222Crosses)
 
   CUSPATIAL_RUN_TEST(
     this->run_single,
-    {0, 1},
+    {0, 2},
     {0, 2, 4},
     {P{0, 0}, P{1, 1}, P{-1, 0}, P{0, -1}},
     {0, 2},
@@ -355,5 +355,61 @@ TYPED_TEST(PairwiseLinestringPolygonDistanceTest, TwoPairs)
                       P{-11, -11},
                       P{-11, -10},
                       P{-10, -10}},
-                     {0.0, 0.0});
+                     {std::sqrt(T{2}), 20 * std::sqrt(T{2})});
+}
+
+TYPED_TEST(PairwiseLinestringPolygonDistanceTest, TwoPairs2)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+
+  CUSPATIAL_RUN_TEST(
+    this->run_single,
+    {0, 1, 3},
+    {0, 4, 7, 9},
+    {P{0, 0}, P{1, 1}, P{2, 2}, P{3, 3}, P{10, 10}, P{11, 11}, P{12, 12}, P{20, 20}, P{20, 21}},
+    {0, 1, 3},
+    {0, 1, 2, 3},
+    {0, 4, 9, 13},
+    {P{-1, -1},
+     P{-2, -2},
+     P{-2, -1},
+     P{-1, -1},
+     P{-10, -10},
+     P{-10, -11},
+     P{-11, -11},
+     P{-11, -10},
+     P{-10, -10},
+     P{20, -10},
+     P{20, -20},
+     P{30, -20},
+     P{20, -10}},
+    {std::sqrt(T{2}), 10 * std::sqrt(T{5})});
+}
+
+TYPED_TEST(PairwiseLinestringPolygonDistanceTest, TwoPairsCrosses)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_single,
+                     {0, 1, 2},
+                     {0, 4, 6},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{3, 3}, P{5, 5}, P{20, 20}},
+                     {0, 1, 2},
+                     {0, 1, 3},
+                     {0, 4, 8, 12},
+                     {P{-1, -1},
+                      P{-2, -2},
+                      P{-2, -1},
+                      P{-1, -1},
+                      P{0, 0},
+                      P{20, 0},
+                      P{0, 20},
+                      P{0, 0},
+                      P{5, 5},
+                      P{15, 5},
+                      P{5, 15},
+                      P{5, 5}},
+                     {std::sqrt(T{2}), 0.0});
 }
