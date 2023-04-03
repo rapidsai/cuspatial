@@ -2,9 +2,9 @@
 
 import cudf
 
-from cuspatial.core.binpreds.binpred_interface import NotImplementedRoot
-from cuspatial.core.binpreds.feature_contains import RootContains
-from cuspatial.core.binpreds.feature_equals import RootEquals
+from cuspatial.core.binpreds.binpred_interface import NotImplementedPredicate
+from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
+from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.utils import binpred_utils
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -15,7 +15,7 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-class RootWithin(RootEquals):
+class RootWithin(EqualsPredicateBase):
     """Base class for binary predicates that are defined in terms of a
     root-level binary predicate. For example, a Point-Point Within
     predicate is defined in terms of a Point-Point Contains predicate.
@@ -29,13 +29,13 @@ class PointPointWithin(RootWithin):
         return cudf.Series(op_result.result)
 
 
-class PointPolygonWithin(RootContains):
+class PointPolygonWithin(ContainsPredicateBase):
     def _preprocess(self, lhs, rhs):
         # Note the order of arguments is reversed.
         return super()._preprocess(rhs, lhs)
 
 
-class ComplexPolygonWithin(RootContains):
+class ComplexPolygonWithin(ContainsPredicateBase):
     def _preprocess(self, lhs, rhs):
         # Note the order of arguments is reversed.
         return super()._preprocess(rhs, lhs)
@@ -64,16 +64,16 @@ class ComplexPolygonWithin(RootContains):
 
 DispatchDict = {
     (Point, Point): PointPointWithin,
-    (Point, MultiPoint): NotImplementedRoot,
-    (Point, LineString): NotImplementedRoot,
+    (Point, MultiPoint): NotImplementedPredicate,
+    (Point, LineString): NotImplementedPredicate,
     (Point, Polygon): PointPolygonWithin,
-    (MultiPoint, Point): NotImplementedRoot,
-    (MultiPoint, MultiPoint): NotImplementedRoot,
-    (MultiPoint, LineString): NotImplementedRoot,
+    (MultiPoint, Point): NotImplementedPredicate,
+    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): ComplexPolygonWithin,
-    (LineString, Point): NotImplementedRoot,
-    (LineString, MultiPoint): NotImplementedRoot,
-    (LineString, LineString): NotImplementedRoot,
+    (LineString, Point): NotImplementedPredicate,
+    (LineString, MultiPoint): NotImplementedPredicate,
+    (LineString, LineString): NotImplementedPredicate,
     (LineString, Polygon): ComplexPolygonWithin,
     (Polygon, Point): RootWithin,
     (Polygon, MultiPoint): RootWithin,

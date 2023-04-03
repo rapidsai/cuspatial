@@ -13,7 +13,7 @@ import cuspatial
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     EqualsOpResult,
-    NotImplementedRoot,
+    NotImplementedPredicate,
     PreprocessorResult,
 )
 from cuspatial.utils.binpred_utils import (
@@ -27,10 +27,10 @@ from cuspatial.utils.binpred_utils import (
 GeoSeries = TypeVar("GeoSeries")
 
 
-class RootEquals(BinPred, Generic[GeoSeries]):
+class EqualsPredicateBase(BinPred, Generic[GeoSeries]):
     """Base class for binary predicates that are defined in terms of the equals
-    basic predicate.  `RootEquals` implements utility functions that are
-    used within many equals-related binary predicates.
+    basic predicate.  `EqualsPredicateBase` implements utility functions that
+    are used within many equals-related binary predicates.
     """
 
     def _offset_equals(self, lhs, rhs):
@@ -258,7 +258,7 @@ class RootEquals(BinPred, Generic[GeoSeries]):
         return cudf.Series(op_result.result, dtype="bool")
 
 
-class PolygonComplexEquals(RootEquals):
+class PolygonComplexEquals(EqualsPredicateBase):
     def _postprocess(self, lhs, rhs, op_result):
         """Postprocess the output GeoSeries to combine the resulting
         comparisons into a single boolean value for each feature in the
@@ -323,20 +323,20 @@ class LineStringLineStringEquals(PolygonComplexEquals):
 
 """DispatchDict for Equals operations."""
 DispatchDict = {
-    (Point, Point): RootEquals,
-    (Point, MultiPoint): NotImplementedRoot,
-    (Point, LineString): NotImplementedRoot,
-    (Point, Polygon): RootEquals,
-    (MultiPoint, Point): NotImplementedRoot,
+    (Point, Point): EqualsPredicateBase,
+    (Point, MultiPoint): NotImplementedPredicate,
+    (Point, LineString): NotImplementedPredicate,
+    (Point, Polygon): EqualsPredicateBase,
+    (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): MultiPointMultiPointEquals,
-    (MultiPoint, LineString): NotImplementedRoot,
-    (MultiPoint, Polygon): NotImplementedRoot,
-    (LineString, Point): NotImplementedRoot,
-    (LineString, MultiPoint): NotImplementedRoot,
+    (MultiPoint, LineString): NotImplementedPredicate,
+    (MultiPoint, Polygon): NotImplementedPredicate,
+    (LineString, Point): NotImplementedPredicate,
+    (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): LineStringLineStringEquals,
-    (LineString, Polygon): RootEquals,
-    (Polygon, Point): RootEquals,
-    (Polygon, MultiPoint): RootEquals,
-    (Polygon, LineString): RootEquals,
-    (Polygon, Polygon): RootEquals,
+    (LineString, Polygon): EqualsPredicateBase,
+    (Polygon, Point): EqualsPredicateBase,
+    (Polygon, MultiPoint): EqualsPredicateBase,
+    (Polygon, LineString): EqualsPredicateBase,
+    (Polygon, Polygon): EqualsPredicateBase,
 }

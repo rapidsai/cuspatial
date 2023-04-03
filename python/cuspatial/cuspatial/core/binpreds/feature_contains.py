@@ -13,7 +13,7 @@ from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     BinPredConfig,
     ContainsOpResult,
-    NotImplementedRoot,
+    NotImplementedPredicate,
     PreprocessorResult,
 )
 from cuspatial.core.binpreds.contains import contains_properly
@@ -38,7 +38,7 @@ from cuspatial.utils.column_utils import (
 GeoSeries = TypeVar("GeoSeries")
 
 
-class RootContains(BinPred, Generic[GeoSeries]):
+class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
     """Base class for binary predicates that are defined in terms of a
     `contains` basic predicate. This class implements the logic that underlies
     `polygon.contains` primarily, and is implemented for many cases.
@@ -48,7 +48,7 @@ class RootContains(BinPred, Generic[GeoSeries]):
     """
 
     def __init__(self, **kwargs):
-        """`RootContains` constructor.
+        """`ContainsPredicateBase` constructor.
 
         Parameters
         ----------
@@ -300,7 +300,7 @@ class RootContains(BinPred, Generic[GeoSeries]):
                 return final_result
 
 
-class PolygonComplexContains(RootContains):
+class PolygonComplexContains(ContainsPredicateBase):
     """Base class for contains operations that use a complex object on
     the right hand side.
 
@@ -334,7 +334,7 @@ class PolygonComplexContains(RootContains):
         return final_result
 
 
-class PointPointContains(RootContains):
+class PointPointContains(ContainsPredicateBase):
     def _preprocess(self, lhs, rhs):
         """PointPointContains that simply calls the equals predicate on the
         points."""
@@ -349,18 +349,18 @@ class PointPointContains(RootContains):
     left and right hand side types. """
 DispatchDict = {
     (Point, Point): PointPointContains,
-    (Point, MultiPoint): NotImplementedRoot,
-    (Point, LineString): NotImplementedRoot,
-    (Point, Polygon): NotImplementedRoot,
-    (MultiPoint, Point): NotImplementedRoot,
-    (MultiPoint, MultiPoint): NotImplementedRoot,
-    (MultiPoint, LineString): NotImplementedRoot,
-    (MultiPoint, Polygon): NotImplementedRoot,
-    (LineString, Point): NotImplementedRoot,
-    (LineString, MultiPoint): NotImplementedRoot,
-    (LineString, LineString): NotImplementedRoot,
-    (LineString, Polygon): NotImplementedRoot,
-    (Polygon, Point): RootContains,
+    (Point, MultiPoint): NotImplementedPredicate,
+    (Point, LineString): NotImplementedPredicate,
+    (Point, Polygon): NotImplementedPredicate,
+    (MultiPoint, Point): NotImplementedPredicate,
+    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, LineString): NotImplementedPredicate,
+    (MultiPoint, Polygon): NotImplementedPredicate,
+    (LineString, Point): NotImplementedPredicate,
+    (LineString, MultiPoint): NotImplementedPredicate,
+    (LineString, LineString): NotImplementedPredicate,
+    (LineString, Polygon): NotImplementedPredicate,
+    (Polygon, Point): ContainsPredicateBase,
     (Polygon, MultiPoint): PolygonComplexContains,
     (Polygon, LineString): PolygonComplexContains,
     (Polygon, Polygon): PolygonComplexContains,

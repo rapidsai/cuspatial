@@ -1,7 +1,7 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-from cuspatial.core.binpreds.binpred_interface import NotImplementedRoot
-from cuspatial.core.binpreds.feature_equals import RootEquals
+from cuspatial.core.binpreds.binpred_interface import NotImplementedPredicate
+from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -10,7 +10,7 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-class RootCovers(RootEquals):
+class CoversPredicateBase(EqualsPredicateBase):
     """Implements the covers predicate across different combinations of
     geometry types.  For example, a Point-Polygon covers predicate is
     defined in terms of a Point-Point equals predicate. The initial release
@@ -33,20 +33,20 @@ class RootCovers(RootEquals):
 
 
 DispatchDict = {
-    (Point, Point): RootCovers,
-    (Point, MultiPoint): NotImplementedRoot,
-    (Point, LineString): NotImplementedRoot,
-    (Point, Polygon): RootCovers,
-    (MultiPoint, Point): NotImplementedRoot,
-    (MultiPoint, MultiPoint): NotImplementedRoot,
-    (MultiPoint, LineString): NotImplementedRoot,
-    (MultiPoint, Polygon): NotImplementedRoot,
-    (LineString, Point): NotImplementedRoot,
-    (LineString, MultiPoint): NotImplementedRoot,
-    (LineString, LineString): NotImplementedRoot,
-    (LineString, Polygon): RootCovers,
-    (Polygon, Point): RootCovers,
-    (Polygon, MultiPoint): RootCovers,
-    (Polygon, LineString): RootCovers,
-    (Polygon, Polygon): RootCovers,
+    (Point, Point): CoversPredicateBase,
+    (Point, MultiPoint): NotImplementedPredicate,
+    (Point, LineString): NotImplementedPredicate,
+    (Point, Polygon): CoversPredicateBase,
+    (MultiPoint, Point): NotImplementedPredicate,
+    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, LineString): NotImplementedPredicate,
+    (MultiPoint, Polygon): NotImplementedPredicate,
+    (LineString, Point): NotImplementedPredicate,
+    (LineString, MultiPoint): NotImplementedPredicate,
+    (LineString, LineString): NotImplementedPredicate,
+    (LineString, Polygon): CoversPredicateBase,
+    (Polygon, Point): CoversPredicateBase,
+    (Polygon, MultiPoint): CoversPredicateBase,
+    (Polygon, LineString): CoversPredicateBase,
+    (Polygon, Polygon): CoversPredicateBase,
 }
