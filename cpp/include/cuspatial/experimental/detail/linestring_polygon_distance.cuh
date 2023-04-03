@@ -28,12 +28,14 @@
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
+#include <libcudf/rapids/thrust/functional.h>
 #include <thrust/fill.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
+#include <thrust/zip_function.h>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -66,29 +68,11 @@ struct point_in_multipolygon_test_functor {
     auto geometry_idx      = multipoints.geometry_idx_from_point_idx(pidx);
 
     auto const& polys = multipolygons[geometry_idx];
-    // TODO: benchmark against range based for loop
 
-    int i           = 0;
-    bool intersects = thrust::any_of(
-      thrust::seq,
-      polys.begin(),
-      polys.end(),
-      [&point, &i, &pidx, &geometry_idx] __device__(auto poly) {
-        vec_2d<T> first_point = poly.point_begin()[0];
-        printf(
-          "pidx: %d, geometry_idx: %d, (%f, %f) in poly %d (first point: (%f %f), size: %d)?\n",
-          static_cast<int>(pidx),
-          static_cast<int>(geometry_idx),
-          point.x,
-          point.y,
-          i,
-          first_point.x,
-          first_point.y,
-          static_cast<int>(poly.size()));
-        bool res = is_point_in_polygon(point, poly);
-        printf("res: %d\n", res);
-        ++i;
-        return res;
+    // TODO: benchmark against range based for loop
+    bool intersects =
+      thrust::any_of(thrust::seq, polys.begin(), polys.end(), [&point] __device__(auto poly) {
+        return is_point_in_polygon(point, poly);
       });
 
     return static_cast<uint8_t>(intersects);
@@ -119,54 +103,25 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
     auto geometry_id = thrust::distance(thread_bounds.begin(), it);
     auto local_idx   = idx - *it;
 
-    printf("idx: %d, geometry_id: %d, intersects?: %d, local_idx: %d\n",
-           static_cast<int>(idx),
-           static_cast<int>(geometry_id),
-           static_cast<int>(intersects[geometry_id]),
-           static_cast<int>(local_idx));
-
     if (intersects[geometry_id]) {
       distances[geometry_id] = 0.0f;
       continue;
     }
 
+    // Retrieve the number of segments in multilinestrings[geometry_id]
     auto num_segment_this_multilinestring =
       multilinestrings.multilinestring_segment_count_begin()[geometry_id];
+    // The segment id from the multilinestring this thread is compmuting (local_id + global_offset)
     auto multilinestring_segment_id =
       local_idx % num_segment_this_multilinestring + multilinestrings_segment_offsets[geometry_id];
+    // The segment id from the multipolygon this thread is computing (local_id + global_offset)
     auto multipolygon_segment_id =
       local_idx / num_segment_this_multilinestring + multipolygons_segment_offsets[geometry_id];
-
-    printf(
-      "multilinestring_segment_id: %d, "
-      "multipolygon_segment_id: %d\n",
-      static_cast<int>(multilinestring_segment_id),
-      static_cast<int>(multipolygon_segment_id));
 
     auto [a, b] = multilinestrings.segment_begin()[multilinestring_segment_id];
     auto [c, d] = multipolygons.segment_begin()[multipolygon_segment_id];
 
-    auto distance = sqrt(squared_segment_distance(a, b, c, d));
-    printf("ab: (%f, %f) -> (%f, %f), cd: (%f, %f) -> (%f, %f), dist: %f\n",
-           static_cast<float>(a.x),
-           static_cast<float>(a.y),
-           static_cast<float>(b.x),
-           static_cast<float>(b.y),
-           static_cast<float>(c.x),
-           static_cast<float>(c.y),
-           static_cast<float>(d.x),
-           static_cast<float>(d.y),
-           static_cast<float>(distance));
-
     atomicMin(&distances[geometry_id], sqrt(squared_segment_distance(a, b, c, d)));
-  }
-}
-
-template <typename index_t>
-struct functor {
-  index_t __device__ operator()(thrust::tuple<index_t, index_t> t)
-  {
-    return thrust::get<0>(t) * thrust::get<1>(t);
   }
 };
 
@@ -225,8 +180,11 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
   auto segment_count_product_it = thrust::make_transform_iterator(
     thrust::make_zip_iterator(multilinestrings.multilinestring_segment_count_begin(),
                               multipolygons.multipolygon_segment_count_begin()),
-    detail::functor<index_t>{});
+    thrust::make_zip_function(thrust::multiplies<index_t>{})
+    );
 
+  // Computes the "thread boundary" of each pair. This array partitions the thread range by geometries.
+  // E.g. threadIdx within [thread_bounds[i], thread_bounds[i+1]) computes distances of the ith pair.
   auto thread_bounds = rmm::device_uvector<index_t>(multilinestrings.size() + 1, stream);
   detail::zero_data_async(thread_bounds.begin(), thread_bounds.end(), stream);
 
@@ -235,6 +193,7 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
                          segment_count_product_it + thread_bounds.size() - 1,
                          thrust::next(thread_bounds.begin()));
 
+  // Compute offsets to the first segment of each multilinestring and multipolygon
   auto multilinestring_segment_offsets =
     rmm::device_uvector<index_t>(multilinestrings.num_multilinestrings() + 1, stream);
   auto multipolygon_segment_offsets =
@@ -252,14 +211,7 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
     multipolygons.multipolygon_segment_count_begin() + multipolygon_segment_offsets.size(),
     multipolygon_segment_offsets.begin());
 
-  std::cout << "multipoint intersect size: " << multipoint_intersects.size() << std::endl;
-  cuspatial::test::print_device_vector(multipoint_intersects, "multipoint_intersects: ");
-  cuspatial::test::print_device_vector(thread_bounds, "thread_bounds: ");
-  cuspatial::test::print_device_vector(multilinestring_segment_offsets,
-                                       "multilinestring_segment_offsets:");
-  cuspatial::test::print_device_vector(multipolygon_segment_offsets,
-                                       "multipolygon_segment_offsets: ");
-
+  // Initialize output range
   thrust::fill(rmm::exec_policy(stream),
                distances_first,
                distances_first + multilinestrings.num_multilinestrings(),
