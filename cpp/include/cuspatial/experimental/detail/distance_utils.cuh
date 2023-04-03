@@ -16,16 +16,16 @@
 
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
+#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/iterator/discard_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/tabulate.h>
-#include <thrust/iterator/discard_iterator.h>
 
 namespace cuspatial {
 namespace detail {
