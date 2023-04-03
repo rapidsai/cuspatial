@@ -36,8 +36,8 @@ namespace cuspatial {
  *
  * @throw cuspatial::logic_error if `multilinestrings` and `multipolygons` has different coordinate
  * types.
- * @throw cuspatial::logic_error if `multilinestrings` is not a linestring column and `multipolygons` is not a
- * polygon column.
+ * @throw cuspatial::logic_error if `multilinestrings` is not a linestring column and
+ * `multipolygons` is not a polygon column.
  * @throw cuspatial::logic_error if input column sizes mismatch.
  */
 
