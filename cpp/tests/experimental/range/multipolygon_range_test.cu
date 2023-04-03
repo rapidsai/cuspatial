@@ -161,28 +161,28 @@ TYPED_TEST(MultipolygonRangeTest, SegmentIterators4)
                       {{11, 11}, {10, 10}}});
 }
 
-TYPED_TEST(MultipolygonRangeTest, PerMultipolygonCountIterator)
+TYPED_TEST(MultipolygonRangeTest, MultipolygonCountIterator)
 {
   CUSPATIAL_RUN_TEST(this->run_multipolygon_point_count_iterator_single,
                      {0, 1},
                      {0, 1},
                      {0, 4},
-                     {{0, 0}, {1, 0}, {1, 1}, {0, 1}},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}},
                      {4});
 }
 
-TYPED_TEST(MultipolygonRangeTest, PerMultipolygonCountIterator2)
+TYPED_TEST(MultipolygonRangeTest, MultipolygonCountIterator2)
 {
   CUSPATIAL_RUN_TEST(
     this->run_multipolygon_point_count_iterator_single,
     {0, 1},
     {0, 2},
     {0, 4, 8},
-    {{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0.2, 0.2}, {0.2, 0.3}, {0.3, 0.3}, {0.3, 0.2}},
+    {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {0.2, 0.2}, {0.2, 0.3}, {0.3, 0.3}, {0.3, 0.2}},
     {8});
 }
 
-TYPED_TEST(MultipolygonRangeTest, PerMultipolygonCountIterator3)
+TYPED_TEST(MultipolygonRangeTest, MultipolygonCountIterator3)
 {
   CUSPATIAL_RUN_TEST(this->run_multipolygon_point_count_iterator_single,
                      {0, 2},
@@ -191,7 +191,7 @@ TYPED_TEST(MultipolygonRangeTest, PerMultipolygonCountIterator3)
                      {{0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1},
+                      {0, 0},
                       {0.2, 0.2},
                       {0.2, 0.3},
                       {0.3, 0.3},
@@ -203,7 +203,7 @@ TYPED_TEST(MultipolygonRangeTest, PerMultipolygonCountIterator3)
                      {12});
 }
 
-TYPED_TEST(MultipolygonRangeTest, PerMultipolygonCountIterator4)
+TYPED_TEST(MultipolygonRangeTest, MultipolygonCountIterator4)
 {
   CUSPATIAL_RUN_TEST(this->run_multipolygon_point_count_iterator_single,
                      {0, 2, 3},
@@ -212,19 +212,19 @@ TYPED_TEST(MultipolygonRangeTest, PerMultipolygonCountIterator4)
                      {{0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1},
+                      {0, 0},
                       {0.2, 0.2},
                       {0.2, 0.3},
                       {0.3, 0.3},
-                      {0.3, 0.2},
+                      {0.2, 0.2},
                       {0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1},
+                      {0, 0},
                       {0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1}},
+                      {0, 0}},
                      {12, 4});
 }
 
@@ -234,7 +234,7 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount)
                      {0, 1},
                      {0, 1},
                      {0, 4},
-                     {{0, 0}, {1, 0}, {1, 1}, {0, 1}},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}},
                      {3});
 }
 
@@ -245,7 +245,7 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount2)
     {0, 1},
     {0, 2},
     {0, 4, 8},
-    {{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0.2, 0.2}, {0.2, 0.3}, {0.3, 0.3}, {0.3, 0.2}},
+    {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {0.2, 0.2}, {0.2, 0.3}, {0.3, 0.3}, {0.2, 0.2}},
     {6});
 }
 
@@ -258,15 +258,15 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount3)
                      {{0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1},
+                      {0, 0},
                       {0.2, 0.2},
                       {0.2, 0.3},
                       {0.3, 0.3},
-                      {0.3, 0.2},
+                      {0.2, 0.2},
                       {0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1}},
+                      {0, 0}},
                      {9});
 }
 
@@ -279,19 +279,19 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount4)
                      {{0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1},
+                      {0, 0},
                       {0.2, 0.2},
                       {0.2, 0.3},
                       {0.3, 0.3},
-                      {0.3, 0.2},
+                      {0.2, 0.2},
                       {0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1},
+                      {0, 0},
                       {0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1}},
+                      {0, 0}},
                      {9, 3});
 }
 
@@ -305,15 +305,15 @@ TYPED_TEST(MultipolygonRangeTest, DISABLED_MultipolygonSegmentCount_ConatainsEmp
                      {{0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1},
+                      {0, 0},
                       {0.2, 0.2},
                       {0.2, 0.3},
                       {0.3, 0.3},
-                      {0.3, 0.2},
+                      {0.2, 0.2},
                       {0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1}},
+                      {0, 0}},
                      {6, 3});
 }
 
@@ -327,14 +327,14 @@ TYPED_TEST(MultipolygonRangeTest, DISABLED_MultipolygonSegmentCount_ConatainsEmp
                      {{0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1},
+                      {0, 0},
                       {0.2, 0.2},
                       {0.2, 0.3},
                       {0.3, 0.3},
-                      {0.3, 0.2},
+                      {0.2, 0.2},
                       {0, 0},
                       {1, 0},
                       {1, 1},
-                      {0, 1}},
+                      {0, 0}},
                      {6, 3});
 }
