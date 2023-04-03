@@ -158,8 +158,10 @@ class multipolygon_range {
                                                             IndexType2 geometry_idx);
 
   /// Returns an iterator to the number of points of the first multipolygon
+  /// @note The count includes the duplicate first and last point of the ring.
   CUSPATIAL_HOST_DEVICE auto multipolygon_point_count_begin();
   /// Returns the one past the iterator to the number of points of the last multipolygon
+  /// @note The count includes the duplicate first and last point of the ring.
   CUSPATIAL_HOST_DEVICE auto multipolygon_point_count_end();
 
   /// Returns an iterator to the number of rings of the first multipolygon
