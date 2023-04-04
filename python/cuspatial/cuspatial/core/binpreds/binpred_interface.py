@@ -142,7 +142,7 @@ class EqualsOpResult(OpResult):
 
 
 class IntersectsOpResult(OpResult):
-    """Result of a binary predicate operation."""
+    """Result of an Intersection binary predicate operation."""
 
     def __init__(self, result: Series):
         self.result = result
