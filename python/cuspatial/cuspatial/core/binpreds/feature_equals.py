@@ -219,9 +219,8 @@ class EqualsPredicateBase(BinPred, Generic[GeoSeries]):
             predicate with its corresponding feature in the left-hand
             GeoSeries.
         """
-        type_compare = lhs.feature_types == rhs.feature_types
         # Any unmatched type is not equal
-        if (type_compare == False).all():  # noqa: E712
+        if (lhs.feature_types != rhs.feature_types).any():
             return _false_series(len(lhs))
         return self._compute_predicate(
             lhs, rhs, PreprocessorResult(None, rhs.point_indices)
