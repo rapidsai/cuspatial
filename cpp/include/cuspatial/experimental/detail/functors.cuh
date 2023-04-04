@@ -26,7 +26,7 @@ namespace cuspatial {
 namespace detail {
 
 /**
- * @brief Given iterator a pair of offsets, return the number of elements between the offsets.
+ * @brief Given iterator to a pair of offsets, return the number of elements between the offsets.
  *
  * Example:
  * pair of offsets: (0, 3), (3, 5), (5, 8)
@@ -52,7 +52,7 @@ struct offset_pair_to_count_functor {
  *
  * Caveats: This has a strong assumption that the Multilinestring does not contain empty linestring.
  * While each non-empty linestring in the multilinestring can cause 1 invalid segment, an empty
- * multilinestring not introduce and invalid segments since it does not contain any points.
+ * multilinestring will not introduce any invalid segments since it does not contain any points.
  *
  * @tparam IndexPair Must be iterator to a pair of counts
  * @param n_point_linestring_pair A pair of counts, the first is the number of points, the second is
@@ -76,7 +76,7 @@ struct point_count_to_segment_count_functor {
  *
  * Caveats: This has a strong assumption that the Multilinestring does not contain empty linestring.
  * While each non-empty linestring in the multilinestring can cause 1 invalid segment, an empty
- * multilinestring not introduce and invalid segments since it does not contain any points.
+ * multilinestring will not introduce any invalid segments since it does not contain any points.
  */
 template <typename OffsetIterator>
 struct to_distance_iterator {

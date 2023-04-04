@@ -74,7 +74,7 @@ struct point_in_multipolygon_test_functor {
  * @tparam MultiPointRange An instantiation of multipoint_range
  * @tparam MultiPolygonRange An instantiation of multipolygon_range
  * @param multipoints The range to the multipoints to compute
- * @param multipolygons The range
+ * @param multipolygons The range to the multipolygons to test
  * @param stream The CUDA stream on which to perform computations
  * @return A uint8_t array, `1` if the multipoint intersects with the multipolygon, `0` otherwise.
  */
