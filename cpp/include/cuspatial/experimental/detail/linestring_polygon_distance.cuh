@@ -101,6 +101,8 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
     auto [a, b] = multilinestrings.segment_begin()[multilinestring_segment_id];
     auto [c, d] = multipolygons.segment_begin()[multipolygon_segment_id];
 
+    auto distance = sqrt(squared_segment_distance(a, b, c, d));
+
     atomicMin(&distances[geometry_id], sqrt(squared_segment_distance(a, b, c, d)));
   }
 };
@@ -146,20 +148,25 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
   // Compute offsets to the first segment of each multilinestring and multipolygon
   auto multilinestring_segment_offsets =
     rmm::device_uvector<index_t>(multilinestrings.num_multilinestrings() + 1, stream);
+  detail::zero_data_async(
+    multilinestring_segment_offsets.begin(), multilinestring_segment_offsets.end(), stream);
+
   auto multipolygon_segment_offsets =
     rmm::device_uvector<index_t>(multipolygons.num_multipolygons() + 1, stream);
+  detail::zero_data_async(
+    multipolygon_segment_offsets.begin(), multipolygon_segment_offsets.end(), stream);
 
-  thrust::exclusive_scan(
-    rmm::exec_policy(stream),
-    multilinestrings.multilinestring_segment_count_begin(),
-    multilinestrings.multilinestring_segment_count_begin() + multilinestring_segment_offsets.size(),
-    multilinestring_segment_offsets.begin());
+  thrust::inclusive_scan(rmm::exec_policy(stream),
+                         multilinestrings.multilinestring_segment_count_begin(),
+                         multilinestrings.multilinestring_segment_count_begin() +
+                           multilinestrings.num_multilinestrings(),
+                         thrust::next(multilinestring_segment_offsets.begin()));
 
-  thrust::exclusive_scan(
+  thrust::inclusive_scan(
     rmm::exec_policy(stream),
     multipolygons.multipolygon_segment_count_begin(),
-    multipolygons.multipolygon_segment_count_begin() + multipolygon_segment_offsets.size(),
-    multipolygon_segment_offsets.begin());
+    multipolygons.multipolygon_segment_count_begin() + multipolygons.num_multipolygons(),
+    thrust::next(multipolygon_segment_offsets.begin()));
 
   // Initialize output range
   thrust::fill(rmm::exec_policy(stream),
