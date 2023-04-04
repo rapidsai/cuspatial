@@ -69,7 +69,8 @@ struct point_count_to_segment_count_functor {
 };
 
 /**
- * @brief Given an iterator of offsets, return an iterator of offsets subtracted by the index.
+ * @brief Given an offset iterator it, returns an iterator of the distance between it and an input
+ * index i
  *
  * @tparam OffsetIterator Iterator type to the offset
  *
@@ -78,7 +79,7 @@ struct point_count_to_segment_count_functor {
  * multilinestring not introduce and invalid segments since it does not contain any points.
  */
 template <typename OffsetIterator>
-struct to_subtracted_by_index_iterator {
+struct to_distance_iterator {
   OffsetIterator begin;
 
   template <typename IndexType>
@@ -88,9 +89,9 @@ struct to_subtracted_by_index_iterator {
   }
 };
 
-/// Deduction guide for to_subtracted_by_index_iterator
+/// Deduction guide for to_distance_iterator
 template <typename OffsetIterator>
-to_subtracted_by_index_iterator(OffsetIterator) -> to_subtracted_by_index_iterator<OffsetIterator>;
+to_distance_iterator(OffsetIterator) -> to_distance_iterator<OffsetIterator>;
 
 /**
  * @brief Return a segment from the a partitioned range of points
