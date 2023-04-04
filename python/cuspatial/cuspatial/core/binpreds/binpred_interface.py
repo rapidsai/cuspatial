@@ -1,6 +1,5 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
-from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from cudf import Series
@@ -23,16 +22,6 @@ class BinPredConfig:
         Whether to compute the binary predicate between all pairs of
         features in the left-hand and right-hand GeoSeries. Defaults to
         False. Only available with the contains predicate.
-
-    Attributes
-    ----------
-    align : bool
-        Whether to align the left-hand and right-hand GeoSeries before
-        computing the binary predicate.
-    allpairs : bool
-        Whether to compute the binary predicate between all pairs of
-        features in the left-hand and right-hand GeoSeries. Only available
-        with the contains predicate.
     """
 
     def __init__(self, **kwargs):
@@ -51,20 +40,6 @@ class PreprocessorResult:
     for preprocessor results.
 
     Parameters
-    ----------
-    lhs : GeoSeries
-        The left-hand GeoSeries.
-    rhs : GeoSeries
-        The right-hand GeoSeries.
-    final_rhs : GeoSeries
-        The rhs GeoSeries, if modified by the preprocessor. For example
-        the contains preprocessor converts any complex feature type into
-        a collection of points.
-    point_indices : cudf.Series
-        A cudf.Series of indices that map each point in `points` to its
-        corresponding feature in the right-hand GeoSeries.
-
-    Attributes
     ----------
     lhs : GeoSeries
         The left-hand GeoSeries.
@@ -106,22 +81,9 @@ class OpResult:
 
 
 class ContainsOpResult(OpResult):
-    """Result of a binary predicate operation.
+    """Result of a Contains binary predicate operation.
 
     Parameters
-    ----------
-    result : cudf.DataFrame
-        A cudf.DataFrame containing two columns: "polygon_index" and
-        Point_index". The "polygon_index" column contains the index of
-        the polygon that contains each point. The "point_index" column
-        contains the index of each point that is contained by a polygon.
-    points : GeoSeries
-        A GeoSeries of points.
-    point_indices : cudf.Series
-        A cudf.Series of indices that map each point in `points` to its
-        corresponding feature in the right-hand GeoSeries.
-
-    Attributes
     ----------
     result : cudf.DataFrame
         A cudf.DataFrame containing two columns: "polygon_index" and
@@ -154,19 +116,9 @@ class ContainsOpResult(OpResult):
 
 
 class EqualsOpResult(OpResult):
-    """Result of a binary predicate operation.
+    """Result of an Equals binary predicate operation.
 
     Parameters
-    ----------
-    result : cudf.Series
-        A cudf.Series of boolean values indicating whether each feature in
-        the right-hand GeoSeries is equal to the point in the left-hand
-        GeoSeries.
-    point_indices: cudf.Series
-        A cudf.Series of indices that map each point in `points` to its
-        corresponding feature in the right-hand GeoSeries.
-
-    Attributes
     ----------
     result : cudf.Series
         A cudf.Series of boolean values indicating whether each feature in
@@ -202,7 +154,7 @@ class IntersectsOpResult(OpResult):
         return self.__repr__()
 
 
-class BinPredItf(ABC):
+class BinPred:
     """Base class for binary predicates. This class is an abstract base class
     and can not be instantiated directly. `BinPred` is the base class that
     implements this interface in the most general case. Child classes exist
@@ -250,7 +202,6 @@ class BinPredItf(ABC):
     dtype: bool
     """
 
-    @abstractmethod
     def __init__(self, **kwargs):
         """Initialize a binary predicate. Collects any arguments passed
         to the binary predicate to be used at runtime.
@@ -305,10 +256,8 @@ class BinPredItf(ABC):
         0    False
         dtype: bool
         """
-        super().__init__(**kwargs)
-        self.kwargs = kwargs
+        self.config = BinPredConfig(**kwargs)
 
-    @abstractmethod
     def __call__(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """System call for the binary predicate. Calls the _call method,
         which is implemented by the subclass. Executing the binary predicate
@@ -344,7 +293,6 @@ class BinPredItf(ABC):
         """
         return self._call(lhs, rhs)
 
-    @abstractmethod
     def _call(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """Call the binary predicate. This method is implemented by the
         subclass.
@@ -366,7 +314,6 @@ class BinPredItf(ABC):
         """
         return self._preprocess(lhs, rhs)
 
-    @abstractmethod
     def _preprocess(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """Preprocess the left-hand and right-hand GeoSeries. This method
         is implemented by the subclass.
@@ -402,10 +349,8 @@ class BinPredItf(ABC):
             predicate with its corresponding feature in the left-hand
             GeoSeries.
         """
-        result = PreprocessorResult(lhs, rhs)
-        return self._compute_predicate(lhs, rhs, result)
+        raise NotImplementedError
 
-    @abstractmethod
     def _compute_predicate(
         self,
         lhs: "GeoSeries",
@@ -451,15 +396,8 @@ class BinPredItf(ABC):
         preprocessor_result : PreprocessorResult
             The result of the preprocessing step.
         """
-        result = OpResult(
-            lhs,
-            rhs,
-            preprocessor_result.points,
-            preprocessor_result.point_indices,
-        )
-        return self._postprocess(lhs, rhs, result)
+        raise NotImplementedError
 
-    @abstractmethod
     def _postprocess(
         self,
         lhs: "GeoSeries",
@@ -505,64 +443,10 @@ class BinPredItf(ABC):
         I'm currently looking into refactoring these arithmetics into a
         syntax that more closely resembles it.
         """
-        return op_result
+        raise NotImplementedError
 
 
-class BinPred(BinPredItf):
-    """Root implementation of BinPredItf."""
-
-    def __init__(self, **kwargs):
-        """Root implementation for BinPredItf"""
-        self.config = BinPredConfig(**kwargs)
-
-    def __call__(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
-        """Root implementation of __call__ for BinPredItf..
-
-        Saves the left-hand and right-hand GeoSeries and calls the
-        `_call` method to continue the execution of the binary predicate.
-        """
-        return self._call(lhs, rhs)
-
-    def _call(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
-        """
-        Start the processing chain with `self._preprocess` to continue the
-        execution of the binary predicate."""
-        return self._preprocess(lhs, rhs)
-
-    def _preprocess(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
-        """raises NotImplementedError.
-        A subclass must implement this method."""
-        raise NotImplementedError(
-            "This method must be implemented by a subclass."
-        )
-
-    def _compute_predicate(
-        self,
-        lhs: "GeoSeries",
-        rhs: "GeoSeries",
-        preprocessor_result: PreprocessorResult,
-    ) -> Series:
-        """raises NotImplementedError.
-        A subclass must implement this method."""
-        raise NotImplementedError(
-            "This method must be implemented by a subclass."
-        )
-
-    def _postprocess(
-        self,
-        lhs: "GeoSeries",
-        rhs: "GeoSeries",
-        op_result: OpResult,
-    ) -> Series:
-        """raises NotImplementedError.
-        A subclass must implement this method.
-        """
-        raise NotImplementedError(
-            "This method must be implemented by a subclass."
-        )
-
-
-class NotImplementedRoot(BinPred):
+class NotImplementedPredicate(BinPred):
     """A class that is used to raise an error when a binary predicate is
     not implemented for a given combination of left-hand and right-hand
     GeoSeries types. This is useful for delineating which binary predicates
@@ -574,7 +458,7 @@ class NotImplementedRoot(BinPred):
         raise NotImplementedError
 
 
-class ImpossibleRoot(BinPred):
+class ImpossiblePredicate(BinPred):
     """There are many combinations that are impossible. This is the base class
     to simply return a series of False values for these cases.
     """

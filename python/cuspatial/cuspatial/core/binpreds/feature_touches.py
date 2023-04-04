@@ -1,9 +1,9 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-from cuspatial.core.binpreds.binpred_interface import NotImplementedRoot
+from cuspatial.core.binpreds.binpred_interface import NotImplementedPredicate
 from cuspatial.core.binpreds.feature_contains import (
+    ContainsPredicateBase,
     PointPointContains,
-    RootContains,
 )
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -14,7 +14,7 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-class RootTouches(RootContains):
+class TouchesPredicateBase(ContainsPredicateBase):
     """
     A point touches a point if they are equal.
     A point touches a polygon if it is contained by the polygon.
@@ -47,19 +47,19 @@ class PointPointTouches(PointPointContains):
 
 DispatchDict = {
     (Point, Point): PointPointTouches,
-    (Point, MultiPoint): NotImplementedRoot,
-    (Point, LineString): NotImplementedRoot,
-    (Point, Polygon): RootTouches,
-    (MultiPoint, Point): NotImplementedRoot,
-    (MultiPoint, MultiPoint): NotImplementedRoot,
-    (MultiPoint, LineString): NotImplementedRoot,
-    (MultiPoint, Polygon): NotImplementedRoot,
-    (LineString, Point): NotImplementedRoot,
-    (LineString, MultiPoint): NotImplementedRoot,
-    (LineString, LineString): NotImplementedRoot,
-    (LineString, Polygon): NotImplementedRoot,
-    (Polygon, Point): RootTouches,
-    (Polygon, MultiPoint): RootTouches,
-    (Polygon, LineString): RootTouches,
-    (Polygon, Polygon): RootTouches,
+    (Point, MultiPoint): NotImplementedPredicate,
+    (Point, LineString): NotImplementedPredicate,
+    (Point, Polygon): TouchesPredicateBase,
+    (MultiPoint, Point): NotImplementedPredicate,
+    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, LineString): NotImplementedPredicate,
+    (MultiPoint, Polygon): NotImplementedPredicate,
+    (LineString, Point): NotImplementedPredicate,
+    (LineString, MultiPoint): NotImplementedPredicate,
+    (LineString, LineString): NotImplementedPredicate,
+    (LineString, Polygon): NotImplementedPredicate,
+    (Polygon, Point): TouchesPredicateBase,
+    (Polygon, MultiPoint): TouchesPredicateBase,
+    (Polygon, LineString): TouchesPredicateBase,
+    (Polygon, Polygon): TouchesPredicateBase,
 }

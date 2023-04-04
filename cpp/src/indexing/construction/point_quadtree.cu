@@ -83,8 +83,8 @@ struct dispatch_construct_quadtree {
                          static_cast<T>(scale),
                          max_depth,
                          max_size,
-                         mr,
-                         stream);
+                         stream,
+                         mr);
 
     auto size = static_cast<cudf::size_type>(tree.key.size());
 
@@ -94,7 +94,7 @@ struct dispatch_construct_quadtree {
     cols.push_back(std::make_unique<cudf::column>(
       cudf::data_type{cudf::type_id::UINT8}, size, tree.level.release()));
     cols.push_back(std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::BOOL8}, size, tree.is_internal_node.release()));
+      cudf::data_type{cudf::type_id::BOOL8}, size, tree.internal_node_flag.release()));
     cols.push_back(std::make_unique<cudf::column>(
       cudf::data_type{cudf::type_id::UINT32}, size, tree.length.release()));
     cols.push_back(std::make_unique<cudf::column>(

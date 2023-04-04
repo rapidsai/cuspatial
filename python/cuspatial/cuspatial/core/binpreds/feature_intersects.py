@@ -11,11 +11,11 @@ from cuspatial.core.binops.intersection import pairwise_linestring_intersection
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     IntersectsOpResult,
-    NotImplementedRoot,
+    NotImplementedPredicate,
     PreprocessorResult,
 )
-from cuspatial.core.binpreds.feature_contains import RootContains
-from cuspatial.core.binpreds.feature_equals import RootEquals
+from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
+from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -25,7 +25,7 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-class RootIntersects(BinPred):
+class IntersectsPredicateBase(BinPred):
     """Base class for binary predicates that are defined in terms of
     the intersects basic predicate.
     """
@@ -99,11 +99,11 @@ class RootIntersects(BinPred):
         return result
 
 
-class IntersectsByEquals(RootEquals):
+class IntersectsByEquals(EqualsPredicateBase):
     pass
 
 
-class PointPolygonIntersects(RootContains):
+class PointPolygonIntersects(ContainsPredicateBase):
     def _preprocess(self, lhs, rhs):
         """Swap LHS and RHS and call the normal contains processing."""
         self.lhs = rhs
@@ -111,7 +111,7 @@ class PointPolygonIntersects(RootContains):
         return super()._preprocess(rhs, lhs)
 
 
-class LineStringPointIntersects(RootIntersects):
+class LineStringPointIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
         """Convert rhs to linestrings."""
         x = cp.repeat(rhs.points.x, 2)
@@ -125,7 +125,7 @@ class LineStringPointIntersects(RootIntersects):
         )
 
 
-class LineStringMultiPointIntersects(RootIntersects):
+class LineStringMultiPointIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
         """Convert rhs to linestrings."""
         xy = rhs.multipoints.xy
@@ -171,7 +171,7 @@ class LineStringMultiPointIntersects(RootIntersects):
         return result
 
 
-class LineStringPolygonIntersects(RootIntersects):
+class LineStringPolygonIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
         """Convert rhs to linestrings."""
         ls_rhs = self._linestrings_from_polygons(rhs)
@@ -180,7 +180,7 @@ class LineStringPolygonIntersects(RootIntersects):
         )
 
 
-class PolygonLineStringIntersects(RootIntersects):
+class PolygonLineStringIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
         """Convert rhs to linestrings."""
         ls_lhs = self._linestrings_from_polygons(lhs)
@@ -189,7 +189,7 @@ class PolygonLineStringIntersects(RootIntersects):
         )
 
 
-class PolygonPolygonIntersects(RootIntersects):
+class PolygonPolygonIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
         """Convert rhs to linestrings."""
         ls_lhs = self._linestrings_from_polygons(lhs)
@@ -207,19 +207,33 @@ class PointLineStringIntersects(LineStringPointIntersects):
         return super()._preprocess(rhs, lhs)
 
 
+class LineStringPointIntersects(IntersectsPredicateBase):
+    def _preprocess(self, lhs, rhs):
+        """Convert rhs to linestrings."""
+        x = cp.repeat(rhs.points.x, 2)
+        y = cp.repeat(rhs.points.y, 2)
+        xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
+        parts = cp.arange((len(lhs) + 1)) * 2
+        geometries = cp.arange(len(lhs) + 1)
+        ls_rhs = cuspatial.GeoSeries.from_linestrings_xy(xy, parts, geometries)
+        return self._compute_predicate(
+            lhs, ls_rhs, PreprocessorResult(lhs, ls_rhs)
+        )
+
+
 """ Type dispatch dictionary for intersects binary predicates. """
 DispatchDict = {
     (Point, Point): IntersectsByEquals,
-    (Point, MultiPoint): NotImplementedRoot,
+    (Point, MultiPoint): NotImplementedPredicate,
     (Point, LineString): PointLineStringIntersects,
     (Point, Polygon): PointPolygonIntersects,
-    (MultiPoint, Point): NotImplementedRoot,
-    (MultiPoint, MultiPoint): NotImplementedRoot,
-    (MultiPoint, LineString): NotImplementedRoot,
-    (MultiPoint, Polygon): NotImplementedRoot,
+    (MultiPoint, Point): NotImplementedPredicate,
+    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, LineString): NotImplementedPredicate,
+    (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): LineStringPointIntersects,
     (LineString, MultiPoint): LineStringMultiPointIntersects,
-    (LineString, LineString): RootIntersects,
+    (LineString, LineString): IntersectsPredicateBase,
     (LineString, Polygon): LineStringPolygonIntersects,
     (Polygon, Point): IntersectsByEquals,
     (Polygon, MultiPoint): IntersectsByEquals,

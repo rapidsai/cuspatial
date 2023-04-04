@@ -2,11 +2,11 @@
 
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
-    NotImplementedRoot,
+    NotImplementedPredicate,
 )
 from cuspatial.core.binpreds.feature_intersects import (
+    IntersectsPredicateBase,
     PointLineStringIntersects,
-    RootIntersects,
 )
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -42,7 +42,7 @@ class LineStringPointDisjoint(PointLineStringDisjoint):
         return super()._preprocess(rhs, lhs)
 
 
-class LineStringLineStringDisjoint(RootIntersects):
+class LineStringLineStringDisjoint(IntersectsPredicateBase):
     def _postprocess(self, lhs, rhs, op_result):
         """Disjoint is the opposite of intersects, so just implement intersects
         and then negate the result."""
@@ -52,17 +52,17 @@ class LineStringLineStringDisjoint(RootIntersects):
 
 DispatchDict = {
     (Point, Point): ContainsDisjoint,
-    (Point, MultiPoint): NotImplementedRoot,
+    (Point, MultiPoint): NotImplementedPredicate,
     (Point, LineString): PointLineStringDisjoint,
     (Point, Polygon): ContainsDisjoint,
-    (MultiPoint, Point): NotImplementedRoot,
-    (MultiPoint, MultiPoint): NotImplementedRoot,
-    (MultiPoint, LineString): NotImplementedRoot,
-    (MultiPoint, Polygon): NotImplementedRoot,
+    (MultiPoint, Point): NotImplementedPredicate,
+    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, LineString): NotImplementedPredicate,
+    (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): LineStringPointDisjoint,
-    (LineString, MultiPoint): NotImplementedRoot,
+    (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): LineStringLineStringDisjoint,
-    (LineString, Polygon): NotImplementedRoot,
+    (LineString, Polygon): NotImplementedPredicate,
     (Polygon, Point): ContainsDisjoint,
     (Polygon, MultiPoint): ContainsDisjoint,
     (Polygon, LineString): ContainsDisjoint,
