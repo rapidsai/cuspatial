@@ -47,9 +47,12 @@ BoundingBoxIterator polygon_bounding_boxes(PolygonOffsetIterator polygon_offsets
                                            T expansion_radius,
                                            rmm::cuda_stream_view stream)
 {
+  static_assert(is_same<T, iterator_vec_base_type<VertexIterator>>(),
+                "expansion_radius type must match vertex floating-point type");
+
   static_assert(is_floating_point<T>(), "Only floating point polygon vertices supported");
 
-  static_assert(is_same<vec_2d<T>, iterator_value_type<VertexIterator>>(),
+  static_assert(is_vec_2d<iterator_value_type<VertexIterator>>,
                 "Input vertices must be cuspatial::vec_2d");
 
   static_assert(cuspatial::is_integral<iterator_value_type<PolygonOffsetIterator>,
