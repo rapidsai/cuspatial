@@ -142,7 +142,7 @@ TYPED_TEST(PairwiseLinestringPolygonDistanceTest, OnePair111Crosses)
                      {P{0, 0}, P{1, 1}, P{2, 2}, P{3, 3}},
                      {0, 1},
                      {0, 1},
-                     {0, 5},
+                     {0, 4},
                      {P{-1, 0}, P{1, 0}, P{0, 1}, P{-1, 0}},
                      {0});
 }

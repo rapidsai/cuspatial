@@ -1,6 +1,6 @@
 import geopandas as gpd
 import pytest
-from shapely.geometry import MultiLineString, LineString, MultiPolygon, Polygon
+from shapely.geometry import LineString, MultiLineString, MultiPolygon, Polygon
 
 import cudf
 from cudf.testing import assert_series_equal
@@ -20,7 +20,11 @@ def test_linestring_polygon_empty():
 
 
 @pytest.mark.parametrize(
-    "linestrings", [[LineString([(0, 0), (1, 1)])], [MultiLineString([[(1, 1), (2, 2)], [(10, 10), (11, 11)]])]]
+    "linestrings",
+    [
+        [LineString([(0, 0), (1, 1)])],
+        [MultiLineString([[(1, 1), (2, 2)], [(10, 10), (11, 11)]])],
+    ],
 )
 @pytest.mark.parametrize(
     "polygons",
