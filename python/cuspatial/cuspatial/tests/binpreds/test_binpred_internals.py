@@ -4,6 +4,7 @@ import pandas as pd
 from shapely.geometry import LineString
 
 import cuspatial
+from cuspatial.core.binpreds.binpred_dispatch import EQUALS_DISPATCH
 
 
 def test_internal_reversed_linestrings():
@@ -17,10 +18,10 @@ def test_internal_reversed_linestrings():
             LineString([(0, 0), (1, 0), (1, 1), (0, 0)]),
         ]
     )
-    from cuspatial.core.binpreds.binpreds import EqualsBinpred
-
-    bp = EqualsBinpred(linestring1, linestring2)
-    got = bp._reverse_linestrings(
+    predicate = EQUALS_DISPATCH[
+        (linestring1.column_type, linestring2.column_type)
+    ]()
+    got = predicate._reverse_linestrings(
         linestring1.lines.xy, linestring1.lines.part_offset
     ).to_pandas()
     expected = linestring2.lines.xy.to_pandas()
@@ -40,10 +41,10 @@ def test_internal_reversed_linestrings_pair():
             LineString([(1, 0), (1, 1), (0, 0)]),
         ]
     )
-    from cuspatial.core.binpreds.binpreds import EqualsBinpred
-
-    bp = EqualsBinpred(linestring1, linestring2)
-    got = bp._reverse_linestrings(
+    predicate = EQUALS_DISPATCH[
+        (linestring1.column_type, linestring2.column_type)
+    ]()
+    got = predicate._reverse_linestrings(
         linestring1.lines.xy, linestring1.lines.part_offset
     ).to_pandas()
     expected = linestring2.lines.xy.to_pandas()
@@ -65,10 +66,10 @@ def test_internal_reversed_linestrings_triple():
             LineString([(1, 1), (0, 0), (1, 0), (1, 1), (0, 0)]),
         ]
     )
-    from cuspatial.core.binpreds.binpreds import EqualsBinpred
-
-    bp = EqualsBinpred(linestring1, linestring2)
-    got = bp._reverse_linestrings(
+    predicate = EQUALS_DISPATCH[
+        (linestring1.column_type, linestring2.column_type)
+    ]()
+    got = predicate._reverse_linestrings(
         linestring1.lines.xy, linestring1.lines.part_offset
     ).to_pandas()
     expected = linestring2.lines.xy.to_pandas()
