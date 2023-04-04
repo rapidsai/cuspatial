@@ -27,7 +27,7 @@ from cuspatial.utils.binpred_utils import (
 
 class IntersectsPredicateBase(BinPred):
     """Base class for binary predicates that are defined in terms of
-    the intersects basic predicate.
+    the intersection primitive.
     """
 
     def _preprocess(self, lhs, rhs):
