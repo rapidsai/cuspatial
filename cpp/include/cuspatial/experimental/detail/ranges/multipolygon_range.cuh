@@ -416,8 +416,7 @@ CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   subtracted_ring_begin()
 {
-  return detail::make_counting_transform_iterator(
-    0, detail::to_subtracted_by_index_iterator{_ring_begin});
+  return detail::make_counting_transform_iterator(0, detail::to_distance_iterator{_ring_begin});
 }
 
 template <typename GeometryIterator,
