@@ -37,6 +37,15 @@ class alignas(sizeof(Vertex)) box {
   using value_type = T;
   Vertex v1;
   Vertex v2;
+
+ private:
+  /**
+   * @brief Output stream operator for `vec_2d<T>` for human-readable formatting
+   */
+  friend std::ostream& operator<<(std::ostream& os, cuspatial::box<T> const& b)
+  {
+    return os << "{" << b.v1 << ", " << b.v2 << "}";
+  }
 };
 
 // deduction guide, enables CTAD

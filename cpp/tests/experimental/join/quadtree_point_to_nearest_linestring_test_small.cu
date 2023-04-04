@@ -27,8 +27,7 @@
 #include <type_traits>
 
 template <typename T>
-struct QuadtreePointToLinestringTestSmall : public cuspatial::test::BaseFixture {
-};
+struct QuadtreePointToLinestringTestSmall : public cuspatial::test::BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 
@@ -132,6 +131,16 @@ TYPED_TEST(QuadtreePointToLinestringTestSmall, TestSmall)
 
   auto [linestring_indices, quad_indices] = cuspatial::join_quadtree_and_bounding_boxes(
     quadtree, bboxes.begin(), bboxes.end(), v_min, scale, max_depth, this->stream(), this->mr());
+
+  {
+    auto expected_linestring_indices =
+      make_device_vector<uint32_t>({3, 1, 2, 3, 3, 0, 1, 2, 3, 0, 3, 1, 2, 3, 1, 2, 1, 2, 0, 1, 3});
+    auto expected_quad_indices = make_device_vector<uint32_t>(
+      {3, 8, 8, 8, 9, 10, 10, 10, 10, 11, 11, 6, 6, 6, 12, 12, 13, 13, 2, 2, 2});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(linestring_indices, expected_linestring_indices);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(quad_indices, expected_quad_indices);
+  }
 
   auto [point_idx, linestring_idx, distance] =
     cuspatial::quadtree_point_to_nearest_linestring(linestring_indices.begin(),

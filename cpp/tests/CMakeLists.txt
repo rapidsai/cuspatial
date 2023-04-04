@@ -99,9 +99,6 @@ ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST
 ConfigureTest(JOIN_QUADTREE_AND_BOUNDING_BOXES_TEST
     join/join_quadtree_and_bounding_boxes_test.cpp)
 
-ConfigureTest(QUADTREE_LINESTRING_FILTERING_TEST
-    join/quadtree_linestring_filtering_test.cu)
-
 ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST
     trajectory/test_trajectory_distances_and_speeds.cu)
 
