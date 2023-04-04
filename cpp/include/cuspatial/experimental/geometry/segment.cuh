@@ -52,6 +52,9 @@ class alignas(sizeof(Vertex)) segment {
   /// Return the geometric center of segment.
   Vertex CUSPATIAL_HOST_DEVICE center() const { return midpoint(v1, v2); }
 
+  /// Return the length squared of segment.
+  T CUSPATIAL_HOST_DEVICE length2() const { return dot(v2 - v1, v2 - v1); }
+
  private:
   friend std::ostream& operator<<(std::ostream& os, segment<T> const& seg)
   {

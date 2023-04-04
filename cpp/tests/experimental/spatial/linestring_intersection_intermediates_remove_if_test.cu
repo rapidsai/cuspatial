@@ -78,7 +78,7 @@ struct LinestringIntersectionIntermediatesRemoveIfTest : public ::testing::Test 
     intermediates.remove_if(range(d_flags.begin(), d_flags.end()), this->stream());
 
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(*intermediates.offsets, *expected.offsets);
-    if constexpr (cuspatial::is_vec_2d<GeomType>())
+    if constexpr (cuspatial::is_vec_2d<GeomType>)
       CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(*intermediates.geoms, *expected.geoms);
     else
       CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(*intermediates.geoms, *expected.geoms);

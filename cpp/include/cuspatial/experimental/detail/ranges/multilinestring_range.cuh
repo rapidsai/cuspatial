@@ -23,6 +23,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/experimental/geometry_collection/multilinestring_ref.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
@@ -81,6 +82,11 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::multilinestr
     _point_begin(point_begin),
     _point_end(point_end)
 {
+  static_assert(is_vec_2d<iterator_value_type<VecIterator>>,
+                "point_begin and point_end must be iterators to floating point vec_2d types.");
+
+  CUSPATIAL_EXPECTS_VALID_MULTILINESTRING_SIZES(
+    num_points(), num_multilinestrings() + 1, num_linestrings() + 1);
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
