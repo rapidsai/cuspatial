@@ -34,7 +34,6 @@ from cuspatial.core.binpreds.binpred_dispatch import (
     EQUALS_DISPATCH,
     INTERSECTS_DISPATCH,
     OVERLAPS_DISPATCH,
-    TOUCHES_DISPATCH,
     WITHIN_DISPATCH,
 )
 from cuspatial.utils.column_utils import (
@@ -1234,32 +1233,8 @@ class GeoSeries(cudf.Series):
         -------
         result : cudf.Series
             A Series of boolean values indicating whether each geometry
-            crosses the corresponding geometry in the input."""
+            is disjoint from the corresponding geometry in the input."""
         predicate = DISJOINT_DISPATCH[(self.column_type, other.column_type)](
-            align=align
-        )
-        return predicate(self, other)
-
-    def touches(self, other, align=True):
-        """Returns True for all aligned geometries that touch other, else
-        False.
-
-        Geometries touch if they have at least one point in common, but their
-        interiors do not intersect.
-
-        Parameters
-        ----------
-        other
-            a cuspatial.GeoSeries
-        align=True
-            align the GeoSeries indexes before calling the binpred
-
-        Returns
-        -------
-        result : cudf.Series
-            A Series of boolean values indicating whether each geometry
-            crosses the corresponding geometry in the input."""
-        predicate = TOUCHES_DISPATCH[(self.column_type, other.column_type)](
             align=align
         )
         return predicate(self, other)
