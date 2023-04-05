@@ -64,7 +64,7 @@ class IntersectsPredicateBase(BinPred):
         computed_result = IntersectsOpResult(basic_result)
         return self._postprocess(lhs, rhs, computed_result)
 
-    def _get_match_indices(self, lhs, op_result):
+    def _get_intersecting_geometry_indices(self, lhs, op_result):
         """Naively computes the indices of matches by constructing
         a set of lengths from the returned offsets buffer, then
         returns an integer index for all of the offset sizes that
@@ -90,11 +90,9 @@ class IntersectsPredicateBase(BinPred):
     def _postprocess(self, lhs, rhs, op_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate."""
-        match_indices = self._get_match_indices(lhs, op_result)
+        match_indices = self._get_intersecting_geometry_indices(lhs, op_result)
         result = _false_series(len(lhs))
-        if len(op_result.result[1]) > 0 and len(lhs) == 1:
-            result[0] = True
-        elif len(op_result.result[1]) > 0:
+        if len(op_result.result[1]) > 0:
             result[match_indices] = True
         return result
 
@@ -153,7 +151,7 @@ class LineStringMultiPointIntersects(IntersectsPredicateBase):
         libcuspatial function that can return the points in rhs
         that are equal to points in the lhs.
         """
-        match_indices = self._get_match_indices(lhs, op_result)
+        match_indices = self._get_intersecting_geometry_indices(lhs, op_result)
         result = super()._postprocess(lhs, rhs, op_result)
         intersections = op_result.result[1]
         x_coords = rhs.lines.x
