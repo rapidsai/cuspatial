@@ -91,7 +91,7 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
     // Retrieve the number of segments in multilinestrings[geometry_id]
     auto num_segment_this_multilinestring =
       multilinestrings.multilinestring_segment_count_begin()[geometry_id];
-    // The segment id from the multilinestring this thread is compmuting (local_id + global_offset)
+    // The segment id from the multilinestring this thread is computing (local_id + global_offset)
     auto multilinestring_segment_id =
       local_idx % num_segment_this_multilinestring + multilinestrings_segment_offsets[geometry_id];
     // The segment id from the multipolygon this thread is computing (local_id + global_offset)
@@ -100,8 +100,6 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
 
     auto [a, b] = multilinestrings.segment_begin()[multilinestring_segment_id];
     auto [c, d] = multipolygons.segment_begin()[multipolygon_segment_id];
-
-    auto distance = sqrt(squared_segment_distance(a, b, c, d));
 
     atomicMin(&distances[geometry_id], sqrt(squared_segment_distance(a, b, c, d)));
   }
