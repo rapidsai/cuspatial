@@ -31,7 +31,7 @@
  * A small test that it is suitable for manually visualizing point-polygon pairing results in a GIS
  * environment. GPU results are compared with expected values embedded in code. However, the number
  * of points in each quadrant is less than 32, the two kernels for point-in-polygon test are not
- * fully tested. This is left for pip_refine_test_large.
+ * fully tested.
  */
 template <typename T>
 struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {
