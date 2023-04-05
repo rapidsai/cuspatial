@@ -27,8 +27,7 @@
 #include <type_traits>
 
 template <typename T>
-struct QuadtreePointToLinestringTestSmall : public cuspatial::test::BaseFixture {
-};
+struct QuadtreePointToLinestringTestSmall : public cuspatial::test::BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 
@@ -133,6 +132,8 @@ TYPED_TEST(QuadtreePointToLinestringTestSmall, TestSmall)
   auto [linestring_indices, quad_indices] = cuspatial::join_quadtree_and_bounding_boxes(
     quadtree, bboxes.begin(), bboxes.end(), v_min, scale, max_depth, this->stream(), this->mr());
 
+  // This tests the output of `join_quadtree_and_bounding_boxes` for correctness, rather than
+  // repeating this test standalone.
   {
     auto expected_linestring_indices =
       make_device_vector<uint32_t>({3, 1, 2, 3, 3, 0, 1, 2, 3, 0, 3, 1, 2, 3, 1, 2, 1, 2, 0, 1, 3});
