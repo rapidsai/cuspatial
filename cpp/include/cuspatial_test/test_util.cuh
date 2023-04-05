@@ -99,5 +99,16 @@ void print_device_range(Iter begin,
   std::cout << post;
 }
 
+template <typename Vector>
+void print_device_vector(Vector const& vec, std::string_view pre = "", std::string_view post = "\n")
+{
+  using T   = typename Vector::value_type;
+  auto hvec = to_host<T>(vec);
+
+  std::cout << pre;
+  std::for_each(hvec.begin(), hvec.end(), [](auto const& x) { std::cout << x << " "; });
+  std::cout << post;
+}
+
 }  // namespace test
 }  // namespace cuspatial

@@ -45,10 +45,12 @@ void __global__ pairwise_multipoint_equals_count_kernel(MultiPointRangeA lhs,
                                                         MultiPointRangeB rhs,
                                                         OutputIt output)
 {
+  using T = typename MultiPointRangeA::point_t::value_type;
+
   for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < lhs.num_points();
        idx += gridDim.x * blockDim.x) {
     auto geometry_id    = lhs.geometry_idx_from_point_idx(idx);
-    auto lhs_point      = lhs.point_begin()[idx];
+    vec_2d<T> lhs_point = lhs.point_begin()[idx];
     auto rhs_multipoint = rhs[geometry_id];
 
     atomicAdd(
@@ -85,8 +87,10 @@ OutputIt pairwise_multipoint_equals_count(MultiPointRangeA lhs,
   thrust::copy(
     rmm::exec_policy(stream), rhs.point_begin(), rhs.point_end(), rhs_point_sorted.begin());
 
-  thrust::sort_by_key(
-    rmm::exec_policy(stream), rhs_keys.begin(), rhs_keys.end(), rhs_point_sorted.begin());
+  auto rhs_with_keys =
+    thrust::make_zip_iterator(thrust::make_tuple(rhs_keys.begin(), rhs_point_sorted.begin()));
+
+  thrust::sort(rmm::exec_policy(stream), rhs_with_keys, rhs_with_keys + rhs.num_points());
 
   auto rhs_sorted = multipoint_range{
     rhs.offsets_begin(), rhs.offsets_end(), rhs_point_sorted.begin(), rhs_point_sorted.end()};
