@@ -2,7 +2,6 @@
 
 
 import cupy as cp
-from shapely.geometry import LineString as ShapelyLineString
 
 import cudf
 
@@ -111,7 +110,8 @@ class PointPolygonIntersects(ContainsPredicateBase):
 
 class LineStringPointIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        """Convert rhs to linestrings."""
+        """Convert rhs to linestrings by making a linestring that has
+        the same start and end point."""
         x = cp.repeat(rhs.points.x, 2)
         y = cp.repeat(rhs.points.y, 2)
         xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
@@ -133,40 +133,6 @@ class LineStringMultiPointIntersects(IntersectsPredicateBase):
         return self._compute_predicate(
             lhs, ls_rhs, PreprocessorResult(lhs, ls_rhs)
         )
-
-    def _postprocess(self, lhs, rhs, op_result):
-        """When a multipoint intersects with a linestring, all of the
-        points in the intersection need to be tested for equality with
-        the linestring.
-
-        This code uses the result of the intersection to determine
-        which points from the rhs to test for membership in the lhs.
-
-        Every point in the intersection is tested for membership in
-        the lhs. If the point is not in the lhs, the result is set to
-        False. If the point is in the lhs, the result is set to True.
-
-        This iterates on the number of results in the intersection,
-        which is not ideal. This code calls for the existence of a
-        libcuspatial function that can return the points in rhs
-        that are equal to points in the lhs.
-        """
-        match_indices = self._get_intersecting_geometry_indices(lhs, op_result)
-        result = super()._postprocess(lhs, rhs, op_result)
-        intersections = op_result.result[1]
-        x_coords = rhs.lines.x
-        y_coords = rhs.lines.y
-        result = _false_series(len(lhs))
-        for idx in range(len(intersections)):
-            if isinstance(intersections[idx], ShapelyLineString):
-                result[match_indices[idx]] = True
-                continue
-            x_match = intersections.points.x[idx] == x_coords
-            if x_match.sum() > 0:
-                y_match = intersections.points.y[idx] == y_coords
-                if (y_match & x_match).sum() > 0:
-                    result[match_indices[idx]] = True
-        return result
 
 
 class LineStringPolygonIntersects(IntersectsPredicateBase):
