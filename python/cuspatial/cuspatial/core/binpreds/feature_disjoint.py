@@ -19,7 +19,13 @@ from cuspatial.utils.binpred_utils import (
 class ContainsDisjoint(BinPred):
     def _preprocess(self, lhs, rhs):
         """Disjoint is the opposite of contains, so just implement contains
-        and then negate the result."""
+        and then negate the result.
+
+        Subclassed by:
+        (Point, Point)
+        (Point, Polygon)
+        (Polygon, Point)
+        """
         from cuspatial.core.binpreds.binpred_dispatch import CONTAINS_DISPATCH
 
         predicate = CONTAINS_DISPATCH[(lhs.column_type, rhs.column_type)](
@@ -64,7 +70,7 @@ DispatchDict = {
     (LineString, LineString): LineStringLineStringDisjoint,
     (LineString, Polygon): NotImplementedPredicate,
     (Polygon, Point): ContainsDisjoint,
-    (Polygon, MultiPoint): ContainsDisjoint,
-    (Polygon, LineString): ContainsDisjoint,
-    (Polygon, Polygon): ContainsDisjoint,
+    (Polygon, MultiPoint): NotImplementedPredicate,
+    (Polygon, LineString): NotImplementedPredicate,
+    (Polygon, Polygon): NotImplementedPredicate,
 }

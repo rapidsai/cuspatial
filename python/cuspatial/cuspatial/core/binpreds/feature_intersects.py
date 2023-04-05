@@ -135,34 +135,6 @@ class LineStringMultiPointIntersects(IntersectsPredicateBase):
         )
 
 
-class LineStringPolygonIntersects(IntersectsPredicateBase):
-    def _preprocess(self, lhs, rhs):
-        """Convert rhs to linestrings."""
-        ls_rhs = self._linestrings_from_polygons(rhs)
-        return self._compute_predicate(
-            lhs, ls_rhs, PreprocessorResult(lhs, ls_rhs)
-        )
-
-
-class PolygonLineStringIntersects(IntersectsPredicateBase):
-    def _preprocess(self, lhs, rhs):
-        """Convert lhs to linestrings."""
-        ls_lhs = self._linestrings_from_polygons(lhs)
-        return self._compute_predicate(
-            ls_lhs, rhs, PreprocessorResult(ls_lhs, rhs)
-        )
-
-
-class PolygonPolygonIntersects(IntersectsPredicateBase):
-    def _preprocess(self, lhs, rhs):
-        """Convert lhs and rhs to linestrings."""
-        ls_lhs = self._linestrings_from_polygons(lhs)
-        ls_rhs = self._linestrings_from_polygons(rhs)
-        return self._compute_predicate(
-            ls_lhs, ls_rhs, PreprocessorResult(ls_lhs, ls_rhs)
-        )
-
-
 class PointLineStringIntersects(LineStringPointIntersects):
     def _preprocess(self, lhs, rhs):
         """Swap LHS and RHS and call the normal contains processing."""
