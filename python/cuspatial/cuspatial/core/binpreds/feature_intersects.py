@@ -146,7 +146,7 @@ class LineStringPolygonIntersects(IntersectsPredicateBase):
 
 class PolygonLineStringIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        """Convert rhs to linestrings."""
+        """Convert lhs to linestrings."""
         ls_lhs = self._linestrings_from_polygons(lhs)
         return self._compute_predicate(
             ls_lhs, rhs, PreprocessorResult(ls_lhs, rhs)
@@ -155,7 +155,7 @@ class PolygonLineStringIntersects(IntersectsPredicateBase):
 
 class PolygonPolygonIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        """Convert rhs to linestrings."""
+        """Convert lhs and rhs to linestrings."""
         ls_lhs = self._linestrings_from_polygons(lhs)
         ls_rhs = self._linestrings_from_polygons(rhs)
         return self._compute_predicate(
@@ -166,8 +166,6 @@ class PolygonPolygonIntersects(IntersectsPredicateBase):
 class PointLineStringIntersects(LineStringPointIntersects):
     def _preprocess(self, lhs, rhs):
         """Swap LHS and RHS and call the normal contains processing."""
-        self.lhs = rhs
-        self.rhs = lhs
         return super()._preprocess(rhs, lhs)
 
 
