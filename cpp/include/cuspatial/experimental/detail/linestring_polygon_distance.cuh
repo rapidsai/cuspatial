@@ -28,8 +28,8 @@
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
-#include <libcudf/rapids/thrust/functional.h>
 #include <thrust/fill.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/logical.h>
