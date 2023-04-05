@@ -89,6 +89,18 @@ class multilinestring_range {
   /// Return the iterator to the one past the last multilinestring in the range.
   CUSPATIAL_HOST_DEVICE auto end() { return multilinestring_end(); }
 
+  /// Return the iterator to the first point in the range.
+  CUSPATIAL_HOST_DEVICE auto point_begin() { return _point_begin; }
+
+  /// Return the iterator to the one past the last point in the range.
+  CUSPATIAL_HOST_DEVICE auto point_end() { return _point_end; }
+
+  /// Return the iterator to the first part offset in the range.
+  CUSPATIAL_HOST_DEVICE auto part_offset_begin() { return _part_begin; }
+
+  /// Return the iterator to the one past the last part offset in the range.
+  CUSPATIAL_HOST_DEVICE auto part_offset_end() { return _part_end; }
+
   /// Given the index of a point, return the part (linestring) index where the point locates.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto part_idx_from_point_idx(IndexType point_idx);
