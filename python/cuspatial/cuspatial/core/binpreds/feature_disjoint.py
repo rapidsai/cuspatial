@@ -21,7 +21,7 @@ class ContainsDisjoint(BinPred):
         """Disjoint is the opposite of contains, so just implement contains
         and then negate the result.
 
-        Subclassed by:
+        Used by:
         (Point, Point)
         (Point, Polygon)
         (Polygon, Point)

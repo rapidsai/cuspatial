@@ -18,6 +18,13 @@ class CrossesPredicateBase(EqualsPredicateBase):
     """Base class for binary predicates that are defined in terms of a
     the equals binary predicate. For example, a Point-Point Crosses
     predicate is defined in terms of a Point-Point Equals predicate.
+
+    Used by:
+    (Point, Polygon)
+    (Polygon, Point)
+    (Polygon, MultiPoint)
+    (Polygon, LineString)
+    (Polygon, Polygon)
     """
 
     pass

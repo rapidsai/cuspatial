@@ -303,6 +303,11 @@ class PolygonComplexContains(ContainsPredicateBase):
     This class is shared by the Polygon*Contains classes that use
     a non-points object on the right hand side: MultiPoint, LineString,
     MultiLineString, Polygon, and MultiPolygon.
+
+    Used by:
+    (Polygon, MultiPoint)
+    (Polygon, LineString)
+    (Polygon, Polygon)
     """
 
     def _postprocess(self, lhs, rhs, preprocessor_output):

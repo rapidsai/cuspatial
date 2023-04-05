@@ -23,6 +23,13 @@ class OverlapsPredicateBase(EqualsPredicateBase):
     equals predicate for all implementations up to this point.
     For example, a Point-Point Crosses predicate is defined in terms
     of a Point-Point Equals predicate.
+
+    Used by:
+    (Point, Polygon)
+    (Polygon, Point)
+    (Polygon, MultiPoint)
+    (Polygon, LineString)
+    (Polygon, Polygon)
     """
 
     pass

@@ -31,6 +31,15 @@ class EqualsPredicateBase(BinPred, Generic[GeoSeries]):
     """Base class for binary predicates that are defined in terms of the equals
     basic predicate.  `EqualsPredicateBase` implements utility functions that
     are used within many equals-related binary predicates.
+
+    Used by:
+    (Point, Point)
+    (Point, Polygon)
+    (LineString, Polygon)
+    (Polygon, Point)
+    (Polygon, MultiPoint)
+    (Polygon, LineString)
+    (Polygon, Polygon)
     """
 
     def _offset_equals(self, lhs, rhs):
