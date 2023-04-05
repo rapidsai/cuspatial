@@ -48,11 +48,12 @@ struct offset_pair_to_count_functor {
  *
  * A Multilinestring is composed of a series of Linestrings. Each Linestring is composed of a
  * segments. The number of segments in a multilinestring is the number of points in the
- * multilinestring subtracting the number of linestrings.
+ * multilinestring minus the number of linestrings.
  *
- * Caveats: This has a strong assumption that the Multilinestring does not contain empty linestring.
- * While each non-empty linestring in the multilinestring can cause 1 invalid segment, an empty
- * multilinestring not introduce and invalid segments since it does not contain any points.
+ * Caveats: This has a strong assumption that the Multilinestring does not contain empty
+ * linestrings. While each non-empty linestring in the multilinestring represents 1 extra segment,
+ * an empty multilinestring does not introduce any extra segments since it does not contain any
+ * points.
  *
  * @tparam IndexPair Must be iterator to a pair of counts
  * @param n_point_linestring_pair A pair of counts, the first is the number of points, the second is
@@ -74,9 +75,10 @@ struct point_count_to_segment_count_functor {
  *
  * @tparam OffsetIterator Iterator type to the offset
  *
- * Caveats: This has a strong assumption that the Multilinestring does not contain empty linestring.
- * While each non-empty linestring in the multilinestring can cause 1 invalid segment, an empty
- * multilinestring not introduce and invalid segments since it does not contain any points.
+ * Caveats: This has a strong assumption that the Multilinestring does not contain empty
+ * linestrings. While each non-empty linestring in the multilinestring represents 1 extra segment,
+ * an empty multilinestring does not introduce any extra segments since it does not contain any
+ * points.
  */
 template <typename OffsetIterator>
 struct to_distance_iterator {
