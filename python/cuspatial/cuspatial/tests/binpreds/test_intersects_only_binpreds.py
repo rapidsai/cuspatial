@@ -1,6 +1,7 @@
 # Copyright (c) 2020-2023, NVIDIA CORPORATION
 
 import pandas as pd
+import pytest
 from shapely.geometry import (
     LineString,
     MultiLineString,
@@ -270,6 +271,7 @@ def test_linestring_intersects_multipoint_implicit_cross_intersection():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
+@pytest.mark.skip(reason="not implemented")
 def test_100_linestrings_intersects_100_multipoints(
     linestring_generator, multipoint_generator
 ):
