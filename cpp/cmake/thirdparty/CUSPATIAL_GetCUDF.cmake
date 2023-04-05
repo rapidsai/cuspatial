@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2021, NVIDIA CORPORATION.
+# Copyright (c) 2021-2023, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,39 +14,61 @@
 # limitations under the License.
 #=============================================================================
 
-function(find_and_configure_cudf VERSION)
+function(find_and_configure_cudf)
 
     if(TARGET cudf::cudf)
         return()
     endif()
 
-    if(${VERSION} MATCHES [=[([0-9]+)\.([0-9]+)\.([0-9]+)]=])
-        set(MAJOR_AND_MINOR "${CMAKE_MATCH_1}.${CMAKE_MATCH_2}")
-    else()
-        set(MAJOR_AND_MINOR "${VERSION}")
-    endif()
+    set(oneValueArgs VERSION GIT_REPO GIT_TAG USE_CUDF_STATIC EXCLUDE_FROM_ALL PER_THREAD_DEFAULT_STREAM)
+    cmake_parse_arguments(PKG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     set(global_targets cudf::cudf)
-    set(find_package_args "")
+    set(find_package_args)
+
     if(BUILD_TESTS)
       list(APPEND global_targets cudf::cudftestutil)
       set(find_package_args "COMPONENTS testing")
     endif()
 
-    rapids_cpm_find(
-      cudf ${VERSION}
-      GLOBAL_TARGETS "${global_targets}"
+    set(BUILD_SHARED ON)
+    if(${PKG_USE_CUDF_STATIC})
+        set(BUILD_SHARED OFF)
+    endif()
+
+    rapids_cpm_find(cudf ${PKG_VERSION}
+      GLOBAL_TARGETS ${global_targets}
       BUILD_EXPORT_SET cuspatial-exports
       INSTALL_EXPORT_SET cuspatial-exports
       CPM_ARGS
-      GIT_REPOSITORY https://github.com/rapidsai/cudf.git
-      GIT_TAG branch-${MAJOR_AND_MINOR}
-      GIT_SHALLOW TRUE
-      OPTIONS "BUILD_TESTS OFF" "BUILD_BENCHMARKS OFF"
-      FIND_PACKAGE_ARGUMENTS "${find_package_args}"
+        GIT_REPOSITORY   ${PKG_GIT_REPO}
+        GIT_TAG          ${PKG_GIT_TAG}
+        GIT_SHALLOW      TRUE
+        SOURCE_SUBDIR    cpp
+        EXCLUDE_FROM_ALL ${PKG_EXCLUDE_FROM_ALL}
+        FIND_PACKAGE_ARGUMENTS ${find_package_args}
+        OPTIONS "BUILD_TESTS OFF"
+                "BUILD_BENCHMARKS OFF"
+                "BUILD_SHARED_LIBS ${BUILD_SHARED}"
+                "CUDF_BUILD_TESTUTIL ${BUILD_TESTS}"
+                "CUDF_BUILD_STREAMS_TEST_UTIL ${BUILD_TESTS}"
+                "CUDF_USE_PER_THREAD_DEFAULT_STREAM ${PKG_PER_THREAD_DEFAULT_STREAM}"
     )
 endfunction()
 
-set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}.00")
+set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
 
-find_and_configure_cudf(${CUSPATIAL_MIN_VERSION_cudf})
+if(NOT DEFINED CUSPATIAL_CUDF_GIT_REPO)
+  set(CUSPATIAL_CUDF_GIT_REPO https://github.com/rapidsai/cudf.git)
+endif()
+
+if(NOT DEFINED CUSPATIAL_CUDF_GIT_TAG)
+  set(CUSPATIAL_CUDF_GIT_TAG branch-${CUSPATIAL_MIN_VERSION_cudf})
+endif()
+
+find_and_configure_cudf(VERSION ${CUSPATIAL_MIN_VERSION_cudf}.00
+                       GIT_REPO ${CUSPATIAL_CUDF_GIT_REPO}
+                        GIT_TAG ${CUSPATIAL_CUDF_GIT_TAG}
+                USE_CUDF_STATIC ${CUSPATIAL_USE_CUDF_STATIC}
+               EXCLUDE_FROM_ALL ${CUSPATIAL_EXCLUDE_CUDF_FROM_ALL}
+      PER_THREAD_DEFAULT_STREAM ${PER_THREAD_DEFAULT_STREAM})

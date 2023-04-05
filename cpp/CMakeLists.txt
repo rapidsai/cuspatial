@@ -51,6 +51,9 @@ option(CUDA_ENABLE_LINEINFO "Enable the -lineinfo option for nvcc (useful for cu
 # cudart can be statically linked or dynamically linked. The python ecosystem wants dynamic linking
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA toolkit runtime and libraries" OFF)
 
+option(CUSPATIAL_USE_CUDF_STATIC "Build and statically link cuDF" OFF)
+option(CUSPATIAL_EXCLUDE_CUDF_FROM_ALL "Exclude cuDF targets from cuSpatial's 'all' target" OFF)
+
 message(STATUS "CUSPATIAL: Build with NVTX support: ${USE_NVTX}")
 message(STATUS "CUSPATIAL: Configure CMake to build tests: ${BUILD_TESTS}")
 message(STATUS "CUSPATIAL: Configure CMake to build (google) benchmarks: ${BUILD_BENCHMARKS}")

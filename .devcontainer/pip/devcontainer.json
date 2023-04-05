@@ -25,10 +25,12 @@
   ],
 
   "initializeCommand": [
-    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../.{aws,cache,configlWorkspaceFolderBasename}-single-local}"
+    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../.{aws,cache,config,${localWorkspaceFolderBasename}-single-local}"
   ],
 
   "containerEnv": {
+    "PYTHONSAFEPATH": "true",
+    "PYTHONUNBUFFERED": "true",
     "DEFAULT_VIRTUAL_ENV": "rapids"
   },
 
@@ -39,7 +41,8 @@
     "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../.${localWorkspaceFolderBasename}-single-local,target=/home/coder/.local,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/.devcontainer/opt/${localWorkspaceFolderBasename},target=/opt/${localWorkspaceFolderBasename},type=bind,consistency=consistent"
+    "source=${localWorkspaceFolder}/.devcontainer/opt/${localWorkspaceFolderBasename},target=/opt/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/.devcontainer/opt/rapids-build-utils,target=/opt/rapids-build-utils,type=bind,consistency=consistent"
   ],
 
   "customizations": {
