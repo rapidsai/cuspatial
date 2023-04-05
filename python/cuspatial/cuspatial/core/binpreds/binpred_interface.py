@@ -1,6 +1,6 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 from cudf import Series
 
@@ -144,7 +144,7 @@ class EqualsOpResult(OpResult):
 class IntersectsOpResult(OpResult):
     """Result of an Intersection binary predicate operation."""
 
-    def __init__(self, result: Series):
+    def __init__(self, result: Tuple):
         self.result = result
 
     def __repr__(self):
