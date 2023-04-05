@@ -27,7 +27,8 @@
 #include <type_traits>
 
 template <typename T>
-struct QuadtreePointToLinestringTestSmall : public cuspatial::test::BaseFixture {};
+struct QuadtreePointToLinestringTestSmall : public cuspatial::test::BaseFixture {
+};
 
 using TestTypes = ::testing::Types<float, double>;
 
