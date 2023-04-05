@@ -28,6 +28,9 @@ namespace detail {
 /**
  * @brief Given iterator a pair of offsets, return the number of elements between the offsets.
  *
+ * Used to create iterator to geometry counts, such as `multi*_point_count_begin`,
+ * `multi*_segment_count_begin`.
+ *
  * Example:
  * pair of offsets: (0, 3), (3, 5), (5, 8)
  * number of elements between offsets: 3, 2, 3
@@ -55,6 +58,8 @@ struct offset_pair_to_count_functor {
  * an empty multilinestring does not introduce any extra segments since it does not contain any
  * points.
  *
+ * Used to create segment count iterators, such as `multi*_segment_count_begin`.
+ *
  * @tparam IndexPair Must be iterator to a pair of counts
  * @param n_point_linestring_pair A pair of counts, the first is the number of points, the second is
  * the number of linestrings.
@@ -79,6 +84,8 @@ struct point_count_to_segment_count_functor {
  * linestrings. While each non-empty linestring in the multilinestring represents 1 extra segment,
  * an empty multilinestring does not introduce any extra segments since it does not contain any
  * points.
+ *
+ * Used to create iterator to segment offsets, such as `segment_offset_begin`.
  */
 template <typename OffsetIterator>
 struct to_distance_iterator {
@@ -101,6 +108,8 @@ to_distance_iterator(OffsetIterator) -> to_distance_iterator<OffsetIterator>;
  * Used in a counting transform iterator. Given an index of the segment, offset it by the number of
  * skipped segments preceding i in the partitioned range of points. Dereference the corresponding
  * point and the point following to make a segment.
+ *
+ * Used to create iterator to segments, such as `segment_begin`.
  *
  * @tparam OffsetIterator the iterator type indicating partitions of the point range.
  * @tparam CoordinateIterator the iterator type to the point range.
