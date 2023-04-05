@@ -48,8 +48,8 @@ endfunction(ConfigureTest)
 ### test sources ##################################################################################
 ###################################################################################################
 
-ConfigureTest(ALLPAIRS_MULTIPOINT_EQUALS_COUNT_TEST
-    spatial/allpairs_multipoint_equals_count_test.cpp)
+ConfigureTest(PAIRWISE_MULTIPOINT_EQUALS_COUNT_TEST
+    spatial/pairwise_multipoint_equals_count_test.cpp)
 
 ConfigureTest(SINUSOIDAL_PROJECTION_TEST
     spatial/sinusoidal_projection_test.cu)
@@ -152,8 +152,8 @@ ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST_EXP
     experimental/spatial/point_linestring_nearest_points_test.cu)
 
-ConfigureTest(ALLPAIRS_MULTIPOINT_EQUALS_COUNT_TEST_EXP
-    experimental/spatial/allpairs_multipoint_equals_count_test.cu)
+ConfigureTest(PAIRWISE_MULTIPOINT_EQUALS_COUNT_TEST_EXP
+    experimental/spatial/pairwise_multipoint_equals_count_test.cu)
 
 ConfigureTest(SINUSOIDAL_PROJECTION_TEST_EXP
     experimental/spatial/sinusoidal_projection_test.cu)
