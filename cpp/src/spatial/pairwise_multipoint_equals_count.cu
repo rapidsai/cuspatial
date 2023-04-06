@@ -49,7 +49,7 @@ struct pairwise_multipoint_equals_count_impl {
                                            rmm::cuda_stream_view stream,
                                            rmm::mr::device_memory_resource* mr)
   {
-    auto size = lhs.size() / 2;  // lhs is a buffer of xy coords
+    auto size = lhs.size();  // lhs is a buffer of xy coords
     auto type = cudf::data_type(cudf::type_to_id<uint32_t>());
     auto result =
       cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
@@ -105,7 +105,6 @@ std::unique_ptr<cudf::column> pairwise_multipoint_equals_count(geometry_column_v
   CUSPATIAL_EXPECTS(lhs.coordinate_type() == rhs.coordinate_type(),
                     "Input geometries must have the same coordinate data types.");
 
-  printf("calling dispatch\n");
   return multi_geometry_double_dispatch<detail::pairwise_multipoint_equals_count>(
     lhs.collection_type(), rhs.collection_type(), lhs, rhs, rmm::cuda_stream_default, mr);
 }
