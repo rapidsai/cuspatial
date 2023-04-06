@@ -1220,7 +1220,8 @@ class GeoSeries(cudf.Series):
         """Returns True for all aligned geometries that are disjoint from
         other, else False.
 
-        Geometries are disjoint if they do not share any points in common.
+        An object is said to be disjoint to other if its boundary and
+        interior does not intersect at all with those of the other.
 
         Parameters
         ----------
@@ -1232,8 +1233,9 @@ class GeoSeries(cudf.Series):
         Returns
         -------
         result : cudf.Series
-            A Series of boolean values indicating whether each geometry
-            is disjoint from the corresponding geometry in the input."""
+            A Series of boolean values indicating whether each pair of
+            corresponding geometries is disjoint.
+        """
         predicate = DISJOINT_DISPATCH[(self.column_type, other.column_type)](
             align=align
         )

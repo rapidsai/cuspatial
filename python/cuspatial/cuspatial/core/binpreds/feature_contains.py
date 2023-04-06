@@ -335,10 +335,15 @@ class PolygonComplexContains(ContainsPredicateBase):
         return final_result
 
 
-class PointPointContains(ContainsPredicateBase):
+class ContainsByIntersection(BinPred):
+    """Point types are contained only by an intersection test.
+
+    Used by:
+    (Point, Point)
+    (LineString, Point)
+    """
+
     def _preprocess(self, lhs, rhs):
-        """PointPointContains that simply calls the equals predicate on the
-        points."""
         from cuspatial.core.binpreds.binpred_dispatch import (
             INTERSECTS_DISPATCH,
         )
@@ -352,7 +357,7 @@ class PointPointContains(ContainsPredicateBase):
 """DispatchDict listing the classes to use for each combination of
     left and right hand side types. """
 DispatchDict = {
-    (Point, Point): PointPointContains,
+    (Point, Point): ContainsByIntersection,
     (Point, MultiPoint): NotImplementedPredicate,
     (Point, LineString): NotImplementedPredicate,
     (Point, Polygon): NotImplementedPredicate,
@@ -360,7 +365,7 @@ DispatchDict = {
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
-    (LineString, Point): PointPointContains,
+    (LineString, Point): ContainsByIntersection,
     (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): NotImplementedPredicate,
     (LineString, Polygon): NotImplementedPredicate,

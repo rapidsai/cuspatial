@@ -20,8 +20,9 @@ from cuspatial.utils.column_utils import has_same_geometry
 
 class OverlapsPredicateBase(EqualsPredicateBase):
     """Base class for overlaps binary predicate. Depends on the
-    equals predicate for all implementations up to this point.
-    For example, a Point-Point Crosses predicate is defined in terms
+    equals predicate for all implementations up to this point in
+    time.
+    For example, a Point-Point Overlaps predicate is defined in terms
     of a Point-Point Equals predicate.
 
     Used by:

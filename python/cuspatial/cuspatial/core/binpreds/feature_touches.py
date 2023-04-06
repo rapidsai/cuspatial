@@ -1,16 +1,15 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-from cuspatial.core.binpreds.binpred_interface import NotImplementedPredicate
-from cuspatial.core.binpreds.feature_contains import (
-    ContainsPredicateBase,
-    PointPointContains,
+from cuspatial.core.binpreds.binpred_interface import (
+    ImpossiblePredicate,
+    NotImplementedPredicate,
 )
+from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
     Point,
     Polygon,
-    _false_series,
 )
 
 
@@ -31,15 +30,8 @@ class TouchesPredicateBase(ContainsPredicateBase):
     pass
 
 
-class PointPointTouches(PointPointContains):
-    """Points can't touch according to GeoPandas, so return False."""
-
-    def _preprocess(self, lhs, rhs):
-        return _false_series(len(lhs))
-
-
 DispatchDict = {
-    (Point, Point): PointPointTouches,
+    (Point, Point): ImpossiblePredicate,
     (Point, MultiPoint): NotImplementedPredicate,
     (Point, LineString): NotImplementedPredicate,
     (Point, Polygon): TouchesPredicateBase,
