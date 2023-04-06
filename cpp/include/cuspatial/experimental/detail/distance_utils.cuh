@@ -106,6 +106,7 @@ rmm::device_uvector<uint8_t> point_polygon_intersects(MultiPointRange multipoint
                         point_intersects.begin(),
                         thrust::make_discard_iterator(),
                         multipoint_intersects.begin(),
+                        thrust::equal_to<index_t>(),
                         thrust::logical_or<uint8_t>());
 
   return multipoint_intersects;
