@@ -130,6 +130,9 @@ ConfigureTest(POINT_LINESTRING_DISTANCE_TEST_EXP
 ConfigureTest(POINT_POLYGON_DISTANCE_TEST_EXP
     experimental/spatial/point_polygon_distance_test.cu)
 
+ConfigureTest(LINESTRING_POLYGON_DISTANCE_TEST_EXP
+    experimental/spatial/linestring_polygon_distance_test.cu)
+
 ConfigureTest(HAUSDORFF_TEST_EXP
     experimental/spatial/hausdorff_test.cu)
 

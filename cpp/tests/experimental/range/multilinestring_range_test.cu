@@ -404,3 +404,29 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringAsMultipointTest4)
                      {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}, P{13, 13}},
                      {{P{0, 0}, P{1, 1}, P{2, 2}}, {P{10, 10}, P{11, 11}, P{12, 12}, P{13, 13}}});
 }
+
+TYPED_TEST(MultilinestringRangeTest, MultilinestringAsMultipointTest5)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_as_multipoint_test,
+                     {0, 1},
+                     {0, 4},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{2, 3}},
+                     {{P{0, 0}, P{1, 1}, P{2, 2}, P{2, 3}}});
+}
+
+TYPED_TEST(MultilinestringRangeTest, MultilinestringAsMultipointTest6)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_as_multipoint_test,
+                     {0, 2},
+                     {0, 2, 4},
+                     {P{1, 1}, P{0, 0}, P{6, 6}, P{6, 7}},
+                     {{P{1, 1}, P{0, 0}, P{6, 6}, P{6, 7}}});
+}
