@@ -2,6 +2,10 @@
 
 from cuspatial.core.binpreds.binpred_interface import NotImplementedPredicate
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
+from cuspatial.core.binpreds.feature_intersects import (
+    LineStringPointIntersects,
+    PointLineStringIntersects,
+)
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -35,13 +39,13 @@ class CoversPredicateBase(EqualsPredicateBase):
 DispatchDict = {
     (Point, Point): CoversPredicateBase,
     (Point, MultiPoint): NotImplementedPredicate,
-    (Point, LineString): NotImplementedPredicate,
+    (Point, LineString): PointLineStringIntersects,
     (Point, Polygon): CoversPredicateBase,
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
-    (LineString, Point): NotImplementedPredicate,
+    (LineString, Point): LineStringPointIntersects,
     (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): NotImplementedPredicate,
     (LineString, Polygon): CoversPredicateBase,

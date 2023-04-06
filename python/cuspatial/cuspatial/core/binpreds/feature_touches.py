@@ -4,20 +4,20 @@ from cuspatial.core.binpreds.binpred_interface import (
     ImpossiblePredicate,
     NotImplementedPredicate,
 )
-from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
+from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
     Point,
     Polygon,
-    _false_series,
 )
 
 
-class CrossesPredicateBase(EqualsPredicateBase):
-    """Base class for binary predicates that are defined in terms of a
-    the equals binary predicate. For example, a Point-Point Crosses
-    predicate is defined in terms of a Point-Point Equals predicate.
+class TouchesPredicateBase(ContainsPredicateBase):
+    """Base class for binary predicates that use the contains predicate
+    to implement the touches predicate. For example, a Point-Polygon
+    Touches predicate is defined in terms of a Point-Polygon Contains
+    predicate.
 
     Used by:
     (Point, Polygon)
@@ -30,27 +30,21 @@ class CrossesPredicateBase(EqualsPredicateBase):
     pass
 
 
-class PointPointCrosses(CrossesPredicateBase):
-    def _preprocess(self, lhs, rhs):
-        """Points can't cross other points, so we return False."""
-        return _false_series(len(lhs))
-
-
 DispatchDict = {
-    (Point, Point): PointPointCrosses,
+    (Point, Point): ImpossiblePredicate,
     (Point, MultiPoint): NotImplementedPredicate,
     (Point, LineString): NotImplementedPredicate,
-    (Point, Polygon): CrossesPredicateBase,
+    (Point, Polygon): TouchesPredicateBase,
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
-    (LineString, Point): ImpossiblePredicate,
+    (LineString, Point): NotImplementedPredicate,
     (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): NotImplementedPredicate,
     (LineString, Polygon): NotImplementedPredicate,
-    (Polygon, Point): CrossesPredicateBase,
-    (Polygon, MultiPoint): CrossesPredicateBase,
-    (Polygon, LineString): CrossesPredicateBase,
-    (Polygon, Polygon): CrossesPredicateBase,
+    (Polygon, Point): TouchesPredicateBase,
+    (Polygon, MultiPoint): TouchesPredicateBase,
+    (Polygon, LineString): TouchesPredicateBase,
+    (Polygon, Polygon): TouchesPredicateBase,
 }

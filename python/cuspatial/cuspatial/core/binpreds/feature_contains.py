@@ -11,15 +11,11 @@ from cudf.core.series import Series
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
-    BinPredConfig,
     ContainsOpResult,
     NotImplementedPredicate,
     PreprocessorResult,
 )
 from cuspatial.core.binpreds.contains import contains_properly
-from cuspatial.core.binpreds.feature_equals import (
-    DispatchDict as EQUALS_DISPATCH_DICT,
-)
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -57,7 +53,7 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
             right-hand GeoSeries. If False, the feature will be compared in a
             1:1 fashion with the corresponding feature in the other GeoSeries.
         """
-        self.config = BinPredConfig(**kwargs)
+        super().__init__(**kwargs)
         self.config.allpairs = kwargs.get("allpairs", False)
 
     def _preprocess(self, lhs, rhs):
@@ -307,6 +303,11 @@ class PolygonComplexContains(ContainsPredicateBase):
     This class is shared by the Polygon*Contains classes that use
     a non-points object on the right hand side: MultiPoint, LineString,
     MultiLineString, Polygon, and MultiPolygon.
+
+    Used by:
+    (Polygon, MultiPoint)
+    (Polygon, LineString)
+    (Polygon, Polygon)
     """
 
     def _postprocess(self, lhs, rhs, preprocessor_output):
@@ -334,12 +335,20 @@ class PolygonComplexContains(ContainsPredicateBase):
         return final_result
 
 
-class PointPointContains(ContainsPredicateBase):
-    def _preprocess(self, lhs, rhs):
-        """PointPointContains that simply calls the equals predicate on the
-        points."""
+class ContainsByIntersection(BinPred):
+    """Point types are contained only by an intersection test.
 
-        predicate = EQUALS_DISPATCH_DICT[(lhs.column_type, rhs.column_type)](
+    Used by:
+    (Point, Point)
+    (LineString, Point)
+    """
+
+    def _preprocess(self, lhs, rhs):
+        from cuspatial.core.binpreds.binpred_dispatch import (
+            INTERSECTS_DISPATCH,
+        )
+
+        predicate = INTERSECTS_DISPATCH[(lhs.column_type, rhs.column_type)](
             align=self.config.align
         )
         return predicate(lhs, rhs)
@@ -348,7 +357,7 @@ class PointPointContains(ContainsPredicateBase):
 """DispatchDict listing the classes to use for each combination of
     left and right hand side types. """
 DispatchDict = {
-    (Point, Point): PointPointContains,
+    (Point, Point): ContainsByIntersection,
     (Point, MultiPoint): NotImplementedPredicate,
     (Point, LineString): NotImplementedPredicate,
     (Point, Polygon): NotImplementedPredicate,
@@ -356,7 +365,7 @@ DispatchDict = {
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
-    (LineString, Point): NotImplementedPredicate,
+    (LineString, Point): ContainsByIntersection,
     (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): NotImplementedPredicate,
     (LineString, Polygon): NotImplementedPredicate,
