@@ -213,10 +213,10 @@ class multilinestring_array {
  public:
   multilinestring_array(GeometryArray geometry_offsets_array,
                         PartArray part_offsets_array,
-                        CoordinateArray coordinate_offset_array)
+                        CoordinateArray coordinate_array)
     : _geometry_offset_array(geometry_offsets_array),
       _part_offset_array(part_offsets_array),
-      _coordinate_offset_array(coordinate_offset_array)
+      _coordinate_array(coordinate_array)
   {
   }
 
@@ -230,14 +230,14 @@ class multilinestring_array {
                                  _geometry_offset_array.end(),
                                  _part_offset_array.begin(),
                                  _part_offset_array.end(),
-                                 _coordinate_offset_array.begin(),
-                                 _coordinate_offset_array.end());
+                                 _coordinate_array.begin(),
+                                 _coordinate_array.end());
   }
 
  protected:
   GeometryArray _geometry_offset_array;
   PartArray _part_offset_array;
-  CoordinateArray _coordinate_offset_array;
+  CoordinateArray _coordinate_array;
 };
 
 /**
