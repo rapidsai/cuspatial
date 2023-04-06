@@ -31,8 +31,8 @@ class RMMResourceMixin {
 
  public:
   /**
-   * @brief Returns pointer to `device_memory_resource` that should be used for all tests inheriting
-   * from this fixture.
+   * @brief Returns pointer to `device_memory_resource` that should be used for
+   * all tests inheriting from this fixture
    * @return pointer to memory resource
    */
   rmm::mr::device_memory_resource* mr() { return _mr; }
@@ -81,6 +81,12 @@ template <typename... Ts>
 class BaseFixtureWithParam : public RMMResourceMixin,
                              public ::testing::TestWithParam<std::tuple<Ts...>> {
 };
+
+/**
+ * @brief Floating point types to be used in libcuspatial tests
+ *
+ */
+using FloatingPointTypes = ::testing::Types<float, double>;
 
 }  // namespace test
 }  // namespace cuspatial
