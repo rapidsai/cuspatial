@@ -26,26 +26,15 @@ from cudf.core.column.column import as_column
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.binpreds.feature_contains import (
-    DispatchDict as CONTAINS_DISPATCH,
-)
-from cuspatial.core.binpreds.feature_covers import (
-    DispatchDict as COVERS_DISPATCH,
-)
-from cuspatial.core.binpreds.feature_crosses import (
-    DispatchDict as CROSSES_DISPATCH,
-)
-from cuspatial.core.binpreds.feature_equals import (
-    DispatchDict as EQUALS_DISPATCH,
-)
-from cuspatial.core.binpreds.feature_intersects import (
-    DispatchDict as INTERSECTS_DISPATCH,
-)
-from cuspatial.core.binpreds.feature_overlaps import (
-    DispatchDict as OVERLAPS_DISPATCH,
-)
-from cuspatial.core.binpreds.feature_within import (
-    DispatchDict as WITHIN_DISPATCH,
+from cuspatial.core.binpreds.binpred_dispatch import (
+    CONTAINS_DISPATCH,
+    COVERS_DISPATCH,
+    CROSSES_DISPATCH,
+    DISJOINT_DISPATCH,
+    EQUALS_DISPATCH,
+    INTERSECTS_DISPATCH,
+    OVERLAPS_DISPATCH,
+    WITHIN_DISPATCH,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -1223,6 +1212,31 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each geometry
             crosses the corresponding geometry in the input."""
         predicate = CROSSES_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
+
+    def disjoint(self, other, align=True):
+        """Returns True for all aligned geometries that are disjoint from
+        other, else False.
+
+        An object is said to be disjoint to other if its boundary and
+        interior does not intersect at all with those of the other.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each pair of
+            corresponding geometries is disjoint.
+        """
+        predicate = DISJOINT_DISPATCH[(self.column_type, other.column_type)](
             align=align
         )
         return predicate(self, other)

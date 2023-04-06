@@ -15,16 +15,20 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-class RootWithin(EqualsPredicateBase):
+class WithinPredicateBase(EqualsPredicateBase):
     """Base class for binary predicates that are defined in terms of a
     root-level binary predicate. For example, a Point-Point Within
     predicate is defined in terms of a Point-Point Contains predicate.
+    Used by:
+    (Polygon, Point)
+    (Polygon, MultiPoint)
+    (Polygon, LineString)
     """
 
     pass
 
 
-class PointPointWithin(RootWithin):
+class PointPointWithin(WithinPredicateBase):
     def _postprocess(self, lhs, rhs, op_result):
         return cudf.Series(op_result.result)
 
@@ -36,6 +40,15 @@ class PointPolygonWithin(ContainsPredicateBase):
 
 
 class ComplexPolygonWithin(ContainsPredicateBase):
+    """Implements within for complex polygons. Depends on contains result
+    for the types.
+
+    Used by:
+    (MultiPoint, Polygon)
+    (LineString, Polygon)
+    (Polygon, Polygon)
+    """
+
     def _preprocess(self, lhs, rhs):
         # Note the order of arguments is reversed.
         return super()._preprocess(rhs, lhs)
@@ -75,8 +88,8 @@ DispatchDict = {
     (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): NotImplementedPredicate,
     (LineString, Polygon): ComplexPolygonWithin,
-    (Polygon, Point): RootWithin,
-    (Polygon, MultiPoint): RootWithin,
-    (Polygon, LineString): RootWithin,
+    (Polygon, Point): WithinPredicateBase,
+    (Polygon, MultiPoint): WithinPredicateBase,
+    (Polygon, LineString): WithinPredicateBase,
     (Polygon, Polygon): ComplexPolygonWithin,
 }

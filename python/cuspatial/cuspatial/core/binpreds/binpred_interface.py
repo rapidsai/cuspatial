@@ -1,8 +1,10 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 from cudf import Series
+
+from cuspatial.utils.binpred_utils import _false_series
 
 if TYPE_CHECKING:
     from cuspatial.core.geoseries import GeoSeries
@@ -139,6 +141,19 @@ class EqualsOpResult(OpResult):
         return self.__repr__()
 
 
+class IntersectsOpResult(OpResult):
+    """Result of an Intersection binary predicate operation."""
+
+    def __init__(self, result: Tuple):
+        self.result = result
+
+    def __repr__(self):
+        return f"OpResult(result={self.result})"
+
+    def __str__(self):
+        return self.__repr__()
+
+
 class BinPred:
     """Base class for binary predicates. This class is an abstract base class
     and can not be instantiated directly. `BinPred` is the base class that
@@ -241,7 +256,7 @@ class BinPred:
         0    False
         dtype: bool
         """
-        self.kwargs = kwargs
+        self.config = BinPredConfig(**kwargs)
 
     def __call__(self, lhs: "GeoSeries", rhs: "GeoSeries") -> Series:
         """System call for the binary predicate. Calls the _call method,
@@ -441,3 +456,12 @@ class NotImplementedPredicate(BinPred):
 
     def __init__(self, *args, **kwargs):
         raise NotImplementedError
+
+
+class ImpossiblePredicate(BinPred):
+    """There are many combinations that are impossible. This is the base class
+    to simply return a series of False values for these cases.
+    """
+
+    def _preprocess(self, lhs, rhs):
+        return _false_series(len(lhs))
