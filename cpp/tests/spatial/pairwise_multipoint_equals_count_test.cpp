@@ -37,15 +37,19 @@ using namespace cudf::test;
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
 
 template <typename T>
-struct PairwiseMultipointEqualsCountTest : public BaseFixture {
+struct PairwiseMultipointEqualsCountTestTyped : public BaseFixture {
+  rmm::cuda_stream_view stream() { return cudf::get_default_stream(); }
+};
+
+struct PairwiseMultipointEqualsCountTestUntyped : public BaseFixture {
   rmm::cuda_stream_view stream() { return cudf::get_default_stream(); }
 };
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = Types<double>;
-TYPED_TEST_CASE(PairwiseMultipointEqualsCountTest, TestTypes);
+TYPED_TEST_CASE(PairwiseMultipointEqualsCountTestTyped, TestTypes);
 
-TYPED_TEST(PairwiseMultipointEqualsCountTest, Empty)
+TYPED_TEST(PairwiseMultipointEqualsCountTestTyped, Empty)
 {
   using T           = TypeParam;
   auto [ptype, lhs] = make_point_column<T>(std::initializer_list<T>{}, this->stream());
@@ -56,16 +60,15 @@ TYPED_TEST(PairwiseMultipointEqualsCountTest, Empty)
 
   auto output = cuspatial::pairwise_multipoint_equals_count(lhs_gcv, rhs_gcv);
 
-  auto expected = fixed_width_column_wrapper<T>({});
+  auto expected = fixed_width_column_wrapper<uint32_t>({});
 
   expect_columns_equivalent(expected, output->view(), verbosity);
 }
 
-TYPED_TEST(PairwiseMultipointEqualsCountTest, InvalidTypes)
+TEST_F(PairwiseMultipointEqualsCountTestUntyped, InvalidTypes)
 {
-  using T           = TypeParam;
-  auto [ptype, lhs] = make_point_column<T>(std::initializer_list<T>{}, this->stream());
-  auto [pytpe, rhs] = make_point_column<T>(std::initializer_list<T>{}, this->stream());
+  auto [ptype, lhs] = make_point_column<float>(std::initializer_list<float>{}, this->stream());
+  auto [pytpe, rhs] = make_point_column<double>(std::initializer_list<double>{}, this->stream());
 
   auto lhs_gcv = geometry_column_view(lhs->view(), ptype, geometry_type_id::POINT);
   auto rhs_gcv = geometry_column_view(rhs->view(), ptype, geometry_type_id::POINT);
