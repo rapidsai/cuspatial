@@ -31,7 +31,7 @@
  * A small test that it is suitable for manually visualizing point-polygon pairing results in a GIS
  * environment. GPU results are compared with expected values embedded in code. However, the number
  * of points in each quadrant is less than 32, the two kernels for point-in-polygon test are not
- * fully tested. This is left for pip_refine_test_large.
+ * fully tested.
  */
 template <typename T>
 struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {
@@ -138,6 +138,14 @@ TYPED_TEST(PIPRefineTestSmall, TestSmall)
 
   auto [poly_indices, quad_indices] = cuspatial::join_quadtree_and_bounding_boxes(
     quadtree, bboxes.begin(), bboxes.end(), v_min, scale, max_depth, this->stream(), this->mr());
+
+  {
+    auto expected_poly_indices = make_device_vector<uint32_t>({3, 3, 1, 2, 1, 1, 0, 3});
+    auto expected_quad_indices = make_device_vector<uint32_t>({10, 11, 6, 6, 12, 13, 2, 2});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(poly_indices, expected_poly_indices);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(quad_indices, expected_quad_indices);
+  }
 
   auto [poly_offset, point_offset] = cuspatial::quadtree_point_in_polygon(poly_indices.begin(),
                                                                           poly_indices.end(),

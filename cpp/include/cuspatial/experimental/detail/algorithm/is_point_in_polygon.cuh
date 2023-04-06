@@ -27,7 +27,7 @@ namespace cuspatial {
 namespace detail {
 
 /**
- * @brief Kernel to test if a point is inside a polygon.
+ * @brief Test if a point is inside a polygon.
  *
  * Implemented based on Eric Haines's crossings-multiply algorithm:
  * See "Crossings test" section of http://erich.realtimerendering.com/ptinpoly/

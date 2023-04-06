@@ -90,6 +90,9 @@ class multipolygon_range {
   /// Return the total number of points in the array.
   CUSPATIAL_HOST_DEVICE auto num_points();
 
+  /// Return the total number of segments in the array.
+  CUSPATIAL_HOST_DEVICE auto num_segments();
+
   /// Return the iterator to the first multipolygon in the range.
   CUSPATIAL_HOST_DEVICE auto multipolygon_begin();
 
@@ -154,6 +157,29 @@ class multipolygon_range {
   CUSPATIAL_HOST_DEVICE bool is_first_point_of_multipolygon(IndexType1 point_idx,
                                                             IndexType2 geometry_idx);
 
+  /// Returns an iterator to the number of points of the first multipolygon
+  /// @note The count includes the duplicate first and last point of the ring.
+  CUSPATIAL_HOST_DEVICE auto multipolygon_point_count_begin();
+  /// Returns the one past the iterator to the number of points of the last multipolygon
+  /// @note The count includes the duplicate first and last point of the ring.
+  CUSPATIAL_HOST_DEVICE auto multipolygon_point_count_end();
+
+  /// Returns an iterator to the number of rings of the first multipolygon
+  CUSPATIAL_HOST_DEVICE auto multipolygon_ring_count_begin();
+  /// Returns the one past the iterator to the number of rings of the last multipolygon
+  CUSPATIAL_HOST_DEVICE auto multipolygon_ring_count_end();
+
+  /// Returns an iterator to the number of segments of the first multipolygon
+  CUSPATIAL_HOST_DEVICE auto multipolygon_segment_count_begin();
+  /// Returns the one past the iterator to the number of segments of the last multipolygon
+  CUSPATIAL_HOST_DEVICE auto multipolygon_segment_count_end();
+
+  /// Returns an iterator to the start of the segment
+  CUSPATIAL_HOST_DEVICE auto segment_begin();
+
+  /// Returns an iterator to the end of the segment
+  CUSPATIAL_HOST_DEVICE auto segment_end();
+
  protected:
   GeometryIterator _geometry_begin;
   GeometryIterator _geometry_end;
@@ -163,6 +189,10 @@ class multipolygon_range {
   RingIterator _ring_end;
   VecIterator _point_begin;
   VecIterator _point_end;
+
+  // TODO: find a better name
+  CUSPATIAL_HOST_DEVICE auto subtracted_ring_begin();
+  CUSPATIAL_HOST_DEVICE auto subtracted_ring_end();
 
  private:
   template <typename IndexType1, typename IndexType2>

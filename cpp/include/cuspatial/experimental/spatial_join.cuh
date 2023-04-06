@@ -20,6 +20,7 @@
 #include <cuspatial/experimental/detail/join/intersection.cuh>
 #include <cuspatial/experimental/detail/join/traversal.cuh>
 #include <cuspatial/experimental/point_quadtree.cuh>
+#include <cuspatial/traits.hpp>
 
 #include <rmm/device_uvector.hpp>
 
@@ -129,7 +130,65 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
   rmm::cuda_stream_view stream        = rmm::cuda_stream_default,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
+/**
+ * @brief Finds the nearest linestring to each point in a quadrant, and computes the distances
+ * between each point and linestring.
+ *
+ * Uses the (linestring, quadrant) pairs returned by `cuspatial::join_quadtree_and_bounding_boxes`
+ * to ensure distances are computed only for the points in the same quadrant as each linestring.
+ *
+ * @param linestring_quad_pairs cudf table of (linestring, quadrant) index pairs returned by
+ * `cuspatial::join_quadtree_and_bounding_boxes`
+ * @param quadtree cudf table representing a quadtree (key, level, is_internal_node, length,
+ * offset).
+ * @param point_indices Sorted point indices returned by `cuspatial::quadtree_on_points`
+ * @param point_x x-coordinates of points to test
+ * @param point_y y-coordinates of points to test
+ * @param linestring_offsets Begin indices of the first point in each linestring (i.e. prefix-sum)
+ * @param linestring_points_x Linestring point x-coordinates
+ * @param linestring_points_y Linestring point y-coordinates
+ * @param mr The optional resource to use for output device memory allocations.
+ *
+ * @throw cuspatial::logic_error If the linestring_quad_pairs table is malformed.
+ * @throw cuspatial::logic_error If the quadtree table is malformed.
+ * @throw cuspatial::logic_error If the number of point indices doesn't match the number of points.
+ * @throw cuspatial::logic_error If any linestring has fewer than two vertices.
+ * @throw cuspatial::logic_error If the types of point and linestring vertices are different.
+ *
+ * @return A cudf table with three columns, where each row represents a point/linestring pair and
+ * the distance between the two:
+ *
+ *   point_offset      - UINT32 column of point indices
+ *   linestring_offset - UINT32 column of linestring indices
+ *   distance          - FLOAT or DOUBLE column (based on input point data type) of distances
+ *                       between each point and linestring
+ *
+ * @note The returned point and linestring indices are offsets into the `point_indices` and
+ * `linestring_quad_pairs` inputs, respectively.
+ *
+ **/
+template <class LinestringIndexIterator,
+          class QuadIndexIterator,
+          class PointIndexIterator,
+          class PointIterator,
+          class MultiLinestringRange,
+          typename IndexType = iterator_value_type<PointIndexIterator>,
+          typename T         = iterator_vec_base_type<PointIterator>>
+std::tuple<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>, rmm::device_uvector<T>>
+quadtree_point_to_nearest_linestring(
+  LinestringIndexIterator linestring_indices_first,
+  LinestringIndexIterator linestring_indices_last,
+  QuadIndexIterator quad_indices_first,
+  point_quadtree_ref quadtree,
+  PointIndexIterator point_indices_first,
+  PointIndexIterator point_indices_last,
+  PointIterator points_first,
+  MultiLinestringRange linestrings,
+  rmm::cuda_stream_view stream        = rmm::cuda_stream_default,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
 }  // namespace cuspatial
 
 #include <cuspatial/experimental/detail/quadtree_bbox_filtering.cuh>
 #include <cuspatial/experimental/detail/quadtree_point_in_polygon.cuh>
+#include <cuspatial/experimental/detail/quadtree_point_to_nearest_linestring.cuh>

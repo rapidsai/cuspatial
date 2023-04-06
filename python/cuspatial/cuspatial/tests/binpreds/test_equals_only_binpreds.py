@@ -106,8 +106,8 @@ def test_3_linestrings_equals_3_linestrings_one_equal(lhs):
 
 
 def test_10_linestrings_geom_equals_10_linestrings(linestring_generator):
-    gpdlines1 = gpd.GeoSeries([*linestring_generator(11, 5)])
-    gpdlines2 = gpd.GeoSeries([*linestring_generator(11, 5)])
+    gpdlines1 = gpd.GeoSeries([*linestring_generator(10, 5)])
+    gpdlines2 = gpd.GeoSeries([*linestring_generator(10, 5)])
     lines1 = cuspatial.from_geopandas(gpdlines1)
     lines2 = cuspatial.from_geopandas(gpdlines2)
     got = lines1.geom_equals(lines2)
@@ -730,50 +730,6 @@ def test_linestring_orders():
     got = linestring1.geom_equals(linestring2)
     expected = gpdlinestring1.geom_equals(gpdlinestring2)
     pd.testing.assert_series_equal(expected, got.to_pandas())
-
-
-def test_internal_reversed_linestrings():
-    linestring1 = cuspatial.GeoSeries(
-        [
-            LineString([(0, 0), (1, 1), (1, 0), (0, 0)]),
-        ]
-    )
-    linestring2 = cuspatial.GeoSeries(
-        [
-            LineString([(0, 0), (1, 0), (1, 1), (0, 0)]),
-        ]
-    )
-    from cuspatial.core.binpreds.binpreds import EqualsBinpred
-
-    bp = EqualsBinpred(linestring1, linestring2)
-    got = bp._reverse_linestrings(
-        linestring1.lines.xy, linestring1.lines.part_offset
-    ).to_pandas()
-    expected = linestring2.lines.xy.to_pandas()
-    pd.testing.assert_series_equal(got, expected)
-
-
-def test_internal_reversed_linestrings_pair():
-    linestring1 = cuspatial.GeoSeries(
-        [
-            LineString([(0, 0), (1, 1), (1, 0), (0, 0)]),
-            LineString([(0, 0), (1, 1), (1, 0)]),
-        ]
-    )
-    linestring2 = cuspatial.GeoSeries(
-        [
-            LineString([(0, 0), (1, 0), (1, 1), (0, 0)]),
-            LineString([(1, 0), (1, 1), (0, 0)]),
-        ]
-    )
-    from cuspatial.core.binpreds.binpreds import EqualsBinpred
-
-    bp = EqualsBinpred(linestring1, linestring2)
-    got = bp._reverse_linestrings(
-        linestring1.lines.xy, linestring1.lines.part_offset
-    ).to_pandas()
-    expected = linestring2.lines.xy.to_pandas()
-    pd.testing.assert_series_equal(got, expected)
 
 
 def test_from_points_xy_large():

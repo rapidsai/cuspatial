@@ -99,6 +99,9 @@ void print_device_range(Iter begin,
   std::cout << post;
 }
 
+/**
+ * @brief
+ */
 template <typename Vector>
 void print_device_vector(Vector const& vec, std::string_view pre = "", std::string_view post = "\n")
 {
