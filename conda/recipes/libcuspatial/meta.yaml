@@ -39,6 +39,7 @@ requirements:
     {% else %}
     - {{ compiler('cuda') }} {{ cuda_version }}
     - cuda-cudart ={{ cuda_version }}
+    - cuda-cudart-dev ={{ cuda_version }}
     - cuda-cupti ={{ cuda_version }}
     {% endif %}
     - cmake {{ cmake_version }}
@@ -50,6 +51,7 @@ requirements:
     - cudatoolkit ={{ cuda_version }}
     {% else %}
     - cuda-cudart ={{ cuda_version }}
+    - cuda-cudart-dev ={{ cuda_version }}
     - cuda-cupti ={{ cuda_version }}
     {% endif %}
     - doxygen
@@ -83,7 +85,6 @@ outputs:
         - cudatoolkit {{ cuda_spec }}
         {% else %}
         - cuda-cudart {{ cuda_spec }}
-        - cuda-cupti ={{ cuda_version }}
         {% endif %}
         - librmm ={{ minor_version }}*=cuda{{ cuda_major }}*
         - libcudf ={{ minor_version }}
