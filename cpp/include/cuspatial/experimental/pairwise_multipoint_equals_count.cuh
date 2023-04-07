@@ -27,22 +27,25 @@ namespace cuspatial {
 /**
  * @brief Compute the number of multipoint pairs that are equal.
  *
- * Given two sets of multipoints, each represented by a range of `vec_2d<T>`s,
- * computes the number of pairs of multipoints that are equal. Example:
+ * Given two arrays of multipoints, each represented by a vector of vec_2ds, and
+ * a vector of counts, this function computes the number of multipoint pairs
+ * that are equal.
  *
- * ```
- * lhs: { {0, 0}, {1, 1}, {2, 2} }
- * rhs: { {0, 0}, {1, 1}, {2, 2} }
- * count: { 1, 1, 1 }
+ * Counts the number of points in the lhs that are contained in the rhs.
+ *
+ * @example
  *
  * lhs: { {0, 0} }
  * rhs: { {0, 0}, {1, 1}, {2, 2}, {3, 3} }
  * count: { 1 }
- *
+
  * lhs: { {0, 0}, {1, 1}, {2, 2}, {3, 3} }
  * rhs: { {0, 0} }
- * count: { 1, 0, 0, 0 }
- * ```
+ * count: { 1 }
+
+ * lhs: { { {3, 3}, {3, 3}, {0, 0} }, { {0, 0}, {1, 1}, {2, 2} }, { {0, 0} } }
+ * rhs: { { {0, 0}, {2, 2}, {1, 1} }, { {2, 2}, {0, 0}, {1, 1} }, { {1, 1} } }
+ * count: { 1, 3, 0 }
  *
  * @note All input iterators must have a `value_type` of `cuspatial::vec_2d<T>`
  * and the output iterator must be able to accept for storage values of type

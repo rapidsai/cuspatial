@@ -68,6 +68,24 @@ TYPED_TEST(PairwiseMultipointEqualsCountTest, EmptyInput)
                      {});
 }
 
+TYPED_TEST(PairwiseMultipointEqualsCountTest, ExampleOne)
+{
+  CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}}}, {{{0, 0}, {1, 1}, {2, 2}, {3, 3}}}, {1});
+}
+
+TYPED_TEST(PairwiseMultipointEqualsCountTest, ExampleTwo)
+{
+  CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}, {1, 1}, {2, 2}, {3, 3}}}, {{{0, 0}}}, {1});
+}
+
+TYPED_TEST(PairwiseMultipointEqualsCountTest, ExampleThree)
+{
+  CUSPATIAL_RUN_TEST(this->run_single,
+                     {{{3, 3}, {3, 3}, {0, 0}}, {{0, 0}, {1, 1}, {2, 2}}, {{0, 0}}},
+                     {{{0, 0}, {2, 2}, {1, 1}}, {{2, 2}, {0, 0}, {1, 1}}, {{1, 1}}},
+                     {1, 3, 0});
+}
+
 TYPED_TEST(PairwiseMultipointEqualsCountTest, OneOneEqual)
 {
   CUSPATIAL_RUN_TEST(this->run_single, {{{0, 0}}}, {{{0, 0}}}, {1});
