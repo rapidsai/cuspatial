@@ -59,11 +59,11 @@ def geotype_tuple(request):
 @pytest.fixture(
     params=[
         "contains_properly",
+        "geom_equals",
+        "intersects",
         "covers",
         "crosses",
         "disjoint",
-        "geom_equals",
-        "intersects",
         "overlaps",
         "touches",
         "within",
