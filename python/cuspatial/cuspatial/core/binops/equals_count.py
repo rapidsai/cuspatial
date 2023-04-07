@@ -23,14 +23,13 @@ def pairwise_multipoint_equals_count(lhs: GeoSeries, rhs: GeoSeries):
 
     Parameters
     ----------
-    multipoint : GeoSeries
+    lhs : GeoSeries
         A GeoSeries of multipoints.
-    multipoint : GeoSeries
+    rhs : GeoSeries
         A GeoSeries of multipoints.
 
     Examples
     --------
-    >>> import cudf
     >>> import cuspatial
     >>> from shapely.geometry import MultiPoint
     >>> p1 = cuspatial.GeoSeries([MultiPoint([Point(0, 0)])])
