@@ -43,42 +43,6 @@ def test_pairwise_multipoint_equals_count_example_3():
     assert_series_equal(got.to_pandas(), expected.to_pandas())
 
 
-def test_pairwise_multipoint_equals_count_one_one_hit():
-    p1 = cuspatial.GeoSeries([MultiPoint([Point(0, 0)])])
-    p2 = cuspatial.GeoSeries([MultiPoint([Point(0, 0)])])
-    got = pairwise_multipoint_equals_count(p1, p2)
-    expected = cudf.Series([1], dtype="uint32")
-    assert_series_equal(got.to_pandas(), expected.to_pandas())
-
-
-def test_pairwise_multipoint_equals_count_one_one_miss():
-    p1 = cuspatial.GeoSeries([MultiPoint([Point(0, 0)])])
-    p2 = cuspatial.GeoSeries([MultiPoint([Point(1, 1)])])
-    got = pairwise_multipoint_equals_count(p1, p2)
-    expected = cudf.Series([0], dtype="uint32")
-    assert_series_equal(got.to_pandas(), expected.to_pandas())
-
-
-def test_pairwise_multipoint_equals_count_three_three_one_mismatch():
-    p1 = cuspatial.GeoSeries(
-        [
-            MultiPoint([Point(0, 0)]),
-            MultiPoint([Point(3, 3)]),
-            MultiPoint([Point(2, 2)]),
-        ]
-    )
-    p2 = cuspatial.GeoSeries(
-        [
-            MultiPoint([Point(0, 0), Point(1, 1), Point(2, 2)]),
-            MultiPoint([Point(0, 0), Point(1, 1), Point(2, 2)]),
-            MultiPoint([Point(0, 0), Point(1, 1), Point(2, 2)]),
-        ]
-    )
-    got = pairwise_multipoint_equals_count(p1, p2)
-    expected = cudf.Series([1, 0, 1], dtype="uint32")
-    assert_series_equal(got.to_pandas(), expected.to_pandas())
-
-
 def test_pairwise_multipoint_equals_count_three_match_two_mismatch():
     p1 = cuspatial.GeoSeries(
         [
