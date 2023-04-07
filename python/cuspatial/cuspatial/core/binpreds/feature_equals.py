@@ -31,6 +31,15 @@ class EqualsPredicateBase(BinPred, Generic[GeoSeries]):
     """Base class for binary predicates that are defined in terms of the equals
     basic predicate.  `EqualsPredicateBase` implements utility functions that
     are used within many equals-related binary predicates.
+
+    Used by:
+    (Point, Point)
+    (Point, Polygon)
+    (LineString, Polygon)
+    (Polygon, Point)
+    (Polygon, MultiPoint)
+    (Polygon, LineString)
+    (Polygon, Polygon)
     """
 
     def _offset_equals(self, lhs, rhs):
@@ -320,6 +329,12 @@ class LineStringLineStringEquals(PolygonComplexEquals):
         )
 
 
+class LineStringPointEquals(EqualsPredicateBase):
+    def _preprocess(self, lhs, rhs):
+        """A LineString cannot be equal to a point. So, return False."""
+        return _false_series(len(lhs))
+
+
 """DispatchDict for Equals operations."""
 DispatchDict = {
     (Point, Point): EqualsPredicateBase,
@@ -330,7 +345,7 @@ DispatchDict = {
     (MultiPoint, MultiPoint): MultiPointMultiPointEquals,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
-    (LineString, Point): NotImplementedPredicate,
+    (LineString, Point): LineStringPointEquals,
     (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): LineStringLineStringEquals,
     (LineString, Polygon): EqualsPredicateBase,
