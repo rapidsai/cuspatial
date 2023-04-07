@@ -48,6 +48,7 @@ requirements:
     - cudatoolkit ={{ cuda_version }}
     {% else %}
     - cuda-cudart ={{ cuda_version }}
+    - cuda-cupti ={{ cuda_version }}
     {% endif %}
     - doxygen
     - gmock {{ gtest_version }}
@@ -69,6 +70,7 @@ outputs:
         - {{ compiler('cuda11') }}
         {% else %}
         - {{ compiler('cuda') }}
+        - cuda-cupti ={{ cuda_version }}
         {% endif %}
     requirements:
       build:
@@ -79,6 +81,7 @@ outputs:
         - cudatoolkit {{ cuda_spec }}
         {% else %}
         - cuda-cudart {{ cuda_spec }}
+        - cuda-cupti ={{ cuda_version }}
         {% endif %}
         - librmm ={{ minor_version }}*=cuda{{ cuda_major }}*
         - libcudf ={{ minor_version }}
@@ -113,6 +116,7 @@ outputs:
         - cudatoolkit {{ cuda_spec }}
         {% else %}
         - cuda-cudart {{ cuda_spec }}
+        - cuda-cupti ={{ cuda_version }}
         {% endif %}
         - gmock {{ gtest_version }}
         - gtest {{ gtest_version }}
