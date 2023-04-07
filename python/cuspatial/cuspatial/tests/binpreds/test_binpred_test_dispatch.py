@@ -11,6 +11,9 @@ from binpred_test_dispatch import (  # noqa: F401
     test_type,
 )
 
+"""Decorator function that skips a test if an exception is throw
+by the test function. Will be removed when all tests are passing."""
+
 
 def skip_on_exception(func):
     @wraps(func)
@@ -23,9 +26,12 @@ def skip_on_exception(func):
     return wrapper
 
 
-@skip_on_exception
+"""Parameterized test fixture that runs a binary predicate test
+for each combination of geometry types and binary predicates."""
+
+
+@skip_on_exception  # TODO: Remove when all tests are passing
 def test_fixtures(predicate, geotype_tuple, test_type):  # noqa: F811
-    """Test that the fixture data is correct."""
     (lhs, rhs) = feature_test_dispatch(
         geotype_tuple[0], geotype_tuple[1], test_type
     )
@@ -48,5 +54,6 @@ def test_fixtures(predicate, geotype_tuple, test_type):  # noqa: F811
         print(f"test_type: {test_type}")
         print(f"expected: {expected}")
         print(f"got: {got}")
-        raise AssertionError(e)
+        raise AssertionError(e)  # TODO: Remove when all tests are passing.
+        # TODO: Uncomment when all tests are passing
         # pytest.fail(f"Assertion failed: {e}")
