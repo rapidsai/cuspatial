@@ -15,6 +15,7 @@
  */
 
 #include <cuspatial_test/vector_equality.hpp>
+#include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/experimental/point_quadtree.cuh>
 #include <cuspatial/vec_2d.hpp>
@@ -29,7 +30,7 @@ struct QuadtreeOnPointIndexingTest : public ::testing::Test {
             const int32_t max_size,
             std::vector<uint32_t> const& expected_key,
             std::vector<uint8_t> const& expected_level,
-            std::vector<bool> const& expected_is_internal_node,
+            thrust::host_vector<bool> const& expected_is_internal_node,
             std::vector<uint32_t> const& expected_length,
             std::vector<uint32_t> const& expected_offset)
   {
@@ -96,7 +97,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_single)
                      max_size,
                      {0},
                      {0},
-                     {false},
+                     cuspatial::test::make_host_vector({false}),
                      {1},
                      {0});
 }
@@ -119,7 +120,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_two)
                      max_size,
                      {0, 3},
                      {0, 0},
-                     {false, false},
+                     cuspatial::test::make_host_vector({false, false}),
                      {1, 1},
                      {0, 1});
 }
@@ -141,7 +142,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
                      max_size,
                      {3, 12, 15},
                      {0, 1, 1},
-                     {true, false, false},
+                     cuspatial::test::make_host_vector({true, false, false}),
                      {2, 1, 1},
                      {1, 0, 1});
 }
@@ -202,7 +203,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_small)
     max_size,
     {0, 1, 2, 0, 1, 3, 4, 7, 5, 6, 13, 14, 28, 31},
     {0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2},
-    {true, true, false, false, true, true, false, true, false, false, false, false, false, false},
+    cuspatial::test::make_host_vector({true, true, false, false, true, true, false, true, false, false, false, false, false, false}),
     {3, 2, 11, 7, 2, 2, 9, 2, 9, 7, 5, 8, 8, 7},
     {3, 6, 60, 0, 8, 10, 36, 12, 7, 16, 23, 28, 45, 53});
 }

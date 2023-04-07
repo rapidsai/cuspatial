@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cuspatial_test/vector_factories.cuh>
 #include <cuspatial/detail/utility/floating_point.cuh>
 
 #include <limits>
@@ -22,6 +23,7 @@
 #include <gtest/gtest.h>
 
 using namespace cuspatial;
+using namespace cuspatial::test;
 
 template <typename T>
 struct ULPFloatingPointEquivalenceTest : public ::testing::Test {
@@ -64,7 +66,7 @@ void run_test(T base)
   rmm::device_vector<T> d_first(first);
   rmm::device_vector<T> d_second(second);
 
-  std::vector<bool> expected{true, false, true, false};
+  auto expected = make_host_vector({true, false, true, false});
   rmm::device_vector<bool> got(4);
 
   thrust::transform(
