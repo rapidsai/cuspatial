@@ -1,5 +1,7 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
+from typing import TYPE_CHECKING
+
 import cudf
 from cudf.core.column import arange, build_list_column
 
@@ -8,15 +10,17 @@ from cuspatial._lib.intersection import (
 )
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.geoseries import GeoSeries
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     empty_geometry_column,
 )
 
+if TYPE_CHECKING:
+    from cuspatial.core.geoseries import GeoSeries
+
 
 def pairwise_linestring_intersection(
-    linestrings1: GeoSeries, linestrings2: GeoSeries
+    linestrings1: "GeoSeries", linestrings2: "GeoSeries"
 ):
     """
     Compute the intersection of two GeoSeries of linestrings.
@@ -44,6 +48,8 @@ def pairwise_linestring_intersection(
         - A DataFrame of the ids of the linestrings and segments that
           the intersection results came from.
     """
+
+    from cuspatial.core.geoseries import GeoSeries
 
     if len(linestrings1) == 0 and len(linestrings2) == 0:
         return (
@@ -97,6 +103,8 @@ def pairwise_linestring_intersection(
     meta = GeoMeta(
         {"input_types": types_buffer, "union_offsets": offset_buffer}
     )
+    from cuspatial.core.geoseries import GeoSeries
+
     geometries = GeoSeries(
         GeoColumn(
             (

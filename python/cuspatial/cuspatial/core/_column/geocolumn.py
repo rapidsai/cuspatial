@@ -1,4 +1,6 @@
-# Copyright (c) 2021-2022 NVIDIA CORPORATION
+# Copyright (c) 2021-2023 NVIDIA CORPORATION
+
+from enum import Enum
 from functools import cached_property
 from typing import Tuple, TypeVar
 
@@ -10,6 +12,15 @@ from cudf.core.column import ColumnBase, arange, as_column, build_list_column
 
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.utils.column_utils import empty_geometry_column
+
+
+class ColumnType(Enum):
+    MIXED = 0
+    POINT = 1
+    MULTIPOINT = 2
+    LINESTRING = 3
+    POLYGON = 4
+
 
 T = TypeVar("T", bound="GeoColumn")
 

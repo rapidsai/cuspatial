@@ -195,9 +195,8 @@ class multilinestring_range {
   VecIterator _point_begin;
   VecIterator _point_end;
 
-  // TODO: find a better name
-  CUSPATIAL_HOST_DEVICE auto subtracted_part_begin();
-  CUSPATIAL_HOST_DEVICE auto subtracted_part_end();
+  CUSPATIAL_HOST_DEVICE auto segment_offset_begin();
+  CUSPATIAL_HOST_DEVICE auto segment_offset_end();
 
  private:
   /// @internal

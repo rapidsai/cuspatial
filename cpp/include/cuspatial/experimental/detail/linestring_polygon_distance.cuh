@@ -28,8 +28,8 @@
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
-#include <libcudf/rapids/thrust/functional.h>
 #include <thrust/fill.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/logical.h>
@@ -91,7 +91,7 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
     // Retrieve the number of segments in multilinestrings[geometry_id]
     auto num_segment_this_multilinestring =
       multilinestrings.multilinestring_segment_count_begin()[geometry_id];
-    // The segment id from the multilinestring this thread is compmuting (local_id + global_offset)
+    // The segment id from the multilinestring this thread is computing (local_id + global_offset)
     auto multilinestring_segment_id =
       local_idx % num_segment_this_multilinestring + multilinestrings_segment_offsets[geometry_id];
     // The segment id from the multipolygon this thread is computing (local_id + global_offset)
@@ -146,20 +146,25 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
   // Compute offsets to the first segment of each multilinestring and multipolygon
   auto multilinestring_segment_offsets =
     rmm::device_uvector<index_t>(multilinestrings.num_multilinestrings() + 1, stream);
+  detail::zero_data_async(
+    multilinestring_segment_offsets.begin(), multilinestring_segment_offsets.end(), stream);
+
   auto multipolygon_segment_offsets =
     rmm::device_uvector<index_t>(multipolygons.num_multipolygons() + 1, stream);
+  detail::zero_data_async(
+    multipolygon_segment_offsets.begin(), multipolygon_segment_offsets.end(), stream);
 
-  thrust::exclusive_scan(
-    rmm::exec_policy(stream),
-    multilinestrings.multilinestring_segment_count_begin(),
-    multilinestrings.multilinestring_segment_count_begin() + multilinestring_segment_offsets.size(),
-    multilinestring_segment_offsets.begin());
+  thrust::inclusive_scan(rmm::exec_policy(stream),
+                         multilinestrings.multilinestring_segment_count_begin(),
+                         multilinestrings.multilinestring_segment_count_begin() +
+                           multilinestrings.num_multilinestrings(),
+                         thrust::next(multilinestring_segment_offsets.begin()));
 
-  thrust::exclusive_scan(
+  thrust::inclusive_scan(
     rmm::exec_policy(stream),
     multipolygons.multipolygon_segment_count_begin(),
-    multipolygons.multipolygon_segment_count_begin() + multipolygon_segment_offsets.size(),
-    multipolygon_segment_offsets.begin());
+    multipolygons.multipolygon_segment_count_begin() + multipolygons.num_multipolygons(),
+    thrust::next(multipolygon_segment_offsets.begin()));
 
   // Initialize output range
   thrust::fill(rmm::exec_policy(stream),
