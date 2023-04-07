@@ -105,6 +105,9 @@ std::unique_ptr<cudf::column> pairwise_multipoint_equals_count(geometry_column_v
   CUSPATIAL_EXPECTS(lhs.coordinate_type() == rhs.coordinate_type(),
                     "Input geometries must have the same coordinate data types.");
 
+  CUSPATIAL_EXPECTS(lhs.size() == rhs.size(),
+                    "Input geometries must have the same number of points.");
+
   return multi_geometry_double_dispatch<detail::pairwise_multipoint_equals_count>(
     lhs.collection_type(), rhs.collection_type(), lhs, rhs, rmm::cuda_stream_default, mr);
 }

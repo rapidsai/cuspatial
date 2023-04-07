@@ -65,6 +65,19 @@ TYPED_TEST(PairwiseMultipointEqualsCountTestTyped, Empty)
   expect_columns_equivalent(expected, output->view(), verbosity);
 }
 
+TYPED_TEST(PairwiseMultipointEqualsCountTestTyped, InvalidLength)
+{
+  using T           = TypeParam;
+  auto [ptype, lhs] = make_point_column<T>({0, 1}, {0.0, 0.0}, this->stream());
+  auto [pytpe, rhs] = make_point_column<T>({0, 1, 2}, {1.0, 1.0, 0.0, 0.0}, this->stream());
+
+  auto lhs_gcv = geometry_column_view(lhs->view(), ptype, geometry_type_id::POINT);
+  auto rhs_gcv = geometry_column_view(rhs->view(), ptype, geometry_type_id::POINT);
+
+  EXPECT_THROW(auto output = cuspatial::pairwise_multipoint_equals_count(lhs_gcv, rhs_gcv),
+               cuspatial::logic_error);
+}
+
 TEST_F(PairwiseMultipointEqualsCountTestUntyped, InvalidTypes)
 {
   auto [ptype, lhs] = make_point_column<float>(std::initializer_list<float>{}, this->stream());
