@@ -488,7 +488,7 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, OnePairMultiPointOnePolygon2)
 }
 
 // Multipoint tests: 2 multipoints - 2 polygons.
-TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairMultiPointOnePolygon2)
+TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairMultiPointOnePolygon)
 {
   using T = TypeParam;
   using P = vec_2d<T>;
@@ -501,6 +501,21 @@ TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairMultiPointOnePolygon2)
     {0, 5, 9},
     {P{-1, -1}, P{1, -1}, P{1, 1}, P{-1, 1}, P{-1, -1}, P{-1, 1}, P{1, 1}, P{0, -1}, P{-1, 1}},
     {1.0, 0.0});
+}
+
+// Multipoint tests: 2 multipoints - 2 polygons.
+TYPED_TEST(PairwisePointPolygonDistanceTest, TwoPairMultiPointOnePolygon2)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_single,
+                     {{P{0, 2}}, {P{2, 3}, P{2, 1}}},
+                     {0, 1, 2},
+                     {0, 1, 2},
+                     {0, 4, 8},
+                     {P{0, 0}, P{2, 0}, P{1, 2}, P{0, 0}, P{2, 0}, P{3, 2}, P{1, 2}, P{2, 0}},
+                     {T{0.894427190999916}, 0.0});
 }
 
 // Large distance test
