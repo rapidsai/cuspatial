@@ -18,13 +18,34 @@ binary predicates.
 
 """The following fixtures are used to generate tests for
 each possible combination of geometry types and binary
-predicates. Each fixture returns a tuple of the form
-(geotype, geotype, predicate, expected_result). The
+predicates. The fixtures are combined in the test function
+in `test_binpreds_test_dispatch.py` to make the following
+tuple: (predicate, geotype, geotype, expected_result). The
 geotype fixtures are used to generate the first two
 elements of the tuple. The predicate fixture is used to
 generate the third element of the tuple. The expected_result
 fixture is used to generate the fourth element of the tuple.
 """
+
+"""The collection of all possible binary predicates"""
+
+
+@pytest.fixture(
+    params=[
+        "contains_properly",
+        "geom_equals",
+        "intersects",
+        "covers",
+        "crosses",
+        "disjoint",
+        "overlaps",
+        "touches",
+        "within",
+    ]
+)
+def predicate(request):
+    return request.param
+
 
 """The collection of all possible geometry types"""
 
@@ -53,24 +74,11 @@ def geotype_tuple(request):
     return request.param
 
 
-"""The collection of all possible binary predicates"""
-
-
-@pytest.fixture(
-    params=[
-        "contains_properly",
-        "geom_equals",
-        "intersects",
-        "covers",
-        "crosses",
-        "disjoint",
-        "overlaps",
-        "touches",
-        "within",
-    ]
-)
-def predicate(request):
-    return request.param
+"""The collection of test types. This section is dispatched based
+on the feature type. Each feature pairing has a specific set of
+comparisons that need to be performed to cover the entire test
+space. This section will be replaced with specific feature
+representations that cover all possible geometric combinations."""
 
 
 @pytest.fixture(
@@ -87,6 +95,7 @@ def test_type(request):
     return request.param
 
 
+"""Named features for each feature dispatch."""
 points_dispatch = {
     "feature1": Point(0.0, 0.0),
     "feature2": Point(1.0, 1.0),
@@ -139,8 +148,14 @@ feature_dispatch = {
 }
 
 
+"""Feature type dispatch function."""
+
+
 def get_feature(feature_type, feature_name):
     return feature_dispatch[feature_type][feature_name]
+
+
+"""Test type dispatch functions."""
 
 
 def single_equal(type0, type1):
@@ -209,7 +224,8 @@ def interior_overlap(type0, type1):
     )
 
 
-# Build a nested dictionary for the dispatch system
+"""Dictionary for dispatching test types to functions that return
+test data."""
 predicate_dispatch = {
     "single_equal": single_equal,
     "single_disjoint": single_disjoint,
@@ -218,6 +234,9 @@ predicate_dispatch = {
     "border_overlap": border_overlap,
     "interior_overlap": interior_overlap,
 }
+
+
+"""Dispatch function for test types."""
 
 
 def feature_test_dispatch(type0, type1, test_type):
