@@ -64,8 +64,9 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonOneRing)
   auto poly_point =
     this->make_device_points({{-1.0, -1.0}, {1.0, -1.0}, {1.0, 1.0}, {-1.0, 1.0}, {-1.0, -1.0}});
 
-  auto got      = rmm::device_vector<int32_t>(1);
-  auto expected = cuspatial::test::make_host_vector({false, false, false, false, true, true, true, true});
+  auto got = rmm::device_vector<int32_t>(1);
+  auto expected =
+    cuspatial::test::make_host_vector({false, false, false, false, true, true, true, true});
 
   for (size_t i = 0; i < point_list.size(); ++i) {
     auto point = this->make_device_points({{point_list[i][0], point_list[i][1]}});

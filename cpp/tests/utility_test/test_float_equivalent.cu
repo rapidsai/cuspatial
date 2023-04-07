@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <cuspatial_test/vector_factories.cuh>
 #include <cuspatial/detail/utility/floating_point.cuh>
+#include <cuspatial_test/vector_factories.cuh>
 
 #include <limits>
 #include <rmm/device_vector.hpp>
