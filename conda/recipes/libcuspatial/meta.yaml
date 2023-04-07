@@ -40,6 +40,7 @@ requirements:
     - {{ compiler('cuda') }} {{ cuda_version }}
     - cuda-cudart ={{ cuda_version }}
     - cuda-cudart-dev ={{ cuda_version }}
+    - cuda-cudart-static ={{ cuda_version }}
     - cuda-cupti ={{ cuda_version }}
     {% endif %}
     - cmake {{ cmake_version }}
@@ -52,6 +53,7 @@ requirements:
     {% else %}
     - cuda-cudart ={{ cuda_version }}
     - cuda-cudart-dev ={{ cuda_version }}
+    - cuda-cudart-static ={{ cuda_version }}
     - cuda-cupti ={{ cuda_version }}
     {% endif %}
     - doxygen
