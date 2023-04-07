@@ -84,6 +84,16 @@ dependencies:
               cuda: "11.8"
             packages:
               - nvcc_linux-aarch64=11.8
+          - matrix:
+              arch: x86_64
+              cuda: "12.0"
+            packages:
+              - cuda-nvcc_linux-64=12.0
+          - matrix:
+              arch: aarch64
+              cuda: "12.0"
+            packages:
+              - cuda-nvcc_linux-aarch64=12.0
   build_python:
     common:
       - output_types: [conda, requirements]
@@ -150,6 +160,15 @@ dependencies:
               cuda: "11.2"
             packages:
               - cudatoolkit=11.2
+          - matrix:
+              cuda: "12.0"
+            packages:
+              - cuda-cudart=12.0
+              - cuda-cudart-dev=12.0
+              - cuda-cudart-static=12.0
+              - cuda-nvrtc=12.0
+              - cuda-nvrtc-dev=12.0
+              - cuda-nvrtc-static=12.0
   develop:
     common:
       - output_types: [conda, requirements]
