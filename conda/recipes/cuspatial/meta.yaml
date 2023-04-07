@@ -33,21 +33,13 @@ build:
     - SCCACHE_S3_KEY_PREFIX=cuspatial-linux64 # [linux64]
     - SCCACHE_S3_USE_SSL
   ignore_run_exports_from:
-    {% if cuda_major == "11" %}
-    - {{ compiler('cuda11') }} {{ cuda_version }}
-    {% else %}
-    - {{ compiler('cuda') }} {{ cuda_version }}
-    {% endif %}
+    - {{ compiler('cuda') }}
 
 requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    {% if cuda_major == "11" %}
-    - {{ compiler('cuda11') }} {{ cuda_version }}
-    {% else %}
     - {{ compiler('cuda') }} {{ cuda_version }}
-    {% endif %}
     - ninja
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
