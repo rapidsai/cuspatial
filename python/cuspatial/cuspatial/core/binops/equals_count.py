@@ -10,9 +10,16 @@ from cuspatial.utils.column_utils import contains_only_multipoints
 
 
 def pairwise_multipoint_equals_count(lhs: GeoSeries, rhs: GeoSeries):
-    """
-    Compute the count of times that each multipoint in the first GeoSeries
-    equals each multipoint in the second GeoSeries.
+    """Compute the number of points in each multipoint in the lhs that are
+    equal to points in the corresponding multipoint in the rhs.
+
+    For each point that exists in a multipoint in the lhs, search the
+    corresponding multipoint in the rhs for a point that is equal to the
+    point in the lhs. If a point is found, increment the count for that
+    multipoint in the lhs.
+
+    Counts the number of points in each multipoint in the lhs that are
+    equal to points in the corresponding multipoint in the rhs.
 
     Parameters
     ----------
@@ -21,10 +28,48 @@ def pairwise_multipoint_equals_count(lhs: GeoSeries, rhs: GeoSeries):
     multipoint : GeoSeries
         A GeoSeries of multipoints.
 
+    Examples
+    --------
+    >>> import cudf
+    >>> import cuspatial
+    >>> from shapely.geometry import MultiPoint
+    >>> p1 = cuspatial.GeoSeries([MultiPoint([Point(0, 0)])])
+    >>> p2 = cuspatial.GeoSeries([MultiPoint([Point(0, 0)])])
+    >>> cuspatial.pairwise_multipoint_equals_count(p1, p2)
+    0    1
+    dtype: uint32
+
+    >>> p1 = cuspatial.GeoSeries([MultiPoint([Point(0, 0)])])
+    >>> p2 = cuspatial.GeoSeries([MultiPoint([Point(1, 1)])])
+    >>> cuspatial.pairwise_multipoint_equals_count(p1, p2)
+    0    0
+    dtype: uint32
+
+    >>> p1 = cuspatial.GeoSeries(
+    ...     [
+    ...         MultiPoint([Point(0, 0)]),
+    ...         MultiPoint([Point(3, 3)]),
+    ...         MultiPoint([Point(2, 2)]),
+    ...     ]
+    ... )
+    >>> p2 = cuspatial.GeoSeries(
+    ...     [
+    ...         MultiPoint([Point(2, 2), Point(0, 0), Point(1, 1)]),
+    ...         MultiPoint([Point(0, 0), Point(1, 1), Point(2, 2)]),
+    ...         MultiPoint([Point(1, 1), Point(2, 2), Point(0, 0)]),
+    ...     ]
+    ... )
+    >>> cuspatial.pairwise_multipoint_equals_count(p1, p2)
+    0    1
+    1    0
+    2    1
+    dtype: uint32
+
     Returns
     -------
     count : cudf.Series
-        A Series of counts of multipoint equality.
+        A Series of the number of points in each multipoint in the lhs that
+        are equal to points in the corresponding multipoint in the rhs.
     """
     if len(lhs) == 0:
         return cudf.Series([])
