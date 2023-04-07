@@ -2,14 +2,14 @@
 
 import cudf
 
-from cuspatial._lib.allpairs_multipoint_equals_count import (
-    allpairs_multipoint_equals_count as c_allpairs_multipoint_equals_count,
+from cuspatial._lib.pairwise_multipoint_equals_count import (
+    pairwise_multipoint_equals_count as c_pairwise_multipoint_equals_count,
 )
 from cuspatial.core.geoseries import GeoSeries
 from cuspatial.utils.column_utils import contains_only_multipoints
 
 
-def allpairs_multipoint_equals_count(lhs: GeoSeries, rhs: GeoSeries):
+def pairwise_multipoint_equals_count(lhs: GeoSeries, rhs: GeoSeries):
     """
     Compute the count of times that each multipoint in the first GeoSeries
     equals each multipoint in the second GeoSeries.
@@ -32,8 +32,8 @@ def allpairs_multipoint_equals_count(lhs: GeoSeries, rhs: GeoSeries):
     if any(not contains_only_multipoints(s) for s in [lhs, rhs]):
         raise ValueError("Input GeoSeries must contain only multipoints.")
 
-    result = c_allpairs_multipoint_equals_count(
-        lhs.multipoints.xy._column, rhs.multipoints.xy._column
-    )
+    lhs_column = lhs._column.mpoints._column
+    rhs_column = rhs._column.mpoints._column
+    result = c_pairwise_multipoint_equals_count(lhs_column, rhs_column)
 
     return cudf.Series(result)

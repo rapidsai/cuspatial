@@ -28,33 +28,43 @@ namespace cuspatial {
 
 /**
  * @addtogroup spatial
- * @brief Compute the number of pairs of multipoints that are equal.
+ * @brief Compute the number of points within pairs of multipoints that are equal.
  *
- * Given two columns of interleaved multipoint coordinates, returns a column
- * containing the count of points in each multipoint from `lhs` that are equal
- * to a point in the corresponding multipoint in `rhs`.
+ * Given two columns of multipoint arrays, returns a column containing the count
+ * of points in each multipoint from `lhs` that are equal to a point in the
+ * corresponding multipoint in `rhs`.
  *
- * @param lhs Geometry column with a multipoint of interleaved coordinates
- * @param rhs Geometry column with a multipoint of interleaved coordinates
+ * @param lhs Geometry column of multipoints with interleaved coordinates
+ * @param rhs Geometry column of multipoints with interleaved coordinates
  * @param mr Device memory resource used to allocate the returned column.
- * @return A column of size len(lhs) containing the count that each point of
- * the multipoint in `lhs` is equal to a point in `rhs`.
+ * @return A column of size len(lhs) containing the number of points in each
+ * multipoint from `lhs` that are equal to a point in the corresponding
+ * multipoint in `rhs`.
  *
  * @throw cuspatial::logic_error if `lhs` and `rhs` have different coordinate
- * types.
+ * types or lengths.
  *
  * @example
  * ```
- * lhs: 0, 0, 1, 1, 2, 2
- * rhs: 0, 0, 1, 1, 2, 2
- * result: 1, 1, 1
- *
- * lhs: 0, 0, 1, 1, 2, 2
- * rhs: 0, 0
- * result: 1, 0, 0
- */
+ * lhs: MultiPoint(0, 0)
+ * rhs: MultiPoint((0, 0), (1, 1), (2, 2), (3, 3))
+ * result: 1
 
-/**
+ * lhs: MultiPoint((0, 0), (1, 1), (2, 2), (3, 3))
+ * rhs: MultiPoint((0, 0))
+ * result: 1
+
+ * lhs: (
+ *        MultiPoint((3, 3), (3, 3), (0, 0)),
+ *        MultiPoint((0, 0), (1, 1), (2, 2)),
+ *        MultiPoint((0, 0))
+ *      )
+ * rhs: (
+ *        MultiPoint((0, 0), (2, 2), (1, 1)),
+ *        MultiPoint((2, 2), (0, 0), (1, 1)),
+ *        MultiPoint((1, 1))
+ *      )
+ * result: ( 1, 3, 0 )
  */
 std::unique_ptr<cudf::column> pairwise_multipoint_equals_count(
   geometry_column_view const& lhs,

@@ -13,7 +13,7 @@
 # =============================================================================
 
 set(cython_sources
-    allpairs_multipoint_equals_count.pyx
+    pairwise_multipoint_equals_count.pyx
     distance.pyx
     hausdorff.pyx
     intersection.pyx
