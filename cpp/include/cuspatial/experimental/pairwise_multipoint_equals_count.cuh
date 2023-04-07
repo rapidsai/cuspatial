@@ -51,14 +51,14 @@ namespace cuspatial {
  * and the output iterator must be able to accept for storage values of type
  * `uint32_t`.
  *
- * @param[in]  lhs_first multipoint_ref of first set of points
- * @param[in]  rhs_first multipoint_ref of second set of points
+ * @param[in]  lhs_first multipoint_range of first array of multipoints
+ * @param[in]  rhs_first multipoint_range of second array of multipoints
  * @param[out] count_first: beginning of range of uint32_t counts
  * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
  *
- * @tparam MultiPointRefA Iterator over multipoint vec_2ds. Must meet the requirements of
+ * @tparam MultiPointRangeA Iterator over multipoints. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam MultiPointRefB Iterator over multipoint vec_2ds. Must meet the requirements of
+ * @tparam MultiPointRangeB Iterator over multipoints. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
  * @tparam OutputIt Iterator over uint32_t. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
