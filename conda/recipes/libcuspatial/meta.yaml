@@ -38,14 +38,6 @@ requirements:
     - {{ compiler('cuda11') }} {{ cuda_version }}
     {% else %}
     - {{ compiler('cuda') }} {{ cuda_version }}
-    - cuda-cudart ={{ cuda_version }}
-    - cuda-cudart-dev ={{ cuda_version }}
-    - cuda-cudart-static ={{ cuda_version }}
-    - cuda-cupti ={{ cuda_version }}
-    - cuda-driver-dev {{ cuda_driver_version }}
-    - libcufile         # [linux64]
-    - libcufile-dev     # [linux64]
-    - libcufile-static  # [linux64]
     {% endif %}
     - cmake {{ cmake_version }}
     - ninja
@@ -56,8 +48,6 @@ requirements:
     - cudatoolkit ={{ cuda_version }}
     {% else %}
     - cuda-cudart ={{ cuda_version }}
-    - cuda-cudart-dev ={{ cuda_version }}
-    - cuda-cudart-static ={{ cuda_version }}
     {% endif %}
     - doxygen
     - gmock {{ gtest_version }}
@@ -89,7 +79,6 @@ outputs:
         - cudatoolkit {{ cuda_spec }}
         {% else %}
         - cuda-cudart {{ cuda_spec }}
-        - cuda-nvrtc {{ cuda_spec }}
         {% endif %}
         - librmm ={{ minor_version }}*=cuda{{ cuda_major }}*
         - libcudf ={{ minor_version }}
@@ -124,12 +113,6 @@ outputs:
         - cudatoolkit {{ cuda_spec }}
         {% else %}
         - cuda-cudart {{ cuda_spec }}
-        - cuda-cudart-dev {{ cuda_spec }}
-        - cuda-cudart-static {{ cuda_spec }}
-        - cuda-cupti {{ cuda_spec }}
-        - libcufile         # [linux64]
-        - libcufile-dev     # [linux64]
-        - libcufile-static  # [linux64]
         {% endif %}
         - gmock {{ gtest_version }}
         - gtest {{ gtest_version }}
