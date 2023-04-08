@@ -59,7 +59,7 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonOneRing)
   auto expected = std::vector<int>{false, false, false, false, true, true, true, true};
 
   for (size_t i = 0; i < point_list.size(); ++i) {
-    auto point = make_device_vector({{point_list[i][0], point_list[i][1]}});
+    auto point = make_device_vector<vec_2d<T>>({{point_list[i][0], point_list[i][1]}});
     auto ret   = pairwise_point_in_polygon(point.begin(),
                                          point.end(),
                                          poly_offsets.begin(),
@@ -103,7 +103,7 @@ TYPED_TEST(PairwisePointInPolygonTest, TwoPolygonsOneRingEach)
   auto expected = std::vector<int>({false, false, false, false, true, true, true, true});
 
   for (size_t i = 0; i < point_list.size() / 2; i = i + 2) {
-    auto points = make_device_vector(
+    auto points = make_device_vector<vec_2d<T>>(
       {{point_list[i][0], point_list[i][1]}, {point_list[i + 1][0], point_list[i + 1][1]}});
     auto ret = pairwise_point_in_polygon(points.begin(),
                                          points.end(),
@@ -142,7 +142,7 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonTwoRings)
   auto expected = std::vector<int>{0b0, 0b0, 0b1, 0b0, 0b1};
 
   for (size_t i = 0; i < point_list.size(); ++i) {
-    auto point = make_device_vector({{point_list[i][0], point_list[i][1]}});
+    auto point = make_device_vector<vec_2d<T>>({{point_list[i][0], point_list[i][1]}});
     auto ret   = pairwise_point_in_polygon(point.begin(),
                                          point.end(),
                                          poly_offsets.begin(),
