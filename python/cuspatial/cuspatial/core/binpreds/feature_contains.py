@@ -12,6 +12,7 @@ from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ContainsOpResult,
+    ImpossiblePredicate,
     NotImplementedPredicate,
     PreprocessorResult,
 )
@@ -358,17 +359,17 @@ class ContainsByIntersection(BinPred):
     left and right hand side types. """
 DispatchDict = {
     (Point, Point): ContainsByIntersection,
-    (Point, MultiPoint): NotImplementedPredicate,
-    (Point, LineString): NotImplementedPredicate,
-    (Point, Polygon): NotImplementedPredicate,
+    (Point, MultiPoint): ImpossiblePredicate,
+    (Point, LineString): ImpossiblePredicate,
+    (Point, Polygon): ImpossiblePredicate,
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): ContainsByIntersection,
     (LineString, MultiPoint): NotImplementedPredicate,
-    (LineString, LineString): NotImplementedPredicate,
-    (LineString, Polygon): NotImplementedPredicate,
+    (LineString, LineString): ImpossiblePredicate,
+    (LineString, Polygon): ImpossiblePredicate,
     (Polygon, Point): ContainsPredicateBase,
     (Polygon, MultiPoint): PolygonComplexContains,
     (Polygon, LineString): PolygonComplexContains,

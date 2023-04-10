@@ -13,6 +13,7 @@ import cuspatial
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     EqualsOpResult,
+    ImpossiblePredicate,
     NotImplementedPredicate,
     PreprocessorResult,
 )
@@ -339,7 +340,7 @@ class LineStringPointEquals(EqualsPredicateBase):
 DispatchDict = {
     (Point, Point): EqualsPredicateBase,
     (Point, MultiPoint): NotImplementedPredicate,
-    (Point, LineString): NotImplementedPredicate,
+    (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): EqualsPredicateBase,
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): MultiPointMultiPointEquals,

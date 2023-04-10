@@ -1,7 +1,7 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
 import pytest
-from shapely.geometry import LineString, MultiPoint, Point, Polygon
+from shapely.geometry import LineString, Point, Polygon
 
 import cuspatial
 
@@ -26,7 +26,6 @@ elements of the tuple. The predicate fixture is used to
 generate the third element of the tuple. The expected_result
 fixture is used to generate the fourth element of the tuple.
 """
-
 """The collection of all possible binary predicates"""
 
 
@@ -53,19 +52,12 @@ def predicate(request):
 @pytest.fixture(
     params=[
         (Point, Point),
-        (Point, MultiPoint),
         (Point, LineString),
         (Point, Polygon),
-        (MultiPoint, Point),
-        (MultiPoint, MultiPoint),
-        (MultiPoint, LineString),
-        (MultiPoint, Polygon),
         (LineString, Point),
-        (LineString, MultiPoint),
         (LineString, LineString),
         (LineString, Polygon),
         (Polygon, Point),
-        (Polygon, MultiPoint),
         (Polygon, LineString),
         (Polygon, Polygon),
     ]
@@ -74,32 +66,13 @@ def geotype_tuple(request):
     return request.param
 
 
-"""The collection of test types. This section is dispatched based
-on the feature type. Each feature pairing has a specific set of
-comparisons that need to be performed to cover the entire test
-space. This section will be replaced with specific feature
-representations that cover all possible geometric combinations."""
-
-
-@pytest.fixture(
-    params=[
-        "single_equal",
-        "single_disjoint",
-        "triple_center_equal",
-        "triple_center_disjoint",
-        "border_overlap",
-        "interior_overlap",
-    ]
-)
-def test_type(request):
-    return request.param
-
-
 """The fundamental set of tests. This section is dispatched based
 on the feature type. Each feature pairing has a specific set of
 comparisons that need to be performed to cover the entire test
 space. This section will be replaced with specific feature
 representations that cover all possible geometric combinations."""
+
+
 point_polygon = Polygon([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0)])
 features = {
     "point-point-disjoint": (
@@ -146,6 +119,44 @@ features = {
         """Point is in polygon interior.""",
         Point(0.5, 0.5),
         point_polygon,
+    ),
+    "linestring-linestring-disjoint": (
+        """
+    x---x
+
+    x---x
+    """,
+        LineString([(0.0, 0.0), (1.0, 0.0)]),
+        LineString([(0.0, 1.0), (1.0, 1.0)]),
+    ),
+    "linestring-linestring-same": (
+        """
+    x---x
+    """,
+        LineString([(0.0, 0.0), (1.0, 0.0)]),
+        LineString([(0.0, 0.0), (1.0, 0.0)]),
+    ),
+    "linestring-linestring-touches": (
+        """
+    x
+    |
+    |
+    |
+    x---x
+    """,
+        LineString([(0.0, 0.0), (0.0, 1.0)]),
+        LineString([(0.0, 0.0), (1.0, 0.0)]),
+    ),
+    "linestring-linestring-crosses": (
+        """
+      x
+      |
+    x-|-x
+      |
+      x
+    """,
+        LineString([(0.5, 0.0), (0.5, 1.0)]),
+        LineString([(0.0, 0.5), (1.0, 0.5)]),
     ),
     "linestring-polygon-disjoint": (
         """
@@ -360,7 +371,7 @@ features = {
     "polygon-polygon-point-outside": (
         """
      x
-    -|\--  # noqa: W605
+    -|\\-- # Double backslash due to issues with escape sequences
     |x-x|
     |   |
     |   |
@@ -382,10 +393,10 @@ features = {
         Polygon([(0.5, 0.5), (0.5, 1.5), (1.0, 1.0)]),
         point_polygon,
     ),
-    "polygon-in-point-point": (
+    "polygon-polygon-in-point-point": (
         """
     x----
-    |\  |  # noqa: W605
+    |\\  | # Double backslash due to issues with escape sequences
     | x |
     |/  |
     x----
@@ -393,7 +404,7 @@ features = {
         Polygon([(0.0, 0.0), (0.0, 1.0), (0.5, 0.5)]),
         point_polygon,
     ),
-    "polygon-contained": (
+    "polygon-polygon-contained": (
         """
     -----
     |  x|
@@ -406,150 +417,148 @@ features = {
     ),
 }
 
-"""Named features for each feature dispatch."""
-points_dispatch = {
-    "feature1": Point(0.0, 0.0),
-    "feature2": Point(1.0, 1.0),
-    "feature1_bo": Point(1.0, 1.0),
-    "feature2_bo": Point(0.0, 0.0),
-    "feature1_io": Point(1.0, 1.0),
-    "feature2_io": Point(2.0, 2.0),
-}
+point_point_dispatch_list = [
+    "point-point-disjoint",
+    "point-point-equal",
+]
 
-multipoints_dispatch = {
-    "feature1": MultiPoint([(0.0, 0.0), (1.0, 1.0)]),
-    "feature2": MultiPoint([(2.0, 2.0), (3.0, 3.0)]),
-    "feature1_bo": MultiPoint([(0.0, 0.0), (1.0, 1.0)]),
-    "feature2_bo": MultiPoint([(1.0, 1.0), (2.0, 2.0)]),
-    "feature1_io": MultiPoint([(1.0, 1.0), (1.0, 1.0), (2.0, 2.0)]),
-    "feature2_io": MultiPoint([(3.0, 3.0), (1.0, 1.0), (4.0, 4.0)]),
-}
+point_linestring_dispatch_list = [
+    "point-linestring-disjoint",
+    "point-linestring-point",
+    "point-linestring-edge",
+]
 
-linestrings_dispatch = {
-    "feature1": LineString([(0.0, 0.0), (1.0, 1.0)]),
-    "feature2": LineString([(2.0, 2.0), (3.0, 3.0)]),
-    "feature1_bo": LineString([(0.0, 0.0), (1.0, 1.0)]),
-    "feature2_bo": LineString([(1.1, 1.1), (2.0, 1.0)]),
-    "feature1_io": LineString(
-        [(0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0)]
-    ),
-    "feature2_io": LineString(
-        [(4.0, 4.0), (1.0, 1.0), (2.0, 2.0), (4.0, 4.0)]
-    ),
-}
+point_polygon_dispatch_list = [
+    "point-polygon-disjoint",
+    "point-polygon-point",
+    "point-polygon-edge",
+    "point-polygon-in",
+]
 
-polygons_dispatch = {
-    "feature1": Polygon([(0.0, 0.0), (1.0, 1.0), (1.0, 0.0)]),
-    "feature2": Polygon([(2.0, 2.0), (3.0, 3.0), (3.0, 2.0)]),
-    "feature1_bo": Polygon([(0.0, 0.0), (1.0, 1.0), (1.0, 0.0)]),
-    "feature2_bo": Polygon([(2.0, 2.0), (1.0, 1.0), (1.0, 0.0)]),
-    "feature1_io": Polygon(
-        [(4.0, 4.0), (4.0, -4.0), (-4.0, -4.0), (-4.0, 4.0)]
-    ),
-    "feature2_io": Polygon(
-        [(1.0, 1.0), (1.0, -1.0), (-1.0, -1.0), (-1.0, 1.0)]
-    ),
-}
+linestring_linestring_dispatch_list = [
+    "linestring-linestring-disjoint",
+    "linestring-linestring-same",
+    "linestring-linestring-touches",
+    "linestring-linestring-crosses",
+]
 
-feature_dispatch = {
-    Point: points_dispatch,
-    MultiPoint: multipoints_dispatch,
-    LineString: linestrings_dispatch,
-    Polygon: polygons_dispatch,
+linestring_polygon_dispatch_list = [
+    "linestring-polygon-disjoint",
+    "linestring-polygon-touch-point",
+    "linestring-polygon-touch-edge",
+    "linestring-polygon-overlap-edge",
+    "linestring-polygon-intersect-edge",
+    "linestring-polygon-intersect-inner-edge",
+    "linestring-polygon-point-interior",
+    "linestring-polygon-edge-interior",
+    "linestring-polygon-in",
+]
+
+polygon_polygon_dispatch_list = [
+    "polygon-polygon-disjoint",
+    "polygon-polygon-touch-point",
+    "polygon-polygon-touch-edge",
+    "polygon-polygon-overlap-edge",
+    "polygon-polygon-point-inside",
+    "polygon-polygon-point-outside",
+    "polygon-polygon-in-out-point",
+    "polygon-polygon-in-point-point",
+    "polygon-polygon-contained",
+]
+
+
+def object_dispatch(name_list):
+    while True:
+        # forward order
+        for name in name_list:
+            yield (name, features[name][1], features[name][2])
+        # reversed order
+        for name in name_list:
+            yield (name, features[name][2], features[name][1])
+
+
+type_dispatch = {
+    (Point, Point): object_dispatch(point_point_dispatch_list),
+    (Point, LineString): object_dispatch(point_linestring_dispatch_list),
+    (LineString, Point): object_dispatch(point_linestring_dispatch_list),
+    (Point, Polygon): object_dispatch(point_polygon_dispatch_list),
+    (Polygon, Point): object_dispatch(point_polygon_dispatch_list),
+    (LineString, LineString): object_dispatch(
+        linestring_linestring_dispatch_list
+    ),
+    (LineString, Polygon): object_dispatch(linestring_polygon_dispatch_list),
+    (Polygon, LineString): object_dispatch(linestring_polygon_dispatch_list),
+    (Polygon, Polygon): object_dispatch(polygon_polygon_dispatch_list),
 }
 
 
 """Feature type dispatch function."""
 
 
-def get_feature(feature_type, feature_name):
-    return feature_dispatch[feature_type][feature_name]
+def feature_dispatch(types):
+    generator = type_dispatch[types]
+    yield next(generator)
 
 
 """Test type dispatch functions."""
 
 
-def single_equal(type0, type1):
+def single_same(feature_0, feature_1):
     return (
-        cuspatial.GeoSeries([get_feature(type0, "feature1")]),
-        cuspatial.GeoSeries([get_feature(type1, "feature2")]),
+        cuspatial.GeoSeries([feature_0]),
+        cuspatial.GeoSeries([feature_0]),
     )
 
 
-def single_disjoint(type0, type1):
+def single_different(feature_0, feature_1):
     return (
-        cuspatial.GeoSeries([get_feature(type0, "feature1")]),
-        cuspatial.GeoSeries([get_feature(type1, "feature2")]),
+        cuspatial.GeoSeries([feature_0]),
+        cuspatial.GeoSeries([feature_1]),
     )
 
 
-def triple_center_equal(type0, type1):
+def triple_center_same(feature_0, feature_1):
     return (
         cuspatial.GeoSeries(
             [
-                get_feature(type0, "feature1"),
-                get_feature(type0, "feature2"),
-                get_feature(type0, "feature1"),
+                feature_0,
+                feature_1,
+                feature_0,
             ]
         ),
         cuspatial.GeoSeries(
             [
-                get_feature(type1, "feature2"),
-                get_feature(type1, "feature2"),
-                get_feature(type1, "feature2"),
-            ]
-        ),
-    )
-
-
-def triple_center_disjoint(type0, type1):
-    return (
-        cuspatial.GeoSeries(
-            [
-                get_feature(type0, "feature1"),
-                get_feature(type0, "feature2"),
-                get_feature(type0, "feature1"),
-            ]
-        ),
-        cuspatial.GeoSeries(
-            [
-                get_feature(type1, "feature1"),
-                get_feature(type1, "feature1"),
-                get_feature(type1, "feature1"),
+                feature_1,
+                feature_1,
+                feature_1,
             ]
         ),
     )
 
 
-def border_overlap(type0, type1):
+def triple_center_different(feature_0, feature_1):
     return (
-        cuspatial.GeoSeries([get_feature(type0, "feature1_bo")]),
-        cuspatial.GeoSeries([get_feature(type1, "feature2_bo")]),
+        cuspatial.GeoSeries(
+            [
+                feature_0,
+                feature_1,
+                feature_0,
+            ]
+        ),
+        cuspatial.GeoSeries(
+            [
+                feature_0,
+                feature_0,
+                feature_0,
+            ]
+        ),
     )
-
-
-def interior_overlap(type0, type1):
-    return (
-        cuspatial.GeoSeries([get_feature(type0, "feature1_io")]),
-        cuspatial.GeoSeries([get_feature(type1, "feature2_io")]),
-    )
-
-
-"""Dictionary for dispatching test types to functions that return
-test data."""
-predicate_dispatch = {
-    "single_equal": single_equal,
-    "single_disjoint": single_disjoint,
-    "triple_center_equal": triple_center_equal,
-    "triple_center_disjoint": triple_center_disjoint,
-    "border_overlap": border_overlap,
-    "interior_overlap": interior_overlap,
-}
 
 
 """Dispatch function for test types."""
 
 
-def feature_test_dispatch(type0, type1, test_type):
-    dispatch_function = predicate_dispatch[test_type]
-    return dispatch_function(type0, type1)
+def feature_test_dispatch(type_tuple):
+    features = [*feature_dispatch(type_tuple)][0]
+    result = single_different(features[1], features[2])
+    return result
