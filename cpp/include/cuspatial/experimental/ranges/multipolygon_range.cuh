@@ -180,6 +180,15 @@ class multipolygon_range {
   /// Returns an iterator to the end of the segment
   CUSPATIAL_HOST_DEVICE auto segment_end();
 
+
+  /// Range Casting
+
+  /// Cast the range of multipolygons as a range of multipoints, ignoring all edge connections and ring relationships.
+  CUSPATIAL_HOST_DEVICE auto as_multipoint_range();
+
+  /// Cast the range of multipolygons as a range of multilinestrings, ignoring ring relationships.
+  CUSPATIAL_HOST_DEVICE auto as_multilinestring_range();
+
  protected:
   GeometryIterator _geometry_begin;
   GeometryIterator _geometry_end;

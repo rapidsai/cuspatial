@@ -76,12 +76,17 @@ OutputIt pairwise_polygon_distance(MultiPolygonRangeA lhs,
     return intersects;
   }();
 
-
   auto lhs_as_multilinestrings = lhs.as_multilinestring_range();
   auto rhs_as_multilinestrings = rhs.as_multilinestring_range();
 
-  return pairwise_linestring_distance(lhs_as_multilinestrings, rhs_as_multilinestrings, distances_first, stream);
+  std::size_t constexpr threads_per_block = 256;
+  std::size_t const num_blocks = (lhs.num_points() + threads_per_block - 1) / threads_per_block;
 
+  detail::linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
+    lhs_as_multilinestrings, rhs_as_multilinestrings, intersects, distances_first);
+
+  CUSPATIAL_CUDA_TRY(cudaGetLastError());
+  return distances_first + lhs.size();
 }
 
 }  // namespace cuspatial

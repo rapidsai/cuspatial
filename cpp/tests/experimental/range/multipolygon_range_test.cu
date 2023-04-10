@@ -99,6 +99,55 @@ struct MultipolygonRangeTest : public BaseFixture {
 
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(got, d_expected);
   }
+
+  void test_multipolygon_as_multilinestring(
+    std::initializer_list<std::size_t> multipolygon_geometry_offset,
+    std::initializer_list<std::size_t> multipolygon_part_offset,
+    std::initializer_list<std::size_t> ring_offset,
+    std::initializer_list<vec_2d<T>> multipolygon_coordinates,
+    std::initializer_list<std::size_t> multilinestring_geometry_offset,
+    std::initializer_list<std::size_t> multilinestring_part_offset,
+    std::initializer_list<vec_2d<T>> multilinestring_coordinates)
+  {
+    auto multipolygon_array = make_multipolygon_array(multipolygon_geometry_offset,
+                                                      multipolygon_part_offset,
+                                                      ring_offset,
+                                                      multipolygon_coordinates);
+    auto rng                = multipolygon_array.range().as_multilinestring_range();
+
+    auto got = make_multilinestring_array(range(rng.geometry_begin(), rng.geometry_end()),
+                                          range(rng.parts_begin(), rng.parts_end()),
+                                          range(rng.coordinates_begin(), rng.coordinates_end()));
+
+    auto expected = make_multilinestring_array(
+      multilinestring_geometry_offset, multilinestring_part_offset, multilinestring_coordinates);
+
+    CUSPATIAL_EXPECT_MULTILINESTRING_ARRAY_EQUIVALENT(expected, got);
+  }
+
+  void test_multipolygon_as_multipoint(
+    std::initializer_list<std::size_t> multipolygon_geometry_offset,
+    std::initializer_list<std::size_t> multipolygon_part_offset,
+    std::initializer_list<std::size_t> ring_offset,
+    std::initializer_list<vec_2d<T>> multipolygon_coordinates,
+    std::initializer_list<std::size_t> multipoint_geometry_offset,
+    std::initializer_list<vec_2d<T>> multipoint_coordinates)
+  {
+    auto multipolygon_array = make_multipolygon_array(multipolygon_geometry_offset,
+                                                      multipolygon_part_offset,
+                                                      ring_offset,
+                                                      multipolygon_coordinates);
+    auto rng                = multipolygon_array.range().as_multipoint_range();
+
+    auto got = make_multipoint_range(range(rng.geometry_begin(), rng.geometry_end()),
+                                     range(rng.coordinates_begin(), rng.coordinates_end()));
+
+    auto expected = make_multipoint_range(
+      range(multipoint_geometry_offset.begin(), multipoint_geometry_offset.end()),
+      range(multipoint_coordinates.begin(), multipoint_coordinates.end()));
+
+    CUSPATIAL_EXPECT_MULTILINESTRING_ARRAY_EQUIVALENT(expected, got);
+  }
 };
 
 TYPED_TEST_CASE(MultipolygonRangeTest, FloatingPointTypes);
@@ -337,4 +386,75 @@ TYPED_TEST(MultipolygonRangeTest, DISABLED_MultipolygonSegmentCount_ConatainsEmp
                       {1, 1},
                       {0, 0}},
                      {6, 3});
+}
+
+
+TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultilinestring1)
+{
+  CUSPATIAL_RUN_TEST(this->test_multipolygon_as_multilinestring,
+                     {0, 1, 2},
+                     {0, 1, 2},
+                     {0, 4, 8},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}},
+                     {0, 1, 2},
+                     {0, 4, 8},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}});
+}
+
+TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultilinestring2)
+{
+  CUSPATIAL_RUN_TEST(this->test_multipolygon_as_multilinestring,
+                     {0, 1, 2},
+                     {0, 1, 3},
+                     {0, 4, 8, 12},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}},
+                     {0, 1, 3},
+                     {0, 4, 8, 12},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}});
+}
+
+TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultilinestring3)
+{
+  CUSPATIAL_RUN_TEST(this->test_multipolygon_as_multilinestring,
+                     {0, 1, 2},
+                     {0, 2, 3},
+                     {0, 4, 8, 12},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}},
+                     {0, 2, 3},
+                     {0, 4, 8, 12},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}});
+}
+
+TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultiPoint1)
+{
+  CUSPATIAL_RUN_TEST(this->test_multipolygon_as_multipoint,
+                     {0, 1, 2},
+                     {0, 1, 2},
+                     {0, 4, 8},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}},
+                     {0, 4, 8},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}});
+}
+
+TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultiPoint2)
+{
+  CUSPATIAL_RUN_TEST(this->test_multipolygon_as_multipoint,
+                     {0, 1, 2},
+                     {0, 1, 3},
+                     {0, 4, 8, 12},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}},
+                     {0, 4, 12},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}});
+}
+
+
+TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultiPoint3)
+{
+  CUSPATIAL_RUN_TEST(this->test_multipolygon_as_multipoint,
+                     {0, 1, 2},
+                     {0, 2, 3},
+                     {0, 4, 8, 12},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}},
+                     {0, 8, 12},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}});
 }
