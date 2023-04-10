@@ -95,6 +95,317 @@ def test_type(request):
     return request.param
 
 
+"""The fundamental set of tests. This section is dispatched based
+on the feature type. Each feature pairing has a specific set of
+comparisons that need to be performed to cover the entire test
+space. This section will be replaced with specific feature
+representations that cover all possible geometric combinations."""
+point_polygon = Polygon([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0)])
+features = {
+    "point-point-disjoint": (
+        """Two points apart.""",
+        Point(0.0, 0.0),
+        Point(1.0, 0.0),
+    ),
+    "point-point-equal": (
+        """Two points together.""",
+        Point(0.0, 0.0),
+        Point(0.0, 0.0),
+    ),
+    "point-linestring-disjoint": (
+        """Point and linestring are disjoint.""",
+        Point(0.0, 0.0),
+        LineString([(1.0, 0.0), (2.0, 0.0)]),
+    ),
+    "point-linestring-point": (
+        """Point and linestring share a point.""",
+        Point(0.0, 0.0),
+        LineString([(0.0, 0.0), (2.0, 0.0)]),
+    ),
+    "point-linestring-edge": (
+        """Point and linestring intersect.""",
+        Point(0.5, 0.0),
+        LineString([(0.0, 0.0), (1.0, 0.0)]),
+    ),
+    "point-polygon-disjoint": (
+        """Point and polygon are disjoint.""",
+        Point(-0.5, 0.5),
+        point_polygon,
+    ),
+    "point-polygon-point": (
+        """Point and polygon share a point.""",
+        Point(0.0, 0.0),
+        point_polygon,
+    ),
+    "point-polygon-edge": (
+        """Point and polygon intersect.""",
+        Point(0.5, 0.0),
+        point_polygon,
+    ),
+    "point-polygon-in": (
+        """Point is in polygon interior.""",
+        Point(0.5, 0.5),
+        point_polygon,
+    ),
+    "linestring-polygon-disjoint": (
+        """
+    point_polygon above is drawn as
+    -----
+    |   |
+    |   |
+    |   |
+    -----
+    and the corresponding linestring is drawn as
+    x---x
+    or
+    x
+    |
+    |
+    |
+    x
+    """
+        """
+    x -----
+    | |   |
+    | |   |
+    | |   |
+    x -----
+    """,
+        LineString([(-0.5, 0.0), (-0.5, 1.0)]),
+        point_polygon,
+    ),
+    "linestring-polygon-touch-point": (
+        """
+    x---x----
+        |   |
+        |   |
+        |   |
+        -----
+    """,
+        LineString([(-1.0, 0.0), (0.0, 0.0)]),
+        point_polygon,
+    ),
+    "linestring-polygon-touch-edge": (
+        """
+        -----
+        |   |
+    x---x   |
+        |   |
+        -----
+    """,
+        LineString([(-1.0, 0.5), (0.0, 0.5)]),
+        point_polygon,
+    ),
+    "linestring-polygon-overlap-edge": (
+        """
+    x----
+    |   |
+    |   |
+    |   |
+    x----
+    """,
+        LineString([(0.0, 0.0), (0.0, 1.0)]),
+        point_polygon,
+    ),
+    "linestring-polygon-intersect-edge": (
+        """
+      -----
+      |   |
+      |   |
+      |   |
+    x---x--
+    """,
+        LineString([(-0.5, 0.0), (0.5, 0.0)]),
+        point_polygon,
+    ),
+    "linestring-polygon-intersect-inner-edge": (
+        """
+    -----
+    x   |
+    |   |
+    x   |
+    -----
+
+    The linestring in this case is shorter than the corners of the polygon.
+    """,
+        LineString([(0.25, 0.0), (0.75, 0.0)]),
+        point_polygon,
+    ),
+    "linestring-polygon-point-interior": (
+        """
+    ----x
+    |  /|
+    | / |
+    |/  |
+    x----
+    """,
+        LineString([(0.0, 0.0), (1.0, 1.0)]),
+        point_polygon,
+    ),
+    "linestring-polygon-edge-interior": (
+        """
+    --x--
+    | | |
+    | | |
+    | | |
+    --x--
+    """,
+        LineString([(0.5, 0.0), (0.5, 1.0)]),
+        point_polygon,
+    ),
+    "linestring-polygon-in": (
+        """
+    -----
+    | x |
+    | | |
+    | x |
+    -----
+    """,
+        LineString([(0.5, 0.25), (0.5, 0.75)]),
+        point_polygon,
+    ),
+    "linestring-polygon-in-out": (
+        """
+    -----
+    |   |
+    | x |
+    | | |
+    --|--
+      |
+      x
+    """,
+        LineString([(0.5, 0.5), (0.5, -0.5)]),
+        point_polygon,
+    ),
+    "polygon-polygon-disjoint": (
+        """
+    Polygon polygon tests use a triangle for the lhs and a square for the rhs.
+    The triangle is drawn as
+    x---x
+    |  /
+    | /
+    |/
+    x
+
+    The square is drawn as
+
+    -----
+    |   |
+    |   |
+    |   |
+    -----
+    """,
+        Polygon([(0.0, 2.0), (0.0, 3.0), (1.0, 3.0)]),
+        point_polygon,
+    ),
+    "polygon-polygon-touch-point": (
+        """
+    x---x
+    |  /
+    | /
+    |/
+    x----
+    |   |
+    |   |
+    |   |
+    -----
+    """,
+        Polygon([(0.0, 1.0), (0.0, 2.0), (1.0, 2.0)]),
+        point_polygon,
+    ),
+    "polygon-polygon-touch-edge": (
+        """
+     x---x
+     |  /
+     | /
+     |/
+    -x--x
+    |   |
+    |   |
+    |   |
+    -----
+    """,
+        Polygon([(0.25, 1.0), (0.25, 2.0), (1.25, 2.0)]),
+        point_polygon,
+    ),
+    "polygon-polygon-overlap-edge": (
+        """
+    x
+    |\
+    | \
+    |  \
+    x---x
+    |   |
+    |   |
+    |   |
+    -----
+    """,
+        Polygon([(0.0, 1.0), (0.0, 2.0), (1.0, 2.0)]),
+        point_polygon,
+    ),
+    "polygon-polygon-point-inside": (
+        """
+      x---x
+      |  /
+      | /
+    --|/-
+    | x |
+    |   |
+    |   |
+    -----
+    """,
+        Polygon([(0.5, 0.5), (0.5, 1.5), (1.5, 1.5)]),
+        point_polygon,
+    ),
+    "polygon-polygon-point-outside": (
+        """
+     x
+    -|\--  # noqa: W605
+    |x-x|
+    |   |
+    |   |
+    -----
+    """,
+        Polygon([(0.25, 0.75), (0.25, 1.25), (0.75, 0.75)]),
+        point_polygon,
+    ),
+    "polygon-polygon-in-out-point": (
+        """
+      x
+      |\
+    --|-x
+    | |/|
+    | x |
+    |   |
+    x----
+    """,
+        Polygon([(0.5, 0.5), (0.5, 1.5), (1.0, 1.0)]),
+        point_polygon,
+    ),
+    "polygon-in-point-point": (
+        """
+    x----
+    |\  |  # noqa: W605
+    | x |
+    |/  |
+    x----
+    """,
+        Polygon([(0.0, 0.0), (0.0, 1.0), (0.5, 0.5)]),
+        point_polygon,
+    ),
+    "polygon-contained": (
+        """
+    -----
+    |  x|
+    | /||
+    |x-x|
+    -----
+    """,
+        Polygon([(0.25, 0.25), (0.75, 0.75), (0.75, 0.25)]),
+        point_polygon,
+    ),
+}
+
 """Named features for each feature dispatch."""
 points_dispatch = {
     "feature1": Point(0.0, 0.0),
