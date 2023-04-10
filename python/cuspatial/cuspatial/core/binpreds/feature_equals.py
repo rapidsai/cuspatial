@@ -335,6 +335,19 @@ class LineStringPointEquals(EqualsPredicateBase):
         return _false_series(len(lhs))
 
 
+class PolygonPolygonEquals(EqualsPredicateBase):
+    def _compute_predicate(self, lhs, rhs, preprocessor_result):
+        """Two polygons are equal if they contain each other."""
+        from cuspatial.core.binpreds.binpred_dispatch import CONTAINS_DISPATCH
+
+        predicate = CONTAINS_DISPATCH[(lhs.column_type, rhs.column_type)](
+            align=self.config.align
+        )
+        lhs_contains_rhs = predicate(lhs, rhs)
+        rhs_contains_lhs = predicate(rhs, lhs)
+        return lhs_contains_rhs & rhs_contains_lhs
+
+
 """DispatchDict for Equals operations."""
 DispatchDict = {
     (Point, Point): EqualsPredicateBase,
@@ -352,5 +365,5 @@ DispatchDict = {
     (Polygon, Point): EqualsPredicateBase,
     (Polygon, MultiPoint): EqualsPredicateBase,
     (Polygon, LineString): EqualsPredicateBase,
-    (Polygon, Polygon): EqualsPredicateBase,
+    (Polygon, Polygon): PolygonPolygonEquals,
 }
