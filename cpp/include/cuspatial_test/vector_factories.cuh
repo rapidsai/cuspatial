@@ -250,16 +250,18 @@ class multilinestring_array {
 /**
  * @brief Construct an owning object of a multilinestring array from ranges
  *
- * @tparam T Type of coordinate
  * @param geometry_inl Range of geometry offsets
  * @param part_inl Range of part offsets
  * @param coord_inl Ramge of coordinate
  * @return multilinestring array object
  */
-template <typename IndexRange,
+template <typename IndexRangeA,
+          typename IndexRangeB,
           typename CoordRange,
-          typename IndexType = typename IndexRange::value_type>
-auto make_multilinestring_array(IndexRange geometry_inl, IndexRange part_inl, CoordRange coord_inl)
+          typename IndexType = typename IndexRangeB::value_type>
+auto make_multilinestring_array(IndexRangeA geometry_inl,
+                                IndexRangeB part_inl,
+                                CoordRange coord_inl)
 {
   using CoordType         = typename CoordRange::value_type;
   using DeviceIndexVector = thrust::device_vector<IndexType>;
@@ -323,15 +325,14 @@ class multipoint_array {
 };
 
 /**
- * @brief Factory method to construct multipoint array from ranges of geometry offsets and coordintes
- *
+ * @brief Factory method to construct multipoint array from ranges of geometry offsets and
+ * coordinates
  */
-template<typename GeometryRange, typename CoordRange>
+template <typename GeometryRange, typename CoordRange>
 auto make_multipoints_array(GeometryRange geometry_inl, CoordRange coordinates_inl)
 {
   return multipoint_array{make_device_vector(geometry_inl), make_device_vector(coordinates_inl)};
 }
-
 
 /**
  * @brief Factory method to construct multipoint array from initializer list of multipoints.

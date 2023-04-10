@@ -17,6 +17,8 @@
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 
+#include <rmm/device_uvector.hpp>
+
 #include <thrust/optional.h>
 
 namespace cuspatial {
@@ -33,14 +35,14 @@ namespace detail {
  * which is then combined with other segment results via an atomic operation to form the global
  * minimum distance between the linestrings.
  *
- * `intersects` is an optional pointer to a boolean range where the `i`th element indicates the `i`th
- * output should be set to 0 and bypass distance computation. This argument is optional, if set to nullopt,
- * no distance computation will be bypassed.
+ * `intersects` is an optional pointer to a boolean range where the `i`th element indicates the
+ * `i`th output should be set to 0 and bypass distance computation. This argument is optional, if
+ * set to nullopt, no distance computation will be bypassed.
  */
-template <class MultiLinestringRange1, class MultiLinestringRange2, class IntersectRange, class OutputIt>
+template <class MultiLinestringRange1, class MultiLinestringRange2, class OutputIt>
 __global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
                                     MultiLinestringRange2 multilinestrings2,
-                                    thrust::optional<IntersectRange> intersects,
+                                    thrust::optional<uint8_t*> intersects,
                                     OutputIt distances_first)
 {
   using T = typename MultiLinestringRange1::element_t;
@@ -51,14 +53,13 @@ __global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
     if (!multilinestrings1.is_valid_segment_id(idx, part_idx)) continue;
     auto const geometry_idx = multilinestrings1.geometry_idx_from_part_idx(part_idx);
 
-    if (intersects.has_value() && intersects.value()[geometry_idx])
-    {
-        distances_first[geometry_idx] = 0;
-        continue;
+    if (intersects.has_value() && intersects.value()[geometry_idx]) {
+      distances_first[geometry_idx] = 0;
+      continue;
     }
 
-    auto [a, b]             = multilinestrings1.segment(idx);
-    T min_distance_squared  = std::numeric_limits<T>::max();
+    auto [a, b]            = multilinestrings1.segment(idx);
+    T min_distance_squared = std::numeric_limits<T>::max();
 
     for (auto const& linestring2 : multilinestrings2[geometry_idx]) {
       for (auto [c, d] : linestring2) {

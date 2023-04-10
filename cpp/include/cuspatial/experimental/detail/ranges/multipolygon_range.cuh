@@ -22,6 +22,7 @@
 #include <cuspatial/experimental/detail/functors.cuh>
 #include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/experimental/geometry_collection/multipolygon_ref.cuh>
+#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 

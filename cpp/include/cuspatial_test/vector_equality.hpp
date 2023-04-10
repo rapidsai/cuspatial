@@ -197,7 +197,6 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, U a
   }
 }
 
-
 #define CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs, rhs, ...)              \
   do {                                                                  \
     SCOPED_TRACE(" <--  line of failure\n");                            \
@@ -240,7 +239,7 @@ void expect_vec_2d_pair_equivalent(PairVector1 const& expected, PairVector2 cons
   } while (0)
 
 template <typename Array1, typename Array2>
-void expect_multilinestring_array_equivalent(Array1 &lhs, Array2 &rhs)
+void expect_multilinestring_array_equivalent(Array1& lhs, Array2& rhs)
 {
   auto [lhs_geometry_offset, lhs_part_offset, lhs_coordinates] = lhs.release();
   auto [rhs_geometry_offset, rhs_part_offset, rhs_coordinates] = rhs.release();
@@ -251,9 +250,25 @@ void expect_multilinestring_array_equivalent(Array1 &lhs, Array2 &rhs)
 }
 
 #define CUSPATIAL_EXPECT_MULTILINESTRING_ARRAY_EQUIVALENT(lhs, rhs)     \
-  do {                                                        \
-    SCOPED_TRACE(" <--  line of failure\n");                  \
+  do {                                                                  \
+    SCOPED_TRACE(" <--  line of failure\n");                            \
     cuspatial::test::expect_multilinestring_array_equivalent(lhs, rhs); \
+  } while (0)
+
+template <typename Array1, typename Array2>
+void expect_multipoint_array_equivalent(Array1& lhs, Array2& rhs)
+{
+  auto [lhs_geometry_offset, lhs_coordinates] = lhs.release();
+  auto [rhs_geometry_offset, rhs_coordinates] = rhs.release();
+
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs_geometry_offset, rhs_geometry_offset);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs_coordinates, rhs_coordinates);
+}
+
+#define CUSPATIAL_EXPECT_MULTIPOINT_ARRAY_EQUIVALENT(lhs, rhs)     \
+  do {                                                             \
+    SCOPED_TRACE(" <--  line of failure\n");                       \
+    cuspatial::test::expect_multipoint_array_equivalent(lhs, rhs); \
   } while (0)
 
 #define CUSPATIAL_RUN_TEST(FUNC, ...)        \

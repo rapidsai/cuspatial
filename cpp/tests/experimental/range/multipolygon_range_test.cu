@@ -115,9 +115,10 @@ struct MultipolygonRangeTest : public BaseFixture {
                                                       multipolygon_coordinates);
     auto rng                = multipolygon_array.range().as_multilinestring_range();
 
-    auto got = make_multilinestring_array(range(rng.geometry_begin(), rng.geometry_end()),
-                                          range(rng.parts_begin(), rng.parts_end()),
-                                          range(rng.coordinates_begin(), rng.coordinates_end()));
+    auto got =
+      make_multilinestring_array(range(rng.geometry_offsets_begin(), rng.geometry_offsets_end()),
+                                 range(rng.part_offsets_begin(), rng.part_offsets_end()),
+                                 range(rng.point_begin(), rng.point_end()));
 
     auto expected = make_multilinestring_array(
       multilinestring_geometry_offset, multilinestring_part_offset, multilinestring_coordinates);
@@ -139,14 +140,14 @@ struct MultipolygonRangeTest : public BaseFixture {
                                                       multipolygon_coordinates);
     auto rng                = multipolygon_array.range().as_multipoint_range();
 
-    auto got = make_multipoint_range(range(rng.geometry_begin(), rng.geometry_end()),
-                                     range(rng.coordinates_begin(), rng.coordinates_end()));
+    auto got = make_multipoints_array(range(rng.offsets_begin(), rng.offsets_end()),
+                                      range(rng.point_begin(), rng.point_end()));
 
-    auto expected = make_multipoint_range(
+    auto expected = make_multipoints_array(
       range(multipoint_geometry_offset.begin(), multipoint_geometry_offset.end()),
       range(multipoint_coordinates.begin(), multipoint_coordinates.end()));
 
-    CUSPATIAL_EXPECT_MULTILINESTRING_ARRAY_EQUIVALENT(expected, got);
+    CUSPATIAL_EXPECT_MULTIPOINT_ARRAY_EQUIVALENT(expected, got);
   }
 };
 
@@ -388,7 +389,6 @@ TYPED_TEST(MultipolygonRangeTest, DISABLED_MultipolygonSegmentCount_ConatainsEmp
                      {6, 3});
 }
 
-
 TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultilinestring1)
 {
   CUSPATIAL_RUN_TEST(this->test_multipolygon_as_multilinestring,
@@ -407,10 +407,32 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultilinestring2)
                      {0, 1, 2},
                      {0, 1, 3},
                      {0, 4, 8, 12},
-                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}},
+                     {{0, 0},
+                      {1, 0},
+                      {1, 1},
+                      {0, 0},
+                      {10, 10},
+                      {11, 10},
+                      {11, 11},
+                      {10, 10},
+                      {20, 20},
+                      {21, 20},
+                      {21, 21},
+                      {20, 20}},
                      {0, 1, 3},
                      {0, 4, 8, 12},
-                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}});
+                     {{0, 0},
+                      {1, 0},
+                      {1, 1},
+                      {0, 0},
+                      {10, 10},
+                      {11, 10},
+                      {11, 11},
+                      {10, 10},
+                      {20, 20},
+                      {21, 20},
+                      {21, 21},
+                      {20, 20}});
 }
 
 TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultilinestring3)
@@ -419,10 +441,32 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultilinestring3)
                      {0, 1, 2},
                      {0, 2, 3},
                      {0, 4, 8, 12},
-                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}},
+                     {{0, 0},
+                      {1, 0},
+                      {1, 1},
+                      {0, 0},
+                      {10, 10},
+                      {11, 10},
+                      {11, 11},
+                      {10, 10},
+                      {20, 20},
+                      {21, 20},
+                      {21, 21},
+                      {20, 20}},
                      {0, 2, 3},
                      {0, 4, 8, 12},
-                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}});
+                     {{0, 0},
+                      {1, 0},
+                      {1, 1},
+                      {0, 0},
+                      {10, 10},
+                      {11, 10},
+                      {11, 11},
+                      {10, 10},
+                      {20, 20},
+                      {21, 20},
+                      {21, 21},
+                      {20, 20}});
 }
 
 TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultiPoint1)
@@ -442,11 +486,32 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultiPoint2)
                      {0, 1, 2},
                      {0, 1, 3},
                      {0, 4, 8, 12},
-                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}},
+                     {{0, 0},
+                      {1, 0},
+                      {1, 1},
+                      {0, 0},
+                      {10, 10},
+                      {11, 10},
+                      {11, 11},
+                      {10, 10},
+                      {20, 20},
+                      {21, 20},
+                      {21, 21},
+                      {20, 20}},
                      {0, 4, 12},
-                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}});
+                     {{0, 0},
+                      {1, 0},
+                      {1, 1},
+                      {0, 0},
+                      {10, 10},
+                      {11, 10},
+                      {11, 11},
+                      {10, 10},
+                      {20, 20},
+                      {21, 20},
+                      {21, 21},
+                      {20, 20}});
 }
-
 
 TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultiPoint3)
 {
@@ -454,7 +519,29 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultiPoint3)
                      {0, 1, 2},
                      {0, 2, 3},
                      {0, 4, 8, 12},
-                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}},
+                     {{0, 0},
+                      {1, 0},
+                      {1, 1},
+                      {0, 0},
+                      {10, 10},
+                      {11, 10},
+                      {11, 11},
+                      {10, 10},
+                      {20, 20},
+                      {21, 20},
+                      {21, 21},
+                      {20, 20}},
                      {0, 8, 12},
-                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}, {20, 20}, {21, 20}, {21, 21}, {20, 20}});
+                     {{0, 0},
+                      {1, 0},
+                      {1, 1},
+                      {0, 0},
+                      {10, 10},
+                      {11, 10},
+                      {11, 11},
+                      {10, 10},
+                      {20, 20},
+                      {21, 20},
+                      {21, 21},
+                      {20, 20}});
 }
