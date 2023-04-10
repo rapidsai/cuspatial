@@ -24,16 +24,17 @@ from cudf._typing import ColumnLike
 from cudf.core.column.column import as_column
 
 import cuspatial.io.pygeoarrow as pygeoarrow
-from cuspatial.core._column.geocolumn import GeoColumn
+from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.binpreds.binpreds import (
-    ContainsProperlyBinpred,
-    CoversBinpred,
-    CrossesBinpred,
-    EqualsBinpred,
-    IntersectsBinpred,
-    OverlapsBinpred,
-    WithinBinpred,
+from cuspatial.core.binpreds.binpred_dispatch import (
+    CONTAINS_DISPATCH,
+    COVERS_DISPATCH,
+    CROSSES_DISPATCH,
+    DISJOINT_DISPATCH,
+    EQUALS_DISPATCH,
+    INTERSECTS_DISPATCH,
+    OVERLAPS_DISPATCH,
+    WITHIN_DISPATCH,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -122,6 +123,23 @@ class GeoSeries(cudf.Series):
         return result
 
     @property
+    def column_type(self):
+        """This is used to determine the type of the GeoColumn.
+        It is a value returning method that produces the same result as
+        the various `contains_only_*` methods, except as an Enum instead
+        of many booleans."""
+        if contains_only_polygons(self):
+            return ColumnType.POLYGON
+        elif contains_only_linestrings(self):
+            return ColumnType.LINESTRING
+        elif contains_only_multipoints(self):
+            return ColumnType.MULTIPOINT
+        elif contains_only_points(self):
+            return ColumnType.POINT
+        else:
+            return ColumnType.MIXED
+
+    @property
     def point_indices(self):
         if contains_only_polygons(self):
             return self.polygons.point_indices()
@@ -132,6 +150,8 @@ class GeoSeries(cudf.Series):
         elif contains_only_points(self):
             return self.points.point_indices()
         else:
+            if len(self) == 0:
+                return cudf.Series([0], dtype="int32")
             raise TypeError(
                 "GeoSeries must contain only Points, MultiPoints, Lines, or "
                 "Polygons to return point indices."
@@ -1017,9 +1037,10 @@ class GeoSeries(cudf.Series):
             `point_indices` and `polygon_indices`, each of which is a
             `Series` of `dtype('int32')` in the case of `allpairs=True`.
         """
-        if contains_only_points(self) and contains_only_points(self):
-            return EqualsBinpred(self, other, align)()
-        return ContainsProperlyBinpred(self, other, align, allpairs)()
+        predicate = CONTAINS_DISPATCH[(self.column_type, other.column_type)](
+            align=align, allpairs=allpairs
+        )
+        return predicate(self, other)
 
     def geom_equals(self, other, align=True):
         """Compute if a GeoSeries of features A is equal to a GeoSeries of
@@ -1064,7 +1085,10 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature in A
             is equal to the corresponding feature in B.
         """
-        return EqualsBinpred(self, other, align)()
+        predicate = EQUALS_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
 
     def covers(self, other, align=True):
         """Compute if a GeoSeries of features A covers a second GeoSeries of
@@ -1084,7 +1108,10 @@ class GeoSeries(cudf.Series):
             input GeoSeries covers the corresponding feature in the other
             GeoSeries.
         """
-        return CoversBinpred(self, other, align)()
+        predicate = COVERS_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
 
     def intersects(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
@@ -1106,10 +1133,10 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether the geometries of
             each row intersect.
         """
-        if contains_only_points(self) and contains_only_points(other):
-            return cudf.Series(EqualsBinpred(self, other, align)())
-        else:
-            return IntersectsBinpred(self, other, align)()
+        predicate = INTERSECTS_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
 
     def within(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
@@ -1132,10 +1159,10 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature falls
             within the corresponding polygon in the input.
         """
-        if contains_only_points(self) and contains_only_points(other):
-            return cudf.Series(EqualsBinpred(self, other, align)())
-        else:
-            return WithinBinpred(self, other, align)()
+        predicate = WITHIN_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
 
     def overlaps(self, other, align=True):
         """Returns True for all aligned geometries that overlap other, else
@@ -1158,11 +1185,10 @@ class GeoSeries(cudf.Series):
         result : cudf.Series
             A Series of boolean values indicating whether each geometry
             overlaps the corresponding geometry in the input."""
-        # Overlaps has the same requirement as crosses.
-        if contains_only_points(self) and contains_only_points(other):
-            return cudf.Series([False] * len(self))
-        else:
-            return OverlapsBinpred(self, other, align=align)()
+        predicate = OVERLAPS_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
 
     def crosses(self, other, align=True):
         """Returns True for all aligned geometries that cross other, else
@@ -1185,7 +1211,32 @@ class GeoSeries(cudf.Series):
         result : cudf.Series
             A Series of boolean values indicating whether each geometry
             crosses the corresponding geometry in the input."""
-        if contains_only_points(self) and contains_only_points(other):
-            return cudf.Series([False] * len(self))
-        else:
-            return CrossesBinpred(self, other, align=align)()
+        predicate = CROSSES_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
+
+    def disjoint(self, other, align=True):
+        """Returns True for all aligned geometries that are disjoint from
+        other, else False.
+
+        An object is said to be disjoint to other if its boundary and
+        interior does not intersect at all with those of the other.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each pair of
+            corresponding geometries is disjoint.
+        """
+        predicate = DISJOINT_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)

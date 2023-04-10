@@ -270,7 +270,7 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_begi
   return detail::make_counting_transform_iterator(
     0,
     detail::to_valid_segment_functor{
-      this->subtracted_part_begin(), this->subtracted_part_end(), _point_begin});
+      this->segment_offset_begin(), this->segment_offset_end(), _point_begin});
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -282,17 +282,16 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_end(
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::subtracted_part_begin()
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_offset_begin()
 {
-  return detail::make_counting_transform_iterator(
-    0, detail::to_subtracted_by_index_iterator{_part_begin});
+  return detail::make_counting_transform_iterator(0, detail::to_distance_iterator{_part_begin});
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::subtracted_part_end()
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_offset_end()
 {
-  return subtracted_part_begin() + thrust::distance(_part_begin, _part_end);
+  return segment_offset_begin() + thrust::distance(_part_begin, _part_end);
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>

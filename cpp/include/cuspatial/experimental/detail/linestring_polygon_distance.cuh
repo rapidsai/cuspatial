@@ -30,8 +30,8 @@
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
-#include <libcudf/rapids/thrust/functional.h>
 #include <thrust/fill.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/logical.h>
@@ -100,7 +100,7 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
     // Retrieve the number of segments in multilinestrings[geometry_id]
     auto num_segment_this_multilinestring =
       multilinestrings.multilinestring_segment_count_begin()[geometry_id];
-    // The segment id from the multilinestring this thread is compmuting (local_id + global_offset)
+    // The segment id from the multilinestring this thread is computing (local_id + global_offset)
     auto multilinestring_segment_id =
       local_idx % num_segment_this_multilinestring + multilinestrings_segment_offsets[geometry_id];
     // The segment id from the multipolygon this thread is computing (local_id + global_offset)
