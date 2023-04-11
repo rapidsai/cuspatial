@@ -4,11 +4,7 @@ from functools import wraps
 
 import pandas as pd
 import pytest
-from binpred_test_dispatch import (  # noqa: F401
-    feature_test_dispatch,
-    geotype_tuple,
-    predicate,
-)
+from binpred_test_dispatch import predicate, simple_test  # noqa: F401
 
 """Decorator function that xfails a test if an exception is throw
 by the test function. Will be removed when all tests are passing."""
@@ -32,8 +28,8 @@ out_file = open("test_binpred_test_dispatch.log", "w")
 
 
 # @xfail_on_exception  # TODO: Remove when all tests are passing
-def test_fixtures(predicate, geotype_tuple):  # noqa: F811
-    (lhs, rhs) = feature_test_dispatch(geotype_tuple)
+def test_simple_features(predicate, simple_test):  # noqa: F811
+    (lhs, rhs) = simple_test[1], simple_test[2]
     gpdlhs = lhs.to_geopandas()
     gpdrhs = rhs.to_geopandas()
     pred_fn = getattr(lhs, predicate)
@@ -44,9 +40,9 @@ def test_fixtures(predicate, geotype_tuple):  # noqa: F811
     expected = gpd_pred_fn(gpdrhs)
     try:
         pd.testing.assert_series_equal(expected, got.to_pandas())
-        out_file.write(f"{predicate}, {geotype_tuple} passed\n")
+        out_file.write(f"{predicate}, {simple_test} passed\n")
     except AssertionError as e:
-        out_file.write(f"{predicate}, {geotype_tuple} failed\n")
+        out_file.write(f"{predicate}, {simple_test} failed\n")
         print("Binary Predicate Test failed")
         print("----------------------------")
         print(f"lhs: {lhs}")

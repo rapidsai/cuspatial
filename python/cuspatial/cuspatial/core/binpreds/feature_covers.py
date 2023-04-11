@@ -51,7 +51,6 @@ class LineStringLineStringCovers(IntersectsPredicateBase):
         basic_result = pairwise_linestring_intersection(
             preprocessor_result.lhs, preprocessor_result.rhs
         )
-        breakpoint()
         # TODO: Need to determine whether or not the intersection is a
         # linestring or a point.
         return self._postprocess(lhs, rhs, IntersectsOpResult(basic_result))

@@ -46,26 +46,6 @@ def predicate(request):
     return request.param
 
 
-"""The collection of all possible geometry types"""
-
-
-@pytest.fixture(
-    params=[
-        (Point, Point),
-        (Point, LineString),
-        (Point, Polygon),
-        (LineString, Point),
-        (LineString, LineString),
-        (LineString, Polygon),
-        (Polygon, Point),
-        (Polygon, LineString),
-        (Polygon, Polygon),
-    ]
-)
-def geotype_tuple(request):
-    return request.param
-
-
 """The fundamental set of tests. This section is dispatched based
 on the feature type. Each feature pairing has a specific set of
 comparisons that need to be performed to cover the entire test
@@ -288,6 +268,19 @@ features = {
         LineString([(0.5, 0.5), (0.5, -0.5)]),
         point_polygon,
     ),
+    "linestring-polygon-crosses": (
+        """
+      x
+    --|--
+    | | |
+    | | |
+    | | |
+    --|--
+      x
+    """,
+        LineString([(0.5, 1.25), (0.5, -0.25)]),
+        point_polygon,
+    ),
     "polygon-polygon-disjoint": (
         """
     Polygon polygon tests use a triangle for the lhs and a square for the rhs.
@@ -415,6 +408,17 @@ features = {
         Polygon([(0.25, 0.25), (0.75, 0.75), (0.75, 0.25)]),
         point_polygon,
     ),
+    "polygon-polygon-same": (
+        """
+    x---x
+    |   |
+    |   |
+    |   |
+    x---x
+    """,
+        point_polygon,
+        point_polygon,
+    ),
 }
 
 point_point_dispatch_list = [
@@ -452,6 +456,7 @@ linestring_polygon_dispatch_list = [
     "linestring-polygon-point-interior",
     "linestring-polygon-edge-interior",
     "linestring-polygon-in",
+    "linestring-polygon-crosses",
 ]
 
 polygon_polygon_dispatch_list = [
@@ -464,101 +469,39 @@ polygon_polygon_dispatch_list = [
     "polygon-polygon-in-out-point",
     "polygon-polygon-in-point-point",
     "polygon-polygon-contained",
+    "polygon-polygon-same",
 ]
 
 
 def object_dispatch(name_list):
-    while True:
-        # forward order
-        for name in name_list:
-            yield (name, features[name][1], features[name][2])
-        # reversed order
-        for name in name_list:
-            yield (name, features[name][2], features[name][1])
+    for name in name_list:
+        yield (name, features[name][1], features[name][2])
 
 
 type_dispatch = {
     (Point, Point): object_dispatch(point_point_dispatch_list),
     (Point, LineString): object_dispatch(point_linestring_dispatch_list),
-    (LineString, Point): object_dispatch(point_linestring_dispatch_list),
     (Point, Polygon): object_dispatch(point_polygon_dispatch_list),
-    (Polygon, Point): object_dispatch(point_polygon_dispatch_list),
     (LineString, LineString): object_dispatch(
         linestring_linestring_dispatch_list
     ),
     (LineString, Polygon): object_dispatch(linestring_polygon_dispatch_list),
-    (Polygon, LineString): object_dispatch(linestring_polygon_dispatch_list),
     (Polygon, Polygon): object_dispatch(polygon_polygon_dispatch_list),
 }
 
 
-"""Feature type dispatch function."""
+def simple_test_dispatch():
+    for types in type_dispatch:
+        generator = type_dispatch[types]
+        tests = list(generator)
+        for test in tests:
+            yield (
+                test[0],
+                cuspatial.GeoSeries([test[1]]),
+                cuspatial.GeoSeries([test[2]]),
+            )
 
 
-def feature_dispatch(types):
-    generator = type_dispatch[types]
-    yield next(generator)
-
-
-"""Test type dispatch functions."""
-
-
-def single_same(feature_0, feature_1):
-    return (
-        cuspatial.GeoSeries([feature_0]),
-        cuspatial.GeoSeries([feature_0]),
-    )
-
-
-def single_different(feature_0, feature_1):
-    return (
-        cuspatial.GeoSeries([feature_0]),
-        cuspatial.GeoSeries([feature_1]),
-    )
-
-
-def triple_center_same(feature_0, feature_1):
-    return (
-        cuspatial.GeoSeries(
-            [
-                feature_0,
-                feature_1,
-                feature_0,
-            ]
-        ),
-        cuspatial.GeoSeries(
-            [
-                feature_1,
-                feature_1,
-                feature_1,
-            ]
-        ),
-    )
-
-
-def triple_center_different(feature_0, feature_1):
-    return (
-        cuspatial.GeoSeries(
-            [
-                feature_0,
-                feature_1,
-                feature_0,
-            ]
-        ),
-        cuspatial.GeoSeries(
-            [
-                feature_0,
-                feature_0,
-                feature_0,
-            ]
-        ),
-    )
-
-
-"""Dispatch function for test types."""
-
-
-def feature_test_dispatch(type_tuple):
-    features = [*feature_dispatch(type_tuple)][0]
-    result = single_different(features[1], features[2])
-    return result
+@pytest.fixture(params=simple_test_dispatch())
+def simple_test(request):
+    return request.param
