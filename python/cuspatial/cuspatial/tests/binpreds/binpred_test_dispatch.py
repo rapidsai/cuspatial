@@ -7,26 +7,16 @@ import cuspatial
 
 """Test Dispatch"""
 
-"""Testing all combinations of possible geometry types and
-binary predicates is a complex task. This file contains the
-basic fixtures for all geometry types that are required to
-cover different possible test outcomes. This file also contains
-the dispatching system that uses each fixture to generate
-a test for each possible combination of geometry types and
-binary predicates.
+"""This file is used to generate tests for all possible combinations
+of geometry types and binary predicates. The tests are generated
+using the fixtures defined in this file. The fixtures are combined
+in the test function in `test_binpreds_test_dispatch.py` to make
+a Tuple: (predicate, feature-name, feature-lhs, feature-rhs). The
+feature-name is not used in the tests but is useful for debugging.
 """
 
-"""The following fixtures are used to generate tests for
-each possible combination of geometry types and binary
-predicates. The fixtures are combined in the test function
-in `test_binpreds_test_dispatch.py` to make the following
-tuple: (predicate, geotype, geotype, expected_result). The
-geotype fixtures are used to generate the first two
-elements of the tuple. The predicate fixture is used to
-generate the third element of the tuple. The expected_result
-fixture is used to generate the fourth element of the tuple.
-"""
-"""The collection of all possible binary predicates"""
+
+"""The collection of all supported binary predicates"""
 
 
 @pytest.fixture(
@@ -49,8 +39,8 @@ def predicate(request):
 """The fundamental set of tests. This section is dispatched based
 on the feature type. Each feature pairing has a specific set of
 comparisons that need to be performed to cover the entire test
-space. This section will be replaced with specific feature
-representations that cover all possible geometric combinations."""
+space. This section will be contains specific feature representations
+that cover all possible geometric combinations."""
 
 
 point_polygon = Polygon([(0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0)])
