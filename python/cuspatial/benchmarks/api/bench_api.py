@@ -107,6 +107,14 @@ def bench_directed_hausdorff_distance(benchmark, sorted_trajectories):
     benchmark(cuspatial.directed_hausdorff_distance, s)
 
 
+def bench_directed_hausdorff_distance_many_spaces(benchmark):
+    spaces = 10000
+    coords = cupy.zeros((spaces * 2,))
+    offsets = cupy.arange(spaces + 1, dtype="int32")
+    s = cuspatial.GeoSeries.from_multipoints_xy(coords, offsets)
+    benchmark(cuspatial.directed_hausdorff_distance, s)
+
+
 def bench_haversine_distance(benchmark, gpu_dataframe):
     coords_first = gpu_dataframe["geometry"][0:10].polygons.xy[0:1000]
     coords_second = gpu_dataframe["geometry"][10:20].polygons.xy[0:1000]

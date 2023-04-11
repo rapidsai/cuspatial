@@ -47,12 +47,6 @@ struct dispatch_quadtree_bounding_box_join {
                                                  rmm::mr::device_memory_resource* mr,
                                                  rmm::cuda_stream_view stream)
   {
-    auto const keys        = quadtree.column(0);  // uint32_t
-    auto const levels      = quadtree.column(1);  // uint8_t
-    auto const is_internal = quadtree.column(2);  // uint8_t
-    auto const lengths     = quadtree.column(3);  // uint32_t
-    auto const offsets     = quadtree.column(4);  // uint32_t
-
     auto bbox_min = cuspatial::make_vec_2d_iterator(bbox.column(0).template begin<T>(),
                                                     bbox.column(1).template begin<T>());
     auto bbox_max = cuspatial::make_vec_2d_iterator(bbox.column(2).template begin<T>(),
@@ -60,20 +54,22 @@ struct dispatch_quadtree_bounding_box_join {
 
     auto bbox_itr = cuspatial::make_box_iterator(bbox_min, bbox_max);
 
-    auto [bbox_offset, quad_offset] = join_quadtree_and_bounding_boxes(keys.begin<uint32_t>(),
-                                                                       keys.end<uint32_t>(),
-                                                                       levels.begin<uint8_t>(),
-                                                                       is_internal.begin<uint8_t>(),
-                                                                       lengths.begin<uint32_t>(),
-                                                                       offsets.begin<uint32_t>(),
-                                                                       bbox_itr,
-                                                                       bbox_itr + bbox.num_rows(),
-                                                                       static_cast<T>(x_min),
-                                                                       static_cast<T>(y_min),
-                                                                       static_cast<T>(scale),
-                                                                       max_depth,
-                                                                       mr,
-                                                                       stream);
+    auto quadtree_ref = point_quadtree_ref(quadtree.column(0).begin<uint32_t>(),  // keys
+                                           quadtree.column(0).end<uint32_t>(),
+                                           quadtree.column(1).begin<uint8_t>(),  // levels
+                                           quadtree.column(2).begin<bool>(),     // is_internal_node
+                                           quadtree.column(3).begin<uint32_t>(),   // lengths
+                                           quadtree.column(4).begin<uint32_t>());  // offsets
+
+    auto [bbox_offset, quad_offset] = join_quadtree_and_bounding_boxes(
+      quadtree_ref,
+      bbox_itr,
+      bbox_itr + bbox.num_rows(),
+      cuspatial::vec_2d<T>{static_cast<T>(x_min), static_cast<T>(y_min)},
+      static_cast<T>(scale),
+      max_depth,
+      stream,
+      mr);
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.push_back(std::make_unique<cudf::column>(std::move(bbox_offset)));

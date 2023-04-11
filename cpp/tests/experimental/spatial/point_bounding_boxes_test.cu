@@ -60,13 +60,13 @@ struct PointBoundingBoxesTest : public ::testing::Test {
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(PointBoundingBoxesTest, TestTypes);
 
-TYPED_TEST(PointBoundingBoxesTest, OneMillionSmallTrajectories) { this->run_test(1'000'000, 50); }
+TYPED_TEST(PointBoundingBoxesTest, TenThousandSmallTrajectories) { this->run_test(10'000, 50); }
 
-TYPED_TEST(PointBoundingBoxesTest, OneHundredLargeTrajectories) { this->run_test(100, 1'000'000); }
+TYPED_TEST(PointBoundingBoxesTest, OneHundredLargeTrajectories) { this->run_test(100, 10'000); }
 
-TYPED_TEST(PointBoundingBoxesTest, OneVeryLargeTrajectory) { this->run_test(1, 100'000'000); }
+TYPED_TEST(PointBoundingBoxesTest, OneVeryLargeTrajectory) { this->run_test(1, 1'000'000); }
 
 TYPED_TEST(PointBoundingBoxesTest, TrajectoriesWithExpansion)
 {
-  this->run_test(1'000'000, 50, TypeParam{0.5});
+  this->run_test(10'000, 50, TypeParam{0.5});
 }

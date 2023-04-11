@@ -126,6 +126,13 @@ def has_same_geometry(lhs: GeoSeries, rhs: GeoSeries):
         return False
 
 
+def has_multipolygons(gs: GeoSeries):
+    """
+    Returns true if `gs` contains any MultiPolygons
+    """
+    return len(gs.polygons.geometry_offset) != len(gs.polygons.part_offset)
+
+
 def empty_geometry_column(feature: Feature_Enum, base_type):
     """Return a geometry column of type `feature`. Length is 0."""
     if feature == Feature_Enum.POINT:

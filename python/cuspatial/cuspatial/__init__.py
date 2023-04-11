@@ -1,8 +1,6 @@
 from ._version import get_versions
-from .core import interpolate
 from .core.geodataframe import GeoDataFrame
 from .core.geoseries import GeoSeries
-from .core.interpolate import CubicSpline
 from .core.spatial import (
     directed_hausdorff_distance,
     haversine_distance,
@@ -12,6 +10,7 @@ from .core.spatial import (
     pairwise_point_distance,
     pairwise_point_linestring_distance,
     pairwise_point_linestring_nearest_points,
+    pairwise_point_polygon_distance,
     point_in_polygon,
     points_in_spatial_window,
     polygon_bounding_boxes,

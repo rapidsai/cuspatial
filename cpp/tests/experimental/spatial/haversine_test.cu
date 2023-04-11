@@ -29,7 +29,7 @@ template <typename T>
 struct HaversineTest : public ::testing::Test {
 };
 
-// float and double are logically the same but would require seperate tests due to precision.
+// float and double are logically the same but would require separate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(HaversineTest, TestTypes);
 

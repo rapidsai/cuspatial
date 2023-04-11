@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/pairwise_point_in_polygon.cuh>
 #include <cuspatial/vec_2d.hpp>
+#include <cuspatial_test/vector_factories.cuh>
 
 #include <rmm/device_vector.hpp>
 
@@ -28,19 +29,10 @@
 #include <gtest/gtest.h>
 
 using namespace cuspatial;
+using namespace cuspatial::test;
 
 template <typename T>
 struct PairwisePointInPolygonTest : public ::testing::Test {
- public:
-  rmm::device_vector<vec_2d<T>> make_device_points(std::initializer_list<vec_2d<T>> pts)
-  {
-    return rmm::device_vector<vec_2d<T>>(pts.begin(), pts.end());
-  }
-
-  rmm::device_vector<std::size_t> make_device_offsets(std::initializer_list<std::size_t> pts)
-  {
-    return rmm::device_vector<std::size_t>(pts.begin(), pts.end());
-  }
 };
 
 // float and double are logically the same but would require separate tests due to precision.
@@ -58,16 +50,17 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonOneRing)
                                                 {0.5, 0.0},
                                                 {0.0, -0.5},
                                                 {0.0, 0.5}};
-  auto poly_offsets      = this->make_device_offsets({0});
-  auto poly_ring_offsets = this->make_device_offsets({0});
-  auto poly_point =
-    this->make_device_points({{-1.0, -1.0}, {1.0, -1.0}, {1.0, 1.0}, {-1.0, 1.0}, {-1.0, -1.0}});
+  auto poly_offsets      = make_device_vector({0, 1});
+  auto poly_ring_offsets = make_device_vector({0, 5});
+  auto poly_point        = make_device_vector<vec_2d<T>>(
+    {{-1.0, -1.0}, {1.0, -1.0}, {1.0, 1.0}, {-1.0, 1.0}, {-1.0, -1.0}});
 
-  auto got      = rmm::device_vector<int32_t>(1);
-  auto expected = std::vector<int>{false, false, false, false, true, true, true, true};
+  auto got = rmm::device_vector<int32_t>(1);
+  auto expected =
+    cuspatial::test::make_host_vector({false, false, false, false, true, true, true, true});
 
   for (size_t i = 0; i < point_list.size(); ++i) {
-    auto point = this->make_device_points({{point_list[i][0], point_list[i][1]}});
+    auto point = make_device_vector<vec_2d<T>>({{point_list[i][0], point_list[i][1]}});
     auto ret   = pairwise_point_in_polygon(point.begin(),
                                          point.end(),
                                          poly_offsets.begin(),
@@ -94,24 +87,24 @@ TYPED_TEST(PairwisePointInPolygonTest, TwoPolygonsOneRingEach)
                                                 {0.0, -0.5},
                                                 {0.0, 0.5}};
 
-  auto poly_offsets      = this->make_device_offsets({0, 1});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5});
-  auto poly_point        = this->make_device_points({{-1.0, -1.0},
-                                              {-1.0, 1.0},
-                                              {1.0, 1.0},
-                                              {1.0, -1.0},
-                                              {-1.0, -1.0},
-                                              {0.0, 1.0},
-                                              {1.0, 0.0},
-                                              {0.0, -1.0},
-                                              {-1.0, 0.0},
-                                              {0.0, 1.0}});
+  auto poly_offsets      = make_device_vector({0, 1, 2});
+  auto poly_ring_offsets = make_device_vector({0, 5, 10});
+  auto poly_point        = make_device_vector<vec_2d<T>>({{-1.0, -1.0},
+                                                   {-1.0, 1.0},
+                                                   {1.0, 1.0},
+                                                   {1.0, -1.0},
+                                                   {-1.0, -1.0},
+                                                   {0.0, 1.0},
+                                                   {1.0, 0.0},
+                                                   {0.0, -1.0},
+                                                   {-1.0, 0.0},
+                                                   {0.0, 1.0}});
 
   auto got      = rmm::device_vector<int32_t>(2);
   auto expected = std::vector<int>({false, false, false, false, true, true, true, true});
 
   for (size_t i = 0; i < point_list.size() / 2; i = i + 2) {
-    auto points = this->make_device_points(
+    auto points = make_device_vector<vec_2d<T>>(
       {{point_list[i][0], point_list[i][1]}, {point_list[i + 1][0], point_list[i + 1][1]}});
     auto ret = pairwise_point_in_polygon(points.begin(),
                                          points.end(),
@@ -133,24 +126,24 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonTwoRings)
   using T = TypeParam;
   auto point_list =
     std::vector<std::vector<T>>{{0.0, 0.0}, {-0.4, 0.0}, {-0.6, 0.0}, {0.0, 0.4}, {0.0, -0.6}};
-  auto poly_offsets      = this->make_device_offsets({0});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5});
-  auto poly_point        = this->make_device_points({{-1.0, -1.0},
-                                              {1.0, -1.0},
-                                              {1.0, 1.0},
-                                              {-1.0, 1.0},
-                                              {-1.0, -1.0},
-                                              {-0.5, -0.5},
-                                              {-0.5, 0.5},
-                                              {0.5, 0.5},
-                                              {0.5, -0.5},
-                                              {-0.5, -0.5}});
+  auto poly_offsets      = make_device_vector({0, 1});
+  auto poly_ring_offsets = make_device_vector({0, 5, 10});
+  auto poly_point        = make_device_vector<vec_2d<T>>({{-1.0, -1.0},
+                                                   {1.0, -1.0},
+                                                   {1.0, 1.0},
+                                                   {-1.0, 1.0},
+                                                   {-1.0, -1.0},
+                                                   {-0.5, -0.5},
+                                                   {-0.5, 0.5},
+                                                   {0.5, 0.5},
+                                                   {0.5, -0.5},
+                                                   {-0.5, -0.5}});
 
   auto got      = rmm::device_vector<int32_t>(1);
   auto expected = std::vector<int>{0b0, 0b0, 0b1, 0b0, 0b1};
 
   for (size_t i = 0; i < point_list.size(); ++i) {
-    auto point = this->make_device_points({{point_list[i][0], point_list[i][1]}});
+    auto point = make_device_vector<vec_2d<T>>({{point_list[i][0], point_list[i][1]}});
     auto ret   = pairwise_point_in_polygon(point.begin(),
                                          point.end(),
                                          poly_offsets.begin(),
@@ -168,15 +161,16 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonTwoRings)
 
 TYPED_TEST(PairwisePointInPolygonTest, EdgesOfSquare)
 {
-  auto test_point   = this->make_device_points({{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}});
-  auto poly_offsets = this->make_device_offsets({0, 1, 2, 3});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10, 15});
+  auto test_point =
+    make_device_vector<vec_2d<double>>({{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}});
+  auto poly_offsets      = make_device_vector({0, 1, 2, 3, 4});
+  auto poly_ring_offsets = make_device_vector({0, 5, 10, 15, 20});
 
   // 0: rect on min x side
   // 1: rect on max x side
   // 2: rect on min y side
   // 3: rect on max y side
-  auto poly_point = this->make_device_points(
+  auto poly_point = make_device_vector<vec_2d<double>>(
     {{-1.0, -1.0}, {0.0, -1.0}, {0.0, 1.0},  {-1.0, 1.0},  {-1.0, -1.0}, {0.0, -1.0}, {1.0, -1.0},
      {1.0, 1.0},   {0.0, 1.0},  {0.0, -1.0}, {-1.0, -1.0}, {-1.0, 0.0},  {1.0, 0.0},  {1.0, -1.0},
      {-1.0, 1.0},  {-1.0, 0.0}, {-1.0, 1.0}, {1.0, 1.0},   {1.0, 0.0},   {-1.0, 0.0}});
@@ -200,15 +194,16 @@ TYPED_TEST(PairwisePointInPolygonTest, EdgesOfSquare)
 
 TYPED_TEST(PairwisePointInPolygonTest, CornersOfSquare)
 {
-  auto test_point   = this->make_device_points({{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}});
-  auto poly_offsets = this->make_device_offsets({0, 1, 2, 3});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10, 15});
+  auto test_point =
+    make_device_vector<vec_2d<double>>({{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}});
+  auto poly_offsets      = make_device_vector({0, 1, 2, 3, 4});
+  auto poly_ring_offsets = make_device_vector({0, 5, 10, 15, 20});
 
   // 0: min x min y corner
   // 1: min x max y corner
   // 2: max x min y corner
   // 3: max x max y corner
-  auto poly_point = this->make_device_points(
+  auto poly_point = make_device_vector<vec_2d<double>>(
     {{-1.0, -1.0}, {-1.0, 0.0}, {0.0, 0.0},  {0.0, -1.0}, {-1.0, -1.0}, {-1.0, 0.0}, {-1.0, 1.0},
      {0.0, 1.0},   {-1.0, 0.0}, {-1.0, 0.0}, {0.0, -1.0}, {0.0, 0.0},   {1.0, 0.0},  {1.0, -1.0},
      {0.0, -1.0},  {0.0, 0.0},  {0.0, 1.0},  {1.0, 1.0},  {1.0, 0.0},   {0.0, 0.0}});
@@ -271,7 +266,7 @@ TYPED_TEST(PairwisePointInPolygonTest, 32PolygonSupport)
   auto constexpr num_polys       = 32;
   auto constexpr num_poly_points = num_polys * 5;
 
-  auto test_point = this->make_device_points(
+  auto test_point = make_device_vector<vec_2d<T>>(
     {{0.0, 0.0}, {2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}, {0.0, 0.0},
      {2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0},
      {0.0, 0.0}, {2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}, {0.0, 0.0},
@@ -293,9 +288,9 @@ TYPED_TEST(PairwisePointInPolygonTest, 32PolygonSupport)
   auto ret = pairwise_point_in_polygon(test_point.begin(),
                                        test_point.end(),
                                        offsets_iter,
-                                       offsets_iter + num_polys,
+                                       offsets_iter + num_polys + 1,
                                        poly_ring_offsets_iter,
-                                       poly_ring_offsets_iter + num_polys,
+                                       poly_ring_offsets_iter + num_polys + 1,
                                        poly_point_iter,
                                        poly_point_iter + num_poly_points,
                                        got.begin());
@@ -307,14 +302,14 @@ TYPED_TEST(PairwisePointInPolygonTest, 32PolygonSupport)
 struct PairwisePointInPolygonErrorTest : public PairwisePointInPolygonTest<double> {
 };
 
-TEST_F(PairwisePointInPolygonErrorTest, MismatchPolyPointXYLength)
+TEST_F(PairwisePointInPolygonErrorTest, InsufficientPoints)
 {
   using T = double;
 
-  auto test_point        = this->make_device_points({{0.0, 0.0}, {0.0, 0.0}});
-  auto poly_offsets      = this->make_device_offsets({0});
-  auto poly_ring_offsets = this->make_device_offsets({0});
-  auto poly_point        = this->make_device_points({{0.0, 1.0}, {1.0, 0.0}, {0.0, -1.0}});
+  auto test_point        = make_device_vector<vec_2d<T>>({{0.0, 0.0}, {0.0, 0.0}});
+  auto poly_offsets      = make_device_vector({0, 1});
+  auto poly_ring_offsets = make_device_vector({0, 3});
+  auto poly_point        = make_device_vector<vec_2d<T>>({{0.0, 1.0}, {1.0, 0.0}, {0.0, -1.0}});
   auto got               = rmm::device_vector<int32_t>(test_point.size());
 
   EXPECT_THROW(pairwise_point_in_polygon(test_point.begin(),
@@ -329,57 +324,25 @@ TEST_F(PairwisePointInPolygonErrorTest, MismatchPolyPointXYLength)
                cuspatial::logic_error);
 }
 
-TYPED_TEST(PairwisePointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
+TEST_F(PairwisePointInPolygonErrorTest, InsufficientPolyOffsets)
 {
-  using T                = TypeParam;
-  auto point_list        = std::vector<std::vector<T>>{{-2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}};
-  auto poly_offsets      = this->make_device_offsets({0});
-  auto poly_ring_offsets = this->make_device_offsets({0});
-  // "left" edge missing
-  auto poly_point = this->make_device_points({{-1, 1}, {1, 1}, {1, -1}, {-1, -1}});
-  auto expected   = std::vector<int>{0b0, 0b1, 0b0};
-  auto got        = rmm::device_vector<int32_t>(1);
+  using T = double;
 
-  for (size_t i = 0; i < point_list.size(); ++i) {
-    auto point = this->make_device_points({{point_list[i][0], point_list[i][1]}});
-    auto ret   = pairwise_point_in_polygon(point.begin(),
-                                         point.end(),
+  auto test_point        = make_device_vector<vec_2d<T>>({{0.0, 0.0}, {0.0, 0.0}});
+  auto poly_offsets      = make_device_vector({0});
+  auto poly_ring_offsets = make_device_vector({0, 4});
+  auto poly_point =
+    make_device_vector<vec_2d<T>>({{0.0, 1.0}, {1.0, 0.0}, {0.0, -1.0}, {0.0, 1.0}});
+  auto got = rmm::device_vector<int32_t>(test_point.size());
+
+  EXPECT_THROW(pairwise_point_in_polygon(test_point.begin(),
+                                         test_point.end(),
                                          poly_offsets.begin(),
                                          poly_offsets.end(),
                                          poly_ring_offsets.begin(),
                                          poly_ring_offsets.end(),
                                          poly_point.begin(),
                                          poly_point.end(),
-                                         got.begin());
-
-    EXPECT_EQ(std::vector<int>{expected[i]}, got);
-    EXPECT_EQ(got.end(), ret);
-  }
-}
-
-TYPED_TEST(PairwisePointInPolygonTest, SelfClosingLoopRightEdgeMissing)
-{
-  using T                = TypeParam;
-  auto point_list        = std::vector<std::vector<T>>{{-2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}};
-  auto poly_offsets      = this->make_device_offsets({0});
-  auto poly_ring_offsets = this->make_device_offsets({0});
-  // "right" edge missing
-  auto poly_point = this->make_device_points({{1, -1}, {-1, -1}, {-1, 1}, {1, 1}});
-  auto expected   = std::vector<int>{0b0, 0b1, 0b0};
-  auto got        = rmm::device_vector<int32_t>(1);
-  for (size_t i = 0; i < point_list.size(); ++i) {
-    auto point = this->make_device_points({{point_list[i][0], point_list[i][1]}});
-    auto ret   = pairwise_point_in_polygon(point.begin(),
-                                         point.end(),
-                                         poly_offsets.begin(),
-                                         poly_offsets.end(),
-                                         poly_ring_offsets.begin(),
-                                         poly_ring_offsets.end(),
-                                         poly_point.begin(),
-                                         poly_point.end(),
-                                         got.begin());
-
-    EXPECT_EQ(std::vector<int>{expected[i]}, got);
-    EXPECT_EQ(got.end(), ret);
-  }
+                                         got.begin()),
+               cuspatial::logic_error);
 }

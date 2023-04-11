@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
     }
     const char * in_name=argv[1];
     const char * out_root=argv[2];
- 	enum FILEDS {time_id=0, objid_id,bbox_id,location_id,coordinate_id};
+ 	enum FIELDS {time_id=0, objid_id,bbox_id,location_id,coordinate_id};
     const char * out_ext[NUM_FIELDS]={".time",".objectid",".bbox",".location",".coordinate"};
 
  	FILE *in_fp=fopen(in_name,"r");
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 		//printf("s=%s t=%s:%3d %d\n",t_str,asctime(&it),in_mili,it.tm_year);
 
 		Time ot;
-        ot.y = it.tm_year - 100;//shifting starting year from 1900 to 2000, max 64 years allowd
+        ot.y = it.tm_year - 100;//shifting starting year from 1900 to 2000, max 64 years allowed
         ot.m =it.tm_mon;
         ot.d =it.tm_mday;
         ot.hh=it.tm_hour;

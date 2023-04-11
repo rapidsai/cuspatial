@@ -189,7 +189,7 @@ inline rmm::device_uvector<uint32_t> compute_parent_positions(
   rmm::cuda_stream_view stream)
 {
   // Compute parent node start positions
-  // Wraped in an IIFE so `position_map` is freed on return
+  // Wrapped in an IIFE so `position_map` is freed on return
   auto parent_pos = [&]() {
     rmm::device_uvector<uint32_t> position_map(num_parent_nodes, stream);
     // line 1 of algorithm in Fig. 5 in ref.
