@@ -155,3 +155,118 @@ TYPED_TEST(PairwisePolygonDistanceTest, OnePairSinglePolygonWithinNoHole)
                    {{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 0}},
                    {0});
 }
+
+TYPED_TEST(PairwisePolygonDistanceTest, OnePairSinglePolygonDisjointHasHole)
+{
+  this->run_single({0, 1},
+                   {0, 2},
+                   {0, 4, 8},
+                   {{0.0, 0.0},
+                    {2.0, 0.0},
+                    {2.0, 2.0},
+                    {0.0, 0.0},
+                    {1.0, 0.75},
+                    {1.5, 0.75},
+                    {1.25, 1.0},
+                    {1.0, 0.75}},
+                   {0, 1},
+                   {0, 2},
+                   {0, 4, 8},
+                   {{-1.0, 0.0},
+                    {-1.0, -1.0},
+                    {-2.0, 0.0},
+                    {-1.0, 0.0},
+                    {-1.25, -0.25},
+                    {-1.25, -0.5},
+                    {-1.5, -0.25},
+                    {-1.25, -0.25}},
+                   {1});
+}
+
+TYPED_TEST(PairwisePolygonDistanceTest, OnePairSinglePolygonDisjointHasHole2)
+{
+  this->run_single({0, 1},
+                   {0, 2},
+                   {0, 5, 10},
+                   {{0.0, 0.0},
+                    {10.0, 0.0},
+                    {10.0, 10.0},
+                    {0.0, 10.0},
+                    {0.0, 0.0},
+                    {2.0, 2.0},
+                    {2.0, 6.0},
+                    {6.0, 6.0},
+                    {6.0, 2.0},
+                    {2.0, 2.0}},
+                   {0, 1},
+                   {0, 1},
+                   {0, 5},
+                   {{3.0, 3.0}, {3.0, 4.0}, {4.0, 4.0}, {4.0, 3.0}, {3.0, 3.0}},
+                   {1});
+}
+
+TYPED_TEST(PairwisePolygonDistanceTest, OnePairSinglePolygonTouchingHasHole)
+{
+  this->run_single({0, 1},
+                   {0, 2},
+                   {0, 4, 8},
+                   {{0.0, 0.0},
+                    {2.0, 0.0},
+                    {2.0, 2.0},
+                    {0.0, 0.0},
+                    {1.0, 0.75},
+                    {1.5, 0.75},
+                    {1.25, 1.0},
+                    {1.0, 0.75}},
+                   {0, 1},
+                   {0, 2},
+                   {0, 4, 8},
+                   {{2.0, 0.0},
+                    {3.0, 0.0},
+                    {3.0, 1.0},
+                    {2.0, 0.0},
+                    {2.5, 0.25},
+                    {2.75, 0.25},
+                    {2.75, 0.5},
+                    {2.5, 0.25}},
+                   {0});
+}
+
+TYPED_TEST(PairwisePolygonDistanceTest, OnePairSinglePolygonOverlappingHasHole)
+{
+  this->run_single({0, 1},
+                   {0, 2},
+                   {0, 5, 10},
+                   {{0, 0}, {4, 0}, {4, 4}, {0, 4}, {0, 0}, {2, 2}, {2, 3}, {3, 3}, {3, 2}, {2, 2}},
+                   {0, 1},
+                   {0, 2},
+                   {0, 4, 8},
+                   {{2, -1}, {5, 4}, {5, -1}, {2, -1}, {3, -0.5}, {4, 0}, {4, -0.5}, {3, -0.5}},
+                   {0});
+}
+
+TYPED_TEST(PairwisePolygonDistanceTest, OnePairSinglePolygonContainedHasHole)
+{
+  this->run_single({0, 1},
+                   {0, 2},
+                   {0, 5, 10},
+                   {{0, 0}, {4, 0}, {4, 4}, {0, 4}, {0, 0}, {1, 3}, {1, 1}, {3, 1}, {1, 3}, {1, 1}},
+                   {0, 1},
+                   {0, 1},
+                   {0, 4},
+                   {{1, 3}, {3, 1}, {3, 3}, {1, 3}},
+                   {0});
+}
+
+TYPED_TEST(PairwisePolygonDistanceTest, OnePairSinglePolygonWithinHasHole)
+{
+  this->run_single({0, 1},
+                   {0, 1},
+                   {0, 4},
+                   {{1, 3}, {3, 1}, {3, 3}, {1, 3}},
+                   {0, 1},
+                   {0, 2},
+                   {0, 5, 9},
+                   {{0, 0}, {4, 0}, {4, 4}, {0, 4}, {0, 0}, {1, 1}, {3, 1}, {1, 3}, {1, 1}},
+                   {0});
+}

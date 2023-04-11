@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
