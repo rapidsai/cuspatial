@@ -289,19 +289,18 @@ class PolygonComplexEquals(EqualsPredicateBase):
 
 
 class MultiPointMultiPointEquals(PolygonComplexEquals):
-    def _preprocess(self, lhs, rhs):
-        """Sort the multipoints by their coordinates. This is necessary
-        because the order of the points in a multipoint is not significant
-        for the equals predicate."""
-        (lhs_result, rhs_result) = self._sort_multipoints(lhs, rhs)
-        return self._compute_predicate(
-            lhs_result, rhs_result, rhs_result.point_indices
-        )
-
     def _compute_predicate(self, lhs, rhs, point_indices):
-        result = self._vertices_equals(lhs.multipoints.xy, rhs.multipoints.xy)
+        lengths_equal = self._offset_equals(
+            lhs.multipoints.geometry_offset, rhs.multipoints.geometry_offset
+        )
+        (lhs_sorted, rhs_sorted) = self._sort_multipoints(
+            lhs[lengths_equal], rhs[lengths_equal]
+        )
+        result = self._vertices_equals(
+            lhs_sorted.multipoints.xy, rhs_sorted.multipoints.xy
+        )
         return self._postprocess(
-            lhs, rhs, EqualsOpResult(result, point_indices)
+            lhs, rhs, EqualsOpResult(result, rhs_sorted.point_indices)
         )
 
 

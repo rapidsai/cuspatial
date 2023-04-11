@@ -66,6 +66,12 @@ auto make_device_uvector(std::initializer_list<T> inl,
   return res;
 }
 
+template <typename T>
+auto make_host_vector(std::initializer_list<T> inl)
+{
+  return thrust::host_vector<T>{inl.begin(), inl.end()};
+}
+
 /**
  * @brief Owning object of a multipolygon array following geoarrow layout.
  *
