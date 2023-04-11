@@ -21,6 +21,7 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _false_series,
+    _linestrings_from_polygons,
 )
 
 
@@ -73,18 +74,6 @@ class IntersectsPredicateBase(BinPred):
             :-1
         ].reset_index(drop=True)
         return cp.arange(len(lhs))[is_sizes > 0]
-
-    def _linestrings_from_polygons(self, geoseries):
-        xy = geoseries.polygons.xy
-        parts = geoseries.polygons.part_offset.take(
-            geoseries.polygons.geometry_offset
-        )
-        rings = geoseries.polygons.ring_offset
-        return cuspatial.GeoSeries.from_linestrings_xy(
-            xy,
-            rings,
-            parts,
-        )
 
     def _postprocess(self, lhs, rhs, op_result):
         """Postprocess the output GeoSeries to ensure that they are of the
@@ -158,7 +147,7 @@ class LineStringPointIntersects(IntersectsPredicateBase):
 class LineStringPolygonIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
         """Convert rhs to linestrings."""
-        ls_rhs = self._linestrings_from_polygons(rhs)
+        ls_rhs = _linestrings_from_polygons(rhs)
         return self._compute_predicate(
             lhs, ls_rhs, PreprocessorResult(lhs, ls_rhs)
         )
@@ -167,8 +156,8 @@ class LineStringPolygonIntersects(IntersectsPredicateBase):
 class PolygonPolygonIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
         """Convert lhs and rhs to linestrings."""
-        ls_lhs = self._linestrings_from_polygons(lhs)
-        ls_rhs = self._linestrings_from_polygons(rhs)
+        ls_lhs = _linestrings_from_polygons(lhs)
+        ls_rhs = _linestrings_from_polygons(rhs)
         return self._compute_predicate(
             ls_lhs, ls_rhs, PreprocessorResult(ls_lhs, ls_rhs)
         )

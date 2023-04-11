@@ -85,11 +85,14 @@ class ContainsOpResult(OpResult):
 
     Parameters
     ----------
-    result : cudf.DataFrame
+    pip_result : cudf.DataFrame
         A cudf.DataFrame containing two columns: "polygon_index" and
         Point_index". The "polygon_index" column contains the index of
         the polygon that contains each point. The "point_index" column
         contains the index of each point that is contained by a polygon.
+    intersection_result: Tuple
+        A tuple containing the result of the intersection operation
+        between the left-hand GeoSeries and the right-hand GeoSeries.
     points : GeoSeries
         A GeoSeries of points.
     point_indices : cudf.Series
@@ -99,17 +102,20 @@ class ContainsOpResult(OpResult):
 
     def __init__(
         self,
-        result: Series,
+        pip_result: Series,
+        intersection_result: Tuple,
         points: "GeoSeries" = None,
         point_indices: Series = None,
     ):
-        self.result = result
+        self.pip_result = pip_result
+        self.intersection_result = intersection_result
         self.points = points
         self.point_indices = point_indices
 
     def __repr__(self):
-        return f"OpResult(result={self.result}, points={self.points}, \
-        point_indices={self.point_indices})"
+        return f"OpResult(pip_result={self.pip_result}, \
+        intersection_result={self.intersection_result}, \
+        points={self.points}, point_indices={self.point_indices})\n"
 
     def __str__(self):
         return self.__repr__()

@@ -9,6 +9,7 @@ from cudf.core.dataframe import DataFrame
 from cudf.core.series import Series
 
 from cuspatial.core._column.geocolumn import GeoColumn
+from cuspatial.core.binops.intersection import pairwise_linestring_intersection
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ContainsOpResult,
@@ -24,6 +25,7 @@ from cuspatial.utils.binpred_utils import (
     Polygon,
     _count_results_in_multipoint_geometries,
     _false_series,
+    _linestrings_from_polygons,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -128,7 +130,7 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
         """
         return len(lhs) >= 32 or has_multipolygons(lhs) or self.config.allpairs
 
-    def _compute_predicate(
+    def _compute_basic_predicate(
         self,
         lhs: "GeoSeries",
         rhs: "GeoSeries",
@@ -148,7 +150,18 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
             result = contains_properly(lhs, points, how="quadtree")
         else:
             result = contains_properly(lhs, points, how="byte-limited")
-        op_result = ContainsOpResult(result, points, point_indices)
+        op_result = ContainsOpResult(result, None, points, point_indices)
+        return op_result
+
+    def _compute_predicate(
+        self,
+        lhs: "GeoSeries",
+        rhs: "GeoSeries",
+        preprocessor_result: PreprocessorResult,
+    ):
+        op_result = self._compute_basic_predicate(
+            lhs, rhs, preprocessor_result
+        )
         return self._postprocess(lhs, rhs, op_result)
 
     def _convert_quadtree_result_from_part_to_polygon_indices(
@@ -217,7 +230,7 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
         # Convert the quadtree part indices df into a polygon indices df
         polygon_indices = (
             self._convert_quadtree_result_from_part_to_polygon_indices(
-                lhs, op_result.result
+                lhs, op_result.pip_result
             )
         )
         # Because the quadtree contains_properly call returns a list of
@@ -265,7 +278,7 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
             point index and the polygon index for each point in the
             polygon.
         """
-        if len(op_result.result) == 0:
+        if len(op_result.pip_result) == 0:
             return _false_series(len(lhs))
 
         # Convert the quadtree part indices df into a polygon indices df.
@@ -311,12 +324,36 @@ class PolygonComplexContains(ContainsPredicateBase):
     (Polygon, Polygon)
     """
 
-    def _postprocess(self, lhs, rhs, preprocessor_output):
+    def _compute_intersects(self, lhs, rhs):
+        ls_lhs = _linestrings_from_polygons(lhs)
+        ls_rhs = _linestrings_from_polygons(rhs)
+        basic_result = pairwise_linestring_intersection(ls_lhs, ls_rhs)
+        return basic_result
+
+    def _compute_predicate(self, lhs, rhs, preprocessor_output):
+        pip_result = super()._compute_basic_predicate(
+            lhs, rhs, preprocessor_output
+        )
+        intersects_result = self._compute_intersects(lhs, rhs)
+        breakpoint()
+        return self._postprocess(
+            lhs,
+            rhs,
+            ContainsOpResult(
+                pip_result,
+                intersects_result,
+                preprocessor_output.final_rhs,
+                preprocessor_output.point_indices,
+            ),
+        )
+
+    def _postprocess(self, lhs, rhs, op_result):
         # for each input pair i: result[i] =  true iff point[i] is
         # contained in at least one polygon of multipolygon[i].
         # pairwise
-        point_indices = preprocessor_output.point_indices
-        allpairs_result = self._reindex_allpairs(lhs, preprocessor_output)
+        point_indices = op_result.point_indices
+        allpairs_result = self._reindex_allpairs(lhs, op_result.pip_result)
+
         if isinstance(allpairs_result, Series):
             return allpairs_result
 
@@ -333,6 +370,21 @@ class PolygonComplexContains(ContainsPredicateBase):
         final_result.loc[
             result_df["rhs_index"][result_df["feature_in_polygon"]]
         ] = True
+
+        offsets = cudf.Series(op_result.intersection_result[0])
+        sizes = offsets[1:].reset_index(drop=True) - offsets[:-1].reset_index(
+            drop=True
+        )
+        exterior_ring_offsets = lhs.polygons.ring_offset.take(
+            lhs.polygons.geometry_offset
+        )
+        exterior_ring_sizes = (
+            exterior_ring_offsets[1:] - exterior_ring_offsets[:-1]
+        ) - 1
+        intersection_size_matches = sizes == exterior_ring_sizes
+        final_result[
+            intersection_size_matches.index
+        ] = intersection_size_matches
         return final_result
 
 
@@ -355,6 +407,18 @@ class ContainsByIntersection(BinPred):
         return predicate(lhs, rhs)
 
 
+class LineStringLineStringContains(BinPred):
+    """LineString types are contained only by an equality test."""
+
+    def _preprocess(self, lhs, rhs):
+        from cuspatial.core.binpreds.binpred_dispatch import EQUALS_DISPATCH
+
+        predicate = EQUALS_DISPATCH[(lhs.column_type, rhs.column_type)](
+            align=self.config.align
+        )
+        return predicate(lhs, rhs)
+
+
 """DispatchDict listing the classes to use for each combination of
     left and right hand side types. """
 DispatchDict = {
@@ -368,7 +432,7 @@ DispatchDict = {
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): ContainsByIntersection,
     (LineString, MultiPoint): NotImplementedPredicate,
-    (LineString, LineString): ImpossiblePredicate,
+    (LineString, LineString): LineStringLineStringContains,
     (LineString, Polygon): ImpossiblePredicate,
     (Polygon, Point): ContainsPredicateBase,
     (Polygon, MultiPoint): PolygonComplexContains,

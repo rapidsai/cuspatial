@@ -4,6 +4,7 @@ import cupy as cp
 
 import cudf
 
+import cuspatial
 from cuspatial.core._column.geocolumn import ColumnType
 
 """Column-Type objects to use for simple syntax in the `DispatchDict` contained
@@ -54,3 +55,16 @@ def _count_results_in_multipoint_geometries(point_indices, point_result):
     )
     expected_count = point_indices_df.groupby("rhs_index").count().sort_index()
     return hits, expected_count
+
+
+def _linestrings_from_polygons(geoseries):
+    xy = geoseries.polygons.xy
+    parts = geoseries.polygons.part_offset.take(
+        geoseries.polygons.geometry_offset
+    )
+    rings = geoseries.polygons.ring_offset
+    return cuspatial.GeoSeries.from_linestrings_xy(
+        xy,
+        rings,
+        parts,
+    )
