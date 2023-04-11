@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 
 #pragma once
 
-#include <thrust/pair.h>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
+#include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/traits.hpp>
+#include <cuspatial/types.hpp>
 #include <cuspatial/vec_2d.hpp>
+
+#include <thrust/pair.h>
 
 namespace cuspatial {
 
@@ -76,6 +78,9 @@ class multilinestring_range {
   /// Return the total number of points in the array.
   CUSPATIAL_HOST_DEVICE auto num_points();
 
+  /// Return the total number of segments in the array.
+  CUSPATIAL_HOST_DEVICE auto num_segments();
+
   /// Return the iterator to the first multilinestring in the range.
   CUSPATIAL_HOST_DEVICE auto multilinestring_begin();
 
@@ -87,6 +92,18 @@ class multilinestring_range {
 
   /// Return the iterator to the one past the last multilinestring in the range.
   CUSPATIAL_HOST_DEVICE auto end() { return multilinestring_end(); }
+
+  /// Return the iterator to the first point in the range.
+  CUSPATIAL_HOST_DEVICE auto point_begin() { return _point_begin; }
+
+  /// Return the iterator to the one past the last point in the range.
+  CUSPATIAL_HOST_DEVICE auto point_end() { return _point_end; }
+
+  /// Return the iterator to the first part offset in the range.
+  CUSPATIAL_HOST_DEVICE auto part_offset_begin() { return _part_begin; }
+
+  /// Return the iterator to the one past the last part offset in the range.
+  CUSPATIAL_HOST_DEVICE auto part_offset_end() { return _part_end; }
 
   /// Given the index of a point, return the part (linestring) index where the point locates.
   template <typename IndexType>
@@ -128,9 +145,47 @@ class multilinestring_range {
   CUSPATIAL_HOST_DEVICE thrust::pair<vec_2d<element_t>, vec_2d<element_t>> segment(
     IndexType segment_idx);
 
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto multilinestring_point_count_begin();
+
+  /// Returns an iterator to the counts of segments per multilinestring
+  CUSPATIAL_HOST_DEVICE auto multilinestring_point_count_end();
+
+  /// Returns an iterator to the counts of segments per multilinestring
+  CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_begin();
+
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_end();
+
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_begin();
+
+  /// Returns an iterator to the counts of points per multilinestring
+  CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_end();
+
+  /// Returns an iterator to the start of the segment
+  CUSPATIAL_HOST_DEVICE auto segment_begin();
+
+  /// Returns an iterator to the end of the segment
+  CUSPATIAL_HOST_DEVICE auto segment_end();
+
   /// Returns the `multilinestring_idx`th multilinestring in the range.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator[](IndexType multilinestring_idx);
+
+  /// Raw offsets iterator
+
+  CUSPATIAL_HOST_DEVICE auto geometry_offsets_begin() { return _geometry_begin; }
+  CUSPATIAL_HOST_DEVICE auto geometry_offsets_end() { return _geometry_end; }
+  CUSPATIAL_HOST_DEVICE auto part_offsets_begin() { return _part_begin; }
+  CUSPATIAL_HOST_DEVICE auto part_offsets_end() { return _part_end; }
+
+  /// Range Casts
+
+  /// Casts the multilinestring range into a multipoint range.
+  /// This treats each multilinestring as simply a collection of points,
+  /// ignoring all edges in the multilinestring.
+  CUSPATIAL_HOST_DEVICE auto as_multipoint_range();
 
  protected:
   GeometryIterator _geometry_begin;
@@ -139,6 +194,9 @@ class multilinestring_range {
   PartIterator _part_end;
   VecIterator _point_begin;
   VecIterator _point_end;
+
+  CUSPATIAL_HOST_DEVICE auto segment_offset_begin();
+  CUSPATIAL_HOST_DEVICE auto segment_offset_end();
 
  private:
   /// @internal
@@ -225,6 +283,67 @@ auto make_multilinestring_range(IntegerRange1 geometry_offsets,
                                points.begin(),
                                points.end());
 }
+
+/**
+ * @ingroup ranges
+ * @brief Create a range object of multilinestring from cuspatial::geometry_column_view.
+ * Specialization for linestrings column.
+ *
+ * @pre linestrings_column must be a cuspatial::geometry_column_view
+ */
+template <collection_type_id Type,
+          typename T,
+          typename IndexType,
+          typename GeometryColumnView,
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::SINGLE)>
+auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
+{
+  CUSPATIAL_EXPECTS(linestrings_column.geometry_type() == geometry_type_id::LINESTRING,
+                    "Must be Linestring geometry type.");
+  auto geometry_iter       = thrust::make_counting_iterator(0);
+  auto const& part_offsets = linestrings_column.offsets();
+  auto const& points_xy = linestrings_column.child().child(1);  // Ignores x-y offset {0, 2, 4...}
+
+  auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
+
+  return multilinestring_range(geometry_iter,
+                               geometry_iter + part_offsets.size(),
+                               part_offsets.template begin<IndexType>(),
+                               part_offsets.template end<IndexType>(),
+                               points_it,
+                               points_it + points_xy.size() / 2);
+}
+
+/**
+ * @ingroup ranges
+ * @brief Create a range object of multilinestring from cuspatial::geometry_column_view.
+ * Specialization for multilinestrings column.
+ *
+ * @pre linestring_column must be a cuspatial::geometry_column_view
+ */
+template <collection_type_id Type,
+          typename T,
+          typename IndexType,
+          CUSPATIAL_ENABLE_IF(Type == collection_type_id::MULTI),
+          typename GeometryColumnView>
+auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
+{
+  CUSPATIAL_EXPECTS(linestrings_column.geometry_type() == geometry_type_id::LINESTRING,
+                    "Must be Linestring geometry type.");
+  auto const& geometry_offsets = linestrings_column.offsets();
+  auto const& parts            = linestrings_column.child();
+  auto const& part_offsets     = parts.child(0);
+  auto const& points_xy        = parts.child(1).child(1);  // Ignores x-y offset {0, 2, 4...}
+
+  auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
+
+  return multilinestring_range(geometry_offsets.template begin<IndexType>(),
+                               geometry_offsets.template end<IndexType>(),
+                               part_offsets.template begin<IndexType>(),
+                               part_offsets.template end<IndexType>(),
+                               points_it,
+                               points_it + points_xy.size() / 2);
+};
 
 }  // namespace cuspatial
 

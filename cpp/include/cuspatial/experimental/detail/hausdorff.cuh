@@ -61,7 +61,7 @@ constexpr auto magnitude_squared(T a, T b)
  * this is the first step to computing Hausdorff distance. The second step of computing Hausdorff
  * distance is to determine the maximum of these minimums, which is done by each thread writing
  * it's minimum to the output using atomicMax. This is done once per thread per RHS space. Once
- * all threads have run to completion, all "maximums of the minumum distances" (aka, directed
+ * all threads have run to completion, all "maximums of the minimum distances" (aka, directed
  * Hausdorff distances) reside in the output.
  *
  * @tparam T type of coordinate, either float or double.

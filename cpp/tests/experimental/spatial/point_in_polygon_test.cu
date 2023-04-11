@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,13 +57,49 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
                                               {0.5, 0.0},
                                               {0.0, -0.5},
                                               {0.0, 0.5}});
-  auto poly_offsets      = this->make_device_offsets({0});
-  auto poly_ring_offsets = this->make_device_offsets({0});
+  auto poly_offsets      = this->make_device_offsets({0, 1});
+  auto poly_ring_offsets = this->make_device_offsets({0, 5});
   auto poly_point =
     this->make_device_points({{-1.0, -1.0}, {1.0, -1.0}, {1.0, 1.0}, {-1.0, 1.0}, {-1.0, -1.0}});
 
   auto got      = rmm::device_vector<int32_t>(test_point.size());
   auto expected = std::vector<int32_t>{false, false, false, false, true, true, true, true};
+
+  auto ret = point_in_polygon(test_point.begin(),
+                              test_point.end(),
+                              poly_offsets.begin(),
+                              poly_offsets.end(),
+                              poly_ring_offsets.begin(),
+                              poly_ring_offsets.end(),
+                              poly_point.begin(),
+                              poly_point.end(),
+                              got.begin());
+
+  EXPECT_EQ(got, expected);
+  EXPECT_EQ(ret, got.end());
+}
+
+// cuspatial expects closed rings, however algorithms may work OK with unclosed rings
+// in the future if we change to an algorithm that requires closed rings we may change or remove
+// this test.
+// Note that we don't introspect the values of offset arrays to validate closedness. So this test
+// uses a polygon ring with 4 vertices so it doesn't fail polygon validation.
+TYPED_TEST(PointInPolygonTest, OnePolygonOneRingUnclosed)
+{
+  auto test_point        = this->make_device_points({{-2.0, 0.0},
+                                              {2.0, 0.0},
+                                              {0.0, -2.0},
+                                              {0.0, 2.0},
+                                              {-0.5, 0.0},
+                                              {0.5, 0.0},
+                                              {0.0, -0.5},
+                                              {0.0, 0.5}});
+  auto poly_offsets      = this->make_device_offsets({0, 1});
+  auto poly_ring_offsets = this->make_device_offsets({0, 4});
+  auto poly_point = this->make_device_points({{-1.0, -1.0}, {1.0, -1.0}, {1.0, 0.0}, {1.0, 1.0}});
+
+  auto got      = rmm::device_vector<int32_t>(test_point.size());
+  auto expected = std::vector<int32_t>{false, false, false, false, false, true, true, false};
 
   auto ret = point_in_polygon(test_point.begin(),
                               test_point.end(),
@@ -90,8 +126,8 @@ TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
                                               {0.0, -0.5},
                                               {0.0, 0.5}});
 
-  auto poly_offsets      = this->make_device_offsets({0, 1});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5});
+  auto poly_offsets      = this->make_device_offsets({0, 1, 2});
+  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10});
   auto poly_point        = this->make_device_points({{-1.0, -1.0},
                                               {-1.0, 1.0},
                                               {1.0, 1.0},
@@ -124,8 +160,8 @@ TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
 {
   auto test_point =
     this->make_device_points({{0.0, 0.0}, {-0.4, 0.0}, {-0.6, 0.0}, {0.0, 0.4}, {0.0, -0.6}});
-  auto poly_offsets      = this->make_device_offsets({0});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5});
+  auto poly_offsets      = this->make_device_offsets({0, 2});
+  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10});
   auto poly_point        = this->make_device_points({{-1.0, -1.0},
                                               {1.0, -1.0},
                                               {1.0, 1.0},
@@ -157,8 +193,8 @@ TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
 TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
 {
   auto test_point        = this->make_device_points({{0.0, 0.0}});
-  auto poly_offsets      = this->make_device_offsets({0, 1, 2, 3});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10, 15});
+  auto poly_offsets      = this->make_device_offsets({0, 1, 2, 3, 4});
+  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10, 15, 20});
 
   // 0: rect on min x side
   // 1: rect on max x side
@@ -189,8 +225,8 @@ TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
 TYPED_TEST(PointInPolygonTest, CornersOfSquare)
 {
   auto test_point        = this->make_device_points({{0.0, 0.0}});
-  auto poly_offsets      = this->make_device_offsets({0, 1, 2, 3});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10, 15});
+  auto poly_offsets      = this->make_device_offsets({0, 1, 2, 3, 4});
+  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10, 15, 20});
 
   // 0: min x min y corner
   // 1: min x max y corner
@@ -276,9 +312,9 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
   auto ret = point_in_polygon(test_point.begin(),
                               test_point.end(),
                               offsets_iter,
-                              offsets_iter + num_polys,
+                              offsets_iter + num_polys + 1,
                               poly_ring_offsets_iter,
-                              poly_ring_offsets_iter + num_polys,
+                              poly_ring_offsets_iter + num_polys + 1,
                               poly_point_iter,
                               poly_point_iter + num_poly_points,
                               got.begin());
@@ -290,34 +326,12 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
 struct PointInPolygonErrorTest : public PointInPolygonTest<double> {
 };
 
-TEST_F(PointInPolygonErrorTest, MismatchPolyPointXYLength)
-{
-  using T = double;
-
-  auto test_point        = this->make_device_points({{0.0, 0.0}, {0.0, 0.0}});
-  auto poly_offsets      = this->make_device_offsets({0});
-  auto poly_ring_offsets = this->make_device_offsets({0});
-  auto poly_point        = this->make_device_points({{0.0, 1.0}, {1.0, 0.0}, {0.0, -1.0}});
-  auto got               = rmm::device_vector<int32_t>(test_point.size());
-
-  EXPECT_THROW(point_in_polygon(test_point.begin(),
-                                test_point.end(),
-                                poly_offsets.begin(),
-                                poly_offsets.end(),
-                                poly_ring_offsets.begin(),
-                                poly_ring_offsets.end(),
-                                poly_point.begin(),
-                                poly_point.end(),
-                                got.begin()),
-               cuspatial::logic_error);
-}
-
 TYPED_TEST(PointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
 {
   using T                = TypeParam;
   auto test_point        = this->make_device_points({{-2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}});
-  auto poly_offsets      = this->make_device_offsets({0});
-  auto poly_ring_offsets = this->make_device_offsets({0});
+  auto poly_offsets      = this->make_device_offsets({0, 1});
+  auto poly_ring_offsets = this->make_device_offsets({0, 4});
   // "left" edge missing
   auto poly_point = this->make_device_points({{-1, 1}, {1, 1}, {1, -1}, {-1, -1}});
   auto expected   = std::vector<int32_t>{0b0, 0b1, 0b0};
@@ -341,8 +355,8 @@ TYPED_TEST(PointInPolygonTest, SelfClosingLoopRightEdgeMissing)
 {
   using T                = TypeParam;
   auto test_point        = this->make_device_points({{-2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}});
-  auto poly_offsets      = this->make_device_offsets({0});
-  auto poly_ring_offsets = this->make_device_offsets({0});
+  auto poly_offsets      = this->make_device_offsets({0, 1});
+  auto poly_ring_offsets = this->make_device_offsets({0, 4});
   // "right" edge missing
   auto poly_point = this->make_device_points({{1, -1}, {-1, -1}, {-1, 1}, {1, 1}});
   auto expected   = std::vector<int32_t>{0b0, 0b1, 0b0};

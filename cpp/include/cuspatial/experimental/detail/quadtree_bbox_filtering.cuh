@@ -29,38 +29,27 @@
 
 namespace cuspatial {
 
-template <class KeyIterator,
-          class LevelIterator,
-          class IsInternalIterator,
-          class BoundingBoxIterator,
-          class T>
+template <class BoundingBoxIterator, class T>
 std::pair<rmm::device_uvector<uint32_t>, rmm::device_uvector<uint32_t>>
-join_quadtree_and_bounding_boxes(KeyIterator keys_first,
-                                 KeyIterator keys_last,
-                                 LevelIterator levels_first,
-                                 IsInternalIterator is_internal_nodes_first,
-                                 KeyIterator lengths_first,
-                                 KeyIterator offsets_first,
+join_quadtree_and_bounding_boxes(point_quadtree_ref quadtree,
                                  BoundingBoxIterator bounding_boxes_first,
                                  BoundingBoxIterator bounding_boxes_last,
-                                 T x_min,
-                                 T y_min,
+                                 vec_2d<T> const& v_min,
                                  T scale,
                                  int8_t max_depth,
-                                 rmm::mr::device_memory_resource* mr,
-                                 rmm::cuda_stream_view stream)
+                                 rmm::cuda_stream_view stream,
+                                 rmm::mr::device_memory_resource* mr)
 {
   static_assert(is_same<T, cuspatial::iterator_vec_base_type<BoundingBoxIterator>>(),
                 "Iterator value_type mismatch");
 
-  auto const num_nodes = std::distance(keys_first, keys_last);
   auto const num_boxes = std::distance(bounding_boxes_first, bounding_boxes_last);
 
   // Count the number of top-level nodes to start.
   // This could be provided explicitly, but count_if should be fast enough.
   auto num_top_level_leaves = thrust::count_if(rmm::exec_policy(stream),
-                                               levels_first,
-                                               levels_first + num_nodes,
+                                               quadtree.level_begin(),
+                                               quadtree.level_end(),
                                                thrust::placeholders::_1 == 0);
 
   auto num_pairs = num_top_level_leaves * num_boxes;
@@ -96,9 +85,7 @@ join_quadtree_and_bounding_boxes(KeyIterator keys_first,
 
   // Find intersections for all the top level quadrants and bounding boxes
   std::tie(num_parents, num_leaves) =
-    detail::find_intersections(keys_first,
-                               levels_first,
-                               is_internal_nodes_first,
+    detail::find_intersections(quadtree,
                                bounding_boxes_first,
                                // The top-level node indices
                                detail::make_counting_transform_iterator(
@@ -111,8 +98,7 @@ join_quadtree_and_bounding_boxes(KeyIterator keys_first,
                                // found intersecting quadrant and bbox indices for output
                                make_output_values_iter(),
                                num_pairs,
-                               x_min,
-                               y_min,
+                               v_min,
                                scale,
                                max_depth,
                                stream);
@@ -141,8 +127,8 @@ join_quadtree_and_bounding_boxes(KeyIterator keys_first,
     // Walk one level down and fill the current level's vectors with
     // the next level's quadrant info and bbox indices.
     std::tie(num_pairs, cur_types, cur_levels, cur_node_idxs, cur_bbox_idxs) =
-      detail::descend_quadtree(lengths_first,
-                               offsets_first,
+      detail::descend_quadtree(quadtree.length_begin(),
+                               quadtree.offset_begin(),
                                num_parents,
                                cur_types,
                                cur_levels,
@@ -152,9 +138,7 @@ join_quadtree_and_bounding_boxes(KeyIterator keys_first,
 
     // Find intersections for the the next level's quadrants and bboxes
     std::tie(num_parents, num_leaves) =
-      detail::find_intersections(keys_first,
-                                 levels_first,
-                                 is_internal_nodes_first,
+      detail::find_intersections(quadtree,
                                  bounding_boxes_first,
                                  cur_node_idxs.begin(),
                                  cur_bbox_idxs.begin(),
@@ -163,8 +147,7 @@ join_quadtree_and_bounding_boxes(KeyIterator keys_first,
                                  // found intersecting quadrant and bbox indices for output
                                  make_output_values_iter(),
                                  num_pairs,
-                                 x_min,
-                                 y_min,
+                                 v_min,
                                  scale,
                                  max_depth,
                                  stream);
@@ -177,7 +160,8 @@ join_quadtree_and_bounding_boxes(KeyIterator keys_first,
     // Copy the relevant node offsets into a temporary vector so we don't modify the quadtree column
     rmm::device_uvector<uint32_t> tmp_node_offsets(num_results, stream);
 
-    auto const iter = thrust::make_permutation_iterator(offsets_first, out_node_idxs.begin());
+    auto const iter =
+      thrust::make_permutation_iterator(quadtree.offset_begin(), out_node_idxs.begin());
 
     thrust::copy(rmm::exec_policy(stream), iter, iter + num_results, tmp_node_offsets.begin());
 

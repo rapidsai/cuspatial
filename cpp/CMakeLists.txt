@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2019-2022, NVIDIA CORPORATION.
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,12 +25,17 @@ include(rapids-find)
 
 rapids_cuda_init_architectures(CUSPATIAL)
 
-project(CUSPATIAL VERSION 23.04.00 LANGUAGES C CXX CUDA)
+project(CUSPATIAL VERSION 23.06.00 LANGUAGES C CXX CUDA)
 
 # Needed because GoogleBenchmark changes the state of FindThreads.cmake,
 # causing subsequent runs to have different values for the `Threads::Threads` target.
 # Setting this flag ensures `Threads::Threads` is the same value in first run and subsequent runs.
 set(THREADS_PREFER_PTHREAD_FLAG ON)
+
+# Must come after enable_language(CUDA)
+# Use `-isystem <path>` instead of `-isystem=<path>`
+# because the former works with clangd intellisense
+set(CMAKE_INCLUDE_SYSTEM_FLAG_CUDA "-isystem ")
 
 ###################################################################################################
 # - build options ---------------------------------------------------------------------------------
@@ -103,14 +108,17 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 rapids_cpm_init()
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
-
+# find or install GoogleTest
+if (CUSPATIAL_BUILD_TESTS)
+    include(cmake/thirdparty/get_gtest.cmake)
+endif()
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial
+    src/column/geometry_column_view.cpp
     src/indexing/construction/point_quadtree.cu
-    src/interpolate/cubic_spline.cu
     src/join/quadtree_point_in_polygon.cu
     src/join/quadtree_point_to_nearest_linestring.cu
     src/join/quadtree_bbox_filtering.cu
@@ -122,8 +130,10 @@ add_library(cuspatial
     src/spatial/haversine.cu
     src/spatial/hausdorff.cu
     src/spatial/linestring_distance.cu
+    src/spatial/linestring_intersection.cu
     src/spatial/point_distance.cu
     src/spatial/point_linestring_distance.cu
+    src/spatial/point_polygon_distance.cu
     src/spatial/point_linestring_nearest_points.cu
     src/spatial/sinusoidal_projection.cu
     src/trajectory/derive_trajectories.cu
@@ -186,7 +196,7 @@ endif()
 target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
 # Specify the target module library dependencies
-target_link_libraries(cuspatial PUBLIC cudf::cudf CUDA::cusparse${_ctk_static_suffix})
+target_link_libraries(cuspatial PUBLIC cudf::cudf)
 
 add_library(cuspatial::cuspatial ALIAS cuspatial)
 
@@ -278,9 +288,10 @@ rapids_export(
 # * build documentation ----------------------------------------------------------------------------
 
 find_package(Doxygen)
-if(Doxygen_FOUND)
 
-# doc targets for cuDF
+if(DOXYGEN_FOUND)
+
+# doc targets for cuSpatial
 add_custom_command(
   OUTPUT CUSPATIAL_DOXYGEN
   WORKING_DIRECTORY ${CUSPATIAL_SOURCE_DIR}/doxygen

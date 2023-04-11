@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,13 +137,7 @@ std::unique_ptr<cudf::column> pairwise_point_in_polygon(cudf::column_view const&
   CUSPATIAL_EXPECTS(not poly_points_x.has_nulls() && not poly_points_y.has_nulls(),
                     "Polygon points must not contain nulls");
 
-  CUSPATIAL_EXPECTS(poly_ring_offsets.size() >= poly_offsets.size(),
-                    "Each polygon must have at least one ring");
-
-  CUSPATIAL_EXPECTS(poly_points_x.size() >= poly_offsets.size() * 4,
-                    "Each ring must have at least four vertices");
-
-  CUSPATIAL_EXPECTS(test_points_x.size() == poly_offsets.size(),
+  CUSPATIAL_EXPECTS(test_points_x.size() == std::max(poly_offsets.size() - 1, 0),
                     "Must pass in the same number of points as polygons.");
 
   return cuspatial::detail::pairwise_point_in_polygon(test_points_x,

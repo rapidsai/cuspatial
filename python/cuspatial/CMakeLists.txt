@@ -14,11 +14,11 @@
 
 cmake_minimum_required(VERSION 3.23.1 FATAL_ERROR)
 
-set(cuspatial_version 23.04.00)
+set(cuspatial_version 23.06.00)
 
-file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-23.04/RAPIDS.cmake
-     ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
-include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
+include(../../fetch_rapids.cmake)
+include(rapids-cuda)
+rapids_cuda_init_architectures(cuspatial-python)
 
 project(
   cuspatial-python
@@ -27,7 +27,7 @@ project(
             # language to be enabled here. The test project that is built in scikit-build to verify
             # various linking options for the python library is hardcoded to build with C, so until
             # that is fixed we need to keep C.
-            C CXX)
+            C CXX CUDA)
 
 option(FIND_CUSPATIAL_CPP "Search for existing cuspatial C++ installations before defaulting to local files"
        OFF)
@@ -42,7 +42,7 @@ endif()
 if(NOT cuspatial_FOUND)
   # TODO: This will not be necessary once we upgrade to CMake 3.22, which will
   # pull in the required languages for the C++ project even if this project
-  # does not require those languges.
+  # does not require those languages.
   include(rapids-cuda)
   rapids_cuda_init_architectures(cuspatial)
   enable_language(CUDA)

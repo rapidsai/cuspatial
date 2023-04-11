@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/linestring.cuh>
+#include <cuspatial/error.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
@@ -72,6 +73,8 @@ void find_and_combine_segment(OffsetRange offsets,
   auto [threads_per_block, num_blocks] = grid_1d(num_spaces);
   simple_find_and_combine_segments_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     offsets, segments, merged_flag);
+
+  CUSPATIAL_CHECK_CUDA(stream.value());
 }
 
 }  // namespace detail

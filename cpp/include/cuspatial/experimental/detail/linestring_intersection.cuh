@@ -156,7 +156,7 @@ std::unique_ptr<rmm::device_uvector<types_t>> compute_types_buffer(
 /**
  * @brief Compute union column's offset buffer
  *
- * This is performing a group-by cummulative sum (pandas semantic) operation
+ * This is performing a group-by cumulative sum (pandas semantic) operation
  * to an "all 1s vector", using `types_buffer` as the key column.
  */
 template <typename index_t>
@@ -233,10 +233,11 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
   points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
   point_flags.resize(points.geoms->size(), stream);
 
-  // Merge mergable segments
+  // Merge mergeable segments
   rmm::device_uvector<uint8_t> segment_flags(num_segments, stream);
   detail::find_and_combine_segment(
     segments.offset_range(), segments.geom_range(), segment_flags.begin(), stream);
+
   segments.remove_if(range(segment_flags.begin(), segment_flags.end()), stream);
 
   // Merge point on segments

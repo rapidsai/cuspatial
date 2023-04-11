@@ -74,7 +74,7 @@ struct TrajectoryDistancesAndSpeedsTest : public ::testing::Test {
     // For speed, there is an additional division. There is also accumulated error in the reductions
     // and we find k_ulps == 10 reliably results in the expected computation matching the actual
     // computation for large trajectories with disparate positions and increasing timestamps.
-    // This value and the magnitude of the values involed (e.g. max distance) are used to scale
+    // This value and the magnitude of the values involved (e.g. max distance) are used to scale
     // the machine epsilon to come up with an absolute error tolerance.
 
     int k_ulps           = 10;
@@ -88,19 +88,19 @@ struct TrajectoryDistancesAndSpeedsTest : public ::testing::Test {
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(TrajectoryDistancesAndSpeedsTest, TestTypes);
 
-TYPED_TEST(TrajectoryDistancesAndSpeedsTest, OneMillionSmallTrajectories)
+TYPED_TEST(TrajectoryDistancesAndSpeedsTest, TenThousandSmallTrajectories)
 {
-  CUSPATIAL_RUN_TEST(this->run_test, 1'000'000, 50);
+  CUSPATIAL_RUN_TEST(this->run_test, 10'000, 50);
 }
 
 TYPED_TEST(TrajectoryDistancesAndSpeedsTest, OneHundredLargeTrajectories)
 {
-  CUSPATIAL_RUN_TEST(this->run_test, 100, 1'000'000);
+  CUSPATIAL_RUN_TEST(this->run_test, 100, 10'000);
 }
 
 TYPED_TEST(TrajectoryDistancesAndSpeedsTest, OneVeryLargeTrajectory)
 {
-  CUSPATIAL_RUN_TEST(this->run_test, 1, 100'000'000);
+  CUSPATIAL_RUN_TEST(this->run_test, 1, 1'000'000);
 }
 
 struct time_point_generator {
