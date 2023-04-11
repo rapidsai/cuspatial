@@ -335,7 +335,6 @@ class PolygonComplexContains(ContainsPredicateBase):
             lhs, rhs, preprocessor_output
         )
         intersects_result = self._compute_intersects(lhs, rhs)
-        breakpoint()
         return self._postprocess(
             lhs,
             rhs,
@@ -371,6 +370,7 @@ class PolygonComplexContains(ContainsPredicateBase):
             result_df["rhs_index"][result_df["feature_in_polygon"]]
         ] = True
 
+        # Intersection processing
         offsets = cudf.Series(op_result.intersection_result[0])
         sizes = offsets[1:].reset_index(drop=True) - offsets[:-1].reset_index(
             drop=True
@@ -385,6 +385,7 @@ class PolygonComplexContains(ContainsPredicateBase):
         final_result[
             intersection_size_matches.index
         ] = intersection_size_matches
+
         return final_result
 
 
