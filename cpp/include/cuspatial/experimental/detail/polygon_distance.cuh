@@ -36,6 +36,14 @@
 
 namespace cuspatial {
 
+/**
+ * @brief Implementation of pairwise distance between two multipolygon ranges.
+ *
+ * All points in lhs and rhs are tested for intersection its corresponding pair,
+ * and if any intersection is found, the distance between the two polygons is 0.
+ * Otherwise, the distance is the minimum distance between any two segments in the
+ * multipolygon pair.
+ */
 template <class MultipolygonRangeA, class MultipolygonRangeB, class OutputIt>
 OutputIt pairwise_polygon_distance(MultipolygonRangeA lhs,
                                    MultipolygonRangeB rhs,
@@ -73,8 +81,7 @@ OutputIt pairwise_polygon_distance(MultipolygonRangeA lhs,
                distances_first + lhs.size(),
                std::numeric_limits<T>::max());
 
-  std::size_t constexpr threads_per_block = 256;
-  std::size_t const num_blocks = (lhs.num_points() + threads_per_block - 1) / threads_per_block;
+  auto [threads_per_block, num_blocks] = grid_1d(lhs.num_points());
 
   detail::linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     lhs_as_multilinestrings, rhs_as_multilinestrings, intersects.begin(), distances_first);

@@ -100,17 +100,23 @@ void print_device_range(Iter begin,
 }
 
 /**
- * @brief
+ * @brief Print a device vector.
+ *
+ * @note Copies the device vector to host before printing.
+ *
+ * @tparam Vector The device vector type
+ * @param vec The device vector to print
+ * @param pre String to print before the device vector
+ * @param post String to print after the device vector
  */
-template <typename U, typename Vector>
+template <typename Vector>
 void print_device_vector(Vector const& vec, std::string_view pre = "", std::string_view post = "\n")
 {
   using T   = typename Vector::value_type;
   auto hvec = to_host<T>(vec);
 
   std::cout << pre;
-  std::for_each(
-    hvec.begin(), hvec.end(), [](auto const& x) { std::cout << static_cast<U>(x) << " "; });
+  std::for_each(hvec.begin(), hvec.end(), [](auto const& x) { std::cout << x << " "; });
   std::cout << post;
 }
 
