@@ -20,26 +20,15 @@
 #include "linestring_distance.cuh"
 
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/detail/utility/device_atomics.cuh>
-#include <cuspatial/detail/utility/linestring.cuh>
-#include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
-#include <thrust/functional.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
 #include <thrust/logical.h>
-#include <thrust/reduce.h>
-#include <thrust/tabulate.h>
+#include <thrust/transform.h>
 
 #include <cstdint>
 #include <limits>
@@ -47,14 +36,13 @@
 
 namespace cuspatial {
 
-template <class MultiPolygonRangeA, class MultiPolygonRangeB, class OutputIt>
-OutputIt pairwise_polygon_distance(MultiPolygonRangeA lhs,
-                                   MultiPolygonRangeB rhs,
+template <class MultipolygonRangeA, class MultipolygonRangeB, class OutputIt>
+OutputIt pairwise_polygon_distance(MultipolygonRangeA lhs,
+                                   MultipolygonRangeB rhs,
                                    OutputIt distances_first,
                                    rmm::cuda_stream_view stream)
 {
-  using T       = typename MultipolygonRangeA::element_t;
-  using index_t = typename MultipolygonRangeB::index_t;
+  using T = typename MultipolygonRangeA::element_t;
 
   CUSPATIAL_EXPECTS(lhs.size() == rhs.size(), "Must have the same number of input rows.");
 
@@ -63,9 +51,10 @@ OutputIt pairwise_polygon_distance(MultiPolygonRangeA lhs,
   auto lhs_as_multipoints = lhs.as_multipoint_range();
   auto rhs_as_multipoints = rhs.as_multipoint_range();
 
-  auto intersects = [&lhs, &rhs, &stream]() {
+  auto intersects = [&]() {
     auto lhs_in_rhs = point_polygon_intersects(lhs_as_multipoints, rhs, stream);
     auto rhs_in_lhs = point_polygon_intersects(rhs_as_multipoints, lhs, stream);
+
     rmm::device_uvector<uint8_t> intersects(lhs_in_rhs.size(), stream);
     thrust::transform(rmm::exec_policy(stream),
                       lhs_in_rhs.begin(),
@@ -79,11 +68,16 @@ OutputIt pairwise_polygon_distance(MultiPolygonRangeA lhs,
   auto lhs_as_multilinestrings = lhs.as_multilinestring_range();
   auto rhs_as_multilinestrings = rhs.as_multilinestring_range();
 
+  thrust::fill(rmm::exec_policy(stream),
+               distances_first,
+               distances_first + lhs.size(),
+               std::numeric_limits<T>::max());
+
   std::size_t constexpr threads_per_block = 256;
   std::size_t const num_blocks = (lhs.num_points() + threads_per_block - 1) / threads_per_block;
 
   detail::linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
-    lhs_as_multilinestrings, rhs_as_multilinestrings, intersects, distances_first);
+    lhs_as_multilinestrings, rhs_as_multilinestrings, intersects.begin(), distances_first);
 
   CUSPATIAL_CUDA_TRY(cudaGetLastError());
   return distances_first + lhs.size();

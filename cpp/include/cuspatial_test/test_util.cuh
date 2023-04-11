@@ -102,14 +102,15 @@ void print_device_range(Iter begin,
 /**
  * @brief
  */
-template <typename Vector>
+template <typename U, typename Vector>
 void print_device_vector(Vector const& vec, std::string_view pre = "", std::string_view post = "\n")
 {
   using T   = typename Vector::value_type;
   auto hvec = to_host<T>(vec);
 
   std::cout << pre;
-  std::for_each(hvec.begin(), hvec.end(), [](auto const& x) { std::cout << x << " "; });
+  std::for_each(
+    hvec.begin(), hvec.end(), [](auto const& x) { std::cout << static_cast<U>(x) << " "; });
   std::cout << post;
 }
 
