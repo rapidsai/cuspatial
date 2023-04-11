@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <cuspatial/experimental/detail/algorithm/linestring_distance.cuh>
 #include <cuspatial/error.hpp>
+#include <cuspatial/experimental/detail/algorithm/linestring_distance.cuh>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/vec_2d.hpp>
 
@@ -31,7 +31,6 @@
 #include <type_traits>
 
 namespace cuspatial {
-
 
 template <class MultiLinestringRange1, class MultiLinestringRange2, class OutputIt>
 OutputIt pairwise_linestring_distance(MultiLinestringRange1 multilinestrings1,
