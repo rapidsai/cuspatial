@@ -28,6 +28,8 @@ def xfail_on_exception(func):
 """Parameterized test fixture that runs a binary predicate test
 for each combination of geometry types and binary predicates."""
 
+out_file = open("test_binpred_test_dispatch.log", "w")
+
 
 # @xfail_on_exception  # TODO: Remove when all tests are passing
 def test_fixtures(predicate, geotype_tuple):  # noqa: F811
@@ -42,7 +44,9 @@ def test_fixtures(predicate, geotype_tuple):  # noqa: F811
     expected = gpd_pred_fn(gpdrhs)
     try:
         pd.testing.assert_series_equal(expected, got.to_pandas())
+        out_file.write(f"{predicate}, {geotype_tuple} passed\n")
     except AssertionError as e:
+        out_file.write(f"{predicate}, {geotype_tuple} failed\n")
         print("Binary Predicate Test failed")
         print("----------------------------")
         print(f"lhs: {lhs}")

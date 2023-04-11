@@ -1,8 +1,14 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-from cuspatial.core.binpreds.binpred_interface import NotImplementedPredicate
+from cuspatial.core.binops.intersection import pairwise_linestring_intersection
+from cuspatial.core.binpreds.binpred_interface import (
+    IntersectsOpResult,
+    NotImplementedPredicate,
+)
+from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.core.binpreds.feature_intersects import (
+    IntersectsPredicateBase,
     LineStringPointIntersects,
     PointLineStringIntersects,
 )
@@ -11,6 +17,7 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
+    _false_series,
 )
 
 
@@ -36,6 +43,34 @@ class CoversPredicateBase(EqualsPredicateBase):
     pass
 
 
+class LineStringLineStringCovers(IntersectsPredicateBase):
+    def _compute_predicate(self, lhs, rhs, preprocessor_result):
+        """Compute the covers predicate using the intersects basic predicate.
+        lhs and rhs must both be LineStrings or MultiLineStrings.
+        """
+        basic_result = pairwise_linestring_intersection(
+            preprocessor_result.lhs, preprocessor_result.rhs
+        )
+        breakpoint()
+        # TODO: Need to determine whether or not the intersection is a
+        # linestring or a point.
+        return self._postprocess(lhs, rhs, IntersectsOpResult(basic_result))
+
+    def _postprocess(self, lhs, rhs, op_result):
+        """Postprocess the result of the intersects operation."""
+        if len(op_result.result[0]) - 1 != len(rhs):
+            # The number of intersections is equal to the rhs side?
+            # Where's my multi-processing here? I don't see this as a
+            # column of values at all.
+            return _false_series(lhs)
+        else:
+            return op_result.result[0]
+
+
+class PolygonPolygonCovers(ContainsPredicateBase):
+    pass
+
+
 DispatchDict = {
     (Point, Point): CoversPredicateBase,
     (Point, MultiPoint): NotImplementedPredicate,
@@ -47,10 +82,10 @@ DispatchDict = {
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): LineStringPointIntersects,
     (LineString, MultiPoint): NotImplementedPredicate,
-    (LineString, LineString): NotImplementedPredicate,
+    (LineString, LineString): LineStringLineStringCovers,
     (LineString, Polygon): CoversPredicateBase,
     (Polygon, Point): CoversPredicateBase,
     (Polygon, MultiPoint): CoversPredicateBase,
     (Polygon, LineString): CoversPredicateBase,
-    (Polygon, Polygon): CoversPredicateBase,
+    (Polygon, Polygon): PolygonPolygonCovers,
 }
