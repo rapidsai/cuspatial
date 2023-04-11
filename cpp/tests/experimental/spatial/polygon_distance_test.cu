@@ -23,10 +23,11 @@
 #include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/vec_2d.hpp>
 
-#include <gtest/gtest-typed-test.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+
+#include <thrust/iterator/zip_iterator.h>
 
 #include <initializer_list>
 
@@ -268,5 +269,85 @@ TYPED_TEST(PairwisePolygonDistanceTest, OnePairSinglePolygonWithinHasHole)
                    {0, 2},
                    {0, 5, 9},
                    {{0, 0}, {4, 0}, {4, 4}, {0, 4}, {0, 0}, {1, 1}, {3, 1}, {1, 3}, {1, 1}},
+                   {0});
+}
+
+TYPED_TEST(PairwisePolygonDistanceTest, OnePairMultiPolygonDisjointNoHole)
+{
+  this->run_single({0, 2},
+                   {0, 1, 2},
+                   {0, 4, 8},
+                   {{0.0, 0.0},
+                    {2.0, 0.0},
+                    {2.0, 2.0},
+                    {0.0, 0.0},
+                    {3.0, 3.0},
+                    {3.0, 4.0},
+                    {4.0, 4.0},
+                    {3.0, 3.0}},
+                   {0, 1},
+                   {0, 1},
+                   {0, 4},
+                   {{-1.0, 0.0}, {-1.0, -1.0}, {-2.0, 0.0}, {-1.0, 0.0}},
+                   {1});
+}
+
+TYPED_TEST(PairwisePolygonDistanceTest, OnePairMultiPolygonTouchingNoHole)
+{
+  this->run_single({0, 2},
+                   {0, 1, 2},
+                   {0, 4, 8},
+                   {{0.0, 0.0},
+                    {2.0, 0.0},
+                    {2.0, 2.0},
+                    {0.0, 0.0},
+                    {3.0, 3.0},
+                    {3.0, 4.0},
+                    {4.0, 4.0},
+                    {3.0, 3.0}},
+                   {0, 1},
+                   {0, 1},
+                   {0, 4},
+                   {{3.0, 3.0}, {2.0, 3.0}, {2.0, 2.0}, {3.0, 3.0}},
+                   {0});
+}
+
+TYPED_TEST(PairwisePolygonDistanceTest, OnePairMultiPolygonOverlappingNoHole)
+{
+  this->run_single({0, 2},
+                   {0, 1, 2},
+                   {0, 4, 8},
+                   {{0.0, 0.0},
+                    {2.0, 0.0},
+                    {2.0, 2.0},
+                    {0.0, 0.0},
+                    {3.0, 3.0},
+                    {3.0, 4.0},
+                    {4.0, 4.0},
+                    {3.0, 3.0}},
+                   {0, 1},
+                   {0, 1},
+                   {0, 4},
+                   {{1.0, 1.0}, {3.0, 1.0}, {3.0, 3.0}, {1.0, 1.0}},
+                   {0});
+}
+
+TYPED_TEST(PairwisePolygonDistanceTest, OnePairMultiPolygonContainedNoHole)
+{
+  this->run_single({0, 2},
+                   {0, 1, 2},
+                   {0, 4, 8},
+                   {{0.0, 0.0},
+                    {2.0, 0.0},
+                    {2.0, 2.0},
+                    {0.0, 0.0},
+                    {1.0, 1.0},
+                    {1.0, 2.0},
+                    {2.0, 2.0},
+                    {1.0, 1.0}},
+                   {0, 1},
+                   {0, 1},
+                   {0, 4},
+                   {{0.5, 0.25}, {1.5, 0.25}, {1.5, 1.25}, {0.5, 0.25}},
                    {0});
 }
