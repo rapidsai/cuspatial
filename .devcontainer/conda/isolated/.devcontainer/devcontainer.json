@@ -27,7 +27,7 @@
   ],
 
   "updateContentCommand": [
-    "/bin/bash", "-c", "cp -ar /workspaces/${localWorkspaceFolderBasename} /home/coder/${localWorkspaceFolderBasename}"
+    "/bin/bash", "-c", "cp -ar /workspaces/${localWorkspaceFolderBasename} /home/coder/${localWorkspaceFolderBasename} && rapids-make-vscode-workspace --update"
   ],
   "postCreateCommand": ["rapids-make-vscode-workspace", "--update"],
   "postAttachCommand": ["rapids-make-conda-env"],
