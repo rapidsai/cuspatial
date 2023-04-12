@@ -70,6 +70,22 @@ def _linestrings_from_polygons(geoseries):
     )
 
 
+def _linestrings_from_multipoints(geoseries):
+    """Convert rhs to linestrings."""
+    points = cudf.DataFrame(
+        {
+            "x": geoseries.multipoints.x.repeat(2).reset_index(drop=True),
+            "y": geoseries.multipoints.y.repeat(2).reset_index(drop=True),
+        }
+    ).interleave_columns()
+    result = cuspatial.GeoSeries.from_linestrings_xy(
+        points,
+        geoseries.multipoints.geometry_offset * 2,
+        cp.arange(len(geoseries) + 1),
+    )
+    return result
+
+
 def _linestrings_from_points(geoseries):
     """Convert rhs to linestrings."""
     x = cp.repeat(geoseries.points.x, 2)
@@ -84,6 +100,8 @@ def _linestrings_from_geometry(geoseries):
     """Convert rhs to linestrings."""
     if geoseries.column_type == ColumnType.POINT:
         return _linestrings_from_points(geoseries)
+    if geoseries.column_type == ColumnType.MULTIPOINT:
+        return _linestrings_from_multipoints(geoseries)
     elif geoseries.column_type == ColumnType.LINESTRING:
         return geoseries
     elif geoseries.column_type == ColumnType.POLYGON:
@@ -112,11 +130,10 @@ def _multipoints_from_linestrings(geoseries):
 def _multipoints_from_polygons(geoseries):
     """Convert rhs to multipoints."""
     xy = geoseries.polygons.xy
-    parts = geoseries.polygons.part_offset.take(
-        geoseries.polygons.geometry_offset
+    polygon_offsets = geoseries.polygons.ring_offset.take(
+        geoseries.polygons.part_offset.take(geoseries.polygons.geometry_offset)
     )
-    rings = geoseries.polygons.ring_offset
-    return cuspatial.GeoSeries.from_multipoints_xy(xy, parts, rings)
+    return cuspatial.GeoSeries.from_multipoints_xy(xy, polygon_offsets)
 
 
 def _multipoints_from_geometry(geoseries):
@@ -130,4 +147,28 @@ def _multipoints_from_geometry(geoseries):
     else:
         raise NotImplementedError(
             "Cannot convert type {} to multipoints".format(geoseries.type)
+        )
+
+
+def _points_from_linestrings(geoseries):
+    """Convert rhs to points."""
+    return cuspatial.GeoSeries.from_points_xy(geoseries.lines.xy)
+
+
+def _points_from_polygons(geoseries):
+    """Convert rhs to points."""
+    return cuspatial.GeoSeries.from_points_xy(geoseries.polygons.xy)
+
+
+def _points_from_geometry(geoseries):
+    """Convert rhs to points."""
+    if geoseries.column_type == ColumnType.POINT:
+        return geoseries
+    elif geoseries.column_type == ColumnType.LINESTRING:
+        return _points_from_linestrings(geoseries)
+    elif geoseries.column_type == ColumnType.POLYGON:
+        return _points_from_polygons(geoseries)
+    else:
+        raise NotImplementedError(
+            "Cannot convert type {} to points".format(geoseries.type)
         )

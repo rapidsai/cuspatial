@@ -38,7 +38,9 @@ from cuspatial.core.binpreds.binpred_dispatch import (
 )
 from cuspatial.utils.binpred_utils import (
     _linestrings_from_geometry,
+    _linestrings_from_points,
     _multipoints_from_geometry,
+    _points_from_geometry,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -949,7 +951,9 @@ class GeoSeries(cudf.Series):
             self.index = cudf_series.index
             return None
 
-    def contains_properly(self, other, align=False, allpairs=False):
+    def contains_properly(
+        self, other, align=False, allpairs=False, mode="full"
+    ):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that contains _other_.
 
@@ -1270,17 +1274,75 @@ class GeoSeries(cudf.Series):
         )
         return result == sizes
 
-    def _basic_intersects(self, other):
+    def _basic_intersects_points(self, other):
         from cuspatial.core.binops.intersection import (
             pairwise_linestring_intersection,
         )
 
-        lhs = _linestrings_from_geometry(self)
-        rhs = _linestrings_from_geometry(other)
+        point_indices = other.point_indices
+        sizes = point_indices[1:] - point_indices[:-1]
+        lhs = _linestrings_from_geometry(self).repeat(sizes)
+        rhs_points = _points_from_geometry(other)
+        rhs = _linestrings_from_points(rhs_points)
         result = pairwise_linestring_intersection(lhs, rhs)
         # Flatten result into list of sizes
         is_offsets = cudf.Series(result[0])
         is_sizes = is_offsets[1:].reset_index(drop=True) - is_offsets[
             :-1
         ].reset_index(drop=True)
+        return result
+
+    def _basic_intersects_pli(self, other):
+        from cuspatial.core.binops.intersection import (
+            pairwise_linestring_intersection,
+        )
+
+        lhs = _linestrings_from_geometry(self)
+        rhs = _linestrings_from_geometry(other)
+        return pairwise_linestring_intersection(lhs, rhs)
+
+    def _basic_intersects_count(self, other):
+        result = self._basic_intersects_pli(other)
+        # Flatten result into list of sizes
+        is_offsets = cudf.Series(result[0])
+        is_sizes = is_offsets[1:].reset_index(drop=True) - is_offsets[
+            :-1
+        ].reset_index(drop=True)
+        return is_sizes
+
+    def _basic_intersects(self, other):
+        is_sizes = self._basic_intersects_count(other)
         return is_sizes > 0
+
+    def _basic_intersects_through(self, other):
+        is_sizes = self._basic_intersects_count(other)
+        return is_sizes > 1
+
+    def _basic_contains_any(self, other):
+        lhs = self
+        rhs = _multipoints_from_geometry(other)
+        # If a point intersects with the polygon, it is contained.
+        intersections = self._basic_intersects_pli(other)
+        return lhs.contains_properly(rhs, mode="basic_any")
+
+    def _basic_contains_all(self, other):
+        lhs = self
+        rhs = _multipoints_from_geometry(other)
+        return lhs.contains_properly(rhs, mode="basic_all")
+
+    def repeat(self, ntimes):
+        """Repeats each geometry in the GeoSeries ntimes.
+
+        Parameters
+        ----------
+        ntimes : int
+            The number of times to repeat each geometry.
+
+        Returns
+        -------
+        result : GeoSeries
+            A new GeoSeries with each geometry repeated ntimes.
+        """
+        return GeoSeries(
+            self._column.repeat(ntimes), index=self.index.repeat(ntimes)
+        )

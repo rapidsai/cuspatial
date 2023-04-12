@@ -58,6 +58,7 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
         """
         super().__init__(**kwargs)
         self.config.allpairs = kwargs.get("allpairs", False)
+        self.config.mode = kwargs.get("mode", "full")
 
     def _preprocess(self, lhs, rhs):
         """Flatten any rhs into only its points xy array. This is necessary
@@ -290,6 +291,16 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
         # contained in the corresponding polygon.
         if self.config.allpairs:
             return allpairs_result
+        elif self.config.mode == "basic_any":
+            final_result = _false_series(len(op_result.point_indices))
+            final_result.loc[allpairs_result["point_index"]] = True
+            return final_result
+        elif self.config.mode == "basic_all":
+            sizes = op_result.point_indices[1:] - op_result.point_indices[:-1]
+            result_sizes = allpairs_result["point_index"].value_counts()
+            final_result = _false_series(len(op_result.point_indices))
+            final_result.loc[sizes == result_sizes] = True
+            return final_result
         else:
             # for each input pair i: result[i] =  true iff point[i] is
             # contained in at least one polygon of multipolygon[i].
