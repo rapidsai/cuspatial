@@ -24,11 +24,11 @@ function(find_and_configure_cudf)
     cmake_parse_arguments(PKG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     set(global_targets cudf::cudf)
-    set(find_package_args)
+    set(cudf_components "")
 
     if(BUILD_TESTS)
       list(APPEND global_targets cudf::cudftestutil)
-      set(find_package_args "COMPONENTS testing")
+      set(cudf_components "COMPONENTS testing")
     endif()
 
     set(BUILD_SHARED ON)
@@ -36,7 +36,7 @@ function(find_and_configure_cudf)
         set(BUILD_SHARED OFF)
     endif()
 
-    rapids_cpm_find(cudf ${PKG_VERSION}
+    rapids_cpm_find(cudf ${PKG_VERSION} ${cudf_components}
       GLOBAL_TARGETS ${global_targets}
       BUILD_EXPORT_SET cuspatial-exports
       INSTALL_EXPORT_SET cuspatial-exports
@@ -46,7 +46,6 @@ function(find_and_configure_cudf)
         GIT_SHALLOW      TRUE
         SOURCE_SUBDIR    cpp
         EXCLUDE_FROM_ALL ${PKG_EXCLUDE_FROM_ALL}
-        FIND_PACKAGE_ARGUMENTS ${find_package_args}
         OPTIONS "BUILD_TESTS OFF"
                 "BUILD_BENCHMARKS OFF"
                 "BUILD_SHARED_LIBS ${BUILD_SHARED}"
