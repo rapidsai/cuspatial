@@ -13,7 +13,6 @@ from cuspatial.core.binpreds.binpred_interface import (
     NotImplementedPredicate,
     PreprocessorResult,
 )
-from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -21,6 +20,7 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _false_series,
+    _linestrings_from_points,
     _linestrings_from_polygons,
 )
 
@@ -89,12 +89,21 @@ class IntersectsByEquals(EqualsPredicateBase):
     pass
 
 
-class PointPolygonIntersects(ContainsPredicateBase):
+class PointPolygonIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
         """Swap LHS and RHS and call the normal contains processing."""
-        self.lhs = rhs
-        self.rhs = lhs
-        return super()._preprocess(rhs, lhs)
+        ls_lhs = _linestrings_from_polygons(rhs)
+        ls_rhs = _linestrings_from_points(lhs)
+        return super()._preprocess(ls_rhs, ls_lhs)
+
+    def _postprocess(self, lhs, rhs, op_result):
+        """Postprocess the output GeoSeries to ensure that they are of the
+        correct type for the predicate."""
+        match_indices = self._get_intersecting_geometry_indices(rhs, op_result)
+        result = _false_series(len(rhs))
+        if len(op_result.result[1]) > 0:
+            result[match_indices] = True
+        return result
 
 
 class LineStringPointIntersects(IntersectsPredicateBase):

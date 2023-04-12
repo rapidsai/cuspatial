@@ -2,16 +2,22 @@
 
 import cudf
 
-from cuspatial.core.binpreds.binpred_interface import NotImplementedPredicate
-from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
+from cuspatial.core.binpreds.binpred_interface import (
+    NotImplementedPredicate,
+    PreprocessorResult,
+)
+from cuspatial.core.binpreds.feature_contains import (
+    ContainsPredicateBase,
+    PolygonComplexContains,
+)
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
-from cuspatial.utils import binpred_utils
+from cuspatial.core.binpreds.feature_intersects import IntersectsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
     Point,
     Polygon,
-    _false_series,
+    _linestrings_from_geometry,
 )
 
 
@@ -28,9 +34,29 @@ class WithinPredicateBase(EqualsPredicateBase):
     pass
 
 
+class WithinIntersectsPredicate(IntersectsPredicateBase):
+    def _preprocess(self, lhs, rhs):
+        ls_lhs = _linestrings_from_geometry(lhs)
+        ls_rhs = _linestrings_from_geometry(rhs)
+        return self._compute_predicate(
+            lhs, rhs, PreprocessorResult(ls_lhs, ls_rhs)
+        )
+
+    def _compute_predicate(self, lhs, rhs, preprocessor_result):
+        intersects = rhs._basic_intersects(lhs)
+        equals = rhs._basic_equals(lhs)
+        return intersects & ~equals
+
+
 class PointPointWithin(WithinPredicateBase):
     def _postprocess(self, lhs, rhs, op_result):
         return cudf.Series(op_result.result)
+
+
+class PointLineStringWithin(WithinIntersectsPredicate):
+    def _preprocess(self, lhs, rhs):
+        # Note the order of arguments is reversed.
+        return super()._preprocess(rhs, lhs)
 
 
 class PointPolygonWithin(ContainsPredicateBase):
@@ -39,7 +65,14 @@ class PointPolygonWithin(ContainsPredicateBase):
         return super()._preprocess(rhs, lhs)
 
 
-class ComplexPolygonWithin(ContainsPredicateBase):
+class LineStringLineStringWithin(IntersectsPredicateBase):
+    def _compute_predicate(self, lhs, rhs, preprocessor_result):
+        intersects = rhs._basic_intersects(lhs)
+        equals = rhs._basic_equals_all(lhs)
+        return intersects & equals
+
+
+class ComplexPolygonWithin(PolygonComplexContains):
     """Implements within for complex polygons. Depends on contains result
     for the types.
 
@@ -53,40 +86,19 @@ class ComplexPolygonWithin(ContainsPredicateBase):
         # Note the order of arguments is reversed.
         return super()._preprocess(rhs, lhs)
 
-    def _postprocess(self, lhs, rhs, op_result):
-        """Postprocess the output GeoSeries to ensure that they are of the
-        correct type for the predicate."""
-        (
-            hits,
-            expected_count,
-        ) = binpred_utils._count_results_in_multipoint_geometries(
-            op_result.point_indices, op_result.result
-        )
-        result_df = hits.reset_index().merge(
-            expected_count.reset_index(), on="rhs_index"
-        )
-        result_df["feature_in_polygon"] = (
-            result_df["point_index_x"] >= result_df["point_index_y"]
-        )
-        final_result = _false_series(len(lhs))
-        final_result.loc[
-            result_df["rhs_index"][result_df["feature_in_polygon"]]
-        ] = True
-        return final_result
-
 
 DispatchDict = {
     (Point, Point): PointPointWithin,
-    (Point, MultiPoint): NotImplementedPredicate,
-    (Point, LineString): NotImplementedPredicate,
+    (Point, MultiPoint): WithinIntersectsPredicate,
+    (Point, LineString): PointLineStringWithin,
     (Point, Polygon): PointPolygonWithin,
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): NotImplementedPredicate,
-    (MultiPoint, LineString): NotImplementedPredicate,
+    (MultiPoint, LineString): WithinIntersectsPredicate,
     (MultiPoint, Polygon): ComplexPolygonWithin,
-    (LineString, Point): NotImplementedPredicate,
-    (LineString, MultiPoint): NotImplementedPredicate,
-    (LineString, LineString): NotImplementedPredicate,
+    (LineString, Point): WithinIntersectsPredicate,
+    (LineString, MultiPoint): WithinIntersectsPredicate,
+    (LineString, LineString): LineStringLineStringWithin,
     (LineString, Polygon): ComplexPolygonWithin,
     (Polygon, Point): WithinPredicateBase,
     (Polygon, MultiPoint): WithinPredicateBase,

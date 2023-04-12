@@ -36,6 +36,10 @@ from cuspatial.core.binpreds.binpred_dispatch import (
     OVERLAPS_DISPATCH,
     WITHIN_DISPATCH,
 )
+from cuspatial.utils.binpred_utils import (
+    _linestrings_from_geometry,
+    _multipoints_from_geometry,
+)
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
     contains_only_multipoints,
@@ -661,7 +665,8 @@ class GeoSeries(cudf.Series):
         """
         return cls(
             GeoColumn._from_multipoints_xy(
-                as_column(multipoints_xy), as_column(geometry_offset)
+                as_column(multipoints_xy),
+                as_column(geometry_offset, dtype="int32"),
             )
         )
 
@@ -1240,3 +1245,42 @@ class GeoSeries(cudf.Series):
             align=align
         )
         return predicate(self, other)
+
+    def _basic_equals(self, other):
+        from cuspatial.core.binops.equals_count import (
+            pairwise_multipoint_equals_count,
+        )
+
+        lhs = _multipoints_from_geometry(self)
+        rhs = _multipoints_from_geometry(other)
+        result = pairwise_multipoint_equals_count(lhs, rhs)
+        return result > 0
+
+    def _basic_equals_all(self, other):
+        from cuspatial.core.binops.equals_count import (
+            pairwise_multipoint_equals_count,
+        )
+
+        lhs = _multipoints_from_geometry(self)
+        rhs = _multipoints_from_geometry(other)
+        result = pairwise_multipoint_equals_count(lhs, rhs)
+        sizes = (
+            rhs.multipoints.geometry_offset[1:]
+            - rhs.multipoints.geometry_offset[:-1]
+        )
+        return result == sizes
+
+    def _basic_intersects(self, other):
+        from cuspatial.core.binops.intersection import (
+            pairwise_linestring_intersection,
+        )
+
+        lhs = _linestrings_from_geometry(self)
+        rhs = _linestrings_from_geometry(other)
+        result = pairwise_linestring_intersection(lhs, rhs)
+        # Flatten result into list of sizes
+        is_offsets = cudf.Series(result[0])
+        is_sizes = is_offsets[1:].reset_index(drop=True) - is_offsets[
+            :-1
+        ].reset_index(drop=True)
+        return is_sizes > 0

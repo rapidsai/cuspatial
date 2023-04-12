@@ -36,16 +36,16 @@ def test_simple_features(
     feature_passes,
     feature_fails,
 ):
-    (lhs, rhs) = simple_test[1], simple_test[2]
-    gpdlhs = lhs.to_geopandas()
-    gpdrhs = rhs.to_geopandas()
-    pred_fn = getattr(lhs, predicate)
-    got = pred_fn(rhs)
-    if predicate == "contains_properly":
-        predicate = "contains"
-    gpd_pred_fn = getattr(gpdlhs, predicate)
-    expected = gpd_pred_fn(gpdrhs)
     try:
+        (lhs, rhs) = simple_test[1], simple_test[2]
+        gpdlhs = lhs.to_geopandas()
+        gpdrhs = rhs.to_geopandas()
+        pred_fn = getattr(lhs, predicate)
+        got = pred_fn(rhs)
+        if predicate == "contains_properly":
+            predicate = "contains"
+        gpd_pred_fn = getattr(gpdlhs, predicate)
+        expected = gpd_pred_fn(gpdrhs)
         pd.testing.assert_series_equal(expected, got.to_pandas())
         try:
             out_file.write(f"{predicate}, {simple_test} passed\n")
@@ -65,18 +65,18 @@ def test_simple_features(
                     "predicate_passes": list(predicate_passes.values()),
                 }
             )
-            passes_df.to_csv("predicate_passes.csv")
+            passes_df.to_csv("predicate_passes.csv", index=False)
             passes_df = pd.DataFrame(
                 {
                     "feature": list(feature_passes.keys()),
                     "feature_passes": list(feature_passes.values()),
                 }
             )
-            passes_df.to_csv("feature_passes.csv")
+            passes_df.to_csv("feature_passes.csv", index=False)
             print(passes_df)
         except Exception as e:
-            raise AssertionError(e)
-    except AssertionError as e:
+            raise ValueError(e)
+    except Exception as e:
         out_file.write(f"{predicate}, {simple_test} failed\n")
         predicate_fails[predicate] = (
             1
@@ -95,13 +95,13 @@ def test_simple_features(
                 "predicate_fails": list(predicate_fails.values()),
             }
         )
-        predicate_fails_df.to_csv("predicate_fails.csv")
+        predicate_fails_df.to_csv("predicate_fails.csv", index=False)
         feature_fails_df = pd.DataFrame(
             {
                 "feature": list(feature_fails.keys()),
                 "feature_fails": list(feature_fails.values()),
             }
         )
-        feature_fails_df.to_csv("feature_fails.csv")
-        raise AssertionError(e)  # TODO: Remove when all tests are passing.
+        feature_fails_df.to_csv("feature_fails.csv", index=False)
+        raise e  # TODO: Remove when all tests are passing.
         # pytest.fail(f"Assertion failed: {e}")

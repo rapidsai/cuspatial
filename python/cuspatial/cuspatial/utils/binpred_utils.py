@@ -68,3 +68,66 @@ def _linestrings_from_polygons(geoseries):
         rings,
         parts,
     )
+
+
+def _linestrings_from_points(geoseries):
+    """Convert rhs to linestrings."""
+    x = cp.repeat(geoseries.points.x, 2)
+    y = cp.repeat(geoseries.points.y, 2)
+    xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
+    parts = cp.arange((len(geoseries) + 1)) * 2
+    geometries = cp.arange(len(geoseries) + 1)
+    return cuspatial.GeoSeries.from_linestrings_xy(xy, parts, geometries)
+
+
+def _linestrings_from_geometry(geoseries):
+    """Convert rhs to linestrings."""
+    if geoseries.column_type == ColumnType.POINT:
+        return _linestrings_from_points(geoseries)
+    elif geoseries.column_type == ColumnType.LINESTRING:
+        return geoseries
+    elif geoseries.column_type == ColumnType.POLYGON:
+        return _linestrings_from_polygons(geoseries)
+    else:
+        raise NotImplementedError(
+            "Cannot convert type {} to linestrings".format(geoseries.type)
+        )
+
+
+def _multipoints_from_points(geoseries):
+    """Convert rhs to multipoints."""
+    result = cuspatial.GeoSeries.from_multipoints_xy(
+        geoseries.points.xy, cp.arange((len(geoseries) + 1))
+    )
+    return result
+
+
+def _multipoints_from_linestrings(geoseries):
+    """Convert rhs to multipoints."""
+    xy = geoseries.lines.xy
+    mpoints = geoseries.lines.part_offset.take(geoseries.lines.geometry_offset)
+    return cuspatial.GeoSeries.from_multipoints_xy(xy, mpoints)
+
+
+def _multipoints_from_polygons(geoseries):
+    """Convert rhs to multipoints."""
+    xy = geoseries.polygons.xy
+    parts = geoseries.polygons.part_offset.take(
+        geoseries.polygons.geometry_offset
+    )
+    rings = geoseries.polygons.ring_offset
+    return cuspatial.GeoSeries.from_multipoints_xy(xy, parts, rings)
+
+
+def _multipoints_from_geometry(geoseries):
+    """Convert rhs to multipoints."""
+    if geoseries.column_type == ColumnType.POINT:
+        return _multipoints_from_points(geoseries)
+    elif geoseries.column_type == ColumnType.LINESTRING:
+        return _multipoints_from_linestrings(geoseries)
+    elif geoseries.column_type == ColumnType.POLYGON:
+        return _multipoints_from_polygons(geoseries)
+    else:
+        raise NotImplementedError(
+            "Cannot convert type {} to multipoints".format(geoseries.type)
+        )

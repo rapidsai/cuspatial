@@ -487,8 +487,20 @@ def simple_test_dispatch():
         for test in tests:
             yield (
                 test[0],
-                cuspatial.GeoSeries([test[1]]),
-                cuspatial.GeoSeries([test[2]]),
+                cuspatial.GeoSeries(
+                    [
+                        test[1],
+                        test[2] if types[0] == types[1] else test[1],
+                        test[1],
+                    ]
+                ),
+                cuspatial.GeoSeries(
+                    [
+                        test[2],
+                        test[2],
+                        test[2],
+                    ]
+                ),
             )
 
 

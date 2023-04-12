@@ -25,7 +25,7 @@ from cuspatial.utils.binpred_utils import (
     Polygon,
     _count_results_in_multipoint_geometries,
     _false_series,
-    _linestrings_from_polygons,
+    _linestrings_from_geometry,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -325,8 +325,8 @@ class PolygonComplexContains(ContainsPredicateBase):
     """
 
     def _compute_intersects(self, lhs, rhs):
-        ls_lhs = _linestrings_from_polygons(lhs)
-        ls_rhs = _linestrings_from_polygons(rhs)
+        ls_lhs = _linestrings_from_geometry(lhs)
+        ls_rhs = _linestrings_from_geometry(rhs)
         basic_result = pairwise_linestring_intersection(ls_lhs, ls_rhs)
         return basic_result
 
@@ -385,7 +385,6 @@ class PolygonComplexContains(ContainsPredicateBase):
         final_result[
             intersection_size_matches.index
         ] = intersection_size_matches
-
         return final_result
 
 
