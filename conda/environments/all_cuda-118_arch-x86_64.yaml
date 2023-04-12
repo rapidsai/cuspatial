@@ -18,6 +18,7 @@ dependencies:
 - gmock=1.10.0
 - gtest=1.10.0
 - ipython
+- ipywidgets
 - libcudf=23.06
 - librmm=23.06
 - myst-parser
@@ -26,6 +27,7 @@ dependencies:
 - notebook
 - numpydoc
 - nvcc_linux-64=11.8
+- opencv
 - pre-commit
 - pydata-sphinx-theme
 - pydeck
@@ -35,6 +37,7 @@ dependencies:
 - python>=3.8,<3.11
 - rmm=23.06
 - scikit-build>=0.13.1
+- scikit-image
 - setuptools
 - shapely
 - sphinx<6
