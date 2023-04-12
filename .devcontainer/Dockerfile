@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.5
 
 ARG CUDA=11.8
-ARG LLVM=15
-ARG RAPIDS=23.04
+ARG LLVM=16
+ARG RAPIDS=23.06
 ARG DISTRO=ubuntu22.04
 ARG REPO=rapidsai/devcontainers
 
@@ -19,12 +19,14 @@ ENV PYTHON_PACKAGE_MANAGER="${PYTHON_PACKAGE_MANAGER}"
 
 USER coder
 
-COPY --chown=coder:coder opt/cuspatial /opt/cuspatial
+# COPY --chown=coder:coder opt/cuspatial /opt/cuspatial
 
 RUN /bin/bash -c 'mkdir -m 0755 -p ~/.{aws,cache,conda,config,local}'
 
 WORKDIR /home/coder/
 
+ENV PYTHONSAFEPATH="1"
+ENV PYTHONUNBUFFERED="1"
 ENV PYTHONDONTWRITEBYTECODE="1"
 
 ENV SCCACHE_REGION="us-east-2"

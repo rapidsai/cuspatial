@@ -1,5 +1,5 @@
 {
-  "shutdownAction": "none",
+  "shutdownAction": "stopContainer",
 
   "build": {
     "context": "${localWorkspaceFolder}/.devcontainer",
@@ -15,7 +15,7 @@
   },
 
   "features": {
-    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:latest": {}
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:23.6": {}
   },
 
   "overrideFeatureInstallOrder": [
@@ -25,6 +25,8 @@
   "initializeCommand": [
     "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../.{aws,cache,config,conda/pkgs,conda/${localWorkspaceFolderBasename}-single-envs}"
   ],
+  "postCreateCommand": ["rapids-make-vscode-workspace", "--update"],
+  "postAttachCommand": ["rapids-make-conda-env"],
 
   "containerEnv": {
     "DEFAULT_CONDA_ENV": "rapids"
@@ -37,8 +39,7 @@
     "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../.conda/pkgs,target=/home/coder/.conda/pkgs,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/../.conda/${localWorkspaceFolderBasename}-single-envs,target=/home/coder/.conda/envs,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/.devcontainer/opt/${localWorkspaceFolderBasename},target=/opt/${localWorkspaceFolderBasename},type=bind,consistency=consistent"
+    "source=${localWorkspaceFolder}/../.conda/${localWorkspaceFolderBasename}-single-envs,target=/home/coder/.conda/envs,type=bind,consistency=consistent"
   ],
 
   "customizations": {
