@@ -3,6 +3,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
+from geopandas.testing import assert_geodataframe_equal
 from shapely.affinity import rotate
 from shapely.geometry import (
     LineString,
@@ -440,3 +441,31 @@ def test_reset_index(level, drop, inplace, col_level, col_fill):
         expected = gpdf
         got = gdf
     pd.testing.assert_frame_equal(expected, got.to_pandas())
+
+
+def test_cudf_dataframe_init():
+    df = cudf.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    gdf = cuspatial.GeoDataFrame(df)
+    assert_eq_geo_df(gdf.to_pandas(), df.to_pandas())
+
+
+def test_apply_boolean_mask(gpdf, mask_factory):
+    mask = mask_factory(len(gpdf))
+
+    expected = gpdf[mask]
+
+    d_gpdf = cuspatial.from_geopandas(gpdf)
+    got = d_gpdf[mask]
+
+    assert_geodataframe_equal(expected, got.to_geopandas())
+
+
+def test_apply_boolean_mask_length_one(mask_factory):
+    geodf = gpd.GeoDataFrame({"geometry": [Point(0, 0)]})
+    mask = mask_factory(len(geodf))
+    expected = geodf[mask]
+
+    d_geodf = cuspatial.from_geopandas(geodf)
+    got = d_geodf[mask]
+
+    assert_geodataframe_equal(expected, got.to_geopandas())

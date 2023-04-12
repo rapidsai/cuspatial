@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,8 @@ multipoint_range<GeometryIterator, VecIterator>::multipoint_range(GeometryIterat
     _points_begin(points_begin),
     _points_end(points_end)
 {
+  static_assert(is_vec_2d<iterator_value_type<VecIterator>>,
+                "Coordinate range must be constructed with iterators to vec_2d.");
 }
 
 template <typename GeometryIterator, typename VecIterator>
@@ -131,6 +133,19 @@ multipoint_range<GeometryIterator, VecIterator>::geometry_idx_from_point_idx(Ind
   return thrust::distance(
     _geometry_begin,
     thrust::prev(thrust::upper_bound(thrust::seq, _geometry_begin, _geometry_end, idx)));
+}
+
+template <typename GeometryIterator, typename VecIterator>
+template <typename IndexType>
+CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::point(IndexType idx)
+{
+  return _points_begin[idx];
+}
+
+template <typename GeometryIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE bool multipoint_range<GeometryIterator, VecIterator>::is_single_point_range()
+{
+  return num_multipoints() == num_points();
 }
 
 }  // namespace cuspatial

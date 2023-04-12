@@ -36,5 +36,17 @@ repos:
               - id: clang-format
                 types_or: [c, c++, cuda]
                 args: ["-fallback-style=none", "-style=file", "-i"]
+      - repo: https://github.com/codespell-project/codespell
+        rev: v2.2.4
+        hooks:
+              - id: codespell
+                args: ["--config pyproject.toml"]
+                additional_dependencies: ["tomli"]
+      - repo: https://github.com/rapidsai/dependency-file-generator
+        rev: v1.5.1
+        hooks:
+            - id: rapids-dependency-file-generator
+              args: ["--clean"]
+
 default_language_version:
       python: python3

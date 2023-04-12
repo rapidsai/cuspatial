@@ -62,7 +62,7 @@ const T __device__ max_(const T a, const T b)
  * @tparam ToRepFuncType The type of function to cast `T` to `RepresentationType`
  * @tparam FromRepFuncType The type of function to cast `RepresentationType` to T
  * @param addr The address where the atomic operation will be performed
- * @param val The right hand side value of the opeartion
+ * @param val The right hand side value of the operation
  * @param op The atomic operation to perform
  * @param to_rep_func The function to cast `T` to `RepresentationType`, see notes below.
  * @param from_rep_func The function to cast `RepresentationType` to `T`, see notes below.

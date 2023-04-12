@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/vec_2d.hpp>
+
+#include <thrust/device_reference.h>
 
 #include <iostream>
 namespace cuspatial {
@@ -50,6 +52,9 @@ class alignas(sizeof(Vertex)) segment {
   /// Return the geometric center of segment.
   Vertex CUSPATIAL_HOST_DEVICE center() const { return midpoint(v1, v2); }
 
+  /// Return the length squared of segment.
+  T CUSPATIAL_HOST_DEVICE length2() const { return dot(v2 - v1, v2 - v1); }
+
  private:
   friend std::ostream& operator<<(std::ostream& os, segment<T> const& seg)
   {
@@ -61,4 +66,7 @@ class alignas(sizeof(Vertex)) segment {
 template <typename T>
 segment(vec_2d<T> a, vec_2d<T> b) -> segment<T, vec_2d<T>>;
 
+template <typename T>
+segment(thrust::device_reference<vec_2d<T>> a, thrust::device_reference<vec_2d<T>> b)
+  -> segment<T, vec_2d<T>>;
 }  // namespace cuspatial

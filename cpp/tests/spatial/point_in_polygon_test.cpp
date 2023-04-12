@@ -46,8 +46,8 @@ TYPED_TEST(PointInPolygonTest, Empty)
 
   auto test_point_xs     = wrapper<T>({0});
   auto test_point_ys     = wrapper<T>({0});
-  auto poly_offsets      = wrapper<cudf::size_type>({});
-  auto poly_ring_offsets = wrapper<cudf::size_type>({});
+  auto poly_offsets      = wrapper<cudf::size_type>({0});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0});
   auto poly_point_xs     = wrapper<T>({});
   auto poly_point_ys     = wrapper<T>({});
 
@@ -109,6 +109,59 @@ TYPED_TEST(PointInPolygonUnsupportedChronoTypesTest, UnsupportedPointChronoType)
 
 struct PointInPolygonErrorTest : public BaseFixture {
 };
+
+TEST_F(PointInPolygonErrorTest, EmptyPolygonOffsets)
+{
+  using T = double;
+
+  auto test_point_xs     = wrapper<T>({0});
+  auto test_point_ys     = wrapper<T>({0});
+  auto poly_offsets      = wrapper<cudf::size_type>({});  // empty lists have a single offset
+  auto poly_ring_offsets = wrapper<cudf::size_type>({});
+  auto poly_point_xs     = wrapper<T>({});
+  auto poly_point_ys     = wrapper<T>({});
+
+  EXPECT_THROW(
+    cuspatial::point_in_polygon(
+      test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
+    cuspatial::logic_error);
+}
+
+TEST_F(PointInPolygonErrorTest, TriangleUnclosedNotEnoughPoints)
+{
+  using T = double;
+
+  auto test_point_xs     = wrapper<T>({0.0, 1.0});
+  auto test_point_ys     = wrapper<T>({0.0, 1.0});
+  auto poly_offsets      = wrapper<cudf::size_type>({0, 1});
+  auto poly_ring_offsets = wrapper<cudf::size_type>({0, 3});
+  auto poly_point_xs     = wrapper<T>({0.0, 1.0, 0.0});
+  auto poly_point_ys     = wrapper<T>({1.0, 0.0, -1.0});
+
+  EXPECT_THROW(
+    cuspatial::point_in_polygon(
+      test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys),
+    cuspatial::logic_error);
+}
+
+TEST_F(PointInPolygonErrorTest, EmptyTestPointsReturnsEmpty)
+{
+  using T = double;
+
+  auto test_point_xs     = wrapper<T>({});
+  auto test_point_ys     = wrapper<T>({});
+  auto poly_offsets      = wrapper<cudf::size_type>({});  // empty lists have a single offset
+  auto poly_ring_offsets = wrapper<cudf::size_type>({});
+  auto poly_point_xs     = wrapper<T>({});
+  auto poly_point_ys     = wrapper<T>({});
+
+  auto expected = wrapper<int32_t>({});
+
+  auto actual = cuspatial::point_in_polygon(
+    test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);
+
+  CUDF_TEST_EXPECT_COLUMNS_EQUAL(expected, actual->view(), verbosity);
+}
 
 TEST_F(PointInPolygonErrorTest, MismatchTestPointXYLength)
 {

@@ -1,5 +1,5 @@
 ﻿#=============================================================================
-# Copyright (c) 2019-2022, NVIDIA CORPORATION.
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,10 @@ function(ConfigureTest CMAKE_TEST_NAME)
         ${CMAKE_TEST_NAME}
         PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/gtests>"
                    INSTALL_RPATH "\$ORIGIN/../../../lib"
+                   CXX_STANDARD 17
+                   CXX_STANDARD_REQUIRED ON
+                   CUDA_STANDARD 17
+                   CUDA_STANDARD_REQUIRED ON
     )
     target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main cudf::cudftestutil cuspatial)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
@@ -44,9 +48,6 @@ endfunction(ConfigureTest)
 ### test sources ##################################################################################
 ###################################################################################################
 
-ConfigureTest(CUBIC_SPLINE_TEST
-    interpolate/cubic_spline_test.cpp)
-
 ConfigureTest(SINUSOIDAL_PROJECTION_TEST
     spatial/sinusoidal_projection_test.cu)
 
@@ -56,14 +57,11 @@ ConfigureTest(HAVERSINE_TEST
 ConfigureTest(HAUSDORFF_TEST
     spatial/hausdorff_test.cpp)
 
-ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST
-    join/point_in_polygon_test_small.cpp)
+ConfigureTest(JOIN_POINT_TO_NEAREST_LINESTRING_TEST
+    join/quadtree_point_to_nearest_linestring_test.cpp)
 
-ConfigureTest(JOIN_POINT_IN_POLYGON_LARGE_TEST
-    join/point_in_polygon_test_large.cpp)
-
-ConfigureTest(JOIN_POINT_TO_LINESTRING_SMALL_TEST
-    join/point_to_nearest_linestring_test_small.cpp)
+ConfigureTest(JOIN_POINT_IN_POLYGON_TEST
+    join/quadtree_point_in_polygon_test.cpp)
 
 ConfigureTest(POINT_IN_POLYGON_TEST
     spatial/point_in_polygon_test.cpp)
@@ -72,13 +70,13 @@ ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST
     spatial/pairwise_point_in_polygon_test.cpp)
 
 ConfigureTest(POINT_QUADTREE_TEST
-    indexing/point_quadtree_test.cu)
+    indexing/point_quadtree_test.cpp)
 
 ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST
-    spatial/linestring_bounding_boxes_test.cu)
+    spatial/linestring_bounding_boxes_test.cpp)
 
 ConfigureTest(POLYGON_BOUNDING_BOXES_TEST
-    spatial/polygon_bounding_boxes_test.cu)
+    spatial/polygon_bounding_boxes_test.cpp)
 
 ConfigureTest(POINT_DISTANCE_TEST
     spatial/point_distance_test.cpp)
@@ -89,17 +87,17 @@ ConfigureTest(POINT_LINESTRING_DISTANCE_TEST
 ConfigureTest(LINESTRING_DISTANCE_TEST
     spatial/linestring_distance_test.cpp)
 
+ConfigureTest(POINT_POLYGON_DISTANCE_TEST
+    spatial/point_polygon_distance_test.cpp)
+
+ConfigureTest(LINESTRING_INTERSECTION_TEST
+    spatial/linestring_intersection_test.cpp)
+
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST
     spatial/point_linestring_nearest_points_test.cpp)
 
-ConfigureTest(SHAPEFILE_READER_TEST
-    io/shp/polygon_shapefile_reader_test.cpp)
-
-ConfigureTest(QUADTREE_POLYGON_FILTERING_TEST
-    join/quadtree_polygon_filtering_test.cu)
-
-ConfigureTest(QUADTREE_LINESTRING_FILTERING_TEST
-    join/quadtree_linestring_filtering_test.cu)
+ConfigureTest(JOIN_QUADTREE_AND_BOUNDING_BOXES_TEST
+    join/join_quadtree_and_bounding_boxes_test.cpp)
 
 ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST
     trajectory/test_trajectory_distances_and_speeds.cu)
@@ -116,9 +114,10 @@ ConfigureTest(SPATIAL_WINDOW_POINT_TEST
 ConfigureTest(UTILITY_TEST
     utility_test/test_float_equivalent.cu
     utility_test/test_multipoint_factory.cu
+    utility_test/test_geometry_generators.cu
 )
 
-# Experimental API
+# Header-only API
 ConfigureTest(HAVERSINE_TEST_EXP
     experimental/spatial/haversine_test.cu)
 
@@ -127,6 +126,12 @@ ConfigureTest(POINT_DISTANCE_TEST_EXP
 
 ConfigureTest(POINT_LINESTRING_DISTANCE_TEST_EXP
     experimental/spatial/point_linestring_distance_test.cu)
+
+ConfigureTest(POINT_POLYGON_DISTANCE_TEST_EXP
+    experimental/spatial/point_polygon_distance_test.cu)
+
+ConfigureTest(LINESTRING_POLYGON_DISTANCE_TEST_EXP
+    experimental/spatial/linestring_polygon_distance_test.cu)
 
 ConfigureTest(HAUSDORFF_TEST_EXP
     experimental/spatial/hausdorff_test.cu)
@@ -181,3 +186,19 @@ ConfigureTest(FIND_TEST_EXP
     experimental/find/find_and_combine_segments_test.cu
     experimental/find/find_points_on_segments_test.cu
     experimental/find/find_duplicate_points_test.cu)
+
+ConfigureTest(JOIN_QUADTREE_AND_BOUNDING_BOXES_TEST_EXP
+    experimental/join/join_quadtree_and_bounding_boxes_test.cu)
+
+ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST_EXP
+    experimental/join/quadtree_point_in_polygon_test_small.cu)
+
+ConfigureTest(JOIN_POINT_IN_POLYGON_LARGE_TEST_EXP
+    experimental/join/quadtree_point_in_polygon_test_large.cu)
+
+ConfigureTest(JOIN_POINT_TO_LINESTRING_SMALL_TEST_EXP
+    experimental/join/quadtree_point_to_nearest_linestring_test_small.cu)
+
+ConfigureTest(RANGE_TEST_EXP
+    experimental/range/multilinestring_range_test.cu
+    experimental/range/multipolygon_range_test.cu)

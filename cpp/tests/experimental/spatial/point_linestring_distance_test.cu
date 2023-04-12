@@ -39,7 +39,7 @@ template <typename T>
 struct PairwisePointLinestringDistanceTest : public ::testing::Test {
 };
 
-// float and double are logically the same but would require seperate tests due to precision.
+// float and double are logically the same but would require separate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(PairwisePointLinestringDistanceTest, TestTypes);
 
@@ -225,7 +225,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePartFiftyPairsCompareWithShap
   using T       = TypeParam;
   using CartVec = std::vector<vec_2d<T>>;
 
-  // All point coordinates are confined in [-1e9, 0] inverval
+  // All point coordinates are confined in [-1e9, 0] interval
   auto d_points_x = rmm::device_vector<T>(std::vector<T>{
     -561549155.2815765,  -539635297.7968571,  -749785291.9823582,  -505256232.2383667,
     -946988876.2831948,  -662300741.9693683,  -603237481.1662251,  -125581339.4351779,
@@ -256,7 +256,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePartFiftyPairsCompareWithShap
     -815538168.7101089,  -805543247.7590245,  -213668210.4341381,  -734828450.688499,
     -718181825.0574478,  -646533731.4391378});
 
-  // All point coordinates are confined in [0, 1e9] inverval
+  // All point coordinates are confined in [0, 1e9] interval
   auto d_linestring_points_x = rmm::device_vector<T>(
     std::vector<T>{409740620.3189557,  136924984.5824146,  380403413.55319613, 870222466.1573819,
                    635018282.0970114,  525659618.01626,    571907477.7659363,  275007048.105586,

@@ -15,6 +15,7 @@
  */
 
 #include <benchmarks/fixture/rmm_pool_raii.hpp>
+
 #include <cuspatial_test/random.cuh>
 
 #include <cuspatial/detail/iterator.hpp>
@@ -35,7 +36,7 @@
 
 #include <memory>
 
-using namespace cuspatial;
+using cuspatial::vec_2d;
 
 /**
  * @brief Helper to generate random points within a range
@@ -54,14 +55,14 @@ using namespace cuspatial;
 template <class PointsIter, typename T>
 void generate_points(PointsIter begin, PointsIter end, vec_2d<T> range_min, vec_2d<T> range_max)
 {
-  auto engine_x = deterministic_engine(std::distance(begin, end));
-  auto engine_y = deterministic_engine(2 * std::distance(begin, end));
+  auto engine_x = cuspatial::test::deterministic_engine(std::distance(begin, end));
+  auto engine_y = cuspatial::test::deterministic_engine(2 * std::distance(begin, end));
 
-  auto x_dist = make_uniform_dist(range_min.x, range_max.x);
-  auto y_dist = make_uniform_dist(range_min.y, range_max.y);
+  auto x_dist = cuspatial::test::make_uniform_dist(range_min.x, range_max.x);
+  auto y_dist = cuspatial::test::make_uniform_dist(range_min.y, range_max.y);
 
-  auto x_gen = value_generator{range_min.x, range_max.x, engine_x, x_dist};
-  auto y_gen = value_generator{range_min.y, range_max.y, engine_y, y_dist};
+  auto x_gen = cuspatial::test::value_generator{range_min.x, range_max.x, engine_x, x_dist};
+  auto y_gen = cuspatial::test::value_generator{range_min.y, range_max.y, engine_y, y_dist};
 
   thrust::tabulate(rmm::exec_policy(), begin, end, [x_gen, y_gen] __device__(size_t n) mutable {
     return vec_2d<T>{x_gen(n), y_gen(n)};

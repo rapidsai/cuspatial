@@ -1,10 +1,19 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2023, NVIDIA CORPORATION.
 
 from typing import TypeVar
 
 import numpy as np
 
 from cudf.api.types import is_datetime_dtype
+from cudf.core.column.column import column_empty
+
+from cuspatial.core._column.geometa import Feature_Enum
+from cuspatial.core.dtypes import (
+    linestring_dtype,
+    multipoint_dtype,
+    point_dtype,
+    polygon_dtype,
+)
 
 GeoSeries = TypeVar("GeoSeries", bound="GeoSeries")
 
@@ -115,3 +124,22 @@ def has_same_geometry(lhs: GeoSeries, rhs: GeoSeries):
         return True
     else:
         return False
+
+
+def has_multipolygons(gs: GeoSeries):
+    """
+    Returns true if `gs` contains any MultiPolygons
+    """
+    return len(gs.polygons.geometry_offset) != len(gs.polygons.part_offset)
+
+
+def empty_geometry_column(feature: Feature_Enum, base_type):
+    """Return a geometry column of type `feature`. Length is 0."""
+    if feature == Feature_Enum.POINT:
+        return column_empty(0, point_dtype(base_type), masked=False)
+    elif feature == Feature_Enum.MULTIPOINT:
+        return column_empty(0, multipoint_dtype(base_type), masked=False)
+    elif feature == Feature_Enum.LINESTRING:
+        return column_empty(0, linestring_dtype(base_type), masked=False)
+    elif feature == Feature_Enum.POLYGON:
+        return column_empty(0, polygon_dtype(base_type), masked=False)

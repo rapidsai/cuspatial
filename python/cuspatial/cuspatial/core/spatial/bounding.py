@@ -9,56 +9,81 @@ from cuspatial._lib.linestring_bounding_boxes import (
 from cuspatial._lib.polygon_bounding_boxes import (
     polygon_bounding_boxes as cpp_polygon_bounding_boxes,
 )
-from cuspatial.utils.column_utils import normalize_point_columns
+from cuspatial.core.geoseries import GeoSeries
+from cuspatial.utils.column_utils import (
+    contains_only_linestrings,
+    contains_only_polygons,
+)
 
 
-def polygon_bounding_boxes(poly_offsets, ring_offsets, xs, ys):
+def polygon_bounding_boxes(polygons: GeoSeries):
     """Compute the minimum bounding-boxes for a set of polygons.
 
     Parameters
     ----------
-    poly_offsets
-        Begin indices of the first ring in each polygon (i.e. prefix-sum)
-    ring_offsets
-        Begin indices of the first point in each ring (i.e. prefix-sum)
-    xs
-        Polygon point x-coordinates
-    ys
-        Polygon point y-coordinates
+    polygons: GeoSeries
+        A series of polygons
 
     Returns
     -------
     result : cudf.DataFrame
         minimum bounding boxes for each polygon
 
-        x_min : cudf.Series
+        minx : cudf.Series
             the minimum x-coordinate of each bounding box
-        y_min : cudf.Series
+        miny : cudf.Series
             the minimum y-coordinate of each bounding box
-        x_max : cudf.Series
+        maxx : cudf.Series
             the maximum x-coordinate of each bounding box
-        y_max : cudf.Series
+        maxy : cudf.Series
             the maximum y-coordinate of each bounding box
+
+    Notes
+    -----
+    Has no notion of multipolygons. If a multipolygon is passed, the bounding
+    boxes for each polygon will be computed and returned. The user is
+    responsible for handling the multipolygon case.
     """
-    poly_offsets = as_column(poly_offsets, dtype="int32")
-    ring_offsets = as_column(ring_offsets, dtype="int32")
-    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+
+    column_names = ["minx", "miny", "maxx", "maxy"]
+    if len(polygons) == 0:
+        return DataFrame(columns=column_names, dtype="f8")
+
+    if not contains_only_polygons(polygons):
+        raise ValueError("Geoseries must contain only polygons.")
+
+    # `cpp_polygon_bounding_boxes` computes bbox with all points supplied,
+    # but only supports single-polygon input. We compute the polygon offset
+    # by combining the geometry offset and parts offset of the multipolygon
+    # array.
+
+    poly_offsets = polygons.polygons.part_offset
+    ring_offsets = polygons.polygons.ring_offset
+    x = polygons.polygons.x
+    y = polygons.polygons.y
+
     return DataFrame._from_data(
-        *cpp_polygon_bounding_boxes(poly_offsets, ring_offsets, xs, ys)
+        dict(
+            zip(
+                column_names,
+                cpp_polygon_bounding_boxes(
+                    as_column(poly_offsets),
+                    as_column(ring_offsets),
+                    as_column(x),
+                    as_column(y),
+                ),
+            )
+        )
     )
 
 
-def linestring_bounding_boxes(linestring_offsets, xs, ys, expansion_radius):
+def linestring_bounding_boxes(linestrings: GeoSeries, expansion_radius: float):
     """Compute the minimum bounding boxes for a set of linestrings.
 
     Parameters
     ----------
-    linestring_offsets
-        Begin indices of the each linestring
-    xs
-        Linestring point x-coordinates
-    ys
-        Linestring point y-coordinates
+    linestrings: GeoSeries
+        A series of linestrings
     expansion_radius
         radius of each linestring point
 
@@ -67,19 +92,36 @@ def linestring_bounding_boxes(linestring_offsets, xs, ys, expansion_radius):
     result : cudf.DataFrame
         minimum bounding boxes for each linestring
 
-        x_min : cudf.Series
+        minx : cudf.Series
             the minimum x-coordinate of each bounding box
-        y_min : cudf.Series
+        miny : cudf.Series
             the minimum y-coordinate of each bounding box
-        x_max : cudf.Series
+        maxx : cudf.Series
             the maximum x-coordinate of each bounding box
-        y_max : cudf.Series
+        maxy : cudf.Series
             the maximum y-coordinate of each bounding box
     """
-    linestring_offsets = as_column(linestring_offsets, dtype="int32")
-    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
-    return DataFrame._from_data(
-        *cpp_linestring_bounding_boxes(
-            linestring_offsets, xs, ys, expansion_radius
-        )
+
+    column_names = ["minx", "miny", "maxx", "maxy"]
+    if len(linestrings) == 0:
+        return DataFrame(columns=column_names, dtype="f8")
+
+    if not contains_only_linestrings(linestrings):
+        raise ValueError("Geoseries must contain only linestrings.")
+
+    # `cpp_linestring_bounding_boxes` computes bbox with all points supplied,
+    # but only supports single-linestring input. We compute the linestring
+    # offset by combining the geometry offset and parts offset of the
+    # multilinestring array.
+
+    line_offsets = linestrings.lines.part_offset.take(
+        linestrings.lines.geometry_offset
     )
+    x = linestrings.lines.x
+    y = linestrings.lines.y
+
+    results = cpp_linestring_bounding_boxes(
+        as_column(line_offsets), as_column(x), as_column(y), expansion_radius
+    )
+
+    return DataFrame._from_data(dict(zip(column_names, results)))

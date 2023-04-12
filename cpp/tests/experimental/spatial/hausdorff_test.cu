@@ -167,6 +167,6 @@ void generic_hausdorff_test()
 
 TYPED_TEST(HausdorffTest, 500Spaces100Points) { generic_hausdorff_test<TypeParam, 500, 100>(); }
 
-TYPED_TEST(HausdorffTest, 10000Spaces10Points) { generic_hausdorff_test<TypeParam, 10000, 10>(); }
+TYPED_TEST(HausdorffTest, 1000Spaces10Points) { generic_hausdorff_test<TypeParam, 1000, 10>(); }
 
 TYPED_TEST(HausdorffTest, 10Spaces10000Points) { generic_hausdorff_test<TypeParam, 10, 10000>(); }

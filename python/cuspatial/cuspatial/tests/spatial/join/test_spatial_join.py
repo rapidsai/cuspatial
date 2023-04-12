@@ -1,5 +1,6 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION.
 
+import cupy as cp
 import numpy as np
 import pytest
 
@@ -11,18 +12,20 @@ bbox_1 = (0, 1, 0, 1)
 bbox_2 = (0, 2, 0, 2)
 
 small_poly_offsets = cudf.Series([0, 1, 2, 3, 4], dtype=np.uint32)
-small_ring_offsets = cudf.Series([0, 3, 8, 12, 17], dtype=np.uint32)
+small_ring_offsets = cudf.Series([0, 4, 10, 14, 19], dtype=np.uint32)
 
 small_poly_xs = cudf.Series(
     [
         2.488450,
         1.333584,
         3.460720,
+        2.488450,
         5.039823,
         5.561707,
         7.103516,
         7.190674,
         5.998939,
+        5.039823,
         5.998939,
         5.573720,
         6.703534,
@@ -40,11 +43,13 @@ small_poly_ys = cudf.Series(
         5.856625,
         5.008840,
         4.586599,
+        5.856625,
         4.229242,
         1.825073,
         1.503906,
         4.025879,
         5.653384,
+        4.229242,
         1.235638,
         0.197808,
         0.086693,
@@ -210,20 +215,23 @@ small_points_y = cudf.Series(
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_empty(dtype):
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": cudf.Series([], dtype=dtype),  # x
+                "y": cudf.Series([], dtype=dtype),  # y
+            }
+        ).interleave_columns()
+    )
     order, quadtree = cuspatial.quadtree_on_points(
-        cudf.Series([], dtype=dtype),  # x
-        cudf.Series([], dtype=dtype),  # y
+        points,
         *bbox_1,  # bbox
         1,  # scale
         1,  # max_depth
         1,  # min_size
     )
-    poly_bboxes = cuspatial.polygon_bounding_boxes(
-        cudf.Series(),
-        cudf.Series(),
-        cudf.Series([], dtype=dtype),
-        cudf.Series([], dtype=dtype),
-    )
+    poly_bboxes = cuspatial.polygon_bounding_boxes(cuspatial.GeoSeries([]))
+    poly_bboxes = poly_bboxes.astype(dtype)
     # empty should not throw
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree,
@@ -254,11 +262,18 @@ def test_polygon_join_small(dtype):
     min_size = 12
     points_x = small_points_x.astype(dtype)
     points_y = small_points_y.astype(dtype)
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": points_x,  # x
+                "y": points_y,  # y
+            }
+        ).interleave_columns()
+    )
     poly_points_x = small_poly_xs.astype(dtype)
     poly_points_y = small_poly_ys.astype(dtype)
     point_indices, quadtree = cuspatial.quadtree_on_points(
-        points_x,
-        points_y,
+        points,
         x_min,
         x_max,
         y_min,
@@ -267,12 +282,16 @@ def test_polygon_join_small(dtype):
         max_depth,
         min_size,
     )
-    poly_bboxes = cuspatial.polygon_bounding_boxes(
-        small_poly_offsets,
+    xy = cudf.DataFrame(
+        {"x": poly_points_x, "y": poly_points_y}
+    ).interleave_columns()
+    polygons = cuspatial.GeoSeries.from_polygons_xy(
+        xy,
         small_ring_offsets,
-        poly_points_x,
-        poly_points_y,
+        small_poly_offsets,
+        cp.arange(len(small_poly_offsets)),
     )
+    poly_bboxes = cuspatial.polygon_bounding_boxes(polygons)
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree,
         poly_bboxes,
@@ -310,11 +329,26 @@ def test_linestring_join_small(dtype):
     expansion_radius = 2.0
     points_x = small_points_x.astype(dtype)
     points_y = small_points_y.astype(dtype)
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": points_x,  # x
+                "y": points_y,  # y
+            }
+        ).interleave_columns()
+    )
     linestring_points_x = small_poly_xs.astype(dtype)
     linestring_points_y = small_poly_ys.astype(dtype)
+    linestrings = cuspatial.GeoSeries.from_linestrings_xy(
+        cudf.DataFrame(
+            {"x": linestring_points_x, "y": linestring_points_y}
+        ).interleave_columns(),
+        small_ring_offsets,
+        cp.arange(len(small_ring_offsets)),
+    )
+
     point_indices, quadtree = cuspatial.quadtree_on_points(
-        points_x,
-        points_y,
+        points,
         x_min,
         x_max,
         y_min,
@@ -324,9 +358,7 @@ def test_linestring_join_small(dtype):
         min_size,
     )
     linestring_bboxes = cuspatial.linestring_bounding_boxes(
-        small_ring_offsets,
-        linestring_points_x,
-        linestring_points_y,
+        linestrings,
         expansion_radius,
     )
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
@@ -411,11 +443,28 @@ def test_quadtree_point_in_polygon_small(dtype):
     min_size = 12
     points_x = small_points_x.astype(dtype)
     points_y = small_points_y.astype(dtype)
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": points_x,  # x
+                "y": points_y,  # y
+            }
+        ).interleave_columns()
+    )
     poly_points_x = small_poly_xs.astype(dtype)
     poly_points_y = small_poly_ys.astype(dtype)
+    poly_points = cudf.DataFrame(
+        {"x": poly_points_x, "y": poly_points_y}
+    ).interleave_columns()
+
+    polygons = cuspatial.GeoSeries.from_polygons_xy(
+        poly_points,
+        small_ring_offsets,
+        small_poly_offsets,
+        cp.arange(len(small_poly_offsets)),
+    )
     point_indices, quadtree = cuspatial.quadtree_on_points(
-        points_x,
-        points_y,
+        points,
         x_min,
         x_max,
         y_min,
@@ -424,12 +473,16 @@ def test_quadtree_point_in_polygon_small(dtype):
         max_depth,
         min_size,
     )
-    poly_bboxes = cuspatial.polygon_bounding_boxes(
-        small_poly_offsets,
+    xy = cudf.DataFrame(
+        {"x": poly_points_x, "y": poly_points_y}
+    ).interleave_columns()
+    polygons = cuspatial.GeoSeries.from_polygons_xy(
+        xy,
         small_ring_offsets,
-        poly_points_x,
-        poly_points_y,
+        small_poly_offsets,
+        cp.arange(len(small_poly_offsets)),
     )
+    poly_bboxes = cuspatial.polygon_bounding_boxes(polygons)
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
         quadtree,
         poly_bboxes,
@@ -441,15 +494,7 @@ def test_quadtree_point_in_polygon_small(dtype):
         max_depth,
     )
     polygons_and_points = cuspatial.quadtree_point_in_polygon(
-        intersections,
-        quadtree,
-        point_indices,
-        points_x,
-        points_y,
-        small_poly_offsets,
-        small_ring_offsets,
-        poly_points_x,
-        poly_points_y,
+        intersections, quadtree, point_indices, points, polygons
     )
     cudf.testing.assert_frame_equal(
         polygons_and_points,
@@ -501,11 +546,25 @@ def run_test_quadtree_point_to_nearest_linestring_small(
     expansion_radius = 2.0
     points_x = small_points_x.astype(dtype)
     points_y = small_points_y.astype(dtype)
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": points_x,  # x
+                "y": points_y,  # y
+            }
+        ).interleave_columns()
+    )
     linestring_points_x = small_poly_xs.astype(dtype)
     linestring_points_y = small_poly_ys.astype(dtype)
+    linestrings = cuspatial.GeoSeries.from_linestrings_xy(
+        cudf.DataFrame(
+            {"x": linestring_points_x, "y": linestring_points_y}
+        ).interleave_columns(),
+        small_ring_offsets,
+        cp.arange(len(small_ring_offsets)),
+    )
     point_indices, quadtree = cuspatial.quadtree_on_points(
-        points_x,
-        points_y,
+        points,
         x_min,
         x_max,
         y_min,
@@ -515,9 +574,7 @@ def run_test_quadtree_point_to_nearest_linestring_small(
         min_size,
     )
     linestring_bboxes = cuspatial.linestring_bounding_boxes(
-        small_ring_offsets,
-        linestring_points_x,
-        linestring_points_y,
+        linestrings,
         expansion_radius,
     )
     intersections = cuspatial.join_quadtree_and_bounding_boxes(
@@ -531,14 +588,7 @@ def run_test_quadtree_point_to_nearest_linestring_small(
         max_depth,
     )
     p2np_result = cuspatial.quadtree_point_to_nearest_linestring(
-        intersections,
-        quadtree,
-        point_indices,
-        points_x,
-        points_y,
-        small_ring_offsets,
-        linestring_points_x,
-        linestring_points_y,
+        intersections, quadtree, point_indices, points, linestrings
     )
     cudf.testing.assert_frame_equal(
         p2np_result,

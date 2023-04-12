@@ -12,5 +12,4 @@ dependencies and RAPIDS libraries automatically fetched and correctly versioned.
 script commands for simple building and testing of all RAPIDS libraries, including cuSpatial.
 `rapids-compose` is the recommended way to set up your environment to develop for cuspatial.
 
-For developers who would like to build from conda or from source, see
-[README.md](https://github.com/rapidsai/cuspatial/blob/main/README.md).
+For developers who would like to build from conda or from source, see the [build page](https://docs.rapids.ai/api/cuspatial/stable/developer_guide/build.html).

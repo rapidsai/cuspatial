@@ -21,6 +21,8 @@ from shapely.geometry import (
     Polygon,
 )
 
+import cudf
+
 import cuspatial
 
 
@@ -142,7 +144,9 @@ def sorted_trajectories():
     timestamps = cp.random.random(10000) * 10000
     x = cp.random.random(10000)
     y = cp.random.random(10000)
-    return cuspatial.derive_trajectories(ids, x, y, timestamps)
+    xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
+    points = cuspatial.GeoSeries.from_points_xy(xy)
+    return cuspatial.derive_trajectories(ids, points, timestamps)
 
 
 @pytest_cases.fixture()

@@ -6,7 +6,7 @@ from libcpp.utility cimport move
 from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column_view cimport column_view
 from cudf._lib.cpp.table.table cimport table
-from cudf._lib.utils cimport data_from_unique_ptr
+from cudf._lib.utils cimport columns_from_unique_ptr
 
 from cuspatial._lib.cpp.linestring_bounding_box cimport (
     linestring_bounding_boxes as cpp_linestring_bounding_boxes,
@@ -24,7 +24,4 @@ cpdef linestring_bounding_boxes(Column poly_offsets,
         result = move(cpp_linestring_bounding_boxes(
             c_poly_offsets, c_x, c_y, R
         ))
-    return data_from_unique_ptr(
-        move(result),
-        column_names=["x_min", "y_min", "x_max", "y_max"]
-    )
+    return columns_from_unique_ptr(move(result))

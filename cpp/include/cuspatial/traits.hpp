@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,19 @@
 #include <type_traits>
 
 namespace cuspatial {
+
+/**
+ * @brief Convenience macro for SFINAE as an unnamed template parameter.
+ *
+ * Example:
+ * \code{cpp}
+ * // This function will participate in overload resolution only if T is an integral type
+ * template <typename T, CUSPATIAL_ENABLE_IF(std::is_integral_v<T> )>
+ * void foo();
+ * \endcode
+ *
+ */
+#define CUSPATIAL_ENABLE_IF(...) typename std::enable_if_t<(__VA_ARGS__)>* = nullptr
 
 /**
  * @internal
@@ -66,15 +79,16 @@ constexpr bool is_integral()
   return std::conjunction_v<std::is_integral<Ts>...>;
 }
 
+template <typename>
+constexpr bool is_vec_2d_impl = false;
+template <typename T>
+constexpr bool is_vec_2d_impl<vec_2d<T>> = true;
 /**
  * @internal
- * @brief returns true if `T` is `vec_2d<float>` or `vec_2d<double>`
+ * @brief Evaluates to true if T is a cuspatial::vec_2d
  */
 template <typename T>
-constexpr bool is_vec_2d()
-{
-  return std::is_same_v<T, vec_2d<float>> or std::is_same_v<T, vec_2d<double>>;
-}
+constexpr bool is_vec_2d = is_vec_2d_impl<std::remove_cv_t<std::remove_reference_t<T>>>;
 
 /**
  * @internal
@@ -91,6 +105,10 @@ template <typename>
 constexpr bool is_optional_impl = false;
 template <typename T>
 constexpr bool is_optional_impl<std::optional<T>> = true;
+/**
+ * @internal
+ * @brief Evaluates to true if T is a std::optional
+ */
 template <typename T>
 constexpr bool is_optional = is_optional_impl<std::remove_cv_t<std::remove_reference_t<T>>>;
 

@@ -1,14 +1,11 @@
 c_compiler_version:
-  - 9
+  - 11
 
 cxx_compiler_version:
-  - 9
+  - 11
 
 cuda_compiler:
   - nvcc
 
 sysroot_version:
   - "2.17"
-
-gdal_version:
-  - ">3.5.0,<3.6.0"

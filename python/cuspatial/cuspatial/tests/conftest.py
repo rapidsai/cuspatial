@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2023, NVIDIA CORPORATION.
 
 import geopandas as gpd
 import numpy as np
@@ -286,3 +286,32 @@ def slice_twenty():
         slice(12, 16),
         slice(16, 20),
     ]
+
+
+@pytest.fixture(params=["MaskOdd", "MaskEven", "MaskNone", "MaskAll"])
+def mask_factory(request):
+    kind = request.param
+
+    def factory(length):
+        mask = pd.Series([False] * length)
+        if kind == "MaskOdd":
+            mask[0::2] = True
+        elif kind == "MaskEven":
+            mask[1::2] = True
+        elif kind == "MaskNone":
+            pass
+        elif kind == "MaskAll":
+            mask[:] = True
+        return mask
+
+    return factory
+
+
+@pytest.fixture
+def naturalearth_cities():
+    return gpd.read_file(gpd.datasets.get_path("naturalearth_cities"))
+
+
+@pytest.fixture
+def naturalearth_lowres():
+    return gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))

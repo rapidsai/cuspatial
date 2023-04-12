@@ -5,9 +5,15 @@ from cudf import DataFrame
 from cuspatial._lib.spatial import (
     sinusoidal_projection as cpp_sinusoidal_projection,
 )
+from cuspatial.core.geoseries import GeoSeries
+from cuspatial.utils.column_utils import (
+    contain_single_type_geometry,
+    contains_only_multipoints,
+    contains_only_points,
+)
 
 
-def sinusoidal_projection(origin_lon, origin_lat, input_lon, input_lat):
+def sinusoidal_projection(origin_lon, origin_lat, lonlat: GeoSeries):
     """
     Sinusoidal projection of longitude/latitude relative to origin to
     Cartesian (x/y) coordinates in km.
@@ -26,23 +32,29 @@ def sinusoidal_projection(origin_lon, origin_lat, input_lon, input_lat):
     origin_lat : ``number``
         latitude offset (this is subtracted from each input before
         converting to x,y)
-    input_lon : ``Series`` or ``list``
-        longitude coordinates to convert to x
-    input_lat : ``Series`` or ``list``
-        latitude coordinates to convert to y
+    lonlat: GeoSeries
+        A GeoSeries of Points that contains the longitude and latitude
+        to transform
 
     Returns
     -------
-    result : cudf.DataFrame
-        x : cudf.Series
-            x-coordinate of the input relative to the size of the Earth in
-            kilometers.
-        y : cudf.Series
-            y-coordinate of the input relative to the size of the Earth in
-            kilometers.
+    result : GeoSeries
+        A GeoSeries that contains the transformed coordinates.
     """
 
+    if contain_single_type_geometry(lonlat):
+        if not contains_only_points(lonlat) or contains_only_multipoints(
+            lonlat
+        ):
+            raise ValueError("`lonlat` must contain only POINTS geometry.")
+
     result = cpp_sinusoidal_projection(
-        origin_lon, origin_lat, input_lon._column, input_lat._column
+        origin_lon,
+        origin_lat,
+        lonlat.points.x._column,
+        lonlat.points.y._column,
     )
-    return DataFrame({"x": result[0], "y": result[1]})
+    lonlat_transformed = DataFrame(
+        {"x": result[0], "y": result[1]}
+    ).interleave_columns()
+    return GeoSeries.from_points_xy(lonlat_transformed)

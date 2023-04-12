@@ -225,7 +225,7 @@ bool __device__ is_point_on_segment(segment<T> const& segment, vec_2d<T> const& 
 }
 
 /*
- * @brief Given two segments, if they are mergable, return the merged result. Otherwise return
+ * @brief Given two segments, if they are mergeable, return the merged result. Otherwise return
  * nullopt.
  */
 template <typename T>

@@ -1,78 +1,40 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
 
+import geopandas as gpd
 import numpy as np
-import pytest
-
-import cudf
+import pandas as pd
+from shapely.geometry import Point
 
 import cuspatial
 
 
 def test_zeros():
     distance = cuspatial.haversine_distance(
-        cudf.Series([0.0]),
-        cudf.Series([0.0]),
-        cudf.Series([0.0]),
-        cudf.Series([0.0]),
+        cuspatial.GeoSeries([Point(0, 0)]), cuspatial.GeoSeries([Point(0, 0)])
     )
-    assert distance.element_indexing(0) == 0
-
-
-def test_empty_x1():
-    with pytest.raises(RuntimeError):
-        distance = cuspatial.haversine_distance(  # noqa: F841
-            cudf.Series(), cudf.Series([0]), cudf.Series([0]), cudf.Series([0])
-        )
-
-
-def test_empty_y1():
-    with pytest.raises(RuntimeError):
-        distance = cuspatial.haversine_distance(  # noqa: F841
-            cudf.Series([0]), cudf.Series(), cudf.Series([0]), cudf.Series([0])
-        )
-
-
-def test_empty_x2():
-    with pytest.raises(RuntimeError):
-        distance = cuspatial.haversine_distance(  # noqa: F841
-            cudf.Series([0]), cudf.Series([0]), cudf.Series([0]), cudf.Series()
-        )
-
-
-def test_empty_y2():
-    with pytest.raises(RuntimeError):
-        distance = cuspatial.haversine_distance(  # noqa: F841
-            cudf.Series([0]), cudf.Series([0]), cudf.Series([0]), cudf.Series()
-        )
+    assert np.allclose(distance.to_numpy(), [0.0])
 
 
 def test_triple():
-    cities = cudf.DataFrame(
-        {
-            "New York": [-74.0060, 40.7128],
-            "Paris": [2.3522, 48.8566],
-            "Sydney": [151.2093, -33.8688],
-        }
+    cities = gpd.GeoSeries(
+        [
+            Point(-74.0060, 40.7128),
+            Point(2.3522, 48.8566),
+            Point(151.2093, -33.8688),
+        ],
+        index=["New York", "Paris", "Sydney"],
     )
-    cities.index = ["lat", "lon"]
-    pnt_x1 = []
-    pnt_y1 = []
-    pnt_x2 = []
-    pnt_y2 = []
-    for i in cities:
-        for j in cities:
-            pnt_x1.append(cities[i].iloc[0])
-            pnt_y1.append(cities[i].iloc[1])
-            pnt_x2.append(cities[j].iloc[0])
-            pnt_y2.append(cities[j].iloc[1])
+
+    # Compute all pairs from pairwise
+    cities1 = cuspatial.from_geopandas(cities.repeat(3))
+    cities2 = cuspatial.from_geopandas(pd.concat([cities] * 3))
+
     distance = cuspatial.haversine_distance(
-        cudf.Series(pnt_x1),
-        cudf.Series(pnt_y1),
-        cudf.Series(pnt_x2),
-        cudf.Series(pnt_y2),
+        cities1,
+        cities2,
     )
     assert np.allclose(
-        distance.values_host,
+        distance.to_numpy(),
         [
             [
                 0.0,

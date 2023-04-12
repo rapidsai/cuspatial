@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+from shapely.geometry import Point
 
 import cudf
 
@@ -12,8 +13,7 @@ def test_trajectory_bounding_boxes_empty_float32():
     result = cuspatial.trajectory_bounding_boxes(
         0,
         cudf.Series(),
-        cudf.Series([], dtype=np.float32),
-        cudf.Series([], dtype=np.float32),
+        cuspatial.GeoSeries.from_points_xy(cudf.Series([], dtype="f4")),
     )
     cudf.testing.assert_frame_equal(
         result,
@@ -32,8 +32,7 @@ def test_trajectory_bounding_boxes_empty_float64():
     result = cuspatial.trajectory_bounding_boxes(
         0,
         cudf.Series(),
-        cudf.Series([], dtype=np.float64),
-        cudf.Series([], dtype=np.float64),
+        cuspatial.GeoSeries.from_points_xy(cudf.Series([], dtype="f8")),
     )
     cudf.testing.assert_frame_equal(
         result,
@@ -50,7 +49,7 @@ def test_trajectory_bounding_boxes_empty_float64():
 
 def test_trajectory_bounding_boxes_zeros():
     result = cuspatial.trajectory_bounding_boxes(
-        1, cudf.Series([0]), cudf.Series([0]), cudf.Series([0])
+        1, cudf.Series([0]), cuspatial.GeoSeries([Point(0, 0)])
     )
     cudf.testing.assert_frame_equal(
         result,
@@ -62,7 +61,7 @@ def test_trajectory_bounding_boxes_zeros():
 
 def test_trajectory_bounding_boxes_ones():
     result = cuspatial.trajectory_bounding_boxes(
-        1, cudf.Series([1]), cudf.Series([1]), cudf.Series([1])
+        1, cudf.Series([1]), cuspatial.GeoSeries([Point(1, 1)])
     )
     cudf.testing.assert_frame_equal(
         result,
@@ -74,10 +73,7 @@ def test_trajectory_bounding_boxes_ones():
 
 def test_trajectory_bounding_boxes_zero_to_one():
     result = cuspatial.trajectory_bounding_boxes(
-        1,
-        cudf.Series([0, 0]),
-        cudf.Series([0, 0]),
-        cudf.Series([0, 1]),
+        1, cudf.Series([0, 0]), cuspatial.GeoSeries([Point(0, 0), Point(0, 1)])
     )
     cudf.testing.assert_frame_equal(
         result,
@@ -89,10 +85,7 @@ def test_trajectory_bounding_boxes_zero_to_one():
 
 def test_trajectory_bounding_boxes_zero_to_one_xy():
     result = cuspatial.trajectory_bounding_boxes(
-        1,
-        cudf.Series([0, 0]),
-        cudf.Series([0, 1]),
-        cudf.Series([0, 1]),
+        1, cudf.Series([0, 0]), cuspatial.GeoSeries([Point(0, 0), Point(1, 1)])
     )
     cudf.testing.assert_frame_equal(
         result,
@@ -106,8 +99,9 @@ def test_trajectory_bounding_boxes_subsetted():
     result = cuspatial.trajectory_bounding_boxes(
         2,
         cudf.Series([0, 0, 1, 1]),
-        cudf.Series([0, 1, -1, 2]),
-        cudf.Series([0, 1, -1, 2]),
+        cuspatial.GeoSeries(
+            [Point(0, 0), Point(1, 1), Point(-1, -1), Point(2, 2)]
+        ),
     )
     cudf.testing.assert_frame_equal(
         result,
@@ -126,8 +120,9 @@ def test_trajectory_bounding_boxes_intersected():
     result = cuspatial.trajectory_bounding_boxes(
         2,
         cudf.Series([0, 0, 1, 1]),
-        cudf.Series([0, 2, 1, 3]),
-        cudf.Series([0, 2, 1, 3]),
+        cuspatial.GeoSeries(
+            [Point(0, 0), Point(2, 2), Point(1, 1), Point(3, 3)]
+        ),
     )
     cudf.testing.assert_frame_equal(
         result,
@@ -146,8 +141,9 @@ def test_trajectory_bounding_boxes_two_and_three():
     result = cuspatial.trajectory_bounding_boxes(
         2,
         cudf.Series([0, 0, 1, 1, 1]),
-        cudf.Series([0, 2, 1, 3, 2]),
-        cudf.Series([0, 2, 1, 3, 2]),
+        cuspatial.GeoSeries(
+            [Point(0, 0), Point(2, 2), Point(1, 1), Point(3, 3), Point(2, 2)]
+        ),
     )
     cudf.testing.assert_frame_equal(
         result,
@@ -165,8 +161,7 @@ def test_trajectory_bounding_boxes_two_and_three():
 def test_derive_trajectories_zeros():
     objects, traj_offsets = cuspatial.derive_trajectories(
         cudf.Series([0]),  # object_id
-        cudf.Series([0]),  # x
-        cudf.Series([0]),  # y
+        cuspatial.GeoSeries([Point(0, 0)]),
         cudf.Series([0]),  # timestamp
     )
     cudf.testing.assert_series_equal(
@@ -188,8 +183,7 @@ def test_derive_trajectories_zeros():
 def test_derive_trajectories_ones():
     objects, traj_offsets = cuspatial.derive_trajectories(
         cudf.Series([1]),  # object_id
-        cudf.Series([1]),  # x
-        cudf.Series([1]),  # y
+        cuspatial.GeoSeries([Point(1, 1)]),
         cudf.Series([1]),  # timestamp
     )
     cudf.testing.assert_series_equal(
@@ -211,8 +205,7 @@ def test_derive_trajectories_ones():
 def test_derive_trajectories_two():
     objects, traj_offsets = cuspatial.derive_trajectories(
         cudf.Series([0, 1]),  # object_id
-        cudf.Series([0, 1]),  # x
-        cudf.Series([0, 1]),  # y
+        cuspatial.GeoSeries([Point(0, 0), Point(1, 1)]),
         cudf.Series([0, 1]),  # timestamp
     )
     cudf.testing.assert_series_equal(
@@ -234,18 +227,20 @@ def test_derive_trajectories_two():
 def test_derive_trajectories_many():
     np.random.seed(0)
     object_id = cudf.Series(np.random.randint(0, 10, 10), dtype="int32")
-    xs = cudf.Series(np.random.randint(0, 10, 10))
-    ys = cudf.Series(np.random.randint(0, 10, 10))
+    xs = cudf.Series(np.random.randint(0, 10, 10).astype("f8"))
+    ys = cudf.Series(np.random.randint(0, 10, 10).astype("f8"))
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame({"x": xs, "y": ys}).interleave_columns()
+    )
     timestamp = cudf.Series(np.random.randint(0, 10, 10))
     objects, traj_offsets = cuspatial.derive_trajectories(
-        object_id, xs, ys, timestamp
+        object_id, points, timestamp
     )
 
     sorted_idxs = cudf.DataFrame({"id": object_id, "ts": timestamp}).argsort()
     cudf.testing.assert_series_equal(
         traj_offsets, cudf.Series([0, 1, 2, 5, 6, 8, 9], dtype="int32")
     )
-    print(objects)
     cudf.testing.assert_frame_equal(
         objects,
         cudf.DataFrame(
@@ -267,17 +262,16 @@ def test_derive_trajectories_many():
 
 
 def test_trajectory_distances_and_speeds_zeros():
-    objects, traj_offsets = cuspatial.derive_trajectories(
-        [0],
-        [0],
-        [0],
-        [0],  # object_id  # xs  # ys  # timestamp
+    points = cuspatial.GeoSeries([Point(0, 0)])
+    objects, traj_offsets = cuspatial.derive_trajectories([0], points, [0])
+    trajs = cuspatial.GeoSeries.from_points_xy(
+        objects[["x", "y"]].interleave_columns()
     )
+
     result = cuspatial.trajectory_distances_and_speeds(
         len(traj_offsets),
         objects["object_id"],
-        objects["x"],
-        objects["y"],
+        trajs,
         objects["timestamp"],
     )
     cudf.testing.assert_series_equal(
@@ -289,17 +283,20 @@ def test_trajectory_distances_and_speeds_zeros():
 
 
 def test_trajectory_distances_and_speeds_ones():
+    points = cuspatial.GeoSeries([Point(0, 0)])
     objects, traj_offsets = cuspatial.derive_trajectories(
         [1],
-        [1],
-        [1],
+        points,
         [1],  # object_id  # xs  # ys  # timestamp
     )
+    trajs = cuspatial.GeoSeries.from_points_xy(
+        objects[["x", "y"]].interleave_columns()
+    )
+
     result = cuspatial.trajectory_distances_and_speeds(
         len(traj_offsets),
         objects["object_id"],
-        objects["x"],
-        objects["y"],
+        trajs,
         objects["timestamp"],
     )
     cudf.testing.assert_series_equal(
@@ -311,17 +308,20 @@ def test_trajectory_distances_and_speeds_ones():
 
 
 def test_derive_one_trajectory_one_meter_one_second():
+    points = cuspatial.GeoSeries([Point(0, 0), Point(0.001, 0.0)])
     objects, traj_offsets = cuspatial.derive_trajectories(
         [0, 0],  # object_id
-        [0.0, 0.001],  # xs
-        [0.0, 0.0],  # ys
+        points,
         [0, 1000],  # timestamp
     )
+    trajs = cuspatial.GeoSeries.from_points_xy(
+        objects[["x", "y"]].interleave_columns()
+    )
+
     result = cuspatial.trajectory_distances_and_speeds(
         len(traj_offsets),
         objects["object_id"],
-        objects["x"],
-        objects["y"],
+        trajs,
         objects["timestamp"],
     )
     cudf.testing.assert_series_equal(
@@ -333,17 +333,27 @@ def test_derive_one_trajectory_one_meter_one_second():
 
 
 def test_derive_two_trajectories_one_meter_one_second():
+    points = cuspatial.GeoSeries(
+        [
+            Point(0, 0),
+            Point(0.001, 0.0),
+            Point(0.0, 0.0),
+            Point(0.0, 0.001),
+        ]
+    )
     objects, traj_offsets = cuspatial.derive_trajectories(
         [0, 0, 1, 1],  # object_id
-        [0.0, 0.001, 0.0, 0.0],  # xs
-        [0.0, 0.0, 0.0, 0.001],  # ys
+        points,
         [0, 1000, 0, 1000],  # timestamp
     )
+    trajs = cuspatial.GeoSeries.from_points_xy(
+        objects[["x", "y"]].interleave_columns()
+    )
+
     result = cuspatial.trajectory_distances_and_speeds(
         len(traj_offsets),
         objects["object_id"],
-        objects["x"],
-        objects["y"],
+        trajs,
         objects["timestamp"],
     )
     cudf.testing.assert_series_equal(
@@ -355,17 +365,29 @@ def test_derive_two_trajectories_one_meter_one_second():
 
 
 def test_trajectory_distances_and_speeds_single_trajectory():
+    x = cudf.Series(
+        [1.0, 2.0, 3.0, 5.0, 7.0, 1.0, 2.0, 3.0, 6.0, 0.0, 3.0, 6.0]
+    )  # xs
+    y = cudf.Series(
+        [0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0]
+    )  # ys
+
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame({"x": x, "y": y}).interleave_columns()
+    )
+
     objects, traj_offsets = cuspatial.derive_trajectories(
         [0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2],  # object_id
-        [1.0, 2.0, 3.0, 5.0, 7.0, 1.0, 2.0, 3.0, 6.0, 0.0, 3.0, 6.0],  # xs
-        [0.0, 1.0, 2.0, 3.0, 1.0, 3.0, 5.0, 6.0, 5.0, 4.0, 7.0, 4.0],  # ys
+        points,
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],  # timestamp
+    )
+    trajs = cuspatial.GeoSeries.from_points_xy(
+        objects[["x", "y"]].interleave_columns()
     )
     result = cuspatial.trajectory_distances_and_speeds(
         len(traj_offsets),
         objects["object_id"],
-        objects["x"],
-        objects["y"],
+        trajs,
         objects["timestamp"],
     )
     cudf.testing.assert_series_equal(
@@ -400,23 +422,30 @@ def test_trajectory_distances_and_speeds_single_trajectory():
     ],
 )
 def test_trajectory_distances_and_speeds_timestamp_types(timestamp_type):
+    points = cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": cudf.Series([0.0, 0.001, 0.0, 0.0]),
+                "y": cudf.Series([0.0, 0.0, 0.0, 0.001]),
+            }
+        ).interleave_columns()
+    )
     objects, traj_offsets = cuspatial.derive_trajectories(
         # object_id
         cudf.Series([0, 0, 1, 1]),
-        # xs
-        cudf.Series([0.0, 0.001, 0.0, 0.0]),  # 1 meter in x
-        # ys
-        cudf.Series([0.0, 0.0, 0.0, 0.001]),  # 1 meter in y
+        points,
         # timestamp
         cudf.Series([0, timestamp_type[1], 0, timestamp_type[1]]).astype(
             timestamp_type[0]
         ),
     )
+    trajs = cuspatial.GeoSeries.from_points_xy(
+        objects[["x", "y"]].interleave_columns()
+    )
     result = cuspatial.trajectory_distances_and_speeds(
         len(traj_offsets),
         objects["object_id"],
-        objects["x"],
-        objects["y"],
+        trajs,
         objects["timestamp"],
     )
     cudf.testing.assert_frame_equal(

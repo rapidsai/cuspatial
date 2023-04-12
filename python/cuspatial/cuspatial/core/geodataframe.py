@@ -19,16 +19,19 @@ class GeoDataFrame(cudf.DataFrame):
     A GPU GeoDataFrame object.
     """
 
-    def __init__(self, data: Union[Dict, gpGeoDataFrame] = None):
+    def __init__(
+        self, data: Union[Dict, gpGeoDataFrame, cudf.DataFrame] = None
+    ):
         """
         Constructs a GPU GeoDataFrame from a GeoPandas dataframe.
 
         Parameters
         ----------
-        data : A geopandas.GeoDataFrame object
+        data : A geopandas.GeoDataFrame object, a cudf.DataFrame object,
+        or a dictionary of objects that can be converted to a GeoDataFrame.
         """
         super().__init__()
-        if isinstance(data, gpGeoDataFrame):
+        if isinstance(data, (gpGeoDataFrame, cudf.DataFrame)):
             self.index = data.index
             for col in data.columns:
                 if is_geometry_type(data[col]):
@@ -177,6 +180,18 @@ class GeoDataFrame(cudf.DataFrame):
             sliced_geo_columns, sliced_data_columns
         )
         return self.__class__(result)
+
+    def _apply_boolean_mask(self, mask) -> T:
+        geo_columns, data_columns = self._split_out_geometry_columns()
+        data = data_columns._apply_boolean_mask(mask)
+
+        geo = GeoDataFrame(
+            {name: geo_columns[name][mask] for name in geo_columns}
+        )
+
+        res = self.__class__._from_data(self._recombine_columns(geo, data))
+        res.index = data.index
+        return res
 
     def _gather(
         self, gather_map, keep_index=True, nullify=False, check_bounds=True

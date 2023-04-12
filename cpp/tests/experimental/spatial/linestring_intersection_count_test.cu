@@ -42,7 +42,7 @@ struct LinestringIntersectionCountTest : public ::testing::Test {
   rmm::cuda_stream_view default_stream() { return rmm::cuda_stream_default; }
 };
 
-// float and double are logically the same but would require seperate tests due to precision.
+// float and double are logically the same but would require separate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(LinestringIntersectionCountTest, TestTypes);
 

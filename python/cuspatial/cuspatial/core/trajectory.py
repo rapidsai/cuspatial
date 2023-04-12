@@ -5,18 +5,19 @@ import numpy as np
 from cudf import DataFrame, Series
 from cudf.core.column import as_column
 
+from cuspatial import GeoSeries
 from cuspatial._lib.trajectory import (
     derive_trajectories as cpp_derive_trajectories,
     trajectory_bounding_boxes as cpp_trajectory_bounding_boxes,
     trajectory_distances_and_speeds as cpp_trajectory_distances_and_speeds,
 )
 from cuspatial.utils.column_utils import (
-    normalize_point_columns,
+    contains_only_points,
     normalize_timestamp_column,
 )
 
 
-def derive_trajectories(object_ids, xs, ys, timestamps):
+def derive_trajectories(object_ids, points: GeoSeries, timestamps):
     """
     Derive trajectories from object ids, points, and timestamps.
 
@@ -24,10 +25,8 @@ def derive_trajectories(object_ids, xs, ys, timestamps):
     ----------
     object_ids
         column of object (e.g., vehicle) ids
-    xs
-        column of x-coordinates (in kilometers)
-    ys
-        column of y-coordinates (in kilometers)
+    points : GeoSeries
+        The points of the trajectories
     timestamps
         column of timestamps in any resolution
 
@@ -62,8 +61,12 @@ def derive_trajectories(object_ids, xs, ys, timestamps):
         3          1  1.0  1.0 1970-01-01 00:00:10
     """
 
+    if len(points) > 0 and not contains_only_points(points):
+        raise ValueError("`points` must only contain point geometries.")
+
     object_ids = as_column(object_ids, dtype=np.int32)
-    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    xs = as_column(points.points.x)
+    ys = as_column(points.points.y)
     timestamps = normalize_timestamp_column(as_column(timestamps))
     objects, traj_offsets = cpp_derive_trajectories(
         object_ids, xs, ys, timestamps
@@ -71,7 +74,7 @@ def derive_trajectories(object_ids, xs, ys, timestamps):
     return DataFrame._from_data(*objects), Series(data=traj_offsets)
 
 
-def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
+def trajectory_bounding_boxes(num_trajectories, object_ids, points: GeoSeries):
     """Compute the bounding boxes of sets of trajectories.
 
     Parameters
@@ -80,10 +83,8 @@ def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
         number of trajectories (unique object ids)
     object_ids
         column of object (e.g., vehicle) ids
-    xs
-        column of x-coordinates (in kilometers)
-    ys
-        column of y-coordinates (in kilometers)
+    points: GeoSeries
+        Series of trajectory points
 
     Returns
     -------
@@ -121,15 +122,19 @@ def trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys):
     1     1.0     1.0     3.0     3.0
     """
 
+    if len(points) > 0 and not contains_only_points(points):
+        raise ValueError("`points` must only contain point geometries.")
+
     object_ids = as_column(object_ids, dtype=np.int32)
-    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    xs = as_column(points.points.x)
+    ys = as_column(points.points.y)
     return DataFrame._from_data(
         *cpp_trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys)
     )
 
 
 def trajectory_distances_and_speeds(
-    num_trajectories, object_ids, xs, ys, timestamps
+    num_trajectories, object_ids, points: GeoSeries, timestamps
 ):
     """
     Compute the distance traveled and speed of sets of trajectories
@@ -140,10 +145,8 @@ def trajectory_distances_and_speeds(
         number of trajectories (unique object ids)
     object_ids
         column of object (e.g., vehicle) ids
-    xs
-        column of x-coordinates (in kilometers)
-    ys
-        column of y-coordinates (in kilometers)
+    points: GeoSeries
+        A series of points
     timestamps
         column of timestamps in any resolution
 
@@ -174,8 +177,12 @@ def trajectory_distances_and_speeds(
         1              1414.213562  141.421356
     """
 
+    if len(points) > 0 and not contains_only_points(points):
+        raise ValueError("`points` must only contain point geometries.")
+
     object_ids = as_column(object_ids, dtype=np.int32)
-    xs, ys = normalize_point_columns(as_column(xs), as_column(ys))
+    xs = as_column(points.points.x)
+    ys = as_column(points.points.y)
     timestamps = normalize_timestamp_column(as_column(timestamps))
     df = DataFrame._from_data(
         *cpp_trajectory_distances_and_speeds(

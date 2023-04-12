@@ -1,6 +1,5 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
-import numpy as np
-import pytest
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
+from shapely.geometry import MultiPoint
 
 import cudf
 
@@ -8,13 +7,8 @@ import cuspatial
 
 
 def _test_hausdorff_from_list_of_spaces(spaces):
-    lengths = [len(space) for space in spaces]
-    offsets = np.cumsum([0, *lengths])[:-1]
-    return cuspatial.directed_hausdorff_distance(
-        [x for space in spaces for (x, y) in space],
-        [y for space in spaces for (x, y) in space],
-        offsets,
-    )
+    s = cuspatial.GeoSeries([MultiPoint(coords) for coords in spaces])
+    return cuspatial.directed_hausdorff_distance(s)
 
 
 def test_empty():
@@ -31,24 +25,6 @@ def test_zeros():
     expected = cudf.DataFrame([0.0])
 
     cudf.testing.assert_frame_equal(expected, actual)
-
-
-def test_empty_x():
-    with pytest.raises(RuntimeError):
-        cuspatial.directed_hausdorff_distance(
-            [],
-            [0.0],
-            [0],
-        )
-
-
-def test_empty_y():
-    with pytest.raises(RuntimeError):
-        cuspatial.directed_hausdorff_distance(
-            [0.0],
-            [],
-            [0],
-        )
 
 
 def test_large():

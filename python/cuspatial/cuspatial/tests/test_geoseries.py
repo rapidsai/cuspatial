@@ -3,6 +3,7 @@
 from enum import Enum
 from numbers import Integral
 
+import cupy as cp
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -21,7 +22,6 @@ from shapely.geometry import (
 import cudf
 
 import cuspatial
-from cuspatial.io.shapefile import WindingOrder
 
 np.random.seed(0)
 
@@ -545,43 +545,6 @@ def test_construction_from_foreign_object(data):
     assert_geoseries_equal(cugs.to_geopandas(), gps)
 
 
-def test_shapefile_constructor():
-    host_dataframe = gpd.read_file(
-        gpd.datasets.get_path("naturalearth_lowres")
-    )
-    # Shapefile reader only works with Polygons so we drop
-    # all the MultiPolygons by slicing the first 19 out.
-    gs = host_dataframe["geometry"][
-        host_dataframe["geometry"].type == "Polygon"
-    ][19:]
-    gs.to_file("naturalearth_lowres_polygon")
-    data = cuspatial.read_polygon_shapefile("naturalearth_lowres_polygon")
-    cus = cuspatial.GeoSeries(data)
-
-    assert_eq_geo(gs.reset_index(drop=True), cus.to_geopandas())
-
-
-def test_shapefile_constructor_reversed():
-    host_dataframe = gpd.read_file(
-        gpd.datasets.get_path("naturalearth_lowres")
-    )
-    # Shapefile reader only works with Polygons so we drop
-    # all the MultiPolygons by slicing the first 19 out.
-    gs = host_dataframe["geometry"][
-        host_dataframe["geometry"].type == "Polygon"
-    ][19:]
-    gs.to_file("naturalearth_lowres_polygon")
-    data = cuspatial.read_polygon_shapefile(
-        "naturalearth_lowres_polygon", outer_ring_order=WindingOrder.CLOCKWISE
-    )
-    cus = cuspatial.GeoSeries(data)
-
-    from shapely.geometry import polygon
-
-    reversed_gs = gpd.GeoSeries([polygon.orient(p, 1) for p in gs])
-    assert_eq_geo(reversed_gs, cus.to_geopandas())
-
-
 def test_memory_usage_simple(gs):
     cugs = cuspatial.from_geopandas(gs)
     assert cugs.memory_usage() == 1616
@@ -621,3 +584,176 @@ def test_reset_index(level, drop, name, inplace):
         pd.testing.assert_series_equal(expected, got.to_pandas())
     else:
         pd.testing.assert_frame_equal(expected, got.to_pandas())
+
+
+def test_geocolumn_polygon_accessor():
+    s = gpd.GeoSeries(
+        [
+            Polygon([(0.0, 0.0), (1.0, 1.0), (0.0, 1.0), (0.0, 0.0)]),
+            MultiPolygon(
+                [
+                    Polygon([(1.0, 1.0), (2.0, 1.0), (2.0, 2.0), (1.0, 1.0)]),
+                    Polygon([(5.0, 5.0), (4.0, 4.0), (4.0, 5.0), (5.0, 5.0)]),
+                ]
+            ),
+            Polygon(
+                [(3.0, 3.0), (2.0, 3.0), (2.0, 2.0), (3.0, 2.0), (3.0, 3.0)]
+            ),
+        ]
+    )
+    gs = cuspatial.from_geopandas(s)
+    expected_xy = [
+        0.0,
+        0.0,
+        1.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        1.0,
+        2.0,
+        1.0,
+        2.0,
+        2.0,
+        1.0,
+        1.0,
+        5.0,
+        5.0,
+        4.0,
+        4.0,
+        4.0,
+        5.0,
+        5.0,
+        5.0,
+        3.0,
+        3.0,
+        2.0,
+        3.0,
+        2.0,
+        2.0,
+        3.0,
+        2.0,
+        3.0,
+        3.0,
+    ]
+
+    cp.testing.assert_array_equal(gs.polygons.xy, cp.array(expected_xy))
+
+    expected_ring_offset = [0, 4, 8, 12, 17]
+    cp.testing.assert_array_equal(
+        gs.polygons.ring_offset, cp.array(expected_ring_offset)
+    )
+
+    expected_part_offset = [0, 1, 2, 3, 4]
+    cp.testing.assert_array_equal(
+        gs.polygons.part_offset, cp.array(expected_part_offset)
+    )
+
+    expected_geometry_offset = [0, 1, 3, 4]
+    cp.testing.assert_array_equal(
+        gs.polygons.geometry_offset, cp.array(expected_geometry_offset)
+    )
+
+    expected_point_indices = [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+    ]
+    cp.testing.assert_array_equal(
+        gs.polygons.point_indices(), cp.array(expected_point_indices)
+    )
+
+
+def test_from_points_xy(point_generator):
+    hs = gpd.GeoSeries(point_generator(10))
+    gs = cuspatial.from_geopandas(hs)
+
+    gs2 = cuspatial.GeoSeries.from_points_xy(gs.points.xy)
+
+    gpd.testing.assert_geoseries_equal(hs, gs2.to_geopandas())
+
+
+def test_from_multipoints_xy(multipoint_generator):
+    hs = gpd.GeoSeries(multipoint_generator(10, max_num_geometries=10))
+    gs = cuspatial.from_geopandas(hs)
+
+    gs2 = cuspatial.GeoSeries.from_multipoints_xy(
+        gs.multipoints.xy, gs.multipoints.geometry_offset
+    )
+
+    gpd.testing.assert_geoseries_equal(hs, gs2.to_geopandas())
+
+
+def test_from_linestrings_xy(linestring_generator):
+    hs = gpd.GeoSeries(linestring_generator(10, 10))
+    gs = cuspatial.from_geopandas(hs)
+
+    gs2 = cuspatial.GeoSeries.from_linestrings_xy(
+        gs.lines.xy, gs.lines.part_offset, gs.lines.geometry_offset
+    )
+
+    gpd.testing.assert_geoseries_equal(hs, gs2.to_geopandas())
+
+
+def test_from_polygons_xy(polygon_generator):
+    hs = gpd.GeoSeries(polygon_generator(10, 10))
+    gs = cuspatial.from_geopandas(hs)
+
+    gs2 = cuspatial.GeoSeries.from_polygons_xy(
+        gs.polygons.xy,
+        gs.polygons.ring_offset,
+        gs.polygons.part_offset,
+        gs.polygons.geometry_offset,
+    )
+
+    gpd.testing.assert_geoseries_equal(hs, gs2.to_geopandas())
+
+
+def test_from_linestrings_xy_example():
+    linestrings_xy = cudf.Series([0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5])
+    part_offset = cudf.Series([0, 6])
+    geometry_offset = cudf.Series([0, 1])
+    gline = cuspatial.GeoSeries.from_linestrings_xy(
+        linestrings_xy, part_offset, geometry_offset
+    )
+    hline = gpd.GeoSeries(
+        [
+            LineString([(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5)]),
+        ]
+    )
+    gpd.testing.assert_geoseries_equal(
+        gline.to_geopandas(), hline, check_less_precise=True
+    )
+
+
+def test_from_polygons_xy_example():
+    polygons_xy = cudf.Series([0.0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 0, 0])
+    ring_offset = cudf.Series([0, 6])
+    part_offset = cudf.Series([0, 1])
+    geometry_offset = cudf.Series([0, 1])
+    gpolygon = cuspatial.GeoSeries.from_polygons_xy(
+        polygons_xy,
+        ring_offset,
+        part_offset,
+        geometry_offset,
+    )
+    hpolygon = gpd.GeoSeries(
+        [Polygon([(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (0, 0)])]
+    )
+    gpd.testing.assert_geoseries_equal(gpolygon.to_geopandas(), hpolygon)

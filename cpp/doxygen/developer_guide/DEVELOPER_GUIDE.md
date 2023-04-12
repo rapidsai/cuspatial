@@ -6,8 +6,8 @@ refer to these additional files for further documentation of libcuspatial best p
 * [Documentation Guide](DOCUMENTATION.md) for guidelines on documenting libcuspatial code.
 * [Testing Guide](TESTING.md) for guidelines on writing unit tests.
 * [Benchmarking Guide](BENCHMARKING.md) for guidelines on writing unit benchmarks.
-* [Refactoring Guide](REFACTORING_GUIDE.md) for guidelines on refactoring legacy column-based APIs into 
-                                            header-only APIs.
+* [Refactoring Guide](REFACTORING_GUIDE.md) for guidelines on refactoring legacy column-based APIs
+                                            into header-only APIs.
 
 # Overview
 
@@ -16,10 +16,10 @@ geospatial and spatiotemporal data. libcuspatial provides various spatial relati
 including distance computation, containment (e.g. point-in-polygon testing), bounding box
 computations, and spatial indexing.
 
-libcuspatial currently has two interfaces. The first is a C++ API based on data types from 
+libcuspatial currently has two interfaces. The first is a C++ API based on data types from
 libcudf, (the [CUDA Dataframe library C++ API](https://github.com/rapidsai/cudf/)). In this document
 we refer to it as the "column-based API". The column-based API represents spatial data as tables of
-type-erased columns. 
+type-erased columns.
 
 The second API is the cuSpatial header-only C++ API, which is independent of libcudf and represents
 data as arrays of structures (e.g. 2D points). The header-only API uses iterators for input and
@@ -29,7 +29,7 @@ output, and is similar in style to the C++ Standard Template Library (STL) and
 ## Lexicon
 
 This section defines terminology used within libcuspatial. For terms specific to libcudf, such
-as Column, Table, etc., see the 
+as Column, Table, etc., see the
 [libcudf developer guide](https://github.com/rapidsai/cudf/blob/main/cpp/docs/DEVELOPER_GUIDE.md#lexicon).
 
 TODO: add terms
@@ -47,11 +47,11 @@ Header files should use the `#pragma once` include guard.
 The naming of public column-based cuSpatial API headers should be consistent with the name of the
 folder that contains the source files that implement the API. For example, the implementation of the
 APIs found in `cuspatial/cpp/include/cuspatial/trajectory.hpp` are located in
-`cuspatial/src/trajectory`. This rule obviously does not apply to the header-only API, since the 
+`cuspatial/src/trajectory`. This rule obviously does not apply to the header-only API, since the
 headers are the source files.
 
-Likewise, unit tests reside in folders corresponding to the names of the API headers, e.g. 
-trajectory.hpp tests are in `cuspatial/tests/trajectory/`. 
+Likewise, unit tests reside in folders corresponding to the names of the API headers, e.g.
+trajectory.hpp tests are in `cuspatial/tests/trajectory/`.
 
 Internal API headers containing `detail` namespace definitions that are used across translation
 units inside libcuspatial should be placed in `include/cuspatial/detail`.
@@ -73,12 +73,12 @@ execution policy (always `rmm::exec_policy` in libcuspatial).
 
 ## Code and Documentation Style and Formatting
 
-libcuspatial code uses [snake_case](https://en.wikipedia.org/wiki/Snake_case) for all names except 
+libcuspatial code uses [snake_case](https://en.wikipedia.org/wiki/Snake_case) for all names except
 in a few cases: template parameters, unit tests and test case names may use Pascal case, aka
 [UpperCamelCase](https://en.wikipedia.org/wiki/Camel_case). We do not use
 [Hungarian notation](https://en.wikipedia.org/wiki/Hungarian_notation), except sometimes when naming
 device data variables and their corresponding host copies (e.g. `d_data` and `h_data`). Private
-member variables are typically prefixed with an underscore. 
+member variables are typically prefixed with an underscore.
 
 Examples:
 
@@ -140,7 +140,7 @@ The following guidelines apply to organizing `#include` lines.
  * Separate groups by a blank line.
  * Order the groups from "nearest" to "farthest". In other words, local includes, then includes
    from other RAPIDS libraries, then includes from related libraries, like `<thrust/...>`, then
-   includes from dependencies installed with cuSpatial, and then standard library headers (for 
+   includes from dependencies installed with cuSpatial, and then standard library headers (for
    example `<string>`, `<iostream>`).
  * Use `<>` instead of `""` unless the header is in the same directory as the source file.
  * Tools like `clangd` often auto-insert includes when they can, but they usually get the grouping
@@ -148,9 +148,9 @@ The following guidelines apply to organizing `#include` lines.
  * Always check that includes are only necessary for the file in which they are included.
    Try to avoid excessive including especially in header files. Double check this when you remove
    code.
- * Use quotes `"` to include local headers from the same relative source directory. This should only
-   occur in source files and non-public header files. Otherwise use angle brackets `<>` around
-   included header filenames.
+ * Use quotes <tt>\"</tt> to include local headers from the same relative source directory. This
+   should only occur in source files and non-public header files. Otherwise use angle brackets `<>`
+   around included header filenames.
  * Avoid relative paths with `..` when possible. Paths with `..` are necessary when including
    (internal) headers from source paths not in the same directory as the including file,
    because source paths are not passed with `-I`.
@@ -162,16 +162,18 @@ The following guidelines apply to organizing `#include` lines.
 # libcuspatial Data Structures
 
 The header-only libcuspatial API is agnostic to the type of containers used by the application to
-hold its data, because the header-only API is based on iterators (see [Iterator Requirements](#iterator-requirements)). The cuDF-based cuSpatial API, on the other hand, uses cuDF Columns and
-Tables to store and access application data. 
+hold its data, because the header-only API is based on iterators
+(see [Iterator Requirements](#iterator-requirements)). The cuDF-based cuSpatial API, on the other
+hand, uses cuDF Columns and Tables to store and access application data.
 
-See the [libcudf Developer guide](https://github.com/rapidsai/cudf/blob/main/cpp/docs/DEVELOPER_GUIDE.md#libcudf-data-structures) for more information on cuDF data structures, including views.
+See the [libcudf Developer guide](https://github.com/rapidsai/cudf/blob/main/cpp/docs/DEVELOPER_GUIDE.md#libcudf-data-structures)
+for more information on cuDF data structures, including views.
 
 ## Views and Ownership
 
-Resource ownership is an essential concept in libcudf, and therefore in the cuDF-based libcuspatial 
+Resource ownership is an essential concept in libcudf, and therefore in the cuDF-based libcuspatial
 API. In short, an "owning" object owns a resource (such as device memory). It acquires that resource
-during construction and releases the resource in destruction 
+during construction and releases the resource in destruction
 ([RAII](https://en.cppreference.com/w/cpp/language/raii)). A "non-owning" object does not own
 resources. Any class in libcudf with the `*_view` suffix is non-owning. For more detail see the
 [`libcudf++` presentation.](https://docs.google.com/presentation/d/1zKzAtc1AWFKfMhiUlV5yRZxSiPLwsObxMlWRWz_f5hA/edit?usp=sharing)
@@ -257,9 +259,9 @@ std::unique_ptr<cudf::column> haversine_distance(
 ```
 
 key points:
-  1. All input data are `cudf::column_view`. This is a type-erased container so determining the 
+  1. All input data are `cudf::column_view`. This is a type-erased container so determining the
      type of data must be done at run time.
-  2. All inputs are arrays of scalars. Longitude and latitude are separate. 
+  2. All inputs are arrays of scalars. Longitude and latitude are separate.
   3. The output is a returned `unique_ptr<cudf::column>`.
   4. The output is allocated inside the function using the passed memory resource.
   5. The public API does not take a stream. There is a `detail` version of the API that takes a
@@ -274,7 +276,7 @@ either the copy constructor or the move constructor of the object, and it may be
 non-trivially copyable objects (and required for types with deleted copy constructors, like
 `std::unique_ptr`).
 
-Multiple column outputs that are functionally related (e.g. x- and y-coordinates), should be 
+Multiple column outputs that are functionally related (e.g. x- and y-coordinates), should be
 combined into a `table`.
 
 ```c++
@@ -339,12 +341,12 @@ header-only API is an iterator-based interface. This has a number of advantages.
   4. Iterators enable cuSpatial algorithms to be fused with transformations of the
      input data, by using "fancy" iterators. Examples include transform iterators and counting
      iterators.
-  5. Iterators enable the header-only cuSpatial API to use structured coordinate data (e.g. x,y 
-     coordinate pairs) while maintaining compatibility with the separate arrays of x and y 
-     coordinates required by the column-based API. This is accomplished with zip iterators. 
+  5. Iterators enable the header-only cuSpatial API to use structured coordinate data (e.g. x,y
+     coordinate pairs) while maintaining compatibility with the separate arrays of x and y
+     coordinates required by the column-based API. This is accomplished with zip iterators.
      Internally, structured data (with arithmetic operators) enables clearer, more arithmetic code.
   6. Memory resources only need to be part of APIs that allocate temporary intermediate storage.
-     Output storage is allocated outside the API and an output iterator is passed as an argument. 
+     Output storage is allocated outside the API and an output iterator is passed as an argument.
 
 The main disadvantages of this type of API are
 
@@ -376,7 +378,7 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
 There are a few key points to notice.
 
   1. The API is very similar to STL algorithms such as `std::transform`.
-  2. All array inputs and outputs are iterator type templates. 
+  2. All array inputs and outputs are iterator type templates.
   3. Longitude/Latitude data is passed as array of structures, using the `cuspatial::vec_2d<T>`
      type (include/cuspatial/vec_2d.hpp). This is enforced using a `static_assert` in the function
      body.
@@ -388,18 +390,18 @@ There are a few key points to notice.
   7. The size of the input and output ranges in the example API are equal, so the start and end of
      only the A range is provided (`a_lonlat_first` and `a_lonlat_last`). This mirrors STL APIs.
   8. This API returns an iterator to the element past the last element written to the output. This
-     is inspired by `std::transform`, even though as with `transform`, many uses of 
+     is inspired by `std::transform`, even though as with `transform`, many uses of
      cuSpatial APIs will not need to use this returned iterator.
   9. All APIs that run CUDA device code (including Thrust algorithms) or allocate memory take a CUDA
      stream on which to execute the device code and allocate memory.
-  10. Any API that allocate and return device data (not shown here) should also take an 
+  10. Any API that allocate and return device data (not shown here) should also take an
       `rmm::device_memory_resource` to use for output memory allocation.
 
 ### (Multiple) Return Values
 
 Whenever possible in the header-only API, output data should be written to output iterators
 that reference data allocated by the caller of the API. In this case, multiple "return values"
-are simply written to multiple output iterators. Typically such APIs return an iterator one 
+are simply written to multiple output iterators. Typically such APIs return an iterator one
 past the end of the primary output iterator (in the style of `std::transform()`.
 
 In functions where the output size is data dependent, the API may allocate the output data and
@@ -416,7 +418,7 @@ CUDA streams are not yet exposed in public column-based libcuspatial APIs. heade
 APIs that execute GPU work or allocate GPU memory should take a stream parameter.
 
 In order to ease the transition to future use of streams in the public column-based API, all
-libcuspatial APIs that allocate device memory or execute GPU work (including kernels, 
+libcuspatial APIs that allocate device memory or execute GPU work (including kernels,
 Thrust algorithms, or anything that can take a stream) should be implemented using asynchronous APIs
 on the default stream (e.g., stream 0).
 
@@ -471,7 +473,7 @@ This limits the ability to do any multi-stream/multi-threaded work with libcuspa
 
  ### NVTX Ranges
 
-In order to aid in performance optimization and debugging, all compute intensive libcuspatial 
+In order to aid in performance optimization and debugging, all compute intensive libcuspatial
 functions should have a corresponding NVTX range. In libcuspatial, we have a convenience macro
 `CUSPATIAL_FUNC_RANGE()` that automatically annotates the lifetime of the enclosing function and
 uses the function's name as the name of the NVTX range. For more information about NVTX, see
@@ -583,7 +585,7 @@ int host_value = int_scalar.value();
 Allocates a specified number of elements of the specified type. If no initialization value is
 provided, all elements are default initialized (this incurs a kernel launch).
 
-**Note**: (TODO: this not true yet in libcuspatial but we should strive for it. The following is 
+**Note**: (TODO: this not true yet in libcuspatial but we should strive for it. The following is
 copied from libcudf's developer guide.)
 We have removed all usage of `rmm::device_vector` and `thrust::device_vector` from
 libcuspatial, and you should not use it in new code in libcuspatial without careful consideration.
@@ -702,7 +704,7 @@ CUSPATIAL_EXPECTS(lhs.type() == rhs.type(), "Column type mismatch");
 
 The first argument is the conditional expression expected to resolve to `true` under normal
 conditions. If the conditional evaluates to `false`, then an error has occurred and an instance of
-`cuspatial::logic_error` is thrown. The second argument to `CUSPATIAL_EXPECTS` is a short 
+`cuspatial::logic_error` is thrown. The second argument to `CUSPATIAL_EXPECTS` is a short
 description of the error that has occurred and is used for the exception's `what()` message.
 
 There are times where a particular code path, if reached, should indicate an error no matter what.
@@ -717,7 +719,7 @@ CUSPATIAL_FAIL("This code path should not be reached.");
 
 ### CUDA Error Checking
 
-Use the `CUSPATIAL_CUDA_TRY` macro to check for the successful completion of CUDA runtime API 
+Use the `CUSPATIAL_CUDA_TRY` macro to check for the successful completion of CUDA runtime API
 functions. This macro throws a `cuspatial::cuda_error` exception if the CUDA API return value is not
 `cudaSuccess`. The thrown exception includes a description of the CUDA error code in its `what()`
 message.

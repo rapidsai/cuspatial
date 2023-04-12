@@ -1,26 +1,24 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 import warnings
 
 from cudf import DataFrame
 from cudf.core.column import as_column
 
+from cuspatial import GeoSeries
 from cuspatial._lib import spatial_join
 from cuspatial._lib.point_in_polygon import (
     point_in_polygon as cpp_point_in_polygon,
 )
-from cuspatial.utils import gis_utils
-from cuspatial.utils.column_utils import normalize_point_columns
+from cuspatial.utils.column_utils import (
+    contains_only_linestrings,
+    contains_only_points,
+    contains_only_polygons,
+)
+from cuspatial.utils.join_utils import pip_bitmap_column_to_binary_array
 
 
-def point_in_polygon(
-    test_points_x,
-    test_points_y,
-    poly_offsets,
-    poly_ring_offsets,
-    poly_points_x,
-    poly_points_y,
-):
+def point_in_polygon(points: GeoSeries, polygons: GeoSeries):
     """Compute from a set of points and a set of polygons which points fall
     within which polygons. Note that `polygons_(x,y)` must be specified as
     closed polygons: the first and last coordinate of each polygon must be
@@ -28,31 +26,21 @@ def point_in_polygon(
 
     Parameters
     ----------
-    test_points_x
-        x-coordinate of test points
-    test_points_y
-        y-coordinate of test points
-    poly_offsets
-        beginning index of the first ring in each polygon
-    poly_ring_offsets
-        beginning index of the first point in each ring
-    poly_points_x
-        x closed-coordinate of polygon points
-    poly_points_y
-        y closed-coordinate of polygon points
+    points : GeoSeries
+        A Series of points to test
+    polygons: GeoSeries
+        A Series of polygons to test
 
     Examples
     --------
-
     Test whether 3 points fall within either of two polygons
 
     >>> result = cuspatial.point_in_polygon(
-        [0, -8, 6.0],                             # test_points_x
-        [0, -8, 6.0],                             # test_points_y
-        cudf.Series([0, 1], index=['nyc', 'hudson river']), # poly_offsets
-        [0, 3],                                   # ring_offsets
-        [-10, 5, 5, -10, 0, 10, 10, 0],           # poly_points_x
-        [-10, -10, 5, 5, 0, 0, 10, 10],           # poly_points_y
+        GeoSeries([Point(0, 0), Point(-8, -8), Point(6, 6)]),
+        GeoSeries([
+            Polygon([(-10, -10), (5, -10), (5, 5), (-10, 5), (-10, -10)]),
+            Polygon([(0, 0), (10, 0), (10, 10), (0, 10), (0, 0)])
+        ], index=['nyc', 'hudson river'])
     )
     # The result of point_in_polygon is a DataFrame of Boolean
     # values indicating whether each point (rows) falls within
@@ -66,17 +54,6 @@ def point_in_polygon(
     # Point 1: (-8, -8) falls in the first polygon
     # Point 2: (6.0, 6.0) falls in the second polygon
 
-    Notes
-    -----
-
-    * input Series x and y will not be index aligned, but computed as
-    sequential arrays.
-
-    * poly_ring_offsets must contain only the rings that make up the polygons
-    indexed by poly_offsets. If there are rings in poly_ring_offsets that
-    are not part of the polygons in poly_offsets, results are likely to be
-    incorrect and behavior is undefined.
-
     Returns
     -------
     result : cudf.DataFrame
@@ -84,40 +61,38 @@ def point_in_polygon(
         within each polygon.
     """
 
-    if len(poly_offsets) == 0:
+    if len(polygons) == 0:
         return DataFrame()
 
-    (
-        test_points_x,
-        test_points_y,
-        poly_points_x,
-        poly_points_y,
-    ) = normalize_point_columns(
-        as_column(test_points_x),
-        as_column(test_points_y),
-        as_column(poly_points_x),
-        as_column(poly_points_y),
+    # The C++ API only supports single-polygon, reject if input has
+    # multipolygons
+    if len(polygons.polygons.part_offset) != len(
+        polygons.polygons.geometry_offset
+    ):
+        raise ValueError("GeoSeries cannot contain multipolygon.")
+
+    x = as_column(points.points.x)
+    y = as_column(points.points.y)
+
+    poly_offsets = as_column(polygons.polygons.part_offset)
+    ring_offsets = as_column(polygons.polygons.ring_offset)
+    px = as_column(polygons.polygons.x)
+    py = as_column(polygons.polygons.y)
+
+    result = cpp_point_in_polygon(x, y, poly_offsets, ring_offsets, px, py)
+    result = DataFrame(
+        pip_bitmap_column_to_binary_array(
+            polygon_bitmap_column=result, width=len(poly_offsets) - 1
+        )
     )
 
-    result = cpp_point_in_polygon(
-        test_points_x,
-        test_points_y,
-        as_column(poly_offsets, dtype="int32"),
-        as_column(poly_ring_offsets, dtype="int32"),
-        poly_points_x,
-        poly_points_y,
+    result.columns = polygons.index[::-1]
+    return DataFrame._from_data(
+        {
+            name: result[name].astype("bool")
+            for name in reversed(result.columns)
+        }
     )
-
-    result = gis_utils.pip_bitmap_column_to_binary_array(
-        polygon_bitmap_column=result, width=len(poly_offsets)
-    )
-    result = DataFrame(result)
-    result = DataFrame._from_data(
-        {name: col.astype("bool") for name, col in result._data.items()}
-    )
-    result.columns = [x for x in list(reversed(poly_offsets.index))]
-    result = result[list(reversed(result.columns))]
-    return result
 
 
 def join_quadtree_and_bounding_boxes(
@@ -191,12 +166,8 @@ def quadtree_point_in_polygon(
     poly_quad_pairs,
     quadtree,
     point_indices,
-    points_x,
-    points_y,
-    poly_offsets,
-    ring_offsets,
-    poly_points_x,
-    poly_points_y,
+    points: GeoSeries,
+    polygons: GeoSeries,
 ):
     """Test whether the specified points are inside any of the specified
     polygons.
@@ -218,18 +189,10 @@ def quadtree_point_in_polygon(
         A complete quadtree for a given area-of-interest bounding box.
     point_indices : cudf.Series
         Sorted point indices returned by ``cuspatial.quadtree_on_points``
-    points_x : cudf.Series
-        x-coordinates of points used to construct the quadtree.
-    points_y : cudf.Series
-        y-coordinates of points used to construct the quadtree.
-    poly_offsets : cudf.Series
-        Begin index of the first ring in each polygon.
-    ring_offsets : cudf.Series
-        Begin index of the first point in each ring.
-    poly_points_x : cudf.Series
-        Polygon point x-coodinates.
-    poly_points_y : cudf.Series
-        Polygon point y-coodinates.
+    points: GeoSeries
+        Points used to build the quadtree
+    polygons: GeoSeries
+        Polygons to test against
 
     Returns
     -------
@@ -243,26 +206,32 @@ def quadtree_point_in_polygon(
             so it is an index to an index.
     """
 
-    (
-        points_x,
-        points_y,
-        poly_points_x,
-        poly_points_y,
-    ) = normalize_point_columns(
-        as_column(points_x),
-        as_column(points_y),
-        as_column(poly_points_x),
-        as_column(poly_points_y),
-    )
+    if not contains_only_points(points):
+        raise ValueError(
+            "`point` Geoseries must contains only point geometries."
+        )
+    if not contains_only_polygons(polygons):
+        raise ValueError(
+            "`polygons` Geoseries must contains only polygons geometries."
+        )
+
+    points_x = as_column(points.points.x)
+    points_y = as_column(points.points.y)
+
+    poly_offsets = as_column(polygons.polygons.part_offset)
+    ring_offsets = as_column(polygons.polygons.ring_offset)
+    poly_points_x = as_column(polygons.polygons.x)
+    poly_points_y = as_column(polygons.polygons.y)
+
     return DataFrame._from_data(
         *spatial_join.quadtree_point_in_polygon(
             poly_quad_pairs,
             quadtree,
-            as_column(point_indices, dtype="uint32"),
+            point_indices._column,
             points_x,
             points_y,
-            as_column(poly_offsets, dtype="uint32"),
-            as_column(ring_offsets, dtype="uint32"),
+            poly_offsets,
+            ring_offsets,
             poly_points_x,
             poly_points_y,
         )
@@ -273,11 +242,8 @@ def quadtree_point_to_nearest_linestring(
     linestring_quad_pairs,
     quadtree,
     point_indices,
-    points_x,
-    points_y,
-    linestring_offsets,
-    linestring_points_x,
-    linestring_points_y,
+    points: GeoSeries,
+    linestrings: GeoSeries,
 ):
     """Finds the nearest linestring to each point in a quadrant, and computes
     the distances between each point and linestring.
@@ -295,16 +261,10 @@ def quadtree_point_to_nearest_linestring(
         A complete quadtree for a given area-of-interest bounding box.
     point_indices : cudf.Series
         Sorted point indices returned by ``cuspatial.quadtree_on_points``
-    points_x : cudf.Series
-        x-coordinates of points used to construct the quadtree.
-    points_y : cudf.Series
-        y-coordinates of points used to construct the quadtree.
-    linestring_offsets : cudf.Series
-        Begin index of the first point in each linestring.
-    poly_points_x : cudf.Series
-        Linestring point x-coordinates.
-    poly_points_y : cudf.Series
-        Linestring point y-coordinates.
+    points: GeoSeries
+        Points to find nearest linestring for
+    linestrings: GeoSeries
+        Linestrings to test for
 
     Returns
     -------
@@ -320,17 +280,28 @@ def quadtree_point_to_nearest_linestring(
         distance : cudf.Series
             Distance between point and its nearest linestring.
     """
-    (
-        points_x,
-        points_y,
-        linestring_points_x,
-        linestring_points_y,
-    ) = normalize_point_columns(
-        as_column(points_x),
-        as_column(points_y),
-        as_column(linestring_points_x),
-        as_column(linestring_points_y),
-    )
+
+    if not contains_only_points(points):
+        raise ValueError(
+            "`point` Geoseries must contains only point geometries."
+        )
+    if not contains_only_linestrings(linestrings):
+        raise ValueError(
+            "`linestrings` Geoseries must contains only linestring geometries."
+        )
+
+    if len(linestrings.lines.part_offset) != len(
+        linestrings.lines.geometry_offset
+    ):
+        raise ValueError("GeoSeries cannot contain multilinestrings.")
+
+    points_x = as_column(points.points.x)
+    points_y = as_column(points.points.y)
+
+    linestring_points_x = as_column(linestrings.lines.x)
+    linestring_points_y = as_column(linestrings.lines.y)
+    linestring_offsets = as_column(linestrings.lines.part_offset)
+
     return DataFrame._from_data(
         *spatial_join.quadtree_point_to_nearest_linestring(
             linestring_quad_pairs,

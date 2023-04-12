@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -15,18 +15,18 @@
 set(cython_sources
     distance.pyx
     hausdorff.pyx
-    interpolate.pyx
+    intersection.pyx
     nearest_points.pyx
     point_in_polygon.pyx
     pairwise_point_in_polygon.pyx
     polygon_bounding_boxes.pyx
     linestring_bounding_boxes.pyx
     quadtree.pyx
-    shapefile_reader.pyx
     spatial.pyx
     spatial_join.pyx
     spatial_window.pyx
     trajectory.pyx
+    types.pyx
     utils.pyx
     )
 set(linked_libraries cuspatial::cuspatial)
