@@ -11,6 +11,7 @@ from .core.spatial import (
     pairwise_point_linestring_distance,
     pairwise_point_linestring_nearest_points,
     pairwise_point_polygon_distance,
+    pairwise_polygon_distance,
     point_in_polygon,
     points_in_spatial_window,
     polygon_bounding_boxes,
