@@ -125,7 +125,7 @@ __global__ void kernel_hausdorff(
     }
 
     // determine the output offset for this pair of spaces (LHS, RHS)
-    Index output_idx = lhs_space_idx * num_spaces + rhs_space_idx;
+    Index output_idx = rhs_space_idx * num_spaces + lhs_space_idx;
 
     // use atomicMax to find the maximum of the minimum distance calculated for each space pair.
     atomicMax(&thrust::raw_reference_cast(*(results + output_idx)),

@@ -22,9 +22,12 @@
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
+#include <cudf/detail/copy.hpp>
 #include <cudf/detail/utilities/device_atomics.cuh>
+#include <cudf/table/table_view.hpp>
 #include <cudf/types.hpp>
 #include <cudf/utilities/error.hpp>
+#include <cudf/utilities/span.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -33,27 +36,52 @@
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/fill.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/sequence.h>
 
 #include <memory>
 #include <type_traits>
 
 namespace {
 
+/**
+ * @brief Split `col` into equal size chunks, each has `size`.
+ *
+ * @note only applicable to fixed width type.
+ * @note only applicable to columns of `size*size`.
+ */
+template <typename T>
+std::vector<cudf::column_view> split_by_size(cudf::column_view const& col, cudf::size_type size)
+{
+  std::vector<cudf::column_view> res;
+  cudf::size_type num_splits = col.size() / size;
+  std::transform(thrust::counting_iterator(0),
+                 thrust::counting_iterator(num_splits),
+                 std::back_inserter(res),
+                 [size, num_splits, &col](int i) {
+                   return cudf::column_view(
+                     col.type(), size, col.data<T>(), nullptr, 0, size * i, {});
+                 });
+  return res;
+}
+
 struct hausdorff_functor {
   template <typename T, typename... Args>
-  std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
-    Args&&...)
+  std::enable_if_t<not std::is_floating_point<T>::value,
+                   std::pair<std::unique_ptr<cudf::column>, cudf::table_view>>
+  operator()(Args&&...)
   {
     CUSPATIAL_FAIL("Non-floating point operation is not supported");
   }
 
   template <typename T>
-  std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
-    cudf::column_view const& xs,
-    cudf::column_view const& ys,
-    cudf::column_view const& space_offsets,
-    rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+  std::enable_if_t<std::is_floating_point<T>::value,
+                   std::pair<std::unique_ptr<cudf::column>, cudf::table_view>>
+  operator()(cudf::column_view const& xs,
+             cudf::column_view const& ys,
+             cudf::column_view const& space_offsets,
+             rmm::cuda_stream_view stream,
+             rmm::mr::device_memory_resource* mr)
   {
     auto const num_points = static_cast<uint32_t>(xs.size());
     auto const num_spaces = static_cast<uint32_t>(space_offsets.size());
@@ -66,7 +94,7 @@ struct hausdorff_functor {
     auto result = cudf::make_fixed_width_column(
       cudf::data_type{tid}, num_results, cudf::mask_state::UNALLOCATED, stream, mr);
 
-    if (result->size() == 0) { return result; }
+    if (result->size() == 0) { return {std::move(result), cudf::table_view{}}; }
 
     auto const result_view = result->mutable_view();
 
@@ -80,7 +108,7 @@ struct hausdorff_functor {
                                            result_view.begin<T>(),
                                            stream);
 
-    return result;
+    return {std::move(result), cudf::table_view(split_by_size<T>(result->view(), num_spaces))};
   }
 };
 
@@ -88,10 +116,11 @@ struct hausdorff_functor {
 
 namespace cuspatial {
 
-std::unique_ptr<cudf::column> directed_hausdorff_distance(cudf::column_view const& xs,
-                                                          cudf::column_view const& ys,
-                                                          cudf::column_view const& space_offsets,
-                                                          rmm::mr::device_memory_resource* mr)
+std::pair<std::unique_ptr<cudf::column>, cudf::table_view> directed_hausdorff_distance(
+  cudf::column_view const& xs,
+  cudf::column_view const& ys,
+  cudf::column_view const& space_offsets,
+  rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(xs.type() == ys.type(), "Inputs `xs` and `ys` must have same type.");
   CUSPATIAL_EXPECTS(xs.size() == ys.size(), "Inputs `xs` and `ys` must have same length.");
