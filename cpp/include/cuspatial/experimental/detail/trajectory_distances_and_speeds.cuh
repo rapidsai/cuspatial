@@ -122,8 +122,8 @@ OutputIt trajectory_distances_and_speeds(IndexT num_trajectories,
                           auto time_s = static_cast<T>(time_d.count()) *
                                         static_cast<T>(Period::num) / static_cast<T>(Period::den);
                           T dist_km   = thrust::get<1>(a) + thrust::get<1>(b);
-                          T dist_m    = dist_km * T{1000.0};  // km to m
-                          T speed_m_s = dist_m / time_s;      // m/ms to m/s
+                          T dist_m    = dist_km* T{1000.0};  // km to m
+                          T speed_m_s = dist_m / time_s;     // m/ms to m/s
                           return thrust::make_tuple(time_d.count(), dist_km, dist_m, speed_m_s);
                         });
 

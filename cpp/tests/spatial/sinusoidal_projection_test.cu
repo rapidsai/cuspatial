@@ -30,8 +30,7 @@ using namespace cudf::test;
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
 
 template <typename T>
-struct SinusoidalProjectionTest : public BaseFixture {
-};
+struct SinusoidalProjectionTest : public BaseFixture {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = Types<double>;
@@ -190,8 +189,7 @@ TYPED_TEST(SinusoidalProjectionTest, MismatchSize)
 }
 
 template <typename T>
-struct LatLonToCartesianUnsupportedTypesTest : public BaseFixture {
-};
+struct LatLonToCartesianUnsupportedTypesTest : public BaseFixture {};
 
 using UnsupportedTestTypes = RemoveIf<ContainedIn<Types<float, double>>, NumericTypes>;
 TYPED_TEST_CASE(LatLonToCartesianUnsupportedTypesTest, UnsupportedTestTypes);
@@ -209,8 +207,7 @@ TYPED_TEST(LatLonToCartesianUnsupportedTypesTest, MismatchSize)
 }
 
 template <typename T>
-struct LatLonToCartesianUnsupportedChronoTypesTest : public BaseFixture {
-};
+struct LatLonToCartesianUnsupportedChronoTypesTest : public BaseFixture {};
 
 TYPED_TEST_CASE(LatLonToCartesianUnsupportedChronoTypesTest, ChronoTypes);
 
