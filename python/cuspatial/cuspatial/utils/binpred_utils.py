@@ -140,6 +140,8 @@ def _multipoints_from_geometry(geoseries):
     """Convert rhs to multipoints."""
     if geoseries.column_type == ColumnType.POINT:
         return _multipoints_from_points(geoseries)
+    elif geoseries.column_type == ColumnType.MULTIPOINT:
+        return geoseries
     elif geoseries.column_type == ColumnType.LINESTRING:
         return _multipoints_from_linestrings(geoseries)
     elif geoseries.column_type == ColumnType.POLYGON:
@@ -172,3 +174,25 @@ def _points_from_geometry(geoseries):
         raise NotImplementedError(
             "Cannot convert type {} to points".format(geoseries.type)
         )
+
+
+def _linestring_to_boundary(geoseries):
+    """Convert a linestrings column to a multipoints column
+    containing only the start and end of the linestrings."""
+    xy = geoseries.lines.xy
+    mpoints = geoseries.lines.part_offset.take(geoseries.lines.geometry_offset)
+    return cuspatial.GeoSeries.from_multipoints_xy(xy, mpoints)
+
+
+def _polygon_to_boundary(geoseries):
+    """Convert a polygon column to a linestring column."""
+    xy = geoseries.polygons.xy
+    parts = geoseries.polygons.part_offset.take(
+        geoseries.polygons.geometry_offset
+    )
+    rings = geoseries.polygons.ring_offset
+    return cuspatial.GeoSeries.from_linestrings_xy(
+        xy,
+        rings,
+        parts,
+    )

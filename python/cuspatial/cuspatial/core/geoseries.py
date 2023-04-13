@@ -34,6 +34,7 @@ from cuspatial.core.binpreds.binpred_dispatch import (
     EQUALS_DISPATCH,
     INTERSECTS_DISPATCH,
     OVERLAPS_DISPATCH,
+    TOUCHES_DISPATCH,
     WITHIN_DISPATCH,
 )
 from cuspatial.utils.binpred_utils import (
@@ -1250,6 +1251,30 @@ class GeoSeries(cudf.Series):
         )
         return predicate(self, other)
 
+    def touches(self, other, align=True):
+        """Returns True for all aligned geometries that touch other, else
+        False.
+
+        Geometries touch if they have at least one point in common, but their
+        interiors do not intersect.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each geometry
+            touches the corresponding geometry in the input."""
+        predicate = TOUCHES_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
+
     def _basic_equals(self, other):
         from cuspatial.core.binops.equals_count import (
             pairwise_multipoint_equals_count,
@@ -1274,24 +1299,6 @@ class GeoSeries(cudf.Series):
         )
         return result == sizes
 
-    def _basic_intersects_points(self, other):
-        from cuspatial.core.binops.intersection import (
-            pairwise_linestring_intersection,
-        )
-
-        point_indices = other.point_indices
-        sizes = point_indices[1:] - point_indices[:-1]
-        lhs = _linestrings_from_geometry(self).repeat(sizes)
-        rhs_points = _points_from_geometry(other)
-        rhs = _linestrings_from_points(rhs_points)
-        result = pairwise_linestring_intersection(lhs, rhs)
-        # Flatten result into list of sizes
-        is_offsets = cudf.Series(result[0])
-        is_sizes = is_offsets[1:].reset_index(drop=True) - is_offsets[
-            :-1
-        ].reset_index(drop=True)
-        return result
-
     def _basic_intersects_pli(self, other):
         from cuspatial.core.binops.intersection import (
             pairwise_linestring_intersection,
@@ -1308,6 +1315,7 @@ class GeoSeries(cudf.Series):
         is_sizes = is_offsets[1:].reset_index(drop=True) - is_offsets[
             :-1
         ].reset_index(drop=True)
+        breakpoint()
         return is_sizes
 
     def _basic_intersects(self, other):
