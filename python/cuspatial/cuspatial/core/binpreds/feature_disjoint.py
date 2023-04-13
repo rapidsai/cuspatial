@@ -46,7 +46,6 @@ class PointPolygonDisjoint(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = lhs._basic_intersects(rhs)
         contains = lhs._basic_contains_any(rhs)
-        breakpoint()
         return ~intersects & ~contains
 
 

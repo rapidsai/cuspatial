@@ -66,8 +66,8 @@ class LineStringLineStringTouches(BinPred):
         rhs_boundary = _linestring_to_boundary(rhs)
         point_intersections = lhs._basic_intersects_at_point_only(rhs)
         boundary_intersects = lhs_boundary._basic_intersects(rhs_boundary)
-        breakpoint()
         return point_intersections & boundary_intersects
+
 
 class LineStringPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):

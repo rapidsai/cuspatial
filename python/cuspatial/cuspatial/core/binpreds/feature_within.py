@@ -3,6 +3,7 @@
 import cudf
 
 from cuspatial.core.binpreds.binpred_interface import (
+    BinPred,
     NotImplementedPredicate,
     PreprocessorResult,
 )
@@ -87,6 +88,14 @@ class ComplexPolygonWithin(PolygonComplexContains):
         return super()._preprocess(rhs, lhs)
 
 
+class LineStringPolygonWithin(BinPred):
+    def _preprocess(self, lhs, rhs):
+        contains_all = rhs._basic_contains_all(lhs)
+        intersects = rhs._basic_intersects(lhs)
+        contains_none = rhs._basic_contains_none(lhs)
+        return contains_all & intersects
+
+
 DispatchDict = {
     (Point, Point): PointPointWithin,
     (Point, MultiPoint): WithinIntersectsPredicate,
@@ -99,7 +108,7 @@ DispatchDict = {
     (LineString, Point): WithinIntersectsPredicate,
     (LineString, MultiPoint): WithinIntersectsPredicate,
     (LineString, LineString): LineStringLineStringWithin,
-    (LineString, Polygon): ComplexPolygonWithin,
+    (LineString, Polygon): LineStringPolygonWithin,
     (Polygon, Point): WithinPredicateBase,
     (Polygon, MultiPoint): WithinPredicateBase,
     (Polygon, LineString): WithinPredicateBase,

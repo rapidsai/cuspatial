@@ -155,21 +155,16 @@ class LineStringPointIntersects(IntersectsPredicateBase):
 
 class LineStringPolygonIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        """Convert rhs to linestrings."""
-        ls_rhs = _linestrings_from_polygons(rhs)
-        return self._compute_predicate(
-            lhs, ls_rhs, PreprocessorResult(lhs, ls_rhs)
-        )
+        intersects = lhs._basic_intersects(rhs)
+        contains = rhs._basic_contains_any(lhs)
+        return intersects | contains
 
 
 class PolygonPolygonIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        """Convert lhs and rhs to linestrings."""
-        ls_lhs = _linestrings_from_polygons(lhs)
-        ls_rhs = _linestrings_from_polygons(rhs)
-        return self._compute_predicate(
-            ls_lhs, ls_rhs, PreprocessorResult(ls_lhs, ls_rhs)
-        )
+        intersects = lhs._basic_intersects(rhs)
+        contains = rhs._basic_contains_any(lhs)
+        return intersects | contains
 
 
 """ Type dispatch dictionary for intersects binary predicates. """

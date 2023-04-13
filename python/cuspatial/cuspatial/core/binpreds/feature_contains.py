@@ -291,6 +291,10 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
         # contained in the corresponding polygon.
         if self.config.allpairs:
             return allpairs_result
+        elif self.config.mode == "basic_none":
+            final_result = cudf.Series(cp.repeat([True], len(lhs)))
+            final_result.loc[allpairs_result["point_index"]] = False
+            return final_result
         elif self.config.mode == "basic_any":
             final_result = _false_series(len(op_result.point_indices))
             final_result.loc[allpairs_result["point_index"]] = True
@@ -361,6 +365,9 @@ class PolygonComplexContains(ContainsPredicateBase):
         # for each input pair i: result[i] =  true iff point[i] is
         # contained in at least one polygon of multipolygon[i].
         # pairwise
+        if self.config.mode != "full":
+            return super()._postprocess(lhs, rhs, op_result)
+
         point_indices = op_result.point_indices
         allpairs_result = self._reindex_allpairs(lhs, op_result.pip_result)
 
@@ -381,6 +388,7 @@ class PolygonComplexContains(ContainsPredicateBase):
             result_df["rhs_index"][result_df["feature_in_polygon"]]
         ] = True
 
+        breakpoint()
         # Intersection processing
         offsets = cudf.Series(op_result.intersection_result[0])
         sizes = offsets[1:].reset_index(drop=True) - offsets[:-1].reset_index(
@@ -393,9 +401,10 @@ class PolygonComplexContains(ContainsPredicateBase):
             exterior_ring_offsets[1:] - exterior_ring_offsets[:-1]
         ) - 1
         intersection_size_matches = sizes == exterior_ring_sizes
-        final_result[intersection_size_matches.index] = final_result[
-            intersection_size_matches.index
-        ] | intersection_size_matches
+        final_result[intersection_size_matches.index] = (
+            final_result[intersection_size_matches.index]
+            | intersection_size_matches
+        )
         return final_result
 
 

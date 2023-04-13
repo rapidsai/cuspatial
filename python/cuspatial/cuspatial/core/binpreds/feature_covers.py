@@ -2,7 +2,7 @@
 
 from cuspatial.core.binops.intersection import pairwise_linestring_intersection
 from cuspatial.core.binpreds.binpred_interface import (
-    IntersectsOpResult,
+    ImpossiblePredicate,
     NotImplementedPredicate,
 )
 from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
@@ -10,14 +10,12 @@ from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.core.binpreds.feature_intersects import (
     IntersectsPredicateBase,
     LineStringPointIntersects,
-    PointLineStringIntersects,
 )
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
     Point,
     Polygon,
-    _false_series,
 )
 
 
@@ -44,36 +42,21 @@ class CoversPredicateBase(EqualsPredicateBase):
 
 
 class LineStringLineStringCovers(IntersectsPredicateBase):
-    def _compute_predicate(self, lhs, rhs, preprocessor_result):
-        """Compute the covers predicate using the intersects basic predicate.
-        lhs and rhs must both be LineStrings or MultiLineStrings.
-        """
-        basic_result = pairwise_linestring_intersection(
-            preprocessor_result.lhs, preprocessor_result.rhs
-        )
-        # TODO: Need to determine whether or not the intersection is a
-        # linestring or a point.
-        return self._postprocess(lhs, rhs, IntersectsOpResult(basic_result))
-
-    def _postprocess(self, lhs, rhs, op_result):
-        """Postprocess the result of the intersects operation."""
-        if len(op_result.result[0]) - 1 != len(rhs):
-            # The number of intersections is equal to the rhs side?
-            # Where's my multi-processing here? I don't see this as a
-            # column of values at all.
-            return _false_series(lhs)
-        else:
-            return op_result.result[0]
+    def _preprocess(self, lhs, rhs):
+        return rhs._basic_equals_all(lhs)
 
 
 class PolygonPolygonCovers(ContainsPredicateBase):
-    pass
+    def _preprocess(self, lhs, rhs):
+        contains_none = rhs._basic_contains_none(lhs)
+        equals = rhs._basic_equals(lhs)
+        return ~contains_none | equals
 
 
 DispatchDict = {
     (Point, Point): CoversPredicateBase,
     (Point, MultiPoint): NotImplementedPredicate,
-    (Point, LineString): PointLineStringIntersects,
+    (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): CoversPredicateBase,
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): NotImplementedPredicate,

@@ -1328,6 +1328,11 @@ class GeoSeries(cudf.Series):
         is_sizes = self._basic_intersects_count(other)
         return is_sizes > 1
 
+    def _basic_contains_none(self, other):
+        lhs = self
+        rhs = _multipoints_from_geometry(other)
+        return lhs.contains_properly(rhs, mode="basic_none")
+
     def _basic_contains_any(self, other):
         lhs = self
         rhs = _multipoints_from_geometry(other)
