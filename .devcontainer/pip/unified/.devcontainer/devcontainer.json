@@ -25,7 +25,7 @@
   ],
 
   "initializeCommand": [
-    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../.{aws,cache,config,${localWorkspaceFolderBasename}-unified-local}"
+    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../.{aws,cache,config/pip,${localWorkspaceFolderBasename}-unified-local}"
   ],
   "updateContentCommand": ["rapids-make-vscode-workspace", "--update"],
   "postCreateCommand": ["rapids-make-vscode-workspace", "--update"],

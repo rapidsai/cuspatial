@@ -21,7 +21,7 @@ USER coder
 
 # COPY --chown=coder:coder opt/cuspatial /opt/cuspatial
 
-RUN /bin/bash -c 'mkdir -m 0755 -p ~/.{aws,cache,conda,config,local}'
+RUN /bin/bash -c 'mkdir -m 0755 -p ~/.{aws,cache,conda,config/pip,local}'
 
 WORKDIR /home/coder/
 
