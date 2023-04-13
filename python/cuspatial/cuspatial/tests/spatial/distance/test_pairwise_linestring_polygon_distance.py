@@ -110,6 +110,8 @@ def test_linestring_polygon_large(linestring_generator, polygon_generator):
     dpolygons = cuspatial.from_geopandas(polygons)
 
     expect = linestrings.distance(polygons)
-    got = cuspatial.pairwise_linestring_polygon_distance(dlinestrings, dpolygons)
+    got = cuspatial.pairwise_linestring_polygon_distance(
+        dlinestrings, dpolygons
+    )
 
     assert_series_equal(got, cudf.Series(expect))
