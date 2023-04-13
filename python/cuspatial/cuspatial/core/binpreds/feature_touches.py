@@ -12,7 +12,9 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
+    _false_series,
     _linestring_to_boundary,
+    _multipoints_from_geometry,
     _polygon_to_boundary,
 )
 
@@ -58,19 +60,22 @@ class PointPolygonTouches(ContainsPredicateBase):
 
 class LineStringLineStringTouches(BinPred):
     def _preprocess(self, lhs, rhs):
-        boundary_touches = lhs._basic_equals(rhs)
-        interior_intersects = lhs._basic_intersects(rhs)
-        return boundary_touches & ~interior_intersects
-
+        """A and B have at least one point in common, and the common points
+        lie in at least one boundary"""
+        lhs_boundary = _linestring_to_boundary(lhs)
+        rhs_boundary = _linestring_to_boundary(rhs)
+        point_intersections = lhs._basic_intersects_at_point_only(rhs)
+        boundary_intersects = lhs_boundary._basic_intersects(rhs_boundary)
+        breakpoint()
+        return point_intersections & boundary_intersects
 
 class LineStringPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):
-        breakpoint()
         lhs_boundary = _linestring_to_boundary(lhs)
         rhs_boundary = _polygon_to_boundary(rhs)
-        boundary_touches = lhs_boundary._basic_equals(rhs_boundary)
-        interior_intersects = lhs._basic_intersects(rhs)
-        return boundary_touches & ~interior_intersects
+        boundary_intersects = lhs_boundary._basic_intersects(rhs_boundary)
+        interior_contains_any = rhs._basic_contains_any(lhs)
+        return boundary_intersects & ~interior_contains_any
 
 
 DispatchDict = {

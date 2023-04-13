@@ -1315,12 +1315,14 @@ class GeoSeries(cudf.Series):
         is_sizes = is_offsets[1:].reset_index(drop=True) - is_offsets[
             :-1
         ].reset_index(drop=True)
-        breakpoint()
         return is_sizes
 
     def _basic_intersects(self, other):
         is_sizes = self._basic_intersects_count(other)
         return is_sizes > 0
+
+    def _basic_intersects_at_point_only(self, other):
+        return self._basic_intersects_count(other) == 1
 
     def _basic_intersects_through(self, other):
         is_sizes = self._basic_intersects_count(other)
@@ -1329,8 +1331,6 @@ class GeoSeries(cudf.Series):
     def _basic_contains_any(self, other):
         lhs = self
         rhs = _multipoints_from_geometry(other)
-        # If a point intersects with the polygon, it is contained.
-        intersections = self._basic_intersects_pli(other)
         return lhs.contains_properly(rhs, mode="basic_any")
 
     def _basic_contains_all(self, other):

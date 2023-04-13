@@ -393,9 +393,9 @@ class PolygonComplexContains(ContainsPredicateBase):
             exterior_ring_offsets[1:] - exterior_ring_offsets[:-1]
         ) - 1
         intersection_size_matches = sizes == exterior_ring_sizes
-        final_result[
+        final_result[intersection_size_matches.index] = final_result[
             intersection_size_matches.index
-        ] = intersection_size_matches
+        ] | intersection_size_matches
         return final_result
 
 
