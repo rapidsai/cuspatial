@@ -231,24 +231,30 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
     make_multipoint_range(points.offset_range(), points.geom_range()), point_flags.begin(), stream);
 
   points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
-  point_flags.resize(points.geoms->size(), stream);
 
-  // Merge mergeable segments
-  rmm::device_uvector<uint8_t> segment_flags(num_segments, stream);
-  detail::find_and_combine_segment(
-    segments.offset_range(), segments.geom_range(), segment_flags.begin(), stream);
+  if (segments.num_geoms() > 0) {
+    // Merge mergeable segments
+    rmm::device_uvector<uint8_t> segment_flags(num_segments, stream);
+    detail::find_and_combine_segment(
+      segments.offset_range(), segments.geom_range(), segment_flags.begin(), stream);
 
-  segments.remove_if(range(segment_flags.begin(), segment_flags.end()), stream);
+    segments.remove_if(range(segment_flags.begin(), segment_flags.end()), stream);
 
-  // Merge point on segments
-  detail::find_points_on_segments(make_multipoint_range(points.offset_range(), points.geom_range()),
-                                  segments.offset_range(),
-                                  segments.geom_range(),
-                                  point_flags.begin(),
-                                  stream);
+    // Reusing `point_flags` for merge point on segment primitive.
+    // Notice that `point_flags` contains leftovers from previous `find_duplicate_points` call.
+    // Here it does not need to be zero initialized because find_points_on_segments will overwrite
+    // every location on point_flags anyway.
+    point_flags.resize(points.geoms->size(), stream);
+    // Merge point on segments
+    detail::find_points_on_segments(
+      make_multipoint_range(points.offset_range(), points.geom_range()),
+      segments.offset_range(),
+      segments.geom_range(),
+      point_flags.begin(),
+      stream);
 
-  points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
-
+    points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
+  }
   // Phase 4: Assemble results as union column
   auto num_union_column_rows = points.geoms->size() + segments.geoms->size();
   auto geometry_collection_offsets =
