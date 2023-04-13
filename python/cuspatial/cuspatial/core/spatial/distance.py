@@ -12,6 +12,7 @@ from cuspatial._lib.distance import (
     pairwise_point_distance as cpp_pairwise_point_distance,
     pairwise_point_linestring_distance as c_pairwise_point_linestring_distance,
     pairwise_point_polygon_distance as c_pairwise_point_polygon_distance,
+    pairwise_polygon_distance as c_pairwise_polygon_distance,
 )
 from cuspatial._lib.hausdorff import (
     directed_hausdorff_distance as cpp_directed_hausdorff_distance,
@@ -564,6 +565,63 @@ def pairwise_linestring_polygon_distance(
 
     return Series._from_data(
         {None: c_pairwise_line_poly_dist(linestrings_column, polygon_column)}
+    )
+
+
+def pairwise_polygon_distance(polygons1: GeoSeries, polygons2: GeoSeries):
+    """Compute distance between pairs of (multi)polygons and (multi)polygons
+    The distance between a (multi)polygon and a (multi)polygon
+    is defined as the shortest distance between every edge of the
+    (multi)polygon pair. If the multipolygon and multipolygon intersects,
+    the distance is 0.
+
+    This algorithm computes distance pairwise. The ith row in the result is
+    the distance between the ith (multi)polygon in `polygons1` and the ith
+    (multi)polygon in `polygons2`.
+
+    Parameters
+    ----------
+    polygons1 : GeoSeries
+        The (multi)polygons to compute the distance from.
+    polygons2 : GeoSeries
+        The (multi)polygons to compute the distance from.
+    Returns
+    -------
+    distance : cudf.Series
+
+    Notes
+    -----
+    The input `GeoSeries` must contain a single type geometry.
+    For example, `polygons1` series cannot contain both points and
+    polygons.
+
+    Examples
+    --------
+    Compute distance between a point and a polygon:
+    """
+
+    if len(polygons1) != len(polygons2):
+        raise ValueError("Unmatched input geoseries length.")
+
+    if len(polygons1) == 0:
+        return cudf.Series(dtype=polygons1.lines.xy.dtype)
+
+    if not contains_only_polygons(polygons1):
+        raise ValueError("`polygons1` array must contain only polygons")
+
+    if not contains_only_polygons(polygons2):
+        raise ValueError("`polygons2` array must contain only polygons")
+
+    # Handle slicing and aligns in geoseries
+    polygon1_column = polygons1._column.polygons._column.take(
+        polygons1._column._meta.union_offsets._column
+    )
+    polygon2_column = polygons2._column.polygons._column.take(
+        polygons2._column._meta.union_offsets._column
+    )
+
+    return Series._from_data(
+        {None: c_pairwise_polygon_distance(polygon1_column, polygon2_column)}
     )
 
 

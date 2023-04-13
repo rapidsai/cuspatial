@@ -93,6 +93,9 @@ ConfigureTest(POINT_POLYGON_DISTANCE_TEST
 ConfigureTest(LINESTRING_POLYGON_DISTANCE_TEST
     spatial/linestring_polygon_distance_test.cpp)
 
+ConfigureTest(POLYGON_DISTANCE_TEST
+    spatial/polygon_distance_test.cpp)
+
 ConfigureTest(LINESTRING_INTERSECTION_TEST
     spatial/linestring_intersection_test.cpp)
 
@@ -135,6 +138,9 @@ ConfigureTest(POINT_POLYGON_DISTANCE_TEST_EXP
 
 ConfigureTest(LINESTRING_POLYGON_DISTANCE_TEST_EXP
     experimental/spatial/linestring_polygon_distance_test.cu)
+
+ConfigureTest(POLYGON_DISTANCE_TEST_EXP
+    experimental/spatial/polygon_distance_test.cu)
 
 ConfigureTest(HAUSDORFF_TEST_EXP
     experimental/spatial/hausdorff_test.cu)
