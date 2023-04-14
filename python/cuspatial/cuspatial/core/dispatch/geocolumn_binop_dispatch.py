@@ -59,18 +59,18 @@ class GeoColumnBinopDispatch:
         self.orders = []
         for lhs_type, rhs_type in self.dispatch_dict:
             mask = (
-                self.df_sorted["lhs_types"]
-                == lhs_type.value & self.df_sorted["rhs_types"]
-                == rhs_type.value
+                (self.df_sorted["lhs_types"]
+                == lhs_type.value) & (self.df_sorted["rhs_types"]
+                == rhs_type.value)
             )
-            masked_df = self.df_sorted["lhs_offsets", "rhs_offsets", "order"][
+            masked_df = self.df_sorted[["lhs_offsets", "rhs_offsets", "order"]][
                 mask
             ]
             self.binary_type_to_offsets[(lhs_type, rhs_type)] = (
-                masked_df["lhs_offsets"],
-                masked_df["rhs_offsets"],
+                masked_df["lhs_offsets"]._column,
+                masked_df["rhs_offsets"]._column,
             )
-            self.types_to_order[(lhs_type, rhs_type)] = masked_df["order"]
+            self.orders.append(masked_df["order"])
 
     def _gather_and_dispatch_computation(self):
         """For each type combination, gather from the child columns and

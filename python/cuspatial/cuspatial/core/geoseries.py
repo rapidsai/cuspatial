@@ -42,6 +42,7 @@ from cuspatial.utils.column_utils import (
     contains_only_points,
     contains_only_polygons,
 )
+from cuspatial.core.binops.distance import DistanceDispatch
 
 T = TypeVar("T", bound="GeoSeries")
 
@@ -1240,3 +1241,29 @@ class GeoSeries(cudf.Series):
             align=align
         )
         return predicate(self, other)
+
+
+    def distance(self, other, align=True):
+        """Returns a Series containing the distance to aligned other.
+
+        Parameters
+        ----------
+        Parameters
+        other: cuspatial.GeoSeries
+            The Geoseries (elementwise) or geometric object to find the
+            distance to.
+
+        align: bool (default True)
+        If True, automatically aligns GeoSeries based on their indices.
+        If False, the order of elements is preserved.
+
+        Returns
+        -------
+        result : cudf.Series
+            A series of floating point values of the distance between the
+            corresponding pair
+        """
+        if align:
+            lhs, rhs = self.align(other)
+
+        return DistanceDispatch(lhs._column, rhs._column)()
