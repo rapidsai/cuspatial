@@ -349,7 +349,7 @@ auto make_multipoint_array(std::initializer_list<std::initializer_list<vec_2d<T>
  */
 template <typename IndexType, typename T>
 auto make_multipoint_array(rmm::device_uvector<IndexType> geometry_offsets,
-                            rmm::device_uvector<vec_2d<T>> coords)
+                           rmm::device_uvector<vec_2d<T>> coords)
 {
   return multipoint_array<rmm::device_uvector<std::size_t>, rmm::device_uvector<vec_2d<T>>>{
     std::move(geometry_offsets), std::move(coords)};
