@@ -45,7 +45,8 @@
 
 #include <numeric>
 
-namespace cuspatial {
+using cuspatial::multipoint_range;
+using cuspatial::vec_2d;
 
 /**
  * @brief Generate `num_points` points on device
@@ -57,12 +58,9 @@ struct PairwisePointDistanceTest : public ::testing::Test {
     std::size_t seed,
     rmm::cuda_stream_view stream = rmm::cuda_stream_default)
   {
-    auto engine_x  = deterministic_engine(0);
-    auto engine_y  = deterministic_engine(0);
-    auto uniform_x = make_normal_dist<T>(0.0, 1.0);
-    auto uniform_y = make_normal_dist<T>(0.0, 1.0);
-    auto pgen =
-      point_generator(vec_2d<T>{0, 0}, vec_2d<T>{1, 1}, engine_x, engine_y, uniform_x, uniform_y);
+    auto engine  = cuspatial::test::deterministic_engine(0);
+    auto uniform = cuspatial::test::make_normal_dist<T>(0.0, 1.0);
+    auto pgen    = cuspatial::test::point_generator(T{0.0}, T{1.0}, engine, uniform);
     rmm::device_vector<vec_2d<T>> points(num_points);
     auto counting_iter = thrust::make_counting_iterator(seed);
     thrust::transform(
@@ -177,8 +175,9 @@ TYPED_TEST(PairwisePointDistanceTest, Empty)
   rmm::device_vector<T> expected{};
   rmm::device_vector<T> got(points1.size());
 
-  auto multipoint_1 = multipoint_range{
-    multipoint_geom1.begin(), multipoint_geom1.end(), points1.begin(), points1.end()};
+  auto multipoint_1 =
+    multipoint_range<decltype(multipoint_geom1.begin()), decltype(points1.begin())>{
+      multipoint_geom1.begin(), multipoint_geom1.end(), points1.begin(), points1.end()};
   auto multipoint_2 = multipoint_range{
     multipoint_geom2.begin(), multipoint_geom2.end(), points2.begin(), points2.end()};
 
@@ -203,7 +202,7 @@ TYPED_TEST(PairwisePointDistanceTest, OnePairSingleComponent)
   rmm::device_vector<T> expected{std::vector<T>{std::sqrt(T{2.0})}};
   rmm::device_vector<T> got(points1.size());
 
-  auto multipoint_1 = multipoint_range{
+  auto multipoint_1 = multipoint_range<thrust::counting_iterator<int>, decltype(points1.begin())>{
     multipoint_geom1, multipoint_geom1 + num_pairs + 1, points1.begin(), points1.end()};
   auto multipoint_2 = multipoint_range{
     multipoint_geom2, multipoint_geom2 + num_pairs + 1, points2.begin(), points2.end()};
@@ -388,8 +387,8 @@ TYPED_TEST(PairwisePointDistanceTest, SingleComponentCompareWithShapely)
   rmm::device_vector<T> dx1(x1), dy1(y1), dx2(x2), dy2(y2);
   rmm::device_vector<T> got(dx1.size());
 
-  auto p1_begin = make_vec_2d_iterator(dx1.begin(), dy1.begin());
-  auto p2_begin = make_vec_2d_iterator(dx2.begin(), dy2.begin());
+  auto p1_begin = cuspatial::make_vec_2d_iterator(dx1.begin(), dy1.begin());
+  auto p2_begin = cuspatial::make_vec_2d_iterator(dx2.begin(), dy2.begin());
 
   auto multipoints_1 = make_multipoint_range(dx1.size(), p1_geom, dx1.size(), p1_begin);
   auto multipoints_2 = make_multipoint_range(dx2.size(), p2_geom, dx2.size(), p2_begin);
@@ -452,5 +451,3 @@ TYPED_TEST(PairwisePointDistanceTest, MultiComponentRandom)
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, got);
   EXPECT_EQ(expected.size(), std::distance(got.begin(), ret_it));
 }
-
-}  // namespace cuspatial

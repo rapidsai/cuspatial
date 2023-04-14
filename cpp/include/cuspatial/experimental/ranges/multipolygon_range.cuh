@@ -21,6 +21,7 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
 #include <cuspatial/traits.hpp>
+#include <cuspatial/types.hpp>
 #include <cuspatial/vec_2d.hpp>
 
 namespace cuspatial {
@@ -89,6 +90,9 @@ class multipolygon_range {
   /// Return the total number of points in the array.
   CUSPATIAL_HOST_DEVICE auto num_points();
 
+  /// Return the total number of segments in the array.
+  CUSPATIAL_HOST_DEVICE auto num_segments();
+
   /// Return the iterator to the first multipolygon in the range.
   CUSPATIAL_HOST_DEVICE auto multipolygon_begin();
 
@@ -106,6 +110,18 @@ class multipolygon_range {
 
   /// Return the iterator to the one past the last point in the range.
   CUSPATIAL_HOST_DEVICE auto point_end();
+
+  /// Return the iterator to the first part offset in the range.
+  CUSPATIAL_HOST_DEVICE auto part_offset_begin() { return _part_begin; }
+
+  /// Return the iterator to the one past the last part offset in the range.
+  CUSPATIAL_HOST_DEVICE auto part_offset_end() { return _part_end; }
+
+  /// Return the iterator to the first ring offset in the range.
+  CUSPATIAL_HOST_DEVICE auto ring_offset_begin() { return _ring_begin; }
+
+  /// Return the iterator to the one past the last ring offset in the range.
+  CUSPATIAL_HOST_DEVICE auto ring_offset_end() { return _ring_end; }
 
   /// Given the index of a segment, return the index of the geometry (multipolygon) that contains
   /// the segment. Segment index is the index to the starting point of the segment. If the index is
@@ -141,6 +157,29 @@ class multipolygon_range {
   CUSPATIAL_HOST_DEVICE bool is_first_point_of_multipolygon(IndexType1 point_idx,
                                                             IndexType2 geometry_idx);
 
+  /// Returns an iterator to the number of points of the first multipolygon
+  /// @note The count includes the duplicate first and last point of the ring.
+  CUSPATIAL_HOST_DEVICE auto multipolygon_point_count_begin();
+  /// Returns the one past the iterator to the number of points of the last multipolygon
+  /// @note The count includes the duplicate first and last point of the ring.
+  CUSPATIAL_HOST_DEVICE auto multipolygon_point_count_end();
+
+  /// Returns an iterator to the number of rings of the first multipolygon
+  CUSPATIAL_HOST_DEVICE auto multipolygon_ring_count_begin();
+  /// Returns the one past the iterator to the number of rings of the last multipolygon
+  CUSPATIAL_HOST_DEVICE auto multipolygon_ring_count_end();
+
+  /// Returns an iterator to the number of segments of the first multipolygon
+  CUSPATIAL_HOST_DEVICE auto multipolygon_segment_count_begin();
+  /// Returns the one past the iterator to the number of segments of the last multipolygon
+  CUSPATIAL_HOST_DEVICE auto multipolygon_segment_count_end();
+
+  /// Returns an iterator to the start of the segment
+  CUSPATIAL_HOST_DEVICE auto segment_begin();
+
+  /// Returns an iterator to the end of the segment
+  CUSPATIAL_HOST_DEVICE auto segment_end();
+
  protected:
   GeometryIterator _geometry_begin;
   GeometryIterator _geometry_end;
@@ -150,6 +189,10 @@ class multipolygon_range {
   RingIterator _ring_end;
   VecIterator _point_begin;
   VecIterator _point_end;
+
+  // TODO: find a better name
+  CUSPATIAL_HOST_DEVICE auto subtracted_ring_begin();
+  CUSPATIAL_HOST_DEVICE auto subtracted_ring_end();
 
  private:
   template <typename IndexType1, typename IndexType2>

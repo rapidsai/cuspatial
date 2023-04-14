@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ namespace cuspatial {
 namespace detail {
 
 /**
- * @brief Kernel to test if a point is inside a polygon.
+ * @brief Test if a point is inside a polygon.
  *
  * Implemented based on Eric Haines's crossings-multiply algorithm:
  * See "Crossings test" section of http://erich.realtimerendering.com/ptinpoly/

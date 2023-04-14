@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "distance_utils.cuh"
+
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/nvtx/ranges.hpp>
@@ -45,38 +47,6 @@
 
 namespace cuspatial {
 namespace detail {
-
-/**
- * @brief For each point in the multipoint, compute point-in-multipolygon in corresponding pair.
- */
-template <typename MultiPointRange, typename MultiPolygonRange>
-struct point_in_multipolygon_test_functor {
-  using T = typename MultiPointRange::element_t;
-
-  MultiPointRange multipoints;
-  MultiPolygonRange multipolygons;
-
-  point_in_multipolygon_test_functor(MultiPointRange multipoints, MultiPolygonRange multipolygons)
-    : multipoints(multipoints), multipolygons(multipolygons)
-  {
-  }
-
-  template <typename IndexType>
-  uint8_t __device__ operator()(IndexType pidx)
-  {
-    vec_2d<T> const& point = multipoints.point(pidx);
-    auto geometry_idx      = multipoints.geometry_idx_from_point_idx(pidx);
-
-    auto const& polys = multipolygons[geometry_idx];
-    // TODO: benchmark against range based for loop
-    bool intersects =
-      thrust::any_of(thrust::seq, polys.begin(), polys.end(), [&point] __device__(auto poly) {
-        return is_point_in_polygon(point, poly);
-      });
-
-    return static_cast<uint8_t>(intersects);
-  }
-};
 
 /**
  * @brief Kernel to compute the distance between pairs of point and polygon.
@@ -131,36 +101,7 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
 
   if (multipoints.size() == 0) return distances_first;
 
-  // Compute whether each multipoint intersects with the corresponding multipolygon.
-  // First, compute the point-multipolygon intersection. Then use reduce-by-key to
-  // compute the multipoint-multipolygon intersection.
-  auto multipoint_intersects = [&]() {
-    rmm::device_uvector<uint8_t> point_intersects(multipoints.num_points(), stream);
-
-    thrust::tabulate(rmm::exec_policy(stream),
-                     point_intersects.begin(),
-                     point_intersects.end(),
-                     detail::point_in_multipolygon_test_functor{multipoints, multipolygons});
-
-    // `multipoints` contains only single points, no need to reduce.
-    if (multipoints.is_single_point_range()) return point_intersects;
-
-    rmm::device_uvector<uint8_t> multipoint_intersects(multipoints.num_multipoints(), stream);
-    detail::zero_data_async(multipoint_intersects.begin(), multipoint_intersects.end(), stream);
-
-    auto offset_as_key_it =
-      make_geometry_id_iterator<index_t>(multipoints.offsets_begin(), multipoints.offsets_end());
-
-    thrust::reduce_by_key(rmm::exec_policy(stream),
-                          offset_as_key_it,
-                          offset_as_key_it + multipoints.num_points(),
-                          point_intersects.begin(),
-                          thrust::make_discard_iterator(),
-                          multipoint_intersects.begin(),
-                          thrust::logical_or<uint8_t>());
-
-    return multipoint_intersects;
-  }();
+  auto multipoint_intersects = point_polygon_intersects(multipoints, multipolygons, stream);
 
   thrust::fill(rmm::exec_policy(stream),
                distances_first,

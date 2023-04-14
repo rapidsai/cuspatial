@@ -23,8 +23,11 @@
 namespace cuspatial {
 namespace detail {
 
-inline __device__ std::pair<uint32_t, uint32_t> get_quad_and_local_point_indices(
-  uint32_t const global_index, uint32_t const* point_offsets, uint32_t const* point_offsets_end)
+template <typename IndexType, typename PointOffsetIterator>
+inline __device__ std::pair<IndexType, IndexType> get_quad_and_local_point_indices(
+  IndexType const global_index,
+  PointOffsetIterator point_offsets_begin,
+  PointOffsetIterator point_offsets_end)
 {
   // Calculate the position in "point_offsets" that `global_index` falls between.
   // This position is the index of the poly/quad pair for this `global_index`.
@@ -33,10 +36,10 @@ inline __device__ std::pair<uint32_t, uint32_t> get_quad_and_local_point_indices
   // quadrant. Adding this zero-based position to the quadrant's first point position in the
   // quadtree yields the "global" position in the `point_indices` map.
   auto const local_point_offset =
-    thrust::upper_bound(thrust::seq, point_offsets, point_offsets_end, global_index) - 1;
+    thrust::upper_bound(thrust::seq, point_offsets_begin, point_offsets_end, global_index) - 1;
   return std::make_pair(
     // quad_poly_index
-    thrust::distance(point_offsets, local_point_offset),
+    thrust::distance(point_offsets_begin, local_point_offset),
     // local_point_index
     global_index - *local_point_offset);
 }

@@ -17,6 +17,8 @@
 #pragma once
 
 #include <cuspatial/detail/utility/z_order.cuh>
+#include <cuspatial/experimental/geometry/box.hpp>
+#include <cuspatial/experimental/point_quadtree.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -69,37 +71,32 @@ inline int32_t remove_non_quad_intersections(InputIterator input_begin,
 }
 
 template <class T,
-          class KeyIterator,
-          class LevelIterator,
-          class IsInternalIterator,
           class BoundingBoxIterator,
           class NodeIndicesIterator,
           class BBoxIndicesIterator,
           class NodePairsIterator,
           class LeafPairsIterator>
-inline std::pair<int32_t, int32_t> find_intersections(KeyIterator keys_first,
-                                                      LevelIterator levels_first,
-                                                      IsInternalIterator is_internal_node_first,
+inline std::pair<int32_t, int32_t> find_intersections(point_quadtree_ref quadtree,
                                                       BoundingBoxIterator bounding_box_first,
                                                       NodeIndicesIterator node_indices,
                                                       BBoxIndicesIterator bbox_indices,
                                                       NodePairsIterator node_pairs,
                                                       LeafPairsIterator leaf_pairs,
                                                       int32_t num_pairs,
-                                                      T x_min,
-                                                      T y_min,
+                                                      vec_2d<T> const& v_min,
                                                       T scale,
                                                       int8_t max_depth,
                                                       rmm::cuda_stream_view stream)
 {
-  auto nodes_first = thrust::make_zip_iterator(keys_first, levels_first, is_internal_node_first);
+  auto nodes_first = thrust::make_zip_iterator(
+    quadtree.key_begin(), quadtree.level_begin(), quadtree.internal_node_flag_begin());
 
   thrust::transform(
     rmm::exec_policy(stream),
     thrust::make_zip_iterator(node_indices, bbox_indices),
     thrust::make_zip_iterator(node_indices, bbox_indices) + num_pairs,
     node_pairs,
-    [x_min, y_min, scale, max_depth, nodes = nodes_first, bboxes = bounding_box_first] __device__(
+    [v_min, scale, max_depth, nodes = nodes_first, bboxes = bounding_box_first] __device__(
       auto const& node_and_bbox) {
       auto const& node_idx = thrust::get<0>(node_and_bbox);
       auto const& bbox_idx = thrust::get<1>(node_and_bbox);
@@ -109,24 +106,20 @@ inline std::pair<int32_t, int32_t> find_intersections(KeyIterator keys_first,
       uint8_t const& level            = thrust::get<1>(node);
       uint8_t const& is_internal_node = thrust::get<2>(node);
 
-      auto const& bbox       = bboxes[bbox_idx];
-      auto const& bbox_min   = bbox.v1;
-      auto const& bbox_max   = bbox.v2;
-      auto const& poly_x_min = bbox_min.x;
-      auto const& poly_y_min = bbox_min.y;
-      auto const& poly_x_max = bbox_max.x;
-      auto const& poly_y_max = bbox_max.y;
+      box<T> const bbox        = bboxes[bbox_idx];
+      vec_2d<T> const bbox_min = bbox.v1;
+      vec_2d<T> const bbox_max = bbox.v2;
 
       T const key_x       = utility::z_order_x(key);
       T const key_y       = utility::z_order_y(key);
       T const level_scale = scale * (1 << (max_depth - 1 - level));
-      T const node_x_min  = x_min + (key_x + 0) * level_scale;
-      T const node_y_min  = y_min + (key_y + 0) * level_scale;
-      T const node_x_max  = x_min + (key_x + 1) * level_scale;
-      T const node_y_max  = y_min + (key_y + 1) * level_scale;
+      T const node_x_min  = v_min.x + (key_x + 0) * level_scale;
+      T const node_y_min  = v_min.y + (key_y + 0) * level_scale;
+      T const node_x_max  = v_min.x + (key_x + 1) * level_scale;
+      T const node_y_max  = v_min.y + (key_y + 1) * level_scale;
 
-      if ((node_x_min > poly_x_max) || (node_x_max < poly_x_min) || (node_y_min > poly_y_max) ||
-          (node_y_max < poly_y_min)) {
+      if ((node_x_min > bbox_max.x) || (node_x_max < bbox_min.x) || (node_y_min > bbox_max.y) ||
+          (node_y_max < bbox_min.y)) {
         // if no overlap, return type = none_indicator
         return thrust::make_tuple(none_indicator, level, node_idx, bbox_idx);
       }

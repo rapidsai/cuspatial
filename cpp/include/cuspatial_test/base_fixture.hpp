@@ -82,5 +82,11 @@ class BaseFixtureWithParam : public RMMResourceMixin,
                              public ::testing::TestWithParam<std::tuple<Ts...>> {
 };
 
+/**
+ * @brief Floating point types to be used in libcuspatial tests
+ *
+ */
+using FloatingPointTypes = ::testing::Types<float, double>;
+
 }  // namespace test
 }  // namespace cuspatial
