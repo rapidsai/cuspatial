@@ -36,6 +36,7 @@ from cuspatial.utils.column_utils import (
 
 GeoSeries = TypeVar("GeoSeries")
 
+
 class ComplexFeaturePredicate(BinPred):
     def _preprocess_multi(self, lhs, rhs):
         # Breaks down complex geometries into their constituent parts.

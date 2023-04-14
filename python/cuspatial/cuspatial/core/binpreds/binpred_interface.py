@@ -26,7 +26,7 @@ class BinPredConfig:
 
     def __init__(self, **kwargs):
         self.align = kwargs.get("align", True)
-        self.kwargs = kwargs;
+        self.kwargs = kwargs
 
     def __repr__(self):
         return f"BinPredConfig(align={self.align}, kwargs={self.kwargs})"

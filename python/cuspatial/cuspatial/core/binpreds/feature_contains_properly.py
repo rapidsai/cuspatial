@@ -17,7 +17,10 @@ from cuspatial.core.binpreds.binpred_interface import (
     PreprocessorResult,
 )
 from cuspatial.core.binpreds.contains import contains_properly
-from cuspatial.core.binpreds.feature_contains import ComplexGeometryPredicate, ContainsPredicateBase
+from cuspatial.core.binpreds.feature_contains import (
+    ComplexGeometryPredicate,
+    ContainsPredicateBase,
+)
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -36,7 +39,9 @@ from cuspatial.utils.column_utils import (
 GeoSeries = TypeVar("GeoSeries")
 
 
-class ContainsProperlyPredicate(ContainsPredicateBase, ComplexGeometryPredicate):
+class ContainsProperlyPredicate(
+    ContainsPredicateBase, ComplexGeometryPredicate
+):
     def __init__(self, **kwargs):
         """`ContainsProperlyPredicate` constructor.
 
@@ -56,12 +61,18 @@ class ContainsProperlyPredicate(ContainsPredicateBase, ComplexGeometryPredicate)
     Subclasses are selected using the `DispatchDict` located at the end
     of this file.
     """
+
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
         contains = super()._compute_predicate(lhs, rhs, preprocessor_result)
         intersects = lhs._basic_intersects_count(rhs)
-        return self._postprocess(lhs, rhs, ContainsOpResult(
-            lhs, rhs, preprocessor_result, contains, intersects)
+        return self._postprocess(
+            lhs,
+            rhs,
+            ContainsOpResult(
+                lhs, rhs, preprocessor_result, contains, intersects
+            ),
         )
+
 
 class ContainsProperlyByIntersection(BinPred):
     """Point types are contained only by an intersection test.

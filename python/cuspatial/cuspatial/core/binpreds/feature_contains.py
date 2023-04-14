@@ -17,7 +17,9 @@ from cuspatial.core.binpreds.binpred_interface import (
     NotImplementedPredicate,
     PreprocessorResult,
 )
-from cuspatial.core.binpreds.complex_geometry_predicate import ComplexGeometryPredicate
+from cuspatial.core.binpreds.complex_geometry_predicate import (
+    ComplexGeometryPredicate,
+)
 from cuspatial.core.binpreds.contains import contains
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -279,9 +281,7 @@ class ContainsPredicateBase(ComplexGeometryPredicate):
                 == allpairs_result["point_index"]
             )
             polygon_indexes = allpairs_result["polygon_index"][matches]
-            final_result.loc[
-                op_result.point_indices[polygon_indexes]
-            ] = True
+            final_result.loc[op_result.point_indices[polygon_indexes]] = True
             return final_result
         else:
             final_result.loc[allpairs_result["polygon_index"]] = True

@@ -1046,9 +1046,9 @@ class GeoSeries(cudf.Series):
             `point_indices` and `polygon_indices`, each of which is a
             `Series` of `dtype('int32')` in the case of `allpairs=True`.
         """
-        predicate = CONTAINS_PROPERLY_DISPATCH[(self.column_type, other.column_type)](
-            align=align, allpairs=allpairs, mode=mode
-        )
+        predicate = CONTAINS_PROPERLY_DISPATCH[
+            (self.column_type, other.column_type)
+        ](align=align, allpairs=allpairs, mode=mode)
         return predicate(self, other)
 
     def geom_equals(self, other, align=True):

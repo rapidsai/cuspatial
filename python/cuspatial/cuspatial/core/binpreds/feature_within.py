@@ -2,11 +2,13 @@
 
 import cudf
 
-from cuspatial.core.binpreds.complex_geometry_predicate import ComplexGeometryPredicate
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     NotImplementedPredicate,
     PreprocessorResult,
+)
+from cuspatial.core.binpreds.complex_geometry_predicate import (
+    ComplexGeometryPredicate,
 )
 from cuspatial.core.binpreds.feature_contains import (
     ContainsPredicate,
