@@ -3,7 +3,6 @@
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ImpossiblePredicate,
-    NotImplementedPredicate,
     PreprocessorResult,
 )
 from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
@@ -12,9 +11,7 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
-    _false_series,
     _linestring_to_boundary,
-    _multipoints_from_geometry,
     _polygon_to_boundary,
 )
 
@@ -35,8 +32,8 @@ class TouchesPredicateBase(ContainsPredicateBase):
 
     def _compute_predicate(
         self,
-        lhs: "GeoSeries",
-        rhs: "GeoSeries",
+        lhs,
+        rhs,
         preprocessor_result: PreprocessorResult,
     ):
         # contains = lhs._basic_contains_any(rhs)
@@ -66,7 +63,8 @@ class LineStringLineStringTouches(BinPred):
         rhs_boundary = _linestring_to_boundary(rhs)
         point_intersections = lhs._basic_intersects_at_point_only(rhs)
         boundary_intersects = lhs_boundary._basic_intersects(rhs_boundary)
-        return point_intersections & boundary_intersects
+        equals = lhs._basic_equals_all(rhs)
+        return point_intersections & boundary_intersects & ~equals
 
 
 class LineStringPolygonTouches(BinPred):
@@ -76,6 +74,16 @@ class LineStringPolygonTouches(BinPred):
         boundary_intersects = lhs_boundary._basic_intersects(rhs_boundary)
         interior_contains_any = rhs._basic_contains_any(lhs)
         return boundary_intersects & ~interior_contains_any
+
+
+class PolygonPolygonTouches(BinPred):
+    def _preprocess(self, lhs, rhs):
+        lhs_boundary = _polygon_to_boundary(lhs)
+        rhs_boundary = _polygon_to_boundary(rhs)
+        boundary_intersects = lhs_boundary._basic_intersects(rhs_boundary)
+        contains = rhs._basic_contains_any(lhs)
+        # Count results here?
+        return boundary_intersects & ~contains
 
 
 DispatchDict = {
@@ -94,5 +102,5 @@ DispatchDict = {
     (Polygon, Point): TouchesPredicateBase,
     (Polygon, MultiPoint): TouchesPredicateBase,
     (Polygon, LineString): TouchesPredicateBase,
-    (Polygon, Polygon): TouchesPredicateBase,
+    (Polygon, Polygon): PolygonPolygonTouches,
 }

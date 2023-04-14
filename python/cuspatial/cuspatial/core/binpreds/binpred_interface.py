@@ -68,7 +68,7 @@ class PreprocessorResult:
 
     def __repr__(self):
         return f"PreprocessorResult(lhs={self.lhs}, rhs={self.rhs}, \
-        points={self.points}, point_indices={self.point_indices})"
+        final_rhs={self.final_rhs}, point_indices={self.point_indices})"
 
     def __str__(self):
         return self.__repr__()

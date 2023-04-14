@@ -350,26 +350,21 @@ class PolygonComplexContains(ContainsPredicateBase):
             lhs, rhs, preprocessor_output
         )
         intersects_result = self._compute_intersects(lhs, rhs)
-        return self._postprocess(
-            lhs,
-            rhs,
-            ContainsOpResult(
-                pip_result,
-                intersects_result,
-                preprocessor_output.final_rhs,
-                preprocessor_output.point_indices,
-            ),
+        op_result = ContainsOpResult(
+            pip_result.pip_result,
+            intersects_result,
+            preprocessor_output.final_rhs,
+            preprocessor_output.point_indices,
         )
+        return self._postprocess(lhs, rhs, op_result)
 
     def _postprocess(self, lhs, rhs, op_result):
         # for each input pair i: result[i] =  true iff point[i] is
         # contained in at least one polygon of multipolygon[i].
         # pairwise
-        if self.config.mode != "full":
-            return super()._postprocess(lhs, rhs, op_result)
 
         point_indices = op_result.point_indices
-        allpairs_result = self._reindex_allpairs(lhs, op_result.pip_result)
+        allpairs_result = self._reindex_allpairs(lhs, op_result)
 
         if isinstance(allpairs_result, Series):
             return allpairs_result
@@ -377,6 +372,9 @@ class PolygonComplexContains(ContainsPredicateBase):
         (hits, expected_count,) = _count_results_in_multipoint_geometries(
             point_indices, allpairs_result
         )
+
+        # Combine intersection count and pip count here
+
         result_df = hits.reset_index().merge(
             expected_count.reset_index(), on="rhs_index"
         )
@@ -388,7 +386,6 @@ class PolygonComplexContains(ContainsPredicateBase):
             result_df["rhs_index"][result_df["feature_in_polygon"]]
         ] = True
 
-        breakpoint()
         # Intersection processing
         offsets = cudf.Series(op_result.intersection_result[0])
         sizes = offsets[1:].reset_index(drop=True) - offsets[:-1].reset_index(
@@ -400,7 +397,15 @@ class PolygonComplexContains(ContainsPredicateBase):
         exterior_ring_sizes = (
             exterior_ring_offsets[1:] - exterior_ring_offsets[:-1]
         ) - 1
-        intersection_size_matches = sizes == exterior_ring_sizes
+        result_df = result_df.set_index("rhs_index")
+        new_sizes = sizes[result_df.index] + result_df["point_index_x"]
+        sizes[result_df.index] = new_sizes.reset_index(drop=True).values
+
+        if self.config.mode == "basic_any":
+            intersection_size_matches = sizes > 0
+        else:
+            intersection_size_matches = sizes == exterior_ring_sizes
+
         final_result[intersection_size_matches.index] = (
             final_result[intersection_size_matches.index]
             | intersection_size_matches

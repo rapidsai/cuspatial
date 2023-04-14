@@ -2,10 +2,7 @@
 
 import cudf
 
-from cuspatial.core.binpreds.binpred_interface import (
-    ImpossiblePredicate,
-    NotImplementedPredicate,
-)
+from cuspatial.core.binpreds.binpred_interface import ImpossiblePredicate
 from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.utils.binpred_utils import (
@@ -36,6 +33,13 @@ class OverlapsPredicateBase(EqualsPredicateBase):
     pass
 
 
+class PolygonPolygonOverlaps(ContainsPredicateBase):
+    def _preprocess(self, lhs, rhs):
+        equals_all = lhs._basic_equals_all(rhs)
+        intersects_not_touches = lhs._basic_intersects_through(rhs)
+        return ~equals_all & intersects_not_touches
+
+
 class PolygonPointOverlaps(ContainsPredicateBase):
     def _postprocess(self, lhs, rhs, op_result):
         if not has_same_geometry(lhs, rhs) or len(op_result.point_result) == 0:
@@ -62,19 +66,19 @@ class PolygonPointOverlaps(ContainsPredicateBase):
 """Dispatch table for overlaps binary predicate."""
 DispatchDict = {
     (Point, Point): ImpossiblePredicate,
-    (Point, MultiPoint): NotImplementedPredicate,
-    (Point, LineString): NotImplementedPredicate,
+    (Point, MultiPoint): ImpossiblePredicate,
+    (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): OverlapsPredicateBase,
-    (MultiPoint, Point): NotImplementedPredicate,
-    (MultiPoint, MultiPoint): NotImplementedPredicate,
-    (MultiPoint, LineString): NotImplementedPredicate,
-    (MultiPoint, Polygon): NotImplementedPredicate,
+    (MultiPoint, Point): ImpossiblePredicate,
+    (MultiPoint, MultiPoint): ImpossiblePredicate,
+    (MultiPoint, LineString): ImpossiblePredicate,
+    (MultiPoint, Polygon): ImpossiblePredicate,
     (LineString, Point): ImpossiblePredicate,
-    (LineString, MultiPoint): NotImplementedPredicate,
+    (LineString, MultiPoint): ImpossiblePredicate,
     (LineString, LineString): ImpossiblePredicate,
     (LineString, Polygon): ImpossiblePredicate,
     (Polygon, Point): OverlapsPredicateBase,
     (Polygon, MultiPoint): OverlapsPredicateBase,
     (Polygon, LineString): OverlapsPredicateBase,
-    (Polygon, Polygon): OverlapsPredicateBase,
+    (Polygon, Polygon): PolygonPolygonOverlaps,
 }

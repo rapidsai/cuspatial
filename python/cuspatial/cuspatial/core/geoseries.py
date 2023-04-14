@@ -39,9 +39,7 @@ from cuspatial.core.binpreds.binpred_dispatch import (
 )
 from cuspatial.utils.binpred_utils import (
     _linestrings_from_geometry,
-    _linestrings_from_points,
     _multipoints_from_geometry,
-    _points_from_geometry,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -1048,7 +1046,7 @@ class GeoSeries(cudf.Series):
             `Series` of `dtype('int32')` in the case of `allpairs=True`.
         """
         predicate = CONTAINS_DISPATCH[(self.column_type, other.column_type)](
-            align=align, allpairs=allpairs
+            align=align, allpairs=allpairs, mode=mode
         )
         return predicate(self, other)
 

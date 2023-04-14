@@ -35,9 +35,10 @@ def test_simple_features(
     predicate_fails,
     feature_passes,
     feature_fails,
+    request,
 ):
     try:
-        (lhs, rhs) = simple_test[1], simple_test[2]
+        (lhs, rhs) = simple_test[2], simple_test[3]
         gpdlhs = lhs.to_geopandas()
         gpdrhs = rhs.to_geopandas()
         pred_fn = getattr(lhs, predicate)
@@ -48,7 +49,6 @@ def test_simple_features(
         expected = gpd_pred_fn(gpdrhs)
         pd.testing.assert_series_equal(expected, got.to_pandas())
         try:
-            out_file.write(f"{predicate}, {simple_test} passed\n")
             predicate_passes[predicate] = (
                 1
                 if predicate not in predicate_passes
@@ -77,7 +77,12 @@ def test_simple_features(
         except Exception as e:
             raise ValueError(e)
     except Exception as e:
-        out_file.write(f"{predicate}, {simple_test} failed\n")
+        out_file.write(
+            f"""{predicate},
+------------
+{simple_test[0]}\n{simple_test[1]}\nfailed
+test: {request.node.name}\n\n"""
+        )
         predicate_fails[predicate] = (
             1
             if predicate not in predicate_fails

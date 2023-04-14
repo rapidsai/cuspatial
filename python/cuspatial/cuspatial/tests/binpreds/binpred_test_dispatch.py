@@ -325,9 +325,9 @@ features = {
     "polygon-polygon-overlap-edge": (
         """
     x
-    |\
-    | \
-    |  \
+    |\\
+    | \\
+    |  \\
     x---x
     |   |
     |   |
@@ -354,7 +354,7 @@ features = {
     "polygon-polygon-point-outside": (
         """
      x
-    -|\\-- # Double backslash due to issues with escape sequences
+    -|\\--
     |x-x|
     |   |
     |   |
@@ -366,7 +366,7 @@ features = {
     "polygon-polygon-in-out-point": (
         """
       x
-      |\
+      |\\
     --|-x
     | |/|
     | x |
@@ -379,7 +379,7 @@ features = {
     "polygon-polygon-in-point-point": (
         """
     x----
-    |\\  | # Double backslash due to issues with escape sequences
+    |\\  |
     | x |
     |/  |
     x----
@@ -465,7 +465,7 @@ polygon_polygon_dispatch_list = [
 
 def object_dispatch(name_list):
     for name in name_list:
-        yield (name, features[name][1], features[name][2])
+        yield (name, features[name][0], features[name][1], features[name][2])
 
 
 type_dispatch = {
@@ -487,18 +487,19 @@ def simple_test_dispatch():
         for test in tests:
             yield (
                 test[0],
+                test[1],
                 cuspatial.GeoSeries(
                     [
-                        test[1],
-                        test[2] if types[0] == types[1] else test[1],
-                        test[1],
+                        test[2],
+                        test[3] if types[0] == types[1] else test[2],
+                        test[2],
                     ]
                 ),
                 cuspatial.GeoSeries(
                     [
-                        test[2],
-                        test[2],
-                        test[2],
+                        test[3],
+                        test[3],
+                        test[3],
                     ]
                 ),
             )
