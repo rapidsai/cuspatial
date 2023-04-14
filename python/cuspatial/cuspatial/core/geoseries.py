@@ -28,6 +28,7 @@ from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.core.binpreds.binpred_dispatch import (
     CONTAINS_DISPATCH,
+    CONTAINS_PROPERLY_DISPATCH,
     COVERS_DISPATCH,
     CROSSES_DISPATCH,
     DISJOINT_DISPATCH,
@@ -1045,7 +1046,7 @@ class GeoSeries(cudf.Series):
             `point_indices` and `polygon_indices`, each of which is a
             `Series` of `dtype('int32')` in the case of `allpairs=True`.
         """
-        predicate = CONTAINS_DISPATCH[(self.column_type, other.column_type)](
+        predicate = CONTAINS_PROPERLY_DISPATCH[(self.column_type, other.column_type)](
             align=align, allpairs=allpairs, mode=mode
         )
         return predicate(self, other)
@@ -1325,6 +1326,11 @@ class GeoSeries(cudf.Series):
     def _basic_intersects_through(self, other):
         is_sizes = self._basic_intersects_count(other)
         return is_sizes > 1
+
+    def _basic_contains_count(self, other):
+        lhs = self
+        rhs = _multipoints_from_geometry(other)
+        return lhs.contains_properly(rhs, mode="basic_count")
 
     def _basic_contains_none(self, other):
         lhs = self

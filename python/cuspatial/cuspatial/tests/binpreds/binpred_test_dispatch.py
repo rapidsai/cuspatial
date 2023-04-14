@@ -117,6 +117,17 @@ features = {
         LineString([(0.0, 0.0), (0.0, 1.0)]),
         LineString([(0.0, 0.0), (1.0, 0.0)]),
     ),
+    "linestring-linestring-touch-edge": (
+        """
+      x
+      |
+      |
+      |
+    x-x-x
+    """,
+        LineString([(0.0, 0.0), (1.0, 0.0)]),
+        LineString([(0.5, 0.0), (0.5, 1.0)]),
+    ),
     "linestring-linestring-crosses": (
         """
       x
@@ -483,23 +494,22 @@ type_dispatch = {
 def simple_test_dispatch():
     for types in type_dispatch:
         generator = type_dispatch[types]
-        tests = list(generator)
-        for test in tests:
+        for test_name, test_description, lhs, rhs in generator:
             yield (
-                test[0],
-                test[1],
+                test_name,
+                test_description,
                 cuspatial.GeoSeries(
                     [
-                        test[2],
-                        test[3] if types[0] == types[1] else test[2],
-                        test[2],
+                        lhs,
+                        rhs if types[0] == types[1] else lhs,
+                        lhs,
                     ]
                 ),
                 cuspatial.GeoSeries(
                     [
-                        test[3],
-                        test[3],
-                        test[3],
+                        rhs,
+                        rhs,
+                        rhs,
                     ]
                 ),
             )

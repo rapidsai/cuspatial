@@ -17,7 +17,8 @@ from cuspatial.core.binpreds.binpred_interface import (
     NotImplementedPredicate,
     PreprocessorResult,
 )
-from cuspatial.core.binpreds.contains import contains_properly
+from cuspatial.core.binpreds.complex_geometry_predicate import ComplexGeometryPredicate
+from cuspatial.core.binpreds.contains import contains
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -37,17 +38,9 @@ from cuspatial.utils.column_utils import (
 GeoSeries = TypeVar("GeoSeries")
 
 
-class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
-    """Base class for binary predicates that are defined in terms of a
-    `contains` basic predicate. This class implements the logic that underlies
-    `polygon.contains` primarily, and is implemented for many cases.
-
-    Subclasses are selected using the `DispatchDict` located at the end
-    of this file.
-    """
-
+class ContainsPredicateBase(ComplexGeometryPredicate):
     def __init__(self, **kwargs):
-        """`ContainsPredicateBase` constructor.
+        """`ContainsProperlyPredicateBase` constructor.
 
         Parameters
         ----------
@@ -56,57 +49,25 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
             right-hand GeoSeries. If False, the feature will be compared in a
             1:1 fashion with the corresponding feature in the other GeoSeries.
         """
+        breakpoint()
         super().__init__(**kwargs)
         self.config.allpairs = kwargs.get("allpairs", False)
         self.config.mode = kwargs.get("mode", "full")
 
     def _preprocess(self, lhs, rhs):
-        """Flatten any rhs into only its points xy array. This is necessary
-        because the basic predicate for contains, point-in-polygon,
-        only accepts points.
+        # Preprocess multi-geometries and complex geometries into
+        # the correct input type for the contains predicate.
+        # This is done by saving the shapes of multi-geometries,
+        # then converting them all to single geometries.
+        # Single geometries are converted from their original
+        # lhs and rhs types to the types needed for the contains predicate.
 
-        Parameters
-        ----------
-        lhs : GeoSeries
-            The left-hand GeoSeries.
-        rhs : GeoSeries
-            The right-hand GeoSeries.
-
-        Returns
-        -------
-        result : GeoSeries
-            A GeoSeries of boolean values indicating whether each feature in
-            the right-hand GeoSeries satisfies the requirements of the point-
-            in-polygon basic predicate with its corresponding feature in the
-            left-hand GeoSeries.
-        """
-        # RHS conditioning:
-        point_indices = None
-        # point in polygon
-        if contains_only_linestrings(rhs):
-            # condition for linestrings
-            geom = rhs.lines
-        elif contains_only_polygons(rhs) is True:
-            # polygon in polygon
-            geom = rhs.polygons
-        elif contains_only_multipoints(rhs) is True:
-            # mpoint in polygon
-            geom = rhs.multipoints
-        else:
-            # no conditioning is required
-            geom = rhs.points
-        xy_points = geom.xy
-
-        # Arrange into shape for calling point-in-polygon, intersection, or
-        # equals
-        point_indices = geom.point_indices()
-        from cuspatial.core.geoseries import GeoSeries
-
-        final_rhs = GeoSeries(GeoColumn._from_points_xy(xy_points._column))
-        preprocess_result = PreprocessorResult(
-            lhs, rhs, final_rhs, point_indices
-        )
-        return self._compute_predicate(lhs, rhs, preprocess_result)
+        # point_indices: the indices of the points in the original
+        # geometry.
+        # geometry_offsets: the offsets of the multi-geometries in
+        # the original geometry.
+        preprocessor_result = super()._preprocess_multi(lhs, rhs)
+        return self._compute_predicate(lhs, rhs, preprocessor_result)
 
     def _should_use_quadtree(self, lhs):
         """Determine if the quadtree should be used for the binary predicate.
@@ -131,12 +92,22 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
         """
         return len(lhs) >= 32 or has_multipolygons(lhs) or self.config.allpairs
 
-    def _compute_basic_predicate(
+    def _compute_predicate(
         self,
         lhs: "GeoSeries",
         rhs: "GeoSeries",
         preprocessor_result: PreprocessorResult,
     ):
+        # _compute predicate no longer cares about preprocessor result
+        # because information is passed directly to the postprocessor.
+        # Creates an op_result and passes it and the preprocessor result
+        # to the postprocessor.
+
+        # Calls various _basic_predicate methods to compute the
+        # predicate.
+        # .contains calls .basic_contains_properly and also .basic_intersects
+        # in order to assemble boundary-exclusive contains with intersection
+        # results.
         """Compute the contains_properly relationship between two GeoSeries.
         A feature A contains another feature B if no points of B lie in the
         exterior of A, and at least one point of the interior of B lies in the
@@ -148,22 +119,11 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
         points = preprocessor_result.final_rhs
         point_indices = preprocessor_result.point_indices
         if self._should_use_quadtree(lhs):
-            result = contains_properly(lhs, points, how="quadtree")
+            result = contains(lhs, points, how="quadtree")
         else:
-            result = contains_properly(lhs, points, how="byte-limited")
-        op_result = ContainsOpResult(result, None, points, point_indices)
-        return op_result
-
-    def _compute_predicate(
-        self,
-        lhs: "GeoSeries",
-        rhs: "GeoSeries",
-        preprocessor_result: PreprocessorResult,
-    ):
-        op_result = self._compute_basic_predicate(
-            lhs, rhs, preprocessor_result
-        )
-        return self._postprocess(lhs, rhs, op_result)
+            result = contains(lhs, points, how="byte-limited")
+        op_result = ContainsOpResult(result, points, point_indices)
+        return self._postprocess(lhs, rhs, None, op_result)
 
     def _convert_quadtree_result_from_part_to_polygon_indices(
         self, lhs, point_result
@@ -220,7 +180,7 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
         ----------
         lhs : GeoSeries
             The left-hand side of the binary predicate.
-        op_result : ContainsOpResult
+        op_result : ContainsProperlyOpResult
             The result of the contains_properly call.
 
         Returns
@@ -246,7 +206,12 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
 
         return allpairs_result
 
-    def _postprocess(self, lhs, rhs, op_result):
+    def _postprocess(self, lhs, rhs, preprocessor_result, op_result):
+        # Downstream predicates inherit from ComplexGeometryPredicate
+        # that implements
+        # point reconstruction for complex types separately.
+        # Early return if individual points are required for downstream
+        # predicates. Handle `any`, `all`, `none` modes.
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate.
 
@@ -279,16 +244,8 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
             point index and the polygon index for each point in the
             polygon.
         """
-        if len(op_result.pip_result) == 0:
-            return _false_series(len(lhs))
-
-        # Convert the quadtree part indices df into a polygon indices df.
-        # Helps with handling multipolygons.
-        allpairs_result = self._reindex_allpairs(lhs, op_result)
-
-        # If the user wants all pairs, return the result. Otherwise,
-        # return a boolean series indicating whether each point is
-        # contained in the corresponding polygon.
+        # Postprocessing early termination. Basic requests, or allpairs
+        # requests do not do object reconstruction.
         if self.config.allpairs:
             return allpairs_result
         elif self.config.mode == "basic_none":
@@ -305,149 +262,44 @@ class ContainsPredicateBase(BinPred, Generic[GeoSeries]):
             final_result = _false_series(len(op_result.point_indices))
             final_result.loc[sizes == result_sizes] = True
             return final_result
-        else:
-            # for each input pair i: result[i] =  true iff point[i] is
-            # contained in at least one polygon of multipolygon[i].
-            # pairwise
-            final_result = _false_series(len(rhs))
-            if len(lhs) == len(rhs):
-                matches = (
-                    allpairs_result["polygon_index"]
-                    == allpairs_result["point_index"]
-                )
-                polygon_indexes = allpairs_result["polygon_index"][matches]
-                final_result.loc[
-                    op_result.point_indices[polygon_indexes]
-                ] = True
-                return final_result
-            else:
-                final_result.loc[allpairs_result["polygon_index"]] = True
-                return final_result
 
+        if len(op_result.pip_result) == 0:
+            return _false_series(len(lhs))
 
-class PolygonComplexContains(ContainsPredicateBase):
-    """Base class for contains operations that use a complex object on
-    the right hand side.
-
-    This class is shared by the Polygon*Contains classes that use
-    a non-points object on the right hand side: MultiPoint, LineString,
-    MultiLineString, Polygon, and MultiPolygon.
-
-    Used by:
-    (Polygon, MultiPoint)
-    (Polygon, LineString)
-    (Polygon, Polygon)
-    """
-
-    def _compute_intersects(self, lhs, rhs):
-        ls_lhs = _linestrings_from_geometry(lhs)
-        ls_rhs = _linestrings_from_geometry(rhs)
-        basic_result = pairwise_linestring_intersection(ls_lhs, ls_rhs)
-        return basic_result
-
-    def _compute_predicate(self, lhs, rhs, preprocessor_output):
-        pip_result = super()._compute_basic_predicate(
-            lhs, rhs, preprocessor_output
-        )
-        intersects_result = self._compute_intersects(lhs, rhs)
-        op_result = ContainsOpResult(
-            pip_result.pip_result,
-            intersects_result,
-            preprocessor_output.final_rhs,
-            preprocessor_output.point_indices,
-        )
-        return self._postprocess(lhs, rhs, op_result)
-
-    def _postprocess(self, lhs, rhs, op_result):
+        # Convert the quadtree part indices df into a polygon indices df.
+        # Helps with handling multipolygons.
+        allpairs_result = self._reindex_allpairs(lhs, op_result)
         # for each input pair i: result[i] =  true iff point[i] is
         # contained in at least one polygon of multipolygon[i].
         # pairwise
-
-        point_indices = op_result.point_indices
-        allpairs_result = self._reindex_allpairs(lhs, op_result)
-
-        if isinstance(allpairs_result, Series):
-            return allpairs_result
-
-        (hits, expected_count,) = _count_results_in_multipoint_geometries(
-            point_indices, allpairs_result
-        )
-
-        # Combine intersection count and pip count here
-
-        result_df = hits.reset_index().merge(
-            expected_count.reset_index(), on="rhs_index"
-        )
-        result_df["feature_in_polygon"] = (
-            result_df["point_index_x"] >= result_df["point_index_y"]
-        )
         final_result = _false_series(len(rhs))
-        final_result.loc[
-            result_df["rhs_index"][result_df["feature_in_polygon"]]
-        ] = True
-
-        # Intersection processing
-        offsets = cudf.Series(op_result.intersection_result[0])
-        sizes = offsets[1:].reset_index(drop=True) - offsets[:-1].reset_index(
-            drop=True
-        )
-        exterior_ring_offsets = lhs.polygons.ring_offset.take(
-            lhs.polygons.geometry_offset
-        )
-        exterior_ring_sizes = (
-            exterior_ring_offsets[1:] - exterior_ring_offsets[:-1]
-        ) - 1
-        result_df = result_df.set_index("rhs_index")
-        new_sizes = sizes[result_df.index] + result_df["point_index_x"]
-        sizes[result_df.index] = new_sizes.reset_index(drop=True).values
-
-        if self.config.mode == "basic_any":
-            intersection_size_matches = sizes > 0
+        if len(lhs) == len(rhs):
+            matches = (
+                allpairs_result["polygon_index"]
+                == allpairs_result["point_index"]
+            )
+            polygon_indexes = allpairs_result["polygon_index"][matches]
+            final_result.loc[
+                op_result.point_indices[polygon_indexes]
+            ] = True
+            return final_result
         else:
-            intersection_size_matches = sizes == exterior_ring_sizes
-
-        final_result[intersection_size_matches.index] = (
-            final_result[intersection_size_matches.index]
-            | intersection_size_matches
-        )
-        return final_result
+            final_result.loc[allpairs_result["polygon_index"]] = True
+            return final_result
 
 
-class ContainsByIntersection(BinPred):
-    """Point types are contained only by an intersection test.
-
-    Used by:
-    (Point, Point)
-    (LineString, Point)
-    """
-
-    def _preprocess(self, lhs, rhs):
-        from cuspatial.core.binpreds.binpred_dispatch import (
-            INTERSECTS_DISPATCH,
-        )
-
-        predicate = INTERSECTS_DISPATCH[(lhs.column_type, rhs.column_type)](
-            align=self.config.align
-        )
-        return predicate(lhs, rhs)
-
-
-class LineStringLineStringContains(BinPred):
-    """LineString types are contained only by an equality test."""
-
-    def _preprocess(self, lhs, rhs):
-        from cuspatial.core.binpreds.binpred_dispatch import EQUALS_DISPATCH
-
-        predicate = EQUALS_DISPATCH[(lhs.column_type, rhs.column_type)](
-            align=self.config.align
-        )
-        return predicate(lhs, rhs)
+class ContainsPredicate(ContainsPredicateBase):
+    def _compute_results(self, lhs, rhs, preprocessor_result):
+        # Compute the contains predicate for the given lhs and rhs.
+        # lhs and rhs are both cudf.Series of shapely geometries.
+        # Returns a ContainsOpResult object.
+        return lhs._contains(rhs)
 
 
 """DispatchDict listing the classes to use for each combination of
     left and right hand side types. """
 DispatchDict = {
-    (Point, Point): ContainsByIntersection,
+    (Point, Point): ContainsPredicateBase,
     (Point, MultiPoint): ImpossiblePredicate,
     (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): ImpossiblePredicate,
@@ -455,12 +307,12 @@ DispatchDict = {
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
-    (LineString, Point): ContainsByIntersection,
+    (LineString, Point): ContainsPredicateBase,
     (LineString, MultiPoint): NotImplementedPredicate,
-    (LineString, LineString): LineStringLineStringContains,
+    (LineString, LineString): ContainsPredicateBase,
     (LineString, Polygon): ImpossiblePredicate,
     (Polygon, Point): ContainsPredicateBase,
-    (Polygon, MultiPoint): PolygonComplexContains,
-    (Polygon, LineString): PolygonComplexContains,
-    (Polygon, Polygon): PolygonComplexContains,
+    (Polygon, MultiPoint): ContainsPredicateBase,
+    (Polygon, LineString): ContainsPredicateBase,
+    (Polygon, Polygon): ContainsPredicateBase,
 }

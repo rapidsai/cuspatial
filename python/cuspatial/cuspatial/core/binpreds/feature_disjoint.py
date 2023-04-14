@@ -16,7 +16,7 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-class ContainsDisjoint(BinPred):
+class DisjointByWayOfContains(BinPred):
     def _preprocess(self, lhs, rhs):
         """Disjoint is the opposite of contains, so just implement contains
         and then negate the result.
@@ -78,7 +78,7 @@ class PolygonPolygonDisjoint(BinPred):
 
 
 DispatchDict = {
-    (Point, Point): ContainsDisjoint,
+    (Point, Point): DisjointByWayOfContains,
     (Point, MultiPoint): NotImplementedPredicate,
     (Point, LineString): PointLineStringDisjoint,
     (Point, Polygon): PointPolygonDisjoint,

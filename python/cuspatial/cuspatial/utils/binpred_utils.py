@@ -87,7 +87,8 @@ def _linestrings_from_multipoints(geoseries):
 
 
 def _linestrings_from_points(geoseries):
-    """Convert rhs to linestrings."""
+    """Convert rhs to linestrings.
+    TODO: Document"""
     x = cp.repeat(geoseries.points.x, 2)
     y = cp.repeat(geoseries.points.y, 2)
     xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
@@ -128,7 +129,8 @@ def _multipoints_from_linestrings(geoseries):
 
 
 def _multipoints_from_polygons(geoseries):
-    """Convert rhs to multipoints."""
+    """Convert rhs to multipoints.
+    TODO: Document"""
     xy = geoseries.polygons.xy
     polygon_offsets = geoseries.polygons.ring_offset.take(
         geoseries.polygons.part_offset.take(geoseries.polygons.geometry_offset)

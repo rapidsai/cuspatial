@@ -2,14 +2,15 @@
 
 import cudf
 
+from cuspatial.core.binpreds.complex_geometry_predicate import ComplexGeometryPredicate
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     NotImplementedPredicate,
     PreprocessorResult,
 )
 from cuspatial.core.binpreds.feature_contains import (
+    ContainsPredicate,
     ContainsPredicateBase,
-    PolygonComplexContains,
 )
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.core.binpreds.feature_intersects import IntersectsPredicateBase
@@ -73,7 +74,7 @@ class LineStringLineStringWithin(IntersectsPredicateBase):
         return intersects & equals
 
 
-class ComplexPolygonWithin(PolygonComplexContains):
+class ComplexPolygonWithin(ContainsPredicate, ComplexGeometryPredicate):
     """Implements within for complex polygons. Depends on contains result
     for the types.
 
