@@ -41,7 +41,7 @@ TYPED_TEST(FindDuplicatePointsTest, simple)
   using T = TypeParam;
   using P = vec_2d<T>;
 
-  auto multipoints = make_multipoints_array({{P{0.0, 0.0}, P{1.0, 0.0}, P{0.0, 0.0}}});
+  auto multipoints = make_multipoint_array({{P{0.0, 0.0}, P{1.0, 0.0}, P{0.0, 0.0}}});
 
   rmm::device_vector<uint8_t> flags(multipoints.range().num_points());
   std::vector<uint8_t> expected_flags{0, 0, 1};
@@ -56,7 +56,7 @@ TYPED_TEST(FindDuplicatePointsTest, empty)
   using T = TypeParam;
   using P = vec_2d<T>;
 
-  auto multipoints = make_multipoints_array<T>({});
+  auto multipoints = make_multipoint_array<T>({});
 
   rmm::device_vector<uint8_t> flags(multipoints.range().num_points());
   std::vector<uint8_t> expected_flags{};
@@ -71,7 +71,7 @@ TYPED_TEST(FindDuplicatePointsTest, multi)
   using T = TypeParam;
   using P = vec_2d<T>;
 
-  auto multipoints = make_multipoints_array<T>(
+  auto multipoints = make_multipoint_array<T>(
     {{P{0.0, 0.0}, P{1.0, 0.0}, P{0.0, 0.0}, P{0.0, 0.0}, P{1.0, 0.0}, P{2.0, 0.0}},
      {P{5.0, 5.0}, P{5.0, 5.0}},
      {P{0.0, 0.0}}});

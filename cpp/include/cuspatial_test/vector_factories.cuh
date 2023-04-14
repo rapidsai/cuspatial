@@ -309,17 +309,17 @@ class multipoint_array {
  *
  * Example: Construct an array of 2 multipoints, each with 2, 0, 1 points:
  * using P = vec_2d<float>;
- * make_multipoints_array({{P{0.0, 1.0}, P{2.0, 0.0}}, {}, {P{3.0, 4.0}}});
+ * make_multipoint_array({{P{0.0, 1.0}, P{2.0, 0.0}}, {}, {P{3.0, 4.0}}});
  *
  * Example: Construct an empty multilinestring array:
- * make_multipoints_array<float>({}); // Explicit parameter required to deduce type.
+ * make_multipoint_array<float>({}); // Explicit parameter required to deduce type.
  *
  * @tparam T Type of coordinate
  * @param inl List of multipoints
  * @return multipoints_array object
  */
 template <typename T>
-auto make_multipoints_array(std::initializer_list<std::initializer_list<vec_2d<T>>> inl)
+auto make_multipoint_array(std::initializer_list<std::initializer_list<vec_2d<T>>> inl)
 {
   std::vector<std::size_t> offsets{0};
   std::transform(inl.begin(), inl.end(), std::back_inserter(offsets), [](auto multipoint) {
@@ -342,7 +342,7 @@ auto make_multipoints_array(std::initializer_list<std::initializer_list<vec_2d<T
  * `rmm::device_uvector`.
  */
 template <typename IndexType, typename T>
-auto make_multipoints_array(rmm::device_uvector<IndexType> geometry_offsets,
+auto make_multipoint_array(rmm::device_uvector<IndexType> geometry_offsets,
                             rmm::device_uvector<vec_2d<T>> coords)
 {
   return multipoint_array<rmm::device_uvector<std::size_t>, rmm::device_uvector<vec_2d<T>>>{

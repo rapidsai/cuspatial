@@ -302,7 +302,7 @@ auto generate_multipoint_array(multipoint_generator_parameter<T> params,
 
   thrust::tabulate(rmm::exec_policy(stream), coordinates.begin(), coordinates.end(), point_gen);
 
-  return make_multipoints_array(std::move(offsets), std::move(coordinates));
+  return make_multipoint_array(std::move(offsets), std::move(coordinates));
 }
 
 }  // namespace test
