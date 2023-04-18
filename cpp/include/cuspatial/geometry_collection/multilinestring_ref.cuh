@@ -69,4 +69,4 @@ class multilinestring_ref {
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/geometry_collection/multilinestring_ref.cuh>
+#include <cuspatial/detail/geometry_collection/multilinestring_ref.cuh>

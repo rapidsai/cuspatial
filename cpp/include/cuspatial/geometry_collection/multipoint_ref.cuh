@@ -56,4 +56,4 @@ class multipoint_ref {
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/geometry_collection/multipoint_ref.cuh>
+#include <cuspatial/detail/geometry_collection/multipoint_ref.cuh>

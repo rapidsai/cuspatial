@@ -17,8 +17,8 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/experimental/geometry_collection/multilinestring_ref.cuh>
 #include <cuspatial/geometry/segment.cuh>
+#include <cuspatial/geometry_collection/multilinestring_ref.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <thrust/iterator/zip_iterator.h>

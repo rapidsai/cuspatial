@@ -79,4 +79,4 @@ class multipolygon_ref {
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/geometry_collection/multipolygon_ref.cuh>
+#include <cuspatial/detail/geometry_collection/multipolygon_ref.cuh>
