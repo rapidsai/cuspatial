@@ -10,9 +10,9 @@ from cuspatial.core.binpreds.binpred_interface import (
 from cuspatial.core.binpreds.complex_geometry_predicate import (
     ComplexGeometryPredicate,
 )
-from cuspatial.core.binpreds.feature_contains import (
-    ContainsPredicate,
-    ContainsPredicateBase,
+from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
+from cuspatial.core.binpreds.feature_contains_properly import (
+    ContainsProperlyPredicate,
 )
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.core.binpreds.feature_intersects import IntersectsPredicateBase
@@ -65,8 +65,7 @@ class PointLineStringWithin(WithinIntersectsPredicate):
 
 class PointPolygonWithin(ContainsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        # Note the order of arguments is reversed.
-        return super()._preprocess(rhs, lhs)
+        return rhs._basic_contains_any(lhs)
 
 
 class LineStringLineStringWithin(IntersectsPredicateBase):
@@ -76,7 +75,9 @@ class LineStringLineStringWithin(IntersectsPredicateBase):
         return intersects & equals
 
 
-class ComplexPolygonWithin(ContainsPredicate, ComplexGeometryPredicate):
+class ComplexPolygonWithin(
+    ContainsProperlyPredicate, ComplexGeometryPredicate
+):
     """Implements within for complex polygons. Depends on contains result
     for the types.
 
@@ -95,7 +96,6 @@ class LineStringPolygonWithin(BinPred):
     def _preprocess(self, lhs, rhs):
         contains_all = rhs._basic_contains_all(lhs)
         intersects = rhs._basic_intersects(lhs)
-        contains_none = rhs._basic_contains_none(lhs)
         return contains_all & intersects
 
 

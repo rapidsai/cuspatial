@@ -51,16 +51,12 @@ class ContainsPredicateBase(ComplexGeometryPredicate):
         return self._compute_predicate(lhs, rhs, preprocessor_result)
 
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
-        contains = super()._basic_contains_properly_count(
-            lhs, rhs, preprocessor_result
-        )
+        contains = lhs._basic_contains_count(rhs)
         intersects = lhs._basic_intersects_count(rhs)
         return self._postprocess(
             lhs,
             rhs,
-            ContainsOpResult(
-                lhs, rhs, preprocessor_result, contains, intersects
-            ),
+            ContainsOpResult(contains, intersects, preprocessor_result),
         )
 
 

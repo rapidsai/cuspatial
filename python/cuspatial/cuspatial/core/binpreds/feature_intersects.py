@@ -20,8 +20,6 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _false_series,
-    _linestrings_from_points,
-    _linestrings_from_polygons,
 )
 
 
@@ -89,21 +87,14 @@ class IntersectsByEquals(EqualsPredicateBase):
     pass
 
 
+class PolygonPointIntersects(IntersectsPredicateBase):
+    def _preprocess(self, lhs, rhs):
+        return lhs._basic_contains_any(rhs)
+
+
 class PointPolygonIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        """Swap LHS and RHS and call the normal contains processing."""
-        ls_lhs = _linestrings_from_polygons(rhs)
-        ls_rhs = _linestrings_from_points(lhs)
-        return super()._preprocess(ls_rhs, ls_lhs)
-
-    def _postprocess(self, lhs, rhs, op_result):
-        """Postprocess the output GeoSeries to ensure that they are of the
-        correct type for the predicate."""
-        match_indices = self._get_intersecting_geometry_indices(rhs, op_result)
-        result = _false_series(len(rhs))
-        if len(op_result.result[1]) > 0:
-            result[match_indices] = True
-        return result
+        return rhs._basic_contains_any(lhs)
 
 
 class LineStringPointIntersects(IntersectsPredicateBase):
@@ -181,7 +172,7 @@ DispatchDict = {
     (LineString, MultiPoint): LineStringMultiPointIntersects,
     (LineString, LineString): IntersectsPredicateBase,
     (LineString, Polygon): LineStringPolygonIntersects,
-    (Polygon, Point): NotImplementedPredicate,
+    (Polygon, Point): PolygonPointIntersects,
     (Polygon, MultiPoint): NotImplementedPredicate,
     (Polygon, LineString): NotImplementedPredicate,
     (Polygon, Polygon): PolygonPolygonIntersects,

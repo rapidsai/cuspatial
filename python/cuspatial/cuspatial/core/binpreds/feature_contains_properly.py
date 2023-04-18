@@ -102,16 +102,18 @@ class ContainsProperlyPredicate(
             raise TypeError(
                 "`.contains` can only be called with polygon series."
             )
-        points = preprocessor_result.final_rhs
-        point_indices = preprocessor_result.point_indices
         if self._should_use_quadtree(lhs):
-            pip_result = contains_properly(lhs, points, how="quadtree")
+            pip_result = contains_properly(
+                lhs, preprocessor_result.points, how="quadtree"
+            )
         else:
-            pip_result = contains_properly(lhs, points, how="byte-limited")
-        op_result = ContainsOpResult(pip_result, points, point_indices)
+            pip_result = contains_properly(
+                lhs, preprocessor_result.points, how="byte-limited"
+            )
+        op_result = ContainsOpResult(pip_result, preprocessor_result)
         return self._postprocess(lhs, rhs, preprocessor_result, op_result)
 
-    def _return_unprocessed_result(self, lhs, op_result):
+    def _return_unprocessed_result(self, lhs, op_result, preprocessor_result):
         """Return the result of the basic predicate without any
         postprocessing.
         """
@@ -125,13 +127,20 @@ class ContainsProperlyPredicate(
             final_result.loc[reindex_pip_result["point_index"]] = False
             return final_result
         elif self.config.mode == "basic_any":
-            final_result = _false_series(len(op_result.point_indices))
+            final_result = _false_series(
+                len(preprocessor_result.point_indices)
+            )
             final_result.loc[reindex_pip_result["point_index"]] = True
             return final_result
         elif self.config.mode == "basic_all":
-            sizes = op_result.point_indices[1:] - op_result.point_indices[:-1]
+            sizes = (
+                preprocessor_result.point_indices[1:]
+                - preprocessor_result.point_indices[:-1]
+            )
             result_sizes = reindex_pip_result["point_index"].value_counts()
-            final_result = _false_series(len(op_result.point_indices))
+            final_result = _false_series(
+                len(preprocessor_result.point_indices)
+            )
             final_result.loc[sizes == result_sizes] = True
             return final_result
 
@@ -173,11 +182,13 @@ class ContainsProperlyPredicate(
             point index and the polygon index for each point in the
             polygon.
         """
-        if self.config.mode != "full" or self.config.allpairs:
-            return self._return_unprocessed_result(lhs, op_result)
-
         if len(op_result.pip_result) == 0:
             return _false_series(len(lhs))
+
+        if self.config.mode != "full" or self.config.allpairs:
+            return self._return_unprocessed_result(
+                lhs, op_result, preprocessor_result
+            )
 
         # for each input pair i: result[i] =  true iff point[i] is
         # contained in at least one polygon of multipolygon[i].

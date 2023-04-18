@@ -195,7 +195,9 @@ class ComplexGeometryPredicate(BinPred):
                 == allpairs_result["point_index"]
             )
             polygon_indexes = allpairs_result["polygon_index"][matches]
-            final_result.loc[op_result.point_indices[polygon_indexes]] = True
+            final_result.loc[
+                preprocessor_result.point_indices[polygon_indexes]
+            ] = True
             return final_result
         else:
             final_result.loc[allpairs_result["polygon_index"]] = True
