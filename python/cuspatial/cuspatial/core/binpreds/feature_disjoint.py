@@ -90,7 +90,7 @@ DispatchDict = {
     (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): LineStringLineStringDisjoint,
     (LineString, Polygon): LineStringPolygonDisjoint,
-    (Polygon, Point): ContainsDisjoint,
+    (Polygon, Point): DisjointByWayOfContains,
     (Polygon, MultiPoint): NotImplementedPredicate,
     (Polygon, LineString): NotImplementedPredicate,
     (Polygon, Polygon): PolygonPolygonDisjoint,

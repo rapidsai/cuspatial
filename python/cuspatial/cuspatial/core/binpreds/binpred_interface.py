@@ -104,18 +104,15 @@ class ContainsOpResult(OpResult):
     def __init__(
         self,
         pip_result: Series,
-        intersection_result: Tuple,
         points: "GeoSeries" = None,
         point_indices: Series = None,
     ):
         self.pip_result = pip_result
-        self.intersection_result = intersection_result
         self.points = points
         self.point_indices = point_indices
 
     def __repr__(self):
         return f"OpResult(pip_result={self.pip_result}, \
-        intersection_result={self.intersection_result}, \
         points={self.points}, point_indices={self.point_indices})\n"
 
     def __str__(self):

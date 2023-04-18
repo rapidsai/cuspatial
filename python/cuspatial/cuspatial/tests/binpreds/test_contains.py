@@ -1,11 +1,9 @@
 # Copyright (c) 2023, NVIDIA CORPORATION
 
-import cupy as cp
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 import pytest
-from shapely.geometry import LineString, MultiPolygon, Point, Polygon
+from shapely.geometry import MultiPolygon, Polygon
 
 import cuspatial
 
@@ -40,3 +38,55 @@ def test_interior():
     got = lhs.contains(rhs)
     expected = gpdlhs.contains(gpdrhs)
     pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+@pytest.mark.parametrize(
+    "object",
+    [
+        Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+        MultiPolygon(
+            [
+                Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+            ]
+        ),
+    ],
+)
+def test_self_contains(object):
+    gpdobject = gpd.GeoSeries(object)
+    object = cuspatial.from_geopandas(gpdobject)
+    got = object.contains_properly(object).values_host
+    expected = gpdobject.contains(gpdobject).values
+    assert (got == expected).all()
+
+
+def test_complex_input():
+    gpdobject = gpd.GeoSeries(
+        [
+            Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+            Polygon(
+                ([0, 0], [1, 1], [1, 0], [0, 0]),
+                [([0, 0], [1, 1], [1, 0], [0, 0])],
+            ),
+            MultiPolygon(
+                [
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                ]
+            ),
+            MultiPolygon(
+                [
+                    Polygon([[0, 0], [1, 1], [1, 0], [0, 0]]),
+                    Polygon(
+                        ([0, 0], [1, 1], [1, 0], [0, 0]),
+                        [([0, 0], [1, 1], [1, 0], [0, 0])],
+                    ),
+                ]
+            ),
+        ]
+    )
+    object = cuspatial.from_geopandas(gpdobject)
+    got = object.contains_properly(object).values_host
+    expected = gpdobject.contains(gpdobject).values
+    assert (got == [True, False, False, False]).all()
+    assert (expected == [True, True, True, True]).all()
