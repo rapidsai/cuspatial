@@ -65,4 +65,5 @@ class polygon_ref {
 };
 
 }  // namespace cuspatial
-#include <cuspatial/experimental/detail/geometry/polygon_ref.cuh>
+
+#include <cuspatial/detail/geometry/polygon_ref.cuh>

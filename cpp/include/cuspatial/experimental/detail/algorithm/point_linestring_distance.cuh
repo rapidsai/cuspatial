@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuspatial/experimental/geometry/linestring_ref.cuh>
+#include <cuspatial/geometry/linestring_ref.cuh>
 #include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 

@@ -2,8 +2,8 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/experimental/geometry/linestring_ref.cuh>
-#include <cuspatial/experimental/geometry/polygon_ref.cuh>
+#include <cuspatial/geometry/linestring_ref.cuh>
+#include <cuspatial/geometry/polygon_ref.cuh>
 
 #include <thrust/iterator/transform_iterator.h>
 

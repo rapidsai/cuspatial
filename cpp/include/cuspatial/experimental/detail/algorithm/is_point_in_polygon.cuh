@@ -21,7 +21,7 @@
 #include <cuspatial/traits.hpp>
 
 #include <cuspatial/detail/utility/floating_point.cuh>
-#include <cuspatial/experimental/geometry/polygon_ref.cuh>
+#include <cuspatial/geometry/polygon_ref.cuh>
 
 namespace cuspatial {
 namespace detail {

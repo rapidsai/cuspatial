@@ -61,4 +61,5 @@ class linestring_ref {
 };
 
 }  // namespace cuspatial
-#include <cuspatial/experimental/detail/geometry/linestring_ref.cuh>
+
+#include <cuspatial/detail/geometry/linestring_ref.cuh>
