@@ -94,11 +94,6 @@ class ContainsOpResult(OpResult):
     intersection_result: Tuple
         A tuple containing the result of the intersection operation
         between the left-hand GeoSeries and the right-hand GeoSeries.
-    points : GeoSeries
-        A GeoSeries of points.
-    point_indices : cudf.Series
-        A cudf.Series of indices that map each point in `points` to its
-        corresponding feature in the right-hand GeoSeries.
     """
 
     def __init__(
@@ -112,9 +107,9 @@ class ContainsOpResult(OpResult):
         self.intersection_result = intersection_result
 
     def __repr__(self):
-        return f"OpResult(pip_result={self.pip_result}, \
-        preprocessor_result={self.preprocessor_result}, \
-        intersection_result={self.intersection_result})"
+        return f"OpResult(pip_result={self.pip_result},\n \
+        preprocessor_result={self.preprocessor_result},\n \
+        intersection_result={self.intersection_result})\n"
 
     def __str__(self):
         return self.__repr__()

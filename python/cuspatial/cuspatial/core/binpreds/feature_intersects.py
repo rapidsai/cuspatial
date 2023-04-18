@@ -89,12 +89,16 @@ class IntersectsByEquals(EqualsPredicateBase):
 
 class PolygonPointIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        return lhs._basic_contains_any(rhs)
+        contains = lhs._basic_contains_any(rhs)
+        intersects = lhs._basic_intersects(rhs)
+        return contains | intersects
 
 
 class PointPolygonIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        return rhs._basic_contains_any(lhs)
+        contains = rhs._basic_contains_any(lhs)
+        intersects = rhs._basic_intersects(lhs)
+        return contains | intersects
 
 
 class LineStringPointIntersects(IntersectsPredicateBase):

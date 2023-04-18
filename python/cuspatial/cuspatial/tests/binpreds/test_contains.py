@@ -55,7 +55,7 @@ def test_interior():
 def test_self_contains(object):
     gpdobject = gpd.GeoSeries(object)
     object = cuspatial.from_geopandas(gpdobject)
-    got = object.contains_properly(object).values_host
+    got = object.contains(object).values_host
     expected = gpdobject.contains(gpdobject).values
     assert (got == expected).all()
 
@@ -86,7 +86,6 @@ def test_complex_input():
         ]
     )
     object = cuspatial.from_geopandas(gpdobject)
-    got = object.contains_properly(object).values_host
+    got = object.contains(object).values_host
     expected = gpdobject.contains(gpdobject).values
-    assert (got == [True, False, False, False]).all()
-    assert (expected == [True, True, True, True]).all()
+    assert (got == expected).all()

@@ -43,11 +43,9 @@ def test_simple_features(
         gpdrhs = rhs.to_geopandas()
         pred_fn = getattr(lhs, predicate)
         got = pred_fn(rhs)
-        if predicate == "contains_properly":
-            predicate = "contains"
         gpd_pred_fn = getattr(gpdlhs, predicate)
         expected = gpd_pred_fn(gpdrhs)
-        pd.testing.assert_series_equal(expected, got.to_pandas())
+        assert (got.values_host == expected.values).all()
         try:
             predicate_passes[predicate] = (
                 1

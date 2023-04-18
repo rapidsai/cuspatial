@@ -21,7 +21,7 @@ feature-name is not used in the tests but is useful for debugging.
 
 @pytest.fixture(
     params=[
-        "contains_properly",
+        "contains",
         "geom_equals",
         "intersects",
         "covers",

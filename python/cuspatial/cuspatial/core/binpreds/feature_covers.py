@@ -1,6 +1,5 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-from cuspatial.core.binops.intersection import pairwise_linestring_intersection
 from cuspatial.core.binpreds.binpred_interface import (
     ImpossiblePredicate,
     NotImplementedPredicate,
@@ -50,7 +49,7 @@ class PolygonPolygonCovers(ContainsPredicateBase):
     def _preprocess(self, lhs, rhs):
         contains_none = rhs._basic_contains_none(lhs)
         equals = rhs._basic_equals(lhs)
-        return ~contains_none | equals
+        return contains_none | equals
 
 
 DispatchDict = {

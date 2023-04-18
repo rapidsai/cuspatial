@@ -54,6 +54,23 @@ class ContainsProperlyPredicate(
             1:1 fashion with the corresponding feature in the other GeoSeries.
         """
         super().__init__(**kwargs)
+        self.config.allpairs = kwargs.get("allpairs", False)
+        self.config.mode = kwargs.get("mode", "full")
+
+    def _preprocess(self, lhs, rhs):
+        # Preprocess multi-geometries and complex geometries into
+        # the correct input type for the contains predicate.
+        # This is done by saving the shapes of multi-geometries,
+        # then converting them all to single geometries.
+        # Single geometries are converted from their original
+        # lhs and rhs types to the types needed for the contains predicate.
+
+        # point_indices: the indices of the points in the original
+        # geometry.
+        # geometry_offsets: the offsets of the multi-geometries in
+        # the original geometry.
+        preprocessor_result = super()._preprocess_multi(lhs, rhs)
+        return self._compute_predicate(lhs, rhs, preprocessor_result)
 
     def _should_use_quadtree(self, lhs):
         """Determine if the quadtree should be used for the binary predicate.
@@ -118,31 +135,36 @@ class ContainsProperlyPredicate(
         postprocessing.
         """
         reindex_pip_result = self._reindex_allpairs(lhs, op_result)
+        if len(reindex_pip_result) == 0:
+            if self.config.mode == "basic_count":
+                return cudf.Series(cp.zeros(len(lhs), dtype="int32"))
+            else:
+                return _false_series(len(lhs))
         # Postprocessing early termination. Basic requests, or allpairs
         # requests do not do object reconstruction.
         if self.config.allpairs:
             return reindex_pip_result
         elif self.config.mode == "basic_none":
             final_result = cudf.Series(cp.repeat([True], len(lhs)))
-            final_result.loc[reindex_pip_result["point_index"]] = False
+            final_result.loc[reindex_pip_result["polygon_index"]] = False
             return final_result
         elif self.config.mode == "basic_any":
-            final_result = _false_series(
-                len(preprocessor_result.point_indices)
-            )
-            final_result.loc[reindex_pip_result["point_index"]] = True
+            final_result = _false_series(len(lhs))
+            final_result.loc[reindex_pip_result["polygon_index"]] = True
             return final_result
         elif self.config.mode == "basic_all":
             sizes = (
                 preprocessor_result.point_indices[1:]
                 - preprocessor_result.point_indices[:-1]
             )
-            result_sizes = reindex_pip_result["point_index"].value_counts()
+            result_sizes = reindex_pip_result["polygon_index"].value_counts()
             final_result = _false_series(
                 len(preprocessor_result.point_indices)
             )
             final_result.loc[sizes == result_sizes] = True
             return final_result
+        elif self.config.mode == "basic_count":
+            return reindex_pip_result["polygon_index"].value_counts()
 
     def _postprocess(self, lhs, rhs, preprocessor_result, op_result):
         # Downstream predicates inherit from ComplexGeometryPredicate
@@ -182,9 +204,6 @@ class ContainsProperlyPredicate(
             point index and the polygon index for each point in the
             polygon.
         """
-        if len(op_result.pip_result) == 0:
-            return _false_series(len(lhs))
-
         if self.config.mode != "full" or self.config.allpairs:
             return self._return_unprocessed_result(
                 lhs, op_result, preprocessor_result
@@ -221,6 +240,12 @@ class ContainsProperlyByIntersection(BinPred):
         return predicate(lhs, rhs)
 
 
+class LineStringLineStringContainsProperly(BinPred):
+    def _preprocess(self, lhs, rhs):
+        count = lhs._basic_equals_all(rhs)
+        return count
+
+
 """DispatchDict listing the classes to use for each combination of
     left and right hand side types. """
 DispatchDict = {
@@ -233,8 +258,8 @@ DispatchDict = {
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): ContainsProperlyByIntersection,
-    (LineString, MultiPoint): NotImplementedPredicate,
-    (LineString, LineString): ImpossiblePredicate,
+    (LineString, MultiPoint): ContainsProperlyPredicate,
+    (LineString, LineString): LineStringLineStringContainsProperly,
     (LineString, Polygon): ImpossiblePredicate,
     (Polygon, Point): ContainsProperlyPredicate,
     (Polygon, MultiPoint): ContainsProperlyPredicate,

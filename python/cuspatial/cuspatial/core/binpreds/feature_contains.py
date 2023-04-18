@@ -3,7 +3,6 @@
 from typing import TypeVar
 
 from cuspatial.core.binpreds.binpred_interface import (
-    ContainsOpResult,
     ImpossiblePredicate,
     NotImplementedPredicate,
 )
@@ -15,6 +14,7 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
+    _multipoints_from_geometry,
 )
 
 GeoSeries = TypeVar("GeoSeries")
@@ -51,13 +51,15 @@ class ContainsPredicateBase(ComplexGeometryPredicate):
         return self._compute_predicate(lhs, rhs, preprocessor_result)
 
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
-        contains = lhs._basic_contains_count(rhs)
-        intersects = lhs._basic_intersects_count(rhs)
-        return self._postprocess(
-            lhs,
-            rhs,
-            ContainsOpResult(contains, intersects, preprocessor_result),
+        contains = lhs._basic_contains_count(rhs).reset_index(drop=True)
+        rhs_points = _multipoints_from_geometry(rhs)
+        intersects = lhs._basic_intersects_count(rhs_points).reset_index(
+            drop=True
         )
+        # TODO: Need to handle multipolygon case. The [0] below ignores all
+        # but the first polygon in a multipolygon.
+        # TODO: Need better point counting in intersection.
+        return contains + intersects >= rhs.sizes
 
 
 class ContainsPredicate(ContainsPredicateBase):
@@ -68,10 +70,29 @@ class ContainsPredicate(ContainsPredicateBase):
         return lhs._contains(rhs)
 
 
+class PointPointContains(ContainsPredicateBase):
+    def _preprocess(self, lhs, rhs):
+        return lhs._basic_equals(rhs)
+
+
+class LineStringMultiPointContainsPredicate(ContainsPredicateBase):
+    def _compute_results(self, lhs, rhs, preprocessor_result):
+        # Compute the contains predicate for the given lhs and rhs.
+        # lhs and rhs are both cudf.Series of shapely geometries.
+        # Returns a ContainsOpResult object.
+        return lhs._linestring_multipoint_contains(rhs)
+
+
+class LineStringLineStringContainsPredicate(ContainsPredicateBase):
+    def _preprocess(self, lhs, rhs):
+        count = lhs._basic_equals_count(rhs)
+        return count == rhs.sizes
+
+
 """DispatchDict listing the classes to use for each combination of
     left and right hand side types. """
 DispatchDict = {
-    (Point, Point): ContainsPredicateBase,
+    (Point, Point): PointPointContains,
     (Point, MultiPoint): ImpossiblePredicate,
     (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): ImpossiblePredicate,
@@ -80,8 +101,8 @@ DispatchDict = {
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): ContainsPredicateBase,
-    (LineString, MultiPoint): NotImplementedPredicate,
-    (LineString, LineString): ContainsPredicateBase,
+    (LineString, MultiPoint): LineStringMultiPointContainsPredicate,
+    (LineString, LineString): LineStringLineStringContainsPredicate,
     (LineString, Polygon): ImpossiblePredicate,
     (Polygon, Point): ContainsPredicateBase,
     (Polygon, MultiPoint): ContainsPredicateBase,
