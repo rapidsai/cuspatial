@@ -20,8 +20,8 @@
 #include <cuspatial/experimental/ranges/multipoint_range.cuh>
 #include <cuspatial/experimental/ranges/multipolygon_range.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>

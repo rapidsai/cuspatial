@@ -21,8 +21,8 @@
 #include <cuspatial/experimental/detail/linestring_intersection_with_duplicates.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>

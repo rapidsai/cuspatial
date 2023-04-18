@@ -23,8 +23,8 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/linestring_intersection.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column.hpp>
 #include <cudf_test/column_utilities.hpp>

@@ -21,7 +21,7 @@
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/linestring_distance.cuh>
 #include <cuspatial/experimental/ranges/multilinestring_range.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 
@@ -29,11 +29,9 @@ using namespace cuspatial;
 using namespace cuspatial::test;
 
 template <typename T>
-struct PairwiseLinestringDistanceTest : public ::testing::Test {
-};
+struct PairwiseLinestringDistanceTest : public ::testing::Test {};
 
-struct PairwiseLinestringDistanceTestUntyped : public ::testing::Test {
-};
+struct PairwiseLinestringDistanceTestUntyped : public ::testing::Test {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;

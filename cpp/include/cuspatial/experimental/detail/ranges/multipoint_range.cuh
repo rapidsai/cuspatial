@@ -24,8 +24,8 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/geometry_collection/multipoint_ref.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 namespace cuspatial {
 

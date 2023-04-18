@@ -19,8 +19,8 @@
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/error.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>

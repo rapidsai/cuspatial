@@ -17,7 +17,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/sinusoidal_projection.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_device_view.cuh>

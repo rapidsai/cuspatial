@@ -21,10 +21,10 @@
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/geometry/box.hpp>
 #include <cuspatial/experimental/point_in_polygon.cuh>
 #include <cuspatial/experimental/polygon_bounding_boxes.cuh>
 #include <cuspatial/experimental/spatial_join.cuh>
+#include <cuspatial/geometry/box.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -42,8 +42,7 @@
  */
 
 template <typename T>
-struct PIPRefineTestLarge : public cuspatial::test::BaseFixture {
-};
+struct PIPRefineTestLarge : public cuspatial::test::BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 

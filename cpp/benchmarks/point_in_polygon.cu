@@ -18,7 +18,7 @@
 #include <nvbench/nvbench.cuh>
 
 #include <cuspatial/experimental/point_in_polygon.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>

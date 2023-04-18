@@ -17,8 +17,8 @@
 #include <cuspatial/column/geometry_column_view.hpp>
 #include <cuspatial/distance/point_polygon_distance.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/types.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <cuspatial_test/column_factories.hpp>
 #include <cuspatial_test/vector_equality.hpp>

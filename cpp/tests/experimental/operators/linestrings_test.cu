@@ -20,7 +20,7 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
 
@@ -40,8 +40,7 @@ template <typename T>
 using optional_vec2d = thrust::optional<vec_2d<T>>;
 
 template <typename T>
-struct SegmentIntersectionTest : public BaseFixture {
-};
+struct SegmentIntersectionTest : public BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(SegmentIntersectionTest, TestTypes);

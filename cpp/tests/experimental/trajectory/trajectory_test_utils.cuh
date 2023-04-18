@@ -18,7 +18,7 @@
 #pragma once
 
 #include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <cuspatial_test/test_util.cuh>
 

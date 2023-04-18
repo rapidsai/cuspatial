@@ -19,7 +19,7 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
-#include <cuspatial/experimental/geometry/segment.cuh>
+#include <cuspatial/geometry/segment.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 

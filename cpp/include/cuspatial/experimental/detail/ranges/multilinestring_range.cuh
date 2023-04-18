@@ -28,8 +28,8 @@
 #include <cuspatial/experimental/detail/functors.cuh>
 #include <cuspatial/experimental/geometry_collection/multilinestring_ref.cuh>
 #include <cuspatial/experimental/ranges/multipoint_range.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <thrust/iterator/permutation_iterator.h>
 

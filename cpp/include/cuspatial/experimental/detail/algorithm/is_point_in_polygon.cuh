@@ -17,8 +17,8 @@
 #pragma once
 
 #include <cuspatial/experimental/geometry_collection/multipoint_ref.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <cuspatial/detail/utility/floating_point.cuh>
 #include <cuspatial/experimental/geometry/polygon_ref.cuh>

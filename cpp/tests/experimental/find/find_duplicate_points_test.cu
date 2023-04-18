@@ -22,7 +22,7 @@
 #include <rmm/device_vector.hpp>
 
 #include <cuspatial/experimental/detail/find/find_duplicate_points.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 using namespace cuspatial;
 using namespace cuspatial::detail;

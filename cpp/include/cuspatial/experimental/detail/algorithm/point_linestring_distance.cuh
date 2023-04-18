@@ -17,8 +17,8 @@
 #pragma once
 
 #include <cuspatial/experimental/geometry/linestring_ref.cuh>
-#include <cuspatial/experimental/geometry/segment.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/segment.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 namespace cuspatial {
 namespace detail {

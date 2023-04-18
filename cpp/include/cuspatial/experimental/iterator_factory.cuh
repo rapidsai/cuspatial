@@ -18,9 +18,9 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/geometry/box.hpp>
+#include <cuspatial/geometry/box.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/detail/raw_reference_cast.h>

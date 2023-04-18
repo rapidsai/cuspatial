@@ -19,10 +19,10 @@
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/detail/linestring_intersection_count.cuh>
-#include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/segment.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>

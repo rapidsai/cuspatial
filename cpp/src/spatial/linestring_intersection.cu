@@ -23,9 +23,9 @@
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/linestring_intersection.cuh>
 #include <cuspatial/experimental/ranges/multilinestring_range.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/linestring_intersection.hpp>
 #include <cuspatial/types.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>

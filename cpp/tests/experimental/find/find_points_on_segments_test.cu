@@ -23,7 +23,7 @@
 
 #include <cuspatial/experimental/detail/find/find_points_on_segments.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <initializer_list>
 

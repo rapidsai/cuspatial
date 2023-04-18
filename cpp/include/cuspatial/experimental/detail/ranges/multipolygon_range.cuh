@@ -20,10 +20,10 @@
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/experimental/detail/functors.cuh>
-#include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/experimental/geometry_collection/multipolygon_ref.cuh>
+#include <cuspatial/geometry/segment.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>

@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/point_linestring_nearest_points.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/column_wrapper.hpp>
@@ -30,8 +30,7 @@ using namespace cudf;
 using namespace cudf::test;
 
 template <typename T>
-struct PairwisePointLinestringNearestPointsTest : public ::testing::Test {
-};
+struct PairwisePointLinestringNearestPointsTest : public ::testing::Test {};
 
 using TestTypes = ::testing::Types<float, double>;
 
@@ -134,8 +133,7 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, MultiPointMultiLineString)
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_nearest_points, *nearest_points);
 }
 
-struct PairwisePointLinestringNearestPointsThrowTest : public ::testing::Test {
-};
+struct PairwisePointLinestringNearestPointsThrowTest : public ::testing::Test {};
 
 TEST_F(PairwisePointLinestringNearestPointsThrowTest, OddNumberOfCoordinates)
 {

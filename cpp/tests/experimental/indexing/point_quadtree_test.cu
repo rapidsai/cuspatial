@@ -18,7 +18,7 @@
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/experimental/point_quadtree.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 template <typename T>
 struct QuadtreeOnPointIndexingTest : public ::testing::Test {

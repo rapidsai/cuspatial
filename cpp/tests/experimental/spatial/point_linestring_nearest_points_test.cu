@@ -20,7 +20,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_linestring_nearest_points.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>
 
@@ -35,8 +35,7 @@ using namespace cuspatial;
 using namespace cuspatial::test;
 
 template <typename T>
-struct PairwisePointLinestringNearestPointsTest : public ::testing::Test {
-};
+struct PairwisePointLinestringNearestPointsTest : public ::testing::Test {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;

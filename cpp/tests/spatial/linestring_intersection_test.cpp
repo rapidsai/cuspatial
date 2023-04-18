@@ -23,9 +23,9 @@
 
 #include <cuspatial/column/geometry_column_view.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/linestring_intersection.hpp>
 #include <cuspatial/types.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/filling.hpp>
@@ -208,8 +208,7 @@ struct LinestringIntersectionTest : public LinestringIntersectionTestBase {
   }
 };
 
-struct LinestringIntersectionTestUntyped : public LinestringIntersectionTestBase {
-};
+struct LinestringIntersectionTestUntyped : public LinestringIntersectionTestBase {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = FloatingPointTypes;

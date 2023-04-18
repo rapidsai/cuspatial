@@ -18,7 +18,7 @@
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/points_in_range.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <limits>
 #include <rmm/cuda_stream_view.hpp>

@@ -26,7 +26,7 @@
 #include <cuspatial/experimental/detail/functors.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <thrust/fill.h>
 #include <thrust/functional.h>

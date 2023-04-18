@@ -20,8 +20,8 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/bounding_box.cuh>
-#include <cuspatial/experimental/geometry/box.hpp>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/box.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>

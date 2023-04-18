@@ -18,10 +18,10 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
-#include <cuspatial/experimental/geometry/segment.cuh>
+#include <cuspatial/geometry/segment.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <thrust/pair.h>
 

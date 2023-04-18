@@ -21,8 +21,8 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/experimental/trajectory_distances_and_speeds.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/trajectory.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/exec_policy.hpp>
 

@@ -19,8 +19,8 @@
 
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_linestring_nearest_points.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/point_linestring_nearest_points.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>

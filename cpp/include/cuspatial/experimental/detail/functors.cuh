@@ -17,7 +17,7 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/experimental/geometry/segment.cuh>
+#include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <thrust/binary_search.h>

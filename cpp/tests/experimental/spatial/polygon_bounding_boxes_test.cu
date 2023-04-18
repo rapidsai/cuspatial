@@ -18,15 +18,14 @@
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/geometry/box.hpp>
 #include <cuspatial/experimental/polygon_bounding_boxes.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/box.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <gtest/gtest.h>
 
 template <typename T>
-struct PolygonBoundingBoxTest : public ::testing::Test {
-};
+struct PolygonBoundingBoxTest : public ::testing::Test {};
 
 using cuspatial::vec_2d;
 using cuspatial::test::make_device_vector;

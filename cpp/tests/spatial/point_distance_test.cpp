@@ -16,7 +16,7 @@
 
 #include <cuspatial/distance/point_distance.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/column_wrapper.hpp>
@@ -32,8 +32,7 @@ using namespace cudf;
 using namespace cudf::test;
 
 template <typename T>
-struct PairwisePointDistanceTest : public ::testing::Test {
-};
+struct PairwisePointDistanceTest : public ::testing::Test {};
 
 using TestTypes = ::testing::Types<float, double>;
 
@@ -107,8 +106,7 @@ TYPED_TEST(PairwisePointDistanceTest, MultiToMultiEmpty)
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
 
-struct PairwisePointDistanceTestThrow : public ::testing::Test {
-};
+struct PairwisePointDistanceTestThrow : public ::testing::Test {};
 
 TEST_F(PairwisePointDistanceTestThrow, SizeMismatch)
 {

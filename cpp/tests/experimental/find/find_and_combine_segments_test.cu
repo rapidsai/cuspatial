@@ -19,9 +19,9 @@
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/experimental/detail/find/find_and_combine_segment.cuh>
-#include <cuspatial/experimental/geometry/segment.cuh>
 #include <cuspatial/experimental/ranges/range.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/segment.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_vector.hpp>
