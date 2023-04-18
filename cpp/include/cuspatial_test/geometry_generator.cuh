@@ -102,7 +102,7 @@ vec_2d<T> __device__ polygon_centroid_displacement(vec_2d<T> centroid,
                                                    std::size_t part_local_idx,
                                                    T radius)
 {
-  return centroid + vec_2d<T>{part_local_idx * radius* T{3.0}, T{0.0}};
+  return centroid + vec_2d<T>{part_local_idx * radius * T{3.0}, T{0.0}};
 }
 
 /**
