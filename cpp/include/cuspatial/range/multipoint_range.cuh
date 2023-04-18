@@ -267,4 +267,4 @@ auto make_multipoint_range(GeometryColumnView const& points_column)
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/ranges/multipoint_range.cuh>
+#include <cuspatial/detail/range/multipoint_range.cuh>

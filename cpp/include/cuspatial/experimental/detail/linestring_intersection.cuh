@@ -25,8 +25,8 @@
 #include <cuspatial/experimental/detail/find/find_points_on_segments.cuh>
 #include <cuspatial/experimental/detail/linestring_intersection_count.cuh>
 #include <cuspatial/experimental/detail/linestring_intersection_with_duplicates.cuh>
-#include <cuspatial/experimental/ranges/multipoint_range.cuh>
-#include <cuspatial/experimental/ranges/range.cuh>
+#include <cuspatial/range/multipoint_range.cuh>
+#include <cuspatial/range/range.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <rmm/cuda_stream_view.hpp>

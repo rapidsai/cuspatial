@@ -15,9 +15,9 @@
  */
 
 #include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/ranges/multipoint_range.cuh>
-#include <cuspatial/experimental/ranges/multipolygon_range.cuh>
 #include <cuspatial/experimental/spatial_join.cuh>
+#include <cuspatial/range/multipoint_range.cuh>
+#include <cuspatial/range/multipolygon_range.cuh>
 
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/error.hpp>

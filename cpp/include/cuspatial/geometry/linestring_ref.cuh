@@ -16,7 +16,7 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
+#include <cuspatial/detail/range/enumerate_range.cuh>
 
 namespace cuspatial {
 

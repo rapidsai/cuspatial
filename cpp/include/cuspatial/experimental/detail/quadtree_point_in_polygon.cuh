@@ -19,7 +19,7 @@
 #include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/experimental/detail/join/get_quad_and_local_point_indices.cuh>
 #include <cuspatial/experimental/point_quadtree.cuh>
-#include <cuspatial/experimental/ranges/multipolygon_range.cuh>
+#include <cuspatial/range/multipolygon_range.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <rmm/device_uvector.hpp>

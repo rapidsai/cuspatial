@@ -20,8 +20,8 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/linestring_distance.cuh>
-#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/range/multilinestring_range.cuh>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>

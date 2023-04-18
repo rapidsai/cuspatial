@@ -19,7 +19,7 @@
 #include <thrust/pair.h>
 
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
+#include <cuspatial/detail/range/enumerate_range.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
@@ -269,4 +269,4 @@ auto make_multipolygon_range(GeometryColumnView const& polygons_column)
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/ranges/multipolygon_range.cuh>
+#include <cuspatial/detail/range/multipolygon_range.cuh>

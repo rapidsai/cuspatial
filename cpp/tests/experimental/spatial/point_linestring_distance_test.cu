@@ -20,9 +20,9 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/experimental/point_linestring_distance.cuh>
-#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
-#include <cuspatial/experimental/ranges/multipoint_range.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/range/multilinestring_range.cuh>
+#include <cuspatial/range/multipoint_range.cuh>
 
 #include <rmm/device_vector.hpp>
 

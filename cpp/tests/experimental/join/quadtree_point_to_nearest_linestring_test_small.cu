@@ -21,14 +21,13 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/linestring_bounding_boxes.cuh>
 #include <cuspatial/experimental/point_quadtree.cuh>
-#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
 #include <cuspatial/experimental/spatial_join.cuh>
+#include <cuspatial/range/multilinestring_range.cuh>
 
 #include <type_traits>
 
 template <typename T>
-struct QuadtreePointToLinestringTestSmall : public cuspatial::test::BaseFixture {
-};
+struct QuadtreePointToLinestringTestSmall : public cuspatial::test::BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 

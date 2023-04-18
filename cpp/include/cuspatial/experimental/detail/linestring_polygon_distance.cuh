@@ -25,8 +25,8 @@
 #include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/experimental/detail/functors.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/ranges/range.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/range/range.cuh>
 
 #include <thrust/fill.h>
 #include <thrust/functional.h>

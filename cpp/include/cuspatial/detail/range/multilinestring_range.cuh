@@ -26,9 +26,9 @@
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/experimental/detail/functors.cuh>
-#include <cuspatial/experimental/ranges/multipoint_range.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/geometry_collection/multilinestring_ref.cuh>
+#include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <thrust/iterator/permutation_iterator.h>

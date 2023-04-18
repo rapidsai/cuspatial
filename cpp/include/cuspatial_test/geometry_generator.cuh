@@ -18,8 +18,8 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/ranges/multipolygon_range.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/range/multipolygon_range.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>

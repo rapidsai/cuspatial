@@ -17,7 +17,7 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/experimental/detail/ranges/enumerate_range.cuh>
+#include <cuspatial/detail/range/enumerate_range.cuh>
 #include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
@@ -347,4 +347,4 @@ auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/ranges/multilinestring_range.cuh>
+#include <cuspatial/detail/range/multilinestring_range.cuh>

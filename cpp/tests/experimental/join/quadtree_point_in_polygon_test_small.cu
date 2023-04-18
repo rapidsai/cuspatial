@@ -21,8 +21,8 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/point_quadtree.cuh>
 #include <cuspatial/experimental/polygon_bounding_boxes.cuh>
-#include <cuspatial/experimental/ranges/multipolygon_range.cuh>
 #include <cuspatial/experimental/spatial_join.cuh>
+#include <cuspatial/range/multipolygon_range.cuh>
 
 #include <gtest/gtest.h>
 #include <initializer_list>
@@ -34,8 +34,7 @@
  * fully tested.
  */
 template <typename T>
-struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {
-};
+struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 

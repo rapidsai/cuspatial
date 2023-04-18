@@ -17,8 +17,8 @@
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
 #include <cuspatial/experimental/spatial_join.cuh>
+#include <cuspatial/range/multilinestring_range.cuh>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>

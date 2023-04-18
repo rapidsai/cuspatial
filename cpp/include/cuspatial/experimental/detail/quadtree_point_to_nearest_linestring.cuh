@@ -20,7 +20,7 @@
 #include <cuspatial/experimental/detail/algorithm/point_linestring_distance.cuh>
 #include <cuspatial/experimental/detail/join/get_quad_and_local_point_indices.cuh>
 #include <cuspatial/experimental/point_quadtree.cuh>
-#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
+#include <cuspatial/range/multilinestring_range.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <rmm/device_uvector.hpp>
