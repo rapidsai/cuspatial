@@ -24,6 +24,7 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _false_series,
+    _is_complex,
 )
 from cuspatial.utils.column_utils import (
     contains_only_polygons,
@@ -107,9 +108,32 @@ class ContainsProperlyPredicate(
             pip_result = contains_properly(lhs, points, how="quadtree")
         else:
             pip_result = contains_properly(lhs, points, how="byte-limited")
-        breakpoint()
         op_result = ContainsOpResult(pip_result, points, point_indices)
         return self._postprocess(lhs, rhs, preprocessor_result, op_result)
+
+    def _return_unprocessed_result(self, lhs, op_result):
+        """Return the result of the basic predicate without any
+        postprocessing.
+        """
+        reindex_pip_result = self._reindex_allpairs(lhs, op_result)
+        # Postprocessing early termination. Basic requests, or allpairs
+        # requests do not do object reconstruction.
+        if self.config.allpairs:
+            return reindex_pip_result
+        elif self.config.mode == "basic_none":
+            final_result = cudf.Series(cp.repeat([True], len(lhs)))
+            final_result.loc[reindex_pip_result["point_index"]] = False
+            return final_result
+        elif self.config.mode == "basic_any":
+            final_result = _false_series(len(op_result.point_indices))
+            final_result.loc[reindex_pip_result["point_index"]] = True
+            return final_result
+        elif self.config.mode == "basic_all":
+            sizes = op_result.point_indices[1:] - op_result.point_indices[:-1]
+            result_sizes = reindex_pip_result["point_index"].value_counts()
+            final_result = _false_series(len(op_result.point_indices))
+            final_result.loc[sizes == result_sizes] = True
+            return final_result
 
     def _postprocess(self, lhs, rhs, preprocessor_result, op_result):
         # Downstream predicates inherit from ComplexGeometryPredicate
@@ -149,37 +173,22 @@ class ContainsProperlyPredicate(
             point index and the polygon index for each point in the
             polygon.
         """
-        reindex_pip_result = self._reindex_allpairs(lhs, op_result)
-        # Postprocessing early termination. Basic requests, or allpairs
-        # requests do not do object reconstruction.
-        if self.config.allpairs:
-            return reindex_pip_result
-        elif self.config.mode == "basic_none":
-            final_result = cudf.Series(cp.repeat([True], len(lhs)))
-            final_result.loc[reindex_pip_result["point_index"]] = False
-            return final_result
-        elif self.config.mode == "basic_any":
-            final_result = _false_series(len(op_result.point_indices))
-            final_result.loc[reindex_pip_result["point_index"]] = True
-            return final_result
-        elif self.config.mode == "basic_all":
-            sizes = op_result.point_indices[1:] - op_result.point_indices[:-1]
-            result_sizes = reindex_pip_result["point_index"].value_counts()
-            final_result = _false_series(len(op_result.point_indices))
-            final_result.loc[sizes == result_sizes] = True
-            return final_result
+        if self.config.mode != "full" or self.config.allpairs:
+            return self._return_unprocessed_result(lhs, op_result)
 
         if len(op_result.pip_result) == 0:
             return _false_series(len(lhs))
 
         # for each input pair i: result[i] =  true iff point[i] is
         # contained in at least one polygon of multipolygon[i].
-        # pairwise
-        postprocess_result = super()._postprocess_multi(
-            lhs, rhs, preprocessor_result, op_result
-        )
-        breakpoint()
-        return postprocess_result
+        if _is_complex(rhs):
+            return super()._postprocess_multi(
+                lhs, rhs, preprocessor_result, op_result
+            )
+        else:
+            return super()._postprocess_simple(
+                lhs, rhs, preprocessor_result, op_result
+            )
 
 
 class ContainsProperlyByIntersection(BinPred):

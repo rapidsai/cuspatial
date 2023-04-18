@@ -171,7 +171,6 @@ class ComplexGeometryPredicate(BinPred):
         allpairs_result = self._reindex_allpairs(lhs, op_result)
         if isinstance(allpairs_result, Series):
             return allpairs_result
-
         (hits, expected_count,) = _count_results_in_multipoint_geometries(
             point_indices, allpairs_result
         )
@@ -186,3 +185,18 @@ class ComplexGeometryPredicate(BinPred):
             result_df["rhs_index"][result_df["feature_in_polygon"]]
         ] = True
         return final_result
+
+    def _postprocess_simple(self, lhs, rhs, preprocessor_result, op_result):
+        allpairs_result = self._reindex_allpairs(lhs, op_result)
+        final_result = _false_series(len(rhs))
+        if len(lhs) == len(rhs):
+            matches = (
+                allpairs_result["polygon_index"]
+                == allpairs_result["point_index"]
+            )
+            polygon_indexes = allpairs_result["polygon_index"][matches]
+            final_result.loc[op_result.point_indices[polygon_indexes]] = True
+            return final_result
+        else:
+            final_result.loc[allpairs_result["polygon_index"]] = True
+            return final_result

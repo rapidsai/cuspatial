@@ -198,3 +198,14 @@ def _polygon_to_boundary(geoseries):
         rings,
         parts,
     )
+
+
+def _is_complex(geoseries):
+    """Returns True if the GeoSeries contains complex types."""
+    if len(geoseries.polygons.xy) > 0:
+        return True
+    if len(geoseries.lines.xy) > 0:
+        return True
+    if len(geoseries.multipoints.xy) > 0:
+        return True
+    return False
