@@ -52,23 +52,17 @@ class ContainsProperlyPredicate(
             Whether to compute all pairs of features in the left-hand and
             right-hand GeoSeries. If False, the feature will be compared in a
             1:1 fashion with the corresponding feature in the other GeoSeries.
+        mode: str
+            The mode to use for computing the predicate. The default is
+            "full", which computes true or false if the `.contains_properly`
+            predicate is satisfied. Other options include "basic_none",
+            "basic_any", "basic_all", and "basic_count".
         """
         super().__init__(**kwargs)
         self.config.allpairs = kwargs.get("allpairs", False)
         self.config.mode = kwargs.get("mode", "full")
 
     def _preprocess(self, lhs, rhs):
-        # Preprocess multi-geometries and complex geometries into
-        # the correct input type for the contains predicate.
-        # This is done by saving the shapes of multi-geometries,
-        # then converting them all to single geometries.
-        # Single geometries are converted from their original
-        # lhs and rhs types to the types needed for the contains predicate.
-
-        # point_indices: the indices of the points in the original
-        # geometry.
-        # geometry_offsets: the offsets of the multi-geometries in
-        # the original geometry.
         preprocessor_result = super()._preprocess_multi(lhs, rhs)
         return self._compute_predicate(lhs, rhs, preprocessor_result)
 
@@ -101,16 +95,6 @@ class ContainsProperlyPredicate(
         rhs: "GeoSeries",
         preprocessor_result: PreprocessorResult,
     ):
-        # _compute predicate no longer cares about preprocessor result
-        # because information is passed directly to the postprocessor.
-        # Creates an op_result and passes it and the preprocessor result
-        # to the postprocessor.
-
-        # Calls various _basic_predicate methods to compute the
-        # predicate.
-        # .contains calls .basic_contains_properly and also .basic_intersects
-        # in order to assemble boundary-exclusive contains with intersection
-        # results.
         """Compute the contains_properly relationship between two GeoSeries.
         A feature A contains another feature B if no points of B lie in the
         exterior of A, and at least one point of the interior of B lies in the
@@ -167,11 +151,6 @@ class ContainsProperlyPredicate(
             return reindex_pip_result["polygon_index"].value_counts()
 
     def _postprocess(self, lhs, rhs, preprocessor_result, op_result):
-        # Downstream predicates inherit from ComplexGeometryPredicate
-        # that implements
-        # point reconstruction for complex types separately.
-        # Early return if individual points are required for downstream
-        # predicates. Handle `any`, `all`, `none` modes.
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate.
 
