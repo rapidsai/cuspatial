@@ -1,9 +1,8 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-import cudf
-
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
+    ImpossiblePredicate,
     NotImplementedPredicate,
     PreprocessorResult,
 )
@@ -52,11 +51,6 @@ class WithinIntersectsPredicate(IntersectsPredicateBase):
         return intersects & ~equals
 
 
-class PointPointWithin(WithinPredicateBase):
-    def _postprocess(self, lhs, rhs, op_result):
-        return cudf.Series(op_result.result)
-
-
 class PointLineStringWithin(WithinIntersectsPredicate):
     def _preprocess(self, lhs, rhs):
         # Note the order of arguments is reversed.
@@ -100,7 +94,7 @@ class LineStringPolygonWithin(BinPred):
 
 
 DispatchDict = {
-    (Point, Point): PointPointWithin,
+    (Point, Point): ImpossiblePredicate,
     (Point, MultiPoint): WithinIntersectsPredicate,
     (Point, LineString): PointLineStringWithin,
     (Point, Polygon): PointPolygonWithin,
