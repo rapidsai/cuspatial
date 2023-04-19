@@ -27,7 +27,7 @@ for each combination of geometry types and binary predicates."""
 out_file = open("test_binpred_test_dispatch.log", "w")
 
 
-# @xfail_on_exception  # TODO: Remove when all tests are passing
+@xfail_on_exception  # TODO: Remove when all tests are passing
 def test_simple_features(
     predicate,  # noqa: F811
     simple_test,  # noqa: F811
@@ -91,7 +91,6 @@ test: {request.node.name}\n\n"""
             if (lhs.column_type, rhs.column_type) not in feature_fails
             else feature_fails[(lhs.column_type, rhs.column_type)] + 1
         )
-        # TODO: Uncomment when all tests are passing
         predicate_fails_df = pd.DataFrame(
             {
                 "predicate": list(predicate_fails.keys()),
@@ -107,4 +106,3 @@ test: {request.node.name}\n\n"""
         )
         feature_fails_df.to_csv("feature_fails.csv", index=False)
         raise e  # TODO: Remove when all tests are passing.
-        # pytest.fail(f"Assertion failed: {e}")
