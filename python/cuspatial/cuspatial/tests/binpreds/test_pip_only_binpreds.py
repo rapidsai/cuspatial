@@ -6,10 +6,10 @@ import cuspatial
 
 
 def _test(lhs, rhs, predicate):
-    cuspatiallhs = lhs.to_geopandas()
-    cuspatialrhs = rhs.to_geopandas()
+    gpdlhs = lhs.to_geopandas()
+    gpdrhs = rhs.to_geopandas()
     got = getattr(lhs, predicate)(rhs).values_host
-    expected = getattr(cuspatiallhs, predicate)(cuspatialrhs).values
+    expected = getattr(gpdlhs, predicate)(gpdrhs).values
     assert (got == expected).all()
 
 

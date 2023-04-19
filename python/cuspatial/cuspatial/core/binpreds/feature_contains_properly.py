@@ -146,11 +146,11 @@ class ContainsProperlyPredicate(
             return reindex_pip_result
         elif self.config.mode == "basic_none":
             final_result = cudf.Series(cp.repeat([True], len(lhs)))
-            final_result.loc[reindex_pip_result["polygon_index"]] = False
+            final_result.loc[reindex_pip_result["point_index"]] = False
             return final_result
         elif self.config.mode == "basic_any":
             final_result = _false_series(len(lhs))
-            final_result.loc[reindex_pip_result["polygon_index"]] = True
+            final_result.loc[reindex_pip_result["point_index"]] = True
             return final_result
         elif self.config.mode == "basic_all":
             sizes = (

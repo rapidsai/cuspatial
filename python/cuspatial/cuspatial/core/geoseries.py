@@ -166,16 +166,15 @@ class GeoSeries(cudf.Series):
     @property
     def sizes(self):
         if contains_only_polygons(self):
-            # TODO: It isn't clear how to return the sizes of polygons.
-            # Care will need to be taken for handling holes and multis.
-            return cudf.Series(
-                (
-                    self.polygons.ring_offset[1:]
-                    - self.polygons.ring_offset[:-1]
-                )
-                - 1
+            # The size of a polygon is the length of its exterior ring
+            # plus the lengths of its interior rings.
+            # The size of a multipolygon is the sum of all its polygons.
+            full_sizes = self.polygons.ring_offset.take(
+                self.polygons.part_offset.take(self.polygons.geometry_offset)
             )
+            return full_sizes[1:] - full_sizes[:-1] - 1
         elif contains_only_linestrings(self):
+            # Not supporting multilinestring yet
             return self.lines.part_offset[1:] - self.lines.part_offset[:-1]
         elif contains_only_multipoints(self):
             return (
@@ -183,7 +182,7 @@ class GeoSeries(cudf.Series):
                 - self.multipoints.geometry_offset[:-1]
             )
         elif contains_only_points(self):
-            return cp.repeat(1, len(self))
+            return cp.repeat(cp.array(1), len(self))
         else:
             if len(self) == 0:
                 return cudf.Series([0], dtype="int32")
@@ -1436,20 +1435,3 @@ class GeoSeries(cudf.Series):
         lhs = self
         rhs = _multipoints_from_geometry(other)
         return lhs.contains_properly(rhs, mode="basic_all")
-
-    def repeat(self, ntimes):
-        """Repeats each geometry in the GeoSeries ntimes.
-
-        Parameters
-        ----------
-        ntimes : int
-            The number of times to repeat each geometry.
-
-        Returns
-        -------
-        result : GeoSeries
-            A new GeoSeries with each geometry repeated ntimes.
-        """
-        return GeoSeries(
-            self._column.repeat(ntimes), index=self.index.repeat(ntimes)
-        )
