@@ -6,8 +6,8 @@ refer to these additional files for further documentation of libcuspatial best p
 * [Documentation Guide](DOCUMENTATION.md) for guidelines on documenting libcuspatial code.
 * [Testing Guide](TESTING.md) for guidelines on writing unit tests.
 * [Benchmarking Guide](BENCHMARKING.md) for guidelines on writing unit benchmarks.
-* [Refactoring Guide](REFACTORING_GUIDE.md) for guidelines on refactoring legacy column-based APIs
-                                            into header-only APIs.
+* [Header-only API Guide](HEADER_ONLY_API_GUIDE.md) for guidelines on the header-only API and
+  column-based API.
 
 # Overview
 
