@@ -19,12 +19,12 @@
 #include "distance_utils.cuh"
 
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/range/range.cuh>

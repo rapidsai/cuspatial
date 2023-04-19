@@ -16,9 +16,9 @@
 
 #pragma once
 
+#include <cuspatial/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
 
