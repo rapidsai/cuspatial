@@ -17,7 +17,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/pairwise_point_in_polygon.cuh>
+#include <cuspatial/point_in_polygon.cuh>
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <rmm/device_vector.hpp>
@@ -32,8 +32,7 @@ using namespace cuspatial;
 using namespace cuspatial::test;
 
 template <typename T>
-struct PairwisePointInPolygonTest : public ::testing::Test {
-};
+struct PairwisePointInPolygonTest : public ::testing::Test {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;
@@ -43,13 +42,13 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonOneRing)
 {
   using T                = TypeParam;
   auto point_list        = std::vector<std::vector<T>>{{-2.0, 0.0},
-                                                {2.0, 0.0},
-                                                {0.0, -2.0},
-                                                {0.0, 2.0},
-                                                {-0.5, 0.0},
-                                                {0.5, 0.0},
-                                                {0.0, -0.5},
-                                                {0.0, 0.5}};
+                                                       {2.0, 0.0},
+                                                       {0.0, -2.0},
+                                                       {0.0, 2.0},
+                                                       {-0.5, 0.0},
+                                                       {0.5, 0.0},
+                                                       {0.0, -0.5},
+                                                       {0.0, 0.5}};
   auto poly_offsets      = make_device_vector({0, 1});
   auto poly_ring_offsets = make_device_vector({0, 5});
   auto poly_point        = make_device_vector<vec_2d<T>>(
@@ -90,15 +89,15 @@ TYPED_TEST(PairwisePointInPolygonTest, TwoPolygonsOneRingEach)
   auto poly_offsets      = make_device_vector({0, 1, 2});
   auto poly_ring_offsets = make_device_vector({0, 5, 10});
   auto poly_point        = make_device_vector<vec_2d<T>>({{-1.0, -1.0},
-                                                   {-1.0, 1.0},
-                                                   {1.0, 1.0},
-                                                   {1.0, -1.0},
-                                                   {-1.0, -1.0},
-                                                   {0.0, 1.0},
-                                                   {1.0, 0.0},
-                                                   {0.0, -1.0},
-                                                   {-1.0, 0.0},
-                                                   {0.0, 1.0}});
+                                                          {-1.0, 1.0},
+                                                          {1.0, 1.0},
+                                                          {1.0, -1.0},
+                                                          {-1.0, -1.0},
+                                                          {0.0, 1.0},
+                                                          {1.0, 0.0},
+                                                          {0.0, -1.0},
+                                                          {-1.0, 0.0},
+                                                          {0.0, 1.0}});
 
   auto got      = rmm::device_vector<int32_t>(2);
   auto expected = std::vector<int>({false, false, false, false, true, true, true, true});
@@ -129,15 +128,15 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonTwoRings)
   auto poly_offsets      = make_device_vector({0, 1});
   auto poly_ring_offsets = make_device_vector({0, 5, 10});
   auto poly_point        = make_device_vector<vec_2d<T>>({{-1.0, -1.0},
-                                                   {1.0, -1.0},
-                                                   {1.0, 1.0},
-                                                   {-1.0, 1.0},
-                                                   {-1.0, -1.0},
-                                                   {-0.5, -0.5},
-                                                   {-0.5, 0.5},
-                                                   {0.5, 0.5},
-                                                   {0.5, -0.5},
-                                                   {-0.5, -0.5}});
+                                                          {1.0, -1.0},
+                                                          {1.0, 1.0},
+                                                          {-1.0, 1.0},
+                                                          {-1.0, -1.0},
+                                                          {-0.5, -0.5},
+                                                          {-0.5, 0.5},
+                                                          {0.5, 0.5},
+                                                          {0.5, -0.5},
+                                                          {-0.5, -0.5}});
 
   auto got      = rmm::device_vector<int32_t>(1);
   auto expected = std::vector<int>{0b0, 0b0, 0b1, 0b0, 0b1};
@@ -299,8 +298,7 @@ TYPED_TEST(PairwisePointInPolygonTest, 32PolygonSupport)
   EXPECT_EQ(ret, got.end());
 }
 
-struct PairwisePointInPolygonErrorTest : public PairwisePointInPolygonTest<double> {
-};
+struct PairwisePointInPolygonErrorTest : public PairwisePointInPolygonTest<double> {};
 
 TEST_F(PairwisePointInPolygonErrorTest, InsufficientPoints)
 {
