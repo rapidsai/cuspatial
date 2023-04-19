@@ -18,7 +18,7 @@
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
-#include <cuspatial/experimental/detail/find/find_and_combine_segment.cuh>
+#include <cuspatial/detail/find/find_and_combine_segment.cuh>
 #include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/range/range.cuh>

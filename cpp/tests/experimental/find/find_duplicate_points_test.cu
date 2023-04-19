@@ -21,7 +21,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_vector.hpp>
 
-#include <cuspatial/experimental/detail/find/find_duplicate_points.cuh>
+#include <cuspatial/detail/find/find_duplicate_points.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 
 using namespace cuspatial;

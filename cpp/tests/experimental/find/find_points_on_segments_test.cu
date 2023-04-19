@@ -21,7 +21,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_vector.hpp>
 
-#include <cuspatial/experimental/detail/find/find_points_on_segments.cuh>
+#include <cuspatial/detail/find/find_points_on_segments.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/range/range.cuh>
 

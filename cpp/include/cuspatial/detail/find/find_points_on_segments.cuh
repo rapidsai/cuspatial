@@ -33,6 +33,7 @@ namespace cuspatial {
 namespace detail {
 
 /**
+ * @internal
  * @brief Functor to find if the given point is on any of the segments in the same pair
  */
 template <typename MultiPointRange, typename OffsetsRange, typename SegmentsRange>
@@ -65,6 +66,7 @@ struct find_point_on_segment_functor {
 };
 
 /**
+ * @internal
  * @brief Given a multipoint and a set of segments, for each point, if the point is
  * on any of the segments, set the `mergeable_flag` of the point to `1`.
  */

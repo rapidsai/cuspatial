@@ -29,6 +29,7 @@ namespace cuspatial {
 namespace detail {
 
 /**
+ * @internal
  * @brief Kernel to merge segments, naive n^2 algorithm.
  */
 template <typename OffsetRange, typename SegmentRange, typename OutputIt>
