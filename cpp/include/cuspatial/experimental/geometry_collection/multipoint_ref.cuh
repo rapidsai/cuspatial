@@ -26,9 +26,9 @@ namespace cuspatial {
  */
 template <typename VecIterator>
 class multipoint_ref {
+ public:
   using point_t = iterator_value_type<VecIterator>;
 
- public:
   CUSPATIAL_HOST_DEVICE multipoint_ref(VecIterator begin, VecIterator end);
 
   /// Return iterator to the starting point of the multipoint.
