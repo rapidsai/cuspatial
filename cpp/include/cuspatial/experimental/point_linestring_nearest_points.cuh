@@ -100,4 +100,4 @@ OutputIt pairwise_point_linestring_nearest_points(
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/point_linestring_nearest_points.cuh>
+#include <cuspatial/detail/point_linestring_nearest_points.cuh>

@@ -17,8 +17,8 @@
 #pragma once
 
 #include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/experimental/detail/join/intersection.cuh>
-#include <cuspatial/experimental/detail/join/traversal.cuh>
+#include <cuspatial/detail/join/intersection.cuh>
+#include <cuspatial/detail/join/traversal.cuh>
 #include <cuspatial/experimental/point_quadtree.cuh>
 #include <cuspatial/traits.hpp>
 
@@ -189,6 +189,6 @@ quadtree_point_to_nearest_linestring(
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/quadtree_bbox_filtering.cuh>
-#include <cuspatial/experimental/detail/quadtree_point_in_polygon.cuh>
-#include <cuspatial/experimental/detail/quadtree_point_to_nearest_linestring.cuh>
+#include <cuspatial/detail/quadtree_bbox_filtering.cuh>
+#include <cuspatial/detail/quadtree_point_in_polygon.cuh>
+#include <cuspatial/detail/quadtree_point_to_nearest_linestring.cuh>

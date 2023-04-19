@@ -47,4 +47,4 @@ OutputIt pairwise_linestring_distance(MultiLinestringRange1 multilinestrings1,
                                       rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/linestring_distance.cuh>
+#include <cuspatial/detail/linestring_distance.cuh>

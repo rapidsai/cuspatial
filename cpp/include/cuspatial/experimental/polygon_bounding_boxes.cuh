@@ -79,4 +79,4 @@ BoundingBoxIterator polygon_bounding_boxes(PolygonOffsetIterator polygon_offsets
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/polygon_bounding_boxes.cuh>
+#include <cuspatial/detail/polygon_bounding_boxes.cuh>

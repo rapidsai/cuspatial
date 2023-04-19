@@ -102,4 +102,4 @@ OutputIt directed_hausdorff_distance(PointIt points_first,
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/hausdorff.cuh>
+#include <cuspatial/detail/hausdorff.cuh>

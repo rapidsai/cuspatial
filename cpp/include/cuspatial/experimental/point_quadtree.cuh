@@ -184,4 +184,4 @@ std::pair<rmm::device_uvector<uint32_t>, point_quadtree> quadtree_on_points(
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/point_quadtree.cuh>
+#include <cuspatial/detail/point_quadtree.cuh>

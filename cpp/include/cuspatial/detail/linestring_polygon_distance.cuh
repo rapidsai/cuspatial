@@ -20,10 +20,10 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/algorithm/is_point_in_polygon.cuh>
+#include <cuspatial/detail/functors.cuh>
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
-#include <cuspatial/experimental/detail/functors.cuh>
 #include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/range/range.cuh>

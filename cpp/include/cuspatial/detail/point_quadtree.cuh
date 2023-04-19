@@ -16,9 +16,9 @@
 
 #pragma once
 
+#include <cuspatial/detail/index/construction/phase_1.cuh>
+#include <cuspatial/detail/index/construction/phase_2.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/detail/indexing/construction/phase_1.cuh>
-#include <cuspatial/experimental/detail/indexing/construction/phase_2.cuh>
 #include <cuspatial/experimental/point_quadtree.cuh>
 
 #include <rmm/cuda_stream_view.hpp>

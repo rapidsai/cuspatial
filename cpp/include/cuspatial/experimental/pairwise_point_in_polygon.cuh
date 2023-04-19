@@ -109,4 +109,4 @@ OutputIt pairwise_point_in_polygon(Cart2dItA test_points_first,
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/pairwise_point_in_polygon.cuh>
+#include <cuspatial/detail/pairwise_point_in_polygon.cuh>

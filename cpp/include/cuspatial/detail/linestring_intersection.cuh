@@ -20,11 +20,11 @@
 #include <cuspatial/detail/find/find_and_combine_segment.cuh>
 #include <cuspatial/detail/find/find_duplicate_points.cuh>
 #include <cuspatial/detail/find/find_points_on_segments.cuh>
+#include <cuspatial/detail/linestring_intersection_count.cuh>
+#include <cuspatial/detail/linestring_intersection_with_duplicates.cuh>
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/detail/linestring_intersection_count.cuh>
-#include <cuspatial/experimental/detail/linestring_intersection_with_duplicates.cuh>
 #include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/range/range.cuh>
 #include <cuspatial/traits.hpp>

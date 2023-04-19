@@ -79,4 +79,4 @@ BoundingBoxOutputIt point_bounding_boxes(IdInputIt ids_first,
 
 }  // namespace cuspatial
 
-#include "detail/bounding_box.cuh"
+#include <cuspatial/detail/bounding_box.cuh>

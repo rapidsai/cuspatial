@@ -17,9 +17,9 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/detail/functors.cuh>
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/validation.hpp>
-#include <cuspatial/experimental/detail/functors.cuh>
 #include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/geometry_collection/multipolygon_ref.cuh>

@@ -76,4 +76,4 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/haversine.cuh>
+#include <cuspatial/detail/haversine.cuh>

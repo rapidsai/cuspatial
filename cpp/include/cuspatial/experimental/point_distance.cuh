@@ -38,4 +38,4 @@ OutputIt pairwise_point_distance(MultiPointArrayViewA multipoints1,
                                  rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/point_distance.cuh>
+#include <cuspatial/detail/point_distance.cuh>

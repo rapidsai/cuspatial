@@ -1,21 +1,21 @@
 # cuSpatial C++ API Refactoring Guide
 
 The original cuSpatial C++ API (libcuspatial) was designed to depend on RAPIDS libcudf and use
-its core data types, especially `cudf::column`. For users who do not also use libcudf or other 
-RAPIDS APIS, depending on libcudf could be a big barrier to adoption of libcuspatial. libcudf is 
+its core data types, especially `cudf::column`. For users who do not also use libcudf or other
+RAPIDS APIS, depending on libcudf could be a big barrier to adoption of libcuspatial. libcudf is
 a very large library and building it takes a lot of time.
 
-Therefore, we are developing a standalone libcuspatial C++ API that does not depend on libcudf. This 
+Therefore, we are developing a standalone libcuspatial C++ API that does not depend on libcudf. This
 is a header-only template API with an iterator-based interface. This has a number of advantages
 
   1. With a header-only API, users can include and build exactly what they use.
-  2. With a templated API, the API can be flexible to support a variety of basic data types, such 
+  2. With a templated API, the API can be flexible to support a variety of basic data types, such
      as float and double for positional data, and different integer sizes for indices.
   3. By templating on iterator types, cuSpatial algorithms can be fused with transformations of the
      input data, by using "fancy" iterators. Examples include transform iterators and counting
      iterators.
   4. Memory resources only need to be part of APIs that allocate temporary intermediate storage.
-     Output storage is allocated outside the API and an output iterator is passed as an argument. 
+     Output storage is allocated outside the API and an output iterator is passed as an argument.
 
 The main disadvantages of this type of API are
 
@@ -27,7 +27,7 @@ only libcuspatial API, we can avoid problem 1 and problem 2 for users of the leg
 
 ## Example API
 
-Following is an example iterator-based API for `cuspatial::haversine_distance`. (See below for 
+Following is an example iterator-based API for `cuspatial::haversine_distance`. (See below for
 discussion of API documentation.)
 
 ```c++
@@ -47,7 +47,7 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
 There are a few key points to notice.
 
   1. The API is very similar to STL algorithms such as `std::transform`.
-  2. All array inputs and outputs are iterator type templates. 
+  2. All array inputs and outputs are iterator type templates.
   3. Longitude/Latitude data is passed as array of structures, using the `cuspatial::vec_2d`
      type (include/cuspatial/vec_2d.hpp). This is enforced using a `static_assert` in the function
      body (discussed later).
@@ -60,7 +60,7 @@ There are a few key points to notice.
   7. The size of the input and output ranges in the example API are equal, so the start and end of
      only the A range is provided (`a_lonlat_first` and `a_lonlat_last`). This mirrors STL APIs.
   8. This API returns an iterator to the element past the last element written to the output. This
-     is inspired by `std::transform`, even though as with `transform`, many uses of 
+     is inspired by `std::transform`, even though as with `transform`, many uses of
      `haversine_distance` will not need this returned iterator.
   9. All APIs that run CUDA device code (including Thrust algorithms) or allocate memory take a CUDA
      stream on which to execute the device code and allocate memory.
@@ -103,7 +103,7 @@ Following is the (Doxygen) documentation for the above `cuspatial::haversine_dis
      * otherwise.
      * @pre `b_lonlat_first` may equal `distance_first`, but the range `[b_lonlat_first, b_lonlat_last)`
      * shall not overlap the range `[distance_first, distance_first + (b_lonlat_last - b_lonlat_last))
-     * otherwise. 
+     * otherwise.
      * @pre All iterators must have the same `Location` type, with  the same underlying floating-point
      * coordinate type (e.g. `cuspatial::vec_2d<float>`).
      *
@@ -119,13 +119,13 @@ Key points:
   2. All parameters and all template parameters are documented.
   3. States the C++ standard iterator concepts that must be implemented, and that iterators must be
      device-accessible.
-  4. Documents requirements as preconditions using `@pre`. 
+  4. Documents requirements as preconditions using `@pre`.
   5. Uses preconditions to explicitly document what input ranges are allowed to overlap.
   6. Documents the units of any inputs or outputs that have them.
 
 ## cuSpatial libcudf-based C++ API (legacy API)
 
-This is the existing API, unchanged by refactoring. Here is the existing 
+This is the existing API, unchanged by refactoring. Here is the existing
 `cuspatial::haversine_distance`:
 
 ```c++
@@ -142,9 +142,9 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
 ```
 
 key points:
-  1. All input data are `cudf::column_view`. This is a type-erased container so determining the 
+  1. All input data are `cudf::column_view`. This is a type-erased container so determining the
      type of data must be done at run time.
-  2. All inputs are arrays of scalars. Longitude and latitude are separate. 
+  2. All inputs are arrays of scalars. Longitude and latitude are separate.
   3. The output is a returned `unique_ptr<cudf::column>`.
   4. The output is allocated inside the function using the passed memory resource.
   5. The public API does not take a stream. There is a `detail` version of the API that takes a
@@ -154,33 +154,33 @@ key points:
 
 For now, libcuspatial APIs should be defined in a header file in the
 `cpp/include/cuspatial/experimental/` directory. Later, as we adopt the new API, we will rename
-the `experimental` directory. The API header should be named after the API. In the example, 
+the `experimental` directory. The API header should be named after the API. In the example,
 `haversine.hpp` defines the `cuspatial::haversine_distance` API.
 
 The implementation must also be in a header, but should be in the `cuspatial/experimental/detail`
-directory.  The implementation should be included from the API definition file, at the end of the 
+directory.  The implementation should be included from the API definition file, at the end of the
 file. Example:
 
 ```c++
 ... // declaration of API above this point
-#include <cuspatial/experimental/detail/haversine.hpp>
+#include <cuspatial/detail/haversine.hpp>
 ```
 
 ## Namespaces
 
 Public APIs are in the `cuspatial` namespace. Note that both the header-only API and the libcudf-
-based API can live in the same namespace, because they are non-ambiguous (very different 
+based API can live in the same namespace, because they are non-ambiguous (very different
 parameters).
 
 Implementation of the header-only API should be in a `cuspatial::detail` namespace.
 
 ## Implementation
 
-The main implementation should be in detail headers. 
+The main implementation should be in detail headers.
 
 ### Header-only API Implementation
 
-Because it is a statically typed API, the header-only implementation can be much simpler than the 
+Because it is a statically typed API, the header-only implementation can be much simpler than the
 libcudf-based API, which requires run-time type dispatching. In the case of `haversine_distance`, it is
 a simple matter of a few static asserts and dynamic expectation checks, followed by a call to
 `thrust::transform` with a custom transform functor.
@@ -216,17 +216,17 @@ OutputIt haversine_distance(LonLatItA a_lonlat_first,
 ```
 
 Note that we `static_assert` that the types of the iterator inputs match documented expectations.
-We also do a runtime check that the radius is positive. Finally we just call `thrust::transform`, 
+We also do a runtime check that the radius is positive. Finally we just call `thrust::transform`,
 passing it an instance of `haversine_distance_functor`, which is a function of two `vec_2d<T>`
 inputs that implements the Haversine distance formula.
 
 ### libcudf-based API Implementation
 
-The substance of the refactoring is making the libcudf-based API a wrapper around the header-only 
-API. This mostly involves replacing business logic implementation in the type-dispatched functor 
-with a call to the header-only API. We also need to convert disjoint latitude and longitude inputs 
+The substance of the refactoring is making the libcudf-based API a wrapper around the header-only
+API. This mostly involves replacing business logic implementation in the type-dispatched functor
+with a call to the header-only API. We also need to convert disjoint latitude and longitude inputs
 into `vec_2d<T>` structs. This is easily done using the `cuspatial::make_vec_2d_iterator` utility
-provided in `type_utils.hpp`. 
+provided in `type_utils.hpp`.
 
 So, to refactor the libcudf-based API, we remove the following code.
 
@@ -271,6 +271,6 @@ cuspatial::haversine_distance(lonlat_a,
 Existing libcudf-based API tests can mostly be left alone. New tests should be added to exercise
 the header-only API separately in case the libcudf-based API is removed.
 
-Note that tests, like the header-only API, should not depend on libcudf or libcudf_test. The 
+Note that tests, like the header-only API, should not depend on libcudf or libcudf_test. The
 cuDF-based API made the mistake of depending on libcudf_test, which results in breakages
 of cuSpatial sometimes when libcudf_test changes.

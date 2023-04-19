@@ -92,4 +92,4 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/linestring_intersection.cuh>
+#include <cuspatial/detail/linestring_intersection.cuh>

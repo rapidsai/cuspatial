@@ -16,9 +16,9 @@
 
 #include <cuspatial/detail/algorithm/point_linestring_distance.cuh>
 #include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/detail/join/get_quad_and_local_point_indices.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/detail/join/get_quad_and_local_point_indices.cuh>
 #include <cuspatial/experimental/point_quadtree.cuh>
 #include <cuspatial/range/multilinestring_range.cuh>
 #include <cuspatial/traits.hpp>

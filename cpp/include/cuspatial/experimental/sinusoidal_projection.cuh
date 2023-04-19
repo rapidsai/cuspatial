@@ -66,4 +66,4 @@ OutputIt sinusoidal_projection(InputIt lon_lat_first,
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/sinusoidal_projection.cuh>
+#include <cuspatial/detail/sinusoidal_projection.cuh>

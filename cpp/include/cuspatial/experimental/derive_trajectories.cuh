@@ -94,4 +94,4 @@ std::unique_ptr<rmm::device_uvector<OffsetType>> derive_trajectories(
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/derive_trajectories.cuh>
+#include <cuspatial/detail/derive_trajectories.cuh>

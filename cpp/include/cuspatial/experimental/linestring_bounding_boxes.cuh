@@ -70,4 +70,4 @@ BoundingBoxIterator linestring_bounding_boxes(
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/linestring_bounding_boxes.cuh>
+#include <cuspatial/detail/linestring_bounding_boxes.cuh>

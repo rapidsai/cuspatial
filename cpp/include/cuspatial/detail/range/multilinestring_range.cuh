@@ -23,9 +23,9 @@
 #include <thrust/pair.h>
 
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/detail/functors.cuh>
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/validation.hpp>
-#include <cuspatial/experimental/detail/functors.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/geometry_collection/multilinestring_ref.cuh>
 #include <cuspatial/range/multipoint_range.cuh>

@@ -112,4 +112,4 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/point_in_polygon.cuh>
+#include <cuspatial/detail/point_in_polygon.cuh>

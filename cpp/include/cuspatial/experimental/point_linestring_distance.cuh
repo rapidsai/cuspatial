@@ -44,4 +44,4 @@ OutputIt pairwise_point_linestring_distance(
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/point_linestring_distance.cuh>
+#include <cuspatial/detail/point_linestring_distance.cuh>

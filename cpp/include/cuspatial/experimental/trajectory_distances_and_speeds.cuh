@@ -73,4 +73,4 @@ OutputIt trajectory_distances_and_speeds(IndexT num_trajectories,
 
 }  // namespace cuspatial
 
-#include "detail/trajectory_distances_and_speeds.cuh"
+#include <cuspatial/detail/trajectory_distances_and_speeds.cuh>

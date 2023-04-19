@@ -45,4 +45,4 @@ OutputIt pairwise_linestring_polygon_distance(
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/linestring_polygon_distance.cuh>
+#include <cuspatial/detail/linestring_polygon_distance.cuh>

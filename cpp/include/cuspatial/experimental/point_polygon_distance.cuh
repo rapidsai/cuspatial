@@ -44,4 +44,4 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
                                          rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/point_polygon_distance.cuh>
+#include <cuspatial/detail/point_polygon_distance.cuh>

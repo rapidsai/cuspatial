@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuspatial/experimental/detail/indexing/construction/utilities.cuh>
+#include <cuspatial/detail/index/construction/utilities.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
