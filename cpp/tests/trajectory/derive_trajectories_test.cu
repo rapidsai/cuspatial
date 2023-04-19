@@ -18,8 +18,8 @@
 #include "trajectory_test_utils.cuh"
 
 #include <cuspatial/derive_trajectories.cuh>
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
@@ -37,8 +37,7 @@
 #include <cstdint>
 
 template <typename T>
-struct DeriveTrajectoriesTest : public ::testing::Test {
-};
+struct DeriveTrajectoriesTest : public ::testing::Test {};
 
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(DeriveTrajectoriesTest, TestTypes);

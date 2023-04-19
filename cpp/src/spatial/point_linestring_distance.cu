@@ -25,7 +25,6 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/point_linestring_distance.cuh>

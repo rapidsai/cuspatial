@@ -18,7 +18,6 @@
 #include "../utility/multi_geometry_dispatch.hpp"
 
 #include <cuspatial/column/geometry_column_view.hpp>
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>

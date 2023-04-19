@@ -16,7 +16,6 @@
 
 #include <cuspatial_test/vector_equality.hpp>
 
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
@@ -36,8 +35,7 @@ namespace cuspatial {
 namespace test {
 
 template <typename T>
-struct PairwisePointLinestringDistanceTest : public ::testing::Test {
-};
+struct PairwisePointLinestringDistanceTest : public ::testing::Test {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;

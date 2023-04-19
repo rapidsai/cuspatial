@@ -19,8 +19,8 @@
 
 #include <cuspatial_test/vector_equality.hpp>
 
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/trajectory.hpp>
 #include <cuspatial/trajectory_distances_and_speeds.cuh>
 
