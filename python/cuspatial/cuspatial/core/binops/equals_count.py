@@ -10,8 +10,8 @@ from cuspatial.utils.column_utils import contains_only_multipoints
 
 
 def pairwise_multipoint_equals_count(lhs: GeoSeries, rhs: GeoSeries):
-    """Compute the number of points in each multipoint in the lhs that are
-    equal to points in the corresponding multipoint in the rhs.
+    """Compute the number of points in each multipoint in the lhs that exist
+    in the corresponding multipoint in the rhs.
 
     For each point in a multipoint in the lhs, search the
     corresponding multipoint in the rhs for a point that is equal to the
