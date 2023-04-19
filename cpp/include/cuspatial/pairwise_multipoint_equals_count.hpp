@@ -30,9 +30,9 @@ namespace cuspatial {
  * @addtogroup spatial
  * @brief Count the number of equal points in pairs of multipoints..
  *
- * Given two columns of multipoints, returns a column containing the count
- * of points in each multipoint from `lhs` that exist in the corresponding 
- * multipoint in `rhs`.
+ * Given two columns of multipoints, returns a column containing the
+ * count of points in each multipoint from `lhs` that exist in the
+ * corresponding multipoint in `rhs`.
  *
  * @param lhs Geometry column of multipoints with interleaved coordinates
  * @param rhs Geometry column of multipoints with interleaved coordinates
