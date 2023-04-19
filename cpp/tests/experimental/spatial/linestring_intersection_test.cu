@@ -21,9 +21,9 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/linestring_intersection.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/linestring_intersection.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <cudf/column/column.hpp>

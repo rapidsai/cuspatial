@@ -19,15 +19,14 @@
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/point_quadtree.cuh>
-#include <cuspatial/experimental/spatial_join.cuh>
+#include <cuspatial/point_quadtree.cuh>
+#include <cuspatial/spatial_join.cuh>
 
 // Note: the detailed correctness test of the join_quadtree_and_bounding_boxes() function is covered
 // by the quadtree_point_in_polygon_test_small.cu test file.
 
 template <typename T>
-struct JoinQuadtreeAndBoundingBoxesErrorTest : public cuspatial::test::BaseFixture {
-};
+struct JoinQuadtreeAndBoundingBoxesErrorTest : public cuspatial::test::BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 

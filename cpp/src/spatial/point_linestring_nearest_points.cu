@@ -17,9 +17,9 @@
 #include "../utility/double_boolean_dispatch.hpp"
 #include "../utility/iterator.hpp"
 
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/point_linestring_nearest_points.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/point_linestring_nearest_points.cuh>
 #include <cuspatial/point_linestring_nearest_points.hpp>
 
 #include <cudf/column/column_factories.hpp>

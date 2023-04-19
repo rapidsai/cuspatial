@@ -18,8 +18,8 @@
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/experimental/point_polygon_distance.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/point_polygon_distance.cuh>
 #include <cuspatial/range/range.cuh>
 
 #include <rmm/cuda_stream_view.hpp>

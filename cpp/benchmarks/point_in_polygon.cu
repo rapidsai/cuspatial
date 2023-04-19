@@ -17,8 +17,8 @@
 #include <benchmarks/fixture/rmm_pool_raii.hpp>
 #include <nvbench/nvbench.cuh>
 
-#include <cuspatial/experimental/point_in_polygon.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/point_in_polygon.cuh>
 
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>

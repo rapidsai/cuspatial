@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <cuspatial/experimental/bounding_box.cuh>
-#include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/bounding_box.cuh>
+#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <rmm/cuda_stream_view.hpp>

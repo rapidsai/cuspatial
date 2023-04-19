@@ -18,9 +18,9 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/point_linestring_distance.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/point_linestring_distance.cuh>
 #include <cuspatial/range/multilinestring_range.cuh>
 #include <cuspatial/range/multipoint_range.cuh>
 

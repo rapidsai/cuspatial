@@ -153,11 +153,11 @@ key points:
 ## File Structure
 
 For now, libcuspatial APIs should be defined in a header file in the
-`cpp/include/cuspatial/experimental/` directory. Later, as we adopt the new API, we will rename
+`cpp/include/cuspatial/` directory. Later, as we adopt the new API, we will rename
 the `experimental` directory. The API header should be named after the API. In the example,
 `haversine.hpp` defines the `cuspatial::haversine_distance` API.
 
-The implementation must also be in a header, but should be in the `cuspatial/experimental/detail`
+The implementation must also be in a header, but should be in the `cuspatial/detail`
 directory.  The implementation should be included from the API definition file, at the end of the
 file. Example:
 

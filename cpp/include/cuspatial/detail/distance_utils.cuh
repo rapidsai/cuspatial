@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/detail/utility/zero_data.cuh>
-#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <rmm/cuda_stream_view.hpp>

@@ -19,7 +19,7 @@
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/join/intersection.cuh>
 #include <cuspatial/detail/join/traversal.cuh>
-#include <cuspatial/experimental/point_quadtree.cuh>
+#include <cuspatial/point_quadtree.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <rmm/device_uvector.hpp>

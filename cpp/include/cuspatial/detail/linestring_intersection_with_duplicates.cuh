@@ -19,9 +19,9 @@
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/range/range.cuh>
 
 #include <rmm/cuda_stream_view.hpp>

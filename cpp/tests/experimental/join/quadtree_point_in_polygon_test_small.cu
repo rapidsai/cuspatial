@@ -19,10 +19,10 @@
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/point_quadtree.cuh>
-#include <cuspatial/experimental/polygon_bounding_boxes.cuh>
-#include <cuspatial/experimental/spatial_join.cuh>
+#include <cuspatial/point_quadtree.cuh>
+#include <cuspatial/polygon_bounding_boxes.cuh>
 #include <cuspatial/range/multipolygon_range.cuh>
+#include <cuspatial/spatial_join.cuh>
 
 #include <gtest/gtest.h>
 #include <initializer_list>

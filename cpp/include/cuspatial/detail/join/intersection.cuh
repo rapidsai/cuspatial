@@ -17,8 +17,8 @@
 #pragma once
 
 #include <cuspatial/detail/utility/z_order.cuh>
-#include <cuspatial/experimental/point_quadtree.cuh>
 #include <cuspatial/geometry/box.hpp>
+#include <cuspatial/point_quadtree.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>

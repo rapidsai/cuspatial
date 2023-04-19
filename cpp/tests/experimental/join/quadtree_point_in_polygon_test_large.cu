@@ -21,10 +21,10 @@
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/point_in_polygon.cuh>
-#include <cuspatial/experimental/polygon_bounding_boxes.cuh>
-#include <cuspatial/experimental/spatial_join.cuh>
 #include <cuspatial/geometry/box.hpp>
+#include <cuspatial/point_in_polygon.cuh>
+#include <cuspatial/polygon_bounding_boxes.cuh>
+#include <cuspatial/spatial_join.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>

@@ -19,8 +19,8 @@
 
 #include <cuspatial/detail/linestring_intersection_with_duplicates.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/iterator_factory.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/range/range.cuh>
 #include <cuspatial/traits.hpp>
 

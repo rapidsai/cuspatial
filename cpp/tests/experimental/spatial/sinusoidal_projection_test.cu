@@ -16,7 +16,7 @@
 
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/sinusoidal_projection.cuh>
+#include <cuspatial/sinusoidal_projection.cuh>
 #include <cuspatial_test/vector_equality.hpp>
 
 #include <rmm/device_vector.hpp>

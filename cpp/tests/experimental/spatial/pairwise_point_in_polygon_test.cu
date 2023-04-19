@@ -15,9 +15,9 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/pairwise_point_in_polygon.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/pairwise_point_in_polygon.cuh>
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <rmm/device_vector.hpp>
