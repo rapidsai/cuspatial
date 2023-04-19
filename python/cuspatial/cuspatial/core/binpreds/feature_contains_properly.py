@@ -118,10 +118,13 @@ class ContainsProperlyPredicate(
         """Return the result of the basic predicate without any
         postprocessing.
         """
+        breakpoint()
         reindex_pip_result = self._reindex_allpairs(lhs, op_result)
         if len(reindex_pip_result) == 0:
             if self.config.mode == "basic_count":
                 return cudf.Series(cp.zeros(len(lhs), dtype="int32"))
+            elif self.config.mode == "basic_none":
+                return cudf.Series(cp.repeat(cp.array(True), len(lhs)))
             else:
                 return _false_series(len(lhs))
         # Postprocessing early termination. Basic requests, or allpairs
@@ -129,7 +132,7 @@ class ContainsProperlyPredicate(
         if self.config.allpairs:
             return reindex_pip_result
         elif self.config.mode == "basic_none":
-            final_result = cudf.Series(cp.repeat([True], len(lhs)))
+            final_result = cudf.Series(cp.repeat(cp.array(True), len(lhs)))
             final_result.loc[reindex_pip_result["point_index"]] = False
             return final_result
         elif self.config.mode == "basic_any":
