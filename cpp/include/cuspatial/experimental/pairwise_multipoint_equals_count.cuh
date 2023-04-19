@@ -47,8 +47,9 @@ namespace cuspatial {
  * rhs: { { {0, 0}, {2, 2}, {1, 1} }, { {2, 2}, {0, 0}, {1, 1} }, { {1, 1} } }
  * count: { 1, 3, 0 }
  *
- * @note All input iterators must have a `value_type` of `cuspatial::vec_2d<T>`
- * and the output iterator must be able to accept for storage values of type
+ * @note All input iterators must conform to the specification defined by
+ * `multipoint_range.cuh` and the output iterator must be able to accept for
+ * storage values of type
  * `uint32_t`.
  *
  * @param[in]  lhs_first multipoint_range of first array of multipoints
