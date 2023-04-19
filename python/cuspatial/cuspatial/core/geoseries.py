@@ -28,13 +28,19 @@ from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.core.binpreds.binpred_dispatch import (
     CONTAINS_DISPATCH,
+    CONTAINS_PROPERLY_DISPATCH,
     COVERS_DISPATCH,
     CROSSES_DISPATCH,
     DISJOINT_DISPATCH,
     EQUALS_DISPATCH,
     INTERSECTS_DISPATCH,
     OVERLAPS_DISPATCH,
+    TOUCHES_DISPATCH,
     WITHIN_DISPATCH,
+)
+from cuspatial.utils.binpred_utils import (
+    _linestrings_from_geometry,
+    _multipoints_from_geometry,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -155,6 +161,35 @@ class GeoSeries(cudf.Series):
             raise TypeError(
                 "GeoSeries must contain only Points, MultiPoints, Lines, or "
                 "Polygons to return point indices."
+            )
+
+    @property
+    def sizes(self):
+        if contains_only_polygons(self):
+            # TODO: It isn't clear how to return the sizes of polygons.
+            # Care will need to be taken for handling holes and multis.
+            return cudf.Series(
+                (
+                    self.polygons.ring_offset[1:]
+                    - self.polygons.ring_offset[:-1]
+                )
+                - 1
+            )
+        elif contains_only_linestrings(self):
+            return self.lines.part_offset[1:] - self.lines.part_offset[:-1]
+        elif contains_only_multipoints(self):
+            return (
+                self.multipoints.geometry_offset[1:]
+                - self.multipoints.geometry_offset[:-1]
+            )
+        elif contains_only_points(self):
+            return cp.repeat(1, len(self))
+        else:
+            if len(self) == 0:
+                return cudf.Series([0], dtype="int32")
+            raise TypeError(
+                "GeoSeries must contain only Points, MultiPoints, Lines, or "
+                "Polygons to return sizes."
             )
 
     class GeoColumnAccessor:
@@ -661,7 +696,8 @@ class GeoSeries(cudf.Series):
         """
         return cls(
             GeoColumn._from_multipoints_xy(
-                as_column(multipoints_xy), as_column(geometry_offset)
+                as_column(multipoints_xy),
+                as_column(geometry_offset, dtype="int32"),
             )
         )
 
@@ -944,7 +980,60 @@ class GeoSeries(cudf.Series):
             self.index = cudf_series.index
             return None
 
-    def contains_properly(self, other, align=False, allpairs=False):
+    def contains(self, other, align=False, allpairs=False, mode="full"):
+        """Returns a `Series` of `dtype('bool')` with value `True` for each
+        aligned geometry that contains _other_.
+
+        Compute from a GeoSeries of points and a GeoSeries of polygons which
+        points are contained within the corresponding polygon. Polygon A
+        contains Point B if B is within the interior or on the boundary of A.
+
+        If `allpairs=False`, the result will be a `Series` of `dtype('bool')`.
+        If `allpairs=True`, the result will be a `DataFrame` containing two
+        columns, `point_indices` and `polygon_indices`, each of which is a
+        `Series` of `dtype('int32')`. The `point_indices` `Series` contains
+        the indices of the points in the right GeoSeries, and the
+        `polygon_indices` `Series` contains the indices of the polygons in the
+        left GeoSeries.
+
+        Parameters
+        ----------
+        other : GeoSeries
+        align : bool, default False
+            If True, the two GeoSeries are aligned before performing the
+            operation. If False, the operation is performed on the
+            unaligned GeoSeries. If the two GeoSeries have different
+            lengths, the result will be a `Series` of `dtype('bool')`.
+        allpairs : bool, default False
+            If True, the result will be a `DataFrame` containing two
+            columns, `point_indices` and `polygon_indices`, each of which is a
+            `Series` of `dtype('int32')`. The `point_indices` `Series` contains
+            the indices of the points in the right GeoSeries, and the
+            `polygon_indices` `Series` contains the indices of the polygons in
+            the left GeoSeries.
+        mode : str, default "full"
+            If "full", the result will be a `Series` of `dtype('bool')` with
+            value `True` for each aligned geometry that contains _other_.
+            If "intersects", the result will be a `Series` of `dtype('bool')`
+            with value `True` for each aligned geometry that contains _other_
+            or intersects _other_.
+
+        Returns
+        -------
+        Series or DataFrame
+            A `Series` of `dtype('bool')` with value `True` for each aligned
+            geometry that contains _other_. If `allpairs=True`, the result
+            will be a `DataFrame` containing two columns, `point_indices` and
+            `polygon_indices`, each of which is a `Series` of `dtype('int32')`.
+        """
+        predicate = CONTAINS_DISPATCH[(self.column_type, other.column_type)](
+            align=align, allpairs=allpairs, mode=mode
+        )
+        return predicate(self, other)
+
+    def contains_properly(
+        self, other, align=False, allpairs=False, mode="full"
+    ):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that contains _other_.
 
@@ -1037,9 +1126,9 @@ class GeoSeries(cudf.Series):
             `point_indices` and `polygon_indices`, each of which is a
             `Series` of `dtype('int32')` in the case of `allpairs=True`.
         """
-        predicate = CONTAINS_DISPATCH[(self.column_type, other.column_type)](
-            align=align, allpairs=allpairs
-        )
+        predicate = CONTAINS_PROPERLY_DISPATCH[
+            (self.column_type, other.column_type)
+        ](align=align, allpairs=allpairs, mode=mode)
         return predicate(self, other)
 
     def geom_equals(self, other, align=True):
@@ -1240,3 +1329,127 @@ class GeoSeries(cudf.Series):
             align=align
         )
         return predicate(self, other)
+
+    def touches(self, other, align=True):
+        """Returns True for all aligned geometries that touch other, else
+        False.
+
+        Geometries touch if they have at least one point in common, but their
+        interiors do not intersect.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each geometry
+            touches the corresponding geometry in the input."""
+        predicate = TOUCHES_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
+
+    def _basic_equals(self, other):
+        from cuspatial.core.binops.equals_count import (
+            pairwise_multipoint_equals_count,
+        )
+
+        lhs = _multipoints_from_geometry(self)
+        rhs = _multipoints_from_geometry(other)
+        result = pairwise_multipoint_equals_count(lhs, rhs)
+        return result > 0
+
+    def _basic_equals_all(self, other):
+        from cuspatial.core.binops.equals_count import (
+            pairwise_multipoint_equals_count,
+        )
+
+        lhs = _multipoints_from_geometry(self)
+        rhs = _multipoints_from_geometry(other)
+        result = pairwise_multipoint_equals_count(lhs, rhs)
+        sizes = (
+            rhs.multipoints.geometry_offset[1:]
+            - rhs.multipoints.geometry_offset[:-1]
+        )
+        return result == sizes
+
+    def _basic_equals_count(self, other):
+        from cuspatial.core.binops.equals_count import (
+            pairwise_multipoint_equals_count,
+        )
+
+        lhs = _multipoints_from_geometry(self)
+        rhs = _multipoints_from_geometry(other)
+        result = pairwise_multipoint_equals_count(lhs, rhs)
+        return result
+
+    def _basic_intersects_pli(self, other):
+        from cuspatial.core.binops.intersection import (
+            pairwise_linestring_intersection,
+        )
+
+        lhs = _linestrings_from_geometry(self)
+        rhs = _linestrings_from_geometry(other)
+        return pairwise_linestring_intersection(lhs, rhs)
+
+    def _basic_intersects_count(self, other):
+        result = self._basic_intersects_pli(other)
+        # Flatten result into list of sizes
+        is_offsets = cudf.Series(result[0])
+        is_sizes = is_offsets[1:].reset_index(drop=True) - is_offsets[
+            :-1
+        ].reset_index(drop=True)
+        return is_sizes
+
+    def _basic_intersects(self, other):
+        is_sizes = self._basic_intersects_count(other)
+        return is_sizes > 0
+
+    def _basic_intersects_at_point_only(self, other):
+        return self._basic_intersects_count(other) == 1
+
+    def _basic_intersects_through(self, other):
+        is_sizes = self._basic_intersects_count(other)
+        return is_sizes > 1
+
+    def _basic_contains_count(self, other):
+        lhs = self
+        rhs = _multipoints_from_geometry(other)
+        return lhs.contains_properly(rhs, mode="basic_count")
+
+    def _basic_contains_none(self, other):
+        lhs = self
+        rhs = _multipoints_from_geometry(other)
+        return lhs.contains_properly(rhs, mode="basic_none")
+
+    def _basic_contains_any(self, other):
+        lhs = self
+        rhs = _multipoints_from_geometry(other)
+        return lhs.contains_properly(rhs, mode="basic_any")
+
+    def _basic_contains_all(self, other):
+        lhs = self
+        rhs = _multipoints_from_geometry(other)
+        return lhs.contains_properly(rhs, mode="basic_all")
+
+    def repeat(self, ntimes):
+        """Repeats each geometry in the GeoSeries ntimes.
+
+        Parameters
+        ----------
+        ntimes : int
+            The number of times to repeat each geometry.
+
+        Returns
+        -------
+        result : GeoSeries
+            A new GeoSeries with each geometry repeated ntimes.
+        """
+        return GeoSeries(
+            self._column.repeat(ntimes), index=self.index.repeat(ntimes)
+        )
