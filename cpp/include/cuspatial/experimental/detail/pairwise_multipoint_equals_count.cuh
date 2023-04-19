@@ -73,7 +73,7 @@ OutputIt pairwise_multipoint_equals_count(MultiPointRangeA lhs,
   static_assert(is_same_floating_point<T, typename MultiPointRangeB::point_t::value_type>(),
                 "Origin and input must have the same base floating point type.");
 
-  CUSPATIAL_EXPECTS(lhs.size() == rhs.size(), "Input should have the same number of pairs.");
+  CUSPATIAL_EXPECTS(lhs.size() == rhs.size(), "lhs and rhs inputs should have the same size.");
 
   if (lhs.size() == 0) return output;
 
