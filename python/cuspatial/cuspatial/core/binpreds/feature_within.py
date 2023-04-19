@@ -4,7 +4,6 @@ from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ImpossiblePredicate,
     NotImplementedPredicate,
-    PreprocessorResult,
 )
 from cuspatial.core.binpreds.complex_geometry_predicate import (
     ComplexGeometryPredicate,
@@ -20,7 +19,6 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
-    _linestrings_from_geometry,
 )
 
 
@@ -39,13 +37,6 @@ class WithinPredicateBase(EqualsPredicateBase):
 
 class WithinIntersectsPredicate(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        ls_lhs = _linestrings_from_geometry(lhs)
-        ls_rhs = _linestrings_from_geometry(rhs)
-        return self._compute_predicate(
-            lhs, rhs, PreprocessorResult(ls_lhs, ls_rhs)
-        )
-
-    def _compute_predicate(self, lhs, rhs, preprocessor_result):
         intersects = rhs._basic_intersects(lhs)
         equals = rhs._basic_equals(lhs)
         return intersects & ~equals
