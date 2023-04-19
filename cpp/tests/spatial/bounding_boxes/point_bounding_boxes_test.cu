@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "../trajectory/trajectory_test_utils.cuh"
+#include "../../trajectory/trajectory_test_utils.cuh"
 
 #include <cuspatial_test/vector_equality.hpp>
 
