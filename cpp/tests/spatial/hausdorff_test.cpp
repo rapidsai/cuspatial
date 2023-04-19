@@ -22,6 +22,7 @@
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/column_wrapper.hpp>
 #include <cudf_test/cudf_gtest.hpp>
+#include <cudf_test/table_utilities.hpp>
 #include <cudf_test/type_lists.hpp>
 
 #include <thrust/iterator/constant_iterator.h>
@@ -49,11 +50,14 @@ TYPED_TEST(HausdorffTest, Empty)
   auto y             = cudf::test::fixed_width_column_wrapper<T>({});
   auto space_offsets = cudf::test::fixed_width_column_wrapper<uint32_t>({});
 
-  auto expected = cudf::test::fixed_width_column_wrapper<T>({});
+  auto expected_col  = cudf::test::fixed_width_column_wrapper<T>({});
+  auto expected_view = cudf::table_view{};
 
-  auto actual = cuspatial::directed_hausdorff_distance(x, y, space_offsets, this->mr());
+  auto [actual_col, actual_view] =
+    cuspatial::directed_hausdorff_distance(x, y, space_offsets, this->mr());
 
-  expect_columns_equivalent(expected, actual->view(), verbosity);
+  expect_columns_equivalent(expected_col, actual_col->view(), verbosity);
+  CUDF_TEST_EXPECT_TABLES_EQUIVALENT(expected_view, actual_view);
 }
 
 TYPED_TEST(HausdorffTest, MoreSpacesThanPoints)

@@ -457,6 +457,117 @@ TYPED_TEST(LinestringIntersectionTest, TwoPairMultiWithDuplicatePoints)
                      expected);
 }
 
+TYPED_TEST(LinestringIntersectionTest, ThreePairIdenticalInputsNoRing)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+
+  using index_t = typename linestring_intersection_result<T, std::size_t>::index_t;
+  using types_t = typename linestring_intersection_result<T, std::size_t>::types_t;
+
+  auto multilinestrings1 = make_multilinestring_array(
+    {0, 1, 2, 3},
+    {0, 2, 4, 6},
+    {P{0.0, 0.0}, P{1.0, 1.0}, P{0.0, 0.0}, P{1.0, 1.0}, P{0.0, 0.0}, P{1.0, 1.0}});
+
+  auto multilinestrings2 = make_multilinestring_array<T>({0, 1, 2, 3},
+                                                         {0, 4, 8, 12},
+                                                         {{0, 0},
+                                                          {0, 1},
+                                                          {1, 1},
+                                                          {1, 0},
+
+                                                          {0, 0},
+                                                          {0, 1},
+                                                          {1, 1},
+                                                          {1, 0},
+
+                                                          {0, 0},
+                                                          {0, 1},
+                                                          {1, 1},
+                                                          {1, 0}});
+
+  auto expected = make_linestring_intersection_result<T, index_t, types_t>({0, 2, 4, 6},
+                                                                           {0, 0, 0, 0, 0, 0},
+                                                                           {0, 1, 2, 3, 4, 5},
+                                                                           {
+                                                                             {0.0, 0.0},
+                                                                             {1.0, 1.0},
+                                                                             {0.0, 0.0},
+                                                                             {1.0, 1.0},
+                                                                             {0.0, 0.0},
+                                                                             {1.0, 1.0},
+                                                                           },
+                                                                           {},
+                                                                           {0, 0, 0, 0, 0, 0},
+                                                                           {0, 0, 0, 0, 0, 0},
+                                                                           {0, 0, 0, 0, 0, 0},
+                                                                           {0, 1, 0, 1, 0, 1},
+                                                                           this->stream(),
+                                                                           this->mr());
+
+  CUSPATIAL_RUN_TEST(this->template run_single_test<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     expected);
+}
+
+TYPED_TEST(LinestringIntersectionTest, ThreePairIdenticalInputsHasRing)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+
+  using index_t = typename linestring_intersection_result<T, std::size_t>::index_t;
+  using types_t = typename linestring_intersection_result<T, std::size_t>::types_t;
+
+  auto multilinestrings1 = make_multilinestring_array(
+    {0, 1, 2, 3},
+    {0, 2, 4, 6},
+    {P{0.0, 0.0}, P{1.0, 1.0}, P{0.0, 0.0}, P{1.0, 1.0}, P{0.0, 0.0}, P{1.0, 1.0}});
+
+  auto multilinestrings2 = make_multilinestring_array<T>({0, 1, 2, 3},
+                                                         {0, 5, 10, 15},
+                                                         {{0, 0},
+                                                          {0, 1},
+                                                          {1, 1},
+                                                          {1, 0},
+                                                          {0, 0},
+                                                          {0, 0},
+                                                          {0, 1},
+                                                          {1, 1},
+                                                          {1, 0},
+                                                          {0, 0},
+                                                          {0, 0},
+                                                          {0, 1},
+                                                          {1, 1},
+                                                          {1, 0},
+                                                          {0, 0}});
+
+  auto expected = make_linestring_intersection_result<T, index_t, types_t>({0, 2, 4, 6},
+                                                                           {0, 0, 0, 0, 0, 0},
+                                                                           {0, 1, 2, 3, 4, 5},
+                                                                           {
+                                                                             {0.0, 0.0},
+                                                                             {1.0, 1.0},
+                                                                             {0.0, 0.0},
+                                                                             {1.0, 1.0},
+                                                                             {0.0, 0.0},
+                                                                             {1.0, 1.0},
+                                                                           },
+                                                                           {},
+                                                                           {0, 0, 0, 0, 0, 0},
+                                                                           {0, 0, 0, 0, 0, 0},
+                                                                           {0, 0, 0, 0, 0, 0},
+                                                                           {0, 1, 0, 1, 0, 1},
+                                                                           this->stream(),
+                                                                           this->mr());
+
+  CUSPATIAL_RUN_TEST(this->template run_single_test<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     expected);
+}
+
 TYPED_TEST(LinestringIntersectionTest, ManyPairsIntegrated)
 {
   using T = TypeParam;
