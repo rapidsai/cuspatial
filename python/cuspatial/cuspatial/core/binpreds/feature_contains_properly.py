@@ -209,14 +209,7 @@ class ContainsProperlyByIntersection(BinPred):
     """
 
     def _preprocess(self, lhs, rhs):
-        from cuspatial.core.binpreds.binpred_dispatch import (
-            INTERSECTS_DISPATCH,
-        )
-
-        predicate = INTERSECTS_DISPATCH[(lhs.column_type, rhs.column_type)](
-            align=self.config.align
-        )
-        return predicate(lhs, rhs)
+        return lhs._basic_intersects(rhs)
 
 
 class LineStringLineStringContainsProperly(BinPred):
