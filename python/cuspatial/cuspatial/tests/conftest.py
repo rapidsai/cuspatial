@@ -315,3 +315,27 @@ def naturalearth_cities():
 @pytest.fixture
 def naturalearth_lowres():
     return gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
+
+
+@pytest.fixture(scope="session")
+def predicate_passes():
+    data = {}
+    return data
+
+
+@pytest.fixture(scope="session")
+def predicate_fails():
+    data = {}
+    return data
+
+
+@pytest.fixture(scope="session")
+def feature_passes():
+    data = {}
+    return data
+
+
+@pytest.fixture(scope="session")
+def feature_fails():
+    data = {}
+    return data
