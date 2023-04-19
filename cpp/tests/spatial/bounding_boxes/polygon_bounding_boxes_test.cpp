@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+#include <cuspatial/bounding_boxes.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/polygon_bounding_box.hpp>
 
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
@@ -24,8 +24,7 @@
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/column_wrapper.hpp>
 
-struct PolygonBoundingBoxErrorTest : public ::testing::Test {
-};
+struct PolygonBoundingBoxErrorTest : public ::testing::Test {};
 
 using T = float;
 

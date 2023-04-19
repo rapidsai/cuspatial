@@ -18,8 +18,8 @@
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
+#include <cuspatial/bounding_boxes.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/linestring_bounding_boxes.cuh>
 #include <cuspatial/point_quadtree.cuh>
 #include <cuspatial/range/multilinestring_range.cuh>
 #include <cuspatial/spatial_join.cuh>
@@ -27,8 +27,7 @@
 #include <type_traits>
 
 template <typename T>
-struct QuadtreePointToLinestringTestSmall : public cuspatial::test::BaseFixture {
-};
+struct QuadtreePointToLinestringTestSmall : public cuspatial::test::BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 

@@ -18,7 +18,7 @@
 
 #include <cuspatial_test/vector_equality.hpp>
 
-#include <cuspatial/bounding_box.cuh>
+#include <cuspatial/bounding_boxes.cuh>
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/geometry/box.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
