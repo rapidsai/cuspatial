@@ -491,12 +491,9 @@ def object_dispatch(name_list):
 
 
 type_dispatch = {
-    """A dictionary of test cases for each geometry type combination.
-    Still needs MultiPoint."""(
-        Point, Point
-    ): object_dispatch(
-        point_point_dispatch_list
-    ),
+    # A dictionary of test cases for each geometry type combination.
+    # Still needs MultiPoint.
+    (Point, Point): object_dispatch(point_point_dispatch_list),
     (Point, LineString): object_dispatch(point_linestring_dispatch_list),
     (Point, Polygon): object_dispatch(point_polygon_dispatch_list),
     (LineString, LineString): object_dispatch(
