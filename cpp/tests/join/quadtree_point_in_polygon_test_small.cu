@@ -34,7 +34,8 @@
  * fully tested.
  */
 template <typename T>
-struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {};
+struct PIPRefineTestSmall : public cuspatial::test::BaseFixture {
+};
 
 using TestTypes = ::testing::Types<float, double>;
 

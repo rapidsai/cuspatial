@@ -50,13 +50,13 @@ TYPED_TEST_CASE(PointInPolygonTest, TestTypes);
 TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
 {
   auto test_point        = this->make_device_points({{-2.0, 0.0},
-                                                     {2.0, 0.0},
-                                                     {0.0, -2.0},
-                                                     {0.0, 2.0},
-                                                     {-0.5, 0.0},
-                                                     {0.5, 0.0},
-                                                     {0.0, -0.5},
-                                                     {0.0, 0.5}});
+                                              {2.0, 0.0},
+                                              {0.0, -2.0},
+                                              {0.0, 2.0},
+                                              {-0.5, 0.0},
+                                              {0.5, 0.0},
+                                              {0.0, -0.5},
+                                              {0.0, 0.5}});
   auto poly_offsets      = this->make_device_offsets({0, 1});
   auto poly_ring_offsets = this->make_device_offsets({0, 5});
   auto poly_point =
@@ -87,13 +87,13 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
 TYPED_TEST(PointInPolygonTest, OnePolygonOneRingUnclosed)
 {
   auto test_point        = this->make_device_points({{-2.0, 0.0},
-                                                     {2.0, 0.0},
-                                                     {0.0, -2.0},
-                                                     {0.0, 2.0},
-                                                     {-0.5, 0.0},
-                                                     {0.5, 0.0},
-                                                     {0.0, -0.5},
-                                                     {0.0, 0.5}});
+                                              {2.0, 0.0},
+                                              {0.0, -2.0},
+                                              {0.0, 2.0},
+                                              {-0.5, 0.0},
+                                              {0.5, 0.0},
+                                              {0.0, -0.5},
+                                              {0.0, 0.5}});
   auto poly_offsets      = this->make_device_offsets({0, 1});
   auto poly_ring_offsets = this->make_device_offsets({0, 4});
   auto poly_point = this->make_device_points({{-1.0, -1.0}, {1.0, -1.0}, {1.0, 0.0}, {1.0, 1.0}});
@@ -129,15 +129,15 @@ TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
   auto poly_offsets      = this->make_device_offsets({0, 1, 2});
   auto poly_ring_offsets = this->make_device_offsets({0, 5, 10});
   auto poly_point        = this->make_device_points({{-1.0, -1.0},
-                                                     {-1.0, 1.0},
-                                                     {1.0, 1.0},
-                                                     {1.0, -1.0},
-                                                     {-1.0, -1.0},
-                                                     {0.0, 1.0},
-                                                     {1.0, 0.0},
-                                                     {0.0, -1.0},
-                                                     {-1.0, 0.0},
-                                                     {0.0, 1.0}});
+                                              {-1.0, 1.0},
+                                              {1.0, 1.0},
+                                              {1.0, -1.0},
+                                              {-1.0, -1.0},
+                                              {0.0, 1.0},
+                                              {1.0, 0.0},
+                                              {0.0, -1.0},
+                                              {-1.0, 0.0},
+                                              {0.0, 1.0}});
 
   auto got      = rmm::device_vector<int32_t>(test_point.size());
   auto expected = std::vector<int32_t>({0b00, 0b00, 0b00, 0b00, 0b11, 0b11, 0b11, 0b11});
@@ -163,15 +163,15 @@ TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
   auto poly_offsets      = this->make_device_offsets({0, 2});
   auto poly_ring_offsets = this->make_device_offsets({0, 5, 10});
   auto poly_point        = this->make_device_points({{-1.0, -1.0},
-                                                     {1.0, -1.0},
-                                                     {1.0, 1.0},
-                                                     {-1.0, 1.0},
-                                                     {-1.0, -1.0},
-                                                     {-0.5, -0.5},
-                                                     {-0.5, 0.5},
-                                                     {0.5, 0.5},
-                                                     {0.5, -0.5},
-                                                     {-0.5, -0.5}});
+                                              {1.0, -1.0},
+                                              {1.0, 1.0},
+                                              {-1.0, 1.0},
+                                              {-1.0, -1.0},
+                                              {-0.5, -0.5},
+                                              {-0.5, 0.5},
+                                              {0.5, 0.5},
+                                              {0.5, -0.5},
+                                              {-0.5, -0.5}});
 
   auto got      = rmm::device_vector<int32_t>(test_point.size());
   auto expected = std::vector<int32_t>{0b0, 0b0, 0b1, 0b0, 0b1};
@@ -323,7 +323,8 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
   EXPECT_EQ(ret, got.end());
 }
 
-struct PointInPolygonErrorTest : public PointInPolygonTest<double> {};
+struct PointInPolygonErrorTest : public PointInPolygonTest<double> {
+};
 
 TYPED_TEST(PointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
 {

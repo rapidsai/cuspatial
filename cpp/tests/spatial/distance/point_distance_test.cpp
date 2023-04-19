@@ -32,7 +32,8 @@ using namespace cudf;
 using namespace cudf::test;
 
 template <typename T>
-struct PairwisePointDistanceTest : public ::testing::Test {};
+struct PairwisePointDistanceTest : public ::testing::Test {
+};
 
 using TestTypes = ::testing::Types<float, double>;
 
@@ -106,7 +107,8 @@ TYPED_TEST(PairwisePointDistanceTest, MultiToMultiEmpty)
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
 
-struct PairwisePointDistanceTestThrow : public ::testing::Test {};
+struct PairwisePointDistanceTestThrow : public ::testing::Test {
+};
 
 TEST_F(PairwisePointDistanceTestThrow, SizeMismatch)
 {

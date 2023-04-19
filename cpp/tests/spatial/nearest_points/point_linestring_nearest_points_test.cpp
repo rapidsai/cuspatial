@@ -30,7 +30,8 @@ using namespace cudf;
 using namespace cudf::test;
 
 template <typename T>
-struct PairwisePointLinestringNearestPointsTest : public ::testing::Test {};
+struct PairwisePointLinestringNearestPointsTest : public ::testing::Test {
+};
 
 using TestTypes = ::testing::Types<float, double>;
 
@@ -133,7 +134,8 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, MultiPointMultiLineString)
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect_nearest_points, *nearest_points);
 }
 
-struct PairwisePointLinestringNearestPointsThrowTest : public ::testing::Test {};
+struct PairwisePointLinestringNearestPointsThrowTest : public ::testing::Test {
+};
 
 TEST_F(PairwisePointLinestringNearestPointsThrowTest, OddNumberOfCoordinates)
 {
