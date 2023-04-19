@@ -216,7 +216,7 @@ class ContainsProperlyPredicate(
                 lhs, rhs, preprocessor_result, op_result
             )
         else:
-            return super()._postprocess_simple(
+            return super()._postprocess_points(
                 lhs, rhs, preprocessor_result, op_result
             )
 

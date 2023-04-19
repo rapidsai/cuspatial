@@ -22,31 +22,11 @@ GeoSeries = TypeVar("GeoSeries")
 
 class ContainsPredicateBase(ComplexGeometryPredicate):
     def __init__(self, **kwargs):
-        """`ContainsProperlyPredicateBase` constructor.
-
-        Parameters
-        ----------
-        allpairs: bool
-            Whether to compute all pairs of features in the left-hand and
-            right-hand GeoSeries. If False, the feature will be compared in a
-            1:1 fashion with the corresponding feature in the other GeoSeries.
-        """
         super().__init__(**kwargs)
         self.config.allpairs = kwargs.get("allpairs", False)
         self.config.mode = kwargs.get("mode", "full")
 
     def _preprocess(self, lhs, rhs):
-        # Preprocess multi-geometries and complex geometries into
-        # the correct input type for the contains predicate.
-        # This is done by saving the shapes of multi-geometries,
-        # then converting them all to single geometries.
-        # Single geometries are converted from their original
-        # lhs and rhs types to the types needed for the contains predicate.
-
-        # point_indices: the indices of the points in the original
-        # geometry.
-        # geometry_offsets: the offsets of the multi-geometries in
-        # the original geometry.
         preprocessor_result = super()._preprocess_multi(lhs, rhs)
         return self._compute_predicate(lhs, rhs, preprocessor_result)
 
@@ -56,17 +36,12 @@ class ContainsPredicateBase(ComplexGeometryPredicate):
         intersects = lhs._basic_intersects_count(rhs_points).reset_index(
             drop=True
         )
-        # TODO: Need to handle multipolygon case. The [0] below ignores all
-        # but the first polygon in a multipolygon.
         # TODO: Need better point counting in intersection.
         return contains + intersects >= rhs.sizes
 
 
 class ContainsPredicate(ContainsPredicateBase):
     def _compute_results(self, lhs, rhs, preprocessor_result):
-        # Compute the contains predicate for the given lhs and rhs.
-        # lhs and rhs are both cudf.Series of shapely geometries.
-        # Returns a ContainsOpResult object.
         return lhs._contains(rhs)
 
 
@@ -77,9 +52,6 @@ class PointPointContains(ContainsPredicateBase):
 
 class LineStringMultiPointContainsPredicate(ContainsPredicateBase):
     def _compute_results(self, lhs, rhs, preprocessor_result):
-        # Compute the contains predicate for the given lhs and rhs.
-        # lhs and rhs are both cudf.Series of shapely geometries.
-        # Returns a ContainsOpResult object.
         return lhs._linestring_multipoint_contains(rhs)
 
 

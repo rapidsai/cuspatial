@@ -26,12 +26,6 @@ from cuspatial.utils.column_utils import (
 
 class ComplexGeometryPredicate(BinPred):
     def _preprocess_multi(self, lhs, rhs):
-        # Breaks down complex geometries into their constituent parts.
-        # Passes a tuple o the preprocessed geometries and a tuple of
-        # the indices of the points in the original geometry.
-        # This is used by the postprocessor to reconstruct the original
-        # geometry.
-        # Child classes should not implement this method.
         """Flatten any rhs into only its points xy array. This is necessary
         because the basic predicate for contains, point-in-polygon,
         only accepts points.
@@ -161,16 +155,35 @@ class ComplexGeometryPredicate(BinPred):
         return allpairs_result
 
     def _postprocess_multi(self, lhs, rhs, preprocessor_result, op_result):
-        # Doesn't use op_result, but uses preprocessor_result to
-        # reconstruct the original geometry.
-        # Child classes should call this method to reconstruct the
-        # original geometry.
+        """Reconstruct the original geometry from the result of the
+        contains_properly call.
 
-        # Complex geometry postprocessor
+        Parameters
+        ----------
+        lhs : GeoSeries
+            The left-hand side of the binary predicate.
+        rhs : GeoSeries
+            The right-hand side of the binary predicate.
+        preprocessor_result : PreprocessorResult
+            The result of the preprocessor.
+        op_result : ContainsProperlyOpResult
+            The result of the contains_properly call.
+
+        Returns
+        -------
+        cudf.Series
+            A boolean series indicating whether each feature in the
+            right-hand GeoSeries satisfies the requirements of the point-
+            in-polygon basic predicate with its corresponding feature in the
+            left-hand GeoSeries."""
+
         point_indices = preprocessor_result.point_indices
         allpairs_result = self._reindex_allpairs(lhs, op_result)
         if isinstance(allpairs_result, Series):
             return allpairs_result
+        # Hits is the number of calculated points in each polygon
+        # Expected count is the sizes of the features in the right-hand
+        # GeoSeries
         (hits, expected_count,) = _count_results_in_multipoint_geometries(
             point_indices, allpairs_result
         )
@@ -186,7 +199,10 @@ class ComplexGeometryPredicate(BinPred):
         ] = True
         return final_result
 
-    def _postprocess_simple(self, lhs, rhs, preprocessor_result, op_result):
+    def _postprocess_points(self, lhs, rhs, preprocessor_result, op_result):
+        """Reconstruct the original geometry from the result of the
+        contains_properly call. Used when the rhs is naturally points.
+        """
         allpairs_result = self._reindex_allpairs(lhs, op_result)
         final_result = _false_series(len(rhs))
         if len(lhs) == len(rhs):
