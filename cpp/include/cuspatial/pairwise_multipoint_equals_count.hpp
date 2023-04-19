@@ -28,7 +28,7 @@ namespace cuspatial {
 
 /**
  * @addtogroup spatial
- * @brief Compute the number of points within pairs of multipoints that are equal.
+ * @brief Count the number of equal points in pairs of multipoints..
  *
  * Given two columns of multipoint arrays, returns a column containing the count
  * of points in each multipoint from `lhs` that are equal to a point in the
