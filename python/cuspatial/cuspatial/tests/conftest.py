@@ -319,23 +319,27 @@ def naturalearth_lowres():
 
 @pytest.fixture(scope="session")
 def predicate_passes():
+    """Used by test_binpred_test_dispatch.py to store test results."""
     data = {}
     return data
 
 
 @pytest.fixture(scope="session")
 def predicate_fails():
+    """Used by test_binpred_test_dispatch.py to store test results."""
     data = {}
     return data
 
 
 @pytest.fixture(scope="session")
 def feature_passes():
+    """Used by test_binpred_test_dispatch.py to store test results."""
     data = {}
     return data
 
 
 @pytest.fixture(scope="session")
 def feature_fails():
+    """Used by test_binpred_test_dispatch.py to store test results."""
     data = {}
     return data

@@ -21,9 +21,7 @@ def xfail_on_exception(func):
     return wrapper
 
 
-"""Parameterized test fixture that runs a binary predicate test
-for each combination of geometry types and binary predicates."""
-
+# In the below file, all failing tests are recorded with visualizations.
 out_file = open("test_binpred_test_dispatch.log", "w")
 
 
@@ -37,6 +35,42 @@ def test_simple_features(
     feature_fails,
     request,
 ):
+    """Parameterized test fixture that runs a binary predicate test
+    for each combination of geometry types and binary predicates.
+
+    Uses four fixtures from `conftest.py` to store the number of times
+    each binary predicate has passed and failed, and the number of times
+    each combination of geometry types has passed and failed. These
+    results are saved to CSV files after each test.
+
+    Uses the @xfail_on_exception decorator to mark a test as xfailed
+    if an exception is thrown. This is a temporary measure to allow
+    the test suite to run to completion while we work on fixing the
+    failing tests.
+
+    Parameters
+    ----------
+    predicate : str
+        The name of the binary predicate to test.
+    simple_test : tuple
+        A tuple containing the name of the test, a docstring that
+        describes the test, and the left and right geometry objects.
+    predicate_passes : dict
+        A dictionary fixture containing the number of times each binary
+        predicate has passed.
+    predicate_fails : dict
+        A dictionary fixture containing the number of times each binary
+        predicate has failed.
+    feature_passes : dict
+        A dictionary fixture containing the number of times each combination
+        of geometry types has passed.
+    feature_fails : dict
+        A dictionary fixture containing the number of times each combination
+        of geometry types has failed.
+    request : pytest.FixtureRequest
+        The pytest request object. Used to print the test name in
+        diagnostic output.
+    """
     try:
         (lhs, rhs) = simple_test[2], simple_test[3]
         gpdlhs = lhs.to_geopandas()
@@ -46,7 +80,10 @@ def test_simple_features(
         gpd_pred_fn = getattr(gpdlhs, predicate)
         expected = gpd_pred_fn(gpdrhs)
         assert (got.values_host == expected.values).all()
+
+        # The test is complete, the rest is just logging.
         try:
+            # The test passed, store the results.
             predicate_passes[predicate] = (
                 1
                 if predicate not in predicate_passes
@@ -71,10 +108,10 @@ def test_simple_features(
                 }
             )
             passes_df.to_csv("feature_passes.csv", index=False)
-            print(passes_df)
         except Exception as e:
             raise ValueError(e)
     except Exception as e:
+        # The test failed, store the results.
         out_file.write(
             f"""{predicate},
 ------------
@@ -105,4 +142,4 @@ test: {request.node.name}\n\n"""
             }
         )
         feature_fails_df.to_csv("feature_fails.csv", index=False)
-        raise e  # TODO: Remove when all tests are passing.
+        raise e

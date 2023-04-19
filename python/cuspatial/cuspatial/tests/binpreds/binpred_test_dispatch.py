@@ -11,12 +11,10 @@ import cuspatial
 of geometry types and binary predicates. The tests are generated
 using the fixtures defined in this file. The fixtures are combined
 in the test function in `test_binpreds_test_dispatch.py` to make
-a Tuple: (predicate, feature-name, feature-lhs, feature-rhs). The
-feature-name is not used in the tests but is useful for debugging.
+a Tuple: (feature-name, feature-description, feature-lhs,
+feature-rhs). The feature-name and feature-descriptions are not used
+in the test but are used for development and debugging.
 """
-
-
-"""The collection of all supported binary predicates"""
 
 
 @pytest.fixture(
@@ -33,13 +31,14 @@ feature-name is not used in the tests but is useful for debugging.
     ]
 )
 def predicate(request):
+    """The collection of all supported binary predicates"""
     return request.param
 
 
 """The fundamental set of tests. This section is dispatched based
 on the feature type. Each feature pairing has a specific set of
 comparisons that need to be performed to cover the entire test
-space. This section will be contains specific feature representations
+space. This section contains specific feature representations
 that cover all possible geometric combinations."""
 
 
@@ -116,6 +115,17 @@ features = {
     """,
         LineString([(0.0, 0.0), (0.0, 1.0)]),
         LineString([(0.0, 0.0), (1.0, 0.0)]),
+    ),
+    "linestring-linestring-touch-interior": (
+        """
+    x   x
+    |  /
+    | /
+    |/
+    x---x
+    """,
+        LineString([(0.0, 1.0), (0.0, 0.0), (1.0, 0.0)]),
+        LineString([(0.0, 0.0), (1.0, 1.0)]),
     ),
     "linestring-linestring-touch-edge": (
         """
@@ -475,12 +485,18 @@ polygon_polygon_dispatch_list = [
 
 
 def object_dispatch(name_list):
+    """Generate a list of test cases for a given set of test names."""
     for name in name_list:
         yield (name, features[name][0], features[name][1], features[name][2])
 
 
 type_dispatch = {
-    (Point, Point): object_dispatch(point_point_dispatch_list),
+    """A dictionary of test cases for each geometry type combination.
+    Still needs MultiPoint."""(
+        Point, Point
+    ): object_dispatch(
+        point_point_dispatch_list
+    ),
     (Point, LineString): object_dispatch(point_linestring_dispatch_list),
     (Point, Polygon): object_dispatch(point_polygon_dispatch_list),
     (LineString, LineString): object_dispatch(
@@ -492,6 +508,7 @@ type_dispatch = {
 
 
 def simple_test_dispatch():
+    """Generates a list of test cases for each geometry type combination."""
     for types in type_dispatch:
         generator = type_dispatch[types]
         for test_name, test_description, lhs, rhs in generator:
@@ -517,4 +534,5 @@ def simple_test_dispatch():
 
 @pytest.fixture(params=simple_test_dispatch())
 def simple_test(request):
+    """Generates a unique test case for each geometry type combination."""
     return request.param
