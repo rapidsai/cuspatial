@@ -31,7 +31,8 @@ template <typename T, typename R = T>
 using wrapper = fixed_width_column_wrapper<T, R>;
 
 template <typename T>
-struct PairwisePointInPolygonTest : public BaseFixture {};
+struct PairwisePointInPolygonTest : public BaseFixture {
+};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = FloatingPointTypes;
@@ -59,7 +60,8 @@ TYPED_TEST(PairwisePointInPolygonTest, Empty)
 }
 
 template <typename T>
-struct PairwisePointInPolygonUnsupportedTypesTest : public BaseFixture {};
+struct PairwisePointInPolygonUnsupportedTypesTest : public BaseFixture {
+};
 
 using UnsupportedTestTypes = RemoveIf<ContainedIn<TestTypes>, NumericTypes>;
 TYPED_TEST_CASE(PairwisePointInPolygonUnsupportedTypesTest, UnsupportedTestTypes);
@@ -82,7 +84,8 @@ TYPED_TEST(PairwisePointInPolygonUnsupportedTypesTest, UnsupportedPointType)
 }
 
 template <typename T>
-struct PairwisePointInPolygonUnsupportedChronoTypesTest : public BaseFixture {};
+struct PairwisePointInPolygonUnsupportedChronoTypesTest : public BaseFixture {
+};
 
 TYPED_TEST_CASE(PairwisePointInPolygonUnsupportedChronoTypesTest, ChronoTypes);
 
@@ -104,7 +107,8 @@ TYPED_TEST(PairwisePointInPolygonUnsupportedChronoTypesTest, UnsupportedPointChr
     cuspatial::logic_error);
 }
 
-struct PairwisePointInPolygonErrorTest : public BaseFixture {};
+struct PairwisePointInPolygonErrorTest : public BaseFixture {
+};
 
 TEST_F(PairwisePointInPolygonErrorTest, MismatchTestPointXYLength)
 {

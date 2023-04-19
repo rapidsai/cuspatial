@@ -22,7 +22,8 @@
 
 #include <cudf_test/column_wrapper.hpp>
 
-struct LinestringBoundingBoxErrorTest : public ::testing::Test {};
+struct LinestringBoundingBoxErrorTest : public ::testing::Test {
+};
 
 using T = float;
 
