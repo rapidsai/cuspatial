@@ -27,11 +27,8 @@ namespace cuspatial {
 /**
  * @brief Compute the number of multipoint pairs that are equal.
  *
- * Given two arrays of multipoints, each represented by a vector of vec_2ds, and
- * a vector of counts, this function computes the number of multipoint pairs
- * that are equal.
- *
- * Counts the number of points in the lhs that are contained in the rhs.
+ * Given two ranges of multipoints, this function counts points in the left-hand
+ * multipoint that exist in the corresponding right-hand multipoint.
  *
  * @example
  *
