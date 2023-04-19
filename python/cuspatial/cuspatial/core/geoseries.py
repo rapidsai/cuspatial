@@ -1016,21 +1016,25 @@ class GeoSeries(cudf.Series):
         `polygon_indices` `Series` contains the indices of the polygons in the
         left GeoSeries.
 
+        Notes
+        -----
+        `allpairs=True` excludes geometries that contain points in the
+        boundary of A.
+
         Parameters
         ----------
         other : GeoSeries
         align : bool, default False
             If True, the two GeoSeries are aligned before performing the
             operation. If False, the operation is performed on the
-            unaligned GeoSeries. If the two GeoSeries have different
-            lengths, the result will be a `Series` of `dtype('bool')`.
+            unaligned GeoSeries.
         allpairs : bool, default False
             If True, the result will be a `DataFrame` containing two
             columns, `point_indices` and `polygon_indices`, each of which is a
             `Series` of `dtype('int32')`. The `point_indices` `Series` contains
             the indices of the points in the right GeoSeries, and the
             `polygon_indices` `Series` contains the indices of the polygons in
-            the left GeoSeries.
+            the left GeoSeries. Excludes boundary points.
         mode : str, default "full"
             If "full", the result will be a `Series` of `dtype('bool')` with
             value `True` for each aligned geometry that contains _other_.
@@ -1375,6 +1379,8 @@ class GeoSeries(cudf.Series):
         return predicate(self, other)
 
     def _basic_equals(self, other):
+        """Utility method that returns True if any point in the lhs geometry
+        is equal to a point in the rhs geometry."""
         from cuspatial.core.binops.equals_count import (
             pairwise_multipoint_equals_count,
         )
@@ -1385,6 +1391,8 @@ class GeoSeries(cudf.Series):
         return result > 0
 
     def _basic_equals_all(self, other):
+        """Utility method that returns True if all points in the lhs geometry
+        are equal to points in the rhs geometry."""
         from cuspatial.core.binops.equals_count import (
             pairwise_multipoint_equals_count,
         )
@@ -1399,6 +1407,8 @@ class GeoSeries(cudf.Series):
         return result == sizes
 
     def _basic_equals_count(self, other):
+        """Utility method that returns the number of points in the lhs geometry
+        that are equal to a point in the rhs geometry."""
         from cuspatial.core.binops.equals_count import (
             pairwise_multipoint_equals_count,
         )
@@ -1409,6 +1419,8 @@ class GeoSeries(cudf.Series):
         return result
 
     def _basic_intersects_pli(self, other):
+        """Utility method that returns the original results of
+        `pairwise_linestring_intersection`."""
         from cuspatial.core.binops.intersection import (
             pairwise_linestring_intersection,
         )
@@ -1418,6 +1430,8 @@ class GeoSeries(cudf.Series):
         return pairwise_linestring_intersection(lhs, rhs)
 
     def _basic_intersects_count(self, other):
+        """Utility method that returns the number of points in the lhs geometry
+        that intersect with the rhs geometry."""
         result = self._basic_intersects_pli(other)
         # Flatten result into list of sizes
         is_offsets = cudf.Series(result[0])
@@ -1427,32 +1441,48 @@ class GeoSeries(cudf.Series):
         return is_sizes
 
     def _basic_intersects(self, other):
+        """Utility method that returns True if any point in the lhs geometry
+        intersects with the rhs geometry."""
         is_sizes = self._basic_intersects_count(other)
         return is_sizes > 0
 
     def _basic_intersects_at_point_only(self, other):
+        """Utility method that returns True if only a single point in the lhs
+        geometry intersects with the rhs geometry."""
         return self._basic_intersects_count(other) == 1
 
     def _basic_intersects_through(self, other):
+        """Utility method that returns True if at least two points in the lhs
+        geometry intersect with the rhs geometry."""
         is_sizes = self._basic_intersects_count(other)
         return is_sizes > 1
 
     def _basic_contains_count(self, other):
+        """Utility method that returns the number of points in the lhs geometry
+        that are contained_properly in the rhs geometry.
+        """
         lhs = self
         rhs = _multipoints_from_geometry(other)
         return lhs.contains_properly(rhs, mode="basic_count")
 
     def _basic_contains_none(self, other):
+        """Utility method that returns True if none of the points in the lhs
+        geometry are contained_properly in the rhs geometry."""
         lhs = self
         rhs = _multipoints_from_geometry(other)
         return lhs.contains_properly(rhs, mode="basic_none")
 
     def _basic_contains_any(self, other):
+        """Utility method that returns True if any point in the lhs geometry
+        is contained_properly in the rhs geometry."""
         lhs = self
         rhs = _multipoints_from_geometry(other)
         return lhs.contains_properly(rhs, mode="basic_any")
 
     def _basic_contains_all(self, other):
+        """Utililty method that returns True if all points in the lhs geometry
+        are contained_properly in the rhs geometry. Equivalent to the public
+        `.contains_properly call."""
         lhs = self
         rhs = _multipoints_from_geometry(other)
         return lhs.contains_properly(rhs, mode="basic_all")
