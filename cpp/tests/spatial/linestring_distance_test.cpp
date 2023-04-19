@@ -34,11 +34,9 @@ template <typename T>
 using wrapper = fixed_width_column_wrapper<T>;
 
 template <typename T>
-struct PairwiseLinestringDistanceTest : public BaseFixture {
-};
+struct PairwiseLinestringDistanceTest : public BaseFixture {};
 
-struct PairwiseLinestringDistanceTestUntyped : public BaseFixture {
-};
+struct PairwiseLinestringDistanceTestUntyped : public BaseFixture {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = FloatingPointTypes;

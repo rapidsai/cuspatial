@@ -37,8 +37,7 @@
 #include <cstdint>
 
 template <typename T>
-struct DeriveTrajectoriesTest : public ::testing::Test {
-};
+struct DeriveTrajectoriesTest : public ::testing::Test {};
 
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(DeriveTrajectoriesTest, TestTypes);
