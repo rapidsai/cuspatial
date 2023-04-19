@@ -16,8 +16,8 @@
 
 #include <cuspatial_test/vector_equality.hpp>
 
+#include <cuspatial/distance/haversine.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/haversine.cuh>
 
 #include <rmm/device_vector.hpp>
 
@@ -26,8 +26,7 @@
 #include <gtest/gtest.h>
 
 template <typename T>
-struct HaversineTest : public ::testing::Test {
-};
+struct HaversineTest : public ::testing::Test {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;

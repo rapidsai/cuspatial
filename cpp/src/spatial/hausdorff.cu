@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+#include <cuspatial/distance/hausdorff.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/hausdorff.cuh>
 #include <cuspatial/iterator_factory.cuh>
 
 #include <cudf/column/column.hpp>

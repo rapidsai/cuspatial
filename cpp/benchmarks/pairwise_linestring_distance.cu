@@ -17,9 +17,9 @@
 #include <benchmarks/fixture/rmm_pool_raii.hpp>
 #include <nvbench/nvbench.cuh>
 
+#include <cuspatial/distance/linestring_distance.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/linestring_distance.cuh>
 #include <cuspatial/range/multilinestring_range.cuh>
 
 #include <rmm/device_vector.hpp>

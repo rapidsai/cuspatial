@@ -17,10 +17,10 @@
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
+#include <cuspatial/distance/linestring_distance.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/linestring_distance.cuh>
 #include <cuspatial/range/multilinestring_range.cuh>
 
 #include <rmm/device_vector.hpp>
@@ -34,8 +34,7 @@ using namespace cuspatial;
 using namespace cuspatial::test;
 
 template <typename T>
-struct PairwiseLinestringDistanceTestMedium : public ::testing::Test {
-};
+struct PairwiseLinestringDistanceTestMedium : public ::testing::Test {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;

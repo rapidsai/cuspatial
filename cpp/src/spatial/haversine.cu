@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/constants.hpp>
+#include <cuspatial/distance/haversine.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/haversine.cuh>
 #include <cuspatial/iterator_factory.cuh>
 
 #include <cudf/column/column.hpp>

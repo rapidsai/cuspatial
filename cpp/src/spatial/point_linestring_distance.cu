@@ -25,9 +25,9 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
+#include <cuspatial/distance/point_linestring_distance.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/point_linestring_distance.cuh>
 #include <cuspatial/range/multilinestring_range.cuh>
 #include <cuspatial/range/multipoint_range.cuh>
 

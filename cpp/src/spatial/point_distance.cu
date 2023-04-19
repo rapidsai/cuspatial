@@ -17,10 +17,10 @@
 #include "../utility/double_boolean_dispatch.hpp"
 #include "../utility/iterator.hpp"
 
+#include <cuspatial/distance/point_distance.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/point_distance.cuh>
 #include <cuspatial/range/multipoint_range.cuh>
 
 #include <cudf/column/column_factories.hpp>
