@@ -1,10 +1,14 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-from cuspatial.core.binpreds.binpred_interface import NotImplementedPredicate
+from cuspatial.core.binpreds.binpred_interface import (
+    ImpossiblePredicate,
+    NotImplementedPredicate,
+)
+from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.core.binpreds.feature_intersects import (
+    IntersectsPredicateBase,
     LineStringPointIntersects,
-    PointLineStringIntersects,
 )
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -36,10 +40,22 @@ class CoversPredicateBase(EqualsPredicateBase):
     pass
 
 
+class LineStringLineStringCovers(IntersectsPredicateBase):
+    def _preprocess(self, lhs, rhs):
+        return rhs._basic_equals_all(lhs)
+
+
+class PolygonPolygonCovers(ContainsPredicateBase):
+    def _preprocess(self, lhs, rhs):
+        contains_none = rhs._basic_contains_none(lhs)
+        equals = rhs._basic_equals(lhs)
+        return contains_none | equals
+
+
 DispatchDict = {
     (Point, Point): CoversPredicateBase,
     (Point, MultiPoint): NotImplementedPredicate,
-    (Point, LineString): PointLineStringIntersects,
+    (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): CoversPredicateBase,
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): NotImplementedPredicate,
@@ -47,10 +63,10 @@ DispatchDict = {
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): LineStringPointIntersects,
     (LineString, MultiPoint): NotImplementedPredicate,
-    (LineString, LineString): NotImplementedPredicate,
+    (LineString, LineString): LineStringLineStringCovers,
     (LineString, Polygon): CoversPredicateBase,
     (Polygon, Point): CoversPredicateBase,
     (Polygon, MultiPoint): CoversPredicateBase,
     (Polygon, LineString): CoversPredicateBase,
-    (Polygon, Polygon): CoversPredicateBase,
+    (Polygon, Polygon): PolygonPolygonCovers,
 }

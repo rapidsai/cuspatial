@@ -16,7 +16,7 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-class ContainsDisjoint(BinPred):
+class DisjointByWayOfContains(BinPred):
     def _preprocess(self, lhs, rhs):
         """Disjoint is the opposite of contains, so just implement contains
         and then negate the result.
@@ -42,6 +42,13 @@ class PointLineStringDisjoint(PointLineStringIntersects):
         return ~result
 
 
+class PointPolygonDisjoint(BinPred):
+    def _preprocess(self, lhs, rhs):
+        intersects = lhs._basic_intersects(rhs)
+        contains = lhs._basic_contains_any(rhs)
+        return ~intersects & ~contains
+
+
 class LineStringPointDisjoint(PointLineStringDisjoint):
     def _preprocess(self, lhs, rhs):
         """Swap ordering for Intersects."""
@@ -56,21 +63,35 @@ class LineStringLineStringDisjoint(IntersectsPredicateBase):
         return ~result
 
 
+class LineStringPolygonDisjoint(BinPred):
+    def _preprocess(self, lhs, rhs):
+        intersects = lhs._basic_intersects(rhs)
+        contains = rhs._basic_contains_any(lhs)
+        return ~intersects & ~contains
+
+
+class PolygonPolygonDisjoint(BinPred):
+    def _preprocess(self, lhs, rhs):
+        intersects = lhs._basic_intersects(rhs)
+        contains = rhs._basic_contains_any(lhs)
+        return ~intersects & ~contains
+
+
 DispatchDict = {
-    (Point, Point): ContainsDisjoint,
+    (Point, Point): DisjointByWayOfContains,
     (Point, MultiPoint): NotImplementedPredicate,
     (Point, LineString): PointLineStringDisjoint,
-    (Point, Polygon): ContainsDisjoint,
+    (Point, Polygon): PointPolygonDisjoint,
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): NotImplementedPredicate,
-    (MultiPoint, Polygon): NotImplementedPredicate,
+    (MultiPoint, Polygon): LineStringPolygonDisjoint,
     (LineString, Point): LineStringPointDisjoint,
     (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): LineStringLineStringDisjoint,
-    (LineString, Polygon): NotImplementedPredicate,
-    (Polygon, Point): ContainsDisjoint,
+    (LineString, Polygon): LineStringPolygonDisjoint,
+    (Polygon, Point): DisjointByWayOfContains,
     (Polygon, MultiPoint): NotImplementedPredicate,
     (Polygon, LineString): NotImplementedPredicate,
-    (Polygon, Polygon): NotImplementedPredicate,
+    (Polygon, Polygon): PolygonPolygonDisjoint,
 }
