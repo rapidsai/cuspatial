@@ -1,12 +1,13 @@
-# cuSpatial C++ API Refactoring Guide
+# cuSpatial C++ header-only API Guide
 
 The original cuSpatial C++ API (libcuspatial) was designed to depend on RAPIDS libcudf and use
 its core data types, especially `cudf::column`. For users who do not also use libcudf or other
 RAPIDS APIS, depending on libcudf could be a big barrier to adoption of libcuspatial. libcudf is
 a very large library and building it takes a lot of time.
 
-Therefore, we are developing a standalone libcuspatial C++ API that does not depend on libcudf. This
-is a header-only template API with an iterator-based interface. This has a number of advantages
+Therefore, the core of cuSpatial is now implemented in a standalone C++ API that does not depend on
+libcudf. This is a header-only template API with an iterator- and range-based interface. This has a
+number of advantages.
 
   1. With a header-only API, users can include and build exactly what they use.
   2. With a templated API, the API can be flexible to support a variety of basic data types, such
@@ -20,10 +21,10 @@ is a header-only template API with an iterator-based interface. This has a numbe
 The main disadvantages of this type of API are
 
   1. Header-only APIs can increase compilation time for code that depends on them.
-  2. Some users (especially our Python API) may prefer a cuDF-based API.
+  2. Some users (especially the cuSpatial Python API) may prefer a cuDF-based API.
 
-The good news is that by maintaining the existing libcudf-based C++ API as a layer above the header-
-only libcuspatial API, we can avoid problem 1 and problem 2 for users of the legacy API.
+The good news is that maintaining the existing libcudf-based C++ API as a layer above the header-
+only libcuspatial API avoids problem 1 and problem 2 for users of the column-based API.
 
 ## Example API
 
@@ -152,14 +153,11 @@ key points:
 
 ## File Structure
 
-For now, libcuspatial APIs should be defined in a header file in the
-`cpp/include/cuspatial/` directory. Later, as we adopt the new API, we will rename
-the `experimental` directory. The API header should be named after the API. In the example,
-`haversine.hpp` defines the `cuspatial::haversine_distance` API.
+libcuspatial APIs should be defined in a header file in the `cpp/include/cuspatial/` directory.
+The API header should be named after the API. In the example, `haversine.hpp` defines the `cuspatial::haversine_distance` API.
 
-The implementation must also be in a header, but should be in the `cuspatial/detail`
-directory.  The implementation should be included from the API definition file, at the end of the
-file. Example:
+The implementation must also be in a header, but should be in the `cuspatial/detail` directory. The
+implementation should be included from the API definition file, at the end of the file. Example:
 
 ```c++
 ... // declaration of API above this point
@@ -181,8 +179,8 @@ The main implementation should be in detail headers.
 ### Header-only API Implementation
 
 Because it is a statically typed API, the header-only implementation can be much simpler than the
-libcudf-based API, which requires run-time type dispatching. In the case of `haversine_distance`, it is
-a simple matter of a few static asserts and dynamic expectation checks, followed by a call to
+libcudf-based API, which requires run-time type dispatching. In the case of `haversine_distance`,
+it is a simple matter of a few static asserts and dynamic expectation checks, followed by a call to
 `thrust::transform` with a custom transform functor.
 
 ```c++
