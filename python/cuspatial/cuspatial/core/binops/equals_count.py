@@ -13,7 +13,7 @@ def pairwise_multipoint_equals_count(lhs: GeoSeries, rhs: GeoSeries):
     """Compute the number of points in each multipoint in the lhs that are
     equal to points in the corresponding multipoint in the rhs.
 
-    For each point that exists in a multipoint in the lhs, search the
+    For each point in a multipoint in the lhs, search the
     corresponding multipoint in the rhs for a point that is equal to the
     point in the lhs. If a point is found, increment the count for that
     multipoint in the lhs.
