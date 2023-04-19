@@ -165,6 +165,24 @@ class GeoSeries(cudf.Series):
 
     @property
     def sizes(self):
+        """Returns the size in points of each geometry in the GeoSeries."
+
+        Returns
+        -------
+        sizes : cudf.Series
+            The size of each geometry in the GeoSeries.
+
+        Notes
+        -----
+        The size of a geometry is the number of points it contains.
+        The size of a polygon is the number of points in its exterior ring
+        plus the number of points in its interior rings.
+        The size of a multipolygon is the sum of all its polygons.
+        The size of a linestring is the number of points in its single line.
+        The size of a multilinestring is the sum of all its linestrings.
+        The size of a multipoint is the number of points in its single point.
+        The size of a point is 1.
+        """
         if contains_only_polygons(self):
             # The size of a polygon is the length of its exterior ring
             # plus the lengths of its interior rings.
@@ -175,7 +193,10 @@ class GeoSeries(cudf.Series):
             return full_sizes[1:] - full_sizes[:-1] - 1
         elif contains_only_linestrings(self):
             # Not supporting multilinestring yet
-            return self.lines.part_offset[1:] - self.lines.part_offset[:-1]
+            full_sizes = self.lines.part_offset.take(
+                self.lines.geometry_offset
+            )
+            return full_sizes[1:] - full_sizes[:-1]
         elif contains_only_multipoints(self):
             return (
                 self.multipoints.geometry_offset[1:]
