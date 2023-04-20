@@ -1483,6 +1483,7 @@ class GeoSeries(cudf.Series):
         rhs = _multipoints_from_geometry(other)
         contains = lhs.contains_properly(rhs, mode="basic_any")
         intersects = lhs._basic_intersects(other)
+        breakpoint()
         return contains | intersects
 
     def _basic_contains_all(self, other):
