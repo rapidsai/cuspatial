@@ -32,8 +32,7 @@ using namespace cudf;
 using namespace cudf::test;
 
 template <typename T>
-struct PairwisePointLinestringDistanceTest : public ::testing::Test {
-};
+struct PairwisePointLinestringDistanceTest : public ::testing::Test {};
 
 using TestTypes = ::testing::Types<float, double>;
 
@@ -94,8 +93,7 @@ TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairMultiPointMultiLinestring
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
 
-struct PairwisePointLinestringDistanceTestThrow : public ::testing::Test {
-};
+struct PairwisePointLinestringDistanceTestThrow : public ::testing::Test {};
 
 TEST_F(PairwisePointLinestringDistanceTestThrow, PointTypeMismatch)
 {

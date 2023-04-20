@@ -25,8 +25,7 @@
 #include <gtest/gtest.h>
 
 template <typename T>
-struct PolygonBoundingBoxTest : public ::testing::Test {
-};
+struct PolygonBoundingBoxTest : public ::testing::Test {};
 
 using cuspatial::vec_2d;
 using cuspatial::test::make_device_vector;

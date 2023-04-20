@@ -32,8 +32,7 @@ using namespace cudf::test;
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
 
 template <typename T>
-struct HaversineTest : public BaseFixture {
-};
+struct HaversineTest : public BaseFixture {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = Types<double>;
@@ -100,8 +99,7 @@ TYPED_TEST(HaversineTest, MismatchSize)
 }
 
 template <typename T>
-struct HaversineUnsupportedTypesTest : public BaseFixture {
-};
+struct HaversineUnsupportedTypesTest : public BaseFixture {};
 
 using UnsupportedTypes = RemoveIf<ContainedIn<Types<float, double>>, NumericTypes>;
 TYPED_TEST_CASE(HaversineUnsupportedTypesTest, UnsupportedTypes);
@@ -119,8 +117,7 @@ TYPED_TEST(HaversineUnsupportedTypesTest, MismatchSize)
 }
 
 template <typename T>
-struct HaversineUnsupportedChronoTypesTest : public BaseFixture {
-};
+struct HaversineUnsupportedChronoTypesTest : public BaseFixture {};
 
 TYPED_TEST_CASE(HaversineUnsupportedChronoTypesTest, ChronoTypes);
 
