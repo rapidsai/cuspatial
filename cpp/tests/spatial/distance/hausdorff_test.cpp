@@ -37,8 +37,7 @@ using namespace test;
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
 
 template <typename T>
-struct HausdorffTest : public BaseFixture {
-};
+struct HausdorffTest : public BaseFixture {};
 
 TYPED_TEST_CASE(HausdorffTest, cudf::test::FloatingPointTypes);
 

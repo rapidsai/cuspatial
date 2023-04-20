@@ -26,8 +26,7 @@
 // by the quadtree_point_in_polygon_test_small.cu test file.
 
 template <typename T>
-struct JoinQuadtreeAndBoundingBoxesErrorTest : public cuspatial::test::BaseFixture {
-};
+struct JoinQuadtreeAndBoundingBoxesErrorTest : public cuspatial::test::BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 
