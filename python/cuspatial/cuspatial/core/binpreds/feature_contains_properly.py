@@ -118,7 +118,6 @@ class ContainsProperlyPredicate(
         """Return the result of the basic predicate without any
         postprocessing.
         """
-        breakpoint()
         reindex_pip_result = self._reindex_allpairs(lhs, op_result)
         if len(reindex_pip_result) == 0:
             if self.config.mode == "basic_count":
